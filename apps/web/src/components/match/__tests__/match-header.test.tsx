@@ -282,7 +282,7 @@ describe("MatchHeader", () => {
       opponent_submitted: false,
     };
 
-    const agreedGame = {
+    const _agreedGame = {
       id: 2,
       game_number: 1,
       status: "agreed",

@@ -50,7 +50,6 @@ jest.mock("@/components/ui/password-input", () => ({
 }));
 
 // --- SocialAuthButtons ---
-const mockOnEmailClick = jest.fn();
 jest.mock("../social-auth-buttons", () => ({
   SocialAuthButtons: ({ onEmailClick }: { onEmailClick: () => void }) => (
     <button data-testid="email-signin-btn" onClick={onEmailClick}>

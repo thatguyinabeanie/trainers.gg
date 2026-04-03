@@ -1,9 +1,15 @@
 "use client";
 
-// jsdom lacks scrollIntoView — stub it globally for this test file
-Element.prototype.scrollIntoView = jest.fn();
-
 import { render, screen, waitFor } from "@testing-library/react";
+
+// jsdom lacks scrollIntoView — stub/restore per suite to avoid leaking
+const originalScrollIntoView = Element.prototype.scrollIntoView;
+beforeAll(() => {
+  Element.prototype.scrollIntoView = jest.fn();
+});
+afterAll(() => {
+  Element.prototype.scrollIntoView = originalScrollIntoView;
+});
 import userEvent from "@testing-library/user-event";
 import { MatchChat } from "../match-chat";
 

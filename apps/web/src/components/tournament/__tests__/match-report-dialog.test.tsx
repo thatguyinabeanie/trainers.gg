@@ -5,7 +5,7 @@
  */
 
 import type React from "react";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MatchReportDialog } from "../match-report-dialog";
 
@@ -106,7 +106,7 @@ jest.mock("@/components/ui/avatar", () => ({
 jest.mock("@/components/ui/radio-group", () => ({
   RadioGroup: ({
     children,
-    onValueChange,
+    onValueChange: _onValueChange,
     value,
   }: {
     children: React.ReactNode;

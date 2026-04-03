@@ -76,7 +76,7 @@ import { toast } from "sonner";
 import { TopNavAuthSection } from "../topnav-auth-section";
 
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
-const mockedToast = jest.mocked(toast);
+const _mockedToast = jest.mocked(toast);
 
 // ============================================================================
 // Helpers

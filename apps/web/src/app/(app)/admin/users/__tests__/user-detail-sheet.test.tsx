@@ -556,15 +556,6 @@ describe("UserDetailSheet", () => {
         screen.getByPlaceholderText(/reason for impersonation/i)
       ).toBeInTheDocument();
 
-      // Find the X cancel button (icon-only button beside Start Impersonation)
-      const cancelBtn = screen
-        .getAllByRole("button")
-        .find(
-          (btn) =>
-            !btn.textContent?.trim() ||
-            btn.closest("[aria-label]")?.getAttribute("aria-label") ===
-              "cancel"
-        );
       // Just check the impersonation UI is togglable by clicking Start then checking dialog
       // The X button hides the input
       const buttons = screen.getAllByRole("button");

@@ -1,5 +1,4 @@
 import { render, screen, act, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { TournamentOverview } from "../tournament-overview";
 import {
   getTournamentPhases,
@@ -112,7 +111,7 @@ const makeActiveRound = (overrides = {}) => ({
   ...overrides,
 });
 
-const makePendingRound = (overrides = {}) => ({
+const _makePendingRound = (overrides = {}) => ({
   id: 11,
   round_number: 2,
   status: "pending",

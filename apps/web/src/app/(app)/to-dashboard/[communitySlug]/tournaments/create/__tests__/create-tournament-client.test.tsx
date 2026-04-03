@@ -135,14 +135,13 @@ describe("CreateTournamentClient", () => {
       isLoading: true,
     });
 
-    render(<CreateTournamentClient communitySlug="test-org" />);
-
-    // No wizard content should be rendered
-    expect(screen.queryByText("Create Tournament")).not.toBeInTheDocument();
-    // The spinner div is present (no text node to assert on)
     const { container } = render(
       <CreateTournamentClient communitySlug="test-org" />
     );
+
+    // No wizard content should be rendered
+    expect(screen.queryByText("Create Tournament")).not.toBeInTheDocument();
+    // The spinner SVG is present
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 

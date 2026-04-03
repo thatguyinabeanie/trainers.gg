@@ -146,7 +146,7 @@ describe("OverviewTab", () => {
         </QueryClientProvider>
       );
       // In loading state, skeleton elements are rendered
-      const skeletons = container.querySelectorAll(
+      const _skeletons = container.querySelectorAll(
         "[class*='animate-pulse'], [class*='bg-muted']"
       );
       // At minimum the loading skeletons should be present — we just check for
