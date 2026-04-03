@@ -12,6 +12,15 @@ jest.mock("next/link", () => ({
   }) => <a href={href}>{children}</a>,
 }));
 
+jest.mock("@trainers/utils", () => ({
+  formatDisplayUsername: (username: string) =>
+    username.startsWith("temp_") || username.startsWith("user_")
+      ? "New Trainer"
+      : username,
+  isTempUsername: (username: string) =>
+    username.startsWith("temp_") || username.startsWith("user_"),
+}));
+
 const makeEntries = (count: number) =>
   Array.from({ length: count }, (_, i) => ({
     userId: `u${i}`,
@@ -63,4 +72,62 @@ describe("SidebarLeaderboard", () => {
     render(<SidebarLeaderboard entries={makeEntries(1)} />);
     expect(screen.getByText("PL")).toBeInTheDocument();
   });
+
+  it("shows 'NT' avatar fallback for temp username", () => {
+    render(
+      <SidebarLeaderboard
+        entries={[
+          {
+            userId: "u0",
+            username: "temp_abc123",
+            avatarUrl: null,
+            rating: 1000,
+            skillBracket: "beginner",
+            gamesPlayed: 1,
+          },
+        ]}
+      />
+    );
+    expect(screen.getByText("NT")).toBeInTheDocument();
+  });
+
+  it("shows 'New Trainer' display name for temp username", () => {
+    render(
+      <SidebarLeaderboard
+        entries={[
+          {
+            userId: "u0",
+            username: "temp_abc123",
+            avatarUrl: null,
+            rating: 1000,
+            skillBracket: "beginner",
+            gamesPlayed: 1,
+          },
+        ]}
+      />
+    );
+    expect(screen.getByText("New Trainer")).toBeInTheDocument();
+  });
+
+  it.each(["temp_abc123", "user_06143118"])(
+    "treats '%s' as a temp username for fallback and display",
+    (username) => {
+      render(
+        <SidebarLeaderboard
+          entries={[
+            {
+              userId: "u0",
+              username,
+              avatarUrl: null,
+              rating: 1000,
+              skillBracket: "beginner",
+              gamesPlayed: 1,
+            },
+          ]}
+        />
+      );
+      expect(screen.getByText("NT")).toBeInTheDocument();
+      expect(screen.getByText("New Trainer")).toBeInTheDocument();
+    }
+  );
 });
