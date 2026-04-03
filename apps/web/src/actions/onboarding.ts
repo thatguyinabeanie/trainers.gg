@@ -23,7 +23,7 @@ const PDS_HOST = process.env.PDS_HOST || "https://pds.trainers.gg";
 export async function completeOnboarding(data: {
   username: string;
   country: string;
-  bio: string;
+  bio?: string;
   birthDate?: string;
 }) {
   // Skip BotID in E2E: headless Chromium is flagged as a bot
