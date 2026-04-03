@@ -11,7 +11,7 @@ import {
   listAllCommunitiesForSudo,
   getCurrentUserAlts,
 } from "@trainers/supabase";
-import { isSudoModeActive } from "@/lib/sudo/server";
+import { isSudoModeActive, isSiteAdmin } from "@/lib/sudo/server";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DASHBOARD_ALT_COOKIE } from "@/components/dashboard/sidebar-helpers";
@@ -29,7 +29,7 @@ export default async function DashboardLayout({
 
   const supabase = await createClient();
 
-  const [communities, alts, userRow, sudoActive] = await Promise.all([
+  const [communities, alts, userRow, sudoActive, isAdmin] = await Promise.all([
     listMyCommunities(supabase, user.id).catch((err) => {
       console.error("[DashboardLayout] Failed to load communities:", err);
       return [];
@@ -54,6 +54,7 @@ export default async function DashboardLayout({
       console.error("[DashboardLayout] Failed to check sudo mode:", err);
       return false;
     }),
+    isSiteAdmin().catch(() => false),
   ]);
 
   // When sudo mode is active, merge all communities — user's own keep their real
@@ -158,6 +159,8 @@ export default async function DashboardLayout({
         communities={sidebarCommunities}
         alts={sidebarAlts}
         selectedAltUsername={selectedAltUsername}
+        isSiteAdmin={isAdmin}
+        isSudoActive={sudoActive}
         variant="inset"
       />
       <SidebarInset>{children}</SidebarInset>

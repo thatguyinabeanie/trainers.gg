@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentProps } from "react";
+import { type ComponentProps, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -17,6 +17,7 @@ import {
   MoreVertical,
   LogOut,
   Settings,
+  ShieldAlert,
   User,
   ChevronsUpDown,
   Check,
@@ -79,6 +80,8 @@ interface DashboardSidebarProps {
   alts: AltInfo[];
   communities: CommunityInfo[];
   selectedAltUsername: string | null;
+  isSiteAdmin?: boolean;
+  isSudoActive?: boolean;
 }
 
 import {
@@ -113,6 +116,8 @@ export function DashboardSidebar({
   alts,
   communities,
   selectedAltUsername,
+  isSiteAdmin = false,
+  isSudoActive = false,
   ...props
 }: DashboardSidebarProps & ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -150,6 +155,8 @@ export function DashboardSidebar({
           activeCommunity={
             isCommunityContext && activeCommunity ? activeCommunity : null
           }
+          isSiteAdmin={isSiteAdmin}
+          isSudoActive={isSudoActive}
         />
       </SidebarFooter>
     </Sidebar>
@@ -412,11 +419,32 @@ function CommunityHeader({ community }: { community: CommunityInfo }) {
 interface NavUserProps {
   user: UserInfo;
   activeCommunity: CommunityInfo | null;
+  isSiteAdmin: boolean;
+  isSudoActive: boolean;
 }
 
-function NavUser({ user, activeCommunity }: NavUserProps) {
+function NavUser({ user, activeCommunity, isSiteAdmin, isSudoActive }: NavUserProps) {
   const { isMobile } = useSidebar();
   const router = useRouter();
+  const [togglingS, setTogglingS] = useState(false);
+
+  const handleToggleSudo = async () => {
+    setTogglingS(true);
+    try {
+      const { toggleSudoMode } = await import("@/lib/sudo/actions");
+      const result = await toggleSudoMode();
+      if (result.success) {
+        toast.success(result.isActive ? "Sudo mode activated" : "Sudo mode deactivated");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("Failed to toggle sudo mode");
+    } finally {
+      setTogglingS(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -521,6 +549,26 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
                 Account
               </Link>
             </DropdownMenuItem>
+            {isSiteAdmin && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleToggleSudo}
+                  disabled={togglingS}
+                  className={cn(
+                    "gap-2",
+                    isSudoActive && "text-amber-600 focus:text-amber-600"
+                  )}
+                >
+                  <ShieldAlert className="size-4" />
+                  {togglingS
+                    ? "Toggling..."
+                    : isSudoActive
+                      ? "Deactivate Sudo"
+                      : "Activate Sudo"}
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleSignOut}
