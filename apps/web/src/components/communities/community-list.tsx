@@ -1,16 +1,19 @@
 import { Users } from "lucide-react";
-import { type CommunityWithCounts } from "@trainers/supabase";
-import { CommunityCard } from "@/components/communities/community-card";
 
-interface CommunityCardGridProps {
+import { type CommunityWithCounts } from "@trainers/supabase";
+
+import { Card } from "@/components/ui/card";
+import { CommunityListRow } from "@/components/communities/community-list-row";
+
+interface CommunityListProps {
   communities: CommunityWithCounts[];
   isSearching?: boolean;
 }
 
-export function CommunityCardGrid({
+export function CommunityList({
   communities,
   isSearching = false,
-}: CommunityCardGridProps) {
+}: CommunityListProps) {
   if (communities.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
@@ -26,10 +29,10 @@ export function CommunityCardGrid({
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <Card>
       {communities.map((community) => (
-        <CommunityCard key={community.id} community={community} />
+        <CommunityListRow key={community.id} community={community} />
       ))}
-    </div>
+    </Card>
   );
 }

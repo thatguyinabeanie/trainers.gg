@@ -97,12 +97,22 @@ check_supabase_cli() {
 }
 
 # =============================================================================
-# Check if Supabase is already running
+# Check if Supabase is already running on the expected port
 # =============================================================================
 check_supabase_status() {
   cd "$SUPABASE_DIR"
   if $SUPABASE_CMD status > /dev/null 2>&1; then
-    return 0
+    # Supabase CLI says it's running, but verify the expected API port is reachable.
+    # This catches the case where containers from a different dev slot are running
+    # but .env.local points to a different port.
+    if curl -sf "http://127.0.0.1:${SUPABASE_API_PORT}/rest/v1/" -o /dev/null 2>/dev/null; then
+      return 0
+    else
+      echo -e "${YELLOW}Supabase is running but not on expected port ${SUPABASE_API_PORT}${NC}"
+      echo -e "${YELLOW}Stopping mismatched Supabase instance...${NC}"
+      $SUPABASE_CMD stop 2>/dev/null || true
+      return 1
+    fi
   else
     return 1
   fi

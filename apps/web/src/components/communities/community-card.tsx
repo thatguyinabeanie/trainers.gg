@@ -6,19 +6,7 @@ import { type SocialLinkPlatform } from "@trainers/validators";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlatformIcon } from "@/components/communities/social-link-icons";
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function getCommunityInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
+import { getCommunityInitials } from "@/components/communities/community-helpers";
 
 // ============================================================================
 // CommunityCard

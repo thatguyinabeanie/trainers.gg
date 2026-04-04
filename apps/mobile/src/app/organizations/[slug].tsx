@@ -92,10 +92,7 @@ export default function CommunityDetailScreen() {
     );
   }
 
-  const tierBadge =
-    community.tier === "verified" || community.tier === "partner"
-      ? community.tier
-      : null;
+  const tierBadge = community.tier === "partner" ? community.tier : null;
 
   return (
     <Screen>
