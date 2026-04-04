@@ -55,7 +55,8 @@ export async function listPublicCommunities(
 }
 
 /**
- * List featured communities ordered by featured_order
+ * List featured communities ordered by featured_order.
+ * Includes communities that are explicitly featured OR have partner tier.
  */
 export async function listFeaturedCommunities(
   supabase: TypedClient
@@ -64,8 +65,8 @@ export async function listFeaturedCommunities(
     .from("communities")
     .select("*")
     .eq("status", "active")
-    .eq("is_featured", true)
-    .order("featured_order", { ascending: true, nullsFirst: false });
+    .or("is_featured.eq.true,tier.eq.partner")
+    .order("featured_order", { ascending: true, nullsFirst: true });
 
   if (error) throw error;
   return data ?? [];
