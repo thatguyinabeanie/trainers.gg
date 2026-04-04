@@ -29,14 +29,14 @@ import { apiCall } from "./client";
  * @example
  * ```ts
  * export function useTournament(id: string) {
- *   return createQuery<Tournament>(
+ *   return useApiQuery<Tournament>(
  *     ['tournament', id],
  *     `api-tournaments/${id}`
  *   );
  * }
  * ```
  */
-export function createQuery<T>(
+export function useApiQuery<T>(
   queryKey: QueryKey,
   endpoint: string,
   options?: Omit<UseQueryOptions<T, Error>, "queryKey" | "queryFn">
@@ -63,7 +63,7 @@ export function createQuery<T>(
  * @example
  * ```ts
  * export function useRegisterTournament() {
- *   return createMutation(
+ *   return useApiMutation(
  *     ({ tournamentId, altId }: RegisterInput) =>
  *       apiCall(`api-tournaments/${tournamentId}/register`, {
  *         method: 'POST',
@@ -76,7 +76,7 @@ export function createQuery<T>(
  * }
  * ```
  */
-export function createMutation<TData, TVariables>(
+export function useApiMutation<TData, TVariables>(
   mutationFn: (variables: TVariables) => Promise<ActionResult<TData>>,
   options?: UseMutationOptions<TData, Error, TVariables, unknown> & {
     invalidates?: (variables: TVariables) => QueryKey[];
