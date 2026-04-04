@@ -31,6 +31,15 @@ BEGIN
         WHERE id::text = (storage.foldername(name))[2]
           AND owner_user_id = (select auth.uid())
       )
+    )
+    WITH CHECK (
+      bucket_id = 'uploads'
+      AND (storage.foldername(name))[1] = 'communities'
+      AND EXISTS (
+        SELECT 1 FROM public.communities
+        WHERE id::text = (storage.foldername(name))[2]
+          AND owner_user_id = (select auth.uid())
+      )
     );
 
   -- Community owners can delete files in communities/{communityId}/

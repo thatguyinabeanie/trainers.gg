@@ -478,7 +478,8 @@ function SocialLinksEditor({
             <div
               className={cn(
                 "relative flex h-9 w-10 shrink-0 items-center justify-center",
-                "bg-muted border-input rounded-l-md border border-r-0"
+                "bg-muted border-input rounded-l-md border border-r-0",
+                "focus-within:ring-ring focus-within:ring-2 focus-within:ring-offset-1"
               )}
             >
               {/* Visual icon — pointer-events-none so the Select trigger below is clickable */}
@@ -493,7 +494,10 @@ function SocialLinksEditor({
                 }}
               >
                 {/* Invisible trigger overlaid on the icon box */}
-                <SelectTrigger className="absolute inset-0 border-0 bg-transparent opacity-0 shadow-none" />
+                <SelectTrigger
+                  aria-label={`Change platform: ${socialPlatformLabels[link.platform]}`}
+                  className="absolute inset-0 border-0 bg-transparent opacity-0 shadow-none"
+                />
                 <SelectContent>
                   {SOCIAL_LINK_PLATFORMS.map((platform) => (
                     <SelectItem key={platform} value={platform}>

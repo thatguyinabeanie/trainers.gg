@@ -25,7 +25,7 @@ export function FeaturedStrip({ communities }: FeaturedStripProps) {
           <div className="relative">
             <Avatar
               noBorder
-              className="h-50 w-50 rounded-2xl shadow-sm transition-shadow group-hover:shadow-md"
+              className="h-[72px] w-[72px] rounded-2xl shadow-sm transition-shadow group-hover:shadow-md"
             >
               <AvatarImage
                 src={community.logo_url ?? undefined}
