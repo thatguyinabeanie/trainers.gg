@@ -1,5 +1,7 @@
 # trainers.gg
 
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0)
+
 All-in-one integrated platform for Pokemon fans. Current focus: competitive battling (VGC, Showdown, Pokemon Champions). Integrated with the **AT Protocol (Bluesky)** for decentralized social features.
 
 ## Tech Stack
@@ -121,6 +123,10 @@ Every user gets a Bluesky identity (`@username.trainers.gg`) with a DID stored i
 
 See [CLAUDE.md](./CLAUDE.md) for code style guidelines and architecture decisions.
 
+By submitting a pull request or otherwise contributing to this project, you agree to the [Contributor License Agreement](./CLA.md).
+
 ## License
 
-Private - All rights reserved.
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](./LICENSE.md). You are free to use, modify, and distribute this software for any **non-commercial** purpose. Commercial use requires a separate paid license.
+
+For commercial licensing inquiries, contact the copyright holder.
