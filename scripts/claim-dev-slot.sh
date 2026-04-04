@@ -61,6 +61,13 @@ if [ -f "$SUPABASE_CONFIG_BACKUP" ]; then
   rm "$SUPABASE_CONFIG_BACKUP"
 fi
 
+# Safety: if config.toml has a non-default project_id (e.g., committed by accident
+# from a worktree), reset it to "supabase" so slot 0 works correctly.
+if [ -f "$SUPABASE_CONFIG" ] && grep -q 'project_id = "supabase-slot-' "$SUPABASE_CONFIG"; then
+  log_warn "config.toml has a slot-specific project_id — resetting to default"
+  sed -i '' 's/project_id = "supabase-slot-[0-9]*"/project_id = "supabase"/' "$SUPABASE_CONFIG"
+fi
+
 # =============================================================================
 # Reuse existing slot if one is active for this worktree
 # =============================================================================
@@ -140,8 +147,9 @@ detect_running_supabase_slot() {
     fi
   done
 
-  # Fallback: if only one Supabase instance is running with no valid lockfile,
-  # adopt it (common case: single dev, server exited without cleanup)
+  # Fallback: if only one Supabase instance is running (regardless of which
+  # worktree started it), adopt it. Common case: single dev, server exited
+  # without cleanup, or a different worktree started it but is no longer running.
   local count
   count=$(echo "$occupied_slots" | wc -w | tr -d ' ')
   if [ "$count" -eq 1 ]; then
@@ -152,6 +160,39 @@ detect_running_supabase_slot() {
     if is_port_free "$web_port"; then
       log_info "Found orphaned Supabase on slot $solo_slot — adopting it"
       echo "$solo_slot"
+      return 0
+    fi
+  fi
+
+  # Fallback 2: if multiple orphaned instances exist, clean up ones whose
+  # lockfile PID is dead and try to adopt the remaining one
+  local alive_slots=""
+  local alive_count=0
+  for occupied_slot in $occupied_slots; do
+    local lockfile="$DEV_SLOT_DIR/slot-${occupied_slot}.lock"
+    local is_alive=false
+    if [ -f "$lockfile" ]; then
+      local lock_pid
+      lock_pid=$(grep -o '"pid": *[0-9]*' "$lockfile" 2>/dev/null | grep -o '[0-9]*')
+      if [ -n "$lock_pid" ] && is_pid_alive "$lock_pid"; then
+        is_alive=true
+      fi
+    fi
+    if [ "$is_alive" = "false" ]; then
+      alive_slots="$alive_slots $occupied_slot"
+      alive_count=$((alive_count + 1))
+    fi
+  done
+
+  # If there's exactly one orphaned slot, adopt it
+  if [ "$alive_count" -eq 1 ]; then
+    local orphan_slot
+    orphan_slot=$(echo "$alive_slots" | tr -d ' ')
+    local web_port
+    web_port=$(slot_port "$PORT_BASE_WEB" "$orphan_slot")
+    if is_port_free "$web_port"; then
+      log_info "Found orphaned Supabase on slot $orphan_slot (from another worktree) — adopting it"
+      echo "$orphan_slot"
       return 0
     fi
   fi
