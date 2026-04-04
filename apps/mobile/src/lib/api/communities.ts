@@ -1,5 +1,5 @@
 import type { Database } from "@trainers/supabase/types";
-import { createQuery, createMutation } from "./query-factory";
+import { useApiQuery, useApiMutation } from "./query-factory";
 import { apiCall } from "./client";
 
 type Community = Database["public"]["Tables"]["communities"]["Row"];
@@ -17,7 +17,7 @@ type Community = Database["public"]["Tables"]["communities"]["Row"];
  * ```
  */
 export function useCommunities() {
-  return createQuery<Community[]>(["communities"], "api-organizations", {
+  return useApiQuery<Community[]>(["communities"], "api-organizations", {
     staleTime: 300_000, // 5 minutes - communities change infrequently
   });
 }
@@ -31,7 +31,7 @@ export function useCommunities() {
  * ```
  */
 export function useCommunity(slug: string) {
-  return createQuery<Community>(
+  return useApiQuery<Community>(
     ["community", slug],
     `api-organizations/${slug}`,
     {
@@ -55,7 +55,7 @@ export function useCommunity(slug: string) {
  * ```
  */
 export function useCreateCommunity() {
-  return createMutation<
+  return useApiMutation<
     Community,
     {
       name: string;
@@ -91,7 +91,7 @@ export function useCreateCommunity() {
  * ```
  */
 export function useUpdateCommunity() {
-  return createMutation<
+  return useApiMutation<
     Community,
     {
       slug: string;
@@ -130,7 +130,7 @@ export function useUpdateCommunity() {
  * ```
  */
 export function useInviteStaff() {
-  return createMutation<
+  return useApiMutation<
     { success: true },
     {
       slug: string;
@@ -159,7 +159,7 @@ export function useInviteStaff() {
  * ```
  */
 export function useRemoveStaff() {
-  return createMutation<{ success: true }, { slug: string; userId: string }>(
+  return useApiMutation<{ success: true }, { slug: string; userId: string }>(
     ({ slug, userId }) =>
       apiCall(`api-organizations/${slug}/staff/${userId}`, {
         method: "DELETE",

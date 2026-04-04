@@ -20,6 +20,12 @@ import type {
 } from "@trainers/supabase/queries";
 
 // ============================================================================
+// Sentinel for render-time state initialization
+// ============================================================================
+
+const UNINITIALIZED = Symbol();
+
+// ============================================================================
 // Query key factory for player search
 // ============================================================================
 
@@ -103,10 +109,15 @@ export function PlayerSearch({ initialData }: PlayerSearchProps) {
     debouncedQuery.length > 0 || country.length > 0 || sort !== "tournaments";
   const isClientSearch = hasFilters || page > 1;
 
-  // Reset page when filters change
-  useEffect(() => {
+  // Reset page when filters change — render-time adjustment keyed on a compound value
+  const filterKey = `${debouncedQuery}|${country}|${sort}`;
+  const [prevFilterKey, setPrevFilterKey] = useState<typeof filterKey | symbol>(
+    UNINITIALIZED
+  );
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
     setPage(1);
-  }, [debouncedQuery, country, sort]);
+  }
 
   // TanStack Query for search results
   const {

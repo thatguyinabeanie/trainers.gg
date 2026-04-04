@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition, useCallback } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,51 +77,47 @@ export default function ProfileSettingsPage() {
     loadProfile();
   }, []);
 
-  // Debounced username availability check
-  const checkAvailability = useCallback(
-    async (value: string) => {
-      if (!value || value.toLowerCase() === originalUsername.toLowerCase()) {
-        setUsernameStatus("idle");
-        setUsernameError(null);
-        return;
-      }
-
-      // Basic validation before server check
-      if (value.length < 3) {
-        setUsernameStatus("error");
-        setUsernameError("Username must be at least 3 characters");
-        return;
-      }
-
-      if (value.length > 20) {
-        setUsernameStatus("error");
-        setUsernameError("Username must be at most 20 characters");
-        return;
-      }
-
-      if (!/^[\p{L}\p{N}_-]+$/u.test(value)) {
-        setUsernameStatus("error");
-        setUsernameError(
-          "Username can only contain letters, numbers, underscores, and hyphens"
-        );
-        return;
-      }
-
-      setUsernameStatus("checking");
+  const checkAvailability = async (value: string) => {
+    if (!value || value.toLowerCase() === originalUsername.toLowerCase()) {
+      setUsernameStatus("idle");
       setUsernameError(null);
+      return;
+    }
 
-      const result = await checkUsernameAvailability(value);
+    // Basic validation before server check
+    if (value.length < 3) {
+      setUsernameStatus("error");
+      setUsernameError("Username must be at least 3 characters");
+      return;
+    }
 
-      if (result.available) {
-        setUsernameStatus("available");
-        setUsernameError(null);
-      } else {
-        setUsernameStatus("taken");
-        setUsernameError(result.error ?? "Username is not available");
-      }
-    },
-    [originalUsername]
-  );
+    if (value.length > 20) {
+      setUsernameStatus("error");
+      setUsernameError("Username must be at most 20 characters");
+      return;
+    }
+
+    if (!/^[\p{L}\p{N}_-]+$/u.test(value)) {
+      setUsernameStatus("error");
+      setUsernameError(
+        "Username can only contain letters, numbers, underscores, and hyphens"
+      );
+      return;
+    }
+
+    setUsernameStatus("checking");
+    setUsernameError(null);
+
+    const result = await checkUsernameAvailability(value);
+
+    if (result.available) {
+      setUsernameStatus("available");
+      setUsernameError(null);
+    } else {
+      setUsernameStatus("taken");
+      setUsernameError(result.error ?? "Username is not available");
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -129,7 +125,7 @@ export default function ProfileSettingsPage() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [username, checkAvailability]);
+  }, [username]);
 
   const isPlaceholderUsername =
     originalUsername.startsWith("temp_") ||

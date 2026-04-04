@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { useSupabase } from "@/lib/supabase";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Gavel, User } from "lucide-react";
@@ -53,7 +53,11 @@ export function useMatchPresence({
     isParticipant,
   });
   const onJudgeRequestRef = useRef(onJudgeRequest);
-  onJudgeRequestRef.current = onJudgeRequest;
+  // Keep ref current without mutating during render — use layout effect so the
+  // ref is updated before any subscriptions fire.
+  useLayoutEffect(() => {
+    onJudgeRequestRef.current = onJudgeRequest;
+  });
 
   useEffect(() => {
     if (!username) return;
@@ -109,26 +113,22 @@ export function useMatchPresence({
     };
   }, [supabase, matchId, username, displayName, isStaff, isParticipant]);
 
-  const setTyping = useCallback(
-    async (isTyping: boolean) => {
-      if (!channelRef.current || !username) return;
-      await channelRef.current.track({
-        ...presenceRef.current,
-        isTyping,
-      });
-    },
-    [username]
-  );
+  const setTyping = async (isTyping: boolean) => {
+    if (!channelRef.current || !username) return;
+    await channelRef.current.track({
+      ...presenceRef.current,
+      isTyping,
+    });
+  };
 
-  // Broadcast judge request state to all other clients on this channel
-  const broadcastJudgeRequest = useCallback(async (requested: boolean) => {
+  const broadcastJudgeRequest = async (requested: boolean) => {
     if (!channelRef.current) return;
     await channelRef.current.send({
       type: "broadcast",
       event: "judge-request",
       payload: { requested },
     });
-  }, []);
+  };
 
   return { viewers, typingUsers, setTyping, broadcastJudgeRequest };
 }

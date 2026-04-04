@@ -62,7 +62,9 @@ const mockGetTournamentPhases =
 const mockGetPhaseRoundsWithStats =
   getPhaseRoundsWithStats as unknown as jest.MockedFunction<SyncRoundsFn>;
 
-// Helper to set up consistent query mocks for phases + rounds
+// Helper to set up consistent query mocks for phases + rounds.
+// Uses mockImplementation with alternating results so extra re-renders
+// (from render-time state adjustments) don't exhaust the mock queue.
 function setupQueryMocks({
   phases = [] as Parameters<
     (typeof mockGetTournamentPhases)["mockReturnValue"]
@@ -73,19 +75,24 @@ function setupQueryMocks({
   roundsLoading = false,
 } = {}) {
   const refetchRounds = jest.fn().mockResolvedValue(undefined);
-  mockUseSupabaseQuery
-    .mockReturnValueOnce({
-      data: phases,
-      error: null,
-      isLoading: false,
-      refetch: jest.fn(),
-    })
-    .mockReturnValueOnce({
-      data: rounds,
-      error: null,
-      isLoading: roundsLoading,
-      refetch: refetchRounds,
-    });
+  const phasesResult = {
+    data: phases,
+    error: null,
+    isLoading: false,
+    refetch: jest.fn(),
+  };
+  const roundsResult = {
+    data: rounds,
+    error: null,
+    isLoading: roundsLoading,
+    refetch: refetchRounds,
+  };
+  let callIdx = 0;
+  mockUseSupabaseQuery.mockImplementation(() => {
+    const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+    callIdx++;
+    return result;
+  });
   return { refetchRounds };
 }
 
@@ -139,19 +146,26 @@ describe("TournamentOverview", () => {
   describe("Registration Progress", () => {
     it("should display correct registration counts for draft tournament", () => {
       // Setup default mocks for non-active tournament
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       const mockTournament = {
         id: 1,
@@ -176,19 +190,26 @@ describe("TournamentOverview", () => {
 
     it("should display checked-in count for active tournament", () => {
       // Setup default mocks
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       const mockTournament = {
         id: 1,
@@ -213,19 +234,26 @@ describe("TournamentOverview", () => {
 
     it("should show dropped count for active tournament", () => {
       // Setup default mocks
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       const mockTournament = {
         id: 1,
@@ -248,19 +276,26 @@ describe("TournamentOverview", () => {
 
     it("should handle tournament without max participants", () => {
       // Setup default mocks
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       const mockTournament = {
         id: 1,
@@ -281,19 +316,26 @@ describe("TournamentOverview", () => {
 
     it("should calculate registration progress correctly", () => {
       // Setup default mocks
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       const mockTournament = {
         id: 1,
@@ -352,19 +394,26 @@ describe("TournamentOverview", () => {
       ];
 
       // Setup mocks for this test
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: mockPhases,
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: mockRounds,
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       render(<TournamentOverview tournament={mockTournament} />);
 
@@ -469,19 +518,26 @@ describe("TournamentOverview", () => {
       ];
 
       // Setup mocks for this test
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: mockPhases,
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: mockRounds,
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       render(<TournamentOverview tournament={mockTournament} />);
 
@@ -496,19 +552,26 @@ describe("TournamentOverview", () => {
   describe("Tournament Details Cards", () => {
     it("should display tournament format information", () => {
       // Setup default mocks
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       const mockTournament = {
         id: 1,
@@ -531,19 +594,26 @@ describe("TournamentOverview", () => {
 
     it("should display schedule information", () => {
       // Setup default mocks
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       const startDate = new Date("2025-03-15T10:00:00Z").getTime();
       const endDate = new Date("2025-03-15T18:00:00Z").getTime();
@@ -568,19 +638,26 @@ describe("TournamentOverview", () => {
 
     it("should handle missing optional tournament data", () => {
       // Setup default mocks
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       const mockTournament = {
         id: 1,
@@ -617,19 +694,26 @@ describe("TournamentOverview", () => {
       ];
 
       // Setup mocks for this test
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: mockPhases,
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       render(<TournamentOverview tournament={mockTournament} />);
 
@@ -639,19 +723,26 @@ describe("TournamentOverview", () => {
 
     it("should not show round command center for draft tournaments", () => {
       // Setup default mocks
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
+      {
+        const phasesResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
+        };
+        const roundsResult = {
           data: [],
           error: null,
           isLoading: false,
           refetch: jest.fn(),
-        }); // rounds query
+        };
+        let callIdx = 0;
+        mockUseSupabaseQuery.mockImplementation(() => {
+          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
+          callIdx++;
+          return result;
+        });
+      }
 
       const mockTournament = {
         id: 1,

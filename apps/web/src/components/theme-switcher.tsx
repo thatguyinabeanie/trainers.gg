@@ -9,19 +9,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Laptop, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+
+import { useIsClient } from "@/hooks/use-is-client";
 
 const ICON_SIZE = 16;
 
 export function ThemeSwitcher() {
-  const [mounted, setMounted] = useState(false);
+  const isClient = useIsClient();
   const { theme, setTheme } = useTheme();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
+  if (!isClient) {
     return null;
   }
 

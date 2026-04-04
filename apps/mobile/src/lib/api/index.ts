@@ -6,7 +6,7 @@
  */
 
 export { apiCall } from "./client";
-export { createQuery, createMutation } from "./query-factory";
+export { useApiQuery, useApiMutation } from "./query-factory";
 
 // Realtime subscriptions
 export {

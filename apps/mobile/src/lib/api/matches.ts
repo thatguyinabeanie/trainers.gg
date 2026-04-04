@@ -1,5 +1,5 @@
 import type { Database } from "@trainers/supabase/types";
-import { createQuery, createMutation } from "./query-factory";
+import { useApiQuery, useApiMutation } from "./query-factory";
 import { apiCall } from "./client";
 
 type Match = Database["public"]["Tables"]["tournament_matches"]["Row"];
@@ -18,7 +18,7 @@ type Game = Database["public"]["Tables"]["match_games"]["Row"];
  * ```
  */
 export function useMatch(id: string) {
-  return createQuery<Match>(["match", id], `api-matches/${id}`, {
+  return useApiQuery<Match>(["match", id], `api-matches/${id}`, {
     staleTime: 30_000, // 30 seconds - matches update frequently during tournaments
   });
 }
@@ -38,7 +38,7 @@ export function useMatch(id: string) {
  * ```
  */
 export function useReportGame() {
-  return createMutation<
+  return useApiMutation<
     Game,
     {
       matchId: string;
@@ -75,7 +75,7 @@ export function useReportGame() {
  * ```
  */
 export function useUpdateGame() {
-  return createMutation<
+  return useApiMutation<
     Game,
     {
       matchId: string;
@@ -111,7 +111,7 @@ export function useUpdateGame() {
  * ```
  */
 export function useCallJudge() {
-  return createMutation<{ success: true }, { matchId: string; reason: string }>(
+  return useApiMutation<{ success: true }, { matchId: string; reason: string }>(
     ({ matchId, reason }) =>
       apiCall(`api-matches/${matchId}/judge-call`, {
         method: "POST",

@@ -1,5 +1,5 @@
 import type { Database } from "@trainers/supabase/types";
-import { createQuery, createMutation } from "./query-factory";
+import { useApiQuery, useApiMutation } from "./query-factory";
 import { apiCall } from "./client";
 
 type Notification = Database["public"]["Tables"]["notifications"]["Row"];
@@ -17,7 +17,7 @@ type Notification = Database["public"]["Tables"]["notifications"]["Row"];
  * ```
  */
 export function useNotifications() {
-  return createQuery<Notification[]>(["notifications"], "api-notifications", {
+  return useApiQuery<Notification[]>(["notifications"], "api-notifications", {
     staleTime: 10_000, // 10 seconds - notifications should be near real-time
     refetchInterval: 30_000, // Poll every 30 seconds
   });
@@ -33,7 +33,7 @@ export function useNotifications() {
  * ```
  */
 export function useMarkNotificationRead() {
-  return createMutation<{ success: true }, { id: string }>(
+  return useApiMutation<{ success: true }, { id: string }>(
     ({ id }) =>
       apiCall(`api-notifications/${id}/read`, {
         method: "PATCH",
@@ -54,7 +54,7 @@ export function useMarkNotificationRead() {
  * ```
  */
 export function useDeleteNotification() {
-  return createMutation<{ success: true }, { id: string }>(
+  return useApiMutation<{ success: true }, { id: string }>(
     ({ id }) =>
       apiCall(`api-notifications/${id}`, {
         method: "DELETE",

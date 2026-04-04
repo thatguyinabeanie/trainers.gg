@@ -94,6 +94,107 @@ useEffect(() => {
 }, [userId]);
 ```
 
+## No setState in Effects (`set-state-in-effect`)
+
+The `react-hooks/set-state-in-effect` rule forbids calling `setState` synchronously in an effect body. Here are the approved alternatives:
+
+**Client detection / SSR hydration** — use `useSyncExternalStore`:
+
+```tsx
+import { useSyncExternalStore } from "react";
+const emptySubscribe = () => () => {};
+export function useIsClient() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+}
+```
+
+**Reset state when a dependency changes** — render-time adjustment with `Symbol` sentinel:
+
+```tsx
+const UNINITIALIZED = Symbol();
+const [prevFilter, setPrevFilter] = useState<typeof filter | symbol>(
+  UNINITIALIZED
+);
+if (filter !== prevFilter) {
+  setPrevFilter(filter);
+  setPage(0); // setState during render is fine — React handles it
+}
+```
+
+The `Symbol` sentinel ensures the condition fires on the first render even when data is immediately available (e.g., in tests with mocks).
+
+**Imperative API calls (form.reset, router.push)** — move to event handlers, not render:
+
+```tsx
+// Good — reset in event handler
+const handleOpenChange = (nextOpen: boolean) => {
+  if (!nextOpen) form.reset();
+  onOpenChange(nextOpen);
+};
+
+// Avoid — imperative calls during render
+if (open !== prevOpen) {
+  form.reset();
+} // breaks StrictMode
+```
+
+**Debounce effects with early exits** — wrap setState in the timer, not at the top:
+
+```tsx
+// Good — setState only inside the timer callback (not directly in the effect body)
+useEffect(() => {
+  if (!searchTerm) return; // no setState here
+  const timer = setTimeout(() => {
+    setResults([]);
+  }, 300);
+  return () => clearTimeout(timer);
+}, [searchTerm]);
+```
+
+## Refs
+
+`useRef` holds mutable values that don't trigger re-renders. Refs are the correct tool for:
+
+- **DOM access** — focusing inputs, measuring elements, scrolling
+- **Stable callback refs** — keeping the latest version of a callback accessible to long-lived subscriptions without tearing them down
+- **Instance-scoped mutable values** — timers, abort controllers, previous-value tracking, subscription channels
+
+**Rules:**
+
+- Never **read or write** refs during render — the `react-hooks/refs` rule catches this
+- Update refs in `useLayoutEffect` (runs before subscriptions) or `useEffect`
+- Read refs inside effects, event handlers, and subscription callbacks
+
+**Stable callback pattern** — for long-lived subscriptions (Realtime, WebSocket, intervals) that need the latest handler without re-subscribing:
+
+```tsx
+const triggerRefreshRef = useRef(() => {
+  // uses only refs and stable setters — safe across closures
+  if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  timeoutRef.current = setTimeout(() => setKey((k) => k + 1), 500);
+});
+
+useEffect(() => {
+  const channel = supabase.channel("events")
+    .on("postgres_changes", { ... }, () => triggerRefreshRef.current())
+    .subscribe();
+  return () => supabase.removeChannel(channel);
+}, [supabase]);
+```
+
+**Updating refs from props** — use `useLayoutEffect` so the ref is current before any `useEffect` subscriptions fire:
+
+```tsx
+const onChangeRef = useRef(onChange);
+useLayoutEffect(() => {
+  onChangeRef.current = onChange;
+});
+```
+
 ## Effects
 
 Effects are an escape hatch for synchronizing with external systems. Reach for them only when needed.

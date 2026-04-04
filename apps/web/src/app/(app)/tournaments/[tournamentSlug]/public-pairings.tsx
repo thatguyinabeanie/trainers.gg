@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
@@ -99,25 +98,18 @@ export function PublicPairings({
     "current-user-alts",
   ]);
 
-  const userAltIds = useMemo(
-    () => new Set((userAlts ?? []).map((alt) => String(alt.id))),
-    [userAlts]
-  );
+  const userAltIds = new Set((userAlts ?? []).map((alt) => String(alt.id)));
 
-  // Only allow clicking matches the user is in, or all matches if staff
-  const canClickMatch = useCallback(
-    (match: TournamentMatch) => {
-      if (canManage) return true;
-      if (userAltIds.size === 0) return false;
-      const p1Id = match.participant1?.id;
-      const p2Id = match.participant2?.id;
-      return (
-        (p1Id !== undefined && userAltIds.has(p1Id)) ||
-        (p2Id !== undefined && userAltIds.has(p2Id))
-      );
-    },
-    [canManage, userAltIds]
-  );
+  const canClickMatch = (match: TournamentMatch) => {
+    if (canManage) return true;
+    if (userAltIds.size === 0) return false;
+    const p1Id = match.participant1?.id;
+    const p2Id = match.participant2?.id;
+    return (
+      (p1Id !== undefined && userAltIds.has(p1Id)) ||
+      (p2Id !== undefined && userAltIds.has(p2Id))
+    );
+  };
 
   // Navigate to match detail page on click
   // Look up the round number and table number from loaded data

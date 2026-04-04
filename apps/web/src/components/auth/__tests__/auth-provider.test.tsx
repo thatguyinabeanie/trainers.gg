@@ -21,7 +21,9 @@ const mockAuth = {
 };
 
 jest.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({ auth: mockAuth }),
+  get supabase() {
+    return { auth: mockAuth };
+  },
 }));
 
 let authStateCallback: (event: string, session: unknown) => void = () => {};

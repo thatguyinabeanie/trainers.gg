@@ -22,7 +22,23 @@
       "Bash(git mv:*)",
       "Bash(for f:*)",
       "Bash(do echo:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh run:*)",
+      "Bash(gh api:*)",
+      "Bash(pnpm eslint:*)",
+      "Bash(npx jest:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(pnpm ls:*)",
+      "Bash(pnpm why:*)",
+      "Bash(pnpm view:*)",
+      "Bash(pnpm --filter @trainers/web typecheck)",
+      "Bash(pnpm --filter @trainers/web lint)",
+      "Bash(pnpm --filter @trainers/web test -- --testPathPattern=\"countdown-timer\" --no-coverage)",
+      "Bash(pnpm --filter @trainers/web test -- --testPathPattern=\"countdown-timer\")",
+      "Bash(pnpm --filter @trainers/web test -- \"countdown-timer\")",
+      "Bash(pnpm --filter @trainers/web test -- --testPathPattern=\"tournament-overview\" --no-coverage)"
     ]
   },
   "hooks": {
