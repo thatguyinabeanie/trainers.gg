@@ -72,32 +72,47 @@ export async function POST(request: NextRequest) {
   if (vercelEnv) {
     const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
 
-    if (!productionRef) {
-      console.error(
-        "[e2e/seed] BLOCKED: SUPABASE_PRODUCTION_PROJECT_REF is not set — cannot verify this is not the production database"
-      );
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-
     const supabaseUrl =
       process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
     const projectRefMatch = supabaseUrl.match(
       /https:\/\/([a-z0-9]+)\.supabase\.co/i
     );
-    const currentRef = projectRefMatch?.[1];
+    const currentRef = projectRefMatch?.[1] ?? "<unknown>";
 
-    if (!currentRef) {
+    if (!productionRef) {
+      const reason =
+        "SUPABASE_PRODUCTION_PROJECT_REF is not set — cannot verify this is not the production database";
       console.error(
-        `[e2e/seed] BLOCKED: Could not extract Supabase project ref from configured URL — cannot verify this is not the production database (url: ${supabaseUrl || "<empty>"})`
+        `[e2e/seed] BLOCKED: ${reason} (connecting to: ${supabaseUrl || "<empty>"}, ref: ${currentRef})`
       );
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Not found", reason, supabaseUrl, currentRef },
+        { status: 404 }
+      );
+    }
+
+    if (!projectRefMatch) {
+      const reason =
+        "Could not extract Supabase project ref from configured URL";
+      console.error(
+        `[e2e/seed] BLOCKED: ${reason} (connecting to: ${supabaseUrl || "<empty>"})`
+      );
+      return NextResponse.json(
+        { error: "Not found", reason, supabaseUrl },
+        { status: 404 }
+      );
     }
 
     if (currentRef === productionRef) {
       const reason =
         "Connected to production database — Supabase branching may not have created a branch DB for this PR";
-      console.error(`[e2e/seed] BLOCKED: ${reason} (ref: ${currentRef})`);
-      return NextResponse.json({ error: "Not found", reason }, { status: 404 });
+      console.error(
+        `[e2e/seed] BLOCKED: ${reason} (connecting to: ${supabaseUrl}, ref: ${currentRef}, production ref: ${productionRef})`
+      );
+      return NextResponse.json(
+        { error: "Not found", reason, supabaseUrl, currentRef, productionRef },
+        { status: 404 }
+      );
     }
   }
 
