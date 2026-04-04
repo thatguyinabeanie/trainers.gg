@@ -13,7 +13,6 @@ import {
   UpcomingTournaments,
   CompletedTournaments,
   TournamentListEmpty,
-  TournamentCardGrid,
 } from "@/components/tournaments/tournament-list";
 
 interface TournamentsListClientProps {
@@ -168,10 +167,9 @@ export function TournamentsListClient({
                 title="Draft"
                 count={groupedTournaments.draft.length}
               />
-              <TournamentCardGrid
+              <UpcomingTournaments
                 tournaments={groupedTournaments.draft}
                 linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                showStatus
                 showOrganization={false}
               />
             </div>
@@ -197,21 +195,31 @@ export function TournamentsListClient({
                 title="Cancelled"
                 count={groupedTournaments.cancelled.length}
               />
-              <TournamentCardGrid
+              <CompletedTournaments
                 tournaments={groupedTournaments.cancelled}
                 linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                showStatus
                 showOrganization={false}
               />
             </div>
           )}
         </div>
-      ) : (
-        // Show filtered view for specific status
-        <TournamentCardGrid
+      ) : currentStatus === "active" ? (
+        <ActiveTournaments
           tournaments={tournaments}
           linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-          showStatus
+          showOrganization={false}
+        />
+      ) : currentStatus === "completed" || currentStatus === "cancelled" ? (
+        <CompletedTournaments
+          tournaments={tournaments}
+          linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+          showOrganization={false}
+        />
+      ) : (
+        // upcoming, draft
+        <UpcomingTournaments
+          tournaments={tournaments}
+          linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
           showOrganization={false}
         />
       )}
