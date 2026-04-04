@@ -272,15 +272,21 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
                   disabled={isLogoUploading}
                   className="group relative cursor-pointer disabled:cursor-not-allowed"
                 >
-                  <Avatar className="h-16 w-16">
-                    {logoUrl && <AvatarImage src={logoUrl} alt={org.name} />}
-                    <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+                  <Avatar className="h-16 w-16 rounded-[10px] after:rounded-[10px]">
+                    {logoUrl && (
+                      <AvatarImage
+                        src={logoUrl}
+                        alt={org.name}
+                        className="rounded-[10px]"
+                      />
+                    )}
+                    <AvatarFallback className="bg-primary/10 text-primary rounded-[10px] text-lg font-semibold">
                       {org.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div
                     className={cn(
-                      "absolute inset-0 flex items-center justify-center rounded-full transition-opacity",
+                      "absolute inset-0 flex items-center justify-center rounded-[10px] transition-opacity",
                       "bg-black/50 opacity-0 group-hover:opacity-100",
                       isLogoUploading && "opacity-100"
                     )}

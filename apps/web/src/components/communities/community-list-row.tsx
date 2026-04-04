@@ -37,7 +37,7 @@ export function CommunityListRow({ community }: CommunityListRowProps) {
 
   return (
     <div className="group hover:bg-muted/50 relative flex items-center gap-3.5 border-b px-4 py-3.5 transition-colors last:border-b-0">
-      <Avatar className="h-10 w-10 shrink-0 rounded-[10px]">
+      <Avatar className="h-10 w-10 shrink-0 rounded-[10px] after:rounded-[10px]">
         <AvatarImage
           src={community.logo_url ?? undefined}
           alt={community.name}

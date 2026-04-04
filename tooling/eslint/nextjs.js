@@ -32,10 +32,13 @@ export default [
       "react/prop-types": "off",
     },
   },
-  // React Hooks + Compiler rules (bundled in v7)
-  reactHooks.configs.flat["recommended-latest"],
+  // React Hooks + Compiler rules — constructed manually for flat config compatibility
   {
+    plugins: {
+      "react-hooks": reactHooks,
+    },
     rules: {
+      ...reactHooks.configs["recommended-latest"].rules,
       // Disabled: React Compiler handles memoization and stale closure
       // prevention automatically. See reactwg/react-compiler#18.
       "react-hooks/exhaustive-deps": "off",
