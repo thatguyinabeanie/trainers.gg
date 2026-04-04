@@ -23,10 +23,18 @@ const nextConfig: NextConfig = {
         hostname: "127.0.0.1",
         pathname: "/storage/v1/object/public/**",
       },
+      {
+        protocol: "https",
+        hostname: "raw.githubusercontent.com",
+        pathname: "/PokeAPI/sprites/**",
+      },
     ],
   },
   experimental: {
     authInterrupts: true,
+    serverActions: {
+      bodySizeLimit: "2mb",
+    },
   },
   redirects: async () => [
     // Old dashboard tab routes

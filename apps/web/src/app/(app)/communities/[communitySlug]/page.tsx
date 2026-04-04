@@ -131,7 +131,7 @@ function OrganizationHeader({
   return (
     <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
       <div className="flex items-start gap-4">
-        <Avatar className="h-16 w-16">
+        <Avatar noBorder className="h-16 w-16">
           <AvatarImage src={organization.logo_url ?? undefined} />
           <AvatarFallback className="text-xl">
             {organization.name.slice(0, 2).toUpperCase()}

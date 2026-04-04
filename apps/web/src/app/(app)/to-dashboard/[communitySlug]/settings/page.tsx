@@ -272,7 +272,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
                   disabled={isLogoUploading}
                   className="group relative cursor-pointer disabled:cursor-not-allowed"
                 >
-                  <Avatar className="h-16 w-16 rounded-[10px] after:rounded-[10px]">
+                  <Avatar noBorder className="h-16 w-16 rounded-[10px]">
                     {logoUrl && (
                       <AvatarImage
                         src={logoUrl}

@@ -8,9 +8,11 @@ import { cn } from "@/lib/utils";
 function Avatar({
   className,
   size = "default",
+  noBorder = false,
   ...props
 }: AvatarPrimitive.Root.Props & {
   size?: "default" | "sm" | "md" | "lg" | "xl";
+  noBorder?: boolean;
 }) {
   return (
     <AvatarPrimitive.Root
@@ -18,6 +20,7 @@ function Avatar({
       data-size={size}
       className={cn(
         "after:border-border group/avatar relative flex size-8 shrink-0 rounded-full select-none after:absolute after:inset-0 after:rounded-full after:border after:mix-blend-darken data-[size=lg]:size-10 data-[size=md]:size-9 data-[size=sm]:size-6 data-[size=xl]:size-12 dark:after:mix-blend-lighten",
+        noBorder && "after:hidden",
         className
       )}
       {...props}
