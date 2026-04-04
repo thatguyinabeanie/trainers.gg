@@ -29,8 +29,12 @@ import {
   TournamentAuditLog,
 } from "@/components/tournaments";
 import { TournamentPairingsJudge } from "@/components/tournaments/manage/tournament-pairings-judge";
+import { toast } from "sonner";
+
+import { publishTournament } from "@/actions/tournaments";
 import {
   ArrowLeft,
+  Globe,
   Loader2,
   Trophy,
   Building2,
@@ -62,6 +66,7 @@ export function TournamentManageClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [auditSheetOpen, setAuditSheetOpen] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
@@ -99,6 +104,17 @@ export function TournamentManageClient({
   // Get active tab from URL or default to overview
   const tabParam = searchParams.get("tab");
   const activeTab: ValidTab = isValidTab(tabParam) ? tabParam : "overview";
+
+  async function handlePublish() {
+    setIsPublishing(true);
+    const result = await publishTournament(tournament?.id ?? 0);
+    setIsPublishing(false);
+    if (result.success) {
+      toast.success("Tournament published — it's now visible to players");
+    } else {
+      toast.error(result.error);
+    }
+  }
 
   // Handle tab change - update URL without page reload
   const handleTabChange = (value: string) => {
@@ -260,6 +276,16 @@ export function TournamentManageClient({
           </div>
         </div>
         <div className="flex gap-2">
+          {tournament.status === "draft" && (
+            <Button size="sm" onClick={handlePublish} disabled={isPublishing}>
+              {isPublishing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Globe className="mr-2 h-4 w-4" />
+              )}
+              Publish
+            </Button>
+          )}
           <Link href={`/tournaments/${tournamentSlug}`}>
             <Button variant="outline" size="sm">
               <ExternalLink className="mr-2 h-4 w-4" />

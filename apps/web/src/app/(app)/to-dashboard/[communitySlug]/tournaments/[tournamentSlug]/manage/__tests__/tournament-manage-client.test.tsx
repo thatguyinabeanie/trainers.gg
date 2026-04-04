@@ -55,6 +55,13 @@ jest.mock("@/components/tournaments/manage/tournament-pairings-judge", () => ({
   ),
 }));
 
+// Mock server actions (next/cache not available in Jest)
+jest.mock("@/actions/tournaments", () => ({
+  publishTournament: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: { success: true } }),
+}));
+
 // Mock Sheet components (Base UI Dialog-based)
 jest.mock("@/components/ui/sheet", () => ({
   Sheet: ({
