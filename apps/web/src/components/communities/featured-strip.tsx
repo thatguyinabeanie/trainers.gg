@@ -41,8 +41,13 @@ export function FeaturedStrip({ communities }: FeaturedStripProps) {
               </AvatarFallback>
             </Avatar>
           </div>
-          <span className="text-foreground line-clamp-2 max-w-[112px] text-center text-xs font-medium">
-            {community.name}
+          <span className="flex items-center gap-1 text-center text-xs font-medium">
+            <span className="text-foreground line-clamp-2 max-w-[112px]">
+              {community.name}
+            </span>
+            {community.tier === "partner" && (
+              <span className="shrink-0 text-[10px] text-teal-600">✦</span>
+            )}
           </span>
         </Link>
       ))}
