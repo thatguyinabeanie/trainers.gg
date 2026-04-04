@@ -100,17 +100,17 @@ export function InviteStaffDialog({
 
   const { isSubmitting } = form.formState;
 
-  // Reset form when dialog closes — render-time adjustment keyed on `open`
-  const [prevOpen, setPrevOpen] = useState(open);
-  if (open !== prevOpen) {
-    setPrevOpen(open);
-    if (!open) {
+  // Reset form when dialog closes — handled in the event handler,
+  // not during render, because form.reset() is imperative.
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
       setSearchTerm("");
       setAsyncSearchResults([]);
       setSelectedUser(null);
       form.reset({ userId: "" });
     }
-  }
+    onOpenChange(nextOpen);
+  };
 
   // Debounced search with cancellation.
   // Early exit (term too short) only guards the timer — no setState call needed
@@ -173,7 +173,7 @@ export function InviteStaffDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add Staff Member</DialogTitle>
