@@ -94,6 +94,67 @@ useEffect(() => {
 }, [userId]);
 ```
 
+## No setState in Effects (`set-state-in-effect`)
+
+The `react-hooks/set-state-in-effect` rule forbids calling `setState` synchronously in an effect body. Here are the approved alternatives:
+
+**Client detection / SSR hydration** — use `useSyncExternalStore`:
+
+```tsx
+import { useSyncExternalStore } from "react";
+const emptySubscribe = () => () => {};
+export function useIsClient() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+}
+```
+
+**Reset state when a dependency changes** — render-time adjustment with `Symbol` sentinel:
+
+```tsx
+const UNINITIALIZED = Symbol();
+const [prevFilter, setPrevFilter] = useState<typeof filter | symbol>(
+  UNINITIALIZED
+);
+if (filter !== prevFilter) {
+  setPrevFilter(filter);
+  setPage(0); // setState during render is fine — React handles it
+}
+```
+
+The `Symbol` sentinel ensures the condition fires on the first render even when data is immediately available (e.g., in tests with mocks).
+
+**Imperative API calls (form.reset, router.push)** — move to event handlers, not render:
+
+```tsx
+// Good — reset in event handler
+const handleOpenChange = (nextOpen: boolean) => {
+  if (!nextOpen) form.reset();
+  onOpenChange(nextOpen);
+};
+
+// Avoid — imperative calls during render
+if (open !== prevOpen) {
+  form.reset();
+} // breaks StrictMode
+```
+
+**Debounce effects with early exits** — wrap setState in the timer, not at the top:
+
+```tsx
+// Good — setState only inside the async timer callback
+useEffect(() => {
+  if (!searchTerm) return; // no setState here
+  const timer = setTimeout(() => {
+    setResults([]);
+  }, 300);
+  return () => clearTimeout(timer);
+}, [searchTerm]);
+```
+
 ## Effects
 
 Effects are an escape hatch for synchronizing with external systems. Reach for them only when needed.

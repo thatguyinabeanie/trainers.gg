@@ -6,7 +6,7 @@ Expo 55 (React Native 0.83, React 19.2) mobile app. Expo Router file-based routi
 
 | File                           | Purpose                                                     |
 | ------------------------------ | ----------------------------------------------------------- |
-| `src/lib/api/query-factory.ts` | TanStack Query factory — use `createQuery`/`createMutation` |
+| `src/lib/api/query-factory.ts` | TanStack Query factory — use `useApiQuery`/`useApiMutation` |
 | `src/lib/supabase/`            | Mobile Supabase client (SecureStore sessions)               |
 | `src/app/_layout.tsx`          | Root layout, auth redirect logic                            |
 

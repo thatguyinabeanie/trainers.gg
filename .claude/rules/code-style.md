@@ -15,16 +15,16 @@ Project-wide coding standards for all TypeScript and TSX code in the trainers.gg
 - **No `any`** — use `unknown` instead
 - **No `@ts-expect-error` or `@ts-ignore`** — fix the type error instead
 - **No `globalThis`** for accessing Node.js globals — use proper imports or configure `tsconfig`/`jest.config` instead
-- **Never `eslint-disable` `react-hooks/exhaustive-deps`** — fix the dependency issue instead (extract to a ref, restructure the effect, or move the function outside the component)
 
 ## React Compiler
 
-This project uses React Compiler for automatic memoization across all packages (web and mobile).
+This project uses React Compiler for automatic memoization across all packages (web and mobile). ESLint uses `eslint-plugin-react-hooks` v7 with `recommended-latest` (bundles compiler rules). `exhaustive-deps` is disabled — the compiler handles memoization and stale closure prevention.
 
-- **Prefer letting React Compiler handle memoization** — avoid `useMemo`, `useCallback`, and `React.memo` in the default case
+- **Do not write `useMemo`, `useCallback`, or `React.memo`** — the compiler handles it. Effect dependency arrays only need values that should trigger re-execution (state, props), not functions
 - If a component re-renders too often, fix the data flow first — manual memoization should be a last resort, not a first instinct
 - When manual memoization is genuinely needed (e.g., stabilizing a reference for a third-party library with strict reference checks), add a comment explaining why
 - The compiler assumes components are pure — avoid side effects during render
+- **Do not call `setState` synchronously in effects** — the `set-state-in-effect` rule catches this. See `react-patterns.md` for approved alternatives
 
 ```tsx
 // Preferred — compiler optimizes automatically
@@ -32,7 +32,7 @@ const filtered = items.filter((i) => i.active);
 const handleClick = () => setOpen(true);
 
 // Avoid unless justified with a comment
-const filtered = useMemo(() => items.filter((i) => i.active), [items]); // eslint-disable-line
+const filtered = useMemo(() => items.filter((i) => i.active), [items]);
 ```
 
 ## Import Ordering
