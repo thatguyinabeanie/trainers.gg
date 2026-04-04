@@ -14,6 +14,10 @@ import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
  */
 export const FORMAT_MAP: Record<string, string> = {
   "reg-i": "gen9vgc2025regi",
+  // TODO: No official Pokémon Showdown format mapping exists for Pokémon Champions
+  // yet. Using "gen9vgc2025regma" as a placeholder — update FORMAT_MAP and run a
+  // data migration when the official @pkmn/sim format ID is confirmed.
+  "reg-m-a": "gen9vgc2025regma",
   "reg-h": "gen9vgc2024regh",
   "reg-g": "gen9vgc2024regg",
   "reg-f": "gen9vgc2024regf",

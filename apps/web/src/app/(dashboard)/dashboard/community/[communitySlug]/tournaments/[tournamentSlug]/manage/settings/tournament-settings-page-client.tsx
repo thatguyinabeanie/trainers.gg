@@ -163,24 +163,6 @@ export function TournamentSettingsPageClient({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header with back navigation */}
-      <div className="flex items-center gap-4">
-        <Link
-          href={`/dashboard/community/${communitySlug}/tournaments/${tournamentSlug}/manage`}
-        >
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
-          <p className="text-muted-foreground text-sm">{tournament.name}</p>
-        </div>
-      </div>
-
-      {/* Settings form */}
-      <TournamentSettings tournament={tournamentForSettings} phases={phases} />
-    </div>
+    <TournamentSettings tournament={tournamentForSettings} phases={phases} />
   );
 }
