@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Bell,
   Loader2,
@@ -52,14 +52,10 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     null
   );
 
-  // Fetch notifications
-  const notificationsQueryFn = useCallback(
-    (client: TypedSupabaseClient) => {
-      if (!userId) return Promise.resolve([]);
-      return getNotifications(client, { limit: 20 });
-    },
-    [userId]
-  );
+  const notificationsQueryFn = (client: TypedSupabaseClient) => {
+    if (!userId) return Promise.resolve([]);
+    return getNotifications(client, { limit: 20 });
+  };
 
   const {
     data: notifications,
@@ -68,28 +64,20 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     error: notificationsError,
   } = useSupabaseQuery(notificationsQueryFn, [userId, refreshKey]);
 
-  // Fetch unread count
-  const unreadCountQueryFn = useCallback(
-    (client: TypedSupabaseClient) => {
-      if (!userId) return Promise.resolve(0);
-      return getUnreadNotificationCount(client);
-    },
-    [userId]
-  );
+  const unreadCountQueryFn = (client: TypedSupabaseClient) => {
+    if (!userId) return Promise.resolve(0);
+    return getUnreadNotificationCount(client);
+  };
 
   const { data: unreadCount, refetch: refetchUnread } = useSupabaseQuery(
     unreadCountQueryFn,
     [userId, refreshKey]
   );
 
-  // Fetch community invitations
-  const invitationsQueryFn = useCallback(
-    (client: TypedSupabaseClient) => {
-      if (!userId) return Promise.resolve([]);
-      return getMyCommunityInvitations(client, userId);
-    },
-    [userId]
-  );
+  const invitationsQueryFn = (client: TypedSupabaseClient) => {
+    if (!userId) return Promise.resolve([]);
+    return getMyCommunityInvitations(client, userId);
+  };
 
   const { data: invitations, refetch: refetchInvitations } = useSupabaseQuery(
     invitationsQueryFn,

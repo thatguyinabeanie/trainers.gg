@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { createQuery, createMutation } from "../query-factory";
+import { useApiQuery, useApiMutation } from "../query-factory";
 import type { ActionResult } from "@trainers/validators";
 
 // Mock the client apiCall function
@@ -12,7 +12,7 @@ jest.mock("../client", () => ({
 import { apiCall } from "../client";
 const mockApiCall = apiCall as jest.MockedFunction<typeof apiCall>;
 
-describe("createQuery", () => {
+describe("useApiQuery", () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
@@ -37,7 +37,7 @@ describe("createQuery", () => {
     });
 
     const useTestQuery = () =>
-      createQuery<typeof mockData>(
+      useApiQuery<typeof mockData>(
         ["tournament", "1"],
         "api-tournaments/1",
         {}
@@ -61,7 +61,7 @@ describe("createQuery", () => {
     });
 
     const useTestQuery = () =>
-      createQuery<{ id: string }>(
+      useApiQuery<{ id: string }>(
         ["tournament", "999"],
         "api-tournaments/999",
         {}
@@ -78,7 +78,7 @@ describe("createQuery", () => {
 
   it("should respect enabled option", () => {
     const useTestQuery = (enabled: boolean) =>
-      createQuery<{ id: string }>(["tournament", "1"], "api-tournaments/1", {
+      useApiQuery<{ id: string }>(["tournament", "1"], "api-tournaments/1", {
         enabled,
       });
 
@@ -96,7 +96,7 @@ describe("createQuery", () => {
     });
 
     const useTestQuery = () =>
-      createQuery<typeof mockData>(["tournament", "1"], "api-tournaments/1", {
+      useApiQuery<typeof mockData>(["tournament", "1"], "api-tournaments/1", {
         staleTime: 60000,
       });
 
@@ -110,7 +110,7 @@ describe("createQuery", () => {
   });
 });
 
-describe("createMutation", () => {
+describe("useApiMutation", () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
@@ -134,7 +134,7 @@ describe("createMutation", () => {
       data: mockResponse,
     } as ActionResult<typeof mockResponse>);
 
-    const useTestMutation = () => createMutation(mutationFn, {});
+    const useTestMutation = () => useApiMutation(mutationFn, {});
 
     const { result } = renderHook(() => useTestMutation(), { wrapper });
 
@@ -155,7 +155,7 @@ describe("createMutation", () => {
       error: errorMessage,
     } as ActionResult<never>);
 
-    const useTestMutation = () => createMutation(mutationFn, {});
+    const useTestMutation = () => useApiMutation(mutationFn, {});
 
     const { result } = renderHook(() => useTestMutation(), { wrapper });
 
@@ -178,7 +178,7 @@ describe("createMutation", () => {
     const invalidateQueriesSpy = jest.spyOn(queryClient, "invalidateQueries");
 
     const useTestMutation = () =>
-      createMutation(mutationFn, {
+      useApiMutation(mutationFn, {
         invalidates: (vars: { tournamentId: string }) => [
           ["tournament", vars.tournamentId],
           ["tournaments"],
@@ -210,7 +210,7 @@ describe("createMutation", () => {
 
     const invalidateQueriesSpy = jest.spyOn(queryClient, "invalidateQueries");
 
-    const useTestMutation = () => createMutation(mutationFn, {});
+    const useTestMutation = () => useApiMutation(mutationFn, {});
 
     const { result } = renderHook(() => useTestMutation(), { wrapper });
 
@@ -233,7 +233,7 @@ describe("createMutation", () => {
     const onSuccessSpy = jest.fn();
 
     const useTestMutation = () =>
-      createMutation(mutationFn, {
+      useApiMutation(mutationFn, {
         onSuccess: onSuccessSpy,
       });
 

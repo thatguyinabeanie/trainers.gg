@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import {
   useSupabase,
@@ -154,6 +154,8 @@ function SectionSeparator({ label }: { label: string }) {
   );
 }
 
+const COUNTDOWN_UNINITIALIZED = Symbol();
+
 /**
  * Countdown timer showing time remaining until a target date.
  */
@@ -165,19 +167,27 @@ function CountdownTimer({ targetDate }: { targetDate: string | null }) {
     seconds: number;
   } | null>(null);
 
-  useEffect(() => {
-    if (!targetDate) {
-      setTimeRemaining(null);
-      return;
-    }
+  // Derive null state during render when targetDate is absent or invalid —
+  // avoids synchronous setState inside the effect body.
+  const targetTimestamp = targetDate ? new Date(targetDate).getTime() : NaN;
+  const isValidTarget = !Number.isNaN(targetTimestamp);
 
-    // Validate date string to prevent NaN calculations
-    const targetTimestamp = new Date(targetDate).getTime();
-    if (Number.isNaN(targetTimestamp)) {
-      console.error(`[CountdownTimer] Invalid date string: "${targetDate}"`);
+  const [prevTargetDate, setPrevTargetDate] = useState<
+    typeof targetDate | symbol
+  >(COUNTDOWN_UNINITIALIZED);
+  if (targetDate !== prevTargetDate) {
+    setPrevTargetDate(targetDate);
+    if (!isValidTarget) {
+      if (targetDate) {
+        console.error(`[CountdownTimer] Invalid date string: "${targetDate}"`);
+      }
       setTimeRemaining(null);
-      return;
     }
+  }
+
+  useEffect(() => {
+    // Early return without setState — null state is handled above during render
+    if (!targetDate || !isValidTarget) return;
 
     const calculateTimeRemaining = () => {
       const now = new Date().getTime();
@@ -205,7 +215,7 @@ function CountdownTimer({ targetDate }: { targetDate: string | null }) {
     const interval = setInterval(calculateTimeRemaining, 1000);
 
     return () => clearInterval(interval);
-  }, [targetDate]);
+  }, [targetDate, targetTimestamp, isValidTarget]);
 
   if (!timeRemaining) return null;
 
@@ -477,22 +487,22 @@ export function TournamentSidebarCard({
 
   // ---- Team handlers ----
 
-  const startTeamEditing = useCallback((mode: TeamInputMode) => {
+  const startTeamEditing = (mode: TeamInputMode) => {
     setTeamInputMode(mode);
     setRawText("");
     setPokepasteUrl("");
     setValidation(null);
     setTeamEditMode(true);
-  }, []);
+  };
 
-  const cancelTeamEditing = useCallback(() => {
+  const cancelTeamEditing = () => {
     setRawText("");
     setPokepasteUrl("");
     setValidation(null);
     setTeamEditMode(false);
-  }, []);
+  };
 
-  const handleFetchPokepaste = useCallback(async () => {
+  const handleFetchPokepaste = async () => {
     const parsed = parsePokepaseUrl(pokepasteUrl);
     if (!parsed) {
       toast.error("Invalid Pokepaste URL", {
@@ -526,9 +536,9 @@ export function TournamentSidebarCard({
     } finally {
       setIsFetchingPaste(false);
     }
-  }, [pokepasteUrl]);
+  };
 
-  const handleSubmitTeam = useCallback(async () => {
+  const handleSubmitTeam = async () => {
     if (!validation?.valid) return;
 
     setIsSubmittingTeam(true);
@@ -584,66 +594,63 @@ export function TournamentSidebarCard({
     } finally {
       setIsSubmittingTeam(false);
     }
-  }, [tournamentId, rawText, validation, refetchRegistration]);
+  };
 
-  const handleSelectTeam = useCallback(
-    async (teamId: string | null) => {
-      if (!teamId) return;
-      const numericId = Number(teamId);
-      if (isNaN(numericId)) return;
+  const handleSelectTeam = async (teamId: string | null) => {
+    if (!teamId) return;
+    const numericId = Number(teamId);
+    if (isNaN(numericId)) return;
 
-      setIsSelectingTeam(true);
-      try {
-        const result = await selectTeamAction(tournamentId, numericId);
+    setIsSelectingTeam(true);
+    try {
+      const result = await selectTeamAction(tournamentId, numericId);
 
-        if (result.success) {
-          const speciesList = result.data.species.join(", ");
-          toast.success("Team selected", {
-            description: `${result.data.teamName}: ${speciesList}`,
-          });
-          setSubmittedTeam({
-            teamId: result.data.teamId,
-            submittedAt: new Date().toISOString(),
-            locked: false,
-            // We don't have full pokemon details from the list,
-            // so use a minimal placeholder — refetch will fill it in
-            pokemon: Array.from({ length: result.data.pokemonCount }, () => ({
-              species: "Loading...",
-            })),
-          });
-          setTeamEditMode(false);
-          refetchRegistration();
-        } else {
-          // Show structured validation errors if available
-          if (result.validationErrors && result.validationErrors.length > 0) {
-            toast.error("Team validation failed", {
-              description: (
-                <ul className="mt-1 list-inside list-disc space-y-0.5">
-                  {result.validationErrors.map((err, i) => (
-                    <li key={`${err}-${i}`}>{err}</li>
-                  ))}
-                </ul>
-              ),
-            });
-          } else {
-            toast.error("Selection failed", {
-              description: result.error,
-            });
-          }
-        }
-      } catch (error) {
-        toast.error("Selection failed", {
-          description:
-            error instanceof Error
-              ? error.message
-              : "An unexpected error occurred",
+      if (result.success) {
+        const speciesList = result.data.species.join(", ");
+        toast.success("Team selected", {
+          description: `${result.data.teamName}: ${speciesList}`,
         });
-      } finally {
-        setIsSelectingTeam(false);
+        setSubmittedTeam({
+          teamId: result.data.teamId,
+          submittedAt: new Date().toISOString(),
+          locked: false,
+          // We don't have full pokemon details from the list,
+          // so use a minimal placeholder — refetch will fill it in
+          pokemon: Array.from({ length: result.data.pokemonCount }, () => ({
+            species: "Loading...",
+          })),
+        });
+        setTeamEditMode(false);
+        refetchRegistration();
+      } else {
+        // Show structured validation errors if available
+        if (result.validationErrors && result.validationErrors.length > 0) {
+          toast.error("Team validation failed", {
+            description: (
+              <ul className="mt-1 list-inside list-disc space-y-0.5">
+                {result.validationErrors.map((err, i) => (
+                  <li key={`${err}-${i}`}>{err}</li>
+                ))}
+              </ul>
+            ),
+          });
+        } else {
+          toast.error("Selection failed", {
+            description: result.error,
+          });
+        }
       }
-    },
-    [tournamentId, refetchRegistration]
-  );
+    } catch (error) {
+      toast.error("Selection failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
+      });
+    } finally {
+      setIsSelectingTeam(false);
+    }
+  };
 
   // ---- Loading state ----
 

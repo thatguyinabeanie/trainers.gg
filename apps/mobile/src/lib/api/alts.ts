@@ -1,5 +1,5 @@
 import type { Database } from "@trainers/supabase/types";
-import { createQuery, createMutation } from "./query-factory";
+import { useApiQuery, useApiMutation } from "./query-factory";
 import { apiCall } from "./client";
 
 type Alt = Database["public"]["Tables"]["alts"]["Row"];
@@ -17,7 +17,7 @@ type Alt = Database["public"]["Tables"]["alts"]["Row"];
  * ```
  */
 export function useAlts() {
-  return createQuery<Alt[]>(["alts"], "api-alts", {
+  return useApiQuery<Alt[]>(["alts"], "api-alts", {
     staleTime: 300_000, // 5 minutes - alts change infrequently
   });
 }
@@ -31,7 +31,7 @@ export function useAlts() {
  * ```
  */
 export function useAlt(id: string) {
-  return createQuery<Alt>(["alt", id], `api-alts/${id}`, {
+  return useApiQuery<Alt>(["alt", id], `api-alts/${id}`, {
     staleTime: 300_000, // 5 minutes
   });
 }
@@ -51,7 +51,7 @@ export function useAlt(id: string) {
  * ```
  */
 export function useCreateAlt() {
-  return createMutation<
+  return useApiMutation<
     Alt,
     {
       username: string;
@@ -83,7 +83,7 @@ export function useCreateAlt() {
  * ```
  */
 export function useUpdateAlt() {
-  return createMutation<
+  return useApiMutation<
     Alt,
     {
       id: string;
@@ -112,7 +112,7 @@ export function useUpdateAlt() {
  * ```
  */
 export function useDeleteAlt() {
-  return createMutation<{ success: true }, { id: string }>(
+  return useApiMutation<{ success: true }, { id: string }>(
     ({ id }) =>
       apiCall(`api-alts/${id}`, {
         method: "DELETE",

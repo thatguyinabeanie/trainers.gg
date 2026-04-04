@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import {
@@ -259,6 +259,8 @@ function MatchTable({
   );
 }
 
+const UNINITIALIZED = Symbol();
+
 export function TournamentPairingsJudge({
   tournament,
 }: TournamentPairingsJudgeProps) {
@@ -275,23 +277,20 @@ export function TournamentPairingsJudge({
   );
   const [selectedRoundId, setSelectedRoundId] = useState<number | null>(null);
 
-  const triggerRefresh = useCallback(() => {
+  const triggerRefreshRef = useRef(() => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
       setRefreshKey((k) => k + 1);
     }, 500);
-  }, []);
+  });
 
-  const navigateToMatch = useCallback(
-    (roundNumber: number, tableNumber: number) => {
-      router.push(
-        `/tournaments/${tournament.slug}/r/${roundNumber}/t/${tableNumber}`
-      );
-    },
-    [router, tournament.slug]
-  );
+  const navigateToMatch = (roundNumber: number, tableNumber: number) => {
+    router.push(
+      `/tournaments/${tournament.slug}/r/${roundNumber}/t/${tableNumber}`
+    );
+  };
 
   // Fetch phases
   const { data: phases } = useSupabaseQuery(
@@ -299,12 +298,16 @@ export function TournamentPairingsJudge({
     [tournament.id]
   );
 
-  // Set initial phase
-  useEffect(() => {
+  // Initialize selectedPhaseId from phases — render-time adjustment
+  const [prevPhases, setPrevPhases] = useState<typeof phases | symbol>(
+    UNINITIALIZED
+  );
+  if (phases !== prevPhases) {
+    setPrevPhases(phases);
     if (!selectedPhaseId && phases && phases.length > 0 && phases[0]) {
       setSelectedPhaseId(phases[0].id);
     }
-  }, [phases, selectedPhaseId]);
+  }
 
   // Fetch rounds for selected phase
   const { data: rounds } = useSupabaseQuery(
@@ -316,26 +319,26 @@ export function TournamentPairingsJudge({
   );
 
   // Auto-select active round, or latest round (preserve manual selection if still valid)
-  useEffect(() => {
+  // — render-time adjustment keyed on rounds data
+  const [prevRounds, setPrevRounds] = useState<typeof rounds | symbol>(
+    UNINITIALIZED
+  );
+  if (rounds !== prevRounds) {
+    setPrevRounds(rounds);
     if (!rounds || rounds.length === 0) {
       setSelectedRoundId(null);
-      return;
-    }
-
-    if (
-      selectedRoundId != null &&
-      rounds.some((r) => r.id === selectedRoundId)
+    } else if (
+      selectedRoundId == null ||
+      !rounds.some((r) => r.id === selectedRoundId)
     ) {
-      return;
+      const active = rounds.find((r) => r.status === "active");
+      if (active) {
+        setSelectedRoundId(active.id);
+      } else {
+        setSelectedRoundId(rounds[rounds.length - 1]!.id);
+      }
     }
-
-    const active = rounds.find((r) => r.status === "active");
-    if (active) {
-      setSelectedRoundId(active.id);
-    } else {
-      setSelectedRoundId(rounds[rounds.length - 1]!.id);
-    }
-  }, [rounds, selectedRoundId]);
+  }
 
   const activeRound = rounds?.find((r) => r.status === "active");
   const isViewingActiveRound =
@@ -365,7 +368,7 @@ export function TournamentPairingsJudge({
           filter: `round_id=eq.${selectedRoundId}`,
         },
         () => {
-          triggerRefresh();
+          triggerRefreshRef.current();
         }
       )
       .subscribe((status, err) => {
@@ -385,7 +388,7 @@ export function TournamentPairingsJudge({
       }
       channel.unsubscribe();
     };
-  }, [supabase, selectedRoundId, isViewingActiveRound, triggerRefresh]);
+  }, [supabase, selectedRoundId, isViewingActiveRound]);
 
   // Realtime: new round detection (INSERT/UPDATE on tournament_rounds)
   useEffect(() => {
@@ -402,7 +405,7 @@ export function TournamentPairingsJudge({
           filter: `phase_id=eq.${selectedPhaseId}`,
         },
         () => {
-          triggerRefresh();
+          triggerRefreshRef.current();
         }
       )
       .subscribe();
@@ -410,7 +413,7 @@ export function TournamentPairingsJudge({
     return () => {
       channel.unsubscribe();
     };
-  }, [supabase, selectedPhaseId, triggerRefresh]);
+  }, [supabase, selectedPhaseId]);
 
   // Categorize matches into sections
   const attentionMatches = matches.filter(

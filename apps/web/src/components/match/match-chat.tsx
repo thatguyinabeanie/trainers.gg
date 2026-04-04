@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  type KeyboardEvent,
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import { type KeyboardEvent, useState, useEffect, useRef } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getMatchMessages } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
@@ -92,10 +86,8 @@ export function MatchChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const messagesQueryFn = useCallback(
-    (client: TypedSupabaseClient) => getMatchMessages(client, matchId),
-    [matchId]
-  );
+  const messagesQueryFn = (client: TypedSupabaseClient) =>
+    getMatchMessages(client, matchId);
 
   const {
     data: messages,
@@ -317,7 +309,7 @@ export function MatchChat({
                       )}
                     >
                       <span className="text-muted-foreground text-xs font-medium">
-                        {msgAlt?.username ?? msgAlt?.username ?? "Unknown"}
+                        {msgAlt?.username ?? "Unknown"}
                       </span>
                       {isJudge && (
                         <Badge

@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
 import { Label, Pie, PieChart } from "recharts";
 import {
   Users,
@@ -143,11 +142,7 @@ function DonutBreakdownCard({
   labels: Record<string, string>;
   isLoading: boolean;
 }) {
-  // Build recharts data + chart config from the Record
-  const { chartData, chartConfig, total } = useMemo(
-    () => buildChartData(data, labels),
-    [data, labels]
-  );
+  const { chartData, chartConfig, total } = buildChartData(data, labels);
 
   return (
     <Card>
@@ -386,10 +381,8 @@ function DashboardContent() {
     error: auditStatsError,
   } = useSupabaseQuery((s) => getAuditLogStats(s), []);
 
-  const recentQueryFn = useCallback(
-    (s: TypedSupabaseClient) => getAuditLog(s, { limit: 10, offset: 0 }),
-    []
-  );
+  const recentQueryFn = (s: TypedSupabaseClient) =>
+    getAuditLog(s, { limit: 10, offset: 0 });
   const {
     data: recentLog,
     isLoading: recentLoading,

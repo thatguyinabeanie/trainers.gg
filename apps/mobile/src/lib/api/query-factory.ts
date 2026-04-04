@@ -10,7 +10,7 @@ import type { ActionResult } from "@trainers/validators";
 import { apiCall } from "./client";
 
 /**
- * DRY factory for creating TanStack Query hooks
+ * DRY factory providing reusable TanStack Query hooks
  *
  * Provides reusable patterns for:
  * - Query hooks (GET requests)
@@ -20,7 +20,7 @@ import { apiCall } from "./client";
  */
 
 /**
- * Create a query hook for GET requests
+ * Query hook for GET requests
  *
  * @param queryKey - TanStack Query key (e.g., ['tournament', id])
  * @param endpoint - Edge function endpoint (e.g., 'api-tournaments/123')
@@ -29,14 +29,14 @@ import { apiCall } from "./client";
  * @example
  * ```ts
  * export function useTournament(id: string) {
- *   return createQuery<Tournament>(
+ *   return useApiQuery<Tournament>(
  *     ['tournament', id],
  *     `api-tournaments/${id}`
  *   );
  * }
  * ```
  */
-export function createQuery<T>(
+export function useApiQuery<T>(
   queryKey: QueryKey,
   endpoint: string,
   options?: Omit<UseQueryOptions<T, Error>, "queryKey" | "queryFn">
@@ -55,7 +55,7 @@ export function createQuery<T>(
 }
 
 /**
- * Create a mutation hook for POST/PATCH/DELETE requests
+ * Mutation hook for POST/PATCH/DELETE requests
  *
  * @param mutationFn - Function that calls the API
  * @param options - Mutation options with onSuccess cache invalidation
@@ -63,7 +63,7 @@ export function createQuery<T>(
  * @example
  * ```ts
  * export function useRegisterTournament() {
- *   return createMutation(
+ *   return useApiMutation(
  *     ({ tournamentId, altId }: RegisterInput) =>
  *       apiCall(`api-tournaments/${tournamentId}/register`, {
  *         method: 'POST',
@@ -76,7 +76,7 @@ export function createQuery<T>(
  * }
  * ```
  */
-export function createMutation<TData, TVariables>(
+export function useApiMutation<TData, TVariables>(
   mutationFn: (variables: TVariables) => Promise<ActionResult<TData>>,
   options?: UseMutationOptions<TData, Error, TVariables, unknown> & {
     invalidates?: (variables: TVariables) => QueryKey[];

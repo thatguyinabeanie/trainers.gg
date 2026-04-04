@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { getPlayerName, type PlayerRef } from "@trainers/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
@@ -59,6 +59,8 @@ import { toast } from "sonner";
 import { BracketVisualization } from "@/components/tournament/bracket-visualization";
 import { transformPhaseData } from "@/lib/tournament-utils";
 
+const UNINITIALIZED = Symbol();
+
 interface TournamentPairingsProps {
   tournament: {
     id: number;
@@ -98,12 +100,16 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
     [tournament.id, "phases"]
   );
 
-  // Set initial phase when phases load
-  useEffect(() => {
+  // Initialize selectedPhaseId from phases — render-time adjustment
+  const [prevPhases, setPrevPhases] = useState<typeof phases | symbol>(
+    UNINITIALIZED
+  );
+  if (phases !== prevPhases) {
+    setPrevPhases(phases);
     if (!selectedPhaseId && phases && phases.length > 0 && phases[0]) {
       setSelectedPhaseId(phases[0].id);
     }
-  }, [phases, selectedPhaseId]);
+  }
 
   // Fetch rounds for selected phase
   const roundsQueryFn = (
@@ -119,14 +125,25 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
     refetch: refetchRounds,
   } = useSupabaseQuery(roundsQueryFn, [selectedPhaseId, "rounds"]);
 
-  // Set initial round when rounds load, or reset when phase changes
-  useEffect(() => {
-    if (rounds && rounds.length > 0 && rounds[0]) {
-      setSelectedRoundId(rounds[0].id);
-    } else {
-      setSelectedRoundId(null);
+  // Initialize selectedRoundId from rounds, or reset when rounds change —
+  // render-time adjustment
+  const [prevRounds, setPrevRounds] = useState<typeof rounds | symbol>(
+    UNINITIALIZED
+  );
+  if (rounds !== prevRounds) {
+    setPrevRounds(rounds);
+    // Only auto-select when current selection is invalid or absent
+    if (
+      selectedRoundId == null ||
+      !rounds?.some((r) => r.id === selectedRoundId)
+    ) {
+      if (rounds && rounds.length > 0 && rounds[0]) {
+        setSelectedRoundId(rounds[0].id);
+      } else {
+        setSelectedRoundId(null);
+      }
     }
-  }, [rounds]);
+  }
 
   // Fetch matches for selected round
   const matchesQueryFn = (

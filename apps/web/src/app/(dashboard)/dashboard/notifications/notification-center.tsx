@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Loader2, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ type FilterTab = (typeof FILTER_TABS)[number]["key"];
 // -- Constants --
 
 const PAGE_SIZE = 20;
+const UNINITIALIZED = Symbol();
 
 // -- Component --
 
@@ -68,10 +69,14 @@ export function NotificationCenter({
   const [page, setPage] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Reset page when tab changes
-  useEffect(() => {
+  // Reset page when tab changes — render-time adjustment
+  const [prevActiveTab, setPrevActiveTab] = useState<typeof activeTab | symbol>(
+    UNINITIALIZED
+  );
+  if (activeTab !== prevActiveTab) {
+    setPrevActiveTab(activeTab);
     setPage(0);
-  }, [activeTab]);
+  }
 
   // Derive filter options from active tab
   const activeFilter = FILTER_TABS.find((t) => t.key === activeTab);

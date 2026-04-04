@@ -1,5 +1,5 @@
 import type { Database } from "@trainers/supabase/types";
-import { createQuery, createMutation } from "./query-factory";
+import { useApiQuery, useApiMutation } from "./query-factory";
 import { apiCall } from "./client";
 
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
@@ -22,7 +22,7 @@ type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
  * ```
  */
 export function useTournament(id: string) {
-  return createQuery<Tournament>(["tournament", id], `api-tournaments/${id}`, {
+  return useApiQuery<Tournament>(["tournament", id], `api-tournaments/${id}`, {
     staleTime: 60_000, // 1 minute
   });
 }
@@ -37,7 +37,7 @@ export function useTournament(id: string) {
  * ```
  */
 export function useTournaments() {
-  return createQuery<{
+  return useApiQuery<{
     active: Tournament[];
     upcoming: Tournament[];
     completed: Tournament[];
@@ -60,7 +60,7 @@ export function useTournaments() {
  * ```
  */
 export function useRegisterTournament() {
-  return createMutation<
+  return useApiMutation<
     { success: true },
     { tournamentId: string; altId: string }
   >(
@@ -88,7 +88,7 @@ export function useRegisterTournament() {
  * ```
  */
 export function useCancelRegistration() {
-  return createMutation<{ success: true }, { tournamentId: string }>(
+  return useApiMutation<{ success: true }, { tournamentId: string }>(
     ({ tournamentId }) =>
       apiCall(`api-tournaments/${tournamentId}/registration`, {
         method: "DELETE",
@@ -112,7 +112,7 @@ export function useCancelRegistration() {
  * ```
  */
 export function useCheckInTournament() {
-  return createMutation<{ success: true }, { tournamentId: string }>(
+  return useApiMutation<{ success: true }, { tournamentId: string }>(
     ({ tournamentId }) =>
       apiCall(`api-tournaments/${tournamentId}/check-in`, {
         method: "POST",
