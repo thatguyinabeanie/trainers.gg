@@ -44,11 +44,18 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
               {children}
             </a>
           ),
-          code: ({ children }) => (
-            <code className="bg-muted rounded px-1 py-0.5 font-mono text-sm">
-              {children}
-            </code>
-          ),
+          code: ({ children, className }) => {
+            // Fenced code blocks have a language-* className; inline code does not.
+            // Avoid double-styling when code is already wrapped by our pre renderer.
+            if (className) {
+              return <code className={className}>{children}</code>;
+            }
+            return (
+              <code className="bg-muted rounded px-1 py-0.5 font-mono text-sm">
+                {children}
+              </code>
+            );
+          },
           pre: ({ children }) => (
             <pre className="bg-muted mb-3 overflow-x-auto rounded-lg p-4 font-mono text-sm">
               {children}

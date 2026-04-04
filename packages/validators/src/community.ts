@@ -80,6 +80,7 @@ export const createCommunitySchema = z.object({
     .optional(),
   about: z
     .string()
+    .trim()
     .max(10_000)
     .refine((val) => !val || !containsProfanity(val), {
       message: PROFANITY_ERROR_MESSAGE,
@@ -108,10 +109,12 @@ export const updateCommunitySchema = z.object({
     .optional(),
   about: z
     .string()
+    .trim()
     .max(10_000)
     .refine((val) => !val || !containsProfanity(val), {
       message: PROFANITY_ERROR_MESSAGE,
     })
+    .nullable()
     .optional(),
   socialLinks: communitySocialLinksSchema.optional(),
 });

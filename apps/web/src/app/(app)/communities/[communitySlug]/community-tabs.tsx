@@ -75,13 +75,17 @@ export function CommunityTabs({
             }
             action={
               canManage ? (
-                <Link
-                  href={`/dashboard/community/${communitySlug}/settings`}
+                <Button
+                  variant="outline"
+                  className="mt-2"
+                  render={
+                    <Link
+                      href={`/dashboard/community/${communitySlug}/settings`}
+                    />
+                  }
                 >
-                  <Button variant="outline" className="mt-2">
-                    Add one in Settings
-                  </Button>
-                </Link>
+                  Add one in Settings
+                </Button>
               ) : undefined
             }
           />
