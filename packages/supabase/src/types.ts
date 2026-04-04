@@ -286,8 +286,10 @@ export type Database = {
           created_at: string | null
           description: string | null
           discord_invite_url: string | null
+          featured_order: number | null
           icon: string | null
           id: number
+          is_featured: boolean
           logo_url: string | null
           name: string
           owner_user_id: string
@@ -307,8 +309,10 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           discord_invite_url?: string | null
+          featured_order?: number | null
           icon?: string | null
           id?: never
+          is_featured?: boolean
           logo_url?: string | null
           name: string
           owner_user_id: string
@@ -328,8 +332,10 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           discord_invite_url?: string | null
+          featured_order?: number | null
           icon?: string | null
           id?: never
+          is_featured?: boolean
           logo_url?: string | null
           name?: string
           owner_user_id?: string
@@ -3070,7 +3076,7 @@ export type Database = {
         | "cancelled"
       community_status: "pending" | "active" | "rejected" | "suspended"
       community_subscription_tier: "free" | "community_plus" | "enterprise"
-      community_tier: "regular" | "verified" | "partner"
+      community_tier: "partner"
       drop_category: "no_show" | "conduct" | "disqualification" | "other"
       entity_type: "profile" | "community" | "alt"
       invitation_status: "pending" | "accepted" | "declined" | "expired"
@@ -3313,7 +3319,7 @@ export const Constants = {
       ],
       community_status: ["pending", "active", "rejected", "suspended"],
       community_subscription_tier: ["free", "community_plus", "enterprise"],
-      community_tier: ["regular", "verified", "partner"],
+      community_tier: ["partner"],
       drop_category: ["no_show", "conduct", "disqualification", "other"],
       entity_type: ["profile", "community", "alt"],
       invitation_status: ["pending", "accepted", "declined", "expired"],
