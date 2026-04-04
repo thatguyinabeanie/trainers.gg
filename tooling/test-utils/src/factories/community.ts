@@ -19,6 +19,8 @@ export const organizationFactory = Factory.define<Tables<"communities">>(
     subscription_started_at: null,
     subscription_tier: null,
     tier: null,
+    is_featured: false,
+    featured_order: null,
     updated_at: new Date().toISOString(),
   })
 );

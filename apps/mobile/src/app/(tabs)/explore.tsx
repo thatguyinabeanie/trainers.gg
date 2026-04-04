@@ -212,8 +212,7 @@ function TrainerRow({
 
 function CommunityCard({ org }: { org: CommunityWithCounts }) {
   const theme = useTheme();
-  const tierBadge =
-    org.tier === "verified" || org.tier === "partner" ? org.tier : null;
+  const tierBadge = org.tier === "partner" ? org.tier : null;
 
   return (
     <Link href={`/communities/${org.slug}` as never} asChild>

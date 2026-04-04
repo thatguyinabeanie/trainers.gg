@@ -1,5 +1,6 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,7 +19,8 @@ export interface CommunityRow {
   slug: string;
   description: string | null;
   status: "pending" | "active" | "rejected" | "suspended";
-  tier: "regular" | "verified" | "partner";
+  tier: "partner" | null;
+  is_featured: boolean;
   created_at: string;
   updated_at: string;
   owner: {
@@ -59,17 +61,12 @@ const communityStatusClasses: Record<CommunityRow["status"], string> = {
 };
 
 /** Human-readable labels for organization tiers */
-export const communityTierLabels: Record<CommunityRow["tier"], string> = {
-  regular: "Regular",
-  verified: "Verified",
+export const communityTierLabels: Record<string, string> = {
   partner: "Partner",
 };
 
 /** Tailwind classes for each organization tier badge */
-const communityTierClasses: Record<CommunityRow["tier"], string> = {
-  regular: "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
-  verified:
-    "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/25",
+const communityTierClasses: Record<string, string> = {
   partner:
     "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/25",
 };
@@ -108,16 +105,43 @@ export const columns = [
     },
   }),
 
-  // Tier column: colored badge
-  columnHelper.accessor("tier", {
+  // Tier column: shows Featured and/or Partner badges
+  columnHelper.display({
+    id: "tier",
     header: "Tier",
     cell: (info) => {
-      const tier = info.getValue();
-      return (
-        <Badge variant="outline" className={cn(communityTierClasses[tier])}>
-          {communityTierLabels[tier]}
-        </Badge>
-      );
+      const row = info.row.original;
+      const badges: ReactNode[] = [];
+
+      if (row.is_featured) {
+        badges.push(
+          <Badge
+            key="featured"
+            variant="outline"
+            className="border-amber-500/25 bg-amber-500/15 text-amber-600 dark:text-amber-400"
+          >
+            Featured
+          </Badge>
+        );
+      }
+
+      if (row.tier === "partner") {
+        badges.push(
+          <Badge
+            key="partner"
+            variant="outline"
+            className={cn(communityTierClasses["partner"])}
+          >
+            Partner
+          </Badge>
+        );
+      }
+
+      if (badges.length === 0) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+
+      return <div className="flex flex-wrap gap-1">{badges}</div>;
     },
   }),
 

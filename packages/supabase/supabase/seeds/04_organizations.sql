@@ -28,7 +28,7 @@ INSERT INTO public.communities (
 ) VALUES (
   'Pallet Town Trainers', 'pallet-town',
   'Pallet Town Trainers - Pokemon VGC Tournament Organization',
-  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'regular', 'free'
+  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', NULL, 'free'
 ) ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO public.communities (
@@ -48,7 +48,7 @@ INSERT INTO public.communities (
   'A tournament series and community for women and femme-oriented players.',
   '🎀', 'https://discord.gg/hatterene',
   '[{"platform": "discord", "url": "https://discord.gg/hatterene"}, {"platform": "twitter", "url": "https://x.com/hatterene-series"}]'::jsonb,
-  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'regular', 'free'
+  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', NULL, 'free'
 ) ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO public.communities (
@@ -58,7 +58,7 @@ INSERT INTO public.communities (
   'Learn competitive Pokemon from the ground up. Weekly workshops, mentoring, and beginner-friendly tournaments on Pokemon Showdown.',
   '📚', 'https://discord.gg/showdown-academy',
   '[{"platform": "discord", "url": "https://discord.gg/showdown-academy"}, {"platform": "youtube", "url": "https://youtube.com/@showdownacademy"}, {"platform": "website", "url": "https://showdownacademy.gg"}]'::jsonb,
-  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'regular', 'free'
+  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', NULL, 'free'
 ) ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO public.communities (
@@ -68,7 +68,7 @@ INSERT INTO public.communities (
   'The home of Pokemon draft leagues. Season-based drafting, weekly matchups, and a thriving community of draft enthusiasts.',
   '📋', 'https://discord.gg/draft-league',
   '[{"platform": "discord", "url": "https://discord.gg/draft-league"}, {"platform": "twitter", "url": "https://x.com/draftleaguecentral"}, {"platform": "reddit", "url": "https://reddit.com/r/draftleague"}]'::jsonb,
-  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'regular', 'free'
+  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', NULL, 'free'
 ) ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO public.communities (
@@ -78,7 +78,7 @@ INSERT INTO public.communities (
   'Comunidad de Pokemon VGC para Latinoamérica. Torneos semanales y recursos en español.',
   '🌎', 'https://discord.gg/vgc-latam',
   '[{"platform": "discord", "url": "https://discord.gg/vgc-latam"}, {"platform": "twitter", "url": "https://x.com/vgclatam"}, {"platform": "instagram", "url": "https://instagram.com/vgclatam"}]'::jsonb,
-  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'regular', 'free'
+  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', NULL, 'free'
 ) ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO public.communities (
@@ -88,7 +88,7 @@ INSERT INTO public.communities (
   'A community dedicated to Nuzlocke challenges. Share your runs, get tips, and compete in Nuzlocke-themed tournaments.',
   '💀', null,
   '[{"platform": "reddit", "url": "https://reddit.com/r/nuzlocke"}, {"platform": "youtube", "url": "https://youtube.com/@nuzlockeunion"}]'::jsonb,
-  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'regular', 'free'
+  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', NULL, 'free'
 ) ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO public.communities (
@@ -98,7 +98,7 @@ INSERT INTO public.communities (
   'Get together to watch Pokemon World Championships and major events. Live commentary, predictions, and community viewing parties.',
   '🏟️', 'https://discord.gg/worlds-watch',
   '[{"platform": "discord", "url": "https://discord.gg/worlds-watch"}, {"platform": "twitch", "url": "https://twitch.tv/worldswatchparty"}]'::jsonb,
-  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'regular', 'free'
+  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', NULL, 'free'
 ) ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO public.communities (
@@ -108,9 +108,16 @@ INSERT INTO public.communities (
   null,
   '🎮', 'https://discord.gg/comp-casual',
   '[{"platform": "discord", "url": "https://discord.gg/comp-casual"}]'::jsonb,
-  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'regular', 'free'
+  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', NULL, 'free'
 ) ON CONFLICT (slug) DO NOTHING;
 
+
+-- Mark some communities as featured for local development
+UPDATE public.communities SET is_featured = true, featured_order = 1 WHERE slug = 'stellar-novas';
+UPDATE public.communities SET is_featured = true, featured_order = 2 WHERE slug = 'vgc-league';
+UPDATE public.communities SET is_featured = true, featured_order = 3 WHERE slug = 'hatterene-series';
+UPDATE public.communities SET is_featured = true, featured_order = 4 WHERE slug = 'showdown-academy';
+UPDATE public.communities SET is_featured = true, featured_order = 5 WHERE slug = 'pallet-town';
 
 -- -----------------------------------------------------------------------------
 -- Organization Staff

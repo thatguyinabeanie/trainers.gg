@@ -143,6 +143,8 @@ jest.mock("../actions", () => ({
     mockUnsuspendCommunityAction(...args),
   transferOwnershipAction: (...args: unknown[]) =>
     mockTransferOwnershipAction(...args),
+  toggleFeaturedAction: jest.fn().mockResolvedValue({ success: true }),
+  togglePartnerAction: jest.fn().mockResolvedValue({ success: true }),
 }));
 
 import { CommunityDetailSheet } from "../community-detail-sheet";
@@ -157,7 +159,8 @@ function buildCommunity(overrides: Partial<CommunityRow> = {}): CommunityRow {
     slug: "pallet-town-league",
     description: "A great community",
     status: "pending",
-    tier: "regular",
+    tier: null,
+    is_featured: false,
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-15T00:00:00.000Z",
     owner: {
@@ -225,10 +228,15 @@ describe("CommunityDetailSheet", () => {
       render(
         <CommunityDetailSheet
           {...defaultProps}
-          community={buildCommunity({ tier: "verified" })}
+          community={buildCommunity({ tier: "partner" })}
         />
       );
-      expect(screen.getByText("Verified")).toBeInTheDocument();
+      // The badge is rendered with the tier-specific class
+      const badges = screen.getAllByText("Partner");
+      const tierBadge = badges.find((el) =>
+        el.className.includes("bg-purple-500/15")
+      );
+      expect(tierBadge).toBeDefined();
     });
 
     it("shows community description when present", () => {

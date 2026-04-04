@@ -133,7 +133,15 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**", "test-results/**"],
-      "env": ["CI", "NODE_ENV"]
+      "env": [
+        "CI",
+        "NODE_ENV",
+        "JEST_JUNIT_OUTPUT_DIR",
+        "JEST_JUNIT_CLASSNAME",
+        "JEST_JUNIT_TITLE",
+        "JEST_JUNIT_ANCESTOR_SEPARATOR",
+        "JEST_JUNIT_ADD_FILE_ATTRIBUTE"
+      ]
     },
     "test:watch": {
       "cache": false,
