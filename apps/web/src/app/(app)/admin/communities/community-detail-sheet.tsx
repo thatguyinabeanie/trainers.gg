@@ -52,10 +52,7 @@ const communityStatusClasses: Record<CommunityRow["status"], string> = {
   suspended: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/25",
 };
 
-const communityTierClasses: Record<CommunityRow["tier"], string> = {
-  regular: "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
-  verified:
-    "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/25",
+const communityTierClasses: Record<string, string> = {
   partner:
     "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/25",
 };
@@ -232,12 +229,14 @@ export function CommunityDetailSheet({
                 >
                   {communityStatusLabels[community.status]}
                 </Badge>
-                <Badge
-                  variant="outline"
-                  className={cn(communityTierClasses[community.tier])}
-                >
-                  {communityTierLabels[community.tier]}
-                </Badge>
+                {community.tier && (
+                  <Badge
+                    variant="outline"
+                    className={cn(communityTierClasses[community.tier])}
+                  >
+                    {communityTierLabels[community.tier]}
+                  </Badge>
+                )}
               </div>
 
               {/* Description */}

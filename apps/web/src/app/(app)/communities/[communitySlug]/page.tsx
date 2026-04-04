@@ -140,11 +140,8 @@ function OrganizationHeader({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold">{organization.name}</h1>
-            {(organization.tier === "verified" ||
-              organization.tier === "partner") && (
-              <Badge variant="secondary">
-                {organization.tier === "partner" ? "Partner" : "Verified"}
-              </Badge>
+            {organization.tier === "partner" && (
+              <Badge variant="secondary">Partner</Badge>
             )}
           </div>
           <p className="text-muted-foreground mt-1">@{organization.slug}</p>

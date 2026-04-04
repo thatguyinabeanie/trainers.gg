@@ -18,7 +18,8 @@ export interface CommunityRow {
   slug: string;
   description: string | null;
   status: "pending" | "active" | "rejected" | "suspended";
-  tier: "regular" | "verified" | "partner";
+  tier: "partner" | null;
+  is_featured: boolean;
   created_at: string;
   updated_at: string;
   owner: {
@@ -59,17 +60,12 @@ const communityStatusClasses: Record<CommunityRow["status"], string> = {
 };
 
 /** Human-readable labels for organization tiers */
-export const communityTierLabels: Record<CommunityRow["tier"], string> = {
-  regular: "Regular",
-  verified: "Verified",
+export const communityTierLabels: Record<string, string> = {
   partner: "Partner",
 };
 
 /** Tailwind classes for each organization tier badge */
-const communityTierClasses: Record<CommunityRow["tier"], string> = {
-  regular: "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
-  verified:
-    "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/25",
+const communityTierClasses: Record<string, string> = {
   partner:
     "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/25",
 };
@@ -108,11 +104,14 @@ export const columns = [
     },
   }),
 
-  // Tier column: colored badge
+  // Tier column: colored badge, or dash when null
   columnHelper.accessor("tier", {
     header: "Tier",
     cell: (info) => {
       const tier = info.getValue();
+      if (!tier) {
+        return <span className="text-muted-foreground">—</span>;
+      }
       return (
         <Badge variant="outline" className={cn(communityTierClasses[tier])}>
           {communityTierLabels[tier]}
