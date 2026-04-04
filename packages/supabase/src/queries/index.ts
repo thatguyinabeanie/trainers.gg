@@ -27,6 +27,7 @@ export {
 // Community queries (renamed from organization)
 export {
   listPublicCommunities,
+  listFeaturedCommunities,
   listAllCommunitiesForSudo,
   listCommunities,
   getCommunityBySlug,

@@ -55,6 +55,23 @@ export async function listPublicCommunities(
 }
 
 /**
+ * List featured communities ordered by featured_order
+ */
+export async function listFeaturedCommunities(
+  supabase: TypedClient
+): Promise<OrganizationRow[]> {
+  const { data, error } = await supabase
+    .from("communities")
+    .select("*")
+    .eq("status", "active")
+    .eq("is_featured", true)
+    .order("featured_order", { ascending: true, nullsFirst: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
  * List ALL communities regardless of status or ownership — for site admins in sudo mode only.
  * Returns every community on the platform sorted by status (active first, then pending,
  * suspended, rejected) and then by name within each status group.
