@@ -30,7 +30,7 @@ DROP POLICY IF EXISTS "Communities are viewable by everyone" ON public.communiti
 DROP POLICY IF EXISTS "Site admins can view all communities" ON public.communities;
 
 CREATE POLICY "Communities are publicly visible"
-  ON public.communities FOR SELECT
+  ON public.communities FOR SELECT TO anon, authenticated
   USING (
     status = 'active'
     OR owner_user_id = (SELECT auth.uid())
