@@ -155,6 +155,46 @@ useEffect(() => {
 }, [searchTerm]);
 ```
 
+## Refs
+
+`useRef` holds mutable values that don't trigger re-renders. Refs are the correct tool for:
+
+- **DOM access** — focusing inputs, measuring elements, scrolling
+- **Stable callback refs** — keeping the latest version of a callback accessible to long-lived subscriptions without tearing them down
+- **Instance-scoped mutable values** — timers, abort controllers, previous-value tracking, subscription channels
+
+**Rules:**
+
+- Never **read or write** refs during render — the `react-hooks/refs` rule catches this
+- Update refs in `useLayoutEffect` (runs before subscriptions) or `useEffect`
+- Read refs inside effects, event handlers, and subscription callbacks
+
+**Stable callback pattern** — for long-lived subscriptions (Realtime, WebSocket, intervals) that need the latest handler without re-subscribing:
+
+```tsx
+const triggerRefreshRef = useRef(() => {
+  // uses only refs and stable setters — safe across closures
+  if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  timeoutRef.current = setTimeout(() => setKey((k) => k + 1), 500);
+});
+
+useEffect(() => {
+  const channel = supabase.channel("events")
+    .on("postgres_changes", { ... }, () => triggerRefreshRef.current())
+    .subscribe();
+  return () => supabase.removeChannel(channel);
+}, [supabase]);
+```
+
+**Updating refs from props** — use `useLayoutEffect` so the ref is current before any `useEffect` subscriptions fire:
+
+```tsx
+const onChangeRef = useRef(onChange);
+useLayoutEffect(() => {
+  onChangeRef.current = onChange;
+});
+```
+
 ## Effects
 
 Effects are an escape hatch for synchronizing with external systems. Reach for them only when needed.
