@@ -158,6 +158,11 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
+  // Authenticated users on auth pages should go to the dashboard
+  if (user && (pathname === "/sign-in" || pathname === "/sign-up")) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   // Protected routes always require authentication
   if (!user && isProtectedRoute(pathname)) {
     const signInUrl = new URL("/sign-in", request.url);
