@@ -1217,13 +1217,13 @@ export async function prepareRound(
 
       const isBye = !match.alt2_id;
       if (isBye && p1) {
-        byePlayer = p1.username ?? p1.username ?? "Unknown";
+        byePlayer = p1.username ?? "Unknown";
       }
 
       return {
         tableNumber: match.table_number,
-        player1Name: p1?.username ?? p1?.username ?? "Unknown",
-        player2Name: isBye ? null : (p2?.username ?? p2?.username ?? "Unknown"),
+        player1Name: p1?.username ?? "Unknown",
+        player2Name: isBye ? null : (p2?.username ?? "Unknown"),
       };
     });
 

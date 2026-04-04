@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -28,16 +28,19 @@ export function setConsentStatus(status: "granted" | "denied") {
   window.dispatchEvent(new CustomEvent("consent-change", { detail: status }));
 }
 
+function subscribeToConsent(callback: () => void) {
+  window.addEventListener("consent-change", callback);
+  return () => window.removeEventListener("consent-change", callback);
+}
+
 export function CookieConsent() {
-  const [status, setStatus] = useState<ConsentStatus>("undecided");
-  const [mounted, setMounted] = useState(false);
+  const status = useSyncExternalStore(
+    subscribeToConsent,
+    getConsentStatus,
+    () => "undecided" as ConsentStatus
+  );
 
-  useEffect(() => {
-    setStatus(getConsentStatus());
-    setMounted(true);
-  }, []);
-
-  if (!mounted || status !== "undecided") return null;
+  if (status !== "undecided") return null;
 
   return (
     <div
@@ -58,7 +61,6 @@ export function CookieConsent() {
           size="sm"
           onClick={() => {
             setConsentStatus("denied");
-            setStatus("denied");
           }}
         >
           Decline
@@ -67,7 +69,6 @@ export function CookieConsent() {
           size="sm"
           onClick={() => {
             setConsentStatus("granted");
-            setStatus("granted");
           }}
         >
           Accept

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { formatDateTime } from "@trainers/utils";
 import { useRouter } from "next/navigation";
 import {
@@ -299,7 +299,7 @@ function SiteRolesSection() {
 
 export default function AdminConfigPage() {
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
   // --- Feature Flags State ---
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
@@ -335,7 +335,7 @@ export default function AdminConfigPage() {
 
   // --- Data Fetching ---
 
-  const fetchFlags = useCallback(async () => {
+  const fetchFlags = async () => {
     setFlagsLoading(true);
     try {
       const { data, error: fetchError } = await supabase
@@ -355,9 +355,9 @@ export default function AdminConfigPage() {
     } finally {
       setFlagsLoading(false);
     }
-  }, [supabase]);
+  };
 
-  const fetchAnnouncements = useCallback(async () => {
+  const fetchAnnouncements = async () => {
     setAnnouncementsLoading(true);
     try {
       const { data, error: fetchError } = await supabase
@@ -377,12 +377,12 @@ export default function AdminConfigPage() {
     } finally {
       setAnnouncementsLoading(false);
     }
-  }, [supabase]);
+  };
 
   useEffect(() => {
     fetchFlags();
     fetchAnnouncements();
-  }, [fetchFlags, fetchAnnouncements]);
+  }, []);
 
   // --- Feature Flag Handlers ---
 
@@ -522,12 +522,12 @@ export default function AdminConfigPage() {
 
   // --- Filtered Announcements ---
 
-  const filteredAnnouncements = useMemo(() => {
-    if (announcementTab === "all") return announcements;
-    return announcements.filter(
-      (ann) => getAnnouncementStatus(ann) === announcementTab
-    );
-  }, [announcements, announcementTab]);
+  const filteredAnnouncements =
+    announcementTab === "all"
+      ? announcements
+      : announcements.filter(
+          (ann) => getAnnouncementStatus(ann) === announcementTab
+        );
 
   // --- Loading State ---
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import { getMatchGames, getMatchGamesForPlayer } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
@@ -103,8 +103,8 @@ export function MatchPageClient({
   const myPlayer = isParticipant ? (swapped ? player2 : player1) : null;
   const opponent = isParticipant ? (swapped ? player1 : player2) : null;
 
-  const myName = myPlayer?.username ?? myPlayer?.username ?? "You";
-  const opponentName = opponent?.username ?? opponent?.username ?? "Opponent";
+  const myName = myPlayer?.username ?? "You";
+  const opponentName = opponent?.username ?? "Opponent";
 
   // Header layout: left = opponent, right = me (current user).
   const perspectiveArgs = { isParticipant, isPlayer1 };
@@ -132,10 +132,10 @@ export function MatchPageClient({
   });
   const headerOpponentName = isParticipant
     ? opponentName
-    : (player1?.username ?? player1?.username ?? "Player 1");
+    : (player1?.username ?? "Player 1");
   const headerMyName = isParticipant
     ? myName
-    : (player2?.username ?? player2?.username ?? "Player 2");
+    : (player2?.username ?? "Player 2");
 
   // ==========================================================================
   // Presence — use currentUser props so staff/judges also join the channel
@@ -150,26 +150,25 @@ export function MatchPageClient({
       onJudgeRequest: setStaffRequested,
     });
 
-  const handleTypingStart = useCallback(() => {
+  const handleTypingStart = () => {
     setTyping(true);
-  }, [setTyping]);
+  };
 
-  const handleTypingStop = useCallback(() => {
+  const handleTypingStop = () => {
     setTyping(false);
-  }, [setTyping]);
+  };
 
   // ==========================================================================
   // Fetch games
   // ==========================================================================
-  const gamesQueryFn = useCallback(
-    async (client: TypedSupabaseClient): Promise<Record<string, unknown>[]> => {
-      if (isStaff) {
-        return getMatchGames(client, matchId);
-      }
-      return getMatchGamesForPlayer(client, matchId);
-    },
-    [matchId, isStaff]
-  );
+  const gamesQueryFn = async (
+    client: TypedSupabaseClient
+  ): Promise<Record<string, unknown>[]> => {
+    if (isStaff) {
+      return getMatchGames(client, matchId);
+    }
+    return getMatchGamesForPlayer(client, matchId);
+  };
 
   const {
     data: gamesRaw,
@@ -331,10 +330,10 @@ export function MatchPageClient({
   // Use actual player names for non-participants instead of "You"/"Opponent"
   const opponentTeamLabel = isParticipant
     ? opponentName
-    : (player1?.username ?? player1?.username ?? "Player 1");
+    : (player1?.username ?? "Player 1");
   const myTeamLabel = isParticipant
     ? "Your Team"
-    : (player2?.username ?? player2?.username ?? "Player 2");
+    : (player2?.username ?? "Player 2");
 
   const teamToggle = hasTeams ? (
     <Tabs defaultValue={opponentTeam ? "opponent" : "mine"}>

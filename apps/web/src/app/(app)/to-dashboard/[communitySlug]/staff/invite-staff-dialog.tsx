@@ -80,9 +80,16 @@ export function InviteStaffDialog({
   onSuccess,
 }: InviteStaffDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  // asyncSearchResults stores the last completed async fetch result.
+  // Displayed results are derived during render — empty when term is too short.
+  const [asyncSearchResults, setAsyncSearchResults] = useState<SearchResult[]>(
+    []
+  );
   const [isSearching, setIsSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SearchResult | null>(null);
+
+  // Derive displayed results during render — no setState needed for the empty case
+  const searchResults = searchTerm.length >= 2 ? asyncSearchResults : [];
 
   const form = useForm<InviteStaffFormData>({
     resolver: zodResolver(inviteStaffSchema),
@@ -93,12 +100,23 @@ export function InviteStaffDialog({
 
   const { isSubmitting } = form.formState;
 
-  // Debounced search with cancellation
-  useEffect(() => {
-    if (!searchTerm || searchTerm.length < 2) {
-      setSearchResults([]);
-      return;
+  // Reset form when dialog closes — render-time adjustment keyed on `open`
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (!open) {
+      setSearchTerm("");
+      setAsyncSearchResults([]);
+      setSelectedUser(null);
+      form.reset({ userId: "" });
     }
+  }
+
+  // Debounced search with cancellation.
+  // Early exit (term too short) only guards the timer — no setState call needed
+  // because results are derived from asyncSearchResults during render above.
+  useEffect(() => {
+    if (!searchTerm || searchTerm.length < 2) return;
 
     let cancelled = false;
 
@@ -107,7 +125,7 @@ export function InviteStaffDialog({
       const result = await searchUsersForStaffInvite(communityId, searchTerm);
       if (cancelled) return;
       if (result.success) {
-        setSearchResults(result.data);
+        setAsyncSearchResults(result.data);
       } else {
         toast.error(result.error);
       }
@@ -120,21 +138,11 @@ export function InviteStaffDialog({
     };
   }, [searchTerm, communityId]);
 
-  // Reset form when dialog closes
-  useEffect(() => {
-    if (!open) {
-      setSearchTerm("");
-      setSearchResults([]);
-      setSelectedUser(null);
-      form.reset({ userId: "" });
-    }
-  }, [open, form]);
-
   const handleSelectUser = (user: SearchResult) => {
     setSelectedUser(user);
     form.setValue("userId", user.id);
     setSearchTerm("");
-    setSearchResults([]);
+    setAsyncSearchResults([]);
   };
 
   const handleClearSelection = () => {

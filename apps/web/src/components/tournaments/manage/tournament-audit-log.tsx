@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useState, useCallback, useMemo } from "react";
+import { type ReactNode, useState } from "react";
 import { formatTimeAgo } from "@trainers/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentAuditLog } from "@trainers/supabase";
@@ -127,19 +127,14 @@ export function TournamentAuditLog({ tournament }: TournamentAuditLogProps) {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const actionsForFilter: AuditAction[] | undefined = useMemo(
-    () => categoryActions[categoryFilter],
-    [categoryFilter]
-  );
+  const actionsForFilter: AuditAction[] | undefined =
+    categoryActions[categoryFilter];
 
-  const queryFn = useCallback(
-    (client: TypedSupabaseClient) =>
-      getTournamentAuditLog(client, tournament.id, {
-        limit: 100,
-        actions: actionsForFilter,
-      }),
-    [tournament.id, actionsForFilter]
-  );
+  const queryFn = (client: TypedSupabaseClient) =>
+    getTournamentAuditLog(client, tournament.id, {
+      limit: 100,
+      actions: actionsForFilter,
+    });
 
   const {
     data: entries,

@@ -10,7 +10,6 @@ export default [
     files: ["**/*.tsx", "**/*.jsx"],
     plugins: {
       react,
-      "react-hooks": reactHooks,
     },
     languageOptions: {
       parserOptions: {
@@ -29,9 +28,20 @@ export default [
     },
     rules: {
       ...react.configs.recommended.rules,
-      ...reactHooks.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
+    },
+  },
+  // React Hooks + Compiler rules (bundled in v7)
+  reactHooks.configs.flat["recommended-latest"],
+  {
+    rules: {
+      // Disabled: React Compiler handles memoization and stale closure
+      // prevention automatically. See reactwg/react-compiler#18.
+      "react-hooks/exhaustive-deps": "off",
+      // Informational only — third-party libs skip compiler optimization
+      // gracefully. No action needed.
+      "react-hooks/incompatible-library": "off",
     },
   },
 ];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { formatDateTime } from "@trainers/utils";
 import {
   Sheet,
@@ -148,10 +148,9 @@ export function UserDetailSheet({
   // Add role selection
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
 
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
-  // Fetch user details when userId changes
-  const fetchUser = useCallback(async () => {
+  const fetchUser = async () => {
     if (!userId) return;
 
     setLoading(true);
@@ -175,7 +174,7 @@ export function UserDetailSheet({
     } finally {
       setLoading(false);
     }
-  }, [userId, supabase]);
+  };
 
   useEffect(() => {
     if (open && userId) {
@@ -186,32 +185,27 @@ export function UserDetailSheet({
       setError(null);
       setActionError(null);
     }
-  }, [open, userId, fetchUser]);
+  }, [open, userId]);
 
-  // Get the user's current site roles
-  const userSiteRoles = useMemo(() => {
-    if (!user?.user_roles) return [];
-    return user.user_roles
-      .filter(
-        (ur) =>
-          ur.role &&
-          typeof ur.role === "object" &&
-          "scope" in ur.role &&
-          ur.role.scope === "site"
-      )
-      .map((ur) => ({
-        userRoleId: ur.id,
-        roleId: ur.role!.id,
-        name: ur.role!.name,
-        description: ur.role!.description,
-      }));
-  }, [user]);
+  const userSiteRoles = !user?.user_roles
+    ? []
+    : user.user_roles
+        .filter(
+          (ur) =>
+            ur.role &&
+            typeof ur.role === "object" &&
+            "scope" in ur.role &&
+            ur.role.scope === "site"
+        )
+        .map((ur) => ({
+          userRoleId: ur.id,
+          roleId: ur.role!.id,
+          name: ur.role!.name,
+          description: ur.role!.description,
+        }));
 
-  // Roles available to add (not yet assigned)
-  const availableRoles = useMemo(() => {
-    const assignedIds = new Set(userSiteRoles.map((r) => r.roleId));
-    return siteRoles.filter((r) => !assignedIds.has(r.id));
-  }, [siteRoles, userSiteRoles]);
+  const assignedIds = new Set(userSiteRoles.map((r) => r.roleId));
+  const availableRoles = siteRoles.filter((r) => !assignedIds.has(r.id));
 
   // ----------------------------------------------------------------
   // Action handlers
@@ -455,7 +449,7 @@ export function UserDetailSheet({
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-medium">
-                            {alt.username ?? alt.username ?? "—"}
+                            {alt.username ?? "—"}
                           </div>
                         </div>
                         {alt.tier && (

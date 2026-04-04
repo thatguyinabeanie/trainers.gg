@@ -3,7 +3,6 @@
 import {
   createContext,
   type ReactNode,
-  useCallback,
   useContext,
   useEffect,
   useState,
@@ -37,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  const fetchUser = useCallback(async () => {
+  const fetchUser = async () => {
     try {
       const {
         data: { session },
@@ -55,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [supabase.auth]);
+  };
 
   useEffect(() => {
     fetchUser();
@@ -72,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth, fetchUser]);
+  }, [supabase.auth]);
 
   const signOut = async () => {
     setLoading(true);
@@ -137,7 +136,6 @@ export function getUserDisplayName(user: AuthUser | null): string {
     (metadata?.username as string | undefined) ??
     (metadata?.full_name as string | undefined) ??
     (metadata?.name as string | undefined) ??
-    (metadata?.username as string | undefined) ??
     (metadata?.bluesky_handle as string | undefined);
 
   if (displayName) {

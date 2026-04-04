@@ -229,9 +229,7 @@ export function MatchReportDialog({
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="font-medium">
-                      {p1?.username ?? p1?.username ?? "BYE"}
-                    </p>
+                    <p className="font-medium">{p1?.username ?? "BYE"}</p>
                     <p className="text-muted-foreground text-xs">Player 1</p>
                   </div>
                   {match.winner_alt_id === p1?.id && (
@@ -302,9 +300,7 @@ export function MatchReportDialog({
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="font-medium">
-                      {p2?.username ?? p2?.username ?? "BYE"}
-                    </p>
+                    <p className="font-medium">{p2?.username ?? "BYE"}</p>
                     <p className="text-muted-foreground text-xs">Player 2</p>
                   </div>
                   {match.winner_alt_id === p2?.id && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useCallback, useRef } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentPhases,
@@ -66,6 +66,10 @@ interface PreviewData {
   }>;
 }
 
+// -- Sentinel --
+
+const UNINITIALIZED = Symbol();
+
 // -- Component --
 
 export function TournamentOverview({ tournament }: TournamentOverviewProps) {
@@ -80,24 +84,17 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
 
   const isActive = tournament.status === "active";
 
-  // Debounced refresh trigger (500ms delay to batch bulk operations)
-  const triggerRefresh = useCallback(() => {
+  const triggerRefresh = () => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
       setRefreshKey((k) => k + 1);
     }, 500);
-  }, []);
+  };
 
-  // -- Data Fetching --
-
-  // Fetch phases
-  const phasesQueryFn = useCallback(
-    (supabase: Parameters<typeof getTournamentPhases>[0]) =>
-      getTournamentPhases(supabase, tournament.id),
-    [tournament.id]
-  );
+  const phasesQueryFn = (supabase: Parameters<typeof getTournamentPhases>[0]) =>
+    getTournamentPhases(supabase, tournament.id);
 
   const { data: phases } = useSupabaseQuery(phasesQueryFn, [
     tournament.id,
@@ -110,14 +107,12 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
     (phases && phases.length > 0 ? phases[0]?.id : null) ??
     null;
 
-  // Fetch rounds for active phase
-  const roundsQueryFn = useCallback(
-    (supabase: Parameters<typeof getPhaseRoundsWithStats>[0]) =>
-      activePhaseId
-        ? getPhaseRoundsWithStats(supabase, activePhaseId)
-        : Promise.resolve([]),
-    [activePhaseId]
-  );
+  const roundsQueryFn = (
+    supabase: Parameters<typeof getPhaseRoundsWithStats>[0]
+  ) =>
+    activePhaseId
+      ? getPhaseRoundsWithStats(supabase, activePhaseId)
+      : Promise.resolve([]);
 
   const {
     data: rounds,
@@ -249,29 +244,32 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
       }
       channels.forEach((ch) => ch.unsubscribe());
     };
-  }, [supabase, tournament.id, activePhaseId, triggerRefresh]);
+  }, [supabase, tournament.id, activePhaseId]);
 
-  // Sync roundState from fetched data
-  useEffect(() => {
-    // Don't override user-initiated states (generating, preview, starting, completing)
+  // Sync roundState from fetched data — render-time adjustment.
+  // Only update when rounds data changes and the current state is not a
+  // user-initiated transition (generating, preview, starting, completing).
+  const [prevRounds, setPrevRounds] = useState<typeof rounds | symbol>(
+    UNINITIALIZED
+  );
+  if (rounds !== prevRounds) {
+    setPrevRounds(rounds);
     if (
-      roundState === "generating" ||
-      roundState === "preview" ||
-      roundState === "starting" ||
-      roundState === "completing"
+      roundState !== "generating" &&
+      roundState !== "preview" &&
+      roundState !== "starting" &&
+      roundState !== "completing"
     ) {
-      return;
+      if (hasActiveRound) {
+        setRoundState("active");
+      } else if (pendingRound) {
+        // A round was prepared but never started — show resume UI
+        setRoundState("pending_resume");
+      } else if (lastRoundCompleted || !lastRound) {
+        setRoundState("idle");
+      }
     }
-
-    if (hasActiveRound) {
-      setRoundState("active");
-    } else if (pendingRound) {
-      // A round was prepared but never started — show resume UI
-      setRoundState("pending_resume");
-    } else if (lastRoundCompleted || !lastRound) {
-      setRoundState("idle");
-    }
-  }, [hasActiveRound, lastRoundCompleted, lastRound, pendingRound, roundState]);
+  }
 
   // -- Handlers --
 

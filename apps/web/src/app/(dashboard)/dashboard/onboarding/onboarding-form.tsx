@@ -35,26 +35,35 @@ export function OnboardingForm() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Debounced username availability check
-  useEffect(() => {
+  // Debounced username availability check.
+  // Synchronous resets (empty username, local validation failure) are handled
+  // during render via render-time adjustment — no setState in effect body.
+  const [prevUsername, setPrevUsername] = useState(username);
+  if (username !== prevUsername) {
+    setPrevUsername(username);
     if (!username) {
+      // Username was cleared — reset status immediately during render
       setUsernameStatus("idle");
       setUsernameError(null);
-      return;
+    } else {
+      const localResult = usernameSchema.safeParse(username);
+      if (!localResult.success) {
+        setUsernameStatus("error");
+        setUsernameError(
+          localResult.error.errors[0]?.message ?? "Invalid username"
+        );
+      } else {
+        setUsernameStatus("checking");
+        setUsernameError(null);
+      }
     }
+  }
 
-    // Local validation first
+  // Async availability check — only fires when username passes local validation
+  useEffect(() => {
+    if (!username) return;
     const localResult = usernameSchema.safeParse(username);
-    if (!localResult.success) {
-      setUsernameStatus("error");
-      setUsernameError(
-        localResult.error.errors[0]?.message ?? "Invalid username"
-      );
-      return;
-    }
-
-    setUsernameStatus("checking");
-    setUsernameError(null);
+    if (!localResult.success) return;
 
     const timer = setTimeout(async () => {
       const result = await checkUsernameAvailability(username);

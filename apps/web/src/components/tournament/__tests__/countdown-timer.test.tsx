@@ -12,6 +12,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
 
+const UNINITIALIZED = Symbol();
+
 // Standalone version matching the implementation in tournament-sidebar-card.tsx
 function CountdownTimer({ targetDate }: { targetDate: string | null }) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -21,19 +23,27 @@ function CountdownTimer({ targetDate }: { targetDate: string | null }) {
     seconds: number;
   } | null>(null);
 
-  useEffect(() => {
-    if (!targetDate) {
-      setTimeRemaining(null);
-      return;
-    }
+  // Derive null state during render when targetDate is absent or invalid —
+  // avoids synchronous setState inside the effect body.
+  const targetTimestamp = targetDate ? new Date(targetDate).getTime() : NaN;
+  const isValidTarget = !Number.isNaN(targetTimestamp);
 
-    // Validate date string to prevent NaN calculations
-    const targetTimestamp = new Date(targetDate).getTime();
-    if (Number.isNaN(targetTimestamp)) {
-      console.error(`[CountdownTimer] Invalid date string: "${targetDate}"`);
+  const [prevTargetDate, setPrevTargetDate] = useState<
+    typeof targetDate | symbol
+  >(UNINITIALIZED);
+  if (targetDate !== prevTargetDate) {
+    setPrevTargetDate(targetDate);
+    if (!isValidTarget) {
+      if (targetDate) {
+        console.error(`[CountdownTimer] Invalid date string: "${targetDate}"`);
+      }
       setTimeRemaining(null);
-      return;
     }
+  }
+
+  useEffect(() => {
+    // Early return without setState — null state is handled above during render
+    if (!targetDate || !isValidTarget) return;
 
     const calculateTimeRemaining = () => {
       const now = new Date().getTime();
@@ -61,7 +71,7 @@ function CountdownTimer({ targetDate }: { targetDate: string | null }) {
     const interval = setInterval(calculateTimeRemaining, 1000);
 
     return () => clearInterval(interval);
-  }, [targetDate]);
+  }, [targetDate, targetTimestamp, isValidTarget]);
 
   if (!timeRemaining) return null;
 

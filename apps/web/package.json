@@ -87,7 +87,6 @@
     "babel-plugin-react-compiler": "catalog:",
     "dotenv": "^17",
     "eslint": "catalog:",
-    "eslint-plugin-react-compiler": "catalog:",
     "jest": "catalog:testing",
     "jest-environment-jsdom": "^29",
     "jest-junit": "catalog:testing",

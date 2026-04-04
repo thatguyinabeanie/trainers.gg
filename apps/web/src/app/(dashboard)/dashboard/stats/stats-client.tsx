@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getCurrentUserAlts,
@@ -24,25 +24,12 @@ import {
 export function StatsClient() {
   const [selectedAltId, setSelectedAltId] = useState<number | null>(null);
 
-  // Fetch user's alts
-  const altsQueryFn = useCallback(
-    (client: TypedSupabaseClient) => getCurrentUserAlts(client),
-    []
-  );
+  const altsQueryFn = (client: TypedSupabaseClient) =>
+    getCurrentUserAlts(client);
   const { data: alts } = useSupabaseQuery(altsQueryFn, []);
 
-  // Fetch tournament history (filtered by alt if selected)
-  const historyQueryFn = useCallback(
-    (client: TypedSupabaseClient) => {
-      if (selectedAltId) {
-        // Filter by specific alt (would need a new query function)
-        // For now, fetch all and filter client-side
-        return getUserTournamentHistory(client);
-      }
-      return getUserTournamentHistory(client);
-    },
-    [selectedAltId]
-  );
+  const historyQueryFn = (client: TypedSupabaseClient) =>
+    getUserTournamentHistory(client);
   const { data: history } = useSupabaseQuery(historyQueryFn, [selectedAltId]);
 
   // Filter history client-side by selected alt

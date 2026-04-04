@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
 import { getMyDashboardData, getActiveMatch } from "@trainers/supabase";
@@ -56,14 +56,14 @@ export function OverviewClient() {
   const [refreshKey, setRefreshKey] = useState(0);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const triggerRefresh = useCallback(() => {
+  const triggerRefresh = () => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
       setRefreshKey((k) => k + 1);
     }, 500);
-  }, []);
+  };
 
   useEffect(() => {
     if (!profileId) return;
@@ -118,7 +118,7 @@ export function OverviewClient() {
       }
       channel.unsubscribe();
     };
-  }, [supabase, profileId, triggerRefresh]);
+  }, [supabase, profileId]);
 
   // Show welcome toast for users with placeholder usernames
   useEffect(() => {

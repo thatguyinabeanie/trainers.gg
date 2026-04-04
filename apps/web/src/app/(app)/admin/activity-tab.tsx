@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -147,43 +147,29 @@ export function ActivityTab() {
   const [page, setPage] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Compute the action list for the current filter
-  const actionsForFilter: AuditAction[] | undefined = useMemo(
-    () => categoryActions[actionFilter],
-    [actionFilter]
-  );
+  const actionsForFilter: AuditAction[] | undefined =
+    categoryActions[actionFilter];
 
-  // Compute entity type param
-  const entityType = useMemo(
-    () =>
-      entityFilter === "all"
-        ? undefined
-        : (entityFilter as "tournament" | "match" | "community"),
-    [entityFilter]
-  );
+  const entityType =
+    entityFilter === "all"
+      ? undefined
+      : (entityFilter as "tournament" | "match" | "community");
 
-  // Fetch stats (24h, 7d, 30d)
-  const statsQueryFn = useCallback(
-    (client: TypedSupabaseClient) => getAuditLogStats(client),
-    []
-  );
+  const statsQueryFn = (client: TypedSupabaseClient) =>
+    getAuditLogStats(client);
   const {
     data: stats,
     isLoading: statsLoading,
     error: statsError,
   } = useSupabaseQuery(statsQueryFn, [refreshKey]);
 
-  // Fetch audit log entries
-  const logQueryFn = useCallback(
-    (client: TypedSupabaseClient) =>
-      getAuditLog(client, {
-        actions: actionsForFilter,
-        entityType,
-        limit: PAGE_SIZE,
-        offset: page * PAGE_SIZE,
-      }),
-    [actionsForFilter, entityType, page]
-  );
+  const logQueryFn = (client: TypedSupabaseClient) =>
+    getAuditLog(client, {
+      actions: actionsForFilter,
+      entityType,
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE,
+    });
   const {
     data: logResult,
     isLoading: logLoading,

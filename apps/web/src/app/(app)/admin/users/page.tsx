@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   ChevronLeft,
@@ -31,6 +31,7 @@ import { UserDetailSheet } from "./user-detail-sheet";
 
 const PAGE_SIZE = 25;
 const DEBOUNCE_MS = 300;
+const UNINITIALIZED = Symbol();
 
 /** Status filter options */
 type StatusFilter = "all" | "active" | "suspended";
@@ -59,7 +60,7 @@ function UsersTabContent() {
   // Manual refresh trigger
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Debounce the search input
+  // Debounce the search input — only sets state inside a timer callback (async)
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -68,30 +69,30 @@ function UsersTabContent() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Reset to first page when filter changes
-  useEffect(() => {
+  // Reset to first page when filter changes — render-time adjustment
+  const [prevStatusFilter, setPrevStatusFilter] = useState<
+    typeof statusFilter | symbol
+  >(UNINITIALIZED);
+  if (statusFilter !== prevStatusFilter) {
+    setPrevStatusFilter(statusFilter);
     setPage(0);
-  }, [statusFilter]);
+  }
 
-  // Build query function
-  const queryFn = useCallback(
-    (supabase: TypedSupabaseClient) => {
-      const isLocked =
-        statusFilter === "active"
-          ? false
-          : statusFilter === "suspended"
-            ? true
-            : undefined;
+  const queryFn = (supabase: TypedSupabaseClient) => {
+    const isLocked =
+      statusFilter === "active"
+        ? false
+        : statusFilter === "suspended"
+          ? true
+          : undefined;
 
-      return listUsersAdmin(supabase, {
-        search: debouncedSearch || undefined,
-        isLocked,
-        limit: PAGE_SIZE,
-        offset: page * PAGE_SIZE,
-      });
-    },
-    [debouncedSearch, statusFilter, page]
-  );
+    return listUsersAdmin(supabase, {
+      search: debouncedSearch || undefined,
+      isLocked,
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE,
+    });
+  };
 
   const { data, isLoading, error, refetch } = useSupabaseQuery(queryFn, [
     debouncedSearch,
