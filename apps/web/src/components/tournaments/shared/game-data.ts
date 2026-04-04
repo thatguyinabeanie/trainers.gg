@@ -18,6 +18,7 @@ export interface FormatOption {
  * Pokemon video games supported for tournaments
  */
 export const POKEMON_GAMES: GameOption[] = [
+  { id: "champions", name: "Pokémon Champions", shortName: "Champions" },
   { id: "sv", name: "Pokémon Scarlet & Violet", shortName: "Scarlet/Violet" },
   { id: "swsh", name: "Pokémon Sword & Shield", shortName: "Sword/Shield" },
   {
@@ -36,6 +37,7 @@ export const POKEMON_GAMES: GameOption[] = [
  * Formats available for each game (newest first)
  */
 export const GAME_FORMATS: Record<string, FormatOption[]> = {
+  champions: [{ id: "reg-m-a", name: "Regulation M-A" }],
   sv: [
     { id: "reg-i", name: "Regulation I" },
     { id: "reg-h", name: "Regulation H" },

@@ -90,7 +90,6 @@ describe("CreateTournamentClient", () => {
   it("renders the wizard form with schedule and registration sections", () => {
     render(<CreateTournamentClient communitySlug="test-org" />);
 
-    expect(screen.getByText("Create Tournament")).toBeInTheDocument();
     expect(screen.getByTestId("tournament-schedule")).toBeInTheDocument();
     expect(screen.getByTestId("tournament-registration")).toBeInTheDocument();
   });
@@ -140,7 +139,7 @@ describe("CreateTournamentClient", () => {
     );
 
     // No wizard content should be rendered
-    expect(screen.queryByText("Create Tournament")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tournament-schedule")).not.toBeInTheDocument();
     // The spinner SVG is present
     expect(container.querySelector("svg")).toBeInTheDocument();
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,7 +36,6 @@ import {
   ArrowRight,
   Check,
   Loader2,
-  Trophy,
   Building2,
   ShieldAlert,
 } from "lucide-react";
@@ -141,8 +140,8 @@ export function CreateTournamentClient({
       slug: "",
       description: "",
       communityId: undefined,
-      game: "sv",
-      gameFormat: "reg-i",
+      game: "champions",
+      gameFormat: "reg-m-a",
       platform: "cartridge",
       battleFormat: "doubles",
       tournamentFormat: "swiss_with_cut",
@@ -192,11 +191,12 @@ export function CreateTournamentClient({
     [communitySlug]
   );
 
-  // Update organization ID when org is loaded
-  const currentOrgId = form.watch("communityId");
-  if (organization && currentOrgId !== organization.id) {
-    form.setValue("communityId", organization.id);
-  }
+  // Set community ID once organization loads
+  useEffect(() => {
+    if (organization?.id) {
+      form.setValue("communityId", organization.id);
+    }
+  }, [organization?.id, form]);
 
   const { mutateAsync: createTournamentMutation } = useSupabaseMutation(
     (
@@ -437,26 +437,8 @@ export function CreateTournamentClient({
   return (
     <Form {...form}>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Link href={`/dashboard/community/${communitySlug}/tournaments`}>
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold">
-              <Trophy className="h-6 w-6" />
-              Create Tournament
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              For {organization.name}
-            </p>
-          </div>
-        </div>
-
         {/* Progress */}
-        <div className="mx-auto max-w-4xl px-4">
+        <div className="mx-auto w-full max-w-sm">
           <div className="mb-4 flex justify-between">
             {STEPS.map((stepItem, index) => {
               const isCompleted = stepItem.id < currentStep;
