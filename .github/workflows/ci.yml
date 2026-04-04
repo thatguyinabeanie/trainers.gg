@@ -455,6 +455,12 @@ jobs:
             echo "safe=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Fail if E2E tests cannot run safely
+        if: steps.e2e-seed.outputs.safe == 'false'
+        run: |
+          echo "::error::E2E tests were skipped — preview is connected to the production database (seed returned 404). Supabase branching must be configured for this PR."
+          exit 1
+
       - name: Run E2E tests
         if: steps.e2e-seed.outputs.safe != 'false'
         env:
