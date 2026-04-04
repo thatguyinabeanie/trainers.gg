@@ -1,20 +1,18 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { listCommunityTournaments } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Loader2, XCircle } from "lucide-react";
+import { Loader2, XCircle } from "lucide-react";
 import {
   SectionHeader,
   ActiveTournaments,
   UpcomingTournaments,
   CompletedTournaments,
   TournamentListEmpty,
-  TournamentCardGrid,
 } from "@/components/tournaments/tournament-list";
 
 interface TournamentsListClientProps {
@@ -88,22 +86,6 @@ export function TournamentsListClient({
 
   return (
     <div className="space-y-6">
-      {/* Page Heading */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Tournaments</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage your community&apos;s tournaments
-          </p>
-        </div>
-        <Link href={`${basePath}/tournaments/create`}>
-          <Button size="sm" className="gap-2">
-            <Plus className="h-3.5 w-3.5" />
-            Create Tournament
-          </Button>
-        </Link>
-      </div>
-
       {/* Status Tabs */}
       <Tabs value={currentStatus} onValueChange={handleStatusChange}>
         <TabsList>
@@ -150,93 +132,96 @@ export function TournamentsListClient({
         </Card>
       ) : currentStatus === "all" ? (
         // Show grouped view when "all" is selected
-        <Card>
-          <CardContent className="space-y-4 pt-6">
-            {groupedTournaments.active.length > 0 && (
-              <div>
-                <SectionHeader
-                  title="In Progress"
-                  count={groupedTournaments.active.length}
-                />
-                <ActiveTournaments
-                  tournaments={groupedTournaments.active}
-                  linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                  showOrganization={false}
-                />
-              </div>
-            )}
+        <div className="space-y-4">
+          {groupedTournaments.active.length > 0 && (
+            <div>
+              <SectionHeader
+                title="In Progress"
+                count={groupedTournaments.active.length}
+              />
+              <ActiveTournaments
+                tournaments={groupedTournaments.active}
+                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                showOrganization={false}
+              />
+            </div>
+          )}
 
-            {groupedTournaments.upcoming.length > 0 && (
-              <div>
-                <SectionHeader
-                  title="Upcoming"
-                  count={groupedTournaments.upcoming.length}
-                />
-                <UpcomingTournaments
-                  tournaments={groupedTournaments.upcoming}
-                  linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                  showOrganization={false}
-                />
-              </div>
-            )}
+          {groupedTournaments.upcoming.length > 0 && (
+            <div>
+              <SectionHeader
+                title="Upcoming"
+                count={groupedTournaments.upcoming.length}
+              />
+              <UpcomingTournaments
+                tournaments={groupedTournaments.upcoming}
+                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                showOrganization={false}
+              />
+            </div>
+          )}
 
-            {groupedTournaments.draft.length > 0 && (
-              <div>
-                <SectionHeader
-                  title="Draft"
-                  count={groupedTournaments.draft.length}
-                />
-                <TournamentCardGrid
-                  tournaments={groupedTournaments.draft}
-                  linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                  showStatus
-                  showOrganization={false}
-                />
-              </div>
-            )}
+          {groupedTournaments.draft.length > 0 && (
+            <div>
+              <SectionHeader
+                title="Draft"
+                count={groupedTournaments.draft.length}
+              />
+              <UpcomingTournaments
+                tournaments={groupedTournaments.draft}
+                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                showOrganization={false}
+              />
+            </div>
+          )}
 
-            {groupedTournaments.completed.length > 0 && (
-              <div>
-                <SectionHeader
-                  title="Completed"
-                  count={groupedTournaments.completed.length}
-                />
-                <CompletedTournaments
-                  tournaments={groupedTournaments.completed}
-                  linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                  showOrganization={false}
-                />
-              </div>
-            )}
+          {groupedTournaments.completed.length > 0 && (
+            <div>
+              <SectionHeader
+                title="Completed"
+                count={groupedTournaments.completed.length}
+              />
+              <CompletedTournaments
+                tournaments={groupedTournaments.completed}
+                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                showOrganization={false}
+              />
+            </div>
+          )}
 
-            {groupedTournaments.cancelled.length > 0 && (
-              <div>
-                <SectionHeader
-                  title="Cancelled"
-                  count={groupedTournaments.cancelled.length}
-                />
-                <TournamentCardGrid
-                  tournaments={groupedTournaments.cancelled}
-                  linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                  showStatus
-                  showOrganization={false}
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          {groupedTournaments.cancelled.length > 0 && (
+            <div>
+              <SectionHeader
+                title="Cancelled"
+                count={groupedTournaments.cancelled.length}
+              />
+              <CompletedTournaments
+                tournaments={groupedTournaments.cancelled}
+                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                showOrganization={false}
+              />
+            </div>
+          )}
+        </div>
+      ) : currentStatus === "active" ? (
+        <ActiveTournaments
+          tournaments={tournaments}
+          linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+          showOrganization={false}
+        />
+      ) : currentStatus === "completed" || currentStatus === "cancelled" ? (
+        <CompletedTournaments
+          tournaments={tournaments}
+          linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+          showOrganization={false}
+        />
       ) : (
-        // Show filtered view for specific status
-        <Card>
-          <CardContent className="pt-6">
-            <TournamentCardGrid
-              tournaments={tournaments}
-              linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-              showStatus
-              showOrganization={false}
-            />
-          </CardContent>
-        </Card>
+        // upcoming, draft
+        <UpcomingTournaments
+          tournaments={tournaments}
+          linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+          showOrganization={false}
+        />
       )}
     </div>
   );

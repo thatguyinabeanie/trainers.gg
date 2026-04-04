@@ -1,6 +1,7 @@
-"use client";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
-import { use } from "react";
+import { PageHeader } from "@/components/dashboard/page-header";
 import { CreateTournamentClient } from "@/app/(app)/to-dashboard/[communitySlug]/tournaments/create/create-tournament-client";
 
 interface PageProps {
@@ -9,8 +10,25 @@ interface PageProps {
   }>;
 }
 
-export default function DashboardCreateTournamentPage({ params }: PageProps) {
-  const { communitySlug } = use(params);
+export default async function DashboardCreateTournamentPage({
+  params,
+}: PageProps) {
+  const { communitySlug } = await params;
 
-  return <CreateTournamentClient communitySlug={communitySlug} />;
+  return (
+    <>
+      <PageHeader>
+        <Link
+          href={`/dashboard/community/${communitySlug}/tournaments`}
+          className="text-muted-foreground hover:text-foreground -ml-1 flex items-center gap-1.5 text-sm transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Tournaments
+        </Link>
+      </PageHeader>
+      <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
+        <CreateTournamentClient communitySlug={communitySlug} />
+      </div>
+    </>
+  );
 }

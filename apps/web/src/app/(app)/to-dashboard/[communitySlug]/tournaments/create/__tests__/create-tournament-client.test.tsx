@@ -90,7 +90,6 @@ describe("CreateTournamentClient", () => {
   it("renders the wizard form with schedule and registration sections", () => {
     render(<CreateTournamentClient communitySlug="test-org" />);
 
-    expect(screen.getByText("Create Tournament")).toBeInTheDocument();
     expect(screen.getByTestId("tournament-schedule")).toBeInTheDocument();
     expect(screen.getByTestId("tournament-registration")).toBeInTheDocument();
   });
@@ -103,6 +102,15 @@ describe("CreateTournamentClient", () => {
     const scheduleCall = mockScheduleProps.mock.calls[0]?.[0];
     expect(scheduleCall).toHaveProperty("formData");
     expect(scheduleCall).toHaveProperty("updateFormData");
+  });
+
+  it("does not show validation errors on initial render", async () => {
+    setupMocks();
+    render(<CreateTournamentClient communitySlug="test-org" />);
+    // Wait for the form to be ready (organization loaded)
+    await screen.findByTestId("tournament-schedule");
+    // No validation errors should appear before user interaction
+    expect(screen.queryByText("Tournament name is required")).toBeNull();
   });
 
   it("re-renders child components when updateFormData is called", async () => {
@@ -140,7 +148,7 @@ describe("CreateTournamentClient", () => {
     );
 
     // No wizard content should be rendered
-    expect(screen.queryByText("Create Tournament")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tournament-schedule")).not.toBeInTheDocument();
     // The spinner SVG is present
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
