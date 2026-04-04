@@ -37,6 +37,8 @@ export const POKEMON_GAMES: GameOption[] = [
  * Formats available for each game (newest first)
  */
 export const GAME_FORMATS: Record<string, FormatOption[]> = {
+  // TODO: Pokémon Champions format IDs use placeholder Showdown mappings in
+  // packages/validators/src/team.ts — update when official @pkmn/sim IDs are confirmed.
   champions: [{ id: "reg-m-a", name: "Regulation M-A" }],
   sv: [
     { id: "reg-i", name: "Regulation I" },

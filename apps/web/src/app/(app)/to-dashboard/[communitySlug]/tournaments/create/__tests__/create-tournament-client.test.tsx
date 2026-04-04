@@ -104,6 +104,15 @@ describe("CreateTournamentClient", () => {
     expect(scheduleCall).toHaveProperty("updateFormData");
   });
 
+  it("does not show validation errors on initial render", async () => {
+    setupMocks();
+    render(<CreateTournamentClient communitySlug="test-org" />);
+    // Wait for the form to be ready (organization loaded)
+    await screen.findByTestId("tournament-schedule");
+    // No validation errors should appear before user interaction
+    expect(screen.queryByText("Tournament name is required")).toBeNull();
+  });
+
   it("re-renders child components when updateFormData is called", async () => {
     const user = userEvent.setup();
     render(<CreateTournamentClient communitySlug="test-org" />);
