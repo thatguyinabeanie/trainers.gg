@@ -214,6 +214,14 @@ describe("UpcomingTournaments", () => {
     const { container } = render(<UpcomingTournaments tournaments={[]} />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it("shows TBD when start_date is null", () => {
+    const nullDateTournament = { ...mockTournament, start_date: null };
+    render(<UpcomingTournaments tournaments={[nullDateTournament]} />);
+    // Mobile card shows TBD when no date
+    const tbdElements = screen.getAllByText("TBD");
+    expect(tbdElements.length).toBeGreaterThan(0);
+  });
 });
 
 describe("CompletedTournaments", () => {
