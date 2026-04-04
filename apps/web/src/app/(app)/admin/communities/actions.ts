@@ -191,7 +191,7 @@ export async function toggleFeaturedAction(
         .eq("is_featured", true)
         .order("featured_order", { ascending: false, nullsFirst: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       updateData.featured_order = (maxOrder?.featured_order ?? 0) + 1;
     } else {
       updateData.featured_order = null;
