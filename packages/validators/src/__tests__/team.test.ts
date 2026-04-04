@@ -265,6 +265,7 @@ describe("getPkmnFormat / FORMAT_MAP", () => {
       "reg-f",
       "reg-e",
       "reg-d",
+      "reg-m-a",
       "ou",
       "uu",
       "ubers",
@@ -275,6 +276,10 @@ describe("getPkmnFormat / FORMAT_MAP", () => {
     for (const key of expectedKeys) {
       expect(FORMAT_MAP[key]).toBeDefined();
     }
+  });
+
+  it("maps reg-m-a to gen9vgc2025regma", () => {
+    expect(getPkmnFormat("reg-m-a")).toBe("gen9vgc2025regma");
   });
 });
 

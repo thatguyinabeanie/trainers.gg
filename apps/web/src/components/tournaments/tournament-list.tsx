@@ -227,7 +227,7 @@ export function UpcomingTournaments({
             <div key={tournament.id} className="flex items-center gap-3 p-3">
               <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground mb-0.5 text-xs">
-                  {dateStr} · {timeStr}
+                  {date ? `${dateStr} · ${timeStr}` : "TBD"}
                 </p>
                 <Link
                   href={href}
