@@ -40,6 +40,7 @@ These files in `components/ui/` are NOT from shadcn — they are project-specifi
 | `field.tsx`            | Form field wrapper with legend, label, description, error   |
 | `item.tsx`             | List item with media, title, description, actions           |
 | `kbd.tsx`              | Keyboard key display                                        |
+| `markdown-content.tsx` | Renders markdown safely (react-markdown + remark-gfm + rehype-sanitize) with design-system styles |
 
 ## Keeping Catalogs in Sync
 

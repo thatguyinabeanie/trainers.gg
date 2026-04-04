@@ -78,6 +78,13 @@ export const createCommunitySchema = z.object({
       message: PROFANITY_ERROR_MESSAGE,
     })
     .optional(),
+  about: z
+    .string()
+    .max(10_000)
+    .refine((val) => !val || !containsProfanity(val), {
+      message: PROFANITY_ERROR_MESSAGE,
+    })
+    .optional(),
 });
 
 /**
@@ -95,6 +102,13 @@ export const updateCommunitySchema = z.object({
   description: z
     .string()
     .max(500)
+    .refine((val) => !val || !containsProfanity(val), {
+      message: PROFANITY_ERROR_MESSAGE,
+    })
+    .optional(),
+  about: z
+    .string()
+    .max(10_000)
     .refine((val) => !val || !containsProfanity(val), {
       message: PROFANITY_ERROR_MESSAGE,
     })

@@ -33,6 +33,10 @@ Table, DataTable (TanStack Table v5 — sorting, filtering, pagination), Respons
 
 Alert (with action slot), EmptyState (illustrated/minimal/inline variants), Empty (composable — header, title, description, media), Spinner, toast notifications via `toast()` from sonner
 
+## Content Rendering
+
+MarkdownContent — renders a markdown string safely using react-markdown + remark-gfm + rehype-sanitize, with design-system–aware Tailwind styles (teal links, muted code blocks, etc.). Props: `content: string`, `className?: string`.
+
 ## Utility
 
 CopyButton (clipboard with feedback), Kbd (keyboard key display), Breadcrumb, Command (command palette via cmdk), Item (list item with media/actions)
