@@ -687,7 +687,9 @@ describe("TournamentRegistrations — action handlers", () => {
     render(<TournamentRegistrations tournament={mockTournament} />);
 
     // Open the dropdown
-    const moreBtn = screen.getByRole("button", { name: "Registration actions" });
+    const moreBtn = screen.getByRole("button", {
+      name: "Registration actions",
+    });
     await user.click(moreBtn);
 
     const checkInItem = await screen.findByText("Force Check-in");
@@ -711,7 +713,9 @@ describe("TournamentRegistrations — action handlers", () => {
     const user = userEvent.setup();
     render(<TournamentRegistrations tournament={mockTournament} />);
 
-    const moreBtn = screen.getByRole("button", { name: "Registration actions" });
+    const moreBtn = screen.getByRole("button", {
+      name: "Registration actions",
+    });
     await user.click(moreBtn);
 
     const checkInItem = await screen.findByText("Force Check-in");
@@ -726,7 +730,9 @@ describe("TournamentRegistrations — action handlers", () => {
     const user = userEvent.setup();
     render(<TournamentRegistrations tournament={mockTournament} />);
 
-    const moreBtn = screen.getByRole("button", { name: "Registration actions" });
+    const moreBtn = screen.getByRole("button", {
+      name: "Registration actions",
+    });
     await user.click(moreBtn);
 
     const dropItem = await screen.findByText("Drop Player");
@@ -782,9 +788,7 @@ describe("TournamentRegistrations — bulk actions", () => {
     expect(
       screen.getByRole("button", { name: /force check-in/i })
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /remove/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /remove/i })).toBeInTheDocument();
   });
 
   it("toggleSelectAll selects all visible registrations", async () => {
@@ -800,9 +804,9 @@ describe("TournamentRegistrations — bulk actions", () => {
   });
 
   it("calls bulkForceCheckIn with selected IDs", async () => {
-    const { bulkForceCheckIn } = jest.requireMock(
-      "@/actions/tournaments"
-    ) as { bulkForceCheckIn: jest.Mock };
+    const { bulkForceCheckIn } = jest.requireMock("@/actions/tournaments") as {
+      bulkForceCheckIn: jest.Mock;
+    };
     bulkForceCheckIn.mockResolvedValue({
       success: true,
       data: { checkedIn: 2, failed: 0 },
@@ -824,9 +828,9 @@ describe("TournamentRegistrations — bulk actions", () => {
   });
 
   it("shows error in toast when bulkForceCheckIn fails", async () => {
-    const { bulkForceCheckIn } = jest.requireMock(
-      "@/actions/tournaments"
-    ) as { bulkForceCheckIn: jest.Mock };
+    const { bulkForceCheckIn } = jest.requireMock("@/actions/tournaments") as {
+      bulkForceCheckIn: jest.Mock;
+    };
     const { toast } = jest.requireMock("sonner") as {
       toast: { success: jest.Mock; error: jest.Mock };
     };

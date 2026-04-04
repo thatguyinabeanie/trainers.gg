@@ -48,9 +48,7 @@ jest.mock("@trainers/supabase", () => ({
 jest.mock("@/actions/tournaments", () => ({
   submitTeamAction: jest.fn().mockResolvedValue({ success: true, data: null }),
   selectTeamAction: jest.fn().mockResolvedValue({ success: true, data: null }),
-  getUserTeamsAction: jest
-    .fn()
-    .mockResolvedValue({ success: true, data: [] }),
+  getUserTeamsAction: jest.fn().mockResolvedValue({ success: true, data: [] }),
   dropFromTournament: jest
     .fn()
     .mockResolvedValue({ success: true, data: null }),
@@ -132,10 +130,20 @@ function setupQueryMocks({
       };
     }
     if (callCount === 2) {
-      return { data: checkInStatus, error: null, isLoading: false, refetch: jest.fn() };
+      return {
+        data: checkInStatus,
+        error: null,
+        isLoading: false,
+        refetch: jest.fn(),
+      };
     }
     // checkInStats
-    return { data: checkInStats, error: null, isLoading: false, refetch: jest.fn() };
+    return {
+      data: checkInStats,
+      error: null,
+      isLoading: false,
+      refetch: jest.fn(),
+    };
   });
 
   mockUseSupabaseMutation.mockReturnValue({
@@ -172,16 +180,25 @@ describe("TournamentSidebarCard", () => {
 
   describe("error state", () => {
     it("shows error message and retry button when registration fails", () => {
-      setupQueryMocks({ registrationStatus: null, registrationError: new Error("fetch failed") });
+      setupQueryMocks({
+        registrationStatus: null,
+        registrationError: new Error("fetch failed"),
+      });
       render(<TournamentSidebarCard {...defaultProps} />);
-      expect(screen.getByText(/unable to load registration status/i)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+      expect(
+        screen.getByText(/unable to load registration status/i)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /try again/i })
+      ).toBeInTheDocument();
     });
 
     it("shows error state when registrationStatus is null without an error", () => {
       setupQueryMocks({ registrationStatus: null });
       render(<TournamentSidebarCard {...defaultProps} />);
-      expect(screen.getByText(/unable to load registration status/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/unable to load registration status/i)
+      ).toBeInTheDocument();
     });
   });
 
@@ -195,10 +212,17 @@ describe("TournamentSidebarCard", () => {
       (status) => {
         setupQueryMocks({
           registrationStatus: buildRegistrationStatus({
-            tournament: { id: 1, status, maxParticipants: 32, lateCheckInMaxRound: null },
+            tournament: {
+              id: 1,
+              status,
+              maxParticipants: 32,
+              lateCheckInMaxRound: null,
+            },
           }),
         });
-        const { container } = render(<TournamentSidebarCard {...defaultProps} />);
+        const { container } = render(
+          <TournamentSidebarCard {...defaultProps} />
+        );
         expect(container.firstChild).toBeNull();
       }
     );
@@ -217,7 +241,9 @@ describe("TournamentSidebarCard", () => {
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(screen.getByText("Dropped")).toBeInTheDocument();
-      expect(screen.getByText(/you have dropped from this tournament/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/you have dropped from this tournament/i)
+      ).toBeInTheDocument();
     });
   });
 
@@ -231,7 +257,11 @@ describe("TournamentSidebarCard", () => {
         registrationStatus: buildRegistrationStatus({
           userStatus: { status: "checked_in", hasTeam: false },
         }),
-        checkInStatus: { isCheckedIn: true, checkInOpen: true, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: true,
+          checkInOpen: true,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(screen.getByText("Registered")).toBeInTheDocument();
@@ -254,7 +284,12 @@ describe("TournamentSidebarCard", () => {
       setupQueryMocks({
         registrationStatus: buildRegistrationStatus({
           registrationStats: { registered: 8 },
-          tournament: { id: 1, status: "upcoming", maxParticipants: 32, lateCheckInMaxRound: null },
+          tournament: {
+            id: 1,
+            status: "upcoming",
+            maxParticipants: 32,
+            lateCheckInMaxRound: null,
+          },
         }),
       });
       render(<TournamentSidebarCard {...defaultProps} />);
@@ -264,7 +299,12 @@ describe("TournamentSidebarCard", () => {
     it("shows 'registered' text when no maxParticipants", () => {
       setupQueryMocks({
         registrationStatus: buildRegistrationStatus({
-          tournament: { id: 1, status: "upcoming", maxParticipants: null, lateCheckInMaxRound: null },
+          tournament: {
+            id: 1,
+            status: "upcoming",
+            maxParticipants: null,
+            lateCheckInMaxRound: null,
+          },
           registrationStats: { registered: 4 },
         }),
       });
@@ -318,11 +358,17 @@ describe("TournamentSidebarCard", () => {
         registrationStatus: buildRegistrationStatus({
           userStatus: { status: "registered", hasTeam: false },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: false, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: false,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(screen.getByText("Registered")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /withdraw/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /withdraw/i })
+      ).toBeInTheDocument();
     });
 
     it("shows check-in button when check-in is open", () => {
@@ -330,10 +376,16 @@ describe("TournamentSidebarCard", () => {
         registrationStatus: buildRegistrationStatus({
           userStatus: { status: "registered", hasTeam: false },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: true, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: true,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
-      expect(screen.getByRole("button", { name: /check in/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /check in/i })
+      ).toBeInTheDocument();
     });
   });
 
@@ -347,11 +399,19 @@ describe("TournamentSidebarCard", () => {
         registrationStatus: buildRegistrationStatus({
           userStatus: { status: "registered", hasTeam: false },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: false, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: false,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
-      expect(screen.getByRole("button", { name: /paste team/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /import url/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /paste team/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /import url/i })
+      ).toBeInTheDocument();
     });
   });
 
@@ -382,7 +442,11 @@ describe("TournamentSidebarCard", () => {
         registrationStatus: buildRegistrationStatus({
           userStatus: { status: "registered", hasTeam: true },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: false, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: false,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...teamProps} />);
       expect(screen.getByText("Team Submitted")).toBeInTheDocument();
@@ -409,7 +473,11 @@ describe("TournamentSidebarCard", () => {
         registrationStatus: buildRegistrationStatus({
           userStatus: { status: "checked_in", hasTeam: true },
         }),
-        checkInStatus: { isCheckedIn: true, checkInOpen: false, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: true,
+          checkInOpen: false,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...lockedTeamProps} />);
       expect(screen.getByText("Team Locked")).toBeInTheDocument();
@@ -465,11 +533,17 @@ describe("TournamentSidebarCard", () => {
             lateCheckInMaxRound: 3,
           },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: true, lateMaxRound: 3 },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: true,
+          lateMaxRound: 3,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(screen.getByText(/tournament in progress/i)).toBeInTheDocument();
-      expect(screen.getByText(/registration.*check-in open until round 3/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/registration.*check-in open until round 3/i)
+      ).toBeInTheDocument();
     });
   });
 
@@ -481,9 +555,17 @@ describe("TournamentSidebarCard", () => {
     it("shows waitlisted banner with position", () => {
       setupQueryMocks({
         registrationStatus: buildRegistrationStatus({
-          userStatus: { status: "waitlist", hasTeam: false, waitlistPosition: 2 },
+          userStatus: {
+            status: "waitlist",
+            hasTeam: false,
+            waitlistPosition: 2,
+          },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: false, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: false,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(screen.getByText(/waitlisted.*#2/i)).toBeInTheDocument();
@@ -506,7 +588,11 @@ describe("TournamentSidebarCard", () => {
             lateCheckInMaxRound: null,
           },
         }),
-        checkInStatus: { isCheckedIn: true, checkInOpen: false, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: true,
+          checkInOpen: false,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(
@@ -525,7 +611,11 @@ describe("TournamentSidebarCard", () => {
             lateCheckInMaxRound: null,
           },
         }),
-        checkInStatus: { isCheckedIn: true, checkInOpen: true, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: true,
+          checkInOpen: true,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(
@@ -538,7 +628,11 @@ describe("TournamentSidebarCard", () => {
         registrationStatus: buildRegistrationStatus({
           userStatus: { status: "checked_in", hasTeam: true },
         }),
-        checkInStatus: { isCheckedIn: true, checkInOpen: false, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: true,
+          checkInOpen: false,
+          lateMaxRound: null,
+        },
         checkInStats: { checkedIn: 12, total: 32, checkedInPercentage: 37.5 },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
@@ -562,7 +656,11 @@ describe("TournamentSidebarCard", () => {
             lateCheckInMaxRound: 2,
           },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: true, lateMaxRound: 2 },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: true,
+          lateMaxRound: 2,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(screen.getByText(/late check-in open/i)).toBeInTheDocument();
@@ -580,7 +678,11 @@ describe("TournamentSidebarCard", () => {
             lateCheckInMaxRound: null,
           },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: true, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: true,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(screen.getByText(/check in now/i)).toBeInTheDocument();
@@ -591,7 +693,11 @@ describe("TournamentSidebarCard", () => {
         registrationStatus: buildRegistrationStatus({
           userStatus: { status: "registered", hasTeam: false },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: true, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: true,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(
@@ -604,7 +710,11 @@ describe("TournamentSidebarCard", () => {
         registrationStatus: buildRegistrationStatus({
           userStatus: { status: "registered", hasTeam: true },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: true, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: true,
+          lateMaxRound: null,
+        },
         checkInStats: { checkedIn: 5, total: 20, checkedInPercentage: 25 },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
@@ -622,7 +732,11 @@ describe("TournamentSidebarCard", () => {
         registrationStatus: buildRegistrationStatus({
           userStatus: { status: "registered", hasTeam: false },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: false, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: false,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(
@@ -635,7 +749,11 @@ describe("TournamentSidebarCard", () => {
         registrationStatus: buildRegistrationStatus({
           userStatus: { status: "registered", hasTeam: false },
         }),
-        checkInStatus: { isCheckedIn: false, checkInOpen: true, lateMaxRound: null },
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: true,
+          lateMaxRound: null,
+        },
       });
       render(<TournamentSidebarCard {...defaultProps} />);
       expect(

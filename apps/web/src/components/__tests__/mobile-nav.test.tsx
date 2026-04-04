@@ -33,9 +33,15 @@ describe("MobileNav", () => {
 
     await user.click(screen.getByRole("button", { name: "Toggle menu" }));
 
-    expect(screen.getByRole("button", { name: /Tournaments/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Communities/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Dashboard/ })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Tournaments/ })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Communities/ })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Dashboard/ })
+    ).not.toBeInTheDocument();
   });
 
   it("shows Sign In and Sign Up buttons when unauthenticated", async () => {
@@ -55,7 +61,9 @@ describe("MobileNav", () => {
 
     await user.click(screen.getByRole("button", { name: "Toggle menu" }));
 
-    expect(screen.getByRole("button", { name: /Dashboard/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Dashboard/ })
+    ).toBeInTheDocument();
   });
 
   it("hides Sign In and Sign Up buttons when authenticated", async () => {
@@ -65,8 +73,12 @@ describe("MobileNav", () => {
 
     await user.click(screen.getByRole("button", { name: "Toggle menu" }));
 
-    expect(screen.queryByRole("button", { name: "Sign In" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Sign Up" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Sign In" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Sign Up" })
+    ).not.toBeInTheDocument();
   });
 
   it("navigates to the correct path when a nav item is clicked", async () => {

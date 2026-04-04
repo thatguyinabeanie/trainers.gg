@@ -188,14 +188,20 @@ describe("AnnouncementDialog", () => {
   describe("edit mode (announcement prop provided)", () => {
     it("shows 'Edit Announcement' title", () => {
       render(
-        <AnnouncementDialog {...defaultProps} announcement={buildAnnouncement()} />
+        <AnnouncementDialog
+          {...defaultProps}
+          announcement={buildAnnouncement()}
+        />
       );
       expect(screen.getByText("Edit Announcement")).toBeInTheDocument();
     });
 
     it("shows edit-mode description", () => {
       render(
-        <AnnouncementDialog {...defaultProps} announcement={buildAnnouncement()} />
+        <AnnouncementDialog
+          {...defaultProps}
+          announcement={buildAnnouncement()}
+        />
       );
       expect(
         screen.getByText("Update the announcement details below.")
@@ -204,7 +210,10 @@ describe("AnnouncementDialog", () => {
 
     it("shows 'Save Changes' submit button", () => {
       render(
-        <AnnouncementDialog {...defaultProps} announcement={buildAnnouncement()} />
+        <AnnouncementDialog
+          {...defaultProps}
+          announcement={buildAnnouncement()}
+        />
       );
       expect(
         screen.getByRole("button", { name: "Save Changes" })
@@ -213,7 +222,10 @@ describe("AnnouncementDialog", () => {
 
     it("pre-fills title and message from announcement", () => {
       render(
-        <AnnouncementDialog {...defaultProps} announcement={buildAnnouncement()} />
+        <AnnouncementDialog
+          {...defaultProps}
+          announcement={buildAnnouncement()}
+        />
       );
       expect(screen.getByLabelText(/title/i)).toHaveValue("Maintenance Window");
       expect(screen.getByLabelText(/message/i)).toHaveValue(
@@ -296,10 +308,7 @@ describe("AnnouncementDialog", () => {
       render(<AnnouncementDialog {...defaultProps} />);
 
       await user.type(screen.getByLabelText(/title/i), "  Hello  ");
-      await user.type(
-        screen.getByLabelText(/message/i),
-        "  Some message  "
-      );
+      await user.type(screen.getByLabelText(/message/i), "  Some message  ");
       await user.click(
         screen.getByRole("button", { name: "Create Announcement" })
       );
@@ -415,7 +424,10 @@ describe("AnnouncementDialog", () => {
 
       const user = userEvent.setup();
       render(
-        <AnnouncementDialog {...defaultProps} announcement={buildAnnouncement()} />
+        <AnnouncementDialog
+          {...defaultProps}
+          announcement={buildAnnouncement()}
+        />
       );
 
       await user.click(screen.getByRole("button", { name: "Save Changes" }));
@@ -427,9 +439,7 @@ describe("AnnouncementDialog", () => {
 
   describe("dialog not rendered when closed", () => {
     it("renders nothing when open is false", () => {
-      render(
-        <AnnouncementDialog {...defaultProps} open={false} />
-      );
+      render(<AnnouncementDialog {...defaultProps} open={false} />);
       expect(screen.queryByTestId("dialog")).not.toBeInTheDocument();
     });
   });

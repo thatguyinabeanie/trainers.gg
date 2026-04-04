@@ -82,27 +82,29 @@ const emptyStats = {
   championPoints: 0,
 };
 
-function makeDashboardData(overrides: Partial<{
-  myTournaments: Array<{
-    id: number;
-    name: string;
-    startDate: string | null;
-    status: string;
-    hasTeam: boolean;
-    registrationStatus: string;
-    registrationId: number | null;
-    lateCheckInMaxRound: number | null;
-  }>;
-  recentActivity: Array<{
-    id: string;
-    tournamentName: string;
-    opponentName: string;
-    result: string;
-    date: number;
-  }>;
-  achievements: unknown[];
-  stats: typeof emptyStats;
-}> = {}) {
+function makeDashboardData(
+  overrides: Partial<{
+    myTournaments: Array<{
+      id: number;
+      name: string;
+      startDate: string | null;
+      status: string;
+      hasTeam: boolean;
+      registrationStatus: string;
+      registrationId: number | null;
+      lateCheckInMaxRound: number | null;
+    }>;
+    recentActivity: Array<{
+      id: string;
+      tournamentName: string;
+      opponentName: string;
+      result: string;
+      date: number;
+    }>;
+    achievements: unknown[];
+    stats: typeof emptyStats;
+  }> = {}
+) {
   return {
     myTournaments: [],
     recentActivity: [],
@@ -112,7 +114,10 @@ function makeDashboardData(overrides: Partial<{
   };
 }
 
-function setupQueries(dashboardData = makeDashboardData(), activeMatch: unknown = null) {
+function setupQueries(
+  dashboardData = makeDashboardData(),
+  activeMatch: unknown = null
+) {
   mockUseSupabaseQuery
     .mockReturnValueOnce({
       data: dashboardData,

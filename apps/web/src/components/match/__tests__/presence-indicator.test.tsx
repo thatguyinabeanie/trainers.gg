@@ -33,7 +33,9 @@ function buildMockChannel() {
 
 const mockRemoveChannel = jest.fn();
 
-function buildMockSupabase(overrideChannel?: ReturnType<typeof buildMockChannel>) {
+function buildMockSupabase(
+  overrideChannel?: ReturnType<typeof buildMockChannel>
+) {
   const ch = overrideChannel ?? buildMockChannel();
   return {
     channel: jest.fn().mockReturnValue(ch),
@@ -79,12 +81,7 @@ describe("ViewerAvatars", () => {
   });
 
   it("shows 'Only you' when current user is the only viewer", () => {
-    render(
-      <ViewerAvatars
-        viewers={[viewers[0]!]}
-        currentUsername="ash"
-      />
-    );
+    render(<ViewerAvatars viewers={[viewers[0]!]} currentUsername="ash" />);
     expect(screen.getByText("Only you")).toBeInTheDocument();
   });
 
@@ -99,12 +96,7 @@ describe("ViewerAvatars", () => {
   });
 
   it("shows '<count> others + you' when multiple other viewers are present", () => {
-    render(
-      <ViewerAvatars
-        viewers={viewers}
-        currentUsername="ash"
-      />
-    );
+    render(<ViewerAvatars viewers={viewers} currentUsername="ash" />);
     expect(screen.getByText(/2 others \+ you/)).toBeInTheDocument();
   });
 
@@ -276,7 +268,9 @@ describe("useMatchPresence", () => {
     const broadcastCall = (ch.on as jest.Mock).mock.calls.find(
       (call) => call[0] === "broadcast"
     );
-    const broadcastHandler = broadcastCall![2] as (arg: { payload: { requested: boolean } }) => void;
+    const broadcastHandler = broadcastCall![2] as (arg: {
+      payload: { requested: boolean };
+    }) => void;
 
     act(() => {
       broadcastHandler({ payload: { requested: true } });
@@ -306,7 +300,9 @@ describe("useMatchPresence", () => {
     const broadcastCall = (ch.on as jest.Mock).mock.calls.find(
       (call) => call[0] === "broadcast"
     );
-    const broadcastHandler = broadcastCall![2] as (arg: { payload: unknown }) => void;
+    const broadcastHandler = broadcastCall![2] as (arg: {
+      payload: unknown;
+    }) => void;
 
     act(() => {
       broadcastHandler({ payload: { requested: "yes" } });

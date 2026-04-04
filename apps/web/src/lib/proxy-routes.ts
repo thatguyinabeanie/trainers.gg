@@ -8,10 +8,7 @@
 export const ADMIN_ROUTES = ["/admin"];
 
 // Routes that require authentication
-export const PROTECTED_ROUTES = [
-  "/dashboard",
-  "/communities/create",
-];
+export const PROTECTED_ROUTES = ["/dashboard", "/communities/create"];
 
 // Dynamic route patterns that require authentication (checked via regex)
 export const PROTECTED_PATTERNS = [

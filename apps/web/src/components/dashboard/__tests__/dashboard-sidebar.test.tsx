@@ -125,8 +125,16 @@ jest.mock("@/components/ui/dropdown-menu", () => ({
 
 // Mock avatar
 jest.mock("@/components/ui/avatar", () => ({
-  Avatar: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div data-testid="avatar" className={className}>{children}</div>
+  Avatar: ({
+    children,
+    className,
+  }: {
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <div data-testid="avatar" className={className}>
+      {children}
+    </div>
   ),
   AvatarFallback: ({ children }: { children: React.ReactNode }) => (
     <span data-testid="avatar-fallback">{children}</span>
@@ -177,9 +185,13 @@ jest.mock("@trainers/utils", () => ({
 
 jest.mock("next/link", () => ({
   __esModule: true,
-  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
-  ),
+  default: ({
+    href,
+    children,
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) => <a href={href}>{children}</a>,
 }));
 
 import { usePathname } from "next/navigation";
@@ -633,7 +645,9 @@ describe("DashboardSidebar", () => {
         />
       );
       // LiveDot renders a Circle icon with emerald fill
-      expect(container.querySelector("[data-testid='icon-circle']")).toBeInTheDocument();
+      expect(
+        container.querySelector("[data-testid='icon-circle']")
+      ).toBeInTheDocument();
     });
   });
 });

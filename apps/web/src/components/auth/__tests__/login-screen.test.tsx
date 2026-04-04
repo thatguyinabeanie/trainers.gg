@@ -157,7 +157,9 @@ describe("LoginScreen", () => {
     });
 
     it("calls resolveLoginIdentifier with typed username on Continue", async () => {
-      mockResolveLoginIdentifier.mockResolvedValue({ email: "ash@example.com" });
+      mockResolveLoginIdentifier.mockResolvedValue({
+        email: "ash@example.com",
+      });
       const user = userEvent.setup();
       render(<LoginScreen />);
 
@@ -170,7 +172,9 @@ describe("LoginScreen", () => {
     });
 
     it("shows password field when identifier resolves successfully", async () => {
-      mockResolveLoginIdentifier.mockResolvedValue({ email: "ash@example.com" });
+      mockResolveLoginIdentifier.mockResolvedValue({
+        email: "ash@example.com",
+      });
       const user = userEvent.setup();
       render(<LoginScreen />);
 
@@ -199,7 +203,10 @@ describe("LoginScreen", () => {
     });
 
     it("shows fallback error when no email and no error returned", async () => {
-      mockResolveLoginIdentifier.mockResolvedValue({ email: null, error: null });
+      mockResolveLoginIdentifier.mockResolvedValue({
+        email: null,
+        error: null,
+      });
       const user = userEvent.setup();
       render(<LoginScreen />);
 
@@ -248,7 +255,9 @@ describe("LoginScreen", () => {
 
   describe("Sign In step (password shown)", () => {
     async function advanceToPasswordStep() {
-      mockResolveLoginIdentifier.mockResolvedValue({ email: "ash@example.com" });
+      mockResolveLoginIdentifier.mockResolvedValue({
+        email: "ash@example.com",
+      });
       const user = userEvent.setup();
       render(<LoginScreen />);
 

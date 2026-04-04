@@ -217,7 +217,7 @@ export function InvitationList({
                 {/* Pending Invitations */}
                 {pendingInvitations.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    <h4 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                       Awaiting Response
                     </h4>
                     <div className="space-y-2">
@@ -237,7 +237,7 @@ export function InvitationList({
                 {/* Responded Invitations */}
                 {respondedInvitations.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    <h4 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                       Responded
                     </h4>
                     <div className="space-y-2">

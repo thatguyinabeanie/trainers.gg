@@ -541,7 +541,10 @@ describe("TournamentSettings", () => {
     it("shows late check-in max round input when allowLateRegistration is true", () => {
       render(
         <TournamentSettings
-          tournament={buildTournament({ allow_late_registration: true, late_check_in_max_round: 3 })}
+          tournament={buildTournament({
+            allow_late_registration: true,
+            late_check_in_max_round: 3,
+          })}
         />
       );
       expect(screen.getByLabelText("Close After Round")).toBeInTheDocument();

@@ -39,9 +39,7 @@ jest.mock("@/components/tournament/bracket-visualization", () => ({
     phases: unknown[];
     onMatchClick: (id: string) => void;
     canClickMatch: (match: unknown) => boolean;
-  }) => (
-    <div data-testid="bracket-viz" data-phase-count={phases.length} />
-  ),
+  }) => <div data-testid="bracket-viz" data-phase-count={phases.length} />,
 }));
 
 // --- lucide-react ---
@@ -86,7 +84,11 @@ function setupAllQueries({
   allPhaseRounds = null as Round[][] | null,
   roundsLoading = false,
   roundsWithStats = null as Array<{ id: number; status: string }> | null,
-  unpairedPlayers = null as Array<{ altId: number; displayName: string | null; username: string }> | null,
+  unpairedPlayers = null as Array<{
+    altId: number;
+    displayName: string | null;
+    username: string;
+  }> | null,
   userAlts = null as Array<{ id: number }> | null,
 } = {}) {
   mockUseSupabaseQuery
@@ -276,10 +278,14 @@ describe("PublicPairings", () => {
       phases: [phase],
       allPhaseRounds: [[round]],
       roundsWithStats: [{ id: round.id, status: "active" }],
-      unpairedPlayers: [{ altId: 1, displayName: "Ash", username: "ash_ketchum" }],
+      unpairedPlayers: [
+        { altId: 1, displayName: "Ash", username: "ash_ketchum" },
+      ],
     });
     render(<PublicPairings {...defaultProps} />);
-    expect(screen.getByText(/1 late arrival — not paired/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/1 late arrival — not paired/i)
+    ).toBeInTheDocument();
   });
 
   it("does not render unpaired banner when unpairedPlayers is empty", () => {

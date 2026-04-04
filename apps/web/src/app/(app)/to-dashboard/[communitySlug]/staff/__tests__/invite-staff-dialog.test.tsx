@@ -81,9 +81,7 @@ jest.mock("@/components/ui/avatar", () => ({
 
 // --- @/components/ui/form ---
 jest.mock("@/components/ui/form", () => ({
-  Form: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  Form: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   FormField: ({
     render: renderProp,
     control: _control,
@@ -140,13 +138,15 @@ const baseProps = {
   onSuccess: jest.fn(),
 };
 
-function makeSearchResult(overrides: Partial<{
-  id: string;
-  username: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  image: string | null;
-}> = {}) {
+function makeSearchResult(
+  overrides: Partial<{
+    id: string;
+    username: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    image: string | null;
+  }> = {}
+) {
   return {
     id: "user-1",
     username: "ash_ketchum",
@@ -186,7 +186,9 @@ describe("InviteStaffDialog", () => {
 
   it("renders search input when no user selected", () => {
     render(<InviteStaffDialog {...baseProps} />);
-    expect(screen.getByPlaceholderText("Search by username...")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Search by username...")
+    ).toBeInTheDocument();
   });
 
   it("renders Add Staff submit button (disabled initially)", () => {
@@ -204,18 +206,27 @@ describe("InviteStaffDialog", () => {
       const user = userEvent.setup();
       render(<InviteStaffDialog {...baseProps} />);
 
-      await user.type(screen.getByPlaceholderText("Search by username..."), "a");
+      await user.type(
+        screen.getByPlaceholderText("Search by username..."),
+        "a"
+      );
       // Search should not be called for a single character
       expect(mockSearchUsersForStaffInvite).not.toHaveBeenCalled();
     });
 
     it("shows 'No users found' message when search returns empty results", async () => {
       jest.useFakeTimers({ advanceTimers: true });
-      mockSearchUsersForStaffInvite.mockResolvedValue({ success: true, data: [] });
+      mockSearchUsersForStaffInvite.mockResolvedValue({
+        success: true,
+        data: [],
+      });
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<InviteStaffDialog {...baseProps} />);
 
-      await user.type(screen.getByPlaceholderText("Search by username..."), "zzz");
+      await user.type(
+        screen.getByPlaceholderText("Search by username..."),
+        "zzz"
+      );
       jest.advanceTimersByTime(400);
 
       await waitFor(() => {
@@ -235,7 +246,10 @@ describe("InviteStaffDialog", () => {
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<InviteStaffDialog {...baseProps} />);
 
-      await user.type(screen.getByPlaceholderText("Search by username..."), "ash");
+      await user.type(
+        screen.getByPlaceholderText("Search by username..."),
+        "ash"
+      );
       jest.advanceTimersByTime(400);
 
       await waitFor(() => {
@@ -254,7 +268,10 @@ describe("InviteStaffDialog", () => {
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<InviteStaffDialog {...baseProps} />);
 
-      await user.type(screen.getByPlaceholderText("Search by username..."), "ash");
+      await user.type(
+        screen.getByPlaceholderText("Search by username..."),
+        "ash"
+      );
       jest.advanceTimersByTime(400);
 
       await waitFor(() => {
@@ -278,7 +295,10 @@ describe("InviteStaffDialog", () => {
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<InviteStaffDialog {...baseProps} />);
 
-      await user.type(screen.getByPlaceholderText("Search by username..."), "ash");
+      await user.type(
+        screen.getByPlaceholderText("Search by username..."),
+        "ash"
+      );
       jest.advanceTimersByTime(400);
       await waitFor(() => screen.getByText("Ash Ketchum"));
 
@@ -300,13 +320,17 @@ describe("InviteStaffDialog", () => {
 
     it("shows Change button to clear selection", async () => {
       await renderWithResult();
-      expect(screen.getByRole("button", { name: /change/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /change/i })
+      ).toBeInTheDocument();
     });
 
     it("clears selection when Change button is clicked", async () => {
       const user = await renderWithResult();
       await user.click(screen.getByRole("button", { name: /change/i }));
-      expect(screen.getByPlaceholderText("Search by username...")).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText("Search by username...")
+      ).toBeInTheDocument();
     });
   });
 
@@ -324,7 +348,10 @@ describe("InviteStaffDialog", () => {
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<InviteStaffDialog {...baseProps} />);
 
-      await user.type(screen.getByPlaceholderText("Search by username..."), "ash");
+      await user.type(
+        screen.getByPlaceholderText("Search by username..."),
+        "ash"
+      );
       jest.advanceTimersByTime(400);
       await waitFor(() => screen.getByText("Ash Ketchum"));
       await user.click(screen.getByText("Ash Ketchum"));
@@ -386,7 +413,9 @@ describe("InviteStaffDialog", () => {
       await user.click(screen.getByRole("button", { name: /add staff/i }));
 
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("An unexpected error occurred");
+        expect(toast.error).toHaveBeenCalledWith(
+          "An unexpected error occurred"
+        );
       });
     });
   });
@@ -405,7 +434,10 @@ describe("InviteStaffDialog", () => {
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<InviteStaffDialog {...baseProps} />);
 
-      await user.type(screen.getByPlaceholderText("Search by username..."), "as");
+      await user.type(
+        screen.getByPlaceholderText("Search by username..."),
+        "as"
+      );
       jest.advanceTimersByTime(400);
       await waitFor(() => screen.getByText("ash_ketchum"));
       jest.useRealTimers();
@@ -420,7 +452,10 @@ describe("InviteStaffDialog", () => {
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<InviteStaffDialog {...baseProps} />);
 
-      await user.type(screen.getByPlaceholderText("Search by username..."), "as");
+      await user.type(
+        screen.getByPlaceholderText("Search by username..."),
+        "as"
+      );
       jest.advanceTimersByTime(400);
       await waitFor(() => screen.getByText("Ash"));
       jest.useRealTimers();

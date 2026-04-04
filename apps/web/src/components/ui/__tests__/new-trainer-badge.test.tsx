@@ -14,7 +14,9 @@ describe("NewTrainerBadge", () => {
   });
 
   it("applies a custom className alongside the default styles", () => {
-    const { container } = render(<NewTrainerBadge className="my-custom-class" />);
+    const { container } = render(
+      <NewTrainerBadge className="my-custom-class" />
+    );
     expect(container.firstChild).toHaveClass("my-custom-class");
   });
 

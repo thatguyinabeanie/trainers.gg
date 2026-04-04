@@ -3,10 +3,7 @@ import { redirect, notFound } from "next/navigation";
 
 import { getCommunityBySlug, hasCommunityAccess } from "@trainers/supabase";
 
-import {
-  createClient,
-  createServiceRoleClient,
-} from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { isSudoModeActive } from "@/lib/sudo/server";
 import { SudoCommunityBanner } from "@/components/dashboard/sudo-community-banner";
 

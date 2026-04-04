@@ -168,23 +168,20 @@ describe("AdminGuard", () => {
     [PERMISSIONS.PERMISSION_VIEW_ALL],
     [PERMISSIONS.ADMIN_MANAGE_TEMPLATES],
     [PERMISSIONS.ADMIN_VIEW_AUDIT_LOGS],
-  ])(
-    "grants admin access when %s permission is granted",
-    (permKey) => {
-      mockUsePermissionsReturn = {
-        permissions: {
-          ...adminPermissions({ [PERMISSIONS.COMMUNITY_MANAGE_REQUESTS]: false }),
-          [permKey]: true,
-        },
-        isLoading: false,
-        user: adminUser(),
-      };
-      render(
-        <AdminGuard key={permKey}>
-          <div>Protected Content</div>
-        </AdminGuard>
-      );
-      expect(screen.getByText("Protected Content")).toBeInTheDocument();
-    }
-  );
+  ])("grants admin access when %s permission is granted", (permKey) => {
+    mockUsePermissionsReturn = {
+      permissions: {
+        ...adminPermissions({ [PERMISSIONS.COMMUNITY_MANAGE_REQUESTS]: false }),
+        [permKey]: true,
+      },
+      isLoading: false,
+      user: adminUser(),
+    };
+    render(
+      <AdminGuard key={permKey}>
+        <div>Protected Content</div>
+      </AdminGuard>
+    );
+    expect(screen.getByText("Protected Content")).toBeInTheDocument();
+  });
 });

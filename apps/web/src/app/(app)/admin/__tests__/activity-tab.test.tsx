@@ -286,7 +286,11 @@ describe("ActivityTab", () => {
 
   describe("error banner", () => {
     it("shows error banner when stats query errors", () => {
-      setupQuery(null, { data: [], count: 0 }, { statsError: new Error("fail") });
+      setupQuery(
+        null,
+        { data: [], count: 0 },
+        { statsError: new Error("fail") }
+      );
       render(<ActivityTab />);
       expect(
         screen.getByText(/failed to load audit log data/i)
@@ -294,11 +298,9 @@ describe("ActivityTab", () => {
     });
 
     it("shows error banner when log query errors", () => {
-      setupQuery(
-        { total24h: 0, total7d: 0, total30d: 0 },
-        null,
-        { logError: new Error("fail") }
-      );
+      setupQuery({ total24h: 0, total7d: 0, total30d: 0 }, null, {
+        logError: new Error("fail"),
+      });
       render(<ActivityTab />);
       expect(
         screen.getByText(/failed to load audit log data/i)
@@ -315,11 +317,9 @@ describe("ActivityTab", () => {
 
   describe("table loading state", () => {
     it("shows skeleton rows while log is loading", () => {
-      setupQuery(
-        { total24h: 0, total7d: 0, total30d: 0 },
-        null,
-        { logLoading: true }
-      );
+      setupQuery({ total24h: 0, total7d: 0, total30d: 0 }, null, {
+        logLoading: true,
+      });
       render(<ActivityTab />);
       // 8 skeleton rows are shown
       expect(screen.getAllByTestId("skeleton").length).toBeGreaterThan(0);
@@ -404,9 +404,7 @@ describe("ActivityTab", () => {
       expect(
         screen.getByRole("button", { name: /previous/i })
       ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /next/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /next/i })).toBeInTheDocument();
     });
 
     it("disables Previous button on first page", () => {
@@ -415,9 +413,7 @@ describe("ActivityTab", () => {
         { data: [], count: 200 }
       );
       render(<ActivityTab />);
-      expect(
-        screen.getByRole("button", { name: /previous/i })
-      ).toBeDisabled();
+      expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
     });
 
     it("shows page info", () => {

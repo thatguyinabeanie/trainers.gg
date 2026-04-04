@@ -3,9 +3,13 @@ import { render, screen } from "@testing-library/react";
 
 jest.mock("next/link", () => ({
   __esModule: true,
-  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
-  ),
+  default: ({
+    href,
+    children,
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) => <a href={href}>{children}</a>,
 }));
 
 jest.mock("lucide-react", () => ({
@@ -53,7 +57,9 @@ describe("RecentAchievements", () => {
 
     it("shows earn rewards hint in empty state", () => {
       render(<RecentAchievements achievements={[]} />);
-      expect(screen.getByText("Win battles to earn rewards")).toBeInTheDocument();
+      expect(
+        screen.getByText("Win battles to earn rewards")
+      ).toBeInTheDocument();
     });
 
     it("does not render 'View All Achievements' button in empty state", () => {
@@ -89,9 +95,7 @@ describe("RecentAchievements", () => {
 
     it("renders 'View All Achievements' link when achievements exist", () => {
       render(<RecentAchievements achievements={[makeAchievement()]} />);
-      expect(
-        screen.getByText("View All Achievements")
-      ).toBeInTheDocument();
+      expect(screen.getByText("View All Achievements")).toBeInTheDocument();
     });
 
     it("'View All Achievements' links to /achievements", () => {

@@ -172,9 +172,7 @@ export default async function proxy(request: NextRequest) {
     !isOnboardingExempt(pathname) &&
     needsOnboarding(user.user_metadata?.username)
   ) {
-    return NextResponse.redirect(
-      new URL("/dashboard/onboarding", request.url)
-    );
+    return NextResponse.redirect(new URL("/dashboard/onboarding", request.url));
   }
 
   // Reverse gate: if user is on /dashboard/onboarding but already has a
@@ -184,9 +182,7 @@ export default async function proxy(request: NextRequest) {
     pathname.startsWith("/dashboard/onboarding") &&
     !needsOnboarding(user.user_metadata?.username)
   ) {
-    return NextResponse.redirect(
-      new URL("/dashboard/overview", request.url)
-    );
+    return NextResponse.redirect(new URL("/dashboard/overview", request.url));
   }
 
   return response;

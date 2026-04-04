@@ -135,7 +135,9 @@ export function UsernameRequiredModal() {
       <DialogContent showCloseButton={false} className="sm:max-w-sm">
         <DialogHeader className="text-center">
           <div className="mb-2 text-2xl">👋</div>
-          <DialogTitle className="text-center">Choose Your Username</DialogTitle>
+          <DialogTitle className="text-center">
+            Choose Your Username
+          </DialogTitle>
           <DialogDescription className="text-center">
             Pick a username to complete your profile
           </DialogDescription>
@@ -160,7 +162,7 @@ export function UsernameRequiredModal() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="cooltrainer"
-                className="pl-7 pr-20"
+                className="pr-20 pl-7"
                 autoFocus
               />
               <div className="pointer-events-none absolute inset-y-0 right-10 flex items-center text-xs text-zinc-500">

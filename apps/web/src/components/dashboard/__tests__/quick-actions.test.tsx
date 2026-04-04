@@ -3,9 +3,13 @@ import { render, screen } from "@testing-library/react";
 
 jest.mock("next/link", () => ({
   __esModule: true,
-  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
-  ),
+  default: ({
+    href,
+    children,
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) => <a href={href}>{children}</a>,
 }));
 
 jest.mock("lucide-react", () => ({

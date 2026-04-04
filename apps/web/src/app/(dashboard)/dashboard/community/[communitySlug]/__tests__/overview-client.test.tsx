@@ -116,7 +116,17 @@ describe("OverviewClient — StatCards", () => {
   });
 
   it("renders the stat values from the stats prop", () => {
-    render(<OverviewClient {...defaultProps} stats={makeStats({ totalTournaments: 7, uniquePlayers: 55, totalEntries: 100, staffCount: 4 })} />);
+    render(
+      <OverviewClient
+        {...defaultProps}
+        stats={makeStats({
+          totalTournaments: 7,
+          uniquePlayers: 55,
+          totalEntries: 100,
+          staffCount: 4,
+        })}
+      />
+    );
     expect(screen.getByText("7")).toBeInTheDocument();
     expect(screen.getByText("55")).toBeInTheDocument();
     expect(screen.getByText("100")).toBeInTheDocument();
@@ -153,7 +163,11 @@ describe("OverviewClient — StatCards", () => {
       render(
         <OverviewClient
           {...defaultProps}
-          stats={makeStats({ totalTournaments: 2, totalEntries: 80, uniquePlayers: 50 })}
+          stats={makeStats({
+            totalTournaments: 2,
+            totalEntries: 80,
+            uniquePlayers: 50,
+          })}
         />
       );
       expect(screen.getByText("of 80 total entries")).toBeInTheDocument();
@@ -183,7 +197,11 @@ describe("OverviewClient — StatCards", () => {
       render(
         <OverviewClient
           {...defaultProps}
-          stats={makeStats({ totalTournaments: 1, adminCount: 2, judgeCount: 3 })}
+          stats={makeStats({
+            totalTournaments: 1,
+            adminCount: 2,
+            judgeCount: 3,
+          })}
         />
       );
       expect(screen.getByText("2 admins, 3 judges")).toBeInTheDocument();
@@ -256,13 +274,19 @@ describe("OverviewClient — Upcoming Tournaments", () => {
   });
 
   it("renders registration count and max participants", () => {
-    const t = makeUpcomingTournament({ registrationCount: 16, max_participants: 32 });
+    const t = makeUpcomingTournament({
+      registrationCount: 16,
+      max_participants: 32,
+    });
     render(<OverviewClient {...defaultProps} upcomingTournaments={[t]} />);
     expect(screen.getByText(/16\/32 registered/)).toBeInTheDocument();
   });
 
   it("renders ∞ when max_participants is null", () => {
-    const t = makeUpcomingTournament({ max_participants: null, registrationCount: 5 });
+    const t = makeUpcomingTournament({
+      max_participants: null,
+      registrationCount: 5,
+    });
     render(<OverviewClient {...defaultProps} upcomingTournaments={[t]} />);
     expect(screen.getByText(/5\/∞ registered/)).toBeInTheDocument();
   });
@@ -277,7 +301,9 @@ describe("OverviewClient — Upcoming Tournaments", () => {
         <OverviewClient {...defaultProps} upcomingTournaments={[t]} />
       );
       // The inner bar div uses inline style with width percentage
-      const bar = container.querySelector(".bg-primary.h-full.rounded-full") as HTMLElement;
+      const bar = container.querySelector(
+        ".bg-primary.h-full.rounded-full"
+      ) as HTMLElement;
       expect(bar).not.toBeNull();
       expect(bar.style.width).toBe("100%");
     });
@@ -290,16 +316,23 @@ describe("OverviewClient — Upcoming Tournaments", () => {
       const { container } = render(
         <OverviewClient {...defaultProps} upcomingTournaments={[t]} />
       );
-      const bar = container.querySelector(".bg-primary.h-full.rounded-full") as HTMLElement;
+      const bar = container.querySelector(
+        ".bg-primary.h-full.rounded-full"
+      ) as HTMLElement;
       expect(bar.style.width).toBe("50%");
     });
 
     it("sets fill bar to 0% when max_participants is null", () => {
-      const t = makeUpcomingTournament({ max_participants: null, registrationCount: 10 });
+      const t = makeUpcomingTournament({
+        max_participants: null,
+        registrationCount: 10,
+      });
       const { container } = render(
         <OverviewClient {...defaultProps} upcomingTournaments={[t]} />
       );
-      const bar = container.querySelector(".bg-primary.h-full.rounded-full") as HTMLElement;
+      const bar = container.querySelector(
+        ".bg-primary.h-full.rounded-full"
+      ) as HTMLElement;
       expect(bar.style.width).toBe("0%");
     });
   });
@@ -381,7 +414,10 @@ describe("OverviewClient — Activity Feed", () => {
   });
 
   it("does not render actorName text when actorName is null", () => {
-    const item = makeActivityItem({ type: "tournament_completed", actorName: null });
+    const item = makeActivityItem({
+      type: "tournament_completed",
+      actorName: null,
+    });
     render(<OverviewClient {...defaultProps} activity={[item]} />);
     // No actor name present — just the verb
     expect(screen.getByText("was completed")).toBeInTheDocument();
@@ -395,8 +431,16 @@ describe("OverviewClient — Activity Feed", () => {
 
   it("renders multiple activity items", () => {
     const items: CommunityActivityItem[] = [
-      makeActivityItem({ type: "registration", actorName: "ash", targetName: "Cup A" }),
-      makeActivityItem({ type: "staff_joined", actorName: "brock", targetName: null }),
+      makeActivityItem({
+        type: "registration",
+        actorName: "ash",
+        targetName: "Cup A",
+      }),
+      makeActivityItem({
+        type: "staff_joined",
+        actorName: "brock",
+        targetName: null,
+      }),
     ];
     render(<OverviewClient {...defaultProps} activity={items} />);
     expect(screen.getByText("registered for Cup A")).toBeInTheDocument();

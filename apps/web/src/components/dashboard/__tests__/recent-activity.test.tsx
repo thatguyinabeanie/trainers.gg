@@ -69,7 +69,9 @@ describe("RecentActivity", () => {
     });
 
     it("shows L badge for lost result", () => {
-      render(<RecentActivity activities={[makeActivity({ result: "lost" })]} />);
+      render(
+        <RecentActivity activities={[makeActivity({ result: "lost" })]} />
+      );
       expect(screen.getByText("L")).toBeInTheDocument();
     });
 
@@ -100,7 +102,9 @@ describe("RecentActivity", () => {
     });
 
     it("shows days ago for activity a few days old", () => {
-      const activity = makeActivity({ date: Date.now() - 1000 * 60 * 60 * 24 * 3 }); // 3d ago
+      const activity = makeActivity({
+        date: Date.now() - 1000 * 60 * 60 * 24 * 3,
+      }); // 3d ago
       render(<RecentActivity activities={[activity]} />);
       expect(screen.getByText("3d ago")).toBeInTheDocument();
     });
@@ -112,7 +116,9 @@ describe("RecentActivity", () => {
       const activity = makeActivity({ id: 42 });
       render(<RecentActivity activities={[activity]} />);
 
-      const activityItem = screen.getByText("VGC Regional").closest("div[class*='rounded-lg']");
+      const activityItem = screen
+        .getByText("VGC Regional")
+        .closest("div[class*='rounded-lg']");
       await user.click(activityItem!);
 
       expect(screen.getByText(/Match ID:/)).toBeInTheDocument();
@@ -124,7 +130,9 @@ describe("RecentActivity", () => {
       const activity = makeActivity({ id: 42 });
       render(<RecentActivity activities={[activity]} />);
 
-      const activityItem = screen.getByText("VGC Regional").closest("div[class*='rounded-lg']");
+      const activityItem = screen
+        .getByText("VGC Regional")
+        .closest("div[class*='rounded-lg']");
       // Expand
       await user.click(activityItem!);
       expect(screen.getByText(/Match ID:/)).toBeInTheDocument();
@@ -141,7 +149,9 @@ describe("RecentActivity", () => {
       ];
       render(<RecentActivity activities={activities} />);
 
-      const firstActivity = screen.getByText("Regional A").closest("div[class*='rounded-lg']");
+      const firstActivity = screen
+        .getByText("Regional A")
+        .closest("div[class*='rounded-lg']");
       await user.click(firstActivity!);
 
       // Only first activity's details visible

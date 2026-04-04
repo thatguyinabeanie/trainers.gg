@@ -28,7 +28,7 @@ export function RecentAchievements({ achievements }: RecentAchievementsProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Award className="size-5 text-amber-500" />
-          <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+          <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
             Achievements
           </span>
         </CardTitle>

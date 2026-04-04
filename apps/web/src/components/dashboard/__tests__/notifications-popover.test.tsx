@@ -36,15 +36,21 @@ jest.mock("../notification-helpers", () => ({
     void type;
     return "⚔️";
   }),
-  isActionType: jest.fn((type: string) => type === "match_ready" || type === "judge_call"),
+  isActionType: jest.fn(
+    (type: string) => type === "match_ready" || type === "judge_call"
+  ),
 }));
 
 // Mock next/link
 jest.mock("next/link", () => ({
   __esModule: true,
-  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
-  ),
+  default: ({
+    href,
+    children,
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) => <a href={href}>{children}</a>,
 }));
 
 // Mock lucide-react

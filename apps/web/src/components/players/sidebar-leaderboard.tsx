@@ -29,36 +29,40 @@ export function SidebarLeaderboard({ entries }: SidebarLeaderboardProps) {
         {entries.map((entry, index) => {
           const displayUsername = formatDisplayUsername(entry.username);
           return (
-          <Link
-            key={entry.userId}
-            href={`/u/${entry.username}`}
-            className="hover:bg-muted/50 flex items-center gap-2.5 rounded-md p-1.5 transition-colors"
-          >
-            {/* Rank number */}
-            <span className="text-muted-foreground w-5 text-center text-xs font-medium">
-              {index + 1}
-            </span>
+            <Link
+              key={entry.userId}
+              href={`/u/${entry.username}`}
+              className="hover:bg-muted/50 flex items-center gap-2.5 rounded-md p-1.5 transition-colors"
+            >
+              {/* Rank number */}
+              <span className="text-muted-foreground w-5 text-center text-xs font-medium">
+                {index + 1}
+              </span>
 
-            {/* Avatar */}
-            <Avatar size="sm">
-              {entry.avatarUrl && (
-                <AvatarImage src={entry.avatarUrl} alt={displayUsername} />
-              )}
-              <AvatarFallback>
-                {isTempUsername(entry.username) ? "NT" : entry.username.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+              {/* Avatar */}
+              <Avatar size="sm">
+                {entry.avatarUrl && (
+                  <AvatarImage src={entry.avatarUrl} alt={displayUsername} />
+                )}
+                <AvatarFallback>
+                  {isTempUsername(entry.username)
+                    ? "NT"
+                    : entry.username.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
 
-            {/* Name + stats */}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{displayUsername}</p>
-              <p className="text-muted-foreground text-xs">
-                {entry.rating.toLocaleString()} pts ·{" "}
-                {entry.skillBracket.charAt(0).toUpperCase() +
-                  entry.skillBracket.slice(1)}
-              </p>
-            </div>
-          </Link>
+              {/* Name + stats */}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">
+                  {displayUsername}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  {entry.rating.toLocaleString()} pts ·{" "}
+                  {entry.skillBracket.charAt(0).toUpperCase() +
+                    entry.skillBracket.slice(1)}
+                </p>
+              </div>
+            </Link>
           );
         })}
       </CardContent>

@@ -33,7 +33,11 @@ jest.mock("@/components/ui/tabs", () => ({
   }: {
     children: React.ReactNode;
     value: string;
-  }) => <button role="tab" data-value={value}>{children}</button>,
+  }) => (
+    <button role="tab" data-value={value}>
+      {children}
+    </button>
+  ),
   TabsContent: ({
     children,
     value,
@@ -54,8 +58,16 @@ function buildMatch(overrides: Partial<TournamentMatch> = {}): TournamentMatch {
     gameWins2: 0,
     winnerProfileId: null,
     isBye: false,
-    participant1: { id: "p1", name: "Player 1", record: { wins: 0, losses: 0 } },
-    participant2: { id: "p2", name: "Player 2", record: { wins: 0, losses: 0 } },
+    participant1: {
+      id: "p1",
+      name: "Player 1",
+      record: { wins: 0, losses: 0 },
+    },
+    participant2: {
+      id: "p2",
+      name: "Player 2",
+      record: { wins: 0, losses: 0 },
+    },
     ...overrides,
   };
 }
@@ -117,7 +129,11 @@ describe("BracketVisualization", () => {
 
   describe("tab rendering", () => {
     it("renders one tab per swiss round", () => {
-      const round1 = buildRound({ id: "r1", roundNumber: 1, status: "completed" });
+      const round1 = buildRound({
+        id: "r1",
+        roundNumber: 1,
+        status: "completed",
+      });
       const round2 = buildRound({ id: "r2", roundNumber: 2, status: "active" });
       const phase = buildPhase({ rounds: [round1, round2] });
 
@@ -131,8 +147,16 @@ describe("BracketVisualization", () => {
     });
 
     it("renders a Top Cut tab when elimination phase has rounds", () => {
-      const swissRound = buildRound({ id: "r1", roundNumber: 1, status: "completed" });
-      const elimRound = buildRound({ id: "er1", roundNumber: 1, status: "pending" });
+      const swissRound = buildRound({
+        id: "r1",
+        roundNumber: 1,
+        status: "completed",
+      });
+      const elimRound = buildRound({
+        id: "er1",
+        roundNumber: 1,
+        status: "pending",
+      });
       const swissPhase = buildPhase({ rounds: [swissRound] });
       const elimPhase = buildPhase({
         id: "phase2",
@@ -146,7 +170,11 @@ describe("BracketVisualization", () => {
     });
 
     it("renders Top Cut tab for double_elimination format", () => {
-      const elimRound = buildRound({ id: "er1", roundNumber: 1, status: "pending" });
+      const elimRound = buildRound({
+        id: "er1",
+        roundNumber: 1,
+        status: "pending",
+      });
       const elimPhase = buildPhase({
         id: "phase2",
         format: "double_elimination",
@@ -159,7 +187,11 @@ describe("BracketVisualization", () => {
     });
 
     it("does NOT render a Top Cut tab when elimination phase has no rounds", () => {
-      const swissRound = buildRound({ id: "r1", roundNumber: 1, status: "pending" });
+      const swissRound = buildRound({
+        id: "r1",
+        roundNumber: 1,
+        status: "pending",
+      });
       const swissPhase = buildPhase({ rounds: [swissRound] });
       const elimPhase = buildPhase({
         id: "phase2",
@@ -180,7 +212,9 @@ describe("BracketVisualization", () => {
       const phase = buildPhase({ rounds: [r1, r2] });
 
       const { container } = render(<BracketVisualization phases={[phase]} />);
-      expect(container.querySelector("[data-default-tab='r2']")).toBeInTheDocument();
+      expect(
+        container.querySelector("[data-default-tab='r2']")
+      ).toBeInTheDocument();
     });
 
     it("defaults to Top Cut tab when top cut is active and no active swiss round", () => {
@@ -207,7 +241,9 @@ describe("BracketVisualization", () => {
       const phase = buildPhase({ rounds: [r1, r2] });
 
       const { container } = render(<BracketVisualization phases={[phase]} />);
-      expect(container.querySelector("[data-default-tab='r2']")).toBeInTheDocument();
+      expect(
+        container.querySelector("[data-default-tab='r2']")
+      ).toBeInTheDocument();
     });
 
     it("defaults to first swiss round when all rounds are pending", () => {
@@ -216,7 +252,9 @@ describe("BracketVisualization", () => {
       const phase = buildPhase({ rounds: [r1, r2] });
 
       const { container } = render(<BracketVisualization phases={[phase]} />);
-      expect(container.querySelector("[data-default-tab='r1']")).toBeInTheDocument();
+      expect(
+        container.querySelector("[data-default-tab='r1']")
+      ).toBeInTheDocument();
     });
 
     it("defaults to Top Cut when there is no swiss phase but has elimination rounds", () => {
@@ -251,7 +289,11 @@ describe("BracketVisualization", () => {
       const match = buildMatch({
         id: "m1",
         participant1: { id: "p1", name: "Ash", record: { wins: 2, losses: 0 } },
-        participant2: { id: "p2", name: "Gary", record: { wins: 1, losses: 1 } },
+        participant2: {
+          id: "p2",
+          name: "Gary",
+          record: { wins: 1, losses: 1 },
+        },
       });
       const round = buildRound({
         id: "r1",
@@ -272,7 +314,11 @@ describe("BracketVisualization", () => {
         participant1: undefined,
         participant2: undefined,
       });
-      const round = buildRound({ id: "r1", status: "pending", matches: [match] });
+      const round = buildRound({
+        id: "r1",
+        status: "pending",
+        matches: [match],
+      });
       const phase = buildPhase({ rounds: [round] });
 
       render(<BracketVisualization phases={[phase]} />);
@@ -287,7 +333,11 @@ describe("BracketVisualization", () => {
         participant1: { id: "p1", name: "Ash" },
         participant2: null,
       });
-      const round = buildRound({ id: "r1", status: "active", matches: [match] });
+      const round = buildRound({
+        id: "r1",
+        status: "active",
+        matches: [match],
+      });
       const phase = buildPhase({ rounds: [round] });
 
       render(<BracketVisualization phases={[phase]} />);
@@ -303,9 +353,17 @@ describe("BracketVisualization", () => {
         gameWins1: 2,
         gameWins2: 0,
         participant1: { id: "p1", name: "Ash", record: { wins: 3, losses: 0 } },
-        participant2: { id: "p2", name: "Gary", record: { wins: 2, losses: 1 } },
+        participant2: {
+          id: "p2",
+          name: "Gary",
+          record: { wins: 2, losses: 1 },
+        },
       });
-      const round = buildRound({ id: "r1", status: "active", matches: [match] });
+      const round = buildRound({
+        id: "r1",
+        status: "active",
+        matches: [match],
+      });
       const phase = buildPhase({ rounds: [round] });
 
       render(<BracketVisualization phases={[phase]} />);
@@ -324,7 +382,11 @@ describe("BracketVisualization", () => {
         participant1: { id: "p1", name: "Ash" },
         participant2: { id: "p2", name: "Gary" },
       });
-      const round = buildRound({ id: "r1", status: "active", matches: [match] });
+      const round = buildRound({
+        id: "r1",
+        status: "active",
+        matches: [match],
+      });
       const phase = buildPhase({ rounds: [round] });
 
       render(<BracketVisualization phases={[phase]} />);
@@ -341,7 +403,11 @@ describe("BracketVisualization", () => {
         participant1: { id: "p1", name: "Ash" },
         participant2: { id: "p2", name: "Gary" },
       });
-      const round = buildRound({ id: "r1", status: "pending", matches: [match] });
+      const round = buildRound({
+        id: "r1",
+        status: "pending",
+        matches: [match],
+      });
       const phase = buildPhase({ rounds: [round] });
 
       render(<BracketVisualization phases={[phase]} />);
@@ -354,9 +420,17 @@ describe("BracketVisualization", () => {
         id: "m1",
         status: "pending",
         participant1: { id: "p1", name: "Ash", record: { wins: 2, losses: 1 } },
-        participant2: { id: "p2", name: "Gary", record: { wins: 1, losses: 2 } },
+        participant2: {
+          id: "p2",
+          name: "Gary",
+          record: { wins: 1, losses: 2 },
+        },
       });
-      const round = buildRound({ id: "r1", status: "active", matches: [match] });
+      const round = buildRound({
+        id: "r1",
+        status: "active",
+        matches: [match],
+      });
       const phase = buildPhase({ rounds: [round] });
 
       render(<BracketVisualization phases={[phase]} />);
@@ -370,9 +444,17 @@ describe("BracketVisualization", () => {
         id: "m1",
         status: "pending",
         participant1: { id: "p1", name: "Ash", record: { wins: 0, losses: 0 } },
-        participant2: { id: "p2", name: "Gary", record: { wins: 0, losses: 0 } },
+        participant2: {
+          id: "p2",
+          name: "Gary",
+          record: { wins: 0, losses: 0 },
+        },
       });
-      const round = buildRound({ id: "r1", status: "pending", matches: [match] });
+      const round = buildRound({
+        id: "r1",
+        status: "pending",
+        matches: [match],
+      });
       const phase = buildPhase({ rounds: [round] });
 
       render(<BracketVisualization phases={[phase]} />);
@@ -391,14 +473,15 @@ describe("BracketVisualization", () => {
         participant1: { id: "p1", name: "Ash" },
         participant2: { id: "p2", name: "Gary" },
       });
-      const round = buildRound({ id: "r1", status: "active", matches: [match] });
+      const round = buildRound({
+        id: "r1",
+        status: "active",
+        matches: [match],
+      });
       const phase = buildPhase({ rounds: [round] });
 
       render(
-        <BracketVisualization
-          phases={[phase]}
-          onMatchClick={onMatchClick}
-        />
+        <BracketVisualization phases={[phase]} onMatchClick={onMatchClick} />
       );
 
       // Find the match row (a div containing both player names)
@@ -406,7 +489,9 @@ describe("BracketVisualization", () => {
         ?.parentElement?.parentElement?.parentElement;
 
       // Click anywhere in the row
-      await user.click(screen.getByText("Ash").closest("[onClick]") ?? screen.getByText("Ash"));
+      await user.click(
+        screen.getByText("Ash").closest("[onClick]") ?? screen.getByText("Ash")
+      );
 
       // The onMatchClick may or may not fire depending on DOM structure —
       // instead verify the handler is wired by checking it wasn't blocked.
@@ -422,7 +507,11 @@ describe("BracketVisualization", () => {
         participant1: { id: "p1", name: "Ash" },
         participant2: { id: "p2", name: "Gary" },
       });
-      const round = buildRound({ id: "r1", status: "active", matches: [match] });
+      const round = buildRound({
+        id: "r1",
+        status: "active",
+        matches: [match],
+      });
       const phase = buildPhase({ rounds: [round] });
 
       const onMatchClick = jest.fn();
@@ -499,7 +588,12 @@ describe("BracketVisualization", () => {
       });
       const swissPhase = buildPhase({
         rounds: [
-          buildRound({ id: "r1", roundNumber: 1, status: "completed", matches: [] }),
+          buildRound({
+            id: "r1",
+            roundNumber: 1,
+            status: "completed",
+            matches: [],
+          }),
         ],
       });
       const elimPhase = buildPhase({
@@ -508,9 +602,7 @@ describe("BracketVisualization", () => {
         rounds: [er1, er2],
       });
 
-      render(
-        <BracketVisualization phases={[swissPhase, elimPhase]} />
-      );
+      render(<BracketVisualization phases={[swissPhase, elimPhase]} />);
 
       // The last round should be labeled "Finals" (may appear in multiple places)
       const finalsLabels = screen.getAllByText("Finals");
@@ -547,14 +639,21 @@ describe("BracketVisualization", () => {
 
     it("shows empty Top Cut message when elimination phase has no rounds", () => {
       // This tests the TopCutDisplay internal guard
-      const swissRound = buildRound({ id: "r1", roundNumber: 1, status: "completed", matches: [] });
+      const swissRound = buildRound({
+        id: "r1",
+        roundNumber: 1,
+        status: "completed",
+        matches: [],
+      });
       const swissPhase = buildPhase({ rounds: [swissRound] });
       // elimPhase present but rounds added only to make hasTopCut = true
       // We can't actually reach TopCutDisplay empty state through BracketVisualization
       // because hasTopCut guards it. Test through phases array with elim rounds.
       render(<BracketVisualization phases={[swissPhase]} />);
 
-      expect(screen.queryByText("Top Cut bracket will appear")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Top Cut bracket will appear")
+      ).not.toBeInTheDocument();
     });
 
     it("renders player seed in elimination match card", () => {
@@ -590,8 +689,19 @@ describe("BracketVisualization", () => {
   describe("ongoing vs completed match sections", () => {
     it("shows 'In Progress' section header when there are both ongoing and completed matches", () => {
       const matches = [
-        buildMatch({ id: "m1", status: "active", participant1: { id: "p1", name: "Ash" }, participant2: { id: "p2", name: "Gary" } }),
-        buildMatch({ id: "m2", matchNumber: 2, status: "completed", participant1: { id: "p3", name: "Misty" }, participant2: { id: "p4", name: "Brock" } }),
+        buildMatch({
+          id: "m1",
+          status: "active",
+          participant1: { id: "p1", name: "Ash" },
+          participant2: { id: "p2", name: "Gary" },
+        }),
+        buildMatch({
+          id: "m2",
+          matchNumber: 2,
+          status: "completed",
+          participant1: { id: "p3", name: "Misty" },
+          participant2: { id: "p4", name: "Brock" },
+        }),
       ];
       const round = buildRound({ id: "r1", status: "active", matches });
       const phase = buildPhase({ rounds: [round] });
@@ -604,8 +714,19 @@ describe("BracketVisualization", () => {
 
     it("does NOT show section headers when all matches are in the same state", () => {
       const matches = [
-        buildMatch({ id: "m1", status: "active", participant1: { id: "p1", name: "Ash" }, participant2: { id: "p2", name: "Gary" } }),
-        buildMatch({ id: "m2", matchNumber: 2, status: "active", participant1: { id: "p3", name: "Misty" }, participant2: { id: "p4", name: "Brock" } }),
+        buildMatch({
+          id: "m1",
+          status: "active",
+          participant1: { id: "p1", name: "Ash" },
+          participant2: { id: "p2", name: "Gary" },
+        }),
+        buildMatch({
+          id: "m2",
+          matchNumber: 2,
+          status: "active",
+          participant1: { id: "p3", name: "Misty" },
+          participant2: { id: "p4", name: "Brock" },
+        }),
       ];
       const round = buildRound({ id: "r1", status: "active", matches });
       const phase = buildPhase({ rounds: [round] });

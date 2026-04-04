@@ -10,7 +10,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Plus, Crown, Users, ArrowRight, ShieldAlert } from "lucide-react";
+import {
+  Building2,
+  Plus,
+  Crown,
+  Users,
+  ArrowRight,
+  ShieldAlert,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ORG_STATUS_LABELS } from "@/app/(app)/admin/helpers";
 
@@ -170,7 +177,8 @@ export function CommunitySelectorClient({
                             "border-gray-200 text-gray-500"
                         )}
                       >
-                        {ORG_STATUS_LABELS[community.status] ?? community.status}
+                        {ORG_STATUS_LABELS[community.status] ??
+                          community.status}
                       </Badge>
                     )}
                   </div>

@@ -119,7 +119,7 @@ export function OnboardingForm() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="cooltrainer"
-            className="pl-7 pr-20"
+            className="pr-20 pl-7"
             autoFocus
           />
           <div className="pointer-events-none absolute inset-y-0 right-10 flex items-center text-xs text-zinc-500">
@@ -165,8 +165,7 @@ export function OnboardingForm() {
       {/* Bio */}
       <div className="space-y-2">
         <Label htmlFor="bio">
-          Bio{" "}
-          <span className="font-normal text-zinc-500">(optional)</span>
+          Bio <span className="font-normal text-zinc-500">(optional)</span>
         </Label>
         <Textarea
           id="bio"

@@ -1542,9 +1542,7 @@ describe("updateAltVisibilityAction", () => {
     // alts table — alt not found
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
-        maybeSingle: jest
-          .fn()
-          .mockResolvedValue({ data: null, error: null }),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       })
     );
 

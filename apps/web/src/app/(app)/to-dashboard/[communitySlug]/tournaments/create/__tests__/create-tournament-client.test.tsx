@@ -165,7 +165,10 @@ describe("CreateTournamentClient", () => {
 
   it("redirects to sign-in when user is not authenticated", () => {
     const mockPush = jest.fn();
-    (useRouter as jest.Mock).mockReturnValue({ push: mockPush, replace: jest.fn() });
+    (useRouter as jest.Mock).mockReturnValue({
+      push: mockPush,
+      replace: jest.fn(),
+    });
     (useCurrentUser as jest.Mock).mockReturnValue({
       user: null,
       isLoading: false,
@@ -206,9 +209,7 @@ describe("CreateTournamentClient", () => {
     it("Previous button is disabled on step 1", () => {
       render(<CreateTournamentClient communitySlug="test-org" />);
 
-      expect(
-        screen.getByRole("button", { name: /previous/i })
-      ).toBeDisabled();
+      expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
     });
 
     it("advances to step 2 after clicking Next with valid step 1 data", async () => {
@@ -284,9 +285,7 @@ describe("CreateTournamentClient", () => {
       await user.click(screen.getByRole("button", { name: /previous/i }));
 
       await waitFor(() => {
-        expect(
-          screen.getByTestId("tournament-schedule")
-        ).toBeInTheDocument();
+        expect(screen.getByTestId("tournament-schedule")).toBeInTheDocument();
       });
     });
 

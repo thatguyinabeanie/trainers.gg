@@ -133,7 +133,10 @@ describe("AuditActionBadge", () => {
 
   it("merges additional className prop", () => {
     render(
-      <AuditActionBadge action="match.score_submitted" className="extra-class" />
+      <AuditActionBadge
+        action="match.score_submitted"
+        className="extra-class"
+      />
     );
     const badge = screen.getByText("Score Submitted");
     expect(badge.className).toContain("extra-class");

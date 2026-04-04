@@ -25,11 +25,19 @@ jest.mock("@/hooks/use-site-admin", () => ({
 describe("SiteAdminGuard", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseSiteAdminReturn = { isSiteAdmin: false, isLoading: false, user: null };
+    mockUseSiteAdminReturn = {
+      isSiteAdmin: false,
+      isLoading: false,
+      user: null,
+    };
   });
 
   it("renders loading skeletons when isLoading=true", () => {
-    mockUseSiteAdminReturn = { isSiteAdmin: false, isLoading: true, user: null };
+    mockUseSiteAdminReturn = {
+      isSiteAdmin: false,
+      isLoading: true,
+      user: null,
+    };
     render(
       <SiteAdminGuard>
         <div>Admin Content</div>
@@ -39,7 +47,11 @@ describe("SiteAdminGuard", () => {
   });
 
   it("renders null and redirects to sign-in when not loading and user is null", () => {
-    mockUseSiteAdminReturn = { isSiteAdmin: false, isLoading: false, user: null };
+    mockUseSiteAdminReturn = {
+      isSiteAdmin: false,
+      isLoading: false,
+      user: null,
+    };
     render(
       <SiteAdminGuard>
         <div>Admin Content</div>
@@ -50,7 +62,11 @@ describe("SiteAdminGuard", () => {
   });
 
   it("does not redirect a second time when user becomes null again (hasRedirected guard)", () => {
-    mockUseSiteAdminReturn = { isSiteAdmin: false, isLoading: false, user: null };
+    mockUseSiteAdminReturn = {
+      isSiteAdmin: false,
+      isLoading: false,
+      user: null,
+    };
     const { rerender } = render(
       <SiteAdminGuard>
         <div>Admin Content</div>

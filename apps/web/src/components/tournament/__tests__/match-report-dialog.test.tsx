@@ -43,7 +43,11 @@ jest.mock("@/components/ui/dialog", () => ({
   }: {
     children: React.ReactNode;
     className?: string;
-  }) => <div data-testid="dialog-content" className={className}>{children}</div>,
+  }) => (
+    <div data-testid="dialog-content" className={className}>
+      {children}
+    </div>
+  ),
   DialogHeader: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -65,7 +69,11 @@ jest.mock("@/components/ui/alert", () => ({
   }: {
     children: React.ReactNode;
     className?: string;
-  }) => <div role="alert" className={className}>{children}</div>,
+  }) => (
+    <div role="alert" className={className}>
+      {children}
+    </div>
+  ),
   AlertDescription: ({ children }: { children: React.ReactNode }) => (
     <span>{children}</span>
   ),
@@ -118,13 +126,9 @@ jest.mock("@/components/ui/radio-group", () => ({
       {children}
     </div>
   ),
-  RadioGroupItem: ({
-    value,
-    id,
-  }: {
-    value: string;
-    id?: string;
-  }) => <input type="radio" value={value} id={id} data-testid={`radio-${value}`} />,
+  RadioGroupItem: ({ value, id }: { value: string; id?: string }) => (
+    <input type="radio" value={value} id={id} data-testid={`radio-${value}`} />
+  ),
 }));
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -345,9 +349,7 @@ describe("MatchReportDialog", () => {
     it("shows pending-round alert", () => {
       renderDialog();
       expect(
-        screen.getByText(
-          "This match will become active once the round starts"
-        )
+        screen.getByText("This match will become active once the round starts")
       ).toBeInTheDocument();
     });
 

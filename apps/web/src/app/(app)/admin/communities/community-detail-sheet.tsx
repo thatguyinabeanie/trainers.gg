@@ -291,7 +291,7 @@ export function CommunityDetailSheet({
             <section className="space-y-2">
               <h3 className="text-sm font-medium">Admin Notes</h3>
               {community.community_admin_notes?.[0]?.notes ? (
-                <p className="bg-muted whitespace-pre-wrap rounded-lg p-3 text-sm">
+                <p className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap">
                   {community.community_admin_notes[0].notes}
                 </p>
               ) : (

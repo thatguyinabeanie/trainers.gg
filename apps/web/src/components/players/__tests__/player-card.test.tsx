@@ -103,7 +103,9 @@ describe("PlayerCard", () => {
     it.each(["temp_abc123", "user_06143118"])(
       "shows 'NT' avatar fallback initials for temp username '%s'",
       (username) => {
-        render(<PlayerCard {...defaultProps} username={username} avatarUrl={null} />);
+        render(
+          <PlayerCard {...defaultProps} username={username} avatarUrl={null} />
+        );
         expect(screen.getByText("NT")).toBeInTheDocument();
       }
     );

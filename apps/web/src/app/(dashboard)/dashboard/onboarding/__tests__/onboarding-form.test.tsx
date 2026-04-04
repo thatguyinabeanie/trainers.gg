@@ -1,4 +1,10 @@
-import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitFor,
+  act,
+  fireEvent,
+} from "@testing-library/react";
 
 // --- next/navigation ---
 const mockRouterPush = jest.fn();
@@ -120,9 +126,7 @@ describe("OnboardingForm", () => {
 
     it("renders the username placeholder", () => {
       render(<OnboardingForm />);
-      expect(
-        screen.getByPlaceholderText("cooltrainer")
-      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("cooltrainer")).toBeInTheDocument();
     });
   });
 

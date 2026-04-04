@@ -83,7 +83,11 @@ export default async function DashboardLayout({
     const myIds = new Set(communities.map((c) => c.id));
     const sudoOnlyCommunities = allSudoCommunities
       .filter((c) => !myIds.has(c.id))
-      .map((c) => ({ ...c, isOwner: false as const, isSudoAccess: true as const }));
+      .map((c) => ({
+        ...c,
+        isOwner: false as const,
+        isSudoAccess: true as const,
+      }));
     return [
       ...communities.map((c) => ({ ...c, isSudoAccess: false as const })),
       ...sudoOnlyCommunities,

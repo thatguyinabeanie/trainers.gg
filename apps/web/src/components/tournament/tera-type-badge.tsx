@@ -18,7 +18,7 @@ export function TeraTypeBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full border font-medium leading-none",
+        "inline-flex items-center gap-0.5 rounded-full border leading-none font-medium",
         size === "sm"
           ? "px-1 py-px text-[8px]"
           : "gap-1 px-1.5 py-0.5 text-[10px]",

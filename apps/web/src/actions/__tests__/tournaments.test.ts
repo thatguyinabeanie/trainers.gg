@@ -870,7 +870,10 @@ describe("getRegistrationDetailsAction", () => {
     const result = await getRegistrationDetailsAction(5);
 
     expect(result).toEqual({ success: true, data: details });
-    expect(mockGetUserRegistrationDetails).toHaveBeenCalledWith(mockSupabase, 5);
+    expect(mockGetUserRegistrationDetails).toHaveBeenCalledWith(
+      mockSupabase,
+      5
+    );
   });
 
   it("returns null data when no registration found", async () => {
@@ -933,8 +936,7 @@ describe("updateRegistrationAction", () => {
 // ── submitTeamAction ───────────────────────────────────────────────────────
 
 describe("submitTeamAction", () => {
-  const rawTeam =
-    "Pikachu\nBulbasaur\nCharmander\nSquirtle\nEevee\nSnorlax";
+  const rawTeam = "Pikachu\nBulbasaur\nCharmander\nSquirtle\nEevee\nSnorlax";
 
   it("returns team data on success", async () => {
     mockSubmitTeam.mockResolvedValue({
@@ -942,7 +944,14 @@ describe("submitTeamAction", () => {
       teamId: 1,
       pokemonCount: 6,
       teamName: "My Team",
-      species: ["Pikachu", "Bulbasaur", "Charmander", "Squirtle", "Eevee", "Snorlax"],
+      species: [
+        "Pikachu",
+        "Bulbasaur",
+        "Charmander",
+        "Squirtle",
+        "Eevee",
+        "Snorlax",
+      ],
       errors: [],
     });
 
@@ -954,7 +963,14 @@ describe("submitTeamAction", () => {
         teamId: 1,
         pokemonCount: 6,
         teamName: "My Team",
-        species: ["Pikachu", "Bulbasaur", "Charmander", "Squirtle", "Eevee", "Snorlax"],
+        species: [
+          "Pikachu",
+          "Bulbasaur",
+          "Charmander",
+          "Squirtle",
+          "Eevee",
+          "Snorlax",
+        ],
       },
     });
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:5");
@@ -1217,7 +1233,9 @@ describe("generatePairings", () => {
   });
 
   it("returns error when pairing algorithm throws", async () => {
-    mockGenerateRoundPairings.mockRejectedValue(new Error("no eligible players"));
+    mockGenerateRoundPairings.mockRejectedValue(
+      new Error("no eligible players")
+    );
 
     const result = await generatePairings(10, 5);
 

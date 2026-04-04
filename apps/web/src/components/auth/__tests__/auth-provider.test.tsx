@@ -160,7 +160,10 @@ describe("AuthProvider", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     const newSession = { user: { id: "u3", email: "brock@example.com" } };
-    mockGetSession.mockResolvedValue({ data: { session: newSession }, error: null });
+    mockGetSession.mockResolvedValue({
+      data: { session: newSession },
+      error: null,
+    });
 
     await act(async () => {
       await result.current.refetchUser();
@@ -208,9 +211,9 @@ describe("getUserDisplayName", () => {
       created_at: "",
       profile: { id: 1, displayName: "Ash Ketchum", username: "ash" },
     };
-    expect(getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])).toBe(
-      "Ash Ketchum"
-    );
+    expect(
+      getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])
+    ).toBe("Ash Ketchum");
   });
 
   it("returns username from user_metadata when no profile", () => {
@@ -221,9 +224,9 @@ describe("getUserDisplayName", () => {
       aud: "authenticated",
       created_at: "",
     };
-    expect(getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])).toBe(
-      "ash_trainer"
-    );
+    expect(
+      getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])
+    ).toBe("ash_trainer");
   });
 
   it("returns full_name from user_metadata when no username", () => {
@@ -234,9 +237,9 @@ describe("getUserDisplayName", () => {
       aud: "authenticated",
       created_at: "",
     };
-    expect(getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])).toBe(
-      "Ash Ketchum"
-    );
+    expect(
+      getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])
+    ).toBe("Ash Ketchum");
   });
 
   it("returns bluesky_handle from user_metadata as fallback", () => {
@@ -247,9 +250,9 @@ describe("getUserDisplayName", () => {
       aud: "authenticated",
       created_at: "",
     };
-    expect(getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])).toBe(
-      "ash.bsky.social"
-    );
+    expect(
+      getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])
+    ).toBe("ash.bsky.social");
   });
 
   it("returns email when no metadata names", () => {
@@ -261,9 +264,9 @@ describe("getUserDisplayName", () => {
       created_at: "",
       email: "ash@example.com",
     };
-    expect(getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])).toBe(
-      "ash@example.com"
-    );
+    expect(
+      getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])
+    ).toBe("ash@example.com");
   });
 
   it("returns 'Trainer' for placeholder bluesky emails", () => {
@@ -275,8 +278,8 @@ describe("getUserDisplayName", () => {
       created_at: "",
       email: "temp@bluesky.trainers.gg",
     };
-    expect(getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])).toBe(
-      "Trainer"
-    );
+    expect(
+      getUserDisplayName(user as Parameters<typeof getUserDisplayName>[0])
+    ).toBe("Trainer");
   });
 });

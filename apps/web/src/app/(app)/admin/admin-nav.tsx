@@ -28,7 +28,7 @@ export function AdminNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "whitespace-nowrap border-b-2 pb-3 text-sm font-medium transition-colors",
+                "border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors",
                 isActive
                   ? "border-primary text-foreground"
                   : "text-muted-foreground hover:border-muted-foreground/30 hover:text-foreground border-transparent"

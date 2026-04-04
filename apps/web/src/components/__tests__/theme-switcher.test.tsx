@@ -24,9 +24,7 @@ jest.mock("@/components/ui/dropdown-menu", () => ({
     children: React.ReactNode;
     className?: string;
     "aria-label"?: string;
-  }) => (
-    <button aria-label={props["aria-label"]}>{children}</button>
-  ),
+  }) => <button aria-label={props["aria-label"]}>{children}</button>,
   DropdownMenuRadioGroup: ({
     children,
   }: {

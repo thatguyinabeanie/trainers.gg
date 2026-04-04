@@ -138,6 +138,8 @@ describe("ResetPasswordForm", () => {
   it("shows password requirements hint text", () => {
     render(<ResetPasswordForm />);
     expect(screen.getByText("At least 8 characters")).toBeInTheDocument();
-    expect(screen.getByText("At least one uppercase letter")).toBeInTheDocument();
+    expect(
+      screen.getByText("At least one uppercase letter")
+    ).toBeInTheDocument();
   });
 });

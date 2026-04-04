@@ -366,9 +366,7 @@ describe("Community Mutations", () => {
       },
       {
         desc: "no discord link",
-        links: [
-          { platform: "twitter" as const, url: "https://x.com/test" },
-        ],
+        links: [{ platform: "twitter" as const, url: "https://x.com/test" }],
         expectedDiscordUrl: null,
       },
       {

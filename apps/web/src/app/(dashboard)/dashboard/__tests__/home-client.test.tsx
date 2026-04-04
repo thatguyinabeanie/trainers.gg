@@ -34,7 +34,10 @@ jest.mock("@trainers/supabase", () => ({
 
 // --- @trainers/pokemon/sprites ---
 jest.mock("@trainers/pokemon/sprites", () => ({
-  getPokemonSprite: jest.fn(() => ({ url: "/sprites/pikachu.png", pixelated: true })),
+  getPokemonSprite: jest.fn(() => ({
+    url: "/sprites/pikachu.png",
+    pixelated: true,
+  })),
 }));
 
 // --- next/image ---
@@ -285,7 +288,9 @@ describe("HomeClient", () => {
       render(<HomeClient selectedAltUsername={null} />);
       expect(screen.getByText("Pallet Cup")).toBeInTheDocument();
       expect(screen.getByText(/round 2/i)).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /go to match/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /go to match/i })
+      ).toBeInTheDocument();
     });
 
     it("does not render live match bar when activeMatch is null", () => {

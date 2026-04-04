@@ -10,7 +10,10 @@ describe("SudoModeIndicator", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
-    mockCheckSudoStatus.mockResolvedValue({ isActive: false, isSiteAdmin: true });
+    mockCheckSudoStatus.mockResolvedValue({
+      isActive: false,
+      isSiteAdmin: true,
+    });
   });
 
   afterEach(() => {
@@ -18,7 +21,10 @@ describe("SudoModeIndicator", () => {
   });
 
   it("renders nothing when sudo is inactive", async () => {
-    mockCheckSudoStatus.mockResolvedValue({ isActive: false, isSiteAdmin: false });
+    mockCheckSudoStatus.mockResolvedValue({
+      isActive: false,
+      isSiteAdmin: false,
+    });
     const { container } = render(<SudoModeIndicator />);
 
     await act(async () => {
@@ -29,7 +35,10 @@ describe("SudoModeIndicator", () => {
   });
 
   it("renders the sudo mode badge and border when sudo is active", async () => {
-    mockCheckSudoStatus.mockResolvedValue({ isActive: true, isSiteAdmin: true });
+    mockCheckSudoStatus.mockResolvedValue({
+      isActive: true,
+      isSiteAdmin: true,
+    });
     render(<SudoModeIndicator />);
 
     await act(async () => {
@@ -40,7 +49,10 @@ describe("SudoModeIndicator", () => {
   });
 
   it("polls checkSudoStatus every 30 seconds", async () => {
-    mockCheckSudoStatus.mockResolvedValue({ isActive: false, isSiteAdmin: true });
+    mockCheckSudoStatus.mockResolvedValue({
+      isActive: false,
+      isSiteAdmin: true,
+    });
     render(<SudoModeIndicator />);
 
     await act(async () => {
@@ -79,7 +91,10 @@ describe("SudoModeIndicator", () => {
   });
 
   it("clears the polling interval on unmount", () => {
-    mockCheckSudoStatus.mockResolvedValue({ isActive: false, isSiteAdmin: false });
+    mockCheckSudoStatus.mockResolvedValue({
+      isActive: false,
+      isSiteAdmin: false,
+    });
     const clearIntervalSpy = jest.spyOn(global, "clearInterval");
 
     const { unmount } = render(<SudoModeIndicator />);
@@ -90,7 +105,10 @@ describe("SudoModeIndicator", () => {
   });
 
   it("hides the border overlay when sudo is inactive", async () => {
-    mockCheckSudoStatus.mockResolvedValue({ isActive: false, isSiteAdmin: false });
+    mockCheckSudoStatus.mockResolvedValue({
+      isActive: false,
+      isSiteAdmin: false,
+    });
     const { container } = render(<SudoModeIndicator />);
 
     await act(async () => {
@@ -102,7 +120,10 @@ describe("SudoModeIndicator", () => {
   });
 
   it("renders aria-hidden border overlay when sudo is active", async () => {
-    mockCheckSudoStatus.mockResolvedValue({ isActive: true, isSiteAdmin: true });
+    mockCheckSudoStatus.mockResolvedValue({
+      isActive: true,
+      isSiteAdmin: true,
+    });
     const { container } = render(<SudoModeIndicator />);
 
     await act(async () => {

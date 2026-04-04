@@ -482,9 +482,7 @@ describe("TournamentPairings", () => {
     await user.click(reportBtn!);
 
     // Player names appear as labels in the dialog
-    expect(
-      screen.getByLabelText(/Ash Ketchum Games Won/i)
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/Ash Ketchum Games Won/i)).toBeInTheDocument();
   });
 
   it("shows tied score error when scores are equal on submit", async () => {

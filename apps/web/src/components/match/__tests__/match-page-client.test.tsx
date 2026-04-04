@@ -1,6 +1,9 @@
 import { type ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
-import { MatchPageClient, type MatchPageClientProps } from "../match-page-client";
+import {
+  MatchPageClient,
+  type MatchPageClientProps,
+} from "../match-page-client";
 
 // ===========================================================================
 // Mocks
@@ -90,13 +93,15 @@ jest.mock("../presence-indicator", () => ({
 }));
 
 jest.mock("../match-perspective", () => ({
-  resolveHeaderPerspective: jest.fn(({ player1Value, player2Value, isParticipant, isPlayer1 }) => {
-    const player1IsMe = isParticipant && isPlayer1;
-    return {
-      headerOpponentValue: player1IsMe ? player2Value : player1Value,
-      headerMyValue: player1IsMe ? player1Value : player2Value,
-    };
-  }),
+  resolveHeaderPerspective: jest.fn(
+    ({ player1Value, player2Value, isParticipant, isPlayer1 }) => {
+      const player1IsMe = isParticipant && isPlayer1;
+      return {
+        headerOpponentValue: player1IsMe ? player2Value : player1Value,
+        headerMyValue: player1IsMe ? player1Value : player2Value,
+      };
+    }
+  ),
 }));
 
 jest.mock("@/actions/matches", () => ({
@@ -239,12 +244,16 @@ describe("MatchPageClient", () => {
 
     it("does not show PostMatchSummary for non-participant (staff)", () => {
       setup({ matchStatus: "completed", isParticipant: false });
-      expect(screen.queryByTestId("post-match-summary")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("post-match-summary")
+      ).not.toBeInTheDocument();
     });
 
     it("does not show PostMatchSummary when match is not completed", () => {
       setup({ matchStatus: "active", isParticipant: true });
-      expect(screen.queryByTestId("post-match-summary")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("post-match-summary")
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -266,7 +275,9 @@ describe("MatchPageClient", () => {
 
     it("does not render Teams tab when no teams are present", () => {
       setup({ myTeam: null, opponentTeam: null });
-      expect(screen.queryByRole("tab", { name: /Teams/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("tab", { name: /Teams/i })
+      ).not.toBeInTheDocument();
     });
 
     it("renders Teams tab on mobile when myTeam is provided", () => {

@@ -80,7 +80,9 @@ describe("StatsOverview", () => {
 
     it("shows global rank when currentRating is greater than zero", () => {
       render(
-        <StatsOverview stats={makeStats({ currentRating: 1500, ratingRank: 42 })} />
+        <StatsOverview
+          stats={makeStats({ currentRating: 1500, ratingRank: 42 })}
+        />
       );
       expect(screen.getByText("#42")).toBeInTheDocument();
     });

@@ -64,8 +64,12 @@ const mockGetPhaseRoundsWithStats =
 
 // Helper to set up consistent query mocks for phases + rounds
 function setupQueryMocks({
-  phases = [] as Parameters<typeof mockGetTournamentPhases["mockReturnValue"]>[0],
-  rounds = [] as Parameters<typeof mockGetPhaseRoundsWithStats["mockReturnValue"]>[0],
+  phases = [] as Parameters<
+    (typeof mockGetTournamentPhases)["mockReturnValue"]
+  >[0],
+  rounds = [] as Parameters<
+    (typeof mockGetPhaseRoundsWithStats)["mockReturnValue"]
+  >[0],
   roundsLoading = false,
 } = {}) {
   const refetchRounds = jest.fn().mockResolvedValue(undefined);
@@ -676,7 +680,9 @@ describe("TournamentOverview", () => {
       render(<TournamentOverview tournament={baseTournament} />);
       // Loader2 SVG — no text to assert, but command center content absent
       expect(screen.queryByText("Ready to Start")).not.toBeInTheDocument();
-      expect(screen.queryByText("Generating pairings...")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Generating pairings...")
+      ).not.toBeInTheDocument();
     });
 
     it("shows 'no phases configured' when tournament has no phase", () => {
@@ -686,9 +692,7 @@ describe("TournamentOverview", () => {
           tournament={{ ...baseTournament, currentPhaseId: null }}
         />
       );
-      expect(
-        screen.getByText(/no phases configured/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/no phases configured/i)).toBeInTheDocument();
     });
 
     it("shows idle state with round 1 label when no rounds exist", () => {
@@ -716,9 +720,13 @@ describe("TournamentOverview", () => {
         ],
       });
       render(<TournamentOverview tournament={baseTournament} />);
-      expect(screen.getByText(/all swiss rounds completed/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/all swiss rounds completed/i)
+      ).toBeInTheDocument();
       // No Start Round button should appear
-      expect(screen.queryByRole("button", { name: /start round/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /start round/i })
+      ).not.toBeInTheDocument();
     });
 
     it("shows intermediate idle state label after completing a round", () => {
@@ -769,7 +777,9 @@ describe("TournamentOverview", () => {
     it("uses phases[0].planned_rounds when currentPhaseId is null", () => {
       // No explicit currentPhaseId — should fall back to phases[0]
       setupQueryMocks({
-        phases: [{ id: 2, name: "Swiss", tournament_id: BigInt(1), planned_rounds: 3 }],
+        phases: [
+          { id: 2, name: "Swiss", tournament_id: BigInt(1), planned_rounds: 3 },
+        ],
         rounds: [],
       });
       render(
@@ -777,7 +787,9 @@ describe("TournamentOverview", () => {
           tournament={{ ...baseTournament, currentPhaseId: null }}
         />
       );
-      const roundCard = screen.getByText("Round Progress").closest('[data-slot="card"]');
+      const roundCard = screen
+        .getByText("Round Progress")
+        .closest('[data-slot="card"]');
       expect(roundCard).toHaveTextContent("of 3 rounds");
     });
   });
@@ -791,10 +803,16 @@ describe("TournamentOverview", () => {
       setupQueryMocks({ phases: mockPhases, rounds: [] });
       render(
         <TournamentOverview
-          tournament={{ ...baseTournament, status: "upcoming", startDate: undefined }}
+          tournament={{
+            ...baseTournament,
+            status: "upcoming",
+            startDate: undefined,
+          }}
         />
       );
-      const scheduleCard = screen.getByText("Schedule").closest('[data-slot="card"]');
+      const scheduleCard = screen
+        .getByText("Schedule")
+        .closest('[data-slot="card"]');
       expect(scheduleCard).toHaveTextContent("—");
     });
 
@@ -806,7 +824,9 @@ describe("TournamentOverview", () => {
           tournament={{ ...baseTournament, status: "upcoming", startDate: ts }}
         />
       );
-      const scheduleCard = screen.getByText("Schedule").closest('[data-slot="card"]');
+      const scheduleCard = screen
+        .getByText("Schedule")
+        .closest('[data-slot="card"]');
       // Should not show em-dash for the start date
       const startTimeEl = scheduleCard?.querySelector("p.font-medium");
       expect(startTimeEl?.textContent).not.toBe("—");
@@ -848,9 +868,7 @@ describe("TournamentOverview", () => {
     it("shows format as 'Custom' when format field is empty", () => {
       setupQueryMocks({ phases: [], rounds: [] });
       render(
-        <TournamentOverview
-          tournament={{ ...baseTournament, format: "" }}
-        />
+        <TournamentOverview tournament={{ ...baseTournament, format: "" }} />
       );
       expect(screen.getByText("Custom")).toBeInTheDocument();
     });

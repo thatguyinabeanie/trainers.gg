@@ -198,7 +198,7 @@ function MatchTable({
   return (
     <div className={cn("rounded-lg border-l-4", config.borderColor)}>
       <div className="px-4 py-2">
-        <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+        <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
           {config.label} ({matches.length})
         </span>
       </div>

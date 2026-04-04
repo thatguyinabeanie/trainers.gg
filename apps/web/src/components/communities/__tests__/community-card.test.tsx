@@ -133,8 +133,6 @@ describe("CommunityCard", () => {
 
     render(<CommunityCard community={community} />);
 
-    expect(
-      screen.queryByText(/active tournament/i)
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/active tournament/i)).not.toBeInTheDocument();
   });
 });

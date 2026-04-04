@@ -306,7 +306,9 @@ describe("StaffListClient", () => {
     it("renders 'Drag staff here' in empty droppable group for owners", () => {
       const group = makeGroup({ id: 1, name: "Admins" });
       setupQuery([makeStaff()]);
-      render(<StaffListClient {...defaultProps} isOwner={true} groups={[group]} />);
+      render(
+        <StaffListClient {...defaultProps} isOwner={true} groups={[group]} />
+      );
       expect(screen.getByText("Drag staff here")).toBeInTheDocument();
     });
 
@@ -430,7 +432,12 @@ describe("StaffListClient", () => {
     it("shows username when first/last name are null", () => {
       setupQuery([
         makeStaff({
-          user: { username: "misty99", first_name: null, last_name: null, image: null },
+          user: {
+            username: "misty99",
+            first_name: null,
+            last_name: null,
+            image: null,
+          },
         }),
       ]);
       render(<StaffListClient {...defaultProps} />);
@@ -440,7 +447,12 @@ describe("StaffListClient", () => {
     it("shows only first name when last name is null", () => {
       setupQuery([
         makeStaff({
-          user: { username: "brock", first_name: "Brock", last_name: null, image: null },
+          user: {
+            username: "brock",
+            first_name: "Brock",
+            last_name: null,
+            image: null,
+          },
         }),
       ]);
       render(<StaffListClient {...defaultProps} />);
@@ -450,7 +462,12 @@ describe("StaffListClient", () => {
     it("shows Unknown when all name fields are null", () => {
       setupQuery([
         makeStaff({
-          user: { username: null, first_name: null, last_name: null, image: null },
+          user: {
+            username: null,
+            first_name: null,
+            last_name: null,
+            image: null,
+          },
         }),
       ]);
       render(<StaffListClient {...defaultProps} />);

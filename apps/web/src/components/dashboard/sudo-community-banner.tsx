@@ -8,7 +8,9 @@ interface SudoCommunityBannerProps {
   communityName: string;
 }
 
-export function SudoCommunityBanner({ communityName }: SudoCommunityBannerProps) {
+export function SudoCommunityBanner({
+  communityName,
+}: SudoCommunityBannerProps) {
   return (
     <div
       className={cn(

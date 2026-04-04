@@ -156,7 +156,17 @@ function SidebarProvider({
       isResizing,
       setIsResizing,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, sidebarWidth, isResizing]
+    [
+      state,
+      open,
+      setOpen,
+      isMobile,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+      sidebarWidth,
+      isResizing,
+    ]
   );
 
   const resolvedWidth = sidebarWidth ? `${sidebarWidth}px` : SIDEBAR_WIDTH;
@@ -263,7 +273,7 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear [[data-resizing]_&]:transition-none md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex [[data-resizing]_&]:transition-none",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -355,7 +365,9 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
     setIsResizing(true);
     startX.current = e.clientX;
     // Detect sidebar side from closest [data-side] ancestor
-    const sidebarGroup = (e.currentTarget as HTMLElement).closest("[data-side]");
+    const sidebarGroup = (e.currentTarget as HTMLElement).closest(
+      "[data-side]"
+    );
     sideRef.current =
       (sidebarGroup?.getAttribute("data-side") as "left" | "right") ?? "left";
     const wrapper = (e.currentTarget as HTMLElement).closest(

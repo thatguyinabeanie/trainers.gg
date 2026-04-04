@@ -181,9 +181,7 @@ describe("TopNavAuthSection", () => {
 
     it("does not render NotificationBell when not authenticated", () => {
       render(<TopNavAuthSection />);
-      expect(
-        screen.queryByTestId("notification-bell")
-      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId("notification-bell")).not.toBeInTheDocument();
     });
   });
 
@@ -371,7 +369,6 @@ describe("TopNavAuthSection", () => {
       await userEvent.click(screen.getByRole("button", { name: /user menu/i }));
       expect(screen.queryByText("My Communities")).not.toBeInTheDocument();
     });
-
   });
 
   // --------------------------------------------------------------------------
@@ -385,6 +382,5 @@ describe("TopNavAuthSection", () => {
       await userEvent.click(screen.getByRole("button", { name: /user menu/i }));
       expect(screen.queryByText(/sudo mode/i)).not.toBeInTheDocument();
     });
-
   });
 });

@@ -129,9 +129,7 @@ describe("MatchChat", () => {
       setupLoading();
       render(<MatchChat {...defaultProps} />);
       // Loader2 has aria-hidden but we can check for the animate-spin class
-      expect(
-        document.querySelector(".animate-spin")
-      ).toBeInTheDocument();
+      expect(document.querySelector(".animate-spin")).toBeInTheDocument();
     });
   });
 
@@ -168,7 +166,12 @@ describe("MatchChat", () => {
       content: "Good luck!",
       message_type: "player",
       created_at: "2026-04-03T10:00:00Z",
-      alt: { id: 10, display_name: "Ash Ketchum", username: "ash", avatar_url: null },
+      alt: {
+        id: 10,
+        display_name: "Ash Ketchum",
+        username: "ash",
+        avatar_url: null,
+      },
     };
 
     const opponentMsg = {
@@ -176,7 +179,12 @@ describe("MatchChat", () => {
       content: "You too!",
       message_type: "player",
       created_at: "2026-04-03T10:01:00Z",
-      alt: { id: 20, display_name: "Misty", username: "misty", avatar_url: null },
+      alt: {
+        id: 20,
+        display_name: "Misty",
+        username: "misty",
+        avatar_url: null,
+      },
     };
 
     const systemMsg = {
@@ -192,7 +200,12 @@ describe("MatchChat", () => {
       content: "Please follow the rules.",
       message_type: "judge",
       created_at: "2026-04-03T10:02:00Z",
-      alt: { id: 30, display_name: null, username: "judge_brock", avatar_url: null },
+      alt: {
+        id: 30,
+        display_name: null,
+        username: "judge_brock",
+        avatar_url: null,
+      },
     };
 
     it("renders player message content", () => {
@@ -279,9 +292,7 @@ describe("MatchChat", () => {
     it("shows 'no player identity' notice when userAltId is null but canChat is true", () => {
       setupNoMessages();
       render(<MatchChat {...defaultProps} userAltId={null} />);
-      expect(
-        screen.getByText(/Unable to send messages/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Unable to send messages/i)).toBeInTheDocument();
     });
 
     it("does not show identity notice when user cannot chat at all", () => {
@@ -520,7 +531,9 @@ describe("MatchChat", () => {
       await waitFor(() => {
         expect(mockCancelJudgeRequestAction).toHaveBeenCalledWith(1, 5);
         expect(onStaffRequestChange).toHaveBeenCalledWith(false);
-        expect(mockToastSuccess).toHaveBeenCalledWith("Judge request cancelled");
+        expect(mockToastSuccess).toHaveBeenCalledWith(
+          "Judge request cancelled"
+        );
       });
     });
   });

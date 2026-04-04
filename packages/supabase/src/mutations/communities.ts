@@ -13,9 +13,7 @@ const DISCORD_INVITE_HOSTS = ["discord.gg", "discord.com"];
  * Extract a valid Discord invite URL from a social links array.
  * Only promotes URLs with https:// and recognized Discord hosts.
  */
-function extractDiscordInviteUrl(
-  links: CommunitySocialLink[]
-): string | null {
+function extractDiscordInviteUrl(links: CommunitySocialLink[]): string | null {
   const discordLink = links.find((l) => l.platform === "discord");
   if (!discordLink) return null;
 

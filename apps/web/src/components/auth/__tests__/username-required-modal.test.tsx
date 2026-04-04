@@ -189,9 +189,7 @@ describe("UsernameRequiredModal", () => {
 
     it("renders username input", () => {
       render(<UsernameRequiredModal />);
-      expect(
-        screen.getByPlaceholderText("cooltrainer")
-      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("cooltrainer")).toBeInTheDocument();
     });
 
     it("renders Continue button (disabled initially)", () => {
@@ -273,7 +271,9 @@ describe("UsernameRequiredModal", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("icon-x")).toBeInTheDocument();
-        expect(screen.getByText("Username is already taken")).toBeInTheDocument();
+        expect(
+          screen.getByText("Username is already taken")
+        ).toBeInTheDocument();
       });
     });
 
@@ -286,7 +286,9 @@ describe("UsernameRequiredModal", () => {
       await user.clear(input);
 
       await waitFor(() => {
-        expect(screen.queryByText("Invalid username format")).not.toBeInTheDocument();
+        expect(
+          screen.queryByText("Invalid username format")
+        ).not.toBeInTheDocument();
       });
     });
   });

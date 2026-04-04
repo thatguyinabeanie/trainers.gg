@@ -50,9 +50,7 @@ jest.mock("@/components/ui/username-input", () => ({
   UsernameInput: ({
     id,
     ...rest
-  }: { id?: string } & Record<string, unknown>) => (
-    <input id={id} {...rest} />
-  ),
+  }: { id?: string } & Record<string, unknown>) => <input id={id} {...rest} />,
 }));
 
 jest.mock("@/components/ui/password-input", () => ({
@@ -180,7 +178,9 @@ describe("SignInView", () => {
     await user.click(screen.getByRole("button", { name: "Sign In" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("Could not find account");
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Could not find account"
+      );
     });
   });
 
@@ -197,7 +197,9 @@ describe("SignInView", () => {
     await user.click(screen.getByRole("button", { name: "Sign In" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("Invalid credentials");
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Invalid credentials"
+      );
     });
   });
 
@@ -271,7 +273,9 @@ describe("SignInView", () => {
     await user.type(screen.getByLabelText("Password"), "Pass123!");
     await user.click(screen.getByRole("button", { name: "Sign In" }));
 
-    expect(screen.getByRole("button", { name: "Signing in..." })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Signing in..." })
+    ).toBeDisabled();
   });
 });
 
@@ -297,9 +301,7 @@ describe("SignUpView (via SignInForm defaultMode=signup)", () => {
     await user.type(screen.getByLabelText("Email"), "ash@example.com");
     await user.type(screen.getByLabelText("Password"), "Pass123!");
     await user.type(screen.getByLabelText("Confirm Password"), "Pass123!");
-    await user.click(
-      screen.getByRole("button", { name: "Create Account" })
-    );
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent(
@@ -320,12 +322,12 @@ describe("SignUpView (via SignInForm defaultMode=signup)", () => {
     await user.type(screen.getByLabelText("Email"), "ash@example.com");
     await user.type(screen.getByLabelText("Password"), "Pass123!");
     await user.type(screen.getByLabelText("Confirm Password"), "Pass123!");
-    await user.click(
-      screen.getByRole("button", { name: "Create Account" })
-    );
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("Service unavailable");
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Service unavailable"
+      );
     });
   });
 
@@ -341,9 +343,7 @@ describe("SignUpView (via SignInForm defaultMode=signup)", () => {
     await user.type(screen.getByLabelText("Email"), "ash@example.com");
     await user.type(screen.getByLabelText("Password"), "Pass123!");
     await user.type(screen.getByLabelText("Confirm Password"), "Pass123!");
-    await user.click(
-      screen.getByRole("button", { name: "Create Account" })
-    );
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent(
@@ -362,9 +362,7 @@ describe("SignUpView (via SignInForm defaultMode=signup)", () => {
     await user.type(screen.getByLabelText("Email"), "ash@example.com");
     await user.type(screen.getByLabelText("Password"), "Pass123!");
     await user.type(screen.getByLabelText("Confirm Password"), "Pass123!");
-    await user.click(
-      screen.getByRole("button", { name: "Create Account" })
-    );
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
 
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/");
@@ -380,9 +378,7 @@ describe("SignUpView (via SignInForm defaultMode=signup)", () => {
     await user.type(screen.getByLabelText("Email"), "ash@example.com");
     await user.type(screen.getByLabelText("Password"), "Pass123!");
     await user.type(screen.getByLabelText("Confirm Password"), "Pass123!");
-    await user.click(
-      screen.getByRole("button", { name: "Create Account" })
-    );
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
 
     expect(
       screen.getByRole("button", { name: "Creating account..." })

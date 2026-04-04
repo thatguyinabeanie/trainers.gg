@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import {
-  createClient,
-  createServiceRoleClient,
-} from "@/lib/supabase/server";
-import { listMyCommunities, listAllCommunitiesForSudo } from "@trainers/supabase";
+  listMyCommunities,
+  listAllCommunitiesForSudo,
+} from "@trainers/supabase";
 import { isSudoModeActive } from "@/lib/sudo/server";
 import { CommunitySelectorClient } from "./community-selector-client";
 
@@ -65,7 +65,11 @@ export default async function TODashboardPage() {
 
   // If user has exactly 1 organization and sudo is NOT active, redirect directly to it.
   // Skip the auto-redirect when sudo is active so admins see the full selector.
-  if (!sudoActive && mergedOrganizations.length === 1 && mergedOrganizations[0]) {
+  if (
+    !sudoActive &&
+    mergedOrganizations.length === 1 &&
+    mergedOrganizations[0]
+  ) {
     redirect(`/dashboard/community/${mergedOrganizations[0].slug}`);
   }
 

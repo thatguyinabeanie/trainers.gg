@@ -3,7 +3,11 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
-import { getCountryName, formatDisplayUsername, isTempUsername } from "@trainers/utils";
+import {
+  getCountryName,
+  formatDisplayUsername,
+  isTempUsername,
+} from "@trainers/utils";
 import { NewTrainerBadge } from "@/components/ui/new-trainer-badge";
 
 interface PlayerCardProps {

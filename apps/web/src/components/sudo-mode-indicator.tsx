@@ -42,7 +42,7 @@ export function SudoModeIndicator() {
       />
 
       {/* Sudo mode badge */}
-      <div className="bg-primary text-primary-foreground fixed bottom-4 right-4 z-[9999] flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium shadow-lg">
+      <div className="bg-primary text-primary-foreground fixed right-4 bottom-4 z-[9999] flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium shadow-lg">
         <ShieldAlert className="h-4 w-4" />
         <span>Sudo Mode Active</span>
       </div>

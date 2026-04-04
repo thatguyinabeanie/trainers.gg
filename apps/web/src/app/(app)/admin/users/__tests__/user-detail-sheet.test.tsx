@@ -7,8 +7,7 @@ const mockGetUserAdminDetails = jest.fn();
 const mockGetSiteRoles = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
-  getUserAdminDetails: (...args: unknown[]) =>
-    mockGetUserAdminDetails(...args),
+  getUserAdminDetails: (...args: unknown[]) => mockGetUserAdminDetails(...args),
   getSiteRoles: (...args: unknown[]) => mockGetSiteRoles(...args),
 }));
 
@@ -171,10 +170,8 @@ const mockRevokeSiteRoleAction = jest.fn();
 
 jest.mock("../actions", () => ({
   suspendUserAction: (...args: unknown[]) => mockSuspendUserAction(...args),
-  unsuspendUserAction: (...args: unknown[]) =>
-    mockUnsuspendUserAction(...args),
-  grantSiteRoleAction: (...args: unknown[]) =>
-    mockGrantSiteRoleAction(...args),
+  unsuspendUserAction: (...args: unknown[]) => mockUnsuspendUserAction(...args),
+  grantSiteRoleAction: (...args: unknown[]) => mockGrantSiteRoleAction(...args),
   revokeSiteRoleAction: (...args: unknown[]) =>
     mockRevokeSiteRoleAction(...args),
 }));
@@ -334,9 +331,7 @@ describe("UserDetailSheet", () => {
     });
 
     it("shows 'Suspended' badge when user is locked", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({ is_locked: true })
-      );
+      mockGetUserAdminDetails.mockResolvedValue(buildUser({ is_locked: true }));
       await renderAndWaitForLoad();
       expect(screen.getByText("Suspended")).toBeInTheDocument();
     });
@@ -493,9 +488,7 @@ describe("UserDetailSheet", () => {
 
   describe("actions — suspended user", () => {
     it("shows 'Unsuspend Account' button when user is locked", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({ is_locked: true })
-      );
+      mockGetUserAdminDetails.mockResolvedValue(buildUser({ is_locked: true }));
       await renderAndWaitForLoad();
       expect(
         screen.getByRole("button", { name: /unsuspend account/i })
@@ -503,9 +496,7 @@ describe("UserDetailSheet", () => {
     });
 
     it("does not show suspension reason input for locked user", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({ is_locked: true })
-      );
+      mockGetUserAdminDetails.mockResolvedValue(buildUser({ is_locked: true }));
       await renderAndWaitForLoad();
       expect(
         screen.queryByPlaceholderText(/reason for suspension/i)
@@ -561,9 +552,7 @@ describe("UserDetailSheet", () => {
       const buttons = screen.getAllByRole("button");
       // The X is the last button in the impersonation group (no text)
       const xBtn = buttons.find(
-        (btn) =>
-          btn.textContent === "" &&
-          btn.className?.includes
+        (btn) => btn.textContent === "" && btn.className?.includes
       );
       if (xBtn) {
         await user.click(xBtn);
@@ -661,9 +650,7 @@ describe("UserDetailSheet", () => {
 
   describe("unsuspend action flow", () => {
     it("opens confirmation dialog when 'Unsuspend Account' is clicked", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({ is_locked: true })
-      );
+      mockGetUserAdminDetails.mockResolvedValue(buildUser({ is_locked: true }));
 
       const user = userEvent.setup();
       await renderAndWaitForLoad();
@@ -677,9 +664,7 @@ describe("UserDetailSheet", () => {
     });
 
     it("calls unsuspendUserAction when confirmed", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({ is_locked: true })
-      );
+      mockGetUserAdminDetails.mockResolvedValue(buildUser({ is_locked: true }));
 
       const user = userEvent.setup();
       await renderAndWaitForLoad();

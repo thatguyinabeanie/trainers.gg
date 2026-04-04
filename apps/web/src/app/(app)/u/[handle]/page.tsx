@@ -16,7 +16,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Users } from "lucide-react";
-import { getCountryName, formatDisplayUsername, isTempUsername } from "@trainers/utils";
+import {
+  getCountryName,
+  formatDisplayUsername,
+  isTempUsername,
+} from "@trainers/utils";
 import { NewTrainerBadge } from "@/components/ui/new-trainer-badge";
 import { PlayerProfileTabs } from "./player-profile-tabs";
 
@@ -94,7 +98,8 @@ export async function generateMetadata({
     return { title: "Player Not Found" };
   }
 
-  const rawDisplayName = profile.mainAlt?.username ?? profile.username ?? handle;
+  const rawDisplayName =
+    profile.mainAlt?.username ?? profile.username ?? handle;
   const displayName = formatDisplayUsername(rawDisplayName);
   const bio = profile.mainAlt?.bio;
   const description = bio
@@ -227,9 +232,7 @@ function PlayerHeader({
           <AvatarFallback className="text-xl">
             {(() => {
               const raw = mainAlt?.username ?? profile.username ?? "?";
-              return isTempUsername(raw)
-                ? "NT"
-                : raw.slice(0, 2).toUpperCase();
+              return isTempUsername(raw) ? "NT" : raw.slice(0, 2).toUpperCase();
             })()}
           </AvatarFallback>
         </Avatar>
@@ -237,7 +240,9 @@ function PlayerHeader({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold">
-              {formatDisplayUsername(mainAlt?.username ?? profile.username ?? "")}
+              {formatDisplayUsername(
+                mainAlt?.username ?? profile.username ?? ""
+              )}
             </h1>
             {isTempUsername(mainAlt?.username ?? profile.username ?? "") && (
               <NewTrainerBadge className="mt-1" />
@@ -310,7 +315,9 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <Breadcrumb
-        username={formatDisplayUsername(profile.mainAlt?.username ?? profile.username ?? handle)}
+        username={formatDisplayUsername(
+          profile.mainAlt?.username ?? profile.username ?? handle
+        )}
       />
       <PlayerHeader
         profile={profile}

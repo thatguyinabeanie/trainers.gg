@@ -190,7 +190,9 @@ describe("useAuth", () => {
     const { result } = renderHook(() => useAuth());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let signInResult: Awaited<ReturnType<typeof result.current.signInWithEmail>>;
+    let signInResult: Awaited<
+      ReturnType<typeof result.current.signInWithEmail>
+    >;
     await act(async () => {
       signInResult = await result.current.signInWithEmail("a@b.com", "pass123");
     });
@@ -207,7 +209,9 @@ describe("useAuth", () => {
     const { result } = renderHook(() => useAuth());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let signInResult: Awaited<ReturnType<typeof result.current.signInWithEmail>>;
+    let signInResult: Awaited<
+      ReturnType<typeof result.current.signInWithEmail>
+    >;
     await act(async () => {
       signInResult = await result.current.signInWithEmail("a@b.com", "wrong");
     });
@@ -272,9 +276,7 @@ describe("useAuth", () => {
     const { result } = renderHook(() => useAuth());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let oauthResult: Awaited<
-      ReturnType<typeof result.current.signInWithOAuth>
-    >;
+    let oauthResult: Awaited<ReturnType<typeof result.current.signInWithOAuth>>;
     await act(async () => {
       oauthResult = await result.current.signInWithOAuth("twitch");
     });
@@ -295,7 +297,9 @@ describe("useAuth", () => {
     const { result } = renderHook(() => useAuth());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let signUpResult: Awaited<ReturnType<typeof result.current.signUpWithEmail>>;
+    let signUpResult: Awaited<
+      ReturnType<typeof result.current.signUpWithEmail>
+    >;
     await act(async () => {
       signUpResult = await result.current.signUpWithEmail("a@b.com", "Pass1!", {
         username: "ashketchum",
@@ -318,7 +322,9 @@ describe("useAuth", () => {
     const { result } = renderHook(() => useAuth());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let signUpResult: Awaited<ReturnType<typeof result.current.signUpWithEmail>>;
+    let signUpResult: Awaited<
+      ReturnType<typeof result.current.signUpWithEmail>
+    >;
     await act(async () => {
       signUpResult = await result.current.signUpWithEmail("a@b.com", "Pass1!");
     });
@@ -333,7 +339,9 @@ describe("useAuth", () => {
     const { result } = renderHook(() => useAuth());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let signUpResult: Awaited<ReturnType<typeof result.current.signUpWithEmail>>;
+    let signUpResult: Awaited<
+      ReturnType<typeof result.current.signUpWithEmail>
+    >;
     await act(async () => {
       signUpResult = await result.current.signUpWithEmail("a@b.com", "Pass1!");
     });

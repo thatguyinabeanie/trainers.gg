@@ -6,8 +6,14 @@ import { TeamSheet, type TeamData } from "../team-sheet";
 // ===========================================================================
 
 jest.mock("../pokemon-card", () => ({
-  PokemonCard: ({ pokemon }: { pokemon: { species: string; position: number } }) => (
-    <div data-testid={`pokemon-card-${pokemon.position}`}>{pokemon.species}</div>
+  PokemonCard: ({
+    pokemon,
+  }: {
+    pokemon: { species: string; position: number };
+  }) => (
+    <div data-testid={`pokemon-card-${pokemon.position}`}>
+      {pokemon.species}
+    </div>
   ),
 }));
 

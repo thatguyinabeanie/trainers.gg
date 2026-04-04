@@ -128,7 +128,9 @@ const mockUseSupabaseQuery = useSupabaseQuery as jest.MockedFunction<
 // Helpers
 // =============================================================================
 
-function makeStaffMember(overrides: Partial<StaffWithRole> = {}): StaffWithRole {
+function makeStaffMember(
+  overrides: Partial<StaffWithRole> = {}
+): StaffWithRole {
   return {
     user_id: "user-1",
     community_id: 10,
@@ -266,7 +268,9 @@ describe("StaffClient", () => {
 
     it("does not show Add Staff button in heading for non-owners", () => {
       setupQuery([makeStaffMember()]);
-      render(<StaffClient {...defaultProps} isOwner={false} currentUserRole={null} />);
+      render(
+        <StaffClient {...defaultProps} isOwner={false} currentUserRole={null} />
+      );
       expect(
         screen.queryByRole("button", { name: /add staff/i })
       ).not.toBeInTheDocument();
@@ -333,7 +337,12 @@ describe("StaffClient", () => {
 
     it("renders username-based display when first/last name absent", () => {
       const member = makeStaffMember({
-        user: { username: "brock123", first_name: null, last_name: null, image: null },
+        user: {
+          username: "brock123",
+          first_name: null,
+          last_name: null,
+          image: null,
+        },
       });
       setupQuery([member]);
       render(<StaffClient {...defaultProps} />);
@@ -342,7 +351,12 @@ describe("StaffClient", () => {
 
     it("renders initials fallback when only first name present", () => {
       const member = makeStaffMember({
-        user: { username: null, first_name: "Misty", last_name: null, image: null },
+        user: {
+          username: null,
+          first_name: "Misty",
+          last_name: null,
+          image: null,
+        },
       });
       setupQuery([member]);
       render(<StaffClient {...defaultProps} />);
@@ -358,8 +372,24 @@ describe("StaffClient", () => {
   describe("search filter in unassigned panel", () => {
     it("filters staff by display name when search term is entered", async () => {
       const members = [
-        makeStaffMember({ user_id: "u1", user: { username: "ash", first_name: "Ash", last_name: "Ketchum", image: null } }),
-        makeStaffMember({ user_id: "u2", user: { username: "brock", first_name: "Brock", last_name: null, image: null } }),
+        makeStaffMember({
+          user_id: "u1",
+          user: {
+            username: "ash",
+            first_name: "Ash",
+            last_name: "Ketchum",
+            image: null,
+          },
+        }),
+        makeStaffMember({
+          user_id: "u2",
+          user: {
+            username: "brock",
+            first_name: "Brock",
+            last_name: null,
+            image: null,
+          },
+        }),
       ];
       setupQuery(members);
       const user = userEvent.setup();
@@ -453,26 +483,19 @@ describe("StaffClient", () => {
       { role: "org_admin", label: "drag hint shown", expectHint: true },
       { role: "org_head_judge", label: "drag hint shown", expectHint: true },
       { role: "org_judge", label: "drag hint NOT shown", expectHint: false },
-    ])(
-      "$label for currentUserRole=$role",
-      ({ role, expectHint }) => {
-        setupQuery([makeStaffMember()]);
-        render(
-          <StaffClient
-            {...defaultProps}
-            isOwner={false}
-            currentUserRole={role}
-          />
-        );
-        const hint = screen.queryByText(
-          "Drag staff between columns to assign roles"
-        );
-        if (expectHint) {
-          expect(hint).toBeInTheDocument();
-        } else {
-          expect(hint).not.toBeInTheDocument();
-        }
+    ])("$label for currentUserRole=$role", ({ role, expectHint }) => {
+      setupQuery([makeStaffMember()]);
+      render(
+        <StaffClient {...defaultProps} isOwner={false} currentUserRole={role} />
+      );
+      const hint = screen.queryByText(
+        "Drag staff between columns to assign roles"
+      );
+      if (expectHint) {
+        expect(hint).toBeInTheDocument();
+      } else {
+        expect(hint).not.toBeInTheDocument();
       }
-    );
+    });
   });
 });

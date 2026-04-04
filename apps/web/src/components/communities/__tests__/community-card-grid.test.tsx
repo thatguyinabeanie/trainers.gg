@@ -20,15 +20,19 @@ jest.mock("next/link", () => ({
 
 // Mock community-card to avoid deep dependency chain
 jest.mock("@/components/communities/community-card", () => ({
-  CommunityCard: ({ community }: { community: { id: number; name: string } }) => (
-    <div data-testid="community-card">{community.name}</div>
-  ),
+  CommunityCard: ({
+    community,
+  }: {
+    community: { id: number; name: string };
+  }) => <div data-testid="community-card">{community.name}</div>,
 }));
 
 import { CommunityCardGrid } from "../community-card-grid";
 import type { CommunityWithCounts } from "@trainers/supabase";
 
-function makeCommunity(overrides: Partial<CommunityWithCounts> = {}): CommunityWithCounts {
+function makeCommunity(
+  overrides: Partial<CommunityWithCounts> = {}
+): CommunityWithCounts {
   return {
     id: 1,
     name: "Test Community",
@@ -89,9 +93,13 @@ describe("CommunityCardGrid", () => {
 
     it("does not show the empty state when communities are present", () => {
       render(
-        <CommunityCardGrid communities={[makeCommunity({ id: 1, name: "VGC Club" })]} />
+        <CommunityCardGrid
+          communities={[makeCommunity({ id: 1, name: "VGC Club" })]}
+        />
       );
-      expect(screen.queryByText("No communities found")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("No communities found")
+      ).not.toBeInTheDocument();
     });
   });
 });

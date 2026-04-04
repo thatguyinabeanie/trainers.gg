@@ -149,9 +149,7 @@ describe("FlagDialog", () => {
 
     it("shows snake_case hint text in create mode", () => {
       render(<FlagDialog {...defaultProps} />);
-      expect(
-        screen.getByText(/must be snake_case/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/must be snake_case/i)).toBeInTheDocument();
     });
 
     it("key input is enabled in create mode", () => {
@@ -184,7 +182,9 @@ describe("FlagDialog", () => {
     });
 
     it("pre-fills enabled from flag", () => {
-      render(<FlagDialog {...defaultProps} flag={buildFlag({ enabled: true })} />);
+      render(
+        <FlagDialog {...defaultProps} flag={buildFlag({ enabled: true })} />
+      );
       expect(screen.getByRole("checkbox", { name: /enabled/i })).toBeChecked();
     });
 
@@ -227,36 +227,36 @@ describe("FlagDialog", () => {
       ["_flag", "Key must be snake_case"],
       ["123flag", "Key must be snake_case"],
       ["my flag", "Key must be snake_case"],
-    ])("shows snake_case error for invalid key '%s'", async (invalidKey, errorMsg) => {
-      const user = userEvent.setup();
-      render(<FlagDialog {...defaultProps} />);
+    ])(
+      "shows snake_case error for invalid key '%s'",
+      async (invalidKey, errorMsg) => {
+        const user = userEvent.setup();
+        render(<FlagDialog {...defaultProps} />);
 
-      await user.type(screen.getByLabelText(/key/i), invalidKey);
-      await user.click(screen.getByRole("button", { name: "Create Flag" }));
+        await user.type(screen.getByLabelText(/key/i), invalidKey);
+        await user.click(screen.getByRole("button", { name: "Create Flag" }));
 
-      expect(screen.getByText(new RegExp(errorMsg, "i"))).toBeInTheDocument();
-      expect(defaultProps.onSubmit).not.toHaveBeenCalled();
-    });
+        expect(screen.getByText(new RegExp(errorMsg, "i"))).toBeInTheDocument();
+        expect(defaultProps.onSubmit).not.toHaveBeenCalled();
+      }
+    );
 
-    it.each([
-      "my_flag",
-      "feature_flag",
-      "flag123",
-      "a",
-      "my_feature_flag_v2",
-    ])("accepts valid snake_case key '%s'", async (validKey) => {
-      const user = userEvent.setup();
-      render(<FlagDialog {...defaultProps} />);
+    it.each(["my_flag", "feature_flag", "flag123", "a", "my_feature_flag_v2"])(
+      "accepts valid snake_case key '%s'",
+      async (validKey) => {
+        const user = userEvent.setup();
+        render(<FlagDialog {...defaultProps} />);
 
-      await user.type(screen.getByLabelText(/key/i), validKey);
-      await user.click(screen.getByRole("button", { name: "Create Flag" }));
+        await user.type(screen.getByLabelText(/key/i), validKey);
+        await user.click(screen.getByRole("button", { name: "Create Flag" }));
 
-      // No key error shown
-      expect(screen.queryByText("Key is required")).not.toBeInTheDocument();
-      expect(
-        screen.queryByText("Key must be snake_case (e.g. my_feature_flag)")
-      ).not.toBeInTheDocument();
-    });
+        // No key error shown
+        expect(screen.queryByText("Key is required")).not.toBeInTheDocument();
+        expect(
+          screen.queryByText("Key must be snake_case (e.g. my_feature_flag)")
+        ).not.toBeInTheDocument();
+      }
+    );
 
     it("clears key error when user types after an error", async () => {
       const user = userEvent.setup();

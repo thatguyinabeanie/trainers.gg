@@ -1,7 +1,11 @@
 import { type ReactNode } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MatchHeader, type PlayerInfo, type PlayerStats } from "../match-header";
+import {
+  MatchHeader,
+  type PlayerInfo,
+  type PlayerStats,
+} from "../match-header";
 
 // ===========================================================================
 // Mocks
@@ -59,7 +63,13 @@ function makePlayer(overrides: Partial<PlayerInfo> = {}): PlayerInfo {
 }
 
 const defaultProps = {
-  opponent: makePlayer({ id: 2, username: "misty", display_name: "Misty", handle: "misty", in_game_name: null }),
+  opponent: makePlayer({
+    id: 2,
+    username: "misty",
+    display_name: "Misty",
+    handle: "misty",
+    in_game_name: null,
+  }),
   myPlayer: makePlayer(),
   opponentStats: { wins: 3, losses: 1 } as PlayerStats,
   myStats: { wins: 2, losses: 2 } as PlayerStats,
@@ -217,7 +227,9 @@ describe("MatchHeader", () => {
         />
       );
       expect(screen.getByText("nohandle")).toBeInTheDocument();
-      expect(screen.queryByRole("link", { name: "nohandle" })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "nohandle" })
+      ).not.toBeInTheDocument();
     });
 
     it("renders nothing for null player (bye slot)", () => {
@@ -371,7 +383,7 @@ describe("MatchHeader", () => {
         expect(mockSubmitGameSelection).toHaveBeenCalledWith(
           1,
           10, // myAltId
-          1   // tournamentId
+          1 // tournamentId
         );
       });
     });
@@ -396,7 +408,7 @@ describe("MatchHeader", () => {
         expect(mockSubmitGameSelection).toHaveBeenCalledWith(
           1,
           20, // opponentAltId
-          1   // tournamentId
+          1 // tournamentId
         );
       });
     });
@@ -504,23 +516,17 @@ describe("MatchHeader", () => {
 
     it("shows staff resolution controls for disputed games when isStaff=true", () => {
       render(
-        <MatchHeader
-          {...defaultProps}
-          isStaff={true}
-          games={[disputedGame]}
-        />
+        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />
       );
       // The Set button should appear for staff
-      expect(screen.getByRole("button", { name: /^Set$/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /^Set$/i })
+      ).toBeInTheDocument();
     });
 
     it("does not show staff resolution controls for non-staff", () => {
       render(
-        <MatchHeader
-          {...defaultProps}
-          isStaff={false}
-          games={[disputedGame]}
-        />
+        <MatchHeader {...defaultProps} isStaff={false} games={[disputedGame]} />
       );
       expect(
         screen.queryByRole("button", { name: /^Set$/i })
@@ -603,22 +609,14 @@ describe("MatchHeader", () => {
 
     it("shows disputed alert with game number for staff", () => {
       render(
-        <MatchHeader
-          {...defaultProps}
-          isStaff={true}
-          games={[disputedGame]}
-        />
+        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />
       );
       expect(screen.getByText(/Game 1 disputed/)).toBeInTheDocument();
     });
 
     it("shows winner select dropdown and Set/Reset buttons for staff", () => {
       render(
-        <MatchHeader
-          {...defaultProps}
-          isStaff={true}
-          games={[disputedGame]}
-        />
+        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />
       );
       // Winner dropdown option
       expect(screen.getByText("Winner...")).toBeInTheDocument();
@@ -632,11 +630,7 @@ describe("MatchHeader", () => {
 
     it("does not show disputed section for non-staff", () => {
       render(
-        <MatchHeader
-          {...defaultProps}
-          isStaff={false}
-          games={[disputedGame]}
-        />
+        <MatchHeader {...defaultProps} isStaff={false} games={[disputedGame]} />
       );
       // Disputed alert is visible to all but override controls are staff-only
       expect(screen.getByText(/Game 1 disputed/)).toBeInTheDocument();
@@ -645,11 +639,7 @@ describe("MatchHeader", () => {
 
     it("shows player names as override options for staff", () => {
       render(
-        <MatchHeader
-          {...defaultProps}
-          isStaff={true}
-          games={[disputedGame]}
-        />
+        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />
       );
       // Player names appear in the winner select options
       const options = screen.getAllByRole("option");
@@ -674,12 +664,7 @@ describe("MatchHeader", () => {
     };
 
     it("renders resolved icon for self-correct game (not editing)", () => {
-      render(
-        <MatchHeader
-          {...defaultProps}
-          games={[selfCorrectGame]}
-        />
-      );
+      render(<MatchHeader {...defaultProps} games={[selfCorrectGame]} />);
       // Self-correct renders as a resolved game with click-to-edit
       // The game number should appear
       expect(screen.getByText("2")).toBeInTheDocument();

@@ -263,8 +263,7 @@ describe("OverviewTab", () => {
         if (url.includes("/api/players/stats")) {
           return Promise.resolve({
             ok: true,
-            json: () =>
-              Promise.resolve(makeStats({ bestPlacement: null })),
+            json: () => Promise.resolve(makeStats({ bestPlacement: null })),
           });
         }
         if (url.includes("/api/players/rating")) {
@@ -545,9 +544,7 @@ describe("OverviewTab", () => {
       render(<OverviewTab altIds={[1]} handle="ash" />, {
         wrapper: createWrapper(),
       });
-      expect(
-        await screen.findByText("Recent Tournaments")
-      ).toBeInTheDocument();
+      expect(await screen.findByText("Recent Tournaments")).toBeInTheDocument();
     });
 
     it("shows start date when present", async () => {

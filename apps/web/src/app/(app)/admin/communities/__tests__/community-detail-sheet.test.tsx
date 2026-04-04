@@ -150,9 +150,7 @@ import type { CommunityRow } from "../columns";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function buildCommunity(
-  overrides: Partial<CommunityRow> = {}
-): CommunityRow {
+function buildCommunity(overrides: Partial<CommunityRow> = {}): CommunityRow {
   return {
     id: 1,
     name: "Pallet Town League",
@@ -193,9 +191,7 @@ describe("CommunityDetailSheet", () => {
 
   describe("when community is null", () => {
     it("renders nothing", () => {
-      render(
-        <CommunityDetailSheet {...defaultProps} community={null} />
-      );
+      render(<CommunityDetailSheet {...defaultProps} community={null} />);
       expect(screen.queryByTestId("sheet")).not.toBeInTheDocument();
     });
   });
@@ -464,9 +460,9 @@ describe("CommunityDetailSheet", () => {
       await user.click(
         screen.getByRole("button", { name: "Approve Community" })
       );
-      expect(
-        screen.getByTestId("alert-dialog")
-      ).toHaveTextContent("Pallet Town League");
+      expect(screen.getByTestId("alert-dialog")).toHaveTextContent(
+        "Pallet Town League"
+      );
     });
 
     it("calls approveCommunityAction when confirm is clicked", async () => {

@@ -368,7 +368,7 @@ function TournamentCard({
       {statusInfo.isUrgent && (
         <div
           className={cn(
-            "absolute left-0 top-0 h-full w-1",
+            "absolute top-0 left-0 h-full w-1",
             statusInfo.variant === "urgent" &&
               statusInfo.label === "Check in now!"
               ? "bg-red-500"
@@ -405,7 +405,7 @@ function TournamentCard({
             </div>
 
             {/* Status indicator */}
-            <div className="pl-13 space-y-0.5">
+            <div className="space-y-0.5 pl-13">
               <div
                 className={`flex items-center gap-1.5 text-xs font-medium ${statusInfo.color}`}
               >

@@ -26,20 +26,20 @@ Guardrails for viewing or editing files in `apps/web/src/components/ui/`. Most f
 
 These files in `components/ui/` are NOT from shadcn — they are project-specific:
 
-| File | Purpose |
-|------|---------|
-| `status-badge.tsx` | Semantic status labels with color mapping |
-| `empty-state.tsx` | Empty state — illustrated/minimal/inline variants |
-| `empty.tsx` | Composable empty state (header, title, description, media) |
-| `copy-button.tsx` | Clipboard copy with feedback animation |
-| `data-table.tsx` | TanStack Table v5 wrapper with sorting/filtering/pagination |
-| `responsive-table.tsx` | Horizontal-scrollable table with fade shadows |
-| `spinner.tsx` | Animated loading spinner |
-| `username-input.tsx` | Input with `.trainers.gg` domain suffix |
-| `password-input.tsx` | Input with show/hide password toggle |
-| `field.tsx` | Form field wrapper with legend, label, description, error |
-| `item.tsx` | List item with media, title, description, actions |
-| `kbd.tsx` | Keyboard key display |
+| File                   | Purpose                                                     |
+| ---------------------- | ----------------------------------------------------------- |
+| `status-badge.tsx`     | Semantic status labels with color mapping                   |
+| `empty-state.tsx`      | Empty state — illustrated/minimal/inline variants           |
+| `empty.tsx`            | Composable empty state (header, title, description, media)  |
+| `copy-button.tsx`      | Clipboard copy with feedback animation                      |
+| `data-table.tsx`       | TanStack Table v5 wrapper with sorting/filtering/pagination |
+| `responsive-table.tsx` | Horizontal-scrollable table with fade shadows               |
+| `spinner.tsx`          | Animated loading spinner                                    |
+| `username-input.tsx`   | Input with `.trainers.gg` domain suffix                     |
+| `password-input.tsx`   | Input with show/hide password toggle                        |
+| `field.tsx`            | Form field wrapper with legend, label, description, error   |
+| `item.tsx`             | List item with media, title, description, actions           |
+| `kbd.tsx`              | Keyboard key display                                        |
 
 ## Keeping Catalogs in Sync
 

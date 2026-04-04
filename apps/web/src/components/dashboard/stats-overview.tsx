@@ -33,7 +33,7 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
           <div className="bg-primary/10 flex size-7 items-center justify-center rounded-lg">
             <Zap className="text-primary size-3.5" />
           </div>
-          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             Win Rate
           </p>
         </div>
@@ -65,7 +65,7 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
           <div className="flex size-7 items-center justify-center rounded-lg bg-blue-500/10">
             <Target className="size-3.5 text-blue-500" />
           </div>
-          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             Rating
           </p>
         </div>
@@ -99,7 +99,7 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
           <div className="flex size-7 items-center justify-center rounded-lg bg-purple-500/10">
             <Trophy className="size-3.5 text-purple-500" />
           </div>
-          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             Tournaments
           </p>
         </div>
@@ -120,11 +120,11 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
           <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/10">
             <Award className="size-3.5 text-amber-500" />
           </div>
-          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             Champion Pts
           </p>
         </div>
-        <p className="mt-3 font-mono text-3xl font-bold tabular-nums text-amber-500">
+        <p className="mt-3 font-mono text-3xl font-bold text-amber-500 tabular-nums">
           {stats.championPoints.toLocaleString()}
         </p>
         <p className="text-muted-foreground mt-1.5 text-xs">Season standing</p>

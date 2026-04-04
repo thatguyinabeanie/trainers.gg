@@ -428,7 +428,12 @@ interface NavUserProps {
   isSudoActive: boolean;
 }
 
-function NavUser({ user, activeCommunity, isSiteAdmin, isSudoActive }: NavUserProps) {
+function NavUser({
+  user,
+  activeCommunity,
+  isSiteAdmin,
+  isSudoActive,
+}: NavUserProps) {
   const { isMobile } = useSidebar();
   const router = useRouter();
   const [togglingS, setTogglingS] = useState(false);
@@ -439,7 +444,9 @@ function NavUser({ user, activeCommunity, isSiteAdmin, isSudoActive }: NavUserPr
       const { toggleSudoMode } = await import("@/lib/sudo/actions");
       const result = await toggleSudoMode();
       if (result.success) {
-        toast.success(result.isActive ? "Sudo mode activated" : "Sudo mode deactivated");
+        toast.success(
+          result.isActive ? "Sudo mode activated" : "Sudo mode deactivated"
+        );
         router.refresh();
       } else {
         toast.error(result.error);
@@ -603,7 +610,11 @@ interface PlayerNavProps {
   isOnboarding?: boolean;
 }
 
-function PlayerNav({ pathname, communities, isOnboarding = false }: PlayerNavProps) {
+function PlayerNav({
+  pathname,
+  communities,
+  isOnboarding = false,
+}: PlayerNavProps) {
   const playerItems = [
     {
       label: "Home",
@@ -628,7 +639,9 @@ function PlayerNav({ pathname, communities, isOnboarding = false }: PlayerNavPro
   return (
     <>
       {/* Main nav */}
-      <SidebarGroup className={cn(isOnboarding && "pointer-events-none opacity-40")}>
+      <SidebarGroup
+        className={cn(isOnboarding && "pointer-events-none opacity-40")}
+      >
         <SidebarGroupContent>
           <SidebarMenu>
             {playerItems.map((item) => (
@@ -649,7 +662,12 @@ function PlayerNav({ pathname, communities, isOnboarding = false }: PlayerNavPro
 
       {/* Communities section */}
       {communities.length > 0 && (
-        <SidebarGroup className={cn("group-data-[collapsible=icon]:hidden", isOnboarding && "pointer-events-none opacity-40")}>
+        <SidebarGroup
+          className={cn(
+            "group-data-[collapsible=icon]:hidden",
+            isOnboarding && "pointer-events-none opacity-40"
+          )}
+        >
           <SidebarGroupLabel>
             Communities
             <SidebarGroupAction
@@ -672,9 +690,7 @@ function PlayerNav({ pathname, communities, isOnboarding = false }: PlayerNavPro
                   <SidebarMenuItem key={community.id}>
                     <SidebarMenuButton
                       render={
-                        <Link
-                          href={`/dashboard/community/${community.slug}`}
-                        />
+                        <Link href={`/dashboard/community/${community.slug}`} />
                       }
                       isActive={false}
                       className="gap-2.5"
@@ -727,7 +743,12 @@ function PlayerNav({ pathname, communities, isOnboarding = false }: PlayerNavPro
       )}
 
       {/* Secondary nav — pinned to bottom of SidebarContent */}
-      <SidebarGroup className={cn("mt-auto", isOnboarding && "pointer-events-none opacity-40")}>
+      <SidebarGroup
+        className={cn(
+          "mt-auto",
+          isOnboarding && "pointer-events-none opacity-40"
+        )}
+      >
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
