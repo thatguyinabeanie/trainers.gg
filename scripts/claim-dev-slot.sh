@@ -61,11 +61,22 @@ if [ -f "$SUPABASE_CONFIG_BACKUP" ]; then
   rm "$SUPABASE_CONFIG_BACKUP"
 fi
 
-# Safety: if config.toml has a non-default project_id (e.g., committed by accident
-# from a worktree), reset it to "supabase" so slot 0 works correctly.
-if [ -f "$SUPABASE_CONFIG" ] && grep -q 'project_id = "supabase-slot-' "$SUPABASE_CONFIG"; then
-  log_warn "config.toml has a slot-specific project_id — resetting to default"
-  sed -i '' 's/project_id = "supabase-slot-[0-9]*"/project_id = "supabase"/' "$SUPABASE_CONFIG"
+# Always reset config.toml to slot-0 defaults before evaluating slots.
+# This catches cases where slot-specific values were accidentally committed
+# or a backup file was lost. The slot-specific rewrite (below) will re-apply
+# the correct values for the chosen slot.
+if [ -f "$SUPABASE_CONFIG" ]; then
+  needs_reset=false
+  grep -q 'project_id = "supabase-slot-' "$SUPABASE_CONFIG" && needs_reset=true
+  # Check if API port is not the default 54321 (indicates leftover slot config)
+  grep -q '^port = 54321' "$SUPABASE_CONFIG" || needs_reset=true
+
+  if [ "$needs_reset" = "true" ]; then
+    log_warn "config.toml has non-default values — resetting to slot-0 defaults"
+    sed -i '' 's/project_id = "supabase-slot-[0-9]*"/project_id = "supabase"/' "$SUPABASE_CONFIG"
+    # Reset all ports to slot-0 defaults using git checkout
+    git checkout -- "$SUPABASE_CONFIG" 2>/dev/null || true
+  fi
 fi
 
 # =============================================================================
