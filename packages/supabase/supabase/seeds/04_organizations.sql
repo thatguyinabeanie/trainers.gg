@@ -31,6 +31,86 @@ INSERT INTO public.communities (
   'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'regular', 'free'
 ) ON CONFLICT (slug) DO NOTHING;
 
+INSERT INTO public.communities (
+  name, slug, description, icon, discord_invite_url, social_links, status, owner_user_id, tier, subscription_tier
+) VALUES (
+  'Stellar Novas', 'stellar-novas',
+  'An organization that runs tournaments for people who love competitive Pokemon and have done so for over 5 years.',
+  '⭐', 'https://discord.gg/stellar-novas',
+  '[{"platform": "discord", "url": "https://discord.gg/stellar-novas"}, {"platform": "twitter", "url": "https://x.com/stellarnovas"}, {"platform": "youtube", "url": "https://youtube.com/@stellarnovas"}, {"platform": "twitch", "url": "https://twitch.tv/stellarnovas"}]'::jsonb,
+  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'partner', 'community_plus'
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO public.communities (
+  name, slug, description, icon, discord_invite_url, social_links, status, owner_user_id, tier, subscription_tier
+) VALUES (
+  'Hatterene Series', 'hatterene-series',
+  'A tournament series and community for women and femme-oriented players.',
+  '🎀', 'https://discord.gg/hatterene',
+  '[{"platform": "discord", "url": "https://discord.gg/hatterene"}, {"platform": "twitter", "url": "https://x.com/hatterene-series"}]'::jsonb,
+  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'regular', 'free'
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO public.communities (
+  name, slug, description, icon, discord_invite_url, social_links, status, owner_user_id, tier, subscription_tier
+) VALUES (
+  'Showdown Academy', 'showdown-academy',
+  'Learn competitive Pokemon from the ground up. Weekly workshops, mentoring, and beginner-friendly tournaments on Pokemon Showdown.',
+  '📚', 'https://discord.gg/showdown-academy',
+  '[{"platform": "discord", "url": "https://discord.gg/showdown-academy"}, {"platform": "youtube", "url": "https://youtube.com/@showdownacademy"}, {"platform": "website", "url": "https://showdownacademy.gg"}]'::jsonb,
+  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'regular', 'free'
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO public.communities (
+  name, slug, description, icon, discord_invite_url, social_links, status, owner_user_id, tier, subscription_tier
+) VALUES (
+  'Draft League Central', 'draft-league-central',
+  'The home of Pokemon draft leagues. Season-based drafting, weekly matchups, and a thriving community of draft enthusiasts.',
+  '📋', 'https://discord.gg/draft-league',
+  '[{"platform": "discord", "url": "https://discord.gg/draft-league"}, {"platform": "twitter", "url": "https://x.com/draftleaguecentral"}, {"platform": "reddit", "url": "https://reddit.com/r/draftleague"}]'::jsonb,
+  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'regular', 'free'
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO public.communities (
+  name, slug, description, icon, discord_invite_url, social_links, status, owner_user_id, tier, subscription_tier
+) VALUES (
+  'VGC Latin America', 'vgc-latam',
+  'Comunidad de Pokemon VGC para Latinoamérica. Torneos semanales y recursos en español.',
+  '🌎', 'https://discord.gg/vgc-latam',
+  '[{"platform": "discord", "url": "https://discord.gg/vgc-latam"}, {"platform": "twitter", "url": "https://x.com/vgclatam"}, {"platform": "instagram", "url": "https://instagram.com/vgclatam"}]'::jsonb,
+  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'regular', 'free'
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO public.communities (
+  name, slug, description, icon, discord_invite_url, social_links, status, owner_user_id, tier, subscription_tier
+) VALUES (
+  'Nuzlocke Union', 'nuzlocke-union',
+  'A community dedicated to Nuzlocke challenges. Share your runs, get tips, and compete in Nuzlocke-themed tournaments.',
+  '💀', null,
+  '[{"platform": "reddit", "url": "https://reddit.com/r/nuzlocke"}, {"platform": "youtube", "url": "https://youtube.com/@nuzlockeunion"}]'::jsonb,
+  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'regular', 'free'
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO public.communities (
+  name, slug, description, icon, discord_invite_url, social_links, status, owner_user_id, tier, subscription_tier
+) VALUES (
+  'Worlds Watch Party', 'worlds-watch-party',
+  'Get together to watch Pokemon World Championships and major events. Live commentary, predictions, and community viewing parties.',
+  '🏟️', 'https://discord.gg/worlds-watch',
+  '[{"platform": "discord", "url": "https://discord.gg/worlds-watch"}, {"platform": "twitch", "url": "https://twitch.tv/worldswatchparty"}]'::jsonb,
+  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'regular', 'free'
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO public.communities (
+  name, slug, description, icon, discord_invite_url, social_links, status, owner_user_id, tier, subscription_tier
+) VALUES (
+  'Competitive Casual', 'competitive-casual',
+  null,
+  '🎮', 'https://discord.gg/comp-casual',
+  '[{"platform": "discord", "url": "https://discord.gg/comp-casual"}]'::jsonb,
+  'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'regular', 'free'
+) ON CONFLICT (slug) DO NOTHING;
+
 
 -- -----------------------------------------------------------------------------
 -- Organization Staff
