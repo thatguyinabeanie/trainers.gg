@@ -101,6 +101,48 @@ describe("createCommunitySchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts about within 10,000 characters", () => {
+    const result = createCommunitySchema.safeParse({
+      name: "Pokemon League",
+      slug: "pokemon-league",
+      about: "a".repeat(10_000),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts without about (optional)", () => {
+    const result = createCommunitySchema.safeParse({
+      name: "Pokemon League",
+      slug: "pokemon-league",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.about).toBeUndefined();
+    }
+  });
+
+  it("rejects about longer than 10,000 characters", () => {
+    const result = createCommunitySchema.safeParse({
+      name: "Pokemon League",
+      slug: "pokemon-league",
+      about: "a".repeat(10_001),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("trims about whitespace before max length check", () => {
+    // 10,000 'a' chars + surrounding whitespace would exceed 10k without trim
+    const result = createCommunitySchema.safeParse({
+      name: "Pokemon League",
+      slug: "pokemon-league",
+      about: "  " + "a".repeat(10_000) + "  ",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.about).toBe("a".repeat(10_000));
+    }
+  });
+
   it("rejects name with profanity", () => {
     const _result = createCommunitySchema.safeParse({
       name: "Bad Organization Name",
@@ -279,6 +321,12 @@ describe("updateCommunitySchema", () => {
         ],
       },
     },
+    {
+      desc: "about within 10,000 chars",
+      input: { about: "# Welcome\n\nThis is our community." },
+    },
+    { desc: "about as null (clears the field)", input: { about: null } },
+    { desc: "about as undefined (no change)", input: { about: undefined } },
   ])("accepts $desc", ({ input }) => {
     expect(updateCommunitySchema.safeParse(input).success).toBe(true);
   });
@@ -293,7 +341,29 @@ describe("updateCommunitySchema", () => {
       desc: "invalid socialLinks (bad URL)",
       input: { socialLinks: [{ platform: "discord", url: "not-a-url" }] },
     },
+    {
+      desc: "about over 10,000 chars",
+      input: { about: "a".repeat(10_001) },
+    },
   ])("rejects $desc", ({ input }) => {
     expect(updateCommunitySchema.safeParse(input).success).toBe(false);
+  });
+
+  it("trims about whitespace before max length check", () => {
+    const result = updateCommunitySchema.safeParse({
+      about: "  " + "a".repeat(10_000) + "  ",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.about).toBe("a".repeat(10_000));
+    }
+  });
+
+  it("normalizes about empty string to empty (trimmed)", () => {
+    const result = updateCommunitySchema.safeParse({ about: "   " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.about).toBe("");
+    }
   });
 });
