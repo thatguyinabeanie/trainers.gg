@@ -1,21 +1,25 @@
 import { unstable_cache } from "next/cache";
-import { createStaticClient, getUser } from "@/lib/supabase/server";
-import { listPublicCommunities } from "@trainers/supabase";
-import { type CommunityWithCounts } from "@trainers/supabase";
 import { Suspense } from "react";
-import { Users, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { CommunitySearch } from "./community-search";
+import { Users } from "lucide-react";
+
+import {
+  listPublicCommunities,
+  listFeaturedCommunities,
+  type CommunityWithCounts,
+} from "@trainers/supabase";
+
+import { createStaticClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 import { PageContainer } from "@/components/layout/page-container";
-import { CommunityCardGrid } from "@/components/communities/community-card-grid";
+import { FeaturedStrip } from "@/components/communities/featured-strip";
+import { CommunityList } from "@/components/communities/community-card-grid";
+import { CommunitySearch } from "./community-search";
 
 // On-demand revalidation via cache tags (no time-based revalidation)
 export const revalidate = false;
 
 /**
- * Cached data fetcher for communities list
+ * Cached data fetcher for all public communities
  * Revalidated when CacheTags.COMMUNITIES_LIST is invalidated
  */
 const getCachedCommunities = unstable_cache(
@@ -24,6 +28,19 @@ const getCachedCommunities = unstable_cache(
     return listPublicCommunities(supabase);
   },
   ["communities-list"],
+  { tags: [CacheTags.COMMUNITIES_LIST] }
+);
+
+/**
+ * Cached data fetcher for featured communities (ordered by featured_order)
+ * Revalidated when CacheTags.COMMUNITIES_LIST is invalidated
+ */
+const getCachedFeaturedCommunities = unstable_cache(
+  async () => {
+    const supabase = createStaticClient();
+    return listFeaturedCommunities(supabase);
+  },
+  ["featured-communities"],
   { tags: [CacheTags.COMMUNITIES_LIST] }
 );
 
@@ -37,12 +54,12 @@ export default async function CommunitiesPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q: searchQuery } = await searchParams;
-  const [allCommunities, user] = await Promise.all([
+  const [allCommunities, featuredCommunities] = await Promise.all([
     getCachedCommunities(),
-    getUser(),
+    getCachedFeaturedCommunities(),
   ]);
 
-  // Filter on the server — name, slug, and description
+  // Search filters the list only — not the featured strip
   const communities: CommunityWithCounts[] = searchQuery
     ? allCommunities.filter(
         (community) =>
@@ -59,34 +76,28 @@ export default async function CommunitiesPage({
   return (
     <PageContainer>
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <Users className="h-8 w-8" />
-            Communities
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Browse Pokemon communities and find your crew
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Suspense fallback={<div className="h-10 w-64" />}>
-            <CommunitySearch />
-          </Suspense>
-          {user && (
-            <Link href="/dashboard/community/request">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Request a Community
-              </Button>
-            </Link>
-          )}
-        </div>
+      <div className="mb-8">
+        <h1 className="flex items-center gap-2 text-3xl font-bold">
+          <Users className="h-8 w-8" />
+          Communities
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Browse Pokemon communities and find your crew
+        </p>
       </div>
 
-      {/* Card Grid */}
-      <CommunityCardGrid communities={communities} isSearching={isSearching} />
+      {/* Featured strip */}
+      <FeaturedStrip communities={featuredCommunities} />
+
+      {/* Search — right-aligned, between featured and list */}
+      <div className="my-6 flex justify-end">
+        <Suspense fallback={<div className="h-10 w-60" />}>
+          <CommunitySearch />
+        </Suspense>
+      </div>
+
+      {/* Community list */}
+      <CommunityList communities={communities} isSearching={isSearching} />
     </PageContainer>
   );
 }
