@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,8 @@ import {
   suspendCommunityAction,
   unsuspendCommunityAction,
   transferOwnershipAction,
+  toggleFeaturedAction,
+  togglePartnerAction,
 } from "./actions";
 
 // --- Status and tier badge styles (reused from columns for consistency) ---
@@ -283,6 +286,65 @@ export function CommunityDetailSheet({
                     {formatDateTime(community.updated_at)}
                   </p>
                 </div>
+              </div>
+            </section>
+
+            {/* --- Featured & Partner toggles --- */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-medium">Community Settings</h3>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="featured-toggle">Featured</Label>
+                  <p className="text-muted-foreground text-xs">
+                    Show in the featured strip on /communities
+                  </p>
+                </div>
+                <Switch
+                  id="featured-toggle"
+                  checked={community.is_featured}
+                  onCheckedChange={async (checked) => {
+                    setLoading(true);
+                    const result = await toggleFeaturedAction(
+                      community.id,
+                      checked
+                    );
+                    setLoading(false);
+                    if (!result.success) {
+                      setError(result.error ?? "Failed to toggle featured");
+                    } else {
+                      router.refresh();
+                    }
+                  }}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="partner-toggle">Partner</Label>
+                  <p className="text-muted-foreground text-xs">
+                    Mark as a partner community
+                  </p>
+                </div>
+                <Switch
+                  id="partner-toggle"
+                  checked={community.tier === "partner"}
+                  onCheckedChange={async (checked) => {
+                    setLoading(true);
+                    const result = await togglePartnerAction(
+                      community.id,
+                      checked
+                    );
+                    setLoading(false);
+                    if (!result.success) {
+                      setError(result.error ?? "Failed to toggle partner");
+                    } else {
+                      router.refresh();
+                    }
+                  }}
+                  disabled={loading}
+                />
               </div>
             </section>
 
