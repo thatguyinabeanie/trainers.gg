@@ -60,13 +60,21 @@ export function CommunityListRow({ community }: CommunityListRowProps) {
       </Avatar>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-sm font-semibold">
+        <span className="flex items-center gap-1 truncate text-sm font-semibold">
           <Link
             href={`/communities/${community.slug}`}
-            className="group-hover:text-primary transition-colors after:absolute after:inset-0"
+            className="group-hover:text-primary truncate transition-colors after:absolute after:inset-0"
           >
             {community.name}
           </Link>
+          {community.tier === "partner" && (
+            <span
+              className="shrink-0 text-[10px] text-teal-600"
+              aria-label="Partner"
+            >
+              ✦
+            </span>
+          )}
         </span>
         {community.description ? (
           <span className="text-muted-foreground truncate text-xs">
