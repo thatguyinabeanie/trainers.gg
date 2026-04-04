@@ -1,5 +1,6 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -104,19 +105,43 @@ export const columns = [
     },
   }),
 
-  // Tier column: colored badge, or dash when null
-  columnHelper.accessor("tier", {
+  // Tier column: shows Featured and/or Partner badges
+  columnHelper.display({
+    id: "tier",
     header: "Tier",
     cell: (info) => {
-      const tier = info.getValue();
-      if (!tier) {
+      const row = info.row.original;
+      const badges: ReactNode[] = [];
+
+      if (row.is_featured) {
+        badges.push(
+          <Badge
+            key="featured"
+            variant="outline"
+            className="border-amber-500/25 bg-amber-500/15 text-amber-600 dark:text-amber-400"
+          >
+            Featured
+          </Badge>
+        );
+      }
+
+      if (row.tier === "partner") {
+        badges.push(
+          <Badge
+            key="partner"
+            variant="outline"
+            className={cn(communityTierClasses["partner"])}
+          >
+            Partner
+          </Badge>
+        );
+      }
+
+      if (badges.length === 0) {
         return <span className="text-muted-foreground">—</span>;
       }
-      return (
-        <Badge variant="outline" className={cn(communityTierClasses[tier])}>
-          {communityTierLabels[tier]}
-        </Badge>
-      );
+
+      return <div className="flex flex-wrap gap-1">{badges}</div>;
     },
   }),
 
