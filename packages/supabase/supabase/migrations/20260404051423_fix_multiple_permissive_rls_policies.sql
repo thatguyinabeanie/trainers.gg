@@ -23,11 +23,12 @@
 -- Three-tier visibility:
 --   1. status = 'active'              → visible to everyone (public)
 --   2. owner_user_id = auth.uid()     → owners see their own regardless of status
---   3. is_site_admin()                → site admins see everything (sudo mode)
+--   3. is_site_admin()                → site admins see all communities
 -- =============================================================================
 
 DROP POLICY IF EXISTS "Communities are viewable by everyone" ON public.communities;
 DROP POLICY IF EXISTS "Site admins can view all communities" ON public.communities;
+DROP POLICY IF EXISTS "Communities are publicly visible" ON public.communities;
 
 CREATE POLICY "Communities are publicly visible"
   ON public.communities FOR SELECT TO anon, authenticated
@@ -45,6 +46,7 @@ CREATE POLICY "Communities are publicly visible"
 
 DROP POLICY IF EXISTS "Community owners can update" ON public.communities;
 DROP POLICY IF EXISTS "Site admins can update communities" ON public.communities;
+DROP POLICY IF EXISTS "Community owners or site admins can update" ON public.communities;
 
 CREATE POLICY "Community owners or site admins can update"
   ON public.communities FOR UPDATE TO authenticated
@@ -65,6 +67,7 @@ CREATE POLICY "Community owners or site admins can update"
 
 DROP POLICY IF EXISTS "Users can view own community requests" ON public.community_requests;
 DROP POLICY IF EXISTS "Site admins can view all community requests" ON public.community_requests;
+DROP POLICY IF EXISTS "Users can view their community requests" ON public.community_requests;
 
 CREATE POLICY "Users can view their community requests"
   ON public.community_requests FOR SELECT TO authenticated
@@ -114,6 +117,7 @@ CREATE POLICY "Match participants and staff can view match games"
 
 -- Replace FOR ALL with explicit write-only policies (SELECT covered above)
 DROP POLICY IF EXISTS "Tournament staff can manage match games" ON public.match_games;
+DROP POLICY IF EXISTS "Tournament staff can insert match games" ON public.match_games;
 
 CREATE POLICY "Tournament staff can insert match games"
   ON public.match_games FOR INSERT TO authenticated
@@ -128,6 +132,7 @@ CREATE POLICY "Tournament staff can insert match games"
     )
   );
 
+DROP POLICY IF EXISTS "Tournament staff can update match games" ON public.match_games;
 CREATE POLICY "Tournament staff can update match games"
   ON public.match_games FOR UPDATE TO authenticated
   USING (
@@ -151,6 +156,7 @@ CREATE POLICY "Tournament staff can update match games"
     )
   );
 
+DROP POLICY IF EXISTS "Tournament staff can delete match games" ON public.match_games;
 CREATE POLICY "Tournament staff can delete match games"
   ON public.match_games FOR DELETE TO authenticated
   USING (
@@ -203,6 +209,7 @@ CREATE POLICY "Match participants and staff can view messages"
 -- Consolidate two INSERT policies into one
 DROP POLICY IF EXISTS "Match participants can send messages" ON public.match_messages;
 DROP POLICY IF EXISTS "Tournament staff can send judge/system messages" ON public.match_messages;
+DROP POLICY IF EXISTS "Authorized users can send messages" ON public.match_messages;
 
 CREATE POLICY "Authorized users can send messages"
   ON public.match_messages FOR INSERT TO authenticated
