@@ -66,7 +66,7 @@ export default async function CommunitiesPage({
             Communities
           </h1>
           <p className="text-muted-foreground mt-1">
-            Browse Pokemon communities and find their Discord servers
+            Browse Pokemon communities and find your crew
           </p>
         </div>
 
