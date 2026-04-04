@@ -2,16 +2,20 @@ import { type Metadata } from "next";
 import { HeroCTA } from "@/components/landing/hero-cta";
 import { HeroStats } from "@/components/landing/hero-stats";
 import { BentoGrid, UnderConstruction } from "@/components/landing/bento-grid";
+import { hero } from "./copy";
 
 export const metadata: Metadata = {
-  title: "trainers.gg — Everything a trainer needs",
-  description:
-    "Manage your alts, guard your strategies, run tournaments, and connect with your community. One account for everything.",
+  title: `${hero.brand} — ${hero.tagline}`,
+  description: `One account for ${hero.tagline}. ${hero.description}`,
   openGraph: {
-    title: "trainers.gg — Everything a trainer needs",
-    description:
-      "Manage your alts, guard your strategies, run tournaments, and connect with your community.",
-    siteName: "trainers.gg",
+    title: `${hero.brand} — ${hero.tagline}`,
+    description: hero.description,
+    siteName: hero.brand,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${hero.brand} — ${hero.tagline}`,
+    description: hero.description,
   },
 };
 
@@ -60,22 +64,14 @@ export default function HomePage() {
         {/* Hero content */}
         <section className="relative z-10 py-20 sm:py-28">
           <div className="mx-auto max-w-screen-xl px-4 text-center">
-            <p className="text-primary/50 mb-5 text-[11px] font-medium uppercase tracking-[6px]">
-              trainers.gg
+            <p className="text-primary mb-5 text-5xl font-extrabold tracking-[6px] sm:text-7xl">
+              {hero.brand}
             </p>
-            <h1 className="text-foreground mb-4 text-4xl font-extrabold tracking-tight sm:text-5xl dark:text-green-50">
-              Everything a trainer needs.
-              <br />
-              One platform.
+            <h1 className="text-foreground mb-4 text-2xl font-semibold tracking-tight sm:text-3xl dark:text-green-50">
+              {hero.tagline}
             </h1>
-            <p className="text-muted-foreground mx-auto mb-2 max-w-xl text-base font-medium sm:text-lg dark:text-white/50">
-              Manage your alts, guard your strategies, run tournaments, and
-              connect with your community.
-            </p>
-            <p className="text-muted-foreground/60 mx-auto mb-8 max-w-xl text-sm leading-relaxed dark:text-white/30">
-              One account for everything — compete under any name, keep teams
-              private until you play them, and track all your analytics in one
-              place.
+            <p className="text-muted-foreground mx-auto mb-8 max-w-xl text-base font-normal sm:text-lg dark:text-white/50">
+              {hero.description}
             </p>
 
             <div className="mb-9">

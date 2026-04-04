@@ -26,6 +26,9 @@ export const metadata: Metadata = {
   description:
     "The social platform for Pokemon trainers. Build teams, compete in tournaments, and connect with the community.",
   manifest: "/manifest.json",
+  twitter: {
+    card: "summary_large_image",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

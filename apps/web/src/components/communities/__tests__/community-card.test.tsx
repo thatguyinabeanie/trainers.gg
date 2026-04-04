@@ -31,60 +31,6 @@ describe("CommunityCard", () => {
     expect(screen.getByText("VGC League")).toBeInTheDocument();
   });
 
-  it("renders Discord invite button when discord_invite_url is present", () => {
-    const community = {
-      ...organizationFactory.build({
-        name: "VGC League",
-        slug: "vgc-league",
-        discord_invite_url: "https://discord.gg/vgc-league",
-      }),
-      activeTournamentsCount: 0,
-      totalTournamentsCount: 0,
-    };
-
-    render(<CommunityCard community={community} />);
-
-    const discordLink = screen.getByRole("link", { name: /join discord/i });
-    expect(discordLink).toBeInTheDocument();
-    expect(discordLink).toHaveAttribute(
-      "href",
-      "https://discord.gg/vgc-league"
-    );
-  });
-
-  it("does not render Discord button when discord_invite_url is null", () => {
-    const community = {
-      ...organizationFactory.build({
-        name: "VGC League",
-        slug: "vgc-league",
-        discord_invite_url: null,
-      }),
-      activeTournamentsCount: 0,
-      totalTournamentsCount: 0,
-    };
-
-    render(<CommunityCard community={community} />);
-
-    expect(
-      screen.queryByRole("link", { name: /join discord/i })
-    ).not.toBeInTheDocument();
-  });
-
-  it("renders tournament count", () => {
-    const community = {
-      ...organizationFactory.build({
-        name: "TCG Masters",
-        slug: "tcg-masters",
-      }),
-      activeTournamentsCount: 5,
-      totalTournamentsCount: 20,
-    };
-
-    render(<CommunityCard community={community} />);
-
-    expect(screen.getByText("5 active tournaments")).toBeInTheDocument();
-  });
-
   it("links to community detail page", () => {
     const community = {
       ...organizationFactory.build({
@@ -97,7 +43,98 @@ describe("CommunityCard", () => {
 
     render(<CommunityCard community={community} />);
 
-    const link = screen.getByRole("link", { name: "Battle Stadium" });
+    const link = screen.getByRole("link", { name: /battle stadium/i });
     expect(link).toHaveAttribute("href", "/communities/battle-stadium");
+  });
+
+  it("renders description when present", () => {
+    const community = {
+      ...organizationFactory.build({
+        name: "VGC League",
+        slug: "vgc-league",
+        description: "A competitive Pokemon community",
+      }),
+      activeTournamentsCount: 0,
+      totalTournamentsCount: 0,
+    };
+
+    render(<CommunityCard community={community} />);
+
+    expect(
+      screen.getByText("A competitive Pokemon community")
+    ).toBeInTheDocument();
+  });
+
+  it("renders slug fallback when no description", () => {
+    const community = {
+      ...organizationFactory.build({
+        name: "VGC League",
+        slug: "vgc-league",
+        description: null,
+      }),
+      activeTournamentsCount: 0,
+      totalTournamentsCount: 0,
+    };
+
+    render(<CommunityCard community={community} />);
+
+    expect(screen.getByText("@vgc-league")).toBeInTheDocument();
+  });
+
+  it("renders discord as social icon when discord_invite_url is present", () => {
+    const community = {
+      ...organizationFactory.build({
+        name: "VGC League",
+        slug: "vgc-league",
+        discord_invite_url: "https://discord.gg/vgc-league",
+        social_links: [],
+      }),
+      activeTournamentsCount: 0,
+      totalTournamentsCount: 0,
+    };
+
+    render(<CommunityCard community={community} />);
+
+    // Discord should appear as a social icon link, not a button
+    const discordIcon = screen.getByLabelText("discord");
+    expect(discordIcon).toBeInTheDocument();
+    expect(discordIcon).toHaveAttribute(
+      "href",
+      "https://discord.gg/vgc-league"
+    );
+  });
+
+  it("does not render tier badges", () => {
+    const community = {
+      ...organizationFactory.build({
+        name: "VGC League",
+        slug: "vgc-league",
+        tier: "partner",
+      }),
+      activeTournamentsCount: 0,
+      totalTournamentsCount: 0,
+    };
+
+    render(<CommunityCard community={community} />);
+
+    expect(screen.queryByText("Partner")).not.toBeInTheDocument();
+    expect(screen.queryByText("Verified")).not.toBeInTheDocument();
+  });
+
+  it("does not render tournament count", () => {
+    const community = {
+      ...organizationFactory.build({
+        name: "VGC League",
+        slug: "vgc-league",
+      }),
+      activeTournamentsCount: 5,
+      totalTournamentsCount: 10,
+    };
+
+    render(<CommunityCard community={community} />);
+
+    expect(
+      screen.queryByText(/active tournament/i)
+    ).not.toBeInTheDocument();
   });
 });

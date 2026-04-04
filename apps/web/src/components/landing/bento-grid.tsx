@@ -30,7 +30,7 @@ function BentoCard({
         className
       )}
     >
-      <p className="text-primary font-mono text-[10px] font-semibold uppercase tracking-[3px]">
+      <p className="text-primary font-mono text-[10px] font-semibold tracking-[3px] uppercase">
         {step} — {label}
       </p>
       <h3 className="text-foreground mt-3 text-lg font-extrabold tracking-tight sm:text-xl">
@@ -131,7 +131,7 @@ function ProfilePreview() {
           <p className="text-primary font-mono text-base font-extrabold">
             1124
           </p>
-          <p className="text-muted-foreground text-[8px] uppercase tracking-[1px]">
+          <p className="text-muted-foreground text-[8px] tracking-[1px] uppercase">
             ELO
           </p>
         </div>
@@ -139,13 +139,13 @@ function ProfilePreview() {
           <p className="text-primary font-mono text-base font-extrabold">
             52.3
           </p>
-          <p className="text-muted-foreground text-[8px] uppercase tracking-[1px]">
+          <p className="text-muted-foreground text-[8px] tracking-[1px] uppercase">
             GXE
           </p>
         </div>
         <div className="flex-1 text-center">
           <p className="text-primary font-mono text-base font-extrabold">54%</p>
-          <p className="text-muted-foreground text-[8px] uppercase tracking-[1px]">
+          <p className="text-muted-foreground text-[8px] tracking-[1px] uppercase">
             Win rate
           </p>
         </div>
@@ -153,7 +153,7 @@ function ProfilePreview() {
 
       {/* Recent results */}
       <div className="border-border/40 mb-2.5 border-t pt-2">
-        <p className="text-muted-foreground mb-1 text-[8px] uppercase tracking-[1px]">
+        <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
           Recent results
         </p>
         <div className="space-y-1">
@@ -235,7 +235,7 @@ function CommunityPreview() {
   return (
     <div className="flex gap-3">
       <div className="flex-1">
-        <p className="text-muted-foreground mb-1 text-[8px] uppercase tracking-[1px]">
+        <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
           Players
         </p>
         <p className="text-foreground text-[10px]">
@@ -243,7 +243,7 @@ function CommunityPreview() {
         </p>
       </div>
       <div className="flex-1">
-        <p className="text-muted-foreground mb-1 text-[8px] uppercase tracking-[1px]">
+        <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
           Discord Servers
         </p>
         <p className="text-foreground text-[10px]">
@@ -285,7 +285,7 @@ export function UnderConstruction() {
   return (
     <section className="mx-auto max-w-screen-2xl px-6 py-12 sm:px-10 sm:py-16">
       <div className="mb-8 text-center">
-        <p className="text-primary/60 font-mono text-[11px] font-medium uppercase tracking-[3px]">
+        <p className="text-primary/60 font-mono text-[11px] font-medium tracking-[3px] uppercase">
           Under Construction
         </p>
         <h2 className="text-foreground mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
