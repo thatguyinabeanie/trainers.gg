@@ -243,7 +243,7 @@ test.describe("Community dashboard", () => {
   // ---------------------------------------------------------------------------
 
   test.describe("Settings page", () => {
-    test("loads and shows the three sectioned cards", async ({ page }) => {
+    test("loads and shows the four sectioned cards", async ({ page }) => {
       await loginViaUI(page, TEST_USERS.admin);
       await page.goto("/dashboard/community/vgc-league/settings");
 
@@ -251,11 +251,12 @@ test.describe("Community dashboard", () => {
         page.getByText("Settings", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
-      // Three DashboardCard labels rendered by SettingsForm
+      // Four DashboardCard labels rendered by SettingsForm
       await expect(page.getByText("Community Identity")).toBeVisible({
         timeout: 10000,
       });
-      await expect(page.getByText("About")).toBeVisible();
+      await expect(page.getByText("About", { exact: true })).toBeVisible();
+      await expect(page.getByText("About Page", { exact: true })).toBeVisible();
       await expect(page.getByText("Social Links")).toBeVisible();
     });
 

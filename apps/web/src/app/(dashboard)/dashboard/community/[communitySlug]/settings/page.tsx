@@ -2,6 +2,8 @@
 
 import { useState, useTransition, useRef, use } from "react";
 import { Camera, Loader2, X, Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import { toast } from "sonner";
 
 import { getCommunityBySlug } from "@trainers/supabase";
@@ -40,6 +42,7 @@ import { PlatformIcon } from "@/components/communities/social-link-icons";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 
 const DESCRIPTION_MAX = 500;
+const ABOUT_MAX = 10_000;
 
 /** URL placeholder per platform. */
 const PLATFORM_PLACEHOLDERS: Partial<Record<SocialLinkPlatform, string>> = {
@@ -133,6 +136,7 @@ interface SettingsFormProps {
     name: string;
     slug: string;
     description: string | null;
+    about: string | null;
     social_links: unknown;
     logo_url: string | null;
   };
@@ -149,6 +153,7 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
 
   const [name, setName] = useState(org.name);
   const [description, setDescription] = useState(org.description ?? "");
+  const [about, setAbout] = useState(org.about ?? "");
   const [socialLinks, setSocialLinks] = useState<CommunitySocialLink[]>(() =>
     parseSocialLinks(org.social_links)
   );
@@ -222,6 +227,7 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
         {
           name: name.trim(),
           description: description.trim() || undefined,
+          about: about.trim() || null,
           socialLinks: validLinks.length > 0 ? validLinks : undefined,
         },
         org.slug
@@ -346,7 +352,50 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
         </div>
       </DashboardCard>
 
-      {/* Card 3: Social Links */}
+      {/* Card 3: About Page (markdown) */}
+      <DashboardCard label="About Page">
+        <Tabs defaultValue="write">
+          <TabsList className="mb-3">
+            <TabsTrigger value="write">Write</TabsTrigger>
+            <TabsTrigger value="preview">Preview</TabsTrigger>
+          </TabsList>
+          <TabsContent value="write">
+            <Textarea
+              value={about}
+              onChange={(e) => setAbout(e.target.value.slice(0, ABOUT_MAX))}
+              placeholder="Write your community's about page in markdown..."
+              rows={10}
+            />
+            <div className="mt-1 flex justify-end">
+              <p
+                className={cn(
+                  "text-xs tabular-nums",
+                  about.length >= ABOUT_MAX
+                    ? "text-destructive"
+                    : "text-muted-foreground"
+                )}
+              >
+                {about.length.toLocaleString()} / {ABOUT_MAX.toLocaleString()}
+              </p>
+            </div>
+          </TabsContent>
+          <TabsContent value="preview">
+            {about.trim() ? (
+              <MarkdownContent content={about} className="min-h-[200px]" />
+            ) : (
+              <p className="text-muted-foreground py-8 text-center text-sm">
+                Nothing to preview
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
+        <p className="text-muted-foreground mt-2 text-xs">
+          Supports <strong>markdown</strong> — shown on the About tab of your
+          public community page
+        </p>
+      </DashboardCard>
+
+      {/* Card 4: Social Links */}
       <DashboardCard label="Social Links">
         <SocialLinksEditor links={socialLinks} onChange={setSocialLinks} />
       </DashboardCard>

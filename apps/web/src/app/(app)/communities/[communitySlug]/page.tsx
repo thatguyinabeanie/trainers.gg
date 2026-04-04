@@ -294,6 +294,7 @@ export default async function OrganizationPage({
         tournaments={tournaments}
         communitySlug={communitySlug}
         canManage={canManage}
+        about={organization.about ?? null}
       />
     </div>
   );

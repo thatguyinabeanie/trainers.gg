@@ -283,6 +283,7 @@ export type Database = {
       }
       communities: {
         Row: {
+          about: string | null
           created_at: string | null
           description: string | null
           discord_invite_url: string | null
@@ -306,6 +307,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          about?: string | null
           created_at?: string | null
           description?: string | null
           discord_invite_url?: string | null
@@ -329,6 +331,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          about?: string | null
           created_at?: string | null
           description?: string | null
           discord_invite_url?: string | null

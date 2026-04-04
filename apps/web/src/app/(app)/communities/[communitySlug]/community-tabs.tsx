@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BookOpen, Trophy, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -10,7 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import {
   SectionHeader,
   ActiveTournaments,
@@ -24,12 +26,14 @@ interface CommunityTabsProps {
   tournaments: TournamentWithOrg[];
   communitySlug: string;
   canManage: boolean;
+  about: string | null;
 }
 
 export function CommunityTabs({
   tournaments,
   communitySlug,
   canManage,
+  about,
 }: CommunityTabsProps) {
   // Group tournaments by status
   const groupedTournaments = {
@@ -41,8 +45,12 @@ export function CommunityTabs({
   const hasTournaments = tournaments.length > 0;
 
   return (
-    <Tabs defaultValue="tournaments" className="space-y-6">
+    <Tabs defaultValue="about" className="space-y-6">
       <TabsList>
+        <TabsTrigger value="about" className="gap-2">
+          <BookOpen className="h-4 w-4" />
+          About
+        </TabsTrigger>
         <TabsTrigger value="tournaments" className="gap-2">
           <Trophy className="h-4 w-4" />
           Tournaments
@@ -52,6 +60,37 @@ export function CommunityTabs({
           Staff
         </TabsTrigger>
       </TabsList>
+
+      <TabsContent value="about">
+        {about ? (
+          <MarkdownContent content={about} />
+        ) : (
+          <EmptyState
+            icon={BookOpen}
+            title="No about page yet"
+            description={
+              canManage
+                ? undefined
+                : "This community hasn't added an about page yet"
+            }
+            action={
+              canManage ? (
+                <Button
+                  variant="outline"
+                  className="mt-2"
+                  render={
+                    <Link
+                      href={`/dashboard/community/${communitySlug}/settings`}
+                    />
+                  }
+                >
+                  Add one in Settings
+                </Button>
+              ) : undefined
+            }
+          />
+        )}
+      </TabsContent>
 
       <TabsContent value="tournaments">
         {!hasTournaments ? (

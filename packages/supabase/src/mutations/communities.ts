@@ -108,6 +108,7 @@ export async function createCommunity(
     name: string;
     slug: string;
     description?: string;
+    about?: string;
     socialLinks?: CommunitySocialLink[];
     logoUrl?: string;
   }
@@ -145,6 +146,7 @@ export async function createCommunity(
       name: data.name,
       slug: data.slug.toLowerCase(),
       description: data.description,
+      about: data.about,
       social_links: validatedLinks,
       discord_invite_url: extractDiscordInviteUrl(validatedLinks),
       logo_url: data.logoUrl,
@@ -175,6 +177,7 @@ export async function updateCommunity(
   updates: {
     name?: string;
     description?: string;
+    about?: string | null;
     socialLinks?: CommunitySocialLink[];
     logoUrl?: string | null;
   }
@@ -199,6 +202,7 @@ export async function updateCommunity(
   if (updates.name !== undefined) updateData.name = updates.name;
   if (updates.description !== undefined)
     updateData.description = updates.description;
+  if (updates.about !== undefined) updateData.about = updates.about;
   if (updates.socialLinks !== undefined) {
     // Validate social links through Zod before writing to JSONB
     const parsed = communitySocialLinksSchema.safeParse(updates.socialLinks);

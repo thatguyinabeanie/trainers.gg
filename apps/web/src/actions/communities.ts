@@ -46,6 +46,7 @@ export async function updateOrganization(
   updates: {
     name?: string;
     description?: string;
+    about?: string | null;
     socialLinks?: CommunitySocialLink[];
     logoUrl?: string | null;
   },
