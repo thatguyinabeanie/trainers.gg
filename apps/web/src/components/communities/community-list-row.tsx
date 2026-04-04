@@ -2,18 +2,11 @@ import Link from "next/link";
 
 import { type CommunityWithCounts } from "@trainers/supabase";
 import { type SocialLinkPlatform } from "@trainers/validators";
+import { socialPlatformLabels } from "@trainers/utils";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlatformIcon } from "@/components/communities/social-link-icons";
-
-function getCommunityInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
+import { getCommunityInitials } from "@/components/communities/community-helpers";
 
 interface CommunityListRowProps {
   community: CommunityWithCounts;
@@ -96,7 +89,7 @@ export function CommunityListRow({ community }: CommunityListRowProps) {
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label={link.platform}
+              aria-label={socialPlatformLabels[link.platform] ?? link.platform}
             >
               <PlatformIcon platform={link.platform} className="h-4 w-4" />
             </a>

@@ -66,7 +66,8 @@ export async function listFeaturedCommunities(
     .select("*")
     .eq("status", "active")
     .or("is_featured.eq.true,tier.eq.partner")
-    .order("featured_order", { ascending: true, nullsFirst: true });
+    .order("featured_order", { ascending: true, nullsFirst: false })
+    .order("name", { ascending: true });
 
   if (error) throw error;
   return data ?? [];

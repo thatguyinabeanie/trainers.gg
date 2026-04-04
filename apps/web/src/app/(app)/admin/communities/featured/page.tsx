@@ -25,6 +25,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getCommunityInitials } from "@/components/communities/community-helpers";
 
 import { updateFeaturedOrderAction, toggleFeaturedAction } from "../actions";
 
@@ -35,15 +36,6 @@ interface FeaturedCommunity {
   logo_url: string | null;
   icon: string | null;
   featured_order: number | null;
-}
-
-function getCommunityInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 }
 
 interface SortableItemProps {
@@ -117,6 +109,7 @@ function SortableItem({ community, onRemove }: SortableItemProps) {
 export default function FeaturedCommunitiesPage() {
   const [communities, setCommunities] = useState<FeaturedCommunity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -134,7 +127,9 @@ export default function FeaturedCommunitiesPage() {
         .eq("is_featured", true)
         .order("featured_order", { ascending: true });
 
-      if (!error && data) {
+      if (error) {
+        setFetchError("Failed to load featured communities");
+      } else if (data) {
         setCommunities(data);
       }
       setLoading(false);
@@ -148,11 +143,13 @@ export default function FeaturedCommunitiesPage() {
 
     const oldIndex = communities.findIndex((c) => c.id === active.id);
     const newIndex = communities.findIndex((c) => c.id === over.id);
+    const previous = [...communities];
     const reordered = arrayMove(communities, oldIndex, newIndex);
     setCommunities(reordered);
 
     const result = await updateFeaturedOrderAction(reordered.map((c) => c.id));
     if (!result.success) {
+      setCommunities(previous);
       toast.error(result.error ?? "Failed to save order");
     }
   }
@@ -183,6 +180,10 @@ export default function FeaturedCommunitiesPage() {
         <div className="text-muted-foreground py-8 text-center text-sm">
           Loading...
         </div>
+      ) : fetchError ? (
+        <Card className="py-12 text-center">
+          <p className="text-destructive text-sm">{fetchError}</p>
+        </Card>
       ) : communities.length === 0 ? (
         <Card className="py-12 text-center">
           <p className="text-muted-foreground text-sm">

@@ -108,7 +108,7 @@ describe("CommunityListRow", () => {
 
     render(<CommunityListRow community={community} />);
 
-    const discordLink = screen.getByLabelText("discord");
+    const discordLink = screen.getByLabelText("Discord");
     expect(discordLink).toBeInTheDocument();
     expect(discordLink).toHaveAttribute(
       "href",

@@ -244,6 +244,11 @@ export async function updateFeaturedOrderAction(
   orderedIds: number[]
 ): Promise<ActionResult> {
   return withAdminAction(async (supabase) => {
+    if (orderedIds.length === 0) {
+      updateTag(CacheTags.COMMUNITIES_LIST);
+      return { success: true };
+    }
+
     for (const [i, id] of orderedIds.entries()) {
       const { error } = await supabase
         .from("communities")

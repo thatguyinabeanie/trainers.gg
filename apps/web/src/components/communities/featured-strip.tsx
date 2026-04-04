@@ -3,17 +3,9 @@ import Link from "next/link";
 import { type Database } from "@trainers/supabase";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getCommunityInitials } from "@/components/communities/community-helpers";
 
 type CommunityRow = Database["public"]["Tables"]["communities"]["Row"];
-
-function getCommunityInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 interface FeaturedStripProps {
   communities: CommunityRow[];

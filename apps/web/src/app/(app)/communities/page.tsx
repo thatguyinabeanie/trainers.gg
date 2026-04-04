@@ -12,7 +12,7 @@ import { createStaticClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 import { PageContainer } from "@/components/layout/page-container";
 import { FeaturedStrip } from "@/components/communities/featured-strip";
-import { CommunityList } from "@/components/communities/community-card-grid";
+import { CommunityList } from "@/components/communities/community-list";
 import { CommunitySearch } from "./community-search";
 
 // On-demand revalidation via cache tags (no time-based revalidation)

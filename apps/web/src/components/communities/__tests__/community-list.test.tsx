@@ -34,7 +34,7 @@ jest.mock("@/components/ui/card", () => ({
   ),
 }));
 
-import { CommunityList } from "../community-card-grid";
+import { CommunityList } from "../community-list";
 import type { CommunityWithCounts } from "@trainers/supabase";
 
 function makeCommunity(
