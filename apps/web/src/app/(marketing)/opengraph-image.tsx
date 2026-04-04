@@ -6,24 +6,62 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = `${hero.brand} — ${hero.tagline}`;
 
-// Load Inter font from Google Fonts for brand consistency
-async function loadFont(font: string, weight: number): Promise<ArrayBuffer> {
-  const url = `https://fonts.googleapis.com/css2?family=${font}:wght@${weight}&display=swap`;
-  const css = await (await fetch(url)).text();
-  const match = css.match(
-    /src: url\((.+?)\) format\('(opentype|truetype|woff2?)'\)/
-  );
-  if (!match?.[1]) throw new Error(`Failed to load font: ${font}`);
-  const response = await fetch(match[1]);
-  return response.arrayBuffer();
+// Load Inter font from Google Fonts for brand consistency.
+// Returns null on any network failure so the build doesn't break in
+// environments where outbound fetches are blocked or time out.
+async function loadFont(
+  font: string,
+  weight: number
+): Promise<ArrayBuffer | null> {
+  try {
+    const url = `https://fonts.googleapis.com/css2?family=${font}:wght@${weight}&display=swap`;
+    const css = await (await fetch(url)).text();
+    const match = css.match(
+      /src: url\((.+?)\) format\('(opentype|truetype|woff2?)'\)/
+    );
+    if (!match?.[1]) return null;
+    const response = await fetch(match[1]);
+    return response.arrayBuffer();
+  } catch {
+    // Expected in sandboxed build environments — falls back to system font
+    return null;
+  }
 }
 
 export default async function OGImage() {
-  // Load both weights in parallel
+  // Load both weights in parallel; either may be null if the network is unavailable
   const [interBold, interRegular] = await Promise.all([
     loadFont("Inter", 800),
     loadFont("Inter", 400),
   ]);
+
+  const fonts: {
+    name: string;
+    data: ArrayBuffer;
+    weight: 400 | 800;
+    style: "normal";
+  }[] = [
+    ...(interBold
+      ? [
+          {
+            name: "Inter",
+            data: interBold,
+            weight: 800 as const,
+            style: "normal" as const,
+          },
+        ]
+      : []),
+    ...(interRegular
+      ? [
+          {
+            name: "Inter",
+            data: interRegular,
+            weight: 400 as const,
+            style: "normal" as const,
+          },
+        ]
+      : []),
+  ];
 
   // Primary teal from theme: oklch(0.600 0.100 185.00) ≈ #3d9e96
   const primaryColor = "#3d9e96";
@@ -105,10 +143,7 @@ export default async function OGImage() {
     </div>,
     {
       ...size,
-      fonts: [
-        { name: "Inter", data: interBold, weight: 800, style: "normal" },
-        { name: "Inter", data: interRegular, weight: 400, style: "normal" },
-      ],
+      fonts,
     }
   );
 }
