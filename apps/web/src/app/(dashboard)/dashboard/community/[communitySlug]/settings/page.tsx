@@ -36,7 +36,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { PlatformIcon } from "@/components/communities/social-link-icons";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
@@ -98,7 +97,7 @@ export default function DashboardSettingsPage({ params }: PageProps) {
     <>
       <PageHeader title="Settings" />
       <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
-        <div className="mx-auto w-full max-w-3xl">
+        <div className="mx-auto w-full max-w-6xl">
           {isLoading ? (
             <SettingsSkeleton />
           ) : !org ? (
@@ -116,12 +115,13 @@ export default function DashboardSettingsPage({ params }: PageProps) {
 
 function SettingsSkeleton() {
   return (
-    <div className="space-y-4">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="h-32 w-full rounded-xl" />
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-20 w-full" />
-      <Skeleton className="h-10 w-full" />
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+      </div>
+      <Skeleton className="h-96 w-full rounded-xl" />
     </div>
   );
 }
@@ -244,160 +244,175 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
 
   return (
     <div className="space-y-3">
-      {/* Card 1: Community Identity */}
-      <DashboardCard label="Community Identity">
-        <div className="flex items-center gap-4">
-          {/* Logo — clickable to upload */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLogoUploading}
-            className={cn(
-              "group border-border relative shrink-0 cursor-pointer rounded-lg border-2 border-dashed p-0.5 transition-colors",
-              "hover:border-primary/60 disabled:cursor-not-allowed"
-            )}
-            aria-label="Upload community logo"
-          >
-            <Avatar className="h-14 w-14 rounded-md after:rounded-md">
-              {currentLogoUrl && (
-                <AvatarImage
-                  src={currentLogoUrl}
-                  alt={org.name}
-                  className="rounded-md"
-                />
-              )}
-              <AvatarFallback className="bg-primary/10 text-primary rounded-md text-xl font-semibold">
-                {org.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            {/* Camera overlay on hover */}
-            <div
+      {/* Top row: Identity + Social Links side by side */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {/* Card: Community Identity */}
+        <DashboardCard label="Community Identity">
+          {/* Logo + Name */}
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLogoUploading}
               className={cn(
-                "absolute inset-0.5 flex items-center justify-center rounded-md transition-opacity",
-                "bg-black/50 opacity-0 group-hover:opacity-100",
-                isLogoUploading && "opacity-100"
+                "group border-border relative shrink-0 cursor-pointer rounded-lg border-2 border-dashed p-0.5 transition-colors",
+                "hover:border-primary/60 disabled:cursor-not-allowed"
               )}
+              aria-label="Upload community logo"
             >
-              {isLogoUploading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-white" />
-              ) : (
-                <Camera className="h-4 w-4 text-white" />
-              )}
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={handleLogoSelect}
-              className="hidden"
-            />
-          </button>
-
-          {/* Community name + URL */}
-          <div className="min-w-0 flex-1">
-            {currentLogoUrl && (
-              <button
-                type="button"
-                onClick={handleLogoRemove}
-                disabled={isLogoUploading}
-                className="text-muted-foreground hover:text-destructive mb-2 text-xs transition-colors disabled:opacity-50"
+              <Avatar noBorder className="h-24 w-24 rounded-md">
+                {currentLogoUrl && (
+                  <AvatarImage
+                    src={currentLogoUrl}
+                    alt={org.name}
+                    className="rounded-md"
+                  />
+                )}
+                <AvatarFallback className="bg-primary/10 text-primary rounded-md text-xl font-semibold">
+                  {org.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div
+                className={cn(
+                  "absolute inset-0.5 flex items-center justify-center rounded-md transition-opacity",
+                  "bg-black/50 opacity-0 group-hover:opacity-100",
+                  isLogoUploading && "opacity-100"
+                )}
               >
-                Remove logo
-              </button>
-            )}
-            <div className="space-y-1.5">
-              <Label htmlFor="communityName">Community Name</Label>
-              <Input
-                id="communityName"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="My Community"
+                {isLogoUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                ) : (
+                  <Camera className="h-4 w-4 text-white" />
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleLogoSelect}
+                className="hidden"
               />
-            </div>
-            <p className="text-muted-foreground mt-2 font-mono text-xs">
-              trainers.gg/communities/{org.slug}
-            </p>
-          </div>
-        </div>
-      </DashboardCard>
+            </button>
 
-      {/* Card 2: About */}
-      <DashboardCard label="About">
-        <div className="space-y-1.5">
-          <Label htmlFor="communityDescription">Description</Label>
-          <Textarea
-            id="communityDescription"
-            value={description}
-            onChange={(e) =>
-              setDescription(e.target.value.slice(0, DESCRIPTION_MAX))
-            }
-            placeholder="Describe your community..."
-            rows={3}
-          />
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground text-xs">
-              Shown on your public community page
-            </p>
-            <p
-              className={cn(
-                "text-xs tabular-nums",
-                description.length >= DESCRIPTION_MAX
-                  ? "text-destructive"
-                  : "text-muted-foreground"
+            <div className="min-w-0 flex-1">
+              {currentLogoUrl && (
+                <button
+                  type="button"
+                  onClick={handleLogoRemove}
+                  disabled={isLogoUploading}
+                  className="text-muted-foreground hover:text-destructive mb-2 text-xs transition-colors disabled:opacity-50"
+                >
+                  Remove logo
+                </button>
               )}
-            >
-              {description.length} / {DESCRIPTION_MAX}
-            </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="communityName">Community Name</Label>
+                <Input
+                  id="communityName"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="My Community"
+                />
+              </div>
+              <p className="text-muted-foreground mt-2 font-mono text-xs">
+                trainers.gg/communities/{org.slug}
+              </p>
+            </div>
           </div>
-        </div>
-      </DashboardCard>
+        </DashboardCard>
 
-      {/* Card 3: About Page (markdown) */}
-      <DashboardCard label="About Page">
-        <Tabs defaultValue="write">
-          <TabsList className="mb-3">
-            <TabsTrigger value="write">Write</TabsTrigger>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
-          </TabsList>
-          <TabsContent value="write">
+        {/* Social Links card */}
+        <DashboardCard label="Social Links">
+          <SocialLinksEditor links={socialLinks} onChange={setSocialLinks} />
+        </DashboardCard>
+      </div>
+
+      {/* About section — full width below */}
+      <DashboardCard label="About">
+        <div className="space-y-5">
+          {/* Short description */}
+          <div className="space-y-1.5">
+            <Label htmlFor="communityDescription">Short Description</Label>
             <Textarea
-              value={about}
-              onChange={(e) => setAbout(e.target.value.slice(0, ABOUT_MAX))}
-              placeholder="Write your community's about page in markdown..."
-              rows={10}
+              id="communityDescription"
+              value={description}
+              onChange={(e) =>
+                setDescription(e.target.value.slice(0, DESCRIPTION_MAX))
+              }
+              placeholder="A one or two sentence summary of your community..."
+              rows={3}
             />
-            <div className="mt-1 flex justify-end">
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground text-xs">
+                Appears on community cards and search results
+              </p>
               <p
                 className={cn(
                   "text-xs tabular-nums",
-                  about.length >= ABOUT_MAX
+                  description.length >= DESCRIPTION_MAX
                     ? "text-destructive"
                     : "text-muted-foreground"
                 )}
               >
-                {about.length.toLocaleString()} / {ABOUT_MAX.toLocaleString()}
+                {description.length} / {DESCRIPTION_MAX}
               </p>
             </div>
-          </TabsContent>
-          <TabsContent value="preview">
-            {about.trim() ? (
-              <MarkdownContent content={about} className="min-h-[200px]" />
-            ) : (
-              <p className="text-muted-foreground py-8 text-center text-sm">
-                Nothing to preview
-              </p>
-            )}
-          </TabsContent>
-        </Tabs>
-        <p className="text-muted-foreground mt-2 text-xs">
-          Supports <strong>markdown</strong> — shown on the About tab of your
-          public community page
-        </p>
-      </DashboardCard>
+          </div>
 
-      {/* Card 4: Social Links */}
-      <DashboardCard label="Social Links">
-        <SocialLinksEditor links={socialLinks} onChange={setSocialLinks} />
+          {/* Full about page */}
+          <div className="space-y-1.5">
+            <Label>About Page</Label>
+            <p className="text-muted-foreground text-xs">
+              Rich content shown on the About tab of your community page.
+              Supports{" "}
+              <a
+                href="https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-teal-600 underline-offset-2 hover:underline"
+              >
+                GitHub Flavored Markdown
+              </a>
+              .
+            </p>
+            <Tabs defaultValue="write">
+              <TabsList className="mb-3">
+                <TabsTrigger value="write">Write</TabsTrigger>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+              </TabsList>
+              <TabsContent value="write">
+                <Textarea
+                  value={about}
+                  onChange={(e) => setAbout(e.target.value.slice(0, ABOUT_MAX))}
+                  placeholder="Write your community's full about page in markdown..."
+                  rows={24}
+                />
+                <div className="mt-1 flex justify-end">
+                  <p
+                    className={cn(
+                      "text-xs tabular-nums",
+                      about.length >= ABOUT_MAX
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {about.length.toLocaleString()} /{" "}
+                    {ABOUT_MAX.toLocaleString()}
+                  </p>
+                </div>
+              </TabsContent>
+              <TabsContent value="preview">
+                {about.trim() ? (
+                  <MarkdownContent content={about} className="min-h-[200px]" />
+                ) : (
+                  <p className="text-muted-foreground py-8 text-center text-sm">
+                    Nothing to preview
+                  </p>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </DashboardCard>
 
       {/* Save */}
@@ -462,29 +477,23 @@ function SocialLinksEditor({
             {/* Platform prefix — fixed width, muted background */}
             <div
               className={cn(
-                "flex h-9 w-[108px] shrink-0 items-center gap-1.5 px-2",
+                "relative flex h-9 w-10 shrink-0 items-center justify-center",
                 "bg-muted border-input rounded-l-md border border-r-0"
               )}
             >
+              {/* Visual icon — pointer-events-none so the Select trigger below is clickable */}
+              <PlatformIcon
+                platform={link.platform}
+                className="pointer-events-none h-4 w-4"
+              />
               <Select
                 value={link.platform}
                 onValueChange={(val) => {
                   if (val) updateLink(index, "platform", val);
                 }}
               >
-                <SelectTrigger className="h-auto w-full gap-1 border-0 bg-transparent p-0 text-xs shadow-none focus:ring-0">
-                  <span className="flex items-center gap-1.5 truncate">
-                    <PlatformIcon
-                      platform={link.platform}
-                      className="h-3.5 w-3.5 shrink-0"
-                    />
-                    <SelectValue>
-                      <span className="truncate text-xs">
-                        {socialPlatformLabels[link.platform]}
-                      </span>
-                    </SelectValue>
-                  </span>
-                </SelectTrigger>
+                {/* Invisible trigger overlaid on the icon box */}
+                <SelectTrigger className="absolute inset-0 border-0 bg-transparent opacity-0 shadow-none" />
                 <SelectContent>
                   {SOCIAL_LINK_PLATFORMS.map((platform) => (
                     <SelectItem key={platform} value={platform}>

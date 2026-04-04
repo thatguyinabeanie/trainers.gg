@@ -39,7 +39,7 @@ export const communitiesColumns: ColumnDef<CommunityWithCounts>[] = [
       const community = row.original;
       return (
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
+          <Avatar noBorder className="h-8 w-8">
             <AvatarImage
               src={community.logo_url ?? undefined}
               alt={community.name}
@@ -136,7 +136,7 @@ export function CommunitiesDataTable({ data }: CommunitiesDataTableProps) {
                 href={`/communities/${community.slug}`}
                 className="hover:bg-muted/50 flex items-center gap-3 p-3 transition-colors"
               >
-                <Avatar className="h-10 w-10 shrink-0">
+                <Avatar noBorder className="h-10 w-10 shrink-0">
                   <AvatarImage
                     src={community.logo_url ?? undefined}
                     alt={community.name}

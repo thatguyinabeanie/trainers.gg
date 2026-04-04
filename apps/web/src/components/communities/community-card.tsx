@@ -44,7 +44,7 @@ export function CommunityCard({ community }: CommunityCardProps) {
     <Card className="group relative h-full transition-shadow hover:shadow-md">
       <CardContent className="flex items-center gap-5 p-5">
         {/* Logo — 96px rounded square, vertically centered */}
-        <Avatar className="h-24 w-24 shrink-0 rounded-[18px]">
+        <Avatar noBorder className="h-24 w-24 shrink-0 rounded-[18px]">
           <AvatarImage
             src={community.logo_url ?? undefined}
             alt={community.name}

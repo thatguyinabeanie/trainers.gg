@@ -243,7 +243,15 @@ export function HomeClient({
       )
       .subscribe((status, err) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.error("Dashboard realtime failed:", status, err);
+          if (err) {
+            console.error("Dashboard realtime failed:", status, err);
+          } else {
+            console.warn(
+              "Dashboard realtime:",
+              status,
+              "(no error — likely a local dev WebSocket issue)"
+            );
+          }
         }
       });
 

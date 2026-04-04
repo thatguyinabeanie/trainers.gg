@@ -57,12 +57,10 @@ export async function uploadCommunityLogo(
 
     const oldLogoUrl = org.logo_url;
 
-    // Upload new logo — path: {userId}/org-logos/{communityId}/{timestamp}.{ext}
+    // Upload new logo — path: communities/{communityId}/{timestamp}.{ext}
     const rawPath = getUploadPath(user.id, file.name);
-    const path = rawPath.replace(
-      `${user.id}/`,
-      `${user.id}/org-logos/${validatedId}/`
-    );
+    const fileName = rawPath.split("/").pop()!;
+    const path = `communities/${validatedId}/${fileName}`;
 
     const storageClient = await createStorageClient();
     const logoUrl = await uploadFile(

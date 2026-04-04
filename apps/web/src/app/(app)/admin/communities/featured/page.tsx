@@ -74,7 +74,7 @@ function SortableItem({ community, onRemove }: SortableItemProps) {
         <GripVertical className="h-4 w-4" />
       </button>
 
-      <Avatar className="h-10 w-10 rounded-[10px]">
+      <Avatar noBorder className="h-10 w-10 rounded-[10px]">
         <AvatarImage
           src={community.logo_url ?? undefined}
           alt={community.name}
