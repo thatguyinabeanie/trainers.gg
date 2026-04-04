@@ -12,7 +12,7 @@ jest.mock("@trainers/supabase", () => ({
 }));
 
 jest.mock("@/lib/supabase/client", () => ({
-  createClient: jest.fn(() => ({})),
+  supabase: {},
 }));
 
 jest.mock("@/components/ui/sheet", () => ({

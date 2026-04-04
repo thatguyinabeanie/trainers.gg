@@ -39,7 +39,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 import { getSiteAdmins, getSiteRoles } from "@trainers/supabase";
 import {
   createFlagAction,
@@ -299,7 +299,6 @@ function SiteRolesSection() {
 
 export default function AdminConfigPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   // --- Feature Flags State ---
   const [flags, setFlags] = useState<FeatureFlag[]>([]);

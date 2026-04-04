@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { type User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 
 interface Profile {
   id: number;
@@ -34,7 +34,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   const fetchUser = async () => {
     try {

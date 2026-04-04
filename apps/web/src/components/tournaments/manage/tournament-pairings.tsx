@@ -132,10 +132,16 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
   );
   if (rounds !== prevRounds) {
     setPrevRounds(rounds);
-    if (rounds && rounds.length > 0 && rounds[0]) {
-      setSelectedRoundId(rounds[0].id);
-    } else {
-      setSelectedRoundId(null);
+    // Only auto-select when current selection is invalid or absent
+    if (
+      selectedRoundId == null ||
+      !rounds?.some((r) => r.id === selectedRoundId)
+    ) {
+      if (rounds && rounds.length > 0 && rounds[0]) {
+        setSelectedRoundId(rounds[0].id);
+      } else {
+        setSelectedRoundId(null);
+      }
     }
   }
 

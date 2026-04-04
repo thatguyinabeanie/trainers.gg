@@ -60,7 +60,7 @@ function UsersTabContent() {
   // Manual refresh trigger
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Debounce the search input — only sets state inside a timer callback (async)
+  // Debounce the search input — setState inside setTimeout, satisfying set-state-in-effect
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);

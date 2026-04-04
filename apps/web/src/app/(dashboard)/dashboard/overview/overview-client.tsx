@@ -56,14 +56,14 @@ export function OverviewClient() {
   const [refreshKey, setRefreshKey] = useState(0);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const triggerRefresh = () => {
+  const triggerRefreshRef = useRef(() => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
       setRefreshKey((k) => k + 1);
     }, 500);
-  };
+  });
 
   useEffect(() => {
     if (!profileId) return;
@@ -78,7 +78,7 @@ export function OverviewClient() {
           table: "tournament_matches",
           filter: `alt1_id=eq.${profileId}`,
         },
-        () => triggerRefresh()
+        () => triggerRefreshRef.current()
       )
       .on(
         "postgres_changes",
@@ -88,7 +88,7 @@ export function OverviewClient() {
           table: "tournament_matches",
           filter: `alt2_id=eq.${profileId}`,
         },
-        () => triggerRefresh()
+        () => triggerRefreshRef.current()
       )
       .on(
         "postgres_changes",
@@ -98,7 +98,7 @@ export function OverviewClient() {
           table: "tournament_matches",
           filter: `alt1_id=eq.${profileId}`,
         },
-        () => triggerRefresh()
+        () => triggerRefreshRef.current()
       )
       .on(
         "postgres_changes",
@@ -108,7 +108,7 @@ export function OverviewClient() {
           table: "tournament_matches",
           filter: `alt2_id=eq.${profileId}`,
         },
-        () => triggerRefresh()
+        () => triggerRefreshRef.current()
       )
       .subscribe();
 

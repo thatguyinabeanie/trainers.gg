@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 import {
   getUserAdminDetails,
   getSiteRoles as fetchSiteRoles,
@@ -147,8 +147,6 @@ export function UserDetailSheet({
 
   // Add role selection
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
-
-  const supabase = createClient();
 
   const fetchUser = async () => {
     if (!userId) return;

@@ -145,7 +145,7 @@ if (open !== prevOpen) {
 **Debounce effects with early exits** — wrap setState in the timer, not at the top:
 
 ```tsx
-// Good — setState only inside the async timer callback
+// Good — setState only inside the timer callback (not directly in the effect body)
 useEffect(() => {
   if (!searchTerm) return; // no setState here
   const timer = setTimeout(() => {

@@ -277,14 +277,14 @@ export function TournamentPairingsJudge({
   );
   const [selectedRoundId, setSelectedRoundId] = useState<number | null>(null);
 
-  const triggerRefresh = () => {
+  const triggerRefreshRef = useRef(() => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
       setRefreshKey((k) => k + 1);
     }, 500);
-  };
+  });
 
   const navigateToMatch = (roundNumber: number, tableNumber: number) => {
     router.push(
@@ -368,7 +368,7 @@ export function TournamentPairingsJudge({
           filter: `round_id=eq.${selectedRoundId}`,
         },
         () => {
-          triggerRefresh();
+          triggerRefreshRef.current();
         }
       )
       .subscribe((status, err) => {
@@ -405,7 +405,7 @@ export function TournamentPairingsJudge({
           filter: `phase_id=eq.${selectedPhaseId}`,
         },
         () => {
-          triggerRefresh();
+          triggerRefreshRef.current();
         }
       )
       .subscribe();

@@ -84,14 +84,14 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
 
   const isActive = tournament.status === "active";
 
-  const triggerRefresh = () => {
+  const triggerRefreshRef = useRef(() => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
       setRefreshKey((k) => k + 1);
     }, 500);
-  };
+  });
 
   const phasesQueryFn = (supabase: Parameters<typeof getTournamentPhases>[0]) =>
     getTournamentPhases(supabase, tournament.id);
@@ -167,7 +167,7 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
           filter: `tournament_id=eq.${tournament.id}`,
         },
         () => {
-          triggerRefresh();
+          triggerRefreshRef.current();
         }
       )
       .subscribe((status, err) => {
@@ -194,7 +194,7 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
           filter: `tournament_id=eq.${tournament.id}`,
         },
         () => {
-          triggerRefresh();
+          triggerRefreshRef.current();
         }
       )
       .subscribe((status, err) => {
@@ -222,7 +222,7 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
             filter: `phase_id=eq.${activePhaseId}`,
           },
           () => {
-            triggerRefresh();
+            triggerRefreshRef.current();
           }
         )
         .subscribe((status, err) => {

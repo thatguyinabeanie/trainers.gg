@@ -10,7 +10,7 @@ import type { ActionResult } from "@trainers/validators";
 import { apiCall } from "./client";
 
 /**
- * DRY factory for creating TanStack Query hooks
+ * DRY factory providing reusable TanStack Query hooks
  *
  * Provides reusable patterns for:
  * - Query hooks (GET requests)
@@ -20,7 +20,7 @@ import { apiCall } from "./client";
  */
 
 /**
- * Create a query hook for GET requests
+ * Query hook for GET requests
  *
  * @param queryKey - TanStack Query key (e.g., ['tournament', id])
  * @param endpoint - Edge function endpoint (e.g., 'api-tournaments/123')
@@ -55,7 +55,7 @@ export function useApiQuery<T>(
 }
 
 /**
- * Create a mutation hook for POST/PATCH/DELETE requests
+ * Mutation hook for POST/PATCH/DELETE requests
  *
  * @param mutationFn - Function that calls the API
  * @param options - Mutation options with onSuccess cache invalidation

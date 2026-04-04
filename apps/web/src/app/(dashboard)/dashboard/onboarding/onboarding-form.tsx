@@ -65,8 +65,10 @@ export function OnboardingForm() {
     const localResult = usernameSchema.safeParse(username);
     if (!localResult.success) return;
 
+    let cancelled = false;
     const timer = setTimeout(async () => {
       const result = await checkUsernameAvailability(username);
+      if (cancelled) return;
       if (result.available) {
         setUsernameStatus("available");
         setUsernameError(null);
@@ -76,7 +78,10 @@ export function OnboardingForm() {
       }
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [username]);
 
   // Bio is optional — only require username + country
