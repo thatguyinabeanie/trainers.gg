@@ -162,3 +162,99 @@ export async function transferOwnershipAction(
     return { success: true };
   }, "Failed to transfer ownership");
 }
+
+// --- Toggle Featured ---
+
+export async function toggleFeaturedAction(
+  communityId: number,
+  isFeatured: boolean
+): Promise<ActionResult> {
+  const parsedOrgId = positiveIntSchema.safeParse(communityId);
+  if (!parsedOrgId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
+    };
+  }
+
+  return withAdminAction(async (supabase) => {
+    const updateData: { is_featured: boolean; featured_order?: number | null } =
+      {
+        is_featured: isFeatured,
+      };
+
+    if (isFeatured) {
+      // Set featured_order to the next available position
+      const { data: maxOrder } = await supabase
+        .from("communities")
+        .select("featured_order")
+        .eq("is_featured", true)
+        .order("featured_order", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .single();
+      updateData.featured_order = (maxOrder?.featured_order ?? 0) + 1;
+    } else {
+      updateData.featured_order = null;
+    }
+
+    const { error } = await supabase
+      .from("communities")
+      .update(updateData)
+      .eq("id", parsedOrgId.data);
+
+    if (error) throw error;
+
+    updateTag(CacheTags.COMMUNITIES_LIST);
+    updateTag(CacheTags.community(parsedOrgId.data));
+    return { success: true };
+  }, "Failed to toggle featured status");
+}
+
+// --- Toggle Partner ---
+
+export async function togglePartnerAction(
+  communityId: number,
+  isPartner: boolean
+): Promise<ActionResult> {
+  const parsedOrgId = positiveIntSchema.safeParse(communityId);
+  if (!parsedOrgId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
+    };
+  }
+
+  return withAdminAction(async (supabase) => {
+    const { error } = await supabase
+      .from("communities")
+      .update({ tier: isPartner ? "partner" : null })
+      .eq("id", parsedOrgId.data);
+
+    if (error) throw error;
+
+    updateTag(CacheTags.COMMUNITIES_LIST);
+    updateTag(CacheTags.community(parsedOrgId.data));
+    return { success: true };
+  }, "Failed to toggle partner status");
+}
+
+// --- Update Featured Order ---
+
+export async function updateFeaturedOrderAction(
+  orderedIds: number[]
+): Promise<ActionResult> {
+  return withAdminAction(async (supabase) => {
+    for (const [i, id] of orderedIds.entries()) {
+      const { error } = await supabase
+        .from("communities")
+        .update({ featured_order: i + 1 })
+        .eq("id", id)
+        .eq("is_featured", true);
+
+      if (error) throw error;
+    }
+
+    updateTag(CacheTags.COMMUNITIES_LIST);
+    return { success: true };
+  }, "Failed to update featured order");
+}
