@@ -51,6 +51,7 @@ export async function listCommunitiesAdmin(
       description,
       status,
       tier,
+      is_featured,
       created_at,
       updated_at,
       owner:users!communities_owner_user_id_fkey(id, username, first_name, last_name, image),
