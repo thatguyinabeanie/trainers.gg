@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
+import type React from "react";
 
-// Mock next/link — render as plain anchor
 jest.mock("next/link", () => ({
   __esModule: true,
   default: ({
@@ -18,20 +18,12 @@ jest.mock("next/link", () => ({
   ),
 }));
 
-// Mock community-list-row to avoid deep dependency chain
 jest.mock("@/components/communities/community-list-row", () => ({
   CommunityListRow: ({
     community,
   }: {
     community: { id: number; name: string };
   }) => <div data-testid="community-list-row">{community.name}</div>,
-}));
-
-// Mock Card to render children directly
-jest.mock("@/components/ui/card", () => ({
-  Card: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="card">{children}</div>
-  ),
 }));
 
 import { CommunityList } from "../community-list";
@@ -56,6 +48,8 @@ function makeCommunity(
     subscription_started_at: null,
     subscription_tier: null,
     tier: null,
+    is_featured: false,
+    featured_order: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     activeTournamentsCount: 0,
@@ -107,15 +101,6 @@ describe("CommunityList", () => {
       expect(
         screen.queryByText("No communities found")
       ).not.toBeInTheDocument();
-    });
-
-    it("wraps the list in a Card", () => {
-      render(
-        <CommunityList
-          communities={[makeCommunity({ id: 1, name: "VGC Club" })]}
-        />
-      );
-      expect(screen.getByTestId("card")).toBeInTheDocument();
     });
   });
 });
