@@ -23,7 +23,7 @@ export function FeaturedStrip({ communities }: FeaturedStripProps) {
           className="group flex flex-col items-center gap-2"
         >
           <div className="relative">
-            <Avatar className="h-[72px] w-[72px] rounded-2xl shadow-sm transition-shadow group-hover:shadow-md">
+            <Avatar className="h-[72px] w-[72px] rounded-2xl shadow-sm transition-shadow group-hover:shadow-md after:rounded-2xl">
               <AvatarImage
                 src={community.logo_url ?? undefined}
                 alt={community.name}

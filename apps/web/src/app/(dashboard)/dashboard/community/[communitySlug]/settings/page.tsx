@@ -252,9 +252,13 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
             )}
             aria-label="Upload community logo"
           >
-            <Avatar className="h-14 w-14 rounded-md">
+            <Avatar className="h-14 w-14 rounded-md after:rounded-md">
               {currentLogoUrl && (
-                <AvatarImage src={currentLogoUrl} alt={org.name} />
+                <AvatarImage
+                  src={currentLogoUrl}
+                  alt={org.name}
+                  className="rounded-md"
+                />
               )}
               <AvatarFallback className="bg-primary/10 text-primary rounded-md text-xl font-semibold">
                 {org.name.charAt(0).toUpperCase()}

@@ -33,7 +33,7 @@ export default [
     },
   },
   // React Hooks + Compiler rules (bundled in v7)
-  reactHooks.configs.flat["recommended-latest"],
+  reactHooks.configs["recommended-latest"],
   {
     rules: {
       // Disabled: React Compiler handles memoization and stale closure
