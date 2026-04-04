@@ -112,6 +112,13 @@ INSERT INTO public.communities (
 ) ON CONFLICT (slug) DO NOTHING;
 
 
+-- Mark some communities as featured for local development
+UPDATE public.communities SET is_featured = true, featured_order = 1 WHERE slug = 'stellar-novas';
+UPDATE public.communities SET is_featured = true, featured_order = 2 WHERE slug = 'vgc-league';
+UPDATE public.communities SET is_featured = true, featured_order = 3 WHERE slug = 'hatterene-series';
+UPDATE public.communities SET is_featured = true, featured_order = 4 WHERE slug = 'showdown-academy';
+UPDATE public.communities SET is_featured = true, featured_order = 5 WHERE slug = 'pallet-town';
+
 -- -----------------------------------------------------------------------------
 -- Organization Staff
 -- -----------------------------------------------------------------------------
