@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { PageHeader } from "@/components/dashboard/page-header";
-import { TournamentManageClient } from "@/app/(app)/to-dashboard/[communitySlug]/tournaments/[tournamentSlug]/manage/tournament-manage-client";
+import { TournamentManageClient } from "./tournament-manage-client";
 
 interface PageProps {
   params: Promise<{

@@ -49,6 +49,11 @@ import {
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 import {
+  invalidateTournamentCaches,
+  invalidateTournamentListCaches,
+  invalidateTournamentAndCommunityCaches,
+} from "@/lib/cache-invalidation";
+import {
   type ActionResult,
   type DropCategory,
   dropCategorySchema,
@@ -116,13 +121,11 @@ export async function updateTournament(
     const supabase = await createClient();
     await updateTournamentMutation(supabase, tournamentId, updates);
 
-    // Revalidate list when tournament is published (becomes visible)
-    if (updates.status === "upcoming") {
-      updateTag(CacheTags.TOURNAMENTS_LIST);
+    if (updates.status) {
+      await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
+    } else {
+      invalidateTournamentCaches(tournamentId);
     }
-
-    // Revalidate individual tournament page
-    updateTag(CacheTags.tournament(tournamentId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -147,9 +150,7 @@ export async function publishTournament(
       status: "upcoming",
     });
 
-    // Tournament is now visible on the public list
-    updateTag(CacheTags.TOURNAMENTS_LIST);
-    updateTag(CacheTags.tournament(tournamentId));
+    await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -177,8 +178,7 @@ export async function startTournament(
       tournamentId
     );
 
-    updateTag(CacheTags.TOURNAMENTS_LIST);
-    updateTag(CacheTags.tournament(tournamentId));
+    await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
 
     return { success: true, data: result };
   } catch (error) {
@@ -201,8 +201,7 @@ export async function completeTournament(
     const supabase = await createClient();
     await completeTournamentMutation(supabase, tournamentId);
 
-    updateTag(CacheTags.TOURNAMENTS_LIST);
-    updateTag(CacheTags.tournament(tournamentId));
+    await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
     updateTag(CacheTags.PLAYERS_LEADERBOARD);
     updateTag(CacheTags.PLAYERS_RECENT);
 
@@ -232,7 +231,7 @@ export async function advanceToTopCut(tournamentId: number): Promise<
     const supabase = await createClient();
     const result = await advanceToTopCutMutation(supabase, tournamentId);
 
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
 
     return {
       success: true,
@@ -264,7 +263,7 @@ export async function generateEliminationPairings(
     const supabase = await createClient();
     const result = await generateEliminationPairingsMutation(supabase, roundId);
 
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
 
     return { success: true, data: result };
   } catch (error) {
@@ -287,9 +286,7 @@ export async function archiveTournament(
     const supabase = await createClient();
     await archiveTournamentMutation(supabase, tournamentId);
 
-    // Remove from public list
-    updateTag(CacheTags.TOURNAMENTS_LIST);
-    updateTag(CacheTags.tournament(tournamentId));
+    await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -348,10 +345,7 @@ export async function registerForTournament(
       data
     );
 
-    // Revalidate tournaments list (registration count displayed in list)
-    updateTag(CacheTags.TOURNAMENTS_LIST);
-    // Revalidate individual tournament page
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentListCaches(tournamentId);
 
     return {
       success: true,
@@ -378,10 +372,7 @@ export async function cancelRegistration(
     const supabase = await createClient();
     await cancelRegistrationMutation(supabase, registrationId);
 
-    // Revalidate tournaments list (registration count displayed in list)
-    updateTag(CacheTags.TOURNAMENTS_LIST);
-    // Revalidate individual tournament page
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentListCaches(tournamentId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -402,7 +393,7 @@ export async function checkIn(
     await rejectBots();
     const supabase = await createClient();
     await checkInMutation(supabase, tournamentId);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -422,7 +413,7 @@ export async function undoCheckIn(
     await rejectBots();
     const supabase = await createClient();
     await undoCheckInMutation(supabase, tournamentId);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -443,11 +434,7 @@ export async function withdrawFromTournament(
     await rejectBots();
     const supabase = await createClient();
     await withdrawFromTournamentMutation(supabase, tournamentId);
-
-    // Revalidate tournaments list (registration count displayed in list)
-    updateTag(CacheTags.TOURNAMENTS_LIST);
-    // Revalidate individual tournament page
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentListCaches(tournamentId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -506,7 +493,7 @@ export async function updateRegistrationAction(
       tournamentId,
       data
     );
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return {
       success: true,
       data: { success: true, registrationId: result.registrationId },
@@ -552,7 +539,7 @@ export async function submitTeamAction(
     }
 
     // Revalidate tournament detail page (shows team submission status)
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     // Revalidate tournament team list (for open teamsheet public view)
     updateTag(CacheTags.tournamentTeams(tournamentId));
 
@@ -605,7 +592,7 @@ export async function selectTeamAction(
       };
     }
 
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     updateTag(CacheTags.tournamentTeams(tournamentId));
 
     return {
@@ -727,7 +714,7 @@ export async function createRound(
     await rejectBots();
     const supabase = await createClient();
     const result = await createRoundMutation(supabase, phaseId, roundNumber);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { roundId: result.round.id } };
   } catch (error) {
     return {
@@ -753,7 +740,7 @@ export async function generatePairings(
     await rejectBots();
     const supabase = await createClient();
     const result = await generateRoundPairingsMutation(supabase, roundId);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return {
       success: true,
       data: {
@@ -780,7 +767,7 @@ export async function startRound(
     await rejectBots();
     const supabase = await createClient();
     await startRoundMutation(supabase, roundId);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -801,7 +788,7 @@ export async function completeRound(
     await rejectBots();
     const supabase = await createClient();
     await completeRoundMutation(supabase, roundId);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -821,7 +808,7 @@ export async function recalculateStandings(
     await rejectBots();
     const supabase = await createClient();
     const result = await recalculateStandingsMutation(supabase, tournamentId);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { playersUpdated: result.playersUpdated } };
   } catch (error) {
     return {
@@ -842,7 +829,7 @@ export async function dropPlayer(
     await rejectBots();
     const supabase = await createClient();
     await dropPlayerMutation(supabase, tournamentId, altId);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -867,7 +854,7 @@ export async function dropFromTournament(
       return { success: false, error: "No player profile found" };
     }
     await dropPlayerMutation(supabase, tournamentId, altId);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -895,7 +882,7 @@ export async function forceCheckInPlayer(
       registrationId,
       "checked_in"
     );
-    updateTag(CacheTags.tournament(result.tournamentId));
+    invalidateTournamentCaches(result.tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -927,7 +914,7 @@ export async function removePlayerFromTournament(
       "dropped",
       { dropCategory, dropNotes }
     );
-    updateTag(CacheTags.tournament(result.tournamentId));
+    invalidateTournamentCaches(result.tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -991,7 +978,7 @@ export async function bulkForceCheckIn(
     const failed = registrationIds.length - checkedIn;
 
     // Invalidate cache
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
 
     return { success: true, data: { checkedIn, failed } };
   } catch (error) {
@@ -1097,7 +1084,7 @@ export async function bulkRemovePlayers(
     const failed = registrationIds.length - removed;
 
     // Invalidate cache
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
 
     return { success: true, data: { removed, failed } };
   } catch (error) {
@@ -1132,7 +1119,7 @@ export async function reportMatchResult(
       player1GamesWon,
       player2GamesWon
     );
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -1227,7 +1214,7 @@ export async function prepareRound(
       };
     });
 
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
 
     return {
       success: true,
@@ -1259,7 +1246,7 @@ export async function confirmAndStartRound(
     await rejectBots();
     const supabase = await createClient();
     await startRoundMutation(supabase, roundId);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -1281,7 +1268,7 @@ export async function cancelPreparedRound(
     await rejectBots();
     const supabase = await createClient();
     await deleteRoundAndMatchesMutation(supabase, roundId);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -1316,7 +1303,7 @@ export async function updatePhase(
     const { updatePhase: updatePhaseMutation } =
       await import("@trainers/supabase");
     await updatePhaseMutation(supabase, phaseId, updates);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -1347,7 +1334,7 @@ export async function createTournamentPhase(
     const { createPhase: createPhaseMutation } =
       await import("@trainers/supabase");
     const result = await createPhaseMutation(supabase, tournamentId, phase);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { phaseId: result.phase.id } };
   } catch (error) {
     return {
@@ -1370,7 +1357,7 @@ export async function deleteTournamentPhase(
     const { deletePhase: deletePhaseMutation } =
       await import("@trainers/supabase");
     await deletePhaseMutation(supabase, phaseId);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -1409,7 +1396,7 @@ export async function saveTournamentPhasesAction(
     const supabase = await createClient();
     const { saveTournamentPhases } = await import("@trainers/supabase");
     const result = await saveTournamentPhases(supabase, tournamentId, phases);
-    updateTag(CacheTags.tournament(tournamentId));
+    invalidateTournamentCaches(tournamentId);
     return {
       success: true,
       data: {

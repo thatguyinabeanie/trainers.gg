@@ -44,20 +44,4 @@ describe("CacheTags", () => {
   it("generates player tag from handle", () => {
     expect(CacheTags.player("ash_ketchum")).toBe("player:ash_ketchum");
   });
-
-  describe("deprecated aliases", () => {
-    it("ORGANIZATIONS_LIST alias resolves to communities-list", () => {
-      expect(CacheTags.ORGANIZATIONS_LIST).toBe("communities-list");
-    });
-
-    it("organization() alias resolves to community: prefix", () => {
-      expect(CacheTags.organization("pallet-town")).toBe(
-        "community:pallet-town"
-      );
-    });
-
-    it("ORG_REQUESTS_LIST alias resolves to community-requests-list", () => {
-      expect(CacheTags.ORG_REQUESTS_LIST).toBe("community-requests-list");
-    });
-  });
 });

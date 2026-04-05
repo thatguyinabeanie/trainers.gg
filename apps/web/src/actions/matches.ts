@@ -8,7 +8,6 @@
 "use server";
 
 import { z } from "@trainers/validators";
-import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   submitGameSelection,
@@ -20,7 +19,7 @@ import {
   confirmMatchCheckIn,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
-import { CacheTags } from "@/lib/cache";
+import { invalidateTournamentCaches } from "@/lib/cache-invalidation";
 import { type ActionResult } from "@trainers/validators";
 import { rejectBots, withAction } from "./utils";
 
@@ -54,7 +53,7 @@ export async function submitGameSelectionAction(
     const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
     await submitGameSelection(supabase, validGameId, validWinnerId);
-    updateTag(CacheTags.tournament(validTournamentId));
+    invalidateTournamentCaches(validTournamentId);
   }, "Failed to submit game selection");
 }
 
@@ -109,7 +108,7 @@ export async function createMatchGamesAction(
     const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
     const data = await createMatchGames(supabase, validMatchId, validCount);
-    updateTag(CacheTags.tournament(validTournamentId));
+    invalidateTournamentCaches(validTournamentId);
     return { count: data.length };
   }, "Failed to create match games");
 }
@@ -155,7 +154,7 @@ export async function judgeOverrideGameAction(
       alt.id,
       notes
     );
-    updateTag(CacheTags.tournament(validTournamentId));
+    invalidateTournamentCaches(validTournamentId);
     return { gameId: data.id };
   }, "Failed to override game");
 }
@@ -173,7 +172,7 @@ export async function judgeResetGameAction(
     const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
     const data = await judgeResetGame(supabase, validGameId);
-    updateTag(CacheTags.tournament(validTournamentId));
+    invalidateTournamentCaches(validTournamentId);
     return { gameId: data.id };
   }, "Failed to reset game");
 }
@@ -197,7 +196,7 @@ export async function requestJudgeAction(
       p_match_id: validMatchId,
     });
     if (error) throw error;
-    updateTag(CacheTags.tournament(validTournamentId));
+    invalidateTournamentCaches(validTournamentId);
     return { success: true as const };
   }, "Failed to request judge");
 }
@@ -215,7 +214,7 @@ export async function resetMatchAction(
     const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
     const data = await resetMatch(supabase, validMatchId);
-    updateTag(CacheTags.tournament(validTournamentId));
+    invalidateTournamentCaches(validTournamentId);
     return { matchId: data.id };
   }, "Failed to reset match");
 }
@@ -238,7 +237,7 @@ export async function cancelJudgeRequestAction(
       p_match_id: validMatchId,
     });
     if (error) throw error;
-    updateTag(CacheTags.tournament(validTournamentId));
+    invalidateTournamentCaches(validTournamentId);
     return { success: true as const };
   }, "Failed to cancel judge request");
 }
@@ -261,7 +260,7 @@ export async function clearJudgeRequestAction(
       p_match_id: validMatchId,
     });
     if (error) throw error;
-    updateTag(CacheTags.tournament(validTournamentId));
+    invalidateTournamentCaches(validTournamentId);
     return { success: true as const };
   }, "Failed to clear judge request");
 }
@@ -284,7 +283,7 @@ export async function confirmMatchCheckInAction(
     const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
     const result = await confirmMatchCheckIn(supabase, validMatchId);
-    updateTag(CacheTags.tournament(validTournamentId));
+    invalidateTournamentCaches(validTournamentId);
     return { matchActivated: result.match_activated ?? false };
   }, "Failed to confirm match check-in");
 }

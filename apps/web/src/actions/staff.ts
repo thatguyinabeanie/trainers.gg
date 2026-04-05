@@ -1,13 +1,12 @@
 /**
  * Staff Management Server Actions
  *
- * Server actions for managing organization staff with cache revalidation.
+ * Server actions for managing community staff with cache revalidation.
  * These wrap the @trainers/supabase mutations and queries.
  */
 
 "use server";
 
-import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import {
@@ -19,7 +18,7 @@ import {
   removeStaffFromGroup as removeStaffFromGroupMutation,
   removeStaffCompletely as removeStaffMutation,
 } from "@trainers/supabase";
-import { CacheTags } from "@/lib/cache";
+import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
 
 /**
  * Action result type for consistent error handling
@@ -68,9 +67,9 @@ export async function searchUsersForStaffInvite(
 // =============================================================================
 
 /**
- * Add a user to an organization as staff (unassigned to any group)
+ * Add a user to a community as staff (unassigned to any group)
  * The user will appear in the "Unassigned" section until moved to a group
- * Revalidates: organization page
+ * Revalidates: community page
  */
 export async function inviteStaffMember(
   communityId: number,
@@ -81,11 +80,7 @@ export async function inviteStaffMember(
     const supabase = await createClient();
     await addStaffMemberMutation(supabase, communityId, userId);
 
-    // Revalidate organization page to show new staff member
-    if (slug) {
-      updateTag(CacheTags.community(slug));
-    }
-    updateTag(CacheTags.community(communityId));
+    invalidateCommunityPageCaches(slug, communityId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -97,8 +92,8 @@ export async function inviteStaffMember(
 }
 
 /**
- * Add a user to an organization as staff with a specific group
- * Revalidates: organization page
+ * Add a user to a community as staff with a specific group
+ * Revalidates: community page
  */
 export async function inviteStaffToGroup(
   communityId: number,
@@ -110,11 +105,7 @@ export async function inviteStaffToGroup(
     const supabase = await createClient();
     await addStaffToGroupMutation(supabase, communityId, userId, groupId);
 
-    // Revalidate organization page to show new staff member
-    if (slug) {
-      updateTag(CacheTags.community(slug));
-    }
-    updateTag(CacheTags.community(communityId));
+    invalidateCommunityPageCaches(slug, communityId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -127,7 +118,7 @@ export async function inviteStaffToGroup(
 
 /**
  * Change a staff member's group (for drag & drop)
- * Revalidates: organization page
+ * Revalidates: community page
  */
 export async function changeStaffRoleAction(
   communityId: number,
@@ -139,11 +130,7 @@ export async function changeStaffRoleAction(
     const supabase = await createClient();
     await changeRoleMutation(supabase, communityId, userId, newGroupId);
 
-    // Revalidate organization page
-    if (slug) {
-      updateTag(CacheTags.community(slug));
-    }
-    updateTag(CacheTags.community(communityId));
+    invalidateCommunityPageCaches(slug, communityId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -167,8 +154,8 @@ export async function moveStaffToGroup(
 }
 
 /**
- * Remove a staff member completely from the organization
- * Revalidates: organization page
+ * Remove a staff member completely from the community
+ * Revalidates: community page
  */
 export async function removeStaffAction(
   communityId: number,
@@ -179,11 +166,7 @@ export async function removeStaffAction(
     const supabase = await createClient();
     await removeStaffMutation(supabase, communityId, userId);
 
-    // Revalidate organization page
-    if (slug) {
-      updateTag(CacheTags.community(slug));
-    }
-    updateTag(CacheTags.community(communityId));
+    invalidateCommunityPageCaches(slug, communityId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -197,7 +180,7 @@ export async function removeStaffAction(
 /**
  * Unassign a staff member from all groups (move back to unassigned pool)
  * Does NOT remove them from the community — they remain staff without a role.
- * Revalidates: organization page
+ * Revalidates: community page
  */
 export async function unassignStaffAction(
   communityId: number,
@@ -208,10 +191,7 @@ export async function unassignStaffAction(
     const supabase = await createClient();
     await removeStaffFromGroupMutation(supabase, communityId, userId);
 
-    if (slug) {
-      updateTag(CacheTags.community(slug));
-    }
-    updateTag(CacheTags.community(communityId));
+    invalidateCommunityPageCaches(slug, communityId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -227,7 +207,7 @@ export async function unassignStaffAction(
 // =============================================================================
 
 /**
- * Get all groups for an organization (for role selection dropdowns)
+ * Get all groups for a community (for role selection dropdowns)
  */
 export async function getOrganizationGroups(communityId: number): Promise<
   ActionResult<

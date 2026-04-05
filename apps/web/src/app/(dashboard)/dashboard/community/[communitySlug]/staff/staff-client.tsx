@@ -33,8 +33,8 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { InviteStaffDialog } from "@/app/(app)/to-dashboard/[communitySlug]/staff/invite-staff-dialog";
-import { RemoveStaffDialog } from "@/app/(app)/to-dashboard/[communitySlug]/staff/remove-staff-dialog";
+import { InviteStaffDialog } from "./invite-staff-dialog";
+import { RemoveStaffDialog } from "./remove-staff-dialog";
 import { moveStaffToGroup, unassignStaffAction } from "@/actions/staff";
 
 // =============================================================================

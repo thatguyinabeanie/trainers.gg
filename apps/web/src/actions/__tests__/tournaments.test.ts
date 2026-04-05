@@ -100,6 +100,25 @@ jest.mock("next/cache", () => ({
   updateTag: (...args: unknown[]) => mockUpdateTag(...args),
 }));
 
+// Mock cache-invalidation helpers so they call mockUpdateTag without any DB
+// queries. The helpers themselves are tested in their own unit tests.
+jest.mock("@/lib/cache-invalidation", () => ({
+  invalidateTournamentCaches: (id: number) => {
+    mockUpdateTag(`tournament:${id}`);
+  },
+  invalidateTournamentListCaches: (id: number) => {
+    mockUpdateTag("tournaments-list");
+    mockUpdateTag(`tournament:${id}`);
+  },
+  invalidateTournamentAndCommunityCaches: async (
+    _supabase: unknown,
+    id: number
+  ) => {
+    mockUpdateTag("tournaments-list");
+    mockUpdateTag(`tournament:${id}`);
+  },
+}));
+
 jest.mock("botid/server", () => ({
   checkBotId: jest.fn().mockResolvedValue({ isBot: false }),
 }));

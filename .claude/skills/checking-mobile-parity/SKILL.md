@@ -43,8 +43,8 @@ Group the changed files by feature area using this mapping:
 | both `tournaments/` and `/manage` (standings/bracket)    | Bracket & Standings    | TGG-345                                |
 | `communities/` or `components/communities/`              | Community Directory    | TGG-348                                |
 | `communities/create`                                     | Community Creation     | TGG-349                                |
-| `to-dashboard/`                                          | TO Dashboard           | TGG-351                                |
-| both `to-dashboard/` and `/staff`                        | Staff Management       | TGG-352                                |
+| `dashboard/community/` (non-settings/notifications)      | TO Dashboard           | TGG-351                                |
+| both `dashboard/community/` and `/staff`                 | Staff Management       | TGG-352                                |
 | `components/tournament/`                                 | Tournament Experience  | TGG-342, TGG-345                       |
 | `components/notifications/`                              | Notifications          | TGG-341                                |
 | `components/settings/`                                   | Settings               | TGG-339                                |

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { PageHeader } from "@/components/dashboard/page-header";
-import { CreateTournamentClient } from "@/app/(app)/to-dashboard/[communitySlug]/tournaments/create/create-tournament-client";
+import { CreateTournamentClient } from "./create-tournament-client";
 
 interface PageProps {
   params: Promise<{

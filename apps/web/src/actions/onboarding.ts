@@ -9,6 +9,7 @@ import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { escapeLike } from "@trainers/utils";
 import { revalidatePath } from "next/cache";
+import { invalidatePlayerDirectoryCaches } from "@/lib/cache-invalidation";
 import { headers } from "next/headers";
 
 const PDS_HOST = process.env.PDS_HOST || "https://pds.trainers.gg";
@@ -162,6 +163,8 @@ export async function completeOnboarding(data: {
     // Provision PDS account (non-blocking failure)
     await provisionPds(supabase, user.id, pdsUsername);
 
+    // New user is now visible in the players directory and new members sidebar
+    invalidatePlayerDirectoryCaches(validated.username);
     revalidatePath("/");
     return { success: true, error: null };
   } catch (error) {

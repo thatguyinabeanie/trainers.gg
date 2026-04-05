@@ -70,12 +70,4 @@ export const CacheTags = {
 
   /** Tag for hero page platform overview stats (players, tournaments, matches) */
   PLATFORM_OVERVIEW: "platform-overview",
-
-  // Aliases for backward compatibility during migration
-  /** @deprecated Use COMMUNITIES_LIST */
-  ORGANIZATIONS_LIST: "communities-list",
-  /** @deprecated Use community() */
-  organization: (idOrSlug: string | number) => `community:${idOrSlug}`,
-  /** @deprecated Use COMMUNITY_REQUESTS_LIST */
-  ORG_REQUESTS_LIST: "community-requests-list",
 } as const;

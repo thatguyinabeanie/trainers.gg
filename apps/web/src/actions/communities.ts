@@ -1,13 +1,12 @@
 /**
- * Organization Server Actions
+ * Community Server Actions
  *
- * Server actions for organization mutations with cache revalidation.
+ * Server actions for community mutations with cache revalidation.
  * These wrap the @trainers/supabase mutations and trigger on-demand cache invalidation.
  */
 
 "use server";
 
-import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import {
@@ -19,7 +18,7 @@ import {
   removeStaff as removeStaffMutation,
 } from "@trainers/supabase";
 import { type CommunitySocialLink } from "@trainers/validators";
-import { CacheTags } from "@/lib/cache";
+import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
 
 /**
  * Action result type for consistent error handling
@@ -34,12 +33,12 @@ export type ActionResult<T = void> =
     };
 
 // =============================================================================
-// Organization CRUD
+// Community CRUD
 // =============================================================================
 
 /**
- * Update organization details
- * Revalidates: organizations list (always) and individual org page
+ * Update community details
+ * Revalidates: communities list (always) and individual community page
  */
 export async function updateOrganization(
   communityId: number,
@@ -56,14 +55,7 @@ export async function updateOrganization(
     const supabase = await createClient();
     await updateCommunityMutation(supabase, communityId, updates);
 
-    // Always revalidate list — any update may affect the public listing
-    updateTag(CacheTags.COMMUNITIES_LIST);
-
-    // Revalidate individual organization page
-    if (slug) {
-      updateTag(CacheTags.community(slug));
-    }
-    updateTag(CacheTags.community(communityId));
+    invalidateCommunityPageCaches(slug, communityId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -79,7 +71,7 @@ export async function updateOrganization(
 // =============================================================================
 
 /**
- * Invite a user to join an organization
+ * Invite a user to join a community
  */
 export async function inviteToOrganization(
   communityId: number,
@@ -103,7 +95,7 @@ export async function inviteToOrganization(
 }
 
 /**
- * Accept an organization invitation
+ * Accept a community invitation
  */
 export async function acceptOrganizationInvitation(
   invitationId: number,
@@ -113,10 +105,7 @@ export async function acceptOrganizationInvitation(
     const supabase = await createClient();
     await acceptCommunityInvitationMutation(supabase, invitationId);
 
-    // Revalidate org page to show new staff member
-    if (organizationSlug) {
-      updateTag(CacheTags.community(organizationSlug));
-    }
+    invalidateCommunityPageCaches(organizationSlug);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -128,7 +117,7 @@ export async function acceptOrganizationInvitation(
 }
 
 /**
- * Decline an organization invitation
+ * Decline a community invitation
  */
 export async function declineOrganizationInvitation(
   invitationId: number
@@ -146,7 +135,7 @@ export async function declineOrganizationInvitation(
 }
 
 /**
- * Leave an organization
+ * Leave a community
  */
 export async function leaveOrganization(
   communityId: number,
@@ -156,11 +145,7 @@ export async function leaveOrganization(
     const supabase = await createClient();
     await leaveCommunityMutation(supabase, communityId);
 
-    // Revalidate org page to update staff list
-    if (slug) {
-      updateTag(CacheTags.community(slug));
-    }
-    updateTag(CacheTags.community(communityId));
+    invalidateCommunityPageCaches(slug, communityId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -172,7 +157,7 @@ export async function leaveOrganization(
 }
 
 /**
- * Remove a staff member from an organization
+ * Remove a staff member from a community
  */
 export async function removeStaff(
   communityId: number,
@@ -183,11 +168,7 @@ export async function removeStaff(
     const supabase = await createClient();
     await removeStaffMutation(supabase, communityId, userId);
 
-    // Revalidate org page to update staff list
-    if (slug) {
-      updateTag(CacheTags.community(slug));
-    }
-    updateTag(CacheTags.community(communityId));
+    invalidateCommunityPageCaches(slug, communityId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
