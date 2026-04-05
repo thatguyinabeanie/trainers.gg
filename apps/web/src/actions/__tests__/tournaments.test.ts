@@ -101,7 +101,7 @@ jest.mock("next/cache", () => ({
 }));
 
 // Mock cache-invalidation helpers so they call mockUpdateTag without any DB
-// queries. The helpers themselves are tested in their own unit tests.
+// queries. This isolates action tests from the helper implementation.
 jest.mock("@/lib/cache-invalidation", () => ({
   invalidateTournamentCaches: (id: number) => {
     mockUpdateTag(`tournament:${id}`);
@@ -116,6 +116,7 @@ jest.mock("@/lib/cache-invalidation", () => ({
   ) => {
     mockUpdateTag("tournaments-list");
     mockUpdateTag(`tournament:${id}`);
+    mockUpdateTag("communities-list");
   },
 }));
 

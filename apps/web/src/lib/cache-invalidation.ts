@@ -73,16 +73,17 @@ export async function invalidateTournamentAndCommunityCaches(
   updateTag(CacheTags.TOURNAMENTS_LIST);
   updateTag(CacheTags.tournament(tournamentId));
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("tournaments")
     .select("communities!tournaments_community_id_fkey(slug, id)")
     .eq("id", tournamentId)
     .single();
 
+  if (error) throw error;
+
   if (data?.communities && "slug" in data.communities) {
     const community = data.communities as { slug: string; id: number };
-    updateTag(CacheTags.community(community.slug));
-    updateTag(CacheTags.community(community.id));
+    invalidateCommunityPageCaches(community.slug, community.id);
   }
 }
 
