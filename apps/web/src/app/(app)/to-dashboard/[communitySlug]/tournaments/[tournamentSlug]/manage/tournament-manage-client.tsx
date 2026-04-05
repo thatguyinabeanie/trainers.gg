@@ -106,13 +106,20 @@ export function TournamentManageClient({
   const activeTab: ValidTab = isValidTab(tabParam) ? tabParam : "overview";
 
   async function handlePublish() {
+    if (!tournament) return;
     setIsPublishing(true);
-    const result = await publishTournament(tournament?.id ?? 0);
-    setIsPublishing(false);
-    if (result.success) {
-      toast.success("Tournament published — it's now visible to players");
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await publishTournament(tournament.id);
+      if (result.success) {
+        toast.success("Tournament published — it's now visible to players");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("Failed to publish tournament. Please try again.");
+    } finally {
+      setIsPublishing(false);
     }
   }
 
