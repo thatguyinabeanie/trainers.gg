@@ -2,7 +2,7 @@
 
 import { z } from "@trainers/validators";
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
+import { invalidatePlayerProfileCaches } from "@/lib/cache-invalidation";
 import { withAction } from "./utils";
 
 const SHOWDOWN_SPRITE_PREFIX = "https://play.pokemonshowdown.com/sprites/";
@@ -31,10 +31,10 @@ export async function setAltAvatar(altId: number, spriteUrl: string) {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    // Verify user owns this alt
+    // Verify user owns this alt and get username for cache invalidation
     const { data: alt } = await supabase
       .from("alts")
-      .select("user_id")
+      .select("user_id, users!inner(username)")
       .eq("id", altId)
       .single();
 
@@ -50,7 +50,9 @@ export async function setAltAvatar(altId: number, spriteUrl: string) {
 
     if (error) throw error;
 
-    revalidatePath("/");
+    if (alt.users?.username) {
+      invalidatePlayerProfileCaches(alt.users.username);
+    }
     return { avatarUrl: spriteUrl };
   }, "Failed to set avatar");
 }
@@ -68,10 +70,10 @@ export async function removeAltAvatar(altId: number) {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    // Verify user owns this alt
+    // Verify user owns this alt and get username for cache invalidation
     const { data: alt } = await supabase
       .from("alts")
-      .select("user_id")
+      .select("user_id, users!inner(username)")
       .eq("id", altId)
       .single();
 
@@ -87,6 +89,8 @@ export async function removeAltAvatar(altId: number) {
 
     if (error) throw error;
 
-    revalidatePath("/");
+    if (alt.users?.username) {
+      invalidatePlayerProfileCaches(alt.users.username);
+    }
   }, "Failed to remove avatar");
 }

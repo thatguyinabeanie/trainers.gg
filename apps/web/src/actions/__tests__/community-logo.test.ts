@@ -5,6 +5,7 @@
 // Mock next/cache
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
+  updateTag: jest.fn(),
 }));
 
 // Mock Supabase clients
@@ -66,6 +67,7 @@ function setupAuthenticatedOwner(options?: { logoUrl?: string | null }) {
           data: {
             owner_user_id: "user-123",
             logo_url: options?.logoUrl ?? null,
+            slug: "test-community",
           },
         }),
       }),
@@ -130,7 +132,7 @@ describe("uploadCommunityLogo", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toMatch(/own organization/i);
+      expect(result.error).toMatch(/own community/i);
     }
   });
 
@@ -276,11 +278,11 @@ describe("removeCommunityLogo", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toMatch(/own organization/i);
+      expect(result.error).toMatch(/own community/i);
     }
   });
 
-  it("returns error when org not found", async () => {
+  it("returns error when community not found", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-123" } },
     });

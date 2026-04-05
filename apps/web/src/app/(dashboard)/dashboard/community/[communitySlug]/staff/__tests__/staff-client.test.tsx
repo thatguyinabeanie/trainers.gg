@@ -66,44 +66,38 @@ jest.mock("@dnd-kit/utilities", () => ({
 }));
 
 // --- InviteStaffDialog ---
-jest.mock(
-  "@/app/(app)/to-dashboard/[communitySlug]/staff/invite-staff-dialog",
-  () => ({
-    InviteStaffDialog: ({
-      open,
-      onOpenChange,
-    }: {
-      open: boolean;
-      onOpenChange: (v: boolean) => void;
-    }) =>
-      open ? (
-        <div data-testid="invite-dialog">
-          <button onClick={() => onOpenChange(false)}>Close Invite</button>
-        </div>
-      ) : null,
-  })
-);
+jest.mock("../invite-staff-dialog", () => ({
+  InviteStaffDialog: ({
+    open,
+    onOpenChange,
+  }: {
+    open: boolean;
+    onOpenChange: (v: boolean) => void;
+  }) =>
+    open ? (
+      <div data-testid="invite-dialog">
+        <button onClick={() => onOpenChange(false)}>Close Invite</button>
+      </div>
+    ) : null,
+}));
 
 // --- RemoveStaffDialog ---
-jest.mock(
-  "@/app/(app)/to-dashboard/[communitySlug]/staff/remove-staff-dialog",
-  () => ({
-    RemoveStaffDialog: ({
-      open,
-      onOpenChange,
-    }: {
-      open: boolean;
-      onOpenChange: (v: boolean) => void;
-      staff: unknown;
-      onSuccess: () => void;
-    }) =>
-      open ? (
-        <div data-testid="remove-dialog">
-          <button onClick={() => onOpenChange(false)}>Close Remove</button>
-        </div>
-      ) : null,
-  })
-);
+jest.mock("../remove-staff-dialog", () => ({
+  RemoveStaffDialog: ({
+    open,
+    onOpenChange,
+  }: {
+    open: boolean;
+    onOpenChange: (v: boolean) => void;
+    staff: unknown;
+    onSuccess: () => void;
+  }) =>
+    open ? (
+      <div data-testid="remove-dialog">
+        <button onClick={() => onOpenChange(false)}>Close Remove</button>
+      </div>
+    ) : null,
+}));
 
 // --- lucide-react ---
 jest.mock("lucide-react", () => ({

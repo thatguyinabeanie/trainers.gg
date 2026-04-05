@@ -7,7 +7,6 @@
 
 "use server";
 
-import { updateTag } from "next/cache";
 import { z } from "@trainers/validators";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -17,7 +16,7 @@ import {
   setMainAlt,
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
-import { CacheTags } from "@/lib/cache";
+import { invalidatePlayerProfileCaches } from "@/lib/cache-invalidation";
 import { withAction } from "./utils";
 
 /**
@@ -36,7 +35,7 @@ async function invalidatePlayerCache(
     .eq("id", user.id)
     .maybeSingle();
   if (data?.username) {
-    updateTag(CacheTags.player(data.username));
+    invalidatePlayerProfileCaches(data.username);
   }
 }
 

@@ -22,13 +22,19 @@ Available hooks and utility functions. Check this list before writing new utilit
 
 ## Lib Helpers (`apps/web/src/lib/`)
 
-| Helper                 | Import                     | Purpose                                                                   |
-| ---------------------- | -------------------------- | ------------------------------------------------------------------------- |
-| `cn()`                 | `@/lib/utils`              | Tailwind class merging (clsx + tailwind-merge)                            |
-| `CacheTags.*`          | `@/lib/cache`              | Static keys (`TOURNAMENTS_LIST`) and dynamic functions (`tournament(id)`) |
-| `notificationIcons`    | `@/lib/notification-utils` | Notification type to lucide icon mapping                                  |
-| `isSafeRelativeUrl()`  | `@/lib/notification-utils` | Validate relative URLs start with `/[^/\\]`                               |
-| `transformPhaseData()` | `@/lib/tournament-utils`   | Supabase phase/round data to bracket visualization shape                  |
+| Helper                                                 | Import                     | Purpose                                                                        |
+| ------------------------------------------------------ | -------------------------- | ------------------------------------------------------------------------------ |
+| `cn()`                                                 | `@/lib/utils`              | Tailwind class merging (clsx + tailwind-merge)                                 |
+| `CacheTags.*`                                          | `@/lib/cache`              | Static keys (`TOURNAMENTS_LIST`) and dynamic functions (`tournament(id)`)      |
+| `invalidateCommunityPageCaches(slug?, id?)`            | `@/lib/cache-invalidation` | Bust `COMMUNITIES_LIST` + `community(slug/id)` — use in any community mutation |
+| `invalidateTournamentCaches(id)`                       | `@/lib/cache-invalidation` | Bust `tournament(id)` — for internal tournament changes (rounds, matches)      |
+| `invalidateTournamentListCaches(id)`                   | `@/lib/cache-invalidation` | Bust `TOURNAMENTS_LIST` + `tournament(id)` — for registration count changes    |
+| `invalidateTournamentAndCommunityCaches(supabase, id)` | `@/lib/cache-invalidation` | Bust list + tournament + community — use on status changes (async)             |
+| `invalidatePlayerProfileCaches(username)`              | `@/lib/cache-invalidation` | Bust `player(username)` — for bio/country/avatar changes                       |
+| `invalidatePlayerDirectoryCaches(username)`            | `@/lib/cache-invalidation` | Bust player + all directory/sidebar caches — on join or username change        |
+| `notificationIcons`                                    | `@/lib/notification-utils` | Notification type to lucide icon mapping                                       |
+| `isSafeRelativeUrl()`                                  | `@/lib/notification-utils` | Validate relative URLs start with `/[^/\\]`                                    |
+| `transformPhaseData()`                                 | `@/lib/tournament-utils`   | Supabase phase/round data to bracket visualization shape                       |
 
 ## @trainers/utils (import from `@trainers/utils`)
 

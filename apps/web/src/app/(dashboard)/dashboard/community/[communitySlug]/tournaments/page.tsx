@@ -5,7 +5,7 @@ import { getCommunityBySlug } from "@trainers/supabase";
 
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
-import { TournamentsListClient } from "@/app/(app)/to-dashboard/[communitySlug]/tournaments/tournaments-list-client";
+import { TournamentsListClient } from "./tournaments-list-client";
 import { PageHeader } from "@/components/dashboard/page-header";
 
 interface PageProps {

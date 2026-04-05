@@ -52,17 +52,35 @@ const getCachedData = unstable_cache(
 - [ ] Tags match what server actions invalidate via `updateTag()`
 - [ ] Access checks happen OUTSIDE the cache (authenticated query before/after)
 
+### Cache Invalidation Helpers
+
+**Never call `updateTag()` directly in server actions.** Use the entity-scoped helpers in
+`@/lib/cache-invalidation` — they bundle all affected tags so adding a new cache only
+requires updating one helper, not every action.
+
+```ts
+import {
+  invalidateCommunityPageCaches, // COMMUNITIES_LIST + community(slug) + community(id)
+  invalidateTournamentCaches, // tournament(id) only — for internal changes
+  invalidateTournamentListCaches, // TOURNAMENTS_LIST + tournament(id)
+  invalidateTournamentAndCommunityCaches, // above + community(slug/id) — async, needs DB
+  invalidatePlayerProfileCaches, // player(username) only
+  invalidatePlayerDirectoryCaches, // player + PLAYERS_DIRECTORY + sidebars
+} from "@/lib/cache-invalidation";
+```
+
 ### Cache Invalidation Checklist
 
-Every mutation that changes data must invalidate affected caches:
+Every mutation that changes data must invalidate affected caches via the correct helper:
 
-| What Changed                                 | Tags to Invalidate                                       |
-| -------------------------------------------- | -------------------------------------------------------- |
-| Community name/description/logo/social links | `COMMUNITIES_LIST` + `community(slug)` + `community(id)` |
-| Tournament CRUD                              | `TOURNAMENTS_LIST` + `tournament(slug)`                  |
-| Player profile                               | `player(handle)`                                         |
-| Tournament registration                      | `tournament(slug)` + `community(slug)`                   |
-| Staff changes                                | `community(slug)`                                        |
+| What Changed                                       | Helper to Call                                                           |
+| -------------------------------------------------- | ------------------------------------------------------------------------ |
+| Community name/description/logo/social links       | `invalidateCommunityPageCaches(slug, id)`                                |
+| Staff roster changes                               | `invalidateCommunityPageCaches(slug, id)`                                |
+| Tournament status change (publish/start/complete)  | `invalidateTournamentAndCommunityCaches(supabase, id)`                   |
+| Tournament internal change (rounds, registrations) | `invalidateTournamentListCaches(id)` or `invalidateTournamentCaches(id)` |
+| Player profile data (bio/country)                  | `invalidatePlayerProfileCaches(username)`                                |
+| Player joins or changes username                   | `invalidatePlayerDirectoryCaches(username)`                              |
 
 ### Anti-Patterns
 

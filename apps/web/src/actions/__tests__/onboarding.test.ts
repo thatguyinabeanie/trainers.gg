@@ -25,6 +25,7 @@ jest.mock("botid/server", () => ({
 
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
+  updateTag: jest.fn(),
 }));
 
 jest.mock("next/headers", () => ({

@@ -73,22 +73,6 @@ const nextConfig: NextConfig = {
       destination: "/dashboard/settings/profile",
       permanent: false,
     },
-    // Old TO-dashboard routes
-    {
-      source: "/to-dashboard",
-      destination: "/dashboard/community",
-      permanent: true,
-    },
-    {
-      source: "/to-dashboard/:slug",
-      destination: "/dashboard/community/:slug",
-      permanent: true,
-    },
-    {
-      source: "/to-dashboard/:slug/:path*",
-      destination: "/dashboard/community/:slug/:path*",
-      permanent: true,
-    },
   ],
 };
 

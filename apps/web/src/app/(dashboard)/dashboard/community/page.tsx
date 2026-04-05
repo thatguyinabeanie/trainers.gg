@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { listMyCommunities } from "@trainers/supabase";
-import { CommunitySelectorClient } from "@/app/(app)/to-dashboard/community-selector-client";
+import { CommunitySelectorClient } from "./community-selector-client";
 import { PageHeader } from "@/components/dashboard/page-header";
 
 export default async function DashboardCommunityPage() {

@@ -3,9 +3,12 @@
 import { z, usernameSchema, pdsStatusSchema } from "@trainers/validators";
 import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { escapeLike } from "@trainers/utils";
-import { CacheTags } from "@/lib/cache";
+import {
+  invalidatePlayerProfileCaches,
+  invalidatePlayerDirectoryCaches,
+} from "@/lib/cache-invalidation";
 import { withAction } from "./utils";
 
 const PDS_HOST = process.env.PDS_HOST || "https://pds.trainers.gg";
@@ -560,14 +563,11 @@ export async function updateProfile(data: {
       }
     }
 
-    // Invalidate player profile cache
     if (currentUsername) {
-      updateTag(CacheTags.player(currentUsername));
+      invalidatePlayerProfileCaches(currentUsername);
     }
     if (hasUsernameChange && validated.username !== currentUsername) {
-      updateTag(CacheTags.player(validated.username!));
-      updateTag(CacheTags.PLAYERS_DIRECTORY);
-      updateTag(CacheTags.PLAYERS_NEW);
+      invalidatePlayerDirectoryCaches(validated.username!);
     }
 
     revalidatePath("/");
@@ -625,7 +625,7 @@ export async function updateAltVisibilityAction(
       .eq("id", user.id)
       .maybeSingle();
     if (userData?.username) {
-      updateTag(CacheTags.player(userData.username));
+      invalidatePlayerProfileCaches(userData.username);
     }
   }, "Failed to update alt visibility");
 }

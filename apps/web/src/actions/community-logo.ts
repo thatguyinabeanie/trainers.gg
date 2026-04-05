@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
 import { z } from "@trainers/validators";
 import { imageUploadSchema } from "@trainers/validators";
 import { type ActionResult } from "@trainers/validators";
@@ -17,8 +17,8 @@ import { withAction } from "./utils";
 const communityIdSchema = z.number().int().positive();
 
 /**
- * Upload a logo image for an organization.
- * Validates the file, uploads to storage, updates the org record,
+ * Upload a logo image for a community.
+ * Validates the file, uploads to storage, updates the community record,
  * and cleans up the previous logo if it was in our storage.
  */
 export async function uploadCommunityLogo(
@@ -46,13 +46,13 @@ export async function uploadCommunityLogo(
     // Verify user owns this org and get current logo for cleanup
     const { data: org } = await supabase
       .from("communities")
-      .select("owner_user_id, logo_url")
+      .select("owner_user_id, logo_url, slug")
       .eq("id", validatedId)
       .single();
 
-    if (!org) throw new Error("Organization not found");
+    if (!org) throw new Error("Community not found");
     if (org.owner_user_id !== user.id) {
-      throw new Error("You can only update your own organization");
+      throw new Error("You can only update your own community");
     }
 
     const oldLogoUrl = org.logo_url;
@@ -85,13 +85,13 @@ export async function uploadCommunityLogo(
       }
     }
 
-    revalidatePath("/");
+    invalidateCommunityPageCaches(org.slug, validatedId);
     return { logoUrl };
   }, "Failed to upload logo");
 }
 
 /**
- * Remove the logo from an organization.
+ * Remove the logo from a community.
  * Deletes the file from storage and sets logo_url to null.
  */
 export async function removeCommunityLogo(
@@ -110,13 +110,13 @@ export async function removeCommunityLogo(
     // Verify user owns this org and get current logo for cleanup
     const { data: org } = await supabase
       .from("communities")
-      .select("owner_user_id, logo_url")
+      .select("owner_user_id, logo_url, slug")
       .eq("id", validatedId)
       .single();
 
-    if (!org) throw new Error("Organization not found");
+    if (!org) throw new Error("Community not found");
     if (org.owner_user_id !== user.id) {
-      throw new Error("You can only update your own organization");
+      throw new Error("You can only update your own community");
     }
 
     // Delete file from storage (best-effort)
@@ -135,7 +135,7 @@ export async function removeCommunityLogo(
       .eq("id", validatedId);
     if (error) throw error;
 
-    revalidatePath("/");
+    invalidateCommunityPageCaches(org.slug, validatedId);
     return { success: true as const };
   }, "Failed to remove logo");
 }
