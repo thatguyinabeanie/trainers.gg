@@ -253,7 +253,7 @@ export function UpcomingTournaments({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="whitespace-nowrap">
+                <TableHead className="w-44 whitespace-nowrap">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3.5 w-3.5" />
                     Date & Time
@@ -400,7 +400,7 @@ export function CompletedTournaments({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
+                <TableHead className="w-44">Date</TableHead>
                 <TableHead>Name</TableHead>
                 {showOrganization && <TableHead>Organization</TableHead>}
                 <TableHead>Winner</TableHead>
