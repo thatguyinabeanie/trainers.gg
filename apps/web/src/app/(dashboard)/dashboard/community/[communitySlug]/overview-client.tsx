@@ -128,17 +128,6 @@ export function OverviewClient({
 
   return (
     <>
-      {/* Create Tournament CTA */}
-      <div className="flex justify-end">
-        <Link
-          href={`/dashboard/community/${communitySlug}/tournaments/create`}
-          className={cn(buttonVariants({ size: "sm" }))}
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          Create Tournament
-        </Link>
-      </div>
-
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard
@@ -184,25 +173,27 @@ export function OverviewClient({
       <DashboardCard>
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold">📅 Upcoming Tournaments</p>
-          <Link
-            href={`/dashboard/community/${communitySlug}/tournaments`}
-            className="text-primary text-xs font-medium"
-          >
-            View all →
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/dashboard/community/${communitySlug}/tournaments/create`}
+              className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New
+            </Link>
+            <Link
+              href={`/dashboard/community/${communitySlug}/tournaments`}
+              className="text-primary text-xs font-medium"
+            >
+              View all →
+            </Link>
+          </div>
         </div>
         {upcomingTournaments.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
+          <div className="py-6 text-center">
             <p className="text-muted-foreground text-sm">
               No upcoming tournaments
             </p>
-            <Link
-              href={`/dashboard/community/${communitySlug}/tournaments/create`}
-              className={cn(buttonVariants({ size: "sm" }))}
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Create Tournament
-            </Link>
           </div>
         ) : (
           <div className="flex gap-3">

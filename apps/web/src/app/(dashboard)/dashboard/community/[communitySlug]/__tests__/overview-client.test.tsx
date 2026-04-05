@@ -261,10 +261,13 @@ describe("OverviewClient — Upcoming Tournaments", () => {
     expect(screen.getByText("No upcoming tournaments")).toBeInTheDocument();
   });
 
-  it("shows Create Tournament link in empty state", () => {
+  it("shows the New tournament link in the card header when empty", () => {
     render(<OverviewClient {...defaultProps} upcomingTournaments={[]} />);
-    const links = screen.getAllByRole("link", { name: /create tournament/i });
-    expect(links.length).toBeGreaterThanOrEqual(1);
+    const link = screen.getByRole("link", { name: /new/i });
+    expect(link).toHaveAttribute(
+      "href",
+      "/dashboard/community/vgc-league/tournaments/create"
+    );
   });
 
   it("renders tournament names when upcomingTournaments is non-empty", () => {
@@ -508,15 +511,13 @@ describe("OverviewClient — Top Regulars", () => {
 // =============================================================================
 
 describe("OverviewClient — navigation links", () => {
-  it("renders a Create Tournament link pointing to the correct route", () => {
+  it("renders the New tournament link pointing to the correct create route", () => {
     render(<OverviewClient {...defaultProps} communitySlug="vgc-league" />);
-    const links = screen.getAllByRole("link", { name: /create tournament/i });
-    links.forEach((link) => {
-      expect(link).toHaveAttribute(
-        "href",
-        "/dashboard/community/vgc-league/tournaments/create"
-      );
-    });
+    const link = screen.getByRole("link", { name: /new/i });
+    expect(link).toHaveAttribute(
+      "href",
+      "/dashboard/community/vgc-league/tournaments/create"
+    );
   });
 
   it("renders a View all link to the tournaments list", () => {
