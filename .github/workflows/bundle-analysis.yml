@@ -81,7 +81,7 @@ jobs:
           path: apps/web/.next/analyze/__bundle_analysis.json
 
       - name: Download base branch bundle
-        uses: dawidd6/action-download-artifact@v19
+        uses: dawidd6/action-download-artifact@v20
         if: success() && github.event_name == 'pull_request'
         with:
           workflow: bundle-analysis.yml
