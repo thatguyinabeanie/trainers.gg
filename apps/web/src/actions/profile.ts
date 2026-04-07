@@ -3,11 +3,11 @@
 import { z, usernameSchema, pdsStatusSchema } from "@trainers/validators";
 import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
 import { escapeLike } from "@trainers/utils";
 import {
   invalidatePlayerProfileCaches,
   invalidatePlayerDirectoryCaches,
+  invalidatePlayerRankingCaches,
 } from "@/lib/cache-invalidation";
 import { withAction } from "./utils";
 
@@ -568,9 +568,10 @@ export async function updateProfile(data: {
     }
     if (hasUsernameChange && validated.username !== currentUsername) {
       invalidatePlayerDirectoryCaches(validated.username!);
+      // Leaderboards display usernames — bust ranking caches on rename
+      invalidatePlayerRankingCaches();
     }
 
-    revalidatePath("/");
     return { success: true, error: null };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -615,8 +616,6 @@ export async function updateAltVisibilityAction(
       .eq("id", altId);
 
     if (updateError) throw updateError;
-
-    revalidatePath("/dashboard/alts");
 
     // Invalidate the public profile cache so /u/[handle] reflects the change
     const { data: userData } = await supabase

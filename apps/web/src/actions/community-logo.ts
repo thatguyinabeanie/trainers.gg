@@ -32,18 +32,14 @@ export async function uploadCommunityLogo(
       throw new Error("No file provided");
     }
 
-    // Validate file constraints
     imageUploadSchema.parse({ file });
 
     const supabase = await createClient();
-
-    // Verify user is authenticated
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    // Verify user owns this org and get current logo for cleanup
     const { data: org } = await supabase
       .from("communities")
       .select("owner_user_id, logo_url, slug")
@@ -57,7 +53,6 @@ export async function uploadCommunityLogo(
 
     const oldLogoUrl = org.logo_url;
 
-    // Upload new logo — path: communities/{communityId}/{timestamp}.{ext}
     const rawPath = getUploadPath(user.id, file.name);
     const fileName = rawPath.split("/").pop()!;
     const path = `communities/${validatedId}/${fileName}`;
@@ -70,14 +65,14 @@ export async function uploadCommunityLogo(
       file
     );
 
-    // Update org record with new logo URL
     const { error } = await supabase
       .from("communities")
       .update({ logo_url: logoUrl })
       .eq("id", validatedId);
     if (error) throw error;
 
-    // Best-effort cleanup of old logo if it was in our storage
+    // Best-effort cleanup — old logo may be external (Discord CDN, etc.)
+    // so only delete if it's in our storage bucket
     if (oldLogoUrl) {
       const oldPath = extractPathFromUrl(oldLogoUrl, STORAGE_BUCKETS.UPLOADS);
       if (oldPath) {
@@ -100,14 +95,11 @@ export async function removeCommunityLogo(
   return withAction(async () => {
     const validatedId = communityIdSchema.parse(communityId);
     const supabase = await createClient();
-
-    // Verify user is authenticated
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    // Verify user owns this org and get current logo for cleanup
     const { data: org } = await supabase
       .from("communities")
       .select("owner_user_id, logo_url, slug")
@@ -119,7 +111,6 @@ export async function removeCommunityLogo(
       throw new Error("You can only update your own community");
     }
 
-    // Delete file from storage (best-effort)
     if (org.logo_url) {
       const path = extractPathFromUrl(org.logo_url, STORAGE_BUCKETS.UPLOADS);
       if (path) {
@@ -128,7 +119,6 @@ export async function removeCommunityLogo(
       }
     }
 
-    // Set logo_url to null
     const { error } = await supabase
       .from("communities")
       .update({ logo_url: null })

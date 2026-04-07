@@ -8,7 +8,6 @@ import {
 import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { escapeLike } from "@trainers/utils";
-import { revalidatePath } from "next/cache";
 import { invalidatePlayerDirectoryCaches } from "@/lib/cache-invalidation";
 import { headers } from "next/headers";
 
@@ -165,7 +164,6 @@ export async function completeOnboarding(data: {
 
     // New user is now visible in the players directory and new members sidebar
     invalidatePlayerDirectoryCaches(validated.username);
-    revalidatePath("/");
     return { success: true, error: null };
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -1,6 +1,5 @@
 "use server";
 
-import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import {
@@ -11,7 +10,7 @@ import {
   type SubmitOrganizationRequestInput,
 } from "@trainers/validators";
 import { submitCommunityRequest as submitCommunityRequestMutation } from "@trainers/supabase";
-import { CacheTags } from "@/lib/cache";
+import { invalidateCommunityRequestCaches } from "@/lib/cache-invalidation";
 
 const HANDLE_TO_URL: {
   field: keyof SubmitOrganizationRequestInput;
@@ -81,7 +80,7 @@ export async function submitCommunityRequestAction(
       social_links: buildSocialLinks(parsed.data),
     });
 
-    updateTag(CacheTags.COMMUNITY_REQUESTS_LIST);
+    invalidateCommunityRequestCaches();
 
     return {
       success: true,

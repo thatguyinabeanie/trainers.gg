@@ -118,6 +118,14 @@ jest.mock("@/lib/cache-invalidation", () => ({
     mockUpdateTag(`tournament:${id}`);
     mockUpdateTag("communities-list");
   },
+  invalidateTournamentWithTeamCaches: (id: number) => {
+    mockUpdateTag(`tournament:${id}`);
+    mockUpdateTag(`tournament-teams:${id}`);
+  },
+  invalidatePlayerRankingCaches: () => {
+    mockUpdateTag("players-leaderboard");
+    mockUpdateTag("players-recent");
+  },
 }));
 
 jest.mock("botid/server", () => ({

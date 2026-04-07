@@ -16,6 +16,25 @@ const spriteUrlSchema = z
     message: "Avatar must be a Pokemon Showdown sprite URL",
   });
 
+/** Verify the authenticated user owns the alt and return it with the username. */
+async function getOwnedAlt(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  altId: number,
+  userId: string
+) {
+  const { data: alt } = await supabase
+    .from("alts")
+    .select("user_id, users!inner(username)")
+    .eq("id", altId)
+    .single();
+
+  if (!alt) throw new Error("Alt not found");
+  if (alt.user_id !== userId) {
+    throw new Error("You can only update your own alt");
+  }
+  return alt;
+}
+
 /**
  * Set a Pokemon sprite as the alt's avatar.
  * Validates the URL is a Showdown sprite and that the user owns the alt.
@@ -31,17 +50,7 @@ export async function setAltAvatar(altId: number, spriteUrl: string) {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    // Verify user owns this alt and get username for cache invalidation
-    const { data: alt } = await supabase
-      .from("alts")
-      .select("user_id, users!inner(username)")
-      .eq("id", altId)
-      .single();
-
-    if (!alt) throw new Error("Alt not found");
-    if (alt.user_id !== user.id) {
-      throw new Error("You can only update your own alt");
-    }
+    const alt = await getOwnedAlt(supabase, altId, user.id);
 
     const { error } = await supabase
       .from("alts")
@@ -70,17 +79,7 @@ export async function removeAltAvatar(altId: number) {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    // Verify user owns this alt and get username for cache invalidation
-    const { data: alt } = await supabase
-      .from("alts")
-      .select("user_id, users!inner(username)")
-      .eq("id", altId)
-      .single();
-
-    if (!alt) throw new Error("Alt not found");
-    if (alt.user_id !== user.id) {
-      throw new Error("You can only update your own alt");
-    }
+    const alt = await getOwnedAlt(supabase, altId, user.id);
 
     const { error } = await supabase
       .from("alts")
