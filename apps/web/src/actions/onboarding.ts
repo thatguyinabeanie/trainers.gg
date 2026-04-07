@@ -10,8 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { escapeLike } from "@trainers/utils";
 import { invalidatePlayerDirectoryCaches } from "@/lib/cache-invalidation";
 import { headers } from "next/headers";
-
-const PDS_HOST = process.env.PDS_HOST || "https://pds.trainers.gg";
+import { checkPdsHandleAvailable, derivePdsUsername } from "./pds-utils";
 
 /**
  * Complete the onboarding flow for OAuth users with temporary usernames.
@@ -96,9 +95,7 @@ export async function completeOnboarding(data: {
     }
 
     // Check PDS handle availability
-    const pdsUsername =
-      validated.username.toLowerCase().replace(/[^a-z0-9-]/g, "") ||
-      `user-${user.id.slice(0, 8)}`;
+    const pdsUsername = derivePdsUsername(validated.username, user.id);
     const handle = `${pdsUsername}.trainers.gg`;
 
     const handleAvailable = await checkPdsHandleAvailable(handle);
@@ -240,25 +237,5 @@ async function provisionPds(
   } catch (error) {
     // Non-blocking — user can retry PDS provisioning later in settings
     console.warn("PDS provisioning error during onboarding:", error);
-  }
-}
-
-/**
- * Check if a handle is available on the PDS.
- */
-async function checkPdsHandleAvailable(handle: string): Promise<boolean> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5_000);
-
-  try {
-    const response = await fetch(
-      `${PDS_HOST}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`,
-      { signal: controller.signal }
-    );
-    return response.status === 400;
-  } catch {
-    return true;
-  } finally {
-    clearTimeout(timeoutId);
   }
 }

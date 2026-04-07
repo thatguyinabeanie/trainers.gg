@@ -130,10 +130,7 @@ export function invalidatePlayerRankingCaches(): void {
 // Tournament Team Cache Helpers
 // =============================================================================
 
-/**
- * Invalidate tournament detail + team submission caches.
- * Call after team submit or team selection changes.
- */
+/** Call after team submit or team selection changes. */
 export function invalidateTournamentWithTeamCaches(tournamentId: number): void {
   updateTag(CacheTags.tournament(tournamentId));
   updateTag(CacheTags.tournamentTeams(tournamentId));
@@ -143,10 +140,7 @@ export function invalidateTournamentWithTeamCaches(tournamentId: number): void {
 // Community Request Cache Helpers
 // =============================================================================
 
-/**
- * Invalidate the community requests list cache.
- * Call after submitting or reviewing a community request.
- */
+/** Call after submitting or reviewing a community request. */
 export function invalidateCommunityRequestCaches(): void {
   updateTag(CacheTags.COMMUNITY_REQUESTS_LIST);
 }

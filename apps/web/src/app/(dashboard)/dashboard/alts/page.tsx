@@ -54,6 +54,7 @@ import { createAltAction, deleteAltAction } from "@/actions/alts";
 import { updateAltVisibilityAction } from "@/actions/profile";
 import { SpritePicker } from "@/components/profile/sprite-picker";
 import { cn } from "@/lib/utils";
+import { formatWinRate } from "../tournaments/tournament-helpers";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,12 +70,6 @@ type Alt = {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function formatWinRate(wins: number, losses: number): string {
-  const total = wins + losses;
-  if (total === 0) return "—";
-  return `${((wins / total) * 100).toFixed(1)}%`;
-}
 
 function isHighWinRate(wins: number, losses: number): boolean {
   const total = wins + losses;

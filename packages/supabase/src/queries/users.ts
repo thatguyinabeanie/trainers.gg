@@ -179,6 +179,28 @@ export async function getCurrentUserAlts(supabase: TypedClient) {
 }
 
 /**
+ * Fetch an alt with its owner's username, throwing if not found or not owned by userId.
+ * Username is included so callers can invalidate player profile caches after mutations.
+ */
+export async function getOwnedAlt(
+  supabase: TypedClient,
+  altId: number,
+  userId: string
+) {
+  const { data: alt } = await supabase
+    .from("alts")
+    .select("user_id, users!inner(username)")
+    .eq("id", altId)
+    .single();
+
+  if (!alt) throw new Error("Alt not found");
+  if (alt.user_id !== userId) {
+    throw new Error("You can only update your own alt");
+  }
+  return alt;
+}
+
+/**
  * Search alts by username or display name
  */
 export async function searchAlts(

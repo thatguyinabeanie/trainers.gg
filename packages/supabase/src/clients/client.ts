@@ -37,6 +37,8 @@ import { getMatchAuditLog as getMatchAuditLog_core } from "../queries/audit-log"
 import { getAuditLog as getAuditLog_core } from "../queries/audit-log";
 import { getAuditLogStats as getAuditLogStats_core } from "../queries/audit-log";
 import { listPublicCommunities as listPublicCommunities_core } from "../queries/communities";
+import { listFeaturedCommunities as listFeaturedCommunities_core } from "../queries/communities";
+import { listAllCommunitiesForSudo as listAllCommunitiesForSudo_core } from "../queries/communities";
 import { listCommunities as listCommunities_core } from "../queries/communities";
 import { getCommunityBySlug as getCommunityBySlug_core } from "../queries/communities";
 import { getCommunityById as getCommunityById_core } from "../queries/communities";
@@ -53,6 +55,9 @@ import { listCommunityStaffWithRoles as listCommunityStaffWithRoles_core } from 
 import { listCommunityGroups as listCommunityGroups_core } from "../queries/communities";
 import { searchUsersForInvite as searchUsersForInvite_core } from "../queries/communities";
 import { hasCommunityPermission as hasCommunityPermission_core } from "../queries/communities";
+import { getCommunityStats as getCommunityStats_core } from "../queries/communities";
+import { getTopReturningPlayers as getTopReturningPlayers_core } from "../queries/communities";
+import { getCommunityActivity as getCommunityActivity_core } from "../queries/communities";
 import { listFeatureFlags as listFeatureFlags_core } from "../queries/feature-flags";
 import { getFeatureFlag as getFeatureFlag_core } from "../queries/feature-flags";
 import { isFeatureEnabled as isFeatureEnabled_core } from "../queries/feature-flags";
@@ -76,6 +81,7 @@ import { searchPlayers as searchPlayers_core } from "../queries/players";
 import { getLeaderboard as getLeaderboard_core } from "../queries/players";
 import { getRecentlyActivePlayers as getRecentlyActivePlayers_core } from "../queries/players";
 import { getNewMembers as getNewMembers_core } from "../queries/players";
+import { getPlayerRatingsBulk as getPlayerRatingsBulk_core } from "../queries/ratings";
 import { getPlayerRating as getPlayerRating_core } from "../queries/ratings";
 import { isSiteAdmin as isSiteAdmin_core } from "../queries/site-roles";
 import { getSiteRoles as getSiteRoles_core } from "../queries/site-roles";
@@ -88,6 +94,9 @@ import { isSudoModeActive as isSudoModeActive_core } from "../queries/sudo-mode"
 import { getSudoSessions as getSudoSessions_core } from "../queries/sudo-mode";
 import { startSudoSession as startSudoSession_core } from "../queries/sudo-mode";
 import { endSudoSession as endSudoSession_core } from "../queries/sudo-mode";
+import { getTournamentTeamSheets as getTournamentTeamSheets_core } from "../queries/tournament-team-sheets";
+import { getTeamSheetByRegistration as getTeamSheetByRegistration_core } from "../queries/tournament-team-sheets";
+import { getMatchTeamSheets as getMatchTeamSheets_core } from "../queries/tournament-team-sheets";
 import { listTournamentsGrouped as listTournamentsGrouped_core } from "../queries/tournaments";
 import { listPublicTournaments as listPublicTournaments_core } from "../queries/tournaments";
 import { listTournaments as listTournaments_core } from "../queries/tournaments";
@@ -125,6 +134,8 @@ import { getUnpairedCheckedInPlayers as getUnpairedCheckedInPlayers_core } from 
 import { getUserTournamentHistory as getUserTournamentHistory_core } from "../queries/tournaments";
 import { getPlayerTournamentHistory as getPlayerTournamentHistory_core } from "../queries/tournaments";
 import { getPlayerLifetimeStats as getPlayerLifetimeStats_core } from "../queries/tournaments";
+import { getAltsBulkStats as getAltsBulkStats_core } from "../queries/tournaments";
+import { getTeamsForAlt as getTeamsForAlt_core } from "../queries/tournaments";
 import { getUserCount as getUserCount_core } from "../queries/users";
 import { getCurrentUser as getCurrentUser_core } from "../queries/users";
 import { getUserSpritePreference as getUserSpritePreference_core } from "../queries/users";
@@ -134,6 +145,7 @@ import { getAltByUsername as getAltByUsername_core } from "../queries/users";
 import { getAltByUserId as getAltByUserId_core } from "../queries/users";
 import { getAltsByUserId as getAltsByUserId_core } from "../queries/users";
 import { getCurrentUserAlts as getCurrentUserAlts_core } from "../queries/users";
+import { getOwnedAlt as getOwnedAlt_core } from "../queries/users";
 import { searchAlts as searchAlts_core } from "../queries/users";
 import { getPlayerProfileByHandle as getPlayerProfileByHandle_core } from "../queries/users";
 import { getEmailByUsername as getEmailByUsername_core } from "../queries/users";
@@ -196,6 +208,7 @@ import { createRound as createRound_core } from "../mutations/tournaments/rounds
 import { deleteRoundAndMatches as deleteRoundAndMatches_core } from "../mutations/tournaments/rounds";
 import { recalculateStandings as recalculateStandings_core } from "../mutations/tournaments/standings";
 import { dropPlayer as dropPlayer_core } from "../mutations/tournaments/standings";
+import { createTournamentTeamSheets as createTournamentTeamSheets_core } from "../mutations/tournaments/team-sheets";
 import { submitTeam as submitTeam_core } from "../mutations/tournaments/teams";
 import { selectTeamForTournament as selectTeamForTournament_core } from "../mutations/tournaments/teams";
 import { createTournament as createTournament_core } from "../mutations/tournaments/tournament-crud";
@@ -628,6 +641,36 @@ export async function listPublicCommunities(
 }
 
 /**
+ * listFeaturedCommunities (auto-injected with browser client)
+ */
+export async function listFeaturedCommunities(
+  ...args: Parameters<typeof listFeaturedCommunities_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listFeaturedCommunities_core>>> {
+  const client = createBrowserSupabaseClient();
+  return listFeaturedCommunities_core(client, ...args);
+}
+
+/**
+ * listAllCommunitiesForSudo (auto-injected with browser client)
+ */
+export async function listAllCommunitiesForSudo(
+  ...args: Parameters<typeof listAllCommunitiesForSudo_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listAllCommunitiesForSudo_core>>> {
+  const client = createBrowserSupabaseClient();
+  return listAllCommunitiesForSudo_core(client, ...args);
+}
+
+/**
  * listCommunities (auto-injected with browser client)
  */
 export async function listCommunities(
@@ -865,6 +908,51 @@ export async function hasCommunityPermission(
 ): Promise<Awaited<ReturnType<typeof hasCommunityPermission_core>>> {
   const client = createBrowserSupabaseClient();
   return hasCommunityPermission_core(client, ...args);
+}
+
+/**
+ * getCommunityStats (auto-injected with browser client)
+ */
+export async function getCommunityStats(
+  ...args: Parameters<typeof getCommunityStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getCommunityStats_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getCommunityStats_core(client, ...args);
+}
+
+/**
+ * getTopReturningPlayers (auto-injected with browser client)
+ */
+export async function getTopReturningPlayers(
+  ...args: Parameters<typeof getTopReturningPlayers_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTopReturningPlayers_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getTopReturningPlayers_core(client, ...args);
+}
+
+/**
+ * getCommunityActivity (auto-injected with browser client)
+ */
+export async function getCommunityActivity(
+  ...args: Parameters<typeof getCommunityActivity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getCommunityActivity_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getCommunityActivity_core(client, ...args);
 }
 
 /**
@@ -1213,6 +1301,21 @@ export async function getNewMembers(
 }
 
 /**
+ * getPlayerRatingsBulk (auto-injected with browser client)
+ */
+export async function getPlayerRatingsBulk(
+  ...args: Parameters<typeof getPlayerRatingsBulk_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPlayerRatingsBulk_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getPlayerRatingsBulk_core(client, ...args);
+}
+
+/**
  * getPlayerRating (auto-injected with browser client)
  */
 export async function getPlayerRating(
@@ -1390,6 +1493,51 @@ export async function endSudoSession(
 ): Promise<Awaited<ReturnType<typeof endSudoSession_core>>> {
   const client = createBrowserSupabaseClient();
   return endSudoSession_core(client, ...args);
+}
+
+/**
+ * getTournamentTeamSheets (auto-injected with browser client)
+ */
+export async function getTournamentTeamSheets(
+  ...args: Parameters<typeof getTournamentTeamSheets_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentTeamSheets_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getTournamentTeamSheets_core(client, ...args);
+}
+
+/**
+ * getTeamSheetByRegistration (auto-injected with browser client)
+ */
+export async function getTeamSheetByRegistration(
+  ...args: Parameters<typeof getTeamSheetByRegistration_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTeamSheetByRegistration_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getTeamSheetByRegistration_core(client, ...args);
+}
+
+/**
+ * getMatchTeamSheets (auto-injected with browser client)
+ */
+export async function getMatchTeamSheets(
+  ...args: Parameters<typeof getMatchTeamSheets_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchTeamSheets_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getMatchTeamSheets_core(client, ...args);
 }
 
 /**
@@ -1949,6 +2097,36 @@ export async function getPlayerLifetimeStats(
 }
 
 /**
+ * getAltsBulkStats (auto-injected with browser client)
+ */
+export async function getAltsBulkStats(
+  ...args: Parameters<typeof getAltsBulkStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getAltsBulkStats_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getAltsBulkStats_core(client, ...args);
+}
+
+/**
+ * getTeamsForAlt (auto-injected with browser client)
+ */
+export async function getTeamsForAlt(
+  ...args: Parameters<typeof getTeamsForAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTeamsForAlt_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getTeamsForAlt_core(client, ...args);
+}
+
+/**
  * getUserCount (auto-injected with browser client)
  */
 export async function getUserCount(
@@ -2081,6 +2259,21 @@ export async function getCurrentUserAlts(
 ): Promise<Awaited<ReturnType<typeof getCurrentUserAlts_core>>> {
   const client = createBrowserSupabaseClient();
   return getCurrentUserAlts_core(client, ...args);
+}
+
+/**
+ * getOwnedAlt (auto-injected with browser client)
+ */
+export async function getOwnedAlt(
+  ...args: Parameters<typeof getOwnedAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getOwnedAlt_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getOwnedAlt_core(client, ...args);
 }
 
 /**
@@ -3011,6 +3204,21 @@ export async function dropPlayer(
 ): Promise<Awaited<ReturnType<typeof dropPlayer_core>>> {
   const client = createBrowserSupabaseClient();
   return dropPlayer_core(client, ...args);
+}
+
+/**
+ * createTournamentTeamSheets (auto-injected with browser client)
+ */
+export async function createTournamentTeamSheets(
+  ...args: Parameters<typeof createTournamentTeamSheets_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createTournamentTeamSheets_core>>> {
+  const client = createBrowserSupabaseClient();
+  return createTournamentTeamSheets_core(client, ...args);
 }
 
 /**

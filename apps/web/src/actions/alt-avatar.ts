@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "@trainers/validators";
+import { getOwnedAlt } from "@trainers/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { invalidatePlayerProfileCaches } from "@/lib/cache-invalidation";
 import { withAction } from "./utils";
@@ -15,25 +16,6 @@ const spriteUrlSchema = z
   .refine((url) => url.startsWith(SHOWDOWN_SPRITE_PREFIX), {
     message: "Avatar must be a Pokemon Showdown sprite URL",
   });
-
-/** Verify the authenticated user owns the alt and return it with the username. */
-async function getOwnedAlt(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  altId: number,
-  userId: string
-) {
-  const { data: alt } = await supabase
-    .from("alts")
-    .select("user_id, users!inner(username)")
-    .eq("id", altId)
-    .single();
-
-  if (!alt) throw new Error("Alt not found");
-  if (alt.user_id !== userId) {
-    throw new Error("You can only update your own alt");
-  }
-  return alt;
-}
 
 /**
  * Set a Pokemon sprite as the alt's avatar.

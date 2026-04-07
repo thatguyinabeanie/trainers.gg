@@ -26,9 +26,3 @@ export function createClient(request: NextRequest) {
 
   return { supabase, response: supabaseResponse };
 }
-
-export async function refreshSession(request: NextRequest) {
-  const { supabase, response } = createClient(request);
-  await supabase.auth.getUser();
-  return { supabase, response };
-}

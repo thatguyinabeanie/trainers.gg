@@ -27,7 +27,6 @@ jest.mock("botid/server", () => ({
 
 const mockUpdateTag = jest.fn();
 jest.mock("next/cache", () => ({
-  revalidatePath: jest.fn(),
   updateTag: (...args: unknown[]) => mockUpdateTag(...args),
 }));
 
@@ -952,7 +951,7 @@ describe("updateProfile", () => {
       const result = await updateProfile({ bio: "Pokemon master" });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Failed to update bio");
+      expect(result.error).toBe("Failed to sync profile to alt");
     });
 
     it("skips alt bio update when user has no main alt", async () => {
@@ -1068,7 +1067,7 @@ describe("updateProfile", () => {
       const result = await updateProfile({ username: "newname" });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Failed to sync username to alt");
+      expect(result.error).toBe("Failed to sync profile to alt");
     });
 
     it("returns error when alt username update fails", async () => {
@@ -1113,7 +1112,7 @@ describe("updateProfile", () => {
       const result = await updateProfile({ username: "newname" });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Failed to sync username to alt");
+      expect(result.error).toBe("Failed to sync profile to alt");
     });
 
     it("returns error when auth metadata update fails", async () => {

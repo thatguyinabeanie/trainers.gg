@@ -4,7 +4,6 @@
 
 // Mock next/cache
 jest.mock("next/cache", () => ({
-  revalidatePath: jest.fn(),
   updateTag: jest.fn(),
 }));
 
