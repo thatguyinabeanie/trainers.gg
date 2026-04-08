@@ -119,7 +119,7 @@ export default function ProfileSettingsPage() {
       setUsernameError(null);
     } else {
       setUsernameStatus("taken");
-      setUsernameError(result.data.reason ?? null);
+      setUsernameError(result.data.reason ?? "Username is not available");
     }
   };
 
