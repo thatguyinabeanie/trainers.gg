@@ -3,6 +3,11 @@ import type { TypedClient } from "../client";
 
 type AuditAction = Database["public"]["Enums"]["audit_action"];
 
+/** Single audit log row with joined actor user, as returned by getAuditLog. */
+export type AuditLogEntry = NonNullable<
+  Awaited<ReturnType<typeof getAuditLog>>["data"]
+>[number];
+
 /**
  * Get audit log entries for a tournament, ordered by newest first.
  * RLS ensures only community staff with tournament.manage or site admins can read.

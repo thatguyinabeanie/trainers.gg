@@ -154,6 +154,7 @@ export {
   getAuditLog,
   getAuditLogStats,
 } from "./audit-log";
+export type { AuditLogEntry } from "./audit-log";
 
 // Sudo mode queries
 export {
