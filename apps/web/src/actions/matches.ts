@@ -45,7 +45,7 @@ export async function submitGameSelectionAction(
   gameId: number,
   selectedWinnerAltId: number,
   tournamentId: number
-): Promise<ActionResult> {
+): Promise<ActionResult<void>> {
   return withAction(async () => {
     await rejectBots();
     const validGameId = idSchema.parse(gameId);
