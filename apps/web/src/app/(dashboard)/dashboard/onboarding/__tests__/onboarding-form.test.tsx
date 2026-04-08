@@ -71,8 +71,14 @@ describe("OnboardingForm", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
-    mockCheckUsername.mockResolvedValue({ available: true });
-    mockCompleteOnboarding.mockResolvedValue({ success: true, error: null });
+    mockCheckUsername.mockResolvedValue({
+      success: true,
+      data: { available: true },
+    });
+    mockCompleteOnboarding.mockResolvedValue({
+      success: true,
+      data: undefined,
+    });
   });
 
   afterEach(() => {
@@ -185,7 +191,10 @@ describe("OnboardingForm", () => {
     });
 
     it("shows 'Username is available' after successful check", async () => {
-      mockCheckUsername.mockResolvedValue({ available: true });
+      mockCheckUsername.mockResolvedValue({
+        success: true,
+        data: { available: true },
+      });
       render(<OnboardingForm />);
       changeInput(screen.getByLabelText("Username"), "cooltrainer");
       await act(async () => {
@@ -198,8 +207,8 @@ describe("OnboardingForm", () => {
 
     it("shows taken error when username is not available", async () => {
       mockCheckUsername.mockResolvedValue({
-        available: false,
-        error: "Username is taken",
+        success: true,
+        data: { available: false, reason: "Username is taken" },
       });
       render(<OnboardingForm />);
       changeInput(screen.getByLabelText("Username"), "takenname");
@@ -212,7 +221,10 @@ describe("OnboardingForm", () => {
     });
 
     it("shows fallback error when taken but no error message provided", async () => {
-      mockCheckUsername.mockResolvedValue({ available: false });
+      mockCheckUsername.mockResolvedValue({
+        success: true,
+        data: { available: false },
+      });
       render(<OnboardingForm />);
       changeInput(screen.getByLabelText("Username"), "takenname");
       await act(async () => {
@@ -289,8 +301,8 @@ describe("OnboardingForm", () => {
 
     it("is disabled when username is taken", async () => {
       mockCheckUsername.mockResolvedValue({
-        available: false,
-        error: "Username is taken",
+        success: true,
+        data: { available: false, reason: "Username is taken" },
       });
       render(<OnboardingForm />);
       changeInput(screen.getByLabelText("Username"), "takenname");

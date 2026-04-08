@@ -1,6 +1,11 @@
 "use server";
 
-import { z, usernameSchema, pdsStatusSchema } from "@trainers/validators";
+import {
+  z,
+  usernameSchema,
+  pdsStatusSchema,
+  type ActionResult,
+} from "@trainers/validators";
 import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { escapeLike } from "@trainers/utils";
@@ -29,18 +34,35 @@ const updateProfileSchema = z.object({
   bio: z.string().max(160, "Bio must be 160 characters or less").optional(),
 });
 
+// --- Interfaces ---
+
+interface UserProfile {
+  id: string;
+  username: string | null;
+  pdsStatus: "pending" | "active" | "failed" | "suspended" | "external" | null;
+  pdsHandle: string | null;
+  did: string | null;
+  birthDate: string | null;
+  country: string | null;
+  mainAltId: number | null;
+  altAvatarUrl: string | null;
+  bio: string | null;
+}
+
 // --- Actions ---
 
 /**
  * Check if a username is available (excluding the current user)
  */
-export async function checkUsernameAvailability(username: string) {
+export async function checkUsernameAvailability(
+  username: string
+): Promise<ActionResult<{ available: boolean; reason?: string }>> {
   try {
     // usernameSchema rejects temp_*/user_* placeholders + profanity
     const validated = usernameSchema.safeParse(username);
     if (!validated.success) {
       return {
-        available: false,
+        success: false,
         error: validated.error.errors[0]?.message ?? "Invalid username",
       };
     }
@@ -77,25 +99,25 @@ export async function checkUsernameAvailability(username: string) {
     if (usersResult.error) {
       console.error("Error checking username in users:", usersResult.error);
       return {
-        available: false,
+        success: false,
         error: "Failed to check username availability",
       };
     }
 
     if (usersResult.data) {
-      return { available: false, error: null };
+      return { success: true, data: { available: false } };
     }
 
     if (altsResult.error) {
       console.error("Error checking username in alts:", altsResult.error);
       return {
-        available: false,
+        success: false,
         error: "Failed to check username availability",
       };
     }
 
     if (altsResult.data) {
-      return { available: false, error: null };
+      return { success: true, data: { available: false } };
     }
 
     // Check PDS handle availability (skip for emoji-only usernames)
@@ -105,23 +127,28 @@ export async function checkUsernameAvailability(username: string) {
 
       if (!pdsAvailable) {
         return {
-          available: false,
-          error: "This handle is already registered on Bluesky",
+          success: true,
+          data: {
+            available: false,
+            reason: "This handle is already registered on Bluesky",
+          },
         };
       }
     }
 
-    return { available: true, error: null };
+    return { success: true, data: { available: true } };
   } catch (error) {
     console.error("Error in checkUsernameAvailability:", error);
-    return { available: false, error: "An unexpected error occurred" };
+    return { success: false, error: "An unexpected error occurred" };
   }
 }
 
 /**
  * Get the current user's profile data
  */
-export async function getCurrentUserProfile() {
+export async function getCurrentUserProfile(): Promise<
+  ActionResult<UserProfile | null>
+> {
   try {
     const supabase = await createClient();
 
@@ -129,7 +156,7 @@ export async function getCurrentUserProfile() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) return null;
+    if (!user) return { success: true, data: null };
 
     const { data: userData, error: dbError } = await supabase
       .from("users")
@@ -141,10 +168,10 @@ export async function getCurrentUserProfile() {
 
     if (dbError) {
       console.error("Error fetching user profile:", dbError);
-      return null;
+      return { success: false, error: "Failed to fetch profile" };
     }
 
-    if (!userData) return null;
+    if (!userData) return { success: true, data: null };
 
     // Fetch main alt's avatar URL and bio if a main alt exists
     let altAvatarUrl: string | null = null;
@@ -160,26 +187,29 @@ export async function getCurrentUserProfile() {
     }
 
     return {
-      id: userData.id,
-      username: userData.username,
-      pdsStatus: userData.pds_status as
-        | "pending"
-        | "active"
-        | "failed"
-        | "suspended"
-        | "external"
-        | null,
-      pdsHandle: userData.pds_handle,
-      did: userData.did,
-      birthDate: userData.birth_date,
-      country: userData.country,
-      mainAltId: userData.main_alt_id,
-      altAvatarUrl,
-      bio,
+      success: true,
+      data: {
+        id: userData.id,
+        username: userData.username,
+        pdsStatus: userData.pds_status as
+          | "pending"
+          | "active"
+          | "failed"
+          | "suspended"
+          | "external"
+          | null,
+        pdsHandle: userData.pds_handle,
+        did: userData.did,
+        birthDate: userData.birth_date,
+        country: userData.country,
+        mainAltId: userData.main_alt_id,
+        altAvatarUrl,
+        bio,
+      },
     };
   } catch (error) {
     console.error("Error in getCurrentUserProfile:", error);
-    return null;
+    return { success: false, error: "An unexpected error occurred" };
   }
 }
 
@@ -192,7 +222,7 @@ export async function updateProfile(data: {
   birthDate?: string;
   country?: string;
   bio?: string;
-}) {
+}): Promise<ActionResult> {
   const { isBot } = await checkBotId();
   if (isBot) return { success: false, error: "Access denied" };
 
@@ -499,7 +529,7 @@ export async function updateProfile(data: {
       invalidatePlayerRankingCaches();
     }
 
-    return { success: true, error: null };
+    return { success: true, data: undefined };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return {
