@@ -16,6 +16,18 @@ Project-wide coding standards for all TypeScript and TSX code in the trainers.gg
 - **No `@ts-expect-error` or `@ts-ignore`** — fix the type error instead
 - **No `globalThis`** for accessing Node.js globals — use proper imports or configure `tsconfig`/`jest.config` instead
 
+## Type Safety
+
+- **Always specify generic parameters** — `ActionResult<void>`, not bare `ActionResult`
+- **Use Supabase type helpers** for database types:
+  - `Tables<"table_name">` for row types
+  - `TablesInsert<"table_name">` for insert payloads
+  - `TablesUpdate<"table_name">` for update payloads
+  - `Enums<"enum_name">` for database enums (not `Database["public"]["Enums"]["x"]`)
+- **Never duplicate types locally** that exist in a shared package — import them from `@trainers/supabase`, `@trainers/validators`, etc.
+- **Derive query result types** with `NonNullable<Awaited<ReturnType<typeof fn>>>` — see architecture.md
+- **Export useful composite types** from queries — when a query returns a joined/enriched shape, export it as a named type so consumers don't redefine it
+
 ## React Compiler
 
 This project uses React Compiler for automatic memoization across all packages (web and mobile). ESLint uses `eslint-plugin-react-hooks` v7 with `recommended-latest` (bundles compiler rules). `exhaustive-deps` is disabled — the compiler handles memoization and stale closure prevention.

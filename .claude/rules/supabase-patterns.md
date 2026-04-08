@@ -62,6 +62,42 @@ Choose the most restrictive client that satisfies the need. Prefer `createStatic
 - Generated types flow through the monorepo via `@trainers/supabase`
 - Use the generated `Database` type for `TypedClient` — never manually define table types
 
+## Type Helpers
+
+Use the generated type helpers from `@trainers/supabase` instead of manual type definitions:
+
+```ts
+import {
+  type Tables,
+  type TablesInsert,
+  type TablesUpdate,
+  type Enums,
+} from "@trainers/supabase";
+
+// Row types (for reads)
+type Tournament = Tables<"tournaments">;
+
+// Insert types (for mutations that create)
+type NewTournament = TablesInsert<"tournaments">;
+
+// Update types (for mutations that modify)
+type TournamentUpdate = TablesUpdate<"tournaments">;
+
+// Enum types (for database enums)
+type TournamentStatus = Enums<"tournament_status">;
+```
+
+**When to export query result types:** If a query returns a joined/enriched shape (e.g., tournament + organization + registration count), export a named type from the query file:
+
+```ts
+/** Tournament with joined org and computed counts. */
+export type TournamentWithOrg = NonNullable<
+  Awaited<ReturnType<typeof listTournamentsGrouped>>
+>["active"][number];
+```
+
+Then re-export from `queries/index.ts`. Never let consumers manually redefine a type that matches a query return shape.
+
 ## Query Organization
 
 - One file per domain in `packages/supabase/src/queries/` (e.g., `communities.ts`, `tournaments.ts`)
