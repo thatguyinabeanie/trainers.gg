@@ -2905,6 +2905,18 @@ export type Database = {
           total_count: number
         }[]
       }
+      get_player_ratings_with_rank: {
+        Args: { p_alt_ids: number[]; p_format?: string }
+        Returns: {
+          alt_id: number
+          format: string
+          games_played: number
+          global_rank: number
+          peak_rating: number
+          rating: number
+          skill_bracket: string
+        }[]
+      }
       get_registration_counts: {
         Args: { tournament_ids: number[] }
         Returns: {

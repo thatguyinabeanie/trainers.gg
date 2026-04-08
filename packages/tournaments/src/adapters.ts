@@ -102,7 +102,7 @@ function isBestOf(value: number | null): value is 1 | 3 | 5 {
  * Generate a temporary client-side ID for new phases
  */
 function generatePhaseId(): string {
-  return `phase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `phase-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 /**

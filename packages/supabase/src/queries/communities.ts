@@ -17,7 +17,8 @@ export async function listPublicCommunities(
     .from("communities")
     .select("*")
     .eq("status", "active")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(200);
 
   if (error) throw error;
   if (!communities || communities.length === 0) return [];

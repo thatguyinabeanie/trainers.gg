@@ -20,7 +20,7 @@ export type PlayerRating = {
 // ============================================================================
 
 /**
- * Fetch ratings for multiple alts in bulk (2 queries total, no N+1).
+ * Fetch ratings with global rank for multiple alts in a single RPC call.
  * Returns a map keyed by altId. Alts without ratings are omitted.
  */
 export async function getPlayerRatingsBulk(
@@ -30,88 +30,39 @@ export async function getPlayerRatingsBulk(
 ): Promise<Record<number, PlayerRating>> {
   if (altIds.length === 0) return {};
 
-  const { data, error } = await supabase
-    .from("player_ratings")
-    .select("alt_id, format, rating, peak_rating, games_played, skill_bracket")
-    .in("alt_id", altIds)
-    .eq("format", format);
+  const { data, error } = await supabase.rpc("get_player_ratings_with_rank", {
+    p_alt_ids: altIds,
+    p_format: format,
+  });
 
   if (error) throw new Error(`Failed to fetch bulk ratings: ${error.message}`);
   if (!data || data.length === 0) return {};
 
-  // For each player, compute global rank: count of players with higher rating
-  // We do this in a single query by getting ALL rated players' ratings for this format,
-  // then computing ranks in JS. This avoids N separate count queries.
-  const { data: allRatings, error: allError } = await supabase
-    .from("player_ratings")
-    .select("rating")
-    .eq("format", format)
-    .gt("games_played", 0)
-    .order("rating", { ascending: false });
-
-  if (allError)
-    throw new Error(`Failed to fetch rating ranks: ${allError.message}`);
-
-  // Build sorted ratings array for rank computation
-  const sortedRatings = (allRatings ?? []).map((r) => Number(r.rating));
-
-  const result: Record<number, PlayerRating> = {};
-  for (const row of data) {
-    const rating = Number(row.rating);
-    // Rank = number of players with strictly higher rating + 1
-    const rank = sortedRatings.filter((r) => r > rating).length + 1;
-
-    result[row.alt_id] = {
-      altId: row.alt_id,
-      format: row.format,
-      rating,
-      peakRating: Number(row.peak_rating),
-      gamesPlayed: row.games_played,
-      skillBracket: row.skill_bracket as PlayerRating["skillBracket"],
-      globalRank: rank,
-    };
-  }
-
-  return result;
+  return Object.fromEntries(
+    data.map((row) => [
+      row.alt_id,
+      {
+        altId: row.alt_id,
+        format: row.format,
+        rating: Number(row.rating),
+        peakRating: Number(row.peak_rating),
+        gamesPlayed: row.games_played,
+        skillBracket: row.skill_bracket as PlayerRating["skillBracket"],
+        globalRank: Number(row.global_rank),
+      } satisfies PlayerRating,
+    ])
+  );
 }
 
 /**
  * Fetch the rating for a specific alt and format.
- * Returns null if no rating record exists yet or if the player has no rated games.
+ * Returns null if no rating record exists yet.
  */
 export async function getPlayerRating(
   supabase: TypedClient,
   altId: number,
   format = "overall"
 ): Promise<PlayerRating | null> {
-  const { data, error } = await supabase
-    .from("player_ratings")
-    .select("alt_id, format, rating, peak_rating, games_played, skill_bracket")
-    .eq("alt_id", altId)
-    .eq("format", format)
-    .maybeSingle();
-
-  if (error) throw new Error(`Failed to fetch rating: ${error.message}`);
-  if (!data) return null;
-
-  // Compute global rank: number of rated players (games_played > 0) with a strictly higher rating + 1
-  const { count, error: countError } = await supabase
-    .from("player_ratings")
-    .select("*", { count: "exact", head: true })
-    .eq("format", format)
-    .gt("games_played", 0)
-    .gt("rating", data.rating);
-
-  if (countError)
-    throw new Error(`Failed to fetch rating rank: ${countError.message}`);
-
-  return {
-    altId: data.alt_id,
-    format: data.format,
-    rating: Number(data.rating),
-    peakRating: Number(data.peak_rating),
-    gamesPlayed: data.games_played,
-    skillBracket: data.skill_bracket as PlayerRating["skillBracket"],
-    globalRank: (count ?? 0) + 1,
-  };
+  const result = await getPlayerRatingsBulk(supabase, [altId], format);
+  return result[altId] ?? null;
 }

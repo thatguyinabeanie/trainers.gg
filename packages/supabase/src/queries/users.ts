@@ -23,19 +23,16 @@ export async function getCurrentUser(supabase: TypedClient) {
 
   if (!authUser) return null;
 
-  const { data: user, error: userError } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", authUser.id)
-    .single();
+  // Fetch user record and main alt in parallel — both only need authUser.id
+  const [userResult, altResult] = await Promise.all([
+    supabase.from("users").select("*").eq("id", authUser.id).single(),
+    supabase.from("alts").select("*").eq("user_id", authUser.id).maybeSingle(),
+  ]);
 
-  if (userError || !user) return null;
-
-  const { data: alt } = await supabase
-    .from("alts")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
+  if (userResult.error || !userResult.data) return null;
+  if (altResult.error) throw altResult.error;
+  const user = userResult.data;
+  const alt = altResult.data;
 
   return {
     id: user.id,

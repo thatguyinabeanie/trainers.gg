@@ -1,4 +1,9 @@
-import type { PokemonSet } from "./types";
+import {
+  createDefaultEvs,
+  createDefaultIvs,
+  toShowdownFormat,
+  type PokemonSet,
+} from "./types";
 
 // Types for Showdown text parsing
 export interface ShowdownParseResult {
@@ -309,25 +314,6 @@ function parseStats(statsStr: string): { [stat: string]: number } {
  * Convert parsed Pokemon to internal PokemonSet format
  */
 function convertToInternalFormat(parsed: ParsedPokemon): PokemonSet {
-  // Default stats (0 for EVs, 31 for IVs)
-  const defaultEvs = {
-    hp: 0,
-    attack: 0,
-    defense: 0,
-    specialAttack: 0,
-    specialDefense: 0,
-    speed: 0,
-  };
-
-  const defaultIvs = {
-    hp: 31,
-    attack: 31,
-    defense: 31,
-    specialAttack: 31,
-    specialDefense: 31,
-    speed: 31,
-  };
-
   return {
     species: parsed.species,
     nickname: parsed.nickname || undefined,
@@ -348,118 +334,20 @@ function convertToInternalFormat(parsed: ParsedPokemon): PokemonSet {
       move4: parsed.moves[3] || undefined,
     },
     evs: {
-      ...defaultEvs,
+      ...createDefaultEvs(),
       ...parsed.evs,
     },
     ivs: {
-      ...defaultIvs,
+      ...createDefaultIvs(),
       ...parsed.ivs,
     },
   };
 }
 
 /**
- * Export Pokemon team to Showdown format
+ * Export Pokemon team to Showdown format.
+ * Delegates to `toShowdownFormat` from types.ts for per-pokemon formatting.
  */
 export function exportToShowdownFormat(pokemon: PokemonSet[]): string {
-  return pokemon.map((p) => formatPokemonForShowdown(p)).join("\n\n");
-}
-
-/**
- * Format a single Pokemon for Showdown export
- */
-function formatPokemonForShowdown(pokemon: PokemonSet): string {
-  const lines: string[] = [];
-
-  // First line: Nickname (Species) (Gender) @ Item
-  let firstLine = "";
-
-  if (pokemon.nickname && pokemon.nickname !== pokemon.species) {
-    firstLine += `${pokemon.nickname} (${pokemon.species})`;
-  } else {
-    firstLine += pokemon.species;
-  }
-
-  if (pokemon.gender) {
-    const genderCode =
-      pokemon.gender === "Male" ? "M" : pokemon.gender === "Female" ? "F" : "";
-    if (genderCode) {
-      firstLine += ` (${genderCode})`;
-    }
-  }
-
-  if (pokemon.heldItem) {
-    firstLine += ` @ ${pokemon.heldItem}`;
-  }
-
-  lines.push(firstLine);
-
-  // Ability
-  if (pokemon.ability) {
-    lines.push(`Ability: ${pokemon.ability}`);
-  }
-
-  // Level (if not 50)
-  if (pokemon.level !== 50) {
-    lines.push(`Level: ${pokemon.level}`);
-  }
-
-  // Shiny
-  if (pokemon.isShiny) {
-    lines.push("Shiny: Yes");
-  }
-
-  // Tera Type
-  if (pokemon.teraType) {
-    lines.push(`Tera Type: ${pokemon.teraType}`);
-  }
-
-  // EVs (only non-zero values)
-  const evs = [];
-  if (pokemon.evs.hp > 0) evs.push(`${pokemon.evs.hp} HP`);
-  if (pokemon.evs.attack > 0) evs.push(`${pokemon.evs.attack} Atk`);
-  if (pokemon.evs.defense > 0) evs.push(`${pokemon.evs.defense} Def`);
-  if (pokemon.evs.specialAttack > 0)
-    evs.push(`${pokemon.evs.specialAttack} SpA`);
-  if (pokemon.evs.specialDefense > 0)
-    evs.push(`${pokemon.evs.specialDefense} SpD`);
-  if (pokemon.evs.speed > 0) evs.push(`${pokemon.evs.speed} Spe`);
-
-  if (evs.length > 0) {
-    lines.push(`EVs: ${evs.join(" / ")}`);
-  }
-
-  // IVs (only non-31 values)
-  const ivs = [];
-  if (pokemon.ivs.hp !== 31) ivs.push(`${pokemon.ivs.hp} HP`);
-  if (pokemon.ivs.attack !== 31) ivs.push(`${pokemon.ivs.attack} Atk`);
-  if (pokemon.ivs.defense !== 31) ivs.push(`${pokemon.ivs.defense} Def`);
-  if (pokemon.ivs.specialAttack !== 31)
-    ivs.push(`${pokemon.ivs.specialAttack} SpA`);
-  if (pokemon.ivs.specialDefense !== 31)
-    ivs.push(`${pokemon.ivs.specialDefense} SpD`);
-  if (pokemon.ivs.speed !== 31) ivs.push(`${pokemon.ivs.speed} Spe`);
-
-  if (ivs.length > 0) {
-    lines.push(`IVs: ${ivs.join(" / ")}`);
-  }
-
-  // Nature
-  if (pokemon.nature && pokemon.nature !== "Hardy") {
-    lines.push(`${pokemon.nature} Nature`);
-  }
-
-  // Moves
-  const moves = [
-    pokemon.moves.move1,
-    pokemon.moves.move2,
-    pokemon.moves.move3,
-    pokemon.moves.move4,
-  ].filter(Boolean);
-
-  for (const move of moves) {
-    lines.push(`- ${move}`);
-  }
-
-  return lines.join("\n");
+  return pokemon.map((p) => toShowdownFormat(p).trimEnd()).join("\n\n");
 }

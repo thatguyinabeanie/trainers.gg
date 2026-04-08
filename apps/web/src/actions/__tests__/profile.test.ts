@@ -1513,6 +1513,9 @@ describe("updateProfile", () => {
       expect(mockUpdateTag).toHaveBeenCalledWith("player:new_name");
       expect(mockUpdateTag).toHaveBeenCalledWith("players-directory");
       expect(mockUpdateTag).toHaveBeenCalledWith("players-new");
+      // Username changes affect leaderboards which display usernames
+      expect(mockUpdateTag).toHaveBeenCalledWith("players-leaderboard");
+      expect(mockUpdateTag).toHaveBeenCalledWith("players-recent");
     });
   });
 });
