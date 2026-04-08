@@ -1,5 +1,8 @@
-import type { Json } from "../types";
+import type { Json, Tables } from "../types";
 import type { TypedClient } from "../client";
+
+/** A feature flag row from the database. */
+export type FeatureFlag = Tables<"feature_flags">;
 
 /**
  * List all feature flags, ordered alphabetically by key.

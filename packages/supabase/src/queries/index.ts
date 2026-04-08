@@ -223,6 +223,8 @@ export {
   deleteFeatureFlag,
 } from "./feature-flags";
 
+export type { FeatureFlag } from "./feature-flags";
+
 // Player directory queries
 export {
   searchPlayers,
