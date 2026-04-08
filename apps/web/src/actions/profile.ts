@@ -222,7 +222,7 @@ export async function updateProfile(data: {
   birthDate?: string;
   country?: string;
   bio?: string;
-}): Promise<ActionResult> {
+}): Promise<ActionResult<void>> {
   const { isBot } = await checkBotId();
   if (isBot) return { success: false, error: "Access denied" };
 
