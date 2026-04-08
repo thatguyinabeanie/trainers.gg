@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { Database } from "@trainers/supabase";
+import { type AuditLogEntry } from "@trainers/supabase";
 import { formatTimeAgo } from "@trainers/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -10,29 +10,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { AuditActionBadge } from "./audit-action-badge";
-
-type AuditAction = Database["public"]["Enums"]["audit_action"];
-
-// Shape of a single audit log row returned by getAuditLog (with joined actor)
-export interface AuditLogEntry {
-  id: number;
-  action: AuditAction;
-  actor_user_id: string | null;
-  actor_alt_id: number | null;
-  tournament_id: number | null;
-  match_id: number | null;
-  game_id: number | null;
-  community_id: number | null;
-  metadata: Record<string, unknown> | null;
-  created_at: string;
-  actor_user: {
-    id: string;
-    username: string | null;
-    first_name: string | null;
-    last_name: string | null;
-    image: string | null;
-  } | null;
-}
 
 // --- Helpers ---
 
@@ -67,7 +44,7 @@ function getActorDisplayName(actor: AuditLogEntry["actor_user"]): string {
  */
 function extractDetails(entry: AuditLogEntry): string {
   const meta = entry.metadata;
-  if (!meta) return "";
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return "";
 
   // If there is an explicit description, use it
   if (typeof meta.description === "string" && meta.description) {

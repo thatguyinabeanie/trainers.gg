@@ -245,7 +245,10 @@ describe("UsernameRequiredModal", () => {
     });
 
     it("shows available state when username is available", async () => {
-      mockCheckUsernameAvailability.mockResolvedValue({ available: true });
+      mockCheckUsernameAvailability.mockResolvedValue({
+        success: true,
+        data: { available: true },
+      });
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<UsernameRequiredModal />);
 
@@ -260,8 +263,8 @@ describe("UsernameRequiredModal", () => {
 
     it("shows taken state when username is not available", async () => {
       mockCheckUsernameAvailability.mockResolvedValue({
-        available: false,
-        error: "Username is already taken",
+        success: true,
+        data: { available: false, reason: "Username is already taken" },
       });
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<UsernameRequiredModal />);
@@ -303,7 +306,10 @@ describe("UsernameRequiredModal", () => {
     });
 
     it("button remains disabled when username is available but no country selected", async () => {
-      mockCheckUsernameAvailability.mockResolvedValue({ available: true });
+      mockCheckUsernameAvailability.mockResolvedValue({
+        success: true,
+        data: { available: true },
+      });
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<UsernameRequiredModal />);
 
@@ -319,7 +325,10 @@ describe("UsernameRequiredModal", () => {
     });
 
     it("button is enabled when both username is available and country selected", async () => {
-      mockCheckUsernameAvailability.mockResolvedValue({ available: true });
+      mockCheckUsernameAvailability.mockResolvedValue({
+        success: true,
+        data: { available: true },
+      });
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<UsernameRequiredModal />);
 
@@ -342,7 +351,10 @@ describe("UsernameRequiredModal", () => {
   describe("form submission", () => {
     async function setupReadyToSubmit() {
       setAuthUser("temp_abc123");
-      mockCheckUsernameAvailability.mockResolvedValue({ available: true });
+      mockCheckUsernameAvailability.mockResolvedValue({
+        success: true,
+        data: { available: true },
+      });
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<UsernameRequiredModal />);
 

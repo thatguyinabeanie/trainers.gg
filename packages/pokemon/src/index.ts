@@ -79,6 +79,7 @@ export {
 
 // Showdown format (advanced parser/exporter)
 export {
+  type ShowdownStats,
   type ShowdownPokemon,
   parsePokemon,
   parseTeam,

@@ -59,8 +59,9 @@ export default function ProfileSettingsPage() {
   // Load current profile data
   useEffect(() => {
     async function loadProfile() {
-      const profile = await getCurrentUserProfile();
-      if (profile) {
+      const result = await getCurrentUserProfile();
+      if (result.success && result.data) {
+        const profile = result.data;
         setUsername(profile.username ?? "");
         setOriginalUsername(profile.username ?? "");
         setBio(profile.bio ?? "");
@@ -110,12 +111,15 @@ export default function ProfileSettingsPage() {
 
     const result = await checkUsernameAvailability(value);
 
-    if (result.available) {
+    if (!result.success) {
+      setUsernameStatus("error");
+      setUsernameError(result.error);
+    } else if (result.data.available) {
       setUsernameStatus("available");
       setUsernameError(null);
     } else {
       setUsernameStatus("taken");
-      setUsernameError(result.error ?? "Username is not available");
+      setUsernameError(result.data.reason ?? "Username is not available");
     }
   };
 

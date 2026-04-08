@@ -7,7 +7,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Activity, RefreshCw } from "lucide-react";
-import { getAuditLog, getAuditLogStats } from "@trainers/supabase";
+import {
+  getAuditLog,
+  getAuditLogStats,
+  type AuditLogEntry,
+} from "@trainers/supabase";
 import type { TypedSupabaseClient, Database } from "@trainers/supabase";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { columns, type AuditLogEntry } from "./activity/columns";
+import { columns } from "./activity/columns";
 
 type AuditAction = Database["public"]["Enums"]["audit_action"];
 

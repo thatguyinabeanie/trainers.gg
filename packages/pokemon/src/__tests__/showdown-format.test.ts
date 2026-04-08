@@ -95,20 +95,18 @@ describe("parsePokemon", () => {
 
   it("parses EVs correctly", () => {
     const result = parsePokemon(PIKACHU_TEXT);
-    expect(result!.evs!.spa).toBe(252);
-    expect(result!.evs!.spe).toBe(252);
-    expect(result!.evs!.hp).toBe(4);
+    expect(result!.evs.spa).toBe(252);
+    expect(result!.evs.spe).toBe(252);
+    expect(result!.evs.hp).toBe(4);
   });
 
   it("parses IVs correctly", () => {
     const result = parsePokemon(PIKACHU_TEXT);
-    // Note: parsePokemon uses `if (!pokemon.ivs!.atk)` to default IVs,
-    // so 0 is treated as falsy and overwritten to 31.
-    // This is a known limitation of the parser when IVs are explicitly 0.
-    expect(result!.ivs!.atk).toBe(31);
-    // Non-specified IVs default to 31
-    expect(result!.ivs!.hp).toBe(31);
-    expect(result!.ivs!.def).toBe(31);
+    // Explicitly set to 0 in PIKACHU_TEXT ("IVs: 0 Atk")
+    expect(result!.ivs.atk).toBe(0);
+    // Non-specified IVs default to 31 (initialized that way)
+    expect(result!.ivs.hp).toBe(31);
+    expect(result!.ivs.def).toBe(31);
   });
 
   it("parses moves correctly", () => {
@@ -584,6 +582,8 @@ describe("convertShowdownToPokemonSet", () => {
       ability: "Static",
       nature: "Hardy",
       moves: ["Thunderbolt"],
+      evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
     };
     const result = convertShowdownToPokemonSet(showdown);
     expect(result.gender).toBe("Female");
@@ -596,6 +596,8 @@ describe("convertShowdownToPokemonSet", () => {
       ability: "Static",
       nature: "Hardy",
       moves: ["Thunderbolt"],
+      evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
     };
     const result = convertShowdownToPokemonSet(showdown);
     expect(result.gender).toBeUndefined();
@@ -608,18 +610,22 @@ describe("convertShowdownToPokemonSet", () => {
       ability: "Static",
       nature: "Hardy",
       moves: ["Thunderbolt"],
+      evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
     };
     const result = convertShowdownToPokemonSet(showdown);
     expect(result.level).toBe(50);
   });
 
-  it("defaults EVs to 0 when not set", () => {
+  it("maps EVs correctly", () => {
     const showdown: ShowdownPokemon = {
       species: "Pikachu",
       gender: "",
       ability: "Static",
       nature: "Hardy",
       moves: ["Thunderbolt"],
+      evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
     };
     const result = convertShowdownToPokemonSet(showdown);
     expect(result.evs.hp).toBe(0);
@@ -627,13 +633,15 @@ describe("convertShowdownToPokemonSet", () => {
     expect(result.evs.speed).toBe(0);
   });
 
-  it("defaults IVs to 31 when not set", () => {
+  it("maps IVs correctly", () => {
     const showdown: ShowdownPokemon = {
       species: "Pikachu",
       gender: "",
       ability: "Static",
       nature: "Hardy",
       moves: ["Thunderbolt"],
+      evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
     };
     const result = convertShowdownToPokemonSet(showdown);
     expect(result.ivs.hp).toBe(31);
@@ -652,7 +660,8 @@ describe("convertShowdownToDbFormat", () => {
       level: 50,
       nature: "Timid",
       moves: ["Thunderbolt", "Protect"],
-      evs: { spa: 252, spe: 252 },
+      evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 0, spe: 252 },
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
     };
 
     const result = convertShowdownToDbFormat(showdown);

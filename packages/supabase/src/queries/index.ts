@@ -154,6 +154,7 @@ export {
   getAuditLog,
   getAuditLogStats,
 } from "./audit-log";
+export type { AuditLogEntry } from "./audit-log";
 
 // Sudo mode queries
 export {
@@ -221,6 +222,8 @@ export {
   updateFeatureFlag,
   deleteFeatureFlag,
 } from "./feature-flags";
+
+export type { FeatureFlag } from "./feature-flags";
 
 // Player directory queries
 export {

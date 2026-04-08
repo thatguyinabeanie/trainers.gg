@@ -69,12 +69,15 @@ export function OnboardingForm() {
     const timer = setTimeout(async () => {
       const result = await checkUsernameAvailability(username);
       if (cancelled) return;
-      if (result.available) {
+      if (!result.success) {
+        setUsernameStatus("error");
+        setUsernameError(result.error);
+      } else if (result.data.available) {
         setUsernameStatus("available");
         setUsernameError(null);
       } else {
         setUsernameStatus("taken");
-        setUsernameError(result.error ?? "Username is not available");
+        setUsernameError(result.data.reason ?? "Username is not available");
       }
     }, 500);
 

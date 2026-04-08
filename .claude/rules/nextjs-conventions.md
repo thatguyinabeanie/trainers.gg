@@ -69,7 +69,7 @@ Located in `src/actions/`, one file per domain (e.g., `tournaments.ts`, `communi
 
 ### Return Type
 
-Every server action returns `Promise<ActionResult<T>>`:
+Every server action returns `Promise<ActionResult<T>>`. **Always specify the generic** — use `ActionResult<void>` for actions with no return data, not bare `ActionResult`:
 
 ```ts
 export type ActionResult<T = void> =

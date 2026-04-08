@@ -15,18 +15,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Json } from "@trainers/supabase/types";
+import { type FeatureFlag } from "@trainers/supabase";
 
 // --- Types ---
-
-interface FeatureFlag {
-  id: number;
-  key: string;
-  description: string | null;
-  enabled: boolean;
-  metadata: Json;
-  created_at: string;
-  updated_at: string;
-}
 
 interface FlagDialogProps {
   /** When provided, the dialog is in "edit" mode and pre-fills values. */

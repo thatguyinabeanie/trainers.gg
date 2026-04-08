@@ -81,6 +81,24 @@ export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;
 
 Zod itself is re-exported from `@trainers/validators` — import `z` from there for single-source access.
 
+## Type Exports
+
+When a query or mutation returns a useful composite type (joins, computed fields), **always export a named type**:
+
+```ts
+// In packages/supabase/src/queries/audit-log.ts
+/** Single audit log row with joined actor user. */
+export type AuditLogEntry = NonNullable<
+  Awaited<ReturnType<typeof getAuditLog>>["data"]
+>[number];
+```
+
+Then re-export from the barrel (`queries/index.ts` and `src/index.ts`).
+
+**Never define a type in `apps/web/` that mirrors a query return shape.** If the type doesn't exist in the package yet, add and export it there — don't create a local duplicate.
+
+For simple table row types, use `Tables<"table_name">` from `@trainers/supabase` instead of defining an interface.
+
 ## Code Reuse
 
 Extract abstractions after 2-3 repetitions. Always check existing patterns before creating new ones.

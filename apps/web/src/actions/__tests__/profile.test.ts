@@ -71,29 +71,29 @@ describe("checkUsernameAvailability", () => {
   it("rejects usernames shorter than 3 code points", async () => {
     const result = await checkUsernameAvailability("ab");
 
-    expect(result.available).toBe(false);
-    expect(result.error).toBeTruthy();
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBeTruthy();
   });
 
   it("rejects usernames with invalid characters", async () => {
     const result = await checkUsernameAvailability("user name!");
 
-    expect(result.available).toBe(false);
-    expect(result.error).toBeTruthy();
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBeTruthy();
   });
 
   it("rejects temp_ placeholder usernames", async () => {
     const result = await checkUsernameAvailability("temp_abc123");
 
-    expect(result.available).toBe(false);
-    expect(result.error).toBeTruthy();
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBeTruthy();
   });
 
   it("rejects user_ placeholder usernames", async () => {
     const result = await checkUsernameAvailability("user_abc123");
 
-    expect(result.available).toBe(false);
-    expect(result.error).toBeTruthy();
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBeTruthy();
   });
 
   it("returns available when username is free in both users and alts tables", async () => {
@@ -113,8 +113,8 @@ describe("checkUsernameAvailability", () => {
 
     const result = await checkUsernameAvailability("available_name");
 
-    expect(result.available).toBe(true);
-    expect(result.error).toBeNull();
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.available).toBe(true);
   });
 
   it("returns unavailable when username exists in users table", async () => {
@@ -127,9 +127,17 @@ describe("checkUsernameAvailability", () => {
       })
     );
 
+    // Alts table check — both queries run in parallel via Promise.all
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+      })
+    );
+
     const result = await checkUsernameAvailability("taken_user");
 
-    expect(result.available).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.available).toBe(false);
   });
 
   it("returns unavailable when username exists in alts table", async () => {
@@ -151,7 +159,8 @@ describe("checkUsernameAvailability", () => {
 
     const result = await checkUsernameAvailability("alt_taken");
 
-    expect(result.available).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.available).toBe(false);
   });
 
   it("returns unavailable when PDS handle is taken", async () => {
@@ -174,8 +183,11 @@ describe("checkUsernameAvailability", () => {
 
     const result = await checkUsernameAvailability("pdstaken");
 
-    expect(result.available).toBe(false);
-    expect(result.error).toMatch(/Bluesky/);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.available).toBe(false);
+      expect(result.data.reason).toMatch(/Bluesky/);
+    }
   });
 
   it("handles users table query errors gracefully", async () => {
@@ -190,8 +202,8 @@ describe("checkUsernameAvailability", () => {
 
     const result = await checkUsernameAvailability("test_query_err");
 
-    expect(result.available).toBe(false);
-    expect(result.error).toBeTruthy();
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBeTruthy();
   });
 
   it("handles alts table query errors gracefully", async () => {
@@ -214,8 +226,8 @@ describe("checkUsernameAvailability", () => {
 
     const result = await checkUsernameAvailability("test_alt_err");
 
-    expect(result.available).toBe(false);
-    expect(result.error).toBeTruthy();
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBeTruthy();
   });
 
   it("excludes current user from users table check when authenticated", async () => {
@@ -257,7 +269,7 @@ describe("getCurrentUserProfile", () => {
 
     const result = await getCurrentUserProfile();
 
-    expect(result).toBeNull();
+    expect(result).toEqual({ success: true, data: null });
   });
 
   it("returns null when user not found in DB", async () => {
@@ -273,7 +285,7 @@ describe("getCurrentUserProfile", () => {
 
     const result = await getCurrentUserProfile();
 
-    expect(result).toBeNull();
+    expect(result).toEqual({ success: true, data: null });
   });
 
   it("returns profile data when user exists", async () => {
@@ -302,16 +314,19 @@ describe("getCurrentUserProfile", () => {
     const result = await getCurrentUserProfile();
 
     expect(result).toEqual({
-      id: "user-1",
-      username: "pikachu",
-      pdsStatus: "active",
-      pdsHandle: "pikachu.trainers.gg",
-      did: "did:plc:abc123",
-      birthDate: "2000-01-15",
-      country: "US",
-      mainAltId: null,
-      altAvatarUrl: null,
-      bio: null,
+      success: true,
+      data: {
+        id: "user-1",
+        username: "pikachu",
+        pdsStatus: "active",
+        pdsHandle: "pikachu.trainers.gg",
+        did: "did:plc:abc123",
+        birthDate: "2000-01-15",
+        country: "US",
+        mainAltId: null,
+        altAvatarUrl: null,
+        bio: null,
+      },
     });
   });
 
@@ -355,17 +370,20 @@ describe("getCurrentUserProfile", () => {
     const result = await getCurrentUserProfile();
 
     expect(result).toEqual({
-      id: "user-1",
-      username: "cynthia",
-      pdsStatus: null,
-      pdsHandle: null,
-      did: null,
-      birthDate: null,
-      country: "JP",
-      mainAltId: 42,
-      altAvatarUrl:
-        "https://play.pokemonshowdown.com/sprites/gen5/garchomp.png",
-      bio: null,
+      success: true,
+      data: {
+        id: "user-1",
+        username: "cynthia",
+        pdsStatus: null,
+        pdsHandle: null,
+        did: null,
+        birthDate: null,
+        country: "JP",
+        mainAltId: 42,
+        altAvatarUrl:
+          "https://play.pokemonshowdown.com/sprites/gen5/garchomp.png",
+        bio: null,
+      },
     });
   });
 
@@ -405,12 +423,15 @@ describe("getCurrentUserProfile", () => {
 
     const result = await getCurrentUserProfile();
 
-    expect(result).toEqual(
-      expect.objectContaining({
-        mainAltId: 42,
-        altAvatarUrl: null,
-      })
-    );
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual(
+        expect.objectContaining({
+          mainAltId: 42,
+          altAvatarUrl: null,
+        })
+      );
+    }
   });
 
   it("returns null on database error", async () => {
@@ -429,7 +450,10 @@ describe("getCurrentUserProfile", () => {
 
     const result = await getCurrentUserProfile();
 
-    expect(result).toBeNull();
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to fetch profile",
+    });
   });
 });
 
