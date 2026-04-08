@@ -64,9 +64,9 @@ export function invalidateTournamentListCaches(tournamentId: number): void {
  * page's tournament groupings stay in sync.
  *
  * NOTE: Makes a DB round-trip to resolve the community slug. If you already
- * have the community slug and id, prefer calling
- * `invalidateCommunityPageCaches(slug, id)` directly alongside
- * `invalidateTournamentListCaches(id)` to avoid the extra query.
+ * have the community slug and community id, prefer calling
+ * `invalidateCommunityPageCaches(slug, communityId)` directly alongside
+ * `invalidateTournamentListCaches(tournamentId)` to avoid the extra query.
  */
 export async function invalidateTournamentAndCommunityCaches(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -107,9 +107,10 @@ export function invalidatePlayerProfileCaches(username: string): void {
  * Call when a player joins or changes their username — these events change
  * how the player appears in directory and new-members lists.
  *
- * Does NOT invalidate ranking caches — new users and username changes don't
- * affect leaderboard/recent standings. Call `invalidatePlayerRankingCaches()`
- * separately after tournament completion.
+ * Does NOT invalidate ranking caches by itself. New users typically do not
+ * affect leaderboard/recent standings, but username changes do because those
+ * views display usernames. Call `invalidatePlayerRankingCaches()`
+ * separately when handling a rename.
  */
 export function invalidatePlayerDirectoryCaches(username: string): void {
   updateTag(CacheTags.player(username));

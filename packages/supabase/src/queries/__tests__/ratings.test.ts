@@ -170,18 +170,17 @@ describe("getPlayerRating", () => {
 // ============================================================================
 
 /**
- * Build a chainable mock for `getPlayerRatingsBulk`, which makes two sequential
- * `.from("player_ratings")` calls:
- *   1. The "targeted" query filtered by `altIds` — returns `ratingRows`
- *   2. The "all ratings" query for rank computation — returns `allRatingRows`
+ * Build a chainable mock for `getPlayerRatingsBulk`, which makes:
+ *   1. One "targeted" query filtered by `altIds` — returns `ratingRows`
+ *   2. N parallel count queries for rank computation — each returns `rankResult`
  */
 function buildBulkClient(
   ratingRows: { data: unknown; error: unknown },
-  allRatingRows: { data: unknown; error: unknown }
+  rankResult: { count: number | null; error: unknown }
 ): TypedClient {
   let callCount = 0;
 
-  const makeChain = (resolved: { data: unknown; error: unknown }) => {
+  const makeChain = (resolved: Record<string, unknown>) => {
     const chain: Record<string, jest.Mock> = {};
     const methods = ["select", "eq", "in", "gt", "order", "limit"];
     for (const m of methods) {
@@ -197,7 +196,7 @@ function buildBulkClient(
   return {
     from: jest.fn(() => {
       callCount++;
-      return callCount === 1 ? makeChain(ratingRows) : makeChain(allRatingRows);
+      return callCount === 1 ? makeChain(ratingRows) : makeChain(rankResult);
     }),
   } as unknown as TypedClient;
 }
@@ -237,11 +236,10 @@ describe("getPlayerRatingsBulk", () => {
   });
 
   it("returns shaped PlayerRating entries for multiple alts", async () => {
-    // Two target rows, two all-ratings rows (same data)
-    const allRatings = [{ rating: "1400.00" }, { rating: "1200.00" }];
+    // Two target rows; rank count queries return 0 (highest) for simplicity
     const client = buildBulkClient(
       { data: [BULK_ROW_1, BULK_ROW_2], error: null },
-      { data: allRatings, error: null }
+      { count: 0, error: null }
     );
 
     const result = await getPlayerRatingsBulk(client, [10, 11]);
@@ -264,26 +262,26 @@ describe("getPlayerRatingsBulk", () => {
     });
   });
 
-  it("computes global rank correctly from all-ratings query", async () => {
-    // alt 10 has rating 1400 — 0 players above → rank 1
-    // alt 11 has rating 1200 — 1 player above (1400) → rank 2
-    const allRatings = [{ rating: "1400.00" }, { rating: "1200.00" }];
+  it("computes global rank from count queries", async () => {
+    // Count queries return how many players have a higher rating.
+    // With the mock returning a fixed count, all alts get the same rank.
+    // rank = count + 1, so count=0 → rank 1
     const client = buildBulkClient(
       { data: [BULK_ROW_1, BULK_ROW_2], error: null },
-      { data: allRatings, error: null }
+      { count: 0, error: null }
     );
 
     const result = await getPlayerRatingsBulk(client, [10, 11]);
 
     expect(result[10]?.globalRank).toBe(1);
-    expect(result[11]?.globalRank).toBe(2);
+    expect(result[11]?.globalRank).toBe(1);
   });
 
   it("omits alts that have no rating record", async () => {
     // Only alt 10 comes back from DB; alt 99 has no row
     const client = buildBulkClient(
       { data: [BULK_ROW_1], error: null },
-      { data: [{ rating: "1400.00" }], error: null }
+      { count: 0, error: null }
     );
 
     const result = await getPlayerRatingsBulk(client, [10, 99]);
@@ -296,7 +294,7 @@ describe("getPlayerRatingsBulk", () => {
   it("returns empty object when no rows come back from DB", async () => {
     const client = buildBulkClient(
       { data: [], error: null },
-      { data: [], error: null }
+      { count: 0, error: null }
     );
 
     const result = await getPlayerRatingsBulk(client, [10, 11]);
@@ -314,14 +312,14 @@ describe("getPlayerRatingsBulk", () => {
     );
   });
 
-  it("throws on all-ratings query error", async () => {
+  it("throws on rank count query error", async () => {
     const client = buildBulkClient(
       { data: [BULK_ROW_1], error: null },
-      { data: null, error: { message: "rank query failed" } }
+      { count: null, error: { message: "rank query failed" } }
     );
 
     await expect(getPlayerRatingsBulk(client, [10])).rejects.toThrow(
-      "Failed to fetch rating ranks: rank query failed"
+      "Failed to fetch rating rank: rank query failed"
     );
   });
 
@@ -335,7 +333,7 @@ describe("getPlayerRatingsBulk", () => {
       const row = { ...BULK_ROW_1, format };
       const client = buildBulkClient(
         { data: [row], error: null },
-        { data: [{ rating: "1400.00" }], error: null }
+        { count: 0, error: null }
       );
 
       const result = await getPlayerRatingsBulk(client, [10], format);

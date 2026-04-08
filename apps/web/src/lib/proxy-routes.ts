@@ -4,6 +4,8 @@
  * Extracted for testability. All functions are pure — no side effects, no I/O.
  */
 
+import { isTempUsername } from "@trainers/utils";
+
 // Admin routes — require site_admin JWT role (checked separately from PROTECTED_ROUTES)
 export const ADMIN_ROUTES = ["/admin"];
 
@@ -116,5 +118,5 @@ export function isOnboardingExempt(pathname: string): boolean {
  */
 export function needsOnboarding(username: unknown): boolean {
   if (typeof username !== "string") return false;
-  return username.startsWith("temp_") || username.startsWith("user_");
+  return isTempUsername(username);
 }

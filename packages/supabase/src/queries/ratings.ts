@@ -39,36 +39,39 @@ export async function getPlayerRatingsBulk(
   if (error) throw new Error(`Failed to fetch bulk ratings: ${error.message}`);
   if (!data || data.length === 0) return {};
 
-  // For each player, compute global rank: count of players with higher rating
-  // We do this in a single query by getting ALL rated players' ratings for this format,
-  // then computing ranks in JS. This avoids N separate count queries.
-  const { data: allRatings, error: allError } = await supabase
-    .from("player_ratings")
-    .select("rating")
-    .eq("format", format)
-    .gt("games_played", 0)
-    .order("rating", { ascending: false });
+  // Compute global rank per player using parallel count queries.
+  // Each count query asks "how many rated players have a strictly higher rating?"
+  // This avoids fetching ALL ratings into JS memory.
+  const rankQueries = data.map((row) =>
+    supabase
+      .from("player_ratings")
+      .select("*", { count: "exact", head: true })
+      .eq("format", format)
+      .gt("games_played", 0)
+      .gt("rating", row.rating)
+  );
 
-  if (allError)
-    throw new Error(`Failed to fetch rating ranks: ${allError.message}`);
-
-  // Build sorted ratings array for rank computation
-  const sortedRatings = (allRatings ?? []).map((r) => Number(r.rating));
+  const rankResults = await Promise.all(rankQueries);
 
   const result: Record<number, PlayerRating> = {};
-  for (const row of data) {
-    const rating = Number(row.rating);
-    // Rank = number of players with strictly higher rating + 1
-    const rank = sortedRatings.filter((r) => r > rating).length + 1;
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i]!;
+    const rankResult = rankResults[i]!;
+
+    if (rankResult.error) {
+      throw new Error(
+        `Failed to fetch rating rank: ${rankResult.error.message}`
+      );
+    }
 
     result[row.alt_id] = {
       altId: row.alt_id,
       format: row.format,
-      rating,
+      rating: Number(row.rating),
       peakRating: Number(row.peak_rating),
       gamesPlayed: row.games_played,
       skillBracket: row.skill_bracket as PlayerRating["skillBracket"],
-      globalRank: rank,
+      globalRank: (rankResult.count ?? 0) + 1,
     };
   }
 

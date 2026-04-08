@@ -64,38 +64,22 @@ async function checkCommunityPermission(
 }
 
 /**
- * Helper to check if current user is community owner
+ * Helper to check if a user is the community owner.
+ * Accepts userId directly to avoid redundant auth.getUser() calls — callers
+ * should pass the already-authenticated user ID.
  */
 async function isCommunityOwner(
   supabase: TypedClient,
-  communityId: number
+  communityId: number,
+  userId: string
 ): Promise<boolean> {
-  const currentUser = await getCurrentUser(supabase);
-  if (!currentUser) return false;
-
   const { data: community } = await supabase
     .from("communities")
     .select("owner_user_id")
     .eq("id", communityId)
     .single();
 
-  return community?.owner_user_id === currentUser.id;
-}
-
-/**
- * Helper to get current alt
- */
-async function _getCurrentAlt(supabase: TypedClient) {
-  const user = await getCurrentUser(supabase);
-  if (!user) return null;
-
-  const { data: alt } = await supabase
-    .from("alts")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
-
-  return alt;
+  return community?.owner_user_id === userId;
 }
 
 /**
@@ -445,7 +429,11 @@ export async function addStaffMember(
   if (!currentUser) throw new Error("Not authenticated");
 
   // Verify permission: must be community owner or have community.staff.manage permission
-  const ownerCheck = await isCommunityOwner(supabase, communityId);
+  const ownerCheck = await isCommunityOwner(
+    supabase,
+    communityId,
+    currentUser.id
+  );
   const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
@@ -491,7 +479,11 @@ export async function addStaffToGroup(
   if (!currentUser) throw new Error("Not authenticated");
 
   // Verify permission: must be community owner or have community.staff.manage permission
-  const ownerCheck = await isCommunityOwner(supabase, communityId);
+  const ownerCheck = await isCommunityOwner(
+    supabase,
+    communityId,
+    currentUser.id
+  );
   const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
@@ -589,7 +581,11 @@ export async function removeStaffFromGroup(
   if (!currentUser) throw new Error("Not authenticated");
 
   // Verify permission: must be community owner or have community.staff.manage permission
-  const ownerCheck = await isCommunityOwner(supabase, communityId);
+  const ownerCheck = await isCommunityOwner(
+    supabase,
+    communityId,
+    currentUser.id
+  );
   const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
@@ -646,7 +642,11 @@ export async function changeStaffRole(
   if (!currentUser) throw new Error("Not authenticated");
 
   // Verify permission: must be community owner or have community.staff.manage permission
-  const ownerCheck = await isCommunityOwner(supabase, communityId);
+  const ownerCheck = await isCommunityOwner(
+    supabase,
+    communityId,
+    currentUser.id
+  );
   const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
@@ -684,7 +684,11 @@ export async function removeStaffCompletely(
   if (!currentUser) throw new Error("Not authenticated");
 
   // Verify permission: must be community owner or have community.staff.manage permission
-  const ownerCheck = await isCommunityOwner(supabase, communityId);
+  const ownerCheck = await isCommunityOwner(
+    supabase,
+    communityId,
+    currentUser.id
+  );
   const permCheck = await checkCommunityPermission(
     supabase,
     communityId,

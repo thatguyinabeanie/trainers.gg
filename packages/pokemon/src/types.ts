@@ -248,8 +248,10 @@ export function toShowdownFormat(pokemonSet: PokemonSet): string {
     result += `EVs: ${evArray.join(" / ")}\n`;
   }
 
-  // Nature
-  result += `${pokemonSet.nature} Nature\n`;
+  // Nature (Hardy is the neutral default — omit per Showdown convention)
+  if (pokemonSet.nature && pokemonSet.nature !== "Hardy") {
+    result += `${pokemonSet.nature} Nature\n`;
+  }
 
   // IVs (only non-31 values)
   const ivs = pokemonSet.ivs;
