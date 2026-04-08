@@ -6,6 +6,16 @@
 import type { PokemonSet, PokemonSetFlat } from "./types";
 import { toFlat } from "./types";
 
+/** Showdown-format stat block using abbreviated stat keys */
+export interface ShowdownStats {
+  hp: number;
+  atk: number;
+  def: number;
+  spa: number;
+  spd: number;
+  spe: number;
+}
+
 export interface ShowdownPokemon {
   species: string;
   nickname?: string;
@@ -14,22 +24,8 @@ export interface ShowdownPokemon {
   ability: string;
   level?: number;
   shiny?: boolean;
-  evs?: {
-    hp?: number;
-    atk?: number;
-    def?: number;
-    spa?: number;
-    spd?: number;
-    spe?: number;
-  };
-  ivs?: {
-    hp?: number;
-    atk?: number;
-    def?: number;
-    spa?: number;
-    spd?: number;
-    spe?: number;
-  };
+  evs: ShowdownStats;
+  ivs: ShowdownStats;
   nature: string;
   moves: string[];
   teraType?: string;
@@ -87,8 +83,8 @@ export function parsePokemon(text: string): ShowdownPokemon | null {
     ability: "",
     nature: "Hardy",
     moves: [],
-    evs: {},
-    ivs: {},
+    evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
   };
 
   // Parse remaining lines
@@ -117,24 +113,23 @@ export function parsePokemon(text: string): ShowdownPokemon | null {
         if (match && match[1] && match[2]) {
           const value = parseInt(match[1]);
           const stat = match[2].toLowerCase();
-          if (stat === "hp") pokemon.evs!.hp = value;
-          else if (stat === "atk" || stat === "attack")
-            pokemon.evs!.atk = value;
+          if (stat === "hp") pokemon.evs.hp = value;
+          else if (stat === "atk" || stat === "attack") pokemon.evs.atk = value;
           else if (stat === "def" || stat === "defense")
-            pokemon.evs!.def = value;
+            pokemon.evs.def = value;
           else if (
             stat === "spa" ||
             stat === "spatk" ||
             stat === "special attack"
           )
-            pokemon.evs!.spa = value;
+            pokemon.evs.spa = value;
           else if (
             stat === "spd" ||
             stat === "spdef" ||
             stat === "special defense"
           )
-            pokemon.evs!.spd = value;
-          else if (stat === "spe" || stat === "speed") pokemon.evs!.spe = value;
+            pokemon.evs.spd = value;
+          else if (stat === "spe" || stat === "speed") pokemon.evs.spe = value;
         }
       }
     }
@@ -147,24 +142,23 @@ export function parsePokemon(text: string): ShowdownPokemon | null {
         if (match && match[1] && match[2]) {
           const value = parseInt(match[1]);
           const stat = match[2].toLowerCase();
-          if (stat === "hp") pokemon.ivs!.hp = value;
-          else if (stat === "atk" || stat === "attack")
-            pokemon.ivs!.atk = value;
+          if (stat === "hp") pokemon.ivs.hp = value;
+          else if (stat === "atk" || stat === "attack") pokemon.ivs.atk = value;
           else if (stat === "def" || stat === "defense")
-            pokemon.ivs!.def = value;
+            pokemon.ivs.def = value;
           else if (
             stat === "spa" ||
             stat === "spatk" ||
             stat === "special attack"
           )
-            pokemon.ivs!.spa = value;
+            pokemon.ivs.spa = value;
           else if (
             stat === "spd" ||
             stat === "spdef" ||
             stat === "special defense"
           )
-            pokemon.ivs!.spd = value;
-          else if (stat === "spe" || stat === "speed") pokemon.ivs!.spe = value;
+            pokemon.ivs.spd = value;
+          else if (stat === "spe" || stat === "speed") pokemon.ivs.spe = value;
         }
       }
     }
@@ -181,14 +175,6 @@ export function parsePokemon(text: string): ShowdownPokemon | null {
       pokemon.moves.push(line.substring(2).trim());
     }
   }
-
-  // Set default IVs if not specified
-  if (!pokemon.ivs!.hp) pokemon.ivs!.hp = 31;
-  if (!pokemon.ivs!.atk) pokemon.ivs!.atk = 31;
-  if (!pokemon.ivs!.def) pokemon.ivs!.def = 31;
-  if (!pokemon.ivs!.spa) pokemon.ivs!.spa = 31;
-  if (!pokemon.ivs!.spd) pokemon.ivs!.spd = 31;
-  if (!pokemon.ivs!.spe) pokemon.ivs!.spe = 31;
 
   return pokemon;
 }
@@ -350,20 +336,20 @@ export function convertShowdownToPokemonSet(
       move4: showdownPokemon.moves[3],
     },
     evs: {
-      hp: showdownPokemon.evs?.hp || 0,
-      attack: showdownPokemon.evs?.atk || 0,
-      defense: showdownPokemon.evs?.def || 0,
-      specialAttack: showdownPokemon.evs?.spa || 0,
-      specialDefense: showdownPokemon.evs?.spd || 0,
-      speed: showdownPokemon.evs?.spe || 0,
+      hp: showdownPokemon.evs.hp,
+      attack: showdownPokemon.evs.atk,
+      defense: showdownPokemon.evs.def,
+      specialAttack: showdownPokemon.evs.spa,
+      specialDefense: showdownPokemon.evs.spd,
+      speed: showdownPokemon.evs.spe,
     },
     ivs: {
-      hp: showdownPokemon.ivs?.hp || 31,
-      attack: showdownPokemon.ivs?.atk || 31,
-      defense: showdownPokemon.ivs?.def || 31,
-      specialAttack: showdownPokemon.ivs?.spa || 31,
-      specialDefense: showdownPokemon.ivs?.spd || 31,
-      speed: showdownPokemon.ivs?.spe || 31,
+      hp: showdownPokemon.ivs.hp,
+      attack: showdownPokemon.ivs.atk,
+      defense: showdownPokemon.ivs.def,
+      specialAttack: showdownPokemon.ivs.spa,
+      specialDefense: showdownPokemon.ivs.spd,
+      speed: showdownPokemon.ivs.spe,
     },
   };
 }
