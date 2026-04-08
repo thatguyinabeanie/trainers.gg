@@ -32,6 +32,9 @@ Available hooks and utility functions. Check this list before writing new utilit
 | `invalidateTournamentAndCommunityCaches(supabase, id)` | `@/lib/cache-invalidation` | Bust list + tournament + community — use on status changes (async)             |
 | `invalidatePlayerProfileCaches(username)`              | `@/lib/cache-invalidation` | Bust `player(username)` — for bio/country/avatar changes                       |
 | `invalidatePlayerDirectoryCaches(username)`            | `@/lib/cache-invalidation` | Bust player + all directory/sidebar caches — on join or username change        |
+| `invalidatePlayerRankingCaches()`                      | `@/lib/cache-invalidation` | Bust `PLAYERS_LEADERBOARD` + `PLAYERS_RECENT` — after tournament completion    |
+| `invalidateTournamentWithTeamCaches(id)`               | `@/lib/cache-invalidation` | Bust `tournament(id)` + `tournamentTeams(id)` — after team submit/select       |
+| `invalidateCommunityRequestCaches()`                   | `@/lib/cache-invalidation` | Bust `COMMUNITY_REQUESTS_LIST` — after request submit/review                   |
 | `notificationIcons`                                    | `@/lib/notification-utils` | Notification type to lucide icon mapping                                       |
 | `isSafeRelativeUrl()`                                  | `@/lib/notification-utils` | Validate relative URLs start with `/[^/\\]`                                    |
 | `transformPhaseData()`                                 | `@/lib/tournament-utils`   | Supabase phase/round data to bracket visualization shape                       |

@@ -7,7 +7,6 @@
 
 "use server";
 
-import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import {
@@ -47,11 +46,12 @@ import {
   getRoundMatchesWithStats,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
-import { CacheTags } from "@/lib/cache";
 import {
   invalidateTournamentCaches,
   invalidateTournamentListCaches,
   invalidateTournamentAndCommunityCaches,
+  invalidateTournamentWithTeamCaches,
+  invalidatePlayerRankingCaches,
 } from "@/lib/cache-invalidation";
 import {
   type ActionResult,
@@ -202,8 +202,7 @@ export async function completeTournament(
     await completeTournamentMutation(supabase, tournamentId);
 
     await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
-    updateTag(CacheTags.PLAYERS_LEADERBOARD);
-    updateTag(CacheTags.PLAYERS_RECENT);
+    invalidatePlayerRankingCaches();
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -538,10 +537,7 @@ export async function submitTeamAction(
       };
     }
 
-    // Revalidate tournament detail page (shows team submission status)
-    invalidateTournamentCaches(tournamentId);
-    // Revalidate tournament team list (for open teamsheet public view)
-    updateTag(CacheTags.tournamentTeams(tournamentId));
+    invalidateTournamentWithTeamCaches(tournamentId);
 
     return {
       success: true,
@@ -592,8 +588,7 @@ export async function selectTeamAction(
       };
     }
 
-    invalidateTournamentCaches(tournamentId);
-    updateTag(CacheTags.tournamentTeams(tournamentId));
+    invalidateTournamentWithTeamCaches(tournamentId);
 
     return {
       success: true,

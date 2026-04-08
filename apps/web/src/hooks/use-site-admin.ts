@@ -26,10 +26,3 @@ export function useSiteAdmin() {
     userLoading: loading,
   });
 }
-
-/**
- * Alias for useSiteAdmin
- */
-export function useSiteRoles() {
-  return useSiteAdmin();
-}

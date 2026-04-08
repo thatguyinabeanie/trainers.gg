@@ -3,62 +3,18 @@
 import { z, usernameSchema, pdsStatusSchema } from "@trainers/validators";
 import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
 import { escapeLike } from "@trainers/utils";
 import {
   invalidatePlayerProfileCaches,
   invalidatePlayerDirectoryCaches,
+  invalidatePlayerRankingCaches,
 } from "@/lib/cache-invalidation";
 import { withAction } from "./utils";
-
-const PDS_HOST = process.env.PDS_HOST || "https://pds.trainers.gg";
-
-/**
- * Check if a handle is available on the PDS.
- * Returns true if available, false if taken.
- * On network errors, assumes available (provisioning will catch conflicts).
- */
-async function checkPdsHandleAvailable(handle: string): Promise<boolean> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5_000);
-
-  try {
-    const response = await fetch(
-      `${PDS_HOST}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`,
-      { signal: controller.signal }
-    );
-
-    // 400 means the handle could not be resolved — it's available
-    if (response.status === 400) {
-      return true;
-    }
-
-    // 200 means handle exists (not available)
-    return false;
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      console.warn("PDS handle check timed out for:", handle);
-    } else {
-      console.warn("PDS handle check failed for:", handle, error);
-    }
-    // Assume available — provisioning will catch conflicts
-    return true;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-/**
- * Generate a trainers.gg handle from a username.
- * AT Protocol handles must be ASCII lowercase alphanumeric + hyphens,
- * so non-matching characters (emoji, underscores, etc.) are stripped.
- * Returns empty string if the result is too short (< 3 chars).
- */
-function generateHandle(username: string): string {
-  const asciiPart = username.toLowerCase().replace(/[^a-z0-9-]/g, "");
-  if (asciiPart.length < 3) return "";
-  return `${asciiPart}.trainers.gg`;
-}
+import {
+  checkPdsHandleAvailable,
+  derivePdsUsername,
+  generateHandle,
+} from "./pds-utils";
 
 const updateProfileSchema = z.object({
   username: usernameSchema.optional(),
@@ -97,53 +53,48 @@ export async function checkUsernameAvailability(username: string) {
 
     const escaped = escapeLike(username);
 
-    // Check users table (case-insensitive, excluding self)
+    // Check users + alts tables in parallel (case-insensitive, excluding self)
     const usersQuery = supabase
       .from("users")
       .select("id")
       .ilike("username", escaped);
 
-    if (user) {
-      usersQuery.neq("id", user.id);
-    }
-
-    const { data: existingUser, error: usersError } =
-      await usersQuery.maybeSingle();
-
-    if (usersError) {
-      console.error("Error checking username in users:", usersError);
-      return {
-        available: false,
-        error: "Failed to check username availability",
-      };
-    }
-
-    if (existingUser) {
-      return { available: false, error: null };
-    }
-
-    // Check alts table (case-insensitive, excluding current user's alts)
     const altsQuery = supabase
       .from("alts")
       .select("id")
       .ilike("username", escaped);
 
     if (user) {
+      usersQuery.neq("id", user.id);
       altsQuery.neq("user_id", user.id);
     }
 
-    const { data: existingAlt, error: altsError } =
-      await altsQuery.maybeSingle();
+    const [usersResult, altsResult] = await Promise.all([
+      usersQuery.maybeSingle(),
+      altsQuery.maybeSingle(),
+    ]);
 
-    if (altsError) {
-      console.error("Error checking username in alts:", altsError);
+    if (usersResult.error) {
+      console.error("Error checking username in users:", usersResult.error);
       return {
         available: false,
         error: "Failed to check username availability",
       };
     }
 
-    if (existingAlt) {
+    if (usersResult.data) {
+      return { available: false, error: null };
+    }
+
+    if (altsResult.error) {
+      console.error("Error checking username in alts:", altsResult.error);
+      return {
+        available: false,
+        error: "Failed to check username availability",
+      };
+    }
+
+    if (altsResult.data) {
       return { available: false, error: null };
     }
 
@@ -319,10 +270,7 @@ export async function updateProfile(data: {
         }
 
         // Call provision-pds edge function (30s timeout)
-        // PDS handles must be ASCII — derive from username
-        const pdsUsername =
-          validated.username!.toLowerCase().replace(/[^a-z0-9-]/g, "") ||
-          `user-${user.id.slice(0, 8)}`;
+        const pdsUsername = derivePdsUsername(validated.username!, user.id);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30_000);
@@ -411,10 +359,7 @@ export async function updateProfile(data: {
           return { success: false, error: "Server configuration error" };
         }
 
-        // PDS handles must be ASCII — derive from username
-        const pdsUsername =
-          validated.username!.toLowerCase().replace(/[^a-z0-9-]/g, "") ||
-          `user-${user.id.slice(0, 8)}`;
+        const pdsUsername = derivePdsUsername(validated.username!, user.id);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30_000);
@@ -497,11 +442,10 @@ export async function updateProfile(data: {
       }
     }
 
-    // If username changed, also update the main alt's username + display_name
-    if (hasUsernameChange) {
-      const username = validated.username!;
+    // Sync changes to the main alt (username, display_name, bio)
+    const needsAltSync = hasUsernameChange || validated.bio !== undefined;
 
-      // Get main alt ID
+    if (needsAltSync) {
       const { data: userData, error: altFetchError } = await supabase
         .from("users")
         .select("main_alt_id")
@@ -510,29 +454,34 @@ export async function updateProfile(data: {
 
       if (altFetchError) {
         console.error("Error fetching main_alt_id:", altFetchError);
-        return { success: false, error: "Failed to sync username to alt" };
+        return { success: false, error: "Failed to sync profile to alt" };
       }
 
       if (userData?.main_alt_id) {
+        const altUpdate: Record<string, string | null> = {};
+        if (hasUsernameChange) {
+          altUpdate.username = validated.username!;
+          altUpdate.display_name = validated.username!;
+        }
+        if (validated.bio !== undefined) {
+          altUpdate.bio = validated.bio || null;
+        }
+
         const { error: altUpdateError } = await supabase
           .from("alts")
-          .update({
-            username,
-            display_name: username,
-          })
+          .update(altUpdate)
           .eq("id", userData.main_alt_id);
 
         if (altUpdateError) {
-          console.error("Error updating main alt username:", altUpdateError);
-          return { success: false, error: "Failed to sync username to alt" };
+          console.error("Error updating main alt:", altUpdateError);
+          return { success: false, error: "Failed to sync profile to alt" };
         }
       }
+    }
 
-      // Update auth user metadata
+    if (hasUsernameChange) {
       const { error: authUpdateError } = await supabase.auth.updateUser({
-        data: {
-          username,
-        },
+        data: { username: validated.username! },
       });
 
       if (authUpdateError) {
@@ -541,36 +490,15 @@ export async function updateProfile(data: {
       }
     }
 
-    // If bio changed, update the main alt's bio
-    if (validated.bio !== undefined) {
-      // Get main alt ID if we haven't already
-      const { data: userForAlt } = await supabase
-        .from("users")
-        .select("main_alt_id")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (userForAlt?.main_alt_id) {
-        const { error: bioError } = await supabase
-          .from("alts")
-          .update({ bio: validated.bio || null })
-          .eq("id", userForAlt.main_alt_id);
-
-        if (bioError) {
-          console.error("Error updating bio:", bioError);
-          return { success: false, error: "Failed to update bio" };
-        }
-      }
-    }
-
     if (currentUsername) {
       invalidatePlayerProfileCaches(currentUsername);
     }
     if (hasUsernameChange && validated.username !== currentUsername) {
       invalidatePlayerDirectoryCaches(validated.username!);
+      // Leaderboards display usernames — bust ranking caches on rename
+      invalidatePlayerRankingCaches();
     }
 
-    revalidatePath("/");
     return { success: true, error: null };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -615,8 +543,6 @@ export async function updateAltVisibilityAction(
       .eq("id", altId);
 
     if (updateError) throw updateError;
-
-    revalidatePath("/dashboard/alts");
 
     // Invalidate the public profile cache so /u/[handle] reflects the change
     const { data: userData } = await supabase

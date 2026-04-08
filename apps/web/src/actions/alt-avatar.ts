@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "@trainers/validators";
+import { getOwnedAlt } from "@trainers/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { invalidatePlayerProfileCaches } from "@/lib/cache-invalidation";
 import { withAction } from "./utils";
@@ -31,17 +32,7 @@ export async function setAltAvatar(altId: number, spriteUrl: string) {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    // Verify user owns this alt and get username for cache invalidation
-    const { data: alt } = await supabase
-      .from("alts")
-      .select("user_id, users!inner(username)")
-      .eq("id", altId)
-      .single();
-
-    if (!alt) throw new Error("Alt not found");
-    if (alt.user_id !== user.id) {
-      throw new Error("You can only update your own alt");
-    }
+    const alt = await getOwnedAlt(supabase, altId, user.id);
 
     const { error } = await supabase
       .from("alts")
@@ -70,17 +61,7 @@ export async function removeAltAvatar(altId: number) {
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    // Verify user owns this alt and get username for cache invalidation
-    const { data: alt } = await supabase
-      .from("alts")
-      .select("user_id, users!inner(username)")
-      .eq("id", altId)
-      .single();
-
-    if (!alt) throw new Error("Alt not found");
-    if (alt.user_id !== user.id) {
-      throw new Error("You can only update your own alt");
-    }
+    const alt = await getOwnedAlt(supabase, altId, user.id);
 
     const { error } = await supabase
       .from("alts")

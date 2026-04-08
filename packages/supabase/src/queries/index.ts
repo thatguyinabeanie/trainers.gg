@@ -12,6 +12,7 @@ export {
   getUserWithAlt,
   getAltByUsername,
   getAltByUserId,
+  getOwnedAlt,
   searchAlts,
   getEmailByUsername,
   getAltsByUserId,

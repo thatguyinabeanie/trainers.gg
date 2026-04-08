@@ -17,20 +17,11 @@ import {
   leaveCommunity as leaveCommunityMutation,
   removeStaff as removeStaffMutation,
 } from "@trainers/supabase";
-import { type CommunitySocialLink } from "@trainers/validators";
+import {
+  type ActionResult,
+  type CommunitySocialLink,
+} from "@trainers/validators";
 import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
-
-/**
- * Action result type for consistent error handling
- */
-export type ActionResult<T = void> =
-  | { success: true; data: T }
-  | {
-      success: false;
-      error: string;
-      code?: string;
-      validationErrors?: string[];
-    };
 
 // =============================================================================
 // Community CRUD

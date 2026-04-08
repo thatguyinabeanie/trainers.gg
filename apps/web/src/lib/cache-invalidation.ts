@@ -63,8 +63,10 @@ export function invalidateTournamentListCaches(tournamentId: number): void {
  * caches. Call when a tournament's status changes so the community detail
  * page's tournament groupings stay in sync.
  *
- * Requires a DB lookup to resolve the community slug — call this inside an
- * existing try/catch so failures surface to the user normally.
+ * NOTE: Makes a DB round-trip to resolve the community slug. If you already
+ * have the community slug and id, prefer calling
+ * `invalidateCommunityPageCaches(slug, id)` directly alongside
+ * `invalidateTournamentListCaches(id)` to avoid the extra query.
  */
 export async function invalidateTournamentAndCommunityCaches(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -103,12 +105,42 @@ export function invalidatePlayerProfileCaches(username: string): void {
 /**
  * Invalidate a player's profile and all directory/sidebar caches.
  * Call when a player joins or changes their username — these events change
- * how the player appears in lists across the site.
+ * how the player appears in directory and new-members lists.
+ *
+ * Does NOT invalidate ranking caches — new users and username changes don't
+ * affect leaderboard/recent standings. Call `invalidatePlayerRankingCaches()`
+ * separately after tournament completion.
  */
 export function invalidatePlayerDirectoryCaches(username: string): void {
   updateTag(CacheTags.player(username));
   updateTag(CacheTags.PLAYERS_DIRECTORY);
   updateTag(CacheTags.PLAYERS_NEW);
+}
+
+/**
+ * Invalidate leaderboard and recently-active player caches.
+ * Call after tournament completion or any event that changes player rankings.
+ */
+export function invalidatePlayerRankingCaches(): void {
   updateTag(CacheTags.PLAYERS_LEADERBOARD);
   updateTag(CacheTags.PLAYERS_RECENT);
+}
+
+// =============================================================================
+// Tournament Team Cache Helpers
+// =============================================================================
+
+/** Call after team submit or team selection changes. */
+export function invalidateTournamentWithTeamCaches(tournamentId: number): void {
+  updateTag(CacheTags.tournament(tournamentId));
+  updateTag(CacheTags.tournamentTeams(tournamentId));
+}
+
+// =============================================================================
+// Community Request Cache Helpers
+// =============================================================================
+
+/** Call after submitting or reviewing a community request. */
+export function invalidateCommunityRequestCaches(): void {
+  updateTag(CacheTags.COMMUNITY_REQUESTS_LIST);
 }
