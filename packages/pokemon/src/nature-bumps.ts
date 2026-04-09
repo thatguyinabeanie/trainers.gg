@@ -12,11 +12,13 @@ import { calculateStat } from "./stats-calculator";
 
 /**
  * For a given base stat, IV, level, and nature multiplier, returns an array
- * of EV values (0–252) where the nature boost causes the stat to round up to
- * an extra point compared to a neutral nature (1.0).
+ * of EV values (0–252) where the +nature boost causes the stat to round up
+ * to an extra point — specifically, the EV breakpoints where the gap between
+ * the nature-boosted stat and the neutral stat increases by 1.
  *
- * Only meaningful when natureMultiplier is 1.1 (positive nature). When the
- * multiplier is 1.0 or 0.9 the returned array will always be empty.
+ * These breakpoints are used as tick marks on the EV slider, showing players
+ * exactly where investing EVs gives them a "free" extra stat point from their
+ * nature. Only meaningful when natureMultiplier is 1.1 (positive nature).
  */
 export function calculateNatureBumps(
   baseStat: number,
@@ -26,10 +28,11 @@ export function calculateNatureBumps(
 ): number[] {
   const bumps: number[] = [];
 
-  // Step by 4 since EV values below a multiple of 4 have no additional effect
-  // on the floor(ev / 4) term in the stat formula. We still check every value
-  // because the caller may pass arbitrary EVs and the array is small (0–252).
-  for (let ev = 0; ev <= 252; ev++) {
+  let prevGap = -1;
+
+  // Stats only change at multiples of 4 EVs (due to floor(ev/4) in the
+  // stat formula), so we step by 4 for efficiency.
+  for (let ev = 0; ev <= 252; ev += 4) {
     const statNeutral = calculateStat(baseStat, iv, ev, level, 1.0);
     const statWithNature = calculateStat(
       baseStat,
@@ -38,10 +41,13 @@ export function calculateNatureBumps(
       level,
       natureMultiplier
     );
+    const gap = statWithNature - statNeutral;
 
-    if (statWithNature > statNeutral) {
+    if (gap > prevGap) {
       bumps.push(ev);
     }
+
+    prevGap = gap;
   }
 
   return bumps;
