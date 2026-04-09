@@ -38,12 +38,12 @@ function TeamActions({ altUsername }: { altUsername: string }) {
           <Link
             href={`/dashboard/alts/${altUsername}`}
             className="bg-muted hover:bg-muted/80 inline-flex size-6 items-center justify-center rounded transition-colors"
-            aria-label="Open in Builder"
+            aria-label="Open alt details"
           >
             <Hammer className="text-muted-foreground size-3" />
           </Link>
         </TooltipTrigger>
-        <TooltipContent>Open in Builder</TooltipContent>
+        <TooltipContent>Open alt details</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger render={<span />}>
@@ -77,12 +77,19 @@ function TeamActions({ altUsername }: { altUsername: string }) {
 // Recent results for an alt (lazy-loaded on expand)
 // ---------------------------------------------------------------------------
 
-function RecentResults({ altId }: { altId: number }) {
+function RecentResults({
+  altId,
+  refreshKey = 0,
+}: {
+  altId: number;
+  refreshKey?: number;
+}) {
   const queryFn = (client: TypedSupabaseClient) =>
     getPlayerTournamentHistory(client, [altId]);
   const { data: results, isLoading } = useSupabaseQuery(queryFn, [
     "altRecentResults",
     altId,
+    refreshKey,
   ]);
 
   // Show at most 3 recent results
@@ -287,7 +294,7 @@ export function TeamsSubTable({
           <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
             Recent Results
           </p>
-          <RecentResults altId={altId} />
+          <RecentResults altId={altId} refreshKey={refreshKey} />
         </div>
       </div>
 
@@ -314,14 +321,14 @@ export function TeamsSubTable({
             View history
           </Button>
         </div>
-        {/* TODO: Replace deleteAltAction with archiveAltAction — alts should be archived, not deleted */}
+        {/* TODO: Replace deleteAltAction with archiveAltAction when archive system is built */}
         {!isMain && (
           <button
             className="text-muted-foreground cursor-pointer text-xs hover:underline disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onDeleteAlt}
             disabled={isDeletePending}
           >
-            Archive alt
+            Delete alt
           </button>
         )}
       </div>

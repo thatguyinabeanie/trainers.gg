@@ -59,15 +59,23 @@ export function HomeClient({
     selectedAltUsername
   );
   const [showCreateForm, setShowCreateForm] = useState(false);
-  // refreshKey is still used by AltsTable for its internal expand/collapse state
+  // refreshKey forces child query keys to update after mutations
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Sync local state when server prop changes (e.g., sidebar alt switcher)
+  const [prevSelectedAltProp, setPrevSelectedAltProp] =
+    useState(selectedAltUsername);
+  if (selectedAltUsername !== prevSelectedAltProp) {
+    setPrevSelectedAltProp(selectedAltUsername);
+    setSelectedAlt(selectedAltUsername);
+  }
 
   // ── Realtime subscription for active match changes ──────────────────────
   useEffect(() => {
     if (!mainAltId) return;
 
-    // Debounced server refresh — re-runs the server component to pick up
-    // new match data from the cached fetcher
+    // router.refresh() re-runs the server component, which re-fetches
+    // active match (uncached) and stats (cache-invalidated)
     function triggerRefresh() {
       if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
       refreshTimeoutRef.current = setTimeout(() => {
@@ -135,7 +143,7 @@ export function HomeClient({
     setSelectedAlt(username);
     // Sync cookie so sidebar alt switcher and page.tsx stay in sync
     if (username) {
-      document.cookie = `${DASHBOARD_ALT_COOKIE}=${username}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`;
+      document.cookie = `${DASHBOARD_ALT_COOKIE}=${encodeURIComponent(username)}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`;
     } else {
       document.cookie = `${DASHBOARD_ALT_COOKIE}=; path=/; max-age=0; samesite=lax`;
     }

@@ -140,11 +140,18 @@ export default async function DashboardHomePage() {
   const alts = await getCurrentUserAlts(supabase);
 
   // Fetch main_alt_id from users table (auth-required — not cached)
-  const { data: userRow } = await supabase
+  const { data: userRow, error: userRowError } = await supabase
     .from("users")
     .select("main_alt_id")
     .eq("id", user.id)
     .single();
+
+  if (userRowError) {
+    console.error(
+      "[DashboardHomePage] Failed to fetch main_alt_id:",
+      userRowError
+    );
+  }
   const mainAltId: number | null = userRow?.main_alt_id ?? null;
 
   // Extract alt IDs for bulk queries
