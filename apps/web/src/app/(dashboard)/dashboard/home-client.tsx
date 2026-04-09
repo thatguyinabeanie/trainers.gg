@@ -1,153 +1,36 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
-import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
+import { Loader2, Plus, Users } from "lucide-react";
+
 import {
+  getCurrentUserAlts,
+  getAltsBulkStats,
+  getPlayerRatingsBulk,
   getMyDashboardData,
   getActiveMatch,
-  getUserTournamentHistory,
-  getCurrentUserAlts,
 } from "@trainers/supabase";
-import { getPokemonSprite } from "@trainers/pokemon/sprites";
-import { cn } from "@/lib/utils";
+import type { TypedSupabaseClient } from "@trainers/supabase";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { useAuth } from "@/components/auth/auth-provider";
+import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
+import {
+  DASHBOARD_ALT_COOKIE,
+  COOKIE_MAX_AGE,
+} from "@/components/dashboard/sidebar-helpers";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
-type ActiveMatch = Awaited<ReturnType<typeof getActiveMatch>>;
-type TournamentHistoryItem = Awaited<
-  ReturnType<typeof getUserTournamentHistory>
->[number];
+import { LiveMatchBar } from "./components/live-match-bar";
+import { DashboardStats } from "./components/dashboard-stats";
+import { AltsTable } from "./components/alts-table";
+import { CreateAltForm } from "./components/create-alt-form";
 
-// ─── Subcomponents ────────────────────────────────────────────────────────────
-
-function LiveMatchBar({ match }: { match: NonNullable<ActiveMatch> }) {
-  return (
-    <div className="mb-3.5 flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs">
-      {/* Green pulse dot */}
-      <span className="relative flex size-1.5 shrink-0">
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-75" />
-        <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-      </span>
-
-      {/* Match info */}
-      <span className="min-w-0 flex-1 text-emerald-800">
-        <strong className="font-semibold">{match.tournamentName}</strong>
-        {" — "}
-        Round {match.roundNumber}
-        {match.opponent && (
-          <>
-            {" · You vs "}
-            <span className="font-medium">{match.opponent.username}</span>
-          </>
-        )}
-        {match.table != null && ` · Table ${match.table}`}
-      </span>
-
-      <Link
-        href={`/tournaments/${match.tournamentSlug}`}
-        className="shrink-0 font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-900"
-      >
-        Go to match →
-      </Link>
-    </div>
-  );
-}
-
-interface StatCardProps {
-  label: string;
-  value: string;
-  sub?: string;
-}
-
-function StatCard({ label, value, sub }: StatCardProps) {
-  return (
-    <div className="bg-muted/50 rounded-md px-2.5 py-2">
-      <p className="text-muted-foreground mb-0.5 text-[9px] font-semibold tracking-widest uppercase">
-        {label}
-      </p>
-      <p className="font-mono text-base leading-none font-bold">{value}</p>
-      {sub && <p className="text-muted-foreground mt-0.5 text-[8px]">{sub}</p>}
-    </div>
-  );
-}
-
-function PokemonSprite({ species }: { species: string }) {
-  const sprite = getPokemonSprite(species);
-  return (
-    <Image
-      src={sprite.url}
-      alt={species}
-      width={18}
-      height={18}
-      className="shrink-0 object-contain"
-      style={{ imageRendering: sprite.pixelated ? "pixelated" : undefined }}
-      unoptimized
-    />
-  );
-}
-
-function ResultRow({ item }: { item: TournamentHistoryItem }) {
-  const isFirst = item.placement === 1;
-  const placementText =
-    item.placement != null ? `${item.placement}${isFirst ? " 🏆" : ""}` : "—";
-
-  // Format date as "Mar 28"
-  const dateText = item.endDate
-    ? new Date(item.endDate).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      })
-    : item.startDate
-      ? new Date(item.startDate).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })
-      : "";
-
-  return (
-    <div className="border-border/50 flex items-center gap-2 border-b py-1.5 text-xs last:border-0">
-      {/* Tournament name */}
-      <Link
-        href={`/tournaments/${item.tournamentSlug}`}
-        className="min-w-0 shrink-0 font-medium hover:underline"
-      >
-        {item.tournamentName}
-      </Link>
-
-      {/* Pokemon sprites — push to the right */}
-      {item.teamPokemon.length > 0 && (
-        <div className="ml-auto flex shrink-0 items-center">
-          {item.teamPokemon.slice(0, 6).map((species, i) => (
-            <PokemonSprite key={i} species={species} />
-          ))}
-        </div>
-      )}
-
-      {/* Placement */}
-      <span
-        className={cn(
-          "shrink-0 font-mono text-[11px]",
-          isFirst ? "font-semibold text-teal-600" : "text-muted-foreground"
-        )}
-      >
-        {placementText}
-      </span>
-
-      {/* Date */}
-      {dateText && (
-        <span className="text-muted-foreground shrink-0 text-[10px]">
-          {dateText}
-        </span>
-      )}
-    </div>
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
+// =============================================================================
+// Main Component
+// =============================================================================
 
 export function HomeClient({
   selectedAltUsername,
@@ -155,19 +38,84 @@ export function HomeClient({
   selectedAltUsername: string | null;
 }) {
   const { user } = useAuth();
+  const router = useRouter();
   const supabase = useSupabase();
   const toastShown = useRef(false);
+  const [selectedAlt, setSelectedAlt] = useState<string | null>(
+    selectedAltUsername
+  );
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  // Fetch user's alts early — needed for mainAltId
-  const { data: userAlts, error: userAltsError } = useSupabaseQuery(
-    (client) => getCurrentUserAlts(client),
-    [user?.id]
-  );
-  const mainAltId = userAlts?.[0]?.id ?? null;
+  // ── Queries ──────────────────────────────────────────────────────────────
 
-  // ── Realtime subscription for active match changes ──
+  // Fetch user's alts
+  const {
+    data: alts,
+    isLoading: altsLoading,
+    error: altsError,
+    refetch: refetchAlts,
+  } = useSupabaseQuery(
+    (client) => getCurrentUserAlts(client),
+    ["alts", user?.id, refreshKey]
+  );
+
+  // Main alt ID from users table
+  const mainAltQueryFn = async (client: TypedSupabaseClient) => {
+    if (!user) return null;
+    const { data, error } = await client
+      .from("users")
+      .select("main_alt_id")
+      .eq("id", user.id)
+      .single();
+    if (error) throw error;
+    return data?.main_alt_id ?? null;
+  };
+  const { data: mainAltId } = useSupabaseQuery(mainAltQueryFn, [
+    "mainAlt",
+    user?.id,
+    refreshKey,
+  ]);
+
+  // Bulk stats for all alts — no N+1
+  const altIds = (alts ?? []).map((a) => a.id);
+  const { data: bulkStats } = useSupabaseQuery(
+    (client) => getAltsBulkStats(client, altIds),
+    ["altsBulkStats", ...altIds, refreshKey]
+  );
+
+  // Bulk ratings for all alts
+  const { data: bulkRatings } = useSupabaseQuery(
+    (client) => getPlayerRatingsBulk(client, altIds, "overall"),
+    ["altsBulkRatings", ...altIds]
+  );
+
+  // Resolve the selected alt's database ID for filtered queries
+  const selectedAltId = selectedAlt
+    ? (alts?.find((a) => a.username === selectedAlt)?.id ?? null)
+    : null;
+
+  // When an alt is selected, use that alt's ID; otherwise fall back to main alt
+  const dashboardAltId = selectedAltId ?? mainAltId;
+
+  // Per-alt dashboard data (stats + recent activity)
+  const { data: dashboardData } = useSupabaseQuery(
+    (client) =>
+      dashboardAltId
+        ? getMyDashboardData(client, dashboardAltId)
+        : Promise.resolve(null),
+    [dashboardAltId, refreshKey]
+  );
+
+  // Active match (always based on main alt)
+  const { data: activeMatch } = useSupabaseQuery(
+    (client) =>
+      mainAltId ? getActiveMatch(client, mainAltId) : Promise.resolve(null),
+    [mainAltId, refreshKey]
+  );
+
+  // ── Realtime subscription for active match changes ──────────────────────
   useEffect(() => {
     if (!mainAltId) return;
 
@@ -261,7 +209,7 @@ export function HomeClient({
     };
   }, [supabase, mainAltId]);
 
-  // ── Welcome toast for temp usernames ──
+  // ── Welcome toast for temp usernames ────────────────────────────────────
   useEffect(() => {
     if (toastShown.current) return;
     const username = (user?.user_metadata?.username as string) ?? "";
@@ -274,36 +222,28 @@ export function HomeClient({
     }
   }, [user]);
 
-  // ── Queries ──
+  // ── Handlers ────────────────────────────────────────────────────────────
 
-  // Resolve the selected alt's database ID for filtered queries
-  const selectedAltId = selectedAltUsername
-    ? (userAlts?.find((a) => a.username === selectedAltUsername)?.id ?? null)
-    : null;
+  function handleAltSelect(username: string | null) {
+    setSelectedAlt(username);
+    // Sync cookie so sidebar alt switcher and page.tsx stay in sync
+    if (username) {
+      document.cookie = `${DASHBOARD_ALT_COOKIE}=${username}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`;
+    } else {
+      document.cookie = `${DASHBOARD_ALT_COOKIE}=; path=/; max-age=0; samesite=lax`;
+    }
+    // Refresh to sync sidebar alt switcher
+    router.refresh();
+  }
 
-  // When an alt is selected, use that alt's ID; otherwise fall back to main alt
-  const dashboardAltId = selectedAltId ?? mainAltId;
+  function handleRefresh() {
+    setRefreshKey((k) => k + 1);
+    refetchAlts();
+  }
 
-  const { data: dashboardData, error: dashboardError } = useSupabaseQuery(
-    (client) =>
-      dashboardAltId
-        ? getMyDashboardData(client, dashboardAltId)
-        : Promise.resolve(null),
-    [dashboardAltId]
-  );
+  // ── Stats computation ───────────────────────────────────────────────────
 
-  const { data: activeMatch, error: activeMatchError } = useSupabaseQuery(
-    (client) =>
-      mainAltId ? getActiveMatch(client, mainAltId) : Promise.resolve(null),
-    [mainAltId, refreshKey]
-  );
-
-  const { data: recentHistory, error: recentHistoryError } = useSupabaseQuery(
-    (client) => getUserTournamentHistory(client),
-    [mainAltId]
-  );
-
-  // ── Derived values ──
+  // Per-alt mode: use dashboardData when an alt is selected (or default alt)
   const stats = dashboardData?.stats ?? {
     winRate: 0,
     winRateChange: 0,
@@ -314,117 +254,225 @@ export function HomeClient({
     championPoints: 0,
   };
 
-  const winRatePct =
-    stats.winRate > 0 ? `${stats.winRate.toFixed(1)}%` : "0.0%";
-
-  // Compute W-L record from recentActivity or fall back to myTournaments player stats
+  // Compute win/loss record from recentActivity
   const recentWins =
     dashboardData?.recentActivity.filter((a) => a.result === "won").length ?? 0;
   const recentTotal = dashboardData?.recentActivity.length ?? 0;
-  const recordStr =
-    recentTotal > 0 ? `${recentWins}-${recentTotal - recentWins}` : "0-0";
 
-  const ratingStr =
-    stats.currentRating > 0 ? stats.currentRating.toLocaleString() : "—";
-  const tournamentsStr =
-    stats.totalEnrolled > 0 ? `${stats.totalEnrolled}` : "0";
+  // Aggregate mode: compute totals from bulkStats across all alts
+  const aggregateWins = bulkStats
+    ? Object.values(bulkStats).reduce((sum, s) => sum + s.matchWins, 0)
+    : 0;
+  const aggregateLosses = bulkStats
+    ? Object.values(bulkStats).reduce((sum, s) => sum + s.matchLosses, 0)
+    : 0;
+  const aggregateTotal = aggregateWins + aggregateLosses;
+  const aggregateWinRate =
+    aggregateTotal > 0 ? (aggregateWins / aggregateTotal) * 100 : 0;
 
-  // Recent results: last 5 completed tournaments, optionally filtered by selected alt
-  const filteredHistory = selectedAltUsername
-    ? (recentHistory ?? []).filter((r) => r.altUsername === selectedAltUsername)
-    : (recentHistory ?? []);
-  const recentResults = filteredHistory.slice(0, 5);
+  // Find best rating across all alts
+  const bestRating = bulkRatings
+    ? Math.max(...Object.values(bulkRatings).map((r) => r.rating ?? 0), 0)
+    : 0;
 
-  const displayName = getUserDisplayName(user);
+  // Determine which stats to show based on alt selection
+  const isAltSelected = selectedAlt !== null;
 
-  // Secondary errors — silently skip those sections rather than blocking the page
-  void userAltsError;
-  void activeMatchError;
-  void recentHistoryError;
+  const winRateStr = isAltSelected
+    ? stats.winRate > 0
+      ? `${stats.winRate.toFixed(1)}%`
+      : "0.0%"
+    : aggregateTotal > 0
+      ? `${aggregateWinRate.toFixed(1)}%`
+      : "0.0%";
 
-  if (dashboardError) {
+  const winRateSub = isAltSelected
+    ? stats.winRateChange !== 0
+      ? `${stats.winRateChange > 0 ? "+" : ""}${stats.winRateChange.toFixed(1)}% this month`
+      : `as ${selectedAlt}`
+    : aggregateTotal > 0
+      ? `${aggregateTotal} games`
+      : "across all alts";
+
+  const ratingStr = isAltSelected
+    ? stats.currentRating > 0
+      ? stats.currentRating.toLocaleString()
+      : "—"
+    : bestRating > 0
+      ? bestRating.toLocaleString()
+      : "—";
+
+  const ratingSub = isAltSelected
+    ? stats.ratingRank > 0
+      ? `Rank #${stats.ratingRank}`
+      : `as ${selectedAlt}`
+    : bestRating > 0
+      ? "best across alts"
+      : "across all alts";
+
+  const recordStr = isAltSelected
+    ? recentTotal > 0
+      ? `${recentWins}-${recentTotal - recentWins}`
+      : "0-0"
+    : aggregateTotal > 0
+      ? `${aggregateWins}-${aggregateLosses}`
+      : "0-0";
+
+  const recordSub = isAltSelected ? `as ${selectedAlt}` : "across all alts";
+
+  // Aggregate tournament count from bulkStats
+  const aggregateTournaments = bulkStats
+    ? Object.values(bulkStats).reduce((sum, s) => sum + s.tournamentCount, 0)
+    : 0;
+
+  const tournamentsStr = isAltSelected
+    ? stats.totalEnrolled > 0
+      ? `${stats.totalEnrolled}`
+      : "0"
+    : `${aggregateTournaments}`;
+
+  const tournamentsSub = isAltSelected
+    ? stats.activeTournaments > 0
+      ? `${stats.activeTournaments} active`
+      : `as ${selectedAlt}`
+    : `${(alts ?? []).length} alt${(alts ?? []).length !== 1 ? "s" : ""}`;
+
+  const tournamentsSubAccent = isAltSelected && stats.activeTournaments > 0;
+
+  // ── Loading state ───────────────────────────────────────────────────────
+  if (altsLoading) {
+    return (
+      <div className="flex min-h-[200px] items-center justify-center">
+        <Loader2 className="text-muted-foreground size-6 animate-spin" />
+      </div>
+    );
+  }
+
+  // ── Error state ─────────────────────────────────────────────────────────
+  if (altsError) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <p className="text-destructive text-sm font-medium">
           Something went wrong
         </p>
         <p className="text-muted-foreground mt-1 text-xs">
-          {dashboardError.message ||
-            "Failed to load data. Please try refreshing."}
+          {altsError.message || "Failed to load data. Please try refreshing."}
         </p>
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col gap-0">
-      {/* Welcome heading */}
-      <h1 className="mb-3 text-base font-bold">Welcome back, {displayName}</h1>
+  const hasAlts = alts && alts.length > 0;
 
-      {/* Live match bar (conditional) */}
-      {activeMatch && <LiveMatchBar match={activeMatch} />}
+  // ── Empty state (no alts) ───────────────────────────────────────────────
+  if (!hasAlts) {
+    return (
+      <div className="space-y-4">
+        {/* Stats row still rendered with zero values */}
+        <DashboardStats
+          winRate="0.0%"
+          winRateSub="no games played"
+          rating="—"
+          ratingSub="no rating yet"
+          record="0-0"
+          recordSub="no matches"
+          tournaments="0"
+          tournamentsSub="no alts yet"
+        />
 
-      {/* Stats row */}
-      <div className="mb-3.5 grid grid-cols-4 gap-2">
-        <StatCard
-          label="Win Rate"
-          value={winRatePct}
-          sub={
-            stats.winRateChange !== 0
-              ? `${stats.winRateChange > 0 ? "+" : ""}${stats.winRateChange.toFixed(1)}% this month`
-              : undefined
-          }
-        />
-        <StatCard
-          label="Rating"
-          value={ratingStr}
-          sub={stats.ratingRank > 0 ? `Rank #${stats.ratingRank}` : undefined}
-        />
-        <StatCard
-          label="Record"
-          value={recordStr}
-          sub={
-            selectedAltUsername
-              ? `as ${selectedAltUsername}`
-              : "across all alts"
-          }
-        />
-        <StatCard
-          label="Tournaments"
-          value={tournamentsStr}
-          sub={
-            stats.activeTournaments > 0
-              ? `${stats.activeTournaments} active`
-              : undefined
-          }
-        />
-      </div>
-
-      {/* Recent results */}
-      <div>
-        <div className="mb-1 flex items-center justify-between">
-          <span className="text-muted-foreground text-[10px] font-semibold tracking-widest uppercase">
-            Recent results
-          </span>
-          <Link
-            href="/dashboard/tournaments"
-            className="text-[11px] text-teal-600 hover:underline"
-          >
-            View history →
-          </Link>
-        </div>
-
-        {recentResults.length === 0 ? (
-          <p className="text-muted-foreground py-4 text-center text-xs">
-            No tournament history yet.
-          </p>
-        ) : (
-          <div>
-            {recentResults.map((item) => (
-              <ResultRow key={item.id} item={item} />
-            ))}
+        {/* Create form if open */}
+        {showCreateForm && (
+          <div className="animate-in slide-in-from-top-2 duration-200">
+            <CreateAltForm
+              onCreated={() => {
+                setShowCreateForm(false);
+                handleRefresh();
+              }}
+              onCancel={() => setShowCreateForm(false)}
+            />
           </div>
         )}
+
+        {/* Empty state card */}
+        <Card className="border-2 border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="bg-primary/10 flex size-14 items-center justify-center rounded-full">
+              <Users className="text-primary size-7" />
+            </div>
+            <h3 className="mt-4 text-lg font-semibold">No alts yet</h3>
+            <p className="text-muted-foreground mt-2 max-w-sm text-center text-sm">
+              Create your first player identity to register for tournaments and
+              track your competitive journey
+            </p>
+            <Button
+              className="mt-6 gap-2"
+              onClick={() => setShowCreateForm(true)}
+            >
+              <Plus className="size-4" />
+              Create Your First Alt
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ── Main render ─────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-4">
+      {/* Live match bar — conditional */}
+      {activeMatch && <LiveMatchBar match={activeMatch} />}
+
+      {/* Adaptive stats row */}
+      <DashboardStats
+        winRate={winRateStr}
+        winRateSub={winRateSub}
+        rating={ratingStr}
+        ratingSub={ratingSub}
+        record={recordStr}
+        recordSub={recordSub}
+        tournaments={tournamentsStr}
+        tournamentsSub={tournamentsSub}
+        tournamentsSubAccent={tournamentsSubAccent}
+      />
+
+      {/* Alts section */}
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Your Alts</h2>
+          <Button
+            size="sm"
+            onClick={() => setShowCreateForm(true)}
+            disabled={showCreateForm}
+          >
+            <Plus className="mr-1 size-3.5" /> New Alt
+          </Button>
+        </div>
+
+        {/* Create form — slides in above the table */}
+        {showCreateForm && (
+          <div className="animate-in slide-in-from-top-2 mb-3 duration-200">
+            <CreateAltForm
+              onCreated={() => {
+                setShowCreateForm(false);
+                handleRefresh();
+              }}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          </div>
+        )}
+
+        {/* Alts table with inline stats and expand/collapse */}
+        <AltsTable
+          alts={alts}
+          mainAltId={mainAltId ?? null}
+          bulkStats={bulkStats}
+          bulkRatings={bulkRatings}
+          selectedAltUsername={selectedAlt}
+          onAltSelect={handleAltSelect}
+          onRefresh={handleRefresh}
+          refreshKey={refreshKey}
+        />
       </div>
     </div>
   );
