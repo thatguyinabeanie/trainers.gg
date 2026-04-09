@@ -72,10 +72,18 @@ export default async function DashboardHomePage() {
     redirect("/sign-in?redirect=/dashboard");
   }
 
-  // Read selected alt cookie
+  // Read selected alt cookie (decode to match encodeURIComponent in writers)
   const cookieStore = await cookies();
-  const selectedAltUsername =
-    cookieStore.get(DASHBOARD_ALT_COOKIE)?.value ?? null;
+  const rawCookieValue = cookieStore.get(DASHBOARD_ALT_COOKIE)?.value ?? null;
+  let selectedAltUsername: string | null = null;
+  if (rawCookieValue) {
+    try {
+      selectedAltUsername = decodeURIComponent(rawCookieValue);
+    } catch {
+      // Malformed encoding — treat as no selection
+      selectedAltUsername = null;
+    }
+  }
 
   // Fetch user's alts (auth-required — not cached)
   const supabase = await createClientReadOnly();

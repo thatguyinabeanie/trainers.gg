@@ -18,14 +18,6 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function spriteUrl(species: string): string {
-  return getPokemonSprite(species).url;
-}
-
-// ---------------------------------------------------------------------------
 // TeamActions
 // ---------------------------------------------------------------------------
 
@@ -152,18 +144,25 @@ function RecentResults({
             {/* Pokemon sprites */}
             {item.teamPokemon.length > 0 && (
               <div className="ml-auto flex shrink-0 items-center">
-                {item.teamPokemon.slice(0, 6).map((species, i) => (
-                  <Image
-                    key={i}
-                    src={spriteUrl(species)}
-                    alt={species}
-                    width={18}
-                    height={18}
-                    className="shrink-0 object-contain"
-                    style={{ imageRendering: "pixelated" }}
-                    unoptimized
-                  />
-                ))}
+                {item.teamPokemon.slice(0, 6).map((species, i) => {
+                  const sprite = getPokemonSprite(species);
+                  return (
+                    <Image
+                      key={i}
+                      src={sprite.url}
+                      alt={species}
+                      width={18}
+                      height={18}
+                      className="shrink-0 object-contain"
+                      style={
+                        sprite.pixelated
+                          ? { imageRendering: "pixelated" }
+                          : undefined
+                      }
+                      unoptimized
+                    />
+                  );
+                })}
               </div>
             )}
 
@@ -281,18 +280,25 @@ export function TeamsSubTable({
                       <td className="px-2 py-1.5 font-medium">{team.name}</td>
                       <td className="px-2 py-1">
                         <div className="flex">
-                          {team.pokemonSpecies.map((species, i) => (
-                            <Image
-                              key={i}
-                              src={spriteUrl(species)}
-                              alt={species}
-                              width={28}
-                              height={28}
-                              className="object-contain"
-                              style={{ imageRendering: "pixelated" }}
-                              unoptimized
-                            />
-                          ))}
+                          {team.pokemonSpecies.map((species, i) => {
+                            const sprite = getPokemonSprite(species);
+                            return (
+                              <Image
+                                key={i}
+                                src={sprite.url}
+                                alt={species}
+                                width={28}
+                                height={28}
+                                className="object-contain"
+                                style={
+                                  sprite.pixelated
+                                    ? { imageRendering: "pixelated" }
+                                    : undefined
+                                }
+                                unoptimized
+                              />
+                            );
+                          })}
                         </div>
                       </td>
                       <td className="px-2 py-1.5">
