@@ -26,6 +26,26 @@ This is the FINAL session. After completion, run the full QA checklist at the bo
 - The full builder is functional on desktop: teams list, editor, species picker, context tabs, validation, import/export
 - Read `docs/the-builder/context.md` for mobile layout design (Section 4, "Mobile layout" row)
 
+## Feature Flag Gating
+
+The team builder must be behind a feature flag for staged rollout. The builder is heavily client-side (editor, pickers, calc), so the flag should be available in the JWT to avoid extra DB calls on every page load.
+
+**Implementation:**
+
+1. **Add `team_builder_access` to the JWT** — extend `custom_access_token_hook` in a new migration to include a `team_builder_access` boolean claim. Derive it from a `feature_flags` row or a new site role (e.g., `team_builder_beta`). The JWT approach means the client can read the flag directly from the session token without a server round-trip.
+
+2. **Gate the routes** — in `proxy.ts` (or the teams layout), check the JWT claim. If the user doesn't have `team_builder_access`, redirect to a "coming soon" or 404 page. The teams list page and builder workspace routes should both be gated:
+   - `/dashboard/alts/[handle]/teams`
+   - `/dashboard/alts/[handle]/teams/new`
+   - `/dashboard/alts/[handle]/teams/[teamId]`
+
+3. **Hide the sidebar link** — conditionally render the "Teams" sidebar nav item based on the JWT claim (use the same pattern as `useSiteAdmin()` but reading `team_builder_access` from the token).
+
+4. **Rollout strategy:**
+   - Start with `enabled: false` + `allowed_users` allowlist for internal testing
+   - Flip to `enabled: true` when ready for all users
+   - Remove the flag entirely once stable (clean up JWT hook, route guards, sidebar conditional)
+
 ## Parallel Track Assignments
 
 ### Track G: Mobile Responsive Layout
