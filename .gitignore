@@ -109,3 +109,5 @@ mise.local.toml
 docs/specs
 docs/superpowers
 .claude/scheduled_tasks.lock
+.superpowers/
+.reference-repos
