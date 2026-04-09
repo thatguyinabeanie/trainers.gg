@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentProps, useState } from "react";
+import { type ComponentProps, type ElementType, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -153,6 +153,8 @@ export function DashboardSidebar({
             pathname={pathname}
             communities={communities}
             isOnboarding={isOnboarding}
+            alts={alts}
+            selectedAltUsername={selectedAltUsername}
           />
         )}
       </SidebarContent>
@@ -588,13 +590,24 @@ interface PlayerNavProps {
   pathname: string;
   communities: CommunityInfo[];
   isOnboarding?: boolean;
+  alts: AltInfo[];
+  selectedAltUsername: string | null;
 }
 
 function PlayerNav({
   pathname,
   communities,
   isOnboarding = false,
+  alts,
+  selectedAltUsername,
 }: PlayerNavProps) {
+  // Resolve the current alt to build a context-aware Team Builder link.
+  // Prefer the cookie-selected alt, fall back to the first alt in the list.
+  const currentAltUsername = selectedAltUsername ?? alts[0]?.username ?? null;
+  const builderHref = currentAltUsername
+    ? `/dashboard/alts/${currentAltUsername}/teams`
+    : "/builder";
+
   const playerItems = [
     {
       label: "Home",
@@ -735,13 +748,17 @@ function PlayerNav({
                   icon: Search,
                 },
                 { label: "Communities", href: "/communities", icon: Globe },
-                { label: "Team Builder", href: "/builder", icon: Hammer },
+                {
+                  label: "Team Builder",
+                  href: builderHref,
+                  icon: Hammer,
+                },
                 { label: "Analytics", href: "/analytics", icon: BarChart3 },
                 { label: "Articles", href: "/articles", icon: FileText },
                 { label: "Coaching", href: "/coaching", icon: GraduationCap },
-              ] as const
+              ] satisfies { label: string; href: string; icon: ElementType }[]
             ).map((item) => (
-              <SidebarMenuItem key={item.href}>
+              <SidebarMenuItem key={item.label}>
                 <SidebarMenuButton
                   render={<Link href={item.href} />}
                   tooltip={item.label}
