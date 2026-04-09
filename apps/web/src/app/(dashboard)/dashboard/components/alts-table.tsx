@@ -4,12 +4,7 @@ import { useTransition } from "react";
 import { Pencil, Star, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
-import { getTeamsForAlt } from "@trainers/supabase";
-import type {
-  TypedSupabaseClient,
-  AltStats,
-  PlayerRating,
-} from "@trainers/supabase";
+import type { AltStats, PlayerRating } from "@trainers/supabase";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +14,6 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { SpritePicker } from "@/components/profile/sprite-picker";
-import { useSupabaseQuery } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { updateAltVisibilityAction } from "@/actions/profile";
 import { deleteAltAction } from "@/actions/alts";
@@ -112,16 +106,6 @@ function AltTableRow({
   const losses = altStats?.matchLosses ?? 0;
   const events = altStats?.tournamentCount ?? 0;
 
-  // Team count fetched separately so expand panel can show the full list
-  const teamCountQueryFn = (client: TypedSupabaseClient) =>
-    getTeamsForAlt(client, alt.id);
-  const { data: teams } = useSupabaseQuery(teamCountQueryFn, [
-    "altTeams",
-    alt.id,
-    refreshKey,
-  ]);
-  const teamCount = teams?.length ?? 0;
-
   const rating = altRating?.rating ?? null;
 
   const handleVisibilityChange = (checked: boolean) => {
@@ -140,6 +124,15 @@ function AltTableRow({
       {/* Main row */}
       <tr
         onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
         className={cn(
           "hover:bg-muted/50 cursor-pointer border-b transition-colors",
           isExpanded && "bg-muted/30",
@@ -253,16 +246,9 @@ function AltTableRow({
           </span>
         </td>
 
-        {/* Teams */}
+        {/* Teams — full team data loads on expand via TeamsSubTable */}
         <td className="px-3 py-2.5 text-right">
-          <span
-            className={cn(
-              "font-mono text-xs",
-              teamCount === 0 && "text-muted-foreground"
-            )}
-          >
-            {teamCount}
-          </span>
+          <span className="text-muted-foreground font-mono text-xs">—</span>
         </td>
 
         {/* Public dot — stop propagation to allow toggling without expanding row */}
@@ -273,6 +259,7 @@ function AltTableRow({
           <button
             onClick={() => handleVisibilityChange(!alt.is_public)}
             className="mx-auto block"
+            aria-label={alt.is_public ? "Make private" : "Make public"}
             title={
               alt.is_public
                 ? "Public — click to make private"
@@ -345,15 +332,15 @@ export function AltsTable({
   // TODO: Replace with archiveAltAction when archive system is built
   const handleDelete = (altId: number, altName: string) => {
     if (mainAltId === altId) {
-      toast.error("Cannot archive your main alt.");
+      toast.error("Cannot delete your main alt.");
       return;
     }
-    if (!confirm(`Archive alt "${altName}"? It can be restored later.`)) return;
+    if (!confirm(`Delete alt "${altName}"? This cannot be undone.`)) return;
 
     startTransition(async () => {
       const result = await deleteAltAction(altId);
       if (result.success) {
-        toast.success("Alt archived");
+        toast.success("Alt deleted");
         onAltSelect(null);
         onRefresh();
       } else {

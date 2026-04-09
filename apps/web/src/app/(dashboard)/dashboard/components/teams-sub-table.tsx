@@ -18,32 +18,24 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function spriteUrl(species: string): string {
-  return getPokemonSprite(species).url;
-}
-
-// ---------------------------------------------------------------------------
 // TeamActions
 // ---------------------------------------------------------------------------
 
 function TeamActions({ altUsername }: { altUsername: string }) {
   return (
     <div className="flex justify-end gap-1">
-      {/* TODO: link to builder page when available */}
+      {/* TODO: replace with team builder link when builder feature ships */}
       <Tooltip>
         <TooltipTrigger render={<span />}>
           <Link
             href={`/dashboard/alts/${altUsername}`}
             className="bg-muted hover:bg-muted/80 inline-flex size-6 items-center justify-center rounded transition-colors"
-            aria-label="Open in Builder"
+            aria-label="Open alt details"
           >
             <Hammer className="text-muted-foreground size-3" />
           </Link>
         </TooltipTrigger>
-        <TooltipContent>Open in Builder</TooltipContent>
+        <TooltipContent>Open alt details</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger render={<span />}>
@@ -77,16 +69,31 @@ function TeamActions({ altUsername }: { altUsername: string }) {
 // Recent results for an alt (lazy-loaded on expand)
 // ---------------------------------------------------------------------------
 
-function RecentResults({ altId }: { altId: number }) {
+function RecentResults({
+  altId,
+  refreshKey = 0,
+}: {
+  altId: number;
+  refreshKey?: number;
+}) {
   const queryFn = (client: TypedSupabaseClient) =>
     getPlayerTournamentHistory(client, [altId]);
-  const { data: results, isLoading } = useSupabaseQuery(queryFn, [
-    "altRecentResults",
-    altId,
-  ]);
+  const {
+    data: results,
+    isLoading,
+    error: resultsError,
+  } = useSupabaseQuery(queryFn, ["altRecentResults", altId, refreshKey]);
 
   // Show at most 3 recent results
   const recentResults = (results ?? []).slice(0, 3);
+
+  if (resultsError) {
+    return (
+      <p className="text-destructive py-4 text-center text-xs">
+        Failed to load results
+      </p>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -137,18 +144,25 @@ function RecentResults({ altId }: { altId: number }) {
             {/* Pokemon sprites */}
             {item.teamPokemon.length > 0 && (
               <div className="ml-auto flex shrink-0 items-center">
-                {item.teamPokemon.slice(0, 6).map((species, i) => (
-                  <Image
-                    key={i}
-                    src={spriteUrl(species)}
-                    alt={species}
-                    width={18}
-                    height={18}
-                    className="shrink-0 object-contain"
-                    style={{ imageRendering: "pixelated" }}
-                    unoptimized
-                  />
-                ))}
+                {item.teamPokemon.slice(0, 6).map((species, i) => {
+                  const sprite = getPokemonSprite(species);
+                  return (
+                    <Image
+                      key={i}
+                      src={sprite.url}
+                      alt={species}
+                      width={18}
+                      height={18}
+                      className="shrink-0 object-contain"
+                      style={
+                        sprite.pixelated
+                          ? { imageRendering: "pixelated" }
+                          : undefined
+                      }
+                      unoptimized
+                    />
+                  );
+                })}
               </div>
             )}
 
@@ -204,11 +218,11 @@ export function TeamsSubTable({
 }: TeamsSubTableProps) {
   const teamsQueryFn = (client: TypedSupabaseClient) =>
     getTeamsForAlt(client, altId);
-  const { data: teams, isLoading } = useSupabaseQuery(teamsQueryFn, [
-    "altTeams",
-    altId,
-    refreshKey,
-  ]);
+  const {
+    data: teams,
+    isLoading,
+    error: teamsError,
+  } = useSupabaseQuery(teamsQueryFn, ["altTeams", altId, refreshKey]);
 
   return (
     <div className="rounded-lg">
@@ -233,7 +247,16 @@ export function TeamsSubTable({
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
+                {teamsError ? (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="text-destructive px-2 py-4 text-center text-xs"
+                    >
+                      Failed to load teams
+                    </td>
+                  </tr>
+                ) : isLoading ? (
                   <tr>
                     <td colSpan={3} className="px-2 py-4 text-center">
                       <Loader2 className="text-muted-foreground mx-auto size-4 animate-spin" />
@@ -257,18 +280,25 @@ export function TeamsSubTable({
                       <td className="px-2 py-1.5 font-medium">{team.name}</td>
                       <td className="px-2 py-1">
                         <div className="flex">
-                          {team.pokemonSpecies.map((species, i) => (
-                            <Image
-                              key={i}
-                              src={spriteUrl(species)}
-                              alt={species}
-                              width={28}
-                              height={28}
-                              className="object-contain"
-                              style={{ imageRendering: "pixelated" }}
-                              unoptimized
-                            />
-                          ))}
+                          {team.pokemonSpecies.map((species, i) => {
+                            const sprite = getPokemonSprite(species);
+                            return (
+                              <Image
+                                key={i}
+                                src={sprite.url}
+                                alt={species}
+                                width={28}
+                                height={28}
+                                className="object-contain"
+                                style={
+                                  sprite.pixelated
+                                    ? { imageRendering: "pixelated" }
+                                    : undefined
+                                }
+                                unoptimized
+                              />
+                            );
+                          })}
                         </div>
                       </td>
                       <td className="px-2 py-1.5">
@@ -287,7 +317,7 @@ export function TeamsSubTable({
           <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
             Recent Results
           </p>
-          <RecentResults altId={altId} />
+          <RecentResults altId={altId} refreshKey={refreshKey} />
         </div>
       </div>
 
@@ -314,14 +344,14 @@ export function TeamsSubTable({
             View history
           </Button>
         </div>
-        {/* TODO: Replace deleteAltAction with archiveAltAction — alts should be archived, not deleted */}
+        {/* TODO: Replace deleteAltAction with archiveAltAction when archive system is built */}
         {!isMain && (
           <button
             className="text-muted-foreground cursor-pointer text-xs hover:underline disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onDeleteAlt}
             disabled={isDeletePending}
           >
-            Archive alt
+            Delete alt
           </button>
         )}
       </div>

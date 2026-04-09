@@ -5,21 +5,8 @@ jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({ push: jest.fn(), refresh: jest.fn() })),
 }));
 
-// --- @/components/auth/auth-provider ---
-const mockGetUserDisplayName = jest.fn(() => "Ash");
-jest.mock("@/components/auth/auth-provider", () => ({
-  useAuth: jest.fn(() => ({
-    user: {
-      id: "user-1",
-      user_metadata: { username: "ash_ketchum" },
-    },
-  })),
-  getUserDisplayName: (...args: unknown[]) => mockGetUserDisplayName(...args),
-}));
-
 // --- @/lib/supabase ---
 jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(),
   useSupabase: jest.fn(() => ({
     channel: jest.fn(() => ({
       on: jest.fn().mockReturnThis(),
@@ -29,12 +16,10 @@ jest.mock("@/lib/supabase", () => ({
   })),
 }));
 
-// --- @trainers/supabase ---
-jest.mock("@trainers/supabase", () => ({
-  getCurrentUserAlts: jest.fn(),
-  getAltsBulkStats: jest.fn(),
-  getPlayerRatingsBulk: jest.fn(),
-  getActiveMatch: jest.fn(),
+// --- @/components/dashboard/sidebar-helpers ---
+jest.mock("@/components/dashboard/sidebar-helpers", () => ({
+  DASHBOARD_ALT_COOKIE: "dashboard-alt",
+  COOKIE_MAX_AGE: 86400,
 }));
 
 // --- Mock child components to avoid deep dependency chains ---
@@ -125,82 +110,44 @@ jest.mock("lucide-react", () => ({
 
 // --- sonner ---
 jest.mock("sonner", () => ({
-  toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+    warning: jest.fn(),
+  },
 }));
 
 import React from "react";
-import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useSupabase } from "@/lib/supabase";
 import { HomeClient } from "../home-client";
 
-const mockUseSupabaseQuery = useSupabaseQuery as jest.MockedFunction<
-  typeof useSupabaseQuery
->;
-const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 const mockUseSupabase = useSupabase as jest.MockedFunction<typeof useSupabase>;
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
+const defaultAlts = [
+  { id: 5, username: "ash_alt", avatar_url: null, is_public: true },
+];
+
 /**
- * Sets up mock return values for all 5 useSupabaseQuery calls in HomeClient.
- * Order: alts, mainAltId, bulkStats, bulkRatings, activeMatch
+ * Default props matching the DashboardHomeClientProps interface.
+ * Override individual fields as needed per test.
  */
-function setupDefaultQueries({
-  alts = [{ id: 5, username: "ash_alt", user_id: "user-1" }],
-  mainAltId = 5 as number | null,
-  bulkStats = null as Record<
-    number,
-    { matchWins: number; matchLosses: number; tournamentCount: number }
-  > | null,
-  bulkRatings = null as Record<number, { rating: number | null }> | null,
-  activeMatch = null as {
-    tournamentName: string;
-    tournamentSlug: string;
-    roundNumber: number;
-    opponent: { username: string } | null;
-    table: number | null;
-  } | null,
-  altsLoading = false,
-  altsError = null as Error | null,
-} = {}) {
-  mockUseSupabaseQuery
-    // 1. alts
-    .mockReturnValueOnce({
-      data: alts,
-      isLoading: altsLoading,
-      error: altsError,
-      refetch: jest.fn(),
-    } as ReturnType<typeof useSupabaseQuery>)
-    // 2. mainAltId
-    .mockReturnValueOnce({
-      data: mainAltId,
-      isLoading: false,
-      error: null,
-      refetch: jest.fn(),
-    } as ReturnType<typeof useSupabaseQuery>)
-    // 3. bulkStats
-    .mockReturnValueOnce({
-      data: bulkStats,
-      isLoading: false,
-      error: null,
-      refetch: jest.fn(),
-    } as ReturnType<typeof useSupabaseQuery>)
-    // 4. bulkRatings
-    .mockReturnValueOnce({
-      data: bulkRatings,
-      isLoading: false,
-      error: null,
-      refetch: jest.fn(),
-    } as ReturnType<typeof useSupabaseQuery>)
-    // 5. activeMatch
-    .mockReturnValueOnce({
-      data: activeMatch,
-      isLoading: false,
-      error: null,
-      refetch: jest.fn(),
-    } as ReturnType<typeof useSupabaseQuery>);
+function getDefaultProps(
+  overrides: Partial<React.ComponentProps<typeof HomeClient>> = {}
+): React.ComponentProps<typeof HomeClient> {
+  return {
+    alts: defaultAlts,
+    mainAltId: 5,
+    initialBulkStats: undefined,
+    initialBulkRatings: undefined,
+    selectedAltUsername: null,
+    username: "ash_ketchum",
+    ...overrides,
+  };
 }
 
 function setupMockSupabase() {
@@ -221,94 +168,7 @@ function setupMockSupabase() {
 describe("HomeClient", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseAuth.mockReturnValue({
-      user: {
-        id: "user-1",
-        user_metadata: { username: "ash_ketchum" },
-      },
-    } as ReturnType<typeof useAuth>);
     setupMockSupabase();
-  });
-
-  // ---------------------------------------------------------------------------
-  // Stats row
-  // ---------------------------------------------------------------------------
-
-  describe("stats row", () => {
-    it("renders DashboardStats component", () => {
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByTestId("dashboard-stats")).toBeInTheDocument();
-    });
-
-    it("renders 0.0% win rate when no dashboard data", () => {
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByTestId("stat-winrate")).toHaveTextContent("0.0%");
-    });
-
-    it("renders — for rating when no rating data", () => {
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByTestId("stat-rating")).toHaveTextContent("—");
-    });
-
-    it("renders rating from bulkRatings", () => {
-      setupDefaultQueries({
-        bulkRatings: { 5: { rating: 1500 } },
-      });
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByTestId("stat-rating")).toHaveTextContent("1,500");
-    });
-
-    it("renders 'across all alts' sub-label always", () => {
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByTestId("stat-record-sub")).toHaveTextContent(
-        "across all alts"
-      );
-    });
-
-    it("renders aggregate stats even when alt is selected", () => {
-      setupDefaultQueries({
-        bulkStats: {
-          5: { matchWins: 10, matchLosses: 5, tournamentCount: 3 },
-        },
-      });
-      render(<HomeClient selectedAltUsername="ash_alt" />);
-      // Should show aggregate, not per-alt
-      expect(screen.getByTestId("stat-record-sub")).toHaveTextContent(
-        "across all alts"
-      );
-      expect(screen.getByTestId("stat-record")).toHaveTextContent("10-5");
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Live match bar
-  // ---------------------------------------------------------------------------
-
-  describe("live match bar", () => {
-    it("renders live match bar when activeMatch present", () => {
-      setupDefaultQueries({
-        activeMatch: {
-          tournamentName: "Pallet Cup",
-          tournamentSlug: "pallet-cup",
-          roundNumber: 2,
-          opponent: { username: "brock" },
-          table: 5,
-        },
-      });
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByTestId("live-match-bar")).toBeInTheDocument();
-      expect(screen.getByText("Pallet Cup")).toBeInTheDocument();
-    });
-
-    it("does not render live match bar when activeMatch is null", () => {
-      setupDefaultQueries({ activeMatch: null });
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.queryByTestId("live-match-bar")).not.toBeInTheDocument();
-    });
   });
 
   // ---------------------------------------------------------------------------
@@ -317,35 +177,18 @@ describe("HomeClient", () => {
 
   describe("alts table", () => {
     it("renders AltsTable component when alts exist", () => {
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
+      render(<HomeClient {...getDefaultProps()} />);
       expect(screen.getByTestId("alts-table")).toBeInTheDocument();
     });
 
     it("renders 'Your Alts' heading", () => {
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
+      render(<HomeClient {...getDefaultProps()} />);
       expect(screen.getByText("Your Alts")).toBeInTheDocument();
     });
 
     it("renders empty state when no alts", () => {
-      setupDefaultQueries({ alts: [] });
-      render(<HomeClient selectedAltUsername={null} />);
+      render(<HomeClient {...getDefaultProps({ alts: [] })} />);
       expect(screen.getByText("No alts yet")).toBeInTheDocument();
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Error state
-  // ---------------------------------------------------------------------------
-
-  describe("error state", () => {
-    it("renders error state when alts query fails", () => {
-      setupDefaultQueries({
-        altsError: new Error("DB connection failed"),
-      });
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText("Something went wrong")).toBeInTheDocument();
     });
   });
 
@@ -356,14 +199,16 @@ describe("HomeClient", () => {
   describe("temp username toast", () => {
     it("shows info toast for users with temp_ username", async () => {
       const { toast } = await import("sonner");
-      mockUseAuth.mockReturnValue({
-        user: {
-          id: "user-temp",
-          user_metadata: { username: "temp_abc123" },
-        },
-      } as ReturnType<typeof useAuth>);
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
+      render(<HomeClient {...getDefaultProps({ username: "temp_abc123" })} />);
+      expect(toast.info).toHaveBeenCalledWith(
+        expect.stringContaining("Welcome to trainers.gg"),
+        expect.any(Object)
+      );
+    });
+
+    it("shows info toast for users with user_ username", async () => {
+      const { toast } = await import("sonner");
+      render(<HomeClient {...getDefaultProps({ username: "user_xyz789" })} />);
       expect(toast.info).toHaveBeenCalledWith(
         expect.stringContaining("Welcome to trainers.gg"),
         expect.any(Object)
@@ -372,9 +217,36 @@ describe("HomeClient", () => {
 
     it("does not show toast for users with regular usernames", async () => {
       const { toast } = await import("sonner");
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
+      render(<HomeClient {...getDefaultProps()} />);
       expect(toast.info).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Realtime subscription
+  // ---------------------------------------------------------------------------
+
+  describe("realtime subscription", () => {
+    it("subscribes to realtime channel when mainAltId is provided", () => {
+      render(<HomeClient {...getDefaultProps({ mainAltId: 5 })} />);
+      const supabase = mockUseSupabase();
+      expect(supabase.channel).toHaveBeenCalled();
+    });
+
+    it("does not subscribe when mainAltId is null", () => {
+      const mockChannel = {
+        on: jest.fn().mockReturnThis(),
+        subscribe: jest.fn().mockReturnThis(),
+        unsubscribe: jest.fn(),
+      };
+      const channelFn = jest.fn(() => mockChannel);
+      mockUseSupabase.mockReturnValue({
+        channel: channelFn,
+      } as ReturnType<typeof useSupabase>);
+
+      render(<HomeClient {...getDefaultProps({ mainAltId: null })} />);
+      // Channel should not be created when there's no main alt
+      expect(channelFn).not.toHaveBeenCalled();
     });
   });
 });
