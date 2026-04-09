@@ -142,3 +142,10 @@ export {
   getFormatSpeedBenchmarks,
   compareSpeedTier,
 } from "./speed-tiers";
+
+// Species search index and filtering
+export {
+  type SpeciesSearchEntry,
+  buildSpeciesSearchIndex,
+  searchSpecies,
+} from "./species-search";
