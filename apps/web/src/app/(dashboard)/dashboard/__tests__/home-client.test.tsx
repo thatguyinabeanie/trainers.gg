@@ -34,7 +34,6 @@ jest.mock("@trainers/supabase", () => ({
   getCurrentUserAlts: jest.fn(),
   getAltsBulkStats: jest.fn(),
   getPlayerRatingsBulk: jest.fn(),
-  getMyDashboardData: jest.fn(),
   getActiveMatch: jest.fn(),
 }));
 
@@ -145,8 +144,8 @@ const mockUseSupabase = useSupabase as jest.MockedFunction<typeof useSupabase>;
 // =============================================================================
 
 /**
- * Sets up mock return values for all 6 useSupabaseQuery calls in HomeClient.
- * Order: alts, mainAltId, bulkStats, bulkRatings, dashboardData, activeMatch
+ * Sets up mock return values for all 5 useSupabaseQuery calls in HomeClient.
+ * Order: alts, mainAltId, bulkStats, bulkRatings, activeMatch
  */
 function setupDefaultQueries({
   alts = [{ id: 5, username: "ash_alt", user_id: "user-1" }],
@@ -156,20 +155,6 @@ function setupDefaultQueries({
     { matchWins: number; matchLosses: number; tournamentCount: number }
   > | null,
   bulkRatings = null as Record<number, { rating: number | null }> | null,
-  dashboardData = null as {
-    stats: {
-      winRate: number;
-      winRateChange: number;
-      currentRating: number;
-      ratingRank: number;
-      activeTournaments: number;
-      totalEnrolled: number;
-      championPoints: number;
-    };
-    recentActivity: Array<{ id: string; result: string; date: number }>;
-    myTournaments: unknown[];
-    achievements: unknown[];
-  } | null,
   activeMatch = null as {
     tournamentName: string;
     tournamentSlug: string;
@@ -209,14 +194,7 @@ function setupDefaultQueries({
       error: null,
       refetch: jest.fn(),
     } as ReturnType<typeof useSupabaseQuery>)
-    // 5. dashboardData
-    .mockReturnValueOnce({
-      data: dashboardData,
-      isLoading: false,
-      error: null,
-      refetch: jest.fn(),
-    } as ReturnType<typeof useSupabaseQuery>)
-    // 6. activeMatch
+    // 5. activeMatch
     .mockReturnValueOnce({
       data: activeMatch,
       isLoading: false,
@@ -275,42 +253,34 @@ describe("HomeClient", () => {
       expect(screen.getByTestId("stat-rating")).toHaveTextContent("—");
     });
 
-    it("renders rating from dashboardData when alt is selected", () => {
+    it("renders rating from bulkRatings", () => {
       setupDefaultQueries({
-        alts: [{ id: 5, username: "ash_alt", user_id: "user-1" }],
-        dashboardData: {
-          stats: {
-            winRate: 60,
-            winRateChange: 5,
-            currentRating: 1500,
-            ratingRank: 3,
-            activeTournaments: 1,
-            totalEnrolled: 4,
-            championPoints: 100,
-          },
-          recentActivity: [],
-          myTournaments: [],
-          achievements: [],
-        },
+        bulkRatings: { 5: { rating: 1500 } },
       });
-      render(<HomeClient selectedAltUsername="ash_alt" />);
+      render(<HomeClient selectedAltUsername={null} />);
       expect(screen.getByTestId("stat-rating")).toHaveTextContent("1,500");
     });
 
-    it("renders 'across all alts' sub-label when no alt selected", () => {
+    it("renders 'across all alts' sub-label always", () => {
       setupDefaultQueries();
       render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByTestId("stat-winrate-sub")).toHaveTextContent(
+      expect(screen.getByTestId("stat-record-sub")).toHaveTextContent(
         "across all alts"
       );
     });
 
-    it("renders 'as <alt>' sub-label when alt is selected", () => {
-      setupDefaultQueries();
+    it("renders aggregate stats even when alt is selected", () => {
+      setupDefaultQueries({
+        bulkStats: {
+          5: { matchWins: 10, matchLosses: 5, tournamentCount: 3 },
+        },
+      });
       render(<HomeClient selectedAltUsername="ash_alt" />);
+      // Should show aggregate, not per-alt
       expect(screen.getByTestId("stat-record-sub")).toHaveTextContent(
-        "as ash_alt"
+        "across all alts"
       );
+      expect(screen.getByTestId("stat-record")).toHaveTextContent("10-5");
     });
   });
 

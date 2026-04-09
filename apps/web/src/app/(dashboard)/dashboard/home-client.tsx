@@ -9,7 +9,6 @@ import {
   getCurrentUserAlts,
   getAltsBulkStats,
   getPlayerRatingsBulk,
-  getMyDashboardData,
   getActiveMatch,
 } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
@@ -89,23 +88,6 @@ export function HomeClient({
   const { data: bulkRatings } = useSupabaseQuery(
     (client) => getPlayerRatingsBulk(client, altIds, "overall"),
     ["altsBulkRatings", ...altIds]
-  );
-
-  // Resolve the selected alt's database ID for filtered queries
-  const selectedAltId = selectedAlt
-    ? (alts?.find((a) => a.username === selectedAlt)?.id ?? null)
-    : null;
-
-  // When an alt is selected, use that alt's ID; otherwise fall back to main alt
-  const dashboardAltId = selectedAltId ?? mainAltId;
-
-  // Per-alt dashboard data (stats + recent activity)
-  const { data: dashboardData } = useSupabaseQuery(
-    (client) =>
-      dashboardAltId
-        ? getMyDashboardData(client, dashboardAltId)
-        : Promise.resolve(null),
-    [dashboardAltId, refreshKey]
   );
 
   // Active match (always based on main alt)
@@ -241,25 +223,8 @@ export function HomeClient({
     refetchAlts();
   }
 
-  // ── Stats computation ───────────────────────────────────────────────────
+  // ── Stats computation (always aggregate across all alts) ─────────────
 
-  // Per-alt mode: use dashboardData when an alt is selected (or default alt)
-  const stats = dashboardData?.stats ?? {
-    winRate: 0,
-    winRateChange: 0,
-    currentRating: 0,
-    ratingRank: 0,
-    activeTournaments: 0,
-    totalEnrolled: 0,
-    championPoints: 0,
-  };
-
-  // Compute win/loss record from recentActivity
-  const recentWins =
-    dashboardData?.recentActivity.filter((a) => a.result === "won").length ?? 0;
-  const recentTotal = dashboardData?.recentActivity.length ?? 0;
-
-  // Aggregate mode: compute totals from bulkStats across all alts
   const aggregateWins = bulkStats
     ? Object.values(bulkStats).reduce((sum, s) => sum + s.matchWins, 0)
     : 0;
@@ -270,74 +235,31 @@ export function HomeClient({
   const aggregateWinRate =
     aggregateTotal > 0 ? (aggregateWins / aggregateTotal) * 100 : 0;
 
-  // Find best rating across all alts
   const bestRating = bulkRatings
     ? Math.max(...Object.values(bulkRatings).map((r) => r.rating ?? 0), 0)
     : 0;
 
-  // Determine which stats to show based on alt selection
-  const isAltSelected = selectedAlt !== null;
-
-  const winRateStr = isAltSelected
-    ? stats.winRate > 0
-      ? `${stats.winRate.toFixed(1)}%`
-      : "0.0%"
-    : aggregateTotal > 0
-      ? `${aggregateWinRate.toFixed(1)}%`
-      : "0.0%";
-
-  const winRateSub = isAltSelected
-    ? stats.winRateChange !== 0
-      ? `${stats.winRateChange > 0 ? "+" : ""}${stats.winRateChange.toFixed(1)}% this month`
-      : `as ${selectedAlt}`
-    : aggregateTotal > 0
-      ? `${aggregateTotal} games`
-      : "across all alts";
-
-  const ratingStr = isAltSelected
-    ? stats.currentRating > 0
-      ? stats.currentRating.toLocaleString()
-      : "—"
-    : bestRating > 0
-      ? bestRating.toLocaleString()
-      : "—";
-
-  const ratingSub = isAltSelected
-    ? stats.ratingRank > 0
-      ? `Rank #${stats.ratingRank}`
-      : `as ${selectedAlt}`
-    : bestRating > 0
-      ? "best across alts"
-      : "across all alts";
-
-  const recordStr = isAltSelected
-    ? recentTotal > 0
-      ? `${recentWins}-${recentTotal - recentWins}`
-      : "0-0"
-    : aggregateTotal > 0
-      ? `${aggregateWins}-${aggregateLosses}`
-      : "0-0";
-
-  const recordSub = isAltSelected ? `as ${selectedAlt}` : "across all alts";
-
-  // Aggregate tournament count from bulkStats
   const aggregateTournaments = bulkStats
     ? Object.values(bulkStats).reduce((sum, s) => sum + s.tournamentCount, 0)
     : 0;
 
-  const tournamentsStr = isAltSelected
-    ? stats.totalEnrolled > 0
-      ? `${stats.totalEnrolled}`
-      : "0"
-    : `${aggregateTournaments}`;
+  const altCount = (alts ?? []).length;
 
-  const tournamentsSub = isAltSelected
-    ? stats.activeTournaments > 0
-      ? `${stats.activeTournaments} active`
-      : `as ${selectedAlt}`
-    : `${(alts ?? []).length} alt${(alts ?? []).length !== 1 ? "s" : ""}`;
+  const winRateStr =
+    aggregateTotal > 0 ? `${aggregateWinRate.toFixed(1)}%` : "0.0%";
+  const winRateSub =
+    aggregateTotal > 0 ? `${aggregateTotal} games` : "across all alts";
 
-  const tournamentsSubAccent = isAltSelected && stats.activeTournaments > 0;
+  const ratingStr = bestRating > 0 ? bestRating.toLocaleString() : "—";
+  const ratingSub = bestRating > 0 ? "best across alts" : "across all alts";
+
+  const recordStr =
+    aggregateTotal > 0 ? `${aggregateWins}-${aggregateLosses}` : "0-0";
+  const recordSub = "across all alts";
+
+  const tournamentsStr = `${aggregateTournaments}`;
+  const tournamentsSub = `${altCount} alt${altCount !== 1 ? "s" : ""}`;
+  const tournamentsSubAccent = false;
 
   // ── Loading state ───────────────────────────────────────────────────────
   if (altsLoading) {
