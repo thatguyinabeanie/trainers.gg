@@ -2,7 +2,7 @@
  * Cache Tags and Utilities
  *
  * Provides cache tag constants and helper functions for Next.js on-demand revalidation.
- * Use with `unstable_cache` for data fetching and `revalidateTag` in server actions.
+ * Use with `unstable_cache` for data fetching and `updateTag` in server actions.
  *
  * @example
  * ```ts
@@ -17,10 +17,10 @@
  * );
  *
  * // In a server action
- * import { revalidateTag } from "next/cache";
+ * import { updateTag } from "next/cache";
  * import { CacheTags } from "@/lib/cache";
  *
- * revalidateTag(CacheTags.TOURNAMENTS_LIST);
+ * updateTag(CacheTags.TOURNAMENTS_LIST);
  * ```
  */
 

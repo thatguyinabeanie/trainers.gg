@@ -32,7 +32,7 @@ function spriteUrl(species: string): string {
 function TeamActions({ altUsername }: { altUsername: string }) {
   return (
     <div className="flex justify-end gap-1">
-      {/* TODO: link to builder page when available */}
+      {/* TODO: replace with team builder link when builder feature ships */}
       <Tooltip>
         <TooltipTrigger render={<span />}>
           <Link
@@ -86,14 +86,22 @@ function RecentResults({
 }) {
   const queryFn = (client: TypedSupabaseClient) =>
     getPlayerTournamentHistory(client, [altId]);
-  const { data: results, isLoading } = useSupabaseQuery(queryFn, [
-    "altRecentResults",
-    altId,
-    refreshKey,
-  ]);
+  const {
+    data: results,
+    isLoading,
+    error: resultsError,
+  } = useSupabaseQuery(queryFn, ["altRecentResults", altId, refreshKey]);
 
   // Show at most 3 recent results
   const recentResults = (results ?? []).slice(0, 3);
+
+  if (resultsError) {
+    return (
+      <p className="text-destructive py-4 text-center text-xs">
+        Failed to load results
+      </p>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -211,11 +219,11 @@ export function TeamsSubTable({
 }: TeamsSubTableProps) {
   const teamsQueryFn = (client: TypedSupabaseClient) =>
     getTeamsForAlt(client, altId);
-  const { data: teams, isLoading } = useSupabaseQuery(teamsQueryFn, [
-    "altTeams",
-    altId,
-    refreshKey,
-  ]);
+  const {
+    data: teams,
+    isLoading,
+    error: teamsError,
+  } = useSupabaseQuery(teamsQueryFn, ["altTeams", altId, refreshKey]);
 
   return (
     <div className="rounded-lg">
@@ -240,7 +248,16 @@ export function TeamsSubTable({
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
+                {teamsError ? (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="text-destructive px-2 py-4 text-center text-xs"
+                    >
+                      Failed to load teams
+                    </td>
+                  </tr>
+                ) : isLoading ? (
                   <tr>
                     <td colSpan={3} className="px-2 py-4 text-center">
                       <Loader2 className="text-muted-foreground mx-auto size-4 animate-spin" />

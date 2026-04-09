@@ -15,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-import { type ActiveMatch } from "./components/live-match-bar";
 import { AltsTable } from "./components/alts-table";
 import { CreateAltForm } from "./components/create-alt-form";
 
@@ -33,7 +32,6 @@ interface DashboardHomeClientProps {
   mainAltId: number | null;
   initialBulkStats: Record<number, AltStats> | undefined;
   initialBulkRatings: Record<number, PlayerRating> | undefined;
-  initialActiveMatch: ActiveMatch | null;
   selectedAltUsername: string | null;
   username: string;
 }
@@ -47,7 +45,6 @@ export function HomeClient({
   mainAltId,
   initialBulkStats,
   initialBulkRatings,
-  initialActiveMatch: _initialActiveMatch,
   selectedAltUsername,
   username,
 }: DashboardHomeClientProps) {
@@ -74,8 +71,9 @@ export function HomeClient({
   useEffect(() => {
     if (!mainAltId) return;
 
-    // router.refresh() re-runs the server component, which re-fetches
-    // active match (uncached) and stats (cache-invalidated)
+    // router.refresh() re-runs the server component, which re-fetches the active match
+    // (uncached). Cached stats/ratings update only after a server action calls
+    // invalidateDashboardCaches().
     function triggerRefresh() {
       if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
       refreshTimeoutRef.current = setTimeout(() => {
@@ -116,6 +114,10 @@ export function HomeClient({
               "(no error — likely a local dev WebSocket issue)"
             );
           }
+          toast.warning(
+            "Live updates disconnected. Refresh the page to see the latest data.",
+            { duration: 10000 }
+          );
         }
       });
 
@@ -147,7 +149,6 @@ export function HomeClient({
     } else {
       document.cookie = `${DASHBOARD_ALT_COOKIE}=; path=/; max-age=0; samesite=lax`;
     }
-    // Refresh to sync sidebar alt switcher
     router.refresh();
   }
 

@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -21,9 +20,9 @@ import { CacheTags } from "@/lib/cache";
 import { DASHBOARD_ALT_COOKIE } from "@/components/dashboard/sidebar-helpers";
 
 import { HomeClient } from "./home-client";
-import HomeLoading from "./home-loading";
 import { LiveMatchBar, type ActiveMatch } from "./components/live-match-bar";
 import { DashboardStats } from "./components/dashboard-stats";
+import { computeStats } from "./compute-stats";
 
 // On-demand revalidation only — no time-based revalidation
 export const revalidate = false;
@@ -63,63 +62,6 @@ function getCachedBulkRatings(altIds: number[]) {
 }
 
 // =============================================================================
-// Stats Computation
-// =============================================================================
-
-interface ComputedStats {
-  winRate: string;
-  winRateSub: string;
-  rating: string;
-  ratingSub: string;
-  record: string;
-  recordSub: string;
-  tournaments: string;
-  tournamentsSub: string;
-  tournamentsSubAccent: boolean;
-}
-
-/**
- * Compute aggregated display strings from bulk stats and ratings.
- * Extracted here so the server component renders DashboardStats directly.
- */
-function computeStats(
-  bulkStats: Record<number, AltStats> | undefined,
-  bulkRatings: Record<number, PlayerRating> | undefined,
-  altCount: number
-): ComputedStats {
-  const aggregateWins = bulkStats
-    ? Object.values(bulkStats).reduce((sum, s) => sum + s.matchWins, 0)
-    : 0;
-  const aggregateLosses = bulkStats
-    ? Object.values(bulkStats).reduce((sum, s) => sum + s.matchLosses, 0)
-    : 0;
-  const aggregateTotal = aggregateWins + aggregateLosses;
-  const aggregateWinRate =
-    aggregateTotal > 0 ? (aggregateWins / aggregateTotal) * 100 : 0;
-
-  const bestRating = bulkRatings
-    ? Math.max(...Object.values(bulkRatings).map((r) => r.rating ?? 0), 0)
-    : 0;
-
-  const aggregateTournaments = bulkStats
-    ? Object.values(bulkStats).reduce((sum, s) => sum + s.tournamentCount, 0)
-    : 0;
-
-  return {
-    winRate: aggregateTotal > 0 ? `${aggregateWinRate.toFixed(1)}%` : "0.0%",
-    winRateSub:
-      aggregateTotal > 0 ? `${aggregateTotal} games` : "across all alts",
-    rating: bestRating > 0 ? bestRating.toLocaleString() : "—",
-    ratingSub: bestRating > 0 ? "best across alts" : "across all alts",
-    record: aggregateTotal > 0 ? `${aggregateWins}-${aggregateLosses}` : "0-0",
-    recordSub: "across all alts",
-    tournaments: `${aggregateTournaments}`,
-    tournamentsSub: `${altCount} alt${altCount !== 1 ? "s" : ""}`,
-    tournamentsSubAccent: false,
-  };
-}
-
-// =============================================================================
 // Page Component (Server Component)
 // =============================================================================
 
@@ -137,7 +79,13 @@ export default async function DashboardHomePage() {
 
   // Fetch user's alts (auth-required — not cached)
   const supabase = await createClientReadOnly();
-  const alts = await getCurrentUserAlts(supabase);
+  let alts: Awaited<ReturnType<typeof getCurrentUserAlts>>;
+  try {
+    alts = await getCurrentUserAlts(supabase);
+  } catch (err) {
+    console.error("[DashboardHomePage] Failed to load alts:", err);
+    alts = [];
+  }
 
   // Fetch main_alt_id from users table (auth-required — not cached)
   const { data: userRow, error: userRowError } = await supabase
@@ -157,13 +105,13 @@ export default async function DashboardHomePage() {
   // Extract alt IDs for bulk queries
   const altIds = alts.map((a) => a.id);
 
-  // Parallel fetch: cached bulk stats/ratings + active match (public data)
+  // Parallel fetch: cached bulk stats/ratings + uncached active match (all public data)
   let bulkStats: Record<number, AltStats> | undefined;
   let bulkRatings: Record<number, PlayerRating> | undefined;
   let activeMatch: ActiveMatch | null = null;
 
   if (altIds.length > 0) {
-    const [statsResult, ratingsResult, matchResult] = await Promise.all([
+    const [statsResult, ratingsResult, matchResult] = await Promise.allSettled([
       getCachedBulkStats(altIds),
       getCachedBulkRatings(altIds),
       mainAltId
@@ -173,9 +121,32 @@ export default async function DashboardHomePage() {
           })()
         : Promise.resolve(null),
     ]);
-    bulkStats = statsResult;
-    bulkRatings = ratingsResult;
-    activeMatch = matchResult;
+
+    bulkStats =
+      statsResult.status === "fulfilled" ? statsResult.value : undefined;
+    if (statsResult.status === "rejected") {
+      console.error(
+        "[DashboardHomePage] Failed to load bulk stats:",
+        statsResult.reason
+      );
+    }
+
+    bulkRatings =
+      ratingsResult.status === "fulfilled" ? ratingsResult.value : undefined;
+    if (ratingsResult.status === "rejected") {
+      console.error(
+        "[DashboardHomePage] Failed to load bulk ratings:",
+        ratingsResult.reason
+      );
+    }
+
+    activeMatch = matchResult.status === "fulfilled" ? matchResult.value : null;
+    if (matchResult.status === "rejected") {
+      console.error(
+        "[DashboardHomePage] Failed to load active match:",
+        matchResult.reason
+      );
+    }
   }
 
   // Compute stats for server-rendered DashboardStats
@@ -200,41 +171,38 @@ export default async function DashboardHomePage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <Suspense fallback={<HomeLoading />}>
-        <div className="space-y-6">
-          {/* Live match bar — server-rendered */}
-          {activeMatch && <LiveMatchBar match={activeMatch} />}
+      <div className="space-y-6">
+        {/* Live match bar — server-rendered */}
+        {activeMatch && <LiveMatchBar match={activeMatch} />}
 
-          {/* Stats row — server-rendered */}
-          <DashboardStats
-            winRate={stats.winRate}
-            winRateSub={stats.winRateSub}
-            rating={stats.rating}
-            ratingSub={stats.ratingSub}
-            record={stats.record}
-            recordSub={stats.recordSub}
-            tournaments={stats.tournaments}
-            tournamentsSub={stats.tournamentsSub}
-            tournamentsSubAccent={stats.tournamentsSubAccent}
-          />
+        {/* Stats row — server-rendered */}
+        <DashboardStats
+          winRate={stats.winRate}
+          winRateSub={stats.winRateSub}
+          rating={stats.rating}
+          ratingSub={stats.ratingSub}
+          record={stats.record}
+          recordSub={stats.recordSub}
+          tournaments={stats.tournaments}
+          tournamentsSub={stats.tournamentsSub}
+          tournamentsSubAccent={stats.tournamentsSubAccent}
+        />
 
-          {/* Client component — handles interactivity only */}
-          <HomeClient
-            alts={alts.map((a) => ({
-              id: a.id,
-              username: a.username,
-              avatar_url: a.avatar_url,
-              is_public: a.is_public,
-            }))}
-            mainAltId={mainAltId}
-            initialBulkStats={bulkStats}
-            initialBulkRatings={bulkRatings}
-            initialActiveMatch={activeMatch}
-            selectedAltUsername={selectedAltUsername}
-            username={username}
-          />
-        </div>
-      </Suspense>
+        {/* Client component — handles interactivity only */}
+        <HomeClient
+          alts={alts.map((a) => ({
+            id: a.id,
+            username: a.username,
+            avatar_url: a.avatar_url,
+            is_public: a.is_public,
+          }))}
+          mainAltId={mainAltId}
+          initialBulkStats={bulkStats}
+          initialBulkRatings={bulkRatings}
+          selectedAltUsername={selectedAltUsername}
+          username={username}
+        />
+      </div>
     </div>
   );
 }

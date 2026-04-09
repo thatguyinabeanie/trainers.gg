@@ -110,7 +110,12 @@ jest.mock("lucide-react", () => ({
 
 // --- sonner ---
 jest.mock("sonner", () => ({
-  toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+    warning: jest.fn(),
+  },
 }));
 
 import React from "react";
@@ -139,7 +144,6 @@ function getDefaultProps(
     mainAltId: 5,
     initialBulkStats: undefined,
     initialBulkRatings: undefined,
-    initialActiveMatch: null,
     selectedAltUsername: null,
     username: "ash_ketchum",
     ...overrides,
