@@ -135,3 +135,10 @@ export { FEATURED_POKEMON } from "./featured-pokemon";
 
 // Nature bump calculator
 export { calculateNatureBumps } from "./nature-bumps";
+
+// Speed tier benchmarks and comparison
+export {
+  type SpeedBenchmark,
+  getFormatSpeedBenchmarks,
+  compareSpeedTier,
+} from "./speed-tiers";
