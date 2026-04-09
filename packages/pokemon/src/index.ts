@@ -132,3 +132,6 @@ export {
 
 // Featured Pokemon for avatar picker
 export { FEATURED_POKEMON } from "./featured-pokemon";
+
+// Nature bump calculator
+export { calculateNatureBumps } from "./nature-bumps";
