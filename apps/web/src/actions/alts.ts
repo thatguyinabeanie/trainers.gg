@@ -16,7 +16,10 @@ import {
   setMainAlt,
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
-import { invalidatePlayerProfileCaches } from "@/lib/cache-invalidation";
+import {
+  invalidatePlayerProfileCaches,
+  invalidateDashboardCaches,
+} from "@/lib/cache-invalidation";
 import { withAction } from "./utils";
 
 /**
@@ -67,6 +70,7 @@ export async function createAltAction(data: {
       username: validated.username,
     });
     await invalidatePlayerCache(supabase);
+    invalidateDashboardCaches();
     return { id: alt.id };
   }, "Failed to create alt");
 }
@@ -100,6 +104,7 @@ export async function deleteAltAction(
     const supabase = await createClient();
     await deleteAlt(supabase, validatedId);
     await invalidatePlayerCache(supabase);
+    invalidateDashboardCaches();
     return { success: true as const };
   }, "Failed to delete alt");
 }
