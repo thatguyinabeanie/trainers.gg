@@ -550,6 +550,74 @@ export type Database = {
           },
         ]
       }
+      data_imports: {
+        Row: {
+          event_tier: string | null
+          external_ref: string | null
+          format: string
+          id: number
+          imported_at: string | null
+          source: string
+        }
+        Insert: {
+          event_tier?: string | null
+          external_ref?: string | null
+          format: string
+          id?: never
+          imported_at?: string | null
+          source: string
+        }
+        Update: {
+          event_tier?: string | null
+          external_ref?: string | null
+          format?: string
+          id?: never
+          imported_at?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
+      external_players: {
+        Row: {
+          created_at: string | null
+          display_name: string
+          id: number
+          linked_alt_id: number | null
+          linked_at: string | null
+          linked_by: string | null
+          source: string
+          source_player_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_name: string
+          id?: never
+          linked_alt_id?: number | null
+          linked_at?: string | null
+          linked_by?: string | null
+          source: string
+          source_player_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string
+          id?: never
+          linked_alt_id?: number | null
+          linked_at?: string | null
+          linked_by?: string | null
+          source?: string
+          source_player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_players_linked_alt_id_fkey"
+            columns: ["linked_alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_flags: {
         Row: {
           created_at: string
@@ -666,6 +734,36 @@ export type Database = {
           },
         ]
       }
+      format_meta_stats: {
+        Row: {
+          computed_at: string | null
+          format: string
+          id: number
+          period_end: string
+          period_start: string
+          total_teams: number
+          total_tournaments: number
+        }
+        Insert: {
+          computed_at?: string | null
+          format: string
+          id?: never
+          period_end: string
+          period_start: string
+          total_teams: number
+          total_tournaments: number
+        }
+        Update: {
+          computed_at?: string | null
+          format?: string
+          id?: never
+          period_end?: string
+          period_start?: string
+          total_teams?: number
+          total_tournaments?: number
+        }
+        Relationships: []
+      }
       group_roles: {
         Row: {
           created_at: string | null
@@ -778,6 +876,93 @@ export type Database = {
             columns: ["target_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      imported_team_sheets: {
+        Row: {
+          ability: string
+          created_at: string | null
+          ev_spread: string | null
+          external_player_id: number | null
+          format: string
+          held_item: string | null
+          id: number
+          import_id: number
+          iv_spread: string | null
+          move1: string | null
+          move2: string | null
+          move3: string | null
+          move4: string | null
+          nature: string | null
+          placement_tier: string | null
+          player_count: number | null
+          position: number
+          species: string
+          tera_type: string | null
+          tournament_date: string | null
+          tournament_name: string
+        }
+        Insert: {
+          ability: string
+          created_at?: string | null
+          ev_spread?: string | null
+          external_player_id?: number | null
+          format: string
+          held_item?: string | null
+          id?: never
+          import_id: number
+          iv_spread?: string | null
+          move1?: string | null
+          move2?: string | null
+          move3?: string | null
+          move4?: string | null
+          nature?: string | null
+          placement_tier?: string | null
+          player_count?: number | null
+          position: number
+          species: string
+          tera_type?: string | null
+          tournament_date?: string | null
+          tournament_name: string
+        }
+        Update: {
+          ability?: string
+          created_at?: string | null
+          ev_spread?: string | null
+          external_player_id?: number | null
+          format?: string
+          held_item?: string | null
+          id?: never
+          import_id?: number
+          iv_spread?: string | null
+          move1?: string | null
+          move2?: string | null
+          move3?: string | null
+          move4?: string | null
+          nature?: string | null
+          placement_tier?: string | null
+          player_count?: number | null
+          position?: number
+          species?: string
+          tera_type?: string | null
+          tournament_date?: string | null
+          tournament_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imported_team_sheets_external_player_id_fkey"
+            columns: ["external_player_id"]
+            isOneToOne: false
+            referencedRelation: "external_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imported_team_sheets_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "data_imports"
             referencedColumns: ["id"]
           },
         ]
@@ -1144,6 +1329,7 @@ export type Database = {
           move4: string | null
           nature: string
           nickname: string | null
+          notes: string | null
           species: string
           tera_type: string | null
         }
@@ -1174,6 +1360,7 @@ export type Database = {
           move4?: string | null
           nature: string
           nickname?: string | null
+          notes?: string | null
           species: string
           tera_type?: string | null
         }
@@ -1204,10 +1391,105 @@ export type Database = {
           move4?: string | null
           nature?: string
           nickname?: string | null
+          notes?: string | null
           species?: string
           tera_type?: string | null
         }
         Relationships: []
+      }
+      pokemon_detail_stats: {
+        Row: {
+          abilities: Json | null
+          id: number
+          items: Json | null
+          meta_id: number
+          moves: Json | null
+          species: string
+          spreads: Json | null
+          teammates: Json | null
+          tera_types: Json | null
+        }
+        Insert: {
+          abilities?: Json | null
+          id?: never
+          items?: Json | null
+          meta_id: number
+          moves?: Json | null
+          species: string
+          spreads?: Json | null
+          teammates?: Json | null
+          tera_types?: Json | null
+        }
+        Update: {
+          abilities?: Json | null
+          id?: never
+          items?: Json | null
+          meta_id?: number
+          moves?: Json | null
+          species?: string
+          spreads?: Json | null
+          teammates?: Json | null
+          tera_types?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pokemon_detail_stats_meta_id_fkey"
+            columns: ["meta_id"]
+            isOneToOne: false
+            referencedRelation: "format_meta_stats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pokemon_usage_stats: {
+        Row: {
+          conversion_rate: number | null
+          id: number
+          meta_id: number
+          rank: number
+          sample_size: number
+          species: string
+          usage_change_30d: number | null
+          usage_change_7d: number | null
+          usage_pct: number
+          usage_pct_top_cut: number | null
+          usage_pct_top8: number | null
+        }
+        Insert: {
+          conversion_rate?: number | null
+          id?: never
+          meta_id: number
+          rank: number
+          sample_size: number
+          species: string
+          usage_change_30d?: number | null
+          usage_change_7d?: number | null
+          usage_pct: number
+          usage_pct_top_cut?: number | null
+          usage_pct_top8?: number | null
+        }
+        Update: {
+          conversion_rate?: number | null
+          id?: never
+          meta_id?: number
+          rank?: number
+          sample_size?: number
+          species?: string
+          usage_change_30d?: number | null
+          usage_change_7d?: number | null
+          usage_pct?: number
+          usage_pct_top_cut?: number | null
+          usage_pct_top8?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pokemon_usage_stats_meta_id_fkey"
+            columns: ["meta_id"]
+            isOneToOne: false
+            referencedRelation: "format_meta_stats"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_limits: {
         Row: {
@@ -1432,11 +1714,13 @@ export type Database = {
           created_at: string | null
           created_by: number
           description: string | null
+          format: string | null
           format_legal: boolean | null
           id: number
           is_public: boolean | null
           name: string
           notes: string | null
+          parent_team_id: number | null
           tags: string[] | null
           updated_at: string | null
         }
@@ -1444,11 +1728,13 @@ export type Database = {
           created_at?: string | null
           created_by: number
           description?: string | null
+          format?: string | null
           format_legal?: boolean | null
           id?: never
           is_public?: boolean | null
           name: string
           notes?: string | null
+          parent_team_id?: number | null
           tags?: string[] | null
           updated_at?: string | null
         }
@@ -1456,11 +1742,13 @@ export type Database = {
           created_at?: string | null
           created_by?: number
           description?: string | null
+          format?: string | null
           format_legal?: boolean | null
           id?: never
           is_public?: boolean | null
           name?: string
           notes?: string | null
+          parent_team_id?: number | null
           tags?: string[] | null
           updated_at?: string | null
         }
@@ -1470,6 +1758,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teams_parent_team_id_fkey"
+            columns: ["parent_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
