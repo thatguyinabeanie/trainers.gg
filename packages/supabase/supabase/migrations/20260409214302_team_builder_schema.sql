@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS external_players (
 ALTER TABLE external_players ENABLE ROW LEVEL SECURITY;
 
 -- Readable by all authenticated and anonymous users
+DROP POLICY IF EXISTS "external_players_read" ON external_players;
 CREATE POLICY "external_players_read"
   ON external_players FOR SELECT
   USING (true);
@@ -49,6 +50,7 @@ CREATE TABLE IF NOT EXISTS data_imports (
 ALTER TABLE data_imports ENABLE ROW LEVEL SECURITY;
 
 -- Readable by all
+DROP POLICY IF EXISTS "data_imports_read" ON data_imports;
 CREATE POLICY "data_imports_read"
   ON data_imports FOR SELECT
   USING (true);
@@ -86,6 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_imported_team_sheets_import_id
 ALTER TABLE imported_team_sheets ENABLE ROW LEVEL SECURITY;
 
 -- Readable by all
+DROP POLICY IF EXISTS "imported_team_sheets_read" ON imported_team_sheets;
 CREATE POLICY "imported_team_sheets_read"
   ON imported_team_sheets FOR SELECT
   USING (true);
@@ -106,6 +109,7 @@ CREATE TABLE IF NOT EXISTS format_meta_stats (
 
 ALTER TABLE format_meta_stats ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "format_meta_stats_read" ON format_meta_stats;
 CREATE POLICY "format_meta_stats_read"
   ON format_meta_stats FOR SELECT
   USING (true);
@@ -135,6 +139,7 @@ CREATE INDEX IF NOT EXISTS idx_pokemon_usage_stats_species
 
 ALTER TABLE pokemon_usage_stats ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "pokemon_usage_stats_read" ON pokemon_usage_stats;
 CREATE POLICY "pokemon_usage_stats_read"
   ON pokemon_usage_stats FOR SELECT
   USING (true);
@@ -160,6 +165,7 @@ CREATE INDEX IF NOT EXISTS idx_pokemon_detail_stats_meta_species
 
 ALTER TABLE pokemon_detail_stats ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "pokemon_detail_stats_read" ON pokemon_detail_stats;
 CREATE POLICY "pokemon_detail_stats_read"
   ON pokemon_detail_stats FOR SELECT
   USING (true);
