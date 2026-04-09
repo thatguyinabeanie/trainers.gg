@@ -48,6 +48,7 @@ Path-scoped rules in `.claude/rules/` load automatically when working with match
 | `shadcn-ui-primitives.md`  | shadcn/ui component files (`apps/web/src/components/ui/**`)                   |
 | `web-ui-catalog.md`        | All web app TS/TSX files (`apps/web/src/**/*.{ts,tsx}`)                       |
 | `web-hooks-and-helpers.md` | All web app TS/TSX files (`apps/web/src/**/*.{ts,tsx}`)                       |
+| `supabase-migrations.md`   | All migration files (`packages/supabase/supabase/migrations/**`)              |
 
 ## Workspace Agents
 
