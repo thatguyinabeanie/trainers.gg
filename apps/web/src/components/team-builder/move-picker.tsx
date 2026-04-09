@@ -1,0 +1,232 @@
+"use client";
+
+import { useState } from "react";
+
+import { Dex } from "@pkmn/dex";
+
+import { getLearnableMoves } from "@trainers/pokemon";
+
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+const TYPE_COLORS: Record<string, string> = {
+  Normal: "bg-stone-400",
+  Bug: "bg-lime-500",
+  Dark: "bg-stone-700 text-white",
+  Dragon: "bg-indigo-600 text-white",
+  Electric: "bg-yellow-400",
+  Fairy: "bg-pink-400",
+  Fighting: "bg-red-700 text-white",
+  Fire: "bg-orange-500 text-white",
+  Flying: "bg-sky-300",
+  Ghost: "bg-purple-600 text-white",
+  Grass: "bg-green-500 text-white",
+  Ground: "bg-amber-600 text-white",
+  Ice: "bg-cyan-300",
+  Poison: "bg-purple-500 text-white",
+  Psychic: "bg-pink-500 text-white",
+  Rock: "bg-amber-700 text-white",
+  Steel: "bg-slate-400",
+  Water: "bg-blue-500 text-white",
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  Physical: "P",
+  Special: "S",
+  Status: "—",
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Physical: "text-orange-500",
+  Special: "text-blue-500",
+  Status: "text-muted-foreground",
+};
+
+type CategoryFilter = "All" | "Physical" | "Special" | "Status";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+interface MovePickerProps {
+  species: string;
+  value: string | null;
+  onSelect: (move: string) => void;
+  onClose: () => void;
+}
+
+// =============================================================================
+// MovePicker
+// =============================================================================
+
+/**
+ * Inline move picker for the team builder Pokemon editor.
+ * Shows learnable moves for the selected species with type badge, category,
+ * BP, accuracy, and a short description.
+ *
+ * Includes search filter and category filter buttons.
+ * The list is capped to 100 visible entries to keep performance reasonable.
+ */
+export function MovePicker({
+  species,
+  value,
+  onSelect,
+  onClose,
+}: MovePickerProps) {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<CategoryFilter>("All");
+
+  const allMoves = getLearnableMoves(species);
+  const gen9 = Dex.forGen(9);
+
+  // Apply search + category filter
+  const filtered = allMoves.filter((name) => {
+    if (!name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (category !== "All") {
+      const move = gen9.moves.get(name);
+      if (!move) return false;
+      if (move.category !== category) return false;
+    }
+    return true;
+  });
+
+  // Cap to 100 for performance — search narrows the list further
+  const visible = filtered.slice(0, 100);
+
+  function handleSelect(move: string) {
+    onSelect(move);
+    onClose();
+  }
+
+  const categories: CategoryFilter[] = ["All", "Physical", "Special", "Status"];
+
+  return (
+    <div className="bg-popover flex flex-col gap-2 rounded-lg border p-2 shadow-md">
+      {/* Search */}
+      <Input
+        placeholder="Search moves…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        autoFocus
+        className="h-7 text-sm"
+      />
+
+      {/* Category filter */}
+      <div className="flex gap-1">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => setCategory(cat)}
+            className={cn(
+              "rounded px-2 py-0.5 text-xs font-medium transition-colors",
+              category === cat
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            )}
+          >
+            {cat}
+          </button>
+        ))}
+        {filtered.length > 100 && (
+          <span className="text-muted-foreground ml-auto self-center text-xs">
+            {filtered.length} moves — search to narrow
+          </span>
+        )}
+      </div>
+
+      {/* Move list */}
+      <ScrollArea className="h-72">
+        <div className="flex flex-col gap-0.5 pr-2">
+          {visible.map((moveName) => {
+            const move = gen9.moves.get(moveName);
+            const isSelected = moveName === value;
+            const typeColor = move?.type
+              ? (TYPE_COLORS[move.type] ?? "bg-muted")
+              : "bg-muted";
+            const catLabel = move?.category
+              ? (CATEGORY_LABELS[move.category] ?? move.category)
+              : "—";
+            const catColor = move?.category
+              ? (CATEGORY_COLORS[move.category] ?? "text-muted-foreground")
+              : "text-muted-foreground";
+
+            return (
+              <button
+                key={moveName}
+                type="button"
+                onClick={() => handleSelect(moveName)}
+                className={cn(
+                  "flex flex-col rounded px-2 py-1.5 text-left transition-colors",
+                  "hover:bg-accent hover:text-accent-foreground",
+                  isSelected && "bg-accent text-accent-foreground"
+                )}
+              >
+                {/* Row 1: name + type badge + category + BP + accuracy */}
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <span
+                    className={cn(
+                      "flex-1 truncate text-sm font-medium",
+                      isSelected && "font-semibold"
+                    )}
+                  >
+                    {moveName}
+                  </span>
+
+                  {/* Type badge */}
+                  {move?.type && (
+                    <span
+                      className={cn(
+                        "shrink-0 rounded px-1 py-0.5 text-[10px] leading-none font-medium",
+                        typeColor
+                      )}
+                    >
+                      {move.type}
+                    </span>
+                  )}
+
+                  {/* Category */}
+                  <span className={cn("shrink-0 text-xs font-bold", catColor)}>
+                    {catLabel}
+                  </span>
+
+                  {/* BP */}
+                  <span className="text-muted-foreground w-8 shrink-0 text-right text-xs">
+                    {move?.basePower && move.basePower > 0
+                      ? `${move.basePower}`
+                      : "—"}
+                  </span>
+
+                  {/* Accuracy */}
+                  <span className="text-muted-foreground w-8 shrink-0 text-right text-xs">
+                    {move?.accuracy === true || !move?.accuracy
+                      ? "—"
+                      : `${move.accuracy}%`}
+                  </span>
+                </div>
+
+                {/* Row 2: short description */}
+                {move?.shortDesc && (
+                  <span className="text-muted-foreground mt-0.5 line-clamp-1 text-xs leading-tight">
+                    {move.shortDesc}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+          {visible.length === 0 && (
+            <p className="text-muted-foreground py-4 text-center text-sm">
+              No moves found
+            </p>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
