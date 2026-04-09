@@ -166,7 +166,10 @@ Every layout decision and the reasoning behind it:
 | Species picker width         | Full width (context panel hides)                                                  | The data table + detail panel need the space. Right panel returns when done picking.                                      |
 | Mobile layout                | Strip horizontal scroll, editor full-width, context tabs below (not side-by-side) | Adapts for touch, doesn't just shrink desktop layout.                                                                     |
 | Context panel tabs           | 3 tabs: Types, Speed, Calc                                                        | Meta and Discover moved elsewhere. Clean, focused analysis tools.                                                         |
+| Meta tab removed             | Meta not a tab — lives as drawer (A) + inline tooltips (C) + separate page (B)    | Three layers of meta access designed but deferred. Builder ships with only Types/Speed/Calc.                              |
+| Discover tab removed         | Discover not a tab — content moved into the species picker detail panel           | VGC Pastes sets, team fit analysis, and alternatives surface during species selection, not as a separate analysis tab.    |
 | Meta data placement          | Decide later (drawer + inline tooltips designed, not committed for V1)            | Depends on data pipeline. Builder ships without meta.                                                                     |
+| Delete Pokemon               | Delete to empty slot, no confirmation needed                                      | Reversible action — user can simply add another Pokemon. No friction.                                                     |
 
 ---
 
@@ -835,6 +838,8 @@ Full competitive landscape with links maintained in `.claude/skills/competitive-
 | [vsrecorder](https://vsrecorder.app)                                                                     | Match tracking         | Integrated with team history (future)                     |
 | [PokePaste](https://pokepast.es)                                                                         | Team sharing           | Richer sharing with access control, analytics             |
 | [VGC Pastes](https://www.vrpastes.com)                                                                   | Curated team database  | Proven sets surfaced in species picker                    |
+
+> Full competitive landscape with all links maintained in `.claude/skills/competitive-landscape/SKILL.md`. Updated during this brainstorm with Marriland, SPAMS, Falinks, VGC MultiCalc, Nerd of Now, Pokemon Attack Analyzer, PokeBin, VR Pastes, SilphScope, MunchTeams, Porydex, Stalruth Dev, and Liberty Note.
 
 ---
 
