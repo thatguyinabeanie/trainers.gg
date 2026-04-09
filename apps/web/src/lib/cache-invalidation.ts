@@ -145,3 +145,17 @@ export function invalidateTournamentWithTeamCaches(tournamentId: number): void {
 export function invalidateCommunityRequestCaches(): void {
   updateTag(CacheTags.COMMUNITY_REQUESTS_LIST);
 }
+
+// =============================================================================
+// Dashboard Cache Helpers
+// =============================================================================
+
+/**
+ * Invalidate dashboard stats and ratings caches.
+ * Call after events that change player stats: tournament completion,
+ * match result recording, alt creation/deletion.
+ */
+export function invalidateDashboardCaches(): void {
+  updateTag(CacheTags.DASHBOARD_STATS);
+  updateTag(CacheTags.DASHBOARD_RATINGS);
+}

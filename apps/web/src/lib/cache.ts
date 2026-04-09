@@ -70,4 +70,10 @@ export const CacheTags = {
 
   /** Tag for hero page platform overview stats (players, tournaments, matches) */
   PLATFORM_OVERVIEW: "platform-overview",
+
+  /** Tag for dashboard bulk stats (win/loss/tournament counts per alt) */
+  DASHBOARD_STATS: "dashboard-stats",
+
+  /** Tag for dashboard bulk ratings */
+  DASHBOARD_RATINGS: "dashboard-ratings",
 } as const;
