@@ -2,8 +2,22 @@
 
 > **Rename session to:** `the-builder-s3-features`
 > **Branch:** `the-builder` (continue from Session 2's commits)
+> **Model:** Sonnet 1M (implementation-heavy, clear specs)
 > **Estimated scope:** Species picker (inline, full-width) + Types/Speed/Calc tabs
 > **Parallelism:** 2 subagent tracks (Track C: species picker, Track D: context panel tabs)
+
+## How To Start This Session
+
+1. Open a new Claude Code conversation
+2. Rename it to `the-builder-s3-features`
+3. Verify Sessions 1-2 are complete: `pnpm lint && pnpm typecheck && pnpm test`
+4. Send this as your first message:
+
+```
+Read docs/the-builder/session-3-features.md and docs/the-builder/context.md.
+Execute using subagent-driven development with parallel subagents for Track C and Track D.
+Branch: the-builder. Do not push. Commit frequently with descriptive messages.
+```
 
 ## Prerequisites
 

@@ -2,12 +2,25 @@
 
 > **Rename session to:** `the-builder-s1-foundations`
 > **Branch:** `the-builder` (already exists, build on top of existing commits)
+> **Model:** Opus 1M (architectural decisions, schema design)
 > **Estimated scope:** Database migrations, package functions, team CRUD, tests
+
+## How To Start This Session
+
+1. Open a new Claude Code conversation
+2. Rename it to `the-builder-s1-foundations`
+3. Send this as your first message:
+
+```
+Read docs/the-builder/session-1-foundations.md and docs/the-builder/context.md.
+Execute the session using subagent-driven development.
+Branch: the-builder (already exists, continue from latest commits).
+Do not push. Commit frequently with descriptive messages.
+```
 
 ## Prerequisites
 
 - Read `docs/the-builder/context.md` for the full design context
-- Read the approved plan at `.claude/plans/spicy-drifting-bird.md`
 - You are on branch `the-builder`. Do NOT create a new branch.
 - Latest migration timestamp: `20260408011707`
 

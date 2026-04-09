@@ -2,12 +2,27 @@
 
 > **Rename session to:** `the-builder-s2-ui-shell`
 > **Branch:** `the-builder` (continue from Session 1's commits)
+> **Model:** Sonnet 1M (implementation-heavy, clear specs)
 > **Estimated scope:** Teams list page + core editor workspace
 > **Parallelism:** 2 subagent tracks (Track A: list page, Track B: editor workspace)
+
+## How To Start This Session
+
+1. Open a new Claude Code conversation
+2. Rename it to `the-builder-s2-ui-shell`
+3. Verify Session 1 is complete: `pnpm db:reset && pnpm generate-types && pnpm lint && pnpm typecheck && pnpm test`
+4. Send this as your first message:
+
+```
+Read docs/the-builder/session-2-ui-shell.md and docs/the-builder/context.md.
+Execute using subagent-driven development with parallel subagents for Track A and Track B.
+Branch: the-builder. Do not push. Commit frequently with descriptive messages.
+```
 
 ## Prerequisites
 
 - Session 1 is complete (migrations applied, package functions built, CRUD working)
+- Run `pnpm db:reset && pnpm generate-types` before starting (ensures Session 1's schema is applied)
 - Read `docs/the-builder/context.md` for design decisions
 - Invoke `building-web-app` and `creating-components` skills before starting
 
