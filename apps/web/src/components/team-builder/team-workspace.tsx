@@ -8,6 +8,8 @@ import { type TeamWithPokemon } from "@trainers/supabase";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Import } from "lucide-react";
+import { TeamStrip } from "@/components/team-builder/team-strip";
+import { ContextPanel } from "@/components/team-builder/context-panel";
 
 // =============================================================================
 // Types
@@ -34,7 +36,7 @@ interface TeamWorkspaceProps {
  */
 export function TeamWorkspace({
   team,
-  handle: _handle,
+  handle,
   format: _format,
 }: TeamWorkspaceProps) {
   // Sort pokemon by position and get the first one as default selection
@@ -44,6 +46,9 @@ export function TeamWorkspace({
 
   const [selectedPokemonId, setSelectedPokemonId] = useState<number | null>(
     sortedPokemon[0]?.id ?? null
+  );
+  const [activeTab, setActiveTab] = useState<"types" | "speed" | "calc">(
+    "types"
   );
 
   const selectedEntry = sortedPokemon.find((tp) => tp.id === selectedPokemonId);
@@ -69,38 +74,18 @@ export function TeamWorkspace({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Team strip — Task 3 will replace this placeholder */}
-      <div className={cn("border-b px-4 py-3", "flex items-center gap-2")}>
-        {/* TeamStrip component — Task 3 */}
-        {sortedPokemon.map((tp) => (
-          <button
-            key={tp.id}
-            type="button"
-            onClick={() => setSelectedPokemonId(tp.id)}
-            className={cn(
-              "bg-muted size-12 rounded-md border-2 transition-colors",
-              tp.id === selectedPokemonId
-                ? "border-primary"
-                : "hover:border-border border-transparent"
-            )}
-            aria-label={tp.pokemon?.species ?? `Slot ${tp.team_position}`}
-            aria-pressed={tp.id === selectedPokemonId}
-          >
-            <span className="text-muted-foreground text-xs">
-              {tp.pokemon?.species?.slice(0, 3) ?? "?"}
-            </span>
-          </button>
-        ))}
-        {/* Fill remaining empty slots up to 6 */}
-        {Array.from(
-          { length: Math.max(0, 6 - sortedPokemon.length) },
-          (_, i) => (
-            <div
-              key={`empty-${i}`}
-              className="bg-muted/50 size-12 rounded-md border-2 border-dashed border-transparent"
-            />
-          )
-        )}
+      {/* Team strip */}
+      <div className="border-b">
+        <TeamStrip
+          teamId={team.id}
+          handle={handle}
+          pokemon={team.team_pokemon}
+          selectedPokemonId={selectedPokemonId}
+          onSelect={setSelectedPokemonId}
+          onAddNew={() => {
+            // Session 3 will wire up the species picker here
+          }}
+        />
       </div>
 
       {/* Split panel — editor left, context right */}
@@ -119,7 +104,9 @@ export function TeamWorkspace({
                 </p>
               </div>
               <div
-                className="bg-muted/30 flex flex-1 items-center justify-center rounded-lg border border-dashed"
+                className={cn(
+                  "bg-muted/30 flex flex-1 items-center justify-center rounded-lg border border-dashed"
+                )}
                 aria-label="Pokemon editor — coming in Task 4"
               >
                 <p className="text-muted-foreground text-sm">
@@ -137,20 +124,14 @@ export function TeamWorkspace({
           )}
         </div>
 
-        {/* Context panel (right 50%) — Task 5 will replace this placeholder */}
-        <div className="flex w-1/2 flex-col">
-          <div
-            className="flex flex-1 items-center justify-center p-4"
-            aria-label="Context panel — coming in Task 5"
-          >
-            {/* ContextPanel component — Task 5 */}
-            <div className="text-center">
-              <p className="text-muted-foreground text-sm">Context panel</p>
-              <p className="text-muted-foreground mt-1 text-xs">
-                (Type chart, usage stats, moveset info)
-              </p>
-            </div>
-          </div>
+        {/* Context panel (right 50%) */}
+        <div className="flex w-1/2 flex-col overflow-hidden">
+          <ContextPanel
+            team={team}
+            selectedPokemon={selectedEntry?.pokemon ?? null}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
         </div>
       </div>
     </div>
