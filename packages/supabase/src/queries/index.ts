@@ -264,3 +264,11 @@ export {
   type TeamSheetPokemon,
   type PlayerTeamSheet,
 } from "./tournament-team-sheets";
+
+// Team builder queries
+export {
+  getTeamsForAltFull,
+  getTeamWithPokemon,
+  getTeamsForAltByFormatFull,
+  type TeamWithPokemon,
+} from "./teams";

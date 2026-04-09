@@ -99,3 +99,15 @@ export {
 
 // Notification preference mutations
 export { upsertNotificationPreferences } from "./notification-preferences";
+
+// Team builder mutations
+export {
+  createTeam,
+  updateTeam,
+  deleteTeam,
+  forkTeam,
+  addPokemonToTeam,
+  updatePokemon,
+  removePokemonFromTeam,
+  reorderTeamPokemon,
+} from "./teams";
