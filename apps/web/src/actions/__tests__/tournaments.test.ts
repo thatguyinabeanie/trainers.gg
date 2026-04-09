@@ -126,6 +126,10 @@ jest.mock("@/lib/cache-invalidation", () => ({
     mockUpdateTag("players-leaderboard");
     mockUpdateTag("players-recent");
   },
+  invalidateDashboardCaches: () => {
+    mockUpdateTag("dashboard-stats");
+    mockUpdateTag("dashboard-ratings");
+  },
 }));
 
 jest.mock("botid/server", () => ({

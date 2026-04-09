@@ -1316,7 +1316,7 @@ export async function getActiveMatch(supabase: TypedClient, altId: number) {
         phase:tournament_phases(
           id,
           name,
-          tournament:tournaments(id, name, slug)
+          tournament:tournaments!tournament_phases_tournament_id_fkey(id, name, slug)
         )
       )
     `

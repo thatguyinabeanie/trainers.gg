@@ -1,245 +1,107 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
-import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
+import { Plus, Users } from "lucide-react";
+
+import type { AltStats, PlayerRating } from "@trainers/supabase";
+
+import { useSupabase } from "@/lib/supabase";
 import {
-  getMyDashboardData,
-  getActiveMatch,
-  getUserTournamentHistory,
-  getCurrentUserAlts,
-} from "@trainers/supabase";
-import { getPokemonSprite } from "@trainers/pokemon/sprites";
-import { cn } from "@/lib/utils";
+  DASHBOARD_ALT_COOKIE,
+  COOKIE_MAX_AGE,
+} from "@/components/dashboard/sidebar-helpers";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { AltsTable } from "./components/alts-table";
+import { CreateAltForm } from "./components/create-alt-form";
 
-type ActiveMatch = Awaited<ReturnType<typeof getActiveMatch>>;
-type TournamentHistoryItem = Awaited<
-  ReturnType<typeof getUserTournamentHistory>
->[number];
+// =============================================================================
+// Types
+// =============================================================================
 
-// ─── Subcomponents ────────────────────────────────────────────────────────────
-
-function LiveMatchBar({ match }: { match: NonNullable<ActiveMatch> }) {
-  return (
-    <div className="mb-3.5 flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs">
-      {/* Green pulse dot */}
-      <span className="relative flex size-1.5 shrink-0">
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-75" />
-        <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-      </span>
-
-      {/* Match info */}
-      <span className="min-w-0 flex-1 text-emerald-800">
-        <strong className="font-semibold">{match.tournamentName}</strong>
-        {" — "}
-        Round {match.roundNumber}
-        {match.opponent && (
-          <>
-            {" · You vs "}
-            <span className="font-medium">{match.opponent.username}</span>
-          </>
-        )}
-        {match.table != null && ` · Table ${match.table}`}
-      </span>
-
-      <Link
-        href={`/tournaments/${match.tournamentSlug}`}
-        className="shrink-0 font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-900"
-      >
-        Go to match →
-      </Link>
-    </div>
-  );
+interface DashboardHomeClientProps {
+  alts: Array<{
+    id: number;
+    username: string;
+    avatar_url: string | null;
+    is_public: boolean;
+  }>;
+  mainAltId: number | null;
+  initialBulkStats: Record<number, AltStats> | undefined;
+  initialBulkRatings: Record<number, PlayerRating> | undefined;
+  selectedAltUsername: string | null;
+  username: string;
 }
 
-interface StatCardProps {
-  label: string;
-  value: string;
-  sub?: string;
-}
-
-function StatCard({ label, value, sub }: StatCardProps) {
-  return (
-    <div className="bg-muted/50 rounded-md px-2.5 py-2">
-      <p className="text-muted-foreground mb-0.5 text-[9px] font-semibold tracking-widest uppercase">
-        {label}
-      </p>
-      <p className="font-mono text-base leading-none font-bold">{value}</p>
-      {sub && <p className="text-muted-foreground mt-0.5 text-[8px]">{sub}</p>}
-    </div>
-  );
-}
-
-function PokemonSprite({ species }: { species: string }) {
-  const sprite = getPokemonSprite(species);
-  return (
-    <Image
-      src={sprite.url}
-      alt={species}
-      width={18}
-      height={18}
-      className="shrink-0 object-contain"
-      style={{ imageRendering: sprite.pixelated ? "pixelated" : undefined }}
-      unoptimized
-    />
-  );
-}
-
-function ResultRow({ item }: { item: TournamentHistoryItem }) {
-  const isFirst = item.placement === 1;
-  const placementText =
-    item.placement != null ? `${item.placement}${isFirst ? " 🏆" : ""}` : "—";
-
-  // Format date as "Mar 28"
-  const dateText = item.endDate
-    ? new Date(item.endDate).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      })
-    : item.startDate
-      ? new Date(item.startDate).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })
-      : "";
-
-  return (
-    <div className="border-border/50 flex items-center gap-2 border-b py-1.5 text-xs last:border-0">
-      {/* Tournament name */}
-      <Link
-        href={`/tournaments/${item.tournamentSlug}`}
-        className="min-w-0 shrink-0 font-medium hover:underline"
-      >
-        {item.tournamentName}
-      </Link>
-
-      {/* Pokemon sprites — push to the right */}
-      {item.teamPokemon.length > 0 && (
-        <div className="ml-auto flex shrink-0 items-center">
-          {item.teamPokemon.slice(0, 6).map((species, i) => (
-            <PokemonSprite key={i} species={species} />
-          ))}
-        </div>
-      )}
-
-      {/* Placement */}
-      <span
-        className={cn(
-          "shrink-0 font-mono text-[11px]",
-          isFirst ? "font-semibold text-teal-600" : "text-muted-foreground"
-        )}
-      >
-        {placementText}
-      </span>
-
-      {/* Date */}
-      {dateText && (
-        <span className="text-muted-foreground shrink-0 text-[10px]">
-          {dateText}
-        </span>
-      )}
-    </div>
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
+// =============================================================================
+// Main Component
+// =============================================================================
 
 export function HomeClient({
+  alts,
+  mainAltId,
+  initialBulkStats,
+  initialBulkRatings,
   selectedAltUsername,
-}: {
-  selectedAltUsername: string | null;
-}) {
-  const { user } = useAuth();
+  username,
+}: DashboardHomeClientProps) {
+  const router = useRouter();
   const supabase = useSupabase();
   const toastShown = useRef(false);
-  const [refreshKey, setRefreshKey] = useState(0);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-
-  // Fetch user's alts early — needed for mainAltId
-  const { data: userAlts, error: userAltsError } = useSupabaseQuery(
-    (client) => getCurrentUserAlts(client),
-    [user?.id]
+  const [selectedAlt, setSelectedAlt] = useState<string | null>(
+    selectedAltUsername
   );
-  const mainAltId = userAlts?.[0]?.id ?? null;
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  // refreshKey forces child query keys to update after mutations
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // ── Realtime subscription for active match changes ──
+  // Sync local state when server prop changes (e.g., sidebar alt switcher)
+  const [prevSelectedAltProp, setPrevSelectedAltProp] =
+    useState(selectedAltUsername);
+  if (selectedAltUsername !== prevSelectedAltProp) {
+    setPrevSelectedAltProp(selectedAltUsername);
+    setSelectedAlt(selectedAltUsername);
+  }
+
+  // ── Realtime subscription for active match changes ──────────────────────
   useEffect(() => {
     if (!mainAltId) return;
+
+    // router.refresh() re-runs the server component, which re-fetches the active match
+    // (uncached). Cached stats/ratings update only after a server action calls
+    // invalidateDashboardCaches().
+    function triggerRefresh() {
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+      refreshTimeoutRef.current = setTimeout(() => {
+        router.refresh();
+      }, 500);
+    }
 
     const channel = supabase
       .channel(`dashboard-matches-${mainAltId}`)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "tournament_matches",
           filter: `alt1_id=eq.${mainAltId}`,
         },
-        () => {
-          if (refreshTimeoutRef.current)
-            clearTimeout(refreshTimeoutRef.current);
-          refreshTimeoutRef.current = setTimeout(
-            () => setRefreshKey((k) => k + 1),
-            500
-          );
-        }
+        triggerRefresh
       )
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "tournament_matches",
           filter: `alt2_id=eq.${mainAltId}`,
         },
-        () => {
-          if (refreshTimeoutRef.current)
-            clearTimeout(refreshTimeoutRef.current);
-          refreshTimeoutRef.current = setTimeout(
-            () => setRefreshKey((k) => k + 1),
-            500
-          );
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `alt1_id=eq.${mainAltId}`,
-        },
-        () => {
-          if (refreshTimeoutRef.current)
-            clearTimeout(refreshTimeoutRef.current);
-          refreshTimeoutRef.current = setTimeout(
-            () => setRefreshKey((k) => k + 1),
-            500
-          );
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `alt2_id=eq.${mainAltId}`,
-        },
-        () => {
-          if (refreshTimeoutRef.current)
-            clearTimeout(refreshTimeoutRef.current);
-          refreshTimeoutRef.current = setTimeout(
-            () => setRefreshKey((k) => k + 1),
-            500
-          );
-        }
+        triggerRefresh
       )
       .subscribe((status, err) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
@@ -252,6 +114,10 @@ export function HomeClient({
               "(no error — likely a local dev WebSocket issue)"
             );
           }
+          toast.warning(
+            "Live updates disconnected. Refresh the page to see the latest data.",
+            { duration: 10000 }
+          );
         }
       });
 
@@ -259,12 +125,11 @@ export function HomeClient({
       if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
       channel.unsubscribe();
     };
-  }, [supabase, mainAltId]);
+  }, [supabase, mainAltId, router]);
 
-  // ── Welcome toast for temp usernames ──
+  // ── Welcome toast for temp usernames ────────────────────────────────────
   useEffect(() => {
     if (toastShown.current) return;
-    const username = (user?.user_metadata?.username as string) ?? "";
     if (username.startsWith("temp_") || username.startsWith("user_")) {
       toastShown.current = true;
       toast.info(
@@ -272,160 +137,112 @@ export function HomeClient({
         { duration: 8000 }
       );
     }
-  }, [user]);
+  }, [username]);
 
-  // ── Queries ──
+  // ── Handlers ────────────────────────────────────────────────────────────
 
-  // Resolve the selected alt's database ID for filtered queries
-  const selectedAltId = selectedAltUsername
-    ? (userAlts?.find((a) => a.username === selectedAltUsername)?.id ?? null)
-    : null;
+  function handleAltSelect(username: string | null) {
+    setSelectedAlt(username);
+    // Sync cookie so sidebar alt switcher and page.tsx stay in sync
+    if (username) {
+      document.cookie = `${DASHBOARD_ALT_COOKIE}=${encodeURIComponent(username)}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`;
+    } else {
+      document.cookie = `${DASHBOARD_ALT_COOKIE}=; path=/; max-age=0; samesite=lax`;
+    }
+    router.refresh();
+  }
 
-  // When an alt is selected, use that alt's ID; otherwise fall back to main alt
-  const dashboardAltId = selectedAltId ?? mainAltId;
+  function handleRefresh() {
+    // Server action already invalidates caches — router.refresh() re-runs
+    // the server component which re-fetches everything
+    setRefreshKey((k) => k + 1);
+    router.refresh();
+  }
 
-  const { data: dashboardData, error: dashboardError } = useSupabaseQuery(
-    (client) =>
-      dashboardAltId
-        ? getMyDashboardData(client, dashboardAltId)
-        : Promise.resolve(null),
-    [dashboardAltId]
-  );
+  const hasAlts = alts.length > 0;
 
-  const { data: activeMatch, error: activeMatchError } = useSupabaseQuery(
-    (client) =>
-      mainAltId ? getActiveMatch(client, mainAltId) : Promise.resolve(null),
-    [mainAltId, refreshKey]
-  );
-
-  const { data: recentHistory, error: recentHistoryError } = useSupabaseQuery(
-    (client) => getUserTournamentHistory(client),
-    [mainAltId]
-  );
-
-  // ── Derived values ──
-  const stats = dashboardData?.stats ?? {
-    winRate: 0,
-    winRateChange: 0,
-    currentRating: 0,
-    ratingRank: 0,
-    activeTournaments: 0,
-    totalEnrolled: 0,
-    championPoints: 0,
-  };
-
-  const winRatePct =
-    stats.winRate > 0 ? `${stats.winRate.toFixed(1)}%` : "0.0%";
-
-  // Compute W-L record from recentActivity or fall back to myTournaments player stats
-  const recentWins =
-    dashboardData?.recentActivity.filter((a) => a.result === "won").length ?? 0;
-  const recentTotal = dashboardData?.recentActivity.length ?? 0;
-  const recordStr =
-    recentTotal > 0 ? `${recentWins}-${recentTotal - recentWins}` : "0-0";
-
-  const ratingStr =
-    stats.currentRating > 0 ? stats.currentRating.toLocaleString() : "—";
-  const tournamentsStr =
-    stats.totalEnrolled > 0 ? `${stats.totalEnrolled}` : "0";
-
-  // Recent results: last 5 completed tournaments, optionally filtered by selected alt
-  const filteredHistory = selectedAltUsername
-    ? (recentHistory ?? []).filter((r) => r.altUsername === selectedAltUsername)
-    : (recentHistory ?? []);
-  const recentResults = filteredHistory.slice(0, 5);
-
-  const displayName = getUserDisplayName(user);
-
-  // Secondary errors — silently skip those sections rather than blocking the page
-  void userAltsError;
-  void activeMatchError;
-  void recentHistoryError;
-
-  if (dashboardError) {
+  // ── Empty state (no alts) ───────────────────────────────────────────────
+  // DashboardStats is rendered by the server parent with zero values,
+  // so we only render the empty card + create form here.
+  if (!hasAlts) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="text-destructive text-sm font-medium">
-          Something went wrong
-        </p>
-        <p className="text-muted-foreground mt-1 text-xs">
-          {dashboardError.message ||
-            "Failed to load data. Please try refreshing."}
-        </p>
-      </div>
+      <>
+        {/* Create form if open */}
+        {showCreateForm && (
+          <div className="animate-in slide-in-from-top-2 duration-200">
+            <CreateAltForm
+              onCreated={() => {
+                setShowCreateForm(false);
+                handleRefresh();
+              }}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          </div>
+        )}
+
+        {/* Empty state card */}
+        <Card className="bg-muted/30 shadow-sm">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="bg-primary/10 flex size-14 items-center justify-center rounded-full">
+              <Users className="text-primary size-7" />
+            </div>
+            <h3 className="mt-4 text-lg font-semibold">No alts yet</h3>
+            <p className="text-muted-foreground mt-2 max-w-sm text-center text-sm">
+              Create your first player identity to register for tournaments and
+              track your competitive journey
+            </p>
+            <Button
+              className="mt-6 gap-2"
+              onClick={() => setShowCreateForm(true)}
+            >
+              <Plus className="size-4" />
+              Create Your First Alt
+            </Button>
+          </CardContent>
+        </Card>
+      </>
     );
   }
 
+  // ── Main render ─────────────────────────────────────────────────────────
+  // LiveMatchBar and DashboardStats are rendered by the server parent.
   return (
-    <div className="flex flex-col gap-0">
-      {/* Welcome heading */}
-      <h1 className="mb-3 text-base font-bold">Welcome back, {displayName}</h1>
-
-      {/* Live match bar (conditional) */}
-      {activeMatch && <LiveMatchBar match={activeMatch} />}
-
-      {/* Stats row */}
-      <div className="mb-3.5 grid grid-cols-4 gap-2">
-        <StatCard
-          label="Win Rate"
-          value={winRatePct}
-          sub={
-            stats.winRateChange !== 0
-              ? `${stats.winRateChange > 0 ? "+" : ""}${stats.winRateChange.toFixed(1)}% this month`
-              : undefined
-          }
-        />
-        <StatCard
-          label="Rating"
-          value={ratingStr}
-          sub={stats.ratingRank > 0 ? `Rank #${stats.ratingRank}` : undefined}
-        />
-        <StatCard
-          label="Record"
-          value={recordStr}
-          sub={
-            selectedAltUsername
-              ? `as ${selectedAltUsername}`
-              : "across all alts"
-          }
-        />
-        <StatCard
-          label="Tournaments"
-          value={tournamentsStr}
-          sub={
-            stats.activeTournaments > 0
-              ? `${stats.activeTournaments} active`
-              : undefined
-          }
-        />
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-base font-semibold">Your Alts</h2>
+        <Button
+          size="sm"
+          onClick={() => setShowCreateForm(true)}
+          disabled={showCreateForm}
+        >
+          <Plus className="mr-1 size-3.5" /> New Alt
+        </Button>
       </div>
 
-      {/* Recent results */}
-      <div>
-        <div className="mb-1 flex items-center justify-between">
-          <span className="text-muted-foreground text-[10px] font-semibold tracking-widest uppercase">
-            Recent results
-          </span>
-          <Link
-            href="/dashboard/tournaments"
-            className="text-[11px] text-teal-600 hover:underline"
-          >
-            View history →
-          </Link>
+      {/* Create form — slides in above the table */}
+      {showCreateForm && (
+        <div className="animate-in slide-in-from-top-2 mb-3 duration-200">
+          <CreateAltForm
+            onCreated={() => {
+              setShowCreateForm(false);
+              handleRefresh();
+            }}
+            onCancel={() => setShowCreateForm(false)}
+          />
         </div>
+      )}
 
-        {recentResults.length === 0 ? (
-          <p className="text-muted-foreground py-4 text-center text-xs">
-            No tournament history yet.
-          </p>
-        ) : (
-          <div>
-            {recentResults.map((item) => (
-              <ResultRow key={item.id} item={item} />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Alts table with inline stats and expand/collapse */}
+      <AltsTable
+        alts={alts}
+        mainAltId={mainAltId}
+        bulkStats={initialBulkStats}
+        bulkRatings={initialBulkRatings}
+        selectedAltUsername={selectedAlt}
+        onAltSelect={handleAltSelect}
+        onRefresh={handleRefresh}
+        refreshKey={refreshKey}
+      />
     </div>
   );
 }

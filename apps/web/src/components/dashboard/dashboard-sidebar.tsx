@@ -7,7 +7,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Home,
-  Users,
   LayoutDashboard,
   Trophy,
   UserCog,
@@ -21,6 +20,12 @@ import {
   User,
   ChevronsUpDown,
   Check,
+  Search,
+  Globe,
+  Hammer,
+  BarChart3,
+  FileText,
+  GraduationCap,
 } from "lucide-react";
 
 import { formatDisplayUsername } from "@trainers/utils";
@@ -356,31 +361,6 @@ function AltSwitcher({ alts, selectedAltUsername }: AltSwitcherProps) {
                 </DropdownMenuItem>
               );
             })}
-
-            <DropdownMenuSeparator className="mx-3.5" />
-
-            {/* Actions */}
-            <DropdownMenuItem
-              render={
-                <Link href="/dashboard/alts/new" aria-label="Create new alt" />
-              }
-              className="mx-1 gap-2.5 rounded-lg px-3 py-2 text-sm"
-            >
-              <span className="text-muted-foreground flex size-[26px] shrink-0 items-center justify-center text-base">
-                +
-              </span>
-              <span>Create new alt</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              render={<Link href="/dashboard/alts" />}
-              className="mx-1 mb-1 gap-2.5 rounded-lg px-3 py-2 text-sm"
-            >
-              <span className="text-muted-foreground flex size-[26px] shrink-0 items-center justify-center text-base">
-                ⚙
-              </span>
-              <span>Manage alts</span>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
@@ -620,13 +600,8 @@ function PlayerNav({
       label: "Home",
       href: "/dashboard",
       icon: Home,
-      isActive: pathname === "/dashboard",
-    },
-    {
-      label: "Alts",
-      href: "/dashboard/alts",
-      icon: Users,
-      isActive: pathname.startsWith("/dashboard/alts"),
+      isActive:
+        pathname === "/dashboard" || pathname.startsWith("/dashboard/alts"),
     },
     {
       label: "Tournaments",
@@ -741,6 +716,44 @@ function PlayerNav({
           </SidebarGroupContent>
         </SidebarGroup>
       )}
+
+      {/* Explore — site-wide navigation */}
+      <SidebarGroup
+        className={cn(
+          "group-data-[collapsible=icon]:hidden",
+          isOnboarding && "pointer-events-none opacity-40"
+        )}
+      >
+        <SidebarGroupLabel>Explore</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {(
+              [
+                {
+                  label: "Browse Tournaments",
+                  href: "/tournaments",
+                  icon: Search,
+                },
+                { label: "Communities", href: "/communities", icon: Globe },
+                { label: "Team Builder", href: "/builder", icon: Hammer },
+                { label: "Analytics", href: "/analytics", icon: BarChart3 },
+                { label: "Articles", href: "/articles", icon: FileText },
+                { label: "Coaching", href: "/coaching", icon: GraduationCap },
+              ] as const
+            ).map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  render={<Link href={item.href} />}
+                  tooltip={item.label}
+                >
+                  <item.icon className="size-4 shrink-0" />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
 
       {/* Secondary nav — pinned to bottom of SidebarContent */}
       <SidebarGroup

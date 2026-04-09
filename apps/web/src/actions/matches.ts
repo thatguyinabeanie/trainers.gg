@@ -19,7 +19,10 @@ import {
   confirmMatchCheckIn,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
-import { invalidateTournamentCaches } from "@/lib/cache-invalidation";
+import {
+  invalidateTournamentCaches,
+  invalidateDashboardCaches,
+} from "@/lib/cache-invalidation";
 import { type ActionResult } from "@trainers/validators";
 import { rejectBots, withAction } from "./utils";
 
@@ -54,6 +57,7 @@ export async function submitGameSelectionAction(
     const supabase = await createClient();
     await submitGameSelection(supabase, validGameId, validWinnerId);
     invalidateTournamentCaches(validTournamentId);
+    invalidateDashboardCaches();
   }, "Failed to submit game selection");
 }
 
@@ -155,6 +159,7 @@ export async function judgeOverrideGameAction(
       notes
     );
     invalidateTournamentCaches(validTournamentId);
+    invalidateDashboardCaches();
     return { gameId: data.id };
   }, "Failed to override game");
 }

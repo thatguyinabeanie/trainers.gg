@@ -52,6 +52,7 @@ import {
   invalidateTournamentAndCommunityCaches,
   invalidateTournamentWithTeamCaches,
   invalidatePlayerRankingCaches,
+  invalidateDashboardCaches,
 } from "@/lib/cache-invalidation";
 import {
   type ActionResult,
@@ -203,6 +204,7 @@ export async function completeTournament(
 
     await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
     invalidatePlayerRankingCaches();
+    invalidateDashboardCaches();
 
     return { success: true, data: { success: true } };
   } catch (error) {
