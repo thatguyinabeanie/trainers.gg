@@ -295,6 +295,7 @@ export function TeamsSubTable({
       <div className="flex items-center justify-between border-t px-3 py-2">
         <div className="flex gap-1.5">
           <Button
+            nativeButton={false}
             size="sm"
             className="h-7 text-xs"
             render={<Link href={`/dashboard/alts/${altUsername}`} />}
@@ -302,6 +303,7 @@ export function TeamsSubTable({
             View as this alt
           </Button>
           <Button
+            nativeButton={false}
             variant="outline"
             size="sm"
             className="h-7 text-xs"
