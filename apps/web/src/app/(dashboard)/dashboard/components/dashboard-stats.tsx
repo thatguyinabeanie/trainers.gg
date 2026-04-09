@@ -25,7 +25,7 @@ export function DashboardStats({
   tournamentsSubAccent = false,
 }: DashboardStatsProps) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <StatCard label="Win Rate" value={winRate} sub={winRateSub} />
       <StatCard label="Rating" value={rating} sub={ratingSub} />
       <StatCard label="Record" value={record} sub={recordSub} />

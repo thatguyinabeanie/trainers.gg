@@ -363,33 +363,33 @@ export function AltsTable({
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border">
+    <div className="bg-muted/30 overflow-hidden rounded-lg">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-muted/30 border-b">
-              <th className="text-muted-foreground h-9 w-[200px] px-3 text-left text-[10px] font-medium tracking-wider uppercase">
+            <tr>
+              <th className="text-muted-foreground h-8 w-[200px] px-3 text-left text-xs font-medium tracking-wide uppercase">
                 Handle
               </th>
-              <th className="text-muted-foreground h-9 px-3 text-right text-[10px] font-medium tracking-wider uppercase">
+              <th className="text-muted-foreground h-8 px-3 text-right text-xs font-medium tracking-wide uppercase">
                 Record
               </th>
-              <th className="text-muted-foreground h-9 px-3 text-right text-[10px] font-medium tracking-wider uppercase">
+              <th className="text-muted-foreground h-8 px-3 text-right text-xs font-medium tracking-wide uppercase">
                 Win %
               </th>
-              <th className="text-muted-foreground h-9 px-3 text-right text-[10px] font-medium tracking-wider uppercase">
+              <th className="text-muted-foreground h-8 px-3 text-right text-xs font-medium tracking-wide uppercase">
                 ELO
               </th>
-              <th className="text-muted-foreground h-9 px-3 text-right text-[10px] font-medium tracking-wider uppercase">
+              <th className="text-muted-foreground h-8 px-3 text-right text-xs font-medium tracking-wide uppercase">
                 Events
               </th>
-              <th className="text-muted-foreground h-9 px-3 text-right text-[10px] font-medium tracking-wider uppercase">
+              <th className="text-muted-foreground h-8 px-3 text-right text-xs font-medium tracking-wide uppercase">
                 Teams
               </th>
-              <th className="text-muted-foreground h-9 px-3 text-center text-[10px] font-medium tracking-wider uppercase">
+              <th className="text-muted-foreground h-8 px-3 text-center text-xs font-medium tracking-wide uppercase">
                 Public
               </th>
-              <th className="h-9 w-8" />
+              <th className="h-8 w-8" />
             </tr>
           </thead>
           <tbody>

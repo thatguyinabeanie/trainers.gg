@@ -211,12 +211,12 @@ export function TeamsSubTable({
   ]);
 
   return (
-    <div className="bg-background rounded-lg border">
+    <div className="rounded-lg">
       {/* Two-column layout: Teams + Recent Results */}
-      <div className="grid grid-cols-1 gap-4 p-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 p-3 sm:grid-cols-2">
         {/* Left: Teams */}
         <div>
-          <p className="text-muted-foreground mb-1.5 text-[10px] font-semibold tracking-widest uppercase">
+          <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
             Teams
           </p>
           <div className="overflow-x-auto">
@@ -284,7 +284,7 @@ export function TeamsSubTable({
 
         {/* Right: Recent Results */}
         <div>
-          <p className="text-muted-foreground mb-1.5 text-[10px] font-semibold tracking-widest uppercase">
+          <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
             Recent Results
           </p>
           <RecentResults altId={altId} />

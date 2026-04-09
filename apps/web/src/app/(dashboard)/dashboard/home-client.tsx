@@ -289,7 +289,7 @@ export function HomeClient({
   // ── Empty state (no alts) ───────────────────────────────────────────────
   if (!hasAlts) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Stats row still rendered with zero values */}
         <DashboardStats
           winRate="0.0%"
@@ -316,7 +316,7 @@ export function HomeClient({
         )}
 
         {/* Empty state card */}
-        <Card className="border-2 border-dashed">
+        <Card className="bg-muted/30 shadow-sm">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <div className="bg-primary/10 flex size-14 items-center justify-center rounded-full">
               <Users className="text-primary size-7" />
@@ -341,7 +341,7 @@ export function HomeClient({
 
   // ── Main render ─────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Live match bar — conditional */}
       {activeMatch && <LiveMatchBar match={activeMatch} />}
 
@@ -361,7 +361,7 @@ export function HomeClient({
       {/* Alts section */}
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Your Alts</h2>
+          <h2 className="text-base font-semibold">Your Alts</h2>
           <Button
             size="sm"
             onClick={() => setShowCreateForm(true)}
