@@ -1,5 +1,10 @@
 import { render, screen } from "@testing-library/react";
 
+// --- next/navigation ---
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn(() => ({ push: jest.fn(), refresh: jest.fn() })),
+}));
+
 // --- @/components/auth/auth-provider ---
 const mockGetUserDisplayName = jest.fn(() => "Ash");
 jest.mock("@/components/auth/auth-provider", () => ({
@@ -26,52 +31,97 @@ jest.mock("@/lib/supabase", () => ({
 
 // --- @trainers/supabase ---
 jest.mock("@trainers/supabase", () => ({
+  getCurrentUserAlts: jest.fn(),
+  getAltsBulkStats: jest.fn(),
+  getPlayerRatingsBulk: jest.fn(),
   getMyDashboardData: jest.fn(),
   getActiveMatch: jest.fn(),
-  getUserTournamentHistory: jest.fn(),
-  getCurrentUserAlts: jest.fn(),
 }));
 
-// --- @trainers/pokemon/sprites ---
-jest.mock("@trainers/pokemon/sprites", () => ({
-  getPokemonSprite: jest.fn(() => ({
-    url: "/sprites/pikachu.png",
-    pixelated: true,
-  })),
+// --- Mock child components to avoid deep dependency chains ---
+// (alts-table -> sprite-picker -> cache-invalidation -> next/cache fails in test env)
+jest.mock("../components/alts-table", () => ({
+  AltsTable: (props: { alts: unknown[] }) => (
+    <div data-testid="alts-table" data-count={props.alts?.length ?? 0} />
+  ),
 }));
 
-// --- next/image ---
-jest.mock("next/image", () => ({
-  __esModule: true,
-  default: ({
-    src,
-    alt,
-    width,
-    height,
+jest.mock("../components/live-match-bar", () => ({
+  LiveMatchBar: (props: { match: { tournamentName: string } }) => (
+    <div data-testid="live-match-bar">{props.match.tournamentName}</div>
+  ),
+}));
+
+jest.mock("../components/dashboard-stats", () => ({
+  DashboardStats: (props: {
+    winRate: string;
+    rating: string;
+    record: string;
+    tournaments: string;
+    winRateSub: string;
+    ratingSub: string;
+    recordSub: string;
+    tournamentsSub: string;
+  }) => (
+    <div data-testid="dashboard-stats">
+      <span data-testid="stat-winrate">{props.winRate}</span>
+      <span data-testid="stat-winrate-sub">{props.winRateSub}</span>
+      <span data-testid="stat-rating">{props.rating}</span>
+      <span data-testid="stat-rating-sub">{props.ratingSub}</span>
+      <span data-testid="stat-record">{props.record}</span>
+      <span data-testid="stat-record-sub">{props.recordSub}</span>
+      <span data-testid="stat-tournaments">{props.tournaments}</span>
+      <span data-testid="stat-tournaments-sub">{props.tournamentsSub}</span>
+    </div>
+  ),
+}));
+
+jest.mock("../components/create-alt-form", () => ({
+  CreateAltForm: () => <div data-testid="create-alt-form" />,
+}));
+
+// --- @/components/ui/button ---
+jest.mock("@/components/ui/button", () => ({
+  Button: ({
+    children,
+    ...props
   }: {
-    src: string;
-    alt: string;
-    width?: number;
-    height?: number;
-  }) => <img src={src} alt={alt} width={width} height={height} />,
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }) => <button {...props}>{children}</button>,
 }));
 
-// --- next/link ---
-jest.mock("next/link", () => ({
-  __esModule: true,
-  default: ({
-    href,
+// --- @/components/ui/card ---
+jest.mock("@/components/ui/card", () => ({
+  Card: ({
     children,
     className,
   }: {
-    href: string;
     children: React.ReactNode;
     className?: string;
   }) => (
-    <a href={href} className={className}>
+    <div data-testid="card" className={className}>
       {children}
-    </a>
+    </div>
   ),
+  CardContent: ({
+    children,
+    className,
+  }: {
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <div data-testid="card-content" className={className}>
+      {children}
+    </div>
+  ),
+}));
+
+// --- lucide-react ---
+jest.mock("lucide-react", () => ({
+  Loader2: () => <svg data-testid="icon-loader" />,
+  Plus: () => <svg data-testid="icon-plus" />,
+  Users: () => <svg data-testid="icon-users" />,
 }));
 
 // --- sonner ---
@@ -94,8 +144,18 @@ const mockUseSupabase = useSupabase as jest.MockedFunction<typeof useSupabase>;
 // Helpers
 // =============================================================================
 
+/**
+ * Sets up mock return values for all 6 useSupabaseQuery calls in HomeClient.
+ * Order: alts, mainAltId, bulkStats, bulkRatings, dashboardData, activeMatch
+ */
 function setupDefaultQueries({
-  userAlts = [{ id: 5, username: "ash_alt", user_id: "user-1" }],
+  alts = [{ id: 5, username: "ash_alt", user_id: "user-1" }],
+  mainAltId = 5 as number | null,
+  bulkStats = null as Record<
+    number,
+    { matchWins: number; matchLosses: number; tournamentCount: number }
+  > | null,
+  bulkRatings = null as Record<number, { rating: number | null }> | null,
   dashboardData = null as {
     stats: {
       winRate: number;
@@ -117,38 +177,48 @@ function setupDefaultQueries({
     opponent: { username: string } | null;
     table: number | null;
   } | null,
-  recentHistory = [] as Array<{
-    id: number;
-    tournamentName: string;
-    tournamentSlug: string;
-    placement: number | null;
-    altUsername: string;
-    startDate: string | null;
-    endDate: string | null;
-    teamPokemon: string[];
-  }>,
+  altsLoading = false,
+  altsError = null as Error | null,
 } = {}) {
   mockUseSupabaseQuery
+    // 1. alts
     .mockReturnValueOnce({
-      data: userAlts,
+      data: alts,
+      isLoading: altsLoading,
+      error: altsError,
+      refetch: jest.fn(),
+    } as ReturnType<typeof useSupabaseQuery>)
+    // 2. mainAltId
+    .mockReturnValueOnce({
+      data: mainAltId,
       isLoading: false,
       error: null,
       refetch: jest.fn(),
     } as ReturnType<typeof useSupabaseQuery>)
+    // 3. bulkStats
+    .mockReturnValueOnce({
+      data: bulkStats,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    } as ReturnType<typeof useSupabaseQuery>)
+    // 4. bulkRatings
+    .mockReturnValueOnce({
+      data: bulkRatings,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    } as ReturnType<typeof useSupabaseQuery>)
+    // 5. dashboardData
     .mockReturnValueOnce({
       data: dashboardData,
       isLoading: false,
       error: null,
       refetch: jest.fn(),
     } as ReturnType<typeof useSupabaseQuery>)
+    // 6. activeMatch
     .mockReturnValueOnce({
       data: activeMatch,
-      isLoading: false,
-      error: null,
-      refetch: jest.fn(),
-    } as ReturnType<typeof useSupabaseQuery>)
-    .mockReturnValueOnce({
-      data: recentHistory,
       isLoading: false,
       error: null,
       refetch: jest.fn(),
@@ -183,55 +253,31 @@ describe("HomeClient", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Welcome heading
-  // ---------------------------------------------------------------------------
-
-  describe("welcome heading", () => {
-    it("renders Welcome back with display name", () => {
-      mockGetUserDisplayName.mockReturnValue("Ash");
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText(/welcome back, ash/i)).toBeInTheDocument();
-    });
-  });
-
-  // ---------------------------------------------------------------------------
   // Stats row
   // ---------------------------------------------------------------------------
 
-  describe("stats cards", () => {
-    it("renders Win Rate stat card", () => {
+  describe("stats row", () => {
+    it("renders DashboardStats component", () => {
       setupDefaultQueries();
       render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText("Win Rate")).toBeInTheDocument();
-    });
-
-    it("renders Rating stat card", () => {
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText("Rating")).toBeInTheDocument();
-    });
-
-    it("renders Record stat card", () => {
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText("Record")).toBeInTheDocument();
-    });
-
-    it("renders Tournaments stat card", () => {
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText("Tournaments")).toBeInTheDocument();
+      expect(screen.getByTestId("dashboard-stats")).toBeInTheDocument();
     });
 
     it("renders 0.0% win rate when no dashboard data", () => {
       setupDefaultQueries();
       render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText("0.0%")).toBeInTheDocument();
+      expect(screen.getByTestId("stat-winrate")).toHaveTextContent("0.0%");
     });
 
-    it("renders rating from dashboardData", () => {
+    it("renders — for rating when no rating data", () => {
+      setupDefaultQueries();
+      render(<HomeClient selectedAltUsername={null} />);
+      expect(screen.getByTestId("stat-rating")).toHaveTextContent("—");
+    });
+
+    it("renders rating from dashboardData when alt is selected", () => {
       setupDefaultQueries({
+        alts: [{ id: 5, username: "ash_alt", user_id: "user-1" }],
         dashboardData: {
           stats: {
             winRate: 60,
@@ -247,31 +293,29 @@ describe("HomeClient", () => {
           achievements: [],
         },
       });
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText("1,500")).toBeInTheDocument();
-    });
-
-    it("renders — for rating when rating is 0", () => {
-      setupDefaultQueries();
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText("—")).toBeInTheDocument();
+      render(<HomeClient selectedAltUsername="ash_alt" />);
+      expect(screen.getByTestId("stat-rating")).toHaveTextContent("1,500");
     });
 
     it("renders 'across all alts' sub-label when no alt selected", () => {
       setupDefaultQueries();
       render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText("across all alts")).toBeInTheDocument();
+      expect(screen.getByTestId("stat-winrate-sub")).toHaveTextContent(
+        "across all alts"
+      );
     });
 
     it("renders 'as <alt>' sub-label when alt is selected", () => {
       setupDefaultQueries();
       render(<HomeClient selectedAltUsername="ash_alt" />);
-      expect(screen.getByText("as ash_alt")).toBeInTheDocument();
+      expect(screen.getByTestId("stat-record-sub")).toHaveTextContent(
+        "as ash_alt"
+      );
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Active match bar
+  // Live match bar
   // ---------------------------------------------------------------------------
 
   describe("live match bar", () => {
@@ -286,184 +330,50 @@ describe("HomeClient", () => {
         },
       });
       render(<HomeClient selectedAltUsername={null} />);
+      expect(screen.getByTestId("live-match-bar")).toBeInTheDocument();
       expect(screen.getByText("Pallet Cup")).toBeInTheDocument();
-      expect(screen.getByText(/round 2/i)).toBeInTheDocument();
-      expect(
-        screen.getByRole("link", { name: /go to match/i })
-      ).toBeInTheDocument();
     });
 
     it("does not render live match bar when activeMatch is null", () => {
       setupDefaultQueries({ activeMatch: null });
       render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.queryByText(/go to match/i)).not.toBeInTheDocument();
-    });
-
-    it("renders opponent username in match bar", () => {
-      setupDefaultQueries({
-        activeMatch: {
-          tournamentName: "Summer Cup",
-          tournamentSlug: "summer-cup",
-          roundNumber: 1,
-          opponent: { username: "misty" },
-          table: null,
-        },
-      });
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText("misty")).toBeInTheDocument();
-    });
-
-    it("renders table number when table is set", () => {
-      setupDefaultQueries({
-        activeMatch: {
-          tournamentName: "Summer Cup",
-          tournamentSlug: "summer-cup",
-          roundNumber: 1,
-          opponent: null,
-          table: 7,
-        },
-      });
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText(/table 7/i)).toBeInTheDocument();
+      expect(screen.queryByTestId("live-match-bar")).not.toBeInTheDocument();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Recent results
+  // Alts table
   // ---------------------------------------------------------------------------
 
-  describe("recent results", () => {
-    it("shows 'No tournament history yet' when recentResults is empty", () => {
-      setupDefaultQueries({ recentHistory: [] });
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(
-        screen.getByText("No tournament history yet.")
-      ).toBeInTheDocument();
-    });
-
-    it("renders recent history items", () => {
-      setupDefaultQueries({
-        recentHistory: [
-          {
-            id: 1,
-            tournamentName: "Kanto Regional",
-            tournamentSlug: "kanto-regional",
-            placement: 1,
-            altUsername: "ash_alt",
-            startDate: "2026-03-01",
-            endDate: "2026-03-02",
-            teamPokemon: ["pikachu"],
-          },
-        ],
-      });
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText("Kanto Regional")).toBeInTheDocument();
-    });
-
-    it("renders 1st place with trophy emoji", () => {
-      setupDefaultQueries({
-        recentHistory: [
-          {
-            id: 1,
-            tournamentName: "Cup A",
-            tournamentSlug: "cup-a",
-            placement: 1,
-            altUsername: "ash_alt",
-            startDate: null,
-            endDate: null,
-            teamPokemon: [],
-          },
-        ],
-      });
-      render(<HomeClient selectedAltUsername={null} />);
-      expect(screen.getByText(/1 🏆/)).toBeInTheDocument();
-    });
-
-    it("renders — for null placement", () => {
-      setupDefaultQueries({
-        recentHistory: [
-          {
-            id: 2,
-            tournamentName: "Cup B",
-            tournamentSlug: "cup-b",
-            placement: null,
-            altUsername: "ash_alt",
-            startDate: null,
-            endDate: null,
-            teamPokemon: [],
-          },
-        ],
-      });
-      render(<HomeClient selectedAltUsername={null} />);
-      // placement null → "—" (may appear multiple times in the UI)
-      const dashes = screen.getAllByText("—");
-      expect(dashes.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it("filters history by selectedAltUsername when provided", () => {
-      setupDefaultQueries({
-        recentHistory: [
-          {
-            id: 1,
-            tournamentName: "Cup A",
-            tournamentSlug: "cup-a",
-            placement: 2,
-            altUsername: "ash_alt",
-            startDate: null,
-            endDate: null,
-            teamPokemon: [],
-          },
-          {
-            id: 2,
-            tournamentName: "Cup B",
-            tournamentSlug: "cup-b",
-            placement: 3,
-            altUsername: "other_alt",
-            startDate: null,
-            endDate: null,
-            teamPokemon: [],
-          },
-        ],
-      });
-      render(<HomeClient selectedAltUsername="ash_alt" />);
-      expect(screen.getByText("Cup A")).toBeInTheDocument();
-      expect(screen.queryByText("Cup B")).not.toBeInTheDocument();
-    });
-
-    it("renders View history link", () => {
+  describe("alts table", () => {
+    it("renders AltsTable component when alts exist", () => {
       setupDefaultQueries();
       render(<HomeClient selectedAltUsername={null} />);
-      const link = screen.getByRole("link", { name: /view history/i });
-      expect(link).toHaveAttribute("href", "/dashboard/tournaments");
+      expect(screen.getByTestId("alts-table")).toBeInTheDocument();
+    });
+
+    it("renders 'Your Alts' heading", () => {
+      setupDefaultQueries();
+      render(<HomeClient selectedAltUsername={null} />);
+      expect(screen.getByText("Your Alts")).toBeInTheDocument();
+    });
+
+    it("renders empty state when no alts", () => {
+      setupDefaultQueries({ alts: [] });
+      render(<HomeClient selectedAltUsername={null} />);
+      expect(screen.getByText("No alts yet")).toBeInTheDocument();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Dashboard error
+  // Error state
   // ---------------------------------------------------------------------------
 
-  describe("dashboard error state", () => {
-    it("renders error state when dashboardError is truthy", () => {
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
-          data: [{ id: 5, username: "ash_alt", user_id: "user-1" }],
-          isLoading: false,
-          error: null,
-          refetch: jest.fn(),
-        } as ReturnType<typeof useSupabaseQuery>)
-        .mockReturnValueOnce({
-          data: undefined,
-          isLoading: false,
-          error: new Error("DB connection failed"),
-          refetch: jest.fn(),
-        } as ReturnType<typeof useSupabaseQuery>)
-        .mockReturnValue({
-          data: null,
-          isLoading: false,
-          error: null,
-          refetch: jest.fn(),
-        } as ReturnType<typeof useSupabaseQuery>);
-
+  describe("error state", () => {
+    it("renders error state when alts query fails", () => {
+      setupDefaultQueries({
+        altsError: new Error("DB connection failed"),
+      });
       render(<HomeClient selectedAltUsername={null} />);
       expect(screen.getByText("Something went wrong")).toBeInTheDocument();
     });

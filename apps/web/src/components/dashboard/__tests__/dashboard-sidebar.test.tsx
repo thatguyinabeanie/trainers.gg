@@ -161,6 +161,12 @@ jest.mock("lucide-react", () => ({
   User: () => <svg data-testid="icon-user" />,
   ChevronsUpDown: () => <svg data-testid="icon-chevrons-up-down" />,
   Check: () => <svg data-testid="icon-check" />,
+  Search: () => <svg data-testid="icon-search" />,
+  Globe: () => <svg data-testid="icon-globe" />,
+  Hammer: () => <svg data-testid="icon-hammer" />,
+  BarChart3: () => <svg data-testid="icon-bar-chart" />,
+  FileText: () => <svg data-testid="icon-file-text" />,
+  GraduationCap: () => <svg data-testid="icon-graduation-cap" />,
 }));
 
 // Mock supabase client
@@ -246,7 +252,7 @@ describe("DashboardSidebar", () => {
       expect(screen.getByText("Home")).toBeInTheDocument();
     });
 
-    it("renders Alts navigation item", () => {
+    it("renders Explore section with navigation links", () => {
       render(
         <DashboardSidebar
           user={baseUser}
@@ -255,7 +261,12 @@ describe("DashboardSidebar", () => {
           selectedAltUsername={null}
         />
       );
-      expect(screen.getByText("Alts")).toBeInTheDocument();
+      expect(screen.getByText("Explore")).toBeInTheDocument();
+      expect(screen.getByText("Browse Tournaments")).toBeInTheDocument();
+      expect(screen.getByText("Team Builder")).toBeInTheDocument();
+      expect(screen.getByText("Analytics")).toBeInTheDocument();
+      expect(screen.getByText("Articles")).toBeInTheDocument();
+      expect(screen.getByText("Coaching")).toBeInTheDocument();
     });
 
     it("renders Tournaments navigation item", () => {
@@ -292,11 +303,14 @@ describe("DashboardSidebar", () => {
           selectedAltUsername={null}
         />
       );
-      expect(screen.getByText("Communities")).toBeInTheDocument();
+      // "Communities" appears as both a sidebar group label and an Explore link.
+      // The group label only renders when user has communities.
+      const labels = screen.getAllByText("Communities");
+      expect(labels.length).toBeGreaterThanOrEqual(2);
       expect(screen.getByText("Pallet Town League")).toBeInTheDocument();
     });
 
-    it("does not render communities section when no communities", () => {
+    it("does not render communities sidebar group when no communities", () => {
       render(
         <DashboardSidebar
           user={baseUser}
@@ -305,7 +319,10 @@ describe("DashboardSidebar", () => {
           selectedAltUsername={null}
         />
       );
-      expect(screen.queryByText("Communities")).not.toBeInTheDocument();
+      // "Communities" still appears once in the Explore section,
+      // but should NOT appear as a sidebar group label.
+      const labels = screen.getAllByText("Communities");
+      expect(labels).toHaveLength(1);
     });
 
     it("renders user display name via formatDisplayUsername", () => {
