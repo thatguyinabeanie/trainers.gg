@@ -123,8 +123,8 @@ Turbo Remote Caching is optional but highly recommended.
 
 3. **Add to GitHub**
    - Go to Settings → Secrets and variables → Actions
-   - Add repository secret: `TURBO_TOKEN`
-   - Add repository variable: `TURBO_TEAM` (your team slug)
+   - Add repository secret: `VERCEL_TOKEN` (your Vercel API token)
+   - Add repository secret: `VERCEL_TEAM_ID` (your Vercel team ID)
 
 4. **Done!** CI will automatically use remote caching.
 
@@ -220,7 +220,7 @@ Check that secrets are configured:
 
 ```bash
 # Local test
-TURBO_TOKEN=your-token TURBO_TEAM=your-team pnpm turbo run build
+TURBO_TOKEN=your-token TURBO_TEAM=your-team-id pnpm turbo run build
 ```
 
 Should output:

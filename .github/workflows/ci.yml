@@ -91,8 +91,8 @@ jobs:
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
           turbo-prefix: quality
-          turbo-token: ${{ secrets.TURBO_TOKEN }}
-          turbo-team: ${{ secrets.TURBO_TEAM }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: ESLint cache
         uses: actions/cache@v5
@@ -146,8 +146,8 @@ jobs:
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
           turbo-prefix: test-web
-          turbo-token: ${{ secrets.TURBO_TOKEN }}
-          turbo-team: ${{ secrets.TURBO_TEAM }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: Jest cache
         uses: actions/cache@v5
@@ -199,8 +199,8 @@ jobs:
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
           turbo-prefix: test-mobile
-          turbo-token: ${{ secrets.TURBO_TOKEN }}
-          turbo-team: ${{ secrets.TURBO_TEAM }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: Jest cache
         uses: actions/cache@v5
@@ -252,8 +252,8 @@ jobs:
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
           turbo-prefix: test-packages
-          turbo-token: ${{ secrets.TURBO_TOKEN }}
-          turbo-team: ${{ secrets.TURBO_TEAM }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: Jest cache
         uses: actions/cache@v5
@@ -316,8 +316,8 @@ jobs:
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
           turbo-prefix: e2e-prepare
-          turbo-token: ${{ secrets.TURBO_TOKEN }}
-          turbo-team: ${{ secrets.TURBO_TEAM }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: Get Playwright version
         id: playwright-version
@@ -425,8 +425,8 @@ jobs:
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
           turbo-prefix: e2e
-          turbo-token: ${{ secrets.TURBO_TOKEN }}
-          turbo-team: ${{ secrets.TURBO_TEAM }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: Restore Playwright browsers
         uses: actions/cache/restore@v5

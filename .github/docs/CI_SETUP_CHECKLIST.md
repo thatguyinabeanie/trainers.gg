@@ -47,14 +47,13 @@ Your team slug is in the URL:
 
 2. **Add Secret:**
    - Click "New repository secret"
-   - Name: `TURBO_TOKEN`
+   - Name: `VERCEL_TOKEN`
    - Value: (paste your Vercel token)
 
-3. **Add Variable:**
-   - Click "Variables" tab
-   - Click "New repository variable"
-   - Name: `TURBO_TEAM`
-   - Value: (your team slug)
+3. **Add Secret:**
+   - Click "New repository secret"
+   - Name: `VERCEL_TEAM_ID`
+   - Value: (your Vercel team ID)
 
 #### Step 5: Verify
 
@@ -182,8 +181,8 @@ A test shard failed. Check the individual shard logs to see which tests failed.
 Double-check:
 
 1. Token has "Full Access" scope
-2. Secret name is exactly `TURBO_TOKEN`
-3. Variable name is exactly `TURBO_TEAM`
+2. Secret name is exactly `VERCEL_TOKEN`
+3. Secret name is exactly `VERCEL_TEAM_ID`
 4. No extra spaces in values
 
 ## 📈 Monitoring

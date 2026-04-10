@@ -8,11 +8,11 @@ inputs:
   turbo-prefix:
     description: Job-specific prefix for the Turbo cache key (e.g. "quality", "test-web")
     required: true
-  turbo-token:
-    description: Turbo remote cache token
+  vercel-token:
+    description: Vercel token (also used for Turbo remote cache)
     required: false
-  turbo-team:
-    description: Turbo remote cache team
+  vercel-team-id:
+    description: Vercel team ID (also used for Turbo remote cache)
     required: false
 
 runs:
@@ -51,8 +51,8 @@ runs:
           turbo-${{ inputs.turbo-prefix }}-${{ runner.os }}-
 
     - name: Configure Turbo Remote Cache
-      if: inputs.turbo-token != ''
+      if: inputs.vercel-token != ''
       shell: bash
       run: |
-        echo "TURBO_TOKEN=${{ inputs.turbo-token }}" >> "$GITHUB_ENV"
-        echo "TURBO_TEAM=${{ inputs.turbo-team }}" >> "$GITHUB_ENV"
+        echo "TURBO_TOKEN=${{ inputs.vercel-token }}" >> "$GITHUB_ENV"
+        echo "TURBO_TEAM=${{ inputs.vercel-team-id }}" >> "$GITHUB_ENV"
