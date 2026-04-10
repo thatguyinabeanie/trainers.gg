@@ -298,6 +298,46 @@ jobs:
           files: "**/coverage/lcov.info"
           fail_ci_if_error: false
 
+  # ── E2E preparation (parallel with preview wait) ──────────
+  e2e-prepare:
+    name: E2E Prepare (browsers)
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [install]
+    outputs:
+      playwright-version: ${{ steps.playwright-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/setup
+        with:
+          node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
+          turbo-prefix: e2e-prepare
+          turbo-token: ${{ secrets.TURBO_TOKEN }}
+          turbo-team: ${{ secrets.TURBO_TEAM }}
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(pnpm --filter=@trainers/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter=@trainers/web exec playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter=@trainers/web exec playwright install-deps chromium
+
   # ── Wait for Vercel preview (shared by E2E + Lighthouse) ───
   wait-for-preview:
     name: Wait for Preview
@@ -395,7 +435,7 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [install, wait-for-preview]
+    needs: [install, e2e-prepare, wait-for-preview]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -408,23 +448,14 @@ jobs:
           turbo-token: ${{ secrets.TURBO_TOKEN }}
           turbo-team: ${{ secrets.TURBO_TEAM }}
 
-      - name: Get Playwright version
-        id: playwright-version
-        run: echo "version=$(pnpm --filter=@trainers/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v5
-        id: playwright-cache
+      - name: Restore Playwright browsers
+        uses: actions/cache/restore@v5
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter=@trainers/web exec playwright install --with-deps chromium
+          key: playwright-${{ runner.os }}-${{ needs.e2e-prepare.outputs.playwright-version }}
+          fail-on-cache-miss: true
 
       - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
       - name: Seed E2E test users on preview
