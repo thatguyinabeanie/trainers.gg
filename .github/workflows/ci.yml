@@ -356,6 +356,8 @@ jobs:
     steps:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
       - name: Create or find Supabase branch
         id: branch
