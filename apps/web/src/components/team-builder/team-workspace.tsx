@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { type GameFormat } from "@trainers/pokemon";
 import { type TeamWithPokemon } from "@trainers/supabase";
@@ -47,9 +48,9 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<"types" | "speed" | "calc">(
     "types"
   );
-  const [_saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
-    "idle"
-  );
+  const [_saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const selectedEntry = sortedPokemon.find(
@@ -69,13 +70,18 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setSaveStatus("saving");
     saveTimerRef.current = setTimeout(async () => {
-      await updatePokemonAction(
+      const result = await updatePokemonAction(
         pokemonId,
         { [field]: value } as Parameters<typeof updatePokemonAction>[1],
         team.id
       );
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
+      if (result.success) {
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2000);
+      } else {
+        setSaveStatus("error");
+        toast.error(result.error ?? "Failed to save changes.");
+      }
     }, 2000);
   }
 

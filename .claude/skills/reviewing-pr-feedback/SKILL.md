@@ -67,27 +67,49 @@ Group comments by **theme**, not by file. Multiple comments about the same under
 - 3 comments about missing `DROP POLICY IF EXISTS` → one group: "migration idempotency"
 - 1 standalone comment about a missing test → its own group
 
-**For each group, present to the user:**
+### Validity Assessment
 
-```markdown
-### Group N: {theme} ({count} comments)
+For each comment/group, assess how valid the concern is before presenting:
 
-**Files affected:** `path/to/file.ts:42`, `path/to/other.ts:88`
+| Validity            | Meaning                                                                             |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| 🔴 **Critical**     | Real bug that will cause runtime failures, data corruption, or security issues      |
+| 🟡 **Valid**        | Legitimate concern — code works but is fragile, misleading, or violates conventions |
+| 🟢 **Minor**        | Style preference or theoretical concern unlikely to cause real issues               |
+| ⚪ **Not an issue** | Reviewer misread the code or flagged something that's actually correct              |
 
-**The concern:** {plain-language explanation of what reviewers flagged}
+### Presenting Groups
 
-**Recommended fix:** {specific, actionable fix — not vague. Include what to change and where.}
+**Use the `AskUserQuestion` tool for every group.** Never present groups as plain text — always use the structured question UI so the user gets a clean interface to make decisions.
 
-How would you like to handle this?
+Format each group as an `AskUserQuestion` with:
+
+- The **question** field contains the full context: emoji-organized summary, files affected, the concern explained in plain language, validity assessment, and recommended fix
+- The **options** provide the decision choices
+
+**Question body template:**
+
+```
+📋 Group N: {theme} ({count} comment(s))
+
+📁 Files: `path/to/file.ts:42`, `path/to/other.ts:88`
+
+🔍 Concern: {plain-language explanation}
+
+{validity emoji} Validity: {Critical|Valid|Minor|Not an issue} — {why}
+
+💡 Recommended fix: {specific, actionable description}
 ```
 
-Wait for the user's decision on each group before moving to the next. The user may:
+**Options should always include:**
 
-- Approve the recommended fix
-- Modify the approach
-- Provide a different fix
+1. The recommended fix (labeled with "(Recommended)" if applicable)
+2. An alternative approach if one exists
+3. "Not an issue — explain why" (only when validity is ⚪)
 
-**There is no "defer" or "won't do" option.** Every group must result in either a code fix or a reply explaining why the code is already correct (with evidence).
+Wait for the user's decision on each group before presenting the next.
+
+**There is no "defer" option.** Every group must result in either a code fix or a reply explaining why the code is already correct (with evidence).
 
 ## Phase 4: Implement Fixes
 

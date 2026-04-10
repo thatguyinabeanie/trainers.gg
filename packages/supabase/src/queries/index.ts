@@ -267,8 +267,10 @@ export {
 
 // Team builder queries
 export {
+  getTeamsForAltList,
   getTeamsForAltFull,
   getTeamWithPokemon,
   getTeamsForAltByFormatFull,
+  type TeamListItem,
   type TeamWithPokemon,
 } from "./teams";

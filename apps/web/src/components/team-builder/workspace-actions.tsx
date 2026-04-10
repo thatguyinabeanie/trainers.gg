@@ -101,11 +101,14 @@ export function WorkspaceActions({
 
       const toImport = parsedTeam.slice(0, availableSlots);
 
-      // Compute next position from the highest existing position to avoid
-      // collisions when team has gaps (e.g., deleted slot 3).
-      const maxPosition = team.team_pokemon.reduce(
-        (max, tp) => Math.max(max, tp.team_position),
-        0
+      // Find available position slots (1–6) that aren't already occupied.
+      // This handles gaps (e.g., positions [1,2,6]) without exceeding the
+      // DB constraint of team_position BETWEEN 1 AND 6.
+      const usedPositions = new Set(
+        team.team_pokemon.map((tp) => tp.team_position)
+      );
+      const availablePositions = [1, 2, 3, 4, 5, 6].filter(
+        (p) => !usedPositions.has(p)
       );
 
       const addResults = await Promise.all(
@@ -145,7 +148,7 @@ export function WorkspaceActions({
           return addPokemonToTeamAction(
             team.id,
             pokemonInsert,
-            maxPosition + i + 1
+            availablePositions[i] ?? i + 1
           );
         })
       );

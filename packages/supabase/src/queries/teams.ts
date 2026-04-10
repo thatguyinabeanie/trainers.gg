@@ -15,9 +15,50 @@ export type TeamWithPokemon = Tables<"teams"> & {
   }>;
 };
 
+/** Lightweight team shape for list views — only species/shiny for sprites. */
+export type TeamListItem = Tables<"teams"> & {
+  team_pokemon: Array<{
+    id: number;
+    team_position: number;
+    pokemon: {
+      id: number;
+      species: string | null;
+      is_shiny: boolean | null;
+    } | null;
+  }>;
+};
+
 // =============================================================================
 // Team Queries
 // =============================================================================
+
+/**
+ * Get all teams for an alt with minimal pokemon data for the list view.
+ * Only fetches species and is_shiny from pokemon (enough for sprites).
+ * Use `getTeamsForAltFull` when full pokemon fields are needed (workspace).
+ */
+export async function getTeamsForAltList(
+  supabase: TypedClient,
+  altId: number
+): Promise<TeamListItem[]> {
+  const { data: teams, error } = await supabase
+    .from("teams")
+    .select(
+      `
+      *,
+      team_pokemon(
+        id,
+        team_position,
+        pokemon:pokemon(id, species, is_shiny)
+      )
+    `
+    )
+    .eq("created_by", altId)
+    .order("updated_at", { ascending: false });
+
+  if (error) throw new Error(`Failed to fetch teams for alt: ${error.message}`);
+  return teams ?? [];
+}
 
 /**
  * Get all teams for an alt with full pokemon data, ordered by updated_at desc.

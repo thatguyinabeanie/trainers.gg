@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Plus, Upload } from "lucide-react";
 
 import { getActiveFormats, getFormatLabel } from "@trainers/pokemon";
-import { getAltByUsername, getTeamsForAltFull } from "@trainers/supabase";
+import { getAltByUsername, getTeamsForAltList } from "@trainers/supabase";
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -30,7 +30,7 @@ export const metadata = {
  * Returns a Map<format, teams[]> preserving insertion order.
  */
 function groupByFormat(
-  teams: Awaited<ReturnType<typeof getTeamsForAltFull>>
+  teams: Awaited<ReturnType<typeof getTeamsForAltList>>
 ): Map<string, typeof teams> {
   const map = new Map<string, typeof teams>();
   for (const team of teams) {
@@ -78,7 +78,7 @@ export default async function TeamsPage({
     notFound();
   }
 
-  const teams = await getTeamsForAltFull(supabase, alt.id);
+  const teams = await getTeamsForAltList(supabase, alt.id);
 
   // Filter logic
   const isAll = !selectedFormat || selectedFormat === "all";

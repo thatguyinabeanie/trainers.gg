@@ -6,7 +6,7 @@ import Link from "next/link";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { getFormatLabel } from "@trainers/pokemon";
 import { formatTimeAgo } from "@trainers/utils";
-import { type TeamWithPokemon } from "@trainers/supabase";
+import { type TeamListItem } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 // ---------------------------------------------------------------------------
 
 interface TeamCardProps {
-  team: TeamWithPokemon;
+  team: TeamListItem;
   handle: string;
   className?: string;
 }
