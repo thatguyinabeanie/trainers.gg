@@ -152,12 +152,12 @@ CREATE TABLE IF NOT EXISTS pokemon_detail_stats (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   meta_id bigint NOT NULL REFERENCES format_meta_stats(id),
   species text NOT NULL,
-  items jsonb DEFAULT '[]',
-  abilities jsonb DEFAULT '[]',
-  moves jsonb DEFAULT '[]',
-  spreads jsonb DEFAULT '[]',
-  tera_types jsonb DEFAULT '[]',
-  teammates jsonb DEFAULT '[]'
+  items jsonb NOT NULL DEFAULT '[]'::jsonb,
+  abilities jsonb NOT NULL DEFAULT '[]'::jsonb,
+  moves jsonb NOT NULL DEFAULT '[]'::jsonb,
+  spreads jsonb NOT NULL DEFAULT '[]'::jsonb,
+  tera_types jsonb NOT NULL DEFAULT '[]'::jsonb,
+  teammates jsonb NOT NULL DEFAULT '[]'::jsonb
 );
 
 CREATE INDEX IF NOT EXISTS idx_pokemon_detail_stats_meta_species

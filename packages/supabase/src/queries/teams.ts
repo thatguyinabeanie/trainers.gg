@@ -15,8 +15,11 @@ export type TeamWithPokemon = Tables<"teams"> & {
   }>;
 };
 
-/** Lightweight team shape for list views — only species/shiny for sprites. */
-export type TeamListItem = Tables<"teams"> & {
+/** Lightweight team shape for list views — only the fields needed for the card UI. */
+export type TeamListItem = Pick<
+  Tables<"teams">,
+  "id" | "name" | "format" | "is_public" | "updated_at" | "created_at"
+> & {
   team_pokemon: Array<{
     id: number;
     team_position: number;
@@ -45,7 +48,12 @@ export async function getTeamsForAltList(
     .from("teams")
     .select(
       `
-      *,
+      id,
+      name,
+      format,
+      is_public,
+      updated_at,
+      created_at,
       team_pokemon(
         id,
         team_position,

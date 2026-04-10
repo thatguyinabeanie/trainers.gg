@@ -59,9 +59,10 @@ Empty optional strings are transformed to `undefined` so downstream code doesn't
 - Return `null` from queries when not found
 - Server Actions return `{ success: boolean; error?: string }`
 
-## Dynamic CSS Classes
+## Styling
 
-Always use `cn()` from `@/lib/utils` for dynamic Tailwind classes. Template literals cause Tailwind purge issues.
+- The web app uses **Tailwind CSS v4** (`@tailwindcss/postcss`). Tailwind v4 has a continuous spacing scale — every integer value (e.g. `w-22`, `h-22`) is valid. Do not flag integer spacing utilities as missing; they are all generated on-demand.
+- Always use `cn()` from `@/lib/utils` for dynamic Tailwind classes. Template literals cause Tailwind purge issues.
 
 ## Design System
 
