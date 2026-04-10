@@ -216,33 +216,38 @@ function countMigrations() {
  * IMPORTANT: For seeding that writes to auth.users, we need a NON-POOLING connection.
  * The pooler (PgBouncer) can't handle multi-statement transactions or auth schema writes.
  *
- * Priority:
- * 1. SUPABASE_POSTGRES_URL_NON_POOLING - Direct connection (preferred for seeding)
- * 2. SUPABASE_POSTGRES_URL - Pooled connection (may work for simple seeds)
- * 3. Build URL from project ref and password (uses direct connection on port 5432)
+ * Priority (check both SUPABASE_* and bare POSTGRES_* — the Supabase Vercel Integration
+ * provides the unprefixed variants, while some setups use the prefixed ones):
+ * 1. SUPABASE_POSTGRES_URL_NON_POOLING / POSTGRES_URL_NON_POOLING - Direct (preferred)
+ * 2. SUPABASE_POSTGRES_URL / POSTGRES_URL - Pooled (may work for simple seeds)
+ * 3. Build URL from project ref and password (direct connection via db host)
  */
 function getDatabaseUrl(projectRef) {
   // Prefer non-pooling URL for seeding (required for auth.users writes)
-  if (process.env.SUPABASE_POSTGRES_URL_NON_POOLING) {
+  const nonPoolingUrl =
+    process.env.SUPABASE_POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_URL_NON_POOLING;
+  if (nonPoolingUrl) {
     console.log(`   Using non-pooling connection (direct)`);
-    return process.env.SUPABASE_POSTGRES_URL_NON_POOLING;
+    return nonPoolingUrl;
   }
 
   // Fall back to pooled URL (may not work for auth schema)
-  if (process.env.SUPABASE_POSTGRES_URL) {
+  const pooledUrl =
+    process.env.SUPABASE_POSTGRES_URL || process.env.POSTGRES_URL;
+  if (pooledUrl) {
     console.log(`   ⚠️  Using pooled connection (may fail for auth.users)`);
-    return process.env.SUPABASE_POSTGRES_URL;
+    return pooledUrl;
   }
 
-  // Build direct connection URL (port 5432, not pooler)
+  // Build direct connection URL — use db.<ref>.supabase.co (region-independent)
   const password = process.env.POSTGRES_PASSWORD;
   if (!password) {
     return null;
   }
 
   console.log(`   Building direct connection URL`);
-  // Use direct connection (port 5432) for seeding, not pooler (port 6543)
-  return `postgresql://postgres.${projectRef}:${password}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`;
+  return `postgresql://postgres:${password}@db.${projectRef}.supabase.co:5432/postgres`;
 }
 
 /**
