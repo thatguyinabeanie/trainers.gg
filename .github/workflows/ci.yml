@@ -338,95 +338,53 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
-  # ── Wait for Vercel preview (shared by E2E + Lighthouse) ───
-  wait-for-preview:
-    name: Wait for Preview
+  # ── Deploy Vercel preview (shared by E2E + Lighthouse) ──────
+  deploy-preview:
+    name: Deploy Preview
     # Skip for Dependabot PRs — they can't access secrets needed for bypass auth,
     # and dependency bumps don't need E2E/Lighthouse validation
     if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
+    needs: [install]
     outputs:
-      url: ${{ steps.vercel-preview.outputs.url }}
+      url: ${{ steps.deploy.outputs.url }}
     steps:
-      - name: Wait for Vercel preview deployment
-        id: vercel-preview
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/setup
+        with:
+          node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
+          turbo-prefix: deploy-preview
+          turbo-token: ${{ secrets.TURBO_TOKEN }}
+          turbo-team: ${{ secrets.TURBO_TEAM }}
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-          PR_SHA: ${{ github.event.pull_request.head.sha }}
-          GH_REPO: ${{ github.repository }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build project
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy to Vercel
+        id: deploy
         run: |
-          echo "Waiting for Vercel preview deployment for $PR_SHA..."
-
-          for i in $(seq 1 40); do
-            DEPLOY_ID=$(gh api "repos/$GH_REPO/deployments?sha=$PR_SHA&environment=Preview" \
-              --jq '.[0].id // empty' 2>/dev/null || true)
-
-            if [ -n "$DEPLOY_ID" ]; then
-              # Check if Vercel skipped this deployment (e.g. "Skipped - Not affected")
-              DEPLOY_DESC=$(gh api "repos/$GH_REPO/deployments/$DEPLOY_ID/statuses" \
-                --jq '.[0].description // empty' 2>/dev/null || true)
-
-              if echo "$DEPLOY_DESC" | grep -qi "skipped"; then
-                echo "Deployment was skipped by Vercel ($DEPLOY_DESC)"
-                echo "Falling back to latest successful preview deployment..."
-
-                # Find the most recent non-skipped preview deployment
-                FALLBACK_ID=$(gh api "repos/$GH_REPO/deployments?environment=Preview&per_page=10" \
-                  --jq '[.[] | select(.sha != env.PR_SHA)] | .[0].id // empty' 2>/dev/null || true)
-
-                if [ -n "$FALLBACK_ID" ]; then
-                  URL=$(gh api "repos/$GH_REPO/deployments/$FALLBACK_ID/statuses" \
-                    --jq '[.[] | select(.environment_url != null and .environment_url != "")] | .[0].environment_url // empty' 2>/dev/null || true)
-
-                  if [ -n "$URL" ]; then
-                    BODY=$(curl -s -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$URL" | head -c 5000)
-                    if ! echo "$BODY" | grep -qi "Deployment was cancelled\|deployment not found\|deployment error"; then
-                      echo "url=$URL" >> "$GITHUB_OUTPUT"
-                      echo "Using fallback preview at $URL"
-                      exit 0
-                    fi
-                  fi
-                fi
-
-                echo "No usable fallback deployment found (attempt $i/40)"
-                sleep 15
-                continue
-              fi
-
-              # Get environment_url from latest status (Vercel uses "inactive" state, not "success")
-              URL=$(gh api "repos/$GH_REPO/deployments/$DEPLOY_ID/statuses" \
-                --jq '.[0].environment_url // empty' 2>/dev/null || true)
-
-              if [ -n "$URL" ]; then
-                STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-                  -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$URL")
-
-                if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-                  # Verify the page isn't a Vercel error/cancelled deployment page
-                  BODY=$(curl -s -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$URL" | head -c 5000)
-                  if echo "$BODY" | grep -qi "Deployment was cancelled\|deployment not found\|deployment error"; then
-                    echo "Deployment at $URL shows error page (attempt $i/40)"
-                  else
-                    echo "url=$URL" >> "$GITHUB_OUTPUT"
-                    echo "Preview ready at $URL (HTTP $STATUS)"
-                    exit 0
-                  fi
-                fi
-                echo "Deployment returned HTTP $STATUS (attempt $i/40)"
-              else
-                echo "Deployment $DEPLOY_ID not ready yet (attempt $i/40)"
-              fi
-            else
-              echo "No deployment found yet (attempt $i/40)"
-            fi
-
-            sleep 15
-          done
-
-          echo "::error::Timeout waiting for Vercel preview deployment"
-          exit 1
+          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Preview deployed to: $URL"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
   # ── E2E tests (Playwright) ─────────────────────────────────
   e2e-tests:
@@ -435,7 +393,7 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [install, e2e-prepare, wait-for-preview]
+    needs: [install, e2e-prepare, deploy-preview]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -460,9 +418,9 @@ jobs:
 
       - name: Seed E2E test users on preview
         id: e2e-seed
-        if: needs.wait-for-preview.outputs.url != ''
+        if: needs.deploy-preview.outputs.url != ''
         env:
-          PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.url }}
+          PLAYWRIGHT_BASE_URL: ${{ needs.deploy-preview.outputs.url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           echo "Seeding E2E test users on $PLAYWRIGHT_BASE_URL..."
@@ -496,7 +454,7 @@ jobs:
         if: steps.e2e-seed.outputs.safe != 'false'
         env:
           CI: true
-          PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.url }}
+          PLAYWRIGHT_BASE_URL: ${{ needs.deploy-preview.outputs.url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm --filter=@trainers/web exec playwright test
 
@@ -543,7 +501,7 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [wait-for-preview]
+    needs: [deploy-preview]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -554,7 +512,7 @@ jobs:
         env:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         with:
-          urls: ${{ needs.wait-for-preview.outputs.url }}
+          urls: ${{ needs.deploy-preview.outputs.url }}
           uploadArtifacts: true
           temporaryPublicStorage: true
           configPath: ./lighthouserc.cjs
