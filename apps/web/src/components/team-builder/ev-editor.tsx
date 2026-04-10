@@ -13,34 +13,19 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
+import {
+  type StatKey,
+  type StatValues,
+  STAT_KEYS,
+  STAT_LABELS,
+} from "./stat-types";
+
 // =============================================================================
 // Constants
 // =============================================================================
 
 const MAX_EV = 252;
 const TOTAL_EV_LIMIT = 510;
-
-/** Stat keys in the order they are displayed. */
-const STAT_KEYS = [
-  "hp",
-  "attack",
-  "defense",
-  "specialAttack",
-  "specialDefense",
-  "speed",
-] as const;
-
-type StatKey = (typeof STAT_KEYS)[number];
-
-/** Short display labels for each stat. */
-const STAT_LABELS: Record<StatKey, string> = {
-  hp: "HP",
-  attack: "Atk",
-  defense: "Def",
-  specialAttack: "SpA",
-  specialDefense: "SpD",
-  speed: "Spe",
-};
 
 /** Tailwind color tokens for each stat's filled bar. */
 const STAT_BAR_COLORS: Record<StatKey, string> = {
@@ -55,15 +40,6 @@ const STAT_BAR_COLORS: Record<StatKey, string> = {
 // =============================================================================
 // Types
 // =============================================================================
-
-interface StatValues {
-  hp: number;
-  attack: number;
-  defense: number;
-  specialAttack: number;
-  specialDefense: number;
-  speed: number;
-}
 
 interface EvEditorProps {
   evs: StatValues;

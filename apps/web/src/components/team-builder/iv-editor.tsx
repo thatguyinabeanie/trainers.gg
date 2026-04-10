@@ -3,47 +3,20 @@
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
+import { type StatValues, STAT_KEYS, STAT_LABELS } from "./stat-types";
+
 // =============================================================================
 // Constants
 // =============================================================================
 
 const MAX_IV = 31;
 
-/** Stat keys in the order they are displayed. */
-const STAT_KEYS = [
-  "hp",
-  "attack",
-  "defense",
-  "specialAttack",
-  "specialDefense",
-  "speed",
-] as const;
-
-type StatKey = (typeof STAT_KEYS)[number];
-
-/** Short display labels for each stat. */
-const STAT_LABELS: Record<StatKey, string> = {
-  hp: "HP",
-  attack: "Atk",
-  defense: "Def",
-  specialAttack: "SpA",
-  specialDefense: "SpD",
-  speed: "Spe",
-};
-
 // =============================================================================
 // Types
 // =============================================================================
 
 interface IvEditorProps {
-  ivs: {
-    hp: number;
-    attack: number;
-    defense: number;
-    specialAttack: number;
-    specialDefense: number;
-    speed: number;
-  };
+  ivs: StatValues;
   onChange: (stat: string, value: number) => void;
 }
 

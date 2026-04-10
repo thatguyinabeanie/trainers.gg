@@ -12,30 +12,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// =============================================================================
-// Constants
-// =============================================================================
-
-const TYPE_COLORS: Record<string, string> = {
-  Normal: "bg-stone-400",
-  Bug: "bg-lime-500",
-  Dark: "bg-stone-700 text-white",
-  Dragon: "bg-indigo-600 text-white",
-  Electric: "bg-yellow-400",
-  Fairy: "bg-pink-400",
-  Fighting: "bg-red-700 text-white",
-  Fire: "bg-orange-500 text-white",
-  Flying: "bg-sky-300",
-  Ghost: "bg-purple-600 text-white",
-  Grass: "bg-green-500 text-white",
-  Ground: "bg-amber-600 text-white",
-  Ice: "bg-cyan-300",
-  Poison: "bg-purple-500 text-white",
-  Psychic: "bg-pink-500 text-white",
-  Rock: "bg-amber-700 text-white",
-  Steel: "bg-slate-400",
-  Water: "bg-blue-500 text-white",
-};
+import { TYPE_BG_COLORS } from "./type-colors";
 
 const CATEGORY_LABELS: Record<string, string> = {
   Physical: "P",
@@ -148,7 +125,7 @@ export function MovePicker({
             const move = gen9.moves.get(moveName);
             const isSelected = moveName === value;
             const typeColor = move?.type
-              ? (TYPE_COLORS[move.type] ?? "bg-muted")
+              ? (TYPE_BG_COLORS[move.type] ?? "bg-muted")
               : "bg-muted";
             const catLabel = move?.category
               ? (CATEGORY_LABELS[move.category] ?? move.category)
