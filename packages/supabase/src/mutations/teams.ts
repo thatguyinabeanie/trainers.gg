@@ -158,8 +158,16 @@ export async function addPokemonToTeam(
   });
 
   if (joinError) {
-    // Clean up the orphaned pokemon record
-    await supabase.from("pokemon").delete().eq("id", newPokemon.id);
+    // Clean up the orphaned pokemon record — log if cleanup also fails
+    const { error: cleanupError } = await supabase
+      .from("pokemon")
+      .delete()
+      .eq("id", newPokemon.id);
+    if (cleanupError) {
+      console.error(
+        `Orphan cleanup failed for pokemon ${newPokemon.id}: ${cleanupError.message}`
+      );
+    }
     throw new Error(`Failed to link pokemon to team: ${joinError.message}`);
   }
 

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 // =============================================================================
 
 const TYPE_COLORS: Record<string, string> = {
-  Normal: "bg-stone-400 text-white",
+  Normal: "bg-stone-400 text-black",
   Bug: "bg-lime-500 text-white",
   Dark: "bg-stone-700 text-white",
   Dragon: "bg-indigo-600 text-white",
@@ -25,7 +25,7 @@ const TYPE_COLORS: Record<string, string> = {
   Poison: "bg-purple-500 text-white",
   Psychic: "bg-pink-500 text-white",
   Rock: "bg-amber-700 text-white",
-  Steel: "bg-slate-400 text-white",
+  Steel: "bg-slate-400 text-black",
   Water: "bg-blue-500 text-white",
   Stellar: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
 };
