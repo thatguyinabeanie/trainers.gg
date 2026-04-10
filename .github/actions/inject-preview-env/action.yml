@@ -68,8 +68,15 @@ runs:
         echo "DB_PASSWORD=${DB_PASSWORD:+set (${#DB_PASSWORD} chars)}"
         echo "POSTGRES_HOST=${POSTGRES_HOST:-<empty>}"
 
-        if [ -z "$DB_PASSWORD" ]; then
-          echo "::error::Could not extract POSTGRES_PASSWORD from branch credentials"
+        # Fail fast if any critical credential is empty
+        MISSING=()
+        [ -z "$ANON_KEY" ] && MISSING+=("ANON_KEY")
+        [ -z "$SERVICE_KEY" ] && MISSING+=("SERVICE_KEY")
+        [ -z "$DB_PASSWORD" ] && MISSING+=("DB_PASSWORD")
+        [ -z "$POSTGRES_URL" ] && MISSING+=("POSTGRES_URL")
+        [ -z "$POSTGRES_URL_NON_POOLING" ] && MISSING+=("POSTGRES_URL_NON_POOLING")
+        if [ ${#MISSING[@]} -gt 0 ]; then
+          echo "::error::Missing critical branch credentials: ${MISSING[*]}"
           exit 1
         fi
 
