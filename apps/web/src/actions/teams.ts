@@ -34,6 +34,7 @@ import {
   pokemonUpdateSchema,
 } from "@trainers/validators";
 
+import { invalidateTeamCaches } from "@/lib/cache-invalidation";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import { rejectBots, withAction } from "@/actions/utils";
@@ -95,6 +96,7 @@ export async function updateTeamAction(
     await rejectBots();
     const supabase = await createClient();
     await updateTeamMutation(supabase, parsed.data.teamId, data);
+    invalidateTeamCaches(parsed.data.teamId);
   }, "Failed to update team");
 }
 
@@ -115,6 +117,7 @@ export async function deleteTeamAction(
     await rejectBots();
     const supabase = await createClient();
     await deleteTeamMutation(supabase, parsed.data.teamId);
+    invalidateTeamCaches(parsed.data.teamId);
   }, "Failed to delete team");
 }
 
@@ -148,6 +151,7 @@ export async function forkTeamAction(
       parsed.data.targetAltId,
       parsed.data.newName
     );
+    invalidateTeamCaches(result.id);
     return { success: true, data: { id: result.id } };
   } catch (error) {
     return {
