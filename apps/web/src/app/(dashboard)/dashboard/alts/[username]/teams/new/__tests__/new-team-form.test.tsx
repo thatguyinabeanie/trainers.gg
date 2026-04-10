@@ -36,6 +36,17 @@ jest.mock("sonner", () => ({
   },
 }));
 
+const mockInvalidateQueries = jest.fn();
+jest.mock("@tanstack/react-query", () => ({
+  useQueryClient: jest.fn(() => ({
+    invalidateQueries: mockInvalidateQueries,
+  })),
+}));
+
+jest.mock("@/lib/supabase", () => ({
+  useSupabase: jest.fn(() => ({})),
+}));
+
 import { NewTeamForm } from "../new-team-form";
 import { type GameFormat } from "@trainers/pokemon";
 
