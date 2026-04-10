@@ -37,7 +37,7 @@ run = "pnpm install"
 description = "Install Python dependencies from pyproject.toml"
 run = """
 echo "Installing Python dependencies from pyproject.toml..."
-uv sync --no-install-project
+uv sync --no-install-project --frozen
 echo "✓ Python dependencies installed"
 """
 
