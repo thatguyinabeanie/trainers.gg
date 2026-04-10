@@ -138,185 +138,27 @@ describe("teams mutations", () => {
   // ==========================================================================
 
   describe("deleteTeam", () => {
-    it("performs the 4-step cascade: fetch join rows, delete joins, delete pokemon, delete team", async () => {
+    it("calls the delete_team RPC with the correct team id", async () => {
       const mockClient = createMockClient();
-
-      // Step 1: fetch team_pokemon join rows
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          data: [
-            { id: 1, pokemon_id: 10 },
-            { id: 2, pokemon_id: 11 },
-          ],
-          error: null,
-        }),
-      };
-
-      // Step 2: delete team_pokemon join rows
-      const mockDeleteJoinChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      // Step 3: delete pokemon records
-      const mockDeletePokemonChain = {
-        delete: jest.fn().mockReturnThis(),
-        in: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      // Step 4: delete the team
-      const mockDeleteTeamChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockDeleteJoinChain)
-        .mockReturnValueOnce(mockDeletePokemonChain)
-        .mockReturnValueOnce(mockDeleteTeamChain);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: null });
 
       await deleteTeam(mockClient, 5);
 
-      expect(mockClient.from).toHaveBeenNthCalledWith(1, "team_pokemon");
-      expect(mockFetchChain.select).toHaveBeenCalledWith("id, pokemon_id");
-      expect(mockFetchChain.eq).toHaveBeenCalledWith("team_id", 5);
-
-      expect(mockClient.from).toHaveBeenNthCalledWith(2, "team_pokemon");
-      expect(mockDeleteJoinChain.eq).toHaveBeenCalledWith("team_id", 5);
-
-      expect(mockClient.from).toHaveBeenNthCalledWith(3, "pokemon");
-      expect(mockDeletePokemonChain.in).toHaveBeenCalledWith("id", [10, 11]);
-
-      expect(mockClient.from).toHaveBeenNthCalledWith(4, "teams");
-      expect(mockDeleteTeamChain.eq).toHaveBeenCalledWith("id", 5);
+      expect(
+        (mockClient as unknown as { rpc: jest.Mock }).rpc
+      ).toHaveBeenCalledWith("delete_team", { p_team_id: 5 });
     });
 
-    it("skips join and pokemon deletion when team has no pokemon", async () => {
+    it("throws when the RPC returns an error", async () => {
       const mockClient = createMockClient();
-
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ data: [], error: null }),
-      };
-
-      const mockDeleteTeamChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockDeleteTeamChain);
-
-      await deleteTeam(mockClient, 5);
-
-      // Only 2 from() calls: fetch + delete team
-      expect(mockClient.from).toHaveBeenCalledTimes(2);
-      expect(mockClient.from).toHaveBeenNthCalledWith(1, "team_pokemon");
-      expect(mockClient.from).toHaveBeenNthCalledWith(2, "teams");
-    });
-
-    it("throws when fetching join rows fails", async () => {
-      const mockClient = createMockClient();
-
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          data: null,
-          error: { message: "access denied" },
-        }),
-      };
-
-      (mockClient.from as jest.Mock).mockReturnValueOnce(mockFetchChain);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: { message: "access denied" } });
 
       await expect(deleteTeam(mockClient, 5)).rejects.toThrow(
-        "Failed to fetch team pokemon for deletion: access denied"
-      );
-    });
-
-    it("throws when deleting join rows fails", async () => {
-      const mockClient = createMockClient();
-
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          data: [{ id: 1, pokemon_id: 10 }],
-          error: null,
-        }),
-      };
-
-      const mockDeleteJoinChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          error: { message: "foreign key violation" },
-        }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockDeleteJoinChain);
-
-      await expect(deleteTeam(mockClient, 5)).rejects.toThrow(
-        "Failed to delete team_pokemon rows: foreign key violation"
-      );
-    });
-
-    it("throws when deleting pokemon records fails", async () => {
-      const mockClient = createMockClient();
-
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          data: [{ id: 1, pokemon_id: 10 }],
-          error: null,
-        }),
-      };
-
-      const mockDeleteJoinChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      const mockDeletePokemonChain = {
-        delete: jest.fn().mockReturnThis(),
-        in: jest.fn().mockResolvedValue({
-          error: { message: "constraint error" },
-        }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockDeleteJoinChain)
-        .mockReturnValueOnce(mockDeletePokemonChain);
-
-      await expect(deleteTeam(mockClient, 5)).rejects.toThrow(
-        "Failed to delete pokemon records: constraint error"
-      );
-    });
-
-    it("throws when deleting the team row fails", async () => {
-      const mockClient = createMockClient();
-
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ data: [], error: null }),
-      };
-
-      const mockDeleteTeamChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          error: { message: "row locked" },
-        }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockDeleteTeamChain);
-
-      await expect(deleteTeam(mockClient, 5)).rejects.toThrow(
-        "Failed to delete team: row locked"
+        "Failed to delete team: access denied"
       );
     });
   });
@@ -517,9 +359,13 @@ describe("teams mutations", () => {
   // ==========================================================================
 
   describe("updatePokemon", () => {
-    it("updates the pokemon row by pokemonId", async () => {
+    it("updates the pokemon row by pokemonId and selects id for row-count check", async () => {
       const mockClient = createMockClient();
-      mockClient._queryBuilder.eq.mockResolvedValue({ error: null });
+      // update().eq("id", ...).select("id") resolves to { data: [{ id: 55 }], error: null }
+      mockClient._queryBuilder.select.mockResolvedValue({
+        data: [{ id: 55 }],
+        error: null,
+      });
 
       await updatePokemon(mockClient, 55, {
         species: "Koraidon",
@@ -532,17 +378,31 @@ describe("teams mutations", () => {
         move1: "Collision Course",
       });
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith("id", 55);
+      expect(mockClient._queryBuilder.select).toHaveBeenCalledWith("id");
     });
 
     it("throws when update fails", async () => {
       const mockClient = createMockClient();
-      mockClient._queryBuilder.eq.mockResolvedValue({
+      mockClient._queryBuilder.select.mockResolvedValue({
+        data: null,
         error: { message: "row not found" },
       });
 
       await expect(
         updatePokemon(mockClient, 55, { species: "Koraidon" })
       ).rejects.toThrow("Failed to update pokemon: row not found");
+    });
+
+    it("throws when no rows are returned (pokemon not found or RLS denied)", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.select.mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      await expect(
+        updatePokemon(mockClient, 55, { species: "Koraidon" })
+      ).rejects.toThrow("Pokemon not found or not authorized");
     });
   });
 
@@ -628,33 +488,11 @@ describe("teams mutations", () => {
   // ==========================================================================
 
   describe("reorderTeamPokemon", () => {
-    // reorderTeamPokemon uses .update().eq("team_id", ...).eq("pokemon_id", ...)
-    // The second .eq() call resolves the chain, so we use a call-count proxy.
-    const makeDoubleEqUpdateChain = (resolvedValue: unknown) => {
-      let eqCallCount = 0;
-      const chain: Record<string, unknown> = {};
-      chain["update"] = jest.fn().mockReturnValue(chain);
-      chain["eq"] = jest.fn().mockImplementation(() => {
-        eqCallCount++;
-        if (eqCallCount >= 2) {
-          return Promise.resolve(resolvedValue);
-        }
-        return chain;
-      });
-      return chain as { update: jest.Mock; eq: jest.Mock };
-    };
-
-    it("updates team_pokemon positions in parallel for all entries", async () => {
+    it("calls the reorder_team_pokemon RPC with teamId and mapped positions", async () => {
       const mockClient = createMockClient();
-
-      const chain1 = makeDoubleEqUpdateChain({ error: null });
-      const chain2 = makeDoubleEqUpdateChain({ error: null });
-      const chain3 = makeDoubleEqUpdateChain({ error: null });
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(chain1)
-        .mockReturnValueOnce(chain2)
-        .mockReturnValueOnce(chain3);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: null });
 
       await reorderTeamPokemon(mockClient, 5, [
         { pokemonId: 10, position: 0 },
@@ -662,56 +500,48 @@ describe("teams mutations", () => {
         { pokemonId: 12, position: 2 },
       ]);
 
-      expect(mockClient.from).toHaveBeenCalledTimes(3);
-      expect(mockClient.from).toHaveBeenCalledWith("team_pokemon");
-      expect(chain1.update).toHaveBeenCalledWith({ team_position: 0 });
-      expect(chain2.update).toHaveBeenCalledWith({ team_position: 1 });
-      expect(chain3.update).toHaveBeenCalledWith({ team_position: 2 });
+      expect(
+        (mockClient as unknown as { rpc: jest.Mock }).rpc
+      ).toHaveBeenCalledWith("reorder_team_pokemon", {
+        p_team_id: 5,
+        p_positions: [
+          { pokemonId: 10, position: 0 },
+          { pokemonId: 11, position: 1 },
+          { pokemonId: 12, position: 2 },
+        ],
+      });
     });
 
-    it("resolves immediately when positions array is empty", async () => {
+    it("resolves immediately for an empty positions array", async () => {
       const mockClient = createMockClient();
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: null });
 
       await expect(
         reorderTeamPokemon(mockClient, 5, [])
       ).resolves.toBeUndefined();
 
-      expect(mockClient.from).not.toHaveBeenCalled();
+      expect(
+        (mockClient as unknown as { rpc: jest.Mock }).rpc
+      ).toHaveBeenCalledWith("reorder_team_pokemon", {
+        p_team_id: 5,
+        p_positions: [],
+      });
     });
 
-    it("throws when any position update fails", async () => {
+    it("throws when the RPC returns an error", async () => {
       const mockClient = createMockClient();
-
-      const failChain = makeDoubleEqUpdateChain({
-        error: { message: "write conflict" },
-      });
-
-      (mockClient.from as jest.Mock).mockReturnValueOnce(failChain);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({
+          data: null,
+          error: { message: "write conflict" },
+        });
 
       await expect(
         reorderTeamPokemon(mockClient, 5, [{ pokemonId: 10, position: 0 }])
-      ).rejects.toThrow("Failed to reorder pokemon 10: write conflict");
-    });
-
-    it("passes correct teamId and pokemonId filters to each update", async () => {
-      const mockClient = createMockClient();
-
-      const chain1 = makeDoubleEqUpdateChain({ error: null });
-      const chain2 = makeDoubleEqUpdateChain({ error: null });
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(chain1)
-        .mockReturnValueOnce(chain2);
-
-      await reorderTeamPokemon(mockClient, 7, [
-        { pokemonId: 20, position: 0 },
-        { pokemonId: 21, position: 1 },
-      ]);
-
-      expect(chain1.eq).toHaveBeenCalledWith("team_id", 7);
-      expect(chain1.eq).toHaveBeenCalledWith("pokemon_id", 20);
-      expect(chain2.eq).toHaveBeenCalledWith("team_id", 7);
-      expect(chain2.eq).toHaveBeenCalledWith("pokemon_id", 21);
+      ).rejects.toThrow("Failed to reorder team pokemon: write conflict");
     });
   });
 });

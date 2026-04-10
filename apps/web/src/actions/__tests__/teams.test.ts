@@ -25,6 +25,11 @@ jest.mock("@/lib/utils", () => ({
   getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
 }));
 
+// @/lib/cache-invalidation — updateTag cannot run outside Server Action context
+jest.mock("@/lib/cache-invalidation", () => ({
+  invalidateTeamCaches: jest.fn(),
+}));
+
 // @trainers/utils — getErrorMessage used inside withAction
 jest.mock("@trainers/utils", () => ({
   getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
@@ -120,6 +125,13 @@ describe("createTeamAction", () => {
     expect(result.success).toBe(false);
     expect(mockCreateTeam).not.toHaveBeenCalled();
   });
+
+  it("returns a validation error when altId is 0", async () => {
+    const result = await createTeamAction(0, "Rain Team", "vgc2025");
+
+    expect(result).toEqual({ success: false, error: expect.any(String) });
+    expect(mockCreateTeam).not.toHaveBeenCalled();
+  });
 });
 
 // =============================================================================
@@ -157,6 +169,20 @@ describe("updateTeamAction", () => {
 
     expect(result.success).toBe(false);
     expect(mockUpdateTeam).not.toHaveBeenCalled();
+  });
+
+  it("strips disallowed fields (created_by) before calling mutation", async () => {
+    // teamUpdateDataSchema strips unknown fields — created_by is omitted, not rejected.
+    // The mutation is called with an empty (safe) object rather than the raw input.
+    mockUpdateTeam.mockResolvedValue(undefined);
+
+    const result = await updateTeamAction(10, {
+      created_by: 999,
+    } as unknown as Parameters<typeof updateTeamAction>[1]);
+
+    expect(result).toEqual({ success: true, data: undefined });
+    // Mutation was called with stripped data (no created_by)
+    expect(mockUpdateTeam).toHaveBeenCalledWith(mockSupabase, 10, {});
   });
 });
 
@@ -284,6 +310,13 @@ describe("addPokemonToTeamAction", () => {
     const result = await addPokemonToTeamAction(10, fakePokemon, 1);
 
     expect(result.success).toBe(false);
+    expect(mockAddPokemonToTeam).not.toHaveBeenCalled();
+  });
+
+  it("returns a validation error when position is 0", async () => {
+    const result = await addPokemonToTeamAction(10, fakePokemon, 0);
+
+    expect(result).toEqual({ success: false, error: expect.any(String) });
     expect(mockAddPokemonToTeam).not.toHaveBeenCalled();
   });
 });

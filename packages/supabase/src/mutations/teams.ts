@@ -45,59 +45,16 @@ export async function updateTeam(
 
 /**
  * Delete a team and all its associated pokemon records.
- * Deletion order: team_pokemon join rows → pokemon records → team row.
+ * Delegates to the `delete_team` RPC for transactional atomicity.
  */
 export async function deleteTeam(
   supabase: TypedClient,
   teamId: number
 ): Promise<void> {
-  // Step 1: Fetch team_pokemon join rows so we know which pokemon to delete
-  const { data: joinRows, error: joinFetchError } = await supabase
-    .from("team_pokemon")
-    .select("id, pokemon_id")
-    .eq("team_id", teamId);
-
-  if (joinFetchError)
-    throw new Error(
-      `Failed to fetch team pokemon for deletion: ${joinFetchError.message}`
-    );
-
-  const pokemonIds = (joinRows ?? []).map((r) => r.pokemon_id);
-
-  // Step 2: Delete team_pokemon join rows
-  if (joinRows && joinRows.length > 0) {
-    const { error: joinDeleteError } = await supabase
-      .from("team_pokemon")
-      .delete()
-      .eq("team_id", teamId);
-
-    if (joinDeleteError)
-      throw new Error(
-        `Failed to delete team_pokemon rows: ${joinDeleteError.message}`
-      );
-  }
-
-  // Step 3: Delete the pokemon records
-  if (pokemonIds.length > 0) {
-    const { error: pokemonDeleteError } = await supabase
-      .from("pokemon")
-      .delete()
-      .in("id", pokemonIds);
-
-    if (pokemonDeleteError)
-      throw new Error(
-        `Failed to delete pokemon records: ${pokemonDeleteError.message}`
-      );
-  }
-
-  // Step 4: Delete the team itself
-  const { error: teamDeleteError } = await supabase
-    .from("teams")
-    .delete()
-    .eq("id", teamId);
-
-  if (teamDeleteError)
-    throw new Error(`Failed to delete team: ${teamDeleteError.message}`);
+  const { error } = await supabase.rpc("delete_team", {
+    p_team_id: teamId,
+  });
+  if (error) throw new Error(`Failed to delete team: ${error.message}`);
 }
 
 /**
@@ -177,18 +134,22 @@ export async function addPokemonToTeam(
 /**
  * Update a pokemon's data — moves, EVs, IVs, ability, item, etc.
  * Only the fields provided in `data` will be updated.
+ * Throws if no row was affected (pokemon not found or RLS denied).
  */
 export async function updatePokemon(
   supabase: TypedClient,
   pokemonId: number,
   data: Partial<TablesUpdate<"pokemon">>
 ): Promise<void> {
-  const { error } = await supabase
+  const { data: rows, error } = await supabase
     .from("pokemon")
     .update(data)
-    .eq("id", pokemonId);
+    .eq("id", pokemonId)
+    .select("id");
 
   if (error) throw new Error(`Failed to update pokemon: ${error.message}`);
+  if (!rows || rows.length === 0)
+    throw new Error("Pokemon not found or not authorized");
 }
 
 /**
@@ -224,25 +185,20 @@ export async function removePokemonFromTeam(
 
 /**
  * Reorder pokemon positions within a team.
- * Updates each team_pokemon row's position in parallel.
+ * Delegates to the `reorder_team_pokemon` RPC for transactional atomicity.
  */
 export async function reorderTeamPokemon(
   supabase: TypedClient,
   teamId: number,
   positions: { pokemonId: number; position: number }[]
 ): Promise<void> {
-  await Promise.all(
-    positions.map(async ({ pokemonId, position }) => {
-      const { error } = await supabase
-        .from("team_pokemon")
-        .update({ team_position: position })
-        .eq("team_id", teamId)
-        .eq("pokemon_id", pokemonId);
-
-      if (error)
-        throw new Error(
-          `Failed to reorder pokemon ${pokemonId}: ${error.message}`
-        );
-    })
-  );
+  const { error } = await supabase.rpc("reorder_team_pokemon", {
+    p_team_id: teamId,
+    p_positions: positions.map(({ pokemonId, position }) => ({
+      pokemonId,
+      position,
+    })),
+  });
+  if (error)
+    throw new Error(`Failed to reorder team pokemon: ${error.message}`);
 }

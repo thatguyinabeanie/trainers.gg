@@ -24,6 +24,7 @@ import {
   type ActionResult,
   createTeamInputSchema,
   updateTeamInputSchema,
+  teamUpdateDataSchema,
   deleteTeamInputSchema,
   forkTeamInputSchema,
   addPokemonInputSchema,
@@ -92,10 +93,21 @@ export async function updateTeamAction(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
+  const parsedData = teamUpdateDataSchema.safeParse(data);
+  if (!parsedData.success) {
+    return {
+      success: false,
+      error: parsedData.error.issues[0]?.message ?? "Invalid data",
+    };
+  }
   return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();
-    await updateTeamMutation(supabase, parsed.data.teamId, data);
+    await updateTeamMutation(
+      supabase,
+      parsed.data.teamId,
+      parsedData.data as Partial<TablesUpdate<"teams">>
+    );
     invalidateTeamCaches(parsed.data.teamId);
   }, "Failed to update team");
 }
