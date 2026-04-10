@@ -149,7 +149,11 @@ function extractProjectRef() {
 /**
  * Validate required environment variables
  */
-function validateEnv() {
+/**
+ * @param {"production" | "preview"} envType
+ * @returns {boolean} true if validation passes, false if preview should skip
+ */
+function validateEnv(envType) {
   const errors = [];
 
   // Access token is always required (added manually)
@@ -174,11 +178,25 @@ function validateEnv() {
   }
 
   if (errors.length > 0) {
+    if (envType === "preview") {
+      // In preview mode, missing env vars means the Supabase branch integration
+      // hasn't injected credentials yet. Skip gracefully — CI will handle
+      // redeployment once env vars are set, or the branch may already have
+      // migrations applied via Supabase branching.
+      console.log("\n⚠️  Missing environment variables for preview:");
+      errors.forEach((err) => console.log(`   - ${err}`));
+      console.log(
+        "\n⏭️  Skipping migrations — preview env vars not ready yet.\n"
+      );
+      return false;
+    }
+    // Production mode: fail hard
     console.error("\n❌ Missing required environment variables:\n");
     errors.forEach((err) => console.error(`   - ${err}`));
     console.error("\n");
     process.exit(1);
   }
+  return true;
 }
 
 /**
@@ -314,8 +332,11 @@ async function runMigrations() {
     process.exit(0);
   }
 
-  // Validate environment variables
-  validateEnv();
+  // Validate environment variables — preview skips gracefully if vars missing
+  const envReady = validateEnv(env.type);
+  if (!envReady) {
+    process.exit(0);
+  }
 
   if (!projectRef) {
     console.error("\n❌ Could not extract project ref from SUPABASE_URL");
