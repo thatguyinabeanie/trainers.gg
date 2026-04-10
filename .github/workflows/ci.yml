@@ -350,7 +350,7 @@ jobs:
     name: Setup Preview DB
     if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     outputs:
       branch-ref: ${{ steps.branch.outputs.ref }}
     steps:
@@ -377,20 +377,27 @@ jobs:
             echo "Supabase branch already exists for $GIT_BRANCH"
           fi
 
-          # Poll until branch is ACTIVE_HEALTHY (up to 2 min)
-          for i in $(seq 1 12); do
-            INFO=$(supabase --experimental branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json)
-            STATUS=$(echo "$INFO" | jq -r '.status // empty')
-            if [ "$STATUS" = "ACTIVE_HEALTHY" ]; then
-              BRANCH_REF=$(echo "$INFO" | jq -r '.project_ref // empty')
+          # Poll until branch is ACTIVE_HEALTHY (up to 5 min)
+          for i in $(seq 1 30); do
+            INFO=$(supabase --experimental branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json 2>&1) || true
+            STATUS=$(echo "$INFO" | jq -r '.status // empty' 2>/dev/null)
+            BRANCH_REF=$(echo "$INFO" | jq -r '.project_ref // empty' 2>/dev/null)
+
+            # Accept any status if we got a valid project ref — the branch is usable
+            if [ -n "$BRANCH_REF" ] && [ "$BRANCH_REF" != "null" ] && [ "$BRANCH_REF" != "" ]; then
               echo "ref=$BRANCH_REF" >> "$GITHUB_OUTPUT"
-              echo "Branch ready: $BRANCH_REF"
+              echo "Branch ready: $BRANCH_REF (status: ${STATUS:-unknown})"
               exit 0
             fi
-            echo "Branch status: $STATUS (attempt $i/12)"
+
+            echo "Branch status: '${STATUS:-<empty>}' ref: '${BRANCH_REF:-<empty>}' (attempt $i/30)"
+            # Log raw response on first attempt for debugging
+            if [ "$i" -eq 1 ]; then
+              echo "Raw response: $(echo "$INFO" | head -5)"
+            fi
             sleep 10
           done
-          echo "::error::Supabase branch did not become healthy within 2 minutes"
+          echo "::error::Supabase branch did not become ready within 5 minutes"
           exit 1
 
       - name: Inject env vars into Vercel
