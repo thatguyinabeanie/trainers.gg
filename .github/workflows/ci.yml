@@ -345,14 +345,17 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
-  # ── Create/find Supabase preview branch + inject env vars ───
-  setup-preview-db:
-    name: Setup Preview DB
+  # ── Setup Supabase branch + wait for Vercel preview ─────────
+  deploy-preview:
+    name: Wait for Preview
+    # Skip for Dependabot PRs — they can't access secrets needed for bypass auth,
+    # and dependency bumps don't need E2E/Lighthouse validation
     if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 15
     outputs:
-      branch-ref: ${{ steps.branch.outputs.ref }}
+      url: ${{ steps.redeploy.outputs.url || steps.detect.outputs.url }}
+      branch-db-ready: ${{ steps.branch-recheck.outputs.ready || steps.branch-check.outputs.ready }}
     steps:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -384,7 +387,7 @@ jobs:
             NON_POOLING=$(echo "$INFO" | jq -r '.POSTGRES_URL_NON_POOLING // empty' 2>/dev/null)
 
             if [ -n "$NON_POOLING" ]; then
-              # Mask all sensitive values from the response before any further output
+              # Mask all sensitive values before any further output
               for KEY in POSTGRES_URL POSTGRES_URL_NON_POOLING SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY POSTGRES_PASSWORD SUPABASE_DEFAULT_KEY; do
                 VAL=$(echo "$INFO" | jq -r ".${KEY} // empty" 2>/dev/null)
                 if [ -n "$VAL" ]; then
@@ -424,7 +427,7 @@ jobs:
           DB_PASSWORD=$(echo "$INFO" | jq -r '.POSTGRES_PASSWORD // empty')
           API_URL="https://${BRANCH_REF}.supabase.co"
 
-          # Mask all dynamic credentials so they never appear in logs
+          # Mask dynamic credentials
           echo "::add-mask::$ANON_KEY"
           echo "::add-mask::$SERVICE_KEY"
           echo "::add-mask::$DB_PASSWORD"
@@ -457,19 +460,6 @@ jobs:
           fi
           echo "Vercel env vars upserted for branch $GIT_BRANCH"
 
-  # ── Wait for Vercel preview (shared by E2E + Lighthouse) ────
-  deploy-preview:
-    name: Wait for Preview
-    # Skip for Dependabot PRs — they can't access secrets needed for bypass auth,
-    # and dependency bumps don't need E2E/Lighthouse validation
-    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
-    needs: [setup-preview-db]
-    outputs:
-      url: ${{ steps.redeploy.outputs.url || steps.detect.outputs.url }}
-      branch-db-ready: ${{ steps.branch-recheck.outputs.ready || steps.branch-check.outputs.ready }}
-    steps:
       - name: Wait for Vercel preview deployment
         id: detect
         env:
@@ -552,7 +542,7 @@ jobs:
 
       - name: Trigger redeployment if needed
         id: redeploy
-        if: steps.branch-check.outputs.ready != 'true' && needs.setup-preview-db.outputs.branch-ref != ''
+        if: steps.branch-check.outputs.ready != 'true' && steps.branch.outputs.ref != ''
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
