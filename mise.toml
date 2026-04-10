@@ -23,7 +23,7 @@ uv = "latest"
 #   android-sdk = "latest"
 
 [hooks]
-postinstall = "mise run install-lefthook ::: install-pnpm ::: install-mempalace"
+postinstall = "mise run install-lefthook ::: install-pnpm ::: install-python-deps"
 
 [tasks.install-lefthook]
 description = "Install lefthook git hooks into the local repo"
@@ -33,16 +33,12 @@ run = "lefthook install"
 description = "Install all pnpm dependencies across the monorepo"
 run = "pnpm install"
 
-[tasks.install-mempalace]
-description = "Create Python venv and install mempalace AI memory system"
+[tasks.install-python-deps]
+description = "Install Python dependencies from pyproject.toml"
 run = """
-if [ ! -d ".venv" ]; then
-  echo "Creating Python virtual environment..."
-  uv venv .venv
-fi
-echo "Installing Python dependencies..."
-uv pip install mempalace
-echo "✓ mempalace installed"
+echo "Installing Python dependencies from pyproject.toml..."
+uv pip install .
+echo "✓ Python dependencies installed"
 """
 
 [tasks.install-ngrok]
