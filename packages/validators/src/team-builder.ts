@@ -126,3 +126,36 @@ export const pokemonPayloadSchema = z.object({
 });
 
 export type PokemonPayload = z.infer<typeof pokemonPayloadSchema>;
+
+/** Update schema — same fields as create but all optional, NO defaults.
+ *  Only explicitly provided fields will be written to the DB. */
+export const pokemonUpdateSchema = z.object({
+  species: z.string().min(1).max(50).optional(),
+  ability: z.string().max(50).optional(),
+  nature: z.string().max(20).optional(),
+  held_item: z.string().max(50).nullable().optional(),
+  nickname: z.string().max(18).nullable().optional(),
+  gender: z.enum(["Male", "Female"]).nullable().optional(),
+  level: z.number().int().min(1).max(100).optional(),
+  is_shiny: z.boolean().optional(),
+  move1: z.string().max(50).optional(),
+  move2: z.string().max(50).nullable().optional(),
+  move3: z.string().max(50).nullable().optional(),
+  move4: z.string().max(50).nullable().optional(),
+  tera_type: z.string().max(20).nullable().optional(),
+  ev_hp: z.number().int().min(0).max(252).optional(),
+  ev_attack: z.number().int().min(0).max(252).optional(),
+  ev_defense: z.number().int().min(0).max(252).optional(),
+  ev_special_attack: z.number().int().min(0).max(252).optional(),
+  ev_special_defense: z.number().int().min(0).max(252).optional(),
+  ev_speed: z.number().int().min(0).max(252).optional(),
+  iv_hp: z.number().int().min(0).max(31).optional(),
+  iv_attack: z.number().int().min(0).max(31).optional(),
+  iv_defense: z.number().int().min(0).max(31).optional(),
+  iv_special_attack: z.number().int().min(0).max(31).optional(),
+  iv_special_defense: z.number().int().min(0).max(31).optional(),
+  iv_speed: z.number().int().min(0).max(31).optional(),
+  notes: z.string().max(500).nullable().optional(),
+});
+
+export type PokemonUpdate = z.infer<typeof pokemonUpdateSchema>;

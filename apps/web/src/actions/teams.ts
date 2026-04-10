@@ -31,6 +31,7 @@ import {
   removePokemonInputSchema,
   reorderTeamPokemonInputSchema,
   pokemonPayloadSchema,
+  pokemonUpdateSchema,
 } from "@trainers/validators";
 
 import { createClient } from "@/lib/supabase/server";
@@ -212,7 +213,7 @@ export async function updatePokemonAction(
   }
   return withAction(async () => {
     await rejectBots();
-    const parsedData = pokemonPayloadSchema.partial().parse(data);
+    const parsedData = pokemonUpdateSchema.parse(data);
     const supabase = await createClient();
     await updatePokemonMutation(
       supabase,
