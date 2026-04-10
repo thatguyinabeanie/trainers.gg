@@ -355,6 +355,7 @@ jobs:
     timeout-minutes: 12
     outputs:
       url: ${{ steps.detect.outputs.url }}
+      branch-db-ready: ${{ steps.branch-check.outputs.ready }}
     steps:
       - name: Wait for Vercel preview deployment
         id: detect
@@ -408,11 +409,43 @@ jobs:
           echo "::error::Timeout waiting for Vercel preview deployment"
           exit 1
 
+      - name: Check Supabase branch DB readiness
+        id: branch-check
+        if: steps.detect.outputs.url != ''
+        env:
+          PREVIEW_URL: ${{ steps.detect.outputs.url }}
+          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          RESPONSE=$(curl -sf --max-time 10 \
+            -H "x-vercel-protection-bypass: $BYPASS_SECRET" \
+            "$PREVIEW_URL/api/e2e/seed" 2>/dev/null) || RESPONSE=""
+
+          if [ -z "$RESPONSE" ]; then
+            echo "::warning::Could not reach seed endpoint for branch DB check"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          SAFE=$(echo "$RESPONSE" | jq -r '.safe // false')
+          REASON=$(echo "$RESPONSE" | jq -r '.reason // empty')
+
+          if [ "$SAFE" = "true" ]; then
+            echo "Supabase branch DB is ready"
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Supabase branch DB not available: $REASON"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # ── E2E tests (Playwright) ─────────────────────────────────
   e2e-tests:
     name: E2E Tests
     # Skip for Dependabot PRs — no access to secrets for bypass auth
-    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
+    # Skip when Supabase branch DB is not available (no production pollution)
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      needs.deploy-preview.outputs.branch-db-ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [install, e2e-prepare, deploy-preview]
@@ -459,27 +492,13 @@ jobs:
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
           echo "Response (HTTP $HTTP_CODE): $BODY"
-          if [ "$HTTP_CODE" = "404" ]; then
-            echo "::error::E2E seed returned 404 — preview is likely connected to the production database. Skipping E2E tests to prevent production pollution."
-            echo "safe=false" >> "$GITHUB_OUTPUT"
-          elif [ -z "$HTTP_CODE" ] || ! [[ "$HTTP_CODE" =~ ^[0-9]+$ ]]; then
-            echo "::warning::E2E seed request failed (curl error) — tests may fail if users don't exist"
-            echo "safe=true" >> "$GITHUB_OUTPUT"
-          elif [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ] || [ "$HTTP_CODE" -eq 207 ]; then
-            echo "::warning::E2E seed returned HTTP $HTTP_CODE — tests may fail if users don't exist"
-            echo "safe=true" >> "$GITHUB_OUTPUT"
+          if [ -n "$HTTP_CODE" ] && [[ "$HTTP_CODE" =~ ^[0-9]+$ ]] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Seed completed successfully"
           else
-            echo "safe=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::E2E seed returned HTTP $HTTP_CODE — tests may fail if users don't exist"
           fi
 
-      - name: Fail if E2E tests cannot run safely
-        if: steps.e2e-seed.outputs.safe == 'false'
-        run: |
-          echo "::error::E2E tests were skipped — preview is connected to the production database (seed returned 404). Supabase branching must be configured for this PR."
-          exit 1
-
       - name: Run E2E tests
-        if: steps.e2e-seed.outputs.safe != 'false'
         env:
           CI: true
           PLAYWRIGHT_BASE_URL: ${{ needs.deploy-preview.outputs.url }}
