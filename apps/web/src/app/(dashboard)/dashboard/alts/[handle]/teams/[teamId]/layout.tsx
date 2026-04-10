@@ -34,12 +34,17 @@ export default async function TeamWorkspaceLayout({
     redirect("/sign-in");
   }
 
+  const numericTeamId = Number(teamId);
+  if (Number.isNaN(numericTeamId)) {
+    notFound();
+  }
+
   const supabase = await createClientReadOnly();
 
   // Fetch alt and team in parallel
   const [alt, team] = await Promise.all([
     getAltByUsername(supabase, handle),
-    getTeamWithPokemon(supabase, Number(teamId)),
+    getTeamWithPokemon(supabase, numericTeamId),
   ]);
 
   if (!alt) {

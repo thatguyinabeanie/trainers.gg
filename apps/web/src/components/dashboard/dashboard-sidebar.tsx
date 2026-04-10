@@ -602,8 +602,13 @@ function PlayerNav({
   selectedAltUsername,
 }: PlayerNavProps) {
   // Resolve the current alt to build a context-aware Team Builder link.
-  // Prefer the cookie-selected alt, fall back to the first alt in the list.
-  const currentAltUsername = selectedAltUsername ?? alts[0]?.username ?? null;
+  // Validate the cookie value against the alts list — the cookie can be stale
+  // if the alt was deleted. Fall back to the first alt when no match is found.
+  const selectedAlt =
+    selectedAltUsername != null
+      ? (alts.find((alt) => alt.username === selectedAltUsername) ?? null)
+      : null;
+  const currentAltUsername = selectedAlt?.username ?? alts[0]?.username ?? null;
   const builderHref = currentAltUsername
     ? `/dashboard/alts/${currentAltUsername}/teams`
     : "/builder";
