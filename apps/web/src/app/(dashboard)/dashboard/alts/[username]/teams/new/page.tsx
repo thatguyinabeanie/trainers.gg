@@ -22,7 +22,7 @@ export const metadata = {
 // ---------------------------------------------------------------------------
 
 interface NewTeamPageProps {
-  params: Promise<{ handle: string }>;
+  params: Promise<{ username: string }>;
   searchParams: Promise<{ mode?: string }>;
 }
 
@@ -35,7 +35,7 @@ export default async function NewTeamPage({
   params,
   searchParams,
 }: NewTeamPageProps) {
-  const { handle } = await params;
+  const { username } = await params;
   const { mode } = await searchParams;
 
   const user = await getUser();
@@ -44,7 +44,7 @@ export default async function NewTeamPage({
   }
 
   const supabase = await createClientReadOnly();
-  const alt = await getAltByUsername(supabase, handle);
+  const alt = await getAltByUsername(supabase, username);
 
   if (!alt) {
     notFound();
@@ -70,7 +70,7 @@ export default async function NewTeamPage({
 
           <NewTeamForm
             altId={alt.id}
-            handle={handle}
+            handle={username}
             activeFormats={activeFormats}
             defaultFormat={defaultFormat}
             initialMode={initialMode}

@@ -20,13 +20,13 @@ export const metadata = {
 // =============================================================================
 
 interface TeamWorkspacePageProps {
-  params: Promise<{ handle: string; teamId: string }>;
+  params: Promise<{ username: string; teamId: string }>;
 }
 
 export default async function TeamWorkspacePage({
   params,
 }: TeamWorkspacePageProps) {
-  const { handle, teamId } = await params;
+  const { username, teamId } = await params;
 
   const user = await getUser();
   if (!user) {
@@ -42,7 +42,7 @@ export default async function TeamWorkspacePage({
 
   // Fetch the alt and team in parallel — they are independent
   const [alt, team] = await Promise.all([
-    getAltByUsername(supabase, handle),
+    getAltByUsername(supabase, username),
     getTeamWithPokemon(supabase, numericTeamId),
   ]);
 
@@ -61,5 +61,5 @@ export default async function TeamWorkspacePage({
 
   const format = team.format ? getFormatById(team.format) : undefined;
 
-  return <TeamWorkspace team={team} handle={handle} format={format} />;
+  return <TeamWorkspace team={team} handle={username} format={format} />;
 }

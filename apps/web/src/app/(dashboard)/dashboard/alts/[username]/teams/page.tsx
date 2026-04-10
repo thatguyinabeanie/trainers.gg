@@ -50,7 +50,7 @@ function groupByFormat(
 // ---------------------------------------------------------------------------
 
 interface TeamsPageProps {
-  params: Promise<{ handle: string }>;
+  params: Promise<{ username: string }>;
   searchParams: Promise<{ format?: string }>;
 }
 
@@ -58,7 +58,7 @@ export default async function TeamsPage({
   params,
   searchParams,
 }: TeamsPageProps) {
-  const { handle } = await params;
+  const { username } = await params;
   const { format: selectedFormat } = await searchParams;
 
   const user = await getUser();
@@ -70,7 +70,7 @@ export default async function TeamsPage({
 
   // getActiveFormats is synchronous — run alt fetch and formats in parallel
   const [alt, activeFormats] = await Promise.all([
-    getAltByUsername(supabase, handle),
+    getAltByUsername(supabase, username),
     Promise.resolve(getActiveFormats()),
   ]);
 
@@ -88,7 +88,7 @@ export default async function TeamsPage({
 
   const groupedTeams = isAll ? groupByFormat(filteredTeams) : null;
 
-  const newTeamUrl = `/dashboard/alts/${handle}/teams/new`;
+  const newTeamUrl = `/dashboard/alts/${username}/teams/new`;
 
   return (
     <>
@@ -99,7 +99,7 @@ export default async function TeamsPage({
           {/* Format filter chips */}
           <div className="flex flex-wrap items-center gap-1.5">
             <Link
-              href={`/dashboard/alts/${handle}/teams`}
+              href={`/dashboard/alts/${username}/teams`}
               className={cn(
                 "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
                 isAll
@@ -112,7 +112,7 @@ export default async function TeamsPage({
             {activeFormats.map((fmt) => (
               <Link
                 key={fmt.id}
-                href={`/dashboard/alts/${handle}/teams?format=${fmt.id}`}
+                href={`/dashboard/alts/${username}/teams?format=${fmt.id}`}
                 className={cn(
                   "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
                   selectedFormat === fmt.id
@@ -177,7 +177,7 @@ export default async function TeamsPage({
                 </h2>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {formatTeams.map((team) => (
-                    <TeamCard key={team.id} team={team} handle={handle} />
+                    <TeamCard key={team.id} team={team} handle={username} />
                   ))}
                 </div>
               </section>
@@ -187,7 +187,7 @@ export default async function TeamsPage({
           // Flat list for filtered view
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filteredTeams.map((team) => (
-              <TeamCard key={team.id} team={team} handle={handle} />
+              <TeamCard key={team.id} team={team} handle={username} />
             ))}
           </div>
         )}

@@ -15,7 +15,7 @@ import { WorkspaceActions } from "@/components/team-builder/workspace-actions";
 
 interface TeamWorkspaceLayoutProps {
   children: React.ReactNode;
-  params: Promise<{ handle: string; teamId: string }>;
+  params: Promise<{ username: string; teamId: string }>;
 }
 
 /**
@@ -27,7 +27,7 @@ export default async function TeamWorkspaceLayout({
   children,
   params,
 }: TeamWorkspaceLayoutProps) {
-  const { handle, teamId } = await params;
+  const { username, teamId } = await params;
 
   const user = await getUser();
   if (!user) {
@@ -43,7 +43,7 @@ export default async function TeamWorkspaceLayout({
 
   // Fetch alt and team in parallel
   const [alt, team] = await Promise.all([
-    getAltByUsername(supabase, handle),
+    getAltByUsername(supabase, username),
     getTeamWithPokemon(supabase, numericTeamId),
   ]);
 
@@ -61,7 +61,7 @@ export default async function TeamWorkspaceLayout({
   }
 
   const format = team.format ? getFormatById(team.format) : undefined;
-  const teamsUrl = `/dashboard/alts/${handle}/teams`;
+  const teamsUrl = `/dashboard/alts/${username}/teams`;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -88,7 +88,7 @@ export default async function TeamWorkspaceLayout({
 
         {/* Action buttons — pushed to the right */}
         <div className="ml-auto">
-          <WorkspaceActions team={team} altId={alt.id} handle={handle} />
+          <WorkspaceActions team={team} altId={alt.id} handle={username} />
         </div>
       </header>
 
