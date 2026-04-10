@@ -25,7 +25,18 @@ jobs:
           GIT_BRANCH: ${{ github.head_ref }}
         run: |
           echo "Deleting Supabase branch for $GIT_BRANCH..."
-          supabase --experimental branches delete "$GIT_BRANCH" --project-ref "$PROJECT_REF" || echo "No branch to delete (may not exist)"
+          DELETE_OUTPUT=$(supabase --experimental branches delete "$GIT_BRANCH" --project-ref "$PROJECT_REF" 2>&1)
+          DELETE_STATUS=$?
+
+          if [ "$DELETE_STATUS" -eq 0 ]; then
+            echo "$DELETE_OUTPUT"
+          elif printf '%s' "$DELETE_OUTPUT" | grep -qiE 'not found|does not exist|404'; then
+            echo "No branch to delete (may not exist)"
+            echo "$DELETE_OUTPUT"
+          else
+            echo "$DELETE_OUTPUT"
+            exit "$DELETE_STATUS"
+          fi
 
       - name: Remove Vercel env vars
         env:
