@@ -104,11 +104,9 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     if (savedIdleTimerRef.current) clearTimeout(savedIdleTimerRef.current);
     setSaveStatus("saving");
     saveTimerRef.current = setTimeout(async () => {
-      const result = await updatePokemonAction(
-        pokemonId,
-        { [field]: value } as Parameters<typeof updatePokemonAction>[1],
-        team.id
-      );
+      const result = await updatePokemonAction(pokemonId, {
+        [field]: value,
+      } as Parameters<typeof updatePokemonAction>[1]);
       if (result.success) {
         setSaveStatus("saved");
         savedIdleTimerRef.current = setTimeout(
@@ -191,25 +189,21 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
         selectMode === "defaults" ? (getValidAbilities(species)[0] ?? "") : "";
 
       startTransition(async () => {
-        const result = await updatePokemonAction(
-          pokemonId,
-          {
-            species,
-            ability: firstAbility,
-            nature: selectMode === "defaults" ? "Hardy" : "",
-            move1: "",
-            move2: null,
-            move3: null,
-            move4: null,
-            ev_hp: 0,
-            ev_attack: 0,
-            ev_defense: 0,
-            ev_special_attack: 0,
-            ev_special_defense: 0,
-            ev_speed: 0,
-          },
-          team.id
-        );
+        const result = await updatePokemonAction(pokemonId, {
+          species,
+          ability: firstAbility,
+          nature: selectMode === "defaults" ? "Hardy" : "",
+          move1: "",
+          move2: null,
+          move3: null,
+          move4: null,
+          ev_hp: 0,
+          ev_attack: 0,
+          ev_defense: 0,
+          ev_special_attack: 0,
+          ev_special_defense: 0,
+          ev_speed: 0,
+        });
         if (result.success) {
           setPickerState({ open: false, slot: null, mode: "add" });
           router.refresh();

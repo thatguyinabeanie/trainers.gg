@@ -1399,37 +1399,37 @@ export type Database = {
       }
       pokemon_detail_stats: {
         Row: {
-          abilities: Json | null
+          abilities: Json
           id: number
-          items: Json | null
+          items: Json
           meta_id: number
-          moves: Json | null
+          moves: Json
           species: string
-          spreads: Json | null
-          teammates: Json | null
-          tera_types: Json | null
+          spreads: Json
+          teammates: Json
+          tera_types: Json
         }
         Insert: {
-          abilities?: Json | null
+          abilities?: Json
           id?: never
-          items?: Json | null
+          items?: Json
           meta_id: number
-          moves?: Json | null
+          moves?: Json
           species: string
-          spreads?: Json | null
-          teammates?: Json | null
-          tera_types?: Json | null
+          spreads?: Json
+          teammates?: Json
+          tera_types?: Json
         }
         Update: {
-          abilities?: Json | null
+          abilities?: Json
           id?: never
-          items?: Json | null
+          items?: Json
           meta_id?: number
-          moves?: Json | null
+          moves?: Json
           species?: string
-          spreads?: Json | null
-          teammates?: Json | null
-          tera_types?: Json | null
+          spreads?: Json
+          teammates?: Json
+          tera_types?: Json
         }
         Relationships: [
           {
@@ -3126,6 +3126,14 @@ export type Database = {
         Returns: Json
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      fork_team: {
+        Args: {
+          p_new_name?: string
+          p_source_team_id: number
+          p_target_alt_id: number
+        }
+        Returns: number
+      }
       generate_bracket_order: {
         Args: { p_bracket_size: number }
         Returns: number[]

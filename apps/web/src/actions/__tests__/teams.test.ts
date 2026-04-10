@@ -20,12 +20,6 @@ jest.mock("@/lib/supabase/server", () => ({
   createClient: jest.fn(async () => mockSupabase),
 }));
 
-// next/cache
-const mockUpdateTag = jest.fn();
-jest.mock("next/cache", () => ({
-  updateTag: (...args: unknown[]) => mockUpdateTag(...args),
-}));
-
 // @/lib/utils — getErrorMessage used in the try/catch actions (createTeamAction etc.)
 jest.mock("@/lib/utils", () => ({
   getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
@@ -110,22 +104,12 @@ describe("createTeamAction", () => {
     );
   });
 
-  it("invalidates the teams list cache for the alt after creation", async () => {
-    mockCreateTeam.mockResolvedValue({ id: 42 });
-
-    await createTeamAction(7, "Rain Team", "vgc2025");
-
-    expect(mockUpdateTag).toHaveBeenCalledWith("teams-alt-7");
-    expect(mockUpdateTag).not.toHaveBeenCalledWith("team-42");
-  });
-
   it("returns an error when the mutation throws", async () => {
     mockCreateTeam.mockRejectedValue(new Error("DB error"));
 
     const result = await createTeamAction(7, "Rain Team", "vgc2025");
 
     expect(result).toEqual({ success: false, error: "Failed to create team" });
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns an error when a bot is detected", async () => {
@@ -135,7 +119,6 @@ describe("createTeamAction", () => {
 
     expect(result.success).toBe(false);
     expect(mockCreateTeam).not.toHaveBeenCalled();
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 });
 
@@ -148,7 +131,7 @@ describe("updateTeamAction", () => {
     jest.clearAllMocks();
   });
 
-  it("updates team metadata and invalidates the team cache", async () => {
+  it("updates team metadata", async () => {
     mockUpdateTeam.mockResolvedValue(undefined);
 
     const result = await updateTeamAction(10, { name: "Sun Team" });
@@ -157,7 +140,6 @@ describe("updateTeamAction", () => {
     expect(mockUpdateTeam).toHaveBeenCalledWith(mockSupabase, 10, {
       name: "Sun Team",
     });
-    expect(mockUpdateTag).toHaveBeenCalledWith("team-10");
   });
 
   it("returns an error when the mutation throws", async () => {
@@ -166,7 +148,6 @@ describe("updateTeamAction", () => {
     const result = await updateTeamAction(10, { name: "Sun Team" });
 
     expect(result).toEqual({ success: false, error: "Failed to update team" });
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns an error when a bot is detected", async () => {
@@ -188,14 +169,13 @@ describe("deleteTeamAction", () => {
     jest.clearAllMocks();
   });
 
-  it("deletes a team and invalidates the team cache", async () => {
+  it("deletes a team", async () => {
     mockDeleteTeam.mockResolvedValue(undefined);
 
     const result = await deleteTeamAction(5);
 
     expect(result).toEqual({ success: true, data: undefined });
     expect(mockDeleteTeam).toHaveBeenCalledWith(mockSupabase, 5);
-    expect(mockUpdateTag).toHaveBeenCalledWith("team-5");
   });
 
   it("returns an error when the mutation throws", async () => {
@@ -204,7 +184,6 @@ describe("deleteTeamAction", () => {
     const result = await deleteTeamAction(5);
 
     expect(result).toEqual({ success: false, error: "Failed to delete team" });
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns an error when a bot is detected", async () => {
@@ -243,24 +222,12 @@ describe("forkTeamAction", () => {
     expect(mockForkTeam).toHaveBeenCalledWith(mockSupabase, 1, 3, "My Fork");
   });
 
-  it("invalidates the target alt's teams list cache, not the source team cache", async () => {
-    mockForkTeam.mockResolvedValue({ id: 99 });
-
-    await forkTeamAction(1, 3);
-
-    expect(mockUpdateTag).toHaveBeenCalledWith("teams-alt-3");
-    expect(mockUpdateTag).not.toHaveBeenCalledWith("teams-alt-1");
-    expect(mockUpdateTag).not.toHaveBeenCalledWith("team-1");
-    expect(mockUpdateTag).not.toHaveBeenCalledWith("team-99");
-  });
-
   it("returns an error when the mutation throws", async () => {
     mockForkTeam.mockRejectedValue(new Error("Fork failed"));
 
     const result = await forkTeamAction(1, 3);
 
     expect(result).toEqual({ success: false, error: "Failed to fork team" });
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns an error when a bot is detected", async () => {
@@ -300,14 +267,6 @@ describe("addPokemonToTeamAction", () => {
     );
   });
 
-  it("invalidates the team cache after adding a pokemon", async () => {
-    mockAddPokemonToTeam.mockResolvedValue({ pokemonId: 77 });
-
-    await addPokemonToTeamAction(10, fakePokemon, 1);
-
-    expect(mockUpdateTag).toHaveBeenCalledWith("team-10");
-  });
-
   it("returns an error when the mutation throws", async () => {
     mockAddPokemonToTeam.mockRejectedValue(new Error("Team full"));
 
@@ -317,7 +276,6 @@ describe("addPokemonToTeamAction", () => {
       success: false,
       error: "Failed to add pokemon to team",
     });
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns an error when a bot is detected", async () => {
@@ -339,19 +297,7 @@ describe("updatePokemonAction", () => {
     jest.clearAllMocks();
   });
 
-  it("updates a pokemon and invalidates the team cache when teamId is provided", async () => {
-    mockUpdatePokemon.mockResolvedValue(undefined);
-
-    const result = await updatePokemonAction(55, { nickname: "Sparky" }, 10);
-
-    expect(result).toEqual({ success: true, data: undefined });
-    expect(mockUpdatePokemon).toHaveBeenCalledWith(mockSupabase, 55, {
-      nickname: "Sparky",
-    });
-    expect(mockUpdateTag).toHaveBeenCalledWith("team-10");
-  });
-
-  it("updates a pokemon without invalidating any cache when teamId is omitted", async () => {
+  it("updates a pokemon", async () => {
     mockUpdatePokemon.mockResolvedValue(undefined);
 
     const result = await updatePokemonAction(55, { nickname: "Sparky" });
@@ -360,37 +306,26 @@ describe("updatePokemonAction", () => {
     expect(mockUpdatePokemon).toHaveBeenCalledWith(mockSupabase, 55, {
       nickname: "Sparky",
     });
-    expect(mockUpdateTag).not.toHaveBeenCalled();
-  });
-
-  it("does not invalidate cache when teamId is 0 (falsy)", async () => {
-    mockUpdatePokemon.mockResolvedValue(undefined);
-
-    await updatePokemonAction(55, { nickname: "Sparky" }, 0);
-
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns an error when the mutation throws", async () => {
     mockUpdatePokemon.mockRejectedValue(new Error("Pokemon not found"));
 
-    const result = await updatePokemonAction(55, { nickname: "Sparky" }, 10);
+    const result = await updatePokemonAction(55, { nickname: "Sparky" });
 
     expect(result).toEqual({
       success: false,
       error: "Failed to update pokemon",
     });
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns an error when a bot is detected", async () => {
     simulateBot();
 
-    const result = await updatePokemonAction(55, { nickname: "Sparky" }, 10);
+    const result = await updatePokemonAction(55, { nickname: "Sparky" });
 
     expect(result.success).toBe(false);
     expect(mockUpdatePokemon).not.toHaveBeenCalled();
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 });
 
@@ -403,7 +338,7 @@ describe("removePokemonFromTeamAction", () => {
     jest.clearAllMocks();
   });
 
-  it("removes a pokemon and invalidates the team cache", async () => {
+  it("removes a pokemon from a team", async () => {
     mockRemovePokemonFromTeam.mockResolvedValue(undefined);
 
     const result = await removePokemonFromTeamAction(10, 55);
@@ -414,7 +349,6 @@ describe("removePokemonFromTeamAction", () => {
       10,
       55
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("team-10");
   });
 
   it("returns an error when the mutation throws", async () => {
@@ -426,7 +360,6 @@ describe("removePokemonFromTeamAction", () => {
       success: false,
       error: "Failed to remove pokemon from team",
     });
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns an error when a bot is detected", async () => {
@@ -454,7 +387,7 @@ describe("reorderTeamPokemonAction", () => {
     jest.clearAllMocks();
   });
 
-  it("reorders pokemon and invalidates the team cache", async () => {
+  it("reorders pokemon within a team", async () => {
     mockReorderTeamPokemon.mockResolvedValue(undefined);
 
     const result = await reorderTeamPokemonAction(10, positions);
@@ -465,7 +398,6 @@ describe("reorderTeamPokemonAction", () => {
       10,
       positions
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("team-10");
   });
 
   it("returns an error when the mutation throws", async () => {
@@ -477,7 +409,6 @@ describe("reorderTeamPokemonAction", () => {
       success: false,
       error: "Failed to reorder team pokemon",
     });
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns an error when a bot is detected", async () => {

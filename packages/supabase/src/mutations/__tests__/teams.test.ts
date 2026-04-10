@@ -47,59 +47,6 @@ const createMockClient = () => {
 };
 
 // =============================================================================
-// Shared test data helpers
-// =============================================================================
-
-const makeSourcePokemon = (id = 10) => ({
-  id,
-  species: "Calyrex-Ice",
-  nickname: null,
-  level: 50,
-  nature: "Brave",
-  ability: "As One",
-  held_item: "Booster Energy",
-  gender: null,
-  is_shiny: false,
-  move1: "Glacial Lance",
-  move2: "Trick Room",
-  move3: null,
-  move4: null,
-  ev_hp: 252,
-  ev_attack: 252,
-  ev_defense: 4,
-  ev_special_attack: 0,
-  ev_special_defense: 0,
-  ev_speed: 0,
-  iv_hp: 31,
-  iv_attack: 31,
-  iv_defense: 31,
-  iv_special_attack: 31,
-  iv_special_defense: 31,
-  iv_speed: 0,
-  tera_type: null,
-  notes: null,
-});
-
-const makeSourceTeam = (overrides?: Record<string, unknown>) => ({
-  id: 1,
-  name: "VGC Squad",
-  format: "gen9vgc2025regg",
-  created_by: 42,
-  description: "My main team",
-  notes: null,
-  tags: ["vgc", "top8"],
-  is_public: true,
-  parent_team_id: null,
-  created_at: "2025-01-01T00:00:00Z",
-  updated_at: "2025-01-02T00:00:00Z",
-  team_pokemon: [
-    { team_position: 0, pokemon: makeSourcePokemon(10) },
-    { team_position: 1, pokemon: makeSourcePokemon(11) },
-  ],
-  ...overrides,
-});
-
-// =============================================================================
 // Tests
 // =============================================================================
 
@@ -379,394 +326,61 @@ describe("teams mutations", () => {
   // ==========================================================================
 
   describe("forkTeam", () => {
-    const makeForkMocks = () => {
-      // Step 1: fetch source team
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: makeSourceTeam(),
-          error: null,
-        }),
-      };
-
-      // Step 2: create new team
-      const mockCreateTeamChain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: 200 },
-          error: null,
-        }),
-      };
-
-      // Step 3a: insert pokemon copy 1
-      const mockInsertPokemon1Chain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: 201 },
-          error: null,
-        }),
-      };
-
-      // Step 3b: insert team_pokemon join for pokemon 1
-      const mockInsertJoin1Chain = {
-        insert: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      // Step 3c: insert pokemon copy 2
-      const mockInsertPokemon2Chain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: 202 },
-          error: null,
-        }),
-      };
-
-      // Step 3d: insert team_pokemon join for pokemon 2
-      const mockInsertJoin2Chain = {
-        insert: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      return {
-        mockFetchChain,
-        mockCreateTeamChain,
-        mockInsertPokemon1Chain,
-        mockInsertJoin1Chain,
-        mockInsertPokemon2Chain,
-        mockInsertJoin2Chain,
-      };
-    };
-
-    it("forks source team: fetches, creates new team, copies each pokemon", async () => {
+    it("calls the fork_team RPC with correct parameters", async () => {
       const mockClient = createMockClient();
-      const {
-        mockFetchChain,
-        mockCreateTeamChain,
-        mockInsertPokemon1Chain,
-        mockInsertJoin1Chain,
-        mockInsertPokemon2Chain,
-        mockInsertJoin2Chain,
-      } = makeForkMocks();
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockCreateTeamChain)
-        .mockReturnValueOnce(mockInsertPokemon1Chain)
-        .mockReturnValueOnce(mockInsertJoin1Chain)
-        .mockReturnValueOnce(mockInsertPokemon2Chain)
-        .mockReturnValueOnce(mockInsertJoin2Chain);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: 200, error: null });
 
       const result = await forkTeam(mockClient, 1, 99);
 
       expect(result).toEqual({ id: 200 });
-      expect(mockClient.from).toHaveBeenNthCalledWith(1, "teams");
-      expect(mockFetchChain.eq).toHaveBeenCalledWith("id", 1);
-
-      expect(mockClient.from).toHaveBeenNthCalledWith(2, "teams");
-      expect(mockCreateTeamChain.insert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          created_by: 99,
-          parent_team_id: 1,
-          format: "gen9vgc2025regg",
-        })
-      );
+      expect(
+        (mockClient as unknown as { rpc: jest.Mock }).rpc
+      ).toHaveBeenCalledWith("fork_team", {
+        p_source_team_id: 1,
+        p_target_alt_id: 99,
+        p_new_name: undefined,
+      });
     });
 
-    it("uses default fork name when newName is not provided", async () => {
+    it("passes newName to RPC when provided", async () => {
       const mockClient = createMockClient();
-      const { mockFetchChain, mockCreateTeamChain, mockInsertJoin1Chain } =
-        makeForkMocks();
-
-      // Single pokemon team for simplicity
-      mockFetchChain.single.mockResolvedValue({
-        data: makeSourceTeam({
-          name: "VGC Squad",
-          team_pokemon: [{ team_position: 0, pokemon: makeSourcePokemon(10) }],
-        }),
-        error: null,
-      });
-
-      const mockInsertPokemon1Chain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: { id: 201 }, error: null }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockCreateTeamChain)
-        .mockReturnValueOnce(mockInsertPokemon1Chain)
-        .mockReturnValueOnce(mockInsertJoin1Chain);
-
-      await forkTeam(mockClient, 1, 99);
-
-      expect(mockCreateTeamChain.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "VGC Squad (fork)" })
-      );
-    });
-
-    it("uses provided newName when given", async () => {
-      const mockClient = createMockClient();
-      const { mockFetchChain, mockCreateTeamChain, mockInsertJoin1Chain } =
-        makeForkMocks();
-
-      mockFetchChain.single.mockResolvedValue({
-        data: makeSourceTeam({
-          team_pokemon: [{ team_position: 0, pokemon: makeSourcePokemon(10) }],
-        }),
-        error: null,
-      });
-
-      const mockInsertPokemon1Chain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: { id: 201 }, error: null }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockCreateTeamChain)
-        .mockReturnValueOnce(mockInsertPokemon1Chain)
-        .mockReturnValueOnce(mockInsertJoin1Chain);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: 200, error: null });
 
       await forkTeam(mockClient, 1, 99, "My Custom Fork");
 
-      expect(mockCreateTeamChain.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "My Custom Fork" })
-      );
+      expect(
+        (mockClient as unknown as { rpc: jest.Mock }).rpc
+      ).toHaveBeenCalledWith("fork_team", {
+        p_source_team_id: 1,
+        p_target_alt_id: 99,
+        p_new_name: "My Custom Fork",
+      });
     });
 
-    it("throws when fetching source team fails", async () => {
+    it("throws when RPC returns an error", async () => {
       const mockClient = createMockClient();
-
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: null,
-          error: { message: "not found" },
-        }),
-      };
-
-      (mockClient.from as jest.Mock).mockReturnValueOnce(mockFetchChain);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: { message: "not found" } });
 
       await expect(forkTeam(mockClient, 1, 99)).rejects.toThrow(
-        "Failed to fetch source team: not found"
+        "Failed to fork team: not found"
       );
     });
 
-    it("throws when source team is null (not found)", async () => {
+    it("throws when RPC returns null data", async () => {
       const mockClient = createMockClient();
-
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null, error: null }),
-      };
-
-      (mockClient.from as jest.Mock).mockReturnValueOnce(mockFetchChain);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: null });
 
       await expect(forkTeam(mockClient, 1, 99)).rejects.toThrow(
-        "Source team 1 not found"
+        "Fork returned no team ID"
       );
-    });
-
-    it("throws when creating the forked team fails", async () => {
-      const mockClient = createMockClient();
-
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: makeSourceTeam(),
-          error: null,
-        }),
-      };
-
-      const mockCreateTeamChain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: null,
-          error: { message: "insert error" },
-        }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockCreateTeamChain);
-
-      await expect(forkTeam(mockClient, 1, 99)).rejects.toThrow(
-        "Failed to create forked team: insert error"
-      );
-    });
-
-    it("cleans up team and pokemon on pokemon insert failure", async () => {
-      const mockClient = createMockClient();
-
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: makeSourceTeam({
-            team_pokemon: [
-              { team_position: 0, pokemon: makeSourcePokemon(10) },
-            ],
-          }),
-          error: null,
-        }),
-      };
-
-      const mockCreateTeamChain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: { id: 200 }, error: null }),
-      };
-
-      const mockInsertPokemon1Chain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: null,
-          error: { message: "pokemon insert failed" },
-        }),
-      };
-
-      // Cleanup calls: delete team_pokemon, delete pokemon, delete team
-      const mockCleanupJoinChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      const mockCleanupPokemonChain = {
-        delete: jest.fn().mockReturnThis(),
-        in: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      const mockCleanupTeamChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockCreateTeamChain)
-        .mockReturnValueOnce(mockInsertPokemon1Chain)
-        // Cleanup calls
-        .mockReturnValueOnce(mockCleanupJoinChain)
-        .mockReturnValueOnce(mockCleanupPokemonChain)
-        .mockReturnValueOnce(mockCleanupTeamChain);
-
-      await expect(forkTeam(mockClient, 1, 99)).rejects.toThrow(
-        "Failed to copy pokemon during fork: pokemon insert failed"
-      );
-
-      // Cleanup should have deleted the team row
-      expect(mockClient.from).toHaveBeenCalledWith("teams");
-    });
-
-    it("cleans up on join insert failure after pokemon was created", async () => {
-      const mockClient = createMockClient();
-
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: makeSourceTeam({
-            team_pokemon: [
-              { team_position: 0, pokemon: makeSourcePokemon(10) },
-            ],
-          }),
-          error: null,
-        }),
-      };
-
-      const mockCreateTeamChain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: { id: 200 }, error: null }),
-      };
-
-      const mockInsertPokemon1Chain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: { id: 201 }, error: null }),
-      };
-
-      const mockInsertJoin1Chain = {
-        insert: jest
-          .fn()
-          .mockResolvedValue({ error: { message: "join insert failed" } }),
-      };
-
-      // Cleanup: team_pokemon delete, pokemon delete (by id), team delete
-      const mockCleanupJoinChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      const mockCleanupPokemonChain = {
-        delete: jest.fn().mockReturnThis(),
-        in: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      const mockCleanupTeamChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockCreateTeamChain)
-        .mockReturnValueOnce(mockInsertPokemon1Chain)
-        .mockReturnValueOnce(mockInsertJoin1Chain)
-        .mockReturnValueOnce(mockCleanupJoinChain)
-        .mockReturnValueOnce(mockCleanupPokemonChain)
-        .mockReturnValueOnce(mockCleanupTeamChain);
-
-      await expect(forkTeam(mockClient, 1, 99)).rejects.toThrow(
-        "Failed to create team_pokemon entry during fork: join insert failed"
-      );
-
-      // Cleanup should include the pokemon that was successfully created
-      expect(mockCleanupPokemonChain.in).toHaveBeenCalledWith("id", [201]);
-      expect(mockCleanupTeamChain.eq).toHaveBeenCalledWith("id", 200);
-    });
-
-    it("skips pokemon without a pokemon record (null pokemon)", async () => {
-      const mockClient = createMockClient();
-
-      const mockFetchChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: makeSourceTeam({
-            team_pokemon: [
-              { team_position: 0, pokemon: null }, // null pokemon — should be skipped
-            ],
-          }),
-          error: null,
-        }),
-      };
-
-      const mockCreateTeamChain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: { id: 200 }, error: null }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockFetchChain)
-        .mockReturnValueOnce(mockCreateTeamChain);
-
-      const result = await forkTeam(mockClient, 1, 99);
-
-      // No pokemon insert calls since pokemon was null
-      expect(result).toEqual({ id: 200 });
-      expect(mockClient.from).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -832,7 +446,7 @@ describe("teams mutations", () => {
       ).rejects.toThrow("Failed to insert pokemon: constraint violation");
     });
 
-    it("throws when team_pokemon join insert fails", async () => {
+    it("cleans up orphaned pokemon and throws when team_pokemon join insert fails", async () => {
       const mockClient = createMockClient();
 
       const mockPokemonChain = {
@@ -847,13 +461,25 @@ describe("teams mutations", () => {
         }),
       };
 
+      // Cleanup: delete the orphaned pokemon
+      const mockCleanupChain = {
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      };
+
       (mockClient.from as jest.Mock)
         .mockReturnValueOnce(mockPokemonChain)
-        .mockReturnValueOnce(mockJoinChain);
+        .mockReturnValueOnce(mockJoinChain)
+        .mockReturnValueOnce(mockCleanupChain);
 
       await expect(
         addPokemonToTeam(mockClient, 3, pokemonInsert, 2)
       ).rejects.toThrow("Failed to link pokemon to team: foreign key error");
+
+      // Verify orphaned pokemon was cleaned up
+      expect(mockClient.from).toHaveBeenNthCalledWith(3, "pokemon");
+      expect(mockCleanupChain.delete).toHaveBeenCalled();
+      expect(mockCleanupChain.eq).toHaveBeenCalledWith("id", 55);
     });
 
     it.each([0, 1, 2, 3, 4, 5])(
