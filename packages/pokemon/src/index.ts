@@ -149,3 +149,11 @@ export {
   buildSpeciesSearchIndex,
   searchSpecies,
 } from "./species-search";
+
+// Move data utilities
+export {
+  type MoveCategory,
+  getMoveType,
+  getMoveCategory,
+  getMoveBP,
+} from "./move-data";
