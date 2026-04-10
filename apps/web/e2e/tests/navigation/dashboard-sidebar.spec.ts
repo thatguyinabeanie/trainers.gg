@@ -12,7 +12,7 @@ test.describe("Dashboard sidebar navigation", () => {
     // (Alts was merged into Home — no separate Alts link)
     await expect(sidebar.getByRole("link", { name: /home/i })).toBeVisible();
     await expect(
-      sidebar.getByRole("link", { name: /tournaments/i })
+      sidebar.getByRole("link", { name: "Tournaments", exact: true })
     ).toBeVisible();
   });
 
@@ -22,8 +22,10 @@ test.describe("Dashboard sidebar navigation", () => {
     const sidebar = page.locator("[data-sidebar='sidebar']");
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
-    // Navigate to Tournaments
-    await sidebar.getByRole("link", { name: /tournaments/i }).click();
+    // Navigate to Tournaments (exact match — "Browse Tournaments" also exists in sidebar)
+    await sidebar
+      .getByRole("link", { name: "Tournaments", exact: true })
+      .click();
     await expect(page).toHaveURL(/\/dashboard\/tournaments/);
 
     // Navigate back to Home
