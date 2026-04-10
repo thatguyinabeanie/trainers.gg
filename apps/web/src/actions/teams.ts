@@ -30,6 +30,7 @@ import {
   updatePokemonInputSchema,
   removePokemonInputSchema,
   reorderTeamPokemonInputSchema,
+  pokemonPayloadSchema,
 } from "@trainers/validators";
 
 import { createClient } from "@/lib/supabase/server";
@@ -177,11 +178,12 @@ export async function addPokemonToTeamAction(
   }
   try {
     await rejectBots();
+    const parsedPokemon = pokemonPayloadSchema.parse(pokemon);
     const supabase = await createClient();
     const result = await addPokemonToTeamMutation(
       supabase,
       parsed.data.teamId,
-      pokemon,
+      parsedPokemon as TablesInsert<"pokemon">,
       parsed.data.position
     );
     return { success: true, data: { pokemonId: result.pokemonId } };
@@ -210,8 +212,13 @@ export async function updatePokemonAction(
   }
   return withAction(async () => {
     await rejectBots();
+    const parsedData = pokemonPayloadSchema.partial().parse(data);
     const supabase = await createClient();
-    await updatePokemonMutation(supabase, parsed.data.pokemonId, data);
+    await updatePokemonMutation(
+      supabase,
+      parsed.data.pokemonId,
+      parsedData as Partial<TablesUpdate<"pokemon">>
+    );
   }, "Failed to update pokemon");
 }
 

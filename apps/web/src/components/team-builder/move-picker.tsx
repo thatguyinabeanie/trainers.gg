@@ -6,6 +6,8 @@ import { Dex } from "@pkmn/dex";
 
 import { getLearnableMoves } from "@trainers/pokemon";
 
+const gen9 = Dex.forGen(9);
+
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -82,7 +84,6 @@ export function MovePicker({
   const [category, setCategory] = useState<CategoryFilter>("All");
 
   const allMoves = getLearnableMoves(species);
-  const gen9 = Dex.forGen(9);
 
   // Apply search + category filter
   const filtered = allMoves.filter((name) => {

@@ -220,7 +220,7 @@ Check that secrets are configured:
 
 ```bash
 # Local test
-TURBO_TOKEN=your-token TURBO_TEAM=your-team-id pnpm turbo run build
+VERCEL_TOKEN=your-token VERCEL_TEAM_ID=your-team-id pnpm turbo run build
 ```
 
 Should output:

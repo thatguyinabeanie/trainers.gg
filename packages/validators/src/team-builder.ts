@@ -7,10 +7,16 @@ import { positiveIntSchema } from "./common";
 // =============================================================================
 
 /** Team name — trimmed, 1–100 characters. */
-export const teamNameSchema = z.string().trim().min(1).max(100);
+export const teamNameSchema = z
+  .string()
+  .transform((v) => v.trim())
+  .pipe(z.string().min(1).max(100));
 
 /** Team format — trimmed, 1–50 characters (e.g., "gen9vgc2026regi"). */
-export const teamFormatSchema = z.string().trim().min(1).max(50);
+export const teamFormatSchema = z
+  .string()
+  .transform((v) => v.trim())
+  .pipe(z.string().min(1).max(50));
 
 // =============================================================================
 // Team CRUD schemas
@@ -84,3 +90,39 @@ export const reorderTeamPokemonInputSchema = z.object({
 export type ReorderTeamPokemonInput = z.infer<
   typeof reorderTeamPokemonInputSchema
 >;
+
+// =============================================================================
+// Pokemon payload schema
+// =============================================================================
+
+/** Allowlisted fields for pokemon create/update payloads from the client. */
+export const pokemonPayloadSchema = z.object({
+  species: z.string().min(1).max(50),
+  ability: z.string().max(50).default(""),
+  nature: z.string().max(20).default(""),
+  held_item: z.string().max(50).nullable().optional(),
+  nickname: z.string().max(18).nullable().optional(),
+  gender: z.enum(["male", "female", "genderless"]).nullable().optional(),
+  level: z.number().int().min(1).max(100).default(50),
+  is_shiny: z.boolean().default(false),
+  move1: z.string().max(50).default(""),
+  move2: z.string().max(50).nullable().optional(),
+  move3: z.string().max(50).nullable().optional(),
+  move4: z.string().max(50).nullable().optional(),
+  tera_type: z.string().max(20).nullable().optional(),
+  ev_hp: z.number().int().min(0).max(252).default(0),
+  ev_attack: z.number().int().min(0).max(252).default(0),
+  ev_defense: z.number().int().min(0).max(252).default(0),
+  ev_special_attack: z.number().int().min(0).max(252).default(0),
+  ev_special_defense: z.number().int().min(0).max(252).default(0),
+  ev_speed: z.number().int().min(0).max(252).default(0),
+  iv_hp: z.number().int().min(0).max(31).default(31),
+  iv_attack: z.number().int().min(0).max(31).default(31),
+  iv_defense: z.number().int().min(0).max(31).default(31),
+  iv_special_attack: z.number().int().min(0).max(31).default(31),
+  iv_special_defense: z.number().int().min(0).max(31).default(31),
+  iv_speed: z.number().int().min(0).max(31).default(31),
+  notes: z.string().max(500).nullable().optional(),
+});
+
+export type PokemonPayload = z.infer<typeof pokemonPayloadSchema>;

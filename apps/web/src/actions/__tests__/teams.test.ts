@@ -262,7 +262,7 @@ describe("addPokemonToTeamAction", () => {
     expect(mockAddPokemonToTeam).toHaveBeenCalledWith(
       mockSupabase,
       10,
-      fakePokemon,
+      expect.objectContaining({ species: "Pikachu" }),
       1
     );
   });

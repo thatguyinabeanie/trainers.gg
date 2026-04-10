@@ -127,7 +127,7 @@ start_supabase() {
   
   # First try with --no-pull to use cached images (fast path)
   # Falls back to pulling if images are missing
-  if $SUPABASE_CMD start --no-pull 2>/dev/null; then
+  if $SUPABASE_CMD start 2>/dev/null; then
     echo -e "${GREEN}Supabase started successfully (using cached images)${NC}"
   else
     echo -e "${YELLOW}Cached images not available, pulling latest...${NC}"
