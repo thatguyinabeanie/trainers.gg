@@ -47,13 +47,31 @@ runs:
         # Get branch credentials and extract project ref.
         # branches get returns: { "POSTGRES_URL_NON_POOLING": "...db.<ref>.supabase.co...", ... }
         for i in $(seq 1 30); do
-          INFO=$(supabase --experimental branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json 2>&1) || true
-          NON_POOLING=$(echo "$INFO" | jq -r '.POSTGRES_URL_NON_POOLING // empty' 2>/dev/null)
+          CLI_ERR=$(mktemp)
+          INFO=$(supabase --experimental branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json 2>"$CLI_ERR")
+          CLI_STATUS=$?
+
+          if [ "$CLI_STATUS" -ne 0 ]; then
+            CLI_MSG=$(cat "$CLI_ERR")
+            rm -f "$CLI_ERR"
+            # Expected: branch still provisioning. Unexpected: bad token, wrong ref, CLI bug.
+            if printf '%s' "$CLI_MSG" | grep -qiE 'not ready|provisioning|not found|creating'; then
+              echo "Branch not ready yet (attempt $i/30): $CLI_MSG"
+            else
+              echo "::error::Supabase CLI failed (exit $CLI_STATUS): $CLI_MSG"
+              exit 1
+            fi
+            sleep 10
+            continue
+          fi
+          rm -f "$CLI_ERR"
+
+          NON_POOLING=$(echo "$INFO" | jq -r '.POSTGRES_URL_NON_POOLING // empty')
 
           if [ -n "$NON_POOLING" ]; then
             # Mask all sensitive values before any further output
             for KEY in POSTGRES_URL POSTGRES_URL_NON_POOLING SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY POSTGRES_PASSWORD SUPABASE_DEFAULT_KEY; do
-              VAL=$(echo "$INFO" | jq -r ".${KEY} // empty" 2>/dev/null)
+              VAL=$(echo "$INFO" | jq -r ".${KEY} // empty")
               if [ -n "$VAL" ]; then
                 echo "::add-mask::$VAL"
               fi
