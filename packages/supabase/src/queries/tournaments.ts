@@ -1323,7 +1323,7 @@ export async function getActiveMatch(supabase: TypedClient, altId: number) {
     )
     .in("status", ["pending", "active"])
     .or(`alt1_id.eq.${altId},alt2_id.eq.${altId}`)
-    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
