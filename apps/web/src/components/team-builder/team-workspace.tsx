@@ -8,7 +8,6 @@ import {
   type GameFormat,
   buildSpeciesSearchIndex,
   getValidAbilities,
-  type SpeciesSearchEntry,
 } from "@trainers/pokemon";
 import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
 
@@ -62,7 +61,7 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<"types" | "speed" | "calc">(
     "types"
   );
-  const [_saveStatus, setSaveStatus] = useState<
+  const [saveStatus, setSaveStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -75,10 +74,8 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     mode: "add" | "change";
   }>({ open: false, slot: null, mode: "add" });
 
-  // Build species search index once on mount (for the format)
-  const [speciesIndex] = useState<SpeciesSearchEntry[]>(() =>
-    buildSpeciesSearchIndex(format?.id ?? "gen9vgc2026regi")
-  );
+  // Build species search index for the format (derived value — React Compiler handles memoization)
+  const speciesIndex = buildSpeciesSearchIndex(format?.id ?? "gen9vgc2026regi");
 
   // Clear both debounce timers on unmount to prevent setState on an unmounted component
   useEffect(() => {
@@ -229,7 +226,19 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="relative flex flex-1 flex-col overflow-hidden">
+      {/* Save status indicator */}
+      <div className="absolute top-2 right-2 z-10">
+        {saveStatus === "saving" && (
+          <span className="text-muted-foreground animate-pulse text-xs">
+            Saving...
+          </span>
+        )}
+        {saveStatus === "saved" && (
+          <span className="text-muted-foreground text-xs">Saved</span>
+        )}
+      </div>
+
       {/* Team strip — always visible so "+" button works even with 0 pokemon */}
       <div className="border-b">
         <TeamStrip
