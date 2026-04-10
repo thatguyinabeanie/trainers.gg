@@ -9,8 +9,8 @@ test.describe("Dashboard sidebar navigation", () => {
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // Nav links for main dashboard pages should be present
+    // (Alts was merged into Home — no separate Alts link)
     await expect(sidebar.getByRole("link", { name: /home/i })).toBeVisible();
-    await expect(sidebar.getByRole("link", { name: /alts/i })).toBeVisible();
     await expect(
       sidebar.getByRole("link", { name: /tournaments/i })
     ).toBeVisible();
@@ -21,10 +21,6 @@ test.describe("Dashboard sidebar navigation", () => {
 
     const sidebar = page.locator("[data-sidebar='sidebar']");
     await expect(sidebar).toBeVisible({ timeout: 10000 });
-
-    // Navigate to Alts
-    await sidebar.getByRole("link", { name: /alts/i }).click();
-    await expect(page).toHaveURL(/\/dashboard\/alts/);
 
     // Navigate to Tournaments
     await sidebar.getByRole("link", { name: /tournaments/i }).click();

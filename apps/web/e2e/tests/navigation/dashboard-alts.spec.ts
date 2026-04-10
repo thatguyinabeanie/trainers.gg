@@ -1,40 +1,40 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Dashboard alts page", () => {
-  test("renders alts page with header and add button", async ({ page }) => {
-    await page.goto("/dashboard/alts");
+test.describe("Dashboard alts section", () => {
+  // /dashboard/alts redirects to /dashboard — alts are on the unified home page
+  test("renders alts heading and add button", async ({ page }) => {
+    await page.goto("/dashboard");
 
-    // Page header should show "Alts" — scope to main to avoid sidebar match
     const main = page.getByRole("main");
-    await expect(main.getByText("Alts", { exact: true })).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(main.getByRole("heading", { name: /your alts/i })).toBeVisible(
+      { timeout: 10000 }
+    );
 
     // "New Alt" button should be present
     await expect(main.getByRole("button", { name: /new alt/i })).toBeVisible();
   });
 
   test("renders alt list or empty state", async ({ page }) => {
-    await page.goto("/dashboard/alts");
+    await page.goto("/dashboard");
 
     const main = page.getByRole("main");
-    await expect(main.getByText("Alts", { exact: true })).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(main.getByRole("heading", { name: /your alts/i })).toBeVisible(
+      { timeout: 10000 }
+    );
 
     // Either table headers (user has alts) or empty state (no alts)
-    const hasTable = main.getByText("Teams");
+    const hasTable = main.getByText("Handle");
     const hasEmptyState = main.getByText(/create your first alt/i);
     await expect(hasTable.or(hasEmptyState)).toBeVisible();
   });
 
   test("alt rows are expandable", async ({ page }) => {
-    await page.goto("/dashboard/alts");
+    await page.goto("/dashboard");
 
     const main = page.getByRole("main");
-    await expect(main.getByText("Alts", { exact: true })).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(main.getByRole("heading", { name: /your alts/i })).toBeVisible(
+      { timeout: 10000 }
+    );
 
     // If the user has alts, there should be expandable rows
     const expandButtons = main.locator(
