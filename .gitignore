@@ -105,6 +105,7 @@ mise.local.toml
 
 # Python virtualenv (managed by uv via mise)
 .venv/
+*.egg-info/
 
 # Android SDK (symlink to external or local install)
 .android-sdk/
