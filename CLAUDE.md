@@ -230,6 +230,8 @@ When saving memories (user preferences, feedback, project context), write them t
 
 If mempalace MCP is available, store design decisions, architecture rationale, and discussion outcomes via `mcp__mempalace__mempalace_add_drawer` with `wing=trainers_gg`. Write session summaries via `mcp__mempalace__mempalace_diary_write`. See `using-mempalace` skill for tool reference, room selection, and what NOT to store.
 
+After every significant commit — architectural decision, non-obvious constraint, security fix with rationale, design trade-off — file it in mempalace. Always call `mcp__mempalace__mempalace_check_duplicate` first. Skip routine code changes, test fixes, and dependency bumps.
+
 ## Project Management
 
 Linear for issue tracking (MCP server available). **Team**: `trainers-gg`. **Default Project**: `Private Beta MVP`.

@@ -77,7 +77,7 @@
           },
           {
             "type": "command",
-            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git commit'*) if command -v mempalace >/dev/null 2>&1; then COMMIT_MSG=$(git log --format='%s' -1 2>/dev/null); mempalace save --wing trainers_gg --type event --content \"Committed: $COMMIT_MSG\" 2>/dev/null; fi;; esac; exit 0"
+            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git commit'*) echo 'MEMPALACE: If this commit captures a design decision, architectural choice, security rationale, or non-obvious constraint — file it via mcp__mempalace__mempalace_add_drawer (wing=trainers_gg). Skip routine code changes, test fixes, and dependency bumps.';; esac; exit 0"
           }
         ]
       }
