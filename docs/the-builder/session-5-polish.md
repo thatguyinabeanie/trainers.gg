@@ -313,6 +313,7 @@ The team builder is complete for V1. The `the-builder` branch has all work acros
 **What comes next (separate PRs):**
 
 - Meta data pipeline (Limitless webhook, RK9 scraper, Showdown replay parser)
+- **[TGG-354](https://linear.app/thatguyinabeanie/issue/TGG-354)** — Before building trend charts (item/move usage over time), decide whether to keep JSONB + pre-computed deltas or migrate `pokemon_detail_stats` to normalized tables. Current JSONB approach is fine for display; breaks down for cross-snapshot queries.
 - Meta UI integration (drawer + inline tooltips)
 - VGC Pastes data import
 - Matchup planning (SPAMS)
