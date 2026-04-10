@@ -9,8 +9,8 @@ import { positiveIntSchema } from "./common";
 /** Team name — trimmed, 1–100 characters. */
 export const teamNameSchema = z.string().trim().min(1).max(100);
 
-/** Team format — at least 1 character, max 50 characters. */
-export const teamFormatSchema = z.string().min(1).max(50);
+/** Team format — trimmed, 1–50 characters (e.g., "gen9vgc2026regi"). */
+export const teamFormatSchema = z.string().trim().min(1).max(50);
 
 // =============================================================================
 // Team CRUD schemas

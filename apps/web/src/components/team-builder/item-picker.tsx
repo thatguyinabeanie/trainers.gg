@@ -21,6 +21,19 @@ interface ItemPickerProps {
 }
 
 // =============================================================================
+// Static data — computed once at module load
+// =============================================================================
+
+const gen9 = Dex.forGen(9);
+
+/** All Gen 9 item names, sorted alphabetically. */
+const allItems = gen9.items
+  .all()
+  .filter((item) => item.exists && item.name)
+  .map((item) => item.name)
+  .sort();
+
+// =============================================================================
 // ItemPicker
 // =============================================================================
 
@@ -38,15 +51,6 @@ export function ItemPicker({
   teamItems,
 }: ItemPickerProps) {
   const [search, setSearch] = useState("");
-
-  const gen9 = Dex.forGen(9);
-
-  // Collect all items from the gen9 dex
-  const allItems = gen9.items
-    .all()
-    .filter((item) => item.exists && item.name)
-    .map((item) => item.name)
-    .sort();
 
   const filtered = search
     ? allItems.filter((name) =>

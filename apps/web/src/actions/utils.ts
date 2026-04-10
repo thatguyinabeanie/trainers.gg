@@ -6,6 +6,11 @@ import { getErrorMessage } from "@trainers/utils";
 
 /**
  * Reject requests classified as bots by Vercel BotID.
+ *
+ * Used by all server actions as the standard bot detection gate.
+ * Does NOT include an automation bypass — E2E tests that need to call
+ * server actions should add a VERCEL_AUTOMATION_BYPASS_SECRET check
+ * here when that need arises (see onboarding.ts for the bypass pattern).
  */
 export async function rejectBots(): Promise<void> {
   const { isBot } = await checkBotId();

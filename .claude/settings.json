@@ -77,7 +77,7 @@
           },
           {
             "type": "command",
-            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git commit'*) if command -v mempalace >/dev/null 2>&1; then COMMIT_MSG=$(git -C /Users/beanie/source/the-builder log --format='%s' -1 2>/dev/null); mempalace save --wing trainers_gg --type event --content \"Committed: $COMMIT_MSG\" 2>/dev/null; fi;; esac; exit 0"
+            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git commit'*) if command -v mempalace >/dev/null 2>&1; then COMMIT_MSG=$(git log --format='%s' -1 2>/dev/null); mempalace save --wing trainers_gg --type event --content \"Committed: $COMMIT_MSG\" 2>/dev/null; fi;; esac; exit 0"
           }
         ]
       }
