@@ -627,6 +627,12 @@ function PlayerNav({
       icon: Trophy,
       isActive: pathname.startsWith("/dashboard/tournaments"),
     },
+    {
+      label: "Builder",
+      href: builderHref,
+      icon: Hammer,
+      isActive: pathname.includes("/teams"),
+    },
   ] as const;
 
   return (
