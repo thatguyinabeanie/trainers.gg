@@ -38,15 +38,17 @@ export interface SpeciesSearchEntry {
 // =============================================================================
 
 /**
- * Build a searchable index of all format-legal species.
+ * Build a searchable index of all species in a format's generation.
  *
  * Iterates all existing species in the format's generation and collects
  * display name, types, abilities, base stats, and BST (base stat total).
+ * Note: this returns all generation-legal species, not regulation-filtered.
+ * Format-specific legality (e.g., VGC Reg I banlist) is not applied here.
  *
  * Falls back to generation 9 if the format ID is not found in the registry.
  *
  * @param formatId - Showdown format ID (e.g., "gen9vgc2026regi")
- * @returns Array of SpeciesSearchEntry objects for every legal species
+ * @returns Array of SpeciesSearchEntry objects for every species in the generation
  */
 export function buildSpeciesSearchIndex(
   formatId: string

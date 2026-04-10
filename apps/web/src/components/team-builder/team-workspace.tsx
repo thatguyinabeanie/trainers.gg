@@ -67,9 +67,11 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setSaveStatus("saving");
     saveTimerRef.current = setTimeout(async () => {
-      await updatePokemonAction(pokemonId, {
-        [field]: value,
-      } as Parameters<typeof updatePokemonAction>[1]);
+      await updatePokemonAction(
+        pokemonId,
+        { [field]: value } as Parameters<typeof updatePokemonAction>[1],
+        team.id
+      );
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
     }, 2000);

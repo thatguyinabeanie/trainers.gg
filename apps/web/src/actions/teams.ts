@@ -77,8 +77,8 @@ export async function updateTeamAction(
   teamId: number,
   data: Partial<TablesUpdate<"teams">>
 ): Promise<ActionResult<void>> {
-  await rejectBots();
   return withAction(async () => {
+    await rejectBots();
     const supabase = await createClient();
     await updateTeamMutation(supabase, teamId, data);
     updateTag(teamCacheTag(teamId));
@@ -91,8 +91,8 @@ export async function updateTeamAction(
 export async function deleteTeamAction(
   teamId: number
 ): Promise<ActionResult<void>> {
-  await rejectBots();
   return withAction(async () => {
+    await rejectBots();
     const supabase = await createClient();
     await deleteTeamMutation(supabase, teamId);
     updateTag(teamCacheTag(teamId));
@@ -163,15 +163,18 @@ export async function addPokemonToTeamAction(
 /**
  * Update a pokemon's data — moves, EVs, IVs, ability, item, etc.
  * Only the fields provided will be updated.
+ * Accepts optional teamId for cache invalidation.
  */
 export async function updatePokemonAction(
   pokemonId: number,
-  data: Partial<TablesUpdate<"pokemon">>
+  data: Partial<TablesUpdate<"pokemon">>,
+  teamId?: number
 ): Promise<ActionResult<void>> {
-  await rejectBots();
   return withAction(async () => {
+    await rejectBots();
     const supabase = await createClient();
     await updatePokemonMutation(supabase, pokemonId, data);
+    if (teamId) updateTag(teamCacheTag(teamId));
   }, "Failed to update pokemon");
 }
 
@@ -183,8 +186,8 @@ export async function removePokemonFromTeamAction(
   teamId: number,
   pokemonId: number
 ): Promise<ActionResult<void>> {
-  await rejectBots();
   return withAction(async () => {
+    await rejectBots();
     const supabase = await createClient();
     await removePokemonFromTeamMutation(supabase, teamId, pokemonId);
     updateTag(teamCacheTag(teamId));
@@ -198,8 +201,8 @@ export async function reorderTeamPokemonAction(
   teamId: number,
   positions: { pokemonId: number; position: number }[]
 ): Promise<ActionResult<void>> {
-  await rejectBots();
   return withAction(async () => {
+    await rejectBots();
     const supabase = await createClient();
     await reorderTeamPokemonMutation(supabase, teamId, positions);
     updateTag(teamCacheTag(teamId));

@@ -68,13 +68,9 @@ export async function getTeamWithPokemon(
     `
     )
     .eq("id", teamId)
-    .single();
+    .maybeSingle();
 
-  if (error) {
-    // PostgREST returns PGRST116 when no rows found via .single()
-    if (error.code === "PGRST116") return null;
-    throw new Error(`Failed to fetch team: ${error.message}`);
-  }
+  if (error) throw new Error(`Failed to fetch team: ${error.message}`);
 
   return team;
 }

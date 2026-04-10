@@ -14,6 +14,9 @@ import { getFormatById } from "./formats";
 // Local Generations instance — supports any generation, not just gen9
 const gens = new Generations(Dex);
 
+// Module-level benchmark cache — avoids re-walking the dex on every call
+const benchmarkCache = new Map<string, SpeedBenchmark[]>();
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -83,17 +86,23 @@ function buildBenchmark(
 // =============================================================================
 
 /**
- * Get speed benchmarks for all format-legal species.
+ * Get speed benchmarks for all species in a format's generation.
  *
  * Uses the format's generation to select the correct dex and iterates all
  * existing species, computing min/max/common speed values at level 50.
+ * Note: this returns all generation-legal species, not regulation-filtered.
+ * Format-specific legality (e.g., VGC Reg I banlist) is not applied here.
  *
  * Falls back to generation 9 if the format ID is not found in the registry.
  *
  * @param formatId - Showdown format ID (e.g., "gen9vgc2026regi")
- * @returns Array of SpeedBenchmark objects for every legal species
+ * @returns Array of SpeedBenchmark objects for every species in the generation
  */
 export function getFormatSpeedBenchmarks(formatId: string): SpeedBenchmark[] {
+  // Return cached benchmarks if available (avoids re-walking the dex)
+  const cached = benchmarkCache.get(formatId);
+  if (cached) return cached;
+
   // Determine generation from format registry; default to 9 if unknown
   const format = getFormatById(formatId);
   const generation = format?.generation ?? 9;
@@ -111,6 +120,7 @@ export function getFormatSpeedBenchmarks(formatId: string): SpeedBenchmark[] {
     benchmarks.push(buildBenchmark(species.name, species.baseStats.spe));
   }
 
+  benchmarkCache.set(formatId, benchmarks);
   return benchmarks;
 }
 
