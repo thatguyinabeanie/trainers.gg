@@ -354,269 +354,48 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
-      url: ${{ steps.detect.outputs.url }}
-      branch-db-ready: ${{ steps.branch-check.outputs.ready }}
+      url: ${{ steps.preview.outputs.url }}
+      branch-db-ready: ${{ steps.db-check.outputs.ready }}
     steps:
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+      - uses: actions/checkout@v6
         with:
-          version: latest
+          fetch-depth: 1
 
-      - name: Create or find Supabase branch
+      - uses: ./.github/actions/supabase-branch
         id: branch
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          GIT_BRANCH: ${{ github.head_ref }}
-        run: |
-          # Check if branch already exists
-          EXISTING=$(supabase --experimental branches list --project-ref "$PROJECT_REF" --output json \
-            | jq -r --arg name "$GIT_BRANCH" '.[] | select(.git_branch == $name) | .id // empty')
+        with:
+          access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          project-ref: ${{ secrets.SUPABASE_PROJECT_REF }}
+          git-branch: ${{ github.head_ref }}
 
-          if [ -z "$EXISTING" ]; then
-            echo "Creating Supabase branch for $GIT_BRANCH..."
-            supabase --experimental branches create "$GIT_BRANCH" --project-ref "$PROJECT_REF"
-          else
-            echo "Supabase branch already exists for $GIT_BRANCH"
-          fi
-
-          # Get branch credentials and extract project ref.
-          # branches get returns: { "POSTGRES_URL_NON_POOLING": "...db.<ref>.supabase.co...", ... }
-          for i in $(seq 1 30); do
-            INFO=$(supabase --experimental branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json 2>&1) || true
-            NON_POOLING=$(echo "$INFO" | jq -r '.POSTGRES_URL_NON_POOLING // empty' 2>/dev/null)
-
-            if [ -n "$NON_POOLING" ]; then
-              # Mask all sensitive values before any further output
-              for KEY in POSTGRES_URL POSTGRES_URL_NON_POOLING SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY POSTGRES_PASSWORD SUPABASE_DEFAULT_KEY; do
-                VAL=$(echo "$INFO" | jq -r ".${KEY} // empty" 2>/dev/null)
-                if [ -n "$VAL" ]; then
-                  echo "::add-mask::$VAL"
-                fi
-              done
-
-              BRANCH_REF=$(echo "$NON_POOLING" | grep -oP 'db\.\K[a-z0-9]+(?=\.supabase\.co)')
-              if [ -n "$BRANCH_REF" ]; then
-                echo "ref=$BRANCH_REF" >> "$GITHUB_OUTPUT"
-                echo "Branch ready: $BRANCH_REF"
-                exit 0
-              fi
-            fi
-
-            echo "Waiting for branch credentials (attempt $i/30)"
-            sleep 10
-          done
-          echo "::error::Supabase branch did not return credentials within 5 minutes"
-          exit 1
-
-      - name: Inject env vars into Vercel
+      - uses: ./.github/actions/inject-preview-env
         if: steps.branch.outputs.ref != ''
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          BRANCH_REF: ${{ steps.branch.outputs.ref }}
-          GIT_BRANCH: ${{ github.head_ref }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-        run: |
-          # branches get returns env-var-style JSON with connection strings and keys.
-          # POSTGRES_PASSWORD is NOT a standalone field — parse it from POSTGRES_URL.
-          INFO=$(supabase --experimental branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json)
+        with:
+          branch-ref: ${{ steps.branch.outputs.ref }}
+          git-branch: ${{ github.head_ref }}
+          supabase-access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          supabase-project-ref: ${{ secrets.SUPABASE_PROJECT_REF }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
 
-          ANON_KEY=$(echo "$INFO" | jq -r '.SUPABASE_ANON_KEY // empty')
-          SERVICE_KEY=$(echo "$INFO" | jq -r '.SUPABASE_SERVICE_ROLE_KEY // empty')
-          API_URL="https://${BRANCH_REF}.supabase.co"
+      - uses: ./.github/actions/wait-for-preview
+        id: preview
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          bypass-secret: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          pr-sha: ${{ github.event.pull_request.head.sha }}
+          git-branch: ${{ github.head_ref }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-          # Extract password from POSTGRES_URL: postgresql://postgres:PASSWORD@host:port/db
-          POSTGRES_URL=$(echo "$INFO" | jq -r '.POSTGRES_URL // empty')
-          DB_PASSWORD=$(echo "$POSTGRES_URL" | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-
-          # Also grab the full connection strings the build may need
-          POSTGRES_URL_NON_POOLING=$(echo "$INFO" | jq -r '.POSTGRES_URL_NON_POOLING // empty')
-          POSTGRES_HOST=$(echo "$POSTGRES_URL_NON_POOLING" | sed -n 's|.*@\([^:]*\):.*|\1|p')
-
-          # Mask all dynamic credentials
-          echo "::add-mask::$ANON_KEY"
-          echo "::add-mask::$SERVICE_KEY"
-          echo "::add-mask::$DB_PASSWORD"
-          echo "::add-mask::$POSTGRES_URL"
-          echo "::add-mask::$POSTGRES_URL_NON_POOLING"
-
-          # Log what we're injecting (values masked)
-          echo "API_URL=$API_URL"
-          echo "ANON_KEY=${ANON_KEY:+set (${#ANON_KEY} chars)}"
-          echo "SERVICE_KEY=${SERVICE_KEY:+set (${#SERVICE_KEY} chars)}"
-          echo "DB_PASSWORD=${DB_PASSWORD:+set (${#DB_PASSWORD} chars)}"
-          echo "POSTGRES_HOST=${POSTGRES_HOST:-<empty>}"
-
-          if [ -z "$DB_PASSWORD" ]; then
-            echo "::error::Could not extract POSTGRES_PASSWORD from branch credentials"
-            exit 1
-          fi
-
-          # Upsert branch-scoped Preview env vars via Vercel API.
-          # These override the integration's All Environments vars for this branch.
-          ENV_VARS=$(jq -n \
-            --arg url "$API_URL" \
-            --arg anon "$ANON_KEY" \
-            --arg svc "$SERVICE_KEY" \
-            --arg pass "$DB_PASSWORD" \
-            --arg pgurl "$POSTGRES_URL" \
-            --arg pgurl_np "$POSTGRES_URL_NON_POOLING" \
-            --arg pghost "$POSTGRES_HOST" \
-            --arg branch "$GIT_BRANCH" \
-            '[
-              {"key":"NEXT_PUBLIC_SUPABASE_URL","value":$url,"type":"encrypted","target":["preview"],"gitBranch":$branch},
-              {"key":"NEXT_PUBLIC_SUPABASE_ANON_KEY","value":$anon,"type":"encrypted","target":["preview"],"gitBranch":$branch},
-              {"key":"SUPABASE_URL","value":$url,"type":"encrypted","target":["preview"],"gitBranch":$branch},
-              {"key":"SUPABASE_SERVICE_ROLE_KEY","value":$svc,"type":"sensitive","target":["preview"],"gitBranch":$branch},
-              {"key":"POSTGRES_PASSWORD","value":$pass,"type":"sensitive","target":["preview"],"gitBranch":$branch},
-              {"key":"POSTGRES_URL","value":$pgurl,"type":"sensitive","target":["preview"],"gitBranch":$branch},
-              {"key":"POSTGRES_URL_NON_POOLING","value":$pgurl_np,"type":"sensitive","target":["preview"],"gitBranch":$branch},
-              {"key":"POSTGRES_HOST","value":$pghost,"type":"encrypted","target":["preview"],"gitBranch":$branch}
-            ]')
-
-          RESPONSE=$(curl -sS -X POST \
-            "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?upsert=true&teamId=$VERCEL_TEAM_ID" \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$ENV_VARS")
-
-          CREATED=$(echo "$RESPONSE" | jq '.created | length // 0')
-          FAILED=$(echo "$RESPONSE" | jq '.failed | length // 0')
-          echo "Vercel env vars: $CREATED created/updated, $FAILED failed"
-          if [ "$FAILED" -gt 0 ]; then
-            echo "::warning::Some Vercel env vars failed to set:"
-            echo "$RESPONSE" | jq '.failed[] | {key: .error.key, message: .error.message}'
-          fi
-
-      - name: Wait for Vercel preview deployment
-        id: detect
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-          PR_SHA: ${{ github.event.pull_request.head.sha }}
-          GIT_BRANCH: ${{ github.head_ref }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Waiting for Vercel preview deployment for $PR_SHA..."
-          REDEPLOYED=false
-
-          for i in $(seq 1 50); do
-            CURL_ERR=$(mktemp)
-            RESPONSE=$(curl -sS --max-time 10 -H "Authorization: Bearer $VERCEL_TOKEN" \
-              "https://api.vercel.com/v6/deployments?sha=$PR_SHA&limit=5&projectId=$VERCEL_PROJECT_ID&slug=$VERCEL_TEAM_ID" \
-              2>"$CURL_ERR") || RESPONSE=""
-
-            if [ -z "$RESPONSE" ]; then
-              echo "API request failed (attempt $i/50): $(cat "$CURL_ERR" 2>/dev/null)"
-              rm -f "$CURL_ERR"
-              sleep 15
-              continue
-            fi
-
-            rm -f "$CURL_ERR"
-            # Find the first READY or latest deployment
-            STATE=$(echo "$RESPONSE" | jq -r '.deployments[0].state // empty')
-            DEPLOY_URL=$(echo "$RESPONSE" | jq -r '.deployments[0].url // empty')
-
-            if [ "$STATE" = "READY" ] && [ -n "$DEPLOY_URL" ]; then
-              FULL_URL="https://$DEPLOY_URL"
-              CURL_ERR2=$(mktemp)
-              STATUS=$(curl -sS --max-time 10 -o /dev/null -w "%{http_code}" \
-                -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$FULL_URL" \
-                2>"$CURL_ERR2") || STATUS="000"
-              if [ "$STATUS" = "000" ] && [ -s "$CURL_ERR2" ]; then
-                echo "  curl error: $(cat "$CURL_ERR2")"
-              fi
-              rm -f "$CURL_ERR2"
-
-              if [ "$STATUS" -ge 200 ] 2>/dev/null && [ "$STATUS" -lt 400 ] 2>/dev/null; then
-                echo "url=$FULL_URL" >> "$GITHUB_OUTPUT"
-                echo "Preview ready at $FULL_URL (HTTP $STATUS)"
-                exit 0
-              fi
-              echo "Deployment at $FULL_URL returned HTTP $STATUS (attempt $i/50)"
-
-            elif [ "$STATE" = "ERROR" ] && [ "$REDEPLOYED" = "false" ]; then
-              # First build failed (likely missing env vars from race condition).
-              # Env vars are now set — trigger a redeployment.
-              echo "::warning::First deployment failed (state: ERROR). Triggering redeployment with updated env vars..."
-              REDEPLOYED=true
-
-              REPO_ID=$(curl -sf -H "Authorization: Bearer $GITHUB_TOKEN" \
-                "https://api.github.com/repos/${{ github.repository }}" | jq -r '.id')
-
-              curl -sf -X POST \
-                "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
-                -H "Authorization: Bearer $VERCEL_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d "$(jq -n \
-                  --arg name "$VERCEL_PROJECT_ID" \
-                  --arg project "$VERCEL_PROJECT_ID" \
-                  --arg branch "$GIT_BRANCH" \
-                  --arg sha "$PR_SHA" \
-                  --argjson repoId "$REPO_ID" \
-                  '{
-                    name: $name,
-                    project: $project,
-                    target: "preview",
-                    gitSource: {
-                      type: "github",
-                      repoId: $repoId,
-                      ref: $branch,
-                      sha: $sha
-                    }
-                  }')" || echo "::warning::Redeployment request failed"
-
-              echo "Redeployment triggered — continuing to poll..."
-
-            elif [ -n "$STATE" ]; then
-              echo "Deployment state: $STATE (attempt $i/50)"
-            else
-              echo "No deployment found yet (attempt $i/50)"
-            fi
-
-            sleep 15
-          done
-
-          echo "::error::Timeout waiting for Vercel preview deployment"
-          exit 1
-
-      - name: Check Supabase branch DB readiness
-        id: branch-check
-        if: steps.detect.outputs.url != ''
-        env:
-          PREVIEW_URL: ${{ steps.detect.outputs.url }}
-          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: |
-          CURL_ERR=$(mktemp)
-          RESPONSE=$(curl -sS --max-time 10 \
-            -H "x-vercel-protection-bypass: $BYPASS_SECRET" \
-            "$PREVIEW_URL/api/e2e/seed" 2>"$CURL_ERR") || RESPONSE=""
-
-          if [ -z "$RESPONSE" ]; then
-            echo "curl error: $(cat "$CURL_ERR")"
-            rm -f "$CURL_ERR"
-            echo "::warning::Could not reach seed endpoint for branch DB check"
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          rm -f "$CURL_ERR"
-          SAFE=$(echo "$RESPONSE" | jq -r '.safe // false')
-          REASON=$(echo "$RESPONSE" | jq -r '.reason // empty')
-
-          if [ "$SAFE" = "true" ]; then
-            echo "Supabase branch DB is ready"
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::Supabase branch DB not available: $REASON"
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          fi
+      - uses: ./.github/actions/check-branch-db
+        id: db-check
+        if: steps.preview.outputs.url != ''
+        with:
+          preview-url: ${{ steps.preview.outputs.url }}
+          bypass-secret: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
   # ── E2E tests (Playwright) ─────────────────────────────────
   e2e-tests:
