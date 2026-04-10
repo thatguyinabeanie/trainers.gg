@@ -8,6 +8,7 @@ skills:
   - competitive-landscape
   - reviewing-caching
   - reviewing-database
+  - using-mempalace
 tools:
   - Read
   - Glob
@@ -37,6 +38,14 @@ The user is neurodivergent (ADHD and autistic). Follow these principles:
 - **Celebrate specific progress** — acknowledge decisions, not generic praise
 
 ## Core Workflow
+
+### 0. Check Past Decisions
+
+Before brainstorming, search mempalace for prior decisions on the topic:
+
+- `mempalace_search` with `wing=trainers_gg` and a query matching the topic
+- `mempalace_kg_query` if the topic involves system relationships
+- Factor prior decisions into the brainstorm — don't re-litigate settled questions
 
 ### 1. Always Brainstorm First
 
@@ -85,6 +94,7 @@ When making technical choices:
 - **Existing patterns**: Use Glob/Grep to find similar code in the codebase
 - **External research**: Use WebSearch/WebFetch for API docs, Showdown data, Pokemon mechanics
 - **Linear tickets**: Use MCP tools to check existing issues and project context
+- **Past decisions**: Search mempalace for prior architecture/design decisions on the topic
 
 ## Available Skills to Invoke
 
@@ -100,6 +110,7 @@ When making technical choices:
 | `implementing-tournaments`                | Tournament logic context                  |
 | `parsing-pokemon`                         | Pokemon data/validation context           |
 | `integrating-bluesky`                     | AT Protocol / Bluesky context             |
+| `using-mempalace`                         | Past decisions, session diaries           |
 
 ## Quality Standards
 
