@@ -354,8 +354,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
-      url: ${{ steps.redeploy.outputs.url || steps.detect.outputs.url }}
-      branch-db-ready: ${{ steps.branch-recheck.outputs.ready || steps.branch-check.outputs.ready }}
+      url: ${{ steps.detect.outputs.url }}
+      branch-db-ready: ${{ steps.branch-check.outputs.ready }}
     steps:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -468,28 +468,29 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           PR_SHA: ${{ github.event.pull_request.head.sha }}
+          GIT_BRANCH: ${{ github.head_ref }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Waiting for Vercel preview deployment for $PR_SHA..."
+          REDEPLOYED=false
 
-          for i in $(seq 1 40); do
-            # Query Vercel REST API directly — more reliable than GitHub Deployments API
+          for i in $(seq 1 50); do
             RESPONSE=$(curl -sf --max-time 10 -H "Authorization: Bearer $VERCEL_TOKEN" \
-              "https://api.vercel.com/v6/deployments?sha=$PR_SHA&limit=1&projectId=$VERCEL_PROJECT_ID&slug=$VERCEL_TEAM_ID" \
+              "https://api.vercel.com/v6/deployments?sha=$PR_SHA&limit=5&projectId=$VERCEL_PROJECT_ID&slug=$VERCEL_TEAM_ID" \
               2>/dev/null) || RESPONSE=""
 
             if [ -z "$RESPONSE" ]; then
-              echo "API request failed (attempt $i/40)"
+              echo "API request failed (attempt $i/50)"
               sleep 15
               continue
             fi
 
+            # Find the first READY or latest deployment
             STATE=$(echo "$RESPONSE" | jq -r '.deployments[0].state // empty')
             DEPLOY_URL=$(echo "$RESPONSE" | jq -r '.deployments[0].url // empty')
 
             if [ "$STATE" = "READY" ] && [ -n "$DEPLOY_URL" ]; then
               FULL_URL="https://$DEPLOY_URL"
-
-              # Verify it's accessible
               STATUS=$(curl -sf --max-time 10 -o /dev/null -w "%{http_code}" \
                 -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$FULL_URL" \
                 2>/dev/null) || STATUS="000"
@@ -499,11 +500,45 @@ jobs:
                 echo "Preview ready at $FULL_URL (HTTP $STATUS)"
                 exit 0
               fi
-              echo "Deployment at $FULL_URL returned HTTP $STATUS (attempt $i/40)"
+              echo "Deployment at $FULL_URL returned HTTP $STATUS (attempt $i/50)"
+
+            elif [ "$STATE" = "ERROR" ] && [ "$REDEPLOYED" = "false" ]; then
+              # First build failed (likely missing env vars from race condition).
+              # Env vars are now set — trigger a redeployment.
+              echo "::warning::First deployment failed (state: ERROR). Triggering redeployment with updated env vars..."
+              REDEPLOYED=true
+
+              REPO_ID=$(curl -sf -H "Authorization: Bearer $GITHUB_TOKEN" \
+                "https://api.github.com/repos/${{ github.repository }}" | jq -r '.id')
+
+              curl -sf -X POST \
+                "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
+                -H "Authorization: Bearer $VERCEL_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "$(jq -n \
+                  --arg name "$VERCEL_PROJECT_ID" \
+                  --arg project "$VERCEL_PROJECT_ID" \
+                  --arg branch "$GIT_BRANCH" \
+                  --arg sha "$PR_SHA" \
+                  --argjson repoId "$REPO_ID" \
+                  '{
+                    name: $name,
+                    project: $project,
+                    target: "preview",
+                    gitSource: {
+                      type: "github",
+                      repoId: $repoId,
+                      ref: $branch,
+                      sha: $sha
+                    }
+                  }')" || echo "::warning::Redeployment request failed"
+
+              echo "Redeployment triggered — continuing to poll..."
+
             elif [ -n "$STATE" ]; then
-              echo "Deployment state: $STATE (attempt $i/40)"
+              echo "Deployment state: $STATE (attempt $i/50)"
             else
-              echo "No deployment found yet (attempt $i/40)"
+              echo "No deployment found yet (attempt $i/50)"
             fi
 
             sleep 15
@@ -537,99 +572,6 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::Supabase branch DB not available: $REASON"
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Trigger redeployment if needed
-        id: redeploy
-        if: steps.branch-check.outputs.ready != 'true' && steps.branch.outputs.ref != ''
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-          PR_SHA: ${{ github.event.pull_request.head.sha }}
-          GIT_BRANCH: ${{ github.head_ref }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Branch DB is now ready but deployment predates env var injection — triggering redeployment..."
-
-          REPO_ID=$(curl -sf -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}" | jq -r '.id')
-
-          RESPONSE=$(curl -sf -X POST \
-            "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n \
-              --arg name "$VERCEL_PROJECT_ID" \
-              --arg project "$VERCEL_PROJECT_ID" \
-              --arg branch "$GIT_BRANCH" \
-              --arg sha "$PR_SHA" \
-              --argjson repoId "$REPO_ID" \
-              '{
-                name: $name,
-                project: $project,
-                target: "preview",
-                gitSource: {
-                  type: "github",
-                  repoId: $repoId,
-                  ref: $branch,
-                  sha: $sha
-                }
-              }')")
-
-          DEPLOY_URL=$(echo "$RESPONSE" | jq -r '.url // empty')
-
-          if [ -z "$DEPLOY_URL" ]; then
-            echo "::warning::Failed to trigger redeployment"
-            exit 0
-          fi
-
-          FULL_URL="https://$DEPLOY_URL"
-          echo "Redeployment triggered: $FULL_URL — polling for readiness..."
-
-          for i in $(seq 1 40); do
-            STATUS=$(curl -sf --max-time 10 -o /dev/null -w "%{http_code}" \
-              -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$FULL_URL" \
-              2>/dev/null) || STATUS="000"
-
-            if [ "$STATUS" -ge 200 ] 2>/dev/null && [ "$STATUS" -lt 400 ] 2>/dev/null; then
-              echo "url=$FULL_URL" >> "$GITHUB_OUTPUT"
-              echo "Redeployment ready at $FULL_URL (HTTP $STATUS)"
-              exit 0
-            fi
-            echo "Redeployment returned HTTP $STATUS (attempt $i/40)"
-            sleep 15
-          done
-
-          echo "::warning::Redeployment did not become accessible in time"
-
-      - name: Re-check branch DB readiness
-        id: branch-recheck
-        if: steps.redeploy.outputs.url != ''
-        env:
-          PREVIEW_URL: ${{ steps.redeploy.outputs.url }}
-          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: |
-          RESPONSE=$(curl -sf --max-time 10 \
-            -H "x-vercel-protection-bypass: $BYPASS_SECRET" \
-            "$PREVIEW_URL/api/e2e/seed" 2>/dev/null) || RESPONSE=""
-
-          if [ -z "$RESPONSE" ]; then
-            echo "::warning::Could not reach seed endpoint on redeployment for branch DB check"
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          SAFE=$(echo "$RESPONSE" | jq -r '.safe // false')
-          REASON=$(echo "$RESPONSE" | jq -r '.reason // empty')
-
-          if [ "$SAFE" = "true" ]; then
-            echo "Supabase branch DB is ready after redeployment"
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::Supabase branch DB not available after redeployment: $REASON"
             echo "ready=false" >> "$GITHUB_OUTPUT"
           fi
 
