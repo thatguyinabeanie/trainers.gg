@@ -1,9 +1,13 @@
 "use client";
 
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
+import { type GameFormat } from "@trainers/pokemon";
 
-import { cn } from "@/lib/utils";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import { DamageCalcTab } from "./damage-calc-tab";
+import { SpeedTierTab } from "./speed-tier-tab";
+import { TypeCoverageTab } from "./type-coverage-tab";
 
 // =============================================================================
 // Types
@@ -16,6 +20,7 @@ interface ContextPanelProps {
   selectedPokemon: Tables<"pokemon"> | null;
   activeTab: ContextTab;
   onTabChange: (tab: ContextTab) => void;
+  format?: GameFormat;
 }
 
 // =============================================================================
@@ -25,14 +30,13 @@ interface ContextPanelProps {
 /**
  * Right-hand panel in the team builder workspace.
  * Shows contextual analysis of the team — type coverage, speed tiers, damage calc.
- *
- * Session 3+ will wire in real tab content; stubs now.
  */
 export function ContextPanel({
-  team: _team,
-  selectedPokemon: _selectedPokemon,
+  team,
+  selectedPokemon,
   activeTab,
   onTabChange,
+  format,
 }: ContextPanelProps) {
   return (
     <div className="flex h-full flex-col">
@@ -50,41 +54,26 @@ export function ContextPanel({
           </TabsList>
         </div>
 
-        {/* Stub content for each tab */}
-        <TabsContent
-          value="types"
-          className={cn("flex flex-1 items-center justify-center p-6")}
-        >
-          <StubMessage label="Type coverage" />
+        <TabsContent value="types" className="flex-1 overflow-y-auto">
+          <TypeCoverageTab team={team} selectedPokemon={selectedPokemon} />
         </TabsContent>
 
-        <TabsContent
-          value="speed"
-          className={cn("flex flex-1 items-center justify-center p-6")}
-        >
-          <StubMessage label="Speed tiers" />
+        <TabsContent value="speed" className="flex-1 overflow-y-auto">
+          <SpeedTierTab
+            team={team}
+            selectedPokemon={selectedPokemon}
+            format={format}
+          />
         </TabsContent>
 
-        <TabsContent
-          value="calc"
-          className={cn("flex flex-1 items-center justify-center p-6")}
-        >
-          <StubMessage label="Damage calculator" />
+        <TabsContent value="calc" className="flex-1 overflow-y-auto">
+          <DamageCalcTab
+            team={team}
+            selectedPokemon={selectedPokemon}
+            format={format}
+          />
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-// =============================================================================
-// StubMessage — placeholder shown until real tab content is implemented
-// =============================================================================
-
-function StubMessage({ label }: { label: string }) {
-  return (
-    <div className="text-center">
-      <p className="text-muted-foreground text-sm font-medium">{label}</p>
-      <p className="text-muted-foreground mt-1 text-xs">Coming in Session 3</p>
     </div>
   );
 }
