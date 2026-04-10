@@ -23,7 +23,7 @@ jobs:
           GIT_BRANCH: ${{ github.head_ref }}
         run: |
           echo "Deleting Supabase branch for $GIT_BRANCH..."
-          supabase branches delete "$GIT_BRANCH" --project-ref "$PROJECT_REF" 2>/dev/null || echo "No branch to delete"
+          supabase branches delete "$GIT_BRANCH" --project-ref "$PROJECT_REF" || echo "No branch to delete (may not exist)"
 
       - name: Remove Vercel env vars
         env:
