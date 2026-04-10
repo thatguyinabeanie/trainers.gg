@@ -117,7 +117,7 @@ export function NewTeamForm({
           // Limit to 6 Pokemon max (DB constraint on team_position)
           const toImport = parsedTeam.slice(0, 6);
 
-          // Add each Pokemon sequentially at its position.
+          // Add all Pokemon concurrently — each has an explicit position index.
           // Cast gender to the DB enum — ParsedPokemon uses string | null but
           // the DB expects the "Male" | "Female" enum. Trim to valid values only.
           const addResults = await Promise.all(
