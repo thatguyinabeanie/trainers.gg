@@ -44,6 +44,8 @@ jest.mock("@trainers/pokemon", () => ({
   calculateHP: jest.fn(() => 200),
   getNatureMultiplier: jest.fn(() => 1.0),
   calculateNatureBumps: jest.fn(() => [0, 40, 80]),
+  buildSpeciesSearchIndex: jest.fn(() => []),
+  searchSpecies: jest.fn(() => []),
   NATURE_EFFECTS: {
     Adamant: { boost: "attack", reduce: "specialAttack" },
   },
@@ -87,8 +89,35 @@ jest.mock("@pkmn/dex", () => ({
 
 jest.mock("@/actions/teams", () => ({
   updatePokemonAction: jest.fn().mockResolvedValue({ success: true }),
+  addPokemonToTeamAction: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: { pokemonId: 99 } }),
   reorderTeamPokemonAction: jest.fn().mockResolvedValue({ success: true }),
   removePokemonFromTeamAction: jest.fn().mockResolvedValue({ success: true }),
+}));
+
+// Mock the tab components to avoid rendering their full implementations
+jest.mock("../type-coverage-tab", () => ({
+  TypeCoverageTab: () => (
+    <div data-testid="type-coverage-tab">Type coverage content</div>
+  ),
+}));
+jest.mock("../speed-tier-tab", () => ({
+  SpeedTierTab: () => (
+    <div data-testid="speed-tier-tab">Speed tier content</div>
+  ),
+}));
+jest.mock("../damage-calc-tab", () => ({
+  DamageCalcTab: () => (
+    <div data-testid="damage-calc-tab">Damage calc content</div>
+  ),
+}));
+jest.mock("../species-picker", () => ({
+  SpeciesPicker: ({ onCancel }: { onCancel: () => void }) => (
+    <div data-testid="species-picker">
+      <button onClick={onCancel}>Cancel</button>
+    </div>
+  ),
 }));
 
 jest.mock("lucide-react", () => {
@@ -258,7 +287,7 @@ describe("TeamWorkspace", () => {
       const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
       await user.click(screen.getByRole("tab", { name: "Speed" }));
-      expect(screen.getByText("Speed tiers")).toBeInTheDocument();
+      expect(screen.getByTestId("speed-tier-tab")).toBeInTheDocument();
     });
 
     it("switches to Calc tab when clicked", async () => {
@@ -266,7 +295,7 @@ describe("TeamWorkspace", () => {
       const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
       await user.click(screen.getByRole("tab", { name: "Calc" }));
-      expect(screen.getByText("Damage calculator")).toBeInTheDocument();
+      expect(screen.getByTestId("damage-calc-tab")).toBeInTheDocument();
     });
   });
 });

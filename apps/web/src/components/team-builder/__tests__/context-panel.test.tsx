@@ -3,6 +3,23 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
+// Mock the tab components to isolate context-panel tests
+jest.mock("../type-coverage-tab", () => ({
+  TypeCoverageTab: () => (
+    <div data-testid="type-coverage-tab">Type coverage content</div>
+  ),
+}));
+jest.mock("../speed-tier-tab", () => ({
+  SpeedTierTab: () => (
+    <div data-testid="speed-tier-tab">Speed tier content</div>
+  ),
+}));
+jest.mock("../damage-calc-tab", () => ({
+  DamageCalcTab: () => (
+    <div data-testid="damage-calc-tab">Damage calc content</div>
+  ),
+}));
+
 import { ContextPanel } from "../context-panel";
 import { type TeamWithPokemon } from "@trainers/supabase";
 
@@ -75,24 +92,19 @@ describe("ContextPanel", () => {
   });
 
   describe("tab content", () => {
-    it("shows Type coverage stub when activeTab=types", () => {
+    it("renders TypeCoverageTab when activeTab=types", () => {
       renderContextPanel("types");
-      expect(screen.getByText("Type coverage")).toBeInTheDocument();
+      expect(screen.getByTestId("type-coverage-tab")).toBeInTheDocument();
     });
 
-    it("shows Speed tiers stub when activeTab=speed", () => {
+    it("renders SpeedTierTab when activeTab=speed", () => {
       renderContextPanel("speed");
-      expect(screen.getByText("Speed tiers")).toBeInTheDocument();
+      expect(screen.getByTestId("speed-tier-tab")).toBeInTheDocument();
     });
 
-    it("shows Damage calculator stub when activeTab=calc", () => {
+    it("renders DamageCalcTab when activeTab=calc", () => {
       renderContextPanel("calc");
-      expect(screen.getByText("Damage calculator")).toBeInTheDocument();
-    });
-
-    it("shows coming soon message", () => {
-      renderContextPanel("types");
-      expect(screen.getByText("Coming in Session 3")).toBeInTheDocument();
+      expect(screen.getByTestId("damage-calc-tab")).toBeInTheDocument();
     });
   });
 
