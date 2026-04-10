@@ -55,6 +55,16 @@ gh api graphql -f query='query {
 
 Filter to **unreplied reviewer comments** — comments from Copilot, vercel[bot], or human reviewers that have no reply from the PR author.
 
+### Stale Comment Detection
+
+Review comments may reference code that has changed since the comment was posted (e.g., from a merge, rebase, or a fix in a later commit). Before grouping, **check each comment against the current code**:
+
+1. Read the file at the path/line the comment references
+2. If the code has already been changed to address the concern (or the flagged code no longer exists), mark the comment as **stale**
+3. Stale comments should be replied to with "Already fixed in commit {sha}" or "Code no longer exists — resolved by subsequent changes" and resolved without presenting to the user
+
+This prevents wasting the user's time on issues that were already addressed in prior review rounds or merges.
+
 If there are zero unreplied comments and zero unresolved threads, skip to Phase 7.
 
 ## Phase 3: Group and Present
