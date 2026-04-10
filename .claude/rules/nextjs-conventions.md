@@ -156,6 +156,29 @@ async function onSubmit(data: CreateTournamentInput) {
 - **`cn()`** from `@/lib/utils` for all conditional class composition
 - **StatusBadge** for semantic status colors (emerald=active, blue=upcoming, amber=draft, gray=completed, red=cancelled)
 
+## Input Validation at Route Boundaries
+
+Data from outside the current request — route params, cookies, query strings, localStorage — can be stale, malformed, or tampered with. Validate before use.
+
+| Source             | Risk                                          | Guard                                                            |
+| ------------------ | --------------------------------------------- | ---------------------------------------------------------------- |
+| Route `params`     | Non-numeric IDs, non-existent slugs           | `Number()` + `Number.isNaN()` → `notFound()` before any query    |
+| Cookies            | References to deleted entities (stale alt ID) | Look up the cookie value in current data; fall back if not found |
+| `searchParams`     | Arbitrary strings, missing keys               | Default values; validate before passing to queries               |
+| External redirects | Open redirect via `?redirect=` param          | `isSafeRelativeUrl()` from `@/lib/notification-utils`            |
+
+```tsx
+// Route param — validate before querying
+const numericId = Number(params.id);
+if (Number.isNaN(numericId)) notFound();
+
+// Cookie — validate against current data
+const selectedAlt = alts.find((a) => a.username === cookieValue) ?? null;
+const currentAlt = selectedAlt ?? alts[0] ?? null;
+```
+
+Never pass unvalidated external input directly to database queries — a `NaN` or stale reference should produce a 404, not a 500.
+
 ## Environment Safety
 
 - Never expose server-only secrets to client code
