@@ -26,6 +26,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `managing-edge-imports`    | Deno import maps, `deno.json` management                                |
 | `auditing-code`            | Codebase audits for type safety, architecture, maintainability          |
 | `writing-skills`           | Creating/editing skills, agents, maintaining the architecture           |
+| `using-mempalace`          | Storing/searching decisions, session diaries, knowledge graph           |
 | `design-system`            | Elevation, typography hierarchy, transitions, layout conventions        |
 | `product-vision`           | Product vision, feature roadmap, differentiators, user types            |
 | `competitive-landscape`    | Competitive landscape, positioning, alternatives by category            |
@@ -227,7 +228,7 @@ When executing implementation plans, always use **subagent-driven development** 
 
 When saving memories (user preferences, feedback, project context), write them to `~/.claude/CLAUDE.md` (the user's private global instructions file), not to the project CLAUDE.md.
 
-If mempalace MCP is available, also store significant design decisions, architecture changes, and PR discussion summaries via `mcp__mempalace__store_memory` with `wing=trainers_gg`. Use rooms matching the project's domain areas: `architecture`, `auth`, `tournaments`, `pokemon`, `team-builder`, `bluesky`, `mobile`, `database`, `web`, `ui-design`, `devtools`, `product`.
+If mempalace MCP is available, store design decisions, architecture rationale, and discussion outcomes via `mcp__mempalace__mempalace_add_drawer` with `wing=trainers_gg`. Write session summaries via `mcp__mempalace__mempalace_diary_write`. See `using-mempalace` skill for tool reference, room selection, and what NOT to store.
 
 ## Project Management
 

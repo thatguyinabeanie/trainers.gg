@@ -127,7 +127,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v mempalace >/dev/null 2>&1; then echo 'MEMPALACE: Context compression imminent. Save important decisions and topics from this session to mempalace via mcp__mempalace__store_memory with wing=trainers_gg before context is lost.'; fi; exit 0"
+            "command": "if command -v mempalace >/dev/null 2>&1; then echo 'MEMPALACE: Context compression imminent. Before context is lost: (1) save key decisions via mcp__mempalace__mempalace_add_drawer with wing=trainers_gg, (2) write a session diary via mcp__mempalace__mempalace_diary_write. See using-mempalace skill.'; fi; exit 0"
           }
         ]
       }
