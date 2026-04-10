@@ -1,135 +1,216 @@
 ---
 name: reviewing-pr-feedback
-description: Use after pushing to a PR — monitors CI check results, fetches and addresses review comments (Copilot, Vercel Agent, human), fixes failures, and replies to all comments before declaring done
+description: Use after pushing to a PR — fetches review comments, groups them, walks through each group with the user, fixes everything (no deferrals), commits, pushes, replies, resolves threads, requests re-review, and waits for completion
 ---
 
 # Reviewing PR Feedback
 
-Monitor CI, fetch review comments, address them with the user, fix approved items, and reply. This is the feedback loop after code is pushed to a PR.
+Fetch review comments, group them, resolve every issue with the user, then close the loop. Nothing gets deferred — every comment is addressed in this session.
 
 ## The Loop
 
 ```
-PR pushed → Check CI → Fix failures → Fetch comments → Group + present →
-User decides per group → Fix approved items → Reply to all → Re-check CI → Done
+Fetch comments → Group by theme → Walk through groups with user →
+Implement ALL fixes → Lint/typecheck/test → Commit + push →
+Reply to every comment → Resolve every thread →
+Request Copilot re-review → Wait for review → Loop if new comments
 ```
 
-## Phase 1: CI Monitoring
+This loop repeats until a review cycle produces zero actionable comments.
+
+## Phase 1: CI Check
 
 ```bash
-gh pr checks <pr-number>
+gh pr checks <pr-number> --watch
 ```
 
-Re-run until no check shows `pending`. Fix any failures locally:
+Fix any failures locally before touching review comments:
 
 - Lint: `pnpm lint`
 - Types: `pnpm typecheck`
 - Tests: `pnpm test`
-- E2E: `pnpm test:e2e`
 
-Push fixes — CI re-runs automatically. Never force-push.
+Push fixes. CI re-runs automatically.
 
 ## Phase 2: Fetch Review Comments
 
 ```bash
-# All review comments (code-level)
-gh api /repos/{owner}/{repo}/pulls/{pr}/comments \
-  --jq '.[] | {id, user: .user.login, path, line, body, in_reply_to_id}'
+# All code-level review comments
+gh api repos/{owner}/{repo}/pulls/{pr}/comments --paginate \
+  | jq '[.[] | {id, path, line: (.line // .original_line), author: .user.login, in_reply_to_id, body}]'
 
-# PR-level comments
-gh api /repos/{owner}/{repo}/issues/{pr}/comments \
-  --jq '.[] | {id, user: .user.login, body}'
+# Count unresolved threads
+gh api graphql -f query='query {
+  repository(owner: "{owner}", name: "{repo}") {
+    pullRequest(number: {pr}) {
+      reviewThreads(first: 100) {
+        nodes { id isResolved comments(first: 1) {
+          nodes { path line body author { login } }
+        }}
+      }
+    }
+  }
+}'
 ```
 
-Filter to unreplied comments (no `in_reply_to_id` pointing to them).
+Filter to **unreplied reviewer comments** — comments from Copilot, vercel[bot], or human reviewers that have no reply from the PR author.
 
-## Phase 3: Review with User
+If there are zero unreplied comments and zero unresolved threads, skip to Phase 7.
 
-**Group similar comments** — if 3 comments flag the same pattern, present once.
+## Phase 3: Group and Present
 
-For each comment/group:
+Group comments by **theme**, not by file. Multiple comments about the same underlying issue form one group.
 
-1. Show the file, line, and full comment text
-2. Explain in plain language what the concern is
-3. Give your assessment — valid concern, false positive, or style preference
-4. Wait for user decision: fix, acknowledge, or dismiss
-5. Record the decision
+**Example groupings:**
 
-Do not touch code during this phase. One decision at a time.
+- 6 comments about using `team_pokemon.id` instead of `pokemon_id` → one group: "wrong ID for mutations"
+- 3 comments about missing `DROP POLICY IF EXISTS` → one group: "migration idempotency"
+- 1 standalone comment about a missing test → its own group
+
+**For each group, present to the user:**
+
+```markdown
+### Group N: {theme} ({count} comments)
+
+**Files affected:** `path/to/file.ts:42`, `path/to/other.ts:88`
+
+**The concern:** {plain-language explanation of what reviewers flagged}
+
+**Recommended fix:** {specific, actionable fix — not vague. Include what to change and where.}
+
+How would you like to handle this?
+```
+
+Wait for the user's decision on each group before moving to the next. The user may:
+
+- Approve the recommended fix
+- Modify the approach
+- Provide a different fix
+
+**There is no "defer" or "won't do" option.** Every group must result in either a code fix or a reply explaining why the code is already correct (with evidence).
 
 ## Phase 4: Implement Fixes
 
-After all comments reviewed, ask: **"Ready to implement?"**
+After all groups are reviewed with the user:
 
-- Dispatch **parallel subagents** for independent fixes
-- Single push to keep CI clean
-- Run `pnpm typecheck && pnpm test` before pushing
+1. Implement all approved fixes
+2. Use parallel subagents for independent fix groups when possible
+3. Run verification:
 
-## Phase 5: Reply to Comments
+```bash
+pnpm lint && pnpm typecheck && pnpm test
+```
 
-After pushing fixes, reply to EVERY comment with a **status label** so anyone scanning the PR can immediately see what happened. The label must be the first thing in the reply — bold, with emoji.
+4. Fix any test/type failures caused by the changes
+5. Commit with a descriptive message referencing the review round
+6. Push to the PR branch
+
+## Phase 5: Reply to Every Comment
+
+After pushing, reply to **every** unreplied reviewer comment. Lead each reply with a status label.
 
 ### Status Labels
 
-| Label                 | When to use                                                              |
-| --------------------- | ------------------------------------------------------------------------ |
-| ✅ **FIXED** (sha)    | Code was changed to address the comment                                  |
-| ❌ **FALSE POSITIVE** | The concern is incorrect (e.g., flagging a built-in function as missing) |
-| 🚫 **WON'T DO**       | Valid concern but intentionally not addressing (explain why)             |
-| 🔜 **DEFERRED**       | Valid concern, will address in a future PR (explain when/why)            |
-| ℹ️ **ACKNOWLEDGED**   | Informational — no code change needed but noting for the record          |
+| Label            | When to use                                          |
+| ---------------- | ---------------------------------------------------- |
+| **FIXED** (sha)  | Code was changed to address the comment              |
+| **NOT AN ISSUE** | The concern is incorrect — explain why with evidence |
 
-### Format
+That's it. Two options. If it's a real concern, fix it. If it's not, explain why.
+
+### Reply Format
 
 ```
-✅ **FIXED** (abc1234) — Brief description of what changed.
+Fixed in commit {sha} — {one-line description of what changed}.
 ```
 
-Always include the commit SHA for FIXED items so the reviewer can verify. Keep the description to one line.
+```
+Not an issue — {why the code is correct, with specific evidence}.
+```
 
 ### Reply Commands
 
 ```bash
-gh api /repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies \
-  -f body="✅ **FIXED** ({sha}) — {what changed}"
+# Reply to a code-level comment
+gh api repos/{owner}/{repo}/pulls/{pr}/comments \
+  -f body="Fixed in commit {sha} — {description}." \
+  -F in_reply_to={comment_id}
 
-gh api /repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies \
-  -f body="❌ **FALSE POSITIVE** — {why it's incorrect}"
-
-gh api /repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies \
-  -f body="🔜 **DEFERRED** — {why and when}"
-
-gh api /repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies \
-  -f body="🚫 **WON'T DO** — {why}"
-
-gh api /repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies \
-  -f body="ℹ️ **ACKNOWLEDGED** — {context}"
+# Reply indicating not an issue
+gh api repos/{owner}/{repo}/pulls/{pr}/comments \
+  -f body="Not an issue — {explanation}." \
+  -F in_reply_to={comment_id}
 ```
 
 ### Rules
 
-- **Every comment gets a labeled reply** — no comment left without a status
-- **FIXED replies must include the commit SHA** — "Fixed" without a SHA is useless
-- **DEFERRED must say when** — "later" is not a plan, "in a follow-up PR for X" is
-- **Never reply with just an explanation** — always lead with the status label
-- **If something was initially DEFERRED but later fixed in the same PR**, add a new reply updating the status to FIXED with the commit SHA
+- **Every reviewer comment gets a reply** — zero unreplied comments when done
+- **Fixed replies include the commit SHA** — so the reviewer can verify
+- **Group replies are fine** — if 6 comments are the same issue, the first reply can be detailed and the rest can say "Fixed in same commit ({sha})."
+- **Never reply with just an explanation and no action** unless the code is genuinely already correct
 
-## Phase 6: Final CI Check
+## Phase 6: Resolve Every Thread
 
-Re-run `gh pr checks` after pushing fixes. Loop until green.
+After replying, resolve all review threads:
 
-## Timing
+```bash
+# Get all unresolved thread IDs
+gh api graphql -f query='query {
+  repository(owner: "{owner}", name: "{repo}") {
+    pullRequest(number: {pr}) {
+      reviewThreads(first: 100) {
+        nodes { id isResolved }
+      }
+    }
+  }
+}' | jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | .id]'
 
-| What                | Typical wait              |
-| ------------------- | ------------------------- |
-| CI checks start     | ~30s after push           |
-| CI checks complete  | 2-10 min                  |
-| Copilot review      | 2-5 min after PR creation |
-| Vercel Agent review | 3-5 min                   |
-| Copilot timeout     | 10 min                    |
+# Resolve each thread
+gh api graphql -f query='mutation {
+  resolveReviewThread(input: {threadId: "{thread_id}"}) {
+    thread { isResolved }
+  }
+}'
+```
+
+Verify: unresolved count should be **0**.
+
+## Phase 7: Request Re-Review
+
+Request a new review from GitHub Copilot:
+
+```bash
+gh api repos/{owner}/{repo}/pulls/{pr}/requested_reviewers \
+  -f "reviewers[]=copilot-pull-request-reviewer[bot]" \
+  -X POST 2>&1 || true
+
+# If the bot reviewer request fails, trigger via the reviews endpoint
+gh api repos/{owner}/{repo}/pulls/{pr}/reviews \
+  -f event="REQUEST_CHANGES" -X POST 2>&1 || true
+```
+
+If the PR has other configured reviewers (Vercel Agent, humans), note their status but don't block on them — only Copilot is waited on.
+
+## Phase 8: Wait for Review
+
+Poll for the Copilot review to complete:
+
+```bash
+# Check every 60 seconds for up to 10 minutes
+gh api repos/{owner}/{repo}/pulls/{pr}/reviews \
+  | jq '[.[] | select(.user.login == "copilot-pull-request-reviewer[bot]")] | sort_by(.submitted_at) | last | {state: .state, submitted: .submitted_at}'
+```
+
+- If review state is `COMMENTED` or `APPROVED` — review is done
+- If no new review appears after 10 minutes — timeout, notify the user
+- If review has new comments — **loop back to Phase 2**
 
 ## Done When
 
-- All CI checks green
-- All review comments addressed with replies
-- No unreplied comments remaining
+All of these must be true simultaneously:
+
+- [ ] All CI checks green
+- [ ] Zero unreplied reviewer comments
+- [ ] Zero unresolved review threads
+- [ ] Latest Copilot review has no new actionable comments
+- [ ] `pnpm lint && pnpm typecheck && pnpm test` all pass locally

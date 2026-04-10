@@ -6,33 +6,33 @@ All-in-one integrated platform for Pokemon fans. Current focus: competitive batt
 
 Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill before working in an area.
 
-| Skill                      | When to Use                                                      |
-| -------------------------- | ---------------------------------------------------------------- |
-| `building-web-app`         | Web routes, components, Server Actions, data fetching, proxy.ts  |
-| `building-mobile-app`      | Mobile screens, Tamagui UI, Expo Router, SecureStore             |
-| `querying-supabase`        | DB queries/mutations, client selection, Edge Functions           |
-| `validating-input`         | Zod schemas, Server Action return types, profanity filter        |
-| `creating-components`      | UI components, design tokens, design principles                  |
-| `checking-mobile-parity`   | After developing web features, check for mobile parity tickets   |
-| `implementing-tournaments` | Swiss pairings, standings, brackets, adapters                    |
-| `parsing-pokemon`          | Team parsing, legality validation, type effectiveness            |
-| `using-utils`              | `getLabel()`, `getErrorMessage()`, permissions, formatting       |
-| `tracking-analytics`       | PostHog event constants, adding new events                       |
-| `integrating-bluesky`      | Bluesky/AT Protocol, DID resolution, public agent                |
-| `writing-tests`            | Fishery factories, Supabase/AT Protocol mocks, Jest config       |
-| `managing-dev-slots`       | Dev-slot port allocation, multi-instance dev, slot cleanup       |
-| `managing-infrastructure`  | PDS on Fly.io, ngrok tunnel for local dev                        |
-| `creating-edge-functions`  | Creating/updating Supabase edge functions                        |
-| `managing-edge-imports`    | Deno import maps, `deno.json` management                         |
-| `auditing-code`            | Codebase audits for type safety, architecture, maintainability   |
-| `writing-skills`           | Creating/editing skills, agents, maintaining the architecture    |
-| `design-system`            | Elevation, typography hierarchy, transitions, layout conventions |
-| `product-vision`           | Product vision, feature roadmap, differentiators, user types     |
-| `competitive-landscape`    | Competitive landscape, positioning, alternatives by category     |
-| `reviewing-pr`             | PR review orchestrator: dispatches domain-specific checks        |
-| `reviewing-database`       | RLS, migrations, indexes, N+1, unbounded fetches, query perf     |
-| `reviewing-caching`        | Next.js unstable_cache, TanStack Query, cache invalidation       |
-| `reviewing-pr-feedback`    | CI monitoring, fetch/address/reply to review comments            |
+| Skill                      | When to Use                                                             |
+| -------------------------- | ----------------------------------------------------------------------- |
+| `building-web-app`         | Web routes, components, Server Actions, data fetching, proxy.ts         |
+| `building-mobile-app`      | Mobile screens, Tamagui UI, Expo Router, SecureStore                    |
+| `querying-supabase`        | DB queries/mutations, client selection, Edge Functions                  |
+| `validating-input`         | Zod schemas, Server Action return types, profanity filter               |
+| `creating-components`      | UI components, design tokens, design principles                         |
+| `checking-mobile-parity`   | After developing web features, check for mobile parity tickets          |
+| `implementing-tournaments` | Swiss pairings, standings, brackets, adapters                           |
+| `parsing-pokemon`          | Team parsing, legality validation, type effectiveness                   |
+| `using-utils`              | `getLabel()`, `getErrorMessage()`, permissions, formatting              |
+| `tracking-analytics`       | PostHog event constants, adding new events                              |
+| `integrating-bluesky`      | Bluesky/AT Protocol, DID resolution, public agent                       |
+| `writing-tests`            | Fishery factories, Supabase/AT Protocol mocks, Jest config              |
+| `managing-dev-slots`       | Dev-slot port allocation, multi-instance dev, slot cleanup              |
+| `managing-infrastructure`  | PDS on Fly.io, ngrok tunnel for local dev                               |
+| `creating-edge-functions`  | Creating/updating Supabase edge functions                               |
+| `managing-edge-imports`    | Deno import maps, `deno.json` management                                |
+| `auditing-code`            | Codebase audits for type safety, architecture, maintainability          |
+| `writing-skills`           | Creating/editing skills, agents, maintaining the architecture           |
+| `design-system`            | Elevation, typography hierarchy, transitions, layout conventions        |
+| `product-vision`           | Product vision, feature roadmap, differentiators, user types            |
+| `competitive-landscape`    | Competitive landscape, positioning, alternatives by category            |
+| `reviewing-pr`             | PR review orchestrator: dispatches domain-specific checks               |
+| `reviewing-database`       | RLS, migrations, indexes, N+1, unbounded fetches, query perf            |
+| `reviewing-caching`        | Next.js unstable_cache, TanStack Query, cache invalidation              |
+| `reviewing-pr-feedback`    | Fetch/group/resolve PR comments with user, no deferrals, re-review loop |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `ticket`.
 
@@ -226,6 +226,8 @@ When executing implementation plans, always use **subagent-driven development** 
 ### Memory
 
 When saving memories (user preferences, feedback, project context), write them to `~/.claude/CLAUDE.md` (the user's private global instructions file), not to the project CLAUDE.md.
+
+If mempalace MCP is available, also store significant design decisions, architecture changes, and PR discussion summaries via `mcp__mempalace__store_memory` with `wing=trainers_gg`. Use rooms matching the project's domain areas: `architecture`, `auth`, `tournaments`, `pokemon`, `team-builder`, `bluesky`, `mobile`, `database`, `web`, `ui-design`, `devtools`, `product`.
 
 ## Project Management
 
