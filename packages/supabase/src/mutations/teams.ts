@@ -150,65 +150,79 @@ export async function forkTeam(
   if (createError)
     throw new Error(`Failed to create forked team: ${createError.message}`);
 
-  // Step 3: Copy each pokemon and create team_pokemon entries
+  // Step 3: Copy each pokemon and create team_pokemon entries.
+  // Track created IDs for cleanup if a later step fails.
   const teamPokemonRows = sourceTeam.team_pokemon ?? [];
+  const createdPokemonIds: number[] = [];
 
-  for (const row of teamPokemonRows) {
-    const sourcePokemon = row.pokemon;
-    if (!sourcePokemon) continue;
+  try {
+    for (const row of teamPokemonRows) {
+      const sourcePokemon = row.pokemon;
+      if (!sourcePokemon) continue;
 
-    // Insert a copy of the pokemon (omit id so DB assigns a new one)
-    const { data: newPokemon, error: pokemonInsertError } = await supabase
-      .from("pokemon")
-      .insert({
-        species: sourcePokemon.species,
-        nickname: sourcePokemon.nickname,
-        level: sourcePokemon.level,
-        nature: sourcePokemon.nature,
-        ability: sourcePokemon.ability,
-        held_item: sourcePokemon.held_item,
-        gender: sourcePokemon.gender,
-        is_shiny: sourcePokemon.is_shiny,
-        move1: sourcePokemon.move1,
-        move2: sourcePokemon.move2,
-        move3: sourcePokemon.move3,
-        move4: sourcePokemon.move4,
-        ev_hp: sourcePokemon.ev_hp,
-        ev_attack: sourcePokemon.ev_attack,
-        ev_defense: sourcePokemon.ev_defense,
-        ev_special_attack: sourcePokemon.ev_special_attack,
-        ev_special_defense: sourcePokemon.ev_special_defense,
-        ev_speed: sourcePokemon.ev_speed,
-        iv_hp: sourcePokemon.iv_hp,
-        iv_attack: sourcePokemon.iv_attack,
-        iv_defense: sourcePokemon.iv_defense,
-        iv_special_attack: sourcePokemon.iv_special_attack,
-        iv_special_defense: sourcePokemon.iv_special_defense,
-        iv_speed: sourcePokemon.iv_speed,
-        tera_type: sourcePokemon.tera_type,
-        notes: sourcePokemon.notes,
-      })
-      .select("id")
-      .single();
+      // Insert a copy of the pokemon (omit id so DB assigns a new one)
+      const { data: newPokemon, error: pokemonInsertError } = await supabase
+        .from("pokemon")
+        .insert({
+          species: sourcePokemon.species,
+          nickname: sourcePokemon.nickname,
+          level: sourcePokemon.level,
+          nature: sourcePokemon.nature,
+          ability: sourcePokemon.ability,
+          held_item: sourcePokemon.held_item,
+          gender: sourcePokemon.gender,
+          is_shiny: sourcePokemon.is_shiny,
+          move1: sourcePokemon.move1,
+          move2: sourcePokemon.move2,
+          move3: sourcePokemon.move3,
+          move4: sourcePokemon.move4,
+          ev_hp: sourcePokemon.ev_hp,
+          ev_attack: sourcePokemon.ev_attack,
+          ev_defense: sourcePokemon.ev_defense,
+          ev_special_attack: sourcePokemon.ev_special_attack,
+          ev_special_defense: sourcePokemon.ev_special_defense,
+          ev_speed: sourcePokemon.ev_speed,
+          iv_hp: sourcePokemon.iv_hp,
+          iv_attack: sourcePokemon.iv_attack,
+          iv_defense: sourcePokemon.iv_defense,
+          iv_special_attack: sourcePokemon.iv_special_attack,
+          iv_special_defense: sourcePokemon.iv_special_defense,
+          iv_speed: sourcePokemon.iv_speed,
+          tera_type: sourcePokemon.tera_type,
+          notes: sourcePokemon.notes,
+        })
+        .select("id")
+        .single();
 
-    if (pokemonInsertError)
-      throw new Error(
-        `Failed to copy pokemon during fork: ${pokemonInsertError.message}`
-      );
+      if (pokemonInsertError)
+        throw new Error(
+          `Failed to copy pokemon during fork: ${pokemonInsertError.message}`
+        );
 
-    // Create the team_pokemon join row
-    const { error: joinInsertError } = await supabase
-      .from("team_pokemon")
-      .insert({
-        team_id: newTeam.id,
-        pokemon_id: newPokemon.id,
-        team_position: row.team_position,
-      });
+      createdPokemonIds.push(newPokemon.id);
 
-    if (joinInsertError)
-      throw new Error(
-        `Failed to create team_pokemon entry during fork: ${joinInsertError.message}`
-      );
+      // Create the team_pokemon join row
+      const { error: joinInsertError } = await supabase
+        .from("team_pokemon")
+        .insert({
+          team_id: newTeam.id,
+          pokemon_id: newPokemon.id,
+          team_position: row.team_position,
+        });
+
+      if (joinInsertError)
+        throw new Error(
+          `Failed to create team_pokemon entry during fork: ${joinInsertError.message}`
+        );
+    }
+  } catch (error) {
+    // Best-effort cleanup: remove partially created data
+    if (createdPokemonIds.length > 0) {
+      await supabase.from("team_pokemon").delete().eq("team_id", newTeam.id);
+      await supabase.from("pokemon").delete().in("id", createdPokemonIds);
+    }
+    await supabase.from("teams").delete().eq("id", newTeam.id);
+    throw error;
   }
 
   return { id: newTeam.id };
