@@ -330,7 +330,8 @@ async function runMigrations() {
       name.includes("TOKEN") ||
       name.includes("SECRET") ||
       name.startsWith("POSTGRES_URL") ||
-      name.startsWith("SUPABASE_POSTGRES_URL")
+      name.startsWith("SUPABASE_POSTGRES_URL") ||
+      val.includes("@")
     ) {
       console.log(`   ${name}: [set, ${val.length} chars]`);
     } else {

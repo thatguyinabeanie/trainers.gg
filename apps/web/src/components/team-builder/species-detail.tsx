@@ -1,0 +1,249 @@
+"use client";
+
+import {
+  getLearnableMoves,
+  getMoveType,
+  getMoveCategory,
+  getMoveBP,
+  type SpeciesSearchEntry,
+} from "@trainers/pokemon";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+import { COMPETITIVE_MOVES } from "./competitive-moves";
+import { TeamFitAnalysis } from "./team-fit-analysis";
+import { TYPE_PILL_COLORS } from "./type-colors";
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+const CATEGORY_LABELS: Record<string, string> = {
+  Physical: "P",
+  Special: "S",
+  Status: "—",
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Physical: "text-orange-500",
+  Special: "text-blue-500",
+  Status: "text-muted-foreground",
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  Normal: "bg-stone-400 text-white",
+  Bug: "bg-lime-500 text-white",
+  Dark: "bg-stone-700 text-white",
+  Dragon: "bg-indigo-600 text-white",
+  Electric: "bg-yellow-400 text-black",
+  Fairy: "bg-pink-400 text-white",
+  Fighting: "bg-red-700 text-white",
+  Fire: "bg-orange-500 text-white",
+  Flying: "bg-sky-300 text-black",
+  Ghost: "bg-purple-600 text-white",
+  Grass: "bg-green-500 text-white",
+  Ground: "bg-amber-600 text-white",
+  Ice: "bg-cyan-300 text-black",
+  Poison: "bg-purple-500 text-white",
+  Psychic: "bg-pink-500 text-white",
+  Rock: "bg-amber-700 text-white",
+  Steel: "bg-slate-400 text-black",
+  Water: "bg-blue-500 text-white",
+};
+
+// =============================================================================
+// Types
+// =============================================================================
+
+interface SpeciesDetailProps {
+  species: SpeciesSearchEntry | null;
+  currentTeam: Array<{ species: string }>;
+  onSelect: (species: string, mode: "defaults" | "blank") => void;
+}
+
+// =============================================================================
+// SpeciesDetail
+// =============================================================================
+
+/**
+ * Detail panel for the species picker showing type info, competitive moves,
+ * team fit analysis, and action buttons to add the pokemon.
+ */
+export function SpeciesDetail({
+  species,
+  currentTeam,
+  onSelect,
+}: SpeciesDetailProps) {
+  if (!species) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-center">
+        <p className="text-muted-foreground text-sm">
+          Select a species from the table to see details
+        </p>
+      </div>
+    );
+  }
+
+  // Filter learnable moves down to competitive ones, cap at 10
+  const allLearnable = new Set(getLearnableMoves(species.species));
+  const competitiveMoves = [...COMPETITIVE_MOVES]
+    .filter((move) => allLearnable.has(move))
+    .slice(0, 10);
+
+  return (
+    <div className="flex flex-col gap-4 p-4">
+      {/* Species name + types */}
+      <div className="flex flex-col gap-1.5">
+        <h3 className="text-xl font-bold">{species.species}</h3>
+        <div className="flex flex-wrap gap-1">
+          {species.types.map((type) => (
+            <span
+              key={type}
+              className={cn(
+                "rounded px-2 py-0.5 text-xs font-medium",
+                TYPE_PILL_COLORS[type] ?? "bg-muted text-foreground"
+              )}
+            >
+              {type}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Base stats summary */}
+      <div className="grid grid-cols-3 gap-1 text-xs">
+        {(
+          [
+            ["HP", species.baseStats.hp],
+            ["Atk", species.baseStats.atk],
+            ["Def", species.baseStats.def],
+            ["SpA", species.baseStats.spa],
+            ["SpD", species.baseStats.spd],
+            ["Spe", species.baseStats.spe],
+          ] as [string, number][]
+        ).map(([label, value]) => (
+          <div key={label} className="flex items-center justify-between gap-1">
+            <span className="text-muted-foreground w-6 shrink-0">{label}</span>
+            <span
+              className={cn(
+                "font-medium tabular-nums",
+                value >= 120 && "text-emerald-500",
+                value < 70 && "text-muted-foreground"
+              )}
+            >
+              {value}
+            </span>
+          </div>
+        ))}
+        <div className="col-span-3 mt-0.5 flex items-center justify-between border-t pt-0.5">
+          <span className="text-muted-foreground">BST</span>
+          <span className="font-bold">{species.bst}</span>
+        </div>
+      </div>
+
+      {/* Abilities */}
+      <div>
+        <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">
+          Abilities
+        </p>
+        <div className="flex flex-wrap gap-1">
+          {species.abilities.map((ability) => (
+            <span
+              key={ability}
+              className="bg-muted rounded px-2 py-0.5 text-xs"
+            >
+              {ability}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Key competitive moves */}
+      {competitiveMoves.length > 0 && (
+        <div>
+          <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">
+            Key Moves
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {competitiveMoves.map((moveName) => {
+              const moveType = getMoveType(moveName);
+              const category = getMoveCategory(moveName);
+              const bp = getMoveBP(moveName);
+              const typeColor = moveType
+                ? (TYPE_COLORS[moveType] ?? "bg-muted text-foreground")
+                : "bg-muted text-foreground";
+              const catLabel = category
+                ? (CATEGORY_LABELS[category] ?? category)
+                : "—";
+              const catColor = category
+                ? (CATEGORY_COLORS[category] ?? "text-muted-foreground")
+                : "text-muted-foreground";
+
+              return (
+                <div
+                  key={moveName}
+                  className="flex items-center gap-1.5 text-xs"
+                >
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {moveName}
+                  </span>
+                  {moveType && (
+                    <span
+                      className={cn(
+                        "shrink-0 rounded px-1 py-0.5 text-[10px] leading-none font-medium",
+                        typeColor
+                      )}
+                    >
+                      {moveType}
+                    </span>
+                  )}
+                  <span className={cn("shrink-0 font-bold", catColor)}>
+                    {catLabel}
+                  </span>
+                  <span className="text-muted-foreground w-6 shrink-0 text-right tabular-nums">
+                    {bp ?? "—"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Team fit analysis */}
+      {currentTeam.length > 0 && (
+        <TeamFitAnalysis
+          currentTeam={currentTeam}
+          candidateSpecies={species.species}
+        />
+      )}
+
+      {/* VGC pastes stub */}
+      <div className="bg-muted/50 rounded p-3 text-center">
+        <p className="text-muted-foreground text-xs">
+          Proven sets will appear here when data is available
+        </p>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <Button
+          className="flex-1"
+          size="sm"
+          onClick={() => onSelect(species.species, "defaults")}
+        >
+          Select with defaults
+        </Button>
+        <Button
+          className="flex-1"
+          variant="outline"
+          size="sm"
+          onClick={() => onSelect(species.species, "blank")}
+        >
+          Select blank
+        </Button>
+      </div>
+    </div>
+  );
+}
