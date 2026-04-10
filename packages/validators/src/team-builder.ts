@@ -95,35 +95,57 @@ export type ReorderTeamPokemonInput = z.infer<
 // Pokemon payload schema
 // =============================================================================
 
+/** EV field names used for the total EV cap validation. */
+const EV_FIELDS = [
+  "ev_hp",
+  "ev_attack",
+  "ev_defense",
+  "ev_special_attack",
+  "ev_special_defense",
+  "ev_speed",
+] as const;
+
 /** Allowlisted fields for pokemon create/update payloads from the client. */
-export const pokemonPayloadSchema = z.object({
-  species: z.string().min(1).max(50),
-  ability: z.string().max(50).default(""),
-  nature: z.string().max(20).default(""),
-  held_item: z.string().max(50).nullable().optional(),
-  nickname: z.string().max(18).nullable().optional(),
-  gender: z.enum(["Male", "Female"]).nullable().optional(),
-  level: z.number().int().min(1).max(100).default(50),
-  is_shiny: z.boolean().default(false),
-  move1: z.string().max(50).default(""),
-  move2: z.string().max(50).nullable().optional(),
-  move3: z.string().max(50).nullable().optional(),
-  move4: z.string().max(50).nullable().optional(),
-  tera_type: z.string().max(20).nullable().optional(),
-  ev_hp: z.number().int().min(0).max(252).default(0),
-  ev_attack: z.number().int().min(0).max(252).default(0),
-  ev_defense: z.number().int().min(0).max(252).default(0),
-  ev_special_attack: z.number().int().min(0).max(252).default(0),
-  ev_special_defense: z.number().int().min(0).max(252).default(0),
-  ev_speed: z.number().int().min(0).max(252).default(0),
-  iv_hp: z.number().int().min(0).max(31).default(31),
-  iv_attack: z.number().int().min(0).max(31).default(31),
-  iv_defense: z.number().int().min(0).max(31).default(31),
-  iv_special_attack: z.number().int().min(0).max(31).default(31),
-  iv_special_defense: z.number().int().min(0).max(31).default(31),
-  iv_speed: z.number().int().min(0).max(31).default(31),
-  notes: z.string().max(500).nullable().optional(),
-});
+export const pokemonPayloadSchema = z
+  .object({
+    species: z.string().min(1).max(50),
+    ability: z.string().max(50).default(""),
+    nature: z.string().max(20).default(""),
+    held_item: z.string().max(50).nullable().optional(),
+    nickname: z.string().max(18).nullable().optional(),
+    gender: z.enum(["Male", "Female"]).nullable().optional(),
+    level: z.number().int().min(1).max(100).default(50),
+    is_shiny: z.boolean().default(false),
+    move1: z.string().max(50).default(""),
+    move2: z.string().max(50).nullable().optional(),
+    move3: z.string().max(50).nullable().optional(),
+    move4: z.string().max(50).nullable().optional(),
+    tera_type: z.string().max(20).nullable().optional(),
+    ev_hp: z.number().int().min(0).max(252).default(0),
+    ev_attack: z.number().int().min(0).max(252).default(0),
+    ev_defense: z.number().int().min(0).max(252).default(0),
+    ev_special_attack: z.number().int().min(0).max(252).default(0),
+    ev_special_defense: z.number().int().min(0).max(252).default(0),
+    ev_speed: z.number().int().min(0).max(252).default(0),
+    iv_hp: z.number().int().min(0).max(31).default(31),
+    iv_attack: z.number().int().min(0).max(31).default(31),
+    iv_defense: z.number().int().min(0).max(31).default(31),
+    iv_special_attack: z.number().int().min(0).max(31).default(31),
+    iv_special_defense: z.number().int().min(0).max(31).default(31),
+    iv_speed: z.number().int().min(0).max(31).default(31),
+    notes: z.string().max(500).nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Validate that the sum of all EV fields does not exceed the 510 cap.
+    const total = EV_FIELDS.reduce((sum, field) => sum + data[field], 0);
+    if (total > 510) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Total EVs must not exceed 510 (got ${total})`,
+        path: ["ev_hp"],
+      });
+    }
+  });
 
 export type PokemonPayload = z.infer<typeof pokemonPayloadSchema>;
 
@@ -159,3 +181,19 @@ export const pokemonUpdateSchema = z.object({
 });
 
 export type PokemonUpdate = z.infer<typeof pokemonUpdateSchema>;
+
+// =============================================================================
+// Team update data schema
+// =============================================================================
+
+/** Allowlisted user-editable fields for a team update payload. */
+export const teamUpdateDataSchema = z.object({
+  name: teamNameSchema.optional(),
+  format: teamFormatSchema.optional(),
+  description: z.string().max(500).nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+  tags: z.array(z.string().max(50)).max(10).nullable().optional(),
+  is_public: z.boolean().optional(),
+});
+
+export type TeamUpdateData = z.infer<typeof teamUpdateDataSchema>;

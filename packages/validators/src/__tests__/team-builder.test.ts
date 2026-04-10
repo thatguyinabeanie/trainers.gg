@@ -12,6 +12,7 @@ import {
   reorderTeamPokemonInputSchema,
   pokemonPayloadSchema,
   pokemonUpdateSchema,
+  teamUpdateDataSchema,
 } from "../team-builder";
 
 // =============================================================================
@@ -487,5 +488,169 @@ describe("pokemonUpdateSchema", () => {
     expect(pokemonUpdateSchema.safeParse({ [field]: value }).success).toBe(
       false
     );
+  });
+});
+
+// =============================================================================
+// pokemonPayloadSchema — EV cap
+// =============================================================================
+
+describe("pokemonPayloadSchema — EV cap", () => {
+  it("rejects when total EVs exceed 510", () => {
+    // 252 + 252 + 8 = 512 — over the cap
+    const result = pokemonPayloadSchema.safeParse({
+      species: "Garchomp",
+      ev_hp: 252,
+      ev_attack: 252,
+      ev_defense: 8,
+    });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    const issue = result.error.issues[0];
+    expect(issue).toBeDefined();
+    expect(issue?.path).toEqual(["ev_hp"]);
+    expect(issue?.message).toMatch(/510/);
+    expect(issue?.message).toMatch(/512/);
+  });
+
+  it("accepts exactly 510 total EVs", () => {
+    // 252 + 252 + 6 = 510 — at the cap
+    const result = pokemonPayloadSchema.safeParse({
+      species: "Garchomp",
+      ev_hp: 252,
+      ev_attack: 252,
+      ev_defense: 6,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts total EVs below 510", () => {
+    // 252 + 252 = 504 — under the cap
+    const result = pokemonPayloadSchema.safeParse({
+      species: "Garchomp",
+      ev_hp: 252,
+      ev_attack: 252,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts zero total EVs (all defaults)", () => {
+    expect(pokemonPayloadSchema.safeParse({ species: "Snorlax" }).success).toBe(
+      true
+    );
+  });
+});
+
+// =============================================================================
+// teamUpdateDataSchema
+// =============================================================================
+
+describe("teamUpdateDataSchema", () => {
+  it("accepts an empty object (all fields optional)", () => {
+    expect(teamUpdateDataSchema.safeParse({}).success).toBe(true);
+  });
+
+  it("accepts a fully populated valid payload", () => {
+    const result = teamUpdateDataSchema.safeParse({
+      name: "Rain Team",
+      format: "gen9vgc2026regi",
+      description: "A rain-based team",
+      notes: "Remember to set up rain turn 1",
+      tags: ["rain", "trick-room"],
+      is_public: true,
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.name).toBe("Rain Team");
+    expect(result.data.format).toBe("gen9vgc2026regi");
+    expect(result.data.description).toBe("A rain-based team");
+    expect(result.data.notes).toBe("Remember to set up rain turn 1");
+    expect(result.data.tags).toEqual(["rain", "trick-room"]);
+    expect(result.data.is_public).toBe(true);
+  });
+
+  it("accepts nullable fields as null", () => {
+    const result = teamUpdateDataSchema.safeParse({
+      description: null,
+      notes: null,
+      tags: null,
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.description).toBeNull();
+    expect(result.data.notes).toBeNull();
+    expect(result.data.tags).toBeNull();
+  });
+
+  it("strips disallowed fields (created_by)", () => {
+    const result = teamUpdateDataSchema.safeParse({
+      name: "My Team",
+      created_by: "some-user-id",
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    // created_by must not appear in the parsed output
+    expect("created_by" in result.data).toBe(false);
+  });
+
+  it("strips disallowed fields (parent_team_id)", () => {
+    const result = teamUpdateDataSchema.safeParse({
+      name: "My Fork",
+      parent_team_id: 42,
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect("parent_team_id" in result.data).toBe(false);
+  });
+
+  it("validates name length (rejects > 100 chars)", () => {
+    expect(
+      teamUpdateDataSchema.safeParse({ name: "x".repeat(101) }).success
+    ).toBe(false);
+  });
+
+  it("validates name (rejects empty string after trim)", () => {
+    expect(teamUpdateDataSchema.safeParse({ name: "   " }).success).toBe(false);
+  });
+
+  it("trims name whitespace", () => {
+    const result = teamUpdateDataSchema.safeParse({ name: "  Rain Team  " });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.name).toBe("Rain Team");
+  });
+
+  it("validates description max length (rejects > 500 chars)", () => {
+    expect(
+      teamUpdateDataSchema.safeParse({ description: "x".repeat(501) }).success
+    ).toBe(false);
+  });
+
+  it("validates notes max length (rejects > 2000 chars)", () => {
+    expect(
+      teamUpdateDataSchema.safeParse({ notes: "x".repeat(2001) }).success
+    ).toBe(false);
+  });
+
+  it("validates tags max count (rejects > 10 tags)", () => {
+    expect(
+      teamUpdateDataSchema.safeParse({
+        tags: Array.from({ length: 11 }, (_, i) => `tag${i}`),
+      }).success
+    ).toBe(false);
+  });
+
+  it("validates individual tag max length (rejects tag > 50 chars)", () => {
+    expect(
+      teamUpdateDataSchema.safeParse({ tags: ["x".repeat(51)] }).success
+    ).toBe(false);
+  });
+
+  it("accepts exactly 10 tags", () => {
+    expect(
+      teamUpdateDataSchema.safeParse({
+        tags: Array.from({ length: 10 }, (_, i) => `tag${i}`),
+      }).success
+    ).toBe(true);
   });
 });

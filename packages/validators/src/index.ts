@@ -199,4 +199,6 @@ export {
   type PokemonPayload,
   pokemonUpdateSchema,
   type PokemonUpdate,
+  teamUpdateDataSchema,
+  type TeamUpdateData,
 } from "./team-builder";
