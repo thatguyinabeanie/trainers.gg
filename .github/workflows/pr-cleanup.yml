@@ -56,10 +56,18 @@ jobs:
             exit 0
           fi
 
+          FAILURES=0
           for ID in $ENV_VARS; do
-            curl -sf -X DELETE \
+            if curl -sf -X DELETE \
               "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID/env/$ID?teamId=$VERCEL_TEAM_ID" \
-              -H "Authorization: Bearer $VERCEL_TOKEN"
-            echo "Deleted env var $ID"
+              -H "Authorization: Bearer $VERCEL_TOKEN"; then
+              echo "Deleted env var $ID"
+            else
+              echo "::warning::Failed to delete env var $ID"
+              FAILURES=$((FAILURES + 1))
+            fi
           done
+          if [ "$FAILURES" -gt 0 ]; then
+            echo "::warning::$FAILURES env var(s) failed to delete"
+          fi
           echo "Cleaned up env vars for $GIT_BRANCH"

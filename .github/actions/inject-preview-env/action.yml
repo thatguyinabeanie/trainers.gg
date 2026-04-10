@@ -105,6 +105,11 @@ runs:
         FAILED=$(echo "$RESPONSE" | jq '.failed | length // 0')
         echo "Vercel env vars: $CREATED created/updated, $FAILED failed"
         if [ "$FAILED" -gt 0 ]; then
-          echo "::warning::Some Vercel env vars failed to set:"
+          echo "::error::Some Vercel env vars failed to set:"
           echo "$RESPONSE" | jq '.failed[] | {key: .error.key, message: .error.message}'
+          CRITICAL_FAILED=$(echo "$RESPONSE" | jq '[.failed[] | select(.error.key | test("SUPABASE|POSTGRES"))] | length')
+          if [ "$CRITICAL_FAILED" -gt 0 ]; then
+            echo "::error::Critical Supabase env vars failed to inject — aborting"
+            exit 1
+          fi
         fi

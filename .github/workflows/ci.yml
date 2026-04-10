@@ -448,14 +448,19 @@ jobs:
           RESPONSE=$(curl -s --max-time 30 --connect-timeout 5 --retry 3 --retry-delay 2 --retry-connrefused -w "\n%{http_code}" -X POST \
             -H "x-e2e-seed-secret: $VERCEL_AUTOMATION_BYPASS_SECRET" \
             -H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" \
-            "$PLAYWRIGHT_BASE_URL/api/e2e/seed" || true)
+            "$PLAYWRIGHT_BASE_URL/api/e2e/seed") || CURL_EXIT=$?
+          if [ "${CURL_EXIT:-0}" -ne 0 ]; then
+            echo "::error::curl failed with exit code $CURL_EXIT"
+            exit 1
+          fi
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
           echo "Response (HTTP $HTTP_CODE): $BODY"
           if [ -n "$HTTP_CODE" ] && [[ "$HTTP_CODE" =~ ^[0-9]+$ ]] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
             echo "Seed completed successfully"
           else
-            echo "::warning::E2E seed returned HTTP $HTTP_CODE — tests may fail if users don't exist"
+            echo "::error::E2E seed returned HTTP $HTTP_CODE — cannot run tests without seeded users"
+            exit 1
           fi
 
       - name: Run E2E tests

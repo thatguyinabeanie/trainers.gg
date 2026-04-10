@@ -54,7 +54,7 @@ runs:
             2>"$CURL_ERR") || RESPONSE=""
 
           if [ -z "$RESPONSE" ]; then
-            echo "API request failed (attempt $i/50): $(cat "$CURL_ERR" 2>/dev/null)"
+            echo "API request failed (attempt $i/50): $(cat "$CURL_ERR" 2>&1 || echo 'no error file')"
             rm -f "$CURL_ERR"
             sleep 15
             continue
@@ -75,7 +75,7 @@ runs:
             fi
             rm -f "$CURL_ERR2"
 
-            if [ "$STATUS" -ge 200 ] 2>/dev/null && [ "$STATUS" -lt 400 ] 2>/dev/null; then
+            if [[ "$STATUS" =~ ^[0-9]+$ ]] && [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
               echo "url=$FULL_URL" >> "$GITHUB_OUTPUT"
               echo "Preview ready at $FULL_URL (HTTP $STATUS)"
               exit 0
