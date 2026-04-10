@@ -125,10 +125,9 @@ start_supabase() {
   echo -e "${YELLOW}Starting Supabase (this may take a minute on first run)...${NC}"
   cd "$SUPABASE_DIR"
   
-  # First try with --no-pull to use cached images (fast path)
-  # Falls back to pulling if images are missing
-  if $SUPABASE_CMD start 2>/dev/null; then
-    echo -e "${GREEN}Supabase started successfully (using cached images)${NC}"
+  # Try starting Supabase — falls back to pulling if images are missing
+  if $SUPABASE_CMD start; then
+    echo -e "${GREEN}Supabase started successfully${NC}"
   else
     echo -e "${YELLOW}Cached images not available, pulling latest...${NC}"
     $SUPABASE_CMD start

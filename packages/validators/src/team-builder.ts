@@ -102,7 +102,7 @@ export const pokemonPayloadSchema = z.object({
   nature: z.string().max(20).default(""),
   held_item: z.string().max(50).nullable().optional(),
   nickname: z.string().max(18).nullable().optional(),
-  gender: z.enum(["male", "female", "genderless"]).nullable().optional(),
+  gender: z.enum(["Male", "Female"]).nullable().optional(),
   level: z.number().int().min(1).max(100).default(50),
   is_shiny: z.boolean().default(false),
   move1: z.string().max(50).default(""),
