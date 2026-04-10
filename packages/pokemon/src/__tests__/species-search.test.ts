@@ -276,4 +276,68 @@ describe("searchSpecies", () => {
       resultsAsSubset.map((e) => e.species)
     );
   });
+
+  // ==========================================================================
+  // moves filter
+  // Note: getLearnableMoves() currently returns ALL moves for any valid species
+  // and [] for unknown species — so moves filter tests are designed accordingly.
+  // ==========================================================================
+
+  describe("moves filter", () => {
+    it("returns species that can learn a specified move", () => {
+      // Fake Out is a real move — all valid species in the gen return all moves
+      // from getLearnableMoves(), so any valid species will pass a single-move filter
+      const results = searchSpecies(index, "", { moves: ["Fake Out"] });
+      expect(results.length).toBeGreaterThan(0);
+      // Incineroar is a well-known Fake Out user — must appear
+      expect(results.map((e) => e.species)).toContain("Incineroar");
+    });
+
+    it("returns results for multiple moves using AND logic — species must learn ALL specified moves", () => {
+      // Both Fake Out and Protect are real moves; a valid species learns all moves
+      const results = searchSpecies(index, "", {
+        moves: ["Fake Out", "Protect"],
+      });
+      expect(results.length).toBeGreaterThan(0);
+      expect(results.map((e) => e.species)).toContain("Incineroar");
+    });
+
+    it("returns empty results when filtering by a move no species can learn", () => {
+      // "NotARealMove999" is not a real move; getLearnableMoves returns [] for it
+      // but the filter checks species moves, not the filter move itself.
+      // Since moves are AND-filtered against learnable moves, an impossible move
+      // name will not appear in any species' learnable set.
+      const results = searchSpecies(index, "", {
+        moves: ["NotARealMove999"],
+      });
+      expect(results).toHaveLength(0);
+    });
+
+    it("returns all entries when moves array is empty (no filter applied)", () => {
+      const results = searchSpecies(index, "", { moves: [] });
+      expect(results).toHaveLength(index.length);
+    });
+
+    it("moves filter works together with types filter to narrow results", () => {
+      // Fake Out + Fire type → should include Incineroar (Fire/Dark, learns Fake Out)
+      const results = searchSpecies(index, "", {
+        moves: ["Fake Out"],
+        types: ["Fire"],
+      });
+      const names = results.map((e) => e.species);
+      expect(names).toContain("Incineroar");
+      // All results must be Fire type
+      for (const entry of results) {
+        expect(entry.types.map((t) => t.toLowerCase())).toContain("fire");
+      }
+    });
+
+    it("moves filter excludes species that cannot learn any of the specified moves", () => {
+      // Filter by a non-existent move — no species should pass
+      const results = searchSpecies(index, "", {
+        moves: ["FakeMoveXYZ123"],
+      });
+      expect(results).toHaveLength(0);
+    });
+  });
 });
