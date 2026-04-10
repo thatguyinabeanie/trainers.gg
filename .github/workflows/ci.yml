@@ -377,27 +377,26 @@ jobs:
             echo "Supabase branch already exists for $GIT_BRANCH"
           fi
 
-          # Poll until branch is ACTIVE_HEALTHY (up to 5 min)
+          # Get branch credentials — branches get returns env-var-style JSON:
+          # { "POSTGRES_URL": "...", "POSTGRES_URL_NON_POOLING": "...", "SUPABASE_ANON_KEY": "...", ... }
+          # Extract project ref from the non-pooling URL: db.<ref>.supabase.co
           for i in $(seq 1 30); do
             INFO=$(supabase --experimental branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json 2>&1) || true
-            STATUS=$(echo "$INFO" | jq -r '.status // empty' 2>/dev/null)
-            BRANCH_REF=$(echo "$INFO" | jq -r '.project_ref // empty' 2>/dev/null)
+            NON_POOLING=$(echo "$INFO" | jq -r '.POSTGRES_URL_NON_POOLING // empty' 2>/dev/null)
 
-            # Accept any status if we got a valid project ref — the branch is usable
-            if [ -n "$BRANCH_REF" ] && [ "$BRANCH_REF" != "null" ] && [ "$BRANCH_REF" != "" ]; then
-              echo "ref=$BRANCH_REF" >> "$GITHUB_OUTPUT"
-              echo "Branch ready: $BRANCH_REF (status: ${STATUS:-unknown})"
-              exit 0
+            if [ -n "$NON_POOLING" ]; then
+              BRANCH_REF=$(echo "$NON_POOLING" | grep -oP 'db\.\K[a-z0-9]+(?=\.supabase\.co)')
+              if [ -n "$BRANCH_REF" ]; then
+                echo "ref=$BRANCH_REF" >> "$GITHUB_OUTPUT"
+                echo "Branch ready: $BRANCH_REF"
+                exit 0
+              fi
             fi
 
-            echo "Branch status: '${STATUS:-<empty>}' ref: '${BRANCH_REF:-<empty>}' (attempt $i/30)"
-            # Log raw response on first attempt for debugging
-            if [ "$i" -eq 1 ]; then
-              echo "Raw response: $(echo "$INFO" | head -5)"
-            fi
+            echo "Waiting for branch credentials (attempt $i/30)"
             sleep 10
           done
-          echo "::error::Supabase branch did not become ready within 5 minutes"
+          echo "::error::Supabase branch did not return credentials within 5 minutes"
           exit 1
 
       - name: Inject env vars into Vercel
@@ -411,15 +410,12 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          # Retrieve branch API keys
-          KEYS=$(supabase --experimental projects api-keys --project-ref "$BRANCH_REF" --output json)
-          ANON_KEY=$(echo "$KEYS" | jq -r '.[] | select(.name == "anon") | .api_key')
-          SERVICE_KEY=$(echo "$KEYS" | jq -r '.[] | select(.name == "service_role") | .api_key')
+          # branches get returns all credentials in one call
+          INFO=$(supabase --experimental branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json)
+          ANON_KEY=$(echo "$INFO" | jq -r '.SUPABASE_ANON_KEY // empty')
+          SERVICE_KEY=$(echo "$INFO" | jq -r '.SUPABASE_SERVICE_ROLE_KEY // empty')
+          DB_PASSWORD=$(echo "$INFO" | jq -r '.POSTGRES_PASSWORD // empty')
           API_URL="https://${BRANCH_REF}.supabase.co"
-
-          # Retrieve DB password from branch info
-          BRANCH_INFO=$(supabase --experimental branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json)
-          DB_PASSWORD=$(echo "$BRANCH_INFO" | jq -r '.database.password // empty')
 
           # Upsert branch-scoped Preview env vars via Vercel API
           ENV_VARS=$(jq -n \
