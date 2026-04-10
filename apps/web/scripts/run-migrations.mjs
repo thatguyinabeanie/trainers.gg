@@ -301,44 +301,6 @@ async function runMigrations() {
   console.log("\n🚀 Supabase Migration Runner\n");
   console.log("=".repeat(50));
 
-  // Debug: dump all Supabase/Vercel env vars (values redacted for secrets)
-  console.log("\n🔍 Environment variable debug:");
-  const debugVars = [
-    "VERCEL_ENV",
-    "VERCEL_GIT_COMMIT_REF",
-    "SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_URL",
-    "SUPABASE_PRODUCTION_PROJECT_REF",
-    "SUPABASE_ACCESS_TOKEN",
-    "POSTGRES_PASSWORD",
-    "SUPABASE_POSTGRES_URL",
-    "SUPABASE_POSTGRES_URL_NON_POOLING",
-    "POSTGRES_URL",
-    "POSTGRES_URL_NON_POOLING",
-    "POSTGRES_PRISMA_URL",
-    "POSTGRES_URL_NO_SSL",
-    "POSTGRES_HOST",
-    "POSTGRES_USER",
-    "POSTGRES_DATABASE",
-  ];
-  for (const name of debugVars) {
-    const val = process.env[name];
-    if (!val) {
-      console.log(`   ${name}: <not set>`);
-    } else if (
-      name.includes("PASSWORD") ||
-      name.includes("TOKEN") ||
-      name.includes("SECRET") ||
-      name.startsWith("POSTGRES_URL") ||
-      name.startsWith("SUPABASE_POSTGRES_URL") ||
-      val.includes("@")
-    ) {
-      console.log(`   ${name}: [set, ${val.length} chars]`);
-    } else {
-      console.log(`   ${name}: ${val}`);
-    }
-  }
-
   // Extract project ref early (needed for environment safety check)
   const projectRef = extractProjectRef();
 
@@ -388,12 +350,10 @@ async function runMigrations() {
 
   // --- Migrations ---
   if (env.type === "preview" && !isProductionDb) {
-    // Supabase GitHub integration applies migrations when creating the preview branch.
-    // Running them again from the Vercel build would cause duplicate schema objects.
-    console.log("\n⏭️  Skipping migrations for preview branch");
-    console.log(
-      "   Supabase automatically applies migrations when creating preview branches."
-    );
+    console.log("\n🔗 Linking to preview Supabase project...");
+    exec(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
+    console.log("\n📤 Applying migrations to preview database...");
+    exec("npx supabase db push --linked", { env: cliEnv });
   } else if (env.type === "preview" && isProductionDb) {
     // SAFETY: Never push unmerged branch migrations to production.
     console.log(
