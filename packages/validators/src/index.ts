@@ -177,3 +177,22 @@ export {
   type NotificationType,
   type NotificationPreferences,
 } from "./notification-preferences";
+
+// Team builder validators
+export {
+  teamNameSchema,
+  teamFormatSchema,
+  createTeamInputSchema,
+  type CreateTeamInput,
+  updateTeamInputSchema,
+  deleteTeamInputSchema,
+  forkTeamInputSchema,
+  type ForkTeamInput,
+  addPokemonInputSchema,
+  type AddPokemonInput,
+  updatePokemonInputSchema,
+  removePokemonInputSchema,
+  teamPositionSchema,
+  reorderTeamPokemonInputSchema,
+  type ReorderTeamPokemonInput,
+} from "./team-builder";

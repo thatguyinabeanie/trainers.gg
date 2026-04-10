@@ -22,7 +22,17 @@ import {
   type TablesInsert,
   type TablesUpdate,
 } from "@trainers/supabase";
-import { type ActionResult } from "@trainers/validators";
+import {
+  type ActionResult,
+  createTeamInputSchema,
+  updateTeamInputSchema,
+  deleteTeamInputSchema,
+  forkTeamInputSchema,
+  addPokemonInputSchema,
+  updatePokemonInputSchema,
+  removePokemonInputSchema,
+  reorderTeamPokemonInputSchema,
+} from "@trainers/validators";
 
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
@@ -55,11 +65,23 @@ export async function createTeamAction(
   name: string,
   format: string
 ): Promise<ActionResult<{ id: number }>> {
+  const parsed = createTeamInputSchema.safeParse({ altId, name, format });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
   try {
     await rejectBots();
     const supabase = await createClient();
-    const result = await createTeamMutation(supabase, altId, name, format);
-    updateTag(teamsCacheTag(altId));
+    const result = await createTeamMutation(
+      supabase,
+      parsed.data.altId,
+      parsed.data.name,
+      parsed.data.format
+    );
+    updateTag(teamsCacheTag(parsed.data.altId));
     return { success: true, data: { id: result.id } };
   } catch (error) {
     return {
@@ -77,11 +99,18 @@ export async function updateTeamAction(
   teamId: number,
   data: Partial<TablesUpdate<"teams">>
 ): Promise<ActionResult<void>> {
+  const parsed = updateTeamInputSchema.safeParse({ teamId });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
   return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();
-    await updateTeamMutation(supabase, teamId, data);
-    updateTag(teamCacheTag(teamId));
+    await updateTeamMutation(supabase, parsed.data.teamId, data);
+    updateTag(teamCacheTag(parsed.data.teamId));
   }, "Failed to update team");
 }
 
@@ -91,11 +120,18 @@ export async function updateTeamAction(
 export async function deleteTeamAction(
   teamId: number
 ): Promise<ActionResult<void>> {
+  const parsed = deleteTeamInputSchema.safeParse({ teamId });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
   return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();
-    await deleteTeamMutation(supabase, teamId);
-    updateTag(teamCacheTag(teamId));
+    await deleteTeamMutation(supabase, parsed.data.teamId);
+    updateTag(teamCacheTag(parsed.data.teamId));
   }, "Failed to delete team");
 }
 
@@ -109,16 +145,27 @@ export async function forkTeamAction(
   targetAltId: number,
   newName?: string
 ): Promise<ActionResult<{ id: number }>> {
+  const parsed = forkTeamInputSchema.safeParse({
+    sourceTeamId,
+    targetAltId,
+    newName,
+  });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
   try {
     await rejectBots();
     const supabase = await createClient();
     const result = await forkTeamMutation(
       supabase,
-      sourceTeamId,
-      targetAltId,
-      newName
+      parsed.data.sourceTeamId,
+      parsed.data.targetAltId,
+      parsed.data.newName
     );
-    updateTag(teamsCacheTag(targetAltId));
+    updateTag(teamsCacheTag(parsed.data.targetAltId));
     return { success: true, data: { id: result.id } };
   } catch (error) {
     return {
@@ -141,16 +188,23 @@ export async function addPokemonToTeamAction(
   pokemon: TablesInsert<"pokemon">,
   position: number
 ): Promise<ActionResult<{ pokemonId: number }>> {
+  const parsed = addPokemonInputSchema.safeParse({ teamId, position });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
   try {
     await rejectBots();
     const supabase = await createClient();
     const result = await addPokemonToTeamMutation(
       supabase,
-      teamId,
+      parsed.data.teamId,
       pokemon,
-      position
+      parsed.data.position
     );
-    updateTag(teamCacheTag(teamId));
+    updateTag(teamCacheTag(parsed.data.teamId));
     return { success: true, data: { pokemonId: result.pokemonId } };
   } catch (error) {
     return {
@@ -170,10 +224,17 @@ export async function updatePokemonAction(
   data: Partial<TablesUpdate<"pokemon">>,
   teamId?: number
 ): Promise<ActionResult<void>> {
+  const parsed = updatePokemonInputSchema.safeParse({ pokemonId });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
   return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();
-    await updatePokemonMutation(supabase, pokemonId, data);
+    await updatePokemonMutation(supabase, parsed.data.pokemonId, data);
     if (teamId) updateTag(teamCacheTag(teamId));
   }, "Failed to update pokemon");
 }
@@ -186,11 +247,22 @@ export async function removePokemonFromTeamAction(
   teamId: number,
   pokemonId: number
 ): Promise<ActionResult<void>> {
+  const parsed = removePokemonInputSchema.safeParse({ teamId, pokemonId });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
   return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();
-    await removePokemonFromTeamMutation(supabase, teamId, pokemonId);
-    updateTag(teamCacheTag(teamId));
+    await removePokemonFromTeamMutation(
+      supabase,
+      parsed.data.teamId,
+      parsed.data.pokemonId
+    );
+    updateTag(teamCacheTag(parsed.data.teamId));
   }, "Failed to remove pokemon from team");
 }
 
@@ -201,10 +273,21 @@ export async function reorderTeamPokemonAction(
   teamId: number,
   positions: { pokemonId: number; position: number }[]
 ): Promise<ActionResult<void>> {
+  const parsed = reorderTeamPokemonInputSchema.safeParse({ teamId, positions });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
   return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();
-    await reorderTeamPokemonMutation(supabase, teamId, positions);
-    updateTag(teamCacheTag(teamId));
+    await reorderTeamPokemonMutation(
+      supabase,
+      parsed.data.teamId,
+      parsed.data.positions
+    );
+    updateTag(teamCacheTag(parsed.data.teamId));
   }, "Failed to reorder team pokemon");
 }

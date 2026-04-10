@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { type GameFormat } from "@trainers/pokemon";
@@ -52,6 +52,15 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const savedIdleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Clear both debounce timers on unmount to prevent setState on an unmounted component
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (savedIdleTimerRef.current) clearTimeout(savedIdleTimerRef.current);
+    };
+  }, []);
 
   const selectedEntry = sortedPokemon.find(
     (tp) => tp.pokemon_id === selectedPokemonId
@@ -77,7 +86,10 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
       );
       if (result.success) {
         setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
+        savedIdleTimerRef.current = setTimeout(
+          () => setSaveStatus("idle"),
+          2000
+        );
       } else {
         setSaveStatus("error");
         toast.error(result.error ?? "Failed to save changes.");

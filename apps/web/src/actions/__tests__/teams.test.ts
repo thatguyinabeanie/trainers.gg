@@ -289,21 +289,21 @@ describe("addPokemonToTeamAction", () => {
   it("adds a pokemon and returns the new pokemon id", async () => {
     mockAddPokemonToTeam.mockResolvedValue({ pokemonId: 77 });
 
-    const result = await addPokemonToTeamAction(10, fakePokemon, 0);
+    const result = await addPokemonToTeamAction(10, fakePokemon, 1);
 
     expect(result).toEqual({ success: true, data: { pokemonId: 77 } });
     expect(mockAddPokemonToTeam).toHaveBeenCalledWith(
       mockSupabase,
       10,
       fakePokemon,
-      0
+      1
     );
   });
 
   it("invalidates the team cache after adding a pokemon", async () => {
     mockAddPokemonToTeam.mockResolvedValue({ pokemonId: 77 });
 
-    await addPokemonToTeamAction(10, fakePokemon, 0);
+    await addPokemonToTeamAction(10, fakePokemon, 1);
 
     expect(mockUpdateTag).toHaveBeenCalledWith("team-10");
   });
@@ -311,7 +311,7 @@ describe("addPokemonToTeamAction", () => {
   it("returns an error when the mutation throws", async () => {
     mockAddPokemonToTeam.mockRejectedValue(new Error("Team full"));
 
-    const result = await addPokemonToTeamAction(10, fakePokemon, 0);
+    const result = await addPokemonToTeamAction(10, fakePokemon, 1);
 
     expect(result).toEqual({
       success: false,
@@ -323,7 +323,7 @@ describe("addPokemonToTeamAction", () => {
   it("returns an error when a bot is detected", async () => {
     simulateBot();
 
-    const result = await addPokemonToTeamAction(10, fakePokemon, 0);
+    const result = await addPokemonToTeamAction(10, fakePokemon, 1);
 
     expect(result.success).toBe(false);
     expect(mockAddPokemonToTeam).not.toHaveBeenCalled();
@@ -445,9 +445,9 @@ describe("removePokemonFromTeamAction", () => {
 
 describe("reorderTeamPokemonAction", () => {
   const positions = [
-    { pokemonId: 1, position: 0 },
-    { pokemonId: 2, position: 1 },
-    { pokemonId: 3, position: 2 },
+    { pokemonId: 1, position: 1 },
+    { pokemonId: 2, position: 2 },
+    { pokemonId: 3, position: 3 },
   ];
 
   beforeEach(() => {
@@ -489,12 +489,10 @@ describe("reorderTeamPokemonAction", () => {
     expect(mockReorderTeamPokemon).not.toHaveBeenCalled();
   });
 
-  it("handles an empty positions array without error", async () => {
-    mockReorderTeamPokemon.mockResolvedValue(undefined);
-
+  it("returns a validation error for an empty positions array", async () => {
     const result = await reorderTeamPokemonAction(10, []);
 
-    expect(result).toEqual({ success: true, data: undefined });
-    expect(mockReorderTeamPokemon).toHaveBeenCalledWith(mockSupabase, 10, []);
+    expect(result.success).toBe(false);
+    expect(mockReorderTeamPokemon).not.toHaveBeenCalled();
   });
 });

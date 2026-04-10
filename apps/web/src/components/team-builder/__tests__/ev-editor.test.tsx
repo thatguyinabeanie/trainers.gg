@@ -151,12 +151,12 @@ describe("EvEditor", () => {
 
     it("shows Full indicator when EVs are exactly 510", () => {
       const evs = {
-        hp: 4,
+        hp: 6,
         attack: 252,
         defense: 0,
         specialAttack: 0,
         specialDefense: 0,
-        speed: 254,
+        speed: 252,
       };
       renderEvEditor({ evs });
       expect(screen.getByText("• Full")).toBeInTheDocument();

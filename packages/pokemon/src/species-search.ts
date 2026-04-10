@@ -128,6 +128,20 @@ export function searchSpecies(
 ): SpeciesSearchEntry[] {
   const normalizedQuery = query.trim().toLowerCase();
 
+  // Precompute normalized filter arrays once (outside the per-entry loop)
+  const normalizedTypes =
+    options?.types && options.types.length > 0
+      ? options.types.map((t) => t.toLowerCase())
+      : undefined;
+  const normalizedAbilities =
+    options?.abilities && options.abilities.length > 0
+      ? options.abilities.map((a) => a.toLowerCase())
+      : undefined;
+  const normalizedMoves =
+    options?.moves && options.moves.length > 0
+      ? options.moves.map((m) => m.toLowerCase())
+      : undefined;
+
   return index.filter((entry) => {
     // -- Query filter --
     if (normalizedQuery.length > 0) {
@@ -143,30 +157,28 @@ export function searchSpecies(
     }
 
     // -- Types filter (OR: species must have at least one matching type) --
-    if (options?.types && options.types.length > 0) {
-      const normalizedFilter = options.types.map((t) => t.toLowerCase());
+    if (normalizedTypes) {
       const hasMatchingType = entry.types.some((t) =>
-        normalizedFilter.includes(t.toLowerCase())
+        normalizedTypes.includes(t.toLowerCase())
       );
       if (!hasMatchingType) return false;
     }
 
     // -- Abilities filter (OR: species must have at least one matching ability) --
-    if (options?.abilities && options.abilities.length > 0) {
-      const normalizedFilter = options.abilities.map((a) => a.toLowerCase());
+    if (normalizedAbilities) {
       const hasMatchingAbility = entry.abilities.some((a) =>
-        normalizedFilter.includes(a.toLowerCase())
+        normalizedAbilities.includes(a.toLowerCase())
       );
       if (!hasMatchingAbility) return false;
     }
 
     // -- Moves filter (AND: species must learn ALL specified moves) --
-    if (options?.moves && options.moves.length > 0) {
+    if (normalizedMoves) {
       const learnableMoves = getLearnableMoves(entry.species).map((m) =>
         m.toLowerCase()
       );
-      const learnsAllMoves = options.moves.every((move) =>
-        learnableMoves.includes(move.toLowerCase())
+      const learnsAllMoves = normalizedMoves.every((move) =>
+        learnableMoves.includes(move)
       );
       if (!learnsAllMoves) return false;
     }

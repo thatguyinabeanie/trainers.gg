@@ -16,7 +16,7 @@ All migrations must be idempotent — preview branches replay every migration on
 | `CREATE FUNCTION`            | `CREATE OR REPLACE FUNCTION`                                                 |
 | `CREATE POLICY`              | `DROP POLICY IF EXISTS` before `CREATE POLICY`                               |
 | `CREATE TYPE` (enum)         | Wrap in `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;` |
-| `ALTER TABLE ADD CONSTRAINT` | Check `pg_constraint` before adding                                          |
+| `ALTER TABLE ADD CONSTRAINT` | `DROP CONSTRAINT IF EXISTS` before `ADD CONSTRAINT`                          |
 
 ## RLS Required
 
