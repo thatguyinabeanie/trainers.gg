@@ -14,6 +14,22 @@ Coding standards for the Next.js 16 web application (`apps/web/`). App Router wi
 - **Layouts** — `export default async function Layout({ children })` — Server Components by default
 - **Loading states** — prefer granular `<Suspense>` boundaries with skeleton fallbacks over page-level `loading.js`
 
+### Dynamic Segment Naming
+
+Next.js requires all dynamic segments at the same path level to use the **same slug name**. Before creating a new `[param]` directory, check what existing sibling routes use.
+
+```
+# BAD — Next.js will crash at build/dev:
+dashboard/alts/[username]/page.tsx
+dashboard/alts/[handle]/teams/page.tsx   ← different name, same level
+
+# GOOD — consistent slug at the same level:
+dashboard/alts/[username]/page.tsx
+dashboard/alts/[username]/teams/page.tsx
+```
+
+When adding routes under an existing dynamic segment, `ls` the parent directory first and match the existing `[paramName]`.
+
 ## Data Fetching
 
 ### Server Components
