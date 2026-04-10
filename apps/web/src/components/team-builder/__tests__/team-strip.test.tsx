@@ -179,7 +179,11 @@ describe("TeamStrip", () => {
           pokemon={[makePokemonEntry(1, 1, "Pikachu")]}
         />
       );
-      await user.click(screen.getByRole("button", { name: /Pikachu/i }));
+      // Click the select button (has aria-pressed), not the remove button
+      const selectBtn = screen
+        .getAllByRole("button", { name: /Pikachu/i })
+        .find((el) => el.hasAttribute("aria-pressed"));
+      await user.click(selectBtn!);
       expect(onSelect).toHaveBeenCalledWith(1);
     });
   });

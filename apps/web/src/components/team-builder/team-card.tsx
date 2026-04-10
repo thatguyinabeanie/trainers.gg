@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
+import { getFormatLabel } from "@trainers/pokemon";
 import { formatTimeAgo } from "@trainers/utils";
 import { type TeamWithPokemon } from "@trainers/supabase";
 
@@ -104,7 +105,7 @@ export function TeamCard({ team, handle, className }: TeamCardProps) {
         <div className="flex shrink-0 items-center gap-1.5">
           {team.format && (
             <Badge variant="secondary" className="text-xs">
-              {team.format}
+              {getFormatLabel(team.format)}
             </Badge>
           )}
           <span className="text-muted-foreground text-xs">

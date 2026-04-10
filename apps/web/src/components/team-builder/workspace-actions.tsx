@@ -101,6 +101,13 @@ export function WorkspaceActions({
 
       const toImport = parsedTeam.slice(0, availableSlots);
 
+      // Compute next position from the highest existing position to avoid
+      // collisions when team has gaps (e.g., deleted slot 3).
+      const maxPosition = team.team_pokemon.reduce(
+        (max, tp) => Math.max(max, tp.team_position),
+        0
+      );
+
       const addResults = await Promise.all(
         toImport.map((pokemon, i) => {
           // ParsedPokemon uses snake_case field names (matches DB columns)
@@ -138,7 +145,7 @@ export function WorkspaceActions({
           return addPokemonToTeamAction(
             team.id,
             pokemonInsert,
-            currentCount + i + 1
+            maxPosition + i + 1
           );
         })
       );

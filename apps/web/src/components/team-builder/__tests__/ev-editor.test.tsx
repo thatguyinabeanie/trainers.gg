@@ -240,14 +240,16 @@ describe("EvEditor", () => {
       const sliders = screen.getAllByRole("slider");
       // HP slider — starts at 0, can go up to 252
       fireEvent.keyDown(sliders[0], { key: "ArrowRight" });
-      expect(onChange).toHaveBeenCalledWith(4);
+      // EvEditor calls onChange(statKey, cappedValue)
+      expect(onChange).toHaveBeenCalledWith("hp", 4);
     });
 
     it("ArrowLeft decreases EV by 4 (clamped to 0)", () => {
       const { onChange } = renderEvEditor();
       const sliders = screen.getAllByRole("slider");
       fireEvent.keyDown(sliders[0], { key: "ArrowLeft" });
-      expect(onChange).toHaveBeenCalledWith(0);
+      // EvEditor calls onChange(statKey, cappedValue)
+      expect(onChange).toHaveBeenCalledWith("hp", 0);
     });
   });
 

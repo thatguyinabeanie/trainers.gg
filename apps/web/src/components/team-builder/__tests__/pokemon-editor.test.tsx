@@ -151,7 +151,8 @@ describe("PokemonEditor", () => {
     it("renders type pills for the species", () => {
       render(<PokemonEditor {...defaultProps} />);
       // getSpeciesTypes mocked to return ["Fire", "Dark"]
-      expect(screen.getByText("Fire")).toBeInTheDocument();
+      // "Fire" may appear multiple times (type pill + tera type), use getAllByText
+      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText("Dark")).toBeInTheDocument();
     });
 
@@ -200,7 +201,8 @@ describe("PokemonEditor", () => {
 
     it("renders EVs label", () => {
       render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByText("EVs")).toBeInTheDocument();
+      // "EVs" appears as both a section header and column header
+      expect(screen.getAllByText("EVs").length).toBeGreaterThanOrEqual(1);
     });
 
     it("renders IVs label", () => {
@@ -227,7 +229,8 @@ describe("PokemonEditor", () => {
 
     it("displays current tera type value", () => {
       render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByText("Fire")).toBeInTheDocument();
+      // "Fire" appears as both the type pill and the tera type value
+      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(2);
     });
 
     it("displays current moves in move slots", () => {

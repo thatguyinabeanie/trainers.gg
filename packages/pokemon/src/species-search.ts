@@ -117,9 +117,13 @@ export function searchSpecies(
     /** Filter: species must be able to learn ALL of these moves */
     moves?: string[];
     /** Filter: species base stats must be >= these values */
-    minBaseStat?: Partial<Record<string, number>>;
+    minBaseStat?: Partial<
+      Record<keyof SpeciesSearchEntry["baseStats"], number>
+    >;
     /** Filter: species base stats must be <= these values */
-    maxBaseStat?: Partial<Record<string, number>>;
+    maxBaseStat?: Partial<
+      Record<keyof SpeciesSearchEntry["baseStats"], number>
+    >;
   }
 ): SpeciesSearchEntry[] {
   const normalizedQuery = query.trim().toLowerCase();

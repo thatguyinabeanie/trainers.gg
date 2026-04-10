@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { type DragEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -39,9 +39,9 @@ interface PokemonChipProps {
   isChoosing: boolean;
   onSelect: () => void;
   onRemove: () => void;
-  onDragStart: (e: React.DragEvent) => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent) => void;
+  onDragStart: (e: DragEvent<HTMLElement>) => void;
+  onDragOver: (e: DragEvent<HTMLElement>) => void;
+  onDrop: (e: DragEvent<HTMLElement>) => void;
   isPending: boolean;
 }
 
@@ -170,8 +170,8 @@ function PokemonChip({
 
 interface EmptySlotProps {
   onClick: () => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent) => void;
+  onDragOver: (e: DragEvent<HTMLElement>) => void;
+  onDrop: (e: DragEvent<HTMLElement>) => void;
 }
 
 function EmptySlot({ onClick, onDragOver, onDrop }: EmptySlotProps) {
@@ -222,41 +222,45 @@ export function TeamStrip({
   // Drag handlers
   // -------------------------------------------------------------------------
 
-  function handleDragStart(e: React.DragEvent, pokemonId: number) {
+  function handleDragStart(e: DragEvent<HTMLElement>, pokemonId: number) {
     e.dataTransfer.setData("text/plain", String(pokemonId));
     e.dataTransfer.effectAllowed = "move";
     setDragSourceId(pokemonId);
   }
 
-  function handleDragOver(e: React.DragEvent) {
+  function handleDragOver(e: DragEvent<HTMLElement>) {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   }
 
-  function handleDrop(e: React.DragEvent, targetPokemonId: number | null) {
+  function handleDrop(
+    e: DragEvent<HTMLElement>,
+    targetPokemonId: number | null
+  ) {
     e.preventDefault();
     const draggedId = Number(e.dataTransfer.getData("text/plain"));
     setDragSourceId(null);
 
     if (!draggedId || draggedId === targetPokemonId) return;
 
-    // Compute new positions — swap the two chips
+    // Compute new positions — swap the two chips.
+    // Use pokemon_id (not team_pokemon.id) since mutations key by pokemon_id.
     const newPositions = sorted.map((tp) => {
-      if (tp.id === draggedId) {
-        const target = sorted.find((t) => t.id === targetPokemonId);
+      if (tp.pokemon_id === draggedId) {
+        const target = sorted.find((t) => t.pokemon_id === targetPokemonId);
         return {
-          pokemonId: tp.id,
+          pokemonId: tp.pokemon_id,
           position: target?.team_position ?? tp.team_position,
         };
       }
-      if (tp.id === targetPokemonId) {
-        const source = sorted.find((t) => t.id === draggedId);
+      if (tp.pokemon_id === targetPokemonId) {
+        const source = sorted.find((t) => t.pokemon_id === draggedId);
         return {
-          pokemonId: tp.id,
+          pokemonId: tp.pokemon_id,
           position: source?.team_position ?? tp.team_position,
         };
       }
-      return { pokemonId: tp.id, position: tp.team_position };
+      return { pokemonId: tp.pokemon_id, position: tp.team_position };
     });
 
     startTransition(async () => {
@@ -269,7 +273,7 @@ export function TeamStrip({
     });
   }
 
-  function handleDropOnEmpty(e: React.DragEvent) {
+  function handleDropOnEmpty(e: DragEvent<HTMLElement>) {
     e.preventDefault();
     // Dropping onto an empty slot doesn't change order — just reset
     setDragSourceId(null);
@@ -303,13 +307,13 @@ export function TeamStrip({
         <PokemonChip
           key={entry.id}
           entry={entry}
-          isSelected={entry.id === selectedPokemonId}
+          isSelected={entry.pokemon_id === selectedPokemonId}
           isChoosing={choosingSlot === idx}
-          onSelect={() => onSelect(entry.id)}
-          onRemove={() => handleRemove(entry.id)}
-          onDragStart={(e) => handleDragStart(e, entry.id)}
+          onSelect={() => onSelect(entry.pokemon_id)}
+          onRemove={() => handleRemove(entry.pokemon_id)}
+          onDragStart={(e) => handleDragStart(e, entry.pokemon_id)}
           onDragOver={handleDragOver}
-          onDrop={(e) => handleDrop(e, entry.id)}
+          onDrop={(e) => handleDrop(e, entry.pokemon_id)}
           isPending={isPending || dragSourceId !== null}
         />
       ))}

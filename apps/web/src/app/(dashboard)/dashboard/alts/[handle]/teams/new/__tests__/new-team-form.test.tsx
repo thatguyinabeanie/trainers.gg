@@ -160,14 +160,13 @@ describe("NewTeamForm", () => {
   });
 
   describe("form validation", () => {
-    it("shows toast error when team name is empty on submit", async () => {
+    it("prevents form submission when team name is empty (required field)", async () => {
       const user = userEvent.setup();
-      const { toast } = await import("sonner");
       render(<NewTeamForm {...defaultProps} />);
       await user.click(screen.getByRole("button", { name: "Create Team" }));
-      await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Please enter a team name.");
-      });
+      // The <input required> attribute prevents form submission in the browser,
+      // so createTeamAction should never be called.
+      expect(mockCreateTeamAction).not.toHaveBeenCalled();
     });
 
     it("does not call createTeamAction when name is empty", async () => {

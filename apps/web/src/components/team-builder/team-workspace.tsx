@@ -42,7 +42,7 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
   );
 
   const [selectedPokemonId, setSelectedPokemonId] = useState<number | null>(
-    sortedPokemon[0]?.id ?? null
+    sortedPokemon[0]?.pokemon_id ?? null
   );
   const [activeTab, setActiveTab] = useState<"types" | "speed" | "calc">(
     "types"
@@ -52,7 +52,9 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
   );
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const selectedEntry = sortedPokemon.find((tp) => tp.id === selectedPokemonId);
+  const selectedEntry = sortedPokemon.find(
+    (tp) => tp.pokemon_id === selectedPokemonId
+  );
   const hasPokemon = sortedPokemon.length > 0;
 
   // ---------------------------------------------------------------------------

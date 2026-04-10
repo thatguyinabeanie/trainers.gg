@@ -191,27 +191,29 @@ function StatRow({
     return capped;
   }
 
-  function handleMouseDown(e: React.MouseEvent<HTMLDivElement>) {
-    // Only left-click
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    // Only primary button (left-click / touch)
     if (e.button !== 0) return;
     e.preventDefault();
 
+    // Capture the pointer so moves are tracked even outside the element
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
     isDragging.current = true;
     onChange(calculateEvFromMouseX(e.clientX));
 
-    function onMouseMove(ev: MouseEvent) {
+    function onPointerMove(ev: PointerEvent) {
       if (!isDragging.current) return;
       onChange(calculateEvFromMouseX(ev.clientX));
     }
 
-    function onMouseUp() {
+    function onPointerUp() {
       isDragging.current = false;
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerUp);
     }
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onPointerUp);
   }
 
   // -------------------------------------------------------------------------
@@ -254,7 +256,7 @@ function StatRow({
       {/* Draggable bar */}
       <div
         ref={barRef}
-        onMouseDown={handleMouseDown}
+        onPointerDown={handlePointerDown}
         role="slider"
         aria-valuemin={0}
         aria-valuemax={MAX_EV}

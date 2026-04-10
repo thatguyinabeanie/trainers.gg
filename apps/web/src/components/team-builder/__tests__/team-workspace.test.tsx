@@ -211,16 +211,18 @@ describe("TeamWorkspace", () => {
     it("renders the team strip when pokemon exist", () => {
       const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
-      expect(
-        screen.getByRole("region", { name: "Team strip" }) ??
-          screen.getByRole("generic", { name: "Team strip" })
-      ).toBeTruthy();
+      // Team strip is a div with aria-label
+      const strip = screen.getByLabelText("Team strip");
+      expect(strip).toBeInTheDocument();
     });
 
     it("renders the first pokemon's editor by default", () => {
       const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
-      expect(screen.getByText("Incineroar")).toBeInTheDocument();
+      // The species name appears in both the strip chip and the editor header;
+      // verify the editor header button (has the ▾ arrow indicator)
+      const editorHeader = screen.getAllByText("Incineroar");
+      expect(editorHeader.length).toBeGreaterThanOrEqual(2);
     });
 
     it("renders context panel with tab headers", () => {

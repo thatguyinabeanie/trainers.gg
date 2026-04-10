@@ -28,11 +28,22 @@ export function calculateNatureBumps(
 ): number[] {
   const bumps: number[] = [];
 
-  let prevGap = -1;
+  // Compute the baseline gap at EV=0 so we only report breakpoints where
+  // investing EVs causes the nature gap to increase beyond the baseline.
+  const baselineNeutral = calculateStat(baseStat, iv, 0, level, 1.0);
+  const baselineNature = calculateStat(
+    baseStat,
+    iv,
+    0,
+    level,
+    natureMultiplier
+  );
+  let prevGap = baselineNature - baselineNeutral;
 
   // Stats only change at multiples of 4 EVs (due to floor(ev/4) in the
-  // stat formula), so we step by 4 for efficiency.
-  for (let ev = 0; ev <= 252; ev += 4) {
+  // stat formula), so we step by 4 for efficiency. Start at 4 since EV=0
+  // is the baseline, not a breakpoint.
+  for (let ev = 4; ev <= 252; ev += 4) {
     const statNeutral = calculateStat(baseStat, iv, ev, level, 1.0);
     const statWithNature = calculateStat(
       baseStat,

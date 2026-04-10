@@ -9,6 +9,7 @@ import type { Tables } from "../types";
 export type TeamWithPokemon = Tables<"teams"> & {
   team_pokemon: Array<{
     id: number;
+    pokemon_id: number;
     team_position: number;
     pokemon: Tables<"pokemon"> | null;
   }>;
@@ -35,6 +36,7 @@ export async function getTeamsForAltFull(
       *,
       team_pokemon(
         id,
+        pokemon_id,
         team_position,
         pokemon:pokemon(*)
       )
@@ -62,6 +64,7 @@ export async function getTeamWithPokemon(
       *,
       team_pokemon(
         id,
+        pokemon_id,
         team_position,
         pokemon:pokemon(*)
       )
@@ -92,6 +95,7 @@ export async function getTeamsForAltByFormatFull(
       *,
       team_pokemon(
         id,
+        pokemon_id,
         team_position,
         pokemon:pokemon(*)
       )

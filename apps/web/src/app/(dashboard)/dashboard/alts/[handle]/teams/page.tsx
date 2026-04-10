@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Plus, Upload } from "lucide-react";
 
-import { getActiveFormats } from "@trainers/pokemon";
+import { getActiveFormats, getFormatLabel } from "@trainers/pokemon";
 import { getAltByUsername, getTeamsForAltFull } from "@trainers/supabase";
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
@@ -173,7 +173,7 @@ export default async function TeamsPage({
             {Array.from(groupedTeams.entries()).map(([format, formatTeams]) => (
               <section key={format}>
                 <h2 className="text-muted-foreground mb-3 text-xs font-semibold tracking-widest uppercase">
-                  {format}
+                  {getFormatLabel(format)}
                 </h2>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {formatTeams.map((team) => (

@@ -114,11 +114,14 @@ export function NewTeamForm({
             "Showdown paste could not be parsed. Team created empty."
           );
         } else {
+          // Limit to 6 Pokemon max (DB constraint on team_position)
+          const toImport = parsedTeam.slice(0, 6);
+
           // Add each Pokemon sequentially at its position.
           // Cast gender to the DB enum — ParsedPokemon uses string | null but
           // the DB expects the "Male" | "Female" enum. Trim to valid values only.
           const addResults = await Promise.all(
-            parsedTeam.map((pokemon, i) => {
+            toImport.map((pokemon, i) => {
               const gender =
                 pokemon.gender === "Male" || pokemon.gender === "Female"
                   ? pokemon.gender

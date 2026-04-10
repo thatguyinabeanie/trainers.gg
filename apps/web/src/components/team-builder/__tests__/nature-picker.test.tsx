@@ -68,7 +68,8 @@ describe("NaturePicker", () => {
 
     it("shows - stat label for reduced stat (Adamant: -SpA)", () => {
       render(<NaturePicker {...defaultProps} />);
-      expect(screen.getByText("-SpA")).toBeInTheDocument();
+      // Multiple natures may reduce SpA, so use getAllByText
+      expect(screen.getAllByText("-SpA").length).toBeGreaterThanOrEqual(1);
     });
 
     it("shows — for neutral natures (Hardy)", () => {

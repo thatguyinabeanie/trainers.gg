@@ -15,6 +15,10 @@ jest.mock("@trainers/pokemon/sprites", () => ({
   })),
 }));
 
+jest.mock("@trainers/pokemon", () => ({
+  getFormatLabel: jest.fn((id: string) => id),
+}));
+
 jest.mock("@trainers/utils", () => ({
   formatTimeAgo: jest.fn((str: string) => (str ? "2h ago" : "just now")),
 }));
