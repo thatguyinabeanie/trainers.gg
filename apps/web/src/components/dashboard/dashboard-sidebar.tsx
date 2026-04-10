@@ -611,7 +611,7 @@ function PlayerNav({
   const currentAltUsername = selectedAlt?.username ?? alts[0]?.username ?? null;
   const builderHref = currentAltUsername
     ? `/dashboard/alts/${currentAltUsername}/teams`
-    : "/builder";
+    : "/dashboard";
 
   const playerItems = [
     {

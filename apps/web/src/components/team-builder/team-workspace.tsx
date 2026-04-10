@@ -225,34 +225,12 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
   }
 
   // ---------------------------------------------------------------------------
-  // Empty state
-  // ---------------------------------------------------------------------------
-
-  if (!hasPokemon) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-        <div className="text-muted-foreground">
-          <p className="text-lg font-medium">No Pokémon yet</p>
-          <p className="mt-1 text-sm">
-            Import a Showdown paste or add Pokémon one by one to get started.
-          </p>
-        </div>
-        {/* Import trigger — placeholder until the Import sheet is wired in Task 3+ */}
-        <Button variant="outline" size="sm">
-          <Import className="size-4" />
-          Import Paste
-        </Button>
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Team strip */}
+      {/* Team strip — always visible so "+" button works even with 0 pokemon */}
       <div className="border-b">
         <TeamStrip
           teamId={team.id}
@@ -282,6 +260,24 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
           onSelect={handleSpeciesSelect}
           onCancel={handlePickerCancel}
         />
+      ) : !hasPokemon ? (
+        /* Empty state — shown inside the content area below the strip */
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+          <div className="text-muted-foreground">
+            <p className="text-lg font-medium">No Pokémon yet</p>
+            <p className="mt-1 text-sm">
+              Import a Showdown paste or add Pokémon one by one to get started.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toast.info("Import paste coming soon!")}
+          >
+            <Import className="size-4" />
+            Import Paste
+          </Button>
+        </div>
       ) : (
         <div className="flex flex-1 overflow-hidden">
           {/* Editor panel (left 50%) */}

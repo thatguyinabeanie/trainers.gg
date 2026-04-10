@@ -87,6 +87,14 @@ jest.mock("@pkmn/dex", () => ({
   },
 }));
 
+jest.mock("sonner", () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+  },
+}));
+
 jest.mock("@/actions/teams", () => ({
   updatePokemonAction: jest.fn().mockResolvedValue({ success: true }),
   addPokemonToTeamAction: jest
@@ -233,6 +241,12 @@ describe("TeamWorkspace", () => {
       expect(
         screen.getByRole("button", { name: /import paste/i })
       ).toBeInTheDocument();
+    });
+
+    it("renders the team strip even with no pokemon", () => {
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+      const strip = screen.getByLabelText("Team strip");
+      expect(strip).toBeInTheDocument();
     });
   });
 
