@@ -116,6 +116,8 @@ export function NewTeamForm({
           toast.warning(
             "Showdown paste could not be parsed. Team created empty."
           );
+          router.push(`/dashboard/alts/${handle}/teams/${teamId}`);
+          return;
         } else {
           // Limit to 6 Pokemon max (DB constraint on team_position)
           const toImport = parsedTeam.slice(0, 6);
@@ -165,6 +167,8 @@ export function NewTeamForm({
             toast.warning(
               `Team created, but ${failures.length} Pokémon failed to import.`
             );
+            router.push(`/dashboard/alts/${handle}/teams/${teamId}`);
+            return;
           }
         }
       }

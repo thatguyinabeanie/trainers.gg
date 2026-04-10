@@ -120,7 +120,10 @@ function checkBranchSafety(): {
 // Supabase branching is active before attempting the seed POST.
 export async function GET() {
   const result = checkBranchSafety();
-  return NextResponse.json(result, { status: result.safe ? 200 : 404 });
+  return NextResponse.json(
+    { safe: result.safe, ...(!result.safe && { reason: result.reason }) },
+    { status: result.safe ? 200 : 404 }
+  );
 }
 
 export async function POST(request: NextRequest) {

@@ -158,9 +158,11 @@ export function WorkspaceActions({
 
       const failures = addResults.filter((r) => !r.success);
       if (failures.length > 0) {
-        toast.warning(
-          `Imported with issues: ${failures.length} Pokémon failed.`
-        );
+        const failedSpecies = parsedTeam
+          .filter((_, i) => !addResults[i]?.success)
+          .map((p) => p.species)
+          .join(", ");
+        toast.warning(`Imported with issues: ${failedSpecies} failed to add.`);
       } else {
         toast.success(`Imported ${toImport.length} Pokémon.`);
       }
