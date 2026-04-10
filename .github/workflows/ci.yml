@@ -345,6 +345,101 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
+  # ── Create/find Supabase preview branch + inject env vars ───
+  setup-preview-db:
+    name: Setup Preview DB
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      branch-ref: ${{ steps.branch.outputs.ref }}
+    steps:
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+
+      - name: Create or find Supabase branch
+        id: branch
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          GIT_BRANCH: ${{ github.head_ref }}
+        run: |
+          # Check if branch already exists
+          EXISTING=$(supabase branches list --project-ref "$PROJECT_REF" --output json \
+            | jq -r --arg name "$GIT_BRANCH" '.[] | select(.git_branch == $name) | .id // empty')
+
+          if [ -z "$EXISTING" ]; then
+            echo "Creating Supabase branch for $GIT_BRANCH..."
+            supabase branches create "$GIT_BRANCH" --project-ref "$PROJECT_REF"
+          else
+            echo "Supabase branch already exists for $GIT_BRANCH"
+          fi
+
+          # Poll until branch is ACTIVE_HEALTHY (up to 2 min)
+          for i in $(seq 1 12); do
+            INFO=$(supabase branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json)
+            STATUS=$(echo "$INFO" | jq -r '.status // empty')
+            if [ "$STATUS" = "ACTIVE_HEALTHY" ]; then
+              BRANCH_REF=$(echo "$INFO" | jq -r '.project_ref // empty')
+              echo "ref=$BRANCH_REF" >> "$GITHUB_OUTPUT"
+              echo "Branch ready: $BRANCH_REF"
+              exit 0
+            fi
+            echo "Branch status: $STATUS (attempt $i/12)"
+            sleep 10
+          done
+          echo "::error::Supabase branch did not become healthy within 2 minutes"
+          exit 1
+
+      - name: Inject env vars into Vercel
+        if: steps.branch.outputs.ref != ''
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          BRANCH_REF: ${{ steps.branch.outputs.ref }}
+          GIT_BRANCH: ${{ github.head_ref }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          # Retrieve branch API keys
+          KEYS=$(supabase projects api-keys --project-ref "$BRANCH_REF" --output json)
+          ANON_KEY=$(echo "$KEYS" | jq -r '.[] | select(.name == "anon") | .api_key')
+          SERVICE_KEY=$(echo "$KEYS" | jq -r '.[] | select(.name == "service_role") | .api_key')
+          API_URL="https://${BRANCH_REF}.supabase.co"
+
+          # Retrieve DB password from branch info
+          BRANCH_INFO=$(supabase branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json)
+          DB_PASSWORD=$(echo "$BRANCH_INFO" | jq -r '.database.password // empty')
+
+          # Upsert branch-scoped Preview env vars via Vercel API
+          ENV_VARS=$(jq -n \
+            --arg url "$API_URL" \
+            --arg anon "$ANON_KEY" \
+            --arg svc "$SERVICE_KEY" \
+            --arg pass "$DB_PASSWORD" \
+            --arg branch "$GIT_BRANCH" \
+            '[
+              {"key":"NEXT_PUBLIC_SUPABASE_URL","value":$url,"type":"encrypted","target":["preview"],"gitBranch":$branch},
+              {"key":"NEXT_PUBLIC_SUPABASE_ANON_KEY","value":$anon,"type":"encrypted","target":["preview"],"gitBranch":$branch},
+              {"key":"SUPABASE_URL","value":$url,"type":"encrypted","target":["preview"],"gitBranch":$branch},
+              {"key":"SUPABASE_SERVICE_ROLE_KEY","value":$svc,"type":"sensitive","target":["preview"],"gitBranch":$branch},
+              {"key":"POSTGRES_PASSWORD","value":$pass,"type":"sensitive","target":["preview"],"gitBranch":$branch}
+            ]')
+
+          RESPONSE=$(curl -sf -X POST \
+            "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?upsert=true&teamId=$VERCEL_TEAM_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$ENV_VARS")
+
+          FAILED=$(echo "$RESPONSE" | jq '.failed | length')
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::warning::Some Vercel env vars failed to set"
+            echo "$RESPONSE" | jq '.failed'
+          fi
+          echo "Vercel env vars upserted for branch $GIT_BRANCH"
+
   # ── Wait for Vercel preview (shared by E2E + Lighthouse) ────
   deploy-preview:
     name: Wait for Preview
