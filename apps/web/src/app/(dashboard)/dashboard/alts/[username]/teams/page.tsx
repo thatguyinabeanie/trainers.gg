@@ -4,6 +4,7 @@ import { getActiveFormats } from "@trainers/pokemon";
 import { getAltByUsername, getTeamsForAltList } from "@trainers/supabase";
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
+import { decodeJwtClaims } from "@/lib/jwt";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { TeamsListClient } from "@/components/team-builder/teams-list-client";
 
@@ -43,14 +44,10 @@ export default async function TeamsPage({
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    const payload = JSON.parse(
-      Buffer.from(session.access_token.split(".")[1]!, "base64url").toString()
-    ) as { team_builder_access?: boolean };
-    if (!payload.team_builder_access) {
-      notFound();
-    }
-  } else {
+  const claims = session?.access_token
+    ? decodeJwtClaims<{ team_builder_access?: boolean }>(session.access_token)
+    : null;
+  if (!claims?.team_builder_access) {
     notFound();
   }
 

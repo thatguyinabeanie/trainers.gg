@@ -6,6 +6,7 @@ import { getFormatById } from "@trainers/pokemon";
 import { getAltByUsername, getTeamWithPokemon } from "@trainers/supabase";
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
+import { decodeJwtClaims } from "@/lib/jwt";
 import { Badge } from "@/components/ui/badge";
 import { WorkspaceActions } from "@/components/team-builder/workspace-actions";
 
@@ -45,14 +46,10 @@ export default async function TeamWorkspaceLayout({
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    const payload = JSON.parse(
-      Buffer.from(session.access_token.split(".")[1]!, "base64url").toString()
-    ) as { team_builder_access?: boolean };
-    if (!payload.team_builder_access) {
-      notFound();
-    }
-  } else {
+  const claims = session?.access_token
+    ? decodeJwtClaims<{ team_builder_access?: boolean }>(session.access_token)
+    : null;
+  if (!claims?.team_builder_access) {
     notFound();
   }
 

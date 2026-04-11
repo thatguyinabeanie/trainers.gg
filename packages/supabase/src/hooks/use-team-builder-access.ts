@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Shared Team Builder Access Hook
  *
@@ -9,6 +7,8 @@
 
 import { useEffect, useState } from "react";
 import type { User, SupabaseClient } from "@supabase/supabase-js";
+
+import { decodeBase64Url } from "./jwt-utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,17 +69,7 @@ export function useTeamBuilderAccess(
         if (session?.access_token) {
           const payload = session.access_token.split(".")[1];
           if (payload) {
-            // base64url decode — cross-platform (Node / Browser / React Native)
-            let base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-            const padding = base64.length % 4;
-            if (padding > 0) base64 += "=".repeat(4 - padding);
-
-            const decoded =
-              typeof Buffer !== "undefined"
-                ? Buffer.from(base64, "base64").toString("utf-8")
-                : atob(base64);
-
-            const claims = JSON.parse(decoded) as {
+            const claims = JSON.parse(decodeBase64Url(payload)) as {
               team_builder_access?: boolean;
             };
             setHasAccess(claims.team_builder_access ?? false);
