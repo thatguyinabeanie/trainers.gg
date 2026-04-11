@@ -1,5 +1,6 @@
 [env]
 BUN_JSC_forceRAMSize=25769803776
+BUN_JSC_gcMaxHeapSize=17179869184
 UV_PYTHON = { value = "{{ tools.python.path }}", tools = true }
 
 [settings]
