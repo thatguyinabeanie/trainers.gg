@@ -38,9 +38,16 @@ export async function updateTeam(
   teamId: number,
   data: Partial<TablesUpdate<"teams">>
 ): Promise<void> {
-  const { error } = await supabase.from("teams").update(data).eq("id", teamId);
+  const { data: updatedTeams, error } = await supabase
+    .from("teams")
+    .update(data)
+    .eq("id", teamId)
+    .select("id");
 
   if (error) throw new Error(`Failed to update team: ${error.message}`);
+  if (!updatedTeams || updatedTeams.length === 0) {
+    throw new Error("Failed to update team: Team not found or not authorized");
+  }
 }
 
 /**

@@ -105,8 +105,11 @@ describe("teams mutations", () => {
   describe("updateTeam", () => {
     it("updates the team row by id", async () => {
       const mockClient = createMockClient();
-      // update().eq() resolves to { error: null }
-      mockClient._queryBuilder.eq.mockResolvedValue({ error: null });
+      // update().eq().select() resolves with the updated row
+      mockClient._queryBuilder.select.mockResolvedValueOnce({
+        data: [{ id: 7 }],
+        error: null,
+      });
 
       await updateTeam(mockClient, 7, {
         name: "Renamed Team",
@@ -119,17 +122,33 @@ describe("teams mutations", () => {
         is_public: true,
       });
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith("id", 7);
+      expect(mockClient._queryBuilder.select).toHaveBeenCalledWith("id");
     });
 
     it("throws when update fails", async () => {
       const mockClient = createMockClient();
-      mockClient._queryBuilder.eq.mockResolvedValue({
+      mockClient._queryBuilder.select.mockResolvedValueOnce({
+        data: null,
         error: { message: "row not found" },
       });
 
       await expect(
         updateTeam(mockClient, 7, { name: "Renamed" })
       ).rejects.toThrow("Failed to update team: row not found");
+    });
+
+    it("throws when no rows are updated (RLS or not found)", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.select.mockResolvedValueOnce({
+        data: [],
+        error: null,
+      });
+
+      await expect(
+        updateTeam(mockClient, 7, { name: "Renamed" })
+      ).rejects.toThrow(
+        "Failed to update team: Team not found or not authorized"
+      );
     });
   });
 
