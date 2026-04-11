@@ -229,7 +229,6 @@ function makeTeam(
 }
 
 const defaultProps = {
-  handle: "ash_ketchum",
   format: { id: "gen9vgc2026regi", label: "SV: Reg I", generation: 9 },
 };
 

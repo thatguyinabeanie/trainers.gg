@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 
 interface TeamStripProps {
   teamId: number;
-  handle: string;
   pokemon: TeamWithPokemon["team_pokemon"];
   selectedPokemonId: number | null;
   onSelect: (pokemonId: number) => void;

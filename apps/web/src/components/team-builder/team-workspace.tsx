@@ -29,7 +29,6 @@ import { ValidationPanel } from "./validation-panel";
 
 interface TeamWorkspaceProps {
   team: TeamWithPokemon;
-  handle: string;
   format: GameFormat | undefined;
 }
 
@@ -47,7 +46,7 @@ interface TeamWorkspaceProps {
  *   - Split panel below: editor (left 50%) and context (right 50%)
  *   - When picker is open: full-width species picker replaces the split panel
  */
-export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
+export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   // Sort pokemon by position and get the first one as default selection
   const sortedPokemon = [...team.team_pokemon].sort(
     (a, b) => a.team_position - b.team_position
@@ -86,6 +85,8 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     team.team_pokemon,
     format
   );
+  const errorCount = errors.filter((e) => e.severity === "error").length;
+  const warningCount = errors.filter((e) => e.severity === "warning").length;
 
   // Build species search index for the format (derived value — React Compiler handles memoization)
   const speciesIndex = buildSpeciesSearchIndex(format?.id ?? "gen9vgc2026regi");
@@ -264,7 +265,6 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
       <div className="border-b">
         <TeamStrip
           teamId={team.id}
-          handle={handle}
           pokemon={team.team_pokemon}
           selectedPokemonId={selectedPokemonId}
           onSelect={setSelectedPokemonId}
@@ -288,20 +288,19 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
         >
           <CheckCircle2 className="size-4" />
           Validate
-          {errors.filter((e) => e.severity === "error").length > 0 && (
+          {errorCount > 0 && (
             <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5">
-              {errors.filter((e) => e.severity === "error").length}
+              {errorCount}
             </Badge>
           )}
-          {errors.filter((e) => e.severity === "warning").length > 0 &&
-            errors.filter((e) => e.severity === "error").length === 0 && (
-              <Badge
-                variant="outline"
-                className="ml-1 h-5 min-w-5 border-amber-500 px-1.5 text-amber-600"
-              >
-                {errors.filter((e) => e.severity === "warning").length}
-              </Badge>
-            )}
+          {warningCount > 0 && errorCount === 0 && (
+            <Badge
+              variant="outline"
+              className="ml-1 h-5 min-w-5 border-amber-500 px-1.5 text-amber-600"
+            >
+              {warningCount}
+            </Badge>
+          )}
         </Button>
       </div>
 

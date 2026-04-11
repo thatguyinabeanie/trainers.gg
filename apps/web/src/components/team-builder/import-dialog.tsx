@@ -180,6 +180,8 @@ export function ImportDialog({
   const [isPendingImport, startImportTransition] = useTransition();
 
   const availableSlots = 6 - team.team_pokemon.length;
+  const hasStructuralErrors =
+    parsed !== null && validateTeamStructure(parsed).length > 0;
 
   // ---------------------------------------------------------------------------
   // Reset state when sheet closes
@@ -415,7 +417,7 @@ export function ImportDialog({
           {parsed ? (
             <Button
               onClick={handleImport}
-              disabled={isWorking || availableSlots <= 0}
+              disabled={isWorking || availableSlots <= 0 || hasStructuralErrors}
             >
               {isPendingImport && <Loader2 className="size-4 animate-spin" />}
               Import {Math.min(parsed.length, availableSlots)} Pokémon

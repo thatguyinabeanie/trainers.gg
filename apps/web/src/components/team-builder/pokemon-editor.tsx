@@ -134,6 +134,28 @@ export function PokemonEditor({
   function getFieldError(field: string): ValidationError | undefined {
     return fieldErrors?.find((e) => e.field === field);
   }
+
+  // Helper — render inline error text for one or more field names, or null.
+  function renderFieldError(...fields: string[]): React.ReactNode {
+    const error = fields.reduce<ValidationError | undefined>(
+      (found, f) => found ?? getFieldError(f),
+      undefined
+    );
+    if (!error) return null;
+    return (
+      <p
+        className={cn(
+          "mt-0.5 text-xs",
+          error.severity === "warning"
+            ? "text-amber-600 dark:text-amber-500"
+            : "text-destructive"
+        )}
+      >
+        {error.message}
+      </p>
+    );
+  }
+
   const [activePicker, setActivePicker] = useState<ActivePicker>(null);
   const [notesOpen, setNotesOpen] = useState(false);
 
@@ -242,18 +264,7 @@ export function PokemonEditor({
             {pokemon.species}
             <ChevronDown className="text-muted-foreground size-4" />
           </button>
-          {getFieldError("species") && (
-            <p
-              className={cn(
-                "mt-0.5 text-xs",
-                getFieldError("species")!.severity === "warning"
-                  ? "text-amber-600 dark:text-amber-500"
-                  : "text-destructive"
-              )}
-            >
-              {getFieldError("species")!.message}
-            </p>
-          )}
+          {renderFieldError("species")}
         </div>
 
         {/* Type pills */}
@@ -331,11 +342,7 @@ export function PokemonEditor({
               <ChevronDown className="text-muted-foreground size-3.5" />
             </button>
           )}
-          {getFieldError("ability") && (
-            <p className="text-destructive mt-0.5 text-xs">
-              {getFieldError("ability")!.message}
-            </p>
-          )}
+          {renderFieldError("ability")}
         </div>
 
         {/* Item */}
@@ -376,11 +383,7 @@ export function PokemonEditor({
               <ChevronDown className="text-muted-foreground size-3.5" />
             </button>
           )}
-          {(getFieldError("item") ?? getFieldError("heldItem")) && (
-            <p className="text-destructive mt-0.5 text-xs">
-              {(getFieldError("item") ?? getFieldError("heldItem"))!.message}
-            </p>
-          )}
+          {renderFieldError("item", "heldItem")}
         </div>
 
         {/* Nature + Tera Type side-by-side */}
@@ -413,11 +416,7 @@ export function PokemonEditor({
               <ChevronDown className="text-muted-foreground size-3.5" />
             </button>
           )}
-          {getFieldError("nature") && (
-            <p className="text-destructive mt-0.5 text-xs">
-              {getFieldError("nature")!.message}
-            </p>
-          )}
+          {renderFieldError("nature")}
         </div>
 
         <div className="py-2">
@@ -472,11 +471,7 @@ export function PokemonEditor({
             )}
             aria-label="Pokemon nickname"
           />
-          {getFieldError("nickname") && (
-            <p className="text-destructive mt-0.5 text-xs">
-              {getFieldError("nickname")!.message}
-            </p>
-          )}
+          {renderFieldError("nickname")}
         </div>
 
         {/* Gender selector — only when species has gender differences */}
@@ -506,11 +501,7 @@ export function PokemonEditor({
                 </button>
               ))}
             </div>
-            {getFieldError("gender") && (
-              <p className="text-destructive mt-0.5 text-xs">
-                {getFieldError("gender")!.message}
-              </p>
-            )}
+            {renderFieldError("gender")}
           </div>
         )}
 
@@ -545,11 +536,7 @@ export function PokemonEditor({
           <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
             Moves
           </p>
-          {getFieldError("moves") && (
-            <p className="text-destructive text-xs">
-              {getFieldError("moves")!.message}
-            </p>
-          )}
+          {renderFieldError("moves")}
         </div>
         <div className="grid grid-cols-2 gap-2">
           {MOVE_SLOTS.map((slot) => {
@@ -627,11 +614,7 @@ export function PokemonEditor({
           }
           onPreset={handleEvPreset}
         />
-        {(getFieldError("evs") ?? getFieldError("evTotal")) && (
-          <p className="text-destructive mt-1 text-xs">
-            {(getFieldError("evs") ?? getFieldError("evTotal"))!.message}
-          </p>
-        )}
+        {renderFieldError("evs", "evTotal")}
       </div>
 
       {/* ===================================================================

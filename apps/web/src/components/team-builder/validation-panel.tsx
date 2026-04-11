@@ -7,6 +7,32 @@ import { cn } from "@/lib/utils";
 import { type ValidationError } from "./validation-hooks";
 
 // =============================================================================
+// Field label mapping
+// =============================================================================
+
+const FIELD_LABELS: Record<string, string> = {
+  species: "Species",
+  ability: "Ability",
+  nature: "Nature",
+  item: "Item",
+  heldItem: "Item",
+  nickname: "Nickname",
+  gender: "Gender",
+  move1: "Move 1",
+  move2: "Move 2",
+  move3: "Move 3",
+  move4: "Move 4",
+  moves: "Moves",
+  evs: "EVs",
+  evTotal: "EV Total",
+  teamSize: "Team Size",
+};
+
+function getFieldLabel(field: string): string {
+  return FIELD_LABELS[field] ?? field.replace(/([A-Z])/g, " $1").trim();
+}
+
+// =============================================================================
 // Types
 // =============================================================================
 
@@ -90,8 +116,8 @@ export function ValidationPanel({
               </span>
 
               {/* Field label */}
-              <span className="text-muted-foreground w-20 shrink-0 truncate capitalize">
-                {error.field}
+              <span className="text-muted-foreground w-20 shrink-0 truncate">
+                {getFieldLabel(error.field)}
               </span>
 
               {/* Error message */}
