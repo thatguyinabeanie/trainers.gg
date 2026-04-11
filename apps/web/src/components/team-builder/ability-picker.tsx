@@ -2,15 +2,11 @@
 
 import { useState } from "react";
 
-import { Dex } from "@pkmn/dex";
-
-import { getValidAbilities } from "@trainers/pokemon";
+import { getValidAbilities, getAbilityShortDesc } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-const gen9 = Dex.forGen(9);
 
 // =============================================================================
 // Types
@@ -65,9 +61,7 @@ export function AbilityPicker({
       <ScrollArea className="h-48">
         <div className="flex flex-col gap-0.5 pr-2">
           {filtered.map((ability) => {
-            const abilityData = gen9.abilities.get(ability);
-            const description =
-              abilityData?.shortDesc ?? abilityData?.desc ?? null;
+            const description = getAbilityShortDesc(ability);
             const isSelected = ability === value;
 
             return (

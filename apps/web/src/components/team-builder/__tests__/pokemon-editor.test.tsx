@@ -45,17 +45,12 @@ jest.mock("@trainers/pokemon", () => ({
   })),
   getAllItems: jest.fn(() => ["Leftovers"]),
   getItemShortDesc: jest.fn(() => "Restores HP."),
+  getAbilityShortDesc: jest.fn(() => "A test ability."),
 }));
 
 jest.mock("@pkmn/dex", () => ({
   Dex: {
     forGen: jest.fn(() => ({
-      abilities: {
-        get: jest.fn((_name: string) => ({
-          exists: true,
-          shortDesc: "A test ability.",
-        })),
-      },
       moves: {
         get: jest.fn((name: string) => ({
           exists: true,

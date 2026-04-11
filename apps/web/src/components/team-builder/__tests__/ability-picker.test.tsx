@@ -9,25 +9,13 @@ import React from "react";
 
 jest.mock("@trainers/pokemon", () => ({
   getValidAbilities: jest.fn(() => ["Intimidate", "Flash Fire", "Moxie"]),
-}));
-
-jest.mock("@pkmn/dex", () => ({
-  Dex: {
-    forGen: jest.fn(() => ({
-      abilities: {
-        get: jest.fn((name: string) => ({
-          exists: true,
-          name,
-          shortDesc:
-            name === "Intimidate"
-              ? "Lowers foes' Attack on entry."
-              : name === "Flash Fire"
-                ? "Powers up Fire moves if hit by one."
-                : "Raises Attack when a Pokemon is KO'd.",
-        })),
-      },
-    })),
-  },
+  getAbilityShortDesc: jest.fn((name: string) =>
+    name === "Intimidate"
+      ? "Lowers foes' Attack on entry."
+      : name === "Flash Fire"
+        ? "Powers up Fire moves if hit by one."
+        : "Raises Attack when a Pokemon is KO'd."
+  ),
 }));
 
 import { AbilityPicker } from "../ability-picker";

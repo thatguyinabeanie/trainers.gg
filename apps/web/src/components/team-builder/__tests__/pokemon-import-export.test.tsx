@@ -1,5 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -30,6 +30,11 @@ jest.mock("@trainers/pokemon", () => ({
 const mockUpdatePokemonAction = jest.fn();
 jest.mock("@/actions/teams", () => ({
   updatePokemonAction: (...args: unknown[]) => mockUpdatePokemonAction(...args),
+}));
+
+const mockContainsProfanity = jest.fn(() => false);
+jest.mock("@trainers/validators", () => ({
+  containsProfanity: (...args: unknown[]) => mockContainsProfanity(...args),
 }));
 
 jest.mock("sonner", () => ({
@@ -116,6 +121,7 @@ describe("PokemonImportExport", () => {
     jest.clearAllMocks();
     mockClipboardWriteText.mockResolvedValue(undefined);
     mockUpdatePokemonAction.mockResolvedValue({ success: true });
+    mockContainsProfanity.mockReturnValue(false);
   });
 
   // ---------------------------------------------------------------------------
@@ -597,6 +603,189 @@ describe("PokemonImportExport", () => {
           expect.objectContaining({ gender: null })
         );
       });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Profanity filter
+  // ---------------------------------------------------------------------------
+
+  describe("profanity filter", () => {
+    /** Open the popover, type text, click Import. */
+    async function openAndTypeImport(
+      user: ReturnType<typeof userEvent.setup>,
+      text: string
+    ) {
+      await user.click(
+        screen.getByRole("button", { name: "Import set from Showdown text" })
+      );
+      await waitFor(() => {
+        expect(screen.getByLabelText("Showdown set text")).toBeInTheDocument();
+      });
+      await user.type(screen.getByLabelText("Showdown set text"), text);
+      await user.click(screen.getByRole("button", { name: "Import" }));
+    }
+
+    it("shows an error toast and blocks import when nickname contains profanity", async () => {
+      // parsePokemon returns a parsed set with a profane nickname
+      (parsePokemon as jest.Mock).mockReturnValueOnce({
+        species: "Pikachu",
+        item: null,
+        ability: "Static",
+        nature: "Timid",
+        nickname: "BadWord",
+        moves: ["Thunderbolt", null, null, null],
+        evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+        ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+        level: 50,
+        gender: null,
+        shiny: false,
+        teraType: null,
+      });
+      mockContainsProfanity.mockReturnValue(true);
+
+      const user = userEvent.setup();
+      render(<PokemonImportExport {...defaultProps} />);
+      await openAndTypeImport(user, "BadWord (Pikachu)");
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+          "Nickname contains inappropriate content. Remove profanity and try again."
+        );
+      });
+      expect(mockUpdatePokemonAction).not.toHaveBeenCalled();
+    });
+
+    it("does not invoke the profanity check when nickname is null", async () => {
+      // parsePokemon returns null nickname — containsProfanity must not be called
+      (parsePokemon as jest.Mock).mockReturnValueOnce({
+        species: "Pikachu",
+        item: null,
+        ability: "Static",
+        nature: "Timid",
+        nickname: null,
+        moves: ["Thunderbolt", null, null, null],
+        evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+        ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+        level: 50,
+        gender: null,
+        shiny: false,
+        teraType: null,
+      });
+
+      const user = userEvent.setup();
+      render(<PokemonImportExport {...defaultProps} />);
+      await openAndTypeImport(user, "Pikachu");
+
+      await waitFor(() => {
+        expect(mockUpdatePokemonAction).toHaveBeenCalled();
+      });
+      expect(mockContainsProfanity).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Export clipboard error paths
+  // ---------------------------------------------------------------------------
+
+  describe("export clipboard error paths", () => {
+    it("shows an error toast when clipboard writeText rejects", async () => {
+      // Spy on the actual clipboard object (which may be userEvent's shim)
+      // and make it reject to test the error path
+      const spy = jest
+        .spyOn(navigator.clipboard, "writeText")
+        .mockRejectedValueOnce(new Error("NotAllowedError"));
+
+      render(<PokemonImportExport {...defaultProps} />);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Copy set to clipboard" })
+      );
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+          "Failed to copy — please copy manually."
+        );
+      });
+
+      spy.mockRestore();
+    });
+
+    it("shows an error toast when the clipboard API is unavailable", async () => {
+      // Temporarily remove the clipboard to simulate no Clipboard API.
+      // Use fireEvent so userEvent's shim does not intercept the click.
+      Object.defineProperty(global.navigator, "clipboard", {
+        value: undefined,
+        writable: true,
+        configurable: true,
+      });
+
+      render(<PokemonImportExport {...defaultProps} />);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Copy set to clipboard" })
+      );
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+          "Failed to copy — please copy manually."
+        );
+      });
+
+      // Restore for subsequent tests
+      Object.defineProperty(global.navigator, "clipboard", {
+        value: { writeText: mockClipboardWriteText },
+        writable: true,
+        configurable: true,
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Import network / unexpected throw
+  // ---------------------------------------------------------------------------
+
+  describe("import — unexpected throw (network error)", () => {
+    it("shows a connection error toast when updatePokemonAction throws", async () => {
+      mockUpdatePokemonAction.mockRejectedValueOnce(new Error("Network error"));
+
+      const user = userEvent.setup();
+      render(<PokemonImportExport {...defaultProps} />);
+      await user.click(
+        screen.getByRole("button", { name: "Import set from Showdown text" })
+      );
+      await waitFor(() => {
+        expect(screen.getByLabelText("Showdown set text")).toBeInTheDocument();
+      });
+      await user.type(
+        screen.getByLabelText("Showdown set text"),
+        "Pikachu @ Light Ball"
+      );
+      await user.click(screen.getByRole("button", { name: "Import" }));
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+          "Failed to import set. Check your connection and try again."
+        );
+      });
+    });
+
+    it("does not call onUpdate when updatePokemonAction throws", async () => {
+      mockUpdatePokemonAction.mockRejectedValueOnce(new Error("Network error"));
+      const onUpdate = jest.fn();
+
+      const user = userEvent.setup();
+      render(<PokemonImportExport {...defaultProps} onUpdate={onUpdate} />);
+      await user.click(
+        screen.getByRole("button", { name: "Import set from Showdown text" })
+      );
+      await waitFor(() => {
+        expect(screen.getByLabelText("Showdown set text")).toBeInTheDocument();
+      });
+      await user.type(
+        screen.getByLabelText("Showdown set text"),
+        "Pikachu @ Light Ball"
+      );
+      await user.click(screen.getByRole("button", { name: "Import" }));
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalled();
+      });
+      expect(onUpdate).not.toHaveBeenCalled();
     });
   });
 });

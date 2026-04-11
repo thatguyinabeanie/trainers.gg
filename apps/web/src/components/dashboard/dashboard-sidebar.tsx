@@ -631,7 +631,7 @@ function PlayerNav({
       label: "Builder",
       href: builderHref,
       icon: Hammer,
-      isActive: pathname.includes("/teams"),
+      isActive: pathname.includes("/alts/") && pathname.includes("/teams"),
     },
   ] as const;
 
