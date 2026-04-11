@@ -110,7 +110,9 @@ check_supabase_status() {
     else
       echo -e "${YELLOW}Supabase is running but not on expected port ${SUPABASE_API_PORT}${NC}"
       echo -e "${YELLOW}Stopping mismatched Supabase instance...${NC}"
-      $SUPABASE_CMD stop 2>/dev/null || true
+      if ! $SUPABASE_CMD stop; then
+        echo -e "${YELLOW}Warning: Failed to stop Supabase (may affect subsequent start)${NC}"
+      fi
       return 1
     fi
   else
@@ -147,10 +149,16 @@ start_supabase() {
 apply_migrations() {
   echo -e "${YELLOW}Applying migrations...${NC}"
   cd "$SUPABASE_DIR"
-  
-  # Use db push which applies all migrations
-  $SUPABASE_CMD db push --local 2>/dev/null || $SUPABASE_CMD migration up --local 2>/dev/null || true
-  
+
+  # Try db push first (recommended for local), fall back to migration up
+  if ! $SUPABASE_CMD db push --local; then
+    echo -e "${YELLOW}db push failed, trying migration up...${NC}"
+    if ! $SUPABASE_CMD migration up --local; then
+      echo -e "${RED}Failed to apply migrations with both db push and migration up${NC}"
+      exit 1
+    fi
+  fi
+
   echo -e "${GREEN}Migrations applied${NC}"
 }
 
@@ -159,10 +167,13 @@ apply_migrations() {
 # =============================================================================
 run_seed() {
   cd "$SUPABASE_DIR"
-  
+
   if [ -f "supabase/seed.sql" ]; then
     echo -e "${YELLOW}Running seed file...${NC}"
-    $SUPABASE_CMD db execute --file supabase/seed.sql --local 2>/dev/null || true
+    if ! $SUPABASE_CMD db execute --file supabase/seed.sql --local; then
+      echo -e "${RED}Failed to apply seed data${NC}"
+      exit 1
+    fi
     echo -e "${GREEN}Seed data applied${NC}"
   fi
 }
@@ -173,14 +184,21 @@ run_seed() {
 generate_types() {
   echo -e "${YELLOW}Generating TypeScript types...${NC}"
   cd "$SUPABASE_DIR"
-  
-  # Redirect stderr to suppress debug output
-  $SUPABASE_CMD gen types typescript --local 2>/dev/null > src/types.ts
-  
-  if [ $? -eq 0 ]; then
+
+  # Capture stderr to temp file to show errors on failure
+  local stderr_file
+  stderr_file=$(mktemp)
+  if $SUPABASE_CMD gen types typescript --local > src/types.ts 2>"$stderr_file"; then
     echo -e "${GREEN}Types generated successfully${NC}"
+    rm -f "$stderr_file"
   else
+    local stderr_content
+    stderr_content=$(cat "$stderr_file")
     echo -e "${YELLOW}Warning: Failed to generate types (non-fatal)${NC}"
+    if [ -n "$stderr_content" ]; then
+      echo -e "${YELLOW}Error details: $stderr_content${NC}"
+    fi
+    rm -f "$stderr_file"
   fi
 }
 
