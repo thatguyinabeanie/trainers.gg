@@ -82,7 +82,7 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
 
   // Validation
   const [validationPanelOpen, setValidationPanelOpen] = useState(false);
-  const { errors, pokemonErrors, isValid, validate } = useTeamValidation(
+  const { errors, pokemonErrors, validate } = useTeamValidation(
     team.team_pokemon,
     format
   );
@@ -288,11 +288,20 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
         >
           <CheckCircle2 className="size-4" />
           Validate
-          {errors.length > 0 && (
+          {errors.filter((e) => e.severity === "error").length > 0 && (
             <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5">
-              {errors.length}
+              {errors.filter((e) => e.severity === "error").length}
             </Badge>
           )}
+          {errors.filter((e) => e.severity === "warning").length > 0 &&
+            errors.filter((e) => e.severity === "error").length === 0 && (
+              <Badge
+                variant="outline"
+                className="ml-1 h-5 min-w-5 border-amber-500 px-1.5 text-amber-600"
+              >
+                {errors.filter((e) => e.severity === "warning").length}
+              </Badge>
+            )}
         </Button>
       </div>
 
@@ -300,7 +309,6 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
       {validationPanelOpen && (
         <ValidationPanel
           errors={errors}
-          isValid={isValid}
           onSelectPokemon={(pokemonId) => {
             setSelectedPokemonId(pokemonId);
             setValidationPanelOpen(false);

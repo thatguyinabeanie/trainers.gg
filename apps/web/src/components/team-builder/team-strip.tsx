@@ -48,6 +48,7 @@ interface PokemonChipProps {
   onDrop: (e: DragEvent<HTMLElement>) => void;
   isPending: boolean;
   hasErrors?: boolean;
+  hasWarningsOnly?: boolean;
 }
 
 function PokemonChip({
@@ -61,6 +62,7 @@ function PokemonChip({
   onDrop,
   isPending,
   hasErrors,
+  hasWarningsOnly,
 }: PokemonChipProps) {
   const pokemon = entry.pokemon;
 
@@ -148,9 +150,14 @@ function PokemonChip({
         )}
       </button>
 
-      {/* Validation error indicator — red dot top-right */}
+      {/* Validation indicator — red for errors, amber for warnings */}
       {hasErrors && (
-        <span className="bg-destructive absolute -top-1 -right-1 size-2.5 rounded-full" />
+        <span
+          className={cn(
+            "absolute -top-1 -right-1 size-2.5 rounded-full",
+            hasWarningsOnly ? "bg-amber-500" : "bg-destructive"
+          )}
+        />
       )}
 
       {/* Remove button — top-right, visible on hover */}
@@ -328,6 +335,12 @@ export function TeamStrip({
           onDrop={(e) => handleDrop(e, entry.pokemon_id)}
           isPending={isPending || dragSourceId !== null}
           hasErrors={(pokemonErrors?.get(entry.pokemon_id)?.length ?? 0) > 0}
+          hasWarningsOnly={
+            (pokemonErrors?.get(entry.pokemon_id)?.length ?? 0) > 0 &&
+            pokemonErrors
+              ?.get(entry.pokemon_id)
+              ?.every((e) => e.severity === "warning") === true
+          }
         />
       ))}
 

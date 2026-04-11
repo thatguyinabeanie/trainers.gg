@@ -223,7 +223,7 @@ function runValidation(
   );
 
   if (filled.length < 6) {
-    // Attach warning to the first Pokemon (or emit without a pokemon if empty)
+    // Attach warning to the first Pokemon when one exists; empty teams do not emit this warning
     const first = filled[0];
     if (first) {
       errors.push({

@@ -77,6 +77,7 @@ export function WorkspaceActions({
         onOpenChange={setImportOpen}
         onImportComplete={() => {
           void queryClient.invalidateQueries({ queryKey: teamKeys.all(altId) });
+          router.refresh();
         }}
       />
 

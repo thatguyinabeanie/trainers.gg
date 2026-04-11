@@ -12,7 +12,6 @@ import { type ValidationError } from "./validation-hooks";
 
 interface ValidationPanelProps {
   errors: ValidationError[];
-  isValid: boolean;
   onSelectPokemon: (pokemonId: number) => void;
   onClose: () => void;
 }
@@ -28,7 +27,6 @@ interface ValidationPanelProps {
  */
 export function ValidationPanel({
   errors,
-  isValid,
   onSelectPokemon,
   onClose,
 }: ValidationPanelProps) {
@@ -37,7 +35,7 @@ export function ValidationPanel({
       {/* Header row */}
       <div className="flex items-center justify-between px-3 py-2">
         <span className="text-sm font-medium">
-          {isValid ? (
+          {errors.length === 0 ? (
             <span className="flex items-center gap-1.5 text-emerald-600">
               <CheckCircle2 className="size-4" />
               No issues found
@@ -57,7 +55,7 @@ export function ValidationPanel({
       </div>
 
       {/* Issue list */}
-      {!isValid && errors.length > 0 && (
+      {errors.length > 0 && (
         <div className="max-h-48 overflow-y-auto">
           {errors.map((error, idx) => (
             <button
