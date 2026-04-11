@@ -9,6 +9,8 @@ import { Plus, X } from "lucide-react";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type TeamWithPokemon } from "@trainers/supabase";
 
+import { type ValidationError } from "./validation-hooks";
+
 import {
   reorderTeamPokemonAction,
   removePokemonFromTeamAction,
@@ -27,6 +29,8 @@ interface TeamStripProps {
   onSelect: (pokemonId: number) => void;
   onAddNew: () => void;
   choosingSlot?: number;
+  /** Validation errors grouped by pokemon DB id — populated by Task 5 display logic. */
+  pokemonErrors?: Map<number, ValidationError[]>;
 }
 
 // =============================================================================

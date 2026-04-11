@@ -11,14 +11,17 @@ import {
 } from "@trainers/pokemon";
 import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Import } from "lucide-react";
+import { CheckCircle2, Import } from "lucide-react";
 import { addPokemonToTeamAction, updatePokemonAction } from "@/actions/teams";
 import { ContextPanel } from "@/components/team-builder/context-panel";
 import { PokemonEditor } from "@/components/team-builder/pokemon-editor";
 import { TeamStrip } from "@/components/team-builder/team-strip";
 
 import { SpeciesPicker } from "./species-picker";
+import { useTeamValidation } from "./validation-hooks";
+import { ValidationPanel } from "./validation-panel";
 
 // =============================================================================
 // Types
@@ -76,6 +79,13 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     slot: number | null;
     mode: "add" | "change";
   }>({ open: false, slot: null, mode: "add" });
+
+  // Validation
+  const [validationPanelOpen, setValidationPanelOpen] = useState(false);
+  const { errors, pokemonErrors, isValid, validate } = useTeamValidation(
+    team.team_pokemon,
+    format
+  );
 
   // Build species search index for the format (derived value — React Compiler handles memoization)
   const speciesIndex = buildSpeciesSearchIndex(format?.id ?? "gen9vgc2026regi");
@@ -262,8 +272,42 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
           choosingSlot={
             pickerState.open ? (pickerState.slot ?? undefined) : undefined
           }
+          pokemonErrors={pokemonErrors}
         />
       </div>
+
+      {/* Validation toolbar — below the team strip */}
+      <div className="flex items-center justify-end border-b px-3 py-1.5">
+        <Button
+          variant={validationPanelOpen ? "secondary" : "outline"}
+          size="sm"
+          onClick={() => {
+            if (!validationPanelOpen) validate();
+            setValidationPanelOpen(!validationPanelOpen);
+          }}
+        >
+          <CheckCircle2 className="size-4" />
+          Validate
+          {errors.length > 0 && (
+            <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5">
+              {errors.length}
+            </Badge>
+          )}
+        </Button>
+      </div>
+
+      {/* Validation panel (collapsible) */}
+      {validationPanelOpen && (
+        <ValidationPanel
+          errors={errors}
+          isValid={isValid}
+          onSelectPokemon={(pokemonId) => {
+            setSelectedPokemonId(pokemonId);
+            setValidationPanelOpen(false);
+          }}
+          onClose={() => setValidationPanelOpen(false)}
+        />
+      )}
 
       {/* Conditional: species picker or split panel */}
       {pickerState.open ? (
@@ -314,6 +358,11 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
                 }
                 onSpeciesClick={handleSpeciesClick}
                 onImport={() => router.refresh()}
+                fieldErrors={
+                  selectedPokemonId
+                    ? (pokemonErrors.get(selectedPokemonId) ?? [])
+                    : []
+                }
               />
             ) : (
               <div className="flex flex-1 items-center justify-center">

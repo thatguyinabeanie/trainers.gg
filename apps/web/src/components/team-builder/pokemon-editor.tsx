@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ChevronDown, Star } from "lucide-react";
 
 import { type StatKey } from "./stat-types";
+import { type ValidationError } from "./validation-hooks";
 import { AbilityPicker } from "./ability-picker";
 import { PokemonImportExport } from "./pokemon-import-export";
 import { EvEditor } from "./ev-editor";
@@ -62,6 +63,8 @@ interface PokemonEditorProps {
   onSpeciesClick: () => void;
   /** Called after a successful import to refresh the workspace. */
   onImport: () => void;
+  /** Validation errors for this Pokemon's fields — populated by Task 5 display logic. */
+  fieldErrors?: ValidationError[];
 }
 
 // =============================================================================
