@@ -306,12 +306,25 @@ export function ImportDialog({
       );
 
       const failures = addResults.filter((r) => !r.success);
+      const successes = addResults.filter((r) => r.success);
+
+      if (successes.length === 0) {
+        // Total failure — keep dialog open, show error with reason
+        const firstError =
+          addResults.find((r) => !r.success)?.error ?? "Unknown error";
+        toast.error(`Import failed: ${firstError}`);
+        return;
+      }
+
       if (failures.length > 0) {
+        // Partial failure
         const failedSpecies = toImport
           .filter((_, i) => !addResults[i]?.success)
           .map((p) => p.species)
           .join(", ");
-        toast.warning(`Imported with issues: ${failedSpecies} failed to add.`);
+        toast.warning(
+          `Imported ${successes.length}, but ${failedSpecies} failed to add.`
+        );
       } else {
         toast.success(`Imported ${toImport.length} Pokémon.`);
       }

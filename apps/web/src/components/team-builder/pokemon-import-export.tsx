@@ -89,12 +89,21 @@ export function PokemonImportExport({
   // ---------------------------------------------------------------------------
 
   function handleExport() {
-    const flat = dbPokemonToFlat(pokemon);
-    const text = exportPokemonToShowdown(flat);
+    let text: string;
+    try {
+      const flat = dbPokemonToFlat(pokemon);
+      text = exportPokemonToShowdown(flat);
+    } catch {
+      toast.error("Failed to build export text.");
+      return;
+    }
     navigator.clipboard
       .writeText(text)
       .then(() => toast.success("Copied set to clipboard"))
-      .catch(() => toast.error("Failed to copy — please copy manually."));
+      .catch((err) => {
+        console.warn("Clipboard write failed:", err);
+        toast.error("Failed to copy — please copy manually.");
+      });
   }
 
   // ---------------------------------------------------------------------------
@@ -144,15 +153,19 @@ export function PokemonImportExport({
     };
 
     setIsImporting(true);
-    const result = await updatePokemonAction(teamId, pokemon.id, updateData);
-    setIsImporting(false);
-
-    if (result.success) {
-      setImportText("");
-      onUpdate();
-      toast.success("Set imported successfully");
-    } else {
-      toast.error(result.error ?? "Failed to import set");
+    try {
+      const result = await updatePokemonAction(teamId, pokemon.id, updateData);
+      if (result.success) {
+        setImportText("");
+        onUpdate();
+        toast.success("Set imported successfully");
+      } else {
+        toast.error(result.error ?? "Failed to import set");
+      }
+    } catch {
+      toast.error("Failed to import set. Check your connection and try again.");
+    } finally {
+      setIsImporting(false);
     }
   }
 

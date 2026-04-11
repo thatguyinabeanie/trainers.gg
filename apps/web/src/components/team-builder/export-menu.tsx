@@ -85,22 +85,40 @@ export function ExportMenu({ team }: ExportMenuProps) {
   // ---------------------------------------------------------------------------
 
   function handleCopyShowdown() {
-    const text = buildShowdownText(team);
+    let text: string;
+    try {
+      text = buildShowdownText(team);
+    } catch {
+      toast.error("Failed to build export text.");
+      return;
+    }
     navigator.clipboard
       .writeText(text)
       .then(() => toast.success("Copied to clipboard!"))
-      .catch(() => toast.error("Failed to copy — please copy manually."));
+      .catch((err) => {
+        console.warn("Clipboard write failed:", err);
+        toast.error("Failed to copy — please copy manually.");
+      });
   }
 
   function handleOpenPokepaste() {
-    const text = buildShowdownText(team);
+    let text: string;
+    try {
+      text = buildShowdownText(team);
+    } catch {
+      toast.error("Failed to build export text.");
+      return;
+    }
     navigator.clipboard
       .writeText(text)
       .then(() => {
         toast.success("Copied — paste it on Pokepaste.");
         window.open("https://pokepast.es/create/", "_blank", "noopener");
       })
-      .catch(() => toast.error("Failed to copy — please copy manually."));
+      .catch((err) => {
+        console.warn("Clipboard write failed:", err);
+        toast.error("Failed to copy — please copy manually.");
+      });
   }
 
   // ---------------------------------------------------------------------------
