@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Import } from "lucide-react";
 import { addPokemonToTeamAction, updatePokemonAction } from "@/actions/teams";
+import { ImportDialog } from "@/components/team-builder/import-dialog";
 import { ContextPanel } from "@/components/team-builder/context-panel";
 import { PokemonEditor } from "@/components/team-builder/pokemon-editor";
 import { TeamStrip } from "@/components/team-builder/team-strip";
@@ -71,6 +72,9 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     field: string;
     value: unknown;
   } | null>(null);
+
+  // Import dialog state (for empty-state shortcut)
+  const [importOpen, setImportOpen] = useState(false);
 
   // Species picker state
   const [pickerState, setPickerState] = useState<{
@@ -348,11 +352,19 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => toast.info("Import paste coming soon!")}
+            onClick={() => setImportOpen(true)}
           >
             <Import className="size-4" />
             Import Paste
           </Button>
+          <ImportDialog
+            team={team}
+            open={importOpen}
+            onOpenChange={setImportOpen}
+            onImportComplete={() => {
+              router.refresh();
+            }}
+          />
         </div>
       ) : (
         <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
