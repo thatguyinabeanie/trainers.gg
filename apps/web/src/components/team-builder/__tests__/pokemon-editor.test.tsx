@@ -70,6 +70,11 @@ jest.mock("@pkmn/dex", () => ({
   },
 }));
 
+// Mock pokemon-import-export to avoid pulling in next/cache via @/actions/teams
+jest.mock("../pokemon-import-export", () => ({
+  PokemonImportExport: () => null,
+}));
+
 jest.mock("lucide-react", () => {
   const mock = (name: string) => {
     const Icon = (props: Record<string, unknown>) => (
@@ -126,11 +131,13 @@ function makePokemon(
 }
 
 const defaultProps = {
+  teamId: 1,
   pokemon: makePokemon(),
   format: { id: "gen9vgc2026regi", label: "SV: Reg I", generation: 9 },
   teamPokemon: [{ pokemon: makePokemon() }],
   onUpdate: jest.fn(),
   onSpeciesClick: jest.fn(),
+  onImport: jest.fn(),
 };
 
 // =============================================================================
