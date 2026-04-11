@@ -58,20 +58,22 @@ export function MovePicker({
 
   const allMoves = getLearnableMoves(species);
 
-  // Pre-compute move data once, then filter and cap
-  const movesWithData = allMoves.map((name) => ({
+  // Filter by search text first (cheap string match), then resolve move data
+  // only for the narrowed set to avoid unnecessary lookups on every keystroke
+  const searchLower = search.toLowerCase();
+  const searchFiltered = allMoves.filter((name) =>
+    name.toLowerCase().includes(searchLower)
+  );
+
+  const movesWithData = searchFiltered.map((name) => ({
     name,
     data: getMoveData(name),
   }));
 
-  const filtered = movesWithData.filter(({ name, data }) => {
-    if (!name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (category !== "All") {
-      if (!data) return false;
-      if (data.category !== category) return false;
-    }
-    return true;
-  });
+  const filtered =
+    category === "All"
+      ? movesWithData
+      : movesWithData.filter(({ data }) => data?.category === category);
 
   // Cap to 100 for performance — search narrows the list further
   const visible = filtered.slice(0, 100);

@@ -6,11 +6,11 @@ import { Dex } from "@pkmn/dex";
 
 import { getValidAbilities } from "@trainers/pokemon";
 
-const gen9 = Dex.forGen(9);
-
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
+const gen9 = Dex.forGen(9);
 
 // =============================================================================
 // Types
