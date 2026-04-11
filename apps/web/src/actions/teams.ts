@@ -22,6 +22,7 @@ import {
 } from "@trainers/supabase";
 import {
   type ActionResult,
+  type TeamUpdateData,
   createTeamInputSchema,
   updateTeamInputSchema,
   teamUpdateDataSchema,
@@ -85,7 +86,7 @@ export async function createTeamAction(
  */
 export async function updateTeamAction(
   teamId: number,
-  data: Partial<TablesUpdate<"teams">>
+  data: TeamUpdateData
 ): Promise<ActionResult<void>> {
   const parsed = updateTeamInputSchema.safeParse({ teamId });
   if (!parsed.success) {
@@ -104,11 +105,7 @@ export async function updateTeamAction(
   return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();
-    await updateTeamMutation(
-      supabase,
-      parsed.data.teamId,
-      parsedData.data as Partial<TablesUpdate<"teams">>
-    );
+    await updateTeamMutation(supabase, parsed.data.teamId, parsedData.data);
     invalidateTeamCaches(parsed.data.teamId);
   }, "Failed to update team");
 }

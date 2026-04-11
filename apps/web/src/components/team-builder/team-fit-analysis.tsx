@@ -95,9 +95,25 @@ export function TeamFitAnalysis({
   ]);
 
   // -- New resistances/immunities added --
-  const currentMatchups = getDefensiveMatchups(
-    currentTeam.flatMap((m) => getSpeciesTypes(m.species))
+  // Compute per-member matchups, then aggregate team-level coverage
+  const memberMatchups = currentTeam.map((m) =>
+    getDefensiveMatchups(getSpeciesTypes(m.species))
   );
+  const currentMatchups = {
+    immunities: [...new Set(memberMatchups.flatMap((m) => m.immunities))],
+    resistances: Object.fromEntries(
+      [
+        ...new Set(memberMatchups.flatMap((m) => Object.keys(m.resistances))),
+      ].map((type) => [
+        type,
+        Math.min(
+          ...memberMatchups
+            .filter((m) => type in m.resistances)
+            .map((m) => m.resistances[type as keyof typeof m.resistances]!)
+        ),
+      ])
+    ) as Record<string, number>,
+  };
 
   for (const immunity of candidateMatchups.immunities) {
     if (!currentMatchups.immunities.includes(immunity)) {

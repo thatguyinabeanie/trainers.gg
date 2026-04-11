@@ -50,7 +50,7 @@ runs:
         for i in $(seq 1 50); do
           CURL_ERR=$(mktemp)
           RESPONSE=$(curl -sS --max-time 10 -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v6/deployments?sha=$PR_SHA&limit=5&projectId=$VERCEL_PROJECT_ID&slug=$VERCEL_TEAM_ID" \
+            "https://api.vercel.com/v6/deployments?sha=$PR_SHA&limit=5&projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_TEAM_ID" \
             2>"$CURL_ERR") || RESPONSE=""
 
           if [ -z "$RESPONSE" ]; then
