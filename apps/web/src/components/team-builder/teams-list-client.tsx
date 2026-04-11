@@ -71,7 +71,11 @@ export function TeamsListClient({
 }: TeamsListClientProps) {
   const supabase = useSupabase();
 
-  const { data: teams = [] } = useQuery({
+  const {
+    data: teams = [],
+    isError,
+    error,
+  } = useQuery({
     queryKey: teamKeys.all(altId),
     queryFn: () => getTeamsForAltList(supabase, altId),
     initialData: initialTeams,
@@ -137,6 +141,14 @@ export function TeamsListClient({
           </Button>
         </div>
       </div>
+
+      {/* Error banner — shown when a background refetch fails */}
+      {isError && (
+        <div className="bg-destructive/10 text-destructive rounded-lg px-4 py-2 text-sm">
+          Failed to refresh teams.{" "}
+          {error instanceof Error ? error.message : "Please try again later."}
+        </div>
+      )}
 
       {/* Teams content */}
       {filteredTeams.length === 0 ? (

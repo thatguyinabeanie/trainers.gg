@@ -497,6 +497,7 @@ function AutoSuggestions({
 
   const offensiveResults: CalcResult[] = [];
   const defensiveResults: CalcResult[] = [];
+  let failedCalcCount = 0;
 
   for (const threat of GEN9_VGC_META_THREATS) {
     const threatSmogon = toSmogonThreat(threat);
@@ -509,7 +510,11 @@ function AutoSuggestions({
         moveName,
         offensiveField
       );
-      if (result && result.maxPercent > 0) offensiveResults.push(result);
+      if (result === null) {
+        failedCalcCount++;
+      } else if (result.maxPercent > 0) {
+        offensiveResults.push(result);
+      }
     }
 
     // Defensive: threat moves vs us
@@ -520,7 +525,11 @@ function AutoSuggestions({
         moveName,
         defensiveField
       );
-      if (result && result.maxPercent > 0) defensiveResults.push(result);
+      if (result === null) {
+        failedCalcCount++;
+      } else if (result.maxPercent > 0) {
+        defensiveResults.push(result);
+      }
     }
   }
 
@@ -574,6 +583,14 @@ function AutoSuggestions({
           </div>
         )}
       </section>
+
+      {/* Failed calculations indicator */}
+      {failedCalcCount > 0 && (
+        <p className="text-muted-foreground text-xs">
+          {failedCalcCount} calculation
+          {failedCalcCount === 1 ? "" : "s"} could not be computed
+        </p>
+      )}
     </div>
   );
 }

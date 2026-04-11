@@ -65,6 +65,11 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
   >("idle");
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const savedIdleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdateRef = useRef<{
+    pokemonId: number;
+    field: string;
+    value: unknown;
+  } | null>(null);
 
   // Species picker state
   const [pickerState, setPickerState] = useState<{
@@ -76,11 +81,19 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
   // Build species search index for the format (derived value — React Compiler handles memoization)
   const speciesIndex = buildSpeciesSearchIndex(format?.id ?? "gen9vgc2026regi");
 
-  // Clear both debounce timers on unmount to prevent setState on an unmounted component
+  // Clear both debounce timers on unmount to prevent setState on an unmounted component.
+  // If there is a pending save, fire it immediately — the server action will still execute
+  // even though we don't await it (the component is unmounting).
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       if (savedIdleTimerRef.current) clearTimeout(savedIdleTimerRef.current);
+      if (pendingUpdateRef.current) {
+        const { pokemonId, field, value } = pendingUpdateRef.current;
+        updatePokemonAction(team.id, pokemonId, {
+          [field]: value,
+        } as Parameters<typeof updatePokemonAction>[2]);
+      }
     };
   }, []);
 
@@ -101,10 +114,13 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     if (savedIdleTimerRef.current) clearTimeout(savedIdleTimerRef.current);
     setSaveStatus("saving");
+    // Track the latest pending update so it can be flushed on unmount
+    pendingUpdateRef.current = { pokemonId, field, value };
     saveTimerRef.current = setTimeout(async () => {
       const result = await updatePokemonAction(team.id, pokemonId, {
         [field]: value,
       } as Parameters<typeof updatePokemonAction>[2]);
+      pendingUpdateRef.current = null;
       if (result.success) {
         setSaveStatus("saved");
         savedIdleTimerRef.current = setTimeout(
