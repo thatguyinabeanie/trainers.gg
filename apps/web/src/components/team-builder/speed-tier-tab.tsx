@@ -32,7 +32,12 @@ interface TeamMemberSpeed {
 
 function getPokemonActualSpeed(pokemon: Tables<"pokemon">): number {
   const baseStats = getBaseStats(pokemon.species);
-  if (!baseStats) return 0;
+  if (!baseStats) {
+    console.warn(
+      `[speed-tier] No base stats found for species: ${pokemon.species}`
+    );
+    return 0;
+  }
   const natureMultiplier = getNatureMultiplier(pokemon.nature, "speed");
   return calculateStat(
     baseStats.speed,

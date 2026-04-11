@@ -27,7 +27,7 @@ jest.mock("@/lib/utils", () => ({
 
 // @/lib/cache-invalidation — updateTag cannot run outside Server Action context
 jest.mock("@/lib/cache-invalidation", () => ({
-  invalidateTeamCaches: jest.fn(),
+  invalidateTeamDetailCache: jest.fn(),
 }));
 
 // @trainers/utils — getErrorMessage used inside withAction

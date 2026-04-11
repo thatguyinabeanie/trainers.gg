@@ -48,7 +48,8 @@ type TerrainOption = "none" | "Electric" | "Grassy" | "Psychic" | "Misty";
 
 const gen9 = Generations.get(9);
 
-function toSmogonPokemon(dbPokemon: Tables<"pokemon">): Pokemon {
+function toSmogonPokemon(dbPokemon: Tables<"pokemon">): Pokemon | null {
+  if (!dbPokemon.species) return null;
   return new Pokemon(gen9, dbPokemon.species, {
     level: dbPokemon.level ?? 50,
     nature: dbPokemon.nature ?? "Hardy",
@@ -125,11 +126,12 @@ function buildSmogonField(
 }
 
 function runCalc(
-  attacker: Pokemon,
-  defender: Pokemon,
+  attacker: Pokemon | null,
+  defender: Pokemon | null,
   moveName: string,
   field: Field
 ): CalcResult | null {
+  if (!attacker || !defender) return null;
   try {
     const move = new Move(gen9, moveName);
     const result = calculate(gen9, attacker, defender, move, field);
@@ -147,7 +149,10 @@ function runCalc(
       desc: result.desc(),
     };
   } catch (err) {
-    console.warn("Damage calculation failed:", err);
+    console.warn(
+      `Damage calc failed: ${attacker.species} using ${moveName} vs ${defender.species}`,
+      err
+    );
     return null;
   }
 }
@@ -386,6 +391,13 @@ function ManualCalcForm({
         false
       );
       const result = runCalc(attacker, defender, state.moveName, field);
+      if (result === null) {
+        setState((s) => ({ ...s, result: null }));
+        setCalcError(
+          "This move does not deal calculable damage to the target."
+        );
+        return;
+      }
       setState((s) => ({ ...s, result }));
     } catch (err) {
       console.warn("Damage calculation failed:", err);
