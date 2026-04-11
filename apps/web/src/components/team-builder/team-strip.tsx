@@ -47,6 +47,7 @@ interface PokemonChipProps {
   onDragOver: (e: DragEvent<HTMLElement>) => void;
   onDrop: (e: DragEvent<HTMLElement>) => void;
   isPending: boolean;
+  hasErrors?: boolean;
 }
 
 function PokemonChip({
@@ -59,6 +60,7 @@ function PokemonChip({
   onDragOver,
   onDrop,
   isPending,
+  hasErrors,
 }: PokemonChipProps) {
   const pokemon = entry.pokemon;
 
@@ -146,6 +148,11 @@ function PokemonChip({
         )}
       </button>
 
+      {/* Validation error indicator — red dot top-right */}
+      {hasErrors && (
+        <span className="bg-destructive absolute -top-1 -right-1 size-2.5 rounded-full" />
+      )}
+
       {/* Remove button — top-right, visible on hover */}
       <button
         type="button"
@@ -212,6 +219,7 @@ export function TeamStrip({
   onSelect,
   onAddNew,
   choosingSlot,
+  pokemonErrors,
 }: TeamStripProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -319,6 +327,7 @@ export function TeamStrip({
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, entry.pokemon_id)}
           isPending={isPending || dragSourceId !== null}
+          hasErrors={(pokemonErrors?.get(entry.pokemon_id)?.length ?? 0) > 0}
         />
       ))}
 
