@@ -1,3 +1,5 @@
+import { type TeamUpdateData } from "@trainers/validators";
+
 import type { TypedClient } from "../client";
 import type { Json, TablesInsert, TablesUpdate } from "../types";
 
@@ -30,13 +32,15 @@ export async function createTeam(
 }
 
 /**
- * Update team metadata such as name, notes, format, or is_public.
+ * Update team metadata.
  * Only the fields provided in `data` will be updated.
+ * Accepts a `TeamUpdateData` payload — a subset of allowed columns:
+ * `name`, `format`, `description`, `notes`, `tags`, `is_public`.
  */
 export async function updateTeam(
   supabase: TypedClient,
   teamId: number,
-  data: Partial<TablesUpdate<"teams">>
+  data: TeamUpdateData
 ): Promise<void> {
   const { data: updatedTeams, error } = await supabase
     .from("teams")

@@ -2,17 +2,13 @@
 
 import { useState } from "react";
 
-import { Dex } from "@pkmn/dex";
-
-import { getLearnableMoves } from "@trainers/pokemon";
+import { getLearnableMoves, getMoveData } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { TYPE_BG_COLORS } from "./type-colors";
-
-const gen9 = Dex.forGen(9);
 
 const CATEGORY_LABELS: Record<string, string> = {
   Physical: "P",
@@ -66,7 +62,7 @@ export function MovePicker({
   const filtered = allMoves.filter((name) => {
     if (!name.toLowerCase().includes(search.toLowerCase())) return false;
     if (category !== "All") {
-      const move = gen9.moves.get(name);
+      const move = getMoveData(name);
       if (!move) return false;
       if (move.category !== category) return false;
     }
@@ -122,7 +118,7 @@ export function MovePicker({
       <ScrollArea className="h-72">
         <div className="flex flex-col gap-0.5 pr-2">
           {visible.map((moveName) => {
-            const move = gen9.moves.get(moveName);
+            const move = getMoveData(moveName);
             const isSelected = moveName === value;
             const typeColor = move?.type
               ? (TYPE_BG_COLORS[move.type as keyof typeof TYPE_BG_COLORS] ??

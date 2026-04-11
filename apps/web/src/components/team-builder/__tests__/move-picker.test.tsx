@@ -7,85 +7,70 @@ import React from "react";
 // Module-level mocks
 // =============================================================================
 
-jest.mock("@trainers/pokemon", () => ({
-  getLearnableMoves: jest.fn(() => [
-    "Fake Out",
-    "Flare Blitz",
-    "Knock Off",
-    "U-turn",
-    "Thunderbolt",
-  ]),
-}));
-
-jest.mock("@pkmn/dex", () => ({
-  Dex: {
-    forGen: jest.fn(() => ({
-      moves: {
-        get: jest.fn((name: string) => {
-          const moves: Record<
-            string,
-            {
-              exists: boolean;
-              name: string;
-              type: string;
-              category: string;
-              basePower: number;
-              accuracy: number | boolean;
-              shortDesc: string;
-            }
-          > = {
-            "Fake Out": {
-              exists: true,
-              name: "Fake Out",
-              type: "Normal",
-              category: "Physical",
-              basePower: 40,
-              accuracy: 100,
-              shortDesc: "Hits first, causes flinching.",
-            },
-            "Flare Blitz": {
-              exists: true,
-              name: "Flare Blitz",
-              type: "Fire",
-              category: "Physical",
-              basePower: 120,
-              accuracy: 100,
-              shortDesc: "Has recoil.",
-            },
-            "Knock Off": {
-              exists: true,
-              name: "Knock Off",
-              type: "Dark",
-              category: "Physical",
-              basePower: 65,
-              accuracy: 100,
-              shortDesc: "Removes the target's item.",
-            },
-            "U-turn": {
-              exists: true,
-              name: "U-turn",
-              type: "Bug",
-              category: "Physical",
-              basePower: 70,
-              accuracy: 100,
-              shortDesc: "User switches out after attacking.",
-            },
-            Thunderbolt: {
-              exists: true,
-              name: "Thunderbolt",
-              type: "Electric",
-              category: "Special",
-              basePower: 90,
-              accuracy: 100,
-              shortDesc: "May paralyze the target.",
-            },
-          };
-          return moves[name] ?? null;
-        }),
-      },
-    })),
-  },
-}));
+jest.mock("@trainers/pokemon", () => {
+  const moveData: Record<
+    string,
+    {
+      name: string;
+      type: string;
+      category: string;
+      basePower: number;
+      accuracy: number | boolean;
+      shortDesc: string;
+    }
+  > = {
+    "Fake Out": {
+      name: "Fake Out",
+      type: "Normal",
+      category: "Physical",
+      basePower: 40,
+      accuracy: 100,
+      shortDesc: "Hits first, causes flinching.",
+    },
+    "Flare Blitz": {
+      name: "Flare Blitz",
+      type: "Fire",
+      category: "Physical",
+      basePower: 120,
+      accuracy: 100,
+      shortDesc: "Has recoil.",
+    },
+    "Knock Off": {
+      name: "Knock Off",
+      type: "Dark",
+      category: "Physical",
+      basePower: 65,
+      accuracy: 100,
+      shortDesc: "Removes the target's item.",
+    },
+    "U-turn": {
+      name: "U-turn",
+      type: "Bug",
+      category: "Physical",
+      basePower: 70,
+      accuracy: 100,
+      shortDesc: "User switches out after attacking.",
+    },
+    Thunderbolt: {
+      name: "Thunderbolt",
+      type: "Electric",
+      category: "Special",
+      basePower: 90,
+      accuracy: 100,
+      shortDesc: "May paralyze the target.",
+    },
+  };
+  return {
+    getLearnableMoves: jest.fn(() => [
+      "Fake Out",
+      "Flare Blitz",
+      "Knock Off",
+      "U-turn",
+      "Thunderbolt",
+    ]),
+    getMoveData: jest.fn((name: string) => moveData[name] ?? null),
+  };
+});
 
 import { MovePicker } from "../move-picker";
 

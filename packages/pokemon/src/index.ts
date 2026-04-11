@@ -153,7 +153,12 @@ export {
 // Move data utilities
 export {
   type MoveCategory,
+  type MoveData,
   getMoveType,
   getMoveCategory,
   getMoveBP,
+  getMoveData,
 } from "./move-data";
+
+// Item data utilities
+export { getAllItems, getItemShortDesc } from "./items";

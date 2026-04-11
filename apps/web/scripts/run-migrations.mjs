@@ -49,7 +49,7 @@ const SEED_FILES = [
 function exec(command, options = {}) {
   // Mask sensitive values in logged command
   let logCommand = command;
-  const sensitiveVars = ["SUPABASE_DB_PASSWORD"];
+  const sensitiveVars = ["SUPABASE_DB_PASSWORD", "POSTGRES_PASSWORD"];
   for (const varName of sensitiveVars) {
     if (options.env?.[varName]) {
       logCommand = logCommand.replace(options.env[varName], "[REDACTED]");
@@ -241,13 +241,14 @@ function getDatabaseUrl(projectRef) {
   }
 
   // Build direct connection URL — use db.<ref>.supabase.co (region-independent)
-  const password = process.env.POSTGRES_PASSWORD;
-  if (!password) {
+  // Password is NOT embedded in the URL — callers must pass it via the `password`
+  // option to the postgres client to avoid the secret appearing in logs or error messages.
+  if (!process.env.POSTGRES_PASSWORD) {
     return null;
   }
 
   console.log(`   Building direct connection URL`);
-  return `postgresql://postgres:${password}@db.${projectRef}.supabase.co:5432/postgres`;
+  return `postgresql://postgres@db.${projectRef}.supabase.co:5432/postgres`;
 }
 
 /**
@@ -279,7 +280,10 @@ async function runSeedSql(projectRef) {
 
   console.log(`   Connecting to database...`);
 
+  // Pass password via options rather than embedding it in the URL so it
+  // never appears in logs, error messages, or future console.log calls.
   const sql = postgres(connectionUrl, {
+    password: process.env.POSTGRES_PASSWORD,
     // Increase timeout for seed operations
     connect_timeout: 30,
     idle_timeout: 30,

@@ -60,6 +60,16 @@ jest.mock("@trainers/pokemon", () => ({
   NATURE_EFFECTS: {
     Adamant: { boost: "attack", reduce: "specialAttack" },
   },
+  getMoveData: jest.fn((name: string) => ({
+    name,
+    type: "Normal",
+    category: "Physical",
+    basePower: 80,
+    accuracy: 100,
+    shortDesc: "A test move.",
+  })),
+  getAllItems: jest.fn(() => ["Leftovers"]),
+  getItemShortDesc: jest.fn(() => "Restores HP."),
 }));
 
 jest.mock("@trainers/pokemon/sprites", () => ({

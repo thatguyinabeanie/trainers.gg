@@ -42,6 +42,12 @@ runs:
         fi
 
         rm -f "$CURL_ERR"
+        if ! echo "$RESPONSE" | jq -e . > /dev/null 2>&1; then
+          echo "::warning::Supabase branch DB returned non-JSON response"
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          echo "curl_failed=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
         SAFE=$(echo "$RESPONSE" | jq -r '.safe // false')
         REASON=$(echo "$RESPONSE" | jq -r '.reason // empty')
 
