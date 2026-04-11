@@ -158,7 +158,7 @@ export function WorkspaceActions({
 
       const failures = addResults.filter((r) => !r.success);
       if (failures.length > 0) {
-        const failedSpecies = parsedTeam
+        const failedSpecies = toImport
           .filter((_, i) => !addResults[i]?.success)
           .map((p) => p.species)
           .join(", ");
@@ -169,9 +169,7 @@ export function WorkspaceActions({
 
       setPaste("");
       setImportOpen(false);
-      void queryClient.invalidateQueries({
-        queryKey: teamKeys.detail(team.id),
-      });
+      router.refresh();
     });
   }
 

@@ -6,13 +6,13 @@ import { Dex } from "@pkmn/dex";
 
 import { getLearnableMoves } from "@trainers/pokemon";
 
-const gen9 = Dex.forGen(9);
-
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { TYPE_BG_COLORS } from "./type-colors";
+
+const gen9 = Dex.forGen(9);
 
 const CATEGORY_LABELS: Record<string, string> = {
   Physical: "P",

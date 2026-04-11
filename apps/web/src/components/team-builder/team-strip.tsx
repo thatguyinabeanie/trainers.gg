@@ -2,9 +2,9 @@
 
 import { type DragEvent, useState, useTransition } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type TeamWithPokemon } from "@trainers/supabase";
@@ -14,7 +14,6 @@ import {
   removePokemonFromTeamAction,
 } from "@/actions/teams";
 import { cn } from "@/lib/utils";
-import { teamKeys } from "@/components/team-builder/teams-list-client";
 
 // =============================================================================
 // Types
@@ -210,7 +209,7 @@ export function TeamStrip({
   onAddNew,
   choosingSlot,
 }: TeamStripProps) {
-  const queryClient = useQueryClient();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [dragSourceId, setDragSourceId] = useState<number | null>(null);
 
@@ -270,7 +269,7 @@ export function TeamStrip({
         toast.error(result.error ?? "Failed to reorder Pokémon.");
         return;
       }
-      queryClient.invalidateQueries({ queryKey: teamKeys.detail(teamId) });
+      router.refresh();
     });
   }
 
@@ -291,7 +290,7 @@ export function TeamStrip({
         toast.error(result.error ?? "Failed to remove Pokémon.");
         return;
       }
-      queryClient.invalidateQueries({ queryKey: teamKeys.detail(teamId) });
+      router.refresh();
     });
   }
 

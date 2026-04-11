@@ -305,5 +305,6 @@ export async function reorderTeamPokemonAction(
       parsed.data.teamId,
       parsed.data.positions
     );
+    invalidateTeamCaches(parsed.data.teamId);
   }, "Failed to reorder team pokemon");
 }

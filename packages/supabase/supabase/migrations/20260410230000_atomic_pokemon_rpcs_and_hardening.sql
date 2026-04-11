@@ -337,6 +337,7 @@ CREATE POLICY "no_user_deletes_pokemon_detail_stats" ON pokemon_detail_stats
 -- same logic. This migration establishes the canonical named constraint
 -- `pokemon_ev_total_max` and removes the old one if present.
 
+ALTER TABLE pokemon DROP CONSTRAINT IF EXISTS ev_total_check;
 ALTER TABLE pokemon DROP CONSTRAINT IF EXISTS pokemon_ev_total_max;
 ALTER TABLE pokemon ADD CONSTRAINT pokemon_ev_total_max CHECK (
   COALESCE(ev_hp, 0) + COALESCE(ev_attack, 0) + COALESCE(ev_defense, 0) +

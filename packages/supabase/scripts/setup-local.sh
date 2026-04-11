@@ -127,14 +127,11 @@ start_supabase() {
   echo -e "${YELLOW}Starting Supabase (this may take a minute on first run)...${NC}"
   cd "$SUPABASE_DIR"
   
-  # Try starting Supabase — falls back to pulling if images are missing
   if $SUPABASE_CMD start; then
     echo -e "${GREEN}Supabase started successfully${NC}"
   else
-    echo -e "${YELLOW}Cached images not available, pulling latest...${NC}"
-    $SUPABASE_CMD start
-    
-    if [ $? -eq 0 ]; then
+    echo -e "${YELLOW}First start attempt failed, retrying...${NC}"
+    if $SUPABASE_CMD start; then
       echo -e "${GREEN}Supabase started successfully${NC}"
     else
       echo -e "${RED}Failed to start Supabase${NC}"
@@ -185,10 +182,13 @@ generate_types() {
   echo -e "${YELLOW}Generating TypeScript types...${NC}"
   cd "$SUPABASE_DIR"
 
-  # Capture stderr to temp file to show errors on failure
-  local stderr_file
+  # Write to temp file first — only replace src/types.ts on success so a
+  # failed generation doesn't leave an empty/partial types file.
+  local tmp_types stderr_file
+  tmp_types=$(mktemp)
   stderr_file=$(mktemp)
-  if $SUPABASE_CMD gen types typescript --local > src/types.ts 2>"$stderr_file"; then
+  if $SUPABASE_CMD gen types typescript --local > "$tmp_types" 2>"$stderr_file"; then
+    mv "$tmp_types" src/types.ts
     echo -e "${GREEN}Types generated successfully${NC}"
     rm -f "$stderr_file"
   else
@@ -198,7 +198,7 @@ generate_types() {
     if [ -n "$stderr_content" ]; then
       echo -e "${YELLOW}Error details: $stderr_content${NC}"
     fi
-    rm -f "$stderr_file"
+    rm -f "$tmp_types" "$stderr_file"
   fi
 }
 
