@@ -305,6 +305,7 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
             {selectedEntry?.pokemon ? (
               <PokemonEditor
                 key={selectedEntry.pokemon.id}
+                teamId={team.id}
                 pokemon={selectedEntry.pokemon}
                 format={format}
                 teamPokemon={team.team_pokemon}
@@ -312,6 +313,7 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
                   handlePokemonUpdate(selectedEntry.pokemon!.id, field, value)
                 }
                 onSpeciesClick={handleSpeciesClick}
+                onImport={() => router.refresh()}
               />
             ) : (
               <div className="flex flex-1 items-center justify-center">

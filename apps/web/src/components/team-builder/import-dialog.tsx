@@ -245,7 +245,7 @@ export function ImportDialog({
       } catch (err) {
         // CORS or network failure — guide the user to paste manually
         const message =
-          err instanceof Error && err.message.includes("fetch")
+          err instanceof TypeError && err.message === "Failed to fetch"
             ? "Could not fetch the Pokepaste (CORS blocked). Open the URL and paste the text manually instead."
             : `Failed to fetch Pokepaste: ${err instanceof Error ? err.message : "network error"}. Try pasting the text manually.`;
         toast.error(message);
@@ -309,8 +309,8 @@ export function ImportDialog({
         toast.success(`Imported ${toImport.length} Pokémon.`);
       }
 
-      handleOpenChange(false);
       onImportComplete();
+      handleOpenChange(false);
     });
   }
 

@@ -16,6 +16,7 @@ import { ChevronDown, Star } from "lucide-react";
 
 import { type StatKey } from "./stat-types";
 import { AbilityPicker } from "./ability-picker";
+import { PokemonImportExport } from "./pokemon-import-export";
 import { EvEditor } from "./ev-editor";
 import { ItemPicker } from "./item-picker";
 import { IvEditor } from "./iv-editor";
@@ -52,12 +53,15 @@ type ActivePicker =
   | null;
 
 interface PokemonEditorProps {
+  teamId: number;
   pokemon: Tables<"pokemon">;
   format: GameFormat | undefined;
   /** All team_pokemon entries — used to collect held items for duplicate detection. */
   teamPokemon: Array<{ pokemon: Tables<"pokemon"> | null }>;
   onUpdate: (field: string, value: unknown) => void;
   onSpeciesClick: () => void;
+  /** Called after a successful import to refresh the workspace. */
+  onImport: () => void;
 }
 
 // =============================================================================
@@ -114,11 +118,13 @@ function getMoveBySlot(
  *   7. Notes collapsible textarea
  */
 export function PokemonEditor({
+  teamId,
   pokemon,
   format,
   teamPokemon,
   onUpdate,
   onSpeciesClick,
+  onImport,
 }: PokemonEditorProps) {
   const [activePicker, setActivePicker] = useState<ActivePicker>(null);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -243,7 +249,7 @@ export function PokemonEditor({
           ))}
         </div>
 
-        {/* Level input */}
+        {/* Level input + import/export */}
         <div className="ml-auto flex items-center gap-1.5">
           <span className="text-muted-foreground text-xs">Lv</span>
           <Input
@@ -259,6 +265,11 @@ export function PokemonEditor({
             }}
             className="h-7 w-14 px-1 text-center text-sm"
             aria-label="Pokemon level"
+          />
+          <PokemonImportExport
+            teamId={teamId}
+            pokemon={pokemon}
+            onUpdate={onImport}
           />
         </div>
       </div>
