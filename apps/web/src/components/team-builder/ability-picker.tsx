@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+const gen9 = Dex.forGen(9);
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -38,7 +40,6 @@ export function AbilityPicker({
   const [search, setSearch] = useState("");
 
   const abilities = getValidAbilities(species);
-  const gen9 = Dex.forGen(9);
 
   const filtered = abilities.filter((a) =>
     a.toLowerCase().includes(search.toLowerCase())
