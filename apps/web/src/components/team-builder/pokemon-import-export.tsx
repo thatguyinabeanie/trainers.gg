@@ -10,6 +10,7 @@ import {
   parsePokemon,
   type PokemonSetFlat,
 } from "@trainers/pokemon";
+import { containsProfanity } from "@trainers/validators";
 import { type Tables } from "@trainers/supabase";
 
 import { updatePokemonAction } from "@/actions/teams";
@@ -88,22 +89,19 @@ export function PokemonImportExport({
   // Export handler
   // ---------------------------------------------------------------------------
 
-  function handleExport() {
-    let text: string;
+  async function handleExport() {
     try {
       const flat = dbPokemonToFlat(pokemon);
-      text = exportPokemonToShowdown(flat);
-    } catch {
-      toast.error("Failed to build export text.");
-      return;
+      const text = exportPokemonToShowdown(flat);
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable");
+      }
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied set to clipboard");
+    } catch (err) {
+      console.warn("Export/clipboard failed:", err);
+      toast.error("Failed to copy — please copy manually.");
     }
-    navigator.clipboard
-      .writeText(text)
-      .then(() => toast.success("Copied set to clipboard"))
-      .catch((err) => {
-        console.warn("Clipboard write failed:", err);
-        toast.error("Failed to copy — please copy manually.");
-      });
   }
 
   // ---------------------------------------------------------------------------
@@ -114,6 +112,14 @@ export function PokemonImportExport({
     const parsed = parsePokemon(importText.trim());
     if (!parsed) {
       toast.error("Could not parse that set. Check the format and try again.");
+      return;
+    }
+
+    // Profanity check on nickname — consistent with full-team import
+    if (parsed.nickname && containsProfanity(parsed.nickname)) {
+      toast.error(
+        "Nickname contains inappropriate content. Remove profanity and try again."
+      );
       return;
     }
 

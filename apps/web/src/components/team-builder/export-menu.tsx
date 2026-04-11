@@ -84,41 +84,33 @@ export function ExportMenu({ team }: ExportMenuProps) {
   // Export handlers
   // ---------------------------------------------------------------------------
 
-  function handleCopyShowdown() {
-    let text: string;
+  async function handleCopyShowdown() {
     try {
-      text = buildShowdownText(team);
-    } catch {
-      toast.error("Failed to build export text.");
-      return;
+      const text = buildShowdownText(team);
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable");
+      }
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard!");
+    } catch (err) {
+      console.warn("Export/clipboard failed:", err);
+      toast.error("Failed to copy — please copy manually.");
     }
-    navigator.clipboard
-      .writeText(text)
-      .then(() => toast.success("Copied to clipboard!"))
-      .catch((err) => {
-        console.warn("Clipboard write failed:", err);
-        toast.error("Failed to copy — please copy manually.");
-      });
   }
 
-  function handleOpenPokepaste() {
-    let text: string;
+  async function handleOpenPokepaste() {
     try {
-      text = buildShowdownText(team);
-    } catch {
-      toast.error("Failed to build export text.");
-      return;
+      const text = buildShowdownText(team);
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable");
+      }
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied — paste it on Pokepaste.");
+      window.open("https://pokepast.es/create/", "_blank", "noopener");
+    } catch (err) {
+      console.warn("Export/clipboard failed:", err);
+      toast.error("Failed to copy — please copy manually.");
     }
-    navigator.clipboard
-      .writeText(text)
-      .then(() => {
-        toast.success("Copied — paste it on Pokepaste.");
-        window.open("https://pokepast.es/create/", "_blank", "noopener");
-      })
-      .catch((err) => {
-        console.warn("Clipboard write failed:", err);
-        toast.error("Failed to copy — please copy manually.");
-      });
   }
 
   // ---------------------------------------------------------------------------
