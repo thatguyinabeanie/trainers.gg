@@ -1,0 +1,127 @@
+"use client";
+
+import { toast } from "sonner";
+import { Copy, ExternalLink } from "lucide-react";
+
+import { exportTeamToShowdown } from "@trainers/pokemon";
+import { type TeamWithPokemon } from "@trainers/supabase";
+
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+interface ExportMenuProps {
+  team: TeamWithPokemon;
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/** Build the Showdown-format text from a `TeamWithPokemon`. */
+function buildShowdownText(team: TeamWithPokemon): string {
+  const sortedPokemon = [...team.team_pokemon]
+    .sort((a, b) => a.team_position - b.team_position)
+    .flatMap((tp) => {
+      if (!tp.pokemon) return [];
+      const p = tp.pokemon;
+      return [
+        {
+          species: p.species ?? "",
+          nickname: p.nickname ?? undefined,
+          ability: p.ability ?? "",
+          nature: p.nature ?? "",
+          move1: p.move1 ?? "",
+          move2: p.move2 ?? undefined,
+          move3: p.move3 ?? undefined,
+          move4: p.move4 ?? undefined,
+          heldItem: p.held_item ?? undefined,
+          level: p.level ?? 50,
+          isShiny: p.is_shiny ?? false,
+          teraType: p.tera_type ?? undefined,
+          gender: (p.gender as "Male" | "Female" | undefined) ?? undefined,
+          formatLegal: true,
+          evHp: p.ev_hp ?? 0,
+          evAttack: p.ev_attack ?? 0,
+          evDefense: p.ev_defense ?? 0,
+          evSpecialAttack: p.ev_special_attack ?? 0,
+          evSpecialDefense: p.ev_special_defense ?? 0,
+          evSpeed: p.ev_speed ?? 0,
+          ivHp: p.iv_hp ?? 31,
+          ivAttack: p.iv_attack ?? 31,
+          ivDefense: p.iv_defense ?? 31,
+          ivSpecialAttack: p.iv_special_attack ?? 31,
+          ivSpecialDefense: p.iv_special_defense ?? 31,
+          ivSpeed: p.iv_speed ?? 31,
+        },
+      ];
+    });
+
+  return exportTeamToShowdown(sortedPokemon);
+}
+
+// =============================================================================
+// ExportMenu
+// =============================================================================
+
+/**
+ * Dropdown menu for exporting a team to various formats.
+ *
+ * Menu items:
+ * - Copy as Showdown text — copies Showdown export to clipboard
+ * - Open in Pokepaste — copies text and opens pokepast.es/create/ in a new tab
+ */
+export function ExportMenu({ team }: ExportMenuProps) {
+  // ---------------------------------------------------------------------------
+  // Export handlers
+  // ---------------------------------------------------------------------------
+
+  function handleCopyShowdown() {
+    const text = buildShowdownText(team);
+    navigator.clipboard
+      .writeText(text)
+      .then(() => toast.success("Copied to clipboard!"))
+      .catch(() => toast.error("Failed to copy — please copy manually."));
+  }
+
+  function handleOpenPokepaste() {
+    const text = buildShowdownText(team);
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        toast.success("Copied — paste it on Pokepaste.");
+        window.open("https://pokepast.es/create/", "_blank", "noopener");
+      })
+      .catch(() => toast.error("Failed to copy — please copy manually."));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+        Export
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={handleCopyShowdown}>
+          <Copy className="size-4" />
+          Copy as Showdown text
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleOpenPokepaste}>
+          <ExternalLink className="size-4" />
+          Open in Pokepaste
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
