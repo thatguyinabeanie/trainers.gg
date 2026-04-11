@@ -91,7 +91,12 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
         const { pokemonId, field, value } = pendingUpdateRef.current;
         updatePokemonAction(team.id, pokemonId, {
           [field]: value,
-        } as Parameters<typeof updatePokemonAction>[2]);
+        } as Parameters<typeof updatePokemonAction>[2]).catch((err) => {
+          console.error(
+            "[team-workspace] Failed to flush pending save on unmount:",
+            err
+          );
+        });
       }
     };
   }, []);

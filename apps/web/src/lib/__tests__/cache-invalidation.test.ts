@@ -18,7 +18,7 @@ import {
   invalidateTournamentWithTeamCaches,
   invalidateCommunityRequestCaches,
   invalidateDashboardCaches,
-  invalidateTeamCaches,
+  invalidateTeamDetailCache,
 } from "../cache-invalidation";
 
 const mockUpdateTag = updateTag as jest.MockedFunction<typeof updateTag>;
@@ -196,9 +196,9 @@ describe("cache-invalidation helpers", () => {
 
   // ── Team ─────────────────────────────────────────────────────────────────
 
-  describe("invalidateTeamCaches", () => {
+  describe("invalidateTeamDetailCache", () => {
     it("invalidates the team tag", () => {
-      invalidateTeamCaches(99);
+      invalidateTeamDetailCache(99);
       expect(mockUpdateTag).toHaveBeenCalledWith(CacheTags.team(99));
     });
   });

@@ -150,8 +150,8 @@ export function invalidateCommunityRequestCaches(): void {
 // Team Cache Helpers
 // =============================================================================
 
-/** Invalidate caches for a specific team. Call after team metadata changes. */
-export function invalidateTeamCaches(teamId: number): void {
+/** Invalidate the detail cache for a specific team. Call after team metadata changes. */
+export function invalidateTeamDetailCache(teamId: number): void {
   updateTag(CacheTags.team(teamId));
 }
 

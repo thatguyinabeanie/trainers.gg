@@ -36,7 +36,7 @@ import {
   pokemonUpdateSchema,
 } from "@trainers/validators";
 
-import { invalidateTeamCaches } from "@/lib/cache-invalidation";
+import { invalidateTeamDetailCache } from "@/lib/cache-invalidation";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import { rejectBots, withAction } from "@/actions/utils";
@@ -70,7 +70,7 @@ export async function createTeamAction(
       parsed.data.name,
       parsed.data.format
     );
-    invalidateTeamCaches(result.id);
+    invalidateTeamDetailCache(result.id);
     return { success: true, data: { id: result.id } };
   } catch (error) {
     return {
@@ -106,7 +106,7 @@ export async function updateTeamAction(
     await rejectBots();
     const supabase = await createClient();
     await updateTeamMutation(supabase, parsed.data.teamId, parsedData.data);
-    invalidateTeamCaches(parsed.data.teamId);
+    invalidateTeamDetailCache(parsed.data.teamId);
   }, "Failed to update team");
 }
 
@@ -127,7 +127,7 @@ export async function deleteTeamAction(
     await rejectBots();
     const supabase = await createClient();
     await deleteTeamMutation(supabase, parsed.data.teamId);
-    invalidateTeamCaches(parsed.data.teamId);
+    invalidateTeamDetailCache(parsed.data.teamId);
   }, "Failed to delete team");
 }
 
@@ -161,7 +161,7 @@ export async function forkTeamAction(
       parsed.data.targetAltId,
       parsed.data.newName
     );
-    invalidateTeamCaches(result.id);
+    invalidateTeamDetailCache(result.id);
     return { success: true, data: { id: result.id } };
   } catch (error) {
     return {
@@ -207,7 +207,7 @@ export async function addPokemonToTeamAction(
       parsedPokemon.data as TablesInsert<"pokemon">,
       parsed.data.position
     );
-    invalidateTeamCaches(parsed.data.teamId);
+    invalidateTeamDetailCache(parsed.data.teamId);
     return { success: true, data: { pokemonId: result.pokemonId } };
   } catch (error) {
     return {
@@ -249,7 +249,7 @@ export async function updatePokemonAction(
       parsed.data.pokemonId,
       parsedData as Partial<TablesUpdate<"pokemon">>
     );
-    invalidateTeamCaches(parsedTeam.data.teamId);
+    invalidateTeamDetailCache(parsedTeam.data.teamId);
   }, "Failed to update pokemon");
 }
 
@@ -276,7 +276,7 @@ export async function removePokemonFromTeamAction(
       parsed.data.teamId,
       parsed.data.pokemonId
     );
-    invalidateTeamCaches(parsed.data.teamId);
+    invalidateTeamDetailCache(parsed.data.teamId);
   }, "Failed to remove pokemon from team");
 }
 
@@ -302,6 +302,6 @@ export async function reorderTeamPokemonAction(
       parsed.data.teamId,
       parsed.data.positions
     );
-    invalidateTeamCaches(parsed.data.teamId);
+    invalidateTeamDetailCache(parsed.data.teamId);
   }, "Failed to reorder team pokemon");
 }
