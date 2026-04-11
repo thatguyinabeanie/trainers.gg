@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 
@@ -35,7 +34,6 @@ import { Textarea } from "@/components/ui/textarea";
 
 interface ImportDialogProps {
   team: TeamWithPokemon;
-  altId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImportComplete: () => void;
@@ -175,8 +173,6 @@ export function ImportDialog({
   onOpenChange,
   onImportComplete,
 }: ImportDialogProps) {
-  const router = useRouter();
-
   const [paste, setPaste] = useState("");
   const [url, setUrl] = useState("");
   const [parsed, setParsed] = useState<ParsedPokemon[] | null>(null);
@@ -314,7 +310,6 @@ export function ImportDialog({
       }
 
       handleOpenChange(false);
-      router.refresh();
       onImportComplete();
     });
   }

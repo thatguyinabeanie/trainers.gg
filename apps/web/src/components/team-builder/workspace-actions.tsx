@@ -73,7 +73,6 @@ export function WorkspaceActions({
       </Button>
       <ImportDialog
         team={team}
-        altId={altId}
         open={importOpen}
         onOpenChange={setImportOpen}
         onImportComplete={() => {
