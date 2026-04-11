@@ -155,6 +155,25 @@ export default async function DashboardLayout({
     isMain: a.id === mainAltId,
   }));
 
+  // Decode team_builder_access from JWT claim
+  let hasTeamBuilderAccess = false;
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      const payload = JSON.parse(
+        Buffer.from(session.access_token.split(".")[1]!, "base64url").toString()
+      ) as { team_builder_access?: boolean };
+      hasTeamBuilderAccess = payload.team_builder_access ?? false;
+    }
+  } catch (err) {
+    console.error(
+      "[DashboardLayout] Failed to decode team_builder_access:",
+      err
+    );
+  }
+
   return (
     <SidebarProvider>
       <DashboardSidebar
@@ -165,6 +184,7 @@ export default async function DashboardLayout({
         isOnboarding={isOnboarding}
         isSiteAdmin={isAdmin}
         isSudoActive={sudoActive}
+        hasTeamBuilderAccess={hasTeamBuilderAccess}
         variant="inset"
       />
       <SidebarInset>{children}</SidebarInset>

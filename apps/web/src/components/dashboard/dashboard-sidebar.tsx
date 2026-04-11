@@ -91,6 +91,7 @@ interface DashboardSidebarProps {
   isOnboarding?: boolean;
   isSiteAdmin?: boolean;
   isSudoActive?: boolean;
+  hasTeamBuilderAccess?: boolean;
 }
 
 import {
@@ -123,6 +124,7 @@ export function DashboardSidebar({
   isOnboarding = false,
   isSiteAdmin = false,
   isSudoActive = false,
+  hasTeamBuilderAccess = false,
   ...props
 }: DashboardSidebarProps & ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -155,6 +157,7 @@ export function DashboardSidebar({
             isOnboarding={isOnboarding}
             alts={alts}
             selectedAltUsername={selectedAltUsername}
+            hasTeamBuilderAccess={hasTeamBuilderAccess}
           />
         )}
       </SidebarContent>
@@ -592,6 +595,7 @@ interface PlayerNavProps {
   isOnboarding?: boolean;
   alts: AltInfo[];
   selectedAltUsername: string | null;
+  hasTeamBuilderAccess?: boolean;
 }
 
 function PlayerNav({
@@ -600,6 +604,7 @@ function PlayerNav({
   isOnboarding = false,
   alts,
   selectedAltUsername,
+  hasTeamBuilderAccess = false,
 }: PlayerNavProps) {
   // Resolve the current alt to build a context-aware Team Builder link.
   // Validate the cookie value against the alts list — the cookie can be stale
@@ -627,13 +632,18 @@ function PlayerNav({
       icon: Trophy,
       isActive: pathname.startsWith("/dashboard/tournaments"),
     },
-    {
-      label: "Builder",
-      href: builderHref,
-      icon: Hammer,
-      isActive: pathname.includes("/teams"),
-    },
-  ] as const;
+    // Only show Builder when the user has team builder access
+    ...(hasTeamBuilderAccess
+      ? [
+          {
+            label: "Builder",
+            href: builderHref,
+            icon: Hammer,
+            isActive: pathname.includes("/teams"),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <>
@@ -759,11 +769,16 @@ function PlayerNav({
                   icon: Search,
                 },
                 { label: "Communities", href: "/communities", icon: Globe },
-                {
-                  label: "Team Builder",
-                  href: builderHref,
-                  icon: Hammer,
-                },
+                // Only show Team Builder when the user has access
+                ...(hasTeamBuilderAccess
+                  ? [
+                      {
+                        label: "Team Builder",
+                        href: builderHref,
+                        icon: Hammer,
+                      },
+                    ]
+                  : []),
                 { label: "Analytics", href: "/analytics", icon: BarChart3 },
                 { label: "Articles", href: "/articles", icon: FileText },
                 { label: "Coaching", href: "/coaching", icon: GraduationCap },

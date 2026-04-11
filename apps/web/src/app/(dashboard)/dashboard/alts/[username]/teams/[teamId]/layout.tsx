@@ -41,6 +41,21 @@ export default async function TeamWorkspaceLayout({
 
   const supabase = await createClientReadOnly();
 
+  // Gate on team_builder_access JWT claim
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    const payload = JSON.parse(
+      Buffer.from(session.access_token.split(".")[1]!, "base64url").toString()
+    ) as { team_builder_access?: boolean };
+    if (!payload.team_builder_access) {
+      notFound();
+    }
+  } else {
+    notFound();
+  }
+
   // Fetch alt and team in parallel
   const [alt, team] = await Promise.all([
     getAltByUsername(supabase, username),
