@@ -259,7 +259,7 @@ describe("DashboardSidebar", () => {
           alts={baseAlts}
           communities={[]}
           selectedAltUsername={null}
-          hasTeamBuilderAccess
+          hasTeamBuilderAccess={true}
         />
       );
       expect(screen.getByText("Explore")).toBeInTheDocument();

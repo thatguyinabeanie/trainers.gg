@@ -44,7 +44,7 @@ BEGIN
   -- Check team builder access: enabled globally, user in allowlist, or site admin
   SELECT
     COALESCE(ff.enabled, false)
-    OR COALESCE(ff.metadata->'allowed_users' @> to_jsonb(_user_id::text), false)
+    OR COALESCE(ff.metadata->'allowed_users' @> jsonb_build_array(_user_id::text), false)
     OR COALESCE('site_admin' = ANY(_site_roles), false)
   INTO _team_builder_access
   FROM feature_flags ff

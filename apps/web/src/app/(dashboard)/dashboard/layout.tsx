@@ -7,6 +7,7 @@ import {
   getUser,
 } from "@/lib/supabase/server";
 import { needsOnboarding } from "@/lib/proxy-routes";
+import { decodeJwtClaims } from "@/lib/jwt";
 import {
   listMyCommunities,
   listAllCommunitiesForSudo,
@@ -162,10 +163,10 @@ export default async function DashboardLayout({
       data: { session },
     } = await supabase.auth.getSession();
     if (session?.access_token) {
-      const payload = JSON.parse(
-        Buffer.from(session.access_token.split(".")[1]!, "base64url").toString()
-      ) as { team_builder_access?: boolean };
-      hasTeamBuilderAccess = payload.team_builder_access ?? false;
+      const claims = decodeJwtClaims<{ team_builder_access?: boolean }>(
+        session.access_token
+      );
+      hasTeamBuilderAccess = claims?.team_builder_access ?? false;
     }
   } catch (err) {
     console.error(
