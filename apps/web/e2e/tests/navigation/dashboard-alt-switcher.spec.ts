@@ -13,24 +13,6 @@ test.describe("Dashboard alt switcher", () => {
     await expect(sidebar).toBeVisible();
   });
 
-  test("notifications bell is visible in page header", async ({ page }) => {
-    await page.goto("/dashboard");
-
-    const bellButton = page.getByRole("button", { name: /notification/i });
-    await expect(bellButton).toBeVisible({ timeout: 10000 });
-  });
-
-  test("notifications popover opens on click", async ({ page }) => {
-    await page.goto("/dashboard");
-
-    const bellButton = page.getByRole("button", { name: /notification/i });
-    await expect(bellButton).toBeVisible({ timeout: 10000 });
-    await bellButton.click();
-
-    // Popover should show content — verify the "Mark all read" button exists
-    const popover = page.locator("[data-side]");
-    await expect(
-      popover.getByRole("button", { name: "Mark all read" })
-    ).toBeVisible();
-  });
+  // Notification bell was removed from the player dashboard header
+  // in the unified home + alts redesign (PR #270).
 });

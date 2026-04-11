@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Upload,
@@ -17,6 +18,7 @@ import { parseShowdownText } from "@trainers/validators";
 import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
 
 import { forkTeamAction, addPokemonToTeamAction } from "@/actions/teams";
+import { teamKeys } from "@/components/team-builder/teams-list-client";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -64,6 +66,7 @@ export function WorkspaceActions({
   handle,
 }: WorkspaceActionsProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [importOpen, setImportOpen] = useState(false);
   const [paste, setPaste] = useState("");
   const [isPendingImport, startImportTransition] = useTransition();
@@ -155,9 +158,11 @@ export function WorkspaceActions({
 
       const failures = addResults.filter((r) => !r.success);
       if (failures.length > 0) {
-        toast.warning(
-          `Imported with issues: ${failures.length} Pokémon failed.`
-        );
+        const failedSpecies = toImport
+          .filter((_, i) => !addResults[i]?.success)
+          .map((p) => p.species)
+          .join(", ");
+        toast.warning(`Imported with issues: ${failedSpecies} failed to add.`);
       } else {
         toast.success(`Imported ${toImport.length} Pokémon.`);
       }
@@ -231,6 +236,7 @@ export function WorkspaceActions({
       }
       toast.success("Team forked!");
       router.push(`/dashboard/alts/${handle}/teams/${result.data.id}`);
+      void queryClient.invalidateQueries({ queryKey: teamKeys.all(altId) });
     });
   }
 

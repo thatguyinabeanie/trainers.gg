@@ -195,4 +195,10 @@ export {
   teamPositionSchema,
   reorderTeamPokemonInputSchema,
   type ReorderTeamPokemonInput,
+  pokemonPayloadSchema,
+  type PokemonPayload,
+  pokemonUpdateSchema,
+  type PokemonUpdate,
+  teamUpdateDataSchema,
+  type TeamUpdateData,
 } from "./team-builder";

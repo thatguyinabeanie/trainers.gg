@@ -180,9 +180,9 @@ export function TeamFitAnalysis({
       <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">
         Team Fit
       </p>
-      {items.map((item, i) => (
+      {items.map((item) => (
         <div
-          key={i}
+          key={`${item.signal}:${item.text}`}
           className={cn(
             "flex items-start gap-1.5 text-xs",
             item.signal === "+" && "text-emerald-600 dark:text-emerald-400",

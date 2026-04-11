@@ -62,22 +62,6 @@ function checkBranchSafety(): {
 } {
   const vercelEnv = process.env.VERCEL_ENV;
 
-  // Debug: log all relevant env vars at runtime (mask any value with credentials)
-  const mask = (val: string | undefined) =>
-    !val ? "<not set>" : val.includes("@") ? `[set, ${val.length} chars]` : val;
-  console.log("[e2e/seed] Environment debug:");
-  console.log(`  VERCEL_ENV=${vercelEnv ?? "<not set>"}`);
-  console.log(
-    `  VERCEL_GIT_COMMIT_REF=${process.env.VERCEL_GIT_COMMIT_REF ?? "<not set>"}`
-  );
-  console.log(
-    `  NEXT_PUBLIC_SUPABASE_URL=${mask(process.env.NEXT_PUBLIC_SUPABASE_URL)}`
-  );
-  console.log(`  SUPABASE_URL=${mask(process.env.SUPABASE_URL)}`);
-  console.log(
-    `  SUPABASE_PRODUCTION_PROJECT_REF=${process.env.SUPABASE_PRODUCTION_PROJECT_REF ?? "<not set>"}`
-  );
-
   const isAllowedEnvironment =
     vercelEnv === "development" ||
     vercelEnv === "preview" ||
@@ -136,7 +120,10 @@ function checkBranchSafety(): {
 // Supabase branching is active before attempting the seed POST.
 export async function GET() {
   const result = checkBranchSafety();
-  return NextResponse.json(result, { status: result.safe ? 200 : 404 });
+  return NextResponse.json(
+    { safe: result.safe, ...(!result.safe && { reason: result.reason }) },
+    { status: result.safe ? 200 : 404 }
+  );
 }
 
 export async function POST(request: NextRequest) {

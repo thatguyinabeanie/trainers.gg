@@ -7,6 +7,17 @@ import React from "react";
 // Module-level mocks
 // =============================================================================
 
+const mockInvalidateQueries = jest.fn();
+jest.mock("@tanstack/react-query", () => ({
+  useQueryClient: jest.fn(() => ({
+    invalidateQueries: mockInvalidateQueries,
+  })),
+}));
+
+jest.mock("@/lib/supabase", () => ({
+  useSupabase: jest.fn(() => ({})),
+}));
+
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn(),
@@ -118,6 +129,7 @@ const defaultStripProps = {
 describe("TeamStrip", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockInvalidateQueries.mockClear();
   });
 
   describe("pokemon chips", () => {

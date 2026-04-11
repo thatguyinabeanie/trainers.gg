@@ -1,14 +1,12 @@
 /**
  * Team Builder Server Actions
  *
- * Server actions for team and pokemon mutations with cache revalidation.
+ * Server actions for team and pokemon mutations.
  * Wraps @trainers/supabase mutations for creating, updating, deleting,
  * forking teams, and managing pokemon within teams.
  */
 
 "use server";
-
-import { updateTag } from "next/cache";
 
 import {
   createTeam as createTeamMutation,
@@ -26,31 +24,21 @@ import {
   type ActionResult,
   createTeamInputSchema,
   updateTeamInputSchema,
+  teamUpdateDataSchema,
   deleteTeamInputSchema,
   forkTeamInputSchema,
   addPokemonInputSchema,
   updatePokemonInputSchema,
   removePokemonInputSchema,
   reorderTeamPokemonInputSchema,
+  pokemonPayloadSchema,
+  pokemonUpdateSchema,
 } from "@trainers/validators";
 
+import { invalidateTeamCaches } from "@/lib/cache-invalidation";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import { rejectBots, withAction } from "@/actions/utils";
-
-// =============================================================================
-// Cache Tag Helpers
-// =============================================================================
-
-/** Cache tag for all teams belonging to an alt. */
-function teamsCacheTag(altId: number) {
-  return `teams-alt-${altId}`;
-}
-
-/** Cache tag for a specific team and its pokemon. */
-function teamCacheTag(teamId: number) {
-  return `team-${teamId}`;
-}
 
 // =============================================================================
 // Team CRUD
@@ -81,7 +69,7 @@ export async function createTeamAction(
       parsed.data.name,
       parsed.data.format
     );
-    updateTag(teamsCacheTag(parsed.data.altId));
+    invalidateTeamCaches(result.id);
     return { success: true, data: { id: result.id } };
   } catch (error) {
     return {
@@ -106,11 +94,22 @@ export async function updateTeamAction(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
+  const parsedData = teamUpdateDataSchema.safeParse(data);
+  if (!parsedData.success) {
+    return {
+      success: false,
+      error: parsedData.error.issues[0]?.message ?? "Invalid data",
+    };
+  }
   return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();
-    await updateTeamMutation(supabase, parsed.data.teamId, data);
-    updateTag(teamCacheTag(parsed.data.teamId));
+    await updateTeamMutation(
+      supabase,
+      parsed.data.teamId,
+      parsedData.data as Partial<TablesUpdate<"teams">>
+    );
+    invalidateTeamCaches(parsed.data.teamId);
   }, "Failed to update team");
 }
 
@@ -131,7 +130,7 @@ export async function deleteTeamAction(
     await rejectBots();
     const supabase = await createClient();
     await deleteTeamMutation(supabase, parsed.data.teamId);
-    updateTag(teamCacheTag(parsed.data.teamId));
+    invalidateTeamCaches(parsed.data.teamId);
   }, "Failed to delete team");
 }
 
@@ -165,7 +164,7 @@ export async function forkTeamAction(
       parsed.data.targetAltId,
       parsed.data.newName
     );
-    updateTag(teamsCacheTag(parsed.data.targetAltId));
+    invalidateTeamCaches(result.id);
     return { success: true, data: { id: result.id } };
   } catch (error) {
     return {
@@ -195,16 +194,23 @@ export async function addPokemonToTeamAction(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
+  const parsedPokemon = pokemonPayloadSchema.safeParse(pokemon);
+  if (!parsedPokemon.success) {
+    return {
+      success: false,
+      error: parsedPokemon.error.issues[0]?.message ?? "Invalid pokemon data",
+    };
+  }
   try {
     await rejectBots();
     const supabase = await createClient();
     const result = await addPokemonToTeamMutation(
       supabase,
       parsed.data.teamId,
-      pokemon,
+      parsedPokemon.data as TablesInsert<"pokemon">,
       parsed.data.position
     );
-    updateTag(teamCacheTag(parsed.data.teamId));
+    invalidateTeamCaches(parsed.data.teamId);
     return { success: true, data: { pokemonId: result.pokemonId } };
   } catch (error) {
     return {
@@ -217,13 +223,19 @@ export async function addPokemonToTeamAction(
 /**
  * Update a pokemon's data — moves, EVs, IVs, ability, item, etc.
  * Only the fields provided will be updated.
- * Accepts optional teamId for cache invalidation.
  */
 export async function updatePokemonAction(
+  teamId: number,
   pokemonId: number,
-  data: Partial<TablesUpdate<"pokemon">>,
-  teamId?: number
+  data: Partial<TablesUpdate<"pokemon">>
 ): Promise<ActionResult<void>> {
+  const parsedTeam = updateTeamInputSchema.safeParse({ teamId });
+  if (!parsedTeam.success) {
+    return {
+      success: false,
+      error: parsedTeam.error.issues[0]?.message ?? "Invalid team id",
+    };
+  }
   const parsed = updatePokemonInputSchema.safeParse({ pokemonId });
   if (!parsed.success) {
     return {
@@ -233,9 +245,14 @@ export async function updatePokemonAction(
   }
   return withAction(async () => {
     await rejectBots();
+    const parsedData = pokemonUpdateSchema.parse(data);
     const supabase = await createClient();
-    await updatePokemonMutation(supabase, parsed.data.pokemonId, data);
-    if (teamId) updateTag(teamCacheTag(teamId));
+    await updatePokemonMutation(
+      supabase,
+      parsed.data.pokemonId,
+      parsedData as Partial<TablesUpdate<"pokemon">>
+    );
+    invalidateTeamCaches(parsedTeam.data.teamId);
   }, "Failed to update pokemon");
 }
 
@@ -262,7 +279,7 @@ export async function removePokemonFromTeamAction(
       parsed.data.teamId,
       parsed.data.pokemonId
     );
-    updateTag(teamCacheTag(parsed.data.teamId));
+    invalidateTeamCaches(parsed.data.teamId);
   }, "Failed to remove pokemon from team");
 }
 
@@ -288,6 +305,6 @@ export async function reorderTeamPokemonAction(
       parsed.data.teamId,
       parsed.data.positions
     );
-    updateTag(teamCacheTag(parsed.data.teamId));
+    invalidateTeamCaches(parsed.data.teamId);
   }, "Failed to reorder team pokemon");
 }

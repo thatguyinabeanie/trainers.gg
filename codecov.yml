@@ -82,3 +82,5 @@ ignore:
   - "apps/web/src/app/**/layout.tsx"
   - "apps/web/src/app/**/error.tsx"
   - "apps/web/src/app/**/columns.tsx"
+  # E2E tests (Playwright) — not instrumented by Jest coverage
+  - "apps/web/e2e/**"

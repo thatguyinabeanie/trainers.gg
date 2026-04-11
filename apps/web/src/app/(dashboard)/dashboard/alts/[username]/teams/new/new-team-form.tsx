@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -10,6 +11,7 @@ import { parseShowdownText } from "@trainers/validators";
 
 import { type TablesInsert } from "@trainers/supabase";
 
+import { teamKeys } from "@/components/team-builder/teams-list-client";
 import { createTeamAction, addPokemonToTeamAction } from "@/actions/teams";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +76,7 @@ export function NewTeamForm({
   initialMode,
 }: NewTeamFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [mode, setMode] = useState<"empty" | "import">(initialMode);
   const [name, setName] = useState("");
@@ -113,6 +116,8 @@ export function NewTeamForm({
           toast.warning(
             "Showdown paste could not be parsed. Team created empty."
           );
+          router.push(`/dashboard/alts/${handle}/teams/${teamId}`);
+          return;
         } else {
           // Limit to 6 Pokemon max (DB constraint on team_position)
           const toImport = parsedTeam.slice(0, 6);
@@ -162,11 +167,14 @@ export function NewTeamForm({
             toast.warning(
               `Team created, but ${failures.length} Pokémon failed to import.`
             );
+            router.push(`/dashboard/alts/${handle}/teams/${teamId}`);
+            return;
           }
         }
       }
 
       toast.success("Team created!");
+      void queryClient.invalidateQueries({ queryKey: teamKeys.all(altId) });
       router.push(`/dashboard/alts/${handle}/teams/${teamId}`);
     });
   }

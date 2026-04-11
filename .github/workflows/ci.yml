@@ -345,97 +345,57 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
-  # ── Wait for Vercel preview (shared by E2E + Lighthouse) ────
+  # ── Setup Supabase branch + wait for Vercel preview ─────────
   deploy-preview:
     name: Wait for Preview
     # Skip for Dependabot PRs — they can't access secrets needed for bypass auth,
     # and dependency bumps don't need E2E/Lighthouse validation
     if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     outputs:
-      url: ${{ steps.detect.outputs.url }}
-      branch-db-ready: ${{ steps.branch-check.outputs.ready }}
+      url: ${{ steps.preview.outputs.url }}
+      branch-db-ready: ${{ steps.db-check.outputs.ready }}
     steps:
-      - name: Wait for Vercel preview deployment
-        id: detect
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-          PR_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          echo "Waiting for Vercel preview deployment for $PR_SHA..."
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
 
-          for i in $(seq 1 40); do
-            # Query Vercel REST API directly — more reliable than GitHub Deployments API
-            RESPONSE=$(curl -sf --max-time 10 -H "Authorization: Bearer $VERCEL_TOKEN" \
-              "https://api.vercel.com/v6/deployments?sha=$PR_SHA&limit=1&projectId=$VERCEL_PROJECT_ID&slug=$VERCEL_TEAM_ID" \
-              2>/dev/null) || RESPONSE=""
+      - uses: ./.github/actions/supabase-branch
+        id: branch
+        with:
+          access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          project-ref: ${{ secrets.SUPABASE_PROJECT_REF }}
+          git-branch: ${{ github.head_ref }}
 
-            if [ -z "$RESPONSE" ]; then
-              echo "API request failed (attempt $i/40)"
-              sleep 15
-              continue
-            fi
+      - uses: ./.github/actions/inject-preview-env
+        if: steps.branch.outputs.ref != ''
+        with:
+          branch-ref: ${{ steps.branch.outputs.ref }}
+          git-branch: ${{ github.head_ref }}
+          supabase-access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          supabase-project-ref: ${{ secrets.SUPABASE_PROJECT_REF }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
 
-            STATE=$(echo "$RESPONSE" | jq -r '.deployments[0].state // empty')
-            DEPLOY_URL=$(echo "$RESPONSE" | jq -r '.deployments[0].url // empty')
+      - uses: ./.github/actions/wait-for-preview
+        id: preview
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          bypass-secret: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          pr-sha: ${{ github.event.pull_request.head.sha }}
+          git-branch: ${{ github.head_ref }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-            if [ "$STATE" = "READY" ] && [ -n "$DEPLOY_URL" ]; then
-              FULL_URL="https://$DEPLOY_URL"
-
-              # Verify it's accessible
-              STATUS=$(curl -sf --max-time 10 -o /dev/null -w "%{http_code}" \
-                -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$FULL_URL" \
-                2>/dev/null) || STATUS="000"
-
-              if [ "$STATUS" -ge 200 ] 2>/dev/null && [ "$STATUS" -lt 400 ] 2>/dev/null; then
-                echo "url=$FULL_URL" >> "$GITHUB_OUTPUT"
-                echo "Preview ready at $FULL_URL (HTTP $STATUS)"
-                exit 0
-              fi
-              echo "Deployment at $FULL_URL returned HTTP $STATUS (attempt $i/40)"
-            elif [ -n "$STATE" ]; then
-              echo "Deployment state: $STATE (attempt $i/40)"
-            else
-              echo "No deployment found yet (attempt $i/40)"
-            fi
-
-            sleep 15
-          done
-
-          echo "::error::Timeout waiting for Vercel preview deployment"
-          exit 1
-
-      - name: Check Supabase branch DB readiness
-        id: branch-check
-        if: steps.detect.outputs.url != ''
-        env:
-          PREVIEW_URL: ${{ steps.detect.outputs.url }}
-          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: |
-          RESPONSE=$(curl -sf --max-time 10 \
-            -H "x-vercel-protection-bypass: $BYPASS_SECRET" \
-            "$PREVIEW_URL/api/e2e/seed" 2>/dev/null) || RESPONSE=""
-
-          if [ -z "$RESPONSE" ]; then
-            echo "::warning::Could not reach seed endpoint for branch DB check"
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          SAFE=$(echo "$RESPONSE" | jq -r '.safe // false')
-          REASON=$(echo "$RESPONSE" | jq -r '.reason // empty')
-
-          if [ "$SAFE" = "true" ]; then
-            echo "Supabase branch DB is ready"
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::Supabase branch DB not available: $REASON"
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          fi
+      - uses: ./.github/actions/check-branch-db
+        id: db-check
+        if: steps.preview.outputs.url != ''
+        with:
+          preview-url: ${{ steps.preview.outputs.url }}
+          bypass-secret: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
   # ── E2E tests (Playwright) ─────────────────────────────────
   e2e-tests:
@@ -488,14 +448,19 @@ jobs:
           RESPONSE=$(curl -s --max-time 30 --connect-timeout 5 --retry 3 --retry-delay 2 --retry-connrefused -w "\n%{http_code}" -X POST \
             -H "x-e2e-seed-secret: $VERCEL_AUTOMATION_BYPASS_SECRET" \
             -H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" \
-            "$PLAYWRIGHT_BASE_URL/api/e2e/seed" || true)
+            "$PLAYWRIGHT_BASE_URL/api/e2e/seed") || CURL_EXIT=$?
+          if [ "${CURL_EXIT:-0}" -ne 0 ]; then
+            echo "::error::curl failed with exit code $CURL_EXIT"
+            exit 1
+          fi
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
           echo "Response (HTTP $HTTP_CODE): $BODY"
           if [ -n "$HTTP_CODE" ] && [[ "$HTTP_CODE" =~ ^[0-9]+$ ]] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
             echo "Seed completed successfully"
           else
-            echo "::warning::E2E seed returned HTTP $HTTP_CODE — tests may fail if users don't exist"
+            echo "::error::E2E seed returned HTTP $HTTP_CODE — cannot run tests without seeded users"
+            exit 1
           fi
 
       - name: Run E2E tests

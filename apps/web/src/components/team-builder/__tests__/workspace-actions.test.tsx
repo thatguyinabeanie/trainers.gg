@@ -7,12 +7,21 @@ import React from "react";
 // Module-level mocks
 // =============================================================================
 
+const mockInvalidateQueries = jest.fn();
+jest.mock("@tanstack/react-query", () => ({
+  useQueryClient: jest.fn(() => ({
+    invalidateQueries: mockInvalidateQueries,
+  })),
+}));
+
+jest.mock("@/lib/supabase", () => ({
+  useSupabase: jest.fn(() => ({})),
+}));
+
 const mockPush = jest.fn();
-const mockRefresh = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({
     push: mockPush,
-    refresh: mockRefresh,
   })),
 }));
 
@@ -89,6 +98,7 @@ const defaultProps = {
 describe("WorkspaceActions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockInvalidateQueries.mockClear();
   });
 
   describe("button rendering", () => {

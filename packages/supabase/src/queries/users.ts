@@ -122,7 +122,7 @@ export async function getAltByUsername(
     .select(
       `
       *,
-      user:users(*)
+      user:users!profiles_user_id_fkey(*)
     `
     )
     .eq("username", username)
@@ -186,7 +186,7 @@ export async function getOwnedAlt(
 ) {
   const { data: alt } = await supabase
     .from("alts")
-    .select("user_id, users!inner(username)")
+    .select("user_id, users!profiles_user_id_fkey!inner(username)")
     .eq("id", altId)
     .single();
 

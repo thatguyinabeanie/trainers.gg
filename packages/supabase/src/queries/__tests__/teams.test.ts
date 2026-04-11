@@ -1,6 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import {
   getTeamsForAltFull,
+  getTeamsForAltList,
   getTeamWithPokemon,
   getTeamsForAltByFormatFull,
 } from "../teams";
@@ -354,5 +355,106 @@ describe("teams queries", () => {
         );
       }
     );
+  });
+
+  // ==========================================================================
+  // getTeamsForAltList
+  // ==========================================================================
+
+  describe("getTeamsForAltList", () => {
+    const makeListTeam = (overrides?: Record<string, unknown>) => ({
+      id: 1,
+      name: "Test Team",
+      format: "gen9vgc2025regg",
+      is_public: false,
+      updated_at: "2025-01-02T00:00:00Z",
+      created_at: "2025-01-01T00:00:00Z",
+      team_pokemon: [
+        {
+          id: 1,
+          team_position: 0,
+          pokemon: {
+            id: 1,
+            species: "Koraidon",
+            is_shiny: false,
+          },
+        },
+      ],
+      ...overrides,
+    });
+
+    it("returns lightweight team list with pokemon data for the given altId", async () => {
+      const team = makeListTeam();
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: [team],
+        error: null,
+      });
+
+      const result = await getTeamsForAltList(mockClient, 42);
+
+      expect(result).toEqual([team]);
+      expect(mockClient.from).toHaveBeenCalledWith("teams");
+      expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
+        "created_by",
+        42
+      );
+      expect(mockClient._queryBuilder.order).toHaveBeenCalledWith(
+        "updated_at",
+        { ascending: false }
+      );
+    });
+
+    it("returns empty array when data is null", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: null,
+        error: null,
+      });
+
+      const result = await getTeamsForAltList(mockClient, 42);
+
+      expect(result).toEqual([]);
+    });
+
+    it("returns empty array when the alt has no teams", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const result = await getTeamsForAltList(mockClient, 42);
+
+      expect(result).toEqual([]);
+    });
+
+    it("throws when Supabase returns an error", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: null,
+        error: { message: "connection refused" },
+      });
+
+      await expect(getTeamsForAltList(mockClient, 42)).rejects.toThrow(
+        "Failed to fetch teams for alt: connection refused"
+      );
+    });
+
+    it("select shape includes lightweight pokemon fields (id, species, is_shiny)", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      await getTeamsForAltList(mockClient, 42);
+
+      const selectArg = mockClient._queryBuilder.select.mock
+        .calls[0]?.[0] as string;
+      expect(selectArg).toContain("team_pokemon");
+      expect(selectArg).toContain("species");
+      expect(selectArg).toContain("is_shiny");
+    });
   });
 });

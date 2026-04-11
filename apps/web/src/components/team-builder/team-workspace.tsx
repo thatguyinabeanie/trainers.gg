@@ -8,7 +8,6 @@ import {
   type GameFormat,
   buildSpeciesSearchIndex,
   getValidAbilities,
-  type SpeciesSearchEntry,
 } from "@trainers/pokemon";
 import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
 
@@ -60,11 +59,16 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<"types" | "speed" | "calc">(
     "types"
   );
-  const [_saveStatus, setSaveStatus] = useState<
+  const [saveStatus, setSaveStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const savedIdleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdateRef = useRef<{
+    pokemonId: number;
+    field: string;
+    value: unknown;
+  } | null>(null);
 
   // Species picker state
   const [pickerState, setPickerState] = useState<{
@@ -73,16 +77,22 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     mode: "add" | "change";
   }>({ open: false, slot: null, mode: "add" });
 
-  // Build species search index once on mount (for the format)
-  const [speciesIndex] = useState<SpeciesSearchEntry[]>(() =>
-    buildSpeciesSearchIndex(format?.id ?? "gen9vgc2026regi")
-  );
+  // Build species search index for the format (derived value — React Compiler handles memoization)
+  const speciesIndex = buildSpeciesSearchIndex(format?.id ?? "gen9vgc2026regi");
 
-  // Clear both debounce timers on unmount to prevent setState on an unmounted component
+  // Clear both debounce timers on unmount to prevent setState on an unmounted component.
+  // If there is a pending save, fire it immediately — the server action will still execute
+  // even though we don't await it (the component is unmounting).
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       if (savedIdleTimerRef.current) clearTimeout(savedIdleTimerRef.current);
+      if (pendingUpdateRef.current) {
+        const { pokemonId, field, value } = pendingUpdateRef.current;
+        updatePokemonAction(team.id, pokemonId, {
+          [field]: value,
+        } as Parameters<typeof updatePokemonAction>[2]);
+      }
     };
   }, []);
 
@@ -103,12 +113,14 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     if (savedIdleTimerRef.current) clearTimeout(savedIdleTimerRef.current);
     setSaveStatus("saving");
+    // Track the latest pending update so it can be flushed on unmount
+    pendingUpdateRef.current = { pokemonId, field, value };
     saveTimerRef.current = setTimeout(async () => {
-      const result = await updatePokemonAction(
-        pokemonId,
-        { [field]: value } as Parameters<typeof updatePokemonAction>[1],
-        team.id
-      );
+      // Clear before awaiting so unmount cleanup won't re-fire an in-flight save
+      pendingUpdateRef.current = null;
+      const result = await updatePokemonAction(team.id, pokemonId, {
+        [field]: value,
+      } as Parameters<typeof updatePokemonAction>[2]);
       if (result.success) {
         setSaveStatus("saved");
         savedIdleTimerRef.current = setTimeout(
@@ -191,25 +203,21 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
         selectMode === "defaults" ? (getValidAbilities(species)[0] ?? "") : "";
 
       startTransition(async () => {
-        const result = await updatePokemonAction(
-          pokemonId,
-          {
-            species,
-            ability: firstAbility,
-            nature: selectMode === "defaults" ? "Hardy" : "",
-            move1: "",
-            move2: null,
-            move3: null,
-            move4: null,
-            ev_hp: 0,
-            ev_attack: 0,
-            ev_defense: 0,
-            ev_special_attack: 0,
-            ev_special_defense: 0,
-            ev_speed: 0,
-          },
-          team.id
-        );
+        const result = await updatePokemonAction(team.id, pokemonId, {
+          species,
+          ability: firstAbility,
+          nature: selectMode === "defaults" ? "Hardy" : "",
+          move1: "",
+          move2: null,
+          move3: null,
+          move4: null,
+          ev_hp: 0,
+          ev_attack: 0,
+          ev_defense: 0,
+          ev_special_attack: 0,
+          ev_special_defense: 0,
+          ev_speed: 0,
+        });
         if (result.success) {
           setPickerState({ open: false, slot: null, mode: "add" });
           router.refresh();
@@ -225,34 +233,24 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
   }
 
   // ---------------------------------------------------------------------------
-  // Empty state
-  // ---------------------------------------------------------------------------
-
-  if (!hasPokemon) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-        <div className="text-muted-foreground">
-          <p className="text-lg font-medium">No Pokémon yet</p>
-          <p className="mt-1 text-sm">
-            Import a Showdown paste or add Pokémon one by one to get started.
-          </p>
-        </div>
-        {/* Import trigger — placeholder until the Import sheet is wired in Task 3+ */}
-        <Button variant="outline" size="sm">
-          <Import className="size-4" />
-          Import Paste
-        </Button>
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Team strip */}
+    <div className="relative flex flex-1 flex-col overflow-hidden">
+      {/* Save status indicator */}
+      <div className="absolute top-2 right-2 z-10">
+        {saveStatus === "saving" && (
+          <span className="text-muted-foreground animate-pulse text-xs">
+            Saving...
+          </span>
+        )}
+        {saveStatus === "saved" && (
+          <span className="text-muted-foreground text-xs">Saved</span>
+        )}
+      </div>
+
+      {/* Team strip — always visible so "+" button works even with 0 pokemon */}
       <div className="border-b">
         <TeamStrip
           teamId={team.id}
@@ -282,6 +280,24 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
           onSelect={handleSpeciesSelect}
           onCancel={handlePickerCancel}
         />
+      ) : !hasPokemon ? (
+        /* Empty state — shown inside the content area below the strip */
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+          <div className="text-muted-foreground">
+            <p className="text-lg font-medium">No Pokémon yet</p>
+            <p className="mt-1 text-sm">
+              Import a Showdown paste or add Pokémon one by one to get started.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toast.info("Import paste coming soon!")}
+          >
+            <Import className="size-4" />
+            Import Paste
+          </Button>
+        </div>
       ) : (
         <div className="flex flex-1 overflow-hidden">
           {/* Editor panel (left 50%) */}

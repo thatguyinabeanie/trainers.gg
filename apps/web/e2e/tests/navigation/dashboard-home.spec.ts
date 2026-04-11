@@ -1,15 +1,15 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Dashboard home page", () => {
-  test("renders welcome heading and stat cards", async ({ page }) => {
+  test("renders stat cards and alts heading", async ({ page }) => {
     await page.goto("/dashboard");
 
     const main = page.getByRole("main");
 
-    // Welcome heading should contain the user's display name
-    await expect(
-      main.getByRole("heading", { name: /welcome back/i })
-    ).toBeVisible({ timeout: 15000 });
+    // "Your Alts" heading should be visible (unified home + alts view)
+    await expect(main.getByRole("heading", { name: /your alts/i })).toBeVisible(
+      { timeout: 15000 }
+    );
 
     // Four stat cards — scope to main to avoid matching sidebar nav links
     const statLabels = ["Win Rate", "Rating", "Record", "Tournaments"];
@@ -20,25 +20,28 @@ test.describe("Dashboard home page", () => {
     }
   });
 
-  test("renders recent results section", async ({ page }) => {
+  test("renders alts table or empty state", async ({ page }) => {
     await page.goto("/dashboard");
 
     const main = page.getByRole("main");
 
-    await expect(
-      main.getByRole("heading", { name: /welcome back/i })
-    ).toBeVisible({ timeout: 15000 });
+    await expect(main.getByRole("heading", { name: /your alts/i })).toBeVisible(
+      { timeout: 15000 }
+    );
 
-    await expect(main.getByText(/recent results/i)).toBeVisible();
+    // Either table headers (user has alts) or empty state
+    const hasTable = main.getByText("Handle");
+    const hasEmptyState = main.getByText(/create your first alt/i);
+    await expect(hasTable.or(hasEmptyState)).toBeVisible();
   });
 
-  test("page header shows Home title", async ({ page }) => {
+  test("sidebar Home link is active on dashboard", async ({ page }) => {
     await page.goto("/dashboard");
 
-    // "Home" appears in both sidebar and page header — scope to header
-    const header = page.locator("header");
-    await expect(header.getByText("Home", { exact: true })).toBeVisible({
-      timeout: 10000,
-    });
+    const sidebar = page.locator("[data-sidebar='sidebar']");
+    await expect(sidebar).toBeVisible({ timeout: 10000 });
+
+    // "Home" link should be present in sidebar
+    await expect(sidebar.getByRole("link", { name: /home/i })).toBeVisible();
   });
 });

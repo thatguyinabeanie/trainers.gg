@@ -9,6 +9,10 @@ Checklist and patterns for caching at the Next.js server layer and TanStack Quer
 
 ## Caching Decision Tree
 
+Every page needs a caching strategy at **both** layers. Server caching (`unstable_cache`) and client caching (TanStack Query) serve different purposes and are decided independently.
+
+### Server Layer (`unstable_cache`)
+
 ```
 Is the data the same for ALL users viewing this page?
 ├── YES (public/community-level data)
@@ -18,10 +22,27 @@ Is the data the same for ALL users viewing this page?
 │   └── Cache the public part, fetch the user part separately
 │       Examples: tournament page (cached) + "am I registered?" (auth)
 └── NO (user-specific data)
-    └── Do NOT cache with unstable_cache
-        Use createClient() or createClientReadOnly()
+    └── Do NOT use unstable_cache — use createClient() or createClientReadOnly()
         Examples: my alts, my settings, my notifications
 ```
+
+### Client Layer (TanStack Query)
+
+```
+Does the page have mutations OR fetch data the user will revisit?
+├── YES
+│   └── REQUIRED: Use TanStack Query (useQuery + useMutation)
+│       - Caches data locally in the user's browser
+│       - Enables optimistic updates for instant UI feedback
+│       - Prevents redundant fetches on re-navigation
+│       - Manages stale data and background refetching
+│       Examples: team builder, dashboard, notifications, team lists
+└── NO (static display, no interactivity)
+    └── Server Component with SSR data is sufficient
+        Examples: marketing pages, static content
+```
+
+TanStack Query caches in the user's browser — it applies to ALL data, including user-specific data. Do not confuse server-side caching decisions with client-side caching decisions.
 
 ## Next.js Server Caching (`unstable_cache`)
 
@@ -113,9 +134,30 @@ const getCached = unstable_cache(
 | ------------------------------------- | -------------- | ----------------------------- |
 | Static reference (formats, countries) | `Infinity`     | Never changes at runtime      |
 | Community/tournament data             | `30_000` (30s) | Changes infrequently          |
+| User's own teams/team list            | `30_000` (30s) | Changes only on explicit CRUD |
 | Live tournament state                 | `0` (default)  | Matches/rounds change rapidly |
 | User profile                          | `60_000` (1m)  | Changes rarely                |
 | Notifications                         | `10_000` (10s) | Should feel responsive        |
+
+### Server-to-Client Data Handoff
+
+When a Server Component fetches data that a Client Component also needs, pass it as `initialData` to avoid duplicate fetching:
+
+```tsx
+// Server Component
+const teams = await getTeamsForAlt(supabase, altId);
+return <TeamList teams={teams} altId={altId} />;
+
+// Client Component
+function TeamList({ teams, altId }: Props) {
+  const { data } = useQuery({
+    queryKey: ["teams", altId],
+    queryFn: () => fetchTeams(altId),
+    initialData: teams,
+  });
+  // ...
+}
+```
 
 ### Mutation Invalidation
 
@@ -130,22 +172,48 @@ const mutation = useMutation({
 
 ### Rules
 
+- [ ] **Every page with mutations MUST use TanStack Query** — not just `useState` + `router.refresh()`
 - [ ] Related queries share a common key prefix for bulk invalidation
-- [ ] Mutations invalidate affected query keys
-- [ ] No duplicate fetching — if a Server Component already fetched the data and passed it as props, don't re-fetch on the client
+- [ ] Mutations invalidate affected query keys via `onSuccess`
+- [ ] No duplicate fetching — if a Server Component already fetched the data and passed it as props, use `initialData` in `useQuery` instead of re-fetching
 - [ ] Optimistic updates for immediate UI feedback (toggles, drag-drop, inline edits)
 - [ ] `staleTime > 0` for data that doesn't change frequently
 
-## When to Add Caching (During Implementation)
+## Caching Requirements (Must Be Done at Implementation Time)
 
-Add `unstable_cache` when you're writing a Server Component that:
+Caching is not optional polish — it is a required part of implementing any feature that fetches or mutates data. Every new page or feature must address both layers before the work is considered complete.
 
-1. Fetches data that is the same for all viewers (public or community-level)
+### Server-side (`unstable_cache`) — add when:
+
+1. Data is the same for all viewers (public or community-level)
 2. The page will be visited frequently
 3. The data doesn't change on every request
 
-Skip caching when:
+Skip `unstable_cache` only when the data is user-specific, changes on every request, or the page is admin-only.
 
-1. The data is user-specific (my alts, my settings)
-2. The data changes on every request (live tournament state)
-3. The page is rarely visited (admin-only pages)
+### Client-side (TanStack Query) — add when:
+
+1. The page has mutations (create, update, delete actions)
+2. The user will navigate back to the page after making changes
+3. The page would benefit from optimistic updates, background refetching, or stale-while-revalidate
+
+**Every page with server actions MUST use TanStack Query.** Using `useState` + `router.refresh()` alone is insufficient — it forces full page re-renders, loses scroll position, and provides no client-side cache.
+
+### Cache invalidation — required for every mutation:
+
+1. Server actions must call the appropriate cache invalidation helper
+2. If no helper exists for the entity type, create one in `@/lib/cache-invalidation`
+3. If no `CacheTags` entry exists, add one to `@/lib/cache`
+4. TanStack Query mutations must invalidate affected query keys via `onSuccess`
+
+### New entity caching checklist
+
+When adding a new entity type (like teams, posts, etc.), complete ALL of these:
+
+- [ ] Add `CacheTags` entries to `@/lib/cache` (if the entity has public-facing pages)
+- [ ] Add invalidation helper(s) to `@/lib/cache-invalidation`
+- [ ] Server actions call the correct invalidation helper after mutations
+- [ ] TanStack Query `useQuery` wraps data fetching on interactive pages
+- [ ] TanStack Query `useMutation` wraps server action calls with `onSuccess` invalidation
+- [ ] `staleTime` is set appropriately per the stale time guidelines
+- [ ] Server Component data is passed as `initialData` to `useQuery` (no duplicate fetching)

@@ -146,7 +146,8 @@ function runCalc(
       maxPercent,
       desc: result.desc(),
     };
-  } catch {
+  } catch (err) {
+    console.warn("Damage calculation failed:", err);
     return null;
   }
 }
@@ -367,10 +368,12 @@ function ManualCalcForm({
     moveName: "",
     result: null,
   });
+  const [calcError, setCalcError] = useState<string | null>(null);
 
   function handleCalc() {
     if (!state.attackerSpecies || !state.defenderSpecies || !state.moveName)
       return;
+    setCalcError(null);
     try {
       const attacker = new Pokemon(gen9, state.attackerSpecies, { level: 50 });
       const defender = new Pokemon(gen9, state.defenderSpecies, { level: 50 });
@@ -384,8 +387,10 @@ function ManualCalcForm({
       );
       const result = runCalc(attacker, defender, state.moveName, field);
       setState((s) => ({ ...s, result }));
-    } catch {
+    } catch (err) {
+      console.warn("Damage calculation failed:", err);
       setState((s) => ({ ...s, result: null }));
+      setCalcError("Calculation failed — check your inputs");
     }
   }
 
@@ -438,6 +443,9 @@ function ManualCalcForm({
       <Button size="sm" variant="outline" onClick={handleCalc}>
         Calculate
       </Button>
+      {calcError && !state.result && (
+        <p className="text-destructive text-xs">{calcError}</p>
+      )}
       {state.result && <CalcRow result={state.result} />}
     </div>
   );
@@ -489,6 +497,7 @@ function AutoSuggestions({
 
   const offensiveResults: CalcResult[] = [];
   const defensiveResults: CalcResult[] = [];
+  let failedCalcCount = 0;
 
   for (const threat of GEN9_VGC_META_THREATS) {
     const threatSmogon = toSmogonThreat(threat);
@@ -501,7 +510,11 @@ function AutoSuggestions({
         moveName,
         offensiveField
       );
-      if (result && result.maxPercent > 0) offensiveResults.push(result);
+      if (result === null) {
+        failedCalcCount++;
+      } else if (result.maxPercent > 0) {
+        offensiveResults.push(result);
+      }
     }
 
     // Defensive: threat moves vs us
@@ -512,7 +525,11 @@ function AutoSuggestions({
         moveName,
         defensiveField
       );
-      if (result && result.maxPercent > 0) defensiveResults.push(result);
+      if (result === null) {
+        failedCalcCount++;
+      } else if (result.maxPercent > 0) {
+        defensiveResults.push(result);
+      }
     }
   }
 
@@ -566,6 +583,14 @@ function AutoSuggestions({
           </div>
         )}
       </section>
+
+      {/* Failed calculations indicator */}
+      {failedCalcCount > 0 && (
+        <p className="text-muted-foreground text-xs">
+          {failedCalcCount} calculation
+          {failedCalcCount === 1 ? "" : "s"} could not be computed
+        </p>
+      )}
     </div>
   );
 }

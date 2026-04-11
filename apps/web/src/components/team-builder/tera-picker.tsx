@@ -4,31 +4,7 @@ import { getValidTeraTypes } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 
-// =============================================================================
-// Constants
-// =============================================================================
-
-const TYPE_COLORS: Record<string, string> = {
-  Normal: "bg-stone-400",
-  Bug: "bg-lime-500",
-  Dark: "bg-stone-700 text-white",
-  Dragon: "bg-indigo-600 text-white",
-  Electric: "bg-yellow-400",
-  Fairy: "bg-pink-400",
-  Fighting: "bg-red-700 text-white",
-  Fire: "bg-orange-500 text-white",
-  Flying: "bg-sky-300",
-  Ghost: "bg-purple-600 text-white",
-  Grass: "bg-green-500 text-white",
-  Ground: "bg-amber-600 text-white",
-  Ice: "bg-cyan-300",
-  Poison: "bg-purple-500 text-white",
-  Psychic: "bg-pink-500 text-white",
-  Rock: "bg-amber-700 text-white",
-  Steel: "bg-slate-400",
-  Water: "bg-blue-500 text-white",
-  Stellar: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
-};
+import { TYPE_BG_COLORS } from "./type-colors";
 
 // =============================================================================
 // Types
@@ -60,7 +36,9 @@ export function TeraPicker({ value, onSelect, onClose }: TeraPickerProps) {
     <div className="bg-popover rounded-lg border p-3 shadow-md">
       <div className="grid grid-cols-4 gap-1.5">
         {teraTypes.map((type) => {
-          const colorClass = TYPE_COLORS[type] ?? "bg-muted text-foreground";
+          const colorClass =
+            TYPE_BG_COLORS[type as keyof typeof TYPE_BG_COLORS] ??
+            "bg-muted text-foreground";
           const isSelected = type === value;
 
           return (

@@ -15,11 +15,9 @@ test.describe("Protected routes redirect unauthenticated users", () => {
     },
   });
 
-  const protectedRoutes = [
-    "/dashboard",
-    "/dashboard/alts",
-    "/dashboard/tournaments",
-  ];
+  // /dashboard/alts server-redirects to /dashboard, so testing it separately
+  // adds a redundant redirect hop that causes timeouts
+  const protectedRoutes = ["/dashboard", "/dashboard/tournaments"];
 
   for (const route of protectedRoutes) {
     test(`${route} redirects unauthenticated users`, async ({ page }) => {

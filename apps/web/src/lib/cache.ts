@@ -76,4 +76,7 @@ export const CacheTags = {
 
   /** Tag for dashboard bulk ratings */
   DASHBOARD_RATINGS: "dashboard-ratings",
+
+  /** Generate a tag for a specific team (for public team pages) */
+  team: (id: number) => `team:${id}`,
 } as const;

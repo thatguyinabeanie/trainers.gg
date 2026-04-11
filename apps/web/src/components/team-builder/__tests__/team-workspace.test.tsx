@@ -7,6 +7,17 @@ import React from "react";
 // Module-level mocks
 // =============================================================================
 
+const mockInvalidateQueries = jest.fn();
+jest.mock("@tanstack/react-query", () => ({
+  useQueryClient: jest.fn(() => ({
+    invalidateQueries: mockInvalidateQueries,
+  })),
+}));
+
+jest.mock("@/lib/supabase", () => ({
+  useSupabase: jest.fn(() => ({})),
+}));
+
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn(),
@@ -84,6 +95,14 @@ jest.mock("@pkmn/dex", () => ({
         get: jest.fn(() => ({ exists: true, shortDesc: "Restores HP." })),
       },
     })),
+  },
+}));
+
+jest.mock("sonner", () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
   },
 }));
 
@@ -211,6 +230,7 @@ const defaultProps = {
 describe("TeamWorkspace", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockInvalidateQueries.mockClear();
   });
 
   describe("empty state", () => {
@@ -233,6 +253,12 @@ describe("TeamWorkspace", () => {
       expect(
         screen.getByRole("button", { name: /import paste/i })
       ).toBeInTheDocument();
+    });
+
+    it("renders the team strip even with no pokemon", () => {
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+      const strip = screen.getByLabelText("Team strip");
+      expect(strip).toBeInTheDocument();
     });
   });
 

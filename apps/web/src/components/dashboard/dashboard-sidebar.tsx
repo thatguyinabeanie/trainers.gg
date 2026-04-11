@@ -611,7 +611,7 @@ function PlayerNav({
   const currentAltUsername = selectedAlt?.username ?? alts[0]?.username ?? null;
   const builderHref = currentAltUsername
     ? `/dashboard/alts/${currentAltUsername}/teams`
-    : "/builder";
+    : "/dashboard";
 
   const playerItems = [
     {
@@ -626,6 +626,12 @@ function PlayerNav({
       href: "/dashboard/tournaments",
       icon: Trophy,
       isActive: pathname.startsWith("/dashboard/tournaments"),
+    },
+    {
+      label: "Builder",
+      href: builderHref,
+      icon: Hammer,
+      isActive: pathname.includes("/teams"),
     },
   ] as const;
 

@@ -14,6 +14,18 @@ import { getLearnableMoves } from "./validation";
 // Local Generations instance — supports any generation, not just gen9
 const gens = new Generations(Dex);
 
+// Module-level cache for learnable moves — avoids recomputing on every search keystroke
+const learnableMovesCache = new Map<string, string[]>();
+
+function getCachedLearnableMoves(species: string): string[] {
+  let moves = learnableMovesCache.get(species);
+  if (!moves) {
+    moves = getLearnableMoves(species);
+    learnableMovesCache.set(species, moves);
+  }
+  return moves;
+}
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -174,7 +186,7 @@ export function searchSpecies(
 
     // -- Moves filter (AND: species must learn ALL specified moves) --
     if (normalizedMoves) {
-      const learnableMoves = getLearnableMoves(entry.species).map((m) =>
+      const learnableMoves = getCachedLearnableMoves(entry.species).map((m) =>
         m.toLowerCase()
       );
       const learnsAllMoves = normalizedMoves.every((move) =>

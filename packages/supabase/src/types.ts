@@ -556,7 +556,7 @@ export type Database = {
           external_ref: string | null
           format: string
           id: number
-          imported_at: string | null
+          imported_at: string
           source: string
         }
         Insert: {
@@ -564,7 +564,7 @@ export type Database = {
           external_ref?: string | null
           format: string
           id?: never
-          imported_at?: string | null
+          imported_at?: string
           source: string
         }
         Update: {
@@ -572,14 +572,14 @@ export type Database = {
           external_ref?: string | null
           format?: string
           id?: never
-          imported_at?: string | null
+          imported_at?: string
           source?: string
         }
         Relationships: []
       }
       external_players: {
         Row: {
-          created_at: string | null
+          created_at: string
           display_name: string
           id: number
           linked_alt_id: number | null
@@ -589,7 +589,7 @@ export type Database = {
           source_player_id: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           display_name: string
           id?: never
           linked_alt_id?: number | null
@@ -599,7 +599,7 @@ export type Database = {
           source_player_id: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           display_name?: string
           id?: never
           linked_alt_id?: number | null
@@ -883,7 +883,7 @@ export type Database = {
       imported_team_sheets: {
         Row: {
           ability: string
-          created_at: string | null
+          created_at: string
           ev_spread: string | null
           external_player_id: number | null
           format: string
@@ -906,7 +906,7 @@ export type Database = {
         }
         Insert: {
           ability: string
-          created_at?: string | null
+          created_at?: string
           ev_spread?: string | null
           external_player_id?: number | null
           format: string
@@ -929,7 +929,7 @@ export type Database = {
         }
         Update: {
           ability?: string
-          created_at?: string | null
+          created_at?: string
           ev_spread?: string | null
           external_player_id?: number | null
           format?: string
@@ -1399,37 +1399,37 @@ export type Database = {
       }
       pokemon_detail_stats: {
         Row: {
-          abilities: Json | null
+          abilities: Json
           id: number
-          items: Json | null
+          items: Json
           meta_id: number
-          moves: Json | null
+          moves: Json
           species: string
-          spreads: Json | null
-          teammates: Json | null
-          tera_types: Json | null
+          spreads: Json
+          teammates: Json
+          tera_types: Json
         }
         Insert: {
-          abilities?: Json | null
+          abilities?: Json
           id?: never
-          items?: Json | null
+          items?: Json
           meta_id: number
-          moves?: Json | null
+          moves?: Json
           species: string
-          spreads?: Json | null
-          teammates?: Json | null
-          tera_types?: Json | null
+          spreads?: Json
+          teammates?: Json
+          tera_types?: Json
         }
         Update: {
-          abilities?: Json | null
+          abilities?: Json
           id?: never
-          items?: Json | null
+          items?: Json
           meta_id?: number
-          moves?: Json | null
+          moves?: Json
           species?: string
-          spreads?: Json | null
-          teammates?: Json | null
-          tera_types?: Json | null
+          spreads?: Json
+          teammates?: Json
+          tera_types?: Json
         }
         Relationships: [
           {
@@ -3101,6 +3101,10 @@ export type Database = {
         Args: { p_invitation_id: number }
         Returns: Json
       }
+      add_pokemon_to_team: {
+        Args: { p_pokemon: Json; p_position: number; p_team_id: number }
+        Returns: number
+      }
       advance_to_top_cut: {
         Args: { p_top_cut_size?: number; p_tournament_id: number }
         Returns: Json
@@ -3126,6 +3130,15 @@ export type Database = {
         Returns: Json
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      delete_team: { Args: { p_team_id: number }; Returns: undefined }
+      fork_team: {
+        Args: {
+          p_new_name?: string
+          p_source_team_id: number
+          p_target_alt_id: number
+        }
+        Returns: number
+      }
       generate_bracket_order: {
         Args: { p_bracket_size: number }
         Returns: number[]
@@ -3279,6 +3292,14 @@ export type Database = {
           p_tournament_id: number
         }
         Returns: Json
+      }
+      remove_pokemon_from_team: {
+        Args: { p_pokemon_id: number; p_team_id: number }
+        Returns: undefined
+      }
+      reorder_team_pokemon: {
+        Args: { p_positions: Json; p_team_id: number }
+        Returns: undefined
       }
       report_match_result: {
         Args: {
