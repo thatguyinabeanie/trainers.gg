@@ -10,6 +10,7 @@ import {
   getPokepaseRawUrl,
   validateTeamStructure,
   type ParsedPokemon,
+  type ValidationError,
 } from "@trainers/validators";
 import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
 
@@ -85,10 +86,14 @@ function parsedToInsert(pokemon: ParsedPokemon): TablesInsert<"pokemon"> {
 interface PreviewPanelProps {
   parsed: ParsedPokemon[];
   availableSlots: number;
+  structuralErrors: ValidationError[];
 }
 
-function PreviewPanel({ parsed, availableSlots }: PreviewPanelProps) {
-  const structuralErrors = validateTeamStructure(parsed);
+function PreviewPanel({
+  parsed,
+  availableSlots,
+  structuralErrors,
+}: PreviewPanelProps) {
   const willImport = parsed.slice(0, availableSlots);
   const willSkip = parsed.slice(availableSlots);
 
@@ -180,8 +185,8 @@ export function ImportDialog({
   const [isPendingImport, startImportTransition] = useTransition();
 
   const availableSlots = 6 - team.team_pokemon.length;
-  const hasStructuralErrors =
-    parsed !== null && validateTeamStructure(parsed).length > 0;
+  const structuralErrors = parsed !== null ? validateTeamStructure(parsed) : [];
+  const hasStructuralErrors = structuralErrors.length > 0;
 
   // ---------------------------------------------------------------------------
   // Reset state when sheet closes
@@ -341,7 +346,11 @@ export function ImportDialog({
                 <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
                 <span className="text-sm font-medium">Preview</span>
               </div>
-              <PreviewPanel parsed={parsed} availableSlots={availableSlots} />
+              <PreviewPanel
+                parsed={parsed}
+                availableSlots={availableSlots}
+                structuralErrors={structuralErrors}
+              />
             </>
           ) : (
             // Input mode — tabbed
