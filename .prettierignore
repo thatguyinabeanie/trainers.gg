@@ -20,6 +20,9 @@ yarn.lock
 # TOML (no Prettier parser)
 *.toml
 
+# GitHub Actions (shell scripts in YAML break Prettier's parser)
+.github/actions/
+
 # IDE
 .idea/
 .vscode/

@@ -46,6 +46,7 @@ export function TeraPicker({ value, onSelect, onClose }: TeraPickerProps) {
               key={type}
               type="button"
               onClick={() => handleSelect(type)}
+              aria-pressed={isSelected}
               className={cn(
                 "flex items-center justify-center rounded px-2 py-1.5 text-center text-xs font-medium transition-all",
                 colorClass,
