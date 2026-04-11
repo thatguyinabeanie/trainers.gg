@@ -116,10 +116,11 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     // Track the latest pending update so it can be flushed on unmount
     pendingUpdateRef.current = { pokemonId, field, value };
     saveTimerRef.current = setTimeout(async () => {
+      // Clear before awaiting so unmount cleanup won't re-fire an in-flight save
+      pendingUpdateRef.current = null;
       const result = await updatePokemonAction(team.id, pokemonId, {
         [field]: value,
       } as Parameters<typeof updatePokemonAction>[2]);
-      pendingUpdateRef.current = null;
       if (result.success) {
         setSaveStatus("saved");
         savedIdleTimerRef.current = setTimeout(
