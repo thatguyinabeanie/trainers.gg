@@ -3,12 +3,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   type GameFormat,
   type PokemonSet,
-  type PokemonSetFlat,
-  fromFlat,
   validatePokemon,
 } from "@trainers/pokemon";
 import { type TeamWithPokemon } from "@trainers/supabase";
 import { containsProfanity } from "@trainers/validators";
+
+import { dbPokemonToPokemonSet } from "./pokemon-utils";
 
 // =============================================================================
 // Types
@@ -38,46 +38,6 @@ type TeamPokemonEntry = TeamWithPokemon["team_pokemon"][number];
 // =============================================================================
 
 const DEBOUNCE_MS = 1500;
-
-// =============================================================================
-// DB → PokemonSet conversion
-// =============================================================================
-
-/**
- * Converts a DB pokemon row (snake_case) to a PokemonSet via the flat
- * intermediate representation.
- */
-function dbPokemonToPokemonSet(p: DbPokemon): PokemonSet {
-  const flat: PokemonSetFlat = {
-    species: p.species ?? "",
-    nickname: p.nickname ?? undefined,
-    ability: p.ability ?? "",
-    nature: p.nature ?? "",
-    move1: p.move1 ?? "",
-    move2: p.move2 ?? undefined,
-    move3: p.move3 ?? undefined,
-    move4: p.move4 ?? undefined,
-    heldItem: p.held_item ?? undefined,
-    level: p.level ?? 50,
-    isShiny: p.is_shiny ?? false,
-    teraType: p.tera_type ?? undefined,
-    gender: (p.gender as "Male" | "Female" | undefined) ?? undefined,
-    formatLegal: true,
-    evHp: p.ev_hp ?? 0,
-    evAttack: p.ev_attack ?? 0,
-    evDefense: p.ev_defense ?? 0,
-    evSpecialAttack: p.ev_special_attack ?? 0,
-    evSpecialDefense: p.ev_special_defense ?? 0,
-    evSpeed: p.ev_speed ?? 0,
-    ivHp: p.iv_hp ?? 31,
-    ivAttack: p.iv_attack ?? 31,
-    ivDefense: p.iv_defense ?? 31,
-    ivSpecialAttack: p.iv_special_attack ?? 31,
-    ivSpecialDefense: p.iv_special_defense ?? 31,
-    ivSpeed: p.iv_speed ?? 31,
-  };
-  return fromFlat(flat);
-}
 
 // =============================================================================
 // Validation logic

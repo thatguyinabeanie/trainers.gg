@@ -6,6 +6,8 @@ import { Copy, ExternalLink } from "lucide-react";
 import { exportTeamToShowdown } from "@trainers/pokemon";
 import { type TeamWithPokemon } from "@trainers/supabase";
 
+import { dbPokemonToFlat } from "./pokemon-utils";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -28,44 +30,11 @@ interface ExportMenuProps {
 
 /** Build the Showdown-format text from a `TeamWithPokemon`. */
 function buildShowdownText(team: TeamWithPokemon): string {
-  const sortedPokemon = [...team.team_pokemon]
+  const sorted = [...team.team_pokemon]
     .sort((a, b) => a.team_position - b.team_position)
-    .flatMap((tp) => {
-      if (!tp.pokemon) return [];
-      const p = tp.pokemon;
-      return [
-        {
-          species: p.species ?? "",
-          nickname: p.nickname ?? undefined,
-          ability: p.ability ?? "",
-          nature: p.nature ?? "",
-          move1: p.move1 ?? "",
-          move2: p.move2 ?? undefined,
-          move3: p.move3 ?? undefined,
-          move4: p.move4 ?? undefined,
-          heldItem: p.held_item ?? undefined,
-          level: p.level ?? 50,
-          isShiny: p.is_shiny ?? false,
-          teraType: p.tera_type ?? undefined,
-          gender: (p.gender as "Male" | "Female" | undefined) ?? undefined,
-          formatLegal: true,
-          evHp: p.ev_hp ?? 0,
-          evAttack: p.ev_attack ?? 0,
-          evDefense: p.ev_defense ?? 0,
-          evSpecialAttack: p.ev_special_attack ?? 0,
-          evSpecialDefense: p.ev_special_defense ?? 0,
-          evSpeed: p.ev_speed ?? 0,
-          ivHp: p.iv_hp ?? 31,
-          ivAttack: p.iv_attack ?? 31,
-          ivDefense: p.iv_defense ?? 31,
-          ivSpecialAttack: p.iv_special_attack ?? 31,
-          ivSpecialDefense: p.iv_special_defense ?? 31,
-          ivSpeed: p.iv_speed ?? 31,
-        },
-      ];
-    });
+    .flatMap((tp) => (tp.pokemon ? [dbPokemonToFlat(tp.pokemon)] : []));
 
-  return exportTeamToShowdown(sortedPokemon);
+  return exportTeamToShowdown(sorted);
 }
 
 // =============================================================================

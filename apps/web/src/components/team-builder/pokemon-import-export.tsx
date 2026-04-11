@@ -5,15 +5,13 @@ import { useState } from "react";
 import { Copy, Upload } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  exportPokemonToShowdown,
-  parsePokemon,
-  type PokemonSetFlat,
-} from "@trainers/pokemon";
+import { exportPokemonToShowdown, parsePokemon } from "@trainers/pokemon";
 import { containsProfanity } from "@trainers/validators";
 import { type Tables } from "@trainers/supabase";
 
 import { updatePokemonAction } from "@/actions/teams";
+
+import { dbPokemonToFlat } from "./pokemon-utils";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -30,42 +28,6 @@ interface PokemonImportExportProps {
   teamId: number;
   pokemon: Tables<"pokemon">;
   onUpdate: () => void;
-}
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-/** Convert a DB pokemon row to PokemonSetFlat for export. */
-function dbPokemonToFlat(pokemon: Tables<"pokemon">): PokemonSetFlat {
-  return {
-    species: pokemon.species ?? "",
-    nickname: pokemon.nickname ?? undefined,
-    ability: pokemon.ability ?? "",
-    nature: pokemon.nature ?? "",
-    move1: pokemon.move1 ?? "",
-    move2: pokemon.move2 ?? undefined,
-    move3: pokemon.move3 ?? undefined,
-    move4: pokemon.move4 ?? undefined,
-    heldItem: pokemon.held_item ?? undefined,
-    level: pokemon.level ?? 50,
-    isShiny: pokemon.is_shiny ?? false,
-    teraType: pokemon.tera_type ?? undefined,
-    gender: (pokemon.gender as "Male" | "Female" | undefined) ?? undefined,
-    formatLegal: true,
-    evHp: pokemon.ev_hp ?? 0,
-    evAttack: pokemon.ev_attack ?? 0,
-    evDefense: pokemon.ev_defense ?? 0,
-    evSpecialAttack: pokemon.ev_special_attack ?? 0,
-    evSpecialDefense: pokemon.ev_special_defense ?? 0,
-    evSpeed: pokemon.ev_speed ?? 0,
-    ivHp: pokemon.iv_hp ?? 31,
-    ivAttack: pokemon.iv_attack ?? 31,
-    ivDefense: pokemon.iv_defense ?? 31,
-    ivSpecialAttack: pokemon.iv_special_attack ?? 31,
-    ivSpecialDefense: pokemon.iv_special_defense ?? 31,
-    ivSpeed: pokemon.iv_speed ?? 31,
-  };
 }
 
 // =============================================================================
