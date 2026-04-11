@@ -18,7 +18,7 @@ export interface StatValues {
 }
 
 /** Ordered stat keys for iteration. */
-export const STAT_KEYS: StatKey[] = [
+export const STAT_KEYS: readonly StatKey[] = [
   "hp",
   "attack",
   "defense",

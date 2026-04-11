@@ -39,11 +39,8 @@ export default async function TeamsPage({
 
   const supabase = await createClientReadOnly();
 
-  // getActiveFormats is synchronous — run alt fetch and formats in parallel
-  const [alt, activeFormats] = await Promise.all([
-    getAltByUsername(supabase, username),
-    Promise.resolve(getActiveFormats()),
-  ]);
+  const activeFormats = getActiveFormats();
+  const alt = await getAltByUsername(supabase, username);
 
   if (!alt) {
     notFound();

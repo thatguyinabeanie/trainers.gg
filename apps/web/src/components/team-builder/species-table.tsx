@@ -283,7 +283,9 @@ export function SpeciesTable({
                         key={type}
                         className={cn(
                           "rounded px-1 py-0.5 text-[10px] leading-none font-medium",
-                          TYPE_PILL_COLORS[type] ?? "bg-muted text-foreground"
+                          TYPE_PILL_COLORS[
+                            type as keyof typeof TYPE_PILL_COLORS
+                          ] ?? "bg-muted text-foreground"
                         )}
                       >
                         {type}

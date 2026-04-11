@@ -62,7 +62,9 @@ function abbreviate(species: string): string {
 // =============================================================================
 
 function TypeBadge({ type }: { type: string }) {
-  const colors = TYPE_PILL_COLORS[type] ?? "bg-stone-400 text-white";
+  const colors =
+    TYPE_PILL_COLORS[type as keyof typeof TYPE_PILL_COLORS] ??
+    "bg-stone-400 text-white";
   return (
     <span
       className={cn(

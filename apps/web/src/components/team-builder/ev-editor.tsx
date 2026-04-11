@@ -47,7 +47,7 @@ interface EvEditorProps {
   baseStats: StatValues;
   nature: string;
   level: number;
-  onChange: (stat: string, value: number) => void;
+  onChange: (stat: StatKey, value: number) => void;
   onPreset: (preset: "reset" | "maxAtk" | "maxBulk") => void;
 }
 

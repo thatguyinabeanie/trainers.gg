@@ -125,7 +125,8 @@ export function MovePicker({
             const move = gen9.moves.get(moveName);
             const isSelected = moveName === value;
             const typeColor = move?.type
-              ? (TYPE_BG_COLORS[move.type] ?? "bg-muted")
+              ? (TYPE_BG_COLORS[move.type as keyof typeof TYPE_BG_COLORS] ??
+                "bg-muted")
               : "bg-muted";
             const catLabel = move?.category
               ? (CATEGORY_LABELS[move.category] ?? move.category)

@@ -36,7 +36,9 @@ export function TeraPicker({ value, onSelect, onClose }: TeraPickerProps) {
     <div className="bg-popover rounded-lg border p-3 shadow-md">
       <div className="grid grid-cols-4 gap-1.5">
         {teraTypes.map((type) => {
-          const colorClass = TYPE_BG_COLORS[type] ?? "bg-muted text-foreground";
+          const colorClass =
+            TYPE_BG_COLORS[type as keyof typeof TYPE_BG_COLORS] ??
+            "bg-muted text-foreground";
           const isSelected = type === value;
 
           return (

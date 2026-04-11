@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronDown, Star } from "lucide-react";
 
+import { type StatKey } from "./stat-types";
 import { AbilityPicker } from "./ability-picker";
 import { EvEditor } from "./ev-editor";
 import { ItemPicker } from "./item-picker";
@@ -28,7 +29,7 @@ import { TYPE_PILL_COLORS } from "./type-colors";
 // =============================================================================
 
 /** Maps stat key names to database column suffixes. */
-const STAT_TO_DB_FIELD: Record<string, string> = {
+const STAT_TO_DB_FIELD: Record<StatKey, string> = {
   hp: "hp",
   attack: "attack",
   defense: "defense",
@@ -64,8 +65,8 @@ interface PokemonEditorProps {
 // =============================================================================
 
 /** Convert a stat camelCase key to the database column suffix. */
-function statToDbField(stat: string): string {
-  return STAT_TO_DB_FIELD[stat] ?? stat;
+function statToDbField(stat: StatKey): string {
+  return STAT_TO_DB_FIELD[stat];
 }
 
 /** Collect held items from all other team members for duplicate detection. */
@@ -197,7 +198,9 @@ export function PokemonEditor({
       },
     };
     const spread = presets[preset];
-    for (const [stat, value] of Object.entries(spread)) {
+    for (const [stat, value] of Object.entries(spread) as Array<
+      [StatKey, number]
+    >) {
       onUpdate(`ev_${statToDbField(stat)}`, value);
     }
   }

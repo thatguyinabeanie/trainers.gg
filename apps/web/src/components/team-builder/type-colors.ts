@@ -1,5 +1,7 @@
+import { type PokemonType } from "@trainers/pokemon";
+
 /** Tailwind background colors for each Pokemon type pill. */
-export const TYPE_PILL_COLORS: Record<string, string> = {
+export const TYPE_PILL_COLORS: Record<PokemonType | "Stellar", string> = {
   Normal: "bg-stone-400 text-white",
   Bug: "bg-lime-500 text-white",
   Dark: "bg-stone-700 text-white",
@@ -22,7 +24,7 @@ export const TYPE_PILL_COLORS: Record<string, string> = {
 };
 
 /** Tailwind background colors for type buttons (with proper text contrast). */
-export const TYPE_BG_COLORS: Record<string, string> = {
+export const TYPE_BG_COLORS: Record<PokemonType | "Stellar", string> = {
   Normal: "bg-stone-400 text-black",
   Bug: "bg-lime-500 text-white",
   Dark: "bg-stone-700 text-white",

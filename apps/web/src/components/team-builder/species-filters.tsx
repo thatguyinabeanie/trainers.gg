@@ -318,7 +318,9 @@ export function SpeciesFilters({
                   className={cn(
                     "rounded px-1.5 py-0.5 text-xs font-medium transition-opacity",
                     filters.types.includes(type)
-                      ? (TYPE_PILL_COLORS[type] ?? "bg-muted")
+                      ? (TYPE_PILL_COLORS[
+                          type as keyof typeof TYPE_PILL_COLORS
+                        ] ?? "bg-muted")
                       : "bg-muted text-muted-foreground opacity-60 hover:opacity-100"
                   )}
                 >
@@ -479,7 +481,8 @@ export function SpeciesFilters({
               className={cn(
                 "rounded px-2 py-0.5 text-xs font-medium transition-colors",
                 filters.types.includes(type)
-                  ? (TYPE_PILL_COLORS[type] ?? "bg-muted")
+                  ? (TYPE_PILL_COLORS[type as keyof typeof TYPE_PILL_COLORS] ??
+                      "bg-muted")
                   : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >

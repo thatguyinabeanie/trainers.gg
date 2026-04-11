@@ -3,7 +3,12 @@
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
-import { type StatValues, STAT_KEYS, STAT_LABELS } from "./stat-types";
+import {
+  type StatKey,
+  type StatValues,
+  STAT_KEYS,
+  STAT_LABELS,
+} from "./stat-types";
 
 // =============================================================================
 // Constants
@@ -17,7 +22,7 @@ const MAX_IV = 31;
 
 interface IvEditorProps {
   ivs: StatValues;
-  onChange: (stat: string, value: number) => void;
+  onChange: (stat: StatKey, value: number) => void;
 }
 
 // =============================================================================
