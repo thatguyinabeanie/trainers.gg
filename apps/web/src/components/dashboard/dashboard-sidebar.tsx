@@ -769,7 +769,7 @@ function PlayerNav({
                 { label: "Coaching", href: "/coaching", icon: GraduationCap },
               ] satisfies { label: string; href: string; icon: ElementType }[]
             ).map((item) => (
-              <SidebarMenuItem key={item.label}>
+              <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   render={<Link href={item.href} />}
                   tooltip={item.label}

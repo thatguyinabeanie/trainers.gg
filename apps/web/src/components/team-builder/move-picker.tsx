@@ -58,13 +58,17 @@ export function MovePicker({
 
   const allMoves = getLearnableMoves(species);
 
-  // Apply search + category filter
-  const filtered = allMoves.filter((name) => {
+  // Pre-compute move data once, then filter and cap
+  const movesWithData = allMoves.map((name) => ({
+    name,
+    data: getMoveData(name),
+  }));
+
+  const filtered = movesWithData.filter(({ name, data }) => {
     if (!name.toLowerCase().includes(search.toLowerCase())) return false;
     if (category !== "All") {
-      const move = getMoveData(name);
-      if (!move) return false;
-      if (move.category !== category) return false;
+      if (!data) return false;
+      if (data.category !== category) return false;
     }
     return true;
   });
@@ -117,8 +121,7 @@ export function MovePicker({
       {/* Move list */}
       <ScrollArea className="h-72">
         <div className="flex flex-col gap-0.5 pr-2">
-          {visible.map((moveName) => {
-            const move = getMoveData(moveName);
+          {visible.map(({ name: moveName, data: move }) => {
             const isSelected = moveName === value;
             const typeColor = move?.type
               ? (TYPE_BG_COLORS[move.type as keyof typeof TYPE_BG_COLORS] ??
