@@ -333,7 +333,7 @@ describe("updatePokemonAction", () => {
   it("updates a pokemon", async () => {
     mockUpdatePokemon.mockResolvedValue(undefined);
 
-    const result = await updatePokemonAction(55, { nickname: "Sparky" });
+    const result = await updatePokemonAction(1, 55, { nickname: "Sparky" });
 
     expect(result).toEqual({ success: true, data: undefined });
     expect(mockUpdatePokemon).toHaveBeenCalledWith(mockSupabase, 55, {
@@ -344,7 +344,7 @@ describe("updatePokemonAction", () => {
   it("returns an error when the mutation throws", async () => {
     mockUpdatePokemon.mockRejectedValue(new Error("Pokemon not found"));
 
-    const result = await updatePokemonAction(55, { nickname: "Sparky" });
+    const result = await updatePokemonAction(1, 55, { nickname: "Sparky" });
 
     expect(result).toEqual({
       success: false,
@@ -355,9 +355,16 @@ describe("updatePokemonAction", () => {
   it("returns an error when a bot is detected", async () => {
     simulateBot();
 
-    const result = await updatePokemonAction(55, { nickname: "Sparky" });
+    const result = await updatePokemonAction(1, 55, { nickname: "Sparky" });
 
     expect(result.success).toBe(false);
+    expect(mockUpdatePokemon).not.toHaveBeenCalled();
+  });
+
+  it("returns a validation error when teamId is 0", async () => {
+    const result = await updatePokemonAction(0, 55, { nickname: "Sparky" });
+
+    expect(result).toEqual({ success: false, error: expect.any(String) });
     expect(mockUpdatePokemon).not.toHaveBeenCalled();
   });
 });

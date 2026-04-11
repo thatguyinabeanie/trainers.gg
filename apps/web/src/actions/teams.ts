@@ -69,6 +69,7 @@ export async function createTeamAction(
       parsed.data.name,
       parsed.data.format
     );
+    invalidateTeamCaches(result.id);
     return { success: true, data: { id: result.id } };
   } catch (error) {
     return {
@@ -193,16 +194,23 @@ export async function addPokemonToTeamAction(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
+  const parsedPokemon = pokemonPayloadSchema.safeParse(pokemon);
+  if (!parsedPokemon.success) {
+    return {
+      success: false,
+      error: parsedPokemon.error.issues[0]?.message ?? "Invalid pokemon data",
+    };
+  }
   try {
     await rejectBots();
-    const parsedPokemon = pokemonPayloadSchema.parse(pokemon);
     const supabase = await createClient();
     const result = await addPokemonToTeamMutation(
       supabase,
       parsed.data.teamId,
-      parsedPokemon as TablesInsert<"pokemon">,
+      parsedPokemon.data as TablesInsert<"pokemon">,
       parsed.data.position
     );
+    invalidateTeamCaches(parsed.data.teamId);
     return { success: true, data: { pokemonId: result.pokemonId } };
   } catch (error) {
     return {
@@ -217,9 +225,17 @@ export async function addPokemonToTeamAction(
  * Only the fields provided will be updated.
  */
 export async function updatePokemonAction(
+  teamId: number,
   pokemonId: number,
   data: Partial<TablesUpdate<"pokemon">>
 ): Promise<ActionResult<void>> {
+  const parsedTeam = updateTeamInputSchema.safeParse({ teamId });
+  if (!parsedTeam.success) {
+    return {
+      success: false,
+      error: parsedTeam.error.issues[0]?.message ?? "Invalid team id",
+    };
+  }
   const parsed = updatePokemonInputSchema.safeParse({ pokemonId });
   if (!parsed.success) {
     return {
@@ -236,6 +252,7 @@ export async function updatePokemonAction(
       parsed.data.pokemonId,
       parsedData as Partial<TablesUpdate<"pokemon">>
     );
+    invalidateTeamCaches(parsedTeam.data.teamId);
   }, "Failed to update pokemon");
 }
 
@@ -262,6 +279,7 @@ export async function removePokemonFromTeamAction(
       parsed.data.teamId,
       parsed.data.pokemonId
     );
+    invalidateTeamCaches(parsed.data.teamId);
   }, "Failed to remove pokemon from team");
 }
 

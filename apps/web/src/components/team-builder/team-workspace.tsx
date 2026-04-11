@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   type GameFormat,
@@ -17,6 +17,7 @@ import { addPokemonToTeamAction, updatePokemonAction } from "@/actions/teams";
 import { ContextPanel } from "@/components/team-builder/context-panel";
 import { PokemonEditor } from "@/components/team-builder/pokemon-editor";
 import { TeamStrip } from "@/components/team-builder/team-strip";
+import { teamKeys } from "@/components/team-builder/teams-list-client";
 
 import { SpeciesPicker } from "./species-picker";
 
@@ -50,7 +51,7 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     (a, b) => a.team_position - b.team_position
   );
 
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
 
   const [selectedPokemonId, setSelectedPokemonId] = useState<number | null>(
@@ -101,9 +102,9 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
     if (savedIdleTimerRef.current) clearTimeout(savedIdleTimerRef.current);
     setSaveStatus("saving");
     saveTimerRef.current = setTimeout(async () => {
-      const result = await updatePokemonAction(pokemonId, {
+      const result = await updatePokemonAction(team.id, pokemonId, {
         [field]: value,
-      } as Parameters<typeof updatePokemonAction>[1]);
+      } as Parameters<typeof updatePokemonAction>[2]);
       if (result.success) {
         setSaveStatus("saved");
         savedIdleTimerRef.current = setTimeout(
@@ -172,7 +173,9 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
         if (result.success) {
           setPickerState({ open: false, slot: null, mode: "add" });
           setSelectedPokemonId(result.data.pokemonId);
-          router.refresh();
+          queryClient.invalidateQueries({
+            queryKey: teamKeys.detail(team.id),
+          });
         } else {
           toast.error(result.error ?? "Failed to add Pokémon.");
         }
@@ -186,7 +189,7 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
         selectMode === "defaults" ? (getValidAbilities(species)[0] ?? "") : "";
 
       startTransition(async () => {
-        const result = await updatePokemonAction(pokemonId, {
+        const result = await updatePokemonAction(team.id, pokemonId, {
           species,
           ability: firstAbility,
           nature: selectMode === "defaults" ? "Hardy" : "",
@@ -203,7 +206,9 @@ export function TeamWorkspace({ team, handle, format }: TeamWorkspaceProps) {
         });
         if (result.success) {
           setPickerState({ open: false, slot: null, mode: "add" });
-          router.refresh();
+          queryClient.invalidateQueries({
+            queryKey: teamKeys.detail(team.id),
+          });
         } else {
           toast.error(result.error ?? "Failed to update species.");
         }
