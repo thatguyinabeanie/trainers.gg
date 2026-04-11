@@ -215,7 +215,7 @@ function StatRow({
   // -------------------------------------------------------------------------
 
   return (
-    <div className="grid grid-cols-[52px_1fr_56px_48px] items-center gap-2">
+    <div className="grid grid-cols-[44px_1fr_48px] items-center gap-2 md:grid-cols-[52px_1fr_56px_48px]">
       {/* Stat label with nature indicator */}
       <span
         className={cn(
@@ -250,7 +250,7 @@ function StatRow({
           }
         }}
         className={cn(
-          "relative h-4 cursor-ew-resize rounded-full select-none",
+          "relative h-6 min-h-[44px] cursor-ew-resize touch-none rounded-full select-none md:h-4 md:min-h-0",
           "bg-muted focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none"
         )}
       >
@@ -279,7 +279,7 @@ function StatRow({
           })}
       </div>
 
-      {/* EV numeric input */}
+      {/* EV numeric input — hidden on mobile, bar + value display is sufficient */}
       <input
         type="number"
         min={0}
@@ -292,7 +292,7 @@ function StatRow({
           onChange(clamped);
         }}
         className={cn(
-          "h-6 w-full rounded border border-transparent bg-transparent px-1 text-right text-xs tabular-nums",
+          "hidden h-6 w-full rounded border border-transparent bg-transparent px-1 text-right text-xs tabular-nums md:block",
           "hover:border-border focus:border-border focus:outline-none",
           "text-foreground"
         )}
@@ -344,14 +344,14 @@ export function EvEditor({
       {/* Stat rows */}
       <div className="flex flex-col gap-1.5">
         {/* Column headers */}
-        <div className="grid grid-cols-[52px_1fr_56px_48px] items-center gap-2">
+        <div className="grid grid-cols-[44px_1fr_48px] items-center gap-2 md:grid-cols-[52px_1fr_56px_48px]">
           <span className="text-muted-foreground text-right text-[10px] tracking-wide uppercase">
             Stat
           </span>
           <span className="text-muted-foreground text-center text-[10px] tracking-wide uppercase">
             EVs
           </span>
-          <span className="text-muted-foreground text-right text-[10px] tracking-wide uppercase">
+          <span className="text-muted-foreground hidden text-right text-[10px] tracking-wide uppercase md:block">
             Val
           </span>
           <span className="text-muted-foreground text-right text-[10px] tracking-wide uppercase">

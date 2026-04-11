@@ -148,7 +148,7 @@ export function SpeciesTable({
   const isTruncated = sorted.length > MAX_VISIBLE_ROWS;
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col overflow-x-auto">
       {isTruncated && (
         <div className="text-muted-foreground border-b px-3 py-1.5 text-xs">
           Showing {MAX_VISIBLE_ROWS} of {sorted.length} results — search to
@@ -169,14 +169,14 @@ export function SpeciesTable({
             {/* Types — no sort */}
             <TableHead>Types</TableHead>
 
-            {/* Ability — no sort */}
-            <TableHead>Ability</TableHead>
+            {/* Ability — no sort, hidden on mobile */}
+            <TableHead className="hidden md:table-cell">Ability</TableHead>
 
             <SortableHead
               column="hp"
               currentSort={sort}
               onSort={handleSort}
-              className="w-10 text-right"
+              className="hidden w-10 text-right md:table-cell"
             >
               HP
             </SortableHead>
@@ -184,7 +184,7 @@ export function SpeciesTable({
               column="atk"
               currentSort={sort}
               onSort={handleSort}
-              className="w-10 text-right"
+              className="hidden w-10 text-right md:table-cell"
             >
               Atk
             </SortableHead>
@@ -192,7 +192,7 @@ export function SpeciesTable({
               column="def"
               currentSort={sort}
               onSort={handleSort}
-              className="w-10 text-right"
+              className="hidden w-10 text-right md:table-cell"
             >
               Def
             </SortableHead>
@@ -200,7 +200,7 @@ export function SpeciesTable({
               column="spa"
               currentSort={sort}
               onSort={handleSort}
-              className="w-10 text-right"
+              className="hidden w-10 text-right md:table-cell"
             >
               SpA
             </SortableHead>
@@ -208,7 +208,7 @@ export function SpeciesTable({
               column="spd"
               currentSort={sort}
               onSort={handleSort}
-              className="w-10 text-right"
+              className="hidden w-10 text-right md:table-cell"
             >
               SpD
             </SortableHead>
@@ -216,7 +216,7 @@ export function SpeciesTable({
               column="spe"
               currentSort={sort}
               onSort={handleSort}
-              className="w-10 text-right"
+              className="hidden w-10 text-right md:table-cell"
             >
               Spe
             </SortableHead>
@@ -229,8 +229,10 @@ export function SpeciesTable({
               BST
             </SortableHead>
 
-            {/* Usage — no data in V1 */}
-            <TableHead className="text-right">Usage</TableHead>
+            {/* Usage — no data in V1, hidden on mobile */}
+            <TableHead className="hidden text-right md:table-cell">
+              Usage
+            </TableHead>
           </TableRow>
         </TableHeader>
 
@@ -294,15 +296,15 @@ export function SpeciesTable({
                   </div>
                 </TableCell>
 
-                {/* Primary ability */}
-                <TableCell className="text-muted-foreground py-1 text-xs">
+                {/* Primary ability — hidden on mobile */}
+                <TableCell className="text-muted-foreground hidden py-1 text-xs md:table-cell">
                   {entry.abilities[0] ?? "—"}
                 </TableCell>
 
-                {/* Stats */}
+                {/* Stats — hidden on mobile */}
                 <TableCell
                   className={cn(
-                    "py-1 text-right text-xs tabular-nums",
+                    "hidden py-1 text-right text-xs tabular-nums md:table-cell",
                     getStatColor(entry.baseStats.hp)
                   )}
                 >
@@ -310,7 +312,7 @@ export function SpeciesTable({
                 </TableCell>
                 <TableCell
                   className={cn(
-                    "py-1 text-right text-xs tabular-nums",
+                    "hidden py-1 text-right text-xs tabular-nums md:table-cell",
                     getStatColor(entry.baseStats.atk)
                   )}
                 >
@@ -318,7 +320,7 @@ export function SpeciesTable({
                 </TableCell>
                 <TableCell
                   className={cn(
-                    "py-1 text-right text-xs tabular-nums",
+                    "hidden py-1 text-right text-xs tabular-nums md:table-cell",
                     getStatColor(entry.baseStats.def)
                   )}
                 >
@@ -326,7 +328,7 @@ export function SpeciesTable({
                 </TableCell>
                 <TableCell
                   className={cn(
-                    "py-1 text-right text-xs tabular-nums",
+                    "hidden py-1 text-right text-xs tabular-nums md:table-cell",
                     getStatColor(entry.baseStats.spa)
                   )}
                 >
@@ -334,7 +336,7 @@ export function SpeciesTable({
                 </TableCell>
                 <TableCell
                   className={cn(
-                    "py-1 text-right text-xs tabular-nums",
+                    "hidden py-1 text-right text-xs tabular-nums md:table-cell",
                     getStatColor(entry.baseStats.spd)
                   )}
                 >
@@ -342,7 +344,7 @@ export function SpeciesTable({
                 </TableCell>
                 <TableCell
                   className={cn(
-                    "py-1 text-right text-xs tabular-nums",
+                    "hidden py-1 text-right text-xs tabular-nums md:table-cell",
                     getStatColor(entry.baseStats.spe)
                   )}
                 >
@@ -354,8 +356,8 @@ export function SpeciesTable({
                   {entry.bst}
                 </TableCell>
 
-                {/* Usage */}
-                <TableCell className="text-muted-foreground py-1 text-right text-xs">
+                {/* Usage — hidden on mobile */}
+                <TableCell className="text-muted-foreground hidden py-1 text-right text-xs md:table-cell">
                   —
                 </TableCell>
               </TableRow>

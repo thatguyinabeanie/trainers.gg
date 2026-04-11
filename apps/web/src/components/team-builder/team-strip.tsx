@@ -70,7 +70,7 @@ function PokemonChip({
     return (
       <div
         className={cn(
-          "border-primary bg-primary/5 relative flex h-20 w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 transition-colors"
+          "border-primary bg-primary/5 relative flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 transition-colors md:h-20 md:w-20"
         )}
         aria-label="Choosing species…"
       >
@@ -83,7 +83,7 @@ function PokemonChip({
     // Slot exists in DB but has no species yet — treat like choosing
     return (
       <div
-        className="bg-muted/40 relative flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border-2 border-dashed"
+        className="bg-muted/40 relative flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-dashed md:h-20 md:w-20"
         aria-label="Empty slot"
       />
     );
@@ -106,7 +106,7 @@ function PokemonChip({
       onDragOver={onDragOver}
       onDrop={onDrop}
       className={cn(
-        "group relative flex h-20 w-20 shrink-0 cursor-grab flex-col items-center justify-between rounded-xl border-2 pt-1 pb-1 transition-colors active:cursor-grabbing",
+        "group relative flex h-16 w-16 shrink-0 cursor-grab flex-col items-center justify-between rounded-xl border-2 pt-1 pb-1 transition-colors active:cursor-grabbing md:h-20 md:w-20",
         isSelected
           ? "border-primary bg-primary/10"
           : "hover:border-border bg-muted/40 hover:bg-muted/60 border-transparent"
@@ -122,7 +122,7 @@ function PokemonChip({
         aria-pressed={isSelected}
       >
         {/* Sprite */}
-        <div className="relative size-10 shrink-0">
+        <div className="relative size-8 shrink-0 md:size-10">
           <Image
             src={sprite.url}
             alt={pokemon.species ?? ""}
@@ -199,7 +199,7 @@ function EmptySlot({ onClick, onDragOver, onDrop }: EmptySlotProps) {
       onDragOver={onDragOver}
       onDrop={onDrop}
       className={cn(
-        "flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-xl border-2 border-dashed",
+        "flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border-2 border-dashed md:h-20 md:w-20",
         "text-muted-foreground hover:border-primary hover:text-primary",
         "transition-colors"
       )}
@@ -318,7 +318,7 @@ export function TeamStrip({
 
   return (
     <div
-      className="flex items-center justify-center gap-2 px-4 py-3"
+      className="flex items-center justify-center gap-1.5 overflow-x-auto px-3 py-3 md:gap-2 md:px-4"
       aria-label="Team strip"
     >
       {sorted.map((entry, idx) => (
@@ -352,7 +352,7 @@ export function TeamStrip({
           return (
             <div
               key={`empty-${i}`}
-              className="border-primary bg-primary/5 flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-xl border-2"
+              className="border-primary bg-primary/5 flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border-2 md:h-20 md:w-20"
               aria-label="Choosing species…"
             >
               <span className="text-primary text-xs font-medium">
@@ -377,7 +377,7 @@ export function TeamStrip({
         return (
           <div
             key={`empty-${i}`}
-            className="bg-muted/20 flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-transparent"
+            className="bg-muted/20 flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-transparent md:h-20 md:w-20"
             aria-label={`Empty slot ${slotIdx + 1}`}
           />
         );

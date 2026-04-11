@@ -59,7 +59,7 @@ export function ValidationPanel({
   return (
     <div className="bg-muted/30 border-b">
       {/* Header row */}
-      <div className="flex items-center justify-between px-3 py-2">
+      <div className="flex items-center justify-between px-3 py-2 md:px-4">
         <span className="text-sm font-medium">
           {errors.length === 0 ? (
             <span className="flex items-center gap-1.5 text-emerald-600">
@@ -106,7 +106,7 @@ export function ValidationPanel({
               {/* Species name */}
               <span
                 className={cn(
-                  "w-24 shrink-0 truncate font-medium",
+                  "w-16 shrink-0 truncate font-medium md:w-24",
                   error.severity === "error"
                     ? "text-destructive"
                     : "text-amber-600"
@@ -116,7 +116,7 @@ export function ValidationPanel({
               </span>
 
               {/* Field label */}
-              <span className="text-muted-foreground w-20 shrink-0 truncate">
+              <span className="text-muted-foreground w-16 shrink-0 truncate md:w-20">
                 {getFieldLabel(error.field)}
               </span>
 

@@ -250,7 +250,7 @@ export function PokemonEditor({
       {/* ===================================================================
           Section 1: Species header
           =================================================================== */}
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className="flex items-center gap-3 px-3 py-3 md:px-4">
         {/* Species name — clickable to open species picker */}
         <div className="flex flex-col">
           <button
@@ -310,7 +310,7 @@ export function PokemonEditor({
       {/* ===================================================================
           Section 2: 2-column field grid (ability, item, nature, tera type)
           =================================================================== */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-0 divide-y px-4">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-0 divide-y px-3 md:px-4">
         {/* Ability */}
         <div className="col-span-2 py-2">
           <p className="text-muted-foreground mb-1 text-[10px] font-semibold tracking-wide uppercase">
@@ -331,7 +331,7 @@ export function PokemonEditor({
               type="button"
               onClick={() => openPicker("ability")}
               className={cn(
-                "flex w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
+                "flex min-h-[44px] w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
                 "hover:bg-muted/50 transition-colors",
                 getFieldError("ability")
                   ? "border-destructive"
@@ -365,7 +365,7 @@ export function PokemonEditor({
               type="button"
               onClick={() => openPicker("item")}
               className={cn(
-                "flex w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
+                "flex min-h-[44px] w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
                 "hover:bg-muted/50 transition-colors",
                 getFieldError("item") || getFieldError("heldItem")
                   ? "border-destructive"
@@ -405,7 +405,7 @@ export function PokemonEditor({
               type="button"
               onClick={() => openPicker("nature")}
               className={cn(
-                "flex w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
+                "flex min-h-[44px] w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
                 "hover:bg-muted/50 transition-colors",
                 getFieldError("nature")
                   ? "border-destructive"
@@ -437,7 +437,7 @@ export function PokemonEditor({
               type="button"
               onClick={() => openPicker("tera")}
               className={cn(
-                "flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm",
+                "flex min-h-[44px] w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm",
                 "hover:bg-muted/50 transition-colors"
               )}
             >
@@ -458,7 +458,7 @@ export function PokemonEditor({
       {/* ===================================================================
           Section 3: Optional fields — nickname, gender, shiny toggle
           =================================================================== */}
-      <div className="flex items-start gap-3 px-4 py-3">
+      <div className="flex items-start gap-3 px-3 py-3 md:px-4">
         {/* Nickname */}
         <div className="flex flex-1 flex-col">
           <Input
@@ -531,14 +531,14 @@ export function PokemonEditor({
       {/* ===================================================================
           Section 4: Moves — 2x2 grid
           =================================================================== */}
-      <div className="px-4 py-3">
+      <div className="px-3 py-3 md:px-4">
         <div className="mb-2 flex items-center gap-2">
           <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
             Moves
           </p>
           {renderFieldError("moves")}
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           {MOVE_SLOTS.map((slot) => {
             const moveValue = getMoveBySlot(pokemon, slot);
             const pickerKey = `move-${slot}` as const;
@@ -563,7 +563,7 @@ export function PokemonEditor({
                     type="button"
                     onClick={() => openPicker(pickerKey)}
                     className={cn(
-                      "flex w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
+                      "flex min-h-[44px] w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
                       "hover:bg-muted/50 transition-colors",
                       moveError
                         ? "border-destructive"
@@ -599,7 +599,7 @@ export function PokemonEditor({
       {/* ===================================================================
           Section 5: EV editor
           =================================================================== */}
-      <div className="px-4 py-3">
+      <div className="px-3 py-3 md:px-4">
         <p className="text-muted-foreground mb-2 text-[10px] font-semibold tracking-wide uppercase">
           EVs
         </p>
@@ -621,7 +621,7 @@ export function PokemonEditor({
           Section 6: IV editor (hidden for Champions format)
           =================================================================== */}
       {!isChampionsFormat && (
-        <div className="px-4 py-3">
+        <div className="px-3 py-3 md:px-4">
           <IvEditor
             ivs={ivs}
             onChange={(stat, value) =>
@@ -634,7 +634,7 @@ export function PokemonEditor({
       {/* ===================================================================
           Section 7: Notes — collapsible textarea
           =================================================================== */}
-      <div className="px-4 py-3">
+      <div className="px-3 py-3 md:px-4">
         <button
           type="button"
           onClick={() => setNotesOpen((prev) => !prev)}

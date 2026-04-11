@@ -255,7 +255,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   return (
     <div className="relative flex flex-1 flex-col overflow-hidden">
       {/* Save status indicator */}
-      <div className="absolute top-2 right-2 z-10">
+      <div className="absolute top-1 right-2 z-10 md:top-2">
         {saveStatus === "saving" && (
           <span className="text-muted-foreground animate-pulse text-xs">
             Saving...
@@ -282,7 +282,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
       </div>
 
       {/* Validation toolbar — below the team strip */}
-      <div className="flex items-center justify-end border-b px-3 py-1.5">
+      <div className="flex items-center justify-end border-b px-2 py-1 md:px-3 md:py-1.5">
         <Button
           variant={validationPanelOpen ? "secondary" : "outline"}
           size="sm"
@@ -355,9 +355,9 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
           </Button>
         </div>
       ) : (
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
           {/* Editor panel (left 50%) */}
-          <div className="flex w-1/2 flex-col overflow-y-auto border-r">
+          <div className="flex max-h-[60vh] w-full flex-col overflow-y-auto border-r md:max-h-none md:w-1/2">
             {selectedEntry?.pokemon ? (
               <PokemonEditor
                 key={selectedEntry.pokemon.id}
@@ -386,7 +386,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
           </div>
 
           {/* Context panel (right 50%) */}
-          <div className="flex w-1/2 flex-col overflow-hidden">
+          <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden md:w-1/2">
             <ContextPanel
               team={team}
               selectedPokemon={selectedEntry?.pokemon ?? null}
