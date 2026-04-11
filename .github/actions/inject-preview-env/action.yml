@@ -49,17 +49,7 @@ runs:
         # Extract password from POSTGRES_URL with a URL parser so encoded
         # special characters in Supabase-generated credentials are handled correctly
         POSTGRES_URL=$(echo "$INFO" | jq -r '.POSTGRES_URL // empty')
-        DB_PASSWORD=$(
-          POSTGRES_URL="$POSTGRES_URL" python3 -c "
-import os
-from urllib.parse import unquote, urlsplit
-url = os.environ.get('POSTGRES_URL', '')
-if url:
-    pw = urlsplit(url).password
-    if pw:
-        print(unquote(pw))
-"
-        )
+        DB_PASSWORD=$(echo "$POSTGRES_URL" | python3 -c "import sys;from urllib.parse import unquote,urlsplit;u=sys.stdin.read().strip();p=urlsplit(u).password if u else None;print(unquote(p)) if p else None")
 
         # Also grab the full connection strings the build may need
         POSTGRES_URL_NON_POOLING=$(echo "$INFO" | jq -r '.POSTGRES_URL_NON_POOLING // empty')
