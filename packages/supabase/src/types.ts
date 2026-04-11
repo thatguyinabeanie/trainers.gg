@@ -3101,6 +3101,10 @@ export type Database = {
         Args: { p_invitation_id: number }
         Returns: Json
       }
+      add_pokemon_to_team: {
+        Args: { p_pokemon: Json; p_position: number; p_team_id: number }
+        Returns: number
+      }
       advance_to_top_cut: {
         Args: { p_top_cut_size?: number; p_tournament_id: number }
         Returns: Json
@@ -3288,6 +3292,10 @@ export type Database = {
           p_tournament_id: number
         }
         Returns: Json
+      }
+      remove_pokemon_from_team: {
+        Args: { p_pokemon_id: number; p_team_id: number }
+        Returns: undefined
       }
       reorder_team_pokemon: {
         Args: { p_positions: Json; p_team_id: number }

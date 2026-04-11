@@ -237,118 +237,64 @@ describe("teams mutations", () => {
       level: 50,
     } as Parameters<typeof addPokemonToTeam>[2];
 
-    it("inserts pokemon record then creates team_pokemon join row", async () => {
+    it("calls the add_pokemon_to_team RPC and returns the new pokemon id", async () => {
       const mockClient = createMockClient();
-
-      // First from(): insert pokemon
-      const mockPokemonChain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: { id: 55 }, error: null }),
-      };
-
-      // Second from(): insert team_pokemon join
-      const mockJoinChain = {
-        insert: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockPokemonChain)
-        .mockReturnValueOnce(mockJoinChain);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: 55, error: null });
 
       const result = await addPokemonToTeam(mockClient, 3, pokemonInsert, 2);
 
       expect(result).toEqual({ pokemonId: 55 });
-      expect(mockClient.from).toHaveBeenNthCalledWith(1, "pokemon");
-      expect(mockPokemonChain.insert).toHaveBeenCalledWith(pokemonInsert);
-      expect(mockClient.from).toHaveBeenNthCalledWith(2, "team_pokemon");
-      expect(mockJoinChain.insert).toHaveBeenCalledWith({
-        team_id: 3,
-        pokemon_id: 55,
-        team_position: 2,
+      expect(
+        (mockClient as unknown as { rpc: jest.Mock }).rpc
+      ).toHaveBeenCalledWith("add_pokemon_to_team", {
+        p_team_id: 3,
+        p_pokemon: pokemonInsert,
+        p_position: 2,
       });
     });
 
-    it("throws when pokemon insert fails", async () => {
+    it("throws when the RPC returns an error", async () => {
       const mockClient = createMockClient();
-
-      const mockPokemonChain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({
           data: null,
           error: { message: "constraint violation" },
-        }),
-      };
-
-      (mockClient.from as jest.Mock).mockReturnValueOnce(mockPokemonChain);
+        });
 
       await expect(
         addPokemonToTeam(mockClient, 3, pokemonInsert, 2)
-      ).rejects.toThrow("Failed to insert pokemon: constraint violation");
+      ).rejects.toThrow("Failed to add pokemon to team: constraint violation");
     });
 
-    it("cleans up orphaned pokemon and throws when team_pokemon join insert fails", async () => {
+    it("throws when the RPC returns null data", async () => {
       const mockClient = createMockClient();
-
-      const mockPokemonChain = {
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: { id: 55 }, error: null }),
-      };
-
-      const mockJoinChain = {
-        insert: jest.fn().mockResolvedValue({
-          error: { message: "foreign key error" },
-        }),
-      };
-
-      // Cleanup: delete the orphaned pokemon
-      const mockCleanupChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockPokemonChain)
-        .mockReturnValueOnce(mockJoinChain)
-        .mockReturnValueOnce(mockCleanupChain);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: null });
 
       await expect(
         addPokemonToTeam(mockClient, 3, pokemonInsert, 2)
-      ).rejects.toThrow("Failed to link pokemon to team: foreign key error");
-
-      // Verify orphaned pokemon was cleaned up
-      expect(mockClient.from).toHaveBeenNthCalledWith(3, "pokemon");
-      expect(mockCleanupChain.delete).toHaveBeenCalled();
-      expect(mockCleanupChain.eq).toHaveBeenCalledWith("id", 55);
+      ).rejects.toThrow("add_pokemon_to_team returned no pokemon ID");
     });
 
     it.each([0, 1, 2, 3, 4, 5])(
-      "passes position=%i to the team_pokemon join row",
+      "passes position=%i to the RPC",
       async (position) => {
         const mockClient = createMockClient();
-
-        const mockPokemonChain = {
-          insert: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          single: jest
-            .fn()
-            .mockResolvedValue({ data: { id: 55 }, error: null }),
-        };
-
-        const mockJoinChain = {
-          insert: jest.fn().mockResolvedValue({ error: null }),
-        };
-
-        (mockClient.from as jest.Mock)
-          .mockReturnValueOnce(mockPokemonChain)
-          .mockReturnValueOnce(mockJoinChain);
+        (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+          .fn()
+          .mockResolvedValue({ data: 55, error: null });
 
         await addPokemonToTeam(mockClient, 3, pokemonInsert, position);
 
-        expect(mockJoinChain.insert).toHaveBeenCalledWith(
-          expect.objectContaining({ team_position: position })
+        expect(
+          (mockClient as unknown as { rpc: jest.Mock }).rpc
+        ).toHaveBeenCalledWith(
+          "add_pokemon_to_team",
+          expect.objectContaining({ p_position: position })
         );
       }
     );
@@ -411,74 +357,30 @@ describe("teams mutations", () => {
   // ==========================================================================
 
   describe("removePokemonFromTeam", () => {
-    // The join-row delete uses two .eq() calls: .eq("team_id", ...).eq("pokemon_id", ...)
-    // The second .eq() call resolves the whole chain, so we use a proxy that
-    // returns itself until the second call, which resolves the promise.
-    const makeDoubleEqDeleteChain = (resolvedValue: unknown) => {
-      let eqCallCount = 0;
-      const chain: Record<string, unknown> = {};
-      chain["delete"] = jest.fn().mockReturnValue(chain);
-      chain["eq"] = jest.fn().mockImplementation(() => {
-        eqCallCount++;
-        if (eqCallCount >= 2) {
-          return Promise.resolve(resolvedValue);
-        }
-        return chain;
-      });
-      return chain as { delete: jest.Mock; eq: jest.Mock };
-    };
-
-    it("deletes the join row then the pokemon record", async () => {
+    it("calls the remove_pokemon_from_team RPC with correct parameters", async () => {
       const mockClient = createMockClient();
-
-      const mockJoinChain = makeDoubleEqDeleteChain({ error: null });
-      const mockPokemonChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockJoinChain)
-        .mockReturnValueOnce(mockPokemonChain);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: null });
 
       await removePokemonFromTeam(mockClient, 3, 55);
 
-      expect(mockClient.from).toHaveBeenNthCalledWith(1, "team_pokemon");
-      expect(mockJoinChain.eq).toHaveBeenCalledWith("team_id", 3);
-      expect(mockJoinChain.eq).toHaveBeenCalledWith("pokemon_id", 55);
-      expect(mockClient.from).toHaveBeenNthCalledWith(2, "pokemon");
-      expect(mockPokemonChain.eq).toHaveBeenCalledWith("id", 55);
-    });
-
-    it("throws when deleting the join row fails", async () => {
-      const mockClient = createMockClient();
-
-      const mockJoinChain = makeDoubleEqDeleteChain({
-        error: { message: "RLS denied" },
+      expect(
+        (mockClient as unknown as { rpc: jest.Mock }).rpc
+      ).toHaveBeenCalledWith("remove_pokemon_from_team", {
+        p_team_id: 3,
+        p_pokemon_id: 55,
       });
-
-      (mockClient.from as jest.Mock).mockReturnValueOnce(mockJoinChain);
-
-      await expect(removePokemonFromTeam(mockClient, 3, 55)).rejects.toThrow(
-        "Failed to remove team_pokemon join row: RLS denied"
-      );
     });
 
-    it("throws when deleting the pokemon record fails", async () => {
+    it("throws when the RPC returns an error", async () => {
       const mockClient = createMockClient();
-
-      const mockJoinChain = makeDoubleEqDeleteChain({ error: null });
-      const mockPokemonChain = {
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: { message: "row locked" } }),
-      };
-
-      (mockClient.from as jest.Mock)
-        .mockReturnValueOnce(mockJoinChain)
-        .mockReturnValueOnce(mockPokemonChain);
+      (mockClient as unknown as { rpc: jest.Mock }).rpc = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: { message: "RLS denied" } });
 
       await expect(removePokemonFromTeam(mockClient, 3, 55)).rejects.toThrow(
-        "Failed to delete pokemon record: row locked"
+        "Failed to remove pokemon from team: RLS denied"
       );
     });
   });
@@ -505,9 +407,9 @@ describe("teams mutations", () => {
       ).toHaveBeenCalledWith("reorder_team_pokemon", {
         p_team_id: 5,
         p_positions: [
-          { pokemonId: 10, position: 0 },
-          { pokemonId: 11, position: 1 },
-          { pokemonId: 12, position: 2 },
+          { pokemon_id: 10, position: 0 },
+          { pokemon_id: 11, position: 1 },
+          { pokemon_id: 12, position: 2 },
         ],
       });
     });

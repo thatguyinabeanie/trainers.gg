@@ -1,5 +1,5 @@
 import type { TypedClient } from "../client";
-import type { TablesInsert, TablesUpdate } from "../types";
+import type { Json, TablesInsert, TablesUpdate } from "../types";
 
 // =============================================================================
 // Team CRUD
@@ -88,7 +88,8 @@ export async function forkTeam(
 
 /**
  * Add a pokemon to a team at the given position.
- * Inserts a new pokemon record then creates the team_pokemon join row.
+ * Delegates to the `add_pokemon_to_team` RPC for transactional atomicity —
+ * if any step fails, the entire operation rolls back with no orphaned records.
  * Returns the new pokemon's id.
  */
 export async function addPokemonToTeam(
@@ -97,38 +98,17 @@ export async function addPokemonToTeam(
   pokemon: TablesInsert<"pokemon">,
   position: number
 ): Promise<{ pokemonId: number }> {
-  // Insert the pokemon record
-  const { data: newPokemon, error: pokemonError } = await supabase
-    .from("pokemon")
-    .insert(pokemon)
-    .select("id")
-    .single();
-
-  if (pokemonError)
-    throw new Error(`Failed to insert pokemon: ${pokemonError.message}`);
-
-  // Create the team_pokemon join row
-  const { error: joinError } = await supabase.from("team_pokemon").insert({
-    team_id: teamId,
-    pokemon_id: newPokemon.id,
-    team_position: position,
+  const { data, error } = await supabase.rpc("add_pokemon_to_team", {
+    p_team_id: teamId,
+    p_pokemon: pokemon as unknown as Json,
+    p_position: position,
   });
 
-  if (joinError) {
-    // Clean up the orphaned pokemon record — log if cleanup also fails
-    const { error: cleanupError } = await supabase
-      .from("pokemon")
-      .delete()
-      .eq("id", newPokemon.id);
-    if (cleanupError) {
-      console.error(
-        `Orphan cleanup failed for pokemon ${newPokemon.id}: ${cleanupError.message}`
-      );
-    }
-    throw new Error(`Failed to link pokemon to team: ${joinError.message}`);
-  }
+  if (error) throw new Error(`Failed to add pokemon to team: ${error.message}`);
+  if (data == null)
+    throw new Error("add_pokemon_to_team returned no pokemon ID");
 
-  return { pokemonId: newPokemon.id };
+  return { pokemonId: data as number };
 }
 
 /**
@@ -154,33 +134,21 @@ export async function updatePokemon(
 
 /**
  * Remove a pokemon from a team.
- * Deletes the team_pokemon join row and then the pokemon record itself.
+ * Delegates to the `remove_pokemon_from_team` RPC for transactional atomicity —
+ * both the team_pokemon join row and the pokemon record are deleted atomically.
  */
 export async function removePokemonFromTeam(
   supabase: TypedClient,
   teamId: number,
   pokemonId: number
 ): Promise<void> {
-  // Step 1: Delete the team_pokemon join row
-  const { error: joinError } = await supabase
-    .from("team_pokemon")
-    .delete()
-    .eq("team_id", teamId)
-    .eq("pokemon_id", pokemonId);
+  const { error } = await supabase.rpc("remove_pokemon_from_team", {
+    p_team_id: teamId,
+    p_pokemon_id: pokemonId,
+  });
 
-  if (joinError)
-    throw new Error(
-      `Failed to remove team_pokemon join row: ${joinError.message}`
-    );
-
-  // Step 2: Delete the pokemon record
-  const { error: pokemonError } = await supabase
-    .from("pokemon")
-    .delete()
-    .eq("id", pokemonId);
-
-  if (pokemonError)
-    throw new Error(`Failed to delete pokemon record: ${pokemonError.message}`);
+  if (error)
+    throw new Error(`Failed to remove pokemon from team: ${error.message}`);
 }
 
 /**
@@ -195,7 +163,7 @@ export async function reorderTeamPokemon(
   const { error } = await supabase.rpc("reorder_team_pokemon", {
     p_team_id: teamId,
     p_positions: positions.map(({ pokemonId, position }) => ({
-      pokemonId,
+      pokemon_id: pokemonId,
       position,
     })),
   });
