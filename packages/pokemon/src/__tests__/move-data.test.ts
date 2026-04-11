@@ -1,4 +1,9 @@
-import { getMoveType, getMoveCategory, getMoveBP } from "../move-data";
+import {
+  getMoveType,
+  getMoveCategory,
+  getMoveBP,
+  getMoveData,
+} from "../move-data";
 
 describe("getMoveType", () => {
   it("returns the type of a known move", () => {
@@ -98,4 +103,81 @@ describe("getMoveBP", () => {
   ])("returns correct base power for %s", (move, expectedBP) => {
     expect(getMoveBP(move)).toBe(expectedBP);
   });
+});
+
+describe("getMoveData", () => {
+  it("returns null for an unknown move", () => {
+    expect(getMoveData("NotARealMove")).toBeNull();
+  });
+
+  it("returns null for an empty string", () => {
+    expect(getMoveData("")).toBeNull();
+  });
+
+  it("returns full move data for Thunderbolt", () => {
+    const data = getMoveData("Thunderbolt");
+    expect(data).not.toBeNull();
+    expect(data?.name).toBe("Thunderbolt");
+    expect(data?.type).toBe("Electric");
+    expect(data?.category).toBe("Special");
+    expect(data?.basePower).toBe(90);
+    expect(data?.shortDesc).toBeTruthy();
+  });
+
+  it("returns full move data for Earthquake", () => {
+    const data = getMoveData("Earthquake");
+    expect(data).not.toBeNull();
+    expect(data?.name).toBe("Earthquake");
+    expect(data?.type).toBe("Ground");
+    expect(data?.category).toBe("Physical");
+    expect(data?.basePower).toBe(100);
+  });
+
+  it("returns full move data for Protect (status move)", () => {
+    const data = getMoveData("Protect");
+    expect(data).not.toBeNull();
+    expect(data?.name).toBe("Protect");
+    expect(data?.type).toBe("Normal");
+    expect(data?.category).toBe("Status");
+    expect(data?.basePower).toBe(0);
+  });
+
+  it("returns accuracy as a number for standard moves", () => {
+    const data = getMoveData("Thunderbolt");
+    expect(data).not.toBeNull();
+    expect(typeof data?.accuracy === "number" || data?.accuracy === true).toBe(
+      true
+    );
+  });
+
+  it("returns accuracy as true for moves that always hit", () => {
+    // Aerial Ace always hits
+    const data = getMoveData("Aerial Ace");
+    expect(data).not.toBeNull();
+    expect(data?.accuracy).toBe(true);
+  });
+
+  it("returns a shortDesc string for every found move", () => {
+    const data = getMoveData("Ice Beam");
+    expect(data).not.toBeNull();
+    expect(typeof data?.shortDesc).toBe("string");
+  });
+
+  it.each<[string, string, string, number]>([
+    ["Flamethrower", "Fire", "Special", 90],
+    ["Close Combat", "Fighting", "Physical", 120],
+    ["Tailwind", "Flying", "Status", 0],
+    ["Fake Out", "Normal", "Physical", 40],
+    ["Dazzling Gleam", "Fairy", "Special", 80],
+    ["Knock Off", "Dark", "Physical", 65],
+  ])(
+    "getMoveData(%s) returns type=%s, category=%s, basePower=%d",
+    (move, type, category, basePower) => {
+      const data = getMoveData(move);
+      expect(data).not.toBeNull();
+      expect(data?.type).toBe(type);
+      expect(data?.category).toBe(category);
+      expect(data?.basePower).toBe(basePower);
+    }
+  );
 });
