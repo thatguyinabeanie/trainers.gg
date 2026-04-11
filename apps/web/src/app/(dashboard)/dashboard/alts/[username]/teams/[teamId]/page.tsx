@@ -52,5 +52,5 @@ export default async function TeamWorkspacePage({
 
   const format = team.format ? getFormatById(team.format) : undefined;
 
-  return <TeamWorkspace team={team} handle={username} format={format} />;
+  return <TeamWorkspace team={team} format={format} />;
 }

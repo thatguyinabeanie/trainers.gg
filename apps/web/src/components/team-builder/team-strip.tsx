@@ -9,6 +9,8 @@ import { Plus, X } from "lucide-react";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type TeamWithPokemon } from "@trainers/supabase";
 
+import { type ValidationError } from "./validation-hooks";
+
 import {
   reorderTeamPokemonAction,
   removePokemonFromTeamAction,
@@ -21,12 +23,13 @@ import { cn } from "@/lib/utils";
 
 interface TeamStripProps {
   teamId: number;
-  handle: string;
   pokemon: TeamWithPokemon["team_pokemon"];
   selectedPokemonId: number | null;
   onSelect: (pokemonId: number) => void;
   onAddNew: () => void;
   choosingSlot?: number;
+  /** Validation errors grouped by pokemon DB id — populated by Task 5 display logic. */
+  pokemonErrors?: Map<number, ValidationError[]>;
 }
 
 // =============================================================================
@@ -43,6 +46,8 @@ interface PokemonChipProps {
   onDragOver: (e: DragEvent<HTMLElement>) => void;
   onDrop: (e: DragEvent<HTMLElement>) => void;
   isPending: boolean;
+  hasIssues?: boolean;
+  hasWarningsOnly?: boolean;
 }
 
 function PokemonChip({
@@ -55,6 +60,8 @@ function PokemonChip({
   onDragOver,
   onDrop,
   isPending,
+  hasIssues,
+  hasWarningsOnly,
 }: PokemonChipProps) {
   const pokemon = entry.pokemon;
 
@@ -142,6 +149,16 @@ function PokemonChip({
         )}
       </button>
 
+      {/* Validation indicator — red for errors, amber for warnings */}
+      {hasIssues && (
+        <span
+          className={cn(
+            "absolute -top-1 -right-1 size-2.5 rounded-full",
+            hasWarningsOnly ? "bg-amber-500" : "bg-destructive"
+          )}
+        />
+      )}
+
       {/* Remove button — top-right, visible on hover */}
       <button
         type="button"
@@ -208,6 +225,7 @@ export function TeamStrip({
   onSelect,
   onAddNew,
   choosingSlot,
+  pokemonErrors,
 }: TeamStripProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -315,6 +333,13 @@ export function TeamStrip({
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, entry.pokemon_id)}
           isPending={isPending || dragSourceId !== null}
+          hasIssues={(pokemonErrors?.get(entry.pokemon_id)?.length ?? 0) > 0}
+          hasWarningsOnly={
+            (pokemonErrors?.get(entry.pokemon_id)?.length ?? 0) > 0 &&
+            pokemonErrors
+              ?.get(entry.pokemon_id)
+              ?.every((e) => e.severity === "warning") === true
+          }
         />
       ))}
 

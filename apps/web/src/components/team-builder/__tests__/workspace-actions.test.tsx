@@ -121,10 +121,11 @@ describe("WorkspaceActions", () => {
       expect(screen.getByRole("button", { name: /fork/i })).toBeInTheDocument();
     });
 
-    it("renders the Validate button as disabled", () => {
+    it("does not render a Validate button", () => {
       render(<WorkspaceActions {...defaultProps} />);
-      const validateBtn = screen.getByRole("button", { name: /validate/i });
-      expect(validateBtn).toBeDisabled();
+      expect(
+        screen.queryByRole("button", { name: /validate/i })
+      ).not.toBeInTheDocument();
     });
   });
 

@@ -15,7 +15,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { ChevronDown, Star } from "lucide-react";
 
 import { type StatKey } from "./stat-types";
+import { type ValidationError } from "./validation-hooks";
 import { AbilityPicker } from "./ability-picker";
+import { PokemonImportExport } from "./pokemon-import-export";
 import { EvEditor } from "./ev-editor";
 import { ItemPicker } from "./item-picker";
 import { IvEditor } from "./iv-editor";
@@ -52,12 +54,17 @@ type ActivePicker =
   | null;
 
 interface PokemonEditorProps {
+  teamId: number;
   pokemon: Tables<"pokemon">;
   format: GameFormat | undefined;
   /** All team_pokemon entries — used to collect held items for duplicate detection. */
   teamPokemon: Array<{ pokemon: Tables<"pokemon"> | null }>;
   onUpdate: (field: string, value: unknown) => void;
   onSpeciesClick: () => void;
+  /** Called after a successful import to refresh the workspace. */
+  onImport: () => void;
+  /** Validation errors for this Pokemon's fields — populated by Task 5 display logic. */
+  fieldErrors?: ValidationError[];
 }
 
 // =============================================================================
@@ -114,12 +121,41 @@ function getMoveBySlot(
  *   7. Notes collapsible textarea
  */
 export function PokemonEditor({
+  teamId,
   pokemon,
   format,
   teamPokemon,
   onUpdate,
   onSpeciesClick,
+  onImport,
+  fieldErrors,
 }: PokemonEditorProps) {
+  // Helper — look up the first error for a given field name.
+  function getFieldError(field: string): ValidationError | undefined {
+    return fieldErrors?.find((e) => e.field === field);
+  }
+
+  // Helper — render inline error text for one or more field names, or null.
+  function renderFieldError(...fields: string[]): React.ReactNode {
+    const error = fields.reduce<ValidationError | undefined>(
+      (found, f) => found ?? getFieldError(f),
+      undefined
+    );
+    if (!error) return null;
+    return (
+      <p
+        className={cn(
+          "mt-0.5 text-xs",
+          error.severity === "warning"
+            ? "text-amber-600 dark:text-amber-500"
+            : "text-destructive"
+        )}
+      >
+        {error.message}
+      </p>
+    );
+  }
+
   const [activePicker, setActivePicker] = useState<ActivePicker>(null);
   const [notesOpen, setNotesOpen] = useState(false);
 
@@ -216,17 +252,20 @@ export function PokemonEditor({
           =================================================================== */}
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Species name — clickable to open species picker */}
-        <button
-          type="button"
-          onClick={onSpeciesClick}
-          className={cn(
-            "flex items-center gap-1 text-lg font-bold",
-            "hover:text-primary transition-colors"
-          )}
-        >
-          {pokemon.species}
-          <ChevronDown className="text-muted-foreground size-4" />
-        </button>
+        <div className="flex flex-col">
+          <button
+            type="button"
+            onClick={onSpeciesClick}
+            className={cn(
+              "flex items-center gap-1 text-lg font-bold",
+              "hover:text-primary transition-colors"
+            )}
+          >
+            {pokemon.species}
+            <ChevronDown className="text-muted-foreground size-4" />
+          </button>
+          {renderFieldError("species")}
+        </div>
 
         {/* Type pills */}
         <div className="flex gap-1">
@@ -243,7 +282,7 @@ export function PokemonEditor({
           ))}
         </div>
 
-        {/* Level input */}
+        {/* Level input + import/export */}
         <div className="ml-auto flex items-center gap-1.5">
           <span className="text-muted-foreground text-xs">Lv</span>
           <Input
@@ -259,6 +298,11 @@ export function PokemonEditor({
             }}
             className="h-7 w-14 px-1 text-center text-sm"
             aria-label="Pokemon level"
+          />
+          <PokemonImportExport
+            teamId={teamId}
+            pokemon={pokemon}
+            onUpdate={onImport}
           />
         </div>
       </div>
@@ -287,14 +331,18 @@ export function PokemonEditor({
               type="button"
               onClick={() => openPicker("ability")}
               className={cn(
-                "flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm",
-                "hover:bg-muted/50 transition-colors"
+                "flex w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
+                "hover:bg-muted/50 transition-colors",
+                getFieldError("ability")
+                  ? "border-destructive"
+                  : "border-transparent"
               )}
             >
               <span className="font-medium">{pokemon.ability}</span>
               <ChevronDown className="text-muted-foreground size-3.5" />
             </button>
           )}
+          {renderFieldError("ability")}
         </div>
 
         {/* Item */}
@@ -317,8 +365,11 @@ export function PokemonEditor({
               type="button"
               onClick={() => openPicker("item")}
               className={cn(
-                "flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm",
-                "hover:bg-muted/50 transition-colors"
+                "flex w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
+                "hover:bg-muted/50 transition-colors",
+                getFieldError("item") || getFieldError("heldItem")
+                  ? "border-destructive"
+                  : "border-transparent"
               )}
             >
               <span
@@ -332,6 +383,7 @@ export function PokemonEditor({
               <ChevronDown className="text-muted-foreground size-3.5" />
             </button>
           )}
+          {renderFieldError("item", "heldItem")}
         </div>
 
         {/* Nature + Tera Type side-by-side */}
@@ -353,14 +405,18 @@ export function PokemonEditor({
               type="button"
               onClick={() => openPicker("nature")}
               className={cn(
-                "flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm",
-                "hover:bg-muted/50 transition-colors"
+                "flex w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
+                "hover:bg-muted/50 transition-colors",
+                getFieldError("nature")
+                  ? "border-destructive"
+                  : "border-transparent"
               )}
             >
               <span className="font-medium">{pokemon.nature}</span>
               <ChevronDown className="text-muted-foreground size-3.5" />
             </button>
           )}
+          {renderFieldError("nature")}
         </div>
 
         <div className="py-2">
@@ -402,36 +458,50 @@ export function PokemonEditor({
       {/* ===================================================================
           Section 3: Optional fields — nickname, gender, shiny toggle
           =================================================================== */}
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className="flex items-start gap-3 px-4 py-3">
         {/* Nickname */}
-        <Input
-          placeholder="Nickname"
-          value={pokemon.nickname ?? ""}
-          onChange={(e) => onUpdate("nickname", e.target.value || null)}
-          className="h-7 flex-1 text-sm"
-          aria-label="Pokemon nickname"
-        />
+        <div className="flex flex-1 flex-col">
+          <Input
+            placeholder="Nickname"
+            value={pokemon.nickname ?? ""}
+            onChange={(e) => onUpdate("nickname", e.target.value || null)}
+            className={cn(
+              "h-7 text-sm",
+              getFieldError("nickname") && "border-destructive"
+            )}
+            aria-label="Pokemon nickname"
+          />
+          {renderFieldError("nickname")}
+        </div>
 
         {/* Gender selector — only when species has gender differences */}
         {pokemon.gender !== null && (
-          <div className="flex gap-0.5 rounded border p-0.5">
-            {(["Male", "Female"] as const).map((g) => (
-              <button
-                key={g}
-                type="button"
-                onClick={() => onUpdate("gender", g)}
-                className={cn(
-                  "rounded px-2 py-0.5 text-xs font-medium transition-colors",
-                  pokemon.gender === g
-                    ? g === "Male"
-                      ? "bg-blue-500 text-white"
-                      : "bg-pink-500 text-white"
-                    : "text-muted-foreground hover:bg-muted"
-                )}
-              >
-                {g === "Male" ? "♂" : "♀"}
-              </button>
-            ))}
+          <div className="flex flex-col items-start">
+            <div
+              className={cn(
+                "flex gap-0.5 rounded border p-0.5",
+                getFieldError("gender") && "border-destructive"
+              )}
+            >
+              {(["Male", "Female"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => onUpdate("gender", g)}
+                  className={cn(
+                    "rounded px-2 py-0.5 text-xs font-medium transition-colors",
+                    pokemon.gender === g
+                      ? g === "Male"
+                        ? "bg-blue-500 text-white"
+                        : "bg-pink-500 text-white"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {g === "Male" ? "♂" : "♀"}
+                </button>
+              ))}
+            </div>
+            {renderFieldError("gender")}
           </div>
         )}
 
@@ -462,17 +532,22 @@ export function PokemonEditor({
           Section 4: Moves — 2x2 grid
           =================================================================== */}
       <div className="px-4 py-3">
-        <p className="text-muted-foreground mb-2 text-[10px] font-semibold tracking-wide uppercase">
-          Moves
-        </p>
+        <div className="mb-2 flex items-center gap-2">
+          <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
+            Moves
+          </p>
+          {renderFieldError("moves")}
+        </div>
         <div className="grid grid-cols-2 gap-2">
           {MOVE_SLOTS.map((slot) => {
             const moveValue = getMoveBySlot(pokemon, slot);
             const pickerKey = `move-${slot}` as const;
             const isOpen = activePicker === pickerKey;
+            const moveField = `move${slot}` as `move${typeof slot}`;
+            const moveError = getFieldError(moveField);
 
             return (
-              <div key={slot}>
+              <div key={slot} className="flex flex-col">
                 {isOpen ? (
                   <MovePicker
                     species={pokemon.species}
@@ -490,7 +565,11 @@ export function PokemonEditor({
                     className={cn(
                       "flex w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
                       "hover:bg-muted/50 transition-colors",
-                      !moveValue && "border-dashed"
+                      moveError
+                        ? "border-destructive"
+                        : !moveValue
+                          ? "border-dashed"
+                          : ""
                     )}
                   >
                     <span
@@ -505,6 +584,11 @@ export function PokemonEditor({
                     </span>
                     <ChevronDown className="text-muted-foreground ml-1 size-3.5 shrink-0" />
                   </button>
+                )}
+                {moveError && (
+                  <p className="text-destructive mt-0.5 text-xs">
+                    {moveError.message}
+                  </p>
                 )}
               </div>
             );
@@ -530,6 +614,7 @@ export function PokemonEditor({
           }
           onPreset={handleEvPreset}
         />
+        {renderFieldError("evs", "evTotal")}
       </div>
 
       {/* ===================================================================
