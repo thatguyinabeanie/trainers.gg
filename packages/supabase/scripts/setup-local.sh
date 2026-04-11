@@ -185,8 +185,8 @@ generate_types() {
   # Write to temp file first — only replace src/types.ts on success so a
   # failed generation doesn't leave an empty/partial types file.
   local tmp_types stderr_file
-  tmp_types=$(mktemp)
-  stderr_file=$(mktemp)
+  tmp_types=$(mktemp /tmp/supabase-types.XXXXXX)
+  stderr_file=$(mktemp /tmp/supabase-types-stderr.XXXXXX)
   if $SUPABASE_CMD gen types typescript --local > "$tmp_types" 2>"$stderr_file"; then
     mv "$tmp_types" src/types.ts
     echo -e "${GREEN}Types generated successfully${NC}"

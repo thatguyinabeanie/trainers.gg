@@ -49,7 +49,7 @@ const SEED_FILES = [
 function exec(command, options = {}) {
   // Mask sensitive values in logged command
   let logCommand = command;
-  const sensitiveVars = ["SUPABASE_DB_PASSWORD"];
+  const sensitiveVars = ["SUPABASE_DB_PASSWORD", "POSTGRES_PASSWORD"];
   for (const varName of sensitiveVars) {
     if (options.env?.[varName]) {
       logCommand = logCommand.replace(options.env[varName], "[REDACTED]");

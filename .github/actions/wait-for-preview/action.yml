@@ -61,6 +61,11 @@ runs:
           fi
 
           rm -f "$CURL_ERR"
+          if ! echo "$RESPONSE" | jq -e . > /dev/null 2>&1; then
+            echo "API returned non-JSON response (attempt $i/50)"
+            sleep 15
+            continue
+          fi
           STATE=$(echo "$RESPONSE" | jq -r '.deployments[0].state // empty')
           DEPLOY_URL=$(echo "$RESPONSE" | jq -r '.deployments[0].url // empty')
 
@@ -88,6 +93,13 @@ runs:
 
             REPO_ID=$(curl -sf -H "Authorization: Bearer $GITHUB_TOKEN" \
               "https://api.github.com/repos/${GITHUB_REPOSITORY}" | jq -r '.id')
+
+            if [ -z "$REPO_ID" ] || [ "$REPO_ID" = "null" ]; then
+              echo "::warning::Could not retrieve GitHub repo ID — skipping redeployment"
+              REDEPLOYED=false
+              sleep 15
+              continue
+            fi
 
             curl -sf -X POST \
               "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \

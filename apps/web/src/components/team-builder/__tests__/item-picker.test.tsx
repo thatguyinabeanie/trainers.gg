@@ -7,36 +7,15 @@ import React from "react";
 // Module-level mocks
 // =============================================================================
 
-jest.mock("@pkmn/dex", () => {
-  const mockItems = [
-    {
-      exists: true,
-      name: "Choice Band",
-      shortDesc: "Boosts Attack.",
-    },
-    {
-      exists: true,
-      name: "Leftovers",
-      shortDesc: "Restores HP each turn.",
-    },
-    {
-      exists: true,
-      name: "Life Orb",
-      shortDesc: "Boosts power but hurts user.",
-    },
-  ];
-
+jest.mock("@trainers/pokemon", () => {
+  const itemDescs: Record<string, string> = {
+    "Choice Band": "Boosts Attack.",
+    Leftovers: "Restores HP each turn.",
+    "Life Orb": "Boosts power but hurts user.",
+  };
   return {
-    Dex: {
-      forGen: jest.fn(() => ({
-        items: {
-          all: jest.fn(() => mockItems),
-          get: jest.fn(
-            (name: string) => mockItems.find((i) => i.name === name) ?? null
-          ),
-        },
-      })),
-    },
+    getAllItems: jest.fn(() => ["Choice Band", "Leftovers", "Life Orb"]),
+    getItemShortDesc: jest.fn((name: string) => itemDescs[name] ?? null),
   };
 });
 

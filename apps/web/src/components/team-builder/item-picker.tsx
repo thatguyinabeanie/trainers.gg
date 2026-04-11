@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Dex } from "@pkmn/dex";
+import { getAllItems, getItemShortDesc } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -24,14 +24,8 @@ interface ItemPickerProps {
 // Static data — computed once at module load
 // =============================================================================
 
-const gen9 = Dex.forGen(9);
-
 /** All Gen 9 item names, sorted alphabetically. */
-const allItems = gen9.items
-  .all()
-  .filter((item) => item.exists && item.name)
-  .map((item) => item.name)
-  .sort();
+const allItems = getAllItems();
 
 // =============================================================================
 // ItemPicker
@@ -88,8 +82,7 @@ export function ItemPicker({
       <ScrollArea className="h-72">
         <div className="flex flex-col gap-0.5 pr-2">
           {visible.map((itemName) => {
-            const itemData = gen9.items.get(itemName);
-            const description = itemData?.shortDesc ?? null;
+            const description = getItemShortDesc(itemName);
             const isSelected = itemName === value;
             const isDuplicate = teamItems.includes(itemName);
 
