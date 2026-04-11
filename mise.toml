@@ -1,3 +1,7 @@
+[env]
+BUN_JSC_forceRAMSize=25769803776
+BUN_JSC_gcMaxHeapSize=17179869184
+
 [settings]
 experimental = true
 
