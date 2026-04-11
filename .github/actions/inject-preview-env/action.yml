@@ -60,6 +60,7 @@ runs:
         echo "::add-mask::$DB_PASSWORD"
         echo "::add-mask::$POSTGRES_URL"
         echo "::add-mask::$POSTGRES_URL_NON_POOLING"
+        echo "::add-mask::$POSTGRES_HOST"
 
         # Log what we're injecting (values masked)
         echo "API_URL=$API_URL"
