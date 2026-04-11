@@ -80,14 +80,15 @@ export function ValidationPanel({
         </button>
       </div>
 
-      {/* Issue list */}
+      {/* Issue list — aria-live so screen readers announce new errors */}
       {errors.length > 0 && (
-        <div className="max-h-48 overflow-y-auto">
+        <div className="max-h-48 overflow-y-auto" role="log" aria-live="polite">
           {errors.map((error, idx) => (
             <button
               key={`${error.pokemonId}-${error.field}-${idx}`}
               type="button"
               onClick={() => onSelectPokemon(error.pokemonId)}
+              aria-label={`${error.severity === "error" ? "Error" : "Warning"}: ${error.pokemonName} — ${getFieldLabel(error.field)}: ${error.message}`}
               className={cn(
                 "flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors",
                 error.severity === "error"
@@ -95,13 +96,17 @@ export function ValidationPanel({
                   : "hover:bg-amber-500/10"
               )}
             >
-              {/* Severity indicator */}
+              {/* Severity indicator — dot + text so it's not color-only */}
               <span
                 className={cn(
                   "size-1.5 shrink-0 rounded-full",
                   error.severity === "error" ? "bg-destructive" : "bg-amber-500"
                 )}
+                aria-hidden="true"
               />
+              <span className="sr-only">
+                {error.severity === "error" ? "Error" : "Warning"}
+              </span>
 
               {/* Species name */}
               <span

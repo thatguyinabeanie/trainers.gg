@@ -49,8 +49,12 @@ interface SortState {
 // Helpers
 // =============================================================================
 
+/** Returns classes for stat values — uses both color and weight so
+ *  the distinction is not color-only (WCAG 1.4.1). */
 function getStatColor(value: number): string {
-  if (value >= 120) return "text-emerald-500";
+  if (value >= 150) return "text-emerald-500 font-bold";
+  if (value >= 120) return "text-emerald-500 font-semibold";
+  if (value < 50) return "text-red-400 font-semibold";
   if (value < 70) return "text-muted-foreground";
   return "";
 }
@@ -370,7 +374,7 @@ export function SpeciesTable({
                 colSpan={13}
                 className="text-muted-foreground py-8 text-center text-sm"
               >
-                No species found
+                No Pokemon match your filters. Try broadening your search.
               </TableCell>
             </TableRow>
           )}

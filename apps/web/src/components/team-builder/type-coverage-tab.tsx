@@ -181,6 +181,19 @@ function TeamOverview({ team }: { team: TeamWithPokemon }) {
                         matchups.resistances[attackType] ??
                         1);
                     const { label, className } = multiplierCell(mult);
+                    // Build descriptive aria-label for screen readers
+                    const effectiveness =
+                      mult === 0
+                        ? "immune"
+                        : mult === 0.25
+                          ? "4x resistant"
+                          : mult === 0.5
+                            ? "2x resistant"
+                            : mult === 2
+                              ? "2x weak"
+                              : mult === 4
+                                ? "4x weak"
+                                : "neutral";
                     return (
                       <td
                         key={pokemon.id}
@@ -188,6 +201,7 @@ function TeamOverview({ team }: { team: TeamWithPokemon }) {
                           "py-0.5 text-center font-mono",
                           className
                         )}
+                        aria-label={`${attackType} vs ${pokemon.species}: ${effectiveness}`}
                       >
                         {label}
                       </td>
@@ -388,6 +402,16 @@ function PokemonView({ pokemon }: { pokemon: Tables<"pokemon"> }) {
                   const curCell = multiplierCell(curMult);
                   const teraCell = multiplierCell(teraMult);
 
+                  // Effectiveness descriptions for aria-labels
+                  function describeMultiplier(m: number): string {
+                    if (m === 0) return "immune";
+                    if (m === 0.25) return "4x resistant";
+                    if (m === 0.5) return "2x resistant";
+                    if (m === 2) return "2x weak";
+                    if (m === 4) return "4x weak";
+                    return "neutral";
+                  }
+
                   return (
                     <tr
                       key={attackType}
@@ -401,6 +425,7 @@ function PokemonView({ pokemon }: { pokemon: Tables<"pokemon"> }) {
                           "py-0.5 text-center font-mono",
                           curCell.className
                         )}
+                        aria-label={`Current: ${attackType} ${describeMultiplier(curMult)}`}
                       >
                         {curCell.label}
                       </td>
@@ -409,6 +434,7 @@ function PokemonView({ pokemon }: { pokemon: Tables<"pokemon"> }) {
                           "py-0.5 text-center font-mono",
                           teraCell.className
                         )}
+                        aria-label={`After Tera: ${attackType} ${describeMultiplier(teraMult)}`}
                       >
                         {teraCell.label}
                       </td>

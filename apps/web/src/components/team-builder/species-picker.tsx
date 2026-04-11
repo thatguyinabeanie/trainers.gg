@@ -64,7 +64,16 @@ export function SpeciesPicker({
       : null;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div
+      className="flex flex-1 flex-col overflow-hidden"
+      onKeyDown={(e) => {
+        // Escape closes the picker from anywhere inside it
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onCancel();
+        }
+      }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2 md:px-4">
         <h2 className="text-sm font-semibold">Choose a species</h2>
