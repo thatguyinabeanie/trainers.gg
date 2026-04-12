@@ -116,6 +116,7 @@ export function NewTeamForm({
           toast.warning(
             "Showdown paste could not be parsed. Team created empty."
           );
+          void queryClient.invalidateQueries({ queryKey: teamKeys.all(altId) });
           router.push(`/dashboard/alts/${handle}/teams/${teamId}`);
           return;
         } else {
@@ -135,7 +136,7 @@ export function NewTeamForm({
                 species: pokemon.species,
                 ability: pokemon.ability,
                 nature: pokemon.nature,
-                move1: pokemon.move1 ?? "Tackle",
+                move1: pokemon.move1 ?? "",
                 move2: pokemon.move2,
                 move3: pokemon.move3,
                 move4: pokemon.move4,
@@ -167,6 +168,9 @@ export function NewTeamForm({
             toast.warning(
               `Team created, but ${failures.length} Pokémon failed to import.`
             );
+            void queryClient.invalidateQueries({
+              queryKey: teamKeys.all(altId),
+            });
             router.push(`/dashboard/alts/${handle}/teams/${teamId}`);
             return;
           }

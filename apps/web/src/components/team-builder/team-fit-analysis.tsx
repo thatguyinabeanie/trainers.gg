@@ -121,8 +121,8 @@ export function TeamFitAnalysis({
     }
   }
 
-  for (const [type, mult] of Object.entries(candidateMatchups.resistances)) {
-    if (!(type in currentMatchups.resistances) && mult !== undefined) {
+  for (const [type] of Object.entries(candidateMatchups.resistances)) {
+    if (!(type in currentMatchups.resistances)) {
       items.push({ signal: "+", text: `Resists ${type}` });
     }
   }

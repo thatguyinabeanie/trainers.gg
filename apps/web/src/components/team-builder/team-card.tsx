@@ -35,7 +35,6 @@ function SpriteSlot({ species, isShiny, position }: SpriteSlotProps) {
   if (!species) {
     return (
       <div
-        key={position}
         className="bg-muted size-10 rounded-md"
         aria-label={`Empty slot ${position + 1}`}
       />

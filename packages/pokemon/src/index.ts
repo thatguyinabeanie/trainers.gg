@@ -162,3 +162,6 @@ export {
 
 // Item data utilities
 export { getAllItems, getItemShortDesc } from "./items";
+
+// Ability data utilities
+export { getAbilityShortDesc } from "./abilities";
