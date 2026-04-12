@@ -64,9 +64,18 @@ export function SpeciesPicker({
       : null;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div
+      className="flex flex-1 flex-col overflow-hidden"
+      onKeyDown={(e) => {
+        // Escape closes the picker from anywhere inside it
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onCancel();
+        }
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-4 py-2">
+      <div className="flex items-center justify-between border-b px-3 py-2 md:px-4">
         <h2 className="text-sm font-semibold">Choose a species</h2>
         <Button variant="ghost" size="sm" onClick={onCancel}>
           Cancel
@@ -84,10 +93,10 @@ export function SpeciesPicker({
         filteredCount={filteredEntries.length}
       />
 
-      {/* Split layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Table — 52% */}
-        <div className="w-[52%] overflow-y-auto border-r">
+      {/* Split layout — stacked vertically on mobile, side-by-side on md+ */}
+      <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
+        {/* Table — full width on mobile, 52% on md+ */}
+        <div className="w-full overflow-y-auto border-r md:w-[52%]">
           <SpeciesTable
             entries={filteredEntries}
             previewedSpecies={previewedSpecies}
@@ -97,8 +106,8 @@ export function SpeciesPicker({
           />
         </div>
 
-        {/* Detail panel — 48% */}
-        <div className="w-[48%] overflow-y-auto">
+        {/* Detail panel — full width on mobile, 48% on md+ */}
+        <div className="max-h-[40vh] w-full overflow-y-auto md:max-h-none md:w-[48%]">
           <SpeciesDetail
             species={previewedEntry}
             currentTeam={currentTeam}

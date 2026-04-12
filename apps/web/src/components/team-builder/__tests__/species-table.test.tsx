@@ -122,9 +122,11 @@ describe("SpeciesTable — rendering", () => {
     expect(screen.getByText("Rillaboom")).toBeInTheDocument();
   });
 
-  it("renders 'No species found' when entries is empty", () => {
+  it("renders empty state when entries is empty", () => {
     render(<SpeciesTable {...defaultProps} entries={[]} />);
-    expect(screen.getByText("No species found")).toBeInTheDocument();
+    expect(
+      screen.getByText(/No Pokemon match your filters/)
+    ).toBeInTheDocument();
   });
 
   it("renders the primary ability for each entry", () => {

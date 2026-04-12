@@ -6,6 +6,7 @@ import { getFormatById } from "@trainers/pokemon";
 import { getAltByUsername, getTeamWithPokemon } from "@trainers/supabase";
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
+import { decodeJwtClaims } from "@/lib/jwt";
 import { Badge } from "@/components/ui/badge";
 import { WorkspaceActions } from "@/components/team-builder/workspace-actions";
 
@@ -41,6 +42,17 @@ export default async function TeamWorkspaceLayout({
 
   const supabase = await createClientReadOnly();
 
+  // Gate on team_builder_access JWT claim
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const claims = session?.access_token
+    ? decodeJwtClaims<{ team_builder_access?: boolean }>(session.access_token)
+    : null;
+  if (!claims?.team_builder_access) {
+    notFound();
+  }
+
   // Fetch alt and team in parallel
   const [alt, team] = await Promise.all([
     getAltByUsername(supabase, username),
@@ -66,7 +78,7 @@ export default async function TeamWorkspaceLayout({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header bar */}
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3 md:px-4">
         {/* Breadcrumb — "← Teams / Team Name" */}
         <Link
           href={teamsUrl}
@@ -74,10 +86,12 @@ export default async function TeamWorkspaceLayout({
           aria-label="Back to Teams"
         >
           <ChevronLeft className="size-4" />
-          <span>Teams</span>
+          <span className="hidden sm:inline">Teams</span>
         </Link>
         <span className="text-muted-foreground text-sm">/</span>
-        <span className="text-sm font-medium">{team.name}</span>
+        <span className="max-w-[120px] truncate text-sm font-medium sm:max-w-none">
+          {team.name}
+        </span>
 
         {/* Format badge */}
         {format && (

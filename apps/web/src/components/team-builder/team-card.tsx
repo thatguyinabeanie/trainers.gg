@@ -80,12 +80,12 @@ export function TeamCard({ team, handle, className }: TeamCardProps) {
     <Link
       href={`/dashboard/alts/${handle}/teams/${team.id}`}
       className={cn(
-        "bg-card hover:bg-accent/50 group flex flex-col gap-3 rounded-xl border p-4 transition-colors",
+        "bg-card hover:bg-accent/50 group flex flex-col gap-3 rounded-xl border p-3 transition-colors md:p-4",
         className
       )}
     >
       {/* Sprite row */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         {slots.map((slot, i) => (
           <SpriteSlot
             key={i}

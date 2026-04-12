@@ -342,7 +342,10 @@ export function ImportDialog({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="right" className="flex flex-col overflow-y-auto">
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col overflow-y-auto sm:max-w-lg"
+      >
         <SheetHeader>
           <SheetTitle>Import Pokémon</SheetTitle>
           <SheetDescription>

@@ -237,6 +237,7 @@ export function SpeciesFilters({
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           className="h-8 pl-8 text-sm"
+          autoFocus
         />
       </div>
 

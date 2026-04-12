@@ -46,8 +46,11 @@ export function ContextPanel({
         onValueChange={(v) => onTabChange(v as ContextTab)}
         className="flex h-full flex-col"
       >
-        <div className="border-b px-4 pt-3 pb-0">
-          <TabsList variant="line" className="w-full justify-start">
+        <div className="border-b px-3 pt-3 pb-0 md:px-4">
+          <TabsList
+            variant="line"
+            className="w-full justify-start overflow-x-auto"
+          >
             <TabsTrigger value="types">Types</TabsTrigger>
             <TabsTrigger value="speed">Speed</TabsTrigger>
             <TabsTrigger value="calc">Calc</TabsTrigger>
