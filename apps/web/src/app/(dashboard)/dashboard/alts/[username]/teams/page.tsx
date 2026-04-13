@@ -1,10 +1,13 @@
 import { notFound, redirect } from "next/navigation";
 
 import { getActiveFormats } from "@trainers/pokemon";
-import { getAltByUsername, getTeamsForAltList } from "@trainers/supabase";
+import {
+  getAltByUsername,
+  getTeamsForAltList,
+  hasTeamBuilderAccess,
+} from "@trainers/supabase";
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
-import { decodeJwtClaims } from "@/lib/jwt";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { TeamsListClient } from "@/components/team-builder/teams-list-client";
 
@@ -40,15 +43,9 @@ export default async function TeamsPage({
 
   const supabase = await createClientReadOnly();
 
-  // Gate on team_builder_access JWT claim.
-  // decodeJwtClaims() never throws — returns null on malformed tokens (see lib/jwt.ts).
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const claims = session?.access_token
-    ? decodeJwtClaims<{ team_builder_access?: boolean }>(session.access_token)
-    : null;
-  if (!claims?.team_builder_access) {
+  // Gate on team builder feature flag (direct DB query — no stale JWT issues).
+  const canAccess = await hasTeamBuilderAccess(supabase, user.id);
+  if (!canAccess) {
     notFound();
   }
 

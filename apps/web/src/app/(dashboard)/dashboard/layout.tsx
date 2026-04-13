@@ -7,11 +7,11 @@ import {
   getUser,
 } from "@/lib/supabase/server";
 import { needsOnboarding } from "@/lib/proxy-routes";
-import { decodeJwtClaims } from "@/lib/jwt";
 import {
   listMyCommunities,
   listAllCommunitiesForSudo,
   getCurrentUserAlts,
+  hasTeamBuilderAccess,
 } from "@trainers/supabase";
 import { isSudoModeActive, isSiteAdmin } from "@/lib/sudo/server";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -31,33 +31,35 @@ export default async function DashboardLayout({
 
   const supabase = await createClient();
 
-  const [communities, alts, userRow, sudoActive, isAdmin] = await Promise.all([
-    listMyCommunities(supabase, user.id).catch((err) => {
-      console.error("[DashboardLayout] Failed to load communities:", err);
-      return [];
-    }),
-    getCurrentUserAlts(supabase).catch((err) => {
-      console.error("[DashboardLayout] Failed to load alts:", err);
-      return [];
-    }),
-    supabase
-      .from("users")
-      .select("main_alt_id")
-      .eq("id", user.id)
-      .single()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("[DashboardLayout] Failed to load user row:", error);
-          return null;
-        }
-        return data;
+  const [communities, alts, userRow, sudoActive, isAdmin, teamBuilderAccess] =
+    await Promise.all([
+      listMyCommunities(supabase, user.id).catch((err) => {
+        console.error("[DashboardLayout] Failed to load communities:", err);
+        return [];
       }),
-    isSudoModeActive().catch((err) => {
-      console.error("[DashboardLayout] Failed to check sudo mode:", err);
-      return false;
-    }),
-    isSiteAdmin().catch(() => false),
-  ]);
+      getCurrentUserAlts(supabase).catch((err) => {
+        console.error("[DashboardLayout] Failed to load alts:", err);
+        return [];
+      }),
+      supabase
+        .from("users")
+        .select("main_alt_id")
+        .eq("id", user.id)
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("[DashboardLayout] Failed to load user row:", error);
+            return null;
+          }
+          return data;
+        }),
+      isSudoModeActive().catch((err) => {
+        console.error("[DashboardLayout] Failed to check sudo mode:", err);
+        return false;
+      }),
+      isSiteAdmin().catch(() => false),
+      hasTeamBuilderAccess(supabase, user.id).catch(() => false),
+    ]);
 
   // When sudo mode is active, merge all communities — user's own keep their real
   // role, communities the user doesn't belong to get role: "sudo".
@@ -156,25 +158,6 @@ export default async function DashboardLayout({
     isMain: a.id === mainAltId,
   }));
 
-  // Decode team_builder_access from JWT claim
-  let hasTeamBuilderAccess = false;
-  try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      const claims = decodeJwtClaims<{ team_builder_access?: boolean }>(
-        session.access_token
-      );
-      hasTeamBuilderAccess = claims?.team_builder_access ?? false;
-    }
-  } catch (err) {
-    console.error(
-      "[DashboardLayout] Failed to decode team_builder_access:",
-      err
-    );
-  }
-
   return (
     <SidebarProvider>
       <DashboardSidebar
@@ -185,7 +168,7 @@ export default async function DashboardLayout({
         isOnboarding={isOnboarding}
         isSiteAdmin={isAdmin}
         isSudoActive={sudoActive}
-        hasTeamBuilderAccess={hasTeamBuilderAccess}
+        hasTeamBuilderAccess={teamBuilderAccess}
         variant="inset"
       />
       <SidebarInset>{children}</SidebarInset>

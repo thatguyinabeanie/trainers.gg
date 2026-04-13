@@ -218,6 +218,7 @@ export {
   listFeatureFlags,
   getFeatureFlag,
   isFeatureEnabled,
+  hasTeamBuilderAccess,
   createFeatureFlag,
   updateFeatureFlag,
   deleteFeatureFlag,

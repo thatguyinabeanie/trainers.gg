@@ -3,10 +3,13 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { getFormatById } from "@trainers/pokemon";
-import { getAltByUsername, getTeamWithPokemon } from "@trainers/supabase";
+import {
+  getAltByUsername,
+  getTeamWithPokemon,
+  hasTeamBuilderAccess,
+} from "@trainers/supabase";
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
-import { decodeJwtClaims } from "@/lib/jwt";
 import { Badge } from "@/components/ui/badge";
 import { WorkspaceActions } from "@/components/team-builder/workspace-actions";
 
@@ -42,15 +45,9 @@ export default async function TeamWorkspaceLayout({
 
   const supabase = await createClientReadOnly();
 
-  // Gate on team_builder_access JWT claim.
-  // decodeJwtClaims() never throws — returns null on malformed tokens (see lib/jwt.ts).
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const claims = session?.access_token
-    ? decodeJwtClaims<{ team_builder_access?: boolean }>(session.access_token)
-    : null;
-  if (!claims?.team_builder_access) {
+  // Gate on team builder feature flag (direct DB query — no stale JWT issues).
+  const canAccess = await hasTeamBuilderAccess(supabase, user.id);
+  if (!canAccess) {
     notFound();
   }
 

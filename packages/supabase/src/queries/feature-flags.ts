@@ -1,5 +1,6 @@
 import type { Json, Tables } from "../types";
 import type { TypedClient } from "../client";
+import { isSiteAdmin } from "./site-roles";
 
 /** A feature flag row from the database. */
 export type FeatureFlag = Tables<"feature_flags">;
@@ -204,5 +205,44 @@ export async function deleteFeatureFlag(
 
   if (auditError) {
     console.error("Failed to log flag_deleted to audit log:", auditError);
+  }
+}
+
+// =============================================================================
+// Team Builder Access
+// =============================================================================
+
+/**
+ * Check whether a user has access to the team builder feature.
+ *
+ * Access is granted when ANY of:
+ * 1. The `team_builder` feature flag is globally enabled
+ * 2. The user's ID is in the flag's `metadata.allowed_users` array
+ * 3. The user has the `site_admin` role
+ *
+ * Fail-closed: returns `false` on errors or missing flag row.
+ */
+export async function hasTeamBuilderAccess(
+  supabase: TypedClient,
+  userId: string
+): Promise<boolean> {
+  try {
+    const [flag, isAdmin] = await Promise.all([
+      getFeatureFlag(supabase, "team_builder"),
+      isSiteAdmin(supabase, userId),
+    ]);
+
+    if (isAdmin) return true;
+    if (!flag) return false;
+    if (flag.enabled) return true;
+
+    // Check allowed_users in metadata
+    const metadata = flag.metadata as { allowed_users?: string[] } | null;
+    if (metadata?.allowed_users?.includes(userId)) return true;
+
+    return false;
+  } catch (error) {
+    console.error("[hasTeamBuilderAccess] Error checking access:", error);
+    return false;
   }
 }
