@@ -621,7 +621,7 @@ function PlayerNav({
   const currentAltUsername = selectedAlt?.username ?? alts[0]?.username ?? null;
   const builderHref = currentAltUsername
     ? `/dashboard/alts/${currentAltUsername}/teams`
-    : "/dashboard";
+    : "/dashboard/teams";
 
   const playerItems = [
     {
@@ -641,7 +641,9 @@ function PlayerNav({
       label: "Builder",
       href: builderHref,
       icon: Hammer,
-      isActive: pathname.includes("/alts/") && pathname.includes("/teams"),
+      isActive:
+        pathname === "/dashboard/teams" ||
+        (pathname.includes("/alts/") && pathname.includes("/teams")),
       disabled: !hasTeamBuilderAccess,
     },
   ];
