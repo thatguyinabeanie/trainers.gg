@@ -31,6 +31,11 @@ export type TeamListItem = Pick<
   }>;
 };
 
+/** Team list item with the owning alt's username for cross-alt views. */
+export type CrossAltTeamListItem = TeamListItem & {
+  alt_username: string;
+};
+
 // =============================================================================
 // Team Queries
 // =============================================================================
@@ -125,6 +130,53 @@ export async function getTeamWithPokemon(
   if (error) throw new Error(`Failed to fetch team: ${error.message}`);
 
   return team;
+}
+
+// =============================================================================
+// Cross-Alt Team Queries
+// =============================================================================
+
+/**
+ * Get all teams across all of a user's alts for the cross-alt landing page.
+ * Joins through alts to get the owning alt's username for display.
+ * Ordered by updated_at desc (most recently edited first).
+ */
+export async function getTeamsForUser(
+  supabase: TypedClient,
+  userId: string
+): Promise<CrossAltTeamListItem[]> {
+  const { data: teams, error } = await supabase
+    .from("teams")
+    .select(
+      `
+      id,
+      name,
+      format,
+      is_public,
+      updated_at,
+      created_at,
+      alt:alts!created_by(username),
+      team_pokemon(
+        id,
+        team_position,
+        pokemon:pokemon(id, species, is_shiny)
+      )
+    `
+    )
+    .eq("alts.user_id", userId)
+    .order("updated_at", { ascending: false });
+
+  if (error)
+    throw new Error(`Failed to fetch teams for user: ${error.message}`);
+
+  // Flatten the alt join into alt_username
+  return (teams ?? []).map((t) => {
+    const { alt, ...rest } = t;
+    return {
+      ...rest,
+      alt_username: (alt as unknown as { username: string })?.username ?? "",
+    };
+  });
 }
 
 /**

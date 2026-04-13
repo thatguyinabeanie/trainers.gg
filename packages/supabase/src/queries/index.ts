@@ -272,6 +272,8 @@ export {
   getTeamsForAltFull,
   getTeamWithPokemon,
   getTeamsForAltByFormatFull,
+  getTeamsForUser,
   type TeamListItem,
   type TeamWithPokemon,
+  type CrossAltTeamListItem,
 } from "./teams";
