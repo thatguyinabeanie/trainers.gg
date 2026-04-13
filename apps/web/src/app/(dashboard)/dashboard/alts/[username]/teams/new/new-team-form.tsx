@@ -165,8 +165,12 @@ export function NewTeamForm({
 
           const failures = addResults.filter((r) => !r.success);
           if (failures.length > 0) {
+            const failedSpecies = toImport
+              .filter((_, i) => !addResults[i]?.success)
+              .map((p) => p.species)
+              .join(", ");
             toast.warning(
-              `Team created, but ${failures.length} Pokémon failed to import.`
+              `Team created, but failed to import: ${failedSpecies}`
             );
             void queryClient.invalidateQueries({
               queryKey: teamKeys.all(altId),

@@ -1,6 +1,7 @@
 /**
  * V1 hardcoded meta threats for damage calculations.
- * When meta pipeline is ready, this will be replaced by data from pokemon_usage_stats.
+ * When meta pipeline is ready, this will be replaced by data from
+ * pokemon_detail_stats (sets/spreads) and pokemon_usage_stats (top species).
  */
 
 export interface MetaThreat {

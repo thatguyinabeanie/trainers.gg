@@ -82,8 +82,9 @@ export async function createTeamAction(
 }
 
 /**
- * Update team metadata such as name, notes, format, or is_public.
- * Only the fields provided will be updated.
+ * Update team metadata. Only the fields provided will be updated.
+ * See `TeamUpdateData` for accepted fields (name, format, description,
+ * notes, tags, is_public).
  */
 export async function updateTeamAction(
   teamId: number,

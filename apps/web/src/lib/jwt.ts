@@ -2,8 +2,9 @@
  * Server-side JWT utilities.
  *
  * Thin helpers for decoding JWT claims in Server Components and layouts.
- * These are intentionally simple — they do not verify signatures (Supabase
- * already validates the token before it reaches application code).
+ * These do not verify signatures — they are used only for reading JWT
+ * claims to gate UI access. Actual authorization is enforced by RLS
+ * policies on the database side.
  */
 
 /**
