@@ -1,0 +1,262 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Plus, Upload } from "lucide-react";
+
+import { type GameFormat, getFormatLabel } from "@trainers/pokemon";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
+import { type CrossAltTeamListItem } from "@trainers/supabase";
+import { formatTimeAgo } from "@trainers/utils";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface AllTeamsClientProps {
+  initialTeams: CrossAltTeamListItem[];
+  alts: Array<{ id: number; username: string }>;
+  activeFormats: GameFormat[];
+  userId: string;
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Number of sprite slots to render per team row. */
+const SPRITE_SLOTS = 6;
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function AllTeamsClient({
+  initialTeams,
+  alts,
+  activeFormats,
+}: AllTeamsClientProps) {
+  const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
+  const [selectedAlt, setSelectedAlt] = useState<string | null>(null);
+
+  const filteredTeams = initialTeams.filter((team) => {
+    if (selectedFormat && team.format !== selectedFormat) return false;
+    if (selectedAlt && team.alt_username !== selectedAlt) return false;
+    return true;
+  });
+
+  // Default new-team alt: selected alt filter, or first alt
+  const defaultAltUsername = selectedAlt ?? alts[0]?.username ?? "";
+  const newTeamUrl = `/dashboard/alts/${defaultAltUsername}/teams/new`;
+
+  if (initialTeams.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center p-8">
+        <EmptyState
+          title="No teams yet"
+          description="Create your first team or import a Showdown paste."
+          action={
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                render={<Link href={`${newTeamUrl}?mode=import`} />}
+              >
+                <Upload className="size-4" />
+                Import Paste
+              </Button>
+              <Button render={<Link href={newTeamUrl} />}>
+                <Plus className="size-4" />
+                New Team
+              </Button>
+            </div>
+          }
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+      {/* Toolbar: filters + actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {/* Format chips */}
+          <button
+            onClick={() => setSelectedFormat(null)}
+            className={cn(
+              "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
+              !selectedFormat
+                ? "border-primary bg-primary text-primary-foreground"
+                : "bg-background hover:bg-accent border-transparent"
+            )}
+          >
+            All
+          </button>
+          {activeFormats.map((fmt) => (
+            <button
+              key={fmt.id}
+              onClick={() =>
+                setSelectedFormat(selectedFormat === fmt.id ? null : fmt.id)
+              }
+              className={cn(
+                "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
+                selectedFormat === fmt.id
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "bg-background hover:bg-accent border-transparent"
+              )}
+            >
+              {fmt.label}
+            </button>
+          ))}
+
+          {/* Divider — only shown when there are multiple alts */}
+          {alts.length > 1 && (
+            <div className="border-border mx-1 h-5 border-l" />
+          )}
+
+          {/* Alt chips */}
+          {alts.length > 1 &&
+            alts.map((alt) => (
+              <button
+                key={alt.id}
+                onClick={() =>
+                  setSelectedAlt(
+                    selectedAlt === alt.username ? null : alt.username
+                  )
+                }
+                className={cn(
+                  "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
+                  selectedAlt === alt.username
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "bg-background hover:bg-accent border-transparent"
+                )}
+              >
+                {alt.username}
+              </button>
+            ))}
+        </div>
+
+        {/* Actions */}
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href={`${newTeamUrl}?mode=import`} />}
+          >
+            <Upload className="size-4" />
+            Import Paste
+          </Button>
+          <Button size="sm" render={<Link href={newTeamUrl} />}>
+            <Plus className="size-4" />
+            New Team
+          </Button>
+        </div>
+      </div>
+
+      {/* Data table */}
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-muted-foreground border-b text-left text-xs tracking-wide uppercase">
+              <th className="px-3 py-2 font-medium">Team</th>
+              <th className="px-3 py-2 font-medium">Alt</th>
+              <th className="px-3 py-2 font-medium">Format</th>
+              <th className="px-3 py-2 font-medium">Updated</th>
+              <th className="px-3 py-2 text-right font-medium">Record</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTeams.map((team) => (
+              <TeamRow key={team.id} team={team} />
+            ))}
+            {filteredTeams.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="text-muted-foreground px-3 py-8 text-center"
+                >
+                  No teams match your filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TeamRow
+// ---------------------------------------------------------------------------
+
+interface TeamRowProps {
+  team: CrossAltTeamListItem;
+}
+
+function TeamRow({ team }: TeamRowProps) {
+  const sortedPokemon = [...team.team_pokemon].sort(
+    (a, b) => a.team_position - b.team_position
+  );
+
+  const href = `/dashboard/alts/${team.alt_username}/teams/${team.id}`;
+
+  return (
+    <tr className="hover:bg-muted/50 border-b transition-colors last:border-0">
+      <td className="px-3 py-2.5">
+        <Link href={href} className="flex items-center gap-2">
+          <span className="flex gap-0.5">
+            {Array.from({ length: SPRITE_SLOTS }, (_, i) => {
+              const pokemon = sortedPokemon[i]?.pokemon;
+              const species = pokemon?.species ?? null;
+              const isShiny = pokemon?.is_shiny ?? false;
+
+              if (!species) {
+                return (
+                  <span
+                    key={i}
+                    className="bg-muted inline-block size-5 rounded"
+                  />
+                );
+              }
+
+              const sprite = getPokemonSprite(species, { shiny: isShiny });
+              return (
+                <Image
+                  key={i}
+                  src={sprite.url}
+                  alt={species}
+                  width={20}
+                  height={20}
+                  className="size-5 rounded object-contain"
+                  unoptimized
+                />
+              );
+            })}
+          </span>
+          <span className="font-medium">{team.name}</span>
+        </Link>
+      </td>
+      <td className="text-muted-foreground px-3 py-2.5">{team.alt_username}</td>
+      <td className="px-3 py-2.5">
+        {team.format && (
+          <Badge variant="secondary" className="text-xs">
+            {getFormatLabel(team.format)}
+          </Badge>
+        )}
+      </td>
+      <td className="text-muted-foreground px-3 py-2.5 text-xs">
+        {team.updated_at ? formatTimeAgo(team.updated_at) : "—"}
+      </td>
+      <td className="text-muted-foreground px-3 py-2.5 text-right text-xs">
+        —
+      </td>
+    </tr>
+  );
+}
