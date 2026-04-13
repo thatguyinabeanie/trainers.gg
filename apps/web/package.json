@@ -92,7 +92,7 @@
     "dotenv": "^17",
     "eslint": "catalog:",
     "jest": "catalog:testing",
-    "jest-environment-jsdom": "^29",
+    "jest-environment-jsdom": "catalog:testing",
     "jest-junit": "catalog:testing",
     "jose": "catalog:",
     "postcss": "^8",

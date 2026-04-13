@@ -74,6 +74,8 @@
     "@faker-js/faker": "catalog:",
     "@types/jest": "catalog:testing",
     "@jest/globals": "catalog:testing",
+    "@testing-library/react": "catalog:testing",
+    "jest-environment-jsdom": "catalog:testing",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/test-utils": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
