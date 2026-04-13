@@ -55,6 +55,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -632,18 +637,13 @@ function PlayerNav({
       icon: Trophy,
       isActive: pathname.startsWith("/dashboard/tournaments"),
     },
-    // Only show Builder when the user has team builder access
-    ...(hasTeamBuilderAccess
-      ? [
-          {
-            label: "Builder",
-            href: builderHref,
-            icon: Hammer,
-            isActive:
-              pathname.includes("/alts/") && pathname.includes("/teams"),
-          },
-        ]
-      : []),
+    {
+      label: "Builder",
+      href: builderHref,
+      icon: Hammer,
+      isActive: pathname.includes("/alts/") && pathname.includes("/teams"),
+      disabled: !hasTeamBuilderAccess,
+    },
   ];
 
   return (
@@ -655,15 +655,32 @@ function PlayerNav({
         <SidebarGroupContent>
           <SidebarMenu>
             {playerItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  render={<Link href={item.href} />}
-                  isActive={item.isActive}
-                  tooltip={item.label}
-                >
-                  <item.icon className="size-4 shrink-0" />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
+              <SidebarMenuItem key={item.label}>
+                {item.disabled ? (
+                  <Tooltip>
+                    <TooltipTrigger render={<span />}>
+                      <SidebarMenuButton
+                        className="pointer-events-none opacity-50"
+                        tooltip={item.label}
+                      >
+                        <item.icon className="size-4 shrink-0" />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      Coming soon — in beta
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <SidebarMenuButton
+                    render={<Link href={item.href} />}
+                    isActive={item.isActive}
+                    tooltip={item.label}
+                  >
+                    <item.icon className="size-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                )}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
