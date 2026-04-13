@@ -12,7 +12,7 @@ inputs:
     description: Vercel token (also used for Turbo remote cache)
     required: false
   vercel-team-id:
-    description: Vercel team ID (also used for Turbo remote cache)
+    description: Vercel team slug or ID — used for both Vercel API and TURBO_TEAM (Turbo accepts either format)
     required: false
 
 runs:
@@ -53,6 +53,8 @@ runs:
     - name: Configure Turbo Remote Cache
       if: inputs.vercel-token != ''
       shell: bash
+      # TURBO_TEAM accepts both team slug ("my-team") and team ID ("team_xxx").
+      # We pass whichever value is in vercel-team-id — Turbo handles both formats.
       run: |
         echo "TURBO_TOKEN=${{ inputs.vercel-token }}" >> "$GITHUB_ENV"
         echo "TURBO_TEAM=${{ inputs.vercel-team-id }}" >> "$GITHUB_ENV"

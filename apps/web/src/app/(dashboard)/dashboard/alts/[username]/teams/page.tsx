@@ -40,7 +40,8 @@ export default async function TeamsPage({
 
   const supabase = await createClientReadOnly();
 
-  // Gate on team_builder_access JWT claim
+  // Gate on team_builder_access JWT claim.
+  // decodeJwtClaims() never throws — returns null on malformed tokens (see lib/jwt.ts).
   const {
     data: { session },
   } = await supabase.auth.getSession();
