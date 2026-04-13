@@ -32,14 +32,25 @@ jest.mock("next/link", () => ({
   ),
 }));
 
+jest.mock("next/image", () => ({
+  __esModule: true,
+  default: ({ alt, ...rest }: { alt: string } & Record<string, unknown>) => (
+    <img alt={alt} {...rest} />
+  ),
+}));
+
 jest.mock("@trainers/pokemon", () => ({
   getFormatLabel: jest.fn((id: string) => id.toUpperCase()),
 }));
 
-jest.mock("@/components/team-builder/team-card", () => ({
-  TeamCard: ({ team }: { team: { id: number; name: string } }) => (
-    <div data-testid={`team-card-${team.id}`}>{team.name}</div>
-  ),
+jest.mock("@trainers/pokemon/sprites", () => ({
+  getPokemonSprite: jest.fn((species: string) => ({
+    url: `https://sprites.test/${species}.png`,
+  })),
+}));
+
+jest.mock("@trainers/utils", () => ({
+  formatTimeAgo: jest.fn(() => "2h ago"),
 }));
 
 import { TeamsListClient, teamKeys } from "../teams-list-client";
@@ -53,16 +64,28 @@ function buildTeam(
     id: number;
     name: string;
     format: string | null;
-    pokemon_count: number;
+    updated_at: string | null;
   }> = {}
 ) {
   return {
     id: 1,
     name: "My Team",
     format: "gen9vgc2024regg" as string | null,
-    pokemon_count: 6,
-    species_list: ["Incineroar", "Rillaboom"],
-    created_at: "2026-01-01T00:00:00Z",
+    is_public: false,
+    updated_at: "2026-04-13T00:00:00Z",
+    created_at: "2026-04-13T00:00:00Z",
+    team_pokemon: [
+      {
+        id: 10,
+        team_position: 1,
+        pokemon: { id: 100, species: "Incineroar", is_shiny: false },
+      },
+      {
+        id: 11,
+        team_position: 2,
+        pokemon: { id: 101, species: "Rillaboom", is_shiny: false },
+      },
+    ],
     ...overrides,
   };
 }
@@ -118,7 +141,7 @@ describe("TeamsListClient", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders team cards for teams", () => {
+  it("renders team rows in data table", () => {
     const teams = [
       buildTeam({ id: 1, name: "Team Alpha" }),
       buildTeam({ id: 2, name: "Team Beta" }),
@@ -126,21 +149,25 @@ describe("TeamsListClient", () => {
 
     render(<TeamsListClient {...defaultProps} initialTeams={teams} />);
 
-    expect(screen.getByTestId("team-card-1")).toBeInTheDocument();
-    expect(screen.getByTestId("team-card-2")).toBeInTheDocument();
+    expect(screen.getByText("Team Alpha")).toBeInTheDocument();
+    expect(screen.getByText("Team Beta")).toBeInTheDocument();
   });
 
-  it("groups teams by format in 'all' view", () => {
-    const teams = [
-      buildTeam({ id: 1, name: "VGC Team", format: "gen9vgc2024regg" }),
-      buildTeam({ id: 2, name: "Draft Team", format: "gen9draft" }),
-    ];
+  it("renders table column headers", () => {
+    render(<TeamsListClient {...defaultProps} initialTeams={[buildTeam()]} />);
 
-    render(<TeamsListClient {...defaultProps} initialTeams={teams} />);
+    expect(screen.getByText("Name")).toBeInTheDocument();
+    expect(screen.getByText("Pokemon")).toBeInTheDocument();
+    expect(screen.getByText("Format")).toBeInTheDocument();
+    expect(screen.getByText("Updated")).toBeInTheDocument();
+    expect(screen.getByText("Record")).toBeInTheDocument();
+  });
 
-    // Format headers rendered via getFormatLabel mock (uppercased)
-    expect(screen.getByText("GEN9VGC2024REGG")).toBeInTheDocument();
-    expect(screen.getByText("GEN9DRAFT")).toBeInTheDocument();
+  it("renders pokemon sprites in table rows", () => {
+    render(<TeamsListClient {...defaultProps} initialTeams={[buildTeam()]} />);
+
+    expect(screen.getByAltText("Incineroar")).toBeInTheDocument();
+    expect(screen.getByAltText("Rillaboom")).toBeInTheDocument();
   });
 
   it("filters teams by selected format", () => {
@@ -157,14 +184,13 @@ describe("TeamsListClient", () => {
       />
     );
 
-    expect(screen.getByTestId("team-card-1")).toBeInTheDocument();
-    expect(screen.queryByTestId("team-card-2")).not.toBeInTheDocument();
+    expect(screen.getByText("VGC Team")).toBeInTheDocument();
+    expect(screen.queryByText("Draft Team")).not.toBeInTheDocument();
   });
 
   it("renders New Team and Import Paste buttons", () => {
     render(<TeamsListClient {...defaultProps} initialTeams={[]} />);
 
-    // Toolbar buttons
     const newTeamLinks = screen.getAllByText("New Team");
     expect(newTeamLinks.length).toBeGreaterThan(0);
 
@@ -180,12 +206,15 @@ describe("TeamsListClient", () => {
     expect(screen.getByText("Reg H")).toBeInTheDocument();
   });
 
-  it("handles teams with no format", () => {
-    const teams = [buildTeam({ id: 1, name: "Unformatted", format: null })];
+  it("links team name to the editor", () => {
+    render(
+      <TeamsListClient
+        {...defaultProps}
+        initialTeams={[buildTeam({ id: 7, name: "My Team" })]}
+      />
+    );
 
-    render(<TeamsListClient {...defaultProps} initialTeams={teams} />);
-
-    expect(screen.getByText("No Format")).toBeInTheDocument();
-    expect(screen.getByTestId("team-card-1")).toBeInTheDocument();
+    const link = screen.getByText("My Team").closest("a");
+    expect(link).toHaveAttribute("href", "/dashboard/alts/ash_ketchum/teams/7");
   });
 });

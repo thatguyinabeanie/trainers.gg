@@ -1,17 +1,20 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Plus, Upload } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { type GameFormat, getFormatLabel } from "@trainers/pokemon";
-import { getTeamsForAltList } from "@trainers/supabase";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
+import { getTeamsForAltList, type TeamListItem } from "@trainers/supabase";
+import { formatTimeAgo } from "@trainers/utils";
 
 import { useSupabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { TeamCard } from "@/components/team-builder/team-card";
 
 // ---------------------------------------------------------------------------
 // Query key factory
@@ -23,28 +26,11 @@ export const teamKeys = {
 };
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Constants
 // ---------------------------------------------------------------------------
 
-/**
- * Group teams by format for the "All" view.
- * Returns a Map<format, teams[]> preserving insertion order.
- */
-function groupByFormat(
-  teams: Awaited<ReturnType<typeof getTeamsForAltList>>
-): Map<string, typeof teams> {
-  const map = new Map<string, typeof teams>();
-  for (const team of teams) {
-    const key = team.format ?? "No Format";
-    const existing = map.get(key);
-    if (existing) {
-      existing.push(team);
-    } else {
-      map.set(key, [team]);
-    }
-  }
-  return map;
-}
+/** Number of sprite slots to render per team row. */
+const SPRITE_SLOTS = 6;
 
 // ---------------------------------------------------------------------------
 // Component
@@ -59,8 +45,9 @@ interface TeamsListClientProps {
 }
 
 /**
- * Client component for the team list page.
+ * Client component for the alt-scoped team list page.
  * Hydrates from SSR data via initialData and keeps the cache warm via useQuery.
+ * Uses the same data table layout as the cross-alt /dashboard/teams page.
  */
 export function TeamsListClient({
   initialTeams,
@@ -88,15 +75,12 @@ export function TeamsListClient({
     ? teams
     : teams.filter((t) => t.format === selectedFormat);
 
-  const groupedTeams = isAll ? groupByFormat(filteredTeams) : null;
-
   const newTeamUrl = `/dashboard/alts/${handle}/teams/new`;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
-        {/* Format filter chips */}
+    <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+      {/* Toolbar: filters + actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5">
           <Link
             href={`/dashboard/alts/${handle}/teams`}
@@ -175,30 +159,92 @@ export function TeamsListClient({
             </div>
           }
         />
-      ) : isAll && groupedTeams ? (
-        // Grouped by format
-        <div className="flex flex-col gap-8">
-          {Array.from(groupedTeams.entries()).map(([format, formatTeams]) => (
-            <section key={format}>
-              <h2 className="text-muted-foreground mb-3 text-xs font-semibold tracking-widest uppercase">
-                {format === "No Format" ? "No Format" : getFormatLabel(format)}
-              </h2>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {formatTeams.map((team) => (
-                  <TeamCard key={team.id} team={team} handle={handle} />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
       ) : (
-        // Flat list for filtered view
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredTeams.map((team) => (
-            <TeamCard key={team.id} team={team} handle={handle} />
-          ))}
+        <div className="overflow-x-auto rounded-lg border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-muted-foreground border-b text-left text-xs tracking-wide uppercase">
+                <th className="px-3 py-2 font-medium">Name</th>
+                <th className="px-3 py-2 font-medium">Pokemon</th>
+                <th className="px-3 py-2 font-medium">Format</th>
+                <th className="px-3 py-2 font-medium">Updated</th>
+                <th className="px-3 py-2 text-right font-medium">Record</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredTeams.map((team) => (
+                <AltTeamRow key={team.id} team={team} handle={handle} />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AltTeamRow — same layout as cross-alt TeamRow but without the Alt column
+// ---------------------------------------------------------------------------
+
+function AltTeamRow({ team, handle }: { team: TeamListItem; handle: string }) {
+  const sortedPokemon = [...team.team_pokemon].sort(
+    (a, b) => a.team_position - b.team_position
+  );
+
+  const href = `/dashboard/alts/${handle}/teams/${team.id}`;
+
+  return (
+    <tr className="hover:bg-muted/50 border-b transition-colors last:border-0">
+      <td className="px-3 py-2.5">
+        <Link href={href} className="font-medium hover:underline">
+          {team.name}
+        </Link>
+      </td>
+      <td className="px-3 py-2.5">
+        <Link href={href} className="flex gap-0.5">
+          {Array.from({ length: SPRITE_SLOTS }, (_, i) => {
+            const pokemon = sortedPokemon[i]?.pokemon;
+            const species = pokemon?.species ?? null;
+            const isShiny = pokemon?.is_shiny ?? false;
+
+            if (!species) {
+              return (
+                <span
+                  key={i}
+                  className="bg-muted inline-block size-5 rounded"
+                />
+              );
+            }
+
+            const sprite = getPokemonSprite(species, { shiny: isShiny });
+            return (
+              <Image
+                key={i}
+                src={sprite.url}
+                alt={species}
+                width={20}
+                height={20}
+                className="size-5 rounded object-contain"
+                unoptimized
+              />
+            );
+          })}
+        </Link>
+      </td>
+      <td className="px-3 py-2.5">
+        {team.format && (
+          <Badge variant="secondary" className="text-xs">
+            {getFormatLabel(team.format)}
+          </Badge>
+        )}
+      </td>
+      <td className="text-muted-foreground px-3 py-2.5 text-xs">
+        {team.updated_at ? formatTimeAgo(team.updated_at) : "—"}
+      </td>
+      <td className="text-muted-foreground px-3 py-2.5 text-right text-xs">
+        —
+      </td>
+    </tr>
   );
 }
