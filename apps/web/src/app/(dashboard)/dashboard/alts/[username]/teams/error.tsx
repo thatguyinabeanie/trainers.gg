@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 
 export default function TeamsError({
-  error: _error,
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -17,6 +17,11 @@ export default function TeamsError({
         refreshing.
       </p>
       <Button onClick={reset}>Try again</Button>
+      {error.digest && (
+        <p className="text-muted-foreground mt-1 text-xs">
+          Error ID: {error.digest}
+        </p>
+      )}
     </div>
   );
 }

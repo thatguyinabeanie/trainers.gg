@@ -130,7 +130,8 @@ export function PokemonImportExport({
       } else {
         toast.error(result.error ?? "Failed to import set");
       }
-    } catch {
+    } catch (err) {
+      console.error("[pokemon-import-export] Import failed:", err);
       toast.error("Failed to import set. Check your connection and try again.");
     } finally {
       setIsImporting(false);

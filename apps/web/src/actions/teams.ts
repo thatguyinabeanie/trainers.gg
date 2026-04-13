@@ -73,6 +73,7 @@ export async function createTeamAction(
     invalidateTeamDetailCache(result.id);
     return { success: true, data: { id: result.id } };
   } catch (error) {
+    console.error("[server-action] createTeamAction:", error);
     return {
       success: false,
       error: getErrorMessage(error, "Failed to create team"),
@@ -164,6 +165,7 @@ export async function forkTeamAction(
     invalidateTeamDetailCache(result.id);
     return { success: true, data: { id: result.id } };
   } catch (error) {
+    console.error("[server-action] forkTeamAction:", error);
     return {
       success: false,
       error: getErrorMessage(error, "Failed to fork team"),
@@ -210,6 +212,7 @@ export async function addPokemonToTeamAction(
     invalidateTeamDetailCache(parsed.data.teamId);
     return { success: true, data: { pokemonId: result.pokemonId } };
   } catch (error) {
+    console.error("[server-action] addPokemonToTeamAction:", error);
     return {
       success: false,
       error: getErrorMessage(error, "Failed to add pokemon to team"),

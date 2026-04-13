@@ -240,7 +240,7 @@ function StatRow({
         aria-label={`${label} EVs`}
         tabIndex={0}
         onKeyDown={(e) => {
-          const step = e.shiftKey ? 4 : 4;
+          const step = e.shiftKey ? 16 : 4;
           if (e.key === "ArrowRight" || e.key === "ArrowUp") {
             e.preventDefault();
             onChange(Math.min(ev + step, ev + remaining, MAX_EV));
