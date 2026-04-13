@@ -127,20 +127,20 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // Validate secret before exposing any diagnostic information
+  const secret = request.headers.get("x-e2e-seed-secret");
+  const expectedSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+
+  if (!expectedSecret || secret !== expectedSecret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const safety = checkBranchSafety();
   if (!safety.safe) {
     return NextResponse.json(
       { error: "Not found", ...safety },
       { status: 404 }
     );
-  }
-
-  // Validate secret
-  const secret = request.headers.get("x-e2e-seed-secret");
-  const expectedSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-
-  if (!expectedSecret || secret !== expectedSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = createServiceRoleClient();
