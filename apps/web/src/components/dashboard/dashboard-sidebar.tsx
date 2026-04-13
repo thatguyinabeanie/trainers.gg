@@ -612,15 +612,17 @@ function PlayerNav({
   hasTeamBuilderAccess = false,
 }: PlayerNavProps) {
   // Resolve the current alt to build a context-aware Team Builder link.
-  // Validate the cookie value against the alts list — the cookie can be stale
-  // if the alt was deleted. Fall back to the first alt when no match is found.
+  // When "All Alts" is selected (no cookie), go to the cross-alt teams page.
+  // When a specific alt is selected, go to that alt's teams page.
+  // For single-alt users, go directly to their only alt's teams page.
   const selectedAlt =
     selectedAltUsername != null
       ? (alts.find((alt) => alt.username === selectedAltUsername) ?? null)
       : null;
-  const currentAltUsername = selectedAlt?.username ?? alts[0]?.username ?? null;
-  const builderHref = currentAltUsername
-    ? `/dashboard/alts/${currentAltUsername}/teams`
+  const builderAltUsername =
+    selectedAlt?.username ?? (alts.length === 1 ? alts[0]?.username : null);
+  const builderHref = builderAltUsername
+    ? `/dashboard/alts/${builderAltUsername}/teams`
     : "/dashboard/teams";
 
   const playerItems = [

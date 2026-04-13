@@ -736,7 +736,7 @@ export type Database = {
       }
       format_meta_stats: {
         Row: {
-          computed_at: string | null
+          computed_at: string
           format: string
           id: number
           period_end: string
@@ -745,7 +745,7 @@ export type Database = {
           total_tournaments: number
         }
         Insert: {
-          computed_at?: string | null
+          computed_at?: string
           format: string
           id?: never
           period_end: string
@@ -754,7 +754,7 @@ export type Database = {
           total_tournaments: number
         }
         Update: {
-          computed_at?: string | null
+          computed_at?: string
           format?: string
           id?: never
           period_end?: string
