@@ -136,6 +136,13 @@ jest.mock("botid/server", () => ({
   checkBotId: jest.fn().mockResolvedValue({ isBot: false }),
 }));
 
+// Mock next/headers — rejectBots() reads the bypass header
+jest.mock("next/headers", () => ({
+  headers: jest.fn(async () => ({
+    get: jest.fn(() => null),
+  })),
+}));
+
 // Use a lazy factory so `mockSupabase` is resolved at call time, not hoist time.
 jest.mock("@/lib/supabase/server", () => ({
   createClient: jest.fn(async () => mockSupabase),

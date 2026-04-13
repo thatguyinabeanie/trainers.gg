@@ -5,12 +5,11 @@ import {
   completeOnboardingSchema,
   pdsStatusSchema,
 } from "@trainers/validators";
-import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { escapeLike } from "@trainers/utils";
 import { invalidatePlayerDirectoryCaches } from "@/lib/cache-invalidation";
-import { headers } from "next/headers";
 import { checkPdsHandleAvailable, derivePdsUsername } from "./pds-utils";
+import { rejectBots } from "./utils";
 
 /**
  * Complete the onboarding flow for OAuth users with temporary usernames.
@@ -25,22 +24,8 @@ export async function completeOnboarding(data: {
   bio?: string;
   birthDate?: string;
 }) {
-  // Skip BotID in E2E: headless Chromium is flagged as a bot
-  const headerStore = await headers();
-  const bypassSecret = headerStore.get("x-vercel-protection-bypass");
-  const expectedSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-  const isE2E = !!(
-    bypassSecret &&
-    expectedSecret &&
-    bypassSecret === expectedSecret
-  );
-
-  if (!isE2E) {
-    const { isBot } = await checkBotId();
-    if (isBot) return { success: false, error: "Access denied" };
-  }
-
   try {
+    await rejectBots();
     const validated = completeOnboardingSchema.parse(data);
 
     const supabase = await createClient();

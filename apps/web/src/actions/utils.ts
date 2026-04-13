@@ -3,16 +3,24 @@
 import { z, type ActionResult } from "@trainers/validators";
 import { checkBotId } from "botid/server";
 import { getErrorMessage } from "@trainers/utils";
+import { headers } from "next/headers";
 
 /**
  * Reject requests classified as bots by Vercel BotID.
  *
  * Used by all server actions as the standard bot detection gate.
- * Does NOT include an automation bypass — E2E tests that need to call
- * server actions should add a VERCEL_AUTOMATION_BYPASS_SECRET check
- * here when that need arises (see onboarding.ts for the bypass pattern).
+ * Allows trusted E2E automation to bypass BotID when the request includes
+ * x-vercel-protection-bypass matching VERCEL_AUTOMATION_BYPASS_SECRET.
  */
 export async function rejectBots(): Promise<void> {
+  const requestHeaders = await headers();
+  const bypassHeader = requestHeaders.get("x-vercel-protection-bypass");
+  const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+
+  if (bypassHeader && bypassSecret && bypassHeader === bypassSecret) {
+    return;
+  }
+
   const { isBot } = await checkBotId();
   if (isBot) throw new Error("Access denied");
 }

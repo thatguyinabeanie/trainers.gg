@@ -9,6 +9,13 @@ jest.mock("botid/server", () => ({
   checkBotId: jest.fn().mockResolvedValue({ isBot: false }),
 }));
 
+// Mock next/headers — rejectBots() reads the bypass header
+jest.mock("next/headers", () => ({
+  headers: jest.fn(async () => ({
+    get: jest.fn(() => null),
+  })),
+}));
+
 // Mock Supabase client
 const mockSupabase = {
   auth: { getUser: jest.fn() },

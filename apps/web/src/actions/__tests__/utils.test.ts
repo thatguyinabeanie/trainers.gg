@@ -4,6 +4,14 @@
 
 import { z } from "@trainers/validators";
 
+// Mock next/headers — rejectBots() reads the bypass header
+const mockHeaders = jest.fn(async () => ({
+  get: jest.fn(() => null),
+}));
+jest.mock("next/headers", () => ({
+  headers: (...args: unknown[]) => mockHeaders(...args),
+}));
+
 // Mock botid/server
 const mockCheckBotId = jest.fn();
 jest.mock("botid/server", () => ({
@@ -111,8 +119,15 @@ describe("withAction", () => {
 });
 
 describe("rejectBots", () => {
+  const BYPASS_SECRET = "test-bypass-secret";
+
   beforeEach(() => {
     jest.clearAllMocks();
+    delete process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+    // Default: no bypass header
+    mockHeaders.mockResolvedValue({
+      get: jest.fn(() => null),
+    });
   });
 
   it("does not throw when the request is not from a bot", async () => {
@@ -125,5 +140,56 @@ describe("rejectBots", () => {
     mockCheckBotId.mockResolvedValue({ isBot: true });
 
     await expect(rejectBots()).rejects.toThrow("Access denied");
+  });
+
+  describe("E2E bypass", () => {
+    it("skips BotID when valid bypass header and secret match", async () => {
+      process.env.VERCEL_AUTOMATION_BYPASS_SECRET = BYPASS_SECRET;
+      mockCheckBotId.mockResolvedValue({ isBot: true });
+      mockHeaders.mockResolvedValueOnce({
+        get: jest.fn((name: string) =>
+          name === "x-vercel-protection-bypass" ? BYPASS_SECRET : null
+        ),
+      });
+
+      await expect(rejectBots()).resolves.toBeUndefined();
+      expect(mockCheckBotId).not.toHaveBeenCalled();
+    });
+
+    it("runs BotID when bypass header is missing", async () => {
+      process.env.VERCEL_AUTOMATION_BYPASS_SECRET = BYPASS_SECRET;
+      mockCheckBotId.mockResolvedValue({ isBot: false });
+
+      await rejectBots();
+
+      expect(mockCheckBotId).toHaveBeenCalled();
+    });
+
+    it("runs BotID when bypass secret doesn't match", async () => {
+      process.env.VERCEL_AUTOMATION_BYPASS_SECRET = BYPASS_SECRET;
+      mockCheckBotId.mockResolvedValue({ isBot: false });
+      mockHeaders.mockResolvedValueOnce({
+        get: jest.fn((name: string) =>
+          name === "x-vercel-protection-bypass" ? "wrong-secret" : null
+        ),
+      });
+
+      await rejectBots();
+
+      expect(mockCheckBotId).toHaveBeenCalled();
+    });
+
+    it("runs BotID when VERCEL_AUTOMATION_BYPASS_SECRET is not set", async () => {
+      mockCheckBotId.mockResolvedValue({ isBot: false });
+      mockHeaders.mockResolvedValueOnce({
+        get: jest.fn((name: string) =>
+          name === "x-vercel-protection-bypass" ? "some-value" : null
+        ),
+      });
+
+      await rejectBots();
+
+      expect(mockCheckBotId).toHaveBeenCalled();
+    });
   });
 });

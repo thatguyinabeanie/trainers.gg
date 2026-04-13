@@ -19,8 +19,10 @@ jest.mock("@/lib/supabase/server", () => ({
   createClient: jest.fn(async () => mockSupabaseClient),
 }));
 
-jest.mock("botid/server", () => ({
-  checkBotId: jest.fn(async () => ({ isBot: false })),
+// Mock rejectBots — onboarding delegates bot detection to the shared gate
+const mockRejectBots = jest.fn(async () => undefined);
+jest.mock("../utils", () => ({
+  rejectBots: (...args: unknown[]) => mockRejectBots(...args),
 }));
 
 jest.mock("next/cache", () => ({
@@ -37,8 +39,6 @@ jest.mock("next/headers", () => ({
 const originalFetch = global.fetch;
 
 import { userFactory } from "@trainers/test-utils/factories";
-import { checkBotId } from "botid/server";
-import { headers } from "next/headers";
 import { completeOnboarding } from "../onboarding";
 
 // Helper to create a chainable mock query builder
@@ -67,16 +67,9 @@ describe("completeOnboarding", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // clearAllMocks doesn't clear mockReturnValueOnce/mockResolvedValueOnce
-    // queues — use mockReset on mocks that use them to prevent cross-test
-    // pollution (e.g. the BotID "skips" test leaves an unconsumed value)
     mockFrom.mockReset();
-    (checkBotId as jest.Mock)
-      .mockReset()
-      .mockImplementation(async () => ({ isBot: false }));
-    (headers as jest.Mock)
-      .mockReset()
-      .mockImplementation(async () => ({ get: jest.fn(() => null) }));
+    // Default: rejectBots allows the request through
+    mockRejectBots.mockReset().mockResolvedValue(undefined);
     process.env.NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
 
     // Default: authenticated user
@@ -184,110 +177,17 @@ describe("completeOnboarding", () => {
   });
 
   it("returns error when bot is detected", async () => {
-    (checkBotId as jest.Mock).mockResolvedValueOnce({ isBot: true });
+    mockRejectBots.mockRejectedValueOnce(new Error("Access denied"));
 
     const result = await completeOnboarding(validInput);
 
-    expect(result).toEqual({ success: false, error: "Access denied" });
+    // rejectBots() throws, caught by the generic catch block
+    expect(result).toEqual({
+      success: false,
+      error: "An unexpected error occurred",
+    });
     // Should not proceed to any DB calls
     expect(mockFrom).not.toHaveBeenCalled();
-  });
-
-  describe("BotID E2E bypass", () => {
-    const BYPASS_SECRET = "test-bypass-secret";
-
-    afterEach(() => {
-      delete process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-    });
-
-    it("skips BotID when valid bypass header and secret match", async () => {
-      process.env.VERCEL_AUTOMATION_BYPASS_SECRET = BYPASS_SECRET;
-
-      // Even though checkBotId would flag as bot, bypass should skip it
-      (checkBotId as jest.Mock).mockResolvedValueOnce({ isBot: true });
-
-      // Mock headers to return the matching bypass secret
-      (headers as jest.Mock).mockResolvedValueOnce({
-        get: jest.fn((name: string) => {
-          if (name === "x-vercel-protection-bypass") return BYPASS_SECRET;
-          return null;
-        }),
-      });
-
-      // Set up the rest of the flow to succeed
-      setupHappyPath();
-
-      const result = await completeOnboarding(validInput);
-
-      // Bot check was bypassed, so the action should succeed
-      expect(result).toEqual({ success: true, error: null });
-      expect(checkBotId).not.toHaveBeenCalled();
-    });
-
-    it("runs BotID when bypass header is missing", async () => {
-      process.env.VERCEL_AUTOMATION_BYPASS_SECRET = BYPASS_SECRET;
-
-      // checkBotId returns not-a-bot so the flow continues
-      (checkBotId as jest.Mock).mockResolvedValueOnce({ isBot: false });
-
-      // Mock headers to return null for the bypass header
-      (headers as jest.Mock).mockResolvedValueOnce({
-        get: jest.fn((name: string) => {
-          if (name === "x-vercel-protection-bypass") return null;
-          return null;
-        }),
-      });
-
-      setupHappyPath();
-
-      await completeOnboarding(validInput);
-
-      // BotID should still be called since bypass header is missing
-      expect(checkBotId).toHaveBeenCalled();
-    });
-
-    it("runs BotID when bypass secret doesn't match", async () => {
-      process.env.VERCEL_AUTOMATION_BYPASS_SECRET = BYPASS_SECRET;
-
-      (checkBotId as jest.Mock).mockResolvedValueOnce({ isBot: false });
-
-      // Mock headers to return a wrong bypass value
-      (headers as jest.Mock).mockResolvedValueOnce({
-        get: jest.fn((name: string) => {
-          if (name === "x-vercel-protection-bypass") return "wrong-secret";
-          return null;
-        }),
-      });
-
-      setupHappyPath();
-
-      await completeOnboarding(validInput);
-
-      // BotID should still be called since secrets don't match
-      expect(checkBotId).toHaveBeenCalled();
-    });
-
-    it("runs BotID when VERCEL_AUTOMATION_BYPASS_SECRET is not set", async () => {
-      // Ensure the env var is not set
-      delete process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-
-      (checkBotId as jest.Mock).mockResolvedValueOnce({ isBot: false });
-
-      // Mock headers to return some bypass value
-      (headers as jest.Mock).mockResolvedValueOnce({
-        get: jest.fn((name: string) => {
-          if (name === "x-vercel-protection-bypass") return "some-value";
-          return null;
-        }),
-      });
-
-      setupHappyPath();
-
-      await completeOnboarding(validInput);
-
-      // BotID should still be called since env var is not set
-      expect(checkBotId).toHaveBeenCalled();
-    });
   });
 
   it("returns error when user is not authenticated", async () => {
