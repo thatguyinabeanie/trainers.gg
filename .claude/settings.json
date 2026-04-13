@@ -51,7 +51,9 @@
       "Bash(pnpm --filter @trainers/supabase exec jest --testPathPattern \"feature-flags\" --no-coverage)",
       "Bash(/Users/gmendoza/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh:*)",
       "Bash(pnpm --filter @trainers/supabase typecheck)",
-      "Bash(pnpm --filter @trainers/web exec jest --testPathPattern \"teams-list-client\" --no-coverage)"
+      "Bash(pnpm --filter @trainers/web exec jest --testPathPattern \"teams-list-client\" --no-coverage)",
+      "Read(//Users/gmendoza/source/NCP-VGC-Damage-Calculator/**)",
+      "Read(//Users/gmendoza/source/**)"
     ]
   },
   "hooks": {
