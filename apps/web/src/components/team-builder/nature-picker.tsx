@@ -8,17 +8,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// =============================================================================
-// Constants
-// =============================================================================
-
-const STAT_LABELS: Record<string, string> = {
-  attack: "Atk",
-  defense: "Def",
-  specialAttack: "SpA",
-  specialDefense: "SpD",
-  speed: "Spe",
-};
+import { STAT_LABELS } from "./stat-types";
 
 // =============================================================================
 // Types

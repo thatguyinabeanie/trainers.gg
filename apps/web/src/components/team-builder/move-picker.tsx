@@ -8,19 +8,8 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+import { CATEGORY_COLORS, CATEGORY_LABELS } from "./move-category-ui";
 import { TYPE_BG_COLORS } from "./type-colors";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  Physical: "P",
-  Special: "S",
-  Status: "—",
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Physical: "text-orange-500",
-  Special: "text-blue-500",
-  Status: "text-muted-foreground",
-};
 
 type CategoryFilter = "All" | "Physical" | "Special" | "Status";
 

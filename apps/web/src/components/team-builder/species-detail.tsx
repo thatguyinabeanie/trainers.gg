@@ -15,21 +15,7 @@ import { COMPETITIVE_MOVES } from "./competitive-moves";
 import { TeamFitAnalysis } from "./team-fit-analysis";
 import { TYPE_PILL_COLORS } from "./type-colors";
 
-// =============================================================================
-// Constants
-// =============================================================================
-
-const CATEGORY_LABELS: Record<string, string> = {
-  Physical: "P",
-  Special: "S",
-  Status: "—",
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Physical: "text-orange-500",
-  Special: "text-blue-500",
-  Status: "text-muted-foreground",
-};
+import { CATEGORY_COLORS, CATEGORY_LABELS } from "./move-category-ui";
 
 // =============================================================================
 // Types
