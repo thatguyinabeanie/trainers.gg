@@ -2,6 +2,7 @@ import { describe, it, expect } from "@jest/globals";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
+import { type ParsedPokemon } from "@trainers/validators";
 
 // =============================================================================
 // Module-level mocks
@@ -24,8 +25,9 @@ jest.mock("@/actions/teams", () => ({
     mockAddPokemonToTeamAction(...args),
 }));
 
+const mockParseShowdownText = jest.fn(() => [] as ParsedPokemon[]);
 jest.mock("@trainers/validators", () => ({
-  parseShowdownText: jest.fn(() => []),
+  parseShowdownText: (...args: unknown[]) => mockParseShowdownText(...args),
 }));
 
 jest.mock("sonner", () => ({
@@ -260,6 +262,476 @@ describe("NewTeamForm", () => {
       render(<NewTeamForm {...defaultProps} />);
       await user.click(screen.getByRole("button", { name: "Cancel" }));
       expect(mockBack).toHaveBeenCalled();
+    });
+  });
+
+  // =============================================================================
+  // Import-mode submission flow
+  // =============================================================================
+
+  // Helper: build a minimal ParsedPokemon with sensible defaults. Tests only need
+  // to override the fields they care about.
+  function makeParsedPokemon(
+    overrides: Partial<ParsedPokemon> = {}
+  ): ParsedPokemon {
+    return {
+      species: "Pikachu",
+      nickname: null,
+      level: 50,
+      ability: "Static",
+      nature: "Timid",
+      held_item: null,
+      move1: "Thunderbolt",
+      move2: null,
+      move3: null,
+      move4: null,
+      ev_hp: 0,
+      ev_attack: 0,
+      ev_defense: 0,
+      ev_special_attack: 252,
+      ev_special_defense: 4,
+      ev_speed: 252,
+      iv_hp: 31,
+      iv_attack: 31,
+      iv_defense: 31,
+      iv_special_attack: 31,
+      iv_special_defense: 31,
+      iv_speed: 31,
+      tera_type: null,
+      gender: null,
+      is_shiny: false,
+      ...overrides,
+    };
+  }
+
+  describe("import-mode submission flow", () => {
+    // Shared setup: render in import mode, type a name, and put something in the
+    // paste box. Tests control what mockParseShowdownText returns.
+    async function setupImportForm(pastContent = "some paste") {
+      const user = userEvent.setup();
+      render(<NewTeamForm {...defaultProps} initialMode="import" />);
+      await user.type(screen.getByLabelText("Team Name"), "Import Team");
+      await user.type(screen.getByLabelText("Showdown Paste"), pastContent);
+      return user;
+    }
+
+    describe("successful full import", () => {
+      it("calls parseShowdownText with the paste content", async () => {
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 99 },
+        });
+        mockAddPokemonToTeamAction.mockResolvedValue({
+          success: true,
+          data: {},
+        });
+        mockParseShowdownText.mockReturnValue([makeParsedPokemon()]);
+
+        const user = await setupImportForm("paste content");
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(mockParseShowdownText).toHaveBeenCalledWith("paste content");
+        });
+      });
+
+      it("calls addPokemonToTeamAction for each parsed Pokemon", async () => {
+        const parsed = [
+          makeParsedPokemon({ species: "Pikachu" }),
+          makeParsedPokemon({ species: "Charizard" }),
+        ];
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 99 },
+        });
+        mockAddPokemonToTeamAction.mockResolvedValue({
+          success: true,
+          data: {},
+        });
+        mockParseShowdownText.mockReturnValue(parsed);
+
+        const user = await setupImportForm();
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(mockAddPokemonToTeamAction).toHaveBeenCalledTimes(2);
+        });
+      });
+
+      it("passes position index starting at 1 for each Pokemon", async () => {
+        const parsed = [
+          makeParsedPokemon({ species: "Pikachu" }),
+          makeParsedPokemon({ species: "Charizard" }),
+          makeParsedPokemon({ species: "Snorlax" }),
+        ];
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 99 },
+        });
+        mockAddPokemonToTeamAction.mockResolvedValue({
+          success: true,
+          data: {},
+        });
+        mockParseShowdownText.mockReturnValue(parsed);
+
+        const user = await setupImportForm();
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(mockAddPokemonToTeamAction).toHaveBeenNthCalledWith(
+            1,
+            99,
+            expect.objectContaining({ species: "Pikachu" }),
+            1
+          );
+          expect(mockAddPokemonToTeamAction).toHaveBeenNthCalledWith(
+            2,
+            99,
+            expect.objectContaining({ species: "Charizard" }),
+            2
+          );
+          expect(mockAddPokemonToTeamAction).toHaveBeenNthCalledWith(
+            3,
+            99,
+            expect.objectContaining({ species: "Snorlax" }),
+            3
+          );
+        });
+      });
+
+      it("shows success toast and navigates after all Pokemon are added", async () => {
+        const { toast } = await import("sonner");
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 99 },
+        });
+        mockAddPokemonToTeamAction.mockResolvedValue({
+          success: true,
+          data: {},
+        });
+        mockParseShowdownText.mockReturnValue([makeParsedPokemon()]);
+
+        const user = await setupImportForm();
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(toast.success).toHaveBeenCalledWith("Team created!");
+          expect(mockPush).toHaveBeenCalledWith(
+            "/dashboard/alts/ash_ketchum/teams/99"
+          );
+        });
+      });
+
+      it("invalidates the team query cache on success", async () => {
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 99 },
+        });
+        mockAddPokemonToTeamAction.mockResolvedValue({
+          success: true,
+          data: {},
+        });
+        mockParseShowdownText.mockReturnValue([makeParsedPokemon()]);
+
+        const user = await setupImportForm();
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(mockInvalidateQueries).toHaveBeenCalled();
+        });
+      });
+    });
+
+    describe("parse returns 0 Pokemon", () => {
+      it("shows a warning toast when the paste cannot be parsed", async () => {
+        const { toast } = await import("sonner");
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 7 },
+        });
+        mockParseShowdownText.mockReturnValue([]);
+
+        const user = await setupImportForm("garbage paste");
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(toast.warning).toHaveBeenCalledWith(
+            "Showdown paste could not be parsed. Team created empty."
+          );
+        });
+      });
+
+      it("does not call addPokemonToTeamAction when parse returns 0 Pokemon", async () => {
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 7 },
+        });
+        mockParseShowdownText.mockReturnValue([]);
+
+        const user = await setupImportForm();
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+        });
+      });
+
+      it("still navigates to the new team when parse returns 0 Pokemon", async () => {
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 7 },
+        });
+        mockParseShowdownText.mockReturnValue([]);
+
+        const user = await setupImportForm();
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(mockPush).toHaveBeenCalledWith(
+            "/dashboard/alts/ash_ketchum/teams/7"
+          );
+        });
+      });
+    });
+
+    describe("partial addPokemonToTeamAction failures", () => {
+      it("shows a warning with failed species names when some calls fail", async () => {
+        const { toast } = await import("sonner");
+        const parsed = [
+          makeParsedPokemon({ species: "Pikachu" }),
+          makeParsedPokemon({ species: "Eevee" }),
+          makeParsedPokemon({ species: "Snorlax" }),
+        ];
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 55 },
+        });
+        mockParseShowdownText.mockReturnValue(parsed);
+        // First succeeds, second fails, third succeeds
+        mockAddPokemonToTeamAction
+          .mockResolvedValueOnce({ success: true, data: {} })
+          .mockResolvedValueOnce({ success: false, error: "DB error" })
+          .mockResolvedValueOnce({ success: true, data: {} });
+
+        const user = await setupImportForm();
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(toast.warning).toHaveBeenCalledWith(
+            "Team created, but failed to import: Eevee"
+          );
+        });
+      });
+
+      it("includes all failed species names in the warning", async () => {
+        const { toast } = await import("sonner");
+        const parsed = [
+          makeParsedPokemon({ species: "Pikachu" }),
+          makeParsedPokemon({ species: "Eevee" }),
+          makeParsedPokemon({ species: "Snorlax" }),
+        ];
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 55 },
+        });
+        mockParseShowdownText.mockReturnValue(parsed);
+        // All three fail
+        mockAddPokemonToTeamAction.mockResolvedValue({
+          success: false,
+          error: "DB error",
+        });
+
+        const user = await setupImportForm();
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(toast.warning).toHaveBeenCalledWith(
+            "Team created, but failed to import: Pikachu, Eevee, Snorlax"
+          );
+        });
+      });
+
+      it("still navigates to the team when some Pokemon fail to import", async () => {
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 55 },
+        });
+        mockParseShowdownText.mockReturnValue([
+          makeParsedPokemon({ species: "Pikachu" }),
+          makeParsedPokemon({ species: "Eevee" }),
+        ]);
+        mockAddPokemonToTeamAction
+          .mockResolvedValueOnce({ success: true, data: {} })
+          .mockResolvedValueOnce({ success: false, error: "DB error" });
+
+        const user = await setupImportForm();
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(mockPush).toHaveBeenCalledWith(
+            "/dashboard/alts/ash_ketchum/teams/55"
+          );
+        });
+      });
+    });
+
+    describe("6-Pokemon limit", () => {
+      it("imports at most 6 Pokemon even when paste contains more", async () => {
+        const sevenPokemon = [
+          makeParsedPokemon({ species: "Pikachu" }),
+          makeParsedPokemon({ species: "Charizard" }),
+          makeParsedPokemon({ species: "Snorlax" }),
+          makeParsedPokemon({ species: "Gengar" }),
+          makeParsedPokemon({ species: "Machamp" }),
+          makeParsedPokemon({ species: "Lapras" }),
+          makeParsedPokemon({ species: "Dragonite" }),
+        ];
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 77 },
+        });
+        mockAddPokemonToTeamAction.mockResolvedValue({
+          success: true,
+          data: {},
+        });
+        mockParseShowdownText.mockReturnValue(sevenPokemon);
+
+        const user = await setupImportForm();
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(mockAddPokemonToTeamAction).toHaveBeenCalledTimes(6);
+        });
+      });
+
+      it("does not add the 7th Pokemon (Dragonite) when 7 are parsed", async () => {
+        const sevenPokemon = [
+          makeParsedPokemon({ species: "Pikachu" }),
+          makeParsedPokemon({ species: "Charizard" }),
+          makeParsedPokemon({ species: "Snorlax" }),
+          makeParsedPokemon({ species: "Gengar" }),
+          makeParsedPokemon({ species: "Machamp" }),
+          makeParsedPokemon({ species: "Lapras" }),
+          makeParsedPokemon({ species: "Dragonite" }),
+        ];
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 77 },
+        });
+        mockAddPokemonToTeamAction.mockResolvedValue({
+          success: true,
+          data: {},
+        });
+        mockParseShowdownText.mockReturnValue(sevenPokemon);
+
+        const user = await setupImportForm();
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          const calls = mockAddPokemonToTeamAction.mock.calls as unknown[][];
+          const importedSpecies = calls.map(
+            (c) => (c[1] as { species: string }).species
+          );
+          expect(importedSpecies).not.toContain("Dragonite");
+        });
+      });
+    });
+
+    describe("gender mapping", () => {
+      it.each([
+        ["Male", "Male" as string | null],
+        ["Female", "Female" as string | null],
+        ["N", null],
+        [null, null],
+        ["Genderless", null],
+        ["M", null],
+        ["F", null],
+      ])(
+        'maps gender "%s" to %s in the Pokemon insert',
+        async (inputGender, expectedGender) => {
+          mockCreateTeamAction.mockResolvedValue({
+            success: true,
+            data: { id: 88 },
+          });
+          mockAddPokemonToTeamAction.mockResolvedValue({
+            success: true,
+            data: {},
+          });
+          mockParseShowdownText.mockReturnValue([
+            makeParsedPokemon({ species: "Ralts", gender: inputGender }),
+          ]);
+
+          const user = userEvent.setup();
+          render(<NewTeamForm {...defaultProps} initialMode="import" />);
+          await user.type(screen.getByLabelText("Team Name"), "Gender Test");
+          await user.type(screen.getByLabelText("Showdown Paste"), "paste");
+          await user.click(
+            screen.getByRole("button", { name: "Import & Create Team" })
+          );
+
+          await waitFor(() => {
+            expect(mockAddPokemonToTeamAction).toHaveBeenCalledWith(
+              88,
+              expect.objectContaining({ gender: expectedGender }),
+              1
+            );
+          });
+        }
+      );
+    });
+
+    describe("import mode with empty paste", () => {
+      it("creates an empty team and shows success toast when paste is blank", async () => {
+        const { toast } = await import("sonner");
+        mockCreateTeamAction.mockResolvedValue({
+          success: true,
+          data: { id: 33 },
+        });
+        // parseShowdownText should not be called when paste is blank
+        mockParseShowdownText.mockReturnValue([]);
+
+        const user = userEvent.setup();
+        render(<NewTeamForm {...defaultProps} initialMode="import" />);
+        // Type a name but leave the paste empty
+        await user.type(screen.getByLabelText("Team Name"), "Blank Paste Team");
+        await user.click(
+          screen.getByRole("button", { name: "Import & Create Team" })
+        );
+
+        await waitFor(() => {
+          expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+          expect(toast.success).toHaveBeenCalledWith("Team created!");
+          expect(mockPush).toHaveBeenCalledWith(
+            "/dashboard/alts/ash_ketchum/teams/33"
+          );
+        });
+      });
     });
   });
 });
