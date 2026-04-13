@@ -164,7 +164,8 @@ export function AllTeamsClient({
         <table className="w-full text-sm">
           <thead>
             <tr className="text-muted-foreground border-b text-left text-xs tracking-wide uppercase">
-              <th className="px-3 py-2 font-medium">Team</th>
+              <th className="px-3 py-2 font-medium">Name</th>
+              <th className="px-3 py-2 font-medium">Pokemon</th>
               <th className="px-3 py-2 font-medium">Alt</th>
               <th className="px-3 py-2 font-medium">Format</th>
               <th className="px-3 py-2 font-medium">Updated</th>
@@ -178,7 +179,7 @@ export function AllTeamsClient({
             {filteredTeams.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="text-muted-foreground px-3 py-8 text-center"
                 >
                   No teams match your filters.
@@ -210,37 +211,39 @@ function TeamRow({ team }: TeamRowProps) {
   return (
     <tr className="hover:bg-muted/50 border-b transition-colors last:border-0">
       <td className="px-3 py-2.5">
-        <Link href={href} className="flex items-center gap-2">
-          <span className="flex gap-0.5">
-            {Array.from({ length: SPRITE_SLOTS }, (_, i) => {
-              const pokemon = sortedPokemon[i]?.pokemon;
-              const species = pokemon?.species ?? null;
-              const isShiny = pokemon?.is_shiny ?? false;
+        <Link href={href} className="font-medium hover:underline">
+          {team.name}
+        </Link>
+      </td>
+      <td className="px-3 py-2.5">
+        <Link href={href} className="flex gap-0.5">
+          {Array.from({ length: SPRITE_SLOTS }, (_, i) => {
+            const pokemon = sortedPokemon[i]?.pokemon;
+            const species = pokemon?.species ?? null;
+            const isShiny = pokemon?.is_shiny ?? false;
 
-              if (!species) {
-                return (
-                  <span
-                    key={i}
-                    className="bg-muted inline-block size-5 rounded"
-                  />
-                );
-              }
-
-              const sprite = getPokemonSprite(species, { shiny: isShiny });
+            if (!species) {
               return (
-                <Image
+                <span
                   key={i}
-                  src={sprite.url}
-                  alt={species}
-                  width={20}
-                  height={20}
-                  className="size-5 rounded object-contain"
-                  unoptimized
+                  className="bg-muted inline-block size-5 rounded"
                 />
               );
-            })}
-          </span>
-          <span className="font-medium">{team.name}</span>
+            }
+
+            const sprite = getPokemonSprite(species, { shiny: isShiny });
+            return (
+              <Image
+                key={i}
+                src={sprite.url}
+                alt={species}
+                width={20}
+                height={20}
+                className="size-5 rounded object-contain"
+                unoptimized
+              />
+            );
+          })}
         </Link>
       </td>
       <td className="text-muted-foreground px-3 py-2.5">{team.alt_username}</td>
