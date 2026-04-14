@@ -75,7 +75,7 @@ export default async function TeamWorkspaceLayout({
   const teamsUrl = `/dashboard/alts/${username}/teams`;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-dvh max-h-full flex-col overflow-hidden">
       {/* Header bar */}
       <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3 md:px-4">
         <SidebarTrigger className="-ml-1" />
