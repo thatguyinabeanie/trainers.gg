@@ -250,7 +250,7 @@ function StatRow({
           }
         }}
         className={cn(
-          "relative h-6 min-h-[44px] cursor-ew-resize touch-none rounded-full select-none md:h-4 md:min-h-0",
+          "relative h-[7px] cursor-ew-resize touch-none rounded-full select-none",
           "bg-muted focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none"
         )}
       >
@@ -343,22 +343,6 @@ export function EvEditor({
     <div className="flex flex-col gap-3">
       {/* Stat rows */}
       <div className="flex flex-col gap-1.5">
-        {/* Column headers */}
-        <div className="grid grid-cols-[44px_1fr_48px] items-center gap-2 md:grid-cols-[52px_1fr_56px_48px]">
-          <span className="text-muted-foreground text-right text-[10px] tracking-wide uppercase">
-            Stat
-          </span>
-          <span className="text-muted-foreground text-center text-[10px] tracking-wide uppercase">
-            EVs
-          </span>
-          <span className="text-muted-foreground hidden text-right text-[10px] tracking-wide uppercase md:block">
-            Val
-          </span>
-          <span className="text-muted-foreground text-right text-[10px] tracking-wide uppercase">
-            Stat
-          </span>
-        </div>
-
         {STAT_KEYS.map((statKey) => {
           const isNatureBoosted = boostedStat === statKey;
           const isNatureReduced = reducedStat === statKey;

@@ -8,6 +8,7 @@ import {
   getMoveData,
   getSpeciesTypes,
   getValidAbilities,
+  NATURE_EFFECTS,
 } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
@@ -16,9 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronDown, Star } from "lucide-react";
 
-import { type StatKey } from "./stat-types";
+import { type StatKey, STAT_LABELS } from "./stat-types";
 import { type ValidationError } from "./validation-hooks";
 import { AbilityPicker } from "./ability-picker";
+import { NaturePicker } from "./nature-picker";
 import { PokemonImportExport } from "./pokemon-import-export";
 import { EvEditor } from "./ev-editor";
 import { ItemPicker } from "./item-picker";
@@ -46,7 +48,13 @@ const STAT_TO_DB_FIELD: Record<StatKey, string> = {
 // =============================================================================
 
 /** Which inline picker is currently open in the editor. */
-type ActivePicker = "ability" | "item" | "tera" | `move-${number}` | null;
+type ActivePicker =
+  | "ability"
+  | "item"
+  | "tera"
+  | "nature"
+  | `move-${number}`
+  | null;
 
 interface PokemonEditorProps {
   teamId: number;
@@ -617,6 +625,52 @@ export function PokemonEditor({
             );
           })}
         </div>
+      </div>
+
+      {/* ===================================================================
+          Section 4a: Nature row — sits directly above the EV editor.
+          Clicking opens the NaturePicker inline.
+          =================================================================== */}
+      <div className="px-3 py-2 md:px-4">
+        {activePicker === "nature" ? (
+          <NaturePicker
+            value={pokemon.nature}
+            onSelect={(val) => {
+              onUpdate("nature", val);
+              closePicker();
+            }}
+            onClose={closePicker}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => openPicker("nature")}
+            className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-2 rounded-md border border-transparent px-3 py-2 text-left transition-colors"
+          >
+            <span className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
+              Nature
+            </span>
+            <span className="text-sm font-medium">{pokemon.nature}</span>
+            {(() => {
+              const effect = NATURE_EFFECTS[pokemon.nature];
+              if (!effect?.boost && !effect?.reduce) return null;
+              return (
+                <>
+                  {effect.boost && (
+                    <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                      +{STAT_LABELS[effect.boost]}
+                    </span>
+                  )}
+                  {effect.reduce && (
+                    <span className="text-xs font-medium text-red-500 dark:text-red-400">
+                      -{STAT_LABELS[effect.reduce]}
+                    </span>
+                  )}
+                </>
+              );
+            })()}
+          </button>
+        )}
       </div>
 
       {/* ===================================================================
