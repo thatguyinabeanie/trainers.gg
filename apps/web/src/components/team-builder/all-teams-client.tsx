@@ -42,8 +42,20 @@ export function AllTeamsClient({
   alts,
   activeFormats,
 }: AllTeamsClientProps) {
+  const [selectedGame, setSelectedGame] = useState<string>("");
   const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
   const [selectedAlt, setSelectedAlt] = useState<string | null>(null);
+
+  // Unique game names in the order they appear in activeFormats
+  const uniqueGames = activeFormats.reduce<string[]>((acc, fmt) => {
+    if (!acc.includes(fmt.game)) acc.push(fmt.game);
+    return acc;
+  }, []);
+
+  // Formats filtered to the selected game (or all formats when no game is selected)
+  const formatsForGame = selectedGame
+    ? activeFormats.filter((fmt) => fmt.game === selectedGame)
+    : activeFormats;
 
   const filteredTeams = initialTeams.filter((team) => {
     if (selectedFormat && team.format !== selectedFormat) return false;
@@ -85,35 +97,37 @@ export function AllTeamsClient({
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
       {/* Toolbar: filters + actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {/* Format chips */}
-          <button
-            onClick={() => setSelectedFormat(null)}
-            className={cn(
-              "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
-              !selectedFormat
-                ? "border-primary bg-primary text-primary-foreground"
-                : "bg-background hover:bg-accent border-transparent"
-            )}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Game selector */}
+          <select
+            value={selectedGame}
+            onChange={(e) => {
+              setSelectedGame(e.target.value);
+              setSelectedFormat(null);
+            }}
+            className="rounded-md border px-2 py-1 text-sm"
           >
-            All
-          </button>
-          {activeFormats.map((fmt) => (
-            <button
-              key={fmt.id}
-              onClick={() =>
-                setSelectedFormat(selectedFormat === fmt.id ? null : fmt.id)
-              }
-              className={cn(
-                "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
-                selectedFormat === fmt.id
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "bg-background hover:bg-accent border-transparent"
-              )}
-            >
-              {fmt.label}
-            </button>
-          ))}
+            <option value="">All Games</option>
+            {uniqueGames.map((game) => (
+              <option key={game} value={game}>
+                {game}
+              </option>
+            ))}
+          </select>
+
+          {/* Format selector — filtered by selected game */}
+          <select
+            value={selectedFormat ?? ""}
+            onChange={(e) => setSelectedFormat(e.target.value || null)}
+            className="rounded-md border px-2 py-1 text-sm"
+          >
+            <option value="">All Formats</option>
+            {formatsForGame.map((fmt) => (
+              <option key={fmt.id} value={fmt.id}>
+                {fmt.label}
+              </option>
+            ))}
+          </select>
 
           {/* Divider — only shown when there are multiple alts */}
           {alts.length > 1 && (

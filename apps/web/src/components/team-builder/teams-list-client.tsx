@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Plus, Upload } from "lucide-react";
@@ -11,7 +12,6 @@ import { getTeamsForAltList, type TeamListItem } from "@trainers/supabase";
 import { formatTimeAgo } from "@trainers/utils";
 
 import { useSupabase } from "@/lib/supabase";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -41,7 +41,6 @@ interface TeamsListClientProps {
   altId: number;
   handle: string;
   activeFormats: GameFormat[];
-  selectedFormat: string | undefined;
 }
 
 /**
@@ -54,9 +53,10 @@ export function TeamsListClient({
   altId,
   handle,
   activeFormats,
-  selectedFormat,
 }: TeamsListClientProps) {
   const supabase = useSupabase();
+  const [selectedGame, setSelectedGame] = useState<string>("");
+  const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
 
   const {
     data: teams = [],
@@ -69,11 +69,21 @@ export function TeamsListClient({
     staleTime: 30_000,
   });
 
-  // Filter logic
-  const isAll = !selectedFormat || selectedFormat === "all";
-  const filteredTeams = isAll
-    ? teams
-    : teams.filter((t) => t.format === selectedFormat);
+  // Unique game names in the order they appear in activeFormats
+  const uniqueGames = activeFormats.reduce<string[]>((acc, fmt) => {
+    if (!acc.includes(fmt.game)) acc.push(fmt.game);
+    return acc;
+  }, []);
+
+  // Formats filtered to the selected game (or all formats when no game is selected)
+  const formatsForGame = selectedGame
+    ? activeFormats.filter((fmt) => fmt.game === selectedGame)
+    : activeFormats;
+
+  // Filter teams by selected format
+  const filteredTeams = selectedFormat
+    ? teams.filter((t) => t.format === selectedFormat)
+    : teams;
 
   const newTeamUrl = `/dashboard/alts/${handle}/teams/new`;
 
@@ -81,32 +91,37 @@ export function TeamsListClient({
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
       {/* Toolbar: filters + actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Link
-            href={`/dashboard/alts/${handle}/teams`}
-            className={cn(
-              "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
-              isAll
-                ? "border-primary bg-primary text-primary-foreground"
-                : "bg-background hover:bg-accent border-transparent"
-            )}
+        <div className="flex items-center gap-2">
+          {/* Game selector */}
+          <select
+            value={selectedGame}
+            onChange={(e) => {
+              setSelectedGame(e.target.value);
+              setSelectedFormat(null);
+            }}
+            className="rounded-md border px-2 py-1 text-sm"
           >
-            All
-          </Link>
-          {activeFormats.map((fmt) => (
-            <Link
-              key={fmt.id}
-              href={`/dashboard/alts/${handle}/teams?format=${fmt.id}`}
-              className={cn(
-                "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
-                selectedFormat === fmt.id
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "bg-background hover:bg-accent border-transparent"
-              )}
-            >
-              {fmt.label}
-            </Link>
-          ))}
+            <option value="">All Games</option>
+            {uniqueGames.map((game) => (
+              <option key={game} value={game}>
+                {game}
+              </option>
+            ))}
+          </select>
+
+          {/* Format selector — filtered by selected game */}
+          <select
+            value={selectedFormat ?? ""}
+            onChange={(e) => setSelectedFormat(e.target.value || null)}
+            className="rounded-md border px-2 py-1 text-sm"
+          >
+            <option value="">All Formats</option>
+            {formatsForGame.map((fmt) => (
+              <option key={fmt.id} value={fmt.id}>
+                {fmt.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Actions */}
@@ -139,7 +154,7 @@ export function TeamsListClient({
         <EmptyState
           title="No teams yet"
           description={
-            isAll
+            !selectedFormat
               ? "Create your first team or import a Showdown paste to get started."
               : "No teams for this format yet."
           }
