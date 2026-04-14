@@ -6,28 +6,25 @@ import {
   type GameFormat,
   getBaseStats,
   getMoveData,
-  getSpeciesTypes,
   getValidAbilities,
   NATURE_EFFECTS,
 } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronDown, Star } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 import { type StatKey, STAT_LABELS } from "./stat-types";
 import { type ValidationError } from "./validation-hooks";
 import { AbilityPicker } from "./ability-picker";
 import { NaturePicker } from "./nature-picker";
-import { PokemonImportExport } from "./pokemon-import-export";
 import { EvEditor } from "./ev-editor";
 import { ItemPicker } from "./item-picker";
 import { IvEditor } from "./iv-editor";
 import { MovePicker } from "./move-picker";
 import { TeraPicker } from "./tera-picker";
-import { TYPE_BG_COLORS, TYPE_PILL_COLORS } from "./type-colors";
+import { TYPE_BG_COLORS } from "./type-colors";
 
 // =============================================================================
 // Constants
@@ -57,15 +54,11 @@ type ActivePicker =
   | null;
 
 interface PokemonEditorProps {
-  teamId: number;
   pokemon: Tables<"pokemon">;
   format: GameFormat | undefined;
   /** All team_pokemon entries — used to collect held items for duplicate detection. */
   teamPokemon: Array<{ pokemon: Tables<"pokemon"> | null }>;
   onUpdate: (field: string, value: unknown) => void;
-  onSpeciesClick: () => void;
-  /** Called after a successful import to refresh the workspace. */
-  onImport: () => void;
   /** Validation errors for this Pokemon's fields — populated by Task 5 display logic. */
   fieldErrors?: ValidationError[];
 }
@@ -115,21 +108,20 @@ function getMoveBySlot(
  * Composes all individual picker and editor sub-components.
  *
  * Layout (top to bottom):
- *   1. Species header: name + type pills + inline nickname/gender/shiny + level input
- *   2. 3-across field row: ability, held item, tera type
- *   3. Moves: single-column list with type badge, category, BP, accuracy
- *   4. EV editor
- *   5. IV editor (hidden for Champions format)
- *   6. Notes collapsible textarea
+ *   1. 3-across field row: ability, held item, tera type
+ *   2. Moves: single-column list with type badge, category, BP, accuracy
+ *   3. EV editor
+ *   4. IV editor (hidden for Champions format)
+ *   5. Notes collapsible textarea
+ *
+ * The species header (name, type pills, nickname, gender, shiny, level,
+ * import/export) is rendered in TeamWorkspace above the editor/panel split.
  */
 export function PokemonEditor({
-  teamId,
   pokemon,
   format,
   teamPokemon,
   onUpdate,
-  onSpeciesClick,
-  onImport,
   fieldErrors,
 }: PokemonEditorProps) {
   // Helper — look up the first error for a given field name.
@@ -165,7 +157,6 @@ export function PokemonEditor({
   // Derived values
   // -------------------------------------------------------------------------
 
-  const types = getSpeciesTypes(pokemon.species);
   const baseStats = getBaseStats(pokemon.species) ?? {
     hp: 0,
     attack: 0,
@@ -249,152 +240,6 @@ export function PokemonEditor({
 
   return (
     <div className="flex flex-col gap-0 divide-y">
-      {/* ===================================================================
-          Section 1: Species header — name, type pills, inline optional fields,
-          level input, and import/export.
-          =================================================================== */}
-      <div className="flex flex-col gap-1 px-3 py-3 md:px-4">
-        {/* Top row: species name + type pills + level + import/export */}
-        <div className="flex items-center gap-2">
-          {/* Species name — clickable to open species picker */}
-          <div className="flex flex-col">
-            <button
-              type="button"
-              onClick={onSpeciesClick}
-              className={cn(
-                "flex items-center gap-1 text-lg font-bold",
-                "hover:text-primary transition-colors"
-              )}
-            >
-              {pokemon.species}
-              <ChevronDown className="text-muted-foreground size-4" />
-            </button>
-            {renderFieldError("species")}
-          </div>
-
-          {/* Type pills */}
-          <div className="flex gap-1">
-            {types.map((type) => (
-              <span
-                key={type}
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                  TYPE_PILL_COLORS[type] ?? "bg-muted text-foreground"
-                )}
-              >
-                {type}
-              </span>
-            ))}
-          </div>
-
-          {/* Level input + import/export */}
-          <div className="ml-auto flex items-center gap-1.5">
-            <span className="text-muted-foreground text-xs">Lv</span>
-            <Input
-              type="number"
-              min={1}
-              max={100}
-              value={pokemon.level ?? 50}
-              onChange={(e) => {
-                const raw = parseInt(e.target.value, 10);
-                if (!isNaN(raw)) {
-                  onUpdate("level", Math.max(1, Math.min(100, raw)));
-                }
-              }}
-              className="h-7 w-14 px-1 text-center text-sm"
-              aria-label="Pokemon level"
-            />
-            <PokemonImportExport
-              teamId={teamId}
-              pokemon={pokemon}
-              onUpdate={onImport}
-            />
-          </div>
-        </div>
-
-        {/* Secondary row: inline nickname, gender, shiny */}
-        <div className="flex items-center gap-2">
-          {/* Nickname input */}
-          <div className="flex flex-col">
-            <Input
-              placeholder="Nickname"
-              value={pokemon.nickname ?? ""}
-              onChange={(e) => onUpdate("nickname", e.target.value || null)}
-              className={cn(
-                "h-6 w-32 px-2 text-xs",
-                getFieldError("nickname") && "border-destructive"
-              )}
-              aria-label="Pokemon nickname"
-            />
-            {renderFieldError("nickname")}
-          </div>
-
-          {/* Separator dot */}
-          <span className="text-muted-foreground text-xs">·</span>
-
-          {/* Gender selector — only when species has gender differences */}
-          {pokemon.gender !== null ? (
-            <>
-              <div className="flex flex-col items-start">
-                <div
-                  className={cn(
-                    "flex gap-0.5 rounded border p-0.5",
-                    getFieldError("gender") && "border-destructive"
-                  )}
-                >
-                  {(["Male", "Female"] as const).map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => onUpdate("gender", g)}
-                      className={cn(
-                        "rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
-                        pokemon.gender === g
-                          ? g === "Male"
-                            ? "bg-blue-500 text-white"
-                            : "bg-pink-500 text-white"
-                          : "text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      {g === "Male" ? "♂" : "♀"}
-                    </button>
-                  ))}
-                </div>
-                {renderFieldError("gender")}
-              </div>
-              <span className="text-muted-foreground text-xs">·</span>
-            </>
-          ) : (
-            <>
-              <span className="text-muted-foreground text-xs">Genderless</span>
-              <span className="text-muted-foreground text-xs">·</span>
-            </>
-          )}
-
-          {/* Shiny toggle */}
-          <button
-            type="button"
-            onClick={() => onUpdate("is_shiny", !(pokemon.is_shiny ?? false))}
-            aria-label="Toggle shiny"
-            aria-pressed={pokemon.is_shiny ?? false}
-            className={cn(
-              "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors",
-              pokemon.is_shiny
-                ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                : "text-muted-foreground hover:bg-muted"
-            )}
-          >
-            <Star
-              className={cn(
-                "size-3",
-                pokemon.is_shiny && "fill-yellow-500 text-yellow-500"
-              )}
-            />
-            {pokemon.is_shiny ? "Shiny" : "Not shiny"}
-          </button>
-        </div>
-      </div>
-
       {/* ===================================================================
           Section 2: 3-across field row — ability, held item, tera type.
           Nature has moved to sit adjacent to EVs (Task 3).

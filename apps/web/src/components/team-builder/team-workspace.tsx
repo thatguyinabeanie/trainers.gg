@@ -2,26 +2,38 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Calculator, CheckCircle2, Import, Zap } from "lucide-react";
+import {
+  Calculator,
+  CheckCircle2,
+  ChevronDown,
+  Import,
+  Star,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
   type GameFormat,
   buildSpeciesSearchIndex,
+  getSpeciesTypes,
   getValidAbilities,
 } from "@trainers/pokemon";
 import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
 
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { addPokemonToTeamAction, updatePokemonAction } from "@/actions/teams";
 import { ImportDialog } from "@/components/team-builder/import-dialog";
 import { ContextPanel } from "@/components/team-builder/context-panel";
 import { PokemonEditor } from "@/components/team-builder/pokemon-editor";
 import { TeamSidebar } from "@/components/team-builder/team-sidebar";
 
+import { PokemonImportExport } from "./pokemon-import-export";
 import { SpeciesPicker } from "./species-picker";
-import { useTeamValidation } from "./validation-hooks";
+import { TYPE_PILL_COLORS } from "./type-colors";
+import { type ValidationError, useTeamValidation } from "./validation-hooks";
 
 // =============================================================================
 // Types
@@ -268,6 +280,38 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   }
 
   // ---------------------------------------------------------------------------
+  // Species header helpers — field error lookup + inline error rendering
+  // ---------------------------------------------------------------------------
+
+  const selectedFieldErrors: ValidationError[] = selectedPokemonId
+    ? (pokemonErrors.get(selectedPokemonId) ?? [])
+    : [];
+
+  function getSelectedFieldError(field: string): ValidationError | undefined {
+    return selectedFieldErrors.find((e) => e.field === field);
+  }
+
+  function renderSelectedFieldError(...fields: string[]): React.ReactNode {
+    const error = fields.reduce<ValidationError | undefined>(
+      (found, f) => found ?? getSelectedFieldError(f),
+      undefined
+    );
+    if (!error) return null;
+    return (
+      <p
+        className={cn(
+          "mt-0.5 text-xs",
+          error.severity === "warning"
+            ? "text-amber-600 dark:text-amber-500"
+            : "text-destructive"
+        )}
+      >
+        {error.message}
+      </p>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
@@ -356,133 +400,305 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
           />
         </div>
       ) : (
-        <div className="flex flex-1 overflow-hidden">
-          {/* Editor panel — flex-1 when panel is open, full width when closed */}
-          <div className="flex max-h-full flex-1 flex-col overflow-y-auto border-r">
-            {selectedEntry?.pokemon ? (
-              <PokemonEditor
-                key={selectedEntry.pokemon.id}
-                teamId={team.id}
-                pokemon={selectedEntry.pokemon}
-                format={format}
-                teamPokemon={team.team_pokemon}
-                onUpdate={(field, value) =>
-                  handlePokemonUpdate(selectedEntry.pokemon!.id, field, value)
-                }
-                onSpeciesClick={handleSpeciesClick}
-                onImport={() => router.refresh()}
-                fieldErrors={
-                  selectedPokemonId
-                    ? (pokemonErrors.get(selectedPokemonId) ?? [])
-                    : []
-                }
-              />
-            ) : (
-              <div className="flex flex-1 items-center justify-center">
-                <p className="text-muted-foreground text-sm">
-                  Select a Pokémon to edit
-                </p>
-              </div>
-            )}
-          </div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/* ===================================================================
+              Species header — spans full width above the editor/panel split.
+              Only rendered when a Pokemon with a species is selected.
+              =================================================================== */}
+          {selectedEntry?.pokemon && (
+            <div className="flex shrink-0 flex-col gap-1 border-b px-4 py-3">
+              {/* Top row: species name + type pills + level + import/export */}
+              <div className="flex items-center gap-2">
+                {/* Species name — clickable to open species picker */}
+                <div className="flex flex-col">
+                  <button
+                    type="button"
+                    onClick={handleSpeciesClick}
+                    className={cn(
+                      "flex items-center gap-1 text-lg font-bold",
+                      "hover:text-primary transition-colors"
+                    )}
+                  >
+                    {selectedEntry.pokemon.species}
+                    <ChevronDown className="text-muted-foreground size-4" />
+                  </button>
+                  {renderSelectedFieldError("species")}
+                </div>
 
-          {panelOpen ? (
-            <>
-              {/* Resize handle */}
-              <div
-                className="hover:bg-primary/20 flex w-1.5 flex-shrink-0 cursor-col-resize items-center justify-center bg-transparent transition-colors"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  const container = e.currentTarget.parentElement;
-                  if (!container) return;
-                  const startX = e.clientX;
-                  const startWidth = panelWidthPercent;
-                  const containerWidth =
-                    container.getBoundingClientRect().width;
+                {/* Type pills */}
+                <div className="flex gap-1">
+                  {getSpeciesTypes(selectedEntry.pokemon.species).map(
+                    (type) => (
+                      <span
+                        key={type}
+                        className={cn(
+                          "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+                          TYPE_PILL_COLORS[type] ?? "bg-muted text-foreground"
+                        )}
+                      >
+                        {type}
+                      </span>
+                    )
+                  )}
+                </div>
 
-                  function onMove(moveEvent: PointerEvent) {
-                    const delta = startX - moveEvent.clientX;
-                    const deltaPercent = (delta / containerWidth) * 100;
-                    const newWidth = Math.min(
-                      75,
-                      Math.max(25, startWidth + deltaPercent)
-                    );
-                    setPanelWidthPercent(newWidth);
-                  }
-
-                  function onUp() {
-                    document.removeEventListener("pointermove", onMove);
-                    document.removeEventListener("pointerup", onUp);
-                  }
-
-                  document.addEventListener("pointermove", onMove);
-                  document.addEventListener("pointerup", onUp);
-                }}
-              >
-                {/* Drag dots */}
-                <div className="flex flex-col gap-0.5">
-                  <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
-                  <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
-                  <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
+                {/* Level input + import/export */}
+                <div className="ml-auto flex items-center gap-1.5">
+                  <span className="text-muted-foreground text-xs">Lv</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={selectedEntry.pokemon.level ?? 50}
+                    onChange={(e) => {
+                      const raw = parseInt(e.target.value, 10);
+                      if (!isNaN(raw)) {
+                        handlePokemonUpdate(
+                          selectedEntry.pokemon!.id,
+                          "level",
+                          Math.max(1, Math.min(100, raw))
+                        );
+                      }
+                    }}
+                    className="h-7 w-14 px-1 text-center text-sm"
+                    aria-label="Pokemon level"
+                  />
+                  <PokemonImportExport
+                    teamId={team.id}
+                    pokemon={selectedEntry.pokemon}
+                    onUpdate={() => router.refresh()}
+                  />
                 </div>
               </div>
 
-              {/* Context panel */}
-              <div
-                className="flex min-h-0 flex-shrink-0 flex-col overflow-hidden"
-                style={{ width: `${panelWidthPercent}%` }}
-              >
-                <ContextPanel
-                  team={team}
-                  selectedPokemon={selectedEntry?.pokemon ?? null}
-                  activeTab={activeTab}
-                  onTabChange={setActiveTab}
-                  onClose={() => setPanelOpen(false)}
-                  format={format}
-                />
+              {/* Secondary row: inline nickname, gender, shiny */}
+              <div className="flex items-center gap-2">
+                {/* Nickname input */}
+                <div className="flex flex-col">
+                  <Input
+                    placeholder="Nickname"
+                    value={selectedEntry.pokemon.nickname ?? ""}
+                    onChange={(e) =>
+                      handlePokemonUpdate(
+                        selectedEntry.pokemon!.id,
+                        "nickname",
+                        e.target.value || null
+                      )
+                    }
+                    className={cn(
+                      "h-6 w-32 px-2 text-xs",
+                      getSelectedFieldError("nickname") && "border-destructive"
+                    )}
+                    aria-label="Pokemon nickname"
+                  />
+                  {renderSelectedFieldError("nickname")}
+                </div>
+
+                {/* Separator dot */}
+                <span className="text-muted-foreground text-xs">·</span>
+
+                {/* Gender selector — only when species has gender differences */}
+                {selectedEntry.pokemon.gender !== null ? (
+                  <>
+                    <div className="flex flex-col items-start">
+                      <div
+                        className={cn(
+                          "flex gap-0.5 rounded border p-0.5",
+                          getSelectedFieldError("gender") &&
+                            "border-destructive"
+                        )}
+                      >
+                        {(["Male", "Female"] as const).map((g) => (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() =>
+                              handlePokemonUpdate(
+                                selectedEntry.pokemon!.id,
+                                "gender",
+                                g
+                              )
+                            }
+                            className={cn(
+                              "rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
+                              selectedEntry.pokemon!.gender === g
+                                ? g === "Male"
+                                  ? "bg-blue-500 text-white"
+                                  : "bg-pink-500 text-white"
+                                : "text-muted-foreground hover:bg-muted"
+                            )}
+                          >
+                            {g === "Male" ? "♂" : "♀"}
+                          </button>
+                        ))}
+                      </div>
+                      {renderSelectedFieldError("gender")}
+                    </div>
+                    <span className="text-muted-foreground text-xs">·</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-muted-foreground text-xs">
+                      Genderless
+                    </span>
+                    <span className="text-muted-foreground text-xs">·</span>
+                  </>
+                )}
+
+                {/* Shiny toggle */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    handlePokemonUpdate(
+                      selectedEntry.pokemon!.id,
+                      "is_shiny",
+                      !(selectedEntry.pokemon!.is_shiny ?? false)
+                    )
+                  }
+                  aria-label="Toggle shiny"
+                  aria-pressed={selectedEntry.pokemon.is_shiny ?? false}
+                  className={cn(
+                    "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors",
+                    selectedEntry.pokemon.is_shiny
+                      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <Star
+                    className={cn(
+                      "size-3",
+                      selectedEntry.pokemon.is_shiny &&
+                        "fill-yellow-500 text-yellow-500"
+                    )}
+                  />
+                  {selectedEntry.pokemon.is_shiny ? "Shiny" : "Not shiny"}
+                </button>
               </div>
-            </>
-          ) : (
-            /* Icon rail — shown when panel is closed */
-            <div className="flex w-9 flex-shrink-0 flex-col items-center gap-1 border-l pt-2">
-              <button
-                type="button"
-                title="Type Coverage"
-                aria-label="Open type coverage"
-                onClick={() => {
-                  setActiveTab("types");
-                  setPanelOpen(true);
-                }}
-                className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded text-xs font-semibold transition-colors"
-              >
-                T
-              </button>
-              <button
-                type="button"
-                title="Speed Tiers"
-                aria-label="Open speed tiers"
-                onClick={() => {
-                  setActiveTab("speed");
-                  setPanelOpen(true);
-                }}
-                className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded transition-colors"
-              >
-                <Zap className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                title="Damage Calc"
-                aria-label="Open damage calc"
-                onClick={() => {
-                  setActiveTab("calc");
-                  setPanelOpen(true);
-                }}
-                className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded transition-colors"
-              >
-                <Calculator className="size-3.5" />
-              </button>
             </div>
           )}
+
+          {/* Editor + context panel — flex-row, fills remaining height */}
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            {/* Editor panel — scrolls independently */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto border-r">
+              {selectedEntry?.pokemon ? (
+                <PokemonEditor
+                  key={selectedEntry.pokemon.id}
+                  pokemon={selectedEntry.pokemon}
+                  format={format}
+                  teamPokemon={team.team_pokemon}
+                  onUpdate={(field, value) =>
+                    handlePokemonUpdate(selectedEntry.pokemon!.id, field, value)
+                  }
+                  fieldErrors={selectedFieldErrors}
+                />
+              ) : (
+                <div className="flex flex-1 items-center justify-center">
+                  <p className="text-muted-foreground text-sm">
+                    Select a Pokémon to edit
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {panelOpen ? (
+              <>
+                {/* Resize handle */}
+                <div
+                  className="hover:bg-primary/20 flex w-1.5 flex-shrink-0 cursor-col-resize items-center justify-center bg-transparent transition-colors"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    const container = e.currentTarget.parentElement;
+                    if (!container) return;
+                    const startX = e.clientX;
+                    const startWidth = panelWidthPercent;
+                    const containerWidth =
+                      container.getBoundingClientRect().width;
+
+                    function onMove(moveEvent: PointerEvent) {
+                      const delta = startX - moveEvent.clientX;
+                      const deltaPercent = (delta / containerWidth) * 100;
+                      const newWidth = Math.min(
+                        75,
+                        Math.max(25, startWidth + deltaPercent)
+                      );
+                      setPanelWidthPercent(newWidth);
+                    }
+
+                    function onUp() {
+                      document.removeEventListener("pointermove", onMove);
+                      document.removeEventListener("pointerup", onUp);
+                    }
+
+                    document.addEventListener("pointermove", onMove);
+                    document.addEventListener("pointerup", onUp);
+                  }}
+                >
+                  {/* Drag dots */}
+                  <div className="flex flex-col gap-0.5">
+                    <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
+                    <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
+                    <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
+                  </div>
+                </div>
+
+                {/* Context panel */}
+                <div
+                  className="flex min-h-0 flex-shrink-0 flex-col overflow-hidden"
+                  style={{ width: `${panelWidthPercent}%` }}
+                >
+                  <ContextPanel
+                    team={team}
+                    selectedPokemon={selectedEntry?.pokemon ?? null}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    onClose={() => setPanelOpen(false)}
+                    format={format}
+                  />
+                </div>
+              </>
+            ) : (
+              /* Icon rail — shown when panel is closed */
+              <div className="flex w-9 flex-shrink-0 flex-col items-center gap-1 border-l pt-2">
+                <button
+                  type="button"
+                  title="Type Coverage"
+                  aria-label="Open type coverage"
+                  onClick={() => {
+                    setActiveTab("types");
+                    setPanelOpen(true);
+                  }}
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded text-xs font-semibold transition-colors"
+                >
+                  T
+                </button>
+                <button
+                  type="button"
+                  title="Speed Tiers"
+                  aria-label="Open speed tiers"
+                  onClick={() => {
+                    setActiveTab("speed");
+                    setPanelOpen(true);
+                  }}
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded transition-colors"
+                >
+                  <Zap className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  title="Damage Calc"
+                  aria-label="Open damage calc"
+                  onClick={() => {
+                    setActiveTab("calc");
+                    setPanelOpen(true);
+                  }}
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded transition-colors"
+                >
+                  <Calculator className="size-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
