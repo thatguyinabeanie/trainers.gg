@@ -282,6 +282,7 @@ export {
 export {
   getDiscordServerByGuildId,
   getDiscordServerByCommunityId,
+  getDiscordServerByChannelId,
   listDiscordServers,
   listChannelMappings,
   getChannelMappingsForEvent,

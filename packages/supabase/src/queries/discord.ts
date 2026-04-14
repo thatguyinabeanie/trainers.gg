@@ -24,6 +24,42 @@ export type DiscordRoleType = Enums<"discord_role_type">;
 // =============================================================================
 
 /**
+ * Get the Discord server record associated with a given channel ID.
+ *
+ * Joins `discord_channels` on `channel_id` → `discord_servers` via
+ * `discord_server_id`. Returns null when no channel mapping exists for
+ * the given channel ID (e.g. the channel was not configured or the row
+ * was deleted).
+ *
+ * @param channelId - Discord channel snowflake ID
+ */
+export async function getDiscordServerByChannelId(
+  supabase: TypedClient,
+  channelId: string
+): Promise<DiscordServer | null> {
+  const { data, error } = await supabase
+    .from("discord_channels")
+    .select("discord_servers(*)")
+    .eq("channel_id", channelId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error)
+    throw new Error(
+      `Failed to get Discord server by channel ID: ${error.message}`
+    );
+
+  if (!data) return null;
+
+  // The join returns the server as a nested object or array
+  const server = data.discord_servers;
+  if (!server) return null;
+
+  // Supabase returns joined one-to-one as object, not array
+  return server as unknown as DiscordServer;
+}
+
+/**
  * Get a Discord server record by guild ID.
  * Returns null if not found (no installed bot for that guild).
  */
