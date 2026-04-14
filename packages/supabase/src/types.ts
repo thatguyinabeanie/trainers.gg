@@ -577,6 +577,341 @@ export type Database = {
         }
         Relationships: []
       }
+      discord_channel_failures: {
+        Row: {
+          channel_id: string
+          consecutive_failures: number
+          discord_server_id: number
+          email_sent_at: string | null
+          id: number
+          last_failed_at: string | null
+        }
+        Insert: {
+          channel_id: string
+          consecutive_failures?: number
+          discord_server_id: number
+          email_sent_at?: string | null
+          id?: never
+          last_failed_at?: string | null
+        }
+        Update: {
+          channel_id?: string
+          consecutive_failures?: number
+          discord_server_id?: number
+          email_sent_at?: string | null
+          id?: never
+          last_failed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_channel_failures_discord_server_id_fkey"
+            columns: ["discord_server_id"]
+            isOneToOne: false
+            referencedRelation: "discord_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_channels: {
+        Row: {
+          channel_id: string
+          created_at: string
+          discord_server_id: number
+          event_type: string
+          id: number
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          discord_server_id: number
+          event_type: string
+          id?: never
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          discord_server_id?: number
+          event_type?: string
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_channels_discord_server_id_fkey"
+            columns: ["discord_server_id"]
+            isOneToOne: false
+            referencedRelation: "discord_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_dm_queue: {
+        Row: {
+          attempts: number
+          community_id: number
+          created_at: string
+          delivery_mode: string
+          discord_user_id: string
+          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
+          failed_reason: string | null
+          fallback_channel_id: string | null
+          id: number
+          payload: Json
+          sent_at: string | null
+          source_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          community_id: number
+          created_at?: string
+          delivery_mode: string
+          discord_user_id: string
+          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
+          failed_reason?: string | null
+          fallback_channel_id?: string | null
+          id?: never
+          payload: Json
+          sent_at?: string | null
+          source_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          community_id?: number
+          created_at?: string
+          delivery_mode?: string
+          discord_user_id?: string
+          event_type?: Database["public"]["Enums"]["discord_dm_event_type"]
+          failed_reason?: string | null
+          fallback_channel_id?: string | null
+          id?: never
+          payload?: Json
+          sent_at?: string | null
+          source_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_dm_queue_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_dm_settings: {
+        Row: {
+          delivery_mode: string
+          discord_server_id: number
+          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
+          fallback_channel_id: string | null
+          id: number
+        }
+        Insert: {
+          delivery_mode?: string
+          discord_server_id: number
+          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
+          fallback_channel_id?: string | null
+          id?: never
+        }
+        Update: {
+          delivery_mode?: string
+          discord_server_id?: number
+          event_type?: Database["public"]["Enums"]["discord_dm_event_type"]
+          fallback_channel_id?: string | null
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_dm_settings_discord_server_id_fkey"
+            columns: ["discord_server_id"]
+            isOneToOne: false
+            referencedRelation: "discord_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_notification_queue: {
+        Row: {
+          attempts: number
+          channel_id: string
+          created_at: string
+          event_type: string
+          failed_reason: string | null
+          id: number
+          payload: Json
+          sent_at: string | null
+          source_id: string
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          channel_id: string
+          created_at?: string
+          event_type: string
+          failed_reason?: string | null
+          id?: never
+          payload: Json
+          sent_at?: string | null
+          source_id: string
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          channel_id?: string
+          created_at?: string
+          event_type?: string
+          failed_reason?: string | null
+          id?: never
+          payload?: Json
+          sent_at?: string | null
+          source_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      discord_role_mappings: {
+        Row: {
+          created_at: string
+          discord_role_id: string
+          discord_server_id: number
+          enabled: boolean
+          id: number
+          role_type: Database["public"]["Enums"]["discord_role_type"]
+        }
+        Insert: {
+          created_at?: string
+          discord_role_id: string
+          discord_server_id: number
+          enabled?: boolean
+          id?: never
+          role_type: Database["public"]["Enums"]["discord_role_type"]
+        }
+        Update: {
+          created_at?: string
+          discord_role_id?: string
+          discord_server_id?: number
+          enabled?: boolean
+          id?: never
+          role_type?: Database["public"]["Enums"]["discord_role_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_role_mappings_discord_server_id_fkey"
+            columns: ["discord_server_id"]
+            isOneToOne: false
+            referencedRelation: "discord_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_role_sync_queue: {
+        Row: {
+          action: string
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          discord_role_id: string
+          discord_server_id: number
+          discord_user_id: string
+          failed_reason: string | null
+          id: number
+          source_event: string
+          status: string
+        }
+        Insert: {
+          action: string
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          discord_role_id: string
+          discord_server_id: number
+          discord_user_id: string
+          failed_reason?: string | null
+          id?: never
+          source_event: string
+          status?: string
+        }
+        Update: {
+          action?: string
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          discord_role_id?: string
+          discord_server_id?: number
+          discord_user_id?: string
+          failed_reason?: string | null
+          id?: never
+          source_event?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_role_sync_queue_discord_server_id_fkey"
+            columns: ["discord_server_id"]
+            isOneToOne: false
+            referencedRelation: "discord_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_servers: {
+        Row: {
+          community_id: number
+          created_at: string
+          guild_id: string
+          id: number
+          installed_by: string
+          settings: Json
+        }
+        Insert: {
+          community_id: number
+          created_at?: string
+          guild_id: string
+          id?: never
+          installed_by: string
+          settings?: Json
+        }
+        Update: {
+          community_id?: number
+          created_at?: string
+          guild_id?: string
+          id?: never
+          installed_by?: string
+          settings?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_servers_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: true
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_user_dm_preferences: {
+        Row: {
+          enabled: boolean
+          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
+          user_id: string
+        }
+        Insert: {
+          enabled?: boolean
+          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
+          user_id: string
+        }
+        Update: {
+          enabled?: boolean
+          event_type?: Database["public"]["Enums"]["discord_dm_event_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       external_players: {
         Row: {
           created_at: string
@@ -3022,6 +3357,7 @@ export type Database = {
           pds_status: Database["public"]["Enums"]["pds_account_status"] | null
           phone_number: string | null
           public_metadata: Json | null
+          show_discord_publicly: boolean
           sprite_preference:
             | Database["public"]["Enums"]["sprite_preference"]
             | null
@@ -3049,6 +3385,7 @@ export type Database = {
           pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
           phone_number?: string | null
           public_metadata?: Json | null
+          show_discord_publicly?: boolean
           sprite_preference?:
             | Database["public"]["Enums"]["sprite_preference"]
             | null
@@ -3076,6 +3413,7 @@ export type Database = {
           pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
           phone_number?: string | null
           public_metadata?: Json | null
+          show_discord_publicly?: boolean
           sprite_preference?:
             | Database["public"]["Enums"]["sprite_preference"]
             | null
@@ -3408,6 +3746,24 @@ export type Database = {
       community_status: "pending" | "active" | "rejected" | "suspended"
       community_subscription_tier: "free" | "community_plus" | "enterprise"
       community_tier: "partner"
+      discord_dm_event_type:
+        | "match_ready"
+        | "match_starting_soon"
+        | "match_result_to_confirm"
+        | "match_disputed"
+        | "team_sheet_needed"
+        | "team_sheet_approved"
+        | "team_sheet_rejected"
+        | "you_dropped"
+        | "top_cut_made"
+        | "tournament_starting"
+        | "tournament_cancelled"
+      discord_role_type:
+        | "member"
+        | "participant"
+        | "winner"
+        | "staff"
+        | "currently_playing"
       drop_category: "no_show" | "conduct" | "disqualification" | "other"
       entity_type: "profile" | "community" | "alt"
       invitation_status: "pending" | "accepted" | "declined" | "expired"
@@ -3651,6 +4007,26 @@ export const Constants = {
       community_status: ["pending", "active", "rejected", "suspended"],
       community_subscription_tier: ["free", "community_plus", "enterprise"],
       community_tier: ["partner"],
+      discord_dm_event_type: [
+        "match_ready",
+        "match_starting_soon",
+        "match_result_to_confirm",
+        "match_disputed",
+        "team_sheet_needed",
+        "team_sheet_approved",
+        "team_sheet_rejected",
+        "you_dropped",
+        "top_cut_made",
+        "tournament_starting",
+        "tournament_cancelled",
+      ],
+      discord_role_type: [
+        "member",
+        "participant",
+        "winner",
+        "staff",
+        "currently_playing",
+      ],
       drop_category: ["no_show", "conduct", "disqualification", "other"],
       entity_type: ["profile", "community", "alt"],
       invitation_status: ["pending", "accepted", "declined", "expired"],
