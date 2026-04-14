@@ -572,22 +572,24 @@ function MoveSelectorRow({
         {verdict ? <VerdictBadge verdict={verdict} /> : null}
       </div>
 
-      {/* Crit checkbox — stop propagation so it doesn't select the row */}
-      <label
-        className={cn(
-          "flex shrink-0 cursor-pointer items-center gap-1 text-[10px]",
-          isCrit ? "text-amber-700" : "text-muted-foreground"
-        )}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <input
-          type="checkbox"
-          checked={isCrit}
-          onChange={() => onCritToggle()}
-          className="size-3 cursor-pointer rounded accent-amber-500"
-        />
-        Crit
-      </label>
+      {/* Crit checkbox — hidden for Status moves since they can't crit */}
+      {moveData?.category !== "Status" && (
+        <label
+          className={cn(
+            "flex shrink-0 cursor-pointer items-center gap-1 text-[10px]",
+            isCrit ? "text-amber-700" : "text-muted-foreground"
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            checked={isCrit}
+            onChange={() => onCritToggle()}
+            className="size-3 cursor-pointer rounded accent-amber-500"
+          />
+          Crit
+        </label>
+      )}
     </button>
   );
 }
