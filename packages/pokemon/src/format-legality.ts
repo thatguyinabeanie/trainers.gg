@@ -1,0 +1,272 @@
+/**
+ * Format species legality.
+ *
+ * - Champions: VGC 2026 Reg M-A uses a static port of NCP VGC Damage
+ *   Calculator's POKEDEX_CHAMPIONS list (pokedex.js lines 18378–18409,
+ *   captured 2026-04-14), because @pkmn/sim doesn't know gen 10.
+ * - Other formats will be resolved via @pkmn/sim in Task 2.
+ * - Unknown / unresolvable formats return `undefined` and callers treat
+ *   that as "permissive — all legal."
+ */
+
+// =============================================================================
+// Champions: VGC 2026 Reg M-A
+// =============================================================================
+
+/**
+ * Every species selectable in Champions: VGC 2026 Reg M-A.
+ *
+ * Ported from NCP calc (pokedex.js lines 18378–18409). Megas are
+ * item-driven battle transformations, not separately selectable species,
+ * so every "Mega X" entry from NCP is dropped here. Distinct battle
+ * forms (Rotom-Heat, Tauros-Paldea-Combat, Ogerpon-Wellspring, etc.)
+ * are retained.
+ */
+const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
+  // Base forms — Pokemon available from launch of Champions
+  "Venusaur",
+  "Charizard",
+  "Blastoise",
+  "Beedrill",
+  "Pidgeot",
+  "Arbok",
+  "Pikachu",
+  "Raichu",
+  "Clefable",
+  "Ninetales",
+  "Arcanine",
+  "Alakazam",
+  "Machamp",
+  "Victreebel",
+  "Slowbro",
+  "Gengar",
+  "Kangaskhan",
+  "Starmie",
+  "Pinsir",
+  "Tauros",
+  "Gyarados",
+  "Ditto",
+  "Vaporeon",
+  "Jolteon",
+  "Flareon",
+  "Aerodactyl",
+  "Snorlax",
+  "Dragonite",
+  "Meganium",
+  "Typhlosion",
+  "Feraligatr",
+  "Ariados",
+  "Ampharos",
+  "Azumarill",
+  "Politoed",
+  "Espeon",
+  "Umbreon",
+  "Slowking",
+  "Forretress",
+  "Steelix",
+  "Scizor",
+  "Heracross",
+  "Skarmory",
+  "Houndoom",
+  "Tyranitar",
+  "Pelipper",
+  "Gardevoir",
+  "Sableye",
+  "Aggron",
+  "Medicham",
+  "Manectric",
+  "Sharpedo",
+  "Camerupt",
+  "Torkoal",
+  "Altaria",
+  "Milotic",
+  "Castform",
+  "Banette",
+  "Chimecho",
+  "Absol",
+  "Glalie",
+  "Torterra",
+  "Infernape",
+  "Empoleon",
+  "Luxray",
+  "Roserade",
+  "Rampardos",
+  "Bastiodon",
+  "Lopunny",
+  "Spiritomb",
+  "Garchomp",
+  "Lucario",
+  "Hippowdon",
+  "Toxicroak",
+  "Abomasnow",
+  "Weavile",
+  "Rhyperior",
+  "Leafeon",
+  "Glaceon",
+  "Gliscor",
+  "Mamoswine",
+  "Gallade",
+  "Froslass",
+  "Rotom",
+  "Serperior",
+  "Emboar",
+  "Samurott",
+  "Watchog",
+  "Liepard",
+  "Simisage",
+  "Simisear",
+  "Simipour",
+  "Excadrill",
+  "Audino",
+  "Conkeldurr",
+  "Whimsicott",
+  "Krookodile",
+  "Cofagrigus",
+  "Garbodor",
+  "Zoroark",
+  "Reuniclus",
+  "Vanilluxe",
+  "Emolga",
+  "Chandelure",
+  "Beartic",
+  "Stunfisk",
+  "Golurk",
+  "Hydreigon",
+  "Volcarona",
+  "Chesnaught",
+  "Delphox",
+  "Greninja",
+  "Diggersby",
+  "Talonflame",
+  "Vivillon",
+  "Floette-Eternal",
+  "Florges",
+  "Pangoro",
+  "Furfrou",
+  "Meowstic",
+  "Aegislash",
+  "Aromatisse",
+  "Slurpuff",
+  "Clawitzer",
+  "Heliolisk",
+  "Tyrantrum",
+  "Aurorus",
+  "Sylveon",
+  "Hawlucha",
+  "Dedenne",
+  "Goodra",
+  "Klefki",
+  "Trevenant",
+  "Gourgeist-Average",
+  "Avalugg",
+  "Noivern",
+  "Decidueye",
+  "Incineroar",
+  "Primarina",
+  "Toucannon",
+  "Crabominable",
+  "Lycanroc-Midday",
+  "Toxapex",
+  "Mudsdale",
+  "Araquanid",
+  "Tsareena",
+  "Oranguru",
+  "Passimian",
+  "Mimikyu",
+  "Drampa",
+  "Kommo-o",
+  "Corviknight",
+  "Flapple",
+  "Appletun",
+  "Sandaconda",
+  "Polteageist",
+  "Hatterene",
+  "Mr. Rime",
+  "Runerigus",
+  "Alcremie",
+  "Morpeko",
+  "Dragapult",
+  "Wyrdeer",
+  "Kleavor",
+  "Basculegion",
+  "Sneasler",
+  "Meowscarada",
+  "Skeledirge",
+  "Quaquaval",
+  "Maushold",
+  "Garganacl",
+  "Armarouge",
+  "Ceruledge",
+  "Bellibolt",
+  "Scovillain",
+  "Espathra",
+  "Tinkaton",
+  "Palafin",
+  "Orthworm",
+  "Glimmora",
+  "Farigiraf",
+  "Kingambit",
+  "Sinistcha",
+  "Archaludon",
+  "Hydrapple",
+  // Regional / battle-distinct alt forms
+  "Raichu-Alola",
+  "Ninetales-Alola",
+  "Arcanine-Hisui",
+  "Slowbro-Galar",
+  "Tauros-Paldea-Combat",
+  "Tauros-Paldea-Aqua",
+  "Tauros-Paldea-Blaze",
+  "Typhlosion-Hisui",
+  "Slowking-Galar",
+  "Samurott-Hisui",
+  "Zoroark-Hisui",
+  "Stunfisk-Galar",
+  "Meowstic-F",
+  "Aegislash-Shield",
+  "Aegislash-Blade",
+  "Goodra-Hisui",
+  "Gourgeist-Small",
+  "Gourgeist-Large",
+  "Gourgeist-Super",
+  "Avalugg-Hisui",
+  "Decidueye-Hisui",
+  "Lycanroc-Midnight",
+  "Lycanroc-Dusk",
+  "Morpeko-Hangry",
+  "Basculegion-F",
+  "Maushold-Three",
+  "Palafin-Hero",
+  "Rotom-Heat",
+  "Rotom-Wash",
+  "Rotom-Frost",
+  "Rotom-Fan",
+  "Rotom-Mow",
+]);
+
+// =============================================================================
+// Public API
+// =============================================================================
+
+/**
+ * Returns the set of species legal in the given format, or `undefined`
+ * if legality cannot be determined (treat as permissive).
+ */
+export function getLegalSpecies(
+  formatId: string
+): ReadonlySet<string> | undefined {
+  if (formatId === "championsvgc2026regma") {
+    return CHAMPIONS_MA_LEGAL_SPECIES;
+  }
+  // Task 2 will add the @pkmn/sim path here.
+  return undefined;
+}
+
+/**
+ * True when `species` is legal in `formatId`. Returns true for any
+ * format without computable legality (permissive default).
+ */
+export function isLegalSpecies(species: string, formatId: string): boolean {
+  const legal = getLegalSpecies(formatId);
+  return legal === undefined || legal.has(species);
+}
