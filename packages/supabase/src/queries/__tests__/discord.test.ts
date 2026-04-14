@@ -16,6 +16,9 @@ import {
   listPendingDmNotifications,
   listPendingRoleSyncs,
   getUserByDiscordId,
+  searchTournamentsInCommunity,
+  searchUserActiveTournamentRegistrations,
+  searchPlayersInCommunity,
 } from "../discord";
 import type { TypedClient } from "../../client";
 import { createMockClient } from "@trainers/test-utils/mocks";
@@ -695,6 +698,349 @@ describe("discord queries", () => {
       await listRoleMappings(mockClient, 5);
 
       expect(fromSpy).toHaveBeenCalledWith("discord_role_mappings");
+    });
+  });
+
+  // ===========================================================================
+  // searchTournamentsInCommunity
+  // ===========================================================================
+
+  describe("searchTournamentsInCommunity", () => {
+    it("returns matching tournaments for a partial input", async () => {
+      const rows = [
+        { name: "Spring Cup 2026", slug: "spring-cup-2026" },
+        { name: "Spring Open", slug: "spring-open" },
+      ];
+      const limitMock = jest
+        .fn()
+        .mockResolvedValue({ data: rows, error: null });
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        is: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: limitMock,
+        ilike: jest.fn().mockReturnThis(),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      const result = await searchTournamentsInCommunity(
+        mockClient,
+        42,
+        "spring"
+      );
+
+      expect(fromSpy).toHaveBeenCalledWith("tournaments");
+      expect(limitMock).toHaveBeenCalledWith(25);
+      expect(result).toEqual(rows);
+    });
+
+    it("does not apply ilike filter for empty partial", async () => {
+      const rows = [{ name: "Latest Cup", slug: "latest-cup" }];
+      const ilikeMock = jest.fn().mockReturnThis();
+      const limitMock = jest
+        .fn()
+        .mockResolvedValue({ data: rows, error: null });
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        is: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: limitMock,
+        ilike: ilikeMock,
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      await searchTournamentsInCommunity(mockClient, 42, "");
+
+      // ilike should not have been called for empty partial
+      expect(ilikeMock).not.toHaveBeenCalled();
+      expect(limitMock).toHaveBeenCalledWith(25);
+    });
+
+    it("applies a custom limit", async () => {
+      const limitMock = jest.fn().mockResolvedValue({ data: [], error: null });
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        is: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: limitMock,
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      await searchTournamentsInCommunity(mockClient, 42, "", { limit: 10 });
+
+      expect(limitMock).toHaveBeenCalledWith(10);
+    });
+
+    it("returns empty array on no results", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        is: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: null, error: null }),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      const result = await searchTournamentsInCommunity(mockClient, 42, "xyz");
+
+      expect(result).toEqual([]);
+    });
+
+    it("throws a descriptive error on DB failure", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        is: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: "connection failed" },
+        }),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      await expect(
+        searchTournamentsInCommunity(mockClient, 42, "spring")
+      ).rejects.toThrow("Failed to search tournaments in community");
+    });
+  });
+
+  // ===========================================================================
+  // searchUserActiveTournamentRegistrations
+  // ===========================================================================
+
+  describe("searchUserActiveTournamentRegistrations", () => {
+    it("returns empty array when user has no alts", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      // First call: alts query
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ data: [], error: null }),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      const result = await searchUserActiveTournamentRegistrations(
+        mockClient,
+        "user-uuid",
+        42,
+        "spring"
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("returns active registration tournament names when user has alts", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+
+      // First call: alts query
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({
+          data: [{ id: 10 }, { id: 11 }],
+          error: null,
+        }),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      // Second call: registrations query
+      const limitMock = jest.fn().mockResolvedValue({
+        data: [
+          {
+            tournament: { name: "Spring Cup", slug: "spring-cup" },
+          },
+        ],
+        error: null,
+      });
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        in: jest.fn().mockReturnThis(),
+        neq: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        is: jest.fn().mockReturnThis(),
+        limit: limitMock,
+        ilike: jest.fn().mockReturnThis(),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      const result = await searchUserActiveTournamentRegistrations(
+        mockClient,
+        "user-uuid",
+        42,
+        "spring"
+      );
+
+      expect(result).toEqual([{ name: "Spring Cup", slug: "spring-cup" }]);
+    });
+
+    it("filters null tournament entries from results", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({
+          data: [{ id: 10 }],
+          error: null,
+        }),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        in: jest.fn().mockReturnThis(),
+        neq: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        is: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
+          data: [{ tournament: null }],
+          error: null,
+        }),
+        ilike: jest.fn().mockReturnThis(),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      const result = await searchUserActiveTournamentRegistrations(
+        mockClient,
+        "user-uuid",
+        42,
+        ""
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("throws a descriptive error when alts query fails", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: "alts failed" },
+        }),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      await expect(
+        searchUserActiveTournamentRegistrations(
+          mockClient,
+          "user-uuid",
+          42,
+          "spring"
+        )
+      ).rejects.toThrow("Failed to get alts for autocomplete");
+    });
+  });
+
+  // ===========================================================================
+  // searchPlayersInCommunity
+  // ===========================================================================
+
+  describe("searchPlayersInCommunity", () => {
+    it("returns matching player usernames", async () => {
+      const rows = [
+        {
+          username: "ash_ketchum",
+          tournament_registrations: [{ tournament: { community_id: 42 } }],
+        },
+        {
+          username: "ash_trainer",
+          tournament_registrations: [{ tournament: { community_id: 42 } }],
+        },
+      ];
+      const limitMock = jest
+        .fn()
+        .mockResolvedValue({ data: rows, error: null });
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: limitMock,
+        ilike: jest.fn().mockReturnThis(),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      const result = await searchPlayersInCommunity(mockClient, 42, "ash");
+
+      expect(result).toEqual([
+        { username: "ash_ketchum" },
+        { username: "ash_trainer" },
+      ]);
+      expect(fromSpy).toHaveBeenCalledWith("alts");
+    });
+
+    it("deduplicates usernames when a player has multiple registrations", async () => {
+      const rows = [
+        {
+          username: "ash_ketchum",
+          tournament_registrations: [{ tournament: { community_id: 42 } }],
+        },
+        {
+          // Same player returned twice due to multiple registrations
+          username: "ash_ketchum",
+          tournament_registrations: [{ tournament: { community_id: 42 } }],
+        },
+      ];
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: rows, error: null }),
+        ilike: jest.fn().mockReturnThis(),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      const result = await searchPlayersInCommunity(mockClient, 42, "ash");
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({ username: "ash_ketchum" });
+    });
+
+    it("does not apply ilike for empty partial", async () => {
+      const ilikeMock = jest.fn().mockReturnThis();
+      const limitMock = jest.fn().mockResolvedValue({ data: [], error: null });
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: limitMock,
+        ilike: ilikeMock,
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      await searchPlayersInCommunity(mockClient, 42, "");
+
+      expect(ilikeMock).not.toHaveBeenCalled();
+    });
+
+    it("returns empty array on no results", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: null, error: null }),
+        ilike: jest.fn().mockReturnThis(),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      const result = await searchPlayersInCommunity(mockClient, 42, "zzz");
+
+      expect(result).toEqual([]);
+    });
+
+    it("throws a descriptive error on DB failure", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: "db failure" },
+        }),
+        ilike: jest.fn().mockReturnThis(),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      await expect(
+        searchPlayersInCommunity(mockClient, 42, "ash")
+      ).rejects.toThrow("Failed to search players in community");
     });
   });
 });

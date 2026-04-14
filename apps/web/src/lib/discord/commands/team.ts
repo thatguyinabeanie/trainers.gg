@@ -17,15 +17,21 @@ import { getChatInputOptions } from "./shared/options";
 import {
   getPlayerByUsername,
   getPublicTeamForCommunity,
+  searchPlayersInCommunity,
 } from "@trainers/supabase";
 
 import { editInteractionResponse } from "../api";
 import { buildEmbed, previewPlusLink, trainersggColor } from "../embeds";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
-import { registerCommand, type CommandHandler } from "./registry";
+import {
+  registerCommand,
+  type CommandHandler,
+  type AutocompleteHandler,
+} from "./registry";
 import { SITE_URL } from "./shared/site-url";
 import { requireLinkedAccount } from "./shared/require-linked-account";
+import { cached } from "./shared/autocomplete";
 
 // =============================================================================
 // Handler
@@ -107,6 +113,30 @@ const handleTeam: CommandHandler = async (ctx) => {
 };
 
 // =============================================================================
+// Autocomplete
+// =============================================================================
+
+const teamPlayerQuery = cached(
+  "player",
+  async (supabase, communityId, partial) => {
+    const rows = await searchPlayersInCommunity(
+      supabase,
+      communityId,
+      partial,
+      {
+        limit: 25,
+      }
+    );
+    return rows.map((r) => ({ name: r.username, value: r.username }));
+  }
+);
+
+const handleTeamAutocomplete: AutocompleteHandler = async (ctx) => {
+  const supabase = createServiceRoleClient();
+  return teamPlayerQuery(supabase, ctx.communityId, ctx.focusedOption.value);
+};
+
+// =============================================================================
 // Registration
 // =============================================================================
 
@@ -120,8 +150,10 @@ registerCommand({
         "Which player's team to show? (optional — defaults to yours)",
       type: ApplicationCommandOptionType.String,
       required: false,
+      autocomplete: true,
     },
   ],
   handler: handleTeam,
+  autocomplete: handleTeamAutocomplete,
   ephemeral: false,
 });

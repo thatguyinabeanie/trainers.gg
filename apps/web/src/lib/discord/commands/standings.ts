@@ -13,15 +13,23 @@ import {
 
 import { getChatInputOptions } from "./shared/options";
 
-import { listStandings } from "@trainers/supabase";
+import {
+  listStandings,
+  searchTournamentsInCommunity,
+} from "@trainers/supabase";
 
 import { editInteractionResponse } from "../api";
 import { buildEmbed, previewPlusLink, trainersggColor } from "../embeds";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
-import { registerCommand, type CommandHandler } from "./registry";
+import {
+  registerCommand,
+  type CommandHandler,
+  type AutocompleteHandler,
+} from "./registry";
 import { SITE_URL } from "./shared/site-url";
 import { resolveTournament } from "./shared/resolve-tournament";
+import { cached } from "./shared/autocomplete";
 
 // =============================================================================
 // Handler
@@ -83,6 +91,34 @@ const handleStandings: CommandHandler = async (ctx) => {
 };
 
 // =============================================================================
+// Autocomplete
+// =============================================================================
+
+const standingsTournamentQuery = cached(
+  "tournament",
+  async (supabase, communityId, partial) => {
+    const rows = await searchTournamentsInCommunity(
+      supabase,
+      communityId,
+      partial,
+      {
+        limit: 25,
+      }
+    );
+    return rows.map((r) => ({ name: r.name, value: r.slug }));
+  }
+);
+
+const handleStandingsAutocomplete: AutocompleteHandler = async (ctx) => {
+  const supabase = createServiceRoleClient();
+  return standingsTournamentQuery(
+    supabase,
+    ctx.communityId,
+    ctx.focusedOption.value
+  );
+};
+
+// =============================================================================
 // Registration
 // =============================================================================
 
@@ -99,4 +135,5 @@ registerCommand({
     },
   ],
   handler: handleStandings,
+  autocomplete: handleStandingsAutocomplete,
 });

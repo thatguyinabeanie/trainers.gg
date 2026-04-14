@@ -309,6 +309,10 @@ export {
   getPlayerByUsername,
   getPlayerCommunityStats,
   getPublicTeamForCommunity,
+  // Autocomplete helpers
+  searchTournamentsInCommunity,
+  searchUserActiveTournamentRegistrations,
+  searchPlayersInCommunity,
   type DiscordServer,
   type DiscordChannelMapping,
   type DiscordDmSetting,

@@ -758,6 +758,167 @@ export async function listCommunityLeaderboard(
     }));
 }
 
+// =============================================================================
+// Autocomplete query helpers
+// =============================================================================
+
+/**
+ * Search tournaments in a community by name or slug (ILIKE) for autocomplete.
+ *
+ * Returns up to `limit` results ordered by recency. When `partial` is empty,
+ * returns the most recent tournaments. Uses case-insensitive ILIKE with
+ * wildcard injection prevention via `escapeLike`.
+ */
+export async function searchTournamentsInCommunity(
+  supabase: TypedClient,
+  communityId: number,
+  partial: string,
+  options: { limit?: number } = {}
+): Promise<{ name: string; slug: string }[]> {
+  const { limit = 25 } = options;
+
+  let query = supabase
+    .from("tournaments")
+    .select("name, slug")
+    .eq("community_id", communityId)
+    .is("archived_at", null)
+    .order("start_date", { ascending: false, nullsFirst: false });
+
+  if (partial.trim().length > 0) {
+    const escaped = escapeLike(partial.trim());
+    query = query.ilike("name", `%${escaped}%`);
+  }
+
+  const { data, error } = await query.limit(limit);
+
+  if (error)
+    throw new Error(
+      `Failed to search tournaments in community: ${error.message}`
+    );
+  return data ?? [];
+}
+
+/**
+ * Search tournaments that a user is actively registered in (not ended/dropped).
+ *
+ * Used by `/drop` autocomplete — only surfaces tournaments the invoking user
+ * can still drop from. Requires a service-role client (joins auth.identities).
+ *
+ * @param userId      - trainers.gg user UUID (resolved from Discord identity)
+ * @param communityId - Community scope
+ * @param partial     - Prefix the user has typed so far
+ */
+export async function searchUserActiveTournamentRegistrations(
+  supabase: TypedClient,
+  userId: string,
+  communityId: number,
+  partial: string,
+  options: { limit?: number } = {}
+): Promise<{ name: string; slug: string }[]> {
+  const { limit = 25 } = options;
+
+  // Get user's alts
+  const { data: alts, error: altsError } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("user_id", userId);
+
+  if (altsError)
+    throw new Error(
+      `Failed to get alts for autocomplete: ${altsError.message}`
+    );
+
+  const altIds = (alts ?? []).map((a) => a.id);
+  if (altIds.length === 0) return [];
+
+  // Find active registrations (not dropped) in this community's active tournaments
+  let tournamentQuery = supabase
+    .from("tournament_registrations")
+    .select(
+      `
+      tournament:tournaments!inner(name, slug, status, community_id, archived_at)
+    `
+    )
+    .in("alt_id", altIds)
+    .neq("status", "dropped")
+    .eq("tournaments.community_id", communityId)
+    .eq("tournaments.status", "active")
+    .is("tournaments.archived_at", null);
+
+  if (partial.trim().length > 0) {
+    const escaped = escapeLike(partial.trim());
+    tournamentQuery = tournamentQuery.ilike("tournaments.name", `%${escaped}%`);
+  }
+
+  const { data, error } = await tournamentQuery.limit(limit);
+
+  if (error)
+    throw new Error(
+      `Failed to search user active tournament registrations: ${error.message}`
+    );
+
+  return (data ?? [])
+    .map((r) => {
+      const t = r.tournament as { name: string; slug: string } | null;
+      return t ? { name: t.name, slug: t.slug } : null;
+    })
+    .filter((t): t is { name: string; slug: string } => t !== null);
+}
+
+/**
+ * Search players who have participated in a community's tournaments (ILIKE username).
+ *
+ * Returns players scoped to this community — users who have at least one
+ * tournament registration in any of the community's tournaments.
+ */
+export async function searchPlayersInCommunity(
+  supabase: TypedClient,
+  communityId: number,
+  partial: string,
+  options: { limit?: number } = {}
+): Promise<{ username: string }[]> {
+  const { limit = 25 } = options;
+
+  // Find alts that have registrations in this community's tournaments
+  let query = supabase
+    .from("alts")
+    .select(
+      `
+      username,
+      tournament_registrations!inner(
+        tournament:tournaments!inner(community_id)
+      )
+    `
+    )
+    .eq("tournament_registrations.tournaments.community_id", communityId)
+    .order("username", { ascending: true });
+
+  if (partial.trim().length > 0) {
+    const escaped = escapeLike(partial.trim());
+    query = query.ilike("username", `%${escaped}%`);
+  }
+
+  const { data, error } = await query.limit(limit);
+
+  if (error)
+    throw new Error(`Failed to search players in community: ${error.message}`);
+
+  // Deduplicate (a player may have multiple registrations)
+  const seen = new Set<string>();
+  const results: { username: string }[] = [];
+  for (const row of data ?? []) {
+    if (!seen.has(row.username)) {
+      seen.add(row.username);
+      results.push({ username: row.username });
+    }
+  }
+  return results.slice(0, limit);
+}
+
+// =============================================================================
+// Player profile
+// =============================================================================
+
 /**
  * Get a player's profile by username (looks up alt by username).
  * Returns basic stats for /player command.

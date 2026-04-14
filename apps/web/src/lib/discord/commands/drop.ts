@@ -18,13 +18,21 @@ import {
 
 import { getChatInputOptions } from "./shared/options";
 
-import { type TypedClient } from "@trainers/supabase";
+import {
+  type TypedClient,
+  getUserByDiscordId,
+  searchUserActiveTournamentRegistrations,
+} from "@trainers/supabase";
 
 import { editInteractionResponse } from "../api";
 import { buildEmbed, trainersggColor } from "../embeds";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
-import { registerCommand, type CommandHandler } from "./registry";
+import {
+  registerCommand,
+  type CommandHandler,
+  type AutocompleteHandler,
+} from "./registry";
 import { SITE_URL } from "./shared/site-url";
 import { resolveTournament } from "./shared/resolve-tournament";
 import { requireLinkedAccount } from "./shared/require-linked-account";
@@ -151,6 +159,39 @@ const handleDrop: CommandHandler = async (ctx) => {
 };
 
 // =============================================================================
+// Autocomplete
+// =============================================================================
+
+/**
+ * `/drop` autocomplete: only surfaces tournaments the invoking user is
+ * registered in AND still active. Returns empty when the Discord account is
+ * not linked (silent — Discord shows "No matches").
+ *
+ * `cached` is keyed by communityId + partial, so we cannot include userId in
+ * the cache key at the `cached` wrapper level. Instead, we skip caching and
+ * query directly — the /drop autocomplete is user-specific, so a shared cache
+ * would leak user A's registrations to user B. We call the raw query without
+ * the cached() wrapper.
+ */
+const handleDropAutocomplete: AutocompleteHandler = async (ctx) => {
+  const supabase = createServiceRoleClient();
+
+  // Resolve Discord user → trainers.gg user (requires linked account)
+  const linked = await getUserByDiscordId(supabase, ctx.userId);
+  if (!linked) return [];
+
+  const rows = await searchUserActiveTournamentRegistrations(
+    supabase,
+    linked.user_id,
+    ctx.communityId,
+    ctx.focusedOption.value,
+    { limit: 25 }
+  );
+
+  return rows.map((r) => ({ name: r.name, value: r.slug }));
+};
+
+// =============================================================================
 // Registration
 // =============================================================================
 
@@ -167,5 +208,6 @@ registerCommand({
     },
   ],
   handler: handleDrop,
+  autocomplete: handleDropAutocomplete,
   ephemeral: true,
 });
