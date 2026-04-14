@@ -2,14 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Calculator,
-  CheckCircle2,
-  ChevronDown,
-  Import,
-  Star,
-  Zap,
-} from "lucide-react";
+import { Calculator, ChevronDown, Import, Star, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -21,7 +14,6 @@ import {
 import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { addPokemonToTeamAction, updatePokemonAction } from "@/actions/teams";
@@ -73,9 +65,6 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<"types" | "speed" | "calc">(
     "types"
   );
-  const [saveStatus, setSaveStatus] = useState<
-    "idle" | "saving" | "saved" | "error"
-  >("idle");
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const savedIdleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingUpdateRef = useRef<{
@@ -98,26 +87,8 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     mode: "add" | "change";
   }>({ open: false, slot: null, mode: "add" });
 
-  // Validation panel toggle state
-  const [validationPanelOpen, setValidationPanelOpen] = useState(false);
-
   // Validation
-  const {
-    errors: validationErrors,
-    pokemonErrors,
-    validate,
-  } = useTeamValidation(team.team_pokemon, format);
-
-  // Derived error/warning counts for the Validate button badge
-  const errorCount = validationErrors.filter(
-    (e) => e.severity === "error"
-  ).length;
-
-  // Handle Validate button click — run immediately and toggle panel
-  function handleValidate() {
-    validate();
-    setValidationPanelOpen((prev) => !prev);
-  }
+  const { pokemonErrors } = useTeamValidation(team.team_pokemon, format);
 
   // Build species search index for the format (derived value — React Compiler handles memoization)
   const speciesIndex = buildSpeciesSearchIndex(format?.id ?? "gen9vgc2026regi");
@@ -159,7 +130,6 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   ) {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     if (savedIdleTimerRef.current) clearTimeout(savedIdleTimerRef.current);
-    setSaveStatus("saving");
     // Track the latest pending update so it can be flushed on unmount
     pendingUpdateRef.current = { pokemonId, field, value };
     saveTimerRef.current = setTimeout(async () => {
@@ -168,14 +138,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
       const result = await updatePokemonAction(team.id, pokemonId, {
         [field]: value,
       } as Parameters<typeof updatePokemonAction>[2]);
-      if (result.success) {
-        setSaveStatus("saved");
-        savedIdleTimerRef.current = setTimeout(
-          () => setSaveStatus("idle"),
-          2000
-        );
-      } else {
-        setSaveStatus("error");
+      if (!result.success) {
         toast.error(result.error ?? "Failed to save changes.");
       }
     }, 2000);
@@ -317,34 +280,6 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
 
   return (
     <div className="relative flex flex-1 overflow-hidden">
-      {/* Toolbar — Validate button + save status indicator */}
-      <div className="absolute top-1 right-2 z-10 flex items-center gap-2 md:top-2">
-        {/* Save status */}
-        {saveStatus === "saving" && (
-          <span className="text-muted-foreground animate-pulse text-xs">
-            Saving...
-          </span>
-        )}
-        {saveStatus === "saved" && (
-          <span className="text-muted-foreground text-xs">Saved</span>
-        )}
-
-        {/* Validate button */}
-        <Button
-          variant={validationPanelOpen ? "secondary" : "outline"}
-          size="sm"
-          onClick={handleValidate}
-        >
-          <CheckCircle2 className="size-4" />
-          Validate
-          {errorCount > 0 && (
-            <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5">
-              {errorCount}
-            </Badge>
-          )}
-        </Button>
-      </div>
-
       {/* Team sidebar — always visible so "+" button works even with 0 pokemon */}
       <TeamSidebar
         teamId={team.id}
@@ -406,173 +341,158 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
               Only rendered when a Pokemon with a species is selected.
               =================================================================== */}
           {selectedEntry?.pokemon && (
-            <div className="flex shrink-0 flex-col gap-1 border-b px-4 py-3">
-              {/* Top row: species name + type pills + level + import/export */}
-              <div className="flex items-center gap-2">
-                {/* Species name — clickable to open species picker */}
-                <div className="flex flex-col">
-                  <button
-                    type="button"
-                    onClick={handleSpeciesClick}
-                    className={cn(
-                      "flex items-center gap-1 text-lg font-bold",
-                      "hover:text-primary transition-colors"
-                    )}
-                  >
-                    {selectedEntry.pokemon.species}
-                    <ChevronDown className="text-muted-foreground size-4" />
-                  </button>
-                  {renderSelectedFieldError("species")}
-                </div>
-
-                {/* Type pills */}
-                <div className="flex gap-1">
-                  {getSpeciesTypes(selectedEntry.pokemon.species).map(
-                    (type) => (
-                      <span
-                        key={type}
-                        className={cn(
-                          "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                          TYPE_PILL_COLORS[type] ?? "bg-muted text-foreground"
-                        )}
-                      >
-                        {type}
-                      </span>
-                    )
-                  )}
-                </div>
-
-                {/* Level input + import/export */}
-                <div className="ml-auto flex items-center gap-1.5">
-                  <span className="text-muted-foreground text-xs">Lv</span>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={selectedEntry.pokemon.level ?? 50}
-                    onChange={(e) => {
-                      const raw = parseInt(e.target.value, 10);
-                      if (!isNaN(raw)) {
-                        handlePokemonUpdate(
-                          selectedEntry.pokemon!.id,
-                          "level",
-                          Math.max(1, Math.min(100, raw))
-                        );
-                      }
-                    }}
-                    className="h-7 w-14 px-1 text-center text-sm"
-                    aria-label="Pokemon level"
-                  />
-                  <PokemonImportExport
-                    teamId={team.id}
-                    pokemon={selectedEntry.pokemon}
-                    onUpdate={() => router.refresh()}
-                  />
-                </div>
-              </div>
-
-              {/* Secondary row: inline nickname, gender, shiny */}
-              <div className="flex items-center gap-2">
-                {/* Nickname input */}
-                <div className="flex flex-col">
-                  <Input
-                    placeholder="Nickname"
-                    value={selectedEntry.pokemon.nickname ?? ""}
-                    onChange={(e) =>
-                      handlePokemonUpdate(
-                        selectedEntry.pokemon!.id,
-                        "nickname",
-                        e.target.value || null
-                      )
-                    }
-                    className={cn(
-                      "h-6 w-32 px-2 text-xs",
-                      getSelectedFieldError("nickname") && "border-destructive"
-                    )}
-                    aria-label="Pokemon nickname"
-                  />
-                  {renderSelectedFieldError("nickname")}
-                </div>
-
-                {/* Separator dot */}
-                <span className="text-muted-foreground text-xs">·</span>
-
-                {/* Gender selector — only when species has gender differences */}
-                {selectedEntry.pokemon.gender !== null ? (
-                  <>
-                    <div className="flex flex-col items-start">
-                      <div
-                        className={cn(
-                          "flex gap-0.5 rounded border p-0.5",
-                          getSelectedFieldError("gender") &&
-                            "border-destructive"
-                        )}
-                      >
-                        {(["Male", "Female"] as const).map((g) => (
-                          <button
-                            key={g}
-                            type="button"
-                            onClick={() =>
-                              handlePokemonUpdate(
-                                selectedEntry.pokemon!.id,
-                                "gender",
-                                g
-                              )
-                            }
-                            className={cn(
-                              "rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
-                              selectedEntry.pokemon!.gender === g
-                                ? g === "Male"
-                                  ? "bg-blue-500 text-white"
-                                  : "bg-pink-500 text-white"
-                                : "text-muted-foreground hover:bg-muted"
-                            )}
-                          >
-                            {g === "Male" ? "♂" : "♀"}
-                          </button>
-                        ))}
-                      </div>
-                      {renderSelectedFieldError("gender")}
-                    </div>
-                    <span className="text-muted-foreground text-xs">·</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-muted-foreground text-xs">
-                      Genderless
-                    </span>
-                    <span className="text-muted-foreground text-xs">·</span>
-                  </>
-                )}
-
-                {/* Shiny toggle */}
+            <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2">
+              {/* Species name — clickable to open species picker */}
+              <div className="flex flex-col">
                 <button
                   type="button"
-                  onClick={() =>
-                    handlePokemonUpdate(
-                      selectedEntry.pokemon!.id,
-                      "is_shiny",
-                      !(selectedEntry.pokemon!.is_shiny ?? false)
-                    )
-                  }
-                  aria-label="Toggle shiny"
-                  aria-pressed={selectedEntry.pokemon.is_shiny ?? false}
+                  onClick={handleSpeciesClick}
                   className={cn(
-                    "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors",
-                    selectedEntry.pokemon.is_shiny
-                      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                      : "text-muted-foreground hover:bg-muted"
+                    "flex items-center gap-1 text-base font-bold",
+                    "hover:text-primary transition-colors"
                   )}
                 >
-                  <Star
-                    className={cn(
-                      "size-3",
-                      selectedEntry.pokemon.is_shiny &&
-                        "fill-yellow-500 text-yellow-500"
-                    )}
-                  />
-                  {selectedEntry.pokemon.is_shiny ? "Shiny" : "Not shiny"}
+                  {selectedEntry.pokemon.species}
+                  <ChevronDown className="text-muted-foreground size-3.5" />
                 </button>
+                {renderSelectedFieldError("species")}
+              </div>
+
+              {/* Type pills */}
+              <div className="flex gap-1">
+                {getSpeciesTypes(selectedEntry.pokemon.species).map((type) => (
+                  <span
+                    key={type}
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+                      TYPE_PILL_COLORS[type] ?? "bg-muted text-foreground"
+                    )}
+                  >
+                    {type}
+                  </span>
+                ))}
+              </div>
+
+              {/* Separator */}
+              <span className="text-muted-foreground text-xs">·</span>
+
+              {/* Nickname input */}
+              <div className="flex flex-col">
+                <Input
+                  placeholder="Nickname"
+                  value={selectedEntry.pokemon.nickname ?? ""}
+                  onChange={(e) =>
+                    handlePokemonUpdate(
+                      selectedEntry.pokemon!.id,
+                      "nickname",
+                      e.target.value || null
+                    )
+                  }
+                  className={cn(
+                    "h-6 w-28 px-2 text-xs",
+                    getSelectedFieldError("nickname") && "border-destructive"
+                  )}
+                  aria-label="Pokemon nickname"
+                />
+                {renderSelectedFieldError("nickname")}
+              </div>
+
+              {/* Gender selector — only when species has gender differences */}
+              {selectedEntry.pokemon.gender !== null ? (
+                <div className="flex flex-col items-start">
+                  <div
+                    className={cn(
+                      "flex gap-0.5 rounded border p-0.5",
+                      getSelectedFieldError("gender") && "border-destructive"
+                    )}
+                  >
+                    {(["Male", "Female"] as const).map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() =>
+                          handlePokemonUpdate(
+                            selectedEntry.pokemon!.id,
+                            "gender",
+                            g
+                          )
+                        }
+                        className={cn(
+                          "rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
+                          selectedEntry.pokemon!.gender === g
+                            ? g === "Male"
+                              ? "bg-blue-500 text-white"
+                              : "bg-pink-500 text-white"
+                            : "text-muted-foreground hover:bg-muted"
+                        )}
+                      >
+                        {g === "Male" ? "♂" : "♀"}
+                      </button>
+                    ))}
+                  </div>
+                  {renderSelectedFieldError("gender")}
+                </div>
+              ) : (
+                <span className="text-muted-foreground text-xs">
+                  Genderless
+                </span>
+              )}
+
+              {/* Shiny toggle */}
+              <button
+                type="button"
+                onClick={() =>
+                  handlePokemonUpdate(
+                    selectedEntry.pokemon!.id,
+                    "is_shiny",
+                    !(selectedEntry.pokemon!.is_shiny ?? false)
+                  )
+                }
+                aria-label="Toggle shiny"
+                aria-pressed={selectedEntry.pokemon.is_shiny ?? false}
+                className={cn(
+                  "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors",
+                  selectedEntry.pokemon.is_shiny
+                    ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <Star
+                  className={cn(
+                    "size-3",
+                    selectedEntry.pokemon.is_shiny &&
+                      "fill-yellow-500 text-yellow-500"
+                  )}
+                />
+                {selectedEntry.pokemon.is_shiny ? "Shiny" : ""}
+              </button>
+
+              {/* Level input + import/export — pushed to far right */}
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="text-muted-foreground text-xs">Lv</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={selectedEntry.pokemon.level ?? 50}
+                  onChange={(e) => {
+                    const raw = parseInt(e.target.value, 10);
+                    if (!isNaN(raw)) {
+                      handlePokemonUpdate(
+                        selectedEntry.pokemon!.id,
+                        "level",
+                        Math.max(1, Math.min(100, raw))
+                      );
+                    }
+                  }}
+                  className="h-6 w-12 px-1 text-center text-xs"
+                  aria-label="Pokemon level"
+                />
+                <PokemonImportExport
+                  teamId={team.id}
+                  pokemon={selectedEntry.pokemon}
+                  onUpdate={() => router.refresh()}
+                />
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import {
   calculate,
   Field,
@@ -19,6 +19,7 @@ import {
   getMoveData,
   buildSpeciesSearchIndex,
   getTypeColor,
+  getAllItems,
 } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
@@ -147,6 +148,9 @@ const STAT_LABELS_SHORT: Record<string, string> = {
 
 const DEFENDER_STAT_KEYS = ["hp", "atk", "def", "spa", "spd", "spe"] as const;
 type DefenderStatKey = (typeof DEFENDER_STAT_KEYS)[number];
+
+/** All held items available in gen 9 — built once at module init. */
+const ALL_ITEMS: string[] = getAllItems();
 
 /**
  * Module-level cache for the species search index.
@@ -670,29 +674,29 @@ function AttackerModifiers({
 }
 
 // =============================================================================
-// SpeciesSearchInput
+// InlineSpeciesSearch — clickable species name that becomes a search input
 // =============================================================================
 
-interface SpeciesSearchInputProps {
-  value: string;
+interface InlineSpeciesSearchProps {
+  species: string;
+  types: string[];
   formatId: string | undefined;
   onChange: (species: string) => void;
 }
 
-function SpeciesSearchInput({
-  value,
+function InlineSpeciesSearch({
+  species,
+  types,
   formatId,
   onChange,
-}: SpeciesSearchInputProps) {
-  const [query, setQuery] = useState(value);
-  const [open, setOpen] = useState(false);
-  // Results are stored in state and updated imperatively in the change handler.
-  // This avoids both the set-state-in-effect and read-ref-in-render lint rules.
+}: InlineSpeciesSearchProps) {
+  const [editing, setEditing] = useState(false);
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Build the species index lazily on first use. The index is module-level so
-  // it's only computed once per app session (not per component mount).
+  // Build the species index lazily on first use.
   let speciesIndex = speciesIndexCache.get(formatId ?? "");
   if (!speciesIndex) {
     try {
@@ -705,19 +709,28 @@ function SpeciesSearchInput({
     speciesIndexCache.set(formatId ?? "", speciesIndex);
   }
 
-  // Close dropdown on outside click — subscribing to a DOM event (external system)
+  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
         containerRef.current &&
         !containerRef.current.contains(e.target as Node)
       ) {
-        setOpen(false);
+        setEditing(false);
+        setQuery("");
+        setResults([]);
       }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  function openSearch() {
+    setQuery(species);
+    setEditing(true);
+    // Focus the input after state update
+    setTimeout(() => inputRef.current?.select(), 0);
+  }
 
   function handleQueryChange(q: string) {
     setQuery(q);
@@ -730,53 +743,82 @@ function SpeciesSearchInput({
       .filter((s) => s.toLowerCase().includes(trimmed))
       .slice(0, 12);
     setResults(filtered);
-    setOpen(true);
   }
 
-  function handleSelect(species: string) {
-    setQuery(species);
+  function handleSelect(sp: string) {
+    setEditing(false);
+    setQuery("");
     setResults([]);
-    setOpen(false);
-    onChange(species);
+    onChange(sp);
   }
 
+  if (editing) {
+    return (
+      <div ref={containerRef} className="relative mb-2">
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          autoFocus
+          placeholder="Search species…"
+          onChange={(e) => handleQueryChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && results.length > 0) {
+              handleSelect(results[0]!);
+            } else if (e.key === "Escape") {
+              setEditing(false);
+              setQuery("");
+              setResults([]);
+            }
+          }}
+          className="border-border bg-background w-full rounded border px-2 py-1 text-sm font-semibold focus:ring-1 focus:ring-teal-500 focus:outline-none"
+        />
+        {results.length > 0 && (
+          <ul className="border-border bg-background absolute top-full right-0 left-0 z-20 mt-0.5 max-h-48 overflow-y-auto rounded-md border shadow-md">
+            {results.map((sp) => (
+              <li key={sp}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSelect(sp);
+                  }}
+                  className="hover:bg-muted w-full px-3 py-1.5 text-left text-xs"
+                >
+                  {sp}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
+  // Display mode: species name + type badges — click to open search
   return (
-    <div ref={containerRef} className="relative">
-      <input
-        type="text"
-        value={query}
-        placeholder="Search species…"
-        onChange={(e) => handleQueryChange(e.target.value)}
-        onFocus={() => {
-          if (results.length > 0) setOpen(true);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && results.length > 0) {
-            handleSelect(results[0]!);
-          } else if (e.key === "Escape") {
-            setOpen(false);
-          }
-        }}
-        className="border-border bg-background w-full rounded border px-2 py-1 text-sm font-medium focus:ring-1 focus:ring-teal-500 focus:outline-none"
-      />
-      {open && results.length > 0 && (
-        <ul className="border-border bg-background absolute top-full right-0 left-0 z-20 mt-0.5 max-h-48 overflow-y-auto rounded-md border shadow-md">
-          {results.map((sp) => (
-            <li key={sp}>
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  handleSelect(sp);
-                }}
-                className="hover:bg-muted w-full px-3 py-1.5 text-left text-xs"
-              >
-                {sp}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="mb-2 flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={openSearch}
+        className="hover:text-primary text-sm font-semibold transition-colors"
+        title="Click to change species"
+      >
+        {species || "—"}
+      </button>
+      {types.map((t) => (
+        <span
+          key={t}
+          className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
+          style={{
+            backgroundColor: getTypeColor(
+              t as Parameters<typeof getTypeColor>[0]
+            ),
+          }}
+        >
+          {t}
+        </span>
+      ))}
     </div>
   );
 }
@@ -814,6 +856,16 @@ function DefenderStatRow({
       {/* Base */}
       <td className="w-8 pr-1 text-right text-xs tabular-nums">{base}</td>
 
+      {/* Bar */}
+      <td className="pr-1" style={{ width: "60px" }}>
+        <div className="bg-muted h-[5px] w-full overflow-hidden rounded-full">
+          <div
+            className={cn("h-full rounded-full", barColor)}
+            style={{ width: `${fillPct}%` }}
+          />
+        </div>
+      </td>
+
       {/* EVs input */}
       <td className="w-14 pr-1">
         <input
@@ -827,16 +879,6 @@ function DefenderStatRow({
           }}
           className="border-border bg-background w-full rounded border px-1 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-teal-500 focus:outline-none"
         />
-      </td>
-
-      {/* Bar */}
-      <td className="flex-1 pr-1">
-        <div className="bg-muted h-[5px] w-full overflow-hidden rounded-full">
-          <div
-            className={cn("h-full rounded-full", barColor)}
-            style={{ width: `${fillPct}%` }}
-          />
-        </div>
       </td>
 
       {/* Boost */}
@@ -912,37 +954,19 @@ function DefenderPanel({
 }: DefenderPanelProps) {
   const validAbilities = getValidAbilities(species);
   const validNatures = getValidNatures();
+  const itemListId = useId();
 
   return (
     <Card>
       <SectionHeader>Defender</SectionHeader>
 
-      {/* Species search */}
-      <div className="mb-2">
-        <SpeciesSearchInput
-          value={species}
-          formatId={formatId}
-          onChange={onSpeciesChange}
-        />
-      </div>
-
-      {/* Species name + types */}
-      <div className="mb-2 flex items-center gap-1.5">
-        <span className="text-sm font-semibold">{species || "—"}</span>
-        {types.map((t) => (
-          <span
-            key={t}
-            className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
-            style={{
-              backgroundColor: getTypeColor(
-                t as Parameters<typeof getTypeColor>[0]
-              ),
-            }}
-          >
-            {t}
-          </span>
-        ))}
-      </div>
+      {/* Species inline search — clickable name that opens a search input */}
+      <InlineSpeciesSearch
+        species={species}
+        types={types}
+        formatId={formatId}
+        onChange={onSpeciesChange}
+      />
 
       {/* Ability / Item / Nature / Tera in 2×2 grid */}
       <div className="mb-2 grid grid-cols-2 gap-1.5">
@@ -963,16 +987,22 @@ function DefenderPanel({
           </select>
         </div>
 
-        {/* Item */}
+        {/* Item — text input with datalist for autocomplete */}
         <div className="flex flex-col gap-0.5">
           <label className="text-muted-foreground text-[10px]">Item</label>
           <input
             type="text"
+            list={itemListId}
             value={item}
             onChange={(e) => onItemChange(e.target.value)}
             placeholder="e.g. Sitrus Berry"
             className="border-border bg-background rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
           />
+          <datalist id={itemListId}>
+            {ALL_ITEMS.map((i) => (
+              <option key={i} value={i} />
+            ))}
+          </datalist>
         </div>
 
         {/* Nature */}
@@ -1004,16 +1034,16 @@ function DefenderPanel({
         </div>
       </div>
 
-      {/* Stats table */}
+      {/* Stats table — columns: Stat | Base | Bar | EVs | ± */}
       <div className="mb-2">
         <table className="w-full border-collapse">
-          <thead>
-            <tr className="text-muted-foreground text-[10px] tracking-wide uppercase">
-              <th className="w-8 text-left font-normal">Stat</th>
-              <th className="w-8 text-right font-normal">Base</th>
-              <th className="w-14 text-right font-normal">EVs</th>
-              <th className="text-left font-normal">Bar</th>
-              <th className="w-14 text-right font-normal">±</th>
+          <thead className="sr-only">
+            <tr>
+              <th>Stat</th>
+              <th>Base</th>
+              <th>Bar</th>
+              <th>EVs</th>
+              <th>Boost</th>
             </tr>
           </thead>
           <tbody className="gap-1 divide-y divide-transparent">
@@ -1100,26 +1130,29 @@ function DefenderPanel({
 }
 
 // =============================================================================
-// SideConditions (reusable for attacker / defender side)
+// SideConditions — chip-style toggle buttons
 // =============================================================================
 
-interface SideToggleProps {
+interface ConditionChipProps {
   label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
+  active: boolean;
+  onToggle: () => void;
 }
 
-function SideToggle({ label, checked, onChange }: SideToggleProps) {
+function ConditionChip({ label, active, onToggle }: ConditionChipProps) {
   return (
-    <label className="flex cursor-pointer items-center gap-1">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="accent-teal-600"
-      />
-      <span className="text-xs">{label}</span>
-    </label>
+    <button
+      type="button"
+      onClick={onToggle}
+      className={cn(
+        "cursor-pointer rounded border px-2 py-1 text-xs transition-colors",
+        active
+          ? "border-teal-500 bg-teal-50 text-teal-700"
+          : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700"
+      )}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -1237,103 +1270,164 @@ function FieldConditions({
           <span className="text-muted-foreground w-14 shrink-0 text-xs">
             Global
           </span>
-          <SideToggle
+          <ConditionChip
             label="Gravity"
-            checked={gravity}
-            onChange={onGravityChange}
+            active={gravity}
+            onToggle={() => onGravityChange(!gravity)}
           />
         </div>
 
-        {/* Per-side conditions */}
+        {/* Per-side conditions — chip toggles in bordered cards */}
         <div className="grid grid-cols-2 gap-3">
           {/* Your side */}
-          <div>
-            <p className="text-muted-foreground mb-1 text-[10px] font-semibold uppercase">
+          <div className="rounded-md border p-2">
+            <p className="text-muted-foreground mb-1.5 text-[10px] font-semibold uppercase">
               Your Side
             </p>
-            <div className="flex flex-col gap-1">
-              <SideToggle
+            <div className="flex flex-wrap gap-1">
+              <ConditionChip
                 label="Reflect"
-                checked={attackerSide.reflect}
-                onChange={(v) => onAttackerSideChange({ reflect: v })}
+                active={attackerSide.reflect}
+                onToggle={() =>
+                  onAttackerSideChange({ reflect: !attackerSide.reflect })
+                }
               />
-              <SideToggle
-                label="Light Screen"
-                checked={attackerSide.lightScreen}
-                onChange={(v) => onAttackerSideChange({ lightScreen: v })}
+              <ConditionChip
+                label="L.Screen"
+                active={attackerSide.lightScreen}
+                onToggle={() =>
+                  onAttackerSideChange({
+                    lightScreen: !attackerSide.lightScreen,
+                  })
+                }
               />
-              <SideToggle
-                label="Aurora Veil"
-                checked={attackerSide.auroraVeil}
-                onChange={(v) => onAttackerSideChange({ auroraVeil: v })}
+              <ConditionChip
+                label="A.Veil"
+                active={attackerSide.auroraVeil}
+                onToggle={() =>
+                  onAttackerSideChange({
+                    auroraVeil: !attackerSide.auroraVeil,
+                  })
+                }
               />
-              <SideToggle
+              <ConditionChip
                 label="Tailwind"
-                checked={attackerSide.tailwind}
-                onChange={(v) => onAttackerSideChange({ tailwind: v })}
+                active={attackerSide.tailwind}
+                onToggle={() =>
+                  onAttackerSideChange({ tailwind: !attackerSide.tailwind })
+                }
               />
-              <SideToggle
-                label="Helping Hand"
-                checked={attackerSide.helpingHand}
-                onChange={(v) => onAttackerSideChange({ helpingHand: v })}
+              <ConditionChip
+                label="H.Hand"
+                active={attackerSide.helpingHand}
+                onToggle={() =>
+                  onAttackerSideChange({
+                    helpingHand: !attackerSide.helpingHand,
+                  })
+                }
               />
-              <SideToggle
-                label="Friend Guard"
-                checked={attackerSide.friendGuard}
-                onChange={(v) => onAttackerSideChange({ friendGuard: v })}
+              <ConditionChip
+                label="F.Guard"
+                active={attackerSide.friendGuard}
+                onToggle={() =>
+                  onAttackerSideChange({
+                    friendGuard: !attackerSide.friendGuard,
+                  })
+                }
               />
             </div>
           </div>
 
           {/* Their side */}
-          <div>
-            <p className="text-muted-foreground mb-1 text-[10px] font-semibold uppercase">
+          <div className="rounded-md border p-2">
+            <p className="text-muted-foreground mb-1.5 text-[10px] font-semibold uppercase">
               Their Side
             </p>
-            <div className="flex flex-col gap-1">
-              <SideToggle
+            <div className="flex flex-wrap gap-1">
+              <ConditionChip
                 label="Reflect"
-                checked={defenderSide.reflect}
-                onChange={(v) => onDefenderSideChange({ reflect: v })}
+                active={defenderSide.reflect}
+                onToggle={() =>
+                  onDefenderSideChange({ reflect: !defenderSide.reflect })
+                }
               />
-              <SideToggle
-                label="Light Screen"
-                checked={defenderSide.lightScreen}
-                onChange={(v) => onDefenderSideChange({ lightScreen: v })}
+              <ConditionChip
+                label="L.Screen"
+                active={defenderSide.lightScreen}
+                onToggle={() =>
+                  onDefenderSideChange({
+                    lightScreen: !defenderSide.lightScreen,
+                  })
+                }
               />
-              <SideToggle
-                label="Aurora Veil"
-                checked={defenderSide.auroraVeil}
-                onChange={(v) => onDefenderSideChange({ auroraVeil: v })}
+              <ConditionChip
+                label="A.Veil"
+                active={defenderSide.auroraVeil}
+                onToggle={() =>
+                  onDefenderSideChange({
+                    auroraVeil: !defenderSide.auroraVeil,
+                  })
+                }
               />
-              <SideToggle
+              <ConditionChip
                 label="Tailwind"
-                checked={defenderSide.tailwind}
-                onChange={(v) => onDefenderSideChange({ tailwind: v })}
+                active={defenderSide.tailwind}
+                onToggle={() =>
+                  onDefenderSideChange({ tailwind: !defenderSide.tailwind })
+                }
               />
-              <SideToggle
-                label="Helping Hand"
-                checked={defenderSide.helpingHand}
-                onChange={(v) => onDefenderSideChange({ helpingHand: v })}
+              <ConditionChip
+                label="H.Hand"
+                active={defenderSide.helpingHand}
+                onToggle={() =>
+                  onDefenderSideChange({
+                    helpingHand: !defenderSide.helpingHand,
+                  })
+                }
               />
-              <SideToggle
-                label="Friend Guard"
-                checked={defenderSide.friendGuard}
-                onChange={(v) => onDefenderSideChange({ friendGuard: v })}
+              <ConditionChip
+                label="F.Guard"
+                active={defenderSide.friendGuard}
+                onToggle={() =>
+                  onDefenderSideChange({
+                    friendGuard: !defenderSide.friendGuard,
+                  })
+                }
               />
-              <SideToggle
-                label="Stealth Rock"
-                checked={defenderSide.stealthRock}
-                onChange={(v) => onDefenderSideChange({ stealthRock: v })}
+              <ConditionChip
+                label="S.Rock"
+                active={defenderSide.stealthRock}
+                onToggle={() =>
+                  onDefenderSideChange({
+                    stealthRock: !defenderSide.stealthRock,
+                  })
+                }
               />
+              <ConditionChip
+                label="Salt Cure"
+                active={defenderSide.saltCure}
+                onToggle={() =>
+                  onDefenderSideChange({ saltCure: !defenderSide.saltCure })
+                }
+              />
+              {/* Spikes — small select inline with chips */}
               <div className="flex items-center gap-1">
-                <span className="text-xs">Spikes</span>
+                <span
+                  className={cn(
+                    "rounded border px-2 py-1 text-xs",
+                    defenderSide.spikes > 0
+                      ? "border-teal-500 bg-teal-50 text-teal-700"
+                      : "border-gray-200 bg-white text-gray-500"
+                  )}
+                >
+                  Spikes
+                </span>
                 <select
                   value={defenderSide.spikes}
                   onChange={(e) =>
                     onDefenderSideChange({ spikes: Number(e.target.value) })
                   }
-                  className="border-border bg-background w-12 rounded border px-1 py-0.5 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                  className="border-border bg-background w-10 rounded border px-0.5 py-0.5 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
                 >
                   {[0, 1, 2, 3].map((v) => (
                     <option key={v} value={v}>
@@ -1342,11 +1436,6 @@ function FieldConditions({
                   ))}
                 </select>
               </div>
-              <SideToggle
-                label="Salt Cure"
-                checked={defenderSide.saltCure}
-                onChange={(v) => onDefenderSideChange({ saltCure: v })}
-              />
             </div>
           </div>
         </div>
