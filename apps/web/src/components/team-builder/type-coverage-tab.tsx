@@ -104,7 +104,7 @@ function TypeBadge({ type }: { type: string }) {
 
 /** Shared cell style: fixed size, centered, bold, rounded. */
 const CELL_BASE =
-  "min-w-[36px] rounded px-1 text-center font-semibold text-xs leading-[32px] h-[32px] select-none";
+  "min-w-[40px] rounded px-1 text-center font-semibold text-xs leading-[36px] h-[36px] select-none";
 
 // =============================================================================
 // Toggle group
@@ -192,7 +192,7 @@ function DefensiveTeamMatrix({ teamPokemon }: DefensiveTeamMatrixProps) {
       {/* Matrix */}
       <div className="rounded-lg border bg-white p-3 shadow-sm">
         <div className="overflow-x-auto">
-          <table style={{ borderSpacing: "4px", borderCollapse: "separate" }}>
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
             <thead>
               <tr>
                 {/* Type label column header */}
@@ -200,7 +200,7 @@ function DefensiveTeamMatrix({ teamPokemon }: DefensiveTeamMatrixProps) {
                 {teamPokemon.map((p) => (
                   <th
                     key={p.id}
-                    className="text-muted-foreground min-w-[36px] pb-1 text-center text-[10px] font-medium"
+                    className="text-muted-foreground min-w-[40px] pb-1.5 text-center text-[10px] font-medium"
                     title={p.species}
                   >
                     {abbreviate(p.species)}
@@ -279,15 +279,15 @@ function DefensiveSelected({ pokemon }: DefensiveSelectedProps) {
           )}
         </p>
         <div className="overflow-x-auto">
-          <table style={{ borderSpacing: "4px", borderCollapse: "separate" }}>
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
             <thead>
               <tr>
                 <th className="w-20 pr-3 text-left" />
-                <th className="text-muted-foreground min-w-[36px] pb-1 text-center text-[10px] font-medium">
+                <th className="text-muted-foreground min-w-[40px] pb-1.5 text-center text-[10px] font-medium">
                   Current
                 </th>
                 {teraMatchups && (
-                  <th className="text-muted-foreground min-w-[36px] pb-1 text-center text-[10px] font-medium">
+                  <th className="text-muted-foreground min-w-[40px] pb-1.5 text-center text-[10px] font-medium">
                     Tera {teraType}
                   </th>
                 )}
@@ -387,14 +387,14 @@ function OffensiveTeamMatrix({ teamPokemon }: OffensiveTeamMatrixProps) {
     <div className="flex flex-col gap-4">
       <div className="rounded-lg border bg-white p-3 shadow-sm">
         <div className="overflow-x-auto">
-          <table style={{ borderSpacing: "4px", borderCollapse: "separate" }}>
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
             <thead>
               <tr>
                 <th className="w-20 pr-3 text-left" />
                 {teamPokemon.map((p) => (
                   <th
                     key={p.id}
-                    className="text-muted-foreground min-w-[36px] pb-1 text-center text-[10px] font-medium"
+                    className="text-muted-foreground min-w-[40px] pb-1.5 text-center text-[10px] font-medium"
                     title={p.species}
                   >
                     {abbreviate(p.species)}
@@ -503,7 +503,7 @@ function OffensiveSelected({ pokemon }: OffensiveSelectedProps) {
           {pokemon.species} — Offensive Coverage
         </p>
         <div className="overflow-x-auto">
-          <table style={{ borderSpacing: "4px", borderCollapse: "separate" }}>
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
             <thead>
               <tr>
                 <th className="w-20 pr-3 text-left" />
