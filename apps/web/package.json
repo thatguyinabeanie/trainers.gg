@@ -52,6 +52,7 @@
     "clsx": "^2",
     "cmdk": "^1",
     "date-fns": "^4",
+    "discord-interactions": "^4.4.0",
     "embla-carousel-react": "^8",
     "flags": "^4",
     "input-otp": "^1",
