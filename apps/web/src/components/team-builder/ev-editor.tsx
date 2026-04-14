@@ -5,6 +5,8 @@ import { useRef, useEffect, useState } from "react";
 import {
   calculateStat,
   calculateHP,
+  calculateChampionsHP,
+  calculateChampionsStat,
   getNatureMultiplier,
   calculateNatureBumps,
   NATURE_EFFECTS,
@@ -26,6 +28,7 @@ import {
 
 const MAX_EV = 252;
 const TOTAL_EV_LIMIT = 510;
+const MAX_SP = 32;
 
 /** Tailwind color tokens for each stat's filled bar. */
 const STAT_BAR_COLORS: Record<StatKey, string> = {
@@ -47,6 +50,12 @@ interface EvEditorProps {
   baseStats: StatValues;
   nature: string;
   level: number;
+  /**
+   * When true, renders the Pokemon Champions Stat Points (SP) input mode
+   * instead of the classic EV draggable bars. SP is 0-32 per stat with no
+   * total budget cap. Champions always uses level 50 and no IVs in its formula.
+   */
+  isStatPoints?: boolean;
   onChange: (stat: StatKey, value: number) => void;
   onPreset: (preset: "reset" | "maxAtk" | "maxBulk") => void;
 }
@@ -92,6 +101,31 @@ function getFinalStat(
     stat as keyof Omit<StatValues, "hp">
   );
   return calculateStat(base, iv, ev, level, multiplier);
+}
+
+/**
+ * Calculate the final stat for Champions (SP system).
+ * Level is always 50 in Champions. IVs are not used — baked into the formula.
+ * Nature applies to non-HP stats.
+ */
+function getChampionsFinalStat(
+  stat: StatKey,
+  baseStats: StatValues,
+  sps: StatValues,
+  nature: string
+): number {
+  const base = baseStats[stat];
+  const sp = sps[stat];
+
+  if (stat === "hp") {
+    return calculateChampionsHP(base, sp);
+  }
+
+  const multiplier = getNatureMultiplier(
+    nature,
+    stat as keyof Omit<StatValues, "hp">
+  );
+  return calculateChampionsStat(base, sp, multiplier);
 }
 
 /**
@@ -315,6 +349,53 @@ function StatRow({
 }
 
 // =============================================================================
+// SpStatRow — a single stat row for the Champions SP editor
+// =============================================================================
+
+interface SpStatRowProps {
+  statKey: StatKey;
+  sp: number;
+  finalStat: number;
+  onChange: (value: number) => void;
+}
+
+function SpStatRow({ statKey, sp, finalStat, onChange }: SpStatRowProps) {
+  const label = STAT_LABELS[statKey];
+
+  return (
+    <div className="grid grid-cols-[44px_1fr_48px] items-center gap-2">
+      {/* Stat label */}
+      <span className="text-muted-foreground text-right text-xs font-semibold tabular-nums">
+        {label}
+      </span>
+
+      {/* SP number input — 0 to 32 */}
+      <input
+        type="number"
+        min={0}
+        max={MAX_SP}
+        value={sp}
+        onChange={(e) => {
+          const raw = parseInt(e.target.value, 10);
+          if (isNaN(raw)) return;
+          onChange(Math.max(0, Math.min(raw, MAX_SP)));
+        }}
+        aria-label={`${label} Stat Points`}
+        className={cn(
+          "h-6 w-full rounded border border-transparent bg-transparent px-1 text-right text-xs tabular-nums",
+          "hover:border-border focus:border-border focus:outline-none"
+        )}
+      />
+
+      {/* Final calculated stat */}
+      <span className="text-muted-foreground text-right text-xs tabular-nums">
+        {finalStat}
+      </span>
+    </div>
+  );
+}
+
+// =============================================================================
 // EvEditor
 // =============================================================================
 
@@ -331,6 +412,7 @@ export function EvEditor({
   baseStats,
   nature,
   level,
+  isStatPoints = false,
   onChange,
   onPreset,
 }: EvEditorProps) {
@@ -362,7 +444,51 @@ export function EvEditor({
   const reducedStat = natureEffect?.reduce ?? null;
 
   // -------------------------------------------------------------------------
-  // Render
+  // Render — SP mode (Champions)
+  // -------------------------------------------------------------------------
+
+  if (isStatPoints) {
+    return (
+      <div className="flex flex-col gap-3">
+        {/* SP stat rows — one number input (0-32) per stat */}
+        <div className="flex flex-col gap-1.5">
+          {STAT_KEYS.map((statKey) => {
+            const finalStat = getChampionsFinalStat(
+              statKey,
+              baseStats,
+              evs,
+              nature
+            );
+            return (
+              <SpStatRow
+                key={statKey}
+                statKey={statKey}
+                sp={evs[statKey]}
+                finalStat={finalStat}
+                onChange={(value) => handleEvChange(statKey, value)}
+              />
+            );
+          })}
+        </div>
+
+        {/* Reset button — Max Atk / Max Bulk presets don't apply to SP */}
+        <div className="flex gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 flex-1 text-xs"
+            onClick={() => onPreset("reset")}
+          >
+            Reset
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Render — classic EV mode
   // -------------------------------------------------------------------------
 
   return (

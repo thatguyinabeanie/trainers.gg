@@ -22,6 +22,9 @@ import {
   getTypeColor,
   getAllItems,
   NATURE_EFFECTS,
+  calculateChampionsHP,
+  calculateChampionsStat,
+  getNatureMultiplier,
 } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
@@ -847,6 +850,10 @@ interface DefenderStatRowProps {
   base: number;
   ev: number;
   boost: number;
+  /** When true, renders a 0-32 SP input instead of the EV slider. */
+  isStatPoints?: boolean;
+  /** Nature string, used to calculate SP-based stat total. */
+  nature?: string;
   onEvChange: (v: number) => void;
   onBoostChange: (v: number) => void;
 }
@@ -856,6 +863,8 @@ function DefenderStatRow({
   base,
   ev,
   boost,
+  isStatPoints = false,
+  nature = "Hardy",
   onEvChange,
   onBoostChange,
 }: DefenderStatRowProps) {
@@ -870,6 +879,89 @@ function DefenderStatRow({
   };
   const sliderColor = sliderColors[statKey] ?? "#6b7280";
   const fillPct = (ev / 252) * 100;
+
+  // Champions SP stat total
+  function getSpTotal(): number {
+    if (statKey === "hp") return calculateChampionsHP(base, ev);
+    // Map short keys to full stat key names for getNatureMultiplier
+    const statKeyMap: Record<
+      string,
+      keyof Omit<
+        {
+          hp: number;
+          attack: number;
+          defense: number;
+          specialAttack: number;
+          specialDefense: number;
+          speed: number;
+        },
+        "hp"
+      >
+    > = {
+      atk: "attack",
+      def: "defense",
+      spa: "specialAttack",
+      spd: "specialDefense",
+      spe: "speed",
+    };
+    const fullKey = statKeyMap[statKey];
+    const mult = fullKey ? getNatureMultiplier(nature, fullKey) : 1.0;
+    return calculateChampionsStat(base, ev, mult);
+  }
+
+  // EV-based stat total (non-HP, approximate at level 50)
+  const evTotal = Math.floor(
+    ((2 * base + 31 + Math.floor(ev / 4)) * 50) / 100 + 5
+  );
+
+  if (isStatPoints) {
+    // SP mode: compact number input + stat total + boost, no slider
+    return (
+      <div className="grid grid-cols-[32px_28px_60px_48px_48px] items-center gap-1 text-xs">
+        {/* Label */}
+        <span className="text-muted-foreground font-semibold">{label}</span>
+
+        {/* Base */}
+        <span className="text-right tabular-nums">{base}</span>
+
+        {/* SP input 0-32 */}
+        <input
+          type="number"
+          min={0}
+          max={32}
+          value={ev}
+          onChange={(e) => {
+            const v = parseInt(e.target.value, 10);
+            if (!isNaN(v)) onEvChange(Math.max(0, Math.min(32, v)));
+          }}
+          className="border-border bg-background rounded border px-1 py-0.5 text-center text-xs tabular-nums focus:ring-1 focus:ring-teal-500 focus:outline-none"
+          aria-label={`${label} Stat Points`}
+        />
+
+        {/* Calculated stat total */}
+        <span className="text-muted-foreground text-center tabular-nums">
+          {getSpTotal()}
+        </span>
+
+        {/* Boost */}
+        <select
+          value={boost}
+          onChange={(e) => onBoostChange(Number(e.target.value))}
+          className={cn(
+            "border-border bg-background rounded border px-0.5 py-0.5 text-center text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none",
+            boost > 0 && "text-green-700",
+            boost < 0 && "text-red-700"
+          )}
+        >
+          {BOOST_OPTIONS.map((b) => (
+            <option key={b} value={b}>
+              {b > 0 ? `+${b}` : b}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-[32px_28px_1fr_48px_48px_48px] items-center gap-1 text-xs">
@@ -911,7 +1003,7 @@ function DefenderStatRow({
 
       {/* Calculated total — approximate for display */}
       <span className="text-muted-foreground text-center tabular-nums">
-        {Math.floor(((2 * base + 31 + Math.floor(ev / 4)) * 50) / 100 + 5)}
+        {evTotal}
       </span>
 
       {/* Boost */}
@@ -950,6 +1042,8 @@ interface DefenderPanelProps {
   status: string;
   hpPercent: number;
   formatId: string | undefined;
+  /** When true, shows SP inputs (0-32) instead of EV sliders for the defender. */
+  isStatPoints?: boolean;
   onSpeciesChange: (species: string) => void;
   onAbilityChange: (v: string) => void;
   onItemChange: (v: string) => void;
@@ -973,6 +1067,7 @@ function DefenderPanel({
   status,
   hpPercent,
   formatId,
+  isStatPoints = false,
   onSpeciesChange,
   onAbilityChange,
   onItemChange,
@@ -1073,17 +1168,27 @@ function DefenderPanel({
         </div>
       </div>
 
-      {/* Stats — grid rows: Label | Base | Slider | EVs | Total | ± */}
+      {/* Stats — grid rows: Label | Base | Slider/SP | EVs/SP | Total | ± */}
       <div className="mb-2">
-        {/* Header */}
-        <div className="text-muted-foreground mb-1 grid grid-cols-[32px_28px_1fr_48px_48px_48px] items-center gap-1 text-[10px]">
-          <span></span>
-          <span className="text-right">Base</span>
-          <span></span>
-          <span className="text-center">EVs</span>
-          <span className="text-center">Stat</span>
-          <span className="text-center">±</span>
-        </div>
+        {/* Header — column labels differ between EV and SP modes */}
+        {isStatPoints ? (
+          <div className="text-muted-foreground mb-1 grid grid-cols-[32px_28px_60px_48px_48px] items-center gap-1 text-[10px]">
+            <span></span>
+            <span className="text-right">Base</span>
+            <span className="text-center">SP</span>
+            <span className="text-center">Stat</span>
+            <span className="text-center">±</span>
+          </div>
+        ) : (
+          <div className="text-muted-foreground mb-1 grid grid-cols-[32px_28px_1fr_48px_48px_48px] items-center gap-1 text-[10px]">
+            <span></span>
+            <span className="text-right">Base</span>
+            <span></span>
+            <span className="text-center">EVs</span>
+            <span className="text-center">Stat</span>
+            <span className="text-center">±</span>
+          </div>
+        )}
         <div className="flex flex-col gap-0.5">
           {DEFENDER_STAT_KEYS.map((stat) => {
             const base =
@@ -1107,6 +1212,8 @@ function DefenderPanel({
                 base={base}
                 ev={evs[stat]}
                 boost={stat === "hp" ? 0 : boosts[stat as keyof DefenderBoosts]}
+                isStatPoints={isStatPoints}
+                nature={nature}
                 onEvChange={(v) => onEvChange(stat, v)}
                 onBoostChange={(v) =>
                   stat !== "hp" &&
@@ -1667,6 +1774,10 @@ export function DamageCalcTab({
     saltCure: false,
   });
 
+  // Champions format uses Stat Points (SP) instead of EVs/IVs.
+  // Detect by generation === 10 to cover all Champions regulation variants.
+  const isStatPoints = format?.generation === 10;
+
   // --- Derived: defender types (computed at render time — no effect needed) ---
   // species.get() requires the ID brand, so we cast with asSmogon.
   function getDefenderTypes(species: string): string[] {
@@ -1849,6 +1960,7 @@ export function DamageCalcTab({
         status={defenderStatus}
         hpPercent={defenderHpPercent}
         formatId={format?.id}
+        isStatPoints={isStatPoints}
         onSpeciesChange={handleDefenderSpeciesChange}
         onAbilityChange={setDefenderAbility}
         onItemChange={setDefenderItem}
@@ -1856,6 +1968,11 @@ export function DamageCalcTab({
         onTeraChange={setDefenderTera}
         onEvChange={(stat, v) =>
           setDefenderEvs((prev) => {
+            if (isStatPoints) {
+              // SP mode: each stat is independent, capped at 0-32
+              return { ...prev, [stat]: Math.max(0, Math.min(32, v)) };
+            }
+            // Classic EV mode: total capped at 510, each stat at 252
             const MAX_TOTAL = 510;
             const otherTotal = Object.entries(prev)
               .filter(([k]) => k !== stat)

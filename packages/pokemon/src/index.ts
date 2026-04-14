@@ -48,6 +48,8 @@ export {
   getBaseStats,
   calculateHP,
   calculateStat,
+  calculateChampionsHP,
+  calculateChampionsStat,
   getNatureMultiplier,
   calculateStats,
   getStatStageMultiplier,

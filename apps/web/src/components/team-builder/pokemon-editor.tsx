@@ -185,7 +185,9 @@ export function PokemonEditor({
   };
 
   const teamItems = getTeamItems(teamPokemon, pokemon.id);
-  const isChampionsFormat = format?.id === "champions";
+  // Champions is generation 10 — detect by generation field, not format ID,
+  // so all Champions regulation variants are covered.
+  const isChampionsFormat = format?.generation === 10;
 
   // -------------------------------------------------------------------------
   // Handlers
@@ -496,34 +498,39 @@ export function PokemonEditor({
               Nature
             </span>
             <span className="text-sm font-medium">{pokemon.nature}</span>
-            {(() => {
-              const effect = NATURE_EFFECTS[pokemon.nature];
-              if (!effect?.boost && !effect?.reduce) return null;
-              return (
-                <>
-                  {effect.boost && (
-                    <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                      +{STAT_LABELS[effect.boost]}
-                    </span>
-                  )}
-                  {effect.reduce && (
-                    <span className="text-xs font-medium text-red-500 dark:text-red-400">
-                      -{STAT_LABELS[effect.reduce]}
-                    </span>
-                  )}
-                </>
-              );
-            })()}
+            {/* Nature stat indicators are hidden for Champions — natures exist
+                but don't affect stats in Gen 10 */}
+            {!isChampionsFormat &&
+              (() => {
+                const effect = NATURE_EFFECTS[pokemon.nature];
+                if (!effect?.boost && !effect?.reduce) return null;
+                return (
+                  <>
+                    {effect.boost && (
+                      <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                        +{STAT_LABELS[effect.boost]}
+                      </span>
+                    )}
+                    {effect.reduce && (
+                      <span className="text-xs font-medium text-red-500 dark:text-red-400">
+                        -{STAT_LABELS[effect.reduce]}
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
           </button>
         )}
       </div>
 
       {/* ===================================================================
-          Section 4: EV editor
+          Section 4: EV / SP editor
+          Champions format uses the Stat Points (SP) system: 0-32 per stat,
+          no IVs, no total budget cap. Classic formats use EVs 0-252, cap 510.
           =================================================================== */}
       <div className="px-3 py-3 md:px-4">
         <p className="text-muted-foreground mb-2 text-[10px] font-semibold tracking-wide uppercase">
-          EVs
+          {isChampionsFormat ? "Stat Points" : "EVs"}
         </p>
         <EvEditor
           evs={evs}
@@ -531,6 +538,7 @@ export function PokemonEditor({
           baseStats={baseStats}
           nature={pokemon.nature}
           level={pokemon.level ?? 50}
+          isStatPoints={isChampionsFormat}
           onChange={(stat, value) =>
             onUpdate(`ev_${statToDbField(stat)}`, value)
           }
