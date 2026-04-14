@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Import } from "lucide-react";
+import { Calculator, Import, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -73,6 +73,10 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
 
   // Import dialog state (for empty-state shortcut)
   const [importOpen, setImportOpen] = useState(false);
+
+  // Context panel visibility + resizable width
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelWidthPercent, setPanelWidthPercent] = useState(50);
 
   // Species picker state
   const [pickerState, setPickerState] = useState<{
@@ -318,8 +322,8 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
         </div>
       ) : (
         <div className="flex flex-1 overflow-hidden">
-          {/* Editor panel (left 50%) */}
-          <div className="flex max-h-full w-1/2 flex-col overflow-y-auto border-r">
+          {/* Editor panel — flex-1 when panel is open, full width when closed */}
+          <div className="flex max-h-full flex-1 flex-col overflow-y-auto border-r">
             {selectedEntry?.pokemon ? (
               <PokemonEditor
                 key={selectedEntry.pokemon.id}
@@ -347,16 +351,103 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
             )}
           </div>
 
-          {/* Context panel (right 50%) */}
-          <div className="flex min-h-0 w-1/2 flex-col overflow-hidden">
-            <ContextPanel
-              team={team}
-              selectedPokemon={selectedEntry?.pokemon ?? null}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              format={format}
-            />
-          </div>
+          {panelOpen ? (
+            <>
+              {/* Resize handle */}
+              <div
+                className="hover:bg-primary/20 flex w-1.5 flex-shrink-0 cursor-col-resize items-center justify-center bg-transparent transition-colors"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  const container = e.currentTarget.parentElement;
+                  if (!container) return;
+                  const startX = e.clientX;
+                  const startWidth = panelWidthPercent;
+                  const containerWidth =
+                    container.getBoundingClientRect().width;
+
+                  function onMove(moveEvent: PointerEvent) {
+                    const delta = startX - moveEvent.clientX;
+                    const deltaPercent = (delta / containerWidth) * 100;
+                    const newWidth = Math.min(
+                      75,
+                      Math.max(25, startWidth + deltaPercent)
+                    );
+                    setPanelWidthPercent(newWidth);
+                  }
+
+                  function onUp() {
+                    document.removeEventListener("pointermove", onMove);
+                    document.removeEventListener("pointerup", onUp);
+                  }
+
+                  document.addEventListener("pointermove", onMove);
+                  document.addEventListener("pointerup", onUp);
+                }}
+              >
+                {/* Drag dots */}
+                <div className="flex flex-col gap-0.5">
+                  <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
+                  <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
+                  <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
+                </div>
+              </div>
+
+              {/* Context panel */}
+              <div
+                className="flex min-h-0 flex-shrink-0 flex-col overflow-hidden"
+                style={{ width: `${panelWidthPercent}%` }}
+              >
+                <ContextPanel
+                  team={team}
+                  selectedPokemon={selectedEntry?.pokemon ?? null}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  onClose={() => setPanelOpen(false)}
+                  format={format}
+                />
+              </div>
+            </>
+          ) : (
+            /* Icon rail — shown when panel is closed */
+            <div className="flex w-9 flex-shrink-0 flex-col items-center gap-1 border-l pt-2">
+              <button
+                type="button"
+                title="Type Coverage"
+                aria-label="Open type coverage"
+                onClick={() => {
+                  setActiveTab("types");
+                  setPanelOpen(true);
+                }}
+                className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded text-xs font-semibold transition-colors"
+              >
+                T
+              </button>
+              <button
+                type="button"
+                title="Speed Tiers"
+                aria-label="Open speed tiers"
+                onClick={() => {
+                  setActiveTab("speed");
+                  setPanelOpen(true);
+                }}
+                className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded transition-colors"
+              >
+                <Zap className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                title="Damage Calc"
+                aria-label="Open damage calc"
+                onClick={() => {
+                  setActiveTab("calc");
+                  setPanelOpen(true);
+                }}
+                className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded transition-colors"
+              >
+                <Calculator className="size-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
