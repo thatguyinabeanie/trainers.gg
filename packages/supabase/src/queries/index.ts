@@ -299,6 +299,14 @@ export {
   listPendingNotifications,
   listPendingDmNotifications,
   listPendingRoleSyncs,
+  // Reconcile-roles helpers
+  listAllEnabledRoleMappingsWithServer,
+  getDiscordIdsByUserIds,
+  getCommunityStaffUserIds,
+  getCommunityParticipantUserIds,
+  getCommunityWinnerUserIds,
+  getCommunityCurrentlyPlayingUserIds,
+  getCommunityMemberUserIds,
   getUserByDiscordId,
   // Slash command helpers
   listActiveTournaments,
@@ -325,6 +333,7 @@ export {
   type DiscordRoleSyncQueueItem,
   type DiscordDmEventType,
   type DiscordRoleType,
+  type EnabledRoleMappingWithServer,
   type DiscordTournamentRow,
   type DiscordStandingRow,
   type DiscordPairingRow,

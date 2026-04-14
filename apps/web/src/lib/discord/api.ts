@@ -444,6 +444,67 @@ export async function registerGuildCommands(
 }
 
 // =============================================================================
+// Guild member utilities (used by reconcile-roles cron)
+// =============================================================================
+
+/** Shape returned by Discord's GET /guilds/{id}/members endpoint. */
+interface APIMemberPartial {
+  roles: string[];
+  user?: { id: string };
+}
+
+/**
+ * Collect all Discord user IDs that currently hold a given role in a guild.
+ *
+ * Paginates `GET /guilds/{id}/members` (limit 1000 per page) using
+ * the `after` cursor parameter, filters members client-side by role,
+ * and caps the scan at `maxPages` iterations to avoid unbounded fetches.
+ *
+ * @param guildId  - Discord guild (server) snowflake ID
+ * @param roleId   - Discord role snowflake to filter by
+ * @param maxPages - Maximum pagination iterations (default 5 → up to 5 000 members)
+ */
+export async function getGuildMembersWithRole(
+  guildId: string,
+  roleId: string,
+  maxPages = 5
+): Promise<Set<string>> {
+  const result = new Set<string>();
+  let after: string | undefined;
+
+  for (let page = 0; page < maxPages; page++) {
+    const query = after ? `?limit=1000&after=${after}` : "?limit=1000";
+
+    let members: APIMemberPartial[];
+    try {
+      members = (await getRest().get(
+        `${Routes.guildMembers(guildId)}${query}` as `/${string}`
+      )) as APIMemberPartial[];
+    } catch (err) {
+      mapRestError(err);
+    }
+
+    if (members.length === 0) break;
+
+    for (const member of members) {
+      if (member.roles.includes(roleId) && member.user?.id) {
+        result.add(member.user.id);
+      }
+    }
+
+    // Reached end of member list
+    if (members.length < 1000) break;
+
+    // Advance cursor to the last user ID in this page
+    const lastUser = members[members.length - 1]?.user?.id;
+    if (!lastUser) break;
+    after = lastUser;
+  }
+
+  return result;
+}
+
+// =============================================================================
 // Error classification helpers (used by uninstall-sweep cron)
 // =============================================================================
 

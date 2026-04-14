@@ -442,6 +442,255 @@ export async function listPendingRoleSyncs(
 }
 
 // =============================================================================
+// Reconcile-roles helpers (service-role only — for cron)
+// =============================================================================
+
+/**
+ * Shape returned by listAllEnabledRoleMappingsWithServer.
+ * Includes the guild_id and community_id from the joined discord_servers row.
+ */
+export type EnabledRoleMappingWithServer = {
+  id: number;
+  discord_server_id: number;
+  discord_role_id: string;
+  role_type: DiscordRoleType;
+  guild_id: string;
+  community_id: number;
+};
+
+/**
+ * List enabled role mappings joined with their Discord server's guild_id and
+ * community_id. Ordered by created_at ASC so mappings configured first get
+ * priority; capped at `limit` for fair rotation.
+ *
+ * TODO: Add a `last_reconciled_at` column to discord_role_mappings in a
+ * followup migration to implement true round-robin fairness across mappings.
+ *
+ * @param limit - Maximum number of mappings to return (default 20)
+ */
+export async function listAllEnabledRoleMappingsWithServer(
+  supabase: TypedClient,
+  limit = 20
+): Promise<EnabledRoleMappingWithServer[]> {
+  const { data, error } = await supabase
+    .from("discord_role_mappings")
+    .select(
+      "id, discord_server_id, discord_role_id, role_type, discord_servers(guild_id, community_id)"
+    )
+    .eq("enabled", true)
+    .order("created_at", { ascending: true, nullsFirst: true })
+    .limit(limit);
+
+  if (error)
+    throw new Error(
+      `Failed to list enabled role mappings with server: ${error.message}`
+    );
+
+  return (data ?? [])
+    .filter(
+      (row) =>
+        row.discord_servers !== null && !Array.isArray(row.discord_servers)
+    )
+    .map((row) => {
+      const server = row.discord_servers as {
+        guild_id: string;
+        community_id: number;
+      };
+      return {
+        id: row.id,
+        discord_server_id: row.discord_server_id,
+        discord_role_id: row.discord_role_id,
+        role_type: row.role_type,
+        guild_id: server.guild_id,
+        community_id: server.community_id,
+      };
+    });
+}
+
+/**
+ * Resolve a list of trainers.gg user UUIDs to their linked Discord snowflake
+ * IDs via `auth.identities`. Only users with a connected Discord account are
+ * returned; users without Discord linked are silently omitted.
+ *
+ * Requires a service-role client — auth.identities is not accessible to
+ * authenticated users.
+ *
+ * @param userIds - trainers.gg user UUIDs to look up
+ */
+export async function getDiscordIdsByUserIds(
+  supabase: TypedClient,
+  userIds: string[]
+): Promise<string[]> {
+  if (userIds.length === 0) return [];
+
+  const { data, error } = await (
+    supabase as TypedClient & {
+      from: (table: "auth.identities") => ReturnType<TypedClient["from"]>;
+    }
+  )
+    .from("auth.identities" as never)
+    .select("identity_id")
+    .eq("provider", "discord")
+    .in("user_id", userIds);
+
+  if (error)
+    throw new Error(
+      `Failed to resolve user IDs to Discord IDs: ${error.message}`
+    );
+
+  return (data as Array<{ identity_id: string }>).map((r) => r.identity_id);
+}
+
+/**
+ * Get the trainers.gg user IDs of all staff members for a community.
+ *
+ * @param communityId - Community to query
+ */
+export async function getCommunityStaffUserIds(
+  supabase: TypedClient,
+  communityId: number
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("community_staff")
+    .select("user_id")
+    .eq("community_id", communityId);
+
+  if (error)
+    throw new Error(`Failed to get community staff user IDs: ${error.message}`);
+
+  return (data ?? []).map((r) => r.user_id);
+}
+
+/**
+ * Get the trainers.gg user IDs of all registered participants across any
+ * tournament in a community. Joins tournament_registrations → alts to resolve
+ * the user_id. Only includes non-dropped registrations.
+ *
+ * @param communityId - Community to query
+ */
+export async function getCommunityParticipantUserIds(
+  supabase: TypedClient,
+  communityId: number
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("tournament_registrations")
+    .select(
+      "alts!tournament_registrations_alt_id_fkey(user_id), tournaments!inner(community_id)"
+    )
+    .eq("tournaments.community_id", communityId)
+    .is("dropped_at", null);
+
+  if (error)
+    throw new Error(
+      `Failed to get community participant user IDs: ${error.message}`
+    );
+
+  const ids = new Set<string>();
+  for (const row of data ?? []) {
+    const alt = row.alts as { user_id: string } | null;
+    if (alt?.user_id) ids.add(alt.user_id);
+  }
+  return [...ids];
+}
+
+/**
+ * Get the trainers.gg user IDs of all players who have placed rank 1 in any
+ * tournament in a community (honorific winner role). Looks at the latest
+ * tournament_standings snapshot per tournament.
+ *
+ * @param communityId - Community to query
+ */
+export async function getCommunityWinnerUserIds(
+  supabase: TypedClient,
+  communityId: number
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("tournament_standings")
+    .select("alts(user_id), tournaments!inner(community_id)")
+    .eq("tournaments.community_id", communityId)
+    .eq("rank", 1);
+
+  if (error)
+    throw new Error(
+      `Failed to get community winner user IDs: ${error.message}`
+    );
+
+  const ids = new Set<string>();
+  for (const row of data ?? []) {
+    const alt = row.alts as { user_id: string } | null;
+    if (alt?.user_id) ids.add(alt.user_id);
+  }
+  return [...ids];
+}
+
+/**
+ * Get the trainers.gg user IDs of all players currently in an active match
+ * within any tournament in a community (currently_playing role).
+ *
+ * Queries tournament_matches with status='active', joining through
+ * tournament_rounds → tournament_phases → tournaments to filter by community.
+ *
+ * @param communityId - Community to query
+ */
+export async function getCommunityCurrentlyPlayingUserIds(
+  supabase: TypedClient,
+  communityId: number
+): Promise<string[]> {
+  // Query active matches; join alts for both players via alt1_id / alt2_id
+  const { data, error } = await supabase
+    .from("tournament_matches")
+    .select(
+      "alt1:alts!tournament_matches_alt1_id_fkey(user_id), alt2:alts!tournament_matches_alt2_id_fkey(user_id), tournament_rounds!inner(tournament_phases!inner(tournaments!inner(community_id)))"
+    )
+    .eq("status", "active")
+    .eq(
+      "tournament_rounds.tournament_phases.tournaments.community_id",
+      communityId
+    );
+
+  if (error)
+    throw new Error(
+      `Failed to get currently playing user IDs: ${error.message}`
+    );
+
+  const ids = new Set<string>();
+  for (const row of data ?? []) {
+    const alt1 = row.alt1 as { user_id: string } | null;
+    const alt2 = row.alt2 as { user_id: string } | null;
+    if (alt1?.user_id) ids.add(alt1.user_id);
+    if (alt2?.user_id) ids.add(alt2.user_id);
+  }
+  return [...ids];
+}
+
+/**
+ * Get the trainers.gg user IDs of all "members" of a community.
+ *
+ * Approximation: there is no community_members table, so membership is
+ * defined as: users who are community staff OR have any non-dropped
+ * tournament registration in the community. This covers the most common
+ * use-case for a "member" role — users who have meaningfully engaged with
+ * the community's events.
+ *
+ * TODO: When a first-class community_members table is added, update this
+ * query to use it directly.
+ *
+ * @param communityId - Community to query
+ */
+export async function getCommunityMemberUserIds(
+  supabase: TypedClient,
+  communityId: number
+): Promise<string[]> {
+  const [staffIds, participantIds] = await Promise.all([
+    getCommunityStaffUserIds(supabase, communityId),
+    getCommunityParticipantUserIds(supabase, communityId),
+  ]);
+
+  const ids = new Set([...staffIds, ...participantIds]);
+  return [...ids];
+}
+
+// =============================================================================
 // Identity resolution
 // =============================================================================
 
