@@ -20,6 +20,7 @@ import {
   buildSpeciesSearchIndex,
   getTypeColor,
   getAllItems,
+  NATURE_EFFECTS,
 } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
@@ -127,16 +128,6 @@ const TERRAIN_LABELS: Record<string, string> = {
   Psychic: "Psych",
 };
 
-/** Stat bar colors matching the EV editor */
-const STAT_BAR_COLORS: Record<string, string> = {
-  hp: "bg-red-500",
-  atk: "bg-orange-500",
-  def: "bg-yellow-500",
-  spa: "bg-blue-500",
-  spd: "bg-green-500",
-  spe: "bg-pink-500",
-};
-
 const STAT_LABELS_SHORT: Record<string, string> = {
   hp: "HP",
   atk: "Atk",
@@ -148,6 +139,31 @@ const STAT_LABELS_SHORT: Record<string, string> = {
 
 const DEFENDER_STAT_KEYS = ["hp", "atk", "def", "spa", "spd", "spe"] as const;
 type DefenderStatKey = (typeof DEFENDER_STAT_KEYS)[number];
+
+/** Maps full stat key names (from NATURE_EFFECTS) to short display labels. */
+const STAT_KEY_TO_SHORT: Record<string, string> = {
+  attack: "Atk",
+  defense: "Def",
+  specialAttack: "SpA",
+  specialDefense: "SpD",
+  speed: "Spe",
+};
+
+/**
+ * Returns a nature's stat effect label, e.g. "(+SpA, -Atk)" or "" for neutral.
+ */
+function getNatureLabel(nature: string): string {
+  const effect = NATURE_EFFECTS[nature];
+  if (!effect || (!effect.boost && !effect.reduce)) return "";
+  const boostLabel = effect.boost
+    ? (STAT_KEY_TO_SHORT[effect.boost] ?? "")
+    : "";
+  const reduceLabel = effect.reduce
+    ? (STAT_KEY_TO_SHORT[effect.reduce] ?? "")
+    : "";
+  if (!boostLabel && !reduceLabel) return "";
+  return `(+${boostLabel}, -${reduceLabel})`;
+}
 
 /** All held items available in gen 9 — built once at module init. */
 const ALL_ITEMS: string[] = getAllItems();
@@ -556,23 +572,22 @@ function MoveSelectorRow({
         {verdict ? <VerdictBadge verdict={verdict} /> : null}
       </div>
 
-      {/* Crit toggle — stop propagation so it doesn't select the row */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onCritToggle();
-        }}
-        title="Toggle critical hit"
+      {/* Crit checkbox — stop propagation so it doesn't select the row */}
+      <label
         className={cn(
-          "shrink-0 rounded px-1 py-0.5 text-[10px] font-bold transition-colors",
-          isCrit
-            ? "bg-amber-100 text-amber-700"
-            : "text-muted-foreground hover:bg-muted"
+          "flex shrink-0 cursor-pointer items-center gap-1 text-[10px]",
+          isCrit ? "text-amber-700" : "text-muted-foreground"
         )}
+        onClick={(e) => e.stopPropagation()}
       >
+        <input
+          type="checkbox"
+          checked={isCrit}
+          onChange={() => onCritToggle()}
+          className="size-3 cursor-pointer rounded accent-amber-500"
+        />
         Crit
-      </button>
+      </label>
     </button>
   );
 }
@@ -628,18 +643,16 @@ function AttackerModifiers({
   onBoostChange,
 }: AttackerModifiersProps) {
   return (
-    <Card>
+    <div>
       <SectionHeader>Your Modifiers</SectionHeader>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-end gap-3">
         {/* Status */}
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground w-12 shrink-0 text-xs">
-            Status
-          </span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-muted-foreground text-[10px]">Status</span>
           <select
             value={status}
             onChange={(e) => onStatusChange(e.target.value)}
-            className="border-border bg-background flex-1 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+            className="border-border bg-background rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
@@ -650,26 +663,24 @@ function AttackerModifiers({
         </div>
 
         {/* Boosts */}
-        <div className="flex items-end gap-2">
-          {(
-            [
-              ["atk", "Atk"],
-              ["def", "Def"],
-              ["spa", "SpA"],
-              ["spd", "SpD"],
-              ["spe", "Spe"],
-            ] as [keyof AttackerBoosts, string][]
-          ).map(([stat, label]) => (
-            <BoostSelect
-              key={stat}
-              label={label}
-              value={boosts[stat]}
-              onChange={(v) => onBoostChange(stat, v)}
-            />
-          ))}
-        </div>
+        {(
+          [
+            ["atk", "Atk"],
+            ["def", "Def"],
+            ["spa", "SpA"],
+            ["spd", "SpD"],
+            ["spe", "Spe"],
+          ] as [keyof AttackerBoosts, string][]
+        ).map(([stat, label]) => (
+          <BoostSelect
+            key={stat}
+            label={label}
+            value={boosts[stat]}
+            onChange={(v) => onBoostChange(stat, v)}
+          />
+        ))}
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -845,8 +856,16 @@ function DefenderStatRow({
   onBoostChange,
 }: DefenderStatRowProps) {
   const label = STAT_LABELS_SHORT[statKey]!;
-  const barColor = STAT_BAR_COLORS[statKey]!;
-  const fillPct = Math.min(100, (base / 255) * 100);
+  // CSS color values matching the bar color classes for accent-color
+  const sliderColors: Record<string, string> = {
+    hp: "#ef4444",
+    atk: "#f97316",
+    def: "#eab308",
+    spa: "#3b82f6",
+    spd: "#22c55e",
+    spe: "#ec4899",
+  };
+  const sliderColor = sliderColors[statKey] ?? "#6b7280";
 
   return (
     <tr className="text-xs">
@@ -856,17 +875,22 @@ function DefenderStatRow({
       {/* Base */}
       <td className="w-8 pr-1 text-right text-xs tabular-nums">{base}</td>
 
-      {/* Bar */}
+      {/* EV slider — interactive range input styled as a thin bar */}
       <td className="pr-1" style={{ width: "60px" }}>
-        <div className="bg-muted h-[5px] w-full overflow-hidden rounded-full">
-          <div
-            className={cn("h-full rounded-full", barColor)}
-            style={{ width: `${fillPct}%` }}
-          />
-        </div>
+        <input
+          type="range"
+          min={0}
+          max={252}
+          step={4}
+          value={ev}
+          onChange={(e) => onEvChange(Number(e.target.value))}
+          style={{ accentColor: sliderColor }}
+          className="h-[7px] w-full cursor-pointer appearance-none rounded-full"
+          title={`EVs: ${ev}`}
+        />
       </td>
 
-      {/* EVs input */}
+      {/* EVs number input */}
       <td className="w-14 pr-1">
         <input
           type="number"
@@ -1013,11 +1037,14 @@ function DefenderPanel({
             onChange={(e) => onNatureChange(e.target.value)}
             className="border-border bg-background rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
           >
-            {validNatures.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
+            {validNatures.map((n) => {
+              const effectLabel = getNatureLabel(n);
+              return (
+                <option key={n} value={n}>
+                  {effectLabel ? `${n} ${effectLabel}` : n}
+                </option>
+              );
+            })}
           </select>
         </div>
 
@@ -1098,19 +1125,24 @@ function DefenderPanel({
         </select>
 
         <div className="flex flex-1 items-center gap-1">
-          <div className="bg-muted relative h-[7px] flex-1 overflow-hidden rounded-full">
-            <div
-              className={cn(
-                "h-full rounded-full transition-all",
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={hpPercent}
+            onChange={(e) => onHpPercentChange(Number(e.target.value))}
+            style={{
+              accentColor:
                 hpPercent > 50
-                  ? "bg-green-500"
+                  ? "#22c55e"
                   : hpPercent > 25
-                    ? "bg-amber-500"
-                    : "bg-red-500"
-              )}
-              style={{ width: `${hpPercent}%` }}
-            />
-          </div>
+                    ? "#f59e0b"
+                    : "#ef4444",
+            }}
+            className="h-[7px] flex-1 cursor-pointer appearance-none rounded-full"
+            title={`HP: ${hpPercent}%`}
+          />
           <input
             type="number"
             min={1}
