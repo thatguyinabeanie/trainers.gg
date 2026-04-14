@@ -1852,7 +1852,14 @@ export function DamageCalcTab({
         onNatureChange={setDefenderNature}
         onTeraChange={setDefenderTera}
         onEvChange={(stat, v) =>
-          setDefenderEvs((prev) => ({ ...prev, [stat]: v }))
+          setDefenderEvs((prev) => {
+            const MAX_TOTAL = 510;
+            const otherTotal = Object.entries(prev)
+              .filter(([k]) => k !== stat)
+              .reduce((sum, [, val]) => sum + val, 0);
+            const capped = Math.min(v, MAX_TOTAL - otherTotal, 252);
+            return { ...prev, [stat]: Math.max(0, capped) };
+          })
         }
         onBoostChange={(stat, v) =>
           setDefenderBoosts((prev) => ({ ...prev, [stat]: v }))
