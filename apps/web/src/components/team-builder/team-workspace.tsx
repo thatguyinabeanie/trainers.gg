@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Import } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -11,18 +12,15 @@ import {
 } from "@trainers/pokemon";
 import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Import } from "lucide-react";
 import { addPokemonToTeamAction, updatePokemonAction } from "@/actions/teams";
 import { ImportDialog } from "@/components/team-builder/import-dialog";
 import { ContextPanel } from "@/components/team-builder/context-panel";
 import { PokemonEditor } from "@/components/team-builder/pokemon-editor";
-import { TeamStrip } from "@/components/team-builder/team-strip";
+import { TeamSidebar } from "@/components/team-builder/team-sidebar";
 
 import { SpeciesPicker } from "./species-picker";
 import { useTeamValidation } from "./validation-hooks";
-import { ValidationPanel } from "./validation-panel";
 
 // =============================================================================
 // Types
@@ -39,13 +37,13 @@ interface TeamWorkspaceProps {
 
 /**
  * Client component that orchestrates the team editor workspace.
- * Manages selected pokemon state and composes the team strip,
+ * Manages selected pokemon state and composes the team sidebar,
  * editor panel, and context panel.
  *
  * Layout:
- *   - Team strip across the top (6 pokemon slots)
- *   - Split panel below: editor (left 50%) and context (right 50%)
- *   - When picker is open: full-width species picker replaces the split panel
+ *   - Team sidebar on the far left (64px, 6 pokemon slots stacked vertically)
+ *   - Editor panel (left 50%) and context panel (right 50%) side-by-side
+ *   - When picker is open: species picker replaces the split panel
  */
 export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   // Sort pokemon by position and get the first one as default selection
@@ -84,13 +82,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   }>({ open: false, slot: null, mode: "add" });
 
   // Validation
-  const [validationPanelOpen, setValidationPanelOpen] = useState(false);
-  const { errors, pokemonErrors, validate } = useTeamValidation(
-    team.team_pokemon,
-    format
-  );
-  const errorCount = errors.filter((e) => e.severity === "error").length;
-  const warningCount = errors.filter((e) => e.severity === "warning").length;
+  const { pokemonErrors } = useTeamValidation(team.team_pokemon, format);
 
   // Build species search index for the format (derived value — React Compiler handles memoization)
   const speciesIndex = buildSpeciesSearchIndex(format?.id ?? "gen9vgc2026regi");
@@ -257,7 +249,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden">
+    <div className="relative flex flex-1 overflow-hidden">
       {/* Save status indicator */}
       <div className="absolute top-1 right-2 z-10 md:top-2">
         {saveStatus === "saving" && (
@@ -270,62 +262,20 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
         )}
       </div>
 
-      {/* Team strip — always visible so "+" button works even with 0 pokemon */}
-      <div className="border-b">
-        <TeamStrip
-          teamId={team.id}
-          pokemon={team.team_pokemon}
-          selectedPokemonId={selectedPokemonId}
-          onSelect={setSelectedPokemonId}
-          onAddNew={handleAddNew}
-          choosingSlot={
-            pickerState.open ? (pickerState.slot ?? undefined) : undefined
-          }
-          pokemonErrors={pokemonErrors}
-        />
-      </div>
+      {/* Team sidebar — always visible so "+" button works even with 0 pokemon */}
+      <TeamSidebar
+        teamId={team.id}
+        pokemon={team.team_pokemon}
+        selectedPokemonId={selectedPokemonId}
+        onSelect={setSelectedPokemonId}
+        onAddNew={handleAddNew}
+        choosingSlot={
+          pickerState.open ? (pickerState.slot ?? undefined) : undefined
+        }
+        pokemonErrors={pokemonErrors}
+      />
 
-      {/* Validation toolbar — below the team strip */}
-      <div className="flex items-center justify-end border-b px-2 py-1 md:px-3 md:py-1.5">
-        <Button
-          variant={validationPanelOpen ? "secondary" : "outline"}
-          size="sm"
-          onClick={() => {
-            if (!validationPanelOpen) validate();
-            setValidationPanelOpen(!validationPanelOpen);
-          }}
-        >
-          <CheckCircle2 className="size-4" />
-          Validate
-          {errorCount > 0 && (
-            <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5">
-              {errorCount}
-            </Badge>
-          )}
-          {warningCount > 0 && errorCount === 0 && (
-            <Badge
-              variant="outline"
-              className="ml-1 h-5 min-w-5 border-amber-500 px-1.5 text-amber-600"
-            >
-              {warningCount}
-            </Badge>
-          )}
-        </Button>
-      </div>
-
-      {/* Validation panel (collapsible) */}
-      {validationPanelOpen && (
-        <ValidationPanel
-          errors={errors}
-          onSelectPokemon={(pokemonId) => {
-            setSelectedPokemonId(pokemonId);
-            setValidationPanelOpen(false);
-          }}
-          onClose={() => setValidationPanelOpen(false)}
-        />
-      )}
-
-      {/* Conditional: species picker or split panel */}
+      {/* Main content area — species picker or split panel */}
       {pickerState.open ? (
         <SpeciesPicker
           speciesIndex={speciesIndex}
@@ -341,7 +291,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
           onCancel={handlePickerCancel}
         />
       ) : !hasPokemon ? (
-        /* Empty state — shown inside the content area below the strip */
+        /* Empty state */
         <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
           <div className="text-muted-foreground">
             <p className="text-lg font-medium">No Pokémon yet</p>
@@ -367,9 +317,9 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
           />
         </div>
       ) : (
-        <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
+        <div className="flex flex-1 overflow-hidden">
           {/* Editor panel (left 50%) */}
-          <div className="flex max-h-[60vh] w-full flex-col overflow-y-auto border-r md:max-h-none md:w-1/2">
+          <div className="flex max-h-full w-1/2 flex-col overflow-y-auto border-r">
             {selectedEntry?.pokemon ? (
               <PokemonEditor
                 key={selectedEntry.pokemon.id}
@@ -398,7 +348,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
           </div>
 
           {/* Context panel (right 50%) */}
-          <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden md:w-1/2">
+          <div className="flex min-h-0 w-1/2 flex-col overflow-hidden">
             <ContextPanel
               team={team}
               selectedPokemon={selectedEntry?.pokemon ?? null}
