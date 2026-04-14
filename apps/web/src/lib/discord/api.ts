@@ -18,6 +18,7 @@
 import { REST, type RequestData } from "@discordjs/rest";
 import {
   Routes,
+  type APIGuild,
   type APIGuildChannel,
   type APIMessage,
   type APIRole,
@@ -314,6 +315,21 @@ export async function sendDM(
 // =============================================================================
 
 /**
+ * Retrieve a guild (server) by ID.
+ * Used by the uninstall-sweep cron to verify the bot is still in the guild.
+ * Throws `DiscordAPIError` with status 404 when the bot is no longer in the guild.
+ *
+ * @param guildId - Discord guild (server) ID
+ */
+export async function getGuild(guildId: string): Promise<APIGuild> {
+  try {
+    return (await getRest().get(Routes.guild(guildId))) as APIGuild;
+  } catch (err) {
+    mapRestError(err);
+  }
+}
+
+/**
  * Retrieve all channels in a guild.
  *
  * @param guildId - Discord guild (server) ID
@@ -425,6 +441,36 @@ export async function registerGuildCommands(
   } catch (err) {
     mapRestError(err);
   }
+}
+
+// =============================================================================
+// Error classification helpers (used by uninstall-sweep cron)
+// =============================================================================
+
+/**
+ * Returns true when the error indicates the bot is no longer in the guild
+ * (Discord HTTP 404 "Unknown Guild").
+ */
+export function isNotFoundError(e: unknown): boolean {
+  return e instanceof DiscordAPIError && e.status === 404;
+}
+
+/**
+ * Returns true when Discord returns error code 50001 "Missing Access".
+ * This occurs when the bot was in the guild but lost access (kicked / permissions removed).
+ * Treat the same as 404 for uninstall-sweep purposes.
+ */
+export function isMissingAccessError(e: unknown): boolean {
+  return e instanceof DiscordAPIError && e.body.code === 50001;
+}
+
+/**
+ * Extract a numeric or string error code from any error value.
+ * Used for structured logging in the uninstall-sweep cron.
+ */
+export function getErrorCode(e: unknown): number | string {
+  if (e instanceof DiscordAPIError) return e.body.code ?? e.status;
+  return "unknown";
 }
 
 // =============================================================================

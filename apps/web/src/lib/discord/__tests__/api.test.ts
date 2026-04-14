@@ -36,8 +36,12 @@ import {
   DiscordDMBlockedError,
   DiscordRateLimitError,
   editInteractionResponse,
+  getErrorCode,
+  getGuild,
   getGuildChannels,
   getGuildRoles,
+  isMissingAccessError,
+  isNotFoundError,
   registerGlobalCommands,
   registerGuildCommands,
   removeRole,
@@ -457,5 +461,134 @@ describe("DiscordDMBlockedError", () => {
     expect(err.discordUserId).toBe(USER_ID);
     expect(err.status).toBe(403);
     expect(err.name).toBe("DiscordDMBlockedError");
+  });
+});
+
+// =============================================================================
+// getGuild
+// =============================================================================
+
+describe("getGuild", () => {
+  it("calls rest.get on the correct guild route and returns the guild", async () => {
+    const guild = { id: GUILD_ID, name: "My Server" };
+    mockGet.mockResolvedValue(guild);
+
+    const result = await getGuild(GUILD_ID);
+
+    expect(mockGet).toHaveBeenCalledWith(`/guilds/${GUILD_ID}`);
+    expect(result).toEqual(guild);
+  });
+
+  it("throws DiscordAPIError with status 404 when the guild is not found", async () => {
+    mockGet.mockRejectedValue(
+      makeRestError(404, { code: 10004, message: "Unknown Guild" })
+    );
+
+    await expect(getGuild(GUILD_ID)).rejects.toBeInstanceOf(DiscordAPIError);
+
+    try {
+      await getGuild(GUILD_ID);
+    } catch (err) {
+      if (err instanceof DiscordAPIError) {
+        expect(err.status).toBe(404);
+      }
+    }
+  });
+});
+
+// =============================================================================
+// isNotFoundError
+// =============================================================================
+
+describe("isNotFoundError", () => {
+  it("returns true for a DiscordAPIError with status 404", () => {
+    const err = new DiscordAPIError(404, {
+      code: 10004,
+      message: "Unknown Guild",
+    });
+    expect(isNotFoundError(err)).toBe(true);
+  });
+
+  it("returns false for a DiscordAPIError with a non-404 status", () => {
+    const err = new DiscordAPIError(403, {
+      code: 50013,
+      message: "Missing Permissions",
+    });
+    expect(isNotFoundError(err)).toBe(false);
+  });
+
+  it("returns false for a plain Error", () => {
+    expect(isNotFoundError(new Error("Network error"))).toBe(false);
+  });
+
+  it("returns false for a non-Error value", () => {
+    expect(isNotFoundError(null)).toBe(false);
+    expect(isNotFoundError("string")).toBe(false);
+    expect(isNotFoundError(undefined)).toBe(false);
+  });
+});
+
+// =============================================================================
+// isMissingAccessError
+// =============================================================================
+
+describe("isMissingAccessError", () => {
+  it("returns true for a DiscordAPIError with body.code === 50001", () => {
+    const err = new DiscordAPIError(403, {
+      code: 50001,
+      message: "Missing Access",
+    });
+    expect(isMissingAccessError(err)).toBe(true);
+  });
+
+  it("returns false for a DiscordAPIError with a different error code", () => {
+    const err = new DiscordAPIError(403, {
+      code: 50013,
+      message: "Missing Permissions",
+    });
+    expect(isMissingAccessError(err)).toBe(false);
+  });
+
+  it("returns false for a DiscordAPIError with no body code", () => {
+    const err = new DiscordAPIError(403, {});
+    expect(isMissingAccessError(err)).toBe(false);
+  });
+
+  it("returns false for a plain Error", () => {
+    expect(isMissingAccessError(new Error("Missing Access"))).toBe(false);
+  });
+
+  it("returns false for non-Error values", () => {
+    expect(isMissingAccessError(null)).toBe(false);
+    expect(isMissingAccessError(undefined)).toBe(false);
+  });
+});
+
+// =============================================================================
+// getErrorCode
+// =============================================================================
+
+describe("getErrorCode", () => {
+  it("returns body.code when the error is a DiscordAPIError with a code", () => {
+    const err = new DiscordAPIError(429, {
+      code: 20016,
+      message: "Rate limited",
+    });
+    expect(getErrorCode(err)).toBe(20016);
+  });
+
+  it("falls back to status when body.code is undefined", () => {
+    const err = new DiscordAPIError(503, {});
+    expect(getErrorCode(err)).toBe(503);
+  });
+
+  it("returns 'unknown' for a plain Error", () => {
+    expect(getErrorCode(new Error("timeout"))).toBe("unknown");
+  });
+
+  it("returns 'unknown' for non-Error values", () => {
+    expect(getErrorCode(null)).toBe("unknown");
+    expect(getErrorCode("some string")).toBe("unknown");
+    expect(getErrorCode(undefined)).toBe("unknown");
   });
 });
