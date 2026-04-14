@@ -279,7 +279,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="relative flex flex-1 overflow-hidden">
+    <div className="relative flex min-h-0 flex-1 overflow-hidden">
       {/* Team sidebar — always visible so "+" button works even with 0 pokemon */}
       <TeamSidebar
         teamId={team.id}
