@@ -23,6 +23,7 @@
       "Bash(for f:*)",
       "Bash(do echo:*)",
       "Bash(python3:*)",
+      "Bash(git fetch:*)",
       "Bash(git push:*)",
       "Bash(gh pr:*)",
       "Bash(gh run:*)",
