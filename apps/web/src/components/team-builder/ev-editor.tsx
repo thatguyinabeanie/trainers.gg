@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 import {
   calculateStat,
@@ -319,7 +319,7 @@ function StatRow({
  * common EV spreads.
  */
 export function EvEditor({
-  evs,
+  evs: propEvs,
   ivs,
   baseStats,
   nature,
@@ -327,8 +327,27 @@ export function EvEditor({
   onChange,
   onPreset,
 }: EvEditorProps) {
+  // Local EV state for optimistic/instant updates while dragging.
+  // Syncs from props when props change (e.g., after server save or preset).
+  const [localEvs, setLocalEvs] = useState<StatValues>(propEvs);
+  const [prevPropEvs, setPrevPropEvs] = useState<StatValues>(propEvs);
+
+  // Sync local state when props change (render-time state reset pattern)
+  if (prevPropEvs !== propEvs) {
+    setPrevPropEvs(propEvs);
+    setLocalEvs(propEvs);
+  }
+
+  // Use local EVs for display — updates are instant
+  const evs = localEvs;
   const used = totalEvs(evs);
   const remaining = TOTAL_EV_LIMIT - used;
+
+  // Wrapper that updates local state immediately AND calls parent onChange for debounced save
+  function handleEvChange(stat: StatKey, value: number) {
+    setLocalEvs((prev) => ({ ...prev, [stat]: value }));
+    onChange(stat, value);
+  }
 
   // Look up nature boost/reduce from NATURE_EFFECTS
   const natureEffect = NATURE_EFFECTS[nature];
@@ -378,7 +397,7 @@ export function EvEditor({
                 // Cap by total budget: other stats' EVs + this new value <= 510
                 const otherTotal = used - evs[statKey];
                 const capped = Math.min(value, TOTAL_EV_LIMIT - otherTotal);
-                onChange(statKey, capped);
+                handleEvChange(statKey, capped);
               }}
             />
           );
