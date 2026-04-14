@@ -13,6 +13,7 @@ import {
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 import {
   type GameFormat,
+  ALL_TYPES,
   getBaseStats,
   getValidAbilities,
   getValidNatures,
@@ -814,10 +815,11 @@ function InlineSpeciesSearch({
       <button
         type="button"
         onClick={openSearch}
-        className="hover:text-primary text-sm font-semibold transition-colors"
+        className="hover:text-primary flex items-center gap-1 rounded border border-dashed border-transparent px-1 py-0.5 text-sm font-semibold transition-colors hover:border-teal-300 hover:bg-teal-50"
         title="Click to change species"
       >
         {species || "—"}
+        <span className="text-muted-foreground text-[10px]">▾</span>
       </button>
       {types.map((t) => (
         <span
@@ -1056,13 +1058,18 @@ function DefenderPanel({
         {/* Tera */}
         <div className="flex flex-col gap-0.5">
           <label className="text-muted-foreground text-[10px]">Tera</label>
-          <input
-            type="text"
+          <select
             value={teraType}
             onChange={(e) => onTeraChange(e.target.value)}
-            placeholder="e.g. Fire"
             className="border-border bg-background rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
-          />
+          >
+            <option value="">None</option>
+            {ALL_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
