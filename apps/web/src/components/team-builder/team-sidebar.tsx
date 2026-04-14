@@ -182,9 +182,19 @@ interface EmptySlotProps {
   onClick: () => void;
   onDragOver: (e: DragEvent<HTMLElement>) => void;
   onDrop: (e: DragEvent<HTMLElement>) => void;
+  /**
+   * When true, render a subtle teal ring to anchor the placeholder editor
+   * visually. Used for slot 1 when the team has 0 Pokémon.
+   */
+  isPlaceholderAnchor?: boolean;
 }
 
-function EmptySlot({ onClick, onDragOver, onDrop }: EmptySlotProps) {
+function EmptySlot({
+  onClick,
+  onDragOver,
+  onDrop,
+  isPlaceholderAnchor = false,
+}: EmptySlotProps) {
   return (
     <button
       type="button"
@@ -194,7 +204,9 @@ function EmptySlot({ onClick, onDragOver, onDrop }: EmptySlotProps) {
       className={cn(
         "flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-dashed",
         "text-muted-foreground hover:border-primary hover:text-primary",
-        "transition-colors"
+        "transition-colors",
+        isPlaceholderAnchor &&
+          "border-primary/50 text-primary/70 ring-primary/20 ring-2"
       )}
       aria-label="Add Pokémon"
     >
@@ -364,6 +376,7 @@ export function TeamSidebar({
               onClick={onAddNew}
               onDragOver={handleDragOver}
               onDrop={handleDropOnEmpty}
+              isPlaceholderAnchor={filledCount === 0}
             />
           );
         }
