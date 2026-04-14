@@ -860,7 +860,6 @@ function DefenderStatRow({
   onBoostChange,
 }: DefenderStatRowProps) {
   const label = STAT_LABELS_SHORT[statKey]!;
-  // CSS color values matching the bar color classes for accent-color
   const sliderColors: Record<string, string> = {
     hp: "#ef4444",
     atk: "#f97316",
@@ -870,17 +869,18 @@ function DefenderStatRow({
     spe: "#ec4899",
   };
   const sliderColor = sliderColors[statKey] ?? "#6b7280";
+  const fillPct = (ev / 252) * 100;
 
   return (
-    <tr className="text-xs">
+    <div className="grid grid-cols-[32px_28px_1fr_48px_48px_48px] items-center gap-1 text-xs">
       {/* Label */}
-      <td className="text-muted-foreground w-8 pr-1 font-semibold">{label}</td>
+      <span className="text-muted-foreground font-semibold">{label}</span>
 
       {/* Base */}
-      <td className="w-8 pr-1 text-right text-xs tabular-nums">{base}</td>
+      <span className="text-right tabular-nums">{base}</span>
 
-      {/* EV slider — interactive range input styled as a thin bar */}
-      <td className="pr-1" style={{ width: "60px" }}>
+      {/* EV slider */}
+      <div className="relative flex h-5 items-center">
         <input
           type="range"
           min={0}
@@ -889,48 +889,48 @@ function DefenderStatRow({
           value={ev}
           onChange={(e) => onEvChange(Number(e.target.value))}
           style={{
-            accentColor: sliderColor,
-            background: `linear-gradient(to right, ${sliderColor} 0%, ${sliderColor} ${(ev / 252) * 100}%, #f1f5f9 ${(ev / 252) * 100}%, #f1f5f9 100%)`,
+            background: `linear-gradient(to right, ${sliderColor} 0%, ${sliderColor} ${fillPct}%, #f1f5f9 ${fillPct}%, #f1f5f9 100%)`,
           }}
-          className="h-[7px] w-full cursor-pointer appearance-none rounded-full [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-current [&::-webkit-slider-thumb]:shadow-sm"
+          className="h-[6px] w-full cursor-pointer appearance-none rounded-full [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-gray-300 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-sm"
           title={`EVs: ${ev}`}
         />
-      </td>
+      </div>
 
-      {/* EVs number input */}
-      <td className="w-14 pr-1">
-        <input
-          type="number"
-          min={0}
-          max={252}
-          value={ev}
-          onChange={(e) => {
-            const v = parseInt(e.target.value, 10);
-            if (!isNaN(v)) onEvChange(Math.max(0, Math.min(252, v)));
-          }}
-          className="border-border bg-background w-full rounded border px-1 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-teal-500 focus:outline-none"
-        />
-      </td>
+      {/* EVs input */}
+      <input
+        type="number"
+        min={0}
+        max={252}
+        value={ev}
+        onChange={(e) => {
+          const v = parseInt(e.target.value, 10);
+          if (!isNaN(v)) onEvChange(Math.max(0, Math.min(252, v)));
+        }}
+        className="border-border bg-background rounded border px-1 py-0.5 text-center text-xs tabular-nums focus:ring-1 focus:ring-teal-500 focus:outline-none"
+      />
+
+      {/* Calculated total — approximate for display */}
+      <span className="text-muted-foreground text-center tabular-nums">
+        {Math.floor(((2 * base + 31 + Math.floor(ev / 4)) * 50) / 100 + 5)}
+      </span>
 
       {/* Boost */}
-      <td className="w-14">
-        <select
-          value={boost}
-          onChange={(e) => onBoostChange(Number(e.target.value))}
-          className={cn(
-            "border-border bg-background w-full rounded border px-0.5 py-0.5 text-center text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none",
-            boost > 0 && "text-green-700",
-            boost < 0 && "text-red-700"
-          )}
-        >
-          {BOOST_OPTIONS.map((b) => (
-            <option key={b} value={b}>
-              {b > 0 ? `+${b}` : b}
-            </option>
-          ))}
-        </select>
-      </td>
-    </tr>
+      <select
+        value={boost}
+        onChange={(e) => onBoostChange(Number(e.target.value))}
+        className={cn(
+          "border-border bg-background rounded border px-0.5 py-0.5 text-center text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none",
+          boost > 0 && "text-green-700",
+          boost < 0 && "text-red-700"
+        )}
+      >
+        {BOOST_OPTIONS.map((b) => (
+          <option key={b} value={b}>
+            {b > 0 ? `+${b}` : b}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 
@@ -1073,53 +1073,49 @@ function DefenderPanel({
         </div>
       </div>
 
-      {/* Stats table — columns: Stat | Base | Bar | EVs | ± */}
+      {/* Stats — grid rows: Label | Base | Slider | EVs | Total | ± */}
       <div className="mb-2">
-        <table className="w-full border-collapse">
-          <thead className="sr-only">
-            <tr>
-              <th>Stat</th>
-              <th>Base</th>
-              <th>Bar</th>
-              <th>EVs</th>
-              <th>Boost</th>
-            </tr>
-          </thead>
-          <tbody className="gap-1 divide-y divide-transparent">
-            {DEFENDER_STAT_KEYS.map((stat) => {
-              const base =
-                getBaseStats(species)?.[
-                  stat === "hp"
-                    ? "hp"
-                    : stat === "atk"
-                      ? "attack"
-                      : stat === "def"
-                        ? "defense"
-                        : stat === "spa"
-                          ? "specialAttack"
-                          : stat === "spd"
-                            ? "specialDefense"
-                            : "speed"
-                ] ?? 0;
-              return (
-                <DefenderStatRow
-                  key={stat}
-                  statKey={stat}
-                  base={base}
-                  ev={evs[stat]}
-                  boost={
-                    stat === "hp" ? 0 : boosts[stat as keyof DefenderBoosts]
-                  }
-                  onEvChange={(v) => onEvChange(stat, v)}
-                  onBoostChange={(v) =>
-                    stat !== "hp" &&
-                    onBoostChange(stat as keyof DefenderBoosts, v)
-                  }
-                />
-              );
-            })}
-          </tbody>
-        </table>
+        {/* Header */}
+        <div className="text-muted-foreground mb-1 grid grid-cols-[32px_28px_1fr_48px_48px_48px] items-center gap-1 text-[10px]">
+          <span></span>
+          <span className="text-right">Base</span>
+          <span></span>
+          <span className="text-center">EVs</span>
+          <span className="text-center">Stat</span>
+          <span className="text-center">±</span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          {DEFENDER_STAT_KEYS.map((stat) => {
+            const base =
+              getBaseStats(species)?.[
+                stat === "hp"
+                  ? "hp"
+                  : stat === "atk"
+                    ? "attack"
+                    : stat === "def"
+                      ? "defense"
+                      : stat === "spa"
+                        ? "specialAttack"
+                        : stat === "spd"
+                          ? "specialDefense"
+                          : "speed"
+              ] ?? 0;
+            return (
+              <DefenderStatRow
+                key={stat}
+                statKey={stat}
+                base={base}
+                ev={evs[stat]}
+                boost={stat === "hp" ? 0 : boosts[stat as keyof DefenderBoosts]}
+                onEvChange={(v) => onEvChange(stat, v)}
+                onBoostChange={(v) =>
+                  stat !== "hp" &&
+                  onBoostChange(stat as keyof DefenderBoosts, v)
+                }
+              />
+            );
+          })}
+        </div>
       </div>
 
       {/* Status + HP */}
