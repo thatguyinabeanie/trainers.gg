@@ -145,11 +145,16 @@ function EvSuggestion({ pokemon, formatId }: EvSuggestionProps) {
   const currentEvs = pokemon.ev_speed ?? 0;
   const benchmarks = getFormatSpeedBenchmarks(formatId);
 
+  // Iterate the full EV range in +4 steps. We compare new speed against the
+  // benchmark's `commonSpeeds.neutral252` (the most common investment pattern
+  // players actually run) rather than against max speed, which produced
+  // misleading suggestions. When multiple benchmarks become newly outspoken
+  // at the same EV step, pick the one with the highest base speed — that's
+  // the most meaningful threat to outrun.
   let suggestion: string | null = null;
 
-  for (const evStep of [4, 8, 12, 16]) {
+  for (let evStep = 4; currentEvs + evStep <= 252; evStep += 4) {
     const newEvs = currentEvs + evStep;
-    if (newEvs > 252) break;
     const newSpeed = calculateStat(
       baseStats.speed,
       pokemon.iv_speed ?? 31,
@@ -157,16 +162,23 @@ function EvSuggestion({ pokemon, formatId }: EvSuggestionProps) {
       pokemon.level ?? 50,
       natureMultiplier
     );
+
+    if (newSpeed <= actualSpeed) continue;
+
     const newlyOutspeeds = benchmarks.filter(
-      (b) => b.maxSpeed < newSpeed && b.maxSpeed >= actualSpeed
+      (b) =>
+        b.commonSpeeds.neutral252 < newSpeed &&
+        b.commonSpeeds.neutral252 >= actualSpeed
     );
-    if (newlyOutspeeds.length > 0) {
-      const topTarget = newlyOutspeeds[newlyOutspeeds.length - 1];
-      if (topTarget) {
-        suggestion = `+${evStep} Speed EVs → ${newSpeed} Spe, outspeeds neutral 252 ${topTarget.species} (${topTarget.commonSpeeds.neutral252})`;
-      }
-      break;
-    }
+
+    if (newlyOutspeeds.length === 0) continue;
+
+    const topTarget = newlyOutspeeds.reduce((best, cur) =>
+      cur.baseSpeed > best.baseSpeed ? cur : best
+    );
+
+    suggestion = `+${evStep} Speed EVs → ${newSpeed} Spe, outspeeds neutral 252 ${topTarget.species} (${topTarget.commonSpeeds.neutral252})`;
+    break;
   }
 
   if (!suggestion) return null;
