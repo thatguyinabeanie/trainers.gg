@@ -53,7 +53,10 @@
       "Bash(pnpm --filter @trainers/supabase typecheck)",
       "Bash(pnpm --filter @trainers/web exec jest --testPathPattern \"teams-list-client\" --no-coverage)",
       "Read(//Users/gmendoza/source/NCP-VGC-Damage-Calculator/**)",
-      "Read(//Users/gmendoza/source/**)"
+      "Read(//Users/gmendoza/source/**)",
+      "Bash(pnpm --filter @trainers/web test --testPathPattern=\"teams-list-client\")",
+      "Bash(pnpm --filter @trainers/pokemon test)",
+      "Bash(pnpm:*)"
     ]
   },
   "hooks": {
