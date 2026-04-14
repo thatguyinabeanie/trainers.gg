@@ -1,15 +1,17 @@
 "use client";
 
+import { useState } from "react";
+
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 import {
   type GameFormat,
-  type SpeedBenchmark,
   calculateStat,
-  compareSpeedTier,
   getBaseStats,
   getFormatSpeedBenchmarks,
   getNatureMultiplier,
 } from "@trainers/pokemon";
+
+import { cn } from "@/lib/utils";
 
 // =============================================================================
 // Types
@@ -21,10 +23,44 @@ interface SpeedTierTabProps {
   format: GameFormat | undefined;
 }
 
-interface TeamMemberSpeed {
-  pokemon: Tables<"pokemon">;
-  speed: number;
+type StatStage = -2 | -1 | 0 | 1 | 2;
+
+interface TableRow {
+  kind: "group-header" | "pokemon";
+  // group-header fields
+  groupLabel?: string;
+  // pokemon row fields
+  species?: string;
+  isTeamMember?: boolean;
+  baseSpeed?: number;
+  minSpeed?: number;
+  maxNeutral?: number;
+  maxPositive?: number;
+  tailwindSpeed?: number;
+  scarfSpeed?: number;
+  // For team member rows: their actual build stats
+  actualSpeed?: number;
 }
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+const STAGE_MULTIPLIERS: Record<StatStage, number> = {
+  [-2]: 0.5,
+  [-1]: 0.67,
+  [0]: 1.0,
+  [1]: 1.5,
+  [2]: 2.0,
+};
+
+const STAGE_LABELS: Record<StatStage, string> = {
+  [-2]: "-2",
+  [-1]: "-1",
+  [0]: "—",
+  [1]: "+1",
+  [2]: "+2",
+};
 
 // =============================================================================
 // Helpers
@@ -32,12 +68,7 @@ interface TeamMemberSpeed {
 
 function getPokemonActualSpeed(pokemon: Tables<"pokemon">): number {
   const baseStats = getBaseStats(pokemon.species);
-  if (!baseStats) {
-    console.warn(
-      `[speed-tier] No base stats found for species: ${pokemon.species}`
-    );
-    return 0;
-  }
+  if (!baseStats) return 0;
   const natureMultiplier = getNatureMultiplier(pokemon.nature, "speed");
   return calculateStat(
     baseStats.speed,
@@ -48,330 +79,377 @@ function getPokemonActualSpeed(pokemon: Tables<"pokemon">): number {
   );
 }
 
-function getSpeedCategory(speed: number): "fast" | "mid" | "tr" {
-  if (speed > 150) return "fast";
-  if (speed >= 80) return "mid";
+function applyStage(value: number, stage: StatStage): number {
+  return Math.floor(value * STAGE_MULTIPLIERS[stage]);
+}
+
+function getSpeedGroup(baseSpeed: number): "fast" | "mid" | "tr" {
+  if (baseSpeed >= 100) return "fast";
+  if (baseSpeed >= 60) return "mid";
   return "tr";
 }
 
-function SpeedThresholdDivider({ label }: { label: string }) {
-  return (
-    <li className="flex items-center gap-2 py-1">
-      <div className="border-border h-px flex-1 border-t border-dashed" />
-      <span className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
-        {label}
-      </span>
-      <div className="border-border h-px flex-1 border-t border-dashed" />
-    </li>
-  );
+// =============================================================================
+// Summary Cards (when a Pokemon is selected)
+// =============================================================================
+
+interface SummaryCardsProps {
+  pokemon: Tables<"pokemon">;
 }
 
-// =============================================================================
-// Team Overview (no Pokemon selected)
-// =============================================================================
+function SummaryCards({ pokemon }: SummaryCardsProps) {
+  const actualSpeed = getPokemonActualSpeed(pokemon);
+  const tailwindSpeed = Math.floor(actualSpeed * 2);
+  const scarfSpeed = Math.floor(actualSpeed * 1.5);
 
-function TeamSpeedOverview({
-  team,
-  format,
-}: {
-  team: TeamWithPokemon;
-  format: GameFormat | undefined;
-}) {
-  const formatId = format?.id ?? "gen9vgc2026regi";
-
-  const teamPokemon = team.team_pokemon
-    .filter((tp) => tp.pokemon !== null)
-    .sort((a, b) => a.team_position - b.team_position)
-    .map((tp) => tp.pokemon!);
-
-  const teamSpeeds: TeamMemberSpeed[] = teamPokemon.map((p) => ({
-    pokemon: p,
-    speed: getPokemonActualSpeed(p),
-  }));
-
-  const benchmarks = getFormatSpeedBenchmarks(formatId);
-
-  // Find min/max team speed for relevance window
-  const minTeamSpeed = Math.min(...teamSpeeds.map((t) => t.speed), 0);
-  const maxTeamSpeed = Math.max(...teamSpeeds.map((t) => t.speed), 0);
-  const WINDOW = 30;
-
-  const relevantBenchmarks = benchmarks
-    .filter(
-      (b) =>
-        b.maxSpeed >= minTeamSpeed - WINDOW &&
-        b.maxSpeed <= maxTeamSpeed + WINDOW
-    )
-    .slice(0, 30);
-
-  // Build interleaved list of team members + benchmarks sorted desc by speed
-  type ListItem =
-    | { kind: "team"; speed: number; pokemon: Tables<"pokemon"> }
-    | { kind: "benchmark"; speed: number; benchmark: SpeedBenchmark };
-
-  const items: ListItem[] = [
-    ...teamSpeeds.map(
-      (t): ListItem => ({
-        kind: "team",
-        speed: t.speed,
-        pokemon: t.pokemon,
-      })
-    ),
-    ...relevantBenchmarks.map(
-      (b): ListItem => ({
-        kind: "benchmark",
-        speed: b.maxSpeed,
-        benchmark: b,
-      })
-    ),
-  ].sort((a, b) => b.speed - a.speed);
-
-  // Check for >30 speed gap between consecutive team members (sorted desc)
-  const sortedTeamSpeeds = [...teamSpeeds].sort((a, b) => b.speed - a.speed);
-  const speedGapWarnings: Array<{ a: string; b: string; gap: number }> = [];
-  for (let i = 0; i < sortedTeamSpeeds.length - 1; i++) {
-    const gap =
-      (sortedTeamSpeeds[i]?.speed ?? 0) - (sortedTeamSpeeds[i + 1]?.speed ?? 0);
-    if (gap > 30) {
-      speedGapWarnings.push({
-        a: sortedTeamSpeeds[i]?.pokemon.species ?? "",
-        b: sortedTeamSpeeds[i + 1]?.pokemon.species ?? "",
-        gap,
-      });
-    }
-  }
-
-  if (teamPokemon.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8">
-        <p className="text-muted-foreground text-sm">
-          Add Pokemon to see speed tiers
-        </p>
-      </div>
-    );
-  }
-
-  // Pre-compute divider visibility (avoids mutation during render)
-  const seenCategories = new Set<string>();
-  const itemsWithDivider = items.map((item) => {
-    const category = getSpeedCategory(item.speed);
-    const showDivider = !seenCategories.has(category);
-    seenCategories.add(category);
-    const categoryLabel =
-      category === "fast"
-        ? "Fast (150+)"
-        : category === "mid"
-          ? "Mid (80–150)"
-          : "Trick Room (<80)";
-    return { item, showDivider, categoryLabel };
-  });
+  const cards = [
+    { label: "Current", value: actualSpeed },
+    { label: "Tailwind ×2", value: tailwindSpeed },
+    { label: "Scarf ×1.5", value: scarfSpeed },
+  ];
 
   return (
-    <div className="flex flex-col gap-3 p-3">
-      {speedGapWarnings.length > 0 && (
-        <div className="flex flex-col gap-1">
-          {speedGapWarnings.map((w) => (
-            <div
-              key={`${w.a}-${w.b}`}
-              className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 dark:border-amber-900/50 dark:bg-amber-950/30"
-            >
-              <span className="text-xs text-amber-600 dark:text-amber-400">
-                ⚠ {w.a} and {w.b} have a {w.gap}-point speed gap
-              </span>
-            </div>
-          ))}
+    <div className="grid grid-cols-3 gap-2">
+      {cards.map(({ label, value }) => (
+        <div
+          key={label}
+          className="flex flex-col items-center rounded-lg border bg-white p-3"
+        >
+          <span className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">
+            {label}
+          </span>
+          <span className="font-mono text-2xl font-bold text-teal-600">
+            {value}
+          </span>
         </div>
-      )}
-
-      <ul className="flex flex-col">
-        {itemsWithDivider.map(({ item, showDivider, categoryLabel }, idx) => {
-          if (item.kind === "team") {
-            const p = item.pokemon;
-            const evNote = p.ev_speed ? `${p.ev_speed} EVs` : "0 EVs";
-            const nateParts = p.nature ? [p.nature] : [];
-            const note = [...nateParts, evNote].join(", ");
-            return (
-              <li key={`team-${p.id}-${idx}`} className="contents">
-                {showDivider && <SpeedThresholdDivider label={categoryLabel} />}
-                <div className="flex items-center gap-2 rounded-md bg-teal-50 px-2 py-1.5 dark:bg-teal-950/30">
-                  <span className="w-8 text-right font-mono text-sm font-semibold text-teal-700 dark:text-teal-300">
-                    {item.speed}
-                  </span>
-                  <span className="flex-1 truncate text-sm font-semibold text-teal-700 dark:text-teal-400">
-                    {p.species}
-                  </span>
-                  <span className="text-muted-foreground text-xs">{note}</span>
-                </div>
-              </li>
-            );
-          }
-
-          const b = item.benchmark;
-          return (
-            <li key={`bench-${b.species}-${idx}`} className="contents">
-              {showDivider && <SpeedThresholdDivider label={categoryLabel} />}
-              <div className="flex items-center gap-2 px-2 py-1">
-                <span className="text-muted-foreground w-8 text-right font-mono text-xs">
-                  {b.maxSpeed}
-                </span>
-                <span className="text-muted-foreground flex-1 truncate text-xs">
-                  {b.species}
-                </span>
-                <span className="text-muted-foreground text-[10px]">+Spe</span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+      ))}
     </div>
   );
 }
 
 // =============================================================================
-// Per-Pokemon View (Pokemon selected)
+// EV Suggestion
 // =============================================================================
 
-function PokemonSpeedView({
-  pokemon,
-  format,
-}: {
+interface EvSuggestionProps {
   pokemon: Tables<"pokemon">;
-  format: GameFormat | undefined;
-}) {
-  const formatId = format?.id ?? "gen9vgc2026regi";
+  formatId: string;
+}
+
+function EvSuggestion({ pokemon, formatId }: EvSuggestionProps) {
+  const baseStats = getBaseStats(pokemon.species);
+  if (!baseStats) return null;
+
+  const natureMultiplier = getNatureMultiplier(pokemon.nature, "speed");
   const actualSpeed = getPokemonActualSpeed(pokemon);
-  const tailwindSpeed = actualSpeed * 2;
-  const scarfSpeed = Math.floor(actualSpeed * 1.5);
-
-  const { outspeeds, outspedBy } = compareSpeedTier(
-    pokemon.species,
-    actualSpeed,
-    formatId
-  );
-
+  const currentEvs = pokemon.ev_speed ?? 0;
   const benchmarks = getFormatSpeedBenchmarks(formatId);
 
-  // Smart suggestion: find if +4/8/12/16 EVs would outspeed a nearby benchmark
-  const baseStats = getBaseStats(pokemon.species);
-  const natureMultiplier = getNatureMultiplier(pokemon.nature, "speed");
-  const currentEvs = pokemon.ev_speed ?? 0;
   let suggestion: string | null = null;
 
-  if (baseStats) {
-    for (const evStep of [4, 8, 12, 16]) {
-      const newEvs = currentEvs + evStep;
-      if (newEvs > 252) break;
-      const newSpeed = calculateStat(
-        baseStats.speed,
-        pokemon.iv_speed ?? 31,
-        newEvs,
-        pokemon.level ?? 50,
-        natureMultiplier
-      );
-      const newlyOutspeeds = benchmarks.filter(
-        (b) => b.maxSpeed < newSpeed && b.maxSpeed >= actualSpeed
-      );
-      if (newlyOutspeeds.length > 0) {
-        const topTarget = newlyOutspeeds[newlyOutspeeds.length - 1];
-        if (topTarget) {
-          suggestion = `+${evStep} Spe EVs (→${newSpeed}) outspeeds max ${topTarget.species}`;
-        }
-        break;
+  for (const evStep of [4, 8, 12, 16]) {
+    const newEvs = currentEvs + evStep;
+    if (newEvs > 252) break;
+    const newSpeed = calculateStat(
+      baseStats.speed,
+      pokemon.iv_speed ?? 31,
+      newEvs,
+      pokemon.level ?? 50,
+      natureMultiplier
+    );
+    const newlyOutspeeds = benchmarks.filter(
+      (b) => b.maxSpeed < newSpeed && b.maxSpeed >= actualSpeed
+    );
+    if (newlyOutspeeds.length > 0) {
+      const topTarget = newlyOutspeeds[newlyOutspeeds.length - 1];
+      if (topTarget) {
+        suggestion = `+${evStep} Speed EVs → ${newSpeed} Spe, outspeeds neutral 252 ${topTarget.species} (${topTarget.commonSpeeds.neutral252})`;
       }
+      break;
     }
   }
 
-  const topOutspeeds = [...outspeeds].reverse().slice(0, 15);
-  const topOutspedBy = outspedBy.slice(0, 15);
+  if (!suggestion) return null;
 
   return (
-    <div className="flex flex-col gap-4 p-3">
-      {/* Speed summary */}
-      <section className="grid grid-cols-3 gap-2">
-        <div className="bg-muted/50 flex flex-col items-center rounded-md p-2">
-          <span className="text-muted-foreground text-[10px] font-medium uppercase">
-            Base
-          </span>
-          <span className="font-mono text-lg font-bold">{actualSpeed}</span>
-        </div>
-        <div className="bg-muted/50 flex flex-col items-center rounded-md p-2">
-          <span className="text-muted-foreground text-[10px] font-medium uppercase">
-            Tailwind
-          </span>
-          <span className="font-mono text-lg font-bold">{tailwindSpeed}</span>
-        </div>
-        <div className="bg-muted/50 flex flex-col items-center rounded-md p-2">
-          <span className="text-muted-foreground text-[10px] font-medium uppercase">
-            Scarf
-          </span>
-          <span className="font-mono text-lg font-bold">{scarfSpeed}</span>
-        </div>
-      </section>
+    <div className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2">
+      <span className="text-sm text-teal-700">💡 {suggestion}</span>
+    </div>
+  );
+}
 
-      {/* EV suggestion */}
-      {suggestion && (
-        <div className="flex items-center gap-2 rounded-md border border-teal-200 bg-teal-50 px-2 py-1.5 dark:border-teal-900/50 dark:bg-teal-950/30">
-          <span className="text-xs text-teal-600 dark:text-teal-400">
-            💡 {suggestion}
-          </span>
-        </div>
-      )}
+// =============================================================================
+// Stat Stage Toggle
+// =============================================================================
 
-      {/* Outspeeds */}
-      <section>
-        <p className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-wide uppercase">
-          You outspeed
-        </p>
-        {topOutspeeds.length === 0 ? (
-          <p className="text-muted-foreground text-xs">Nothing at max speed</p>
-        ) : (
-          <ul className="flex flex-col gap-0.5">
-            {topOutspeeds.map((b) => {
-              const delta = actualSpeed - b.maxSpeed;
+interface StageToggleProps {
+  activeStage: StatStage;
+  onChange: (stage: StatStage) => void;
+}
+
+function StageToggle({ activeStage, onChange }: StageToggleProps) {
+  const stages: StatStage[] = [-2, -1, 0, 1, 2];
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-muted-foreground mr-1 text-xs font-medium">
+        Stage
+      </span>
+      {stages.map((stage) => (
+        <button
+          key={stage}
+          type="button"
+          onClick={() => onChange(stage)}
+          className={cn(
+            "h-7 min-w-[2rem] rounded px-2 text-xs font-semibold transition-colors",
+            activeStage === stage
+              ? "bg-teal-600 text-white"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+          )}
+        >
+          {STAGE_LABELS[stage]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// =============================================================================
+// Speed Data Table
+// =============================================================================
+
+interface SpeedTableProps {
+  team: TeamWithPokemon;
+  formatId: string;
+  activeStage: StatStage;
+}
+
+function SpeedTable({ team, formatId, activeStage }: SpeedTableProps) {
+  const benchmarks = getFormatSpeedBenchmarks(formatId);
+
+  // Build a set of team member species for quick lookup
+  const teamPokemon = team.team_pokemon
+    .filter((tp) => tp.pokemon !== null)
+    .map((tp) => tp.pokemon!);
+
+  const teamSpeciesSet = new Set(teamPokemon.map((p) => p.species));
+
+  // Build team member rows (use actual build stats)
+  const teamRows: TableRow[] = teamPokemon.map((p) => {
+    const baseStats = getBaseStats(p.species);
+    const baseSpe = baseStats?.speed ?? 0;
+    const actualSpeed = getPokemonActualSpeed(p);
+
+    // Compute generic benchmarks for this species
+    const minSpe = calculateStat(baseSpe, 0, 0, 50, 0.9);
+    const maxNeutral = calculateStat(baseSpe, 31, 252, 50, 1.0);
+    const maxPositive = calculateStat(baseSpe, 31, 252, 50, 1.1);
+    const tailwind = Math.floor(maxPositive * 2);
+    const scarf = Math.floor(maxPositive * 1.5);
+
+    return {
+      kind: "pokemon",
+      species: p.species,
+      isTeamMember: true,
+      baseSpeed: baseSpe,
+      minSpeed: minSpe,
+      maxNeutral,
+      maxPositive,
+      tailwindSpeed: tailwind,
+      scarfSpeed: scarf,
+      actualSpeed,
+    };
+  });
+
+  // Build benchmark rows (skip species already on the team)
+  const benchmarkRows: TableRow[] = benchmarks
+    .filter((b) => !teamSpeciesSet.has(b.species))
+    .map(
+      (b): TableRow => ({
+        kind: "pokemon",
+        species: b.species,
+        isTeamMember: false,
+        baseSpeed: b.baseSpeed,
+        minSpeed: b.minSpeed,
+        maxNeutral: b.commonSpeeds.neutral252,
+        maxPositive: b.commonSpeeds.positive252,
+        tailwindSpeed: b.commonSpeeds.tailwind,
+        scarfSpeed: b.commonSpeeds.scarf,
+      })
+    );
+
+  // Merge and sort by baseSpeed descending
+  const allPokemonRows = [...teamRows, ...benchmarkRows].sort(
+    (a, b) => (b.baseSpeed ?? 0) - (a.baseSpeed ?? 0)
+  );
+
+  // Inject group-header dividers
+  const rows: TableRow[] = [];
+  const seenGroups = new Set<string>();
+
+  for (const row of allPokemonRows) {
+    const group = getSpeedGroup(row.baseSpeed ?? 0);
+    if (!seenGroups.has(group)) {
+      seenGroups.add(group);
+      const label =
+        group === "fast"
+          ? "Fast (Base 100+)"
+          : group === "mid"
+            ? "Mid (Base 60–99)"
+            : "Trick Room (Base <60)";
+      rows.push({ kind: "group-header", groupLabel: label });
+    }
+    rows.push(row);
+  }
+
+  const headers = [
+    "Pokemon",
+    "Base",
+    "Min",
+    "Max Neutral",
+    "Max +Nat",
+    "Tailwind",
+    "Scarf",
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-lg border bg-white">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="sticky top-0 bg-gray-50">
+              {headers.map((h) => (
+                <th
+                  key={h}
+                  className="border-b px-3 py-2 text-left text-[10px] font-semibold tracking-wide text-gray-500 uppercase"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, idx) => {
+              if (row.kind === "group-header") {
+                return (
+                  <tr
+                    key={`group-${row.groupLabel}-${idx}`}
+                    className="bg-gray-50"
+                  >
+                    <td
+                      colSpan={7}
+                      className="border-b px-3 py-1.5 text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
+                    >
+                      {row.groupLabel}
+                    </td>
+                  </tr>
+                );
+              }
+
+              const isTeam = row.isTeamMember;
+
+              // For team members: show actual speed in the column that matches their build,
+              // "—" in others. For benchmarks: show computed values with stage modifier.
+              const displayMin = isTeam
+                ? row.actualSpeed === row.minSpeed
+                  ? applyStage(row.actualSpeed!, activeStage)
+                  : "—"
+                : applyStage(row.minSpeed!, activeStage);
+
+              const displayNeutral = isTeam
+                ? row.actualSpeed === row.maxNeutral
+                  ? applyStage(row.actualSpeed!, activeStage)
+                  : "—"
+                : applyStage(row.maxNeutral!, activeStage);
+
+              const displayPositive = isTeam
+                ? row.actualSpeed === row.maxPositive ||
+                  (row.actualSpeed !== row.minSpeed &&
+                    row.actualSpeed !== row.maxNeutral)
+                  ? applyStage(row.actualSpeed!, activeStage)
+                  : "—"
+                : applyStage(row.maxPositive!, activeStage);
+
+              const displayTailwind = isTeam
+                ? applyStage(Math.floor(row.actualSpeed! * 2), activeStage)
+                : applyStage(row.tailwindSpeed!, activeStage);
+
+              const displayScarf = isTeam
+                ? applyStage(Math.floor(row.actualSpeed! * 1.5), activeStage)
+                : applyStage(row.scarfSpeed!, activeStage);
+
               return (
-                <li key={b.species} className="flex items-center gap-2 px-1">
-                  <span className="text-muted-foreground w-8 text-right font-mono text-xs">
-                    {b.maxSpeed}
-                  </span>
-                  <span className="flex-1 truncate text-xs">{b.species}</span>
-                  <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400">
-                    +{delta}
-                  </span>
-                </li>
+                <tr
+                  key={`${isTeam ? "team" : "bench"}-${row.species}-${idx}`}
+                  className={cn(
+                    "border-b transition-colors last:border-0",
+                    isTeam ? "bg-teal-50 hover:bg-teal-100" : "hover:bg-gray-50"
+                  )}
+                >
+                  {/* Pokemon name */}
+                  <td
+                    className={cn(
+                      "px-3 py-1.5 font-medium",
+                      isTeam ? "text-teal-700" : "text-gray-800"
+                    )}
+                  >
+                    {isTeam ? `★ ${row.species}` : row.species}
+                  </td>
+                  {/* Base speed — slightly accented */}
+                  <td className="bg-gray-50/50 px-3 py-1.5 font-mono text-gray-600">
+                    {row.baseSpeed}
+                  </td>
+                  {/* Min */}
+                  <td
+                    className={cn(
+                      "px-3 py-1.5 font-mono",
+                      isTeam ? "text-teal-600" : "text-gray-500"
+                    )}
+                  >
+                    {displayMin}
+                  </td>
+                  {/* Max Neutral */}
+                  <td
+                    className={cn(
+                      "px-3 py-1.5 font-mono",
+                      isTeam ? "text-teal-600" : "text-gray-600"
+                    )}
+                  >
+                    {displayNeutral}
+                  </td>
+                  {/* Max +Nat */}
+                  <td
+                    className={cn(
+                      "px-3 py-1.5 font-mono font-semibold",
+                      isTeam ? "text-teal-700" : "text-gray-700"
+                    )}
+                  >
+                    {displayPositive}
+                  </td>
+                  {/* Tailwind */}
+                  <td
+                    className={cn(
+                      "px-3 py-1.5 font-mono",
+                      isTeam ? "text-teal-600" : "text-gray-500"
+                    )}
+                  >
+                    {displayTailwind}
+                  </td>
+                  {/* Scarf */}
+                  <td
+                    className={cn(
+                      "px-3 py-1.5 font-mono",
+                      isTeam ? "text-teal-600" : "text-gray-500"
+                    )}
+                  >
+                    {displayScarf}
+                  </td>
+                </tr>
               );
             })}
-          </ul>
-        )}
-      </section>
-
-      {/* Outsped by */}
-      <section>
-        <p className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-wide uppercase">
-          You&apos;re outsped by
-        </p>
-        {topOutspedBy.length === 0 ? (
-          <p className="text-muted-foreground text-xs">
-            Nothing outspeeds you at max speed
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-0.5">
-            {topOutspedBy.map((b) => {
-              const delta = b.maxSpeed - actualSpeed;
-              return (
-                <li key={b.species} className="flex items-center gap-2 px-1">
-                  <span className="text-muted-foreground w-8 text-right font-mono text-xs">
-                    {b.maxSpeed}
-                  </span>
-                  <span className="flex-1 truncate text-xs">{b.species}</span>
-                  <span className="font-mono text-xs text-red-600 dark:text-red-400">
-                    -{delta}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -385,8 +463,31 @@ export function SpeedTierTab({
   selectedPokemon,
   format,
 }: SpeedTierTabProps) {
-  if (selectedPokemon) {
-    return <PokemonSpeedView pokemon={selectedPokemon} format={format} />;
-  }
-  return <TeamSpeedOverview team={team} format={format} />;
+  const [activeStage, setActiveStage] = useState<StatStage>(0);
+  const formatId = format?.id ?? "gen9vgc2026regi";
+
+  return (
+    <div className="flex flex-col gap-3 p-3">
+      {/* Summary cards — only when a Pokemon is selected */}
+      {selectedPokemon && (
+        <>
+          <SummaryCards pokemon={selectedPokemon} />
+          <EvSuggestion pokemon={selectedPokemon} formatId={formatId} />
+        </>
+      )}
+
+      {/* Stat modifier toggle */}
+      <div className="flex items-center justify-between">
+        <StageToggle activeStage={activeStage} onChange={setActiveStage} />
+        {activeStage !== 0 && (
+          <span className="text-muted-foreground text-xs">
+            ×{STAGE_MULTIPLIERS[activeStage]} applied to all speeds
+          </span>
+        )}
+      </div>
+
+      {/* Data table */}
+      <SpeedTable team={team} formatId={formatId} activeStage={activeStage} />
+    </div>
+  );
 }
