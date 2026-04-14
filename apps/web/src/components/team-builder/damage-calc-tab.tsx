@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   calculate,
   Field,
@@ -11,14 +11,17 @@ import {
 } from "@smogon/calc";
 
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
-import { type GameFormat } from "@trainers/pokemon";
+import {
+  type GameFormat,
+  getBaseStats,
+  getValidAbilities,
+  getValidNatures,
+  getMoveData,
+  buildSpeciesSearchIndex,
+  getTypeColor,
+} from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-
-import { GEN9_VGC_META_THREATS, type MetaThreat } from "./meta-threats";
 
 // =============================================================================
 // Types
@@ -30,577 +33,1421 @@ interface DamageCalcTabProps {
   format: GameFormat | undefined;
 }
 
-interface CalcResult {
-  moveName: string;
-  attackerName: string;
-  defenderName: string;
-  minPercent: number;
-  maxPercent: number;
-  desc: string;
+interface DefenderEvs {
+  hp: number;
+  atk: number;
+  def: number;
+  spa: number;
+  spd: number;
+  spe: number;
 }
 
-type WeatherOption = "none" | "Sun" | "Rain" | "Sand" | "Snow";
-type TerrainOption = "none" | "Electric" | "Grassy" | "Psychic" | "Misty";
+interface DefenderBoosts {
+  atk: number;
+  def: number;
+  spa: number;
+  spd: number;
+  spe: number;
+}
+
+interface AttackerBoosts {
+  atk: number;
+  def: number;
+  spa: number;
+  spd: number;
+  spe: number;
+}
+
+interface AttackerSideState {
+  reflect: boolean;
+  lightScreen: boolean;
+  auroraVeil: boolean;
+  tailwind: boolean;
+  helpingHand: boolean;
+  friendGuard: boolean;
+}
+
+interface DefenderSideState {
+  reflect: boolean;
+  lightScreen: boolean;
+  auroraVeil: boolean;
+  tailwind: boolean;
+  helpingHand: boolean;
+  friendGuard: boolean;
+  stealthRock: boolean;
+  spikes: number;
+  saltCure: boolean;
+}
 
 // =============================================================================
-// Smogon helpers
+// Constants
 // =============================================================================
 
 const gen9 = Generations.get(9);
 
-function toSmogonPokemon(dbPokemon: Tables<"pokemon">): Pokemon | null {
-  if (!dbPokemon.species) return null;
-  return new Pokemon(gen9, dbPokemon.species, {
-    level: dbPokemon.level ?? 50,
-    nature: dbPokemon.nature ?? "Hardy",
-    ability: dbPokemon.ability,
-    item: dbPokemon.held_item ?? undefined,
-    ivs: {
-      hp: dbPokemon.iv_hp ?? 31,
-      atk: dbPokemon.iv_attack ?? 31,
-      def: dbPokemon.iv_defense ?? 31,
-      spa: dbPokemon.iv_special_attack ?? 31,
-      spd: dbPokemon.iv_special_defense ?? 31,
-      spe: dbPokemon.iv_speed ?? 31,
-    },
-    evs: {
-      hp: dbPokemon.ev_hp ?? 0,
-      atk: dbPokemon.ev_attack ?? 0,
-      def: dbPokemon.ev_defense ?? 0,
-      spa: dbPokemon.ev_special_attack ?? 0,
-      spd: dbPokemon.ev_special_defense ?? 0,
-      spe: dbPokemon.ev_speed ?? 0,
-    },
-    moves: [
-      dbPokemon.move1,
-      dbPokemon.move2,
-      dbPokemon.move3,
-      dbPokemon.move4,
-    ].filter((m): m is string => Boolean(m)) as unknown as string[],
-  });
+const STATUS_OPTIONS = [
+  "Healthy",
+  "Burned",
+  "Poisoned",
+  "Badly Poisoned",
+  "Paralyzed",
+  "Asleep",
+  "Frozen",
+];
+
+/** Smogon status names map */
+const STATUS_MAP: Record<string, string> = {
+  Healthy: "",
+  Burned: "brn",
+  Poisoned: "psn",
+  "Badly Poisoned": "tox",
+  Paralyzed: "par",
+  Asleep: "slp",
+  Frozen: "frz",
+};
+
+const BOOST_OPTIONS = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+
+const WEATHER_OPTIONS = ["", "Sun", "Rain", "Sand", "Snow"] as const;
+const WEATHER_LABELS: Record<string, string> = {
+  "": "None",
+  Sun: "Sun",
+  Rain: "Rain",
+  Sand: "Sand",
+  Snow: "Snow",
+};
+
+const TERRAIN_OPTIONS = ["", "Electric", "Grassy", "Misty", "Psychic"] as const;
+const TERRAIN_LABELS: Record<string, string> = {
+  "": "None",
+  Electric: "Elec",
+  Grassy: "Grass",
+  Misty: "Misty",
+  Psychic: "Psych",
+};
+
+/** Stat bar colors matching the EV editor */
+const STAT_BAR_COLORS: Record<string, string> = {
+  hp: "bg-red-500",
+  atk: "bg-orange-500",
+  def: "bg-yellow-500",
+  spa: "bg-blue-500",
+  spd: "bg-green-500",
+  spe: "bg-pink-500",
+};
+
+const STAT_LABELS_SHORT: Record<string, string> = {
+  hp: "HP",
+  atk: "Atk",
+  def: "Def",
+  spa: "SpA",
+  spd: "SpD",
+  spe: "Spe",
+};
+
+const DEFENDER_STAT_KEYS = ["hp", "atk", "def", "spa", "spd", "spe"] as const;
+type DefenderStatKey = (typeof DEFENDER_STAT_KEYS)[number];
+
+/**
+ * Module-level cache for the species search index.
+ * Built once per format ID per app session, keyed by format ID string.
+ */
+const speciesIndexCache = new Map<string, string[]>();
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/** Cast a string to the branded smogon type it needs for Pokemon constructor options. */
+function asSmogon<T>(v: string | null | undefined): T {
+  return (v ?? undefined) as unknown as T;
 }
 
-function toSmogonThreat(threat: MetaThreat): Pokemon {
-  return new Pokemon(gen9, threat.species, {
-    level: 50,
-    nature: threat.nature,
-    ability: threat.ability,
-    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
-    evs: {
-      hp: threat.evs.hp,
-      atk: threat.evs.atk,
-      def: threat.evs.def,
-      spa: threat.evs.spa,
-      spd: threat.evs.spd,
-      spe: threat.evs.spe,
-    },
-    moves: threat.moves as unknown as string[],
-  });
-}
-
-function buildSmogonField(
-  weather: WeatherOption,
-  terrain: TerrainOption,
-  lightScreen: boolean,
-  reflect: boolean,
-  helpingHand: boolean,
-  isAttackerSide: boolean
-): Field {
-  const attackerSide = new Side({
-    isHelpingHand: helpingHand,
-    isLightScreen: isAttackerSide ? false : lightScreen,
-    isReflect: isAttackerSide ? false : reflect,
-  });
-  const defenderSide = new Side({
-    isLightScreen: lightScreen,
-    isReflect: reflect,
-  });
-
-  return new Field({
-    weather: weather === "none" ? undefined : weather,
-    terrain: terrain === "none" ? undefined : terrain,
-    gameType: "Doubles",
-    attackerSide,
-    defenderSide,
-  });
-}
-
-function runCalc(
-  attacker: Pokemon | null,
-  defender: Pokemon | null,
-  moveName: string,
-  field: Field
-): CalcResult | null {
-  if (!attacker || !defender) return null;
+/**
+ * Build a @smogon/calc Pokemon from a DB row with optional boost/status overrides.
+ */
+function buildAttackerFromDb(
+  db: Tables<"pokemon">,
+  boosts: AttackerBoosts,
+  status: string
+): Pokemon | null {
+  if (!db.species) return null;
   try {
-    const move = new Move(gen9, moveName);
-    const result = calculate(gen9, attacker, defender, move, field);
-    const [minDmg, maxDmg] = result.range();
-    const defenderHP = defender.maxHP();
-    if (defenderHP === 0) return null;
-    const minPercent = Math.floor((minDmg / defenderHP) * 1000) / 10;
-    const maxPercent = Math.floor((maxDmg / defenderHP) * 1000) / 10;
-    return {
-      moveName,
-      attackerName: attacker.name,
-      defenderName: defender.name,
-      minPercent,
-      maxPercent,
-      desc: result.desc(),
-    };
-  } catch (err) {
-    console.warn(
-      `Damage calc failed: ${attacker.species} using ${moveName} vs ${defender.species}`,
-      err
-    );
+    return new Pokemon(gen9, db.species, {
+      level: db.level ?? 50,
+      nature: asSmogon(db.nature ?? "Hardy"),
+      ability: asSmogon(db.ability),
+      item: asSmogon(db.held_item),
+      teraType: asSmogon(db.tera_type),
+      ivs: {
+        hp: db.iv_hp ?? 31,
+        atk: db.iv_attack ?? 31,
+        def: db.iv_defense ?? 31,
+        spa: db.iv_special_attack ?? 31,
+        spd: db.iv_special_defense ?? 31,
+        spe: db.iv_speed ?? 31,
+      },
+      evs: {
+        hp: db.ev_hp ?? 0,
+        atk: db.ev_attack ?? 0,
+        def: db.ev_defense ?? 0,
+        spa: db.ev_special_attack ?? 0,
+        spd: db.ev_special_defense ?? 0,
+        spe: db.ev_speed ?? 0,
+      },
+      boosts: {
+        atk: boosts.atk,
+        def: boosts.def,
+        spa: boosts.spa,
+        spd: boosts.spd,
+        spe: boosts.spe,
+      },
+      status: asSmogon(STATUS_MAP[status] ?? ""),
+      moves: [db.move1, db.move2, db.move3, db.move4].filter((m): m is string =>
+        Boolean(m)
+      ) as unknown as string[],
+    });
+  } catch {
     return null;
   }
 }
 
-// =============================================================================
-// DamageBar
-// =============================================================================
-
-function getVerdict(minPercent: number, maxPercent: number): string {
-  if (minPercent >= 100) return "OHKO";
-  if (maxPercent >= 100) return "roll";
-  if (maxPercent >= 50) return "2HKO";
-  if (maxPercent >= 33) return "3HKO";
-  return "";
+/**
+ * Build a @smogon/calc Pokemon for the defender from the editable calc state.
+ */
+function buildDefenderPokemon(
+  species: string,
+  ability: string,
+  item: string,
+  nature: string,
+  teraType: string,
+  evs: DefenderEvs,
+  boosts: DefenderBoosts,
+  status: string,
+  hpPercent: number
+): Pokemon | null {
+  if (!species) return null;
+  try {
+    const poke = new Pokemon(gen9, species, {
+      level: 50,
+      nature: asSmogon(nature),
+      ability: asSmogon(ability || null),
+      item: asSmogon(item || null),
+      teraType: asSmogon(teraType || null),
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+      evs: {
+        hp: evs.hp,
+        atk: evs.atk,
+        def: evs.def,
+        spa: evs.spa,
+        spd: evs.spd,
+        spe: evs.spe,
+      },
+      boosts: {
+        atk: boosts.atk,
+        def: boosts.def,
+        spa: boosts.spa,
+        spd: boosts.spd,
+        spe: boosts.spe,
+      },
+      status: asSmogon(STATUS_MAP[status] ?? ""),
+      curHP: Math.max(1, Math.round((hpPercent / 100) * 1)),
+    });
+    return poke;
+  } catch {
+    return null;
+  }
 }
 
-function DamageBar({
-  minPercent,
-  maxPercent,
-}: {
+/**
+ * Build a @smogon/calc Field from the field state.
+ */
+function buildField(
+  gameType: "Doubles" | "Singles",
+  weather: string,
+  terrain: string,
+  gravity: boolean,
+  attackerSide: AttackerSideState,
+  defenderSide: DefenderSideState,
+  direction: "offense" | "defense"
+): Field {
+  // When direction is "defense", attacker/defender sides swap
+  const aSide = direction === "offense" ? attackerSide : defenderSide;
+  const dSide = direction === "offense" ? defenderSide : attackerSide;
+
+  const aSmogon = new Side({
+    isReflect: "reflect" in aSide ? aSide.reflect : false,
+    isLightScreen: "lightScreen" in aSide ? aSide.lightScreen : false,
+    isAuroraVeil: "auroraVeil" in aSide ? aSide.auroraVeil : false,
+    isTailwind: "tailwind" in aSide ? aSide.tailwind : false,
+    isHelpingHand: "helpingHand" in aSide ? aSide.helpingHand : false,
+    isFriendGuard: "friendGuard" in aSide ? aSide.friendGuard : false,
+  });
+
+  const dSmogon = new Side({
+    isReflect: "reflect" in dSide ? dSide.reflect : false,
+    isLightScreen: "lightScreen" in dSide ? dSide.lightScreen : false,
+    isAuroraVeil: "auroraVeil" in dSide ? dSide.auroraVeil : false,
+    isTailwind: "tailwind" in dSide ? dSide.tailwind : false,
+    isHelpingHand: "helpingHand" in dSide ? dSide.helpingHand : false,
+    isFriendGuard: "friendGuard" in dSide ? dSide.friendGuard : false,
+    isSR:
+      "stealthRock" in dSide ? (dSide as DefenderSideState).stealthRock : false,
+    spikes: "spikes" in dSide ? (dSide as DefenderSideState).spikes : 0,
+    isSaltCured:
+      "saltCure" in dSide ? (dSide as DefenderSideState).saltCure : false,
+  });
+
+  return new Field({
+    gameType,
+    weather: asSmogon(weather || null),
+    terrain: asSmogon(terrain || null),
+    isGravity: gravity,
+    attackerSide: aSmogon,
+    defenderSide: dSmogon,
+  });
+}
+
+/**
+ * Run a calc and return a structured result.
+ * Returns null if the calc fails or deals no damage.
+ */
+interface CalcOutput {
   minPercent: number;
   maxPercent: number;
+  desc: string;
+  rolls: readonly number[];
+  defenderMaxHP: number;
+}
+
+function runCalc(
+  attacker: Pokemon,
+  defender: Pokemon,
+  moveName: string,
+  isCrit: boolean,
+  field: Field
+): CalcOutput | null {
+  try {
+    const move = new Move(gen9, moveName, { isCrit });
+    const result = calculate(gen9, attacker, defender, move, field);
+    const damage = result.damage;
+    if (!damage || (Array.isArray(damage) && damage.length === 0)) return null;
+
+    const defHP = defender.maxHP();
+    if (defHP === 0) return null;
+
+    const [minDmg, maxDmg] = result.range();
+    const minPercent = Math.floor((minDmg / defHP) * 1000) / 10;
+    const maxPercent = Math.floor((maxDmg / defHP) * 1000) / 10;
+
+    // result.damage can be number[] or number[][] (doubles spread)
+    const rolls: readonly number[] = Array.isArray(damage)
+      ? Array.isArray(damage[0])
+        ? ((damage as number[][])[0] ?? [])
+        : (damage as number[])
+      : [];
+
+    return {
+      minPercent,
+      maxPercent,
+      desc: result.desc(),
+      rolls,
+      defenderMaxHP: defHP,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get the verdict label for a calc result.
+ */
+function getVerdict(
+  minPercent: number,
+  maxPercent: number
+): "OHKO" | "2HKO" | "3HKO" | null {
+  if (minPercent >= 100) return "OHKO";
+  if (maxPercent >= 50) return "2HKO";
+  if (maxPercent >= 34) return "3HKO";
+  return null;
+}
+
+// =============================================================================
+// Small shared UI pieces
+// =============================================================================
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-muted-foreground mb-2 text-[10px] font-bold tracking-widest uppercase">
+      {children}
+    </p>
+  );
+}
+
+function Card({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
 }) {
-  const cappedMax = Math.min(maxPercent, 100);
-  const verdict = getVerdict(minPercent, maxPercent);
-  const barColor =
-    maxPercent >= 66
-      ? "bg-red-500"
-      : maxPercent >= 33
-        ? "bg-amber-500"
-        : "bg-green-500";
+  return (
+    <div
+      className={cn(
+        "bg-background rounded-lg border px-3 py-2.5 shadow-sm",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+interface VerdictBadgeProps {
+  verdict: "OHKO" | "2HKO" | "3HKO";
+}
+
+function VerdictBadge({ verdict }: VerdictBadgeProps) {
+  return (
+    <span
+      className={cn(
+        "rounded px-1.5 py-0.5 text-[10px] font-bold",
+        verdict === "OHKO" && "bg-red-100 text-red-700",
+        verdict === "2HKO" && "bg-orange-100 text-orange-700",
+        verdict === "3HKO" && "bg-yellow-100 text-yellow-700"
+      )}
+    >
+      {verdict}
+    </span>
+  );
+}
+
+// =============================================================================
+// DirectionToggle
+// =============================================================================
+
+interface DirectionToggleProps {
+  value: "offense" | "defense";
+  attackerName: string;
+  defenderName: string;
+  onChange: (v: "offense" | "defense") => void;
+}
+
+function DirectionToggle({
+  value,
+  attackerName,
+  defenderName,
+  onChange,
+}: DirectionToggleProps) {
+  return (
+    <div className="flex gap-1">
+      <button
+        type="button"
+        onClick={() => onChange("offense")}
+        className={cn(
+          "flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+          value === "offense"
+            ? "bg-teal-600 text-white"
+            : "bg-muted text-muted-foreground hover:bg-muted/80"
+        )}
+      >
+        {attackerName} → {defenderName}
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("defense")}
+        className={cn(
+          "flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+          value === "defense"
+            ? "bg-teal-600 text-white"
+            : "bg-muted text-muted-foreground hover:bg-muted/80"
+        )}
+      >
+        {defenderName} → {attackerName}
+      </button>
+    </div>
+  );
+}
+
+// =============================================================================
+// TypeDot
+// =============================================================================
+
+function TypeDot({ type }: { type: string | null }) {
+  const color = type
+    ? getTypeColor(type as Parameters<typeof getTypeColor>[0])
+    : "#9ca3af";
+  return (
+    <span
+      className="inline-block size-2 shrink-0 rounded-full"
+      style={{ backgroundColor: color }}
+      title={type ?? "Unknown"}
+    />
+  );
+}
+
+// =============================================================================
+// MoveSelectorRow
+// =============================================================================
+
+interface MoveSelectorRowProps {
+  moveName: string | null;
+  moveIdx: number;
+  isSelected: boolean;
+  isCrit: boolean;
+  calcOutput: CalcOutput | null;
+  onSelect: () => void;
+  onCritToggle: () => void;
+}
+
+function MoveSelectorRow({
+  moveName,
+  moveIdx: _moveIdx,
+  isSelected,
+  isCrit,
+  calcOutput,
+  onSelect,
+  onCritToggle,
+}: MoveSelectorRowProps) {
+  const moveData = moveName ? getMoveData(moveName) : null;
+  const verdict = calcOutput
+    ? getVerdict(calcOutput.minPercent, calcOutput.maxPercent)
+    : null;
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2">
-      <div className="bg-muted relative h-3 flex-1 overflow-hidden rounded-full">
-        <div
-          className={cn("h-full rounded-full", barColor)}
-          style={{ width: `${cappedMax}%` }}
-        />
-      </div>
-      <span className="text-muted-foreground w-20 text-right font-mono text-xs">
-        {minPercent}–{maxPercent}%
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors",
+        isSelected ? "bg-teal-50 ring-1 ring-teal-400" : "hover:bg-muted/60"
+      )}
+    >
+      {/* Type dot */}
+      <TypeDot type={moveData?.type ?? null} />
+
+      {/* Move name */}
+      <span className="min-w-0 flex-1 truncate text-xs font-medium">
+        {moveName ?? <span className="text-muted-foreground italic">—</span>}
       </span>
-      {verdict && (
-        <span
+
+      {/* BP */}
+      {moveData?.basePower ? (
+        <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
+          {moveData.basePower}
+        </span>
+      ) : null}
+
+      {/* Damage range */}
+      {calcOutput ? (
+        <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
+          {calcOutput.minPercent}–{calcOutput.maxPercent}%
+        </span>
+      ) : (
+        <span className="text-muted-foreground shrink-0 text-[10px]">—%</span>
+      )}
+
+      {/* Verdict badge */}
+      <div className="w-10 shrink-0 text-right">
+        {verdict ? <VerdictBadge verdict={verdict} /> : null}
+      </div>
+
+      {/* Crit toggle — stop propagation so it doesn't select the row */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onCritToggle();
+        }}
+        title="Toggle critical hit"
+        className={cn(
+          "shrink-0 rounded px-1 py-0.5 text-[10px] font-bold transition-colors",
+          isCrit
+            ? "bg-amber-100 text-amber-700"
+            : "text-muted-foreground hover:bg-muted"
+        )}
+      >
+        Crit
+      </button>
+    </button>
+  );
+}
+
+// =============================================================================
+// BoostSelect
+// =============================================================================
+
+interface BoostSelectProps {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}
+
+function BoostSelect({ label, value, onChange }: BoostSelectProps) {
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <span className="text-muted-foreground text-[10px]">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className={cn(
+          "border-border bg-background h-7 rounded border px-1 text-center text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none",
+          value > 0 && "text-green-700",
+          value < 0 && "text-red-700"
+        )}
+      >
+        {BOOST_OPTIONS.map((b) => (
+          <option key={b} value={b}>
+            {b > 0 ? `+${b}` : b}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+// =============================================================================
+// AttackerModifiers
+// =============================================================================
+
+interface AttackerModifiersProps {
+  status: string;
+  boosts: AttackerBoosts;
+  onStatusChange: (v: string) => void;
+  onBoostChange: (stat: keyof AttackerBoosts, v: number) => void;
+}
+
+function AttackerModifiers({
+  status,
+  boosts,
+  onStatusChange,
+  onBoostChange,
+}: AttackerModifiersProps) {
+  return (
+    <Card>
+      <SectionHeader>Your Modifiers</SectionHeader>
+      <div className="flex flex-col gap-2">
+        {/* Status */}
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground w-12 shrink-0 text-xs">
+            Status
+          </span>
+          <select
+            value={status}
+            onChange={(e) => onStatusChange(e.target.value)}
+            className="border-border bg-background flex-1 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+          >
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Boosts */}
+        <div className="flex items-end gap-2">
+          {(
+            [
+              ["atk", "Atk"],
+              ["def", "Def"],
+              ["spa", "SpA"],
+              ["spd", "SpD"],
+              ["spe", "Spe"],
+            ] as [keyof AttackerBoosts, string][]
+          ).map(([stat, label]) => (
+            <BoostSelect
+              key={stat}
+              label={label}
+              value={boosts[stat]}
+              onChange={(v) => onBoostChange(stat, v)}
+            />
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// =============================================================================
+// SpeciesSearchInput
+// =============================================================================
+
+interface SpeciesSearchInputProps {
+  value: string;
+  formatId: string | undefined;
+  onChange: (species: string) => void;
+}
+
+function SpeciesSearchInput({
+  value,
+  formatId,
+  onChange,
+}: SpeciesSearchInputProps) {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  // Results are stored in state and updated imperatively in the change handler.
+  // This avoids both the set-state-in-effect and read-ref-in-render lint rules.
+  const [results, setResults] = useState<string[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Build the species index lazily on first use. The index is module-level so
+  // it's only computed once per app session (not per component mount).
+  let speciesIndex = speciesIndexCache.get(formatId ?? "");
+  if (!speciesIndex) {
+    try {
+      speciesIndex = buildSpeciesSearchIndex(formatId ?? "gen9vgc2026regg").map(
+        (s) => s.species
+      );
+    } catch {
+      speciesIndex = [];
+    }
+    speciesIndexCache.set(formatId ?? "", speciesIndex);
+  }
+
+  // Close dropdown on outside click — subscribing to a DOM event (external system)
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function handleQueryChange(q: string) {
+    setQuery(q);
+    const trimmed = q.trim().toLowerCase();
+    if (trimmed.length === 0) {
+      setResults([]);
+      return;
+    }
+    const filtered = (speciesIndex ?? [])
+      .filter((s) => s.toLowerCase().includes(trimmed))
+      .slice(0, 12);
+    setResults(filtered);
+    setOpen(true);
+  }
+
+  function handleSelect(species: string) {
+    setQuery(species);
+    setResults([]);
+    setOpen(false);
+    onChange(species);
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        value={query}
+        placeholder="Search species…"
+        onChange={(e) => handleQueryChange(e.target.value)}
+        onFocus={() => {
+          if (results.length > 0) setOpen(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && results.length > 0) {
+            handleSelect(results[0]!);
+          } else if (e.key === "Escape") {
+            setOpen(false);
+          }
+        }}
+        className="border-border bg-background w-full rounded border px-2 py-1 text-sm font-medium focus:ring-1 focus:ring-teal-500 focus:outline-none"
+      />
+      {open && results.length > 0 && (
+        <ul className="border-border bg-background absolute top-full right-0 left-0 z-20 mt-0.5 max-h-48 overflow-y-auto rounded-md border shadow-md">
+          {results.map((sp) => (
+            <li key={sp}>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSelect(sp);
+                }}
+                className="hover:bg-muted w-full px-3 py-1.5 text-left text-xs"
+              >
+                {sp}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// DefenderStatRow
+// =============================================================================
+
+interface DefenderStatRowProps {
+  statKey: DefenderStatKey;
+  base: number;
+  ev: number;
+  boost: number;
+  onEvChange: (v: number) => void;
+  onBoostChange: (v: number) => void;
+}
+
+function DefenderStatRow({
+  statKey,
+  base,
+  ev,
+  boost,
+  onEvChange,
+  onBoostChange,
+}: DefenderStatRowProps) {
+  const label = STAT_LABELS_SHORT[statKey]!;
+  const barColor = STAT_BAR_COLORS[statKey]!;
+  const fillPct = Math.min(100, (base / 255) * 100);
+
+  return (
+    <tr className="text-xs">
+      {/* Label */}
+      <td className="text-muted-foreground w-8 pr-1 font-semibold">{label}</td>
+
+      {/* Base */}
+      <td className="w-8 pr-1 text-right text-xs tabular-nums">{base}</td>
+
+      {/* EVs input */}
+      <td className="w-14 pr-1">
+        <input
+          type="number"
+          min={0}
+          max={252}
+          value={ev}
+          onChange={(e) => {
+            const v = parseInt(e.target.value, 10);
+            if (!isNaN(v)) onEvChange(Math.max(0, Math.min(252, v)));
+          }}
+          className="border-border bg-background w-full rounded border px-1 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-teal-500 focus:outline-none"
+        />
+      </td>
+
+      {/* Bar */}
+      <td className="flex-1 pr-1">
+        <div className="bg-muted h-[5px] w-full overflow-hidden rounded-full">
+          <div
+            className={cn("h-full rounded-full", barColor)}
+            style={{ width: `${fillPct}%` }}
+          />
+        </div>
+      </td>
+
+      {/* Boost */}
+      <td className="w-14">
+        <select
+          value={boost}
+          onChange={(e) => onBoostChange(Number(e.target.value))}
           className={cn(
-            "w-10 text-right text-xs font-bold",
-            verdict === "OHKO"
-              ? "text-red-600 dark:text-red-400"
-              : verdict === "roll"
-                ? "text-amber-600 dark:text-amber-400"
-                : "text-muted-foreground"
+            "border-border bg-background w-full rounded border px-0.5 py-0.5 text-center text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none",
+            boost > 0 && "text-green-700",
+            boost < 0 && "text-red-700"
           )}
         >
-          {verdict}
-        </span>
-      )}
-    </div>
+          {BOOST_OPTIONS.map((b) => (
+            <option key={b} value={b}>
+              {b > 0 ? `+${b}` : b}
+            </option>
+          ))}
+        </select>
+      </td>
+    </tr>
   );
 }
 
 // =============================================================================
-// CalcRow
+// DefenderPanel
 // =============================================================================
 
-function CalcRow({ result }: { result: CalcResult }) {
+interface DefenderPanelProps {
+  species: string;
+  types: string[];
+  ability: string;
+  item: string;
+  nature: string;
+  teraType: string;
+  evs: DefenderEvs;
+  boosts: DefenderBoosts;
+  status: string;
+  hpPercent: number;
+  formatId: string | undefined;
+  onSpeciesChange: (species: string) => void;
+  onAbilityChange: (v: string) => void;
+  onItemChange: (v: string) => void;
+  onNatureChange: (v: string) => void;
+  onTeraChange: (v: string) => void;
+  onEvChange: (stat: DefenderStatKey, v: number) => void;
+  onBoostChange: (stat: keyof DefenderBoosts, v: number) => void;
+  onStatusChange: (v: string) => void;
+  onHpPercentChange: (v: number) => void;
+}
+
+function DefenderPanel({
+  species,
+  types,
+  ability,
+  item,
+  nature,
+  teraType,
+  evs,
+  boosts,
+  status,
+  hpPercent,
+  formatId,
+  onSpeciesChange,
+  onAbilityChange,
+  onItemChange,
+  onNatureChange,
+  onTeraChange,
+  onEvChange,
+  onBoostChange,
+  onStatusChange,
+  onHpPercentChange,
+}: DefenderPanelProps) {
+  const validAbilities = getValidAbilities(species);
+  const validNatures = getValidNatures();
+
   return (
-    <div className="group hover:bg-muted/40 flex items-center gap-2 rounded-md px-2 py-1.5">
-      <div className="flex w-48 shrink-0 flex-col">
-        <span className="truncate text-xs font-medium">{result.moveName}</span>
-        <span className="text-muted-foreground truncate text-[10px]">
-          {result.attackerName} → {result.defenderName}
-        </span>
+    <Card>
+      <SectionHeader>Defender</SectionHeader>
+
+      {/* Species search */}
+      <div className="mb-2">
+        <SpeciesSearchInput
+          value={species}
+          formatId={formatId}
+          onChange={onSpeciesChange}
+        />
       </div>
-      <DamageBar
-        minPercent={result.minPercent}
-        maxPercent={result.maxPercent}
-      />
-    </div>
+
+      {/* Species name + types */}
+      <div className="mb-2 flex items-center gap-1.5">
+        <span className="text-sm font-semibold">{species || "—"}</span>
+        {types.map((t) => (
+          <span
+            key={t}
+            className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
+            style={{
+              backgroundColor: getTypeColor(
+                t as Parameters<typeof getTypeColor>[0]
+              ),
+            }}
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+
+      {/* Ability / Item / Nature / Tera in 2×2 grid */}
+      <div className="mb-2 grid grid-cols-2 gap-1.5">
+        {/* Ability */}
+        <div className="flex flex-col gap-0.5">
+          <label className="text-muted-foreground text-[10px]">Ability</label>
+          <select
+            value={ability}
+            onChange={(e) => onAbilityChange(e.target.value)}
+            className="border-border bg-background rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+          >
+            <option value="">—</option>
+            {validAbilities.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Item */}
+        <div className="flex flex-col gap-0.5">
+          <label className="text-muted-foreground text-[10px]">Item</label>
+          <input
+            type="text"
+            value={item}
+            onChange={(e) => onItemChange(e.target.value)}
+            placeholder="e.g. Sitrus Berry"
+            className="border-border bg-background rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+          />
+        </div>
+
+        {/* Nature */}
+        <div className="flex flex-col gap-0.5">
+          <label className="text-muted-foreground text-[10px]">Nature</label>
+          <select
+            value={nature}
+            onChange={(e) => onNatureChange(e.target.value)}
+            className="border-border bg-background rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+          >
+            {validNatures.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Tera */}
+        <div className="flex flex-col gap-0.5">
+          <label className="text-muted-foreground text-[10px]">Tera</label>
+          <input
+            type="text"
+            value={teraType}
+            onChange={(e) => onTeraChange(e.target.value)}
+            placeholder="e.g. Fire"
+            className="border-border bg-background rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Stats table */}
+      <div className="mb-2">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="text-muted-foreground text-[10px] tracking-wide uppercase">
+              <th className="w-8 text-left font-normal">Stat</th>
+              <th className="w-8 text-right font-normal">Base</th>
+              <th className="w-14 text-right font-normal">EVs</th>
+              <th className="text-left font-normal">Bar</th>
+              <th className="w-14 text-right font-normal">±</th>
+            </tr>
+          </thead>
+          <tbody className="gap-1 divide-y divide-transparent">
+            {DEFENDER_STAT_KEYS.map((stat) => {
+              const base =
+                getBaseStats(species)?.[
+                  stat === "hp"
+                    ? "hp"
+                    : stat === "atk"
+                      ? "attack"
+                      : stat === "def"
+                        ? "defense"
+                        : stat === "spa"
+                          ? "specialAttack"
+                          : stat === "spd"
+                            ? "specialDefense"
+                            : "speed"
+                ] ?? 0;
+              return (
+                <DefenderStatRow
+                  key={stat}
+                  statKey={stat}
+                  base={base}
+                  ev={evs[stat]}
+                  boost={
+                    stat === "hp" ? 0 : boosts[stat as keyof DefenderBoosts]
+                  }
+                  onEvChange={(v) => onEvChange(stat, v)}
+                  onBoostChange={(v) =>
+                    stat !== "hp" &&
+                    onBoostChange(stat as keyof DefenderBoosts, v)
+                  }
+                />
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Status + HP */}
+      <div className="flex items-center gap-2">
+        <select
+          value={status}
+          onChange={(e) => onStatusChange(e.target.value)}
+          className="border-border bg-background flex-1 rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+        >
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex flex-1 items-center gap-1">
+          <div className="bg-muted relative h-[7px] flex-1 overflow-hidden rounded-full">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all",
+                hpPercent > 50
+                  ? "bg-green-500"
+                  : hpPercent > 25
+                    ? "bg-amber-500"
+                    : "bg-red-500"
+              )}
+              style={{ width: `${hpPercent}%` }}
+            />
+          </div>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            value={hpPercent}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              if (!isNaN(v)) onHpPercentChange(Math.max(1, Math.min(100, v)));
+            }}
+            className="border-border bg-background w-12 rounded border px-1 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-teal-500 focus:outline-none"
+          />
+          <span className="text-muted-foreground text-xs">%</span>
+        </div>
+      </div>
+    </Card>
   );
 }
 
 // =============================================================================
-// FieldControls
+// SideConditions (reusable for attacker / defender side)
 // =============================================================================
 
-interface FieldControlsProps {
-  weather: WeatherOption;
-  terrain: TerrainOption;
-  lightScreen: boolean;
-  reflect: boolean;
-  helpingHand: boolean;
-  onWeatherChange: (v: WeatherOption) => void;
-  onTerrainChange: (v: TerrainOption) => void;
-  onLightScreenChange: (v: boolean) => void;
-  onReflectChange: (v: boolean) => void;
-  onHelpingHandChange: (v: boolean) => void;
+interface SideToggleProps {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
 }
 
-function FieldControls({
+function SideToggle({ label, checked, onChange }: SideToggleProps) {
+  return (
+    <label className="flex cursor-pointer items-center gap-1">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="accent-teal-600"
+      />
+      <span className="text-xs">{label}</span>
+    </label>
+  );
+}
+
+// =============================================================================
+// FieldConditions
+// =============================================================================
+
+interface FieldConditionsProps {
+  gameType: "Doubles" | "Singles";
+  weather: string;
+  terrain: string;
+  gravity: boolean;
+  attackerSide: AttackerSideState;
+  defenderSide: DefenderSideState;
+  onGameTypeChange: (v: "Doubles" | "Singles") => void;
+  onWeatherChange: (v: string) => void;
+  onTerrainChange: (v: string) => void;
+  onGravityChange: (v: boolean) => void;
+  onAttackerSideChange: (patch: Partial<AttackerSideState>) => void;
+  onDefenderSideChange: (patch: Partial<DefenderSideState>) => void;
+}
+
+function FieldConditions({
+  gameType,
   weather,
   terrain,
-  lightScreen,
-  reflect,
-  helpingHand,
+  gravity,
+  attackerSide,
+  defenderSide,
+  onGameTypeChange,
   onWeatherChange,
   onTerrainChange,
-  onLightScreenChange,
-  onReflectChange,
-  onHelpingHandChange,
-}: FieldControlsProps) {
+  onGravityChange,
+  onAttackerSideChange,
+  onDefenderSideChange,
+}: FieldConditionsProps) {
   return (
-    <div className="border-border border-t pt-3">
-      <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
-        Field Conditions
-      </p>
-      <div className="flex flex-col gap-2">
+    <Card>
+      <SectionHeader>Field Conditions</SectionHeader>
+      <div className="flex flex-col gap-3">
+        {/* Mode toggle */}
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground w-14 shrink-0 text-xs">
+            Mode
+          </span>
+          <div className="flex gap-1">
+            {(["Doubles", "Singles"] as const).map((gt) => (
+              <button
+                key={gt}
+                type="button"
+                onClick={() => onGameTypeChange(gt)}
+                className={cn(
+                  "rounded px-2 py-1 text-xs font-medium transition-colors",
+                  gameType === gt
+                    ? "bg-teal-600 text-white"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}
+              >
+                {gt}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Weather */}
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground w-16 shrink-0 text-xs">
+          <span className="text-muted-foreground w-14 shrink-0 text-xs">
             Weather
           </span>
-          <ToggleGroup
-            variant="outline"
-            size="sm"
-            value={[weather]}
-            onValueChange={(vals) => {
-              const v = vals[vals.length - 1] as WeatherOption | undefined;
-              if (v) onWeatherChange(v);
-            }}
-          >
-            {(["none", "Sun", "Rain", "Sand", "Snow"] as const).map((w) => (
-              <ToggleGroupItem key={w} value={w} className="text-xs">
-                {w === "none" ? "–" : w}
-              </ToggleGroupItem>
+          <div className="flex flex-wrap gap-1">
+            {WEATHER_OPTIONS.map((w) => (
+              <button
+                key={w}
+                type="button"
+                onClick={() => onWeatherChange(weather === w ? "" : w)}
+                className={cn(
+                  "rounded px-2 py-1 text-xs transition-colors",
+                  weather === w
+                    ? "bg-teal-600 text-white"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}
+              >
+                {WEATHER_LABELS[w]}
+              </button>
             ))}
-          </ToggleGroup>
+          </div>
         </div>
+
         {/* Terrain */}
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground w-16 shrink-0 text-xs">
+          <span className="text-muted-foreground w-14 shrink-0 text-xs">
             Terrain
           </span>
-          <ToggleGroup
-            variant="outline"
-            size="sm"
-            value={[terrain]}
-            onValueChange={(vals) => {
-              const v = vals[vals.length - 1] as TerrainOption | undefined;
-              if (v) onTerrainChange(v);
-            }}
-          >
-            {(["none", "Electric", "Grassy", "Psychic", "Misty"] as const).map(
-              (t) => (
-                <ToggleGroupItem key={t} value={t} className="text-xs">
-                  {t === "none" ? "–" : t.slice(0, 4)}
-                </ToggleGroupItem>
-              )
-            )}
-          </ToggleGroup>
-        </div>
-        {/* Screens + Helping Hand */}
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex cursor-pointer items-center gap-1.5">
-            <Checkbox
-              checked={lightScreen}
-              onCheckedChange={(v) => onLightScreenChange(Boolean(v))}
-            />
-            <span className="text-xs">Light Screen</span>
-          </label>
-          <label className="flex cursor-pointer items-center gap-1.5">
-            <Checkbox
-              checked={reflect}
-              onCheckedChange={(v) => onReflectChange(Boolean(v))}
-            />
-            <span className="text-xs">Reflect</span>
-          </label>
-          <label className="flex cursor-pointer items-center gap-1.5">
-            <Checkbox
-              checked={helpingHand}
-              onCheckedChange={(v) => onHelpingHandChange(Boolean(v))}
-            />
-            <span className="text-xs">Helping Hand</span>
-          </label>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// =============================================================================
-// ManualCalc
-// =============================================================================
-
-interface ManualCalcState {
-  attackerSpecies: string;
-  defenderSpecies: string;
-  moveName: string;
-  result: CalcResult | null;
-}
-
-function ManualCalcForm({
-  weather,
-  terrain,
-  lightScreen,
-  reflect,
-  helpingHand,
-}: {
-  weather: WeatherOption;
-  terrain: TerrainOption;
-  lightScreen: boolean;
-  reflect: boolean;
-  helpingHand: boolean;
-}) {
-  const [state, setState] = useState<ManualCalcState>({
-    attackerSpecies: "",
-    defenderSpecies: "",
-    moveName: "",
-    result: null,
-  });
-  const [calcError, setCalcError] = useState<string | null>(null);
-
-  function handleCalc() {
-    if (!state.attackerSpecies || !state.defenderSpecies || !state.moveName)
-      return;
-    setCalcError(null);
-    try {
-      const attacker = new Pokemon(gen9, state.attackerSpecies, { level: 50 });
-      const defender = new Pokemon(gen9, state.defenderSpecies, { level: 50 });
-      const field = buildSmogonField(
-        weather,
-        terrain,
-        lightScreen,
-        reflect,
-        helpingHand,
-        false
-      );
-      const result = runCalc(attacker, defender, state.moveName, field);
-      if (result === null) {
-        setState((s) => ({ ...s, result: null }));
-        setCalcError(
-          "This move does not deal calculable damage to the target."
-        );
-        return;
-      }
-      setState((s) => ({ ...s, result }));
-    } catch (err) {
-      console.warn("Damage calculation failed:", err);
-      setState((s) => ({ ...s, result: null }));
-      setCalcError("Calculation failed — check your inputs");
-    }
-  }
-
-  return (
-    <div className="border-border flex flex-col gap-2 border-t pt-3">
-      <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-        Manual Calc
-      </p>
-      <div className="grid grid-cols-3 gap-2">
-        <div className="flex flex-col gap-1">
-          <label className="text-muted-foreground text-[10px] uppercase">
-            Attacker
-          </label>
-          <input
-            className="border-border bg-background rounded-md border px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-teal-500"
-            placeholder="e.g. Charizard"
-            value={state.attackerSpecies}
-            onChange={(e) =>
-              setState((s) => ({ ...s, attackerSpecies: e.target.value }))
-            }
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-muted-foreground text-[10px] uppercase">
-            Move
-          </label>
-          <input
-            className="border-border bg-background rounded-md border px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-teal-500"
-            placeholder="e.g. Flamethrower"
-            value={state.moveName}
-            onChange={(e) =>
-              setState((s) => ({ ...s, moveName: e.target.value }))
-            }
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-muted-foreground text-[10px] uppercase">
-            Defender
-          </label>
-          <input
-            className="border-border bg-background rounded-md border px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-teal-500"
-            placeholder="e.g. Kingambit"
-            value={state.defenderSpecies}
-            onChange={(e) =>
-              setState((s) => ({ ...s, defenderSpecies: e.target.value }))
-            }
-          />
-        </div>
-      </div>
-      <Button size="sm" variant="outline" onClick={handleCalc}>
-        Calculate
-      </Button>
-      {calcError && !state.result && (
-        <p className="text-destructive text-xs">{calcError}</p>
-      )}
-      {state.result && <CalcRow result={state.result} />}
-    </div>
-  );
-}
-
-// =============================================================================
-// Auto Suggestions (Pokemon selected)
-// =============================================================================
-
-function AutoSuggestions({
-  pokemon,
-  weather,
-  terrain,
-  lightScreen,
-  reflect,
-  helpingHand,
-}: {
-  pokemon: Tables<"pokemon">;
-  weather: WeatherOption;
-  terrain: TerrainOption;
-  lightScreen: boolean;
-  reflect: boolean;
-  helpingHand: boolean;
-}) {
-  const attackerSmogon = toSmogonPokemon(pokemon);
-  const offensiveField = buildSmogonField(
-    weather,
-    terrain,
-    lightScreen,
-    reflect,
-    helpingHand,
-    true
-  );
-  const defensiveField = buildSmogonField(
-    weather,
-    terrain,
-    lightScreen,
-    reflect,
-    helpingHand,
-    false
-  );
-
-  const moves = [
-    pokemon.move1,
-    pokemon.move2,
-    pokemon.move3,
-    pokemon.move4,
-  ].filter((m): m is string => Boolean(m));
-
-  const offensiveResults: CalcResult[] = [];
-  const defensiveResults: CalcResult[] = [];
-  let failedCalcCount = 0;
-
-  for (const threat of GEN9_VGC_META_THREATS) {
-    const threatSmogon = toSmogonThreat(threat);
-
-    // Offensive: our moves vs threat
-    for (const moveName of moves) {
-      const result = runCalc(
-        attackerSmogon,
-        threatSmogon,
-        moveName,
-        offensiveField
-      );
-      if (result === null) {
-        failedCalcCount++;
-      } else if (result.maxPercent > 0) {
-        offensiveResults.push(result);
-      }
-    }
-
-    // Defensive: threat moves vs us
-    for (const moveName of threat.moves) {
-      const result = runCalc(
-        threatSmogon,
-        attackerSmogon,
-        moveName,
-        defensiveField
-      );
-      if (result === null) {
-        failedCalcCount++;
-      } else if (result.maxPercent > 0) {
-        defensiveResults.push(result);
-      }
-    }
-  }
-
-  // Sort: OHKOs first, then rolls, then 2HKOs
-  function sortCalcResults(results: CalcResult[]): CalcResult[] {
-    return [...results].sort((a, b) => {
-      const aVerdict = getVerdict(a.minPercent, a.maxPercent);
-      const bVerdict = getVerdict(b.minPercent, b.maxPercent);
-      const order = ["OHKO", "roll", "2HKO", "3HKO", ""];
-      return order.indexOf(aVerdict) - order.indexOf(bVerdict);
-    });
-  }
-
-  const topOffensive = sortCalcResults(offensiveResults).slice(0, 10);
-  const topDefensive = sortCalcResults(defensiveResults).slice(0, 10);
-
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Offensive */}
-      <section>
-        <p className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-wide uppercase">
-          {pokemon.species} attacks
-        </p>
-        {topOffensive.length === 0 ? (
-          <p className="text-muted-foreground text-xs">
-            No damage calcs available
-          </p>
-        ) : (
-          <div className="flex flex-col gap-0.5">
-            {topOffensive.map((r, i) => (
-              <CalcRow key={i} result={r} />
+          <div className="flex flex-wrap gap-1">
+            {TERRAIN_OPTIONS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => onTerrainChange(terrain === t ? "" : t)}
+                className={cn(
+                  "rounded px-2 py-1 text-xs transition-colors",
+                  terrain === t
+                    ? "bg-teal-600 text-white"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}
+              >
+                {TERRAIN_LABELS[t]}
+              </button>
             ))}
           </div>
-        )}
-      </section>
+        </div>
 
-      {/* Defensive */}
-      <section>
-        <p className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-wide uppercase">
-          Taking hits
-        </p>
-        {topDefensive.length === 0 ? (
-          <p className="text-muted-foreground text-xs">
-            No damage calcs available
-          </p>
-        ) : (
-          <div className="flex flex-col gap-0.5">
-            {topDefensive.map((r, i) => (
-              <CalcRow key={i} result={r} />
-            ))}
+        {/* Gravity */}
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground w-14 shrink-0 text-xs">
+            Global
+          </span>
+          <SideToggle
+            label="Gravity"
+            checked={gravity}
+            onChange={onGravityChange}
+          />
+        </div>
+
+        {/* Per-side conditions */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Your side */}
+          <div>
+            <p className="text-muted-foreground mb-1 text-[10px] font-semibold uppercase">
+              Your Side
+            </p>
+            <div className="flex flex-col gap-1">
+              <SideToggle
+                label="Reflect"
+                checked={attackerSide.reflect}
+                onChange={(v) => onAttackerSideChange({ reflect: v })}
+              />
+              <SideToggle
+                label="Light Screen"
+                checked={attackerSide.lightScreen}
+                onChange={(v) => onAttackerSideChange({ lightScreen: v })}
+              />
+              <SideToggle
+                label="Aurora Veil"
+                checked={attackerSide.auroraVeil}
+                onChange={(v) => onAttackerSideChange({ auroraVeil: v })}
+              />
+              <SideToggle
+                label="Tailwind"
+                checked={attackerSide.tailwind}
+                onChange={(v) => onAttackerSideChange({ tailwind: v })}
+              />
+              <SideToggle
+                label="Helping Hand"
+                checked={attackerSide.helpingHand}
+                onChange={(v) => onAttackerSideChange({ helpingHand: v })}
+              />
+              <SideToggle
+                label="Friend Guard"
+                checked={attackerSide.friendGuard}
+                onChange={(v) => onAttackerSideChange({ friendGuard: v })}
+              />
+            </div>
           </div>
-        )}
-      </section>
 
-      {/* Failed calculations indicator */}
-      {failedCalcCount > 0 && (
+          {/* Their side */}
+          <div>
+            <p className="text-muted-foreground mb-1 text-[10px] font-semibold uppercase">
+              Their Side
+            </p>
+            <div className="flex flex-col gap-1">
+              <SideToggle
+                label="Reflect"
+                checked={defenderSide.reflect}
+                onChange={(v) => onDefenderSideChange({ reflect: v })}
+              />
+              <SideToggle
+                label="Light Screen"
+                checked={defenderSide.lightScreen}
+                onChange={(v) => onDefenderSideChange({ lightScreen: v })}
+              />
+              <SideToggle
+                label="Aurora Veil"
+                checked={defenderSide.auroraVeil}
+                onChange={(v) => onDefenderSideChange({ auroraVeil: v })}
+              />
+              <SideToggle
+                label="Tailwind"
+                checked={defenderSide.tailwind}
+                onChange={(v) => onDefenderSideChange({ tailwind: v })}
+              />
+              <SideToggle
+                label="Helping Hand"
+                checked={defenderSide.helpingHand}
+                onChange={(v) => onDefenderSideChange({ helpingHand: v })}
+              />
+              <SideToggle
+                label="Friend Guard"
+                checked={defenderSide.friendGuard}
+                onChange={(v) => onDefenderSideChange({ friendGuard: v })}
+              />
+              <SideToggle
+                label="Stealth Rock"
+                checked={defenderSide.stealthRock}
+                onChange={(v) => onDefenderSideChange({ stealthRock: v })}
+              />
+              <div className="flex items-center gap-1">
+                <span className="text-xs">Spikes</span>
+                <select
+                  value={defenderSide.spikes}
+                  onChange={(e) =>
+                    onDefenderSideChange({ spikes: Number(e.target.value) })
+                  }
+                  className="border-border bg-background w-12 rounded border px-1 py-0.5 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                >
+                  {[0, 1, 2, 3].map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <SideToggle
+                label="Salt Cure"
+                checked={defenderSide.saltCure}
+                onChange={(v) => onDefenderSideChange({ saltCure: v })}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// =============================================================================
+// ResultPanel (sticky bottom)
+// =============================================================================
+
+interface ResultPanelProps {
+  attackerName: string;
+  defenderName: string;
+  moveName: string | null;
+  direction: "offense" | "defense";
+  output: CalcOutput | null;
+}
+
+function ResultPanel({
+  attackerName,
+  defenderName,
+  moveName,
+  direction,
+  output,
+}: ResultPanelProps) {
+  if (!moveName) {
+    return (
+      <div className="border-t bg-white px-3 py-3">
+        <p className="text-muted-foreground text-xs">No move selected.</p>
+      </div>
+    );
+  }
+
+  const effectiveAttacker =
+    direction === "offense" ? attackerName : defenderName;
+  const effectiveDefender =
+    direction === "offense" ? defenderName : attackerName;
+  const verdict = output
+    ? getVerdict(output.minPercent, output.maxPercent)
+    : null;
+
+  return (
+    <div className="border-t bg-white px-3 py-3">
+      {/* Move → Target header */}
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="text-xs font-semibold">{moveName}</span>
+        <span className="text-muted-foreground text-xs">→</span>
+        <span className="text-xs font-semibold">{effectiveDefender}</span>
+        {verdict && <VerdictBadge verdict={verdict} />}
+      </div>
+
+      {output ? (
+        <>
+          {/* Damage bar */}
+          <div className="mb-1.5">
+            <div className="bg-muted relative h-[7px] overflow-hidden rounded-full">
+              <div
+                className={cn(
+                  "h-full rounded-full",
+                  output.maxPercent >= 100
+                    ? "bg-red-500"
+                    : output.maxPercent >= 50
+                      ? "bg-orange-500"
+                      : output.maxPercent >= 25
+                        ? "bg-amber-500"
+                        : "bg-green-500"
+                )}
+                style={{ width: `${Math.min(100, output.maxPercent)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Range */}
+          <p className="mb-1 text-xs font-semibold tabular-nums">
+            {output.minPercent}% – {output.maxPercent}%
+          </p>
+
+          {/* Desc text */}
+          <p className="text-muted-foreground mb-1 text-[10px] leading-snug">
+            {output.desc}
+          </p>
+
+          {/* Damage rolls */}
+          {output.rolls.length > 0 && (
+            <p className="text-muted-foreground text-[10px] tabular-nums">
+              Rolls:{" "}
+              {output.rolls
+                .map(
+                  (r) =>
+                    `${Math.floor((r / output.defenderMaxHP) * 1000) / 10}%`
+                )
+                .join(", ")}
+            </p>
+          )}
+        </>
+      ) : (
         <p className="text-muted-foreground text-xs">
-          {failedCalcCount} calculation
-          {failedCalcCount === 1 ? "" : "s"} could not be computed
+          {effectiveAttacker} using {moveName} vs {effectiveDefender} — no
+          damage dealt.
         </p>
       )}
     </div>
@@ -608,75 +1455,315 @@ function AutoSuggestions({
 }
 
 // =============================================================================
-// DamageCalcTab
+// DamageCalcTab — main component
 // =============================================================================
 
+/**
+ * Traditional damage calculator tab in the team builder.
+ *
+ * The selected Pokemon's actual set is the attacker. The defender is fully
+ * configurable in the right panel. Live calculations update as any input changes.
+ */
 export function DamageCalcTab({
   team: _team,
   selectedPokemon,
-  format: _format,
+  format,
 }: DamageCalcTabProps) {
-  const [weather, setWeather] = useState<WeatherOption>("none");
-  const [terrain, setTerrain] = useState<TerrainOption>("none");
-  const [lightScreen, setLightScreen] = useState(false);
-  const [reflect, setReflect] = useState(false);
-  const [helpingHand, setHelpingHand] = useState(false);
-  const [manualCalcOpen, setManualCalcOpen] = useState(false);
+  // --- Direction ---
+  const [direction, setDirection] = useState<"offense" | "defense">("offense");
+
+  // --- Selected move (0-3) ---
+  const [selectedMoveIdx, setSelectedMoveIdx] = useState(0);
+
+  // --- Crit per move ---
+  const [critMoves, setCritMoves] = useState([false, false, false, false]);
+
+  // --- Attacker modifiers (calc-only) ---
+  const [attackerStatus, setAttackerStatus] = useState("Healthy");
+  const [attackerBoosts, setAttackerBoosts] = useState<AttackerBoosts>({
+    atk: 0,
+    def: 0,
+    spa: 0,
+    spd: 0,
+    spe: 0,
+  });
+
+  // --- Defender ---
+  const [defenderSpecies, setDefenderSpecies] = useState("Incineroar");
+  const [defenderAbility, setDefenderAbility] = useState("Intimidate");
+  const [defenderItem, setDefenderItem] = useState("Sitrus Berry");
+  const [defenderNature, setDefenderNature] = useState("Careful");
+  const [defenderTera, setDefenderTera] = useState("");
+  const [defenderEvs, setDefenderEvs] = useState<DefenderEvs>({
+    hp: 252,
+    atk: 0,
+    def: 0,
+    spa: 0,
+    spd: 4,
+    spe: 0,
+  });
+  const [defenderBoosts, setDefenderBoosts] = useState<DefenderBoosts>({
+    atk: 0,
+    def: 0,
+    spa: 0,
+    spd: 0,
+    spe: 0,
+  });
+  const [defenderStatus, setDefenderStatus] = useState("Healthy");
+  const [defenderHpPercent, setDefenderHpPercent] = useState(100);
+
+  // --- Field ---
+  const [gameType, setGameType] = useState<"Doubles" | "Singles">("Doubles");
+  const [weather, setWeather] = useState("");
+  const [terrain, setTerrain] = useState("");
+  const [gravity, setGravity] = useState(false);
+  const [attackerSide, setAttackerSide] = useState<AttackerSideState>({
+    reflect: false,
+    lightScreen: false,
+    auroraVeil: false,
+    tailwind: false,
+    helpingHand: false,
+    friendGuard: false,
+  });
+  const [defenderSide, setDefenderSide] = useState<DefenderSideState>({
+    reflect: false,
+    lightScreen: false,
+    auroraVeil: false,
+    tailwind: false,
+    helpingHand: false,
+    friendGuard: false,
+    stealthRock: false,
+    spikes: 0,
+    saltCure: false,
+  });
+
+  // --- Derived: defender types (computed at render time — no effect needed) ---
+  // species.get() requires the ID brand, so we cast with asSmogon.
+  function getDefenderTypes(species: string): string[] {
+    try {
+      const sp = gen9.species.get(asSmogon(species.toLowerCase()));
+      return sp ? (sp.types as string[]) : [];
+    } catch {
+      return [];
+    }
+  }
+  const defenderTypes = getDefenderTypes(defenderSpecies);
+
+  // --- Auto-populate defender on species change ---
+  function handleDefenderSpeciesChange(newSpecies: string) {
+    setDefenderSpecies(newSpecies);
+    const abilities = getValidAbilities(newSpecies);
+    setDefenderAbility(abilities[0] ?? "");
+    setDefenderItem("");
+    setDefenderNature("Hardy");
+    setDefenderTera("");
+    setDefenderEvs({ hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 });
+    setDefenderBoosts({ atk: 0, def: 0, spa: 0, spd: 0, spe: 0 });
+    setDefenderStatus("Healthy");
+    setDefenderHpPercent(100);
+  }
+
+  // --- Compute per-move calcs ---
+  const moves = [
+    selectedPokemon?.move1 ?? null,
+    selectedPokemon?.move2 ?? null,
+    selectedPokemon?.move3 ?? null,
+    selectedPokemon?.move4 ?? null,
+  ];
+
+  const attackerName = selectedPokemon?.species ?? "—";
+  const defenderName = defenderSpecies || "—";
+
+  function getCalcOutputForMove(
+    moveIdx: number,
+    overrideDirection?: "offense" | "defense"
+  ): CalcOutput | null {
+    if (!selectedPokemon) return null;
+    const moveName = moves[moveIdx];
+    if (!moveName) return null;
+
+    const isCrit = critMoves[moveIdx] ?? false;
+    const dir = overrideDirection ?? direction;
+
+    const field = buildField(
+      gameType,
+      weather,
+      terrain,
+      gravity,
+      attackerSide,
+      defenderSide,
+      dir
+    );
+
+    if (dir === "offense") {
+      const attacker = buildAttackerFromDb(
+        selectedPokemon,
+        attackerBoosts,
+        attackerStatus
+      );
+      const defender = buildDefenderPokemon(
+        defenderSpecies,
+        defenderAbility,
+        defenderItem,
+        defenderNature,
+        defenderTera,
+        defenderEvs,
+        defenderBoosts,
+        defenderStatus,
+        defenderHpPercent
+      );
+      if (!attacker || !defender) return null;
+      return runCalc(attacker, defender, moveName, isCrit, field);
+    } else {
+      // "defense": the defender's Pokémon uses the move against us
+      // We build the defender as attacker, and we are the defender
+      const defenderAsAttacker = buildDefenderPokemon(
+        defenderSpecies,
+        defenderAbility,
+        defenderItem,
+        defenderNature,
+        defenderTera,
+        defenderEvs,
+        defenderBoosts,
+        defenderStatus,
+        100
+      );
+      const ourPokemon = buildAttackerFromDb(
+        selectedPokemon,
+        { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+        "Healthy"
+      );
+      if (!defenderAsAttacker || !ourPokemon) return null;
+      return runCalc(defenderAsAttacker, ourPokemon, moveName, isCrit, field);
+    }
+  }
+
+  // Compute calcs for all moves (live as state changes)
+  const moveCalcOutputs = moves.map((_, idx) => getCalcOutputForMove(idx));
+
+  // Selected move output
+  const selectedMoveOutput = moveCalcOutputs[selectedMoveIdx] ?? null;
+  const selectedMoveName = moves[selectedMoveIdx] ?? null;
+
+  // -------------------------------------------------------------------------
+  // Early exit — no Pokemon selected
+  // -------------------------------------------------------------------------
 
   if (!selectedPokemon) {
     return (
       <div className="flex flex-col items-center justify-center p-8">
         <p className="text-muted-foreground text-sm">
-          Select a Pokémon to see damage calculations
+          Select a Pokémon to use the calculator
         </p>
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col gap-4 p-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">{selectedPokemon.species}</p>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setManualCalcOpen((v) => !v)}
-        >
-          {manualCalcOpen ? "Close" : "Manual Calc"}
-        </Button>
-      </div>
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
 
-      <AutoSuggestions
-        pokemon={selectedPokemon}
-        weather={weather}
-        terrain={terrain}
-        lightScreen={lightScreen}
-        reflect={reflect}
-        helpingHand={helpingHand}
+  return (
+    <div className="flex flex-col gap-3 pb-32">
+      {/* Direction toggle */}
+      <DirectionToggle
+        value={direction}
+        attackerName={attackerName}
+        defenderName={defenderName}
+        onChange={setDirection}
       />
 
-      <FieldControls
+      {/* Move selector */}
+      <Card>
+        <SectionHeader>Moves</SectionHeader>
+        <div className="flex flex-col gap-0.5">
+          {moves.map((moveName, idx) => (
+            <MoveSelectorRow
+              key={idx}
+              moveName={moveName}
+              moveIdx={idx}
+              isSelected={selectedMoveIdx === idx}
+              isCrit={critMoves[idx] ?? false}
+              calcOutput={moveCalcOutputs[idx] ?? null}
+              onSelect={() => setSelectedMoveIdx(idx)}
+              onCritToggle={() => {
+                const next = [...critMoves];
+                next[idx] = !next[idx];
+                setCritMoves(next);
+              }}
+            />
+          ))}
+        </div>
+      </Card>
+
+      {/* Attacker modifiers */}
+      <AttackerModifiers
+        status={attackerStatus}
+        boosts={attackerBoosts}
+        onStatusChange={setAttackerStatus}
+        onBoostChange={(stat, v) =>
+          setAttackerBoosts((prev) => ({ ...prev, [stat]: v }))
+        }
+      />
+
+      {/* Defender */}
+      <DefenderPanel
+        species={defenderSpecies}
+        types={defenderTypes}
+        ability={defenderAbility}
+        item={defenderItem}
+        nature={defenderNature}
+        teraType={defenderTera}
+        evs={defenderEvs}
+        boosts={defenderBoosts}
+        status={defenderStatus}
+        hpPercent={defenderHpPercent}
+        formatId={format?.id}
+        onSpeciesChange={handleDefenderSpeciesChange}
+        onAbilityChange={setDefenderAbility}
+        onItemChange={setDefenderItem}
+        onNatureChange={setDefenderNature}
+        onTeraChange={setDefenderTera}
+        onEvChange={(stat, v) =>
+          setDefenderEvs((prev) => ({ ...prev, [stat]: v }))
+        }
+        onBoostChange={(stat, v) =>
+          setDefenderBoosts((prev) => ({ ...prev, [stat]: v }))
+        }
+        onStatusChange={setDefenderStatus}
+        onHpPercentChange={setDefenderHpPercent}
+      />
+
+      {/* Field conditions */}
+      <FieldConditions
+        gameType={gameType}
         weather={weather}
         terrain={terrain}
-        lightScreen={lightScreen}
-        reflect={reflect}
-        helpingHand={helpingHand}
+        gravity={gravity}
+        attackerSide={attackerSide}
+        defenderSide={defenderSide}
+        onGameTypeChange={setGameType}
         onWeatherChange={setWeather}
         onTerrainChange={setTerrain}
-        onLightScreenChange={setLightScreen}
-        onReflectChange={setReflect}
-        onHelpingHandChange={setHelpingHand}
+        onGravityChange={setGravity}
+        onAttackerSideChange={(patch) =>
+          setAttackerSide((prev) => ({ ...prev, ...patch }))
+        }
+        onDefenderSideChange={(patch) =>
+          setDefenderSide((prev) => ({ ...prev, ...patch }))
+        }
       />
 
-      {manualCalcOpen && (
-        <ManualCalcForm
-          weather={weather}
-          terrain={terrain}
-          lightScreen={lightScreen}
-          reflect={reflect}
-          helpingHand={helpingHand}
+      {/* Sticky result */}
+      <div className="fixed right-0 bottom-0 left-0 z-10 shadow-lg md:static md:shadow-none">
+        <ResultPanel
+          attackerName={attackerName}
+          defenderName={defenderName}
+          moveName={selectedMoveName}
+          direction={direction}
+          output={selectedMoveOutput}
         />
-      )}
+      </div>
     </div>
   );
 }
