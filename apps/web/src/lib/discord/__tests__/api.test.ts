@@ -3,11 +3,27 @@
  */
 
 // =============================================================================
-// Mocks
+// Mocks — set up before any imports so Jest hoisting works correctly
 // =============================================================================
 
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
+const mockGet = jest.fn();
+const mockPost = jest.fn();
+const mockPatch = jest.fn();
+const mockPut = jest.fn();
+const mockDelete = jest.fn();
+
+const mockRestInstance = {
+  get: mockGet,
+  post: mockPost,
+  patch: mockPatch,
+  put: mockPut,
+  delete: mockDelete,
+  setToken: jest.fn().mockReturnThis(),
+};
+
+jest.mock("@discordjs/rest", () => ({
+  REST: jest.fn().mockImplementation(() => mockRestInstance),
+}));
 
 // =============================================================================
 // Imports (after mocks)
@@ -28,13 +44,13 @@ import {
   sendChannelMessage,
   sendDM,
   sendFollowup,
+  _setRestInstance,
 } from "../api";
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
-const BOT_TOKEN = "Bot test-token-abc";
 const APP_ID = "app-id-123";
 const INTERACTION_TOKEN = "interaction-token-xyz";
 const GUILD_ID = "guild-999";
@@ -46,30 +62,21 @@ const MESSAGE_ID = "message-555";
 const EMBED = { title: "Test Embed", color: 0x14b8a6 };
 const CONTENT = { content: "Hello!" };
 
-function makeOkResponse(body: unknown, headers: Record<string, string> = {}) {
-  return {
-    ok: true,
-    status: 200,
-    headers: {
-      get: (name: string) => headers[name] ?? null,
-    },
-    json: async () => body,
-  };
-}
-
-function makeErrorResponse(
+/** Build a fake @discordjs/rest API error with the same shape the library uses. */
+function makeRestError(
   status: number,
-  body: unknown,
-  headers: Record<string, string> = {}
+  rawError: { code?: number; message?: string },
+  retryAfter?: number
 ) {
-  return {
-    ok: false,
-    status,
-    headers: {
-      get: (name: string) => headers[name] ?? null,
-    },
-    json: async () => body,
+  const err = new Error(rawError.message ?? "Discord API error") as Error & {
+    status: number;
+    rawError: typeof rawError;
+    retryAfter?: number;
   };
+  err.status = status;
+  err.rawError = rawError;
+  if (retryAfter !== undefined) err.retryAfter = retryAfter;
+  return err;
 }
 
 // =============================================================================
@@ -85,6 +92,9 @@ beforeEach(() => {
     DISCORD_BOT_TOKEN: "test-token-abc",
     DISCORD_APP_ID: APP_ID,
   };
+  // Inject the mock REST instance so tests don't trigger lazy construction
+  // with a real token check.
+  _setRestInstance(mockRestInstance as never);
 });
 
 afterEach(() => {
@@ -96,40 +106,42 @@ afterEach(() => {
 // =============================================================================
 
 describe("editInteractionResponse", () => {
-  it("sends PATCH to /webhooks/{appId}/{token}/messages/@original with embed", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse({}));
+  it("calls rest.patch on the correct webhook-message route with embed", async () => {
+    mockPatch.mockResolvedValue({});
 
     await editInteractionResponse(INTERACTION_TOKEN, { embed: EMBED });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `https://discord.com/api/v10/webhooks/${APP_ID}/${INTERACTION_TOKEN}/messages/@original`,
+    // Routes.webhookMessage URL-encodes @original → %40original
+    expect(mockPatch).toHaveBeenCalledWith(
+      `/webhooks/${APP_ID}/${INTERACTION_TOKEN}/messages/%40original`,
       expect.objectContaining({
-        method: "PATCH",
-        body: JSON.stringify({
-          allowed_mentions: { parse: [] },
+        body: expect.objectContaining({
           embeds: [EMBED],
+          allowed_mentions: { parse: [] },
         }),
       })
     );
   });
 
-  it("sends PATCH with content payload", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse({}));
+  it("calls rest.patch with content payload", async () => {
+    mockPatch.mockResolvedValue({});
 
     await editInteractionResponse(INTERACTION_TOKEN, CONTENT);
 
-    const callBody = JSON.parse(mockFetch.mock.calls[0][1].body as string);
-    expect(callBody.content).toBe("Hello!");
-    expect(callBody.embeds).toBeUndefined();
+    expect(mockPatch).toHaveBeenCalledWith(
+      `/webhooks/${APP_ID}/${INTERACTION_TOKEN}/messages/%40original`,
+      expect.objectContaining({
+        body: expect.objectContaining({ content: "Hello!" }),
+      })
+    );
   });
 
-  it("includes Authorization header with bot token", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse({}));
+  it("throws when DISCORD_APP_ID is not set", async () => {
+    delete process.env.DISCORD_APP_ID;
 
-    await editInteractionResponse(INTERACTION_TOKEN, CONTENT);
-
-    const headers = mockFetch.mock.calls[0][1].headers;
-    expect(headers.Authorization).toBe(BOT_TOKEN);
+    await expect(
+      editInteractionResponse(INTERACTION_TOKEN, CONTENT)
+    ).rejects.toThrow("DISCORD_APP_ID is not set");
   });
 });
 
@@ -138,19 +150,21 @@ describe("editInteractionResponse", () => {
 // =============================================================================
 
 describe("sendFollowup", () => {
-  it("sends POST to /webhooks/{appId}/{token}", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse({ id: "msg-1" }));
+  it("calls rest.post on the correct webhook route", async () => {
+    mockPost.mockResolvedValue({ id: "msg-1" });
 
     await sendFollowup(INTERACTION_TOKEN, { embed: EMBED });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `https://discord.com/api/v10/webhooks/${APP_ID}/${INTERACTION_TOKEN}`,
-      expect.objectContaining({ method: "POST" })
+    expect(mockPost).toHaveBeenCalledWith(
+      `/webhooks/${APP_ID}/${INTERACTION_TOKEN}`,
+      expect.objectContaining({
+        body: expect.objectContaining({ embeds: [EMBED] }),
+      })
     );
   });
 
   it("returns the message from the response", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse({ id: "msg-2", content: "" }));
+    mockPost.mockResolvedValue({ id: "msg-2", content: "" });
 
     const msg = await sendFollowup(INTERACTION_TOKEN, CONTENT);
 
@@ -163,24 +177,30 @@ describe("sendFollowup", () => {
 // =============================================================================
 
 describe("sendChannelMessage", () => {
-  it("sends POST to /channels/{channelId}/messages", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse({ id: "msg-3" }));
+  it("calls rest.post on the correct channel-messages route", async () => {
+    mockPost.mockResolvedValue({ id: "msg-3" });
 
     await sendChannelMessage(CHANNEL_ID, { embed: EMBED });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `https://discord.com/api/v10/channels/${CHANNEL_ID}/messages`,
-      expect.objectContaining({ method: "POST" })
+    expect(mockPost).toHaveBeenCalledWith(
+      `/channels/${CHANNEL_ID}/messages`,
+      expect.anything()
     );
   });
 
   it("includes allowed_mentions parse: [] to prevent accidental pings", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse({ id: "msg-4" }));
+    mockPost.mockResolvedValue({ id: "msg-4" });
 
     await sendChannelMessage(CHANNEL_ID, CONTENT);
 
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
-    expect(body.allowed_mentions).toEqual({ parse: [] });
+    expect(mockPost).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: expect.objectContaining({
+          allowed_mentions: { parse: [] },
+        }),
+      })
+    );
   });
 });
 
@@ -189,14 +209,13 @@ describe("sendChannelMessage", () => {
 // =============================================================================
 
 describe("deleteMessage", () => {
-  it("sends DELETE to /channels/{channelId}/messages/{messageId}", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse(null));
+  it("calls rest.delete on the correct channel-message route", async () => {
+    mockDelete.mockResolvedValue(null);
 
     await deleteMessage(CHANNEL_ID, MESSAGE_ID);
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `https://discord.com/api/v10/channels/${CHANNEL_ID}/messages/${MESSAGE_ID}`,
-      expect.objectContaining({ method: "DELETE" })
+    expect(mockDelete).toHaveBeenCalledWith(
+      `/channels/${CHANNEL_ID}/messages/${MESSAGE_ID}`
     );
   });
 });
@@ -206,28 +225,37 @@ describe("deleteMessage", () => {
 // =============================================================================
 
 describe("sendDM", () => {
-  it("opens DM channel then sends message", async () => {
-    // First call: POST /users/@me/channels returns DM channel
-    // Second call: POST /channels/{dmId}/messages
-    mockFetch
-      .mockResolvedValueOnce(makeOkResponse({ id: "dm-channel-1", type: 1 }))
-      .mockResolvedValueOnce(makeOkResponse({ id: "msg-5" }));
+  it("opens DM channel via user-channels route then sends channel message", async () => {
+    // First post: open DM channel
+    // Second post: send channel message
+    mockPost
+      .mockResolvedValueOnce({ id: "dm-channel-1", type: 1 })
+      .mockResolvedValueOnce({ id: "msg-5" });
 
     await sendDM(USER_ID, { embed: EMBED });
 
-    expect(mockFetch).toHaveBeenCalledTimes(2);
-    const [firstUrl] = mockFetch.mock.calls[0];
-    expect(firstUrl).toBe("https://discord.com/api/v10/users/@me/channels");
+    expect(mockPost).toHaveBeenCalledTimes(2);
 
-    const [secondUrl] = mockFetch.mock.calls[1];
-    expect(secondUrl).toBe(
-      "https://discord.com/api/v10/channels/dm-channel-1/messages"
+    // First call opens the DM channel
+    expect(mockPost).toHaveBeenNthCalledWith(
+      1,
+      "/users/@me/channels",
+      expect.objectContaining({
+        body: expect.objectContaining({ recipient_id: USER_ID }),
+      })
+    );
+
+    // Second call sends the message to the DM channel
+    expect(mockPost).toHaveBeenNthCalledWith(
+      2,
+      `/channels/dm-channel-1/messages`,
+      expect.anything()
     );
   });
 
   it("throws DiscordDMBlockedError when error code 50007 on channel open", async () => {
-    mockFetch.mockResolvedValueOnce(
-      makeErrorResponse(403, {
+    mockPost.mockRejectedValueOnce(
+      makeRestError(403, {
         code: 50007,
         message: "Cannot send messages to this user",
       })
@@ -239,10 +267,10 @@ describe("sendDM", () => {
   });
 
   it("throws DiscordDMBlockedError when error code 50007 on message send", async () => {
-    mockFetch
-      .mockResolvedValueOnce(makeOkResponse({ id: "dm-channel-1", type: 1 }))
-      .mockResolvedValueOnce(
-        makeErrorResponse(403, {
+    mockPost
+      .mockResolvedValueOnce({ id: "dm-channel-1", type: 1 })
+      .mockRejectedValueOnce(
+        makeRestError(403, {
           code: 50007,
           message: "Cannot send messages to this user",
         })
@@ -259,16 +287,13 @@ describe("sendDM", () => {
 // =============================================================================
 
 describe("getGuildChannels", () => {
-  it("sends GET to /guilds/{guildId}/channels", async () => {
+  it("calls rest.get on the correct guild-channels route and returns data", async () => {
     const channels = [{ id: "ch-1", name: "general", type: 0 }];
-    mockFetch.mockResolvedValue(makeOkResponse(channels));
+    mockGet.mockResolvedValue(channels);
 
     const result = await getGuildChannels(GUILD_ID);
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `https://discord.com/api/v10/guilds/${GUILD_ID}/channels`,
-      expect.objectContaining({ method: "GET" })
-    );
+    expect(mockGet).toHaveBeenCalledWith(`/guilds/${GUILD_ID}/channels`);
     expect(result).toEqual(channels);
   });
 });
@@ -278,18 +303,15 @@ describe("getGuildChannels", () => {
 // =============================================================================
 
 describe("getGuildRoles", () => {
-  it("sends GET to /guilds/{guildId}/roles", async () => {
+  it("calls rest.get on the correct guild-roles route and returns data", async () => {
     const roles = [
       { id: "role-1", name: "Admin", color: 0, position: 1, managed: false },
     ];
-    mockFetch.mockResolvedValue(makeOkResponse(roles));
+    mockGet.mockResolvedValue(roles);
 
     const result = await getGuildRoles(GUILD_ID);
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `https://discord.com/api/v10/guilds/${GUILD_ID}/roles`,
-      expect.objectContaining({ method: "GET" })
-    );
+    expect(mockGet).toHaveBeenCalledWith(`/guilds/${GUILD_ID}/roles`);
     expect(result).toEqual(roles);
   });
 });
@@ -299,27 +321,25 @@ describe("getGuildRoles", () => {
 // =============================================================================
 
 describe("assignRole", () => {
-  it("sends PUT to /guilds/{guildId}/members/{userId}/roles/{roleId}", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse(null));
+  it("calls rest.put on the correct guild-member-role route", async () => {
+    mockPut.mockResolvedValue(null);
 
     await assignRole(GUILD_ID, USER_ID, ROLE_ID);
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${USER_ID}/roles/${ROLE_ID}`,
-      expect.objectContaining({ method: "PUT" })
+    expect(mockPut).toHaveBeenCalledWith(
+      `/guilds/${GUILD_ID}/members/${USER_ID}/roles/${ROLE_ID}`
     );
   });
 });
 
 describe("removeRole", () => {
-  it("sends DELETE to /guilds/{guildId}/members/{userId}/roles/{roleId}", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse(null));
+  it("calls rest.delete on the correct guild-member-role route", async () => {
+    mockDelete.mockResolvedValue(null);
 
     await removeRole(GUILD_ID, USER_ID, ROLE_ID);
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${USER_ID}/roles/${ROLE_ID}`,
-      expect.objectContaining({ method: "DELETE" })
+    expect(mockDelete).toHaveBeenCalledWith(
+      `/guilds/${GUILD_ID}/members/${USER_ID}/roles/${ROLE_ID}`
     );
   });
 });
@@ -329,51 +349,41 @@ describe("removeRole", () => {
 // =============================================================================
 
 describe("registerGlobalCommands", () => {
-  it("sends PUT to /applications/{appId}/commands", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse([]));
+  it("calls rest.put on the correct application-commands route with the defs body", async () => {
+    mockPut.mockResolvedValue([]);
 
     const defs = [{ name: "team", description: "View your team" }];
-    await registerGlobalCommands(defs);
+    await registerGlobalCommands(defs as never);
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `https://discord.com/api/v10/applications/${APP_ID}/commands`,
-      expect.objectContaining({
-        method: "PUT",
-        body: JSON.stringify(defs),
-      })
+    expect(mockPut).toHaveBeenCalledWith(
+      `/applications/${APP_ID}/commands`,
+      expect.objectContaining({ body: defs })
     );
   });
 });
 
 describe("registerGuildCommands", () => {
-  it("sends PUT to /applications/{appId}/guilds/{guildId}/commands", async () => {
-    mockFetch.mockResolvedValue(makeOkResponse([]));
+  it("calls rest.put on the correct application-guild-commands route", async () => {
+    mockPut.mockResolvedValue([]);
 
     const defs = [{ name: "team", description: "View your team" }];
-    await registerGuildCommands(GUILD_ID, defs);
+    await registerGuildCommands(GUILD_ID, defs as never);
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `https://discord.com/api/v10/applications/${APP_ID}/guilds/${GUILD_ID}/commands`,
-      expect.objectContaining({
-        method: "PUT",
-        body: JSON.stringify(defs),
-      })
+    expect(mockPut).toHaveBeenCalledWith(
+      `/applications/${APP_ID}/guilds/${GUILD_ID}/commands`,
+      expect.objectContaining({ body: defs })
     );
   });
 });
 
 // =============================================================================
-// Rate limit + error handling
+// Rate limit + error mapping
 // =============================================================================
 
-describe("rate limit (HTTP 429)", () => {
-  it("throws DiscordRateLimitError with retryAfter seconds when 429 received", async () => {
-    mockFetch.mockResolvedValue(
-      makeErrorResponse(
-        429,
-        { message: "You are being rate limited." },
-        { "Retry-After": "3.5" }
-      )
+describe("rate limit (HTTP 429 from @discordjs/rest)", () => {
+  it("maps a 429 rest error to DiscordRateLimitError with retryAfter", async () => {
+    mockPost.mockRejectedValue(
+      makeRestError(429, { message: "You are being rate limited." }, 3.5)
     );
 
     await expect(
@@ -390,9 +400,10 @@ describe("rate limit (HTTP 429)", () => {
     }
   });
 
-  it("defaults retryAfter to 1 when Retry-After header is absent", async () => {
-    mockFetch.mockResolvedValue(
-      makeErrorResponse(429, { message: "Rate limited" })
+  it("defaults retryAfter to 1 when the error has no retryAfter field", async () => {
+    mockPost.mockRejectedValue(
+      makeRestError(429, { message: "Rate limited" })
+      // note: no retryAfter on the error object
     );
 
     try {
@@ -406,9 +417,9 @@ describe("rate limit (HTTP 429)", () => {
 });
 
 describe("non-429 errors", () => {
-  it("throws DiscordAPIError with status code for other error responses", async () => {
-    mockFetch.mockResolvedValue(
-      makeErrorResponse(403, { code: 50013, message: "Missing Permissions" })
+  it("maps a non-429 rest error to DiscordAPIError with the correct status", async () => {
+    mockPost.mockRejectedValue(
+      makeRestError(403, { code: 50013, message: "Missing Permissions" })
     );
 
     try {
@@ -422,20 +433,17 @@ describe("non-429 errors", () => {
     }
   });
 
-  it("throws when DISCORD_BOT_TOKEN is not set", async () => {
+  it("throws when DISCORD_BOT_TOKEN is not set (getRest lazy init)", async () => {
+    // Force re-creation of the REST instance by nulling the injected one.
+    // We achieve this by importing and calling _setRestInstance with null-ish,
+    // but the cleanest approach is to clear env then call any function that
+    // will try getBotToken via getRest.
+    _setRestInstance(null as never);
     delete process.env.DISCORD_BOT_TOKEN;
 
     await expect(sendChannelMessage(CHANNEL_ID, CONTENT)).rejects.toThrow(
       "DISCORD_BOT_TOKEN is not set"
     );
-  });
-
-  it("throws when DISCORD_APP_ID is not set", async () => {
-    delete process.env.DISCORD_APP_ID;
-
-    await expect(
-      editInteractionResponse(INTERACTION_TOKEN, CONTENT)
-    ).rejects.toThrow("DISCORD_APP_ID is not set");
   });
 });
 
@@ -444,7 +452,7 @@ describe("non-429 errors", () => {
 // =============================================================================
 
 describe("DiscordDMBlockedError", () => {
-  it("exposes discordUserId", () => {
+  it("exposes discordUserId, status 403, and correct name", () => {
     const err = new DiscordDMBlockedError(USER_ID, { code: 50007 });
     expect(err.discordUserId).toBe(USER_ID);
     expect(err.status).toBe(403);

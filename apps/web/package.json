@@ -52,6 +52,8 @@
     "clsx": "^2",
     "cmdk": "^1",
     "date-fns": "^4",
+    "@discordjs/rest": "^2.6.1",
+    "discord-api-types": "^0.38.46",
     "discord-interactions": "^4.4.0",
     "embla-carousel-react": "^8",
     "flags": "^4",

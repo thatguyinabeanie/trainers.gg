@@ -230,6 +230,32 @@ describe("buildEmbed — defaults", () => {
 });
 
 // =============================================================================
+// buildEmbed — footer truncation (2048, not 256)
+// =============================================================================
+
+describe("buildEmbed — footer truncation", () => {
+  it.each([
+    ["exactly 2048 chars", "a".repeat(2048), 2048, false],
+    ["2049 chars", "a".repeat(2049), 2048, true],
+    ["short text", "Footer text", 11, false],
+  ])("footer text: %s", (_label, input, expectedLen, expectsEllipsis) => {
+    const embed = buildEmbed({ footer: { text: input } });
+    expect(embed.footer?.text).toHaveLength(expectedLen);
+    if (expectsEllipsis) {
+      expect(embed.footer?.text).toEndWith(ELLIPSIS);
+    }
+  });
+
+  it("does NOT truncate footer text at 256 chars (bug fix verification)", () => {
+    // Previously footer was capped at 256 (TITLE_MAX) — it should now allow up to 2048
+    const text = "a".repeat(500);
+    const embed = buildEmbed({ footer: { text } });
+    expect(embed.footer?.text).toHaveLength(500);
+    expect(embed.footer?.text?.endsWith(ELLIPSIS)).toBe(false);
+  });
+});
+
+// =============================================================================
 // previewPlusLink
 // =============================================================================
 

@@ -1,22 +1,64 @@
 /**
- * Discord REST API client helpers.
+ * Discord REST API client helpers built on @discordjs/rest.
  *
- * Every outbound call includes `Authorization: Bot <token>`. Calls that send
- * user-controlled content include `allowed_mentions: { parse: [] }` to prevent
- * accidental @everyone / @here pings.
+ * @discordjs/rest handles bucket-based rate limiting natively: it tracks
+ * X-RateLimit-Bucket / X-RateLimit-Remaining per route and queues requests
+ * proactively before hitting 429s, eliminating the need for our hand-rolled
+ * 429-reactive approach.
  *
- * Rate limit handling: on HTTP 429, a `DiscordRateLimitError` is thrown with
- * `retryAfter` seconds so callers can requeue.
+ * Calls that send user-controlled content include `allowed_mentions: { parse: [] }`
+ * to prevent accidental @everyone / @here pings.
+ *
+ * Rate limit policy: @discordjs/rest auto-queues and retries within its
+ * configured retry budget. Hard failures (retries exhausted) surface as a
+ * DiscordAPIError with status 429 — DiscordRateLimitError is kept as a
+ * convenience subclass for callers that want to distinguish the status code.
  */
 
-import { type DiscordChannel } from "./types";
-import { type DiscordCommandDefinition } from "./types";
-import { type DiscordDMChannel } from "./types";
-import { type DiscordEmbed } from "./types";
-import { type DiscordMessage } from "./types";
-import { type DiscordRole } from "./types";
+import { REST, type RequestData } from "@discordjs/rest";
+import {
+  Routes,
+  type APIGuildChannel,
+  type APIMessage,
+  type APIRole,
+  type GuildChannelType,
+} from "discord-api-types/v10";
 
-const DISCORD_API_BASE = "https://discord.com/api/v10";
+import { type DiscordCommandDefinition, type DiscordEmbed } from "./types";
+
+// =============================================================================
+// REST instance (module-level, lazy token injection)
+// =============================================================================
+
+/**
+ * Lazily-created REST instance. Token is set on the first call to `getRest()`
+ * so the environment variable is read at call time, not at module import time.
+ */
+let _rest: REST | null = null;
+
+function getRest(): REST {
+  if (!_rest) {
+    const token = process.env.DISCORD_BOT_TOKEN;
+    if (!token) {
+      throw new Error(
+        "DISCORD_BOT_TOKEN is not set — cannot make Discord API calls"
+      );
+    }
+    _rest = new REST({ version: "10" }).setToken(token);
+  }
+  return _rest;
+}
+
+/** Read the application ID from env. Throws if missing. */
+function getAppId(): string {
+  const appId = process.env.DISCORD_APP_ID;
+  if (!appId) {
+    throw new Error(
+      "DISCORD_APP_ID is not set — cannot make Discord API calls"
+    );
+  }
+  return appId;
+}
 
 // =============================================================================
 // Error types
@@ -44,7 +86,11 @@ export class DiscordAPIError extends Error {
   }
 }
 
-/** Thrown when Discord returns HTTP 429 (rate limited). */
+/**
+ * Thrown when Discord returns HTTP 429 (rate limited) after @discordjs/rest
+ * exhausts its retry budget. Under normal conditions the library queues
+ * preemptively and this error is rare.
+ */
 export class DiscordRateLimitError extends DiscordAPIError {
   /** Seconds to wait before retrying. */
   readonly retryAfter: number;
@@ -95,64 +141,42 @@ function buildMessageBody(
   return body;
 }
 
-/** Shared fetch wrapper — throws typed errors on non-2xx responses. */
-async function discordFetch(
-  path: string,
-  init: RequestInit,
-  botToken: string
-): Promise<Response> {
-  const url = `${DISCORD_API_BASE}${path}`;
+/**
+ * Wrap @discordjs/rest errors into our typed error hierarchy.
+ *
+ * @discordjs/rest throws its own `DiscordAPIError` class (from the library)
+ * on non-2xx responses. We inspect the status and code to re-throw the
+ * appropriate local subclass. Unknown shapes are re-thrown as-is.
+ */
+function mapRestError(err: unknown, discordUserId?: string): never {
+  // @discordjs/rest throws objects with a `status` and `rawError` property
+  if (
+    err !== null &&
+    typeof err === "object" &&
+    "status" in err &&
+    typeof (err as { status: unknown }).status === "number"
+  ) {
+    const restErr = err as { status: number; rawError?: DiscordErrorBody };
+    const body: DiscordErrorBody = restErr.rawError ?? {};
+    const status = restErr.status;
 
-  const headers: Record<string, string> = {
-    Authorization: `Bot ${botToken}`,
-    "Content-Type": "application/json",
-    ...(init.headers as Record<string, string> | undefined),
-  };
-
-  const res = await fetch(url, { ...init, headers });
-
-  if (res.status === 429) {
-    const retryAfterHeader = res.headers.get("Retry-After");
-    const retryAfter = retryAfterHeader ? parseFloat(retryAfterHeader) : 1;
-    const body = (await res.json().catch(() => ({}))) as DiscordErrorBody;
-    throw new DiscordRateLimitError(retryAfter, body);
-  }
-
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as DiscordErrorBody;
-
-    // Discord error code 50007: Cannot send messages to this user (DMs blocked)
-    if (body.code === 50007) {
-      // The discordUserId is extracted by the caller; we rethrow from sendDM
-      throw new DiscordAPIError(res.status, body);
+    if (status === 429) {
+      const retryAfter =
+        "retryAfter" in restErr &&
+        typeof (restErr as { retryAfter: unknown }).retryAfter === "number"
+          ? (restErr as { retryAfter: number }).retryAfter
+          : 1;
+      throw new DiscordRateLimitError(retryAfter, body);
     }
 
-    throw new DiscordAPIError(res.status, body);
+    if (body.code === 50007 && discordUserId !== undefined) {
+      throw new DiscordDMBlockedError(discordUserId, body);
+    }
+
+    throw new DiscordAPIError(status, body);
   }
 
-  return res;
-}
-
-/** Read the bot token from env. Throws if missing. */
-function getBotToken(): string {
-  const token = process.env.DISCORD_BOT_TOKEN;
-  if (!token) {
-    throw new Error(
-      "DISCORD_BOT_TOKEN is not set — cannot make Discord API calls"
-    );
-  }
-  return token;
-}
-
-/** Read the application ID from env. Throws if missing. */
-function getAppId(): string {
-  const appId = process.env.DISCORD_APP_ID;
-  if (!appId) {
-    throw new Error(
-      "DISCORD_APP_ID is not set — cannot make Discord API calls"
-    );
-  }
-  return appId;
+  throw err;
 }
 
 // =============================================================================
@@ -171,14 +195,15 @@ export async function editInteractionResponse(
   payload: MessageContent
 ): Promise<void> {
   const appId = getAppId();
-  const botToken = getBotToken();
   const body = buildMessageBody(payload);
 
-  await discordFetch(
-    `/webhooks/${appId}/${token}/messages/@original`,
-    { method: "PATCH", body: JSON.stringify(body) },
-    botToken
-  );
+  try {
+    await getRest().patch(Routes.webhookMessage(appId, token, "@original"), {
+      body,
+    } as RequestData);
+  } catch (err) {
+    mapRestError(err);
+  }
 }
 
 /**
@@ -190,18 +215,17 @@ export async function editInteractionResponse(
 export async function sendFollowup(
   token: string,
   payload: MessageContent
-): Promise<DiscordMessage> {
+): Promise<APIMessage> {
   const appId = getAppId();
-  const botToken = getBotToken();
   const body = buildMessageBody(payload);
 
-  const res = await discordFetch(
-    `/webhooks/${appId}/${token}`,
-    { method: "POST", body: JSON.stringify(body) },
-    botToken
-  );
-
-  return res.json() as Promise<DiscordMessage>;
+  try {
+    return (await getRest().post(Routes.webhook(appId, token), {
+      body,
+    } as RequestData)) as APIMessage;
+  } catch (err) {
+    mapRestError(err);
+  }
 }
 
 // =============================================================================
@@ -217,17 +241,16 @@ export async function sendFollowup(
 export async function sendChannelMessage(
   channelId: string,
   payload: MessageContent
-): Promise<DiscordMessage> {
-  const botToken = getBotToken();
+): Promise<APIMessage> {
   const body = buildMessageBody(payload);
 
-  const res = await discordFetch(
-    `/channels/${channelId}/messages`,
-    { method: "POST", body: JSON.stringify(body) },
-    botToken
-  );
-
-  return res.json() as Promise<DiscordMessage>;
+  try {
+    return (await getRest().post(Routes.channelMessages(channelId), {
+      body,
+    } as RequestData)) as APIMessage;
+  } catch (err) {
+    mapRestError(err);
+  }
 }
 
 /**
@@ -240,13 +263,11 @@ export async function deleteMessage(
   channelId: string,
   messageId: string
 ): Promise<void> {
-  const botToken = getBotToken();
-
-  await discordFetch(
-    `/channels/${channelId}/messages/${messageId}`,
-    { method: "DELETE" },
-    botToken
-  );
+  try {
+    await getRest().delete(Routes.channelMessage(channelId, messageId));
+  } catch (err) {
+    mapRestError(err);
+  }
 }
 
 // =============================================================================
@@ -265,31 +286,21 @@ export async function deleteMessage(
 export async function sendDM(
   discordUserId: string,
   payload: MessageContent
-): Promise<DiscordMessage> {
-  const botToken = getBotToken();
-
+): Promise<APIMessage> {
   // Step 1: Open (or retrieve) the DM channel
-  let dmChannel: DiscordDMChannel;
+  let dmChannelId: string;
   try {
-    const res = await discordFetch(
-      `/users/@me/channels`,
-      {
-        method: "POST",
-        body: JSON.stringify({ recipient_id: discordUserId }),
-      },
-      botToken
-    );
-    dmChannel = (await res.json()) as DiscordDMChannel;
+    const dmChannel = (await getRest().post(Routes.userChannels(), {
+      body: { recipient_id: discordUserId },
+    } as RequestData)) as { id: string };
+    dmChannelId = dmChannel.id;
   } catch (err) {
-    if (err instanceof DiscordAPIError && err.body.code === 50007) {
-      throw new DiscordDMBlockedError(discordUserId, err.body);
-    }
-    throw err;
+    mapRestError(err, discordUserId);
   }
 
   // Step 2: Send the message in the DM channel
   try {
-    return await sendChannelMessage(dmChannel.id, payload);
+    return await sendChannelMessage(dmChannelId, payload);
   } catch (err) {
     if (err instanceof DiscordAPIError && err.body.code === 50007) {
       throw new DiscordDMBlockedError(discordUserId, err.body);
@@ -309,16 +320,14 @@ export async function sendDM(
  */
 export async function getGuildChannels(
   guildId: string
-): Promise<DiscordChannel[]> {
-  const botToken = getBotToken();
-
-  const res = await discordFetch(
-    `/guilds/${guildId}/channels`,
-    { method: "GET" },
-    botToken
-  );
-
-  return res.json() as Promise<DiscordChannel[]>;
+): Promise<APIGuildChannel<GuildChannelType>[]> {
+  try {
+    return (await getRest().get(
+      Routes.guildChannels(guildId)
+    )) as APIGuildChannel<GuildChannelType>[];
+  } catch (err) {
+    mapRestError(err);
+  }
 }
 
 /**
@@ -326,16 +335,12 @@ export async function getGuildChannels(
  *
  * @param guildId - Discord guild (server) ID
  */
-export async function getGuildRoles(guildId: string): Promise<DiscordRole[]> {
-  const botToken = getBotToken();
-
-  const res = await discordFetch(
-    `/guilds/${guildId}/roles`,
-    { method: "GET" },
-    botToken
-  );
-
-  return res.json() as Promise<DiscordRole[]>;
+export async function getGuildRoles(guildId: string): Promise<APIRole[]> {
+  try {
+    return (await getRest().get(Routes.guildRoles(guildId))) as APIRole[];
+  } catch (err) {
+    mapRestError(err);
+  }
 }
 
 /**
@@ -350,13 +355,11 @@ export async function assignRole(
   userId: string,
   roleId: string
 ): Promise<void> {
-  const botToken = getBotToken();
-
-  await discordFetch(
-    `/guilds/${guildId}/members/${userId}/roles/${roleId}`,
-    { method: "PUT" },
-    botToken
-  );
+  try {
+    await getRest().put(Routes.guildMemberRole(guildId, userId, roleId));
+  } catch (err) {
+    mapRestError(err);
+  }
 }
 
 /**
@@ -371,13 +374,11 @@ export async function removeRole(
   userId: string,
   roleId: string
 ): Promise<void> {
-  const botToken = getBotToken();
-
-  await discordFetch(
-    `/guilds/${guildId}/members/${userId}/roles/${roleId}`,
-    { method: "DELETE" },
-    botToken
-  );
+  try {
+    await getRest().delete(Routes.guildMemberRole(guildId, userId, roleId));
+  } catch (err) {
+    mapRestError(err);
+  }
 }
 
 // =============================================================================
@@ -394,13 +395,14 @@ export async function registerGlobalCommands(
   commandDefs: DiscordCommandDefinition[]
 ): Promise<void> {
   const appId = getAppId();
-  const botToken = getBotToken();
 
-  await discordFetch(
-    `/applications/${appId}/commands`,
-    { method: "PUT", body: JSON.stringify(commandDefs) },
-    botToken
-  );
+  try {
+    await getRest().put(Routes.applicationCommands(appId), {
+      body: commandDefs,
+    } as RequestData);
+  } catch (err) {
+    mapRestError(err);
+  }
 }
 
 /**
@@ -415,11 +417,24 @@ export async function registerGuildCommands(
   commandDefs: DiscordCommandDefinition[]
 ): Promise<void> {
   const appId = getAppId();
-  const botToken = getBotToken();
 
-  await discordFetch(
-    `/applications/${appId}/guilds/${guildId}/commands`,
-    { method: "PUT", body: JSON.stringify(commandDefs) },
-    botToken
-  );
+  try {
+    await getRest().put(Routes.applicationGuildCommands(appId, guildId), {
+      body: commandDefs,
+    } as RequestData);
+  } catch (err) {
+    mapRestError(err);
+  }
+}
+
+// =============================================================================
+// Module-level test seam
+// =============================================================================
+
+/**
+ * Replace the internal REST instance. For use in tests only.
+ * @internal
+ */
+export function _setRestInstance(instance: REST): void {
+  _rest = instance;
 }

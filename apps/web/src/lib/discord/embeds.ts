@@ -27,6 +27,7 @@ export const trainersggColor = 0x14b8a6;
 // =============================================================================
 
 const TITLE_MAX = 256;
+const FOOTER_TEXT_MAX = 2048;
 const DESCRIPTION_MAX = 4096;
 const FIELD_NAME_MAX = 256;
 const FIELD_VALUE_MAX = 1024;
@@ -183,7 +184,7 @@ export function buildEmbed(options: BuildEmbedOptions): DiscordEmbed {
     ...(footer !== undefined
       ? {
           footer: {
-            text: truncate(footer.text, TITLE_MAX),
+            text: truncate(footer.text, FOOTER_TEXT_MAX),
             icon_url: footer.icon_url,
           },
         }
