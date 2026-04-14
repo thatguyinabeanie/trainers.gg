@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 
+import { NewTeamDialog } from "./new-team-dialog";
+
 // ---------------------------------------------------------------------------
 // Query key factory
 // ---------------------------------------------------------------------------
@@ -57,6 +59,8 @@ export function TeamsListClient({
   const supabase = useSupabase();
   const [selectedGame, setSelectedGame] = useState<string>("");
   const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"empty" | "import">("empty");
 
   const {
     data: teams = [],
@@ -85,7 +89,10 @@ export function TeamsListClient({
     ? teams.filter((t) => t.format === selectedFormat)
     : teams;
 
-  const newTeamUrl = `/dashboard/alts/${handle}/teams/new`;
+  function openDialog(mode: "empty" | "import") {
+    setDialogMode(mode);
+    setDialogOpen(true);
+  }
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
@@ -129,12 +136,12 @@ export function TeamsListClient({
           <Button
             variant="outline"
             size="sm"
-            render={<Link href={`${newTeamUrl}?mode=import`} />}
+            onClick={() => openDialog("import")}
           >
             <Upload className="size-4" />
             Import Paste
           </Button>
-          <Button size="sm" render={<Link href={newTeamUrl} />}>
+          <Button size="sm" onClick={() => openDialog("empty")}>
             <Plus className="size-4" />
             New Team
           </Button>
@@ -160,14 +167,11 @@ export function TeamsListClient({
           }
           action={
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                render={<Link href={`${newTeamUrl}?mode=import`} />}
-              >
+              <Button variant="outline" onClick={() => openDialog("import")}>
                 <Upload className="size-4" />
                 Import Paste
               </Button>
-              <Button render={<Link href={newTeamUrl} />}>
+              <Button onClick={() => openDialog("empty")}>
                 <Plus className="size-4" />
                 New Team
               </Button>
@@ -194,6 +198,16 @@ export function TeamsListClient({
           </table>
         </div>
       )}
+
+      <NewTeamDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        activeFormats={activeFormats}
+        defaultFormat={selectedFormat ?? undefined}
+        initialMode={dialogMode}
+        altId={altId}
+        altUsername={handle}
+      />
     </div>
   );
 }

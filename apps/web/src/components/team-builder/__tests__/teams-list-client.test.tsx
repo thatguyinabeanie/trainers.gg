@@ -53,6 +53,22 @@ jest.mock("@trainers/utils", () => ({
   formatTimeAgo: jest.fn(() => "2h ago"),
 }));
 
+// Stub the dialog so tests don't transitively pull in `@/actions/teams`
+// (which loads `next/cache` — incompatible with the Jest environment).
+const mockNewTeamDialog = jest.fn(
+  (props: { open: boolean; initialMode: string }) => (
+    <div
+      data-testid="new-team-dialog"
+      data-open={props.open}
+      data-mode={props.initialMode}
+    />
+  )
+);
+jest.mock("../new-team-dialog", () => ({
+  NewTeamDialog: (props: { open: boolean; initialMode: string }) =>
+    mockNewTeamDialog(props),
+}));
+
 import { TeamsListClient, teamKeys } from "../teams-list-client";
 
 // =============================================================================
@@ -204,6 +220,32 @@ describe("TeamsListClient", () => {
 
     const importLinks = screen.getAllByText("Import Paste");
     expect(importLinks.length).toBeGreaterThan(0);
+  });
+
+  it("opens the dialog in empty mode when New Team is clicked", () => {
+    render(<TeamsListClient {...defaultProps} initialTeams={[buildTeam()]} />);
+
+    // Dialog starts closed
+    expect(screen.getByTestId("new-team-dialog")).toHaveAttribute(
+      "data-open",
+      "false"
+    );
+
+    fireEvent.click(screen.getByText("New Team"));
+
+    const dialog = screen.getByTestId("new-team-dialog");
+    expect(dialog).toHaveAttribute("data-open", "true");
+    expect(dialog).toHaveAttribute("data-mode", "empty");
+  });
+
+  it("opens the dialog in import mode when Import Paste is clicked", () => {
+    render(<TeamsListClient {...defaultProps} initialTeams={[buildTeam()]} />);
+
+    fireEvent.click(screen.getByText("Import Paste"));
+
+    const dialog = screen.getByTestId("new-team-dialog");
+    expect(dialog).toHaveAttribute("data-open", "true");
+    expect(dialog).toHaveAttribute("data-mode", "import");
   });
 
   it("renders game and format dropdowns with correct options", () => {

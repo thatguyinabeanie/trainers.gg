@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 
+import { NewTeamDialog } from "./new-team-dialog";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -45,6 +47,8 @@ export function AllTeamsClient({
   const [selectedGame, setSelectedGame] = useState<string>("");
   const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
   const [selectedAlt, setSelectedAlt] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"empty" | "import">("empty");
 
   // Unique game names in the order they appear in activeFormats
   const uniqueGames = activeFormats.reduce<string[]>((acc, fmt) => {
@@ -63,9 +67,21 @@ export function AllTeamsClient({
     return true;
   });
 
-  // Default new-team alt: selected alt filter, or first alt
-  const defaultAltUsername = selectedAlt ?? alts[0]?.username ?? "";
-  const newTeamUrl = `/dashboard/alts/${defaultAltUsername}/teams/new`;
+  function openDialog(mode: "empty" | "import") {
+    setDialogMode(mode);
+    setDialogOpen(true);
+  }
+
+  const dialog = (
+    <NewTeamDialog
+      open={dialogOpen}
+      onOpenChange={setDialogOpen}
+      activeFormats={activeFormats}
+      defaultFormat={selectedFormat ?? undefined}
+      initialMode={dialogMode}
+      alts={alts}
+    />
+  );
 
   if (initialTeams.length === 0) {
     return (
@@ -75,20 +91,18 @@ export function AllTeamsClient({
           description="Create your first team or import a Showdown paste."
           action={
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                render={<Link href={`${newTeamUrl}?mode=import`} />}
-              >
+              <Button variant="outline" onClick={() => openDialog("import")}>
                 <Upload className="size-4" />
                 Import Paste
               </Button>
-              <Button render={<Link href={newTeamUrl} />}>
+              <Button onClick={() => openDialog("empty")}>
                 <Plus className="size-4" />
                 New Team
               </Button>
             </div>
           }
         />
+        {dialog}
       </div>
     );
   }
@@ -161,12 +175,12 @@ export function AllTeamsClient({
           <Button
             variant="outline"
             size="sm"
-            render={<Link href={`${newTeamUrl}?mode=import`} />}
+            onClick={() => openDialog("import")}
           >
             <Upload className="size-4" />
             Import Paste
           </Button>
-          <Button size="sm" render={<Link href={newTeamUrl} />}>
+          <Button size="sm" onClick={() => openDialog("empty")}>
             <Plus className="size-4" />
             New Team
           </Button>
@@ -203,6 +217,7 @@ export function AllTeamsClient({
           </tbody>
         </table>
       </div>
+      {dialog}
     </div>
   );
 }
