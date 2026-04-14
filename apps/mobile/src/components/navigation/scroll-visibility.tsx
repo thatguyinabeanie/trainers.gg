@@ -2,15 +2,12 @@ import { createContext, useContext, type ReactNode } from "react";
 import {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedScrollHandler,
   withTiming,
   type SharedValue,
   interpolate,
   Extrapolation,
 } from "react-native-reanimated";
-import {
-  type NativeSyntheticEvent,
-  type NativeScrollEvent,
-} from "react-native";
 
 const SCROLL_THRESHOLD = 10; // Minimum scroll distance to trigger hide/show
 const ANIMATION_DURATION = 200;
@@ -18,8 +15,8 @@ const ANIMATION_DURATION = 200;
 interface ScrollVisibilityContextValue {
   /** Whether the bars are currently visible */
   isVisible: SharedValue<number>;
-  /** Call this in onScroll handler */
-  handleScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  /** Pass to Animated.ScrollView's onScroll prop */
+  handleScroll: ReturnType<typeof useAnimatedScrollHandler>;
   /** Force bars to show (e.g., on pull-to-refresh) */
   show: () => void;
   /** Get animated style for header */
@@ -53,11 +50,20 @@ export function ScrollVisibilityProvider({
 
   const show = () => {
     "worklet";
+    // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are mutable by design inside worklets
     isVisible.value = withTiming(1, { duration: ANIMATION_DURATION });
   };
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const currentY = event.nativeEvent.contentOffset.y;
+  /* eslint-disable react-hooks/immutability --
+   * useAnimatedScrollHandler returns a worklet-scoped handler. Mutating
+   * shared-value `.value` fields inside the worklet is Reanimated's
+   * documented pattern for updating animated state from scroll events.
+   * The immutability rule (react-hooks v7) does not descend into hook
+   * callback arguments to detect the worklet directive.
+   */
+  const handleScroll = useAnimatedScrollHandler((event) => {
+    "worklet";
+    const currentY = event.contentOffset.y;
     const diff = currentY - lastScrollY.value;
 
     // Don't do anything if we're at the top
@@ -85,7 +91,8 @@ export function ScrollVisibilityProvider({
 
       lastScrollY.value = currentY;
     }
-  };
+  });
+  /* eslint-enable react-hooks/immutability */
 
   // Animated style for header - slides up when hidden
   const headerAnimatedStyle = useAnimatedStyle(() => {
