@@ -240,26 +240,10 @@ describe("TeamWorkspace", () => {
     mockInvalidateQueries.mockClear();
   });
 
-  describe("empty state", () => {
-    it("shows empty state message when no pokemon exist", () => {
+  describe("placeholder shell (0 Pokémon)", () => {
+    it("does NOT show 'No Pokémon yet' text", () => {
       render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
-      expect(screen.getByText("No Pokémon yet")).toBeInTheDocument();
-    });
-
-    it("shows import paste suggestion in empty state", () => {
-      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
-      expect(
-        screen.getByText(
-          "Import a Showdown paste or add Pokémon one by one to get started."
-        )
-      ).toBeInTheDocument();
-    });
-
-    it("shows Import Paste button in empty state", () => {
-      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
-      expect(
-        screen.getByRole("button", { name: /import paste/i })
-      ).toBeInTheDocument();
+      expect(screen.queryByText("No Pokémon yet")).not.toBeInTheDocument();
     });
 
     it("renders the team sidebar even with no pokemon", () => {
@@ -267,9 +251,52 @@ describe("TeamWorkspace", () => {
       const sidebar = screen.getByLabelText("Team sidebar");
       expect(sidebar).toBeInTheDocument();
     });
+
+    it("renders 'Choose a Pokémon' label in the species header", () => {
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+      expect(
+        screen.getByRole("button", { name: "Choose a Pokémon" })
+      ).toBeInTheDocument();
+    });
+
+    it("clicking 'Choose a Pokémon' opens the species picker", async () => {
+      const user = userEvent.setup();
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+
+      await user.click(
+        screen.getByRole("button", { name: "Choose a Pokémon" })
+      );
+
+      expect(screen.getByTestId("species-picker")).toBeInTheDocument();
+    });
+
+    it("renders the disabled placeholder editor (ability/item/move sections present but dimmed)", () => {
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+      // PokemonEditor renders with disabled=true → sections are wrapped in
+      // opacity-50 pointer-events-none. Verify at least one dimmed wrapper exists.
+      const dimmed = document.querySelectorAll(
+        ".opacity-50.pointer-events-none, .pointer-events-none.opacity-50"
+      );
+      expect(dimmed.length).toBeGreaterThan(0);
+    });
+
+    it("does NOT show the species picker before any interaction in placeholder state", () => {
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+      // The placeholder editor is fully dimmed — no stray picker should appear.
+      expect(screen.queryByTestId("species-picker")).not.toBeInTheDocument();
+    });
   });
 
   describe("with pokemon", () => {
+    it("does NOT render 'Choose a Pokémon' or 'No Pokémon yet' when pokemon exist", () => {
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+      expect(screen.queryByText("No Pokémon yet")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Choose a Pokémon" })
+      ).not.toBeInTheDocument();
+    });
+
     it("renders the team sidebar when pokemon exist", () => {
       const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
       render(<TeamWorkspace {...defaultProps} team={team} />);

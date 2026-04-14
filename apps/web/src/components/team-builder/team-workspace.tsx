@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Calculator, ChevronDown, Import, Star, Zap } from "lucide-react";
+import { Calculator, ChevronDown, Star, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -11,13 +11,15 @@ import {
   getSpeciesTypes,
   getValidAbilities,
 } from "@trainers/pokemon";
-import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
+import {
+  type TeamWithPokemon,
+  type Tables,
+  type TablesInsert,
+} from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { addPokemonToTeamAction, updatePokemonAction } from "@/actions/teams";
-import { ImportDialog } from "@/components/team-builder/import-dialog";
 import { ContextPanel } from "@/components/team-builder/context-panel";
 import { PokemonEditor } from "@/components/team-builder/pokemon-editor";
 import { TeamSidebar } from "@/components/team-builder/team-sidebar";
@@ -26,6 +28,48 @@ import { PokemonImportExport } from "./pokemon-import-export";
 import { SpeciesPicker } from "./species-picker";
 import { TYPE_PILL_COLORS } from "./type-colors";
 import { type ValidationError, useTeamValidation } from "./validation-hooks";
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+/**
+ * Synthetic placeholder used when a team has 0 Pokémon.
+ * Passed to PokemonEditor with disabled=true so the full layout renders
+ * but all pickers / inputs are no-ops.
+ * id: -1 is a sentinel — this object is never persisted.
+ */
+const PLACEHOLDER_POKEMON: Tables<"pokemon"> = {
+  id: -1,
+  species: "",
+  ability: "",
+  held_item: null,
+  nature: "Hardy",
+  tera_type: null,
+  nickname: null,
+  gender: null,
+  is_shiny: null,
+  level: null,
+  move1: "",
+  move2: null,
+  move3: null,
+  move4: null,
+  ev_hp: null,
+  ev_attack: null,
+  ev_defense: null,
+  ev_special_attack: null,
+  ev_special_defense: null,
+  ev_speed: null,
+  iv_hp: null,
+  iv_attack: null,
+  iv_defense: null,
+  iv_special_attack: null,
+  iv_special_defense: null,
+  iv_speed: null,
+  notes: null,
+  format_legal: null,
+  created_at: null,
+};
 
 // =============================================================================
 // Types
@@ -73,9 +117,6 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     value: unknown;
   } | null>(null);
 
-  // Import dialog state (for empty-state shortcut)
-  const [importOpen, setImportOpen] = useState(false);
-
   // Context panel visibility + resizable width
   const [panelOpen, setPanelOpen] = useState(true);
   const [panelWidthPercent, setPanelWidthPercent] = useState(50);
@@ -117,7 +158,8 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   const selectedEntry = sortedPokemon.find(
     (tp) => tp.pokemon_id === selectedPokemonId
   );
-  const hasPokemon = sortedPokemon.length > 0;
+  // True when the team has no pokemon — drives placeholder vs real editor mode
+  const isPlaceholder = sortedPokemon.length === 0;
 
   // ---------------------------------------------------------------------------
   // Auto-save handler — debounced 2s
@@ -308,200 +350,207 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
           onSelect={handleSpeciesSelect}
           onCancel={handlePickerCancel}
         />
-      ) : !hasPokemon ? (
-        /* Empty state */
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-          <div className="text-muted-foreground">
-            <p className="text-lg font-medium">No Pokémon yet</p>
-            <p className="mt-1 text-sm">
-              Import a Showdown paste or add Pokémon one by one to get started.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setImportOpen(true)}
-          >
-            <Import className="size-4" />
-            Import Paste
-          </Button>
-          <ImportDialog
-            team={team}
-            open={importOpen}
-            onOpenChange={setImportOpen}
-            onImportComplete={() => {
-              router.refresh();
-            }}
-          />
-        </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* ===================================================================
               Species header — spans full width above the editor/panel split.
-              Only rendered when a Pokemon with a species is selected.
+              Placeholder mode: shows "Choose a Pokémon" that opens the picker.
+              Real mode: shows species name, type pills, nickname, gender, shiny,
+              level, and import/export controls.
               =================================================================== */}
-          {selectedEntry?.pokemon && (
-            <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2">
-              {/* Species name — clickable to open species picker */}
-              <div className="flex flex-col">
-                <button
-                  type="button"
-                  onClick={handleSpeciesClick}
-                  className={cn(
-                    "flex items-center gap-1 text-base font-bold",
-                    "hover:text-primary transition-colors"
-                  )}
-                >
-                  {selectedEntry.pokemon.species}
-                  <ChevronDown className="text-muted-foreground size-3.5" />
-                </button>
-                {renderSelectedFieldError("species")}
-              </div>
-
-              {/* Type pills */}
-              <div className="flex gap-1">
-                {getSpeciesTypes(selectedEntry.pokemon.species).map((type) => (
-                  <span
-                    key={type}
-                    className={cn(
-                      "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                      TYPE_PILL_COLORS[type] ?? "bg-muted text-foreground"
-                    )}
-                  >
-                    {type}
-                  </span>
-                ))}
-              </div>
-
-              {/* Separator */}
-              <span className="text-muted-foreground text-xs">·</span>
-
-              {/* Nickname input */}
-              <div className="flex flex-col">
-                <Input
-                  placeholder="Nickname"
-                  value={selectedEntry.pokemon.nickname ?? ""}
-                  onChange={(e) =>
-                    handlePokemonUpdate(
-                      selectedEntry.pokemon!.id,
-                      "nickname",
-                      e.target.value || null
-                    )
-                  }
-                  className={cn(
-                    "h-6 w-28 px-2 text-xs",
-                    getSelectedFieldError("nickname") && "border-destructive"
-                  )}
-                  aria-label="Pokemon nickname"
-                />
-                {renderSelectedFieldError("nickname")}
-              </div>
-
-              {/* Gender selector — only when species has gender differences */}
-              {selectedEntry.pokemon.gender !== null ? (
-                <div className="flex flex-col items-start">
-                  <div
-                    className={cn(
-                      "flex gap-0.5 rounded border p-0.5",
-                      getSelectedFieldError("gender") && "border-destructive"
-                    )}
-                  >
-                    {(["Male", "Female"] as const).map((g) => (
-                      <button
-                        key={g}
-                        type="button"
-                        onClick={() =>
-                          handlePokemonUpdate(
-                            selectedEntry.pokemon!.id,
-                            "gender",
-                            g
-                          )
-                        }
-                        className={cn(
-                          "rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
-                          selectedEntry.pokemon!.gender === g
-                            ? g === "Male"
-                              ? "bg-blue-500 text-white"
-                              : "bg-pink-500 text-white"
-                            : "text-muted-foreground hover:bg-muted"
-                        )}
-                      >
-                        {g === "Male" ? "♂" : "♀"}
-                      </button>
-                    ))}
-                  </div>
-                  {renderSelectedFieldError("gender")}
-                </div>
-              ) : (
-                <span className="text-muted-foreground text-xs">
-                  Genderless
-                </span>
-              )}
-
-              {/* Shiny toggle */}
+          <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2">
+            {isPlaceholder ? (
+              /* Placeholder header — opens the species picker at slot 0 */
               <button
                 type="button"
-                onClick={() =>
-                  handlePokemonUpdate(
-                    selectedEntry.pokemon!.id,
-                    "is_shiny",
-                    !(selectedEntry.pokemon!.is_shiny ?? false)
-                  )
-                }
-                aria-label="Toggle shiny"
-                aria-pressed={selectedEntry.pokemon.is_shiny ?? false}
+                onClick={handleAddNew}
+                aria-label="Choose a Pokémon"
                 className={cn(
-                  "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors",
-                  selectedEntry.pokemon.is_shiny
-                    ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                    : "text-muted-foreground hover:bg-muted"
+                  "flex items-center gap-1 text-base font-bold",
+                  "text-muted-foreground hover:text-primary transition-colors"
                 )}
               >
-                <Star
-                  className={cn(
-                    "size-3",
-                    selectedEntry.pokemon.is_shiny &&
-                      "fill-yellow-500 text-yellow-500"
-                  )}
-                />
-                {selectedEntry.pokemon.is_shiny ? "Shiny" : ""}
+                Choose a Pokémon
+                <ChevronDown className="size-3.5" />
               </button>
+            ) : selectedEntry?.pokemon ? (
+              <>
+                {/* Species name — clickable to open species picker */}
+                <div className="flex flex-col">
+                  <button
+                    type="button"
+                    onClick={handleSpeciesClick}
+                    className={cn(
+                      "flex items-center gap-1 text-base font-bold",
+                      "hover:text-primary transition-colors"
+                    )}
+                  >
+                    {selectedEntry.pokemon.species}
+                    <ChevronDown className="text-muted-foreground size-3.5" />
+                  </button>
+                  {renderSelectedFieldError("species")}
+                </div>
 
-              {/* Level input + import/export — pushed to far right */}
-              <div className="ml-auto flex items-center gap-1.5">
-                <span className="text-muted-foreground text-xs">Lv</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={selectedEntry.pokemon.level ?? 50}
-                  onChange={(e) => {
-                    const raw = parseInt(e.target.value, 10);
-                    if (!isNaN(raw)) {
+                {/* Type pills */}
+                <div className="flex gap-1">
+                  {getSpeciesTypes(selectedEntry.pokemon.species).map(
+                    (type) => (
+                      <span
+                        key={type}
+                        className={cn(
+                          "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+                          TYPE_PILL_COLORS[type] ?? "bg-muted text-foreground"
+                        )}
+                      >
+                        {type}
+                      </span>
+                    )
+                  )}
+                </div>
+
+                {/* Separator */}
+                <span className="text-muted-foreground text-xs">·</span>
+
+                {/* Nickname input */}
+                <div className="flex flex-col">
+                  <Input
+                    placeholder="Nickname"
+                    value={selectedEntry.pokemon.nickname ?? ""}
+                    onChange={(e) =>
                       handlePokemonUpdate(
                         selectedEntry.pokemon!.id,
-                        "level",
-                        Math.max(1, Math.min(100, raw))
-                      );
+                        "nickname",
+                        e.target.value || null
+                      )
                     }
-                  }}
-                  className="h-6 w-12 px-1 text-center text-xs"
-                  aria-label="Pokemon level"
-                />
-                <PokemonImportExport
-                  teamId={team.id}
-                  pokemon={selectedEntry.pokemon}
-                  onUpdate={() => router.refresh()}
-                />
-              </div>
-            </div>
-          )}
+                    className={cn(
+                      "h-6 w-28 px-2 text-xs",
+                      getSelectedFieldError("nickname") && "border-destructive"
+                    )}
+                    aria-label="Pokemon nickname"
+                  />
+                  {renderSelectedFieldError("nickname")}
+                </div>
+
+                {/* Gender selector — only when species has gender differences */}
+                {selectedEntry.pokemon.gender !== null ? (
+                  <div className="flex flex-col items-start">
+                    <div
+                      className={cn(
+                        "flex gap-0.5 rounded border p-0.5",
+                        getSelectedFieldError("gender") && "border-destructive"
+                      )}
+                    >
+                      {(["Male", "Female"] as const).map((g) => (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() =>
+                            handlePokemonUpdate(
+                              selectedEntry.pokemon!.id,
+                              "gender",
+                              g
+                            )
+                          }
+                          className={cn(
+                            "rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
+                            selectedEntry.pokemon!.gender === g
+                              ? g === "Male"
+                                ? "bg-blue-500 text-white"
+                                : "bg-pink-500 text-white"
+                              : "text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          {g === "Male" ? "♂" : "♀"}
+                        </button>
+                      ))}
+                    </div>
+                    {renderSelectedFieldError("gender")}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-xs">
+                    Genderless
+                  </span>
+                )}
+
+                {/* Shiny toggle */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    handlePokemonUpdate(
+                      selectedEntry.pokemon!.id,
+                      "is_shiny",
+                      !(selectedEntry.pokemon!.is_shiny ?? false)
+                    )
+                  }
+                  aria-label="Toggle shiny"
+                  aria-pressed={selectedEntry.pokemon.is_shiny ?? false}
+                  className={cn(
+                    "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors",
+                    selectedEntry.pokemon.is_shiny
+                      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <Star
+                    className={cn(
+                      "size-3",
+                      selectedEntry.pokemon.is_shiny &&
+                        "fill-yellow-500 text-yellow-500"
+                    )}
+                  />
+                  {selectedEntry.pokemon.is_shiny ? "Shiny" : ""}
+                </button>
+
+                {/* Level input + import/export — pushed to far right */}
+                <div className="ml-auto flex items-center gap-1.5">
+                  <span className="text-muted-foreground text-xs">Lv</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={selectedEntry.pokemon.level ?? 50}
+                    onChange={(e) => {
+                      const raw = parseInt(e.target.value, 10);
+                      if (!isNaN(raw)) {
+                        handlePokemonUpdate(
+                          selectedEntry.pokemon!.id,
+                          "level",
+                          Math.max(1, Math.min(100, raw))
+                        );
+                      }
+                    }}
+                    className="h-6 w-12 px-1 text-center text-xs"
+                    aria-label="Pokemon level"
+                  />
+                  <PokemonImportExport
+                    teamId={team.id}
+                    pokemon={selectedEntry.pokemon}
+                    onUpdate={() => router.refresh()}
+                  />
+                </div>
+              </>
+            ) : null}
+          </div>
 
           {/* Editor + context panel — flex-row, fills remaining height */}
           <div className="flex min-h-0 flex-1 overflow-hidden">
             {/* Editor panel — scrolls independently */}
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto border-r">
-              {selectedEntry?.pokemon ? (
+              {isPlaceholder ? (
+                /* Placeholder shell — disabled so all pickers are no-ops */
+                <PokemonEditor
+                  key="placeholder"
+                  pokemon={PLACEHOLDER_POKEMON}
+                  format={format}
+                  teamPokemon={[]}
+                  onUpdate={() => {
+                    /* no-op: disabled placeholder */
+                  }}
+                  fieldErrors={[]}
+                  disabled={true}
+                />
+              ) : selectedEntry?.pokemon ? (
                 <PokemonEditor
                   key={selectedEntry.pokemon.id}
                   pokemon={selectedEntry.pokemon}
