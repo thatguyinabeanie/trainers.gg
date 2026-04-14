@@ -71,24 +71,30 @@ export function ContextPanel({
           </button>
         </div>
 
-        <TabsContent value="types" className="flex-1 overflow-y-auto">
-          <TypeCoverageTab team={team} selectedPokemon={selectedPokemon} />
+        <TabsContent value="types" className="flex-1 overflow-y-auto p-4">
+          <div className="mx-auto max-w-2xl">
+            <TypeCoverageTab team={team} selectedPokemon={selectedPokemon} />
+          </div>
         </TabsContent>
 
-        <TabsContent value="speed" className="flex-1 overflow-y-auto">
-          <SpeedTierTab
-            team={team}
-            selectedPokemon={selectedPokemon}
-            format={format}
-          />
+        <TabsContent value="speed" className="flex-1 overflow-y-auto p-4">
+          <div className="mx-auto max-w-2xl">
+            <SpeedTierTab
+              team={team}
+              selectedPokemon={selectedPokemon}
+              format={format}
+            />
+          </div>
         </TabsContent>
 
-        <TabsContent value="calc" className="flex-1 overflow-y-auto">
-          <DamageCalcTab
-            team={team}
-            selectedPokemon={selectedPokemon}
-            format={format}
-          />
+        <TabsContent value="calc" className="flex-1 overflow-y-auto p-4">
+          <div className="mx-auto max-w-2xl">
+            <DamageCalcTab
+              team={team}
+              selectedPokemon={selectedPokemon}
+              format={format}
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
