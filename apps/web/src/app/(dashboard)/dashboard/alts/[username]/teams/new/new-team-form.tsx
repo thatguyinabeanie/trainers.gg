@@ -7,12 +7,9 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { type GameFormat } from "@trainers/pokemon";
-import { parseShowdownText } from "@trainers/validators";
-
-import { type TablesInsert } from "@trainers/supabase";
 
 import { teamKeys } from "@/components/team-builder/teams-list-client";
-import { createTeamAction, addPokemonToTeamAction } from "@/actions/teams";
+import { submitNewTeam } from "@/components/team-builder/new-team-submit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -98,92 +95,37 @@ export function NewTeamForm({
     }
 
     startTransition(async () => {
-      // 1. Create the team
-      const result = await createTeamAction(altId, name.trim(), format);
+      const res = await submitNewTeam({
+        altId,
+        name: name.trim(),
+        format,
+        mode,
+        paste,
+      });
 
-      if (!result.success) {
-        toast.error(result.error);
+      if (res.status === "error") {
+        toast.error(res.error);
         return;
       }
 
-      const teamId = result.data.id;
-
-      // 2. If import mode, parse the paste and add each Pokemon
-      if (mode === "import" && paste.trim()) {
-        const parsedTeam = parseShowdownText(paste.trim());
-
-        if (parsedTeam.length === 0) {
+      switch (res.status) {
+        case "empty-paste":
           toast.warning(
             "Showdown paste could not be parsed. Team created empty."
           );
-          void queryClient.invalidateQueries({ queryKey: teamKeys.all(altId) });
-          router.push(`/dashboard/alts/${handle}/teams/${teamId}`);
-          return;
-        } else {
-          // Limit to 6 Pokemon max (DB constraint on team_position)
-          const toImport = parsedTeam.slice(0, 6);
-
-          // Add all Pokemon concurrently — each has an explicit position index.
-          // Cast gender to the DB enum — ParsedPokemon uses string | null but
-          // the DB expects the "Male" | "Female" enum. Trim to valid values only.
-          const addResults = await Promise.all(
-            toImport.map((pokemon, i) => {
-              const gender =
-                pokemon.gender === "Male" || pokemon.gender === "Female"
-                  ? pokemon.gender
-                  : null;
-              const pokemonInsert: TablesInsert<"pokemon"> = {
-                species: pokemon.species,
-                ability: pokemon.ability,
-                nature: pokemon.nature,
-                move1: pokemon.move1 ?? "",
-                move2: pokemon.move2,
-                move3: pokemon.move3,
-                move4: pokemon.move4,
-                held_item: pokemon.held_item,
-                level: pokemon.level,
-                nickname: pokemon.nickname,
-                is_shiny: pokemon.is_shiny,
-                tera_type: pokemon.tera_type,
-                gender,
-                ev_hp: pokemon.ev_hp,
-                ev_attack: pokemon.ev_attack,
-                ev_defense: pokemon.ev_defense,
-                ev_special_attack: pokemon.ev_special_attack,
-                ev_special_defense: pokemon.ev_special_defense,
-                ev_speed: pokemon.ev_speed,
-                iv_hp: pokemon.iv_hp,
-                iv_attack: pokemon.iv_attack,
-                iv_defense: pokemon.iv_defense,
-                iv_special_attack: pokemon.iv_special_attack,
-                iv_special_defense: pokemon.iv_special_defense,
-                iv_speed: pokemon.iv_speed,
-              };
-              return addPokemonToTeamAction(teamId, pokemonInsert, i + 1);
-            })
+          break;
+        case "partial":
+          toast.warning(
+            `Team created, but failed to import: ${res.failedSpecies.join(", ")}`
           );
-
-          const failures = addResults.filter((r) => !r.success);
-          if (failures.length > 0) {
-            const failedSpecies = toImport
-              .filter((_, i) => !addResults[i]?.success)
-              .map((p) => p.species)
-              .join(", ");
-            toast.warning(
-              `Team created, but failed to import: ${failedSpecies}`
-            );
-            void queryClient.invalidateQueries({
-              queryKey: teamKeys.all(altId),
-            });
-            router.push(`/dashboard/alts/${handle}/teams/${teamId}`);
-            return;
-          }
-        }
+          break;
+        case "ok":
+          toast.success("Team created!");
+          break;
       }
 
-      toast.success("Team created!");
       void queryClient.invalidateQueries({ queryKey: teamKeys.all(altId) });
-      router.push(`/dashboard/alts/${handle}/teams/${teamId}`);
+      router.push(`/dashboard/alts/${handle}/teams/${res.teamId}`);
     });
   }
 
