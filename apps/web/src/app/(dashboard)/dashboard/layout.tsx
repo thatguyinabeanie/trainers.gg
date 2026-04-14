@@ -171,7 +171,7 @@ export default async function DashboardLayout({
         hasTeamBuilderAccess={teamBuilderAccess}
         variant="inset"
       />
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset className="overflow-hidden">{children}</SidebarInset>
     </SidebarProvider>
   );
 }

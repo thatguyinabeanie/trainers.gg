@@ -886,8 +886,11 @@ function DefenderStatRow({
           step={4}
           value={ev}
           onChange={(e) => onEvChange(Number(e.target.value))}
-          style={{ accentColor: sliderColor }}
-          className="h-[7px] w-full cursor-pointer appearance-none rounded-full"
+          style={{
+            accentColor: sliderColor,
+            background: `linear-gradient(to right, ${sliderColor} 0%, ${sliderColor} ${(ev / 252) * 100}%, #f1f5f9 ${(ev / 252) * 100}%, #f1f5f9 100%)`,
+          }}
+          className="h-[7px] w-full cursor-pointer appearance-none rounded-full [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-current [&::-webkit-slider-thumb]:shadow-sm"
           title={`EVs: ${ev}`}
         />
       </td>
@@ -1141,8 +1144,9 @@ function DefenderPanel({
                   : hpPercent > 25
                     ? "#f59e0b"
                     : "#ef4444",
+              background: `linear-gradient(to right, ${hpPercent > 50 ? "#22c55e" : hpPercent > 25 ? "#f59e0b" : "#ef4444"} 0%, ${hpPercent > 50 ? "#22c55e" : hpPercent > 25 ? "#f59e0b" : "#ef4444"} ${hpPercent}%, #f1f5f9 ${hpPercent}%, #f1f5f9 100%)`,
             }}
-            className="h-[7px] flex-1 cursor-pointer appearance-none rounded-full"
+            className="h-[7px] flex-1 cursor-pointer appearance-none rounded-full [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-current [&::-webkit-slider-thumb]:shadow-sm"
             title={`HP: ${hpPercent}%`}
           />
           <input
