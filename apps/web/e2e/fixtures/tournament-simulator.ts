@@ -803,7 +803,7 @@ export class TournamentSimulator {
         .eq("id", this.tournamentId);
 
       if (error) {
-        if (error.message.includes("audit log")) {
+        if (/audit log/i.test(error.message)) {
           this.log(
             `Cleanup skipped — audit_log immutability trigger prevents deletion. ` +
               `Run 'pnpm db:reset' to clean up. Tournament: ${this.tournamentSlug}`
