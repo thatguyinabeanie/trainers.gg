@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Calculator, Import, Zap } from "lucide-react";
+import { Calculator, CheckCircle2, Import, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -12,6 +12,7 @@ import {
 } from "@trainers/pokemon";
 import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { addPokemonToTeamAction, updatePokemonAction } from "@/actions/teams";
 import { ImportDialog } from "@/components/team-builder/import-dialog";
@@ -85,8 +86,26 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     mode: "add" | "change";
   }>({ open: false, slot: null, mode: "add" });
 
+  // Validation panel toggle state
+  const [validationPanelOpen, setValidationPanelOpen] = useState(false);
+
   // Validation
-  const { pokemonErrors } = useTeamValidation(team.team_pokemon, format);
+  const {
+    errors: validationErrors,
+    pokemonErrors,
+    validate,
+  } = useTeamValidation(team.team_pokemon, format);
+
+  // Derived error/warning counts for the Validate button badge
+  const errorCount = validationErrors.filter(
+    (e) => e.severity === "error"
+  ).length;
+
+  // Handle Validate button click — run immediately and toggle panel
+  function handleValidate() {
+    validate();
+    setValidationPanelOpen((prev) => !prev);
+  }
 
   // Build species search index for the format (derived value — React Compiler handles memoization)
   const speciesIndex = buildSpeciesSearchIndex(format?.id ?? "gen9vgc2026regi");
@@ -254,8 +273,9 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
 
   return (
     <div className="relative flex flex-1 overflow-hidden">
-      {/* Save status indicator */}
-      <div className="absolute top-1 right-2 z-10 md:top-2">
+      {/* Toolbar — Validate button + save status indicator */}
+      <div className="absolute top-1 right-2 z-10 flex items-center gap-2 md:top-2">
+        {/* Save status */}
         {saveStatus === "saving" && (
           <span className="text-muted-foreground animate-pulse text-xs">
             Saving...
@@ -264,6 +284,21 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
         {saveStatus === "saved" && (
           <span className="text-muted-foreground text-xs">Saved</span>
         )}
+
+        {/* Validate button */}
+        <Button
+          variant={validationPanelOpen ? "secondary" : "outline"}
+          size="sm"
+          onClick={handleValidate}
+        >
+          <CheckCircle2 className="size-4" />
+          Validate
+          {errorCount > 0 && (
+            <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5">
+              {errorCount}
+            </Badge>
+          )}
+        </Button>
       </div>
 
       {/* Team sidebar — always visible so "+" button works even with 0 pokemon */}
