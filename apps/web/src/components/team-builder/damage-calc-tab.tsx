@@ -1887,65 +1887,61 @@ export function DamageCalcTab({
   const selectedMoveName = moves[selectedMoveIdx] ?? null;
 
   // -------------------------------------------------------------------------
-  // Early exit — no Pokemon selected
-  // -------------------------------------------------------------------------
-
-  if (!selectedPokemon) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8">
-        <p className="text-muted-foreground text-sm">
-          Select a Pokémon to use the calculator
-        </p>
-      </div>
-    );
-  }
-
-  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
 
+  // When no Pokemon is selected, the attacker-dependent sections are dimmed
+  // and non-interactive. Defender + field conditions remain editable.
+  const hasAttacker = Boolean(selectedPokemon?.species);
+
   return (
     <div className="flex flex-col gap-3 pb-32">
-      {/* Direction toggle */}
-      <DirectionToggle
-        value={direction}
-        attackerName={attackerName}
-        defenderName={defenderName}
-        onChange={setDirection}
-      />
+      {/* Direction toggle — only rendered when an attacker is present */}
+      {hasAttacker && (
+        <DirectionToggle
+          value={direction}
+          attackerName={attackerName}
+          defenderName={defenderName}
+          onChange={setDirection}
+        />
+      )}
 
-      {/* Move selector */}
-      <Card>
-        <SectionHeader>Moves</SectionHeader>
-        <div className="flex flex-col gap-0.5">
-          {moves.map((moveName, idx) => (
-            <MoveSelectorRow
-              key={idx}
-              moveName={moveName}
-              moveIdx={idx}
-              isSelected={selectedMoveIdx === idx}
-              isCrit={critMoves[idx] ?? false}
-              calcOutput={moveCalcOutputs[idx] ?? null}
-              onSelect={() => setSelectedMoveIdx(idx)}
-              onCritToggle={() => {
-                const next = [...critMoves];
-                next[idx] = !next[idx];
-                setCritMoves(next);
-              }}
-            />
-          ))}
-        </div>
-      </Card>
+      {/* Move selector — dimmed and non-interactive without an attacker */}
+      <div className={cn(!hasAttacker && "pointer-events-none opacity-50")}>
+        <Card>
+          <SectionHeader>Moves</SectionHeader>
+          <div className="flex flex-col gap-0.5">
+            {moves.map((moveName, idx) => (
+              <MoveSelectorRow
+                key={idx}
+                moveName={moveName}
+                moveIdx={idx}
+                isSelected={selectedMoveIdx === idx}
+                isCrit={critMoves[idx] ?? false}
+                calcOutput={moveCalcOutputs[idx] ?? null}
+                onSelect={() => setSelectedMoveIdx(idx)}
+                onCritToggle={() => {
+                  const next = [...critMoves];
+                  next[idx] = !next[idx];
+                  setCritMoves(next);
+                }}
+              />
+            ))}
+          </div>
+        </Card>
+      </div>
 
-      {/* Attacker modifiers */}
-      <AttackerModifiers
-        status={attackerStatus}
-        boosts={attackerBoosts}
-        onStatusChange={setAttackerStatus}
-        onBoostChange={(stat, v) =>
-          setAttackerBoosts((prev) => ({ ...prev, [stat]: v }))
-        }
-      />
+      {/* Attacker modifiers — dimmed and non-interactive without an attacker */}
+      <div className={cn(!hasAttacker && "pointer-events-none opacity-50")}>
+        <AttackerModifiers
+          status={attackerStatus}
+          boosts={attackerBoosts}
+          onStatusChange={setAttackerStatus}
+          onBoostChange={(stat, v) =>
+            setAttackerBoosts((prev) => ({ ...prev, [stat]: v }))
+          }
+        />
+      </div>
 
       {/* Defender */}
       <DefenderPanel
@@ -2010,13 +2006,21 @@ export function DamageCalcTab({
 
       {/* Sticky result */}
       <div className="fixed right-0 bottom-0 left-0 z-10 shadow-lg md:static md:shadow-none">
-        <ResultPanel
-          attackerName={attackerName}
-          defenderName={defenderName}
-          moveName={selectedMoveName}
-          direction={direction}
-          output={selectedMoveOutput}
-        />
+        {hasAttacker ? (
+          <ResultPanel
+            attackerName={attackerName}
+            defenderName={defenderName}
+            moveName={selectedMoveName}
+            direction={direction}
+            output={selectedMoveOutput}
+          />
+        ) : (
+          <div className="border-t bg-white px-3 py-3">
+            <p className="text-muted-foreground text-xs">
+              Pick an attacker to calculate.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

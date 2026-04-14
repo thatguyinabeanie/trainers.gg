@@ -253,6 +253,76 @@ describe("SpeedTierTab — data table", () => {
 });
 
 // =============================================================================
+// Tests — 0-Pokemon empty team
+// =============================================================================
+
+describe("SpeedTierTab — 0 Pokemon, no selected Pokemon", () => {
+  it("renders benchmark rows without crashing", () => {
+    render(
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
+    );
+    expect(screen.getByText("Flutter Mane")).toBeInTheDocument();
+    expect(screen.getByText("Incineroar")).toBeInTheDocument();
+  });
+
+  it("does not render SummaryCards (Current / Tailwind / Scarf) at 0 Pokemon", () => {
+    render(
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
+    );
+    expect(screen.queryByText("Current")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tailwind ×2")).not.toBeInTheDocument();
+    expect(screen.queryByText("Scarf ×1.5")).not.toBeInTheDocument();
+  });
+
+  it("does not render EvSuggestion at 0 Pokemon", () => {
+    render(
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
+    );
+    // EvSuggestion renders a 💡 hint — no pokemon means no suggestion
+    expect(screen.queryByText(/Speed EVs/)).not.toBeInTheDocument();
+  });
+
+  it("renders no ★ team-marker rows at 0 Pokemon", () => {
+    render(
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
+    );
+    // No ★ prefix should appear — all rows are benchmark rows
+    const starCells = screen
+      .queryAllByText(/★/)
+      .filter((el) => el.textContent?.includes("★"));
+    expect(starCells.length).toBe(0);
+  });
+
+  it("still renders the stage modifier toggle at 0 Pokemon", () => {
+    render(
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
+    );
+    expect(screen.getByText("Stage")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "—" })).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
 // Tests — stat stage modifier toggle
 // =============================================================================
 

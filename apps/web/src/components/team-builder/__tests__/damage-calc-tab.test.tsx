@@ -186,11 +186,11 @@ describe("DamageCalcTab", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Empty state — no Pokemon selected
+  // No attacker (selectedPokemon null) — scaffold render
   // ---------------------------------------------------------------------------
 
   describe("no Pokemon selected", () => {
-    it("renders the 'select a Pokemon' prompt", () => {
+    it("renders 'Pick an attacker to calculate.' in the result area", () => {
       render(
         <DamageCalcTab
           team={makeTeam()}
@@ -199,7 +199,7 @@ describe("DamageCalcTab", () => {
         />
       );
       expect(
-        screen.getByText("Select a Pokémon to use the calculator")
+        screen.getByText("Pick an attacker to calculate.")
       ).toBeInTheDocument();
     });
 
@@ -211,8 +211,82 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
-      // Direction toggle buttons only show when a Pokemon is selected
-      expect(screen.queryByText(/Incineroar/)).not.toBeInTheDocument();
+      // Direction toggle buttons (with → arrow) only show when a Pokemon is selected
+      const dirButtons = screen
+        .queryAllByRole("button")
+        .filter((b) => b.textContent?.includes("→"));
+      expect(dirButtons.length).toBe(0);
+    });
+
+    it("renders the Moves section in a dimmed container (opacity-50)", () => {
+      const { container } = render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      // The wrapper div around the moves card should have opacity-50
+      const dimmedDiv = container.querySelector(".opacity-50");
+      expect(dimmedDiv).not.toBeNull();
+    });
+
+    it("renders the Moves section header even without an attacker", () => {
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      expect(screen.getByText("Moves")).toBeInTheDocument();
+    });
+
+    it("renders the Defender section while no attacker is selected", () => {
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      expect(screen.getByText("Defender")).toBeInTheDocument();
+    });
+
+    it("renders the Field Conditions section while no attacker is selected", () => {
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      expect(screen.getByText(/field conditions/i)).toBeInTheDocument();
+    });
+
+    it("renders weather toggle buttons even without an attacker", () => {
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      expect(screen.getByText("Sun")).toBeInTheDocument();
+      expect(screen.getByText("Rain")).toBeInTheDocument();
+    });
+
+    it("does not render old full-page 'select a pokemon' message", () => {
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      expect(
+        screen.queryByText("Select a Pokémon to use the calculator")
+      ).not.toBeInTheDocument();
     });
   });
 

@@ -151,11 +151,43 @@ interface DefensiveTeamMatrixProps {
 }
 
 function DefensiveTeamMatrix({ teamPokemon }: DefensiveTeamMatrixProps) {
+  // At 0 Pokemon, render the type-label scaffold with 6 ghost placeholder columns.
   if (teamPokemon.length === 0) {
+    const ghostCols = [0, 1, 2, 3, 4, 5];
     return (
-      <p className="text-muted-foreground py-6 text-center text-sm">
-        Add Pokemon to see the defensive heatmap.
-      </p>
+      <div className="rounded-lg border bg-white p-3 shadow-sm">
+        <div className="overflow-x-auto">
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
+            <thead>
+              <tr>
+                <th className="w-20 pr-3 text-left" />
+                {ghostCols.map((i) => (
+                  <th key={i} className="min-w-[40px] pb-1.5" />
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {ALL_TYPES.map((attackType) => (
+                <tr key={attackType}>
+                  <td className="py-1 pr-3 text-left">
+                    <TypeBadge type={attackType} />
+                  </td>
+                  {ghostCols.map((i) => (
+                    <td key={i} className="p-0">
+                      <div
+                        className={cn(
+                          CELL_BASE,
+                          "bg-muted text-muted-foreground/30"
+                        )}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     );
   }
 
@@ -351,11 +383,43 @@ interface OffensiveTeamMatrixProps {
 }
 
 function OffensiveTeamMatrix({ teamPokemon }: OffensiveTeamMatrixProps) {
+  // At 0 Pokemon, render the type-label scaffold with 6 ghost placeholder columns.
   if (teamPokemon.length === 0) {
+    const ghostCols = [0, 1, 2, 3, 4, 5];
     return (
-      <p className="text-muted-foreground py-6 text-center text-sm">
-        Add Pokemon to see the offensive coverage heatmap.
-      </p>
+      <div className="rounded-lg border bg-white p-3 shadow-sm">
+        <div className="overflow-x-auto">
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
+            <thead>
+              <tr>
+                <th className="w-20 pr-3 text-left" />
+                {ghostCols.map((i) => (
+                  <th key={i} className="min-w-[40px] pb-1.5" />
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {ALL_TYPES.map((targetType) => (
+                <tr key={targetType}>
+                  <td className="py-1 pr-3 text-left">
+                    <TypeBadge type={targetType} />
+                  </td>
+                  {ghostCols.map((i) => (
+                    <td key={i} className="p-0">
+                      <div
+                        className={cn(
+                          CELL_BASE,
+                          "bg-muted text-muted-foreground/30"
+                        )}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     );
   }
 

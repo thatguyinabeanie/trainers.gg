@@ -265,6 +265,70 @@ describe("TypeCoverageTab", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // 0-Pokemon scaffold — defensive heatmap
+  // ---------------------------------------------------------------------------
+
+  describe("0-Pokemon scaffold (defensive view)", () => {
+    it("renders type label rows even with an empty team", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      // Type labels are rendered as part of the scaffold rows
+      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("Water").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("does not render DefensiveInsights when team has 0 Pokemon", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      expect(screen.queryByText("Insights")).not.toBeInTheDocument();
+    });
+
+    it("renders toggle row (Defensive/Offensive/Full Team/Selected) at 0 Pokemon", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      expect(
+        screen.getByRole("button", { name: "Defensive" })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Full Team" })
+      ).toBeInTheDocument();
+    });
+
+    it("does not render 'Add Pokemon to see the defensive heatmap.' text", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      expect(
+        screen.queryByText("Add Pokemon to see the defensive heatmap.")
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 0-Pokemon scaffold — offensive heatmap
+  // ---------------------------------------------------------------------------
+
+  describe("0-Pokemon scaffold (offensive view)", () => {
+    it("renders type label rows in offensive scaffold", async () => {
+      const user = userEvent.setup();
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      await user.click(screen.getByRole("button", { name: "Offensive" }));
+      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("does not render Coverage Gaps section at 0 Pokemon (offensive view)", async () => {
+      const user = userEvent.setup();
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      await user.click(screen.getByRole("button", { name: "Offensive" }));
+      expect(screen.queryByText("Coverage Gaps")).not.toBeInTheDocument();
+    });
+
+    it("does not render 'Add Pokemon to see the offensive coverage heatmap.' text", async () => {
+      const user = userEvent.setup();
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      await user.click(screen.getByRole("button", { name: "Offensive" }));
+      expect(
+        screen.queryByText("Add Pokemon to see the offensive coverage heatmap.")
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Defensive heatmap — team view
   // ---------------------------------------------------------------------------
 
