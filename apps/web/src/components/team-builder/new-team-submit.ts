@@ -1,5 +1,3 @@
-"use client";
-
 import { type TablesInsert } from "@trainers/supabase";
 import { parseShowdownText } from "@trainers/validators";
 
