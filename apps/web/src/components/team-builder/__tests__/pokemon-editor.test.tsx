@@ -290,6 +290,85 @@ describe("PokemonEditor", () => {
     });
   });
 
+  // ---------------------------------------------------------------------------
+  // disabled prop
+  // ---------------------------------------------------------------------------
+
+  describe("disabled prop", () => {
+    it("does NOT open ability picker when disabled=true and ability field is clicked", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      // Clicking on the ability value should not open the picker
+      await user.click(screen.getByText("Intimidate"));
+      expect(
+        screen.queryByPlaceholderText("Search abilities…")
+      ).not.toBeInTheDocument();
+    });
+
+    it("does NOT open nature picker when disabled=true and nature field is clicked", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      await user.click(screen.getByText("Adamant"));
+      expect(
+        screen.queryByPlaceholderText("Search natures…")
+      ).not.toBeInTheDocument();
+    });
+
+    it("does NOT open tera picker when disabled=true and tera field is clicked", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      // The tera section button is pointer-events-none so clicks on it should not fire
+      // Verify tera picker (which renders type grid buttons like Water) is absent
+      const teraSection = screen.getByText("Tera Type").closest("div");
+      const teraFieldButton = teraSection?.querySelector("button");
+      if (teraFieldButton) {
+        await user.click(teraFieldButton);
+      }
+      expect(
+        screen.queryByRole("button", { name: "Water" })
+      ).not.toBeInTheDocument();
+    });
+
+    it("does NOT open move picker when disabled=true and a move slot is clicked", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      await user.click(screen.getByText("Fake Out"));
+      expect(
+        screen.queryByPlaceholderText("Search moves…")
+      ).not.toBeInTheDocument();
+    });
+
+    it("opens ability picker normally when disabled=false (regression)", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} disabled={false} />);
+      await user.click(screen.getByText("Intimidate"));
+      expect(
+        screen.getByPlaceholderText("Search abilities…")
+      ).toBeInTheDocument();
+    });
+
+    it("opens move picker normally when disabled=false (regression)", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} disabled={false} />);
+      await user.click(screen.getByText("Fake Out"));
+      expect(screen.getByPlaceholderText("Search moves…")).toBeInTheDocument();
+    });
+
+    it("preset EV buttons are disabled when disabled=true", () => {
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
+    });
+
+    it("all IV inputs are disabled when disabled=true", () => {
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      // IvEditor renders spinbuttons for each stat — all should be disabled
+      const inputs = screen.getAllByRole("spinbutton");
+      inputs.forEach((input) => {
+        expect(input).toBeDisabled();
+      });
+    });
+  });
+
   describe("format-specific behavior", () => {
     it("hides the IV editor for champions format", () => {
       render(

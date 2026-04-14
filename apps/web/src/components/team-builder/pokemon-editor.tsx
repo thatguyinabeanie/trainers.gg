@@ -61,6 +61,12 @@ interface PokemonEditorProps {
   onUpdate: (field: string, value: unknown) => void;
   /** Validation errors for this Pokemon's fields — populated by Task 5 display logic. */
   fieldErrors?: ValidationError[];
+  /**
+   * When true, all interactive fields except the species header are inert.
+   * Use this to render the editor as a placeholder shell when no species is selected.
+   * The species picker entry point remains active so the user can still pick a species.
+   */
+  disabled?: boolean;
 }
 
 // =============================================================================
@@ -123,6 +129,7 @@ export function PokemonEditor({
   teamPokemon,
   onUpdate,
   fieldErrors,
+  disabled = false,
 }: PokemonEditorProps) {
   // Helper — look up the first error for a given field name.
   function getFieldError(field: string): ValidationError | undefined {
@@ -194,6 +201,7 @@ export function PokemonEditor({
   // -------------------------------------------------------------------------
 
   function openPicker(picker: ActivePicker) {
+    if (disabled) return;
     setActivePicker(picker);
   }
 
@@ -248,7 +256,12 @@ export function PokemonEditor({
           =================================================================== */}
       <div className="flex gap-0 divide-x px-3 py-2 md:px-4">
         {/* Ability */}
-        <div className="flex flex-1 flex-col pr-3">
+        <div
+          className={cn(
+            "flex flex-1 flex-col pr-3",
+            disabled && "pointer-events-none opacity-50"
+          )}
+        >
           <p className="text-muted-foreground mb-1 text-[10px] font-semibold tracking-wide uppercase">
             Ability
           </p>
@@ -287,7 +300,12 @@ export function PokemonEditor({
         </div>
 
         {/* Held Item */}
-        <div className="flex flex-1 flex-col px-3">
+        <div
+          className={cn(
+            "flex flex-1 flex-col px-3",
+            disabled && "pointer-events-none opacity-50"
+          )}
+        >
           <p className="text-muted-foreground mb-1 text-[10px] font-semibold tracking-wide uppercase">
             Item
           </p>
@@ -328,7 +346,12 @@ export function PokemonEditor({
         </div>
 
         {/* Tera Type */}
-        <div className="flex flex-1 flex-col pl-3">
+        <div
+          className={cn(
+            "flex flex-1 flex-col pl-3",
+            disabled && "pointer-events-none opacity-50"
+          )}
+        >
           <p className="text-muted-foreground mb-1 text-[10px] font-semibold tracking-wide uppercase">
             Tera Type
           </p>
@@ -368,7 +391,12 @@ export function PokemonEditor({
       {/* ===================================================================
           Section 3: Moves — single-column list with type/category/BP/accuracy
           =================================================================== */}
-      <div className="px-3 py-3 md:px-4">
+      <div
+        className={cn(
+          "px-3 py-3 md:px-4",
+          disabled && "pointer-events-none opacity-50"
+        )}
+      >
         <div className="mb-2 flex items-center gap-2">
           <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
             Moves
@@ -478,7 +506,12 @@ export function PokemonEditor({
           Section 4a: Nature row — sits directly above the EV editor.
           Clicking opens the NaturePicker inline.
           =================================================================== */}
-      <div className="px-3 py-2 md:px-4">
+      <div
+        className={cn(
+          "px-3 py-2 md:px-4",
+          disabled && "pointer-events-none opacity-50"
+        )}
+      >
         {activePicker === "nature" ? (
           <NaturePicker
             value={pokemon.nature}
@@ -543,6 +576,7 @@ export function PokemonEditor({
             onUpdate(`ev_${statToDbField(stat)}`, value)
           }
           onPreset={handleEvPreset}
+          disabled={disabled}
         />
         {renderFieldError("evs", "evTotal")}
       </div>
@@ -557,6 +591,7 @@ export function PokemonEditor({
             onChange={(stat, value) =>
               onUpdate(`iv_${statToDbField(stat)}`, value)
             }
+            disabled={disabled}
           />
         </div>
       )}
@@ -564,10 +599,18 @@ export function PokemonEditor({
       {/* ===================================================================
           Section 6: Notes — collapsible textarea
           =================================================================== */}
-      <div className="px-3 py-3 md:px-4">
+      <div
+        className={cn(
+          "px-3 py-3 md:px-4",
+          disabled && "pointer-events-none opacity-50"
+        )}
+      >
         <button
           type="button"
-          onClick={() => setNotesOpen((prev) => !prev)}
+          onClick={() => {
+            if (disabled) return;
+            setNotesOpen((prev) => !prev);
+          }}
           className="flex w-full items-center justify-between"
           aria-expanded={notesOpen}
         >
@@ -590,6 +633,7 @@ export function PokemonEditor({
             rows={4}
             className="mt-2 resize-none text-sm"
             aria-label="Pokemon notes"
+            disabled={disabled}
           />
         )}
       </div>

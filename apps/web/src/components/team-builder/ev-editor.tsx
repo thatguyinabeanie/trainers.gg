@@ -58,6 +58,11 @@ interface EvEditorProps {
   isStatPoints?: boolean;
   onChange: (stat: StatKey, value: number) => void;
   onPreset: (preset: "reset" | "maxAtk" | "maxBulk") => void;
+  /**
+   * When true, all drag, keyboard, and input interactions are no-ops and
+   * the bars/inputs appear dimmed. Preset buttons are also disabled.
+   */
+  disabled?: boolean;
 }
 
 // =============================================================================
@@ -161,6 +166,7 @@ interface StatRowProps {
   isNatureReduced: boolean;
   remaining: number;
   onChange: (value: number) => void;
+  disabled?: boolean;
 }
 
 function StatRow({
@@ -172,6 +178,7 @@ function StatRow({
   isNatureReduced,
   remaining,
   onChange,
+  disabled = false,
 }: StatRowProps) {
   const barRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -204,6 +211,7 @@ function StatRow({
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     // Only primary button (left-click / touch)
     if (e.button !== 0) return;
+    if (disabled) return;
     e.preventDefault();
 
     // Capture the pointer so moves are tracked even outside the element
@@ -249,7 +257,12 @@ function StatRow({
   // -------------------------------------------------------------------------
 
   return (
-    <div className="grid grid-cols-[44px_1fr_48px] items-center gap-2 md:grid-cols-[52px_1fr_56px_48px]">
+    <div
+      className={cn(
+        "grid grid-cols-[44px_1fr_48px] items-center gap-2 md:grid-cols-[52px_1fr_56px_48px]",
+        disabled && "opacity-50"
+      )}
+    >
       {/* Stat label with nature indicator */}
       <span
         className={cn(
@@ -272,8 +285,9 @@ function StatRow({
         aria-valuemax={MAX_EV}
         aria-valuenow={ev}
         aria-label={`${label} EVs`}
-        tabIndex={0}
+        tabIndex={disabled ? -1 : 0}
         onKeyDown={(e) => {
+          if (disabled) return;
           const step = e.shiftKey ? 16 : 4;
           if (e.key === "ArrowRight" || e.key === "ArrowUp") {
             e.preventDefault();
@@ -284,7 +298,8 @@ function StatRow({
           }
         }}
         className={cn(
-          "relative h-[7px] cursor-ew-resize touch-none rounded-full select-none",
+          "relative h-[7px] touch-none rounded-full select-none",
+          disabled ? "cursor-default" : "cursor-ew-resize",
           "bg-muted focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none"
         )}
       >
@@ -327,11 +342,13 @@ function StatRow({
         max={MAX_EV}
         value={ev}
         onChange={(e) => {
+          if (disabled) return;
           const raw = parseInt(e.target.value, 10);
           if (isNaN(raw)) return;
           const clamped = Math.max(0, Math.min(raw, ev + remaining, MAX_EV));
           onChange(clamped);
         }}
+        disabled={disabled}
         className={cn(
           "hidden h-6 w-full rounded border border-transparent bg-transparent px-1 text-right text-xs tabular-nums md:block",
           "hover:border-border focus:border-border focus:outline-none",
@@ -357,13 +374,25 @@ interface SpStatRowProps {
   sp: number;
   finalStat: number;
   onChange: (value: number) => void;
+  disabled?: boolean;
 }
 
-function SpStatRow({ statKey, sp, finalStat, onChange }: SpStatRowProps) {
+function SpStatRow({
+  statKey,
+  sp,
+  finalStat,
+  onChange,
+  disabled = false,
+}: SpStatRowProps) {
   const label = STAT_LABELS[statKey];
 
   return (
-    <div className="grid grid-cols-[44px_1fr_48px] items-center gap-2">
+    <div
+      className={cn(
+        "grid grid-cols-[44px_1fr_48px] items-center gap-2",
+        disabled && "opacity-50"
+      )}
+    >
       {/* Stat label */}
       <span className="text-muted-foreground text-right text-xs font-semibold tabular-nums">
         {label}
@@ -376,10 +405,12 @@ function SpStatRow({ statKey, sp, finalStat, onChange }: SpStatRowProps) {
         max={MAX_SP}
         value={sp}
         onChange={(e) => {
+          if (disabled) return;
           const raw = parseInt(e.target.value, 10);
           if (isNaN(raw)) return;
           onChange(Math.max(0, Math.min(raw, MAX_SP)));
         }}
+        disabled={disabled}
         aria-label={`${label} Stat Points`}
         className={cn(
           "h-6 w-full rounded border border-transparent bg-transparent px-1 text-right text-xs tabular-nums",
@@ -415,6 +446,7 @@ export function EvEditor({
   isStatPoints = false,
   onChange,
   onPreset,
+  disabled = false,
 }: EvEditorProps) {
   // Local EV state for optimistic/instant updates while dragging.
   // Syncs from props when props change (e.g., after server save or preset).
@@ -466,6 +498,7 @@ export function EvEditor({
                 sp={evs[statKey]}
                 finalStat={finalStat}
                 onChange={(value) => handleEvChange(statKey, value)}
+                disabled={disabled}
               />
             );
           })}
@@ -479,6 +512,7 @@ export function EvEditor({
             size="sm"
             className="h-7 flex-1 text-xs"
             onClick={() => onPreset("reset")}
+            disabled={disabled}
           >
             Reset
           </Button>
@@ -532,6 +566,7 @@ export function EvEditor({
                 const capped = Math.min(value, TOTAL_EV_LIMIT - otherTotal);
                 handleEvChange(statKey, capped);
               }}
+              disabled={disabled}
             />
           );
         })}
@@ -583,6 +618,7 @@ export function EvEditor({
           size="sm"
           className="h-7 flex-1 text-xs"
           onClick={() => onPreset("reset")}
+          disabled={disabled}
         >
           Reset
         </Button>
@@ -592,6 +628,7 @@ export function EvEditor({
           size="sm"
           className="h-7 flex-1 text-xs"
           onClick={() => onPreset("maxAtk")}
+          disabled={disabled}
         >
           Max Atk
         </Button>
@@ -601,6 +638,7 @@ export function EvEditor({
           size="sm"
           className="h-7 flex-1 text-xs"
           onClick={() => onPreset("maxBulk")}
+          disabled={disabled}
         >
           Max Bulk
         </Button>
