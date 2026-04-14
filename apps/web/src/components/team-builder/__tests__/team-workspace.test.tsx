@@ -262,20 +262,19 @@ describe("TeamWorkspace", () => {
       ).toBeInTheDocument();
     });
 
-    it("renders the team strip even with no pokemon", () => {
+    it("renders the team sidebar even with no pokemon", () => {
       render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
-      const strip = screen.getByLabelText("Team strip");
-      expect(strip).toBeInTheDocument();
+      const sidebar = screen.getByLabelText("Team sidebar");
+      expect(sidebar).toBeInTheDocument();
     });
   });
 
   describe("with pokemon", () => {
-    it("renders the team strip when pokemon exist", () => {
+    it("renders the team sidebar when pokemon exist", () => {
       const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
-      // Team strip is a div with aria-label
-      const strip = screen.getByLabelText("Team strip");
-      expect(strip).toBeInTheDocument();
+      const sidebar = screen.getByLabelText("Team sidebar");
+      expect(sidebar).toBeInTheDocument();
     });
 
     it("renders the first pokemon's editor by default", () => {

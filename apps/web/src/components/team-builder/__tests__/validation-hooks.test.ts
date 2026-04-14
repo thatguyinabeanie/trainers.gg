@@ -12,11 +12,21 @@ import { renderHook, act } from "@testing-library/react";
 // Module-level mocks — must be set up before imports
 // =============================================================================
 
-// Mock the heavy @pkmn/dex used inside @trainers/pokemon validation
+// Mock the heavy @pkmn/dex used inside @trainers/pokemon validation and
+// inside validation-hooks.ts (Dex.species.get for genderless check).
 jest.mock("@pkmn/dex", () => ({
   Dex: {
     forGen: jest.fn(() => ({})),
-    species: { get: jest.fn() },
+    species: {
+      // Return a species object with gender property — default to non-genderless
+      get: jest.fn((name: string) => ({
+        exists: name !== "Fakemon",
+        name,
+        gender: name === "Magnemite" ? "N" : undefined,
+        abilities: { 0: "Intimidate", 1: "Moxie" },
+        genderRatio: { M: 0.5, F: 0.5 },
+      })),
+    },
     natures: { get: jest.fn() },
     abilities: { get: jest.fn() },
     items: { get: jest.fn() },

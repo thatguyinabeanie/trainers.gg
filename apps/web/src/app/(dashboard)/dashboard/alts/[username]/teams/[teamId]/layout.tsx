@@ -11,6 +11,7 @@ import {
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { WorkspaceActions } from "@/components/team-builder/workspace-actions";
 
 // =============================================================================
@@ -77,6 +78,7 @@ export default async function TeamWorkspaceLayout({
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header bar */}
       <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3 md:px-4">
+        <SidebarTrigger className="-ml-1" />
         {/* Breadcrumb — "← Teams / Team Name" */}
         <Link
           href={teamsUrl}

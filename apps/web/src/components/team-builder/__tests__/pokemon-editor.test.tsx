@@ -193,7 +193,8 @@ describe("PokemonEditor", () => {
 
     it("renders Held Item label", () => {
       render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByText("Held Item")).toBeInTheDocument();
+      // The field label is "Item" (uppercase, abbreviated) in the new layout
+      expect(screen.getByText("Item")).toBeInTheDocument();
     });
 
     it("renders Nature label", () => {
