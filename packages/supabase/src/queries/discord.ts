@@ -1,5 +1,6 @@
 import type { TypedClient } from "../client";
 import type { Enums, Tables } from "../types";
+import { escapeLike } from "@trainers/utils";
 
 // =============================================================================
 // Types
@@ -439,4 +440,492 @@ export async function getUserByDiscordId(
 
   if (!data) return null;
   return { user_id: (data as { user_id: string }).user_id };
+}
+
+// =============================================================================
+// Discord bot slash-command query helpers
+// =============================================================================
+
+/** A minimal tournament row used by slash commands. */
+export type DiscordTournamentRow = {
+  id: number;
+  name: string;
+  slug: string;
+  /** Nullable to match the generated DB enum column type. */
+  status: string | null;
+  format: string | null;
+  start_date: string | null;
+  community_id: number;
+};
+
+/**
+ * List active tournaments for a community (status = 'active').
+ * Used by slash commands as the default tournament selection.
+ */
+export async function listActiveTournaments(
+  supabase: TypedClient,
+  communityId: number
+): Promise<DiscordTournamentRow[]> {
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("id, name, slug, status, format, start_date, community_id")
+    .eq("community_id", communityId)
+    .eq("status", "active")
+    .is("archived_at", null)
+    .order("start_date", { ascending: true, nullsFirst: false })
+    .limit(10);
+
+  if (error)
+    throw new Error(`Failed to list active tournaments: ${error.message}`);
+  return data ?? [];
+}
+
+/**
+ * List upcoming tournaments for a community (status = 'upcoming').
+ * Used by the /events command.
+ */
+export async function listUpcomingTournaments(
+  supabase: TypedClient,
+  communityId: number,
+  options: { limit?: number } = {}
+): Promise<DiscordTournamentRow[]> {
+  const { limit = 5 } = options;
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("id, name, slug, status, format, start_date, community_id")
+    .eq("community_id", communityId)
+    .in("status", ["active", "upcoming"])
+    .is("archived_at", null)
+    .order("start_date", { ascending: true, nullsFirst: false })
+    .limit(limit);
+
+  if (error)
+    throw new Error(`Failed to list upcoming tournaments: ${error.message}`);
+  return data ?? [];
+}
+
+/**
+ * Find a tournament by slug or name (ILIKE) within a community.
+ * Used when the user provides a tournament argument to a slash command.
+ */
+export async function getTournamentByNameOrSlugInCommunity(
+  supabase: TypedClient,
+  communityId: number,
+  identifier: string
+): Promise<DiscordTournamentRow | null> {
+  const escaped = escapeLike(identifier);
+
+  // Try exact slug match first
+  const { data: bySlug, error: slugError } = await supabase
+    .from("tournaments")
+    .select("id, name, slug, status, format, start_date, community_id")
+    .eq("community_id", communityId)
+    .eq("slug", identifier)
+    .is("archived_at", null)
+    .maybeSingle();
+
+  if (slugError)
+    throw new Error(
+      `Failed to get tournament by slug in community: ${slugError.message}`
+    );
+  if (bySlug) return bySlug;
+
+  // Fall back to ILIKE name match
+  const { data: byName, error: nameError } = await supabase
+    .from("tournaments")
+    .select("id, name, slug, status, format, start_date, community_id")
+    .eq("community_id", communityId)
+    .ilike("name", `%${escaped}%`)
+    .is("archived_at", null)
+    .order("start_date", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (nameError)
+    throw new Error(
+      `Failed to get tournament by name in community: ${nameError.message}`
+    );
+  return byName;
+}
+
+/** A standings row with player name for Discord previews. */
+export type DiscordStandingRow = {
+  /** Nullable to match the generated DB column type on tournament_standings. */
+  rank: number | null;
+  player_name: string;
+  wins: number;
+  losses: number;
+};
+
+/**
+ * Get top N standings for a tournament for Discord preview.
+ * Returns rank, player name (alt username), wins, and losses.
+ */
+export async function listStandings(
+  supabase: TypedClient,
+  tournamentId: number,
+  options: { limit?: number } = {}
+): Promise<DiscordStandingRow[]> {
+  const { limit = 5 } = options;
+
+  const { data, error } = await supabase
+    .from("tournament_standings")
+    .select(
+      `
+      rank,
+      game_wins,
+      game_losses,
+      alt:alts(username)
+    `
+    )
+    .eq("tournament_id", tournamentId)
+    .order("rank", { ascending: true })
+    .limit(limit);
+
+  if (error) throw new Error(`Failed to list standings: ${error.message}`);
+
+  return (data ?? []).map((row) => ({
+    rank: row.rank,
+    player_name:
+      (row.alt as { username: string } | null)?.username ?? "Unknown",
+    wins: row.game_wins ?? 0,
+    losses: row.game_losses ?? 0,
+  }));
+}
+
+/** A pairing row for Discord preview. */
+export type DiscordPairingRow = {
+  table_number: number | null;
+  player1_name: string;
+  player2_name: string | null;
+  is_bye: boolean;
+};
+
+/**
+ * Get current-round pairings for a tournament for Discord preview.
+ * Looks up the most recently started round across all phases.
+ */
+export async function listCurrentPairings(
+  supabase: TypedClient,
+  tournamentId: number,
+  options: { limit?: number } = {}
+): Promise<{ pairings: DiscordPairingRow[]; roundNumber: number | null }> {
+  const { limit = 10 } = options;
+
+  // Find the most recent active or completed round for this tournament
+  const { data: rounds, error: roundError } = await supabase
+    .from("tournament_rounds")
+    .select(
+      `
+      id,
+      round_number,
+      tournament_phases!inner(tournament_id)
+    `
+    )
+    .eq("tournament_phases.tournament_id", tournamentId)
+    .in("status", ["active", "completed"])
+    .order("round_number", { ascending: false })
+    .limit(1);
+
+  if (roundError)
+    throw new Error(`Failed to get tournament rounds: ${roundError.message}`);
+
+  const round = rounds?.[0];
+  if (!round) return { pairings: [], roundNumber: null };
+
+  const { data: matches, error: matchError } = await supabase
+    .from("tournament_matches")
+    .select(
+      `
+      table_number,
+      is_bye,
+      player1:alts!tournament_matches_alt1_id_fkey(username),
+      player2:alts!tournament_matches_alt2_id_fkey(username)
+    `
+    )
+    .eq("round_id", round.id)
+    .order("table_number", { ascending: true, nullsFirst: false })
+    .limit(limit);
+
+  if (matchError)
+    throw new Error(`Failed to get pairings: ${matchError.message}`);
+
+  const pairings: DiscordPairingRow[] = (matches ?? []).map((m) => ({
+    table_number: m.table_number,
+    player1_name:
+      (m.player1 as { username: string } | null)?.username ?? "Unknown",
+    player2_name: (m.player2 as { username: string } | null)?.username ?? null,
+    is_bye: m.is_bye ?? false,
+  }));
+
+  return { pairings, roundNumber: round.round_number };
+}
+
+/** A leaderboard entry for Discord preview. */
+export type DiscordLeaderboardRow = {
+  rank: number;
+  player_name: string;
+  rating: number;
+  wins: number;
+  losses: number;
+};
+
+/**
+ * Get community leaderboard for Discord preview.
+ * scope='current': ratings from current/most recent active tournament
+ * scope='all-time': global ELO ratings
+ */
+export async function listCommunityLeaderboard(
+  supabase: TypedClient,
+  communityId: number,
+  options: { scope?: "current" | "all-time"; limit?: number } = {}
+): Promise<DiscordLeaderboardRow[]> {
+  const { limit = 10 } = options;
+
+  // For both scopes, fetch tournament_player_stats for this community's tournaments
+  const { data: tournaments, error: tErr } = await supabase
+    .from("tournaments")
+    .select("id")
+    .eq("community_id", communityId)
+    .in("status", ["active", "completed"])
+    .is("archived_at", null)
+    .order("start_date", { ascending: false, nullsFirst: false })
+    .limit(options.scope === "current" ? 1 : 100);
+
+  if (tErr)
+    throw new Error(
+      `Failed to fetch tournaments for leaderboard: ${tErr.message}`
+    );
+
+  const tournamentIds = (tournaments ?? []).map((t) => t.id);
+  if (tournamentIds.length === 0) return [];
+
+  const { data: stats, error: statsError } = await supabase
+    .from("tournament_player_stats")
+    .select(
+      `
+      alt_id,
+      match_wins,
+      match_losses,
+      tournament_id,
+      alt:alts(username)
+    `
+    )
+    .in("tournament_id", tournamentIds)
+    .or("is_dropped.is.null,is_dropped.eq.false");
+
+  if (statsError)
+    throw new Error(`Failed to fetch leaderboard stats: ${statsError.message}`);
+
+  // Aggregate per player
+  const playerMap = new Map<
+    number,
+    { name: string; wins: number; losses: number }
+  >();
+  for (const row of stats ?? []) {
+    const existing = playerMap.get(row.alt_id);
+    const name =
+      (row.alt as { username: string } | null)?.username ?? "Unknown";
+    if (existing) {
+      existing.wins += row.match_wins ?? 0;
+      existing.losses += row.match_losses ?? 0;
+    } else {
+      playerMap.set(row.alt_id, {
+        name,
+        wins: row.match_wins ?? 0,
+        losses: row.match_losses ?? 0,
+      });
+    }
+  }
+
+  return Array.from(playerMap.entries())
+    .sort(([, a], [, b]) => {
+      // Sort by win rate descending, then wins descending
+      const totalA = a.wins + a.losses;
+      const totalB = b.wins + b.losses;
+      const rateA = totalA > 0 ? a.wins / totalA : 0;
+      const rateB = totalB > 0 ? b.wins / totalB : 0;
+      if (rateB !== rateA) return rateB - rateA;
+      return b.wins - a.wins;
+    })
+    .slice(0, limit)
+    .map(([, player], idx) => ({
+      rank: idx + 1,
+      player_name: player.name,
+      rating: 0, // Not using ELO here — using win/loss record
+      wins: player.wins,
+      losses: player.losses,
+    }));
+}
+
+/**
+ * Get a player's profile by username (looks up alt by username).
+ * Returns basic stats for /player command.
+ */
+export async function getPlayerByUsername(
+  supabase: TypedClient,
+  username: string
+): Promise<{
+  userId: string;
+  altId: number;
+  username: string;
+  country: string | null;
+} | null> {
+  const { data, error } = await supabase
+    .from("alts")
+    .select("id, user_id, username, user:users(country)")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (error)
+    throw new Error(`Failed to get player by username: ${error.message}`);
+  if (!data) return null;
+
+  return {
+    userId: data.user_id,
+    altId: data.id,
+    username: data.username,
+    country: (data.user as { country: string | null } | null)?.country ?? null,
+  };
+}
+
+/**
+ * Get a player's community-scoped stats (W-L record in this community's tournaments).
+ */
+export async function getPlayerCommunityStats(
+  supabase: TypedClient,
+  userId: string,
+  communityId: number
+): Promise<{
+  wins: number;
+  losses: number;
+  tournamentsPlayed: number;
+  lastPlayedAt: string | null;
+}> {
+  // Get the user's alts
+  const { data: alts, error: altsError } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("user_id", userId);
+
+  if (altsError)
+    throw new Error(
+      `Failed to get alts for player stats: ${altsError.message}`
+    );
+
+  const altIds = (alts ?? []).map((a) => a.id);
+  if (altIds.length === 0) {
+    return { wins: 0, losses: 0, tournamentsPlayed: 0, lastPlayedAt: null };
+  }
+
+  // Get all tournaments for this community
+  const { data: tournaments, error: tErr } = await supabase
+    .from("tournaments")
+    .select("id")
+    .eq("community_id", communityId)
+    .is("archived_at", null);
+
+  if (tErr)
+    throw new Error(
+      `Failed to get community tournaments for player stats: ${tErr.message}`
+    );
+
+  const tournamentIds = (tournaments ?? []).map((t) => t.id);
+  if (tournamentIds.length === 0) {
+    return { wins: 0, losses: 0, tournamentsPlayed: 0, lastPlayedAt: null };
+  }
+
+  const { data: stats, error: statsError } = await supabase
+    .from("tournament_player_stats")
+    .select("match_wins, match_losses, tournament_id, created_at")
+    .in("alt_id", altIds)
+    .in("tournament_id", tournamentIds);
+
+  if (statsError)
+    throw new Error(
+      `Failed to get player community stats: ${statsError.message}`
+    );
+
+  const rows = stats ?? [];
+  const totalWins = rows.reduce((s, r) => s + (r.match_wins ?? 0), 0);
+  const totalLosses = rows.reduce((s, r) => s + (r.match_losses ?? 0), 0);
+  const uniqueTournaments = new Set(rows.map((r) => r.tournament_id)).size;
+  const lastPlayed = rows.reduce<string | null>((latest, r) => {
+    if (!r.created_at) return latest;
+    if (!latest) return r.created_at;
+    return r.created_at > latest ? r.created_at : latest;
+  }, null);
+
+  return {
+    wins: totalWins,
+    losses: totalLosses,
+    tournamentsPlayed: uniqueTournaments,
+    lastPlayedAt: lastPlayed,
+  };
+}
+
+/**
+ * Get the most recent public team sheet for a user in this community's tournaments.
+ * Returns the team name and tournament context.
+ */
+export async function getPublicTeamForCommunity(
+  supabase: TypedClient,
+  userId: string,
+  communityId: number
+): Promise<{
+  teamId: number;
+  teamName: string | null;
+  tournamentId: number;
+  tournamentName: string;
+  tournamentSlug: string;
+} | null> {
+  // Get the user's alts
+  const { data: alts, error: altsError } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("user_id", userId);
+
+  if (altsError)
+    throw new Error(`Failed to get alts for public team: ${altsError.message}`);
+
+  const altIds = (alts ?? []).map((a) => a.id);
+  if (altIds.length === 0) return null;
+
+  // Find the most recent registration with a team in this community
+  const { data: regs, error: regError } = await supabase
+    .from("tournament_registrations")
+    .select(
+      `
+      team_id,
+      tournament:tournaments!inner(id, name, slug, community_id),
+      team:teams(name)
+    `
+    )
+    .in("alt_id", altIds)
+    .eq("tournaments.community_id", communityId)
+    .not("team_id", "is", null)
+    .order("registered_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (regError)
+    throw new Error(
+      `Failed to get public team for community: ${regError.message}`
+    );
+  if (!regs) return null;
+
+  const tournament = regs.tournament as {
+    id: number;
+    name: string;
+    slug: string;
+  } | null;
+  if (!tournament || !regs.team_id) return null;
+
+  return {
+    teamId: regs.team_id,
+    teamName: (regs.team as { name: string } | null)?.name ?? null,
+    tournamentId: tournament.id,
+    tournamentName: tournament.name,
+    tournamentSlug: tournament.slug,
+  };
 }

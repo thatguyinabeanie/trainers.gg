@@ -1,17 +1,24 @@
 /**
  * Command barrel — imports all command files for side-effect registration.
  *
- * Phase 3c will populate this file with imports like:
- *   import "./tournament";
- *   import "./standings";
- *   import "./team";
- *   etc.
- *
  * Each command file calls `registerCommand(...)` at module scope so that
  * importing it here is sufficient to register it in the global registry.
  */
 
-// Phase 3c: add command imports here
+// Register all commands by importing for side effects.
+import "./tournament";
+import "./standings";
+import "./pairings";
+import "./events";
+import "./player";
+import "./team";
+import "./leaderboard";
+import "./drop";
+import "./link";
+import "./setchannel";
+import "./unsetchannel";
+import "./channels";
+import "./help";
 
 export { commandRegistry, registerCommand } from "./registry";
 
@@ -22,3 +29,12 @@ export type {
   AutocompleteHandler,
   CommandDefinition,
 } from "./registry";
+
+// Re-export shared helpers for tests and other consumers
+export { resolveTournament } from "./shared/resolve-tournament";
+export type { ResolveTournamentResult } from "./shared/resolve-tournament";
+export { requireLinkedAccount } from "./shared/require-linked-account";
+export type { RequireLinkedAccountResult } from "./shared/require-linked-account";
+export { requireCommunityLeader } from "./shared/require-community-leader";
+export type { RequireCommunityLeaderResult } from "./shared/require-community-leader";
+export { SITE_URL } from "./shared/site-url";
