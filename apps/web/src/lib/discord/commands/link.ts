@@ -35,6 +35,7 @@ const handleLink: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "link",
+  description: "Link your Discord account to trainers.gg",
   handler: handleLink,
   ephemeral: true,
 });

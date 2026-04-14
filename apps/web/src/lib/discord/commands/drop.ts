@@ -11,7 +11,10 @@
  * custom_id pattern: `drop:confirm:{tournamentId}:{altId}` / `drop:cancel`
  */
 
-import { type APIApplicationCommandInteractionDataStringOption } from "discord-api-types/v10";
+import {
+  ApplicationCommandOptionType,
+  type APIApplicationCommandInteractionDataStringOption,
+} from "discord-api-types/v10";
 
 import { getChatInputOptions } from "./shared/options";
 
@@ -153,6 +156,16 @@ const handleDrop: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "drop",
+  description: "Drop from a tournament (requires linked account)",
+  options: [
+    {
+      name: "tournament",
+      description: "Which tournament? (optional — defaults to current active)",
+      type: ApplicationCommandOptionType.String,
+      required: false,
+      autocomplete: true,
+    },
+  ],
   handler: handleDrop,
   ephemeral: true,
 });

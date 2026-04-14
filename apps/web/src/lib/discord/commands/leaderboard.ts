@@ -6,7 +6,10 @@
  * Link to full leaderboard.
  */
 
-import { type APIApplicationCommandInteractionDataStringOption } from "discord-api-types/v10";
+import {
+  ApplicationCommandOptionType,
+  type APIApplicationCommandInteractionDataStringOption,
+} from "discord-api-types/v10";
 
 import { getChatInputOptions } from "./shared/options";
 
@@ -71,5 +74,18 @@ const handleLeaderboard: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "leaderboard",
+  description: "Community leaderboard — top players by ELO",
+  options: [
+    {
+      name: "scope",
+      description: "Time scope for the leaderboard (default: current season)",
+      type: ApplicationCommandOptionType.String,
+      required: false,
+      choices: [
+        { name: "Current season", value: "current" },
+        { name: "All-time", value: "all-time" },
+      ],
+    },
+  ],
   handler: handleLeaderboard,
 });

@@ -5,7 +5,10 @@
  * Requires community-leader permission (owner or staff).
  */
 
-import { type APIApplicationCommandInteractionDataStringOption } from "discord-api-types/v10";
+import {
+  ApplicationCommandOptionType,
+  type APIApplicationCommandInteractionDataStringOption,
+} from "discord-api-types/v10";
 
 import { getChatInputOptions } from "./shared/options";
 
@@ -108,6 +111,23 @@ const handleSetChannel: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "setchannel",
+  description: "Map this channel to a notification event (leaders only)",
+  options: [
+    {
+      name: "event_type",
+      description: "The event type to receive notifications for",
+      type: ApplicationCommandOptionType.String,
+      required: true,
+      choices: [
+        { name: "Tournament started", value: "tournament_started" },
+        { name: "Round posted", value: "round_posted" },
+        { name: "Tournament completed", value: "tournament_completed" },
+        { name: "Registration opened", value: "registration_opened" },
+        { name: "Registration closed", value: "registration_closed" },
+      ],
+    },
+  ],
+  defaultMemberPermissions: "16",
   handler: handleSetChannel,
   ephemeral: true,
 });

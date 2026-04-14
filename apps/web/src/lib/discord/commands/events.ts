@@ -70,5 +70,6 @@ const handleEvents: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "events",
+  description: "List upcoming tournaments in this community",
   handler: handleEvents,
 });

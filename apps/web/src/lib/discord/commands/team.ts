@@ -7,7 +7,10 @@
  * Link to the team sheet page.
  */
 
-import { type APIApplicationCommandInteractionDataStringOption } from "discord-api-types/v10";
+import {
+  ApplicationCommandOptionType,
+  type APIApplicationCommandInteractionDataStringOption,
+} from "discord-api-types/v10";
 
 import { getChatInputOptions } from "./shared/options";
 
@@ -109,6 +112,16 @@ const handleTeam: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "team",
+  description: "Show a team sheet (yours by default)",
+  options: [
+    {
+      name: "player",
+      description:
+        "Which player's team to show? (optional — defaults to yours)",
+      type: ApplicationCommandOptionType.String,
+      required: false,
+    },
+  ],
   handler: handleTeam,
   ephemeral: false,
 });

@@ -6,7 +6,10 @@
  * Link to bracket/pairings page.
  */
 
-import { type APIApplicationCommandInteractionDataStringOption } from "discord-api-types/v10";
+import {
+  ApplicationCommandOptionType,
+  type APIApplicationCommandInteractionDataStringOption,
+} from "discord-api-types/v10";
 
 import { getChatInputOptions } from "./shared/options";
 
@@ -89,5 +92,15 @@ const handlePairings: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "pairings",
+  description: "Show the current round's pairings",
+  options: [
+    {
+      name: "tournament",
+      description: "Which tournament? (optional — defaults to current active)",
+      type: ApplicationCommandOptionType.String,
+      required: false,
+      autocomplete: true,
+    },
+  ],
   handler: handlePairings,
 });

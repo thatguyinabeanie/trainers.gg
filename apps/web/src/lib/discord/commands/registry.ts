@@ -9,6 +9,7 @@
 import {
   type APIApplicationCommandAutocompleteInteraction,
   type APIApplicationCommandInteraction,
+  type APIApplicationCommandOption,
 } from "discord-api-types/v10";
 
 // =============================================================================
@@ -64,6 +65,19 @@ export type AutocompleteHandler = (
 export interface CommandDefinition {
   /** Must match the slash command name registered with Discord. */
   name: string;
+  /** Short description shown in Discord's command picker (max 100 chars). */
+  description: string;
+  /**
+   * Slash command options (string, integer, etc.) shown to users.
+   * These are sent to Discord during command registration.
+   */
+  options?: APIApplicationCommandOption[];
+  /**
+   * Bit field string for default required member permissions.
+   * E.g. "16" = MANAGE_CHANNELS. Server admins can always override.
+   * Omit to allow all members to see and use the command.
+   */
+  defaultMemberPermissions?: string;
   handler: CommandHandler;
   autocomplete?: AutocompleteHandler;
   /**

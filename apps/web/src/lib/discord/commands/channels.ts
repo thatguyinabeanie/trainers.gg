@@ -85,6 +85,8 @@ const handleChannels: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "channels",
+  description: "List current notification channel mappings",
+  defaultMemberPermissions: "16",
   handler: handleChannels,
   ephemeral: true,
 });

@@ -5,7 +5,10 @@
  * Requires community-leader permission.
  */
 
-import { type APIApplicationCommandInteractionDataStringOption } from "discord-api-types/v10";
+import {
+  ApplicationCommandOptionType,
+  type APIApplicationCommandInteractionDataStringOption,
+} from "discord-api-types/v10";
 
 import { getChatInputOptions } from "./shared/options";
 
@@ -122,6 +125,23 @@ const handleUnsetChannel: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "unsetchannel",
+  description: "Remove a channel mapping (leaders only)",
+  options: [
+    {
+      name: "event_type",
+      description: "The event type mapping to remove",
+      type: ApplicationCommandOptionType.String,
+      required: true,
+      choices: [
+        { name: "Tournament started", value: "tournament_started" },
+        { name: "Round posted", value: "round_posted" },
+        { name: "Tournament completed", value: "tournament_completed" },
+        { name: "Registration opened", value: "registration_opened" },
+        { name: "Registration closed", value: "registration_closed" },
+      ],
+    },
+  ],
+  defaultMemberPermissions: "16",
   handler: handleUnsetChannel,
   ephemeral: true,
 });

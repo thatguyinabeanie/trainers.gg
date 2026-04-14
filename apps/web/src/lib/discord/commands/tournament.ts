@@ -7,7 +7,10 @@
  * Link button to the tournament page on trainers.gg.
  */
 
-import { type APIApplicationCommandInteractionDataStringOption } from "discord-api-types/v10";
+import {
+  ApplicationCommandOptionType,
+  type APIApplicationCommandInteractionDataStringOption,
+} from "discord-api-types/v10";
 
 import { getChatInputOptions } from "./shared/options";
 
@@ -77,5 +80,15 @@ const handleTournament: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "tournament",
+  description: "Quick tournament info with a link to the full page",
+  options: [
+    {
+      name: "name",
+      description: "Which tournament? (optional — defaults to current active)",
+      type: ApplicationCommandOptionType.String,
+      required: false,
+      autocomplete: true,
+    },
+  ],
   handler: handleTournament,
 });

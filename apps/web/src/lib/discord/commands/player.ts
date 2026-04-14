@@ -5,7 +5,10 @@
  * Link button to the global player profile page.
  */
 
-import { type APIApplicationCommandInteractionDataStringOption } from "discord-api-types/v10";
+import {
+  ApplicationCommandOptionType,
+  type APIApplicationCommandInteractionDataStringOption,
+} from "discord-api-types/v10";
 
 import { getChatInputOptions } from "./shared/options";
 
@@ -98,5 +101,14 @@ const handlePlayer: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "player",
+  description: "Look up a player's community profile",
+  options: [
+    {
+      name: "username",
+      description: "The player's trainers.gg username",
+      type: ApplicationCommandOptionType.String,
+      required: true,
+    },
+  ],
   handler: handlePlayer,
 });

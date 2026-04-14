@@ -80,6 +80,7 @@ const handleHelp: CommandHandler = async (ctx) => {
 
 registerCommand({
   name: "help",
+  description: "Show all Beanie Bot commands",
   handler: handleHelp,
   unscoped: true,
   ephemeral: true,
