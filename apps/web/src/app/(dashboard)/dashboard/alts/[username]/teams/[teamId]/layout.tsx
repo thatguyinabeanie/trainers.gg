@@ -102,7 +102,12 @@ export default async function TeamWorkspaceLayout({
 
         {/* Action buttons — pushed to the right */}
         <div className="ml-auto">
-          <WorkspaceActions team={team} altId={alt.id} handle={username} />
+          <WorkspaceActions
+            team={team}
+            altId={alt.id}
+            handle={username}
+            formatId={format?.id}
+          />
         </div>
       </header>
 

@@ -19,6 +19,12 @@ jest.mock("@trainers/validators", () => ({
   parseShowdownText: (...args: unknown[]) => mockParseShowdownText(...args),
 }));
 
+const mockGetLegalSpecies = jest.fn();
+
+jest.mock("@trainers/pokemon", () => ({
+  getLegalSpecies: (...args: unknown[]) => mockGetLegalSpecies(...args),
+}));
+
 // =============================================================================
 // Imports (after mocks)
 // =============================================================================
@@ -96,6 +102,8 @@ describe("submitNewTeam", () => {
       success: true,
       data: { pokemonId: 1 },
     });
+    // Default: no format legality restriction (permissive)
+    mockGetLegalSpecies.mockReturnValue(undefined);
   });
 
   // ---------------------------------------------------------------------------
@@ -363,5 +371,58 @@ describe("submitNewTeam", () => {
       expect.objectContaining({ move1: "" }),
       1
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Format legality guards
+  // ---------------------------------------------------------------------------
+
+  it("returns { status: 'error' } without creating a team when paste contains an illegal species", async () => {
+    // Koraidon is not legal in championsvgc2026regma (only Miraidon is)
+    const parsed = [
+      makeParsedPokemon("Flutter Mane"), // legal
+      makeParsedPokemon("Koraidon"), // illegal in Reg MA (restricted to Miraidon)
+    ];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    // Simulate format legality: only Flutter Mane is in the legal set, not Koraidon
+    const legalSet = new Set(["Flutter Mane", "Incineroar", "Rillaboom"]);
+    mockGetLegalSpecies.mockReturnValueOnce(legalSet);
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      format: "championsvgc2026regma",
+      mode: "import",
+      paste: "Flutter Mane\nKoraidon",
+    });
+
+    expect(result.status).toBe("error");
+    expect((result as { status: "error"; error: string }).error).toContain(
+      "Koraidon"
+    );
+    // Team row must NOT be created
+    expect(mockCreateTeamAction).not.toHaveBeenCalled();
+    expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+  });
+
+  it("proceeds normally when all species are legal in the target format", async () => {
+    const parsed = [
+      makeParsedPokemon("Flutter Mane"),
+      makeParsedPokemon("Incineroar"),
+    ];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    // Both species are in the legal set
+    const legalSet = new Set(["Flutter Mane", "Incineroar", "Rillaboom"]);
+    mockGetLegalSpecies.mockReturnValueOnce(legalSet);
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      format: "championsvgc2026regma",
+      mode: "import",
+      paste: "Flutter Mane\nIncineroar",
+    });
+
+    expect(result).toEqual({ status: "ok", teamId: 42 });
+    expect(mockCreateTeamAction).toHaveBeenCalledTimes(1);
+    expect(mockAddPokemonToTeamAction).toHaveBeenCalledTimes(2);
   });
 });

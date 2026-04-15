@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 
+import { getLegalSpecies } from "@trainers/pokemon";
+
 import {
   parseShowdownText,
   parsePokepaseUrl,
@@ -38,6 +40,8 @@ interface ImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImportComplete: () => void;
+  /** Format ID for species legality checks. When omitted, all species are allowed. */
+  formatId?: string;
 }
 
 // =============================================================================
@@ -177,10 +181,12 @@ export function ImportDialog({
   open,
   onOpenChange,
   onImportComplete,
+  formatId,
 }: ImportDialogProps) {
   const [paste, setPaste] = useState("");
   const [url, setUrl] = useState("");
   const [parsed, setParsed] = useState<ParsedPokemon[] | null>(null);
+  const [legalityError, setLegalityError] = useState<string | null>(null);
   const [isFetching, startFetchTransition] = useTransition();
   const [isPendingImport, startImportTransition] = useTransition();
 
@@ -197,8 +203,24 @@ export function ImportDialog({
       setPaste("");
       setUrl("");
       setParsed(null);
+      setLegalityError(null);
     }
     onOpenChange(next);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Legality check helper — returns an error string or null
+  // ---------------------------------------------------------------------------
+
+  function checkLegality(candidates: ParsedPokemon[]): string | null {
+    if (!formatId) return null;
+    const legalSet = getLegalSpecies(formatId);
+    if (legalSet === undefined) return null;
+    const illegal = candidates
+      .map((p) => p.species)
+      .filter((s): s is string => Boolean(s) && !legalSet.has(s));
+    if (illegal.length === 0) return null;
+    return `These Pokémon aren't legal in this format: ${illegal.join(", ")}.`;
   }
 
   // ---------------------------------------------------------------------------
@@ -206,6 +228,7 @@ export function ImportDialog({
   // ---------------------------------------------------------------------------
 
   function handleParsePaste() {
+    setLegalityError(null);
     const text = paste.trim();
     if (!text) {
       toast.error("Paste a Showdown export first.");
@@ -218,6 +241,11 @@ export function ImportDialog({
       );
       return;
     }
+    const illegalMsg = checkLegality(result);
+    if (illegalMsg) {
+      setLegalityError(illegalMsg);
+      return;
+    }
     setParsed(result);
   }
 
@@ -226,6 +254,7 @@ export function ImportDialog({
   // ---------------------------------------------------------------------------
 
   function handleFetchUrl() {
+    setLegalityError(null);
     const input = url.trim();
     if (!input) {
       toast.error("Enter a Pokepaste URL first.");
@@ -266,6 +295,11 @@ export function ImportDialog({
         );
         return;
       }
+      const illegalMsg = checkLegality(result);
+      if (illegalMsg) {
+        setLegalityError(illegalMsg);
+        return;
+      }
       setParsed(result);
     });
   }
@@ -281,6 +315,13 @@ export function ImportDialog({
       toast.error(
         "This team already has 6 Pokémon. Remove some before importing."
       );
+      return;
+    }
+
+    // Final legality safety net — should be caught at parse time, but guard anyway
+    const illegalMsg = checkLegality(parsed);
+    if (illegalMsg) {
+      setLegalityError(illegalMsg);
       return;
     }
 
@@ -355,6 +396,21 @@ export function ImportDialog({
         </SheetHeader>
 
         <div className="flex flex-1 flex-col gap-4 px-4">
+          {/* Legality error — shown when a paste is rejected before preview */}
+          {legalityError && (
+            <div
+              role="alert"
+              className="bg-destructive/10 border-destructive/30 rounded-md border p-2.5"
+            >
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle className="text-destructive size-3.5 shrink-0" />
+                <span className="text-destructive text-xs font-medium">
+                  {legalityError}
+                </span>
+              </div>
+            </div>
+          )}
+
           {parsed ? (
             // Preview mode
             <>

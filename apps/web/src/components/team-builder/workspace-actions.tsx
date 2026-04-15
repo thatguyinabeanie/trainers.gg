@@ -22,6 +22,8 @@ interface WorkspaceActionsProps {
   team: TeamWithPokemon;
   altId: number;
   handle: string;
+  /** Format ID for species legality checks in the import dialog. */
+  formatId?: string;
 }
 
 // =============================================================================
@@ -38,6 +40,7 @@ export function WorkspaceActions({
   team,
   altId,
   handle,
+  formatId,
 }: WorkspaceActionsProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -75,6 +78,7 @@ export function WorkspaceActions({
         team={team}
         open={importOpen}
         onOpenChange={setImportOpen}
+        formatId={formatId}
         onImportComplete={() => {
           void queryClient.invalidateQueries({ queryKey: teamKeys.all(altId) });
           router.refresh();

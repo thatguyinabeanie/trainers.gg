@@ -1,3 +1,4 @@
+import { getLegalSpecies } from "@trainers/pokemon";
 import { type TablesInsert } from "@trainers/supabase";
 import { parseShowdownText } from "@trainers/validators";
 
@@ -34,7 +35,33 @@ export type NewTeamSubmitResult =
 export async function submitNewTeam(
   input: NewTeamSubmitInput
 ): Promise<NewTeamSubmitResult> {
-  // 1. Create the team record
+  // 1. If import mode with a non-blank paste, parse + legality-check BEFORE
+  //    creating the team record so we never leave an orphan team row on error.
+  let parsed: ReturnType<typeof parseShowdownText> = [];
+  if (input.mode === "import" && input.paste.trim()) {
+    parsed = parseShowdownText(input.paste.trim());
+
+    // Reject the whole paste when any species is illegal in the target format.
+    if (parsed.length > 0) {
+      const legalSet = getLegalSpecies(input.format);
+      if (legalSet !== undefined) {
+        const illegal = parsed
+          .map((p) => p.species)
+          .filter(
+            (species): species is string =>
+              Boolean(species) && !legalSet.has(species)
+          );
+        if (illegal.length > 0) {
+          return {
+            status: "error",
+            error: `Cannot import. These Pokémon aren't legal in this format: ${illegal.join(", ")}.`,
+          };
+        }
+      }
+    }
+  }
+
+  // 2. Create the team record
   const createResult = await createTeamAction(
     input.altId,
     input.name.trim(),
@@ -45,18 +72,17 @@ export async function submitNewTeam(
   }
   const teamId = createResult.data.id;
 
-  // 2. If not import mode, or paste is blank, we're done
+  // 3. If not import mode, or paste is blank, we're done
   if (input.mode !== "import" || !input.paste.trim()) {
     return { status: "ok", teamId };
   }
 
-  // 3. Parse the Showdown paste
-  const parsed = parseShowdownText(input.paste.trim());
+  // 4. If the paste was unparseable, report empty-paste (team was created)
   if (parsed.length === 0) {
     return { status: "empty-paste", teamId };
   }
 
-  // 4. Import up to 6 pokemon concurrently with explicit position indexes.
+  // 5. Import up to 6 pokemon concurrently with explicit position indexes.
   //    Cast gender to the DB enum — parseShowdownText uses string | null but
   //    the DB expects the "Male" | "Female" enum. Trim to valid values only.
   const toImport = parsed.slice(0, 6);
@@ -97,7 +123,7 @@ export async function submitNewTeam(
     })
   );
 
-  // 5. Collect any failures and report them
+  // 6. Collect any failures and report them
   const failedSpecies = toImport
     .filter((_, i) => !addResults[i]?.success)
     .map((p) => p.species);
