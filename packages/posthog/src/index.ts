@@ -18,4 +18,4 @@ export {
   DISCORD_CHANNEL_MAPPED,
   DISCORD_ROLE_MAPPED,
   DISCORD_ROLE_SYNC_FAILED,
-} from "./events.js";
+} from "./events";

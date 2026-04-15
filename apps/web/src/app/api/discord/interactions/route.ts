@@ -28,6 +28,10 @@ import {
 } from "discord-api-types/v10";
 
 import {
+  DISCORD_COMMAND_EXECUTED,
+  DISCORD_COMMAND_FAILED,
+} from "@trainers/posthog";
+import {
   getCommunityById,
   getDiscordServerByGuildId,
 } from "@trainers/supabase";
@@ -36,6 +40,7 @@ import { editInteractionResponse } from "@/lib/discord/api";
 import { commandRegistry } from "@/lib/discord/commands";
 import { type CommandDefinition } from "@/lib/discord/commands/registry";
 import { checkRateLimit } from "@/lib/discord/rate-limit";
+import { captureServerEvent } from "@/lib/posthog/server";
 import { verifyRequest } from "@/lib/discord/verify";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
@@ -146,18 +151,32 @@ async function handleCommand(
   };
 
   // Schedule the real work — runs after the response is sent
+  const startedAt = Date.now();
   waitUntil(
-    runCommand(definition, interaction, userId, communityContext).catch(
-      (err) => {
-        console.error(`Command /${commandName} failed:`, err);
-        void editInteractionResponse(interaction.token, {
-          content:
-            "Something went wrong running that command. Please try again.",
-        }).catch((e) => {
-          console.error("Failed to send fallback error message:", e);
-        });
-      }
-    )
+    runCommand(
+      definition,
+      interaction,
+      userId,
+      communityContext,
+      startedAt
+    ).catch((err) => {
+      console.error(`Command /${commandName} failed:`, err);
+      // Emit failure event — fire-and-forget, never blocks the error path
+      void captureServerEvent({
+        event: DISCORD_COMMAND_FAILED,
+        distinctId: userId,
+        properties: {
+          command_name: commandName,
+          community_id: communityContext?.communityId ?? null,
+          error_code: err instanceof Error ? err.message : String(err),
+        },
+      });
+      void editInteractionResponse(interaction.token, {
+        content: "Something went wrong running that command. Please try again.",
+      }).catch((e) => {
+        console.error("Failed to send fallback error message:", e);
+      });
+    })
   );
 
   return Response.json(deferred);
@@ -167,7 +186,8 @@ async function runCommand(
   definition: CommandDefinition,
   interaction: APIApplicationCommandInteraction,
   userId: string,
-  communityContext: { communityId: number; communitySlug: string } | null
+  communityContext: { communityId: number; communitySlug: string } | null,
+  startedAt: number
 ): Promise<void> {
   await definition.handler({
     interaction,
@@ -175,6 +195,19 @@ async function runCommand(
     userId,
     communityId: communityContext?.communityId ?? 0,
     communitySlug: communityContext?.communitySlug ?? "",
+  });
+
+  // Emit success event — fire-and-forget
+  void captureServerEvent({
+    event: DISCORD_COMMAND_EXECUTED,
+    distinctId: userId,
+    properties: {
+      command_name: definition.name,
+      community_id: communityContext?.communityId ?? null,
+      is_linked: communityContext !== null,
+      success: true,
+      latency_ms: Date.now() - startedAt,
+    },
   });
 }
 

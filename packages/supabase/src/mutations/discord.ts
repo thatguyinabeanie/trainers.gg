@@ -75,6 +75,9 @@ export async function deleteDiscordServerByGuildId(
 /**
  * Upsert a channel-to-event-type mapping for a Discord server.
  * Idempotent: conflicts on (discord_server_id, channel_id, event_type) are ignored.
+ *
+ * TODO(phase-6a): emit DISCORD_CHANNEL_MAPPED when called from a server action
+ * once Phase 5 UI wires it (community_id, event_type properties).
  */
 export async function upsertChannelMapping(
   supabase: TypedClient,
@@ -193,6 +196,9 @@ export async function setDmPreference(
 /**
  * Upsert a role mapping for a Discord server.
  * Conflicts on (discord_server_id, role_type) update discord_role_id and enabled.
+ *
+ * TODO(phase-6a): emit DISCORD_ROLE_MAPPED when called from a server action
+ * once Phase 5 UI wires it (community_id, role_type properties).
  */
 export async function upsertRoleMapping(
   supabase: TypedClient,

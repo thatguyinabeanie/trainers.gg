@@ -17,6 +17,9 @@
  * GET /api/discord/uninstall-sweep
  */
 
+import { DISCORD_BOT_UNINSTALLED } from "@trainers/posthog";
+import { listDiscordServers, deleteDiscordServer } from "@trainers/supabase";
+
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
   getGuild,
@@ -24,7 +27,7 @@ import {
   isMissingAccessError,
   getErrorCode,
 } from "@/lib/discord/api";
-import { listDiscordServers, deleteDiscordServer } from "@trainers/supabase";
+import { captureServerEvent } from "@/lib/posthog/server";
 
 // =============================================================================
 // Route handler
@@ -54,6 +57,15 @@ export async function GET(request: Request): Promise<Response> {
         // the bot is no longer in this server. Delete the row (cascades to
         // discord_channels, discord_dm_settings, discord_role_mappings, etc.)
         await deleteDiscordServer(supabase, server.id);
+        // Emit uninstall event — fire-and-forget
+        void captureServerEvent({
+          event: DISCORD_BOT_UNINSTALLED,
+          distinctId: `guild:${server.guild_id}`,
+          properties: {
+            community_id: server.community_id,
+            guild_id: server.guild_id,
+          },
+        });
         removedCount++;
       } else {
         // Transient error (rate-limit, 5xx, network). Leave the row alone

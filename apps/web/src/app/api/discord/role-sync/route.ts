@@ -17,6 +17,14 @@
  * GET /api/discord/role-sync
  */
 
+import { DISCORD_ROLE_SYNC_FAILED } from "@trainers/posthog";
+import {
+  listPendingRoleSyncs,
+  markRoleSyncComplete,
+  markRoleSyncFailed,
+  toggleRoleMapping,
+} from "@trainers/supabase";
+
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
   assignRole,
@@ -29,12 +37,7 @@ import {
   isUnknownRole,
   isUnknownMember,
 } from "@/lib/discord/role-sync-helpers";
-import {
-  listPendingRoleSyncs,
-  markRoleSyncComplete,
-  markRoleSyncFailed,
-  toggleRoleMapping,
-} from "@trainers/supabase";
+import { captureServerEvent } from "@/lib/posthog/server";
 
 // =============================================================================
 // Constants
@@ -97,6 +100,16 @@ export async function GET(request: Request): Promise<Response> {
       await markRoleSyncFailed(supabase, job.id, "server_not_found");
       stats.failed++;
       stats.errors.push({ jobId: job.id, reason: "server_not_found" });
+      // Emit failure event — fire-and-forget
+      void captureServerEvent({
+        event: DISCORD_ROLE_SYNC_FAILED,
+        distinctId: `server:${job.discord_server_id}`,
+        properties: {
+          community_id: null,
+          role_type: job.discord_role_id,
+          reason: "server_not_found",
+        },
+      });
       continue;
     }
 
@@ -125,6 +138,15 @@ export async function GET(request: Request): Promise<Response> {
           reason: "hierarchy_violation",
           code,
         });
+        void captureServerEvent({
+          event: DISCORD_ROLE_SYNC_FAILED,
+          distinctId: `guild:${guildId}`,
+          properties: {
+            community_id: null,
+            role_type: job.discord_role_id,
+            reason: "hierarchy_violation",
+          },
+        });
       } else if (isUnknownRole(e)) {
         // Role was deleted from Discord — disable the mapping to stop retries.
         await markRoleSyncFailed(supabase, job.id, `role_deleted:${code}`);
@@ -139,11 +161,29 @@ export async function GET(request: Request): Promise<Response> {
         }
         stats.failed++;
         stats.errors.push({ jobId: job.id, reason: "role_deleted", code });
+        void captureServerEvent({
+          event: DISCORD_ROLE_SYNC_FAILED,
+          distinctId: `guild:${guildId}`,
+          properties: {
+            community_id: null,
+            role_type: job.discord_role_id,
+            reason: "role_deleted",
+          },
+        });
       } else if (isUnknownMember(e)) {
         // User left the server — fail the job, no mapping change needed.
         await markRoleSyncFailed(supabase, job.id, `user_left:${code}`);
         stats.failed++;
         stats.errors.push({ jobId: job.id, reason: "user_left", code });
+        void captureServerEvent({
+          event: DISCORD_ROLE_SYNC_FAILED,
+          distinctId: `guild:${guildId}`,
+          properties: {
+            community_id: null,
+            role_type: job.discord_role_id,
+            reason: "user_left",
+          },
+        });
       } else if (e instanceof DiscordRateLimitError) {
         // Rate limit exhausted — leave job pending for next cron pass.
         stats.errors.push({ jobId: job.id, reason: "rate_limited", code });

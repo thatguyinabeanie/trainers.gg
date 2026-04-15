@@ -20,13 +20,16 @@
  * GET /api/discord/install-callback?code=...&guild_id=...&state=...
  */
 
-import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
-import { verifyInstallState } from "@/lib/discord/install-state";
+import { DISCORD_BOT_INSTALLED } from "@trainers/posthog";
 import {
   hasCommunityAccess,
   getCommunityById,
   createDiscordServer,
 } from "@trainers/supabase";
+
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { verifyInstallState } from "@/lib/discord/install-state";
+import { captureServerEvent } from "@/lib/posthog/server";
 
 // =============================================================================
 // Helpers
@@ -136,7 +139,17 @@ export async function GET(request: Request): Promise<Response> {
     throw err;
   }
 
-  // Step 7: Look up the community slug for the redirect URL
+  // Step 7: Emit bot-installed analytics event — fire-and-forget
+  void captureServerEvent({
+    event: DISCORD_BOT_INSTALLED,
+    distinctId: user.id,
+    properties: {
+      community_id,
+      guild_id: guildId,
+    },
+  });
+
+  // Step 8: Look up the community slug for the redirect URL
   // getCommunityById returns null on missing community, but at this point
   // hasCommunityAccess already confirmed it exists, so this should never be null.
   const community = await getCommunityById(supabase, community_id);
@@ -145,7 +158,7 @@ export async function GET(request: Request): Promise<Response> {
     return redirectWithError("community_not_found");
   }
 
-  // Step 8: Redirect to the integration settings page (Phase 5 page location)
+  // Step 9: Redirect to the integration settings page (Phase 5 page location)
   return Response.redirect(
     `${baseUrl}/communities/${community.slug}/settings/integrations/discord?installed=true&guild=${guildId}`,
     303

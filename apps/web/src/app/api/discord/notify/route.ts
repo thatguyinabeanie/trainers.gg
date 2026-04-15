@@ -29,12 +29,17 @@
  */
 
 import {
+  DISCORD_NOTIFICATION_FAILED,
+  DISCORD_NOTIFICATION_SENT,
+} from "@trainers/posthog";
+import {
   getDiscordServerByChannelId,
   isDmEnabledForUser,
   listPendingDmNotifications,
   listPendingNotifications,
   type DiscordDmQueueItem,
   type DiscordNotificationQueueItem,
+  type TypedClient,
 } from "@trainers/supabase";
 import {
   markChannelEmailSent,
@@ -57,8 +62,7 @@ import {
   sendDM,
 } from "@/lib/discord/api";
 import { buildEmbed } from "@/lib/discord/embeds";
-
-import { type TypedClient } from "@trainers/supabase";
+import { captureServerEvent } from "@/lib/posthog/server";
 
 // =============================================================================
 // Constants
@@ -133,6 +137,17 @@ async function processChannelQueue(
     if (item.attempts >= MAX_CHANNEL_ATTEMPTS) {
       await markNotificationFailed(supabase, item.id, "max_attempts_exceeded");
       failed++;
+      // Emit failure event — fire-and-forget
+      void captureServerEvent({
+        event: DISCORD_NOTIFICATION_FAILED,
+        distinctId: `channel:${item.channel_id}`,
+        properties: {
+          event_type: item.event_type,
+          community_id: null,
+          reason: "max_attempts_exceeded",
+          attempts: item.attempts,
+        },
+      });
       continue;
     }
 
@@ -148,6 +163,16 @@ async function processChannelQueue(
       if (server) {
         await resetChannelFailures(supabase, server.id, item.channel_id);
       }
+
+      // Emit sent event — fire-and-forget
+      void captureServerEvent({
+        event: DISCORD_NOTIFICATION_SENT,
+        distinctId: `guild:${server?.guild_id ?? item.channel_id}`,
+        properties: {
+          event_type: item.event_type,
+          community_id: server?.community_id ?? null,
+        },
+      });
 
       sent++;
     } catch (e: unknown) {
@@ -192,6 +217,18 @@ async function processChannelQueue(
             }
           }
         }
+
+        // Emit failure event — fire-and-forget
+        void captureServerEvent({
+          event: DISCORD_NOTIFICATION_FAILED,
+          distinctId: `guild:${server?.guild_id ?? item.channel_id}`,
+          properties: {
+            event_type: item.event_type,
+            community_id: server?.community_id ?? null,
+            reason: `terminal:${getErrorCode(e)}`,
+            attempts: item.attempts,
+          },
+        });
       } else {
         // 5xx or other transient error — leave item pending
         errors.push({
