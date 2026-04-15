@@ -245,6 +245,113 @@ const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
 ]);
 
 // =============================================================================
+// @pkmn/sim-backed legality
+// =============================================================================
+
+import { Dex as SimDex, TeamValidator } from "@pkmn/sim";
+import type { PokemonSet, Species } from "@pkmn/sim";
+
+/**
+ * Map our format IDs to the Showdown format display name that
+ * `@pkmn/sim` registers. Formats not listed here fall back to
+ * `undefined` (permissive) until someone adds them.
+ */
+const SIM_FORMAT_NAME_BY_ID: Record<string, string> = {
+  gen9vgc2026regi: "[Gen 9] VGC 2026 Reg I",
+  gen9vgc2026regf: "[Gen 9] VGC 2026 Reg F",
+  gen9vgc2024regg: "[Gen 9] VGC 2024 Reg G",
+  gen9vgc2024regh: "[Gen 9] VGC 2024 Reg H",
+  gen9ou: "[Gen 9] OU",
+  gen9uu: "[Gen 9] UU",
+  gen9ru: "[Gen 9] RU",
+  gen9nu: "[Gen 9] NU",
+  gen9pu: "[Gen 9] PU",
+  gen9lc: "[Gen 9] LC",
+  gen9monotype: "[Gen 9] Monotype",
+  gen9anythinggoes: "[Gen 9] Anything Goes",
+  gen9ubers: "[Gen 9] Ubers",
+};
+
+const simSetCache = new Map<string, ReadonlySet<string>>();
+
+/**
+ * Build a minimal valid-looking PokemonSet for a species. Used as a
+ * probe for `TeamValidator.validateSet` — only the species matters for
+ * the species-legality check; other fields are filled with safe defaults.
+ *
+ * We use "Protect" as the probe move because it is learnable by virtually
+ * all pokemon in Gen 9 via TM, avoiding false-negative move-legality errors.
+ * A single HP EV avoids the "0 EVs" validator warning.
+ */
+function probeSet(species: Species): PokemonSet {
+  return {
+    name: species.name,
+    species: species.name,
+    item: "",
+    ability: species.abilities[0] ?? species.abilities.H ?? "No Ability",
+    moves: ["Protect"],
+    nature: "Hardy",
+    gender: "",
+    evs: { hp: 1, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+    level: 50,
+    shiny: false,
+  };
+}
+
+/**
+ * Compute the legal-species set for a format registered in @pkmn/sim.
+ * Iterates the gen-9 species table and filters via TeamValidator.
+ *
+ * Issues that are purely move-legality errors (e.g. "can't learn X") are
+ * excluded from the species-ban check — only species-level bans (Mythical,
+ * Min Source Gen, etc.) cause a species to be excluded from the result set.
+ */
+function computeLegalSpeciesFromSim(
+  formatId: string
+): ReadonlySet<string> | undefined {
+  const cached = simSetCache.get(formatId);
+  if (cached) return cached;
+
+  const simName = SIM_FORMAT_NAME_BY_ID[formatId];
+  if (!simName) return undefined;
+
+  const format = SimDex.formats.get(simName);
+  if (!format?.exists) return undefined;
+
+  const validator = new TeamValidator(format, SimDex);
+  const gen = SimDex.forGen(9);
+  const legal = new Set<string>();
+
+  for (const species of gen.species.all()) {
+    if (!species.exists) continue;
+    if (species.isNonstandard && species.isNonstandard !== "Unobtainable") {
+      continue;
+    }
+    const issues = validator.validateSet(probeSet(species), {});
+    if (issues === null) {
+      legal.add(species.name);
+      continue;
+    }
+    // Accept species whose only issues are move-legality errors — those
+    // stem from our probe move choice, not a species-level ban.
+    const speciesIssues = issues.filter(
+      (issue) =>
+        !issue.includes("can't learn") &&
+        !issue.includes("can not learn") &&
+        !issue.includes("EVs") &&
+        !issue.includes("moves")
+    );
+    if (speciesIssues.length === 0) {
+      legal.add(species.name);
+    }
+  }
+
+  simSetCache.set(formatId, legal);
+  return legal;
+}
+
+// =============================================================================
 // Public API
 // =============================================================================
 
@@ -258,8 +365,7 @@ export function getLegalSpecies(
   if (formatId === "championsvgc2026regma") {
     return CHAMPIONS_MA_LEGAL_SPECIES;
   }
-  // Task 2 will add the @pkmn/sim path here.
-  return undefined;
+  return computeLegalSpeciesFromSim(formatId);
 }
 
 /**

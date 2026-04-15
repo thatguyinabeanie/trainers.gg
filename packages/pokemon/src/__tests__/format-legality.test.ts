@@ -44,3 +44,32 @@ describe("format-legality — permissive fallback", () => {
     expect(isLegalSpecies("Landorus-Therian", "unknown-format-id")).toBe(true);
   });
 });
+
+describe("format-legality — @pkmn/sim path", () => {
+  const REG_I = "gen9vgc2026regi";
+  const REG_G = "gen9vgc2024regg";
+
+  it("marks Incineroar as legal in VGC Reg I", () => {
+    expect(isLegalSpecies("Incineroar", REG_I)).toBe(true);
+  });
+
+  it("marks Mew as illegal in VGC Reg I (Mythical, banned by Flat Rules)", () => {
+    expect(isLegalSpecies("Mew", REG_I)).toBe(false);
+  });
+
+  it("returns a non-empty set for VGC Reg I", () => {
+    const legal = getLegalSpecies(REG_I);
+    expect(legal).toBeInstanceOf(Set);
+    expect(legal?.size).toBeGreaterThan(100);
+  });
+
+  it("marks Mewtwo legal in Reg G (restricted-legendary format)", () => {
+    expect(isLegalSpecies("Mewtwo", REG_G)).toBe(true);
+  });
+
+  it("memoizes the set — repeated calls return the same instance", () => {
+    const first = getLegalSpecies(REG_I);
+    const second = getLegalSpecies(REG_I);
+    expect(first).toBe(second);
+  });
+});
