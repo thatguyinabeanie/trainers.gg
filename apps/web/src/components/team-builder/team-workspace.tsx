@@ -347,6 +347,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
               ? (selectedEntry?.pokemon?.species ?? null)
               : null
           }
+          formatId={format?.id}
           onSelect={handleSpeciesSelect}
           onCancel={handlePickerCancel}
         />

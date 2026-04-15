@@ -22,6 +22,8 @@ interface SpeciesPickerProps {
   speciesIndex: SpeciesSearchEntry[];
   currentTeam: Array<{ species: string }>;
   currentSpecies: string | null;
+  /** Active format ID. When set, illegal species are dimmed + select is blocked. */
+  formatId?: string;
   onSelect: (species: string, mode: "defaults" | "blank") => void;
   onCancel: () => void;
 }
@@ -42,6 +44,7 @@ export function SpeciesPicker({
   speciesIndex,
   currentTeam,
   currentSpecies,
+  formatId,
   onSelect,
   onCancel,
 }: SpeciesPickerProps) {
@@ -101,6 +104,7 @@ export function SpeciesPicker({
             entries={filteredEntries}
             previewedSpecies={previewedSpecies}
             currentSpecies={currentSpecies}
+            formatId={formatId}
             onPreview={setPreviewedSpecies}
             onSelect={(species) => onSelect(species, "defaults")}
           />
@@ -111,6 +115,7 @@ export function SpeciesPicker({
           <SpeciesDetail
             species={previewedEntry}
             currentTeam={currentTeam}
+            formatId={formatId}
             onSelect={onSelect}
           />
         </div>
