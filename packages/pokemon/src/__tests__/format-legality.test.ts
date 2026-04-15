@@ -14,7 +14,7 @@ describe("format-legality — Champions M-A", () => {
   it("returns a ReadonlySet for Champions M-A", () => {
     const legal = getLegalSpecies(CHAMPIONS);
     expect(legal).toBeInstanceOf(Set);
-    expect(legal?.size).toBeGreaterThan(150);
+    expect(legal?.size).toBe(217);
   });
 
   it("excludes Mega forms (they're item-driven, not separately selectable)", () => {

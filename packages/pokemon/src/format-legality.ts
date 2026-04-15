@@ -19,7 +19,7 @@
  * Ported from NCP calc (pokedex.js lines 18378–18409). Megas are
  * item-driven battle transformations, not separately selectable species,
  * so every "Mega X" entry from NCP is dropped here. Distinct battle
- * forms (Rotom-Heat, Tauros-Paldea-Combat, Ogerpon-Wellspring, etc.)
+ * forms (Rotom-Heat, Tauros-Paldea-Combat, Aegislash-Blade, etc.)
  * are retained.
  */
 const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
