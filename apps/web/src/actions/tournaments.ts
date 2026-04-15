@@ -182,7 +182,7 @@ export async function publishTournament(
           .eq("id", tournamentId)
           .single();
         if (tournament) {
-          void enqueueCommunityChannelNotification(
+          await enqueueCommunityChannelNotification(
             supabase,
             tournament.community_id,
             "registration_opens",
@@ -268,7 +268,7 @@ export async function completeTournament(
         if (!tournament) return;
 
         // Channel notification: tournament ended
-        void enqueueCommunityChannelNotification(
+        await enqueueCommunityChannelNotification(
           supabase,
           tournament.community_id,
           "tournament_ended",
@@ -292,7 +292,7 @@ export async function completeTournament(
           .filter((id): id is string => Boolean(id));
 
         if (winnerUserIds.length > 0) {
-          void enqueueCommunityRoleSync(
+          await enqueueCommunityRoleSync(
             supabase,
             tournament.community_id,
             winnerUserIds,
@@ -466,7 +466,7 @@ export async function registerForTournament(
           .single();
         if (!tournament) return;
 
-        void enqueueCommunityRoleSync(
+        await enqueueCommunityRoleSync(
           supabase,
           tournament.community_id,
           [user.id],
@@ -508,6 +508,50 @@ export async function cancelRegistration(
     await cancelRegistrationMutation(supabase, registrationId);
 
     invalidateTournamentListCaches(tournamentId);
+
+    // Fire-and-forget: remove member role if user has no remaining active registrations
+    void (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: tournament } = await supabase
+          .from("tournaments")
+          .select("community_id")
+          .eq("id", tournamentId)
+          .single();
+        if (!tournament) return;
+
+        // Count remaining non-dropped registrations for this user in this community
+        const { count } = await supabase
+          .from("tournament_registrations")
+          .select("id, alts!inner(user_id), tournaments!inner(community_id)", {
+            count: "exact",
+            head: true,
+          })
+          .eq("alts.user_id", user.id)
+          .eq("tournaments.community_id", tournament.community_id)
+          .is("dropped_at", null);
+
+        if (count === 0) {
+          await enqueueCommunityRoleSync(
+            supabase,
+            tournament.community_id,
+            [user.id],
+            "member",
+            "remove",
+            `tournament_registration_cancel:${registrationId}`
+          );
+        }
+      } catch (discordErr) {
+        console.error(
+          "[cancelRegistration] Discord member role remove sync failed",
+          { registrationId, tournamentId, error: String(discordErr) }
+        );
+      }
+    })();
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -570,6 +614,50 @@ export async function withdrawFromTournament(
     const supabase = await createClient();
     await withdrawFromTournamentMutation(supabase, tournamentId);
     invalidateTournamentListCaches(tournamentId);
+
+    // Fire-and-forget: remove member role if user has no remaining active registrations
+    void (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: tournament } = await supabase
+          .from("tournaments")
+          .select("community_id")
+          .eq("id", tournamentId)
+          .single();
+        if (!tournament) return;
+
+        // Count remaining non-dropped registrations for this user in this community
+        const { count } = await supabase
+          .from("tournament_registrations")
+          .select("id, alts!inner(user_id), tournaments!inner(community_id)", {
+            count: "exact",
+            head: true,
+          })
+          .eq("alts.user_id", user.id)
+          .eq("tournaments.community_id", tournament.community_id)
+          .is("dropped_at", null);
+
+        if (count === 0) {
+          await enqueueCommunityRoleSync(
+            supabase,
+            tournament.community_id,
+            [user.id],
+            "member",
+            "remove",
+            `tournament_withdraw:${tournamentId}`
+          );
+        }
+      } catch (discordErr) {
+        console.error(
+          "[withdrawFromTournament] Discord member role remove sync failed",
+          { tournamentId, error: String(discordErr) }
+        );
+      }
+    })();
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -926,6 +1014,8 @@ export async function generatePairings(
             `match_ready:${match.id}`,
             matchPayload
           );
+          // TODO(phase-4e): enqueue match_starting_soon DM ~15min before match.scheduled_at
+          // Requires a time-based cron or scheduled task. See docs/superpowers/specs/2026-04-11-discord-bot-design.md § Notification Event Types.
         }
       } catch (discordErr) {
         console.error(
