@@ -20,6 +20,7 @@ import {
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
 import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
+import { enqueueCommunityRoleSync } from "@/lib/discord/enqueue-helpers";
 
 // =============================================================================
 // Staff Search
@@ -76,6 +77,16 @@ export async function inviteStaffMember(
 
     invalidateCommunityPageCaches(slug, communityId);
 
+    // Fire-and-forget: assign the staff Discord role
+    void enqueueCommunityRoleSync(
+      supabase,
+      communityId,
+      [userId],
+      "staff",
+      "add",
+      `staff_added:${communityId}:${userId}`
+    );
+
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -100,6 +111,16 @@ export async function inviteStaffToGroup(
     await addStaffToGroupMutation(supabase, communityId, userId, groupId);
 
     invalidateCommunityPageCaches(slug, communityId);
+
+    // Fire-and-forget: assign the staff Discord role
+    void enqueueCommunityRoleSync(
+      supabase,
+      communityId,
+      [userId],
+      "staff",
+      "add",
+      `staff_added:${communityId}:${userId}`
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -161,6 +182,16 @@ export async function removeStaffAction(
     await removeStaffMutation(supabase, communityId, userId);
 
     invalidateCommunityPageCaches(slug, communityId);
+
+    // Fire-and-forget: remove the staff Discord role
+    void enqueueCommunityRoleSync(
+      supabase,
+      communityId,
+      [userId],
+      "staff",
+      "remove",
+      `staff_removed:${communityId}:${userId}`
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {
