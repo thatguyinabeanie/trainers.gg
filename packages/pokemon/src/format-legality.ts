@@ -272,6 +272,9 @@ const SIM_FORMAT_NAME_BY_ID: Record<string, string> = {
   gen9ubers: "[Gen 9] Ubers",
 };
 
+// Module-level cache — computed once per process (worker) lifetime.
+// First call per format iterates ~900 gen-9 species through the validator
+// (~100ms); subsequent calls are synchronous.
 const simSetCache = new Map<string, ReadonlySet<string>>();
 
 /**
@@ -306,6 +309,16 @@ function probeSet(species: Species): PokemonSet {
  * Issues that are purely move-legality errors (e.g. "can't learn X") are
  * excluded from the species-ban check — only species-level bans (Mythical,
  * Min Source Gen, etc.) cause a species to be excluded from the result set.
+ *
+ * Returns the set of _individually_-legal species. Team-composition rules
+ * like "Limit 2 Restricted" (Reg I) are NOT enforced here — `teamHas` is
+ * `{}` so the validator only sees a single-species probe. A species that
+ * can appear as 1 of 6 on a valid team will be marked legal.
+ *
+ * Nonstandard filter: species with `isNonstandard === "Unobtainable"` are
+ * kept (legacy/transfer-only Pokémon that still see competitive use);
+ * other nonstandard values ("Future", "LGPE", "Gigantamax", "Past",
+ * "CAP", "Custom") are excluded.
  */
 function computeLegalSpeciesFromSim(
   formatId: string
