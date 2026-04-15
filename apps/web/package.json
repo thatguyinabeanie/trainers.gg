@@ -41,6 +41,7 @@
     "@tanstack/react-table": "^8",
     "@tanstack/react-virtual": "^3",
     "@trainers/atproto": "workspace:*",
+    "@trainers/posthog": "workspace:*",
     "@trainers/pokemon": "workspace:*",
     "@trainers/supabase": "workspace:*",
     "@trainers/theme": "workspace:*",
