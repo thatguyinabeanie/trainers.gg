@@ -4,7 +4,9 @@ import { useState } from "react";
 import Image from "next/image";
 
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
-import { type SpeciesSearchEntry } from "@trainers/pokemon";
+import { type SpeciesSearchEntry, isLegalSpecies } from "@trainers/pokemon";
+
+import { Badge } from "@/components/ui/badge";
 
 import { cn } from "@/lib/utils";
 import {
@@ -38,6 +40,7 @@ interface SpeciesTableProps {
   currentSpecies: string | null;
   onPreview: (species: string) => void;
   onSelect: (species: string) => void;
+  formatId?: string;
 }
 
 interface SortState {
@@ -133,6 +136,7 @@ export function SpeciesTable({
   currentSpecies,
   onPreview,
   onSelect,
+  formatId,
 }: SpeciesTableProps) {
   const [sort, setSort] = useState<SortState>({
     column: "name",
@@ -245,6 +249,9 @@ export function SpeciesTable({
             const isCurrent = entry.species === currentSpecies;
             const isPreviewed = entry.species === previewedSpecies;
             const sprite = getPokemonSprite(entry.species);
+            const legal = formatId
+              ? isLegalSpecies(entry.species, formatId)
+              : true;
 
             return (
               <TableRow
@@ -255,10 +262,14 @@ export function SpeciesTable({
                     "border-l-2 border-l-teal-500 bg-teal-50 dark:bg-teal-950/20",
                   isPreviewed &&
                     !isCurrent &&
-                    "border-l-2 border-l-blue-500 bg-blue-50 dark:bg-blue-950/20"
+                    "border-l-2 border-l-blue-500 bg-blue-50 dark:bg-blue-950/20",
+                  !legal && "opacity-50"
                 )}
                 onClick={() => onPreview(entry.species)}
-                onDoubleClick={() => onSelect(entry.species)}
+                onDoubleClick={() => {
+                  if (!legal) return;
+                  onSelect(entry.species);
+                }}
               >
                 {/* Sprite */}
                 <TableCell className="px-2 py-1">
@@ -279,6 +290,14 @@ export function SpeciesTable({
                 {/* Name */}
                 <TableCell className="py-1 font-medium">
                   {entry.species}
+                  {!legal && (
+                    <Badge
+                      variant="outline"
+                      className="border-muted-foreground/30 text-muted-foreground ml-2 text-[10px]"
+                    >
+                      Not legal
+                    </Badge>
+                  )}
                 </TableCell>
 
                 {/* Types */}

@@ -425,3 +425,105 @@ describe("SpeciesTable — sorting", () => {
     expect(mutedCells.length).toBeGreaterThan(0);
   });
 });
+
+// =============================================================================
+// Tests — format legality
+// =============================================================================
+
+const CHAMPIONS_FORMAT = "championsvgc2026regma";
+
+describe("SpeciesTable — format legality", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("dims an illegal species row with opacity-50 and renders 'Not legal' badge", () => {
+    const entry = makeEntry({ species: "Landorus-Therian" });
+    const { container } = render(
+      <SpeciesTable
+        {...defaultProps}
+        entries={[entry]}
+        formatId={CHAMPIONS_FORMAT}
+      />
+    );
+
+    // Row should have opacity-50
+    const dimmedRows = container.querySelectorAll("tr.opacity-50");
+    expect(dimmedRows.length).toBe(1);
+
+    // Badge text should appear
+    expect(screen.getByText("Not legal")).toBeInTheDocument();
+  });
+
+  it("does not call onSelect when an illegal row is double-clicked, but does call onPreview on click", async () => {
+    const onPreview = jest.fn();
+    const onSelect = jest.fn();
+    const user = userEvent.setup();
+
+    const entry = makeEntry({ species: "Landorus-Therian" });
+    render(
+      <SpeciesTable
+        {...defaultProps}
+        entries={[entry]}
+        formatId={CHAMPIONS_FORMAT}
+        onPreview={onPreview}
+        onSelect={onSelect}
+      />
+    );
+
+    // Single click still previews
+    await user.click(screen.getByText("Landorus-Therian"));
+    expect(onPreview).toHaveBeenCalledWith("Landorus-Therian");
+
+    // Double click does NOT select
+    await user.dblClick(screen.getByText("Landorus-Therian"));
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("does not dim a legal species and onSelect fires on double-click", async () => {
+    const onSelect = jest.fn();
+    const user = userEvent.setup();
+
+    const entry = makeEntry({ species: "Incineroar" });
+    const { container } = render(
+      <SpeciesTable
+        {...defaultProps}
+        entries={[entry]}
+        formatId={CHAMPIONS_FORMAT}
+        onSelect={onSelect}
+      />
+    );
+
+    // No opacity-50 class on any data row
+    const dimmedRows = container.querySelectorAll("tr.opacity-50");
+    expect(dimmedRows.length).toBe(0);
+
+    // No "Not legal" badge
+    expect(screen.queryByText("Not legal")).not.toBeInTheDocument();
+
+    // Double-click selects normally
+    await user.dblClick(screen.getByText("Incineroar"));
+    expect(onSelect).toHaveBeenCalledWith("Incineroar");
+  });
+
+  it("does not dim any rows when formatId is an unknown format", () => {
+    const entries = [
+      makeEntry({ species: "Landorus-Therian" }),
+      makeEntry({ species: "Incineroar" }),
+    ];
+    const { container } = render(
+      <SpeciesTable
+        {...defaultProps}
+        entries={entries}
+        formatId="unknown-format-id"
+      />
+    );
+
+    // No rows should be dimmed for an unknown format
+    const dimmedRows = container.querySelectorAll("tr.opacity-50");
+    expect(dimmedRows.length).toBe(0);
+
+    // No badges should appear
+    expect(screen.queryByText("Not legal")).not.toBeInTheDocument();
+  });
+});
