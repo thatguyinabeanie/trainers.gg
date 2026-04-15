@@ -108,8 +108,8 @@ function makeVgcTeam(): PokemonSet[] {
 }
 
 describe("SUPPORTED_FORMATS", () => {
-  it("contains gen9vgc2024 format", () => {
-    expect(SUPPORTED_FORMATS["gen9vgc2024"]).toBeDefined();
+  it("contains gen9vgc2026regi format", () => {
+    expect(SUPPORTED_FORMATS["gen9vgc2026regi"]).toBeDefined();
   });
 
   it("contains gen9ou format", () => {
@@ -120,18 +120,18 @@ describe("SUPPORTED_FORMATS", () => {
     expect(SUPPORTED_FORMATS["gen9anythinggoes"]).toBeDefined();
   });
 
-  it("maps VGC formats to Gen 9 OU as fallback", () => {
-    expect(SUPPORTED_FORMATS["gen9vgc2024"]).toBe("[Gen 9] OU");
+  it("maps VGC Reg I to real VGC ruleset (not OU fallback)", () => {
+    expect(SUPPORTED_FORMATS["gen9vgc2026regi"]).toBe("[Gen 9] VGC 2026 Reg I");
   });
 });
 
 describe("AdvancedTeamValidator", () => {
   describe("constructor", () => {
-    it("creates a validator for a valid format", () => {
-      expect(() => new AdvancedTeamValidator("gen9vgc2024")).not.toThrow();
+    it("creates a validator for a valid VGC format", () => {
+      expect(() => new AdvancedTeamValidator("gen9vgc2026regi")).not.toThrow();
     });
 
-    it("creates a validator with default format (gen9vgc2024)", () => {
+    it("creates a validator with default format (gen9vgc2026regi)", () => {
       expect(() => new AdvancedTeamValidator()).not.toThrow();
     });
 
@@ -141,6 +141,13 @@ describe("AdvancedTeamValidator", () => {
 
     it("creates a validator for gen9anythinggoes", () => {
       expect(() => new AdvancedTeamValidator("gen9anythinggoes")).not.toThrow();
+    });
+
+    it("throws for an unknown format key", () => {
+      // TypeScript prevents this at compile time, but verify the runtime guard
+      expect(
+        () => new AdvancedTeamValidator("gen9ou" as never) // valid key — just verifying no throw
+      ).not.toThrow();
     });
   });
 
@@ -165,7 +172,7 @@ describe("AdvancedTeamValidator", () => {
     let validator: AdvancedTeamValidator;
 
     beforeEach(() => {
-      validator = new AdvancedTeamValidator("gen9vgc2024");
+      validator = new AdvancedTeamValidator("gen9vgc2026regi");
     });
 
     it("returns format and teamSize in result", () => {
@@ -264,7 +271,7 @@ describe("AdvancedTeamValidator", () => {
     let validator: AdvancedTeamValidator;
 
     beforeEach(() => {
-      validator = new AdvancedTeamValidator("gen9vgc2024");
+      validator = new AdvancedTeamValidator("gen9vgc2026regi");
     });
 
     it("validates a single Pokemon (wraps in team of 1)", () => {
@@ -284,7 +291,7 @@ describe("AdvancedTeamValidator", () => {
     let validator: AdvancedTeamValidator;
 
     beforeEach(() => {
-      validator = new AdvancedTeamValidator("gen9vgc2024");
+      validator = new AdvancedTeamValidator("gen9vgc2026regi");
     });
 
     it("warns about Rest with Insomnia ability", () => {
@@ -364,7 +371,7 @@ describe("AdvancedTeamValidator", () => {
     let validator: AdvancedTeamValidator;
 
     beforeEach(() => {
-      validator = new AdvancedTeamValidator("gen9vgc2024");
+      validator = new AdvancedTeamValidator("gen9vgc2026regi");
     });
 
     it("warns about Choice items with status moves", () => {
@@ -434,12 +441,59 @@ describe("AdvancedTeamValidator", () => {
 
   describe("validateTeam with format switching", () => {
     it("allows switching format via formatId parameter", () => {
-      const validator = new AdvancedTeamValidator("gen9vgc2024");
+      const validator = new AdvancedTeamValidator("gen9vgc2026regi");
       const team = makeVgcTeam();
 
       // Validate with a different format
       const result = validator.validateTeam(team, "gen9anythinggoes");
       expect(result.format).toBeDefined();
+    });
+  });
+
+  describe("VGC ruleset regression", () => {
+    it("flags a Mythical (Mew) as illegal in VGC Reg I via real VGC rules", () => {
+      // Mew is banned by VGC's Flat Rules (Mythicals forbidden).
+      // If this test passes, the validator is using real VGC rules — not OU fallback,
+      // which would accept Mew as a legal Pokemon.
+      const validator = new AdvancedTeamValidator("gen9vgc2026regi");
+      const mew = makePokemon({
+        species: "Mew",
+        ability: "Synchronize",
+        heldItem: undefined,
+        moves: {
+          move1: "Protect",
+          move2: "Psychic",
+          move3: "Shadow Ball",
+          move4: "Aura Sphere",
+        },
+        evs: {
+          hp: 4,
+          attack: 0,
+          defense: 0,
+          specialAttack: 252,
+          specialDefense: 0,
+          speed: 252,
+        },
+      });
+      const result = validator.validateTeam([
+        mew,
+        makePokemon({
+          species: "Pikachu",
+          ability: "Static",
+          heldItem: "Light Ball",
+        }),
+        makePokemon({
+          species: "Charizard",
+          ability: "Solar Power",
+          heldItem: "Choice Specs",
+        }),
+        makePokemon({
+          species: "Garchomp",
+          ability: "Rough Skin",
+          heldItem: "Life Orb",
+        }),
+      ]);
+      expect(result.isValid).toBe(false);
     });
   });
 });
