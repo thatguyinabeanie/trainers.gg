@@ -84,10 +84,15 @@ jest.mock("@trainers/pokemon", () => ({
   buildSpeciesSearchIndex: jest.fn(() => [
     { species: "Charizard" },
     { species: "Incineroar" },
+    { species: "Landorus-Therian" },
   ]),
   calculateChampionsHP: jest.fn(() => 160),
   calculateChampionsStat: jest.fn(() => 100),
   getNatureMultiplier: jest.fn(() => 1.0),
+  // Returns false for Landorus-Therian so legality tests have an illegal species.
+  isLegalSpecies: jest.fn(
+    (species: string, _formatId: string) => species !== "Landorus-Therian"
+  ),
 }));
 
 jest.mock("lucide-react", () => {
@@ -708,6 +713,108 @@ describe("DamageCalcTab", () => {
   // ---------------------------------------------------------------------------
   // Format prop
   // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
+  // Defender species search legality
+  // ---------------------------------------------------------------------------
+
+  describe("damage calc — defender species search legality", () => {
+    const championsFormat = {
+      id: "championsvgc2026regma",
+      label: "Champions VGC 2026 Reg MA",
+      generation: 9,
+    };
+
+    it("dims illegal species in the search results and blocks selection", async () => {
+      const user = userEvent.setup();
+      const pokemon = makePokemon({ species: "Charizard" });
+
+      render(
+        <DamageCalcTab
+          team={makeTeam([
+            { sort_order: 0, pokemon },
+          ] as TeamWithPokemon["team_pokemon"])}
+          selectedPokemon={pokemon}
+          format={championsFormat}
+        />
+      );
+
+      // Open the defender species search by clicking the ▾ button
+      const speciesButtons = screen
+        .getAllByRole("button")
+        .filter((b) => b.getAttribute("title") === "Click to change species");
+      // The defender InlineSpeciesSearch button is the last one (defender section)
+      const defenderButton = speciesButtons[speciesButtons.length - 1]!;
+      await user.click(defenderButton);
+
+      // Use fireEvent.change to set the query — avoids async userEvent sequencing
+      const input = screen.getByPlaceholderText("Search species…");
+      fireEvent.change(input, { target: { value: "lando" } });
+
+      // Landorus-Therian row should be present and disabled
+      const landoButton = screen
+        .getAllByRole("button", { hidden: true })
+        .find((b) => b.textContent?.includes("Landorus-Therian"));
+      expect(landoButton).toBeDefined();
+      expect(landoButton).toBeDisabled();
+      expect(landoButton).toHaveClass("opacity-50");
+
+      // "Not legal" badge appears within that row
+      expect(screen.getByText("Not legal")).toBeInTheDocument();
+
+      // MouseDown on the disabled row does NOT select — search stays open
+      if (landoButton) {
+        fireEvent.mouseDown(landoButton);
+      }
+      // The search input should still be visible (Landorus-Therian was not selected)
+      expect(
+        screen.getByPlaceholderText("Search species…")
+      ).toBeInTheDocument();
+    });
+
+    it("allows selection of a legal species", async () => {
+      const user = userEvent.setup();
+      const pokemon = makePokemon({ species: "Charizard" });
+
+      render(
+        <DamageCalcTab
+          team={makeTeam([
+            { sort_order: 0, pokemon },
+          ] as TeamWithPokemon["team_pokemon"])}
+          selectedPokemon={pokemon}
+          format={championsFormat}
+        />
+      );
+
+      // Open the defender species search
+      const speciesButtons = screen
+        .getAllByRole("button")
+        .filter((b) => b.getAttribute("title") === "Click to change species");
+      const defenderButton = speciesButtons[speciesButtons.length - 1]!;
+      await user.click(defenderButton);
+
+      // Use fireEvent.change to set the query — avoids async userEvent sequencing
+      const input = screen.getByPlaceholderText("Search species…");
+      fireEvent.change(input, { target: { value: "incin" } });
+
+      // Incineroar row should be present and enabled (legal)
+      const incineroarButton = screen
+        .getAllByRole("button")
+        .find((b) => b.textContent?.includes("Incineroar"));
+      expect(incineroarButton).toBeDefined();
+      expect(incineroarButton).not.toBeDisabled();
+      expect(incineroarButton).not.toHaveClass("opacity-50");
+
+      // Click Incineroar — defender species should update (input closes)
+      if (incineroarButton) {
+        fireEvent.mouseDown(incineroarButton);
+      }
+      // The input should be closed (search mode exits on selection)
+      expect(
+        screen.queryByPlaceholderText("Search species…")
+      ).not.toBeInTheDocument();
+    });
+  });
 
   it("renders correctly when format is undefined", () => {
     const pokemon = makePokemon();

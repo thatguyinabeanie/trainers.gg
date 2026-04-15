@@ -25,9 +25,11 @@ import {
   calculateChampionsHP,
   calculateChampionsStat,
   getNatureMultiplier,
+  isLegalSpecies,
 } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 // =============================================================================
 // Types
@@ -792,20 +794,37 @@ function InlineSpeciesSearch({
         />
         {results.length > 0 && (
           <ul className="border-border bg-background absolute top-full right-0 left-0 z-20 mt-0.5 max-h-48 overflow-y-auto rounded-md border shadow-md">
-            {results.map((sp) => (
-              <li key={sp}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleSelect(sp);
-                  }}
-                  className="hover:bg-muted w-full px-3 py-1.5 text-left text-xs"
-                >
-                  {sp}
-                </button>
-              </li>
-            ))}
+            {results.map((sp) => {
+              const legal = formatId ? isLegalSpecies(sp, formatId) : true;
+              return (
+                <li key={sp}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      if (!legal) return;
+                      handleSelect(sp);
+                    }}
+                    disabled={!legal}
+                    className={cn(
+                      "hover:bg-muted flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs",
+                      !legal &&
+                        "cursor-not-allowed opacity-50 hover:bg-transparent"
+                    )}
+                  >
+                    <span className="flex-1">{sp}</span>
+                    {!legal && (
+                      <Badge
+                        variant="outline"
+                        className="border-muted-foreground/30 text-muted-foreground text-[10px]"
+                      >
+                        Not legal
+                      </Badge>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
