@@ -57,7 +57,11 @@
       "Read(//Users/gmendoza/source/**)",
       "Bash(pnpm --filter @trainers/web test --testPathPattern=\"teams-list-client\")",
       "Bash(pnpm --filter @trainers/pokemon test)",
-      "Bash(pnpm:*)"
+      "Bash(pnpm:*)",
+      "Bash(npm test:*)",
+      "Bash(git -C /Users/beanie/source/the-builder-polish show HEAD:packages/pokemon/src/__tests__/team-validator.test.ts)",
+      "Bash(git:*)",
+      "Bash(npm run:*)"
     ]
   },
   "hooks": {
