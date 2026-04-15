@@ -86,7 +86,7 @@ async function handleCommand(
   interaction: APIApplicationCommandInteraction
 ): Promise<Response> {
   // Rate limit check must happen before any DB work
-  const guildId = interaction.guild_id ?? "global";
+  const guildId = interaction.guild_id ?? null;
   const userId = interaction.member?.user.id ?? interaction.user?.id;
 
   if (!userId) {
@@ -97,8 +97,8 @@ async function handleCommand(
   if (!limit.allowed) {
     const message =
       limit.scope === "user"
-        ? "Slow down — you're sending commands too fast."
-        : "This server is hitting the command rate limit — try again soon.";
+        ? "Slow down! Try again in a few seconds."
+        : "This server has hit the command rate limit — try again in a minute.";
     return ephemeralReply(message);
   }
 

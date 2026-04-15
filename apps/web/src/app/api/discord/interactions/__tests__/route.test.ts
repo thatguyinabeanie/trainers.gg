@@ -14,8 +14,10 @@ jest.mock("@/lib/discord/verify", () => ({
 
 // Mock rate limiter
 const mockCheckRateLimit = jest.fn();
+const mockResetRateLimit = jest.fn();
 jest.mock("@/lib/discord/rate-limit", () => ({
   checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
+  _resetRateLimit: () => mockResetRateLimit(),
 }));
 
 // Mock Discord REST API helpers
@@ -383,7 +385,7 @@ describe("unscoped commands", () => {
 // =============================================================================
 
 describe("rate limiting", () => {
-  it("returns ephemeral 'slow down' for per-user rate limit", async () => {
+  it("returns type 4 (immediate) with ephemeral flag for per-user rate limit", async () => {
     mockCheckRateLimit.mockReturnValue({
       allowed: false,
       scope: "user",
@@ -393,13 +395,29 @@ describe("rate limiting", () => {
     const response = await POST(makeRequest(commandInteraction("test")));
     const body = await parseJson(response);
 
+    expect(response.status).toBe(200);
     expect(body.type).toBe(InteractionResponseType.ChannelMessageWithSource);
-    const content = (body.data as Record<string, unknown>).content as string;
-    expect(content).toContain("Slow down");
+    expect((body.data as Record<string, unknown>).flags).toBe(
+      MessageFlags.Ephemeral
+    );
     expect(mockWaitUntil).not.toHaveBeenCalled();
   });
 
-  it("returns ephemeral 'server rate limit' for per-guild rate limit", async () => {
+  it("returns the spec-exact user rate limit message", async () => {
+    mockCheckRateLimit.mockReturnValue({
+      allowed: false,
+      scope: "user",
+      retryAfter: 30,
+    });
+
+    const response = await POST(makeRequest(commandInteraction("test")));
+    const body = await parseJson(response);
+
+    const content = (body.data as Record<string, unknown>).content as string;
+    expect(content).toBe("Slow down! Try again in a few seconds.");
+  });
+
+  it("returns type 4 (immediate) with ephemeral flag for per-guild rate limit", async () => {
     mockCheckRateLimit.mockReturnValue({
       allowed: false,
       scope: "guild",
@@ -409,22 +427,49 @@ describe("rate limiting", () => {
     const response = await POST(makeRequest(commandInteraction("test")));
     const body = await parseJson(response);
 
+    expect(response.status).toBe(200);
     expect(body.type).toBe(InteractionResponseType.ChannelMessageWithSource);
-    const content = (body.data as Record<string, unknown>).content as string;
-    expect(content).toContain("server");
-    expect(content).toContain("rate limit");
+    expect((body.data as Record<string, unknown>).flags).toBe(
+      MessageFlags.Ephemeral
+    );
     expect(mockWaitUntil).not.toHaveBeenCalled();
   });
 
-  it("rate limit replies are ephemeral", async () => {
-    mockCheckRateLimit.mockReturnValue({ allowed: false, scope: "user" });
+  it("returns the spec-exact guild rate limit message", async () => {
+    mockCheckRateLimit.mockReturnValue({
+      allowed: false,
+      scope: "guild",
+      retryAfter: 15,
+    });
 
     const response = await POST(makeRequest(commandInteraction("test")));
     const body = await parseJson(response);
 
-    expect((body.data as Record<string, unknown>).flags).toBe(
-      MessageFlags.Ephemeral
+    const content = (body.data as Record<string, unknown>).content as string;
+    expect(content).toBe(
+      "This server has hit the command rate limit — try again in a minute."
     );
+  });
+
+  it("rate-limited response does not call any command handler", async () => {
+    mockCheckRateLimit.mockReturnValue({ allowed: false, scope: "user" });
+
+    await POST(makeRequest(commandInteraction("test")));
+
+    expect(mockHandler).not.toHaveBeenCalled();
+    expect(mockWaitUntil).not.toHaveBeenCalled();
+  });
+
+  it("does NOT call checkRateLimit for PING interactions (type 1)", async () => {
+    await POST(makeRequest(pingInteraction()));
+
+    expect(mockCheckRateLimit).not.toHaveBeenCalled();
+  });
+
+  it("does NOT call checkRateLimit for autocomplete interactions (type 4)", async () => {
+    await POST(makeRequest(autocompleteInteraction("test")));
+
+    expect(mockCheckRateLimit).not.toHaveBeenCalled();
   });
 });
 
