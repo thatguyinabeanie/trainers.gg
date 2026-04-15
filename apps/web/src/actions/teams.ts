@@ -17,6 +17,7 @@ import {
   updatePokemon as updatePokemonMutation,
   removePokemonFromTeam as removePokemonFromTeamMutation,
   reorderTeamPokemon as reorderTeamPokemonMutation,
+  getTeamWithPokemon,
   type TablesInsert,
   type TablesUpdate,
 } from "@trainers/supabase";
@@ -40,6 +41,7 @@ import { invalidateTeamDetailCache } from "@/lib/cache-invalidation";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import { rejectBots, withAction } from "@/actions/utils";
+import { checkFormatChangeLegality } from "@/actions/format-legality-guard";
 
 // =============================================================================
 // Team CRUD
@@ -104,6 +106,30 @@ export async function updateTeamAction(
       error: parsedData.error.issues[0]?.message ?? "Invalid data",
     };
   }
+
+  // ---------------------------------------------------------------------------
+  // Format-change legality guard
+  // ---------------------------------------------------------------------------
+  // If the caller is switching formats, reject the change if any of the team's
+  // current species are illegal in the target format.
+  if (parsedData.data.format !== undefined) {
+    const supabase = await createClient();
+    const team = await getTeamWithPokemon(supabase, parsed.data.teamId);
+    if (team !== null) {
+      const guard = checkFormatChangeLegality(
+        team.team_pokemon,
+        team.format,
+        parsedData.data.format
+      );
+      if (!guard.ok) {
+        return {
+          success: false,
+          error: `These Pokémon aren't legal in the target format: ${guard.illegal.join(", ")}. Remove them before changing format.`,
+        };
+      }
+    }
+  }
+
   return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();

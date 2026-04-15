@@ -51,6 +51,7 @@ const mockAddPokemonToTeam = jest.fn();
 const mockUpdatePokemon = jest.fn();
 const mockRemovePokemonFromTeam = jest.fn();
 const mockReorderTeamPokemon = jest.fn();
+const mockGetTeamWithPokemon = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
   createTeam: (...args: unknown[]) => mockCreateTeam(...args),
@@ -62,6 +63,13 @@ jest.mock("@trainers/supabase", () => ({
   removePokemonFromTeam: (...args: unknown[]) =>
     mockRemovePokemonFromTeam(...args),
   reorderTeamPokemon: (...args: unknown[]) => mockReorderTeamPokemon(...args),
+  getTeamWithPokemon: (...args: unknown[]) => mockGetTeamWithPokemon(...args),
+}));
+
+// @trainers/pokemon — mock getLegalSpecies so tests are deterministic
+const mockGetLegalSpecies = jest.fn();
+jest.mock("@trainers/pokemon", () => ({
+  getLegalSpecies: (...args: unknown[]) => mockGetLegalSpecies(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -190,6 +198,66 @@ describe("updateTeamAction", () => {
     expect(result).toEqual({ success: true, data: undefined });
     // Mutation was called with stripped data (no created_by)
     expect(mockUpdateTeam).toHaveBeenCalledWith(mockSupabase, 10, {});
+  });
+
+  // ---------------------------------------------------------------------------
+  // Format-change legality guard
+  // ---------------------------------------------------------------------------
+
+  it("blocks a format change when the team holds a species illegal in the target format", async () => {
+    // Team is on gen9vgc2024regh, trying to switch to gen9vgc2026regi.
+    // Mew is not in the gen9vgc2026regi legal set.
+    const illegalLegalSet = new Set(["Charizard", "Pikachu"]); // Mew is absent
+    mockGetLegalSpecies.mockReturnValue(illegalLegalSet);
+    mockGetTeamWithPokemon.mockResolvedValue({
+      id: 10,
+      format: "gen9vgc2024regh",
+      team_pokemon: [
+        { pokemon: { species: "Charizard" } },
+        { pokemon: { species: "Mew" } },
+      ],
+    });
+
+    const result = await updateTeamAction(10, { format: "gen9vgc2026regi" });
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toContain(
+      "Mew"
+    );
+    expect(mockUpdateTeam).not.toHaveBeenCalled();
+  });
+
+  it("allows a format change when all current species are legal in the target format", async () => {
+    // All team members are in the legal set for the target format.
+    const allLegalSet = new Set(["Charizard", "Pikachu"]);
+    mockGetLegalSpecies.mockReturnValue(allLegalSet);
+    mockGetTeamWithPokemon.mockResolvedValue({
+      id: 10,
+      format: "gen9vgc2024regh",
+      team_pokemon: [
+        { pokemon: { species: "Charizard" } },
+        { pokemon: { species: "Pikachu" } },
+      ],
+    });
+    mockUpdateTeam.mockResolvedValue(undefined);
+
+    const result = await updateTeamAction(10, { format: "gen9vgc2026regi" });
+
+    expect(result).toEqual({ success: true, data: undefined });
+    expect(mockUpdateTeam).toHaveBeenCalled();
+  });
+
+  it("bypasses the legality check entirely for non-format updates", async () => {
+    mockUpdateTeam.mockResolvedValue(undefined);
+
+    const result = await updateTeamAction(10, { name: "New Name" });
+
+    expect(result).toEqual({ success: true, data: undefined });
+    // getTeamWithPokemon should not have been called — no format field present
+    expect(mockGetTeamWithPokemon).not.toHaveBeenCalled();
+    expect(mockUpdateTeam).toHaveBeenCalledWith(mockSupabase, 10, {
+      name: "New Name",
+    });
   });
 });
 
