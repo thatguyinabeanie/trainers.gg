@@ -29,6 +29,11 @@ interface EditorHeaderBandProps {
   onOpenItemPicker: () => void;
   onOpenTeraPicker: () => void;
   onOpenNaturePicker: () => void;
+  /** Optional. When provided, the sprite + name become a single clickable
+   * affordance that opens the species picker (change-species flow). When
+   * omitted, the sprite + name render as static decoration (e.g., the
+   * disabled placeholder editor). */
+  onOpenSpeciesPicker?: () => void;
   /** When true, all loadout field buttons render as static text — no clicks. */
   disabled?: boolean;
   className?: string;
@@ -116,6 +121,7 @@ export function EditorHeaderBand({
   onOpenItemPicker,
   onOpenTeraPicker,
   onOpenNaturePicker,
+  onOpenSpeciesPicker,
   disabled = false,
   className,
 }: EditorHeaderBandProps) {
@@ -141,13 +147,15 @@ export function EditorHeaderBand({
   // Render
   // -------------------------------------------------------------------------
 
-  return (
-    <div
-      className={cn(
-        "from-primary/5 to-card grid grid-cols-[48px_minmax(160px,1fr)_auto_auto_auto_auto] items-center gap-3.5 border-b bg-gradient-to-b px-4 py-3",
-        className
-      )}
-    >
+  // Sprite + name + types collapse into a single click target when a species
+  // picker handler is provided and the band is enabled — the entire identity
+  // block becomes the affordance for swapping species. When no handler is
+  // provided (e.g., the disabled placeholder editor), it renders as static
+  // decoration without hover affordances.
+  const speciesClickable = !disabled && onOpenSpeciesPicker !== undefined;
+
+  const identityContent = (
+    <>
       {/* Sprite: 48x48 circle with primary-soft radial gradient */}
       <div className="bg-primary/10 flex size-12 shrink-0 items-center justify-center rounded-full">
         <Image
@@ -165,7 +173,15 @@ export function EditorHeaderBand({
 
       {/* Identity — name + type pills */}
       <div className="flex min-w-0 flex-col gap-1">
-        <span className="text-foreground truncate text-base leading-tight font-semibold">
+        <span
+          className={cn(
+            "text-foreground truncate text-base leading-tight font-semibold",
+            // Subtle hover affordance — the underline tells the user the
+            // sprite + name are interactive, without making the band feel
+            // like a giant button.
+            speciesClickable && "group-hover:text-primary group-hover:underline"
+          )}
+        >
           {pokemon.species}
         </span>
         {types.length > 0 && (
@@ -184,6 +200,35 @@ export function EditorHeaderBand({
           </div>
         )}
       </div>
+    </>
+  );
+
+  return (
+    <div
+      className={cn(
+        "from-primary/5 to-card grid grid-cols-[auto_minmax(160px,1fr)_auto_auto_auto_auto] items-center gap-3.5 border-b bg-gradient-to-b px-4 py-3",
+        className
+      )}
+    >
+      {speciesClickable ? (
+        <button
+          type="button"
+          onClick={onOpenSpeciesPicker}
+          aria-label={`Change species (currently ${pokemon.species})`}
+          // `group` lets the inner name trigger its own hover style above —
+          // grid template above keeps the button spanning sprite + identity
+          // columns so the click target matches the visible identity block.
+          className="group col-span-2 -mx-1 grid grid-cols-[3rem_minmax(160px,1fr)] items-center gap-3.5 rounded-lg px-1 py-1 text-left transition-colors hover:bg-white/40 dark:hover:bg-white/5"
+        >
+          {identityContent}
+        </button>
+      ) : (
+        // Static (placeholder / disabled) — render as a regular grid cell so
+        // the column template still behaves the same.
+        <div className="col-span-2 grid grid-cols-[3rem_minmax(160px,1fr)] items-center gap-3.5">
+          {identityContent}
+        </div>
+      )}
 
       {/* Ability — static when single-ability species or disabled, button otherwise */}
       {isSingleAbility || disabled ? (

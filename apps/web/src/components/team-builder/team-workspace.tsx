@@ -409,6 +409,13 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
                 onUpdate={(field, value) =>
                   handlePokemonUpdate(selectedEntry.pokemon!.id, field, value)
                 }
+                onOpenSpeciesPicker={() =>
+                  setPickerState({
+                    open: true,
+                    slot: selectedEntry.team_position - 1,
+                    mode: "change",
+                  })
+                }
                 fieldErrors={selectedFieldErrors}
                 className={EDITOR_CHROME_OVERRIDE}
               />

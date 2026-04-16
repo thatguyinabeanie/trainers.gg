@@ -38,6 +38,10 @@ interface PokemonEditorProps {
   /** All team_pokemon entries — used to collect held items for duplicate detection. */
   teamPokemon: Array<{ pokemon: Tables<"pokemon"> | null }>;
   onUpdate: (field: string, value: unknown) => void;
+  /** Optional callback to open the species picker for this slot — clicking
+   * the sprite/name in the editor header band invokes it. Omit to render
+   * the identity block as static (placeholder editor). */
+  onOpenSpeciesPicker?: () => void;
   /** Validation errors for this Pokemon's fields — populated by Task 5 display logic. */
   fieldErrors?: ValidationError[];
   /**
@@ -108,6 +112,7 @@ export function PokemonEditor({
   format,
   teamPokemon,
   onUpdate,
+  onOpenSpeciesPicker,
   fieldErrors,
   disabled = false,
   className,
@@ -183,6 +188,7 @@ export function PokemonEditor({
         onOpenItemPicker={() => openPicker("item")}
         onOpenTeraPicker={() => openPicker("tera")}
         onOpenNaturePicker={() => openPicker("nature")}
+        onOpenSpeciesPicker={onOpenSpeciesPicker}
         disabled={disabled}
       />
 

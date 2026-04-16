@@ -93,6 +93,7 @@ function renderBand(
     onOpenItemPicker: () => void;
     onOpenTeraPicker: () => void;
     onOpenNaturePicker: () => void;
+    onOpenSpeciesPicker?: () => void;
   }> = {}
 ) {
   const handlers = {
@@ -188,6 +189,30 @@ describe("EditorHeaderBand", () => {
       const handlers = renderBand();
       await user.click(screen.getByRole("button", { name: /Edit Nature/ }));
       expect(handlers.onOpenNaturePicker).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("species picker affordance", () => {
+    it("renders sprite + name as a clickable button when onOpenSpeciesPicker is provided", async () => {
+      const user = userEvent.setup();
+      const onOpenSpeciesPicker = jest.fn();
+      renderBand({ species: "Incineroar" }, { onOpenSpeciesPicker });
+
+      // Single click target labeled with the current species — covers both
+      // sprite and name per the design.
+      const trigger = screen.getByRole("button", {
+        name: /Change species \(currently Incineroar\)/,
+      });
+      await user.click(trigger);
+      expect(onOpenSpeciesPicker).toHaveBeenCalledTimes(1);
+    });
+
+    it("renders sprite + name as static when onOpenSpeciesPicker is omitted", () => {
+      renderBand({ species: "Incineroar" });
+      // No species-change button — placeholder/static mode.
+      expect(
+        screen.queryByRole("button", { name: /Change species/ })
+      ).not.toBeInTheDocument();
     });
   });
 
