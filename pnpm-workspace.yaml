@@ -11,7 +11,7 @@ catalog:
   esbuild: ^0.27
   eslint: ^9
   jose: ^5
-  next: ^16.1
+  next: ^16.2
   obscenity: ^0.4
   prettier: ^3
   prettier-plugin-tailwindcss: ^0.7
