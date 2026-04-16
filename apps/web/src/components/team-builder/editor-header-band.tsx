@@ -29,6 +29,8 @@ interface EditorHeaderBandProps {
   onOpenItemPicker: () => void;
   onOpenTeraPicker: () => void;
   onOpenNaturePicker: () => void;
+  /** When true, all loadout field buttons render as static text — no clicks. */
+  disabled?: boolean;
   className?: string;
 }
 
@@ -114,6 +116,7 @@ export function EditorHeaderBand({
   onOpenItemPicker,
   onOpenTeraPicker,
   onOpenNaturePicker,
+  disabled = false,
   className,
 }: EditorHeaderBandProps) {
   // -------------------------------------------------------------------------
@@ -182,8 +185,8 @@ export function EditorHeaderBand({
         )}
       </div>
 
-      {/* Ability — static when single-ability species, button otherwise */}
-      {isSingleAbility ? (
+      {/* Ability — static when single-ability species or disabled, button otherwise */}
+      {isSingleAbility || disabled ? (
         <FieldStatic label="Ability">{pokemon.ability}</FieldStatic>
       ) : (
         <FieldButton label="Ability" onClick={onOpenAbilityPicker}>
@@ -192,31 +195,59 @@ export function EditorHeaderBand({
       )}
 
       {/* Item */}
-      <FieldButton label="Item" onClick={onOpenItemPicker}>
-        {pokemon.held_item ?? "None"}
-      </FieldButton>
+      {disabled ? (
+        <FieldStatic label="Item">{pokemon.held_item ?? "None"}</FieldStatic>
+      ) : (
+        <FieldButton label="Item" onClick={onOpenItemPicker}>
+          {pokemon.held_item ?? "None"}
+        </FieldButton>
+      )}
 
       {/* Tera type — render with type pill inline */}
-      <FieldButton label="Tera" onClick={onOpenTeraPicker}>
-        {pokemon.tera_type ? (
-          <span
-            className={cn(
-              "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-              TYPE_PILL_COLORS[pokemon.tera_type as PokemonType | "Stellar"] ??
-                "bg-muted text-foreground"
-            )}
-          >
-            {pokemon.tera_type}
-          </span>
-        ) : (
-          "None"
-        )}
-      </FieldButton>
+      {disabled ? (
+        <FieldStatic label="Tera">
+          {pokemon.tera_type ? (
+            <span
+              className={cn(
+                "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+                TYPE_PILL_COLORS[
+                  pokemon.tera_type as PokemonType | "Stellar"
+                ] ?? "bg-muted text-foreground"
+              )}
+            >
+              {pokemon.tera_type}
+            </span>
+          ) : (
+            "None"
+          )}
+        </FieldStatic>
+      ) : (
+        <FieldButton label="Tera" onClick={onOpenTeraPicker}>
+          {pokemon.tera_type ? (
+            <span
+              className={cn(
+                "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+                TYPE_PILL_COLORS[
+                  pokemon.tera_type as PokemonType | "Stellar"
+                ] ?? "bg-muted text-foreground"
+              )}
+            >
+              {pokemon.tera_type}
+            </span>
+          ) : (
+            "None"
+          )}
+        </FieldButton>
+      )}
 
       {/* Nature */}
-      <FieldButton label="Nature" onClick={onOpenNaturePicker}>
-        {pokemon.nature}
-      </FieldButton>
+      {disabled ? (
+        <FieldStatic label="Nature">{pokemon.nature}</FieldStatic>
+      ) : (
+        <FieldButton label="Nature" onClick={onOpenNaturePicker}>
+          {pokemon.nature}
+        </FieldButton>
+      )}
     </div>
   );
 }
