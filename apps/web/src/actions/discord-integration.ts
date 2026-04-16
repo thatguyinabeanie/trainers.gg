@@ -29,6 +29,10 @@ import {
   deleteDiscordServer,
   resetNotificationForRetry,
   resetDmForRetry,
+  listRecentFailures,
+  type ChannelFailureRow,
+  type DmFailureRow,
+  type RoleSyncFailureRow,
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
 import { getErrorMessage } from "@trainers/utils";
@@ -718,6 +722,58 @@ export async function retryNotificationAction(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to retry notification"),
+    };
+  }
+}
+
+/**
+ * Fetch the last 24 hours of delivery failures for a Discord server.
+ *
+ * Returns channel notification failures, DM failures, and role-sync failures.
+ * Requires `community.manage` permission on the server's community.
+ *
+ * Called on-demand from the Failures tab (not loaded with the page) to keep
+ * the initial page load fast.
+ *
+ * @param serverId - discord_servers.id
+ */
+export async function listRecentFailuresAction(serverId: number): Promise<
+  ActionResult<{
+    channelFailures: ChannelFailureRow[];
+    dmFailures: DmFailureRow[];
+    roleSyncFailures: RoleSyncFailureRow[];
+  }>
+> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+
+    const server = await getDiscordServerById(supabase, serverId);
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
+    }
+
+    await requireCommunityManage(supabase, server.community_id);
+
+    const { channels, dms, roleSyncs } = await listRecentFailures(
+      supabase,
+      serverId
+    );
+
+    return {
+      success: true,
+      data: {
+        channelFailures: channels,
+        dmFailures: dms,
+        roleSyncFailures: roleSyncs,
+      },
+    };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to load failure details"),
     };
   }
 }

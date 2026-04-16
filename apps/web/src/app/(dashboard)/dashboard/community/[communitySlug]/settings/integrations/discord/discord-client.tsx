@@ -7,8 +7,12 @@ import { type DiscordIntegrationOverview } from "@trainers/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type GuildChannel, type GuildRole } from "@/lib/discord/guild-cache";
 
+import { ChannelMappingTable } from "./_components/channel-mapping-table";
+import { DmSettingsTable } from "./_components/dm-settings-table";
 import { FailureBanner } from "./_components/failure-banner";
+import { FailuresTabContent } from "./_components/failures-tab-content";
 import { InstallCard } from "./_components/install-card";
+import { RoleMappingTable } from "./_components/role-mapping-table";
 import { StatusHeader } from "./_components/status-header";
 
 // =============================================================================
@@ -35,7 +39,13 @@ interface Props {
 // Component
 // =============================================================================
 
-export function DiscordClient({ community, communitySlug, overview }: Props) {
+export function DiscordClient({
+  community,
+  communitySlug,
+  overview,
+  guildChannels,
+  guildRoles,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -90,19 +100,41 @@ export function DiscordClient({ community, communitySlug, overview }: Props) {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="notifications">
-          <div className="text-muted-foreground p-4 text-sm">
-            Channel + DM tables render here (T17, T18).
+          <div className="space-y-4">
+            <ChannelMappingTable
+              channelMappings={overview.channelMappings}
+              guildChannels={guildChannels ?? []}
+              serverId={overview.server.id}
+              communityId={community.id}
+            />
+            <DmSettingsTable
+              dmSettings={overview.dmSettings}
+              guildChannels={guildChannels ?? []}
+              serverId={overview.server.id}
+              communityId={community.id}
+            />
           </div>
         </TabsContent>
         <TabsContent value="roles">
-          <div className="text-muted-foreground p-4 text-sm">
-            Roles table renders here (T19).
-          </div>
+          <RoleMappingTable
+            roleMappings={overview.roleMappings}
+            guildRoles={guildRoles ?? []}
+            serverId={overview.server.id}
+            communityId={community.id}
+            hasHierarchyViolation={false}
+          />
         </TabsContent>
         <TabsContent value="failures">
-          <div className="text-muted-foreground p-4 text-sm">
-            Failures table renders here (T20).
-          </div>
+          {failureCount > 0 ? (
+            <FailuresTabContent
+              failureCount={failureCount}
+              serverId={overview.server.id}
+            />
+          ) : (
+            <div className="text-muted-foreground p-4 text-sm">
+              No failures in the last 24 hours.
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
