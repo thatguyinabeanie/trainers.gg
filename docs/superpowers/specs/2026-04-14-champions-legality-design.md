@@ -27,7 +27,7 @@ For formats where we cannot determine legality (unknown format ID, legacy Smogon
    - **Champions: VGC 2026 Reg M-A** — ported NCP VGC Damage Calculator `POKEDEX_CHAMPIONS` list (`pokedex.js`, lines 18375–18410, captured 2026-04-14) as a static TS `Set`. `@pkmn/sim` doesn't know about Champions (gen 10), so a hand-maintained port is the only option.
    - **Every other registered format (VGC Reg I/G/H, Smogon tiers, etc.)** — derived from `@pkmn/sim`'s `Dex.formats.get(...)` + `TeamValidator`. For each species in the generation, check it against the format's banlist / restricted list and collect the legal subset.
 3. **Items** — Champions uses the same item pool as gen-9 SV **for now**. A follow-up will narrow using https://www.videogameschronicle.com/guide/pokemon-champions-all-items-in-pokemon-champions/. Non-Champions item legality is also deferred.
-4. **Picker visual** — all species still render in the table. Illegal rows are dimmed with a "Not legal" badge; click-to-select is blocked.
+4. **Picker visual** — illegal species, items, moves, tera types, and abilities are **hidden entirely** from pickers (not shown at all). This was changed from a dim-and-badge approach to hide-entirely based on user feedback during implementation — hiding reduces noise and keeps the picker focused on what the user can actually select.
 5. **Existing teams** — switching an already-populated team into a stricter format is **blocked** when any current Pokemon is illegal. User removes illegal ones first.
 6. **Paste import** — a paste containing illegal species for the target format is **rejected whole**, with an error listing the offending species.
 

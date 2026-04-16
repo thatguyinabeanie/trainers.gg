@@ -108,32 +108,31 @@ export async function updateTeamAction(
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Format-change legality guard
-  // ---------------------------------------------------------------------------
-  // If the caller is switching formats, reject the change if any of the team's
-  // current species are illegal in the target format.
-  if (parsedData.data.format !== undefined) {
-    const supabase = await createClient();
-    const team = await getTeamWithPokemon(supabase, parsed.data.teamId);
-    if (team !== null) {
-      const guard = checkFormatChangeLegality(
-        team.team_pokemon,
-        team.format,
-        parsedData.data.format
-      );
-      if (!guard.ok) {
-        return {
-          success: false,
-          error: `These Pokémon aren't legal in the target format: ${guard.illegal.join(", ")}. Remove them before changing format.`,
-        };
-      }
-    }
-  }
-
   return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();
+
+    // -------------------------------------------------------------------------
+    // Format-change legality guard
+    // -------------------------------------------------------------------------
+    // If the caller is switching formats, reject the change if any of the
+    // team's current species are illegal in the target format.
+    if (parsedData.data.format !== undefined) {
+      const team = await getTeamWithPokemon(supabase, parsed.data.teamId);
+      if (team !== null) {
+        const guard = checkFormatChangeLegality(
+          team.team_pokemon,
+          team.format,
+          parsedData.data.format
+        );
+        if (!guard.ok) {
+          throw new Error(
+            `These Pokémon aren't legal in the target format: ${guard.illegal.join(", ")}. Remove them before changing format.`
+          );
+        }
+      }
+    }
+
     await updateTeamMutation(supabase, parsed.data.teamId, parsedData.data);
     invalidateTeamDetailCache(parsed.data.teamId);
   }, "Failed to update team");

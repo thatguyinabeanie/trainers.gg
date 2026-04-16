@@ -38,8 +38,11 @@ jest.mock("@/lib/cache-invalidation", () => ({
 }));
 
 // @trainers/utils — getErrorMessage used inside withAction
+const mockTrainersGetErrorMessage = jest.fn(
+  (_err: unknown, fallback: string) => fallback
+);
 jest.mock("@trainers/utils", () => ({
-  getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
+  getErrorMessage: (...args: unknown[]) => mockTrainersGetErrorMessage(...args),
 }));
 
 // @trainers/supabase mutations
@@ -232,8 +235,12 @@ describe("updateTeamAction", () => {
     const result = await updateTeamAction(10, { format: "gen9vgc2026regi" });
 
     expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toContain(
-      "Mew"
+    // The guard throws inside withAction — verify the thrown error mentions Mew.
+    // getErrorMessage mock returns the fallback, but we can inspect the arg.
+    expect(mockTrainersGetErrorMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining("Mew") }),
+      "Failed to update team",
+      expect.anything()
     );
     expect(mockUpdateTeam).not.toHaveBeenCalled();
   });

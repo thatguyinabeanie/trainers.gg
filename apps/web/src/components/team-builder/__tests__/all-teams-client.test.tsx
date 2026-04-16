@@ -113,7 +113,6 @@ const ACTIVE_FORMATS = [
 const defaultProps = {
   alts: ALTS,
   activeFormats: ACTIVE_FORMATS,
-  userId: "user-123",
 } as const;
 
 // =============================================================================

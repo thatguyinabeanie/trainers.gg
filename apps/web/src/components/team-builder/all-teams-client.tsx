@@ -25,7 +25,6 @@ interface AllTeamsClientProps {
   initialTeams: CrossAltTeamListItem[];
   alts: Array<{ id: number; username: string }>;
   activeFormats: GameFormat[];
-  userId: string;
 }
 
 // ---------------------------------------------------------------------------

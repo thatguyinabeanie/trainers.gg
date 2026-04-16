@@ -1,4 +1,8 @@
-import { AdvancedTeamValidator, SUPPORTED_FORMATS } from "../team-validator";
+import {
+  AdvancedTeamValidator,
+  SUPPORTED_FORMATS,
+  type FormatId,
+} from "../team-validator";
 import type { PokemonSet } from "../types";
 
 // -- Helper: creates a valid VGC-style PokemonSet --
@@ -146,8 +150,8 @@ describe("AdvancedTeamValidator", () => {
     it("throws for an unknown format key", () => {
       // TypeScript prevents this at compile time, but verify the runtime guard
       expect(
-        () => new AdvancedTeamValidator("gen9ou" as never) // valid key — just verifying no throw
-      ).not.toThrow();
+        () => new AdvancedTeamValidator("unknown-format" as unknown as FormatId)
+      ).toThrow();
     });
   });
 

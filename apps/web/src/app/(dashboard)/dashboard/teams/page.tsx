@@ -51,7 +51,6 @@ export default async function AllTeamsPage() {
         initialTeams={teams}
         alts={alts}
         activeFormats={activeFormats}
-        userId={user.id}
       />
     </>
   );
