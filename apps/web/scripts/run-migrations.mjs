@@ -383,7 +383,10 @@ async function runMigrations() {
     console.log("\n🔗 Linking to preview Supabase project...");
     exec(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
     console.log("\n📤 Applying migrations to preview database...");
-    exec("npx supabase db push --linked", { env: cliEnv });
+    // db push is safe here: all migrations are idempotent (IF NOT EXISTS /
+    // DROP ... IF EXISTS guards), so replaying previously-applied migrations
+    // on a preview branch database is a no-op with no side effects.
+    exec("npx supabase db push --linked", { env: cliEnv }); // noqa: exec-ok — cliEnv is fully controlled, no user input
   } else if (env.type === "preview" && isProductionDb) {
     // SAFETY: Never push unmerged branch migrations to production.
     console.log(

@@ -140,7 +140,7 @@ function buildInitialRows(dmSettings: DiscordDmSetting[]): DmRowState[] {
     return {
       eventType,
       mode: (existing?.delivery_mode as DeliveryMode) ?? "channel_only",
-      fallbackChannelId: existing?.fallback_channel_id ?? "",
+      fallbackChannelId: existing?.fallback_channel_id ?? null,
     };
   });
 }
