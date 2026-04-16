@@ -334,6 +334,7 @@ export {
   type DiscordChannelFailure,
   type DiscordDeliveryFailure,
   type DiscordDmEventType,
+  ALL_DM_EVENT_TYPES,
   type DiscordRoleType,
   type EnabledRoleMappingWithServer,
   type DiscordTournamentRow,

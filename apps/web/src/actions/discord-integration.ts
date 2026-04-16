@@ -30,6 +30,7 @@ import {
   listRecentFailures,
   type ChannelFailureRow,
   type DmFailureRow,
+  ALL_DM_EVENT_TYPES,
   type DiscordDmEventType,
   type RoleSyncFailureRow,
 } from "@trainers/supabase";
@@ -50,20 +51,8 @@ import { rejectBots } from "./utils";
 // Types
 // =============================================================================
 
-/** Discord DM event types (matches discord_dm_event_type enum) */
-const DISCORD_DM_EVENT_TYPES = [
-  "match_ready",
-  "match_starting_soon",
-  "match_result_to_confirm",
-  "match_disputed",
-  "team_sheet_needed",
-  "team_sheet_approved",
-  "team_sheet_rejected",
-  "you_dropped",
-  "top_cut_made",
-  "tournament_starting",
-  "tournament_cancelled",
-] as const;
+/** DM event types — derived from the shared constant for z.enum(). */
+const DISCORD_DM_EVENT_TYPES = ALL_DM_EVENT_TYPES;
 
 /** Discord channel notification event types (matches discord_channels.event_type usage) */
 const CHANNEL_EVENT_TYPES = [

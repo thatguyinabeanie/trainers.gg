@@ -17,6 +17,21 @@ export type DiscordDeliveryFailure = Tables<"discord_delivery_failures">;
 export type DiscordDmEventType = Enums<"discord_dm_event_type">;
 export type DiscordRoleType = Enums<"discord_role_type">;
 
+/** All Discord DM event types — single source of truth for the enum values. */
+export const ALL_DM_EVENT_TYPES = [
+  "match_ready",
+  "match_starting_soon",
+  "match_result_to_confirm",
+  "match_disputed",
+  "team_sheet_needed",
+  "team_sheet_approved",
+  "team_sheet_rejected",
+  "you_dropped",
+  "top_cut_made",
+  "tournament_starting",
+  "tournament_cancelled",
+] as const satisfies readonly DiscordDmEventType[];
+
 // =============================================================================
 // discord_servers
 // =============================================================================

@@ -4,31 +4,13 @@ import {
   getNotificationPreferences,
   listDmPreferences,
   getPublicDiscordHandle,
+  ALL_DM_EVENT_TYPES,
   type DiscordDmEventType,
 } from "@trainers/supabase";
 
 import { createClient, getUser } from "@/lib/supabase/server";
 import { DiscordDmPreferencesSection } from "@/components/settings/discord-dm-preferences-section";
 import { NotificationPreferencesForm } from "./notification-preferences-form";
-
-export const metadata = {
-  title: "Notification Settings — trainers.gg",
-};
-
-/** All 11 Discord DM event types — used to build the full preferences map. */
-const ALL_DM_EVENT_TYPES: DiscordDmEventType[] = [
-  "match_ready",
-  "match_starting_soon",
-  "match_result_to_confirm",
-  "match_disputed",
-  "team_sheet_needed",
-  "team_sheet_approved",
-  "team_sheet_rejected",
-  "you_dropped",
-  "top_cut_made",
-  "tournament_starting",
-  "tournament_cancelled",
-];
 
 /**
  * Check if a user has any staff roles by looking at organization_staff membership.

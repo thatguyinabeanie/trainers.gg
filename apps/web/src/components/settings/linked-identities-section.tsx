@@ -16,11 +16,12 @@ import {
 } from "@/components/ui/tooltip";
 import { oauthProviders, type OAuthProvider } from "@/lib/supabase/auth";
 import { BlueskyIcon } from "@/components/icons/bluesky-icon";
+import { ALL_DM_EVENT_TYPES } from "@trainers/supabase";
 import { toast } from "sonner";
 import { unlinkBlueskyAction, getBlueskyStatus } from "@/actions/identities";
 
-/** Total number of configurable Discord DM event types. */
-const DISCORD_DM_EVENT_TOTAL = 11;
+/** Derived from the shared constant — stays in sync automatically. */
+const DISCORD_DM_EVENT_TOTAL = ALL_DM_EVENT_TYPES.length;
 
 // Provider icons (reusing from social-auth-buttons pattern)
 function XIcon() {
