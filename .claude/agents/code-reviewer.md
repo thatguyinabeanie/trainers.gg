@@ -5,6 +5,7 @@ model: sonnet
 skills:
   - reviewing-database
   - reviewing-caching
+  - using-mempalace
 tools:
   - Read
   - Glob
@@ -35,6 +36,7 @@ Review changed files for correctness, style, architecture, and domain convention
    - `**/*.test.*` or `**/__tests__/` → load `writing-tests`
 4. Check each file against loaded skill rules, code-style rules, and the injected reviewing-database / reviewing-caching checklists
 5. Report findings and fix directly
+6. If notable patterns or recurring issues were found, write a diary entry via `mempalace_diary_write` with `agent_name="code-reviewer"` summarizing the findings
 
 ## Review Categories
 

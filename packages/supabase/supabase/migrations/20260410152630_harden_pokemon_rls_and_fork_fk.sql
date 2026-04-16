@@ -1,0 +1,8 @@
+-- =============================================================================
+-- NO-OP: Content squashed into 20260410023632_add_pokemon_update_delete_rls.sql
+-- =============================================================================
+-- This migration originally hardened permissive pokemon RLS policies and added
+-- ON DELETE SET NULL for fork lineage. Its contents were merged into the earlier
+-- migration to eliminate a transient insecure state during replay.
+--
+-- The file is kept as a no-op to preserve the Supabase migration history.

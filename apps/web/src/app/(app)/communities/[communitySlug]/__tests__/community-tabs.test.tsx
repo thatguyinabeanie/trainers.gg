@@ -28,9 +28,7 @@ jest.mock("@/components/tournaments/tournament-list", () => ({
   SectionHeader: ({ title }: { title: string }) => (
     <div data-testid={`section-header-${title.toLowerCase()}`}>{title}</div>
   ),
-  ActiveTournaments: () => (
-    <div data-testid="active-tournaments">Active</div>
-  ),
+  ActiveTournaments: () => <div data-testid="active-tournaments">Active</div>,
   UpcomingTournaments: () => (
     <div data-testid="upcoming-tournaments">Upcoming</div>
   ),
@@ -69,13 +67,14 @@ const defaultProps = {
 describe("CommunityTabs — About tab", () => {
   it("renders MarkdownContent when about is provided", () => {
     render(
-      <CommunityTabs {...defaultProps} about="# Hello\n\nWelcome to our community!" />
+      <CommunityTabs
+        {...defaultProps}
+        about="# Hello\n\nWelcome to our community!"
+      />
     );
 
     expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
-    expect(screen.getByTestId("markdown-content")).toHaveTextContent(
-      "# Hello"
-    );
+    expect(screen.getByTestId("markdown-content")).toHaveTextContent("# Hello");
   });
 
   it("renders empty state when about is null and canManage is false", () => {

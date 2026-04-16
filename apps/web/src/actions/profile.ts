@@ -47,6 +47,7 @@ interface UserProfile {
   mainAltId: number | null;
   altAvatarUrl: string | null;
   bio: string | null;
+  showDiscordPublicly: boolean;
 }
 
 // --- Actions ---
@@ -161,7 +162,7 @@ export async function getCurrentUserProfile(): Promise<
     const { data: userData, error: dbError } = await supabase
       .from("users")
       .select(
-        "id, username, pds_status, pds_handle, did, birth_date, country, main_alt_id"
+        "id, username, pds_status, pds_handle, did, birth_date, country, main_alt_id, show_discord_publicly"
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -205,6 +206,7 @@ export async function getCurrentUserProfile(): Promise<
         mainAltId: userData.main_alt_id,
         altAvatarUrl,
         bio,
+        showDiscordPublicly: userData.show_discord_publicly,
       },
     };
   } catch (error) {

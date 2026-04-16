@@ -24,6 +24,8 @@ Run these commands sequentially and capture output:
 
 ## Report Format
 
+Always print EVERY row explicitly. Never collapse a status into "CI is running", "looks good", or "mostly green". Each check gets one row with its own pass/fail/skip — a missed failure (codecov patch, a single failing test) must be visible at a glance.
+
 | Check     | Status         | Details                           |
 | --------- | -------------- | --------------------------------- |
 | Lint      | PASS/FAIL      | error count or "clean"            |
@@ -32,5 +34,5 @@ Run these commands sequentially and capture output:
 | Format    | PASS/FAIL      | file count or "clean"             |
 | E2E       | PASS/FAIL/SKIP | result or "no dev server running" |
 
-If all pass: **"All checks pass. Safe to push."**
-If any fail: **"BLOCKED — fix issues before pushing."** List failures.
+If all rows are PASS: **"All checks pass. Safe to push."**
+If any row is FAIL: **"BLOCKED — fix issues before pushing."** List the failing rows by name.

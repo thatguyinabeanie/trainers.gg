@@ -23,6 +23,7 @@
       "Bash(for f:*)",
       "Bash(do echo:*)",
       "Bash(python3:*)",
+      "Bash(git fetch:*)",
       "Bash(git push:*)",
       "Bash(gh pr:*)",
       "Bash(gh run:*)",
@@ -38,7 +39,44 @@
       "Bash(pnpm --filter @trainers/web test -- --testPathPattern=\"countdown-timer\" --no-coverage)",
       "Bash(pnpm --filter @trainers/web test -- --testPathPattern=\"countdown-timer\")",
       "Bash(pnpm --filter @trainers/web test -- \"countdown-timer\")",
-      "Bash(pnpm --filter @trainers/web test -- --testPathPattern=\"tournament-overview\" --no-coverage)"
+      "Bash(pnpm --filter @trainers/web test -- --testPathPattern=\"tournament-overview\" --no-coverage)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm --filter @trainers/web exec jest --testPathPattern \"new-team-form\" --no-coverage)",
+      "Bash(pnpm --filter @trainers/web exec jest --testPathPattern \"pokemon-utils\" --no-coverage)",
+      "Bash(pnpm --filter @trainers/supabase exec jest --testPathPattern \"use-team-builder-access\" --no-coveragekjkk)",
+      "Bash(pnpm --filter @trainers/supabase exec jest --testPathPattern \"use-team-builder-access\" --no-coverage)",
+      "Bash(pnpm supabase:*)",
+      "Bash(psql:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm --filter @trainers/supabase exec jest --testPathPattern \"feature-flags\" --no-coverage)",
+      "Bash(/Users/gmendoza/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh:*)",
+      "Bash(pnpm --filter @trainers/supabase typecheck)",
+      "Bash(pnpm --filter @trainers/web exec jest --testPathPattern \"teams-list-client\" --no-coverage)",
+      "Read(//Users/gmendoza/source/NCP-VGC-Damage-Calculator/**)",
+      "Read(//Users/gmendoza/source/**)",
+      "Bash(pnpm --filter @trainers/web test --testPathPattern=\"teams-list-client\")",
+      "Bash(pnpm --filter @trainers/pokemon test)",
+      "Bash(pnpm:*)",
+      "Bash(npm test:*)",
+      "Bash(git -C /Users/beanie/source/the-builder-polish show HEAD:packages/pokemon/src/__tests__/team-validator.test.ts)",
+      "Bash(git:*)",
+      "Bash(npm run:*)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(command -v yq)",
+      "Bash(yq eval *)",
+      "Bash(command -v actionlint)",
+      "Bash(actionlint /Users/beanie/source/the-builder-polish/.github/actions/supabase-branch/action.yml)",
+      "Bash(bash -n /tmp/supabase-branch-run.sh)",
+      "WebFetch(domain:www.videogameschronicle.com)",
+      "WebFetch(domain:www.pokemon.com)",
+      "WebFetch(domain:championships.pokemon.com)",
+      "WebFetch(domain:www.smogon.com)",
+      "WebFetch(domain:www.serebii.net)",
+      "WebFetch(domain:www.pikalytics.com)",
+      "WebFetch(domain:old.reddit.com)",
+      "WebFetch(domain:www.reddit.com)",
+      "WebFetch(domain:bulbapedia.bulbagarden.net)"
     ]
   },
   "hooks": {
@@ -48,11 +86,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -n \"$CLAUDE_FILE_PATHS\" ]; then npx prettier --write $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); fi"
+            "command": "if [ -n \"$CLAUDE_FILE_PATHS\" ]; then pnpm exec prettier --write $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); fi"
           },
           {
             "type": "command",
-            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in *.ts|*.tsx|*.js|*.jsx) npx eslint --fix --quiet \"$f\";; esac; done"
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in *.ts|*.tsx|*.js|*.jsx) pnpm exec eslint --fix --quiet \"$f\";; esac; done"
           },
           {
             "type": "command",
@@ -74,6 +112,10 @@
           {
             "type": "command",
             "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git commit'*) WEB_CHANGES=$(git diff HEAD~1 --name-only -- apps/web/ 2>/dev/null); if [ -n \"$WEB_CHANGES\" ]; then echo 'This commit touched apps/web/. If this is a new feature or significant change, consider running /checking-mobile-parity to check for mobile parity tickets.'; fi;; esac; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git commit'*) echo 'MEMPALACE: If this commit captures a design decision, architectural choice, security rationale, or non-obvious constraint — file it via mcp__mempalace__mempalace_add_drawer (wing=trainers_gg). Skip routine code changes, test fixes, and dependency bumps.';; esac; exit 0"
           }
         ]
       }
@@ -104,6 +146,26 @@
           {
             "type": "command",
             "command": "REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ''); if [ -n \"$REPO_ROOT\" ]; then cd \"$REPO_ROOT\" || exit 0; BRANCH=$(git branch --show-current 2>/dev/null); if [ -n \"$BRANCH\" ] && [ \"$BRANCH\" != 'main' ] && [ \"$BRANCH\" != 'master' ]; then if git rev-parse --verify main >/dev/null 2>&1; then BASE_BRANCH=main; elif git rev-parse --verify master >/dev/null 2>&1; then BASE_BRANCH=master; else BASE_BRANCH=; fi; if [ -n \"$BASE_BRANCH\" ]; then WEB_CHANGES=$(git diff --name-only \"$BASE_BRANCH\"...HEAD -- apps/web/ 2>/dev/null); if [ -n \"$WEB_CHANGES\" ]; then echo 'This branch has apps/web/ changes. If you have added new features, run /checking-mobile-parity to check for mobile parity tickets.'; fi; fi; fi; fi; exit 0"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v mempalace >/dev/null 2>&1; then mempalace wake-up --wing trainers_gg --format brief 2>/dev/null | head -50; fi; exit 0"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v mempalace >/dev/null 2>&1; then echo 'MEMPALACE: Context compression imminent. Before context is lost: (1) save key decisions via mcp__mempalace__mempalace_add_drawer with wing=trainers_gg, (2) write a session diary via mcp__mempalace__mempalace_diary_write. See using-mempalace skill.'; fi; exit 0"
           }
         ]
       }

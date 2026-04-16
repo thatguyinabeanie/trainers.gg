@@ -10,6 +10,7 @@ import {
   getPlayerProfileByHandle,
   getFollowerCount,
   getFollowingCount,
+  getPublicDiscordHandle,
 } from "@trainers/supabase/queries";
 import { CacheTags } from "@/lib/cache";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,6 +23,7 @@ import {
   isTempUsername,
 } from "@trainers/utils";
 import { NewTrainerBadge } from "@/components/ui/new-trainer-badge";
+import { DiscordIcon } from "@/components/icons/discord-icon";
 import { PlayerProfileTabs } from "./player-profile-tabs";
 
 // On-demand revalidation only (no time-based)
@@ -83,6 +85,36 @@ async function getCurrentUserId(): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * Cached Discord handle fetcher for public profiles.
+ * Reads show_discord_publicly from users table and — only when true — fetches
+ * the Discord identity via auth.identities (service role via static client).
+ * Uses the same cache tag as the profile so toggling the setting invalidates both.
+ */
+const getCachedDiscordHandle = (userId: string, handle: string) =>
+  unstable_cache(
+    async () => {
+      const supabase = createStaticClient();
+      // Check whether this user has opted in to showing their Discord publicly
+      const { data: userRow } = await supabase
+        .from("users")
+        .select("show_discord_publicly")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (!userRow?.show_discord_publicly) return null;
+
+      // Only call auth.identities when the user has opted in — saves a round trip
+      return getPublicDiscordHandle(supabase, userId);
+    },
+    // Handle is part of the key so a handle-change creates a fresh entry
+    // whose tag (CacheTags.player(newHandle)) matches future invalidations.
+    // Without it, the cached value would live under the userId forever while
+    // the stored tag stayed pinned to the original handle.
+    ["player-discord-handle", userId, handle],
+    { tags: [CacheTags.player(handle)] }
+  )();
 
 // ============================================================================
 // Metadata
@@ -212,10 +244,12 @@ function PlayerHeader({
   profile,
   canEdit,
   followCounts,
+  discordHandle,
 }: {
   profile: PlayerProfile;
   canEdit: boolean;
   followCounts: { followers: number; following: number };
+  discordHandle: string | null;
 }) {
   const mainAlt = profile.mainAlt;
   const countryCode = profile.country;
@@ -255,12 +289,20 @@ function PlayerHeader({
             <p className="text-muted-foreground text-sm">@{profile.username}</p>
           )}
 
-          {countryCode && countryName && (
-            <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
-              <span>{countryCodeToFlag(countryCode)}</span>
-              <span>{countryName}</span>
-            </p>
-          )}
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {countryCode && countryName && (
+              <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                <span>{countryCodeToFlag(countryCode)}</span>
+                <span>{countryName}</span>
+              </span>
+            )}
+            {discordHandle && (
+              <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                <DiscordIcon className="size-3 text-[#5865F2]" />@
+                {discordHandle}
+              </span>
+            )}
+          </div>
 
           {mainAlt?.bio && (
             <p className="text-muted-foreground mt-2 max-w-xl whitespace-pre-wrap">
@@ -307,8 +349,11 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
     notFound();
   }
 
-  // Fetch follow counts (cached, depends on profile)
-  const followCounts = await getCachedFollowCounts(profile.userId, handle);
+  // Fetch follow counts and Discord handle in parallel (both depend on profile)
+  const [followCounts, discordHandle] = await Promise.all([
+    getCachedFollowCounts(profile.userId, handle),
+    getCachedDiscordHandle(profile.userId, handle),
+  ]);
 
   const canEdit = currentUserId != null && profile.userId === currentUserId;
 
@@ -323,6 +368,7 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
         profile={profile}
         canEdit={canEdit}
         followCounts={followCounts}
+        discordHandle={discordHandle}
       />
       <PlayerProfileTabs altIds={profile.altIds} handle={handle} />
     </div>

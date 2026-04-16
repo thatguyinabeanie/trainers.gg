@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+
+import { useQuery } from "@tanstack/react-query";
+
 import { useAuth } from "@/hooks/use-auth";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,8 +16,12 @@ import {
 } from "@/components/ui/tooltip";
 import { oauthProviders, type OAuthProvider } from "@/lib/supabase/auth";
 import { BlueskyIcon } from "@/components/icons/bluesky-icon";
+import { ALL_DM_EVENT_TYPES } from "@trainers/supabase";
 import { toast } from "sonner";
 import { unlinkBlueskyAction, getBlueskyStatus } from "@/actions/identities";
+
+/** Derived from the shared constant — stays in sync automatically. */
+const DISCORD_DM_EVENT_TOTAL = ALL_DM_EVENT_TYPES.length;
 
 // Provider icons (reusing from social-auth-buttons pattern)
 function XIcon() {
@@ -79,6 +87,24 @@ export function LinkedIdentitiesSection() {
   const [blueskyHandle, setBlueskyHandle] = useState<string | null>(null);
   const [unlinking, setUnlinking] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Fetch enabled DM preference count via DB-side count (user-specific — TanStack Query)
+  const { data: enabledDmCount = 0 } = useQuery({
+    queryKey: ["discord-dm-preferences-count", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const { count, error } = await supabase
+        .from("discord_user_dm_preferences")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("enabled", true);
+      if (error)
+        throw new Error(`Failed to count DM preferences: ${error.message}`);
+      return count ?? 0;
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
 
   // Load identities and Bluesky status on mount
   useEffect(() => {
@@ -257,6 +283,22 @@ export function LinkedIdentitiesSection() {
                 <p className="text-muted-foreground text-xs">
                   {identity ? "Connected" : "Not connected"}
                 </p>
+                {/* DM summary — only for Discord when linked */}
+                {provider.name === "discord" && identity && (
+                  <p className="text-muted-foreground mt-0.5 text-xs">
+                    DM notifications:{" "}
+                    <span>
+                      {enabledDmCount} of {DISCORD_DM_EVENT_TOTAL} enabled
+                    </span>
+                    {" · "}
+                    <Link
+                      href="/dashboard/settings/notifications#discord-dms"
+                      className="text-primary hover:underline"
+                    >
+                      Manage →
+                    </Link>
+                  </p>
+                )}
               </div>
             </div>
             {identity ? (

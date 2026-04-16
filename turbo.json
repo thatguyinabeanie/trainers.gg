@@ -1,5 +1,5 @@
 {
-  "$schema": "https://turbo.build/schema.json",
+  "$schema": "https://v2-9-6.turborepo.dev/schema.json",
   "ui": "tui",
   "globalEnv": [
     "FORCE_REDIRECT_TO_HOME",
@@ -39,7 +39,11 @@
     "PDS_HANDLE_DOMAIN",
     "RESEND_API_KEY",
     "EXPO_PUBLIC_POSTHOG_KEY",
-    "EXPO_PUBLIC_POSTHOG_HOST"
+    "EXPO_PUBLIC_POSTHOG_HOST",
+    "DISCORD_APPLICATION_ID",
+    "DISCORD_PUBLIC_KEY",
+    "DISCORD_BOT_TOKEN",
+    "CRON_SECRET"
   ],
   "tasks": {
     "build": {

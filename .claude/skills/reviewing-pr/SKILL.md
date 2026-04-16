@@ -7,6 +7,10 @@ description: Use when reviewing a PR or after creating a PR — orchestrates gen
 
 Orchestrator skill that runs a comprehensive PR review by dispatching domain-specific checks based on which files changed.
 
+## No Deferrals
+
+Every finding surfaced by any dispatched skill or agent is in scope for the current session. Do not aggregate findings into a "follow-up" section — resolve them now. Only defer when the user explicitly says to. The individual skills (`reviewing-pr-feedback`, `reviewing-database`, `reviewing-caching`) carry the same rule.
+
 ## Workflow
 
 ### Phase 1: Generic Code Quality

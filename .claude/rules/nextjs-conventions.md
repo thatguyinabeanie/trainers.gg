@@ -14,6 +14,22 @@ Coding standards for the Next.js 16 web application (`apps/web/`). App Router wi
 - **Layouts** — `export default async function Layout({ children })` — Server Components by default
 - **Loading states** — prefer granular `<Suspense>` boundaries with skeleton fallbacks over page-level `loading.js`
 
+### Dynamic Segment Naming
+
+Next.js requires all dynamic segments at the same path level to use the **same slug name**. Before creating a new `[param]` directory, check what existing sibling routes use.
+
+```
+# BAD — Next.js will crash at build/dev:
+dashboard/alts/[username]/page.tsx
+dashboard/alts/[handle]/teams/page.tsx   ← different name, same level
+
+# GOOD — consistent slug at the same level:
+dashboard/alts/[username]/page.tsx
+dashboard/alts/[username]/teams/page.tsx
+```
+
+When adding routes under an existing dynamic segment, `ls` the parent directory first and match the existing `[paramName]`.
+
 ## Data Fetching
 
 ### Server Components
@@ -155,6 +171,29 @@ async function onSubmit(data: CreateTournamentInput) {
 - **CVA** (`class-variance-authority`) for component variants
 - **`cn()`** from `@/lib/utils` for all conditional class composition
 - **StatusBadge** for semantic status colors (emerald=active, blue=upcoming, amber=draft, gray=completed, red=cancelled)
+
+## Input Validation at Route Boundaries
+
+Data from outside the current request — route params, cookies, query strings, localStorage — can be stale, malformed, or tampered with. Validate before use.
+
+| Source             | Risk                                          | Guard                                                            |
+| ------------------ | --------------------------------------------- | ---------------------------------------------------------------- |
+| Route `params`     | Non-numeric IDs, non-existent slugs           | `Number()` + `Number.isNaN()` → `notFound()` before any query    |
+| Cookies            | References to deleted entities (stale alt ID) | Look up the cookie value in current data; fall back if not found |
+| `searchParams`     | Arbitrary strings, missing keys               | Default values; validate before passing to queries               |
+| External redirects | Open redirect via `?redirect=` param          | `isSafeRelativeUrl()` from `@/lib/notification-utils`            |
+
+```tsx
+// Route param — validate before querying
+const numericId = Number(params.id);
+if (Number.isNaN(numericId)) notFound();
+
+// Cookie — validate against current data
+const selectedAlt = alts.find((a) => a.username === cookieValue) ?? null;
+const currentAlt = selectedAlt ?? alts[0] ?? null;
+```
+
+Never pass unvalidated external input directly to database queries — a `NaN` or stale reference should produce a 404, not a 500.
 
 ## Environment Safety
 

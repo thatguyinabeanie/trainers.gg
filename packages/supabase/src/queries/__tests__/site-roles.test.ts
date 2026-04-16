@@ -92,7 +92,7 @@ describe("site-roles queries", () => {
       expect(result).toBe(false);
     });
 
-    it("should return false on database error", async () => {
+    it("should throw on database error", async () => {
       const mockClient = createMockClient();
       const dbError = new Error("Database error");
       mockClient._queryBuilder.maybeSingle.mockResolvedValue({
@@ -100,19 +100,9 @@ describe("site-roles queries", () => {
         error: dbError,
       });
 
-      const consoleErrorSpy = jest
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
-      const result = await isSiteAdmin(mockClient, "user-123");
-
-      expect(result).toBe(false);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error checking site admin status:",
-        dbError
+      await expect(isSiteAdmin(mockClient, "user-123")).rejects.toThrow(
+        "Failed to check site admin status for user user-123: Database error"
       );
-
-      consoleErrorSpy.mockRestore();
     });
 
     it("should handle different user IDs", async () => {

@@ -49,79 +49,98 @@ const USER_EXISTS_CODES = new Set([
   "identity_already_exists",
 ]);
 
-export async function POST(request: NextRequest) {
-  // Only allow in explicit non-production environments (default-deny).
-  // When VERCEL_ENV is unset (local dev via `next dev`), fall back to NODE_ENV.
+// ---------------------------------------------------------------------------
+// Safety check: verify this preview has a Supabase branch DB, not production.
+// Returns { safe: true } or { safe: false, reason, ...diagnostics }.
+// ---------------------------------------------------------------------------
+function checkBranchSafety(): {
+  safe: boolean;
+  reason?: string;
+  supabaseUrl?: string;
+  currentRef?: string;
+  productionRef?: string;
+} {
   const vercelEnv = process.env.VERCEL_ENV;
+
   const isAllowedEnvironment =
     vercelEnv === "development" ||
     vercelEnv === "preview" ||
     (!vercelEnv && process.env.NODE_ENV === "development");
 
   if (!isAllowedEnvironment) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return {
+      safe: false,
+      reason: `Blocked environment: VERCEL_ENV=${vercelEnv ?? "<unset>"}, NODE_ENV=${process.env.NODE_ENV}`,
+    };
   }
 
-  // SAFETY: On Vercel, verify we're NOT connected to the production database.
-  // Supabase branching assigns a different project ref to each branch database.
-  // If a preview deploy falls back to production (branch creation failed),
-  // the project refs will match and we block seeding.
-  // Fail-closed: if SUPABASE_PRODUCTION_PROJECT_REF is not set, block seeding
-  // rather than assuming we're safe — a missing env var should not bypass safety.
-  // Skipped entirely for local dev (no VERCEL_ENV).
-  if (vercelEnv) {
-    const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
+  // Local dev (no VERCEL_ENV) is always safe — skip ref comparison.
+  if (!vercelEnv) {
+    return { safe: true };
+  }
 
-    const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
-    const projectRefMatch = supabaseUrl.match(
-      /https:\/\/([a-z0-9]+)\.supabase\.co/i
+  const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
+  const projectRefMatch = supabaseUrl.match(
+    /https:\/\/([a-z0-9]+)\.supabase\.co/i
+  );
+  const currentRef = projectRefMatch?.[1] ?? "<unknown>";
+
+  if (!productionRef) {
+    const reason =
+      "SUPABASE_PRODUCTION_PROJECT_REF is not set — cannot verify this is not the production database";
+    console.error(
+      `[e2e/seed] BLOCKED: ${reason} (connecting to: ${supabaseUrl || "<empty>"}, ref: ${currentRef})`
     );
-    const currentRef = projectRefMatch?.[1] ?? "<unknown>";
-
-    if (!productionRef) {
-      const reason =
-        "SUPABASE_PRODUCTION_PROJECT_REF is not set — cannot verify this is not the production database";
-      console.error(
-        `[e2e/seed] BLOCKED: ${reason} (connecting to: ${supabaseUrl || "<empty>"}, ref: ${currentRef})`
-      );
-      return NextResponse.json(
-        { error: "Not found", reason, supabaseUrl, currentRef },
-        { status: 404 }
-      );
-    }
-
-    if (!projectRefMatch) {
-      const reason =
-        "Could not extract Supabase project ref from configured URL";
-      console.error(
-        `[e2e/seed] BLOCKED: ${reason} (connecting to: ${supabaseUrl || "<empty>"})`
-      );
-      return NextResponse.json(
-        { error: "Not found", reason, supabaseUrl },
-        { status: 404 }
-      );
-    }
-
-    if (currentRef === productionRef) {
-      const reason =
-        "Connected to production database — Supabase branching may not have created a branch DB for this PR";
-      console.error(
-        `[e2e/seed] BLOCKED: ${reason} (connecting to: ${supabaseUrl}, ref: ${currentRef}, production ref: ${productionRef})`
-      );
-      return NextResponse.json(
-        { error: "Not found", reason, supabaseUrl, currentRef, productionRef },
-        { status: 404 }
-      );
-    }
+    return { safe: false, reason, supabaseUrl, currentRef };
   }
 
-  // Validate secret
+  if (!projectRefMatch) {
+    const reason = "Could not extract Supabase project ref from configured URL";
+    console.error(
+      `[e2e/seed] BLOCKED: ${reason} (connecting to: ${supabaseUrl || "<empty>"})`
+    );
+    return { safe: false, reason, supabaseUrl };
+  }
+
+  if (currentRef === productionRef) {
+    const reason =
+      "Connected to production database — Supabase branching may not have created a branch DB for this PR";
+    console.error(
+      `[e2e/seed] BLOCKED: ${reason} (connecting to: ${supabaseUrl}, ref: ${currentRef}, production ref: ${productionRef})`
+    );
+    return { safe: false, reason, supabaseUrl, currentRef, productionRef };
+  }
+
+  return { safe: true, supabaseUrl, currentRef, productionRef };
+}
+
+// GET /api/e2e/seed — lightweight pre-check for CI to determine if
+// Supabase branching is active before attempting the seed POST.
+export async function GET() {
+  const result = checkBranchSafety();
+  return NextResponse.json(
+    { safe: result.safe, ...(!result.safe && { reason: result.reason }) },
+    { status: result.safe ? 200 : 404 }
+  );
+}
+
+export async function POST(request: NextRequest) {
+  // Validate secret before exposing any diagnostic information
   const secret = request.headers.get("x-e2e-seed-secret");
   const expectedSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
   if (!expectedSecret || secret !== expectedSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const safety = checkBranchSafety();
+  if (!safety.safe) {
+    return NextResponse.json(
+      { error: "Not found", ...safety },
+      { status: 404 }
+    );
   }
 
   const supabase = createServiceRoleClient();

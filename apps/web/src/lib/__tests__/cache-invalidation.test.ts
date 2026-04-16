@@ -18,6 +18,7 @@ import {
   invalidateTournamentWithTeamCaches,
   invalidateCommunityRequestCaches,
   invalidateDashboardCaches,
+  invalidateTeamDetailCache,
 } from "../cache-invalidation";
 
 const mockUpdateTag = updateTag as jest.MockedFunction<typeof updateTag>;
@@ -190,6 +191,15 @@ describe("cache-invalidation helpers", () => {
       expect(mockUpdateTag).toHaveBeenCalledWith(
         CacheTags.COMMUNITY_REQUESTS_LIST
       );
+    });
+  });
+
+  // ── Team ─────────────────────────────────────────────────────────────────
+
+  describe("invalidateTeamDetailCache", () => {
+    it("invalidates the team tag", () => {
+      invalidateTeamDetailCache(99);
+      expect(mockUpdateTag).toHaveBeenCalledWith(CacheTags.team(99));
     });
   });
 

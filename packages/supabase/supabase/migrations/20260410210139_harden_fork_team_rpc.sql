@@ -1,0 +1,9 @@
+-- =============================================================================
+-- NO-OP: Content squashed into 20260410203404_team_builder_indexes_and_fork_rpc.sql
+-- =============================================================================
+-- This migration originally hardened the fork_team RPC with a source team
+-- visibility check and REVOKE/GRANT for authenticated-only access. Its contents
+-- were merged into the earlier migration to eliminate a transient insecure state
+-- during replay.
+--
+-- The file is kept as a no-op to preserve the Supabase migration history.

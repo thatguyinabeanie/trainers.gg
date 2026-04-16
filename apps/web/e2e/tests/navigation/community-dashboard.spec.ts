@@ -109,9 +109,7 @@ test.describe("Community dashboard", () => {
       });
     });
 
-    test("Create Tournament button links to the create page", async ({
-      page,
-    }) => {
+    test("New tournament link points to the create page", async ({ page }) => {
       await loginViaUI(page, TEST_USERS.admin);
       await page.goto("/dashboard/community/vgc-league");
 
@@ -119,9 +117,8 @@ test.describe("Community dashboard", () => {
         page.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
-      const createLink = page
-        .getByRole("link", { name: /Create Tournament/i })
-        .first();
+      // "New" link in the Upcoming Tournaments section
+      const createLink = page.getByRole("link", { name: /^New$/i }).first();
       await expect(createLink).toBeVisible({ timeout: 10000 });
       await expect(createLink).toHaveAttribute(
         "href",

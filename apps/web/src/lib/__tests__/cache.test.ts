@@ -44,4 +44,8 @@ describe("CacheTags", () => {
   it("generates player tag from handle", () => {
     expect(CacheTags.player("ash_ketchum")).toBe("player:ash_ketchum");
   });
+
+  it("generates team tag from numeric id", () => {
+    expect(CacheTags.team(123)).toBe("team:123");
+  });
 });

@@ -7,8 +7,6 @@
 
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { getErrorMessage } from "@/lib/utils";
 import {
   createTournament as createTournamentMutation,
   updateTournament as updateTournamentMutation,
@@ -41,11 +39,26 @@ import {
   getCurrentUserAlts,
   getUserTeams,
   getUserRegistrationDetails,
+  // Phase management mutations
+  updatePhase as updatePhaseMutation,
+  createPhase as createPhaseMutation,
+  deletePhase as deletePhaseMutation,
+  saveTournamentPhases,
   // Queries (for prepareRound preview)
   getPhaseRoundsWithStats,
   getRoundMatchesWithStats,
+  getDiscordServerByCommunityId,
 } from "@trainers/supabase";
-import type { Database } from "@trainers/supabase";
+import type { Enums } from "@trainers/supabase";
+import {
+  type ActionResult,
+  type DropCategory,
+  dropCategorySchema,
+  dropNotesSchema,
+} from "@trainers/validators";
+import { getErrorMessage } from "@trainers/utils";
+
+import { createClient } from "@/lib/supabase/server";
 import {
   invalidateTournamentCaches,
   invalidateTournamentListCaches,
@@ -54,16 +67,56 @@ import {
   invalidatePlayerRankingCaches,
   invalidateDashboardCaches,
 } from "@/lib/cache-invalidation";
-import {
-  type ActionResult,
-  type DropCategory,
-  dropCategorySchema,
-  dropNotesSchema,
-} from "@trainers/validators";
 import { rejectBots } from "./utils";
+import {
+  enqueueCommunityChannelNotification,
+  enqueueCommunityDms,
+  enqueueCommunityRoleSync,
+} from "@/lib/discord/enqueue-helpers";
 
-type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
-type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
+type TournamentFormat = Enums<"tournament_format">;
+type TournamentStatus = Enums<"tournament_status">;
+
+// =============================================================================
+// Discord fire-and-forget helper
+// =============================================================================
+
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * Run a Discord notification callback as fire-and-forget.
+ * Fetches the tournament row, passes it to the callback, and swallows errors
+ * so the primary server action is never affected.
+ */
+function fireAndForgetDiscord(
+  supabase: SupabaseClient,
+  tournamentId: number,
+  source: string,
+  callback: (tournament: {
+    id: number;
+    name: string;
+    slug: string;
+    community_id: number;
+    start_date: string | null;
+  }) => Promise<void>
+): void {
+  void (async () => {
+    try {
+      const { data: tournament } = await supabase
+        .from("tournaments")
+        .select("id, name, slug, community_id, start_date")
+        .eq("id", tournamentId)
+        .single();
+      if (!tournament) return;
+      await callback(tournament);
+    } catch (discordErr) {
+      console.error(`[${source}] Discord enqueue failed`, {
+        tournamentId,
+        error: String(discordErr),
+      });
+    }
+  })();
+}
 
 // =============================================================================
 // Tournament CRUD
@@ -92,6 +145,21 @@ export async function createTournament(data: {
     const supabase = await createClient();
     const result = await createTournamentMutation(supabase, data);
     // Note: Don't revalidate list yet - tournament is created as draft
+
+    // Fire-and-forget: notify Discord that a tournament was created (draft)
+    void enqueueCommunityChannelNotification(
+      supabase,
+      data.communityId,
+      "tournament_created",
+      `tournament_created:${result.id}`,
+      {
+        tournament_id: result.id,
+        tournament_name: data.name,
+        tournament_slug: result.slug,
+        start_date: data.startDate ?? null,
+      }
+    );
+
     return { success: true, data: result };
   } catch (error) {
     return {
@@ -153,6 +221,22 @@ export async function publishTournament(
 
     await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
 
+    fireAndForgetDiscord(supabase, tournamentId, "publishTournament", (t) =>
+      enqueueCommunityChannelNotification(
+        supabase,
+        t.community_id,
+        "registration_opens",
+        `registration_opens:${tournamentId}`,
+        {
+          tournament_id: t.id,
+          tournament_name: t.name,
+          tournament_slug: t.slug,
+          start_date: t.start_date,
+          registration_url: `/tournaments/${t.slug}`,
+        }
+      )
+    );
+
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -205,6 +289,67 @@ export async function completeTournament(
     await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
     invalidatePlayerRankingCaches();
     invalidateDashboardCaches();
+
+    fireAndForgetDiscord(
+      supabase,
+      tournamentId,
+      "completeTournament",
+      async (t) => {
+        // Resolve the server once — passed to each helper to avoid redundant lookups
+        const server = await getDiscordServerByCommunityId(
+          supabase,
+          t.community_id
+        );
+        if (!server) return;
+
+        // Channel notification + winner role sync in parallel
+        const channelPromise = enqueueCommunityChannelNotification(
+          supabase,
+          t.community_id,
+          "tournament_ended",
+          `tournament_ended:${tournamentId}`,
+          {
+            tournament_id: t.id,
+            tournament_name: t.name,
+            tournament_slug: t.slug,
+          },
+          { server }
+        );
+
+        const winnerPromise = (async () => {
+          const { data: winnerRows, error: winnerErr } = await supabase
+            .from("tournament_standings")
+            .select("alts(user_id)")
+            .eq("tournament_id", tournamentId)
+            .eq("rank", 1);
+
+          if (winnerErr) {
+            console.error("[completeTournament] Failed to fetch winner rows", {
+              tournamentId,
+              error: String(winnerErr),
+            });
+          }
+
+          const winnerUserIds = (winnerRows ?? [])
+            .map((row) => (row.alts as { user_id: string } | null)?.user_id)
+            .filter((id): id is string => Boolean(id));
+
+          if (winnerUserIds.length > 0) {
+            await enqueueCommunityRoleSync(
+              supabase,
+              t.community_id,
+              winnerUserIds,
+              "winner",
+              "add",
+              `tournament_ended:${tournamentId}`,
+              { server }
+            );
+          }
+        })();
+
+        await Promise.all([channelPromise, winnerPromise]);
+      }
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -348,6 +493,27 @@ export async function registerForTournament(
 
     invalidateTournamentListCaches(tournamentId);
 
+    fireAndForgetDiscord(
+      supabase,
+      tournamentId,
+      "registerForTournament",
+      async (t) => {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        await enqueueCommunityRoleSync(
+          supabase,
+          t.community_id,
+          [user.id],
+          "member",
+          "add",
+          `tournament_registration:${result.registrationId}`
+        );
+      }
+    );
+
     return {
       success: true,
       data: { registrationId: result.registrationId, status: result.status },
@@ -358,6 +524,59 @@ export async function registerForTournament(
       error: getErrorMessage(error, "Failed to register"),
     };
   }
+}
+
+/**
+ * Private helper — fire-and-forget removal of the Discord "member" role when a
+ * user has no remaining active registrations in the tournament's community.
+ */
+function maybeDemoteMemberRole(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tournamentId: number,
+  sourceEvent: string
+): void {
+  void (async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: tournament } = await supabase
+        .from("tournaments")
+        .select("community_id")
+        .eq("id", tournamentId)
+        .single();
+      if (!tournament) return;
+
+      // Count remaining non-dropped registrations for this user in this community
+      const { count } = await supabase
+        .from("tournament_registrations")
+        .select("id, alts!inner(user_id), tournaments!inner(community_id)", {
+          count: "exact",
+          head: true,
+        })
+        .eq("alts.user_id", user.id)
+        .eq("tournaments.community_id", tournament.community_id)
+        .is("dropped_at", null);
+
+      if (count === 0) {
+        await enqueueCommunityRoleSync(
+          supabase,
+          tournament.community_id,
+          [user.id],
+          "member",
+          "remove",
+          sourceEvent
+        );
+      }
+    } catch (discordErr) {
+      console.error(
+        "[maybeDemoteMemberRole] Discord member role remove sync failed",
+        { tournamentId, sourceEvent, error: String(discordErr) }
+      );
+    }
+  })();
 }
 
 /**
@@ -374,6 +593,12 @@ export async function cancelRegistration(
     await cancelRegistrationMutation(supabase, registrationId);
 
     invalidateTournamentListCaches(tournamentId);
+
+    maybeDemoteMemberRole(
+      supabase,
+      tournamentId,
+      `tournament_registration_cancel:${registrationId}`
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -436,6 +661,12 @@ export async function withdrawFromTournament(
     const supabase = await createClient();
     await withdrawFromTournamentMutation(supabase, tournamentId);
     invalidateTournamentListCaches(tournamentId);
+
+    maybeDemoteMemberRole(
+      supabase,
+      tournamentId,
+      `tournament_withdraw:${tournamentId}`
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -738,6 +969,94 @@ export async function generatePairings(
     const supabase = await createClient();
     const result = await generateRoundPairingsMutation(supabase, roundId);
     invalidateTournamentCaches(tournamentId);
+
+    // Fire-and-forget: DM both players in each newly created match
+    fireAndForgetDiscord(
+      supabase,
+      tournamentId,
+      "generatePairings",
+      async (t) => {
+        const { data: matches, error: matchesErr } = await supabase
+          .from("tournament_matches")
+          .select(
+            "id, alt1_id, alt2_id, is_bye, alt1:alts!tournament_matches_alt1_id_fkey(user_id, username), alt2:alts!tournament_matches_alt2_id_fkey(user_id, username)"
+          )
+          .eq("round_id", roundId)
+          .eq("is_bye", false);
+
+        if (matchesErr) {
+          console.error("[generatePairings] Failed to fetch matches", {
+            roundId,
+            error: String(matchesErr),
+          });
+          return;
+        }
+        if (!matches || matches.length === 0) return;
+
+        // Collect all player user IDs across matches, then batch-enqueue DMs
+        // so enqueueCommunityDms resolves server + DM settings once instead of per match.
+        const allPlayerUserIds: string[] = [];
+        const perMatchPayloads: Array<{
+          matchId: number;
+          playerUserIds: string[];
+          payload: Record<string, unknown>;
+        }> = [];
+
+        for (const match of matches) {
+          const alt1 = match.alt1 as {
+            user_id: string;
+            username: string;
+          } | null;
+          const alt2 = match.alt2 as {
+            user_id: string;
+            username: string;
+          } | null;
+          if (!alt1 || !alt2) {
+            // Guard against unexpected select shape — log so skips are visible
+            console.warn(
+              "[generatePairings] Match missing alt relation shape",
+              {
+                matchId: match.id,
+                hasAlt1: Boolean(alt1),
+                hasAlt2: Boolean(alt2),
+              }
+            );
+            continue;
+          }
+
+          const playerUserIds = [alt1.user_id, alt2.user_id];
+          allPlayerUserIds.push(...playerUserIds);
+          perMatchPayloads.push({
+            matchId: match.id,
+            playerUserIds,
+            payload: {
+              tournament_id: t.id,
+              tournament_name: t.name,
+              tournament_slug: t.slug,
+              opponent_name_for: {
+                [alt1.user_id]: alt2.username,
+                [alt2.user_id]: alt1.username,
+              },
+            },
+          });
+        }
+
+        // Enqueue all match DMs concurrently
+        await Promise.all(
+          perMatchPayloads.map((m) =>
+            enqueueCommunityDms(
+              supabase,
+              t.community_id,
+              m.playerUserIds,
+              "match_ready",
+              `match_ready:${m.matchId}`,
+              { match_id: m.matchId, ...m.payload }
+            )
+          )
+        );
+      }
+    );
+
     return {
       success: true,
       data: {
@@ -837,7 +1156,9 @@ export async function dropPlayer(
 }
 
 /**
- * Drop yourself from the tournament (player self-service)
+ * Drop yourself from the tournament (player self-service).
+ * Finds the caller's registered alt for this specific tournament — avoids
+ * silently dropping the wrong alt when the user has multiple alts.
  */
 export async function dropFromTournament(
   tournamentId: number
@@ -845,12 +1166,34 @@ export async function dropFromTournament(
   try {
     await rejectBots();
     const supabase = await createClient();
+
+    // Get all alts for the current user
     const alts = await getCurrentUserAlts(supabase);
-    const altId = alts[0]?.id;
-    if (!altId) {
+    if (!alts.length) {
       return { success: false, error: "No player profile found" };
     }
-    await dropPlayerMutation(supabase, tournamentId, altId);
+
+    const altIds = alts.map((a) => a.id);
+
+    // Find which alt (if any) is registered for this tournament
+    const { data: registration, error: regErr } = await supabase
+      .from("tournament_registrations")
+      .select("alt_id")
+      .eq("tournament_id", tournamentId)
+      .in("alt_id", altIds)
+      .not("status", "eq", "dropped")
+      .maybeSingle();
+
+    if (regErr) throw regErr;
+
+    if (!registration) {
+      return {
+        success: false,
+        error: "You are not registered for this tournament.",
+      };
+    }
+
+    await dropPlayerMutation(supabase, tournamentId, registration.alt_id);
     invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -937,10 +1280,12 @@ export async function bulkForceCheckIn(
     }
 
     // Get registrations to verify they all belong to the same tournament
-    const { data: registrations } = await supabase
+    const { data: registrations, error: regsErr } = await supabase
       .from("tournament_registrations")
       .select("id, tournament_id")
       .in("id", registrationIds);
+
+    if (regsErr) throw regsErr;
 
     if (!registrations || registrations.length === 0) {
       throw new Error("No registrations found");
@@ -1009,10 +1354,12 @@ export async function bulkRemovePlayers(
     }
 
     // Get registrations to verify they all belong to the same tournament
-    const { data: registrations } = await supabase
+    const { data: registrations, error: regsErr } = await supabase
       .from("tournament_registrations")
       .select("id, tournament_id")
       .in("id", registrationIds);
+
+    if (regsErr) throw regsErr;
 
     if (!registrations || registrations.length === 0) {
       throw new Error("No registrations found");
@@ -1117,6 +1464,85 @@ export async function reportMatchResult(
       player2GamesWon
     );
     invalidateTournamentCaches(tournamentId);
+
+    fireAndForgetDiscord(
+      supabase,
+      tournamentId,
+      "reportMatchResult",
+      async (t) => {
+        // Resolve the server once — passed to each helper to avoid redundant lookups
+        const server = await getDiscordServerByCommunityId(
+          supabase,
+          t.community_id
+        );
+        if (!server) return;
+
+        const { data: match, error: matchErr } = await supabase
+          .from("tournament_matches")
+          .select(
+            "id, alt1_id, alt2_id, alt1:alts!tournament_matches_alt1_id_fkey(user_id, username), alt2:alts!tournament_matches_alt2_id_fkey(user_id, username)"
+          )
+          .eq("id", matchId)
+          .single();
+
+        if (matchErr) {
+          console.error("[reportMatchResult] Failed to fetch match", {
+            matchId,
+            error: String(matchErr),
+          });
+          return;
+        }
+        if (!match) return;
+
+        const alt1 = match.alt1 as { user_id: string; username: string } | null;
+        const alt2 = match.alt2 as { user_id: string; username: string } | null;
+
+        const winnerUsername =
+          match.alt1_id === winnerAltId
+            ? (alt1?.username ?? "Unknown")
+            : (alt2?.username ?? "Unknown");
+
+        const resultPayload = {
+          match_id: matchId,
+          tournament_id: t.id,
+          tournament_name: t.name,
+          tournament_slug: t.slug,
+          winner_alt_id: winnerAltId,
+          winner_username: winnerUsername,
+          score: `${player1GamesWon}-${player2GamesWon}`,
+        };
+
+        // Channel notification + DM confirmation in parallel
+        const channelPromise = enqueueCommunityChannelNotification(
+          supabase,
+          t.community_id,
+          "match_result_reported",
+          `match_result_reported:${matchId}`,
+          resultPayload,
+          { server }
+        );
+
+        const playerUserIds = [alt1?.user_id, alt2?.user_id].filter(
+          (id): id is string => Boolean(id)
+        );
+
+        const dmPromise =
+          playerUserIds.length > 0
+            ? enqueueCommunityDms(
+                supabase,
+                t.community_id,
+                playerUserIds,
+                "match_result_to_confirm",
+                `match_result_to_confirm:${matchId}`,
+                resultPayload,
+                { server }
+              )
+            : Promise.resolve();
+
+        await Promise.all([channelPromise, dmPromise]);
+      }
+    );
+
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -1155,11 +1581,13 @@ export async function prepareRound(
     const supabase = await createClient();
 
     // Look up the phase type to determine which pairing algorithm to use
-    const { data: phaseData } = await supabase
+    const { data: phaseData, error: phaseErr } = await supabase
       .from("tournament_phases")
       .select("phase_type")
       .eq("id", phaseId)
       .single();
+
+    if (phaseErr) throw phaseErr;
 
     const isElimination = phaseData?.phase_type === "single_elimination";
 
@@ -1297,8 +1725,6 @@ export async function updatePhase(
   try {
     await rejectBots();
     const supabase = await createClient();
-    const { updatePhase: updatePhaseMutation } =
-      await import("@trainers/supabase");
     await updatePhaseMutation(supabase, phaseId, updates);
     invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
@@ -1328,8 +1754,6 @@ export async function createTournamentPhase(
   try {
     await rejectBots();
     const supabase = await createClient();
-    const { createPhase: createPhaseMutation } =
-      await import("@trainers/supabase");
     const result = await createPhaseMutation(supabase, tournamentId, phase);
     invalidateTournamentCaches(tournamentId);
     return { success: true, data: { phaseId: result.phase.id } };
@@ -1351,8 +1775,6 @@ export async function deleteTournamentPhase(
   try {
     await rejectBots();
     const supabase = await createClient();
-    const { deletePhase: deletePhaseMutation } =
-      await import("@trainers/supabase");
     await deletePhaseMutation(supabase, phaseId);
     invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
@@ -1391,7 +1813,6 @@ export async function saveTournamentPhasesAction(
   try {
     await rejectBots();
     const supabase = await createClient();
-    const { saveTournamentPhases } = await import("@trainers/supabase");
     const result = await saveTournamentPhases(supabase, tournamentId, phases);
     invalidateTournamentCaches(tournamentId);
     return {

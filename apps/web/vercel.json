@@ -2,5 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "cd ../.. && pnpm install",
-  "buildCommand": "cd ../.. && pnpm turbo run build --filter=@trainers/web"
+  "buildCommand": "cd ../.. && pnpm turbo run build --filter=@trainers/web",
+  "crons": [
+    { "path": "/api/discord/reconcile-roles", "schedule": "3-59/15 * * * *" },
+    { "path": "/api/discord/uninstall-sweep", "schedule": "0 7 * * *" }
+  ]
 }

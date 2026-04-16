@@ -1,5 +1,6 @@
 import type { Json, Tables } from "../types";
 import type { TypedClient } from "../client";
+import { isSiteAdmin } from "./site-roles";
 
 /** A feature flag row from the database. */
 export type FeatureFlag = Tables<"feature_flags">;
@@ -204,5 +205,68 @@ export async function deleteFeatureFlag(
 
   if (auditError) {
     console.error("Failed to log flag_deleted to audit log:", auditError);
+  }
+}
+
+// =============================================================================
+// Team Builder Access
+// =============================================================================
+
+/**
+ * Discriminated result from `hasTeamBuilderAccess`.
+ *
+ * - `{ access: true }` — user may use the team builder
+ * - `{ access: false }` — user does not have access
+ * - `{ access: "error"; reason: string }` — a system error occurred; the
+ *   caller must not treat this as a silent denial — surface it to the user
+ */
+export type AccessCheckResult =
+  | { access: true }
+  | { access: false }
+  | { access: "error"; reason: string };
+
+/**
+ * Check whether a user has access to the team builder feature.
+ *
+ * Access is granted when ANY of:
+ * 1. The `team_builder` feature flag is globally enabled
+ * 2. The user's ID is in the flag's `metadata.allowed_users` array
+ * 3. The user has the `site_admin` role
+ *
+ * Returns a discriminated `AccessCheckResult` so callers can distinguish
+ * "user has no access" from "a system error occurred".
+ *
+ * @param supabase - Typed Supabase client
+ * @param userId - UUID of the user to check
+ */
+export async function hasTeamBuilderAccess(
+  supabase: TypedClient,
+  userId: string
+): Promise<AccessCheckResult> {
+  try {
+    const [flag, isAdmin] = await Promise.all([
+      getFeatureFlag(supabase, "team_builder"),
+      isSiteAdmin(supabase, userId),
+    ]);
+
+    if (isAdmin) return { access: true };
+    if (!flag) return { access: false };
+    if (flag.enabled) return { access: true };
+
+    // Check allowed_users in metadata
+    const metadata = flag.metadata as { allowed_users?: string[] } | null;
+    if (metadata?.allowed_users?.includes(userId)) return { access: true };
+
+    return { access: false };
+  } catch (error) {
+    console.error(
+      "[hasTeamBuilderAccess] Error checking access for user:",
+      userId,
+      error
+    );
+    return {
+      access: "error",
+      reason: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }

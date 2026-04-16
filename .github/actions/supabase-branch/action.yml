@@ -1,0 +1,109 @@
+name: Create or Find Supabase Branch
+description: Creates a Supabase preview branch (or finds existing one), waits for credentials, outputs the branch project ref.
+
+inputs:
+  access-token:
+    description: Supabase personal access token
+    required: true
+  project-ref:
+    description: Production Supabase project ref
+    required: true
+  git-branch:
+    description: Git branch name to create the Supabase branch for
+    required: true
+
+outputs:
+  ref:
+    description: The Supabase branch project ref
+    value: ${{ steps.branch.outputs.ref }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: 2.84.2
+
+    - name: Create or find branch
+      id: branch
+      shell: bash
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ inputs.access-token }}
+        PROJECT_REF: ${{ inputs.project-ref }}
+        GIT_BRANCH: ${{ inputs.git-branch }}
+      run: |
+        # Check if branch already exists
+        EXISTING=$(supabase --experimental branches list --project-ref "$PROJECT_REF" --output json \
+          | jq -r --arg name "$GIT_BRANCH" '.[] | select(.name == $name or .git_branch == $name) | .id // empty')
+
+        if [ -z "$EXISTING" ]; then
+          echo "Creating Supabase branch for $GIT_BRANCH..."
+          CREATE_ERR=$(mktemp)
+          if supabase --experimental branches create "$GIT_BRANCH" --project-ref "$PROJECT_REF" 2>"$CREATE_ERR"; then
+            # Associate the git branch so future list-by-git_branch lookups also match.
+            supabase --experimental branches update "$GIT_BRANCH" --git-branch "$GIT_BRANCH" --project-ref "$PROJECT_REF" \
+              || echo "::warning::Failed to set git_branch association — non-fatal"
+          else
+            CREATE_MSG=$(cat "$CREATE_ERR")
+            # 409 = branch already exists on Supabase side (list/create race or stale state).
+            # Proceed to the get-polling loop; it will find the branch if it truly exists.
+            if printf '%s' "$CREATE_MSG" | grep -qiE '409|already exists|Failed to insert'; then
+              echo "::warning::Create returned conflict; proceeding to poll branches get: $CREATE_MSG"
+            else
+              echo "::error::Supabase branch create failed: $CREATE_MSG"
+              rm -f "$CREATE_ERR"
+              exit 1
+            fi
+          fi
+          rm -f "$CREATE_ERR"
+        else
+          echo "Supabase branch already exists for $GIT_BRANCH (id=$EXISTING)"
+        fi
+
+        # Get branch credentials and extract project ref.
+        # branches get returns: { "POSTGRES_URL_NON_POOLING": "...db.<ref>.supabase.co...", ... }
+        for i in $(seq 1 30); do
+          CLI_ERR=$(mktemp)
+          INFO=$(supabase --experimental branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json 2>"$CLI_ERR")
+          CLI_STATUS=$?
+
+          if [ "$CLI_STATUS" -ne 0 ]; then
+            CLI_MSG=$(cat "$CLI_ERR")
+            rm -f "$CLI_ERR"
+            # Expected: branch still provisioning. Unexpected: bad token, wrong ref, CLI bug.
+            if printf '%s' "$CLI_MSG" | grep -qiE 'not ready|provisioning|not found|creating'; then
+              echo "Branch not ready yet (attempt $i/30): $CLI_MSG"
+            else
+              echo "::error::Supabase CLI failed (exit $CLI_STATUS): $CLI_MSG"
+              exit 1
+            fi
+            sleep 10
+            continue
+          fi
+          rm -f "$CLI_ERR"
+
+          NON_POOLING=$(echo "$INFO" | jq -r '.POSTGRES_URL_NON_POOLING // empty')
+
+          if [ -n "$NON_POOLING" ]; then
+            # Mask all sensitive values before any further output
+            for KEY in POSTGRES_URL POSTGRES_URL_NON_POOLING SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY POSTGRES_PASSWORD SUPABASE_DEFAULT_KEY; do
+              VAL=$(echo "$INFO" | jq -r ".${KEY} // empty")
+              if [ -n "$VAL" ]; then
+                echo "::add-mask::$VAL"
+              fi
+            done
+
+            BRANCH_REF=$(echo "$NON_POOLING" | grep -oP 'db\.\K[a-z0-9]+(?=\.supabase\.co)')
+            if [ -n "$BRANCH_REF" ]; then
+              echo "ref=$BRANCH_REF" >> "$GITHUB_OUTPUT"
+              echo "Branch ready: $BRANCH_REF"
+              exit 0
+            fi
+          fi
+
+          echo "Waiting for branch credentials (attempt $i/30)"
+          sleep 10
+        done
+        echo "::error::Supabase branch did not return credentials within 5 minutes"
+        exit 1

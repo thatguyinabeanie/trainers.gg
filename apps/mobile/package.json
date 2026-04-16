@@ -80,6 +80,7 @@
     "babel-plugin-react-compiler": "catalog:",
     "babel-preset-expo": "catalog:expo",
     "eslint": "catalog:",
+    "expo-modules-core": "~55.0",
     "jest": "catalog:testing",
     "jest-expo": "catalog:expo",
     "prettier": "catalog:",

@@ -7,6 +7,10 @@ description: Use when reviewing or writing database changes — covers RLS polic
 
 Checklist for database changes: migrations, RLS policies, query patterns, and indexing.
 
+## No Deferrals
+
+Every finding from this review is in scope for the current session. Do not produce a "follow-ups", "future work", or "deferred" section — if a policy is missing, an index is absent, or a query is N+1, fix it now. Only defer when the user explicitly says "address X in a separate PR". Match this to the PR feedback rule in `reviewing-pr-feedback`.
+
 ## Migration Checks
 
 - [ ] RLS enabled on new tables (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`)

@@ -7,8 +7,6 @@
 
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { getErrorMessage } from "@/lib/utils";
 import {
   searchUsersForInvite as searchUsersQuery,
   listCommunityGroups as listGroupsQuery,
@@ -19,7 +17,12 @@ import {
   removeStaffCompletely as removeStaffMutation,
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
+import { getErrorMessage } from "@trainers/utils";
+
+import { createClient } from "@/lib/supabase/server";
 import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
+import { enqueueCommunityRoleSync } from "@/lib/discord/enqueue-helpers";
+import { rejectBots } from "./utils";
 
 // =============================================================================
 // Staff Search
@@ -71,10 +74,21 @@ export async function inviteStaffMember(
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await addStaffMemberMutation(supabase, communityId, userId);
 
     invalidateCommunityPageCaches(slug, communityId);
+
+    // Fire-and-forget: assign the staff Discord role
+    void enqueueCommunityRoleSync(
+      supabase,
+      communityId,
+      [userId],
+      "staff",
+      "add",
+      `staff_added:${communityId}:${userId}`
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -96,10 +110,21 @@ export async function inviteStaffToGroup(
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await addStaffToGroupMutation(supabase, communityId, userId, groupId);
 
     invalidateCommunityPageCaches(slug, communityId);
+
+    // Fire-and-forget: assign the staff Discord role
+    void enqueueCommunityRoleSync(
+      supabase,
+      communityId,
+      [userId],
+      "staff",
+      "add",
+      `staff_added:${communityId}:${userId}`
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -121,6 +146,7 @@ export async function changeStaffRoleAction(
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await changeRoleMutation(supabase, communityId, userId, newGroupId);
 
@@ -157,10 +183,21 @@ export async function removeStaffAction(
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await removeStaffMutation(supabase, communityId, userId);
 
     invalidateCommunityPageCaches(slug, communityId);
+
+    // Fire-and-forget: remove the staff Discord role
+    void enqueueCommunityRoleSync(
+      supabase,
+      communityId,
+      [userId],
+      "staff",
+      "remove",
+      `staff_removed:${communityId}:${userId}`
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -182,6 +219,7 @@ export async function unassignStaffAction(
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await removeStaffFromGroupMutation(supabase, communityId, userId);
 

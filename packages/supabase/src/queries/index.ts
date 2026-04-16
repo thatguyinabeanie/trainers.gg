@@ -218,12 +218,13 @@ export {
   listFeatureFlags,
   getFeatureFlag,
   isFeatureEnabled,
+  hasTeamBuilderAccess,
   createFeatureFlag,
   updateFeatureFlag,
   deleteFeatureFlag,
 } from "./feature-flags";
 
-export type { FeatureFlag } from "./feature-flags";
+export type { FeatureFlag, AccessCheckResult } from "./feature-flags";
 
 // Player directory queries
 export {
@@ -264,3 +265,86 @@ export {
   type TeamSheetPokemon,
   type PlayerTeamSheet,
 } from "./tournament-team-sheets";
+
+// Team builder queries
+export {
+  getTeamsForAltList,
+  getTeamsForAltFull,
+  getTeamWithPokemon,
+  getTeamsForAltByFormatFull,
+  getTeamsForUser,
+  type TeamListItem,
+  type TeamWithPokemon,
+  type CrossAltTeamListItem,
+} from "./teams";
+
+// Discord bot queries
+export {
+  getDiscordServerById,
+  getDiscordServerByGuildId,
+  getDiscordServerByCommunityId,
+  getDiscordServerByChannelId,
+  listDiscordServers,
+  getRoleMappingById,
+  listChannelMappings,
+  getChannelMappingsForEvent,
+  listDmSettings,
+  getDmSetting,
+  listDmPreferences,
+  getDmPreference,
+  isDmEnabledForUser,
+  listRoleMappings,
+  getRoleMapping,
+  getEnabledRoleMappings,
+  listChannelFailures,
+  getChannelFailureCount,
+  getDeliveryFailure,
+  // Reconcile-roles helpers
+  listAllEnabledRoleMappingsWithServer,
+  getDiscordIdsByUserIds,
+  getCommunityStaffUserIds,
+  getCommunityParticipantUserIds,
+  getCommunityWinnerUserIds,
+  getCommunityCurrentlyPlayingUserIds,
+  getCommunityMemberUserIds,
+  getUserByDiscordId,
+  // Slash command helpers
+  listActiveTournaments,
+  listUpcomingTournaments,
+  getTournamentByNameOrSlugInCommunity,
+  listStandings,
+  listCurrentPairings,
+  listCommunityLeaderboard,
+  getPlayerByUsername,
+  getPlayerCommunityStats,
+  getPublicTeamForCommunity,
+  // Autocomplete helpers
+  searchTournamentsInCommunity,
+  searchUserActiveTournamentRegistrations,
+  searchPlayersInCommunity,
+  // Integration page composite queries
+  getDiscordIntegrationOverview,
+  listRecentFailures,
+  getPublicDiscordHandle,
+  type DiscordServer,
+  type DiscordChannelMapping,
+  type DiscordDmSetting,
+  type DiscordUserDmPreference,
+  type DiscordRoleMapping,
+  type DiscordChannelFailure,
+  type DiscordDeliveryFailure,
+  type DiscordDmEventType,
+  ALL_DM_EVENT_TYPES,
+  ALL_CHANNEL_EVENT_TYPES,
+  type DiscordChannelEventType,
+  type DiscordRoleType,
+  type EnabledRoleMappingWithServer,
+  type DiscordTournamentRow,
+  type DiscordStandingRow,
+  type DiscordPairingRow,
+  type DiscordLeaderboardRow,
+  type DiscordIntegrationOverview,
+  type ChannelFailureRow,
+  type DmFailureRow,
+  type RoleSyncFailureRow,
+} from "./discord";

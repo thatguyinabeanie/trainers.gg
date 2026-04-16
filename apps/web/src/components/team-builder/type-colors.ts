@@ -1,0 +1,47 @@
+import { type PokemonType } from "@trainers/pokemon";
+
+/** Tailwind background colors for each Pokemon type pill. */
+export const TYPE_PILL_COLORS: Record<PokemonType | "Stellar", string> = {
+  Normal: "bg-stone-400 text-white",
+  Bug: "bg-lime-500 text-white",
+  Dark: "bg-stone-700 text-white",
+  Dragon: "bg-indigo-600 text-white",
+  Electric: "bg-yellow-400 text-black",
+  Fairy: "bg-pink-400 text-white",
+  Fighting: "bg-red-700 text-white",
+  Fire: "bg-orange-500 text-white",
+  Flying: "bg-sky-300 text-black",
+  Ghost: "bg-purple-600 text-white",
+  Grass: "bg-green-500 text-white",
+  Ground: "bg-amber-600 text-white",
+  Ice: "bg-cyan-300 text-black",
+  Poison: "bg-purple-500 text-white",
+  Psychic: "bg-pink-500 text-white",
+  Rock: "bg-amber-700 text-white",
+  Steel: "bg-slate-400 text-black",
+  Water: "bg-blue-500 text-white",
+  Stellar: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+};
+
+/** Tailwind background colors for type buttons (with proper text contrast). */
+export const TYPE_BG_COLORS: Record<PokemonType | "Stellar", string> = {
+  Normal: "bg-stone-400 text-black",
+  Bug: "bg-lime-500 text-white",
+  Dark: "bg-stone-700 text-white",
+  Dragon: "bg-indigo-600 text-white",
+  Electric: "bg-yellow-400 text-black",
+  Fairy: "bg-pink-400 text-black",
+  Fighting: "bg-red-700 text-white",
+  Fire: "bg-orange-500 text-white",
+  Flying: "bg-sky-300 text-black",
+  Ghost: "bg-purple-600 text-white",
+  Grass: "bg-green-500 text-white",
+  Ground: "bg-amber-600 text-white",
+  Ice: "bg-cyan-300 text-black",
+  Poison: "bg-purple-500 text-white",
+  Psychic: "bg-pink-500 text-white",
+  Rock: "bg-amber-700 text-white",
+  Steel: "bg-slate-400 text-black",
+  Water: "bg-blue-500 text-white",
+  Stellar: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+};

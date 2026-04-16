@@ -49,7 +49,7 @@ const SEED_FILES = [
 function exec(command, options = {}) {
   // Mask sensitive values in logged command
   let logCommand = command;
-  const sensitiveVars = ["SUPABASE_DB_PASSWORD"];
+  const sensitiveVars = ["SUPABASE_DB_PASSWORD", "POSTGRES_PASSWORD"];
   for (const varName of sensitiveVars) {
     if (options.env?.[varName]) {
       logCommand = logCommand.replace(options.env[varName], "[REDACTED]");
@@ -149,7 +149,11 @@ function extractProjectRef() {
 /**
  * Validate required environment variables
  */
-function validateEnv() {
+/**
+ * @param {"production" | "preview"} envType
+ * @returns {boolean} true if validation passes, false if preview should skip
+ */
+function validateEnv(envType) {
   const errors = [];
 
   // Access token is always required (added manually)
@@ -174,11 +178,25 @@ function validateEnv() {
   }
 
   if (errors.length > 0) {
+    if (envType === "preview") {
+      // In preview mode, missing env vars means the Supabase branch integration
+      // hasn't injected credentials yet. Skip gracefully — CI will handle
+      // redeployment once env vars are set, or the branch may already have
+      // migrations applied via Supabase branching.
+      console.log("\n⚠️  Missing environment variables for preview:");
+      errors.forEach((err) => console.log(`   - ${err}`));
+      console.log(
+        "\n⏭️  Skipping migrations — preview env vars not ready yet.\n"
+      );
+      return false;
+    }
+    // Production mode: fail hard
     console.error("\n❌ Missing required environment variables:\n");
     errors.forEach((err) => console.error(`   - ${err}`));
     console.error("\n");
     process.exit(1);
   }
+  return true;
 }
 
 /**
@@ -198,33 +216,46 @@ function countMigrations() {
  * IMPORTANT: For seeding that writes to auth.users, we need a NON-POOLING connection.
  * The pooler (PgBouncer) can't handle multi-statement transactions or auth schema writes.
  *
- * Priority:
- * 1. SUPABASE_POSTGRES_URL_NON_POOLING - Direct connection (preferred for seeding)
- * 2. SUPABASE_POSTGRES_URL - Pooled connection (may work for simple seeds)
- * 3. Build URL from project ref and password (uses direct connection on port 5432)
+ * Priority (check both SUPABASE_* and bare POSTGRES_* — the Supabase Vercel Integration
+ * provides the unprefixed variants, while some setups use the prefixed ones):
+ * 1. SUPABASE_POSTGRES_URL_NON_POOLING / POSTGRES_URL_NON_POOLING - Direct (preferred)
+ * 2. SUPABASE_POSTGRES_URL / POSTGRES_URL - Pooled (may work for simple seeds)
+ * 3. Build URL from project ref and password (direct connection via db host)
  */
 function getDatabaseUrl(projectRef) {
-  // Prefer non-pooling URL for seeding (required for auth.users writes)
-  if (process.env.SUPABASE_POSTGRES_URL_NON_POOLING) {
+  // Prefer non-pooling URL for seeding (required for auth.users writes).
+  // Pooled/non-pooling URLs from the Supabase integration embed credentials —
+  // we must NOT pass an explicit `password` option when using them, because
+  // postgres.js options take precedence over URL auth and would either
+  // override the real password or pass `undefined` when the env var is unset.
+  const nonPoolingUrl =
+    process.env.SUPABASE_POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_URL_NON_POOLING;
+  if (nonPoolingUrl) {
     console.log(`   Using non-pooling connection (direct)`);
-    return process.env.SUPABASE_POSTGRES_URL_NON_POOLING;
+    return { url: nonPoolingUrl, needsExplicitPassword: false };
   }
 
   // Fall back to pooled URL (may not work for auth schema)
-  if (process.env.SUPABASE_POSTGRES_URL) {
+  const pooledUrl =
+    process.env.SUPABASE_POSTGRES_URL || process.env.POSTGRES_URL;
+  if (pooledUrl) {
     console.log(`   ⚠️  Using pooled connection (may fail for auth.users)`);
-    return process.env.SUPABASE_POSTGRES_URL;
+    return { url: pooledUrl, needsExplicitPassword: false };
   }
 
-  // Build direct connection URL (port 5432, not pooler)
-  const password = process.env.POSTGRES_PASSWORD;
-  if (!password) {
+  // Build direct connection URL — use db.<ref>.supabase.co (region-independent).
+  // Password is NOT embedded in the URL — callers must pass it via the
+  // `password` option so the secret never appears in logs or error messages.
+  if (!process.env.POSTGRES_PASSWORD) {
     return null;
   }
 
   console.log(`   Building direct connection URL`);
-  // Use direct connection (port 5432) for seeding, not pooler (port 6543)
-  return `postgresql://postgres.${projectRef}:${password}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`;
+  return {
+    url: `postgresql://postgres@db.${projectRef}.supabase.co:5432/postgres`,
+    needsExplicitPassword: true,
+  };
 }
 
 /**
@@ -248,16 +279,28 @@ async function runSeedSql(projectRef) {
 
   console.log(`   Found ${existingSeeds.length} seed files`);
 
-  const connectionUrl = getDatabaseUrl(projectRef);
-  if (!connectionUrl) {
+  const connection = getDatabaseUrl(projectRef);
+  if (!connection) {
     console.log(`   ❌ No database connection URL available`);
     return false;
   }
 
   console.log(`   Connecting to database...`);
 
-  const sql = postgres(connectionUrl, {
-    // Increase timeout for seed operations
+  // postgres.js options:
+  //   ssl: true — widely-supported across postgres.js versions; Supabase
+  //   direct/pooled connections require TLS.
+  //   password — only supply when the URL came from the fallback branch
+  //   (the only branch that intentionally omits credentials). Supplying it
+  //   on pooled/non-pooling URLs would either override the embedded password
+  //   or pass `undefined` in environments that only provide the URL, both
+  //   of which break auth.
+  //   connect_timeout / idle_timeout / max_lifetime — increased for seeding.
+  const sql = postgres(connection.url, {
+    ssl: true,
+    ...(connection.needsExplicitPassword
+      ? { password: process.env.POSTGRES_PASSWORD }
+      : {}),
     connect_timeout: 30,
     idle_timeout: 30,
     max_lifetime: 60,
@@ -314,8 +357,11 @@ async function runMigrations() {
     process.exit(0);
   }
 
-  // Validate environment variables
-  validateEnv();
+  // Validate environment variables — preview skips gracefully if vars missing
+  const envReady = validateEnv(env.type);
+  if (!envReady) {
+    process.exit(0);
+  }
 
   if (!projectRef) {
     console.error("\n❌ Could not extract project ref from SUPABASE_URL");
@@ -350,12 +396,13 @@ async function runMigrations() {
 
   // --- Migrations ---
   if (env.type === "preview" && !isProductionDb) {
-    // Supabase GitHub integration applies migrations when creating the preview branch.
-    // Running them again from the Vercel build would cause duplicate schema objects.
-    console.log("\n⏭️  Skipping migrations for preview branch");
-    console.log(
-      "   Supabase automatically applies migrations when creating preview branches."
-    );
+    console.log("\n🔗 Linking to preview Supabase project...");
+    exec(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
+    console.log("\n📤 Applying migrations to preview database...");
+    // db push is safe here: all migrations are idempotent (IF NOT EXISTS /
+    // DROP ... IF EXISTS guards), so replaying previously-applied migrations
+    // on a preview branch database is a no-op with no side effects.
+    exec("npx supabase db push --linked", { env: cliEnv }); // noqa: exec-ok — cliEnv is fully controlled, no user input
   } else if (env.type === "preview" && isProductionDb) {
     // SAFETY: Never push unmerged branch migrations to production.
     console.log(

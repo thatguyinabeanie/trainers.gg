@@ -1,0 +1,138 @@
+name: Wait for Vercel Preview
+description: Polls Vercel API for a preview deployment. Handles ERROR state by triggering a redeployment.
+
+inputs:
+  vercel-token:
+    description: Vercel API token
+    required: true
+  vercel-team-id:
+    description: Vercel team ID
+    required: true
+  vercel-project-id:
+    description: Vercel project ID
+    required: true
+  bypass-secret:
+    description: Vercel automation bypass secret
+    required: true
+  pr-sha:
+    description: PR head commit SHA
+    required: true
+  git-branch:
+    description: Git branch name
+    required: true
+  github-token:
+    description: GitHub token for repo API access
+    required: true
+
+outputs:
+  url:
+    description: The preview deployment URL
+    value: ${{ steps.poll.outputs.url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Poll for deployment
+      id: poll
+      shell: bash
+      env:
+        VERCEL_TOKEN: ${{ inputs.vercel-token }}
+        VERCEL_TEAM_ID: ${{ inputs.vercel-team-id }}
+        VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
+        BYPASS_SECRET: ${{ inputs.bypass-secret }}
+        PR_SHA: ${{ inputs.pr-sha }}
+        GIT_BRANCH: ${{ inputs.git-branch }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        echo "Waiting for Vercel preview deployment for $PR_SHA..."
+        REDEPLOYED=false
+
+        for i in $(seq 1 50); do
+          CURL_ERR=$(mktemp)
+          RESPONSE=$(curl -sS --max-time 10 -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v6/deployments?sha=$PR_SHA&limit=5&projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_TEAM_ID" \
+            2>"$CURL_ERR") || RESPONSE=""
+
+          if [ -z "$RESPONSE" ]; then
+            echo "API request failed (attempt $i/50): $(cat "$CURL_ERR" 2>&1 || echo 'no error file')"
+            rm -f "$CURL_ERR"
+            sleep 15
+            continue
+          fi
+
+          rm -f "$CURL_ERR"
+          if ! echo "$RESPONSE" | jq -e . > /dev/null 2>&1; then
+            echo "API returned non-JSON response (attempt $i/50)"
+            sleep 15
+            continue
+          fi
+          STATE=$(echo "$RESPONSE" | jq -r '.deployments[0].state // empty')
+          DEPLOY_URL=$(echo "$RESPONSE" | jq -r '.deployments[0].url // empty')
+
+          if [ "$STATE" = "READY" ] && [ -n "$DEPLOY_URL" ]; then
+            FULL_URL="https://$DEPLOY_URL"
+            CURL_ERR2=$(mktemp)
+            STATUS=$(curl -sS --max-time 10 -o /dev/null -w "%{http_code}" \
+              -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$FULL_URL" \
+              2>"$CURL_ERR2") || STATUS="000"
+            if [ "$STATUS" = "000" ] && [ -s "$CURL_ERR2" ]; then
+              echo "  curl error: $(cat "$CURL_ERR2")"
+            fi
+            rm -f "$CURL_ERR2"
+
+            if [[ "$STATUS" =~ ^[0-9]+$ ]] && [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+              echo "url=$FULL_URL" >> "$GITHUB_OUTPUT"
+              echo "Preview ready at $FULL_URL (HTTP $STATUS)"
+              exit 0
+            fi
+            echo "Deployment at $FULL_URL returned HTTP $STATUS (attempt $i/50)"
+
+          elif [ "$STATE" = "ERROR" ] && [ "$REDEPLOYED" = "false" ]; then
+            echo "::warning::First deployment failed (state: ERROR). Triggering redeployment with updated env vars..."
+            REDEPLOYED=true
+
+            REPO_ID=$(curl -sf -H "Authorization: Bearer $GITHUB_TOKEN" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}" | jq -r '.id')
+
+            if [ -z "$REPO_ID" ] || [ "$REPO_ID" = "null" ]; then
+              echo "::warning::Could not retrieve GitHub repo ID — skipping redeployment"
+              REDEPLOYED=false
+              sleep 15
+              continue
+            fi
+
+            curl -sf -X POST \
+              "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n \
+                --arg name "$VERCEL_PROJECT_ID" \
+                --arg project "$VERCEL_PROJECT_ID" \
+                --arg branch "$GIT_BRANCH" \
+                --arg sha "$PR_SHA" \
+                --argjson repoId "$REPO_ID" \
+                '{
+                  name: $name,
+                  project: $project,
+                  target: "preview",
+                  gitSource: {
+                    type: "github",
+                    repoId: $repoId,
+                    ref: $branch,
+                    sha: $sha
+                  }
+                }')" || echo "::warning::Redeployment request failed"
+
+            echo "Redeployment triggered — continuing to poll..."
+
+          elif [ -n "$STATE" ]; then
+            echo "Deployment state: $STATE (attempt $i/50)"
+          else
+            echo "No deployment found yet (attempt $i/50)"
+          fi
+
+          sleep 15
+        done
+
+        echo "::error::Timeout waiting for Vercel preview deployment"
+        exit 1

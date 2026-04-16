@@ -22,3 +22,16 @@ export const GAME_RESULT_SUBMITTED = "game_result_submitted" as const;
 export const ORG_REQUEST_SUBMITTED = "org_request_submitted" as const;
 export const ORG_REQUEST_APPROVED = "org_request_approved" as const;
 export const ORG_REQUEST_REJECTED = "org_request_rejected" as const;
+
+// Discord events
+export const DISCORD_COMMAND_EXECUTED = "discord_command_executed" as const;
+export const DISCORD_COMMAND_FAILED = "discord_command_failed" as const;
+export const DISCORD_NOTIFICATION_SENT = "discord_notification_sent" as const;
+export const DISCORD_NOTIFICATION_FAILED =
+  "discord_notification_failed" as const;
+export const DISCORD_BOT_INSTALLED = "discord_bot_installed" as const;
+export const DISCORD_BOT_UNINSTALLED = "discord_bot_uninstalled" as const;
+export const DISCORD_ACCOUNT_LINKED = "discord_account_linked" as const;
+export const DISCORD_CHANNEL_MAPPED = "discord_channel_mapped" as const;
+export const DISCORD_ROLE_MAPPED = "discord_role_mapped" as const;
+export const DISCORD_ROLE_SYNC_FAILED = "discord_role_sync_failed" as const;

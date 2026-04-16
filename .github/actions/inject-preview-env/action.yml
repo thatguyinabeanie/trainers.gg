@@ -1,0 +1,127 @@
+name: Inject Preview Env Vars
+description: Retrieves Supabase branch credentials and upserts them as git-branch-scoped Preview env vars in Vercel.
+
+inputs:
+  branch-ref:
+    description: Supabase branch project ref
+    required: true
+  git-branch:
+    description: Git branch name for env var scoping
+    required: true
+  supabase-access-token:
+    description: Supabase personal access token
+    required: true
+  supabase-project-ref:
+    description: Production Supabase project ref (parent of the branch)
+    required: true
+  vercel-token:
+    description: Vercel API token
+    required: true
+  vercel-team-id:
+    description: Vercel team ID
+    required: true
+  vercel-project-id:
+    description: Vercel project ID
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install Supabase CLI
+      uses: supabase/setup-cli@v1
+
+    - name: Inject env vars
+      shell: bash
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ inputs.supabase-access-token }}
+        BRANCH_REF: ${{ inputs.branch-ref }}
+        GIT_BRANCH: ${{ inputs.git-branch }}
+        VERCEL_TOKEN: ${{ inputs.vercel-token }}
+        VERCEL_TEAM_ID: ${{ inputs.vercel-team-id }}
+        VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
+        PROJECT_REF: ${{ inputs.supabase-project-ref }}
+      run: |
+        # branches get returns env-var-style JSON with connection strings and keys.
+        # POSTGRES_PASSWORD is NOT a standalone field — parse it from POSTGRES_URL.
+        INFO=$(supabase --experimental branches get "$GIT_BRANCH" --project-ref "$PROJECT_REF" --output json)
+
+        ANON_KEY=$(echo "$INFO" | jq -r '.SUPABASE_ANON_KEY // empty')
+        SERVICE_KEY=$(echo "$INFO" | jq -r '.SUPABASE_SERVICE_ROLE_KEY // empty')
+        API_URL="https://${BRANCH_REF}.supabase.co"
+
+        # Extract password from POSTGRES_URL with a URL parser so encoded
+        # special characters in Supabase-generated credentials are handled correctly
+        POSTGRES_URL=$(echo "$INFO" | jq -r '.POSTGRES_URL // empty')
+        DB_PASSWORD=$(echo "$POSTGRES_URL" | python3 -c "import sys;from urllib.parse import unquote,urlsplit;u=sys.stdin.read().strip();p=urlsplit(u).password if u else None;print(unquote(p) if p else '')")
+
+        # Also grab the full connection strings the build may need
+        POSTGRES_URL_NON_POOLING=$(echo "$INFO" | jq -r '.POSTGRES_URL_NON_POOLING // empty')
+        POSTGRES_HOST=$(echo "$POSTGRES_URL_NON_POOLING" | sed -n 's|.*@\([^:]*\):.*|\1|p')
+
+        # Mask all dynamic credentials
+        echo "::add-mask::$ANON_KEY"
+        echo "::add-mask::$SERVICE_KEY"
+        echo "::add-mask::$DB_PASSWORD"
+        echo "::add-mask::$POSTGRES_URL"
+        echo "::add-mask::$POSTGRES_URL_NON_POOLING"
+        echo "::add-mask::$POSTGRES_HOST"
+
+        # Log what we're injecting (values masked)
+        echo "API_URL=$API_URL"
+        echo "ANON_KEY=${ANON_KEY:+set (${#ANON_KEY} chars)}"
+        echo "SERVICE_KEY=${SERVICE_KEY:+set (${#SERVICE_KEY} chars)}"
+        echo "DB_PASSWORD=${DB_PASSWORD:+set (${#DB_PASSWORD} chars)}"
+        echo "POSTGRES_HOST=${POSTGRES_HOST:-<empty>}"
+
+        # Fail fast if any critical credential is empty
+        MISSING=()
+        [ -z "$ANON_KEY" ] && MISSING+=("ANON_KEY")
+        [ -z "$SERVICE_KEY" ] && MISSING+=("SERVICE_KEY")
+        [ -z "$DB_PASSWORD" ] && MISSING+=("DB_PASSWORD")
+        [ -z "$POSTGRES_URL" ] && MISSING+=("POSTGRES_URL")
+        [ -z "$POSTGRES_URL_NON_POOLING" ] && MISSING+=("POSTGRES_URL_NON_POOLING")
+        if [ ${#MISSING[@]} -gt 0 ]; then
+          echo "::error::Missing critical branch credentials: ${MISSING[*]}"
+          exit 1
+        fi
+
+        # Upsert branch-scoped Preview env vars via Vercel API.
+        # These override the integration's All Environments vars for this branch.
+        ENV_VARS=$(jq -n \
+          --arg url "$API_URL" \
+          --arg anon "$ANON_KEY" \
+          --arg svc "$SERVICE_KEY" \
+          --arg pass "$DB_PASSWORD" \
+          --arg pgurl "$POSTGRES_URL" \
+          --arg pgurl_np "$POSTGRES_URL_NON_POOLING" \
+          --arg pghost "$POSTGRES_HOST" \
+          --arg branch "$GIT_BRANCH" \
+          '[
+            {"key":"NEXT_PUBLIC_SUPABASE_URL","value":$url,"type":"encrypted","target":["preview"],"gitBranch":$branch},
+            {"key":"NEXT_PUBLIC_SUPABASE_ANON_KEY","value":$anon,"type":"encrypted","target":["preview"],"gitBranch":$branch},
+            {"key":"SUPABASE_URL","value":$url,"type":"encrypted","target":["preview"],"gitBranch":$branch},
+            {"key":"SUPABASE_SERVICE_ROLE_KEY","value":$svc,"type":"sensitive","target":["preview"],"gitBranch":$branch},
+            {"key":"POSTGRES_PASSWORD","value":$pass,"type":"sensitive","target":["preview"],"gitBranch":$branch},
+            {"key":"POSTGRES_URL","value":$pgurl,"type":"sensitive","target":["preview"],"gitBranch":$branch},
+            {"key":"POSTGRES_URL_NON_POOLING","value":$pgurl_np,"type":"sensitive","target":["preview"],"gitBranch":$branch},
+            {"key":"POSTGRES_HOST","value":$pghost,"type":"encrypted","target":["preview"],"gitBranch":$branch}
+          ]')
+
+        RESPONSE=$(curl -sS -X POST \
+          "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?upsert=true&teamId=$VERCEL_TEAM_ID" \
+          -H "Authorization: Bearer $VERCEL_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "$ENV_VARS")
+
+        CREATED=$(echo "$RESPONSE" | jq '.created | length // 0')
+        FAILED=$(echo "$RESPONSE" | jq '.failed | length // 0')
+        echo "Vercel env vars: $CREATED created/updated, $FAILED failed"
+        if [ "$FAILED" -gt 0 ]; then
+          echo "::error::Some Vercel env vars failed to set:"
+          echo "$RESPONSE" | jq '.failed[] | {key: .error.key, message: .error.message}'
+          CRITICAL_FAILED=$(echo "$RESPONSE" | jq '[.failed[] | select(.error.key | test("SUPABASE|POSTGRES"))] | length')
+          if [ "$CRITICAL_FAILED" -gt 0 ]; then
+            echo "::error::Critical Supabase env vars failed to inject — aborting"
+            exit 1
+          fi
+        fi

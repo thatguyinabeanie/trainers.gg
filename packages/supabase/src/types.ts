@@ -550,6 +550,321 @@ export type Database = {
           },
         ]
       }
+      data_imports: {
+        Row: {
+          event_tier: string | null
+          external_ref: string | null
+          format: string
+          id: number
+          imported_at: string
+          source: string
+        }
+        Insert: {
+          event_tier?: string | null
+          external_ref?: string | null
+          format: string
+          id?: never
+          imported_at?: string
+          source: string
+        }
+        Update: {
+          event_tier?: string | null
+          external_ref?: string | null
+          format?: string
+          id?: never
+          imported_at?: string
+          source?: string
+        }
+        Relationships: []
+      }
+      discord_channel_failures: {
+        Row: {
+          channel_id: string
+          consecutive_failures: number
+          discord_server_id: number
+          email_sent_at: string | null
+          id: number
+          last_failed_at: string | null
+        }
+        Insert: {
+          channel_id: string
+          consecutive_failures?: number
+          discord_server_id: number
+          email_sent_at?: string | null
+          id?: never
+          last_failed_at?: string | null
+        }
+        Update: {
+          channel_id?: string
+          consecutive_failures?: number
+          discord_server_id?: number
+          email_sent_at?: string | null
+          id?: never
+          last_failed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_channel_failures_discord_server_id_fkey"
+            columns: ["discord_server_id"]
+            isOneToOne: false
+            referencedRelation: "discord_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_channels: {
+        Row: {
+          channel_id: string
+          created_at: string
+          discord_server_id: number
+          event_type: string
+          id: number
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          discord_server_id: number
+          event_type: string
+          id?: never
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          discord_server_id?: number
+          event_type?: string
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_channels_discord_server_id_fkey"
+            columns: ["discord_server_id"]
+            isOneToOne: false
+            referencedRelation: "discord_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_delivery_failures: {
+        Row: {
+          community_id: number
+          created_at: string
+          delivered_via_fallback: boolean
+          discord_server_id: number
+          error_code: string | null
+          error_reason: string
+          event_type: string
+          id: number
+          payload: Json | null
+          target: string
+          type: string
+        }
+        Insert: {
+          community_id: number
+          created_at?: string
+          delivered_via_fallback?: boolean
+          discord_server_id: number
+          error_code?: string | null
+          error_reason: string
+          event_type: string
+          id?: never
+          payload?: Json | null
+          target: string
+          type: string
+        }
+        Update: {
+          community_id?: number
+          created_at?: string
+          delivered_via_fallback?: boolean
+          discord_server_id?: number
+          error_code?: string | null
+          error_reason?: string
+          event_type?: string
+          id?: never
+          payload?: Json | null
+          target?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_delivery_failures_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discord_delivery_failures_discord_server_id_fkey"
+            columns: ["discord_server_id"]
+            isOneToOne: false
+            referencedRelation: "discord_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_dm_settings: {
+        Row: {
+          created_at: string
+          delivery_mode: string
+          discord_server_id: number
+          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
+          fallback_channel_id: string | null
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          delivery_mode?: string
+          discord_server_id: number
+          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
+          fallback_channel_id?: string | null
+          id?: never
+        }
+        Update: {
+          created_at?: string
+          delivery_mode?: string
+          discord_server_id?: number
+          event_type?: Database["public"]["Enums"]["discord_dm_event_type"]
+          fallback_channel_id?: string | null
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_dm_settings_discord_server_id_fkey"
+            columns: ["discord_server_id"]
+            isOneToOne: false
+            referencedRelation: "discord_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_role_mappings: {
+        Row: {
+          created_at: string
+          discord_role_id: string
+          discord_server_id: number
+          enabled: boolean
+          id: number
+          role_type: Database["public"]["Enums"]["discord_role_type"]
+        }
+        Insert: {
+          created_at?: string
+          discord_role_id: string
+          discord_server_id: number
+          enabled?: boolean
+          id?: never
+          role_type: Database["public"]["Enums"]["discord_role_type"]
+        }
+        Update: {
+          created_at?: string
+          discord_role_id?: string
+          discord_server_id?: number
+          enabled?: boolean
+          id?: never
+          role_type?: Database["public"]["Enums"]["discord_role_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_role_mappings_discord_server_id_fkey"
+            columns: ["discord_server_id"]
+            isOneToOne: false
+            referencedRelation: "discord_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_servers: {
+        Row: {
+          community_id: number
+          created_at: string
+          guild_id: string
+          id: number
+          installed_by: string
+          settings: Json
+        }
+        Insert: {
+          community_id: number
+          created_at?: string
+          guild_id: string
+          id?: never
+          installed_by: string
+          settings?: Json
+        }
+        Update: {
+          community_id?: number
+          created_at?: string
+          guild_id?: string
+          id?: never
+          installed_by?: string
+          settings?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_servers_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: true
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_user_dm_preferences: {
+        Row: {
+          enabled: boolean
+          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
+          user_id: string
+        }
+        Insert: {
+          enabled?: boolean
+          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
+          user_id: string
+        }
+        Update: {
+          enabled?: boolean
+          event_type?: Database["public"]["Enums"]["discord_dm_event_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      external_players: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: number
+          linked_alt_id: number | null
+          linked_at: string | null
+          linked_by: string | null
+          source: string
+          source_player_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: never
+          linked_alt_id?: number | null
+          linked_at?: string | null
+          linked_by?: string | null
+          source: string
+          source_player_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: never
+          linked_alt_id?: number | null
+          linked_at?: string | null
+          linked_by?: string | null
+          source?: string
+          source_player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_players_linked_alt_id_fkey"
+            columns: ["linked_alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_flags: {
         Row: {
           created_at: string
@@ -666,6 +981,36 @@ export type Database = {
           },
         ]
       }
+      format_meta_stats: {
+        Row: {
+          computed_at: string
+          format: string
+          id: number
+          period_end: string
+          period_start: string
+          total_teams: number
+          total_tournaments: number
+        }
+        Insert: {
+          computed_at?: string
+          format: string
+          id?: never
+          period_end: string
+          period_start: string
+          total_teams: number
+          total_tournaments: number
+        }
+        Update: {
+          computed_at?: string
+          format?: string
+          id?: never
+          period_end?: string
+          period_start?: string
+          total_teams?: number
+          total_tournaments?: number
+        }
+        Relationships: []
+      }
       group_roles: {
         Row: {
           created_at: string | null
@@ -778,6 +1123,93 @@ export type Database = {
             columns: ["target_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      imported_team_sheets: {
+        Row: {
+          ability: string
+          created_at: string
+          ev_spread: string | null
+          external_player_id: number | null
+          format: string
+          held_item: string | null
+          id: number
+          import_id: number
+          iv_spread: string | null
+          move1: string | null
+          move2: string | null
+          move3: string | null
+          move4: string | null
+          nature: string | null
+          placement_tier: string | null
+          player_count: number | null
+          position: number
+          species: string
+          tera_type: string | null
+          tournament_date: string | null
+          tournament_name: string
+        }
+        Insert: {
+          ability: string
+          created_at?: string
+          ev_spread?: string | null
+          external_player_id?: number | null
+          format: string
+          held_item?: string | null
+          id?: never
+          import_id: number
+          iv_spread?: string | null
+          move1?: string | null
+          move2?: string | null
+          move3?: string | null
+          move4?: string | null
+          nature?: string | null
+          placement_tier?: string | null
+          player_count?: number | null
+          position: number
+          species: string
+          tera_type?: string | null
+          tournament_date?: string | null
+          tournament_name: string
+        }
+        Update: {
+          ability?: string
+          created_at?: string
+          ev_spread?: string | null
+          external_player_id?: number | null
+          format?: string
+          held_item?: string | null
+          id?: never
+          import_id?: number
+          iv_spread?: string | null
+          move1?: string | null
+          move2?: string | null
+          move3?: string | null
+          move4?: string | null
+          nature?: string | null
+          placement_tier?: string | null
+          player_count?: number | null
+          position?: number
+          species?: string
+          tera_type?: string | null
+          tournament_date?: string | null
+          tournament_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imported_team_sheets_external_player_id_fkey"
+            columns: ["external_player_id"]
+            isOneToOne: false
+            referencedRelation: "external_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imported_team_sheets_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "data_imports"
             referencedColumns: ["id"]
           },
         ]
@@ -1144,6 +1576,7 @@ export type Database = {
           move4: string | null
           nature: string
           nickname: string | null
+          notes: string | null
           species: string
           tera_type: string | null
         }
@@ -1174,6 +1607,7 @@ export type Database = {
           move4?: string | null
           nature: string
           nickname?: string | null
+          notes?: string | null
           species: string
           tera_type?: string | null
         }
@@ -1204,10 +1638,105 @@ export type Database = {
           move4?: string | null
           nature?: string
           nickname?: string | null
+          notes?: string | null
           species?: string
           tera_type?: string | null
         }
         Relationships: []
+      }
+      pokemon_detail_stats: {
+        Row: {
+          abilities: Json
+          id: number
+          items: Json
+          meta_id: number
+          moves: Json
+          species: string
+          spreads: Json
+          teammates: Json
+          tera_types: Json
+        }
+        Insert: {
+          abilities?: Json
+          id?: never
+          items?: Json
+          meta_id: number
+          moves?: Json
+          species: string
+          spreads?: Json
+          teammates?: Json
+          tera_types?: Json
+        }
+        Update: {
+          abilities?: Json
+          id?: never
+          items?: Json
+          meta_id?: number
+          moves?: Json
+          species?: string
+          spreads?: Json
+          teammates?: Json
+          tera_types?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pokemon_detail_stats_meta_id_fkey"
+            columns: ["meta_id"]
+            isOneToOne: false
+            referencedRelation: "format_meta_stats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pokemon_usage_stats: {
+        Row: {
+          conversion_rate: number | null
+          id: number
+          meta_id: number
+          rank: number
+          sample_size: number
+          species: string
+          usage_change_30d: number | null
+          usage_change_7d: number | null
+          usage_pct: number
+          usage_pct_top_cut: number | null
+          usage_pct_top8: number | null
+        }
+        Insert: {
+          conversion_rate?: number | null
+          id?: never
+          meta_id: number
+          rank: number
+          sample_size: number
+          species: string
+          usage_change_30d?: number | null
+          usage_change_7d?: number | null
+          usage_pct: number
+          usage_pct_top_cut?: number | null
+          usage_pct_top8?: number | null
+        }
+        Update: {
+          conversion_rate?: number | null
+          id?: never
+          meta_id?: number
+          rank?: number
+          sample_size?: number
+          species?: string
+          usage_change_30d?: number | null
+          usage_change_7d?: number | null
+          usage_pct?: number
+          usage_pct_top_cut?: number | null
+          usage_pct_top8?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pokemon_usage_stats_meta_id_fkey"
+            columns: ["meta_id"]
+            isOneToOne: false
+            referencedRelation: "format_meta_stats"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_limits: {
         Row: {
@@ -1432,11 +1961,13 @@ export type Database = {
           created_at: string | null
           created_by: number
           description: string | null
+          format: string | null
           format_legal: boolean | null
           id: number
           is_public: boolean | null
           name: string
           notes: string | null
+          parent_team_id: number | null
           tags: string[] | null
           updated_at: string | null
         }
@@ -1444,11 +1975,13 @@ export type Database = {
           created_at?: string | null
           created_by: number
           description?: string | null
+          format?: string | null
           format_legal?: boolean | null
           id?: never
           is_public?: boolean | null
           name: string
           notes?: string | null
+          parent_team_id?: number | null
           tags?: string[] | null
           updated_at?: string | null
         }
@@ -1456,11 +1989,13 @@ export type Database = {
           created_at?: string | null
           created_by?: number
           description?: string | null
+          format?: string | null
           format_legal?: boolean | null
           id?: never
           is_public?: boolean | null
           name?: string
           notes?: string | null
+          parent_team_id?: number | null
           tags?: string[] | null
           updated_at?: string | null
         }
@@ -1470,6 +2005,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teams_parent_team_id_fkey"
+            columns: ["parent_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -2712,6 +3254,7 @@ export type Database = {
           country: string | null
           created_at: string | null
           did: string | null
+          discord_dm_warn_until: string | null
           email: string | null
           external_accounts: Json | null
           first_name: string | null
@@ -2727,6 +3270,7 @@ export type Database = {
           pds_status: Database["public"]["Enums"]["pds_account_status"] | null
           phone_number: string | null
           public_metadata: Json | null
+          show_discord_publicly: boolean
           sprite_preference:
             | Database["public"]["Enums"]["sprite_preference"]
             | null
@@ -2739,6 +3283,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           did?: string | null
+          discord_dm_warn_until?: string | null
           email?: string | null
           external_accounts?: Json | null
           first_name?: string | null
@@ -2754,6 +3299,7 @@ export type Database = {
           pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
           phone_number?: string | null
           public_metadata?: Json | null
+          show_discord_publicly?: boolean
           sprite_preference?:
             | Database["public"]["Enums"]["sprite_preference"]
             | null
@@ -2766,6 +3312,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           did?: string | null
+          discord_dm_warn_until?: string | null
           email?: string | null
           external_accounts?: Json | null
           first_name?: string | null
@@ -2781,6 +3328,7 @@ export type Database = {
           pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
           phone_number?: string | null
           public_metadata?: Json | null
+          show_discord_publicly?: boolean
           sprite_preference?:
             | Database["public"]["Enums"]["sprite_preference"]
             | null
@@ -2805,6 +3353,10 @@ export type Database = {
       accept_tournament_invitation_atomic: {
         Args: { p_invitation_id: number }
         Returns: Json
+      }
+      add_pokemon_to_team: {
+        Args: { p_pokemon: Json; p_position: number; p_team_id: number }
+        Returns: number
       }
       advance_to_top_cut: {
         Args: { p_top_cut_size?: number; p_tournament_id: number }
@@ -2831,6 +3383,15 @@ export type Database = {
         Returns: Json
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      delete_team: { Args: { p_team_id: number }; Returns: undefined }
+      fork_team: {
+        Args: {
+          p_new_name?: string
+          p_source_team_id: number
+          p_target_alt_id: number
+        }
+        Returns: number
+      }
       generate_bracket_order: {
         Args: { p_bracket_size: number }
         Returns: number[]
@@ -2985,6 +3546,14 @@ export type Database = {
         }
         Returns: Json
       }
+      remove_pokemon_from_team: {
+        Args: { p_pokemon_id: number; p_team_id: number }
+        Returns: undefined
+      }
+      reorder_team_pokemon: {
+        Args: { p_positions: Json; p_team_id: number }
+        Returns: undefined
+      }
       report_match_result: {
         Args: {
           p_match_id: number
@@ -3092,6 +3661,24 @@ export type Database = {
       community_status: "pending" | "active" | "rejected" | "suspended"
       community_subscription_tier: "free" | "community_plus" | "enterprise"
       community_tier: "partner"
+      discord_dm_event_type:
+        | "match_ready"
+        | "match_starting_soon"
+        | "match_result_to_confirm"
+        | "match_disputed"
+        | "team_sheet_needed"
+        | "team_sheet_approved"
+        | "team_sheet_rejected"
+        | "you_dropped"
+        | "top_cut_made"
+        | "tournament_starting"
+        | "tournament_cancelled"
+      discord_role_type:
+        | "member"
+        | "participant"
+        | "winner"
+        | "staff"
+        | "currently_playing"
       drop_category: "no_show" | "conduct" | "disqualification" | "other"
       entity_type: "profile" | "community" | "alt"
       invitation_status: "pending" | "accepted" | "declined" | "expired"
@@ -3335,6 +3922,26 @@ export const Constants = {
       community_status: ["pending", "active", "rejected", "suspended"],
       community_subscription_tier: ["free", "community_plus", "enterprise"],
       community_tier: ["partner"],
+      discord_dm_event_type: [
+        "match_ready",
+        "match_starting_soon",
+        "match_result_to_confirm",
+        "match_disputed",
+        "team_sheet_needed",
+        "team_sheet_approved",
+        "team_sheet_rejected",
+        "you_dropped",
+        "top_cut_made",
+        "tournament_starting",
+        "tournament_cancelled",
+      ],
+      discord_role_type: [
+        "member",
+        "participant",
+        "winner",
+        "staff",
+        "currently_playing",
+      ],
       drop_category: ["no_show", "conduct", "disqualification", "other"],
       entity_type: ["profile", "community", "alt"],
       invitation_status: ["pending", "accepted", "declined", "expired"],

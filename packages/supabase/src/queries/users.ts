@@ -122,7 +122,7 @@ export async function getAltByUsername(
     .select(
       `
       *,
-      user:users(*)
+      user:users!profiles_user_id_fkey(*)
     `
     )
     .eq("username", username)
@@ -184,12 +184,13 @@ export async function getOwnedAlt(
   altId: number,
   userId: string
 ) {
-  const { data: alt } = await supabase
+  const { data: alt, error } = await supabase
     .from("alts")
-    .select("user_id, users!inner(username)")
+    .select("user_id, users!profiles_user_id_fkey!inner(username)")
     .eq("id", altId)
     .single();
 
+  if (error) throw new Error(`Failed to fetch alt: ${error.message}`);
   if (!alt) throw new Error("Alt not found");
   if (alt.user_id !== userId) {
     throw new Error("You can only update your own alt");

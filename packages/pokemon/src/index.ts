@@ -13,6 +13,7 @@
 
 // Types and conversion utilities
 export {
+  MAX_TEAM_SIZE,
   type PokemonCore,
   type PokemonStats,
   type PokemonMoves,
@@ -48,11 +49,12 @@ export {
   getBaseStats,
   calculateHP,
   calculateStat,
+  calculateChampionsHP,
+  calculateChampionsStat,
   getNatureMultiplier,
   calculateStats,
   getStatStageMultiplier,
   formatStats,
-  getStatColor,
   calculateBulk,
 } from "./stats-calculator";
 
@@ -116,6 +118,20 @@ export {
   AdvancedTeamValidator,
 } from "./team-validator";
 
+// Format legality
+export {
+  getLegalAbilities,
+  getLegalItems,
+  getLegalMoves,
+  getLegalSpecies,
+  getLegalTeraTypes,
+  isLegalAbility,
+  isLegalItem,
+  isLegalMove,
+  isLegalSpecies,
+  isLegalTeraType,
+} from "./format-legality";
+
 // Competitive format registry (Showdown format IDs + display metadata)
 export {
   type GameFormat,
@@ -123,6 +139,8 @@ export {
   POKEMON_GAMES,
   VGC_FORMATS,
   ALL_FORMAT_IDS,
+  SIM_UNSUPPORTED_FORMAT_IDS,
+  buildVgcShowdownNameMap,
   getFormatById,
   getFormatLabel,
   getFormatsByGame,
@@ -132,3 +150,36 @@ export {
 
 // Featured Pokemon for avatar picker
 export { FEATURED_POKEMON } from "./featured-pokemon";
+
+// Nature bump calculator
+export { calculateNatureBumps } from "./nature-bumps";
+
+// Speed tier benchmarks and comparison
+export {
+  type SpeedBenchmark,
+  getFormatSpeedBenchmarks,
+  compareSpeedTier,
+} from "./speed-tiers";
+
+// Species search index and filtering
+export {
+  type SpeciesSearchEntry,
+  buildSpeciesSearchIndex,
+  searchSpecies,
+} from "./species-search";
+
+// Move data utilities
+export {
+  type MoveCategory,
+  type MoveData,
+  getMoveType,
+  getMoveCategory,
+  getMoveBP,
+  getMoveData,
+} from "./move-data";
+
+// Item data utilities
+export { getAllItems, getItemShortDesc } from "./items";
+
+// Ability data utilities
+export { getAbilityShortDesc } from "./abilities";

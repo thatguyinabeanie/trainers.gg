@@ -39,6 +39,8 @@ import {
   Building2,
   ShieldAlert,
 } from "lucide-react";
+
+import { DiscordNotificationsInfoBanner } from "./_components/discord-notifications-info-banner";
 import { toast } from "sonner";
 
 // Phase configuration schema
@@ -124,10 +126,12 @@ const STEPS = [
 
 interface CreateTournamentClientProps {
   communitySlug: string;
+  discordInstalled?: boolean;
 }
 
 export function CreateTournamentClient({
   communitySlug,
+  discordInstalled = false,
 }: CreateTournamentClientProps) {
   const router = useRouter();
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
@@ -437,6 +441,9 @@ export function CreateTournamentClient({
   return (
     <Form {...form}>
       <div className="space-y-6">
+        {/* Discord banner */}
+        {discordInstalled && <DiscordNotificationsInfoBanner />}
+
         {/* Progress */}
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-4 flex justify-between">

@@ -1,0 +1,93 @@
+wing: trainers_gg
+rooms:
+  - name: architecture
+    description: Monorepo structure, package boundaries, tech stack
+    keywords:
+      - architecture
+      - monorepo
+      - packages
+      - tech stack
+  - name: auth
+    description: Authentication, OAuth, JWT, feature flags
+    keywords:
+      - auth
+      - oauth
+      - jwt
+      - supabase auth
+  - name: tournaments
+    description: Swiss pairings, brackets, scoring, standings
+    keywords:
+      - tournament
+      - pairings
+      - brackets
+      - standings
+  - name: pokemon
+    description: Parsing, legality, formats, species data
+    keywords:
+      - pokemon
+      - parsing
+      - legality
+      - showdown
+  - name: team-builder
+    description: Team builder UI, editor, pickers, context tabs
+    keywords:
+      - team builder
+      - team sheet
+      - species picker
+      - editor panel
+  - name: bluesky
+    description: AT Protocol, PDS, DID resolution, handles
+    keywords:
+      - bluesky
+      - atproto
+      - pds
+      - did
+  - name: mobile
+    description: Expo, React Native, Tamagui, mobile parity
+    keywords:
+      - mobile
+      - expo
+      - react native
+      - tamagui
+  - name: database
+    description: Schema, RLS, migrations, query optimization
+    keywords:
+      - database
+      - rls
+      - migration
+      - supabase
+      - postgresql
+  - name: web
+    description: Next.js 16, Server Components, proxy.ts, caching
+    keywords:
+      - nextjs
+      - server components
+      - proxy
+      - caching
+      - web app
+  - name: ui-design
+    description: Design system, components, typography, color
+    keywords:
+      - design
+      - components
+      - shadcn
+      - tailwind
+      - typography
+  - name: devtools
+    description: Claude Code hooks, skills, agents, workflow
+    keywords:
+      - claude
+      - hooks
+      - skills
+      - agents
+      - workflow
+  - name: product
+    description: Product vision, roadmap, competitive landscape
+    keywords:
+      - product
+      - roadmap
+      - vision
+      - competitive
+  - name: general
+    description: Topics that don't fit other rooms
+    keywords: []

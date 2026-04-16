@@ -18,6 +18,7 @@ const mockSupabase: Record<string, unknown> = {
 };
 
 // @trainers/supabase mutation mocks
+const mockGetDiscordServerByCommunityId = jest.fn();
 const mockCreateTournament = jest.fn();
 const mockUpdateTournament = jest.fn();
 const mockDeleteTournament = jest.fn();
@@ -93,6 +94,8 @@ jest.mock("@trainers/supabase", () => ({
     mockGetPhaseRoundsWithStats(...args),
   getRoundMatchesWithStats: (...args: unknown[]) =>
     mockGetRoundMatchesWithStats(...args),
+  getDiscordServerByCommunityId: (...args: unknown[]) =>
+    mockGetDiscordServerByCommunityId(...args),
 }));
 
 const mockUpdateTag = jest.fn();
@@ -136,13 +139,33 @@ jest.mock("botid/server", () => ({
   checkBotId: jest.fn().mockResolvedValue({ isBot: false }),
 }));
 
+// Mock next/headers — rejectBots() reads the bypass header
+jest.mock("next/headers", () => ({
+  headers: jest.fn(async () => ({
+    get: jest.fn(() => null),
+  })),
+}));
+
 // Use a lazy factory so `mockSupabase` is resolved at call time, not hoist time.
 jest.mock("@/lib/supabase/server", () => ({
   createClient: jest.fn(async () => mockSupabase),
 }));
 
-jest.mock("@/lib/utils", () => ({
+jest.mock("@trainers/utils", () => ({
   getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
+}));
+
+// Discord enqueue helper mocks — all helpers are fire-and-forget, so failures
+// must not propagate to the primary action return value.
+const mockEnqueueCommunityChannelNotification = jest.fn();
+const mockEnqueueCommunityDms = jest.fn();
+const mockEnqueueCommunityRoleSync = jest.fn();
+jest.mock("@/lib/discord/enqueue-helpers", () => ({
+  enqueueCommunityChannelNotification: (...args: unknown[]) =>
+    mockEnqueueCommunityChannelNotification(...args),
+  enqueueCommunityDms: (...args: unknown[]) => mockEnqueueCommunityDms(...args),
+  enqueueCommunityRoleSync: (...args: unknown[]) =>
+    mockEnqueueCommunityRoleSync(...args),
 }));
 
 import {
@@ -1359,14 +1382,31 @@ describe("dropPlayer", () => {
 // ── dropFromTournament ─────────────────────────────────────────────────────
 
 describe("dropFromTournament", () => {
-  it("drops self using first alt and revalidates tournament", async () => {
-    mockGetCurrentUserAlts.mockResolvedValue([{ id: 3, user_id: "user-123" }]);
+  it("drops the registered alt (not just first alt) and revalidates", async () => {
+    // User has two alts; alt_id 7 is the one registered for tournament 5
+    mockGetCurrentUserAlts.mockResolvedValue([
+      { id: 3, user_id: "user-123" },
+      { id: 7, user_id: "user-123" },
+    ]);
     mockDropPlayer.mockResolvedValue(undefined);
+
+    // Mock the tournament_registrations lookup
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      not: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { alt_id: 7 },
+        error: null,
+      }),
+    });
 
     const result = await dropFromTournament(5);
 
     expect(result).toEqual({ success: true, data: { success: true } });
-    expect(mockDropPlayer).toHaveBeenCalledWith(mockSupabase, 5, 3);
+    // Must use the registered alt (7), not the first alt (3)
+    expect(mockDropPlayer).toHaveBeenCalledWith(mockSupabase, 5, 7);
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:5");
   });
 
@@ -1381,9 +1421,43 @@ describe("dropFromTournament", () => {
     });
   });
 
+  it("returns error when no alt is registered for this tournament", async () => {
+    mockGetCurrentUserAlts.mockResolvedValue([{ id: 3, user_id: "user-123" }]);
+
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      not: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: null,
+        error: null,
+      }),
+    });
+
+    const result = await dropFromTournament(5);
+
+    expect(result).toEqual({
+      success: false,
+      error: "You are not registered for this tournament.",
+    });
+    expect(mockDropPlayer).not.toHaveBeenCalled();
+  });
+
   it("returns error when drop mutation throws", async () => {
     mockGetCurrentUserAlts.mockResolvedValue([{ id: 3, user_id: "user-123" }]);
     mockDropPlayer.mockRejectedValue(new Error("already dropped"));
+
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      not: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { alt_id: 3 },
+        error: null,
+      }),
+    });
 
     const result = await dropFromTournament(5);
 
@@ -1422,6 +1496,99 @@ describe("reportMatchResult", () => {
       success: false,
       error: "Failed to report match result",
     });
+  });
+});
+
+// ── reportMatchResult — Discord channel + DM notifications ─────────────────
+
+describe("reportMatchResult — Discord channel + DM notifications", () => {
+  const mockServer = { id: 77, guild_id: "discord-guild-7" };
+  const matchRow = {
+    id: 20,
+    alt1_id: 1,
+    alt2_id: 2,
+    alt1: { user_id: "user-p1", username: "player1" },
+    alt2: { user_id: "user-p2", username: "player2" },
+  };
+
+  beforeEach(() => {
+    mockReportMatchResult.mockResolvedValue(undefined);
+  });
+
+  it("resolves server once then passes it to channel and DM helpers", async () => {
+    mockGetDiscordServerByCommunityId.mockResolvedValue(mockServer);
+    mockEnqueueCommunityChannelNotification.mockResolvedValue(undefined);
+    mockEnqueueCommunityDms.mockResolvedValue(undefined);
+
+    const fromMock = jest.fn();
+    fromMock
+      .mockReturnValueOnce({
+        // tournaments lookup (fireAndForgetDiscord)
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { id: 5, name: "Test Cup", slug: "test-cup", community_id: 7 },
+          error: null,
+        }),
+      })
+      .mockReturnValueOnce({
+        // tournament_matches lookup
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: matchRow, error: null }),
+      });
+    (mockSupabase.from as jest.Mock) = fromMock;
+
+    const result = await reportMatchResult(20, 5, 1, 2, 0);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    // Server resolved once for community_id 7
+    expect(mockGetDiscordServerByCommunityId).toHaveBeenCalledTimes(1);
+    expect(mockGetDiscordServerByCommunityId).toHaveBeenCalledWith(
+      mockSupabase,
+      7
+    );
+    // Channel notification receives pre-resolved server
+    expect(mockEnqueueCommunityChannelNotification).toHaveBeenCalledWith(
+      mockSupabase,
+      7,
+      "match_result_reported",
+      "match_result_reported:20",
+      expect.objectContaining({ match_id: 20, winner_username: "player1" }),
+      { server: mockServer }
+    );
+    // DM notification receives pre-resolved server
+    expect(mockEnqueueCommunityDms).toHaveBeenCalledWith(
+      mockSupabase,
+      7,
+      ["user-p1", "user-p2"],
+      "match_result_to_confirm",
+      "match_result_to_confirm:20",
+      expect.objectContaining({ match_id: 20 }),
+      { server: mockServer }
+    );
+  });
+
+  it("no-ops when server lookup returns null", async () => {
+    mockGetDiscordServerByCommunityId.mockResolvedValue(null);
+
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      // tournaments lookup (fireAndForgetDiscord)
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { id: 5, name: "Test Cup", slug: "test-cup", community_id: 7 },
+        error: null,
+      }),
+    });
+
+    const result = await reportMatchResult(20, 5, 1, 2, 0);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    expect(mockEnqueueCommunityChannelNotification).not.toHaveBeenCalled();
+    expect(mockEnqueueCommunityDms).not.toHaveBeenCalled();
   });
 });
 
@@ -1717,5 +1884,502 @@ describe("bulkForceCheckIn additional error cases", () => {
       success: false,
       error: "Failed to bulk check-in players",
     });
+  });
+});
+
+// =============================================================================
+// Discord enqueue integration tests
+// These tests verify that fire-and-forget Discord helpers are called correctly
+// and that their rejection does NOT propagate to the primary action result.
+// =============================================================================
+
+// Helper: flush all pending microtasks so IIFE fire-and-forget code runs.
+async function flushMicrotasks() {
+  await new Promise<void>((resolve) => setImmediate(resolve));
+}
+
+// ── publishTournament — Discord registration_opens ─────────────────────────
+
+describe("publishTournament — Discord registration_opens", () => {
+  beforeEach(() => {
+    mockUpdateTournament.mockResolvedValue(undefined);
+  });
+
+  it("enqueues registration_opens channel notification with correct args", async () => {
+    mockEnqueueCommunityChannelNotification.mockResolvedValue(undefined);
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: {
+          id: 7,
+          name: "Spring Cup",
+          slug: "spring-cup",
+          community_id: 3,
+          start_date: "2026-06-01",
+        },
+        error: null,
+      }),
+    });
+
+    const result = await publishTournament(7);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    expect(mockEnqueueCommunityChannelNotification).toHaveBeenCalledWith(
+      mockSupabase,
+      3,
+      "registration_opens",
+      "registration_opens:7",
+      expect.objectContaining({
+        tournament_id: 7,
+        tournament_name: "Spring Cup",
+        tournament_slug: "spring-cup",
+        registration_url: "/tournaments/spring-cup",
+      })
+    );
+  });
+
+  it("returns success even when the Discord enqueue rejects", async () => {
+    mockEnqueueCommunityChannelNotification.mockRejectedValue(
+      new Error("discord down")
+    );
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: {
+          id: 7,
+          name: "Spring Cup",
+          slug: "spring-cup",
+          community_id: 3,
+          start_date: null,
+        },
+        error: null,
+      }),
+    });
+
+    const result = await publishTournament(7);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+  });
+
+  it("does not enqueue when tournament lookup returns null", async () => {
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    });
+
+    await publishTournament(7);
+    await flushMicrotasks();
+
+    expect(mockEnqueueCommunityChannelNotification).not.toHaveBeenCalled();
+  });
+});
+
+// ── completeTournament — Discord tournament_ended + winner role ─────────────
+
+describe("completeTournament — Discord tournament_ended + winner role", () => {
+  const mockServer = { id: 55, guild_id: "discord-guild-3" };
+
+  beforeEach(() => {
+    mockCompleteTournament.mockResolvedValue(undefined);
+  });
+
+  it("enqueues tournament_ended notification and winner role sync", async () => {
+    mockGetDiscordServerByCommunityId.mockResolvedValue(mockServer);
+    mockEnqueueCommunityChannelNotification.mockResolvedValue(undefined);
+    mockEnqueueCommunityRoleSync.mockResolvedValue(undefined);
+
+    // standings query: .select().eq(tournament_id).eq(rank) chain
+    const standingsEqRank = jest.fn().mockResolvedValue({
+      data: [{ alts: { user_id: "user-winner" } }],
+      error: null,
+    });
+    const standingsEqTournament = jest
+      .fn()
+      .mockReturnValue({ eq: standingsEqRank });
+
+    const fromMock = jest.fn();
+    fromMock
+      .mockReturnValueOnce({
+        // tournaments lookup (fireAndForgetDiscord)
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: {
+            id: 7,
+            name: "Spring Cup",
+            slug: "spring-cup",
+            community_id: 3,
+          },
+          error: null,
+        }),
+      })
+      .mockReturnValueOnce({
+        // tournament_standings lookup
+        select: jest.fn().mockReturnValue({ eq: standingsEqTournament }),
+      });
+    (mockSupabase.from as jest.Mock) = fromMock;
+
+    const result = await completeTournament(7);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    // Server resolved once for community_id 3
+    expect(mockGetDiscordServerByCommunityId).toHaveBeenCalledWith(
+      mockSupabase,
+      3
+    );
+    // Helpers receive the pre-resolved server object
+    expect(mockEnqueueCommunityChannelNotification).toHaveBeenCalledWith(
+      mockSupabase,
+      3,
+      "tournament_ended",
+      "tournament_ended:7",
+      expect.objectContaining({
+        tournament_id: 7,
+        tournament_name: "Spring Cup",
+        tournament_slug: "spring-cup",
+      }),
+      { server: mockServer }
+    );
+    expect(mockEnqueueCommunityRoleSync).toHaveBeenCalledWith(
+      mockSupabase,
+      3,
+      ["user-winner"],
+      "winner",
+      "add",
+      "tournament_ended:7",
+      { server: mockServer }
+    );
+  });
+
+  it("no-ops when server lookup returns null", async () => {
+    mockGetDiscordServerByCommunityId.mockResolvedValue(null);
+
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      // tournaments lookup (fireAndForgetDiscord)
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: {
+          id: 7,
+          name: "Spring Cup",
+          slug: "spring-cup",
+          community_id: 3,
+        },
+        error: null,
+      }),
+    });
+
+    const result = await completeTournament(7);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    expect(mockEnqueueCommunityChannelNotification).not.toHaveBeenCalled();
+    expect(mockEnqueueCommunityRoleSync).not.toHaveBeenCalled();
+  });
+
+  it("returns success even when the Discord enqueue rejects", async () => {
+    mockGetDiscordServerByCommunityId.mockResolvedValue(mockServer);
+    mockEnqueueCommunityChannelNotification.mockRejectedValue(
+      new Error("discord down")
+    );
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: {
+          id: 7,
+          name: "Spring Cup",
+          slug: "spring-cup",
+          community_id: 3,
+        },
+        error: null,
+      }),
+    });
+
+    const result = await completeTournament(7);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+  });
+});
+
+// ── registerForTournament — Discord member role add ─────────────────────────
+
+describe("registerForTournament — Discord member role add", () => {
+  it("enqueues member role add after successful registration", async () => {
+    mockRegisterForTournament.mockResolvedValue({
+      registrationId: 99,
+      status: "registered",
+    });
+    mockEnqueueCommunityRoleSync.mockResolvedValue(undefined);
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 5 },
+        error: null,
+      }),
+    });
+
+    const result = await registerForTournament(10, { altId: 1 });
+    await flushMicrotasks();
+
+    expect(result).toEqual({
+      success: true,
+      data: { registrationId: 99, status: "registered" },
+    });
+    expect(mockEnqueueCommunityRoleSync).toHaveBeenCalledWith(
+      mockSupabase,
+      5,
+      ["user-123"],
+      "member",
+      "add",
+      "tournament_registration:99"
+    );
+  });
+
+  it("returns success even when role sync rejects", async () => {
+    mockRegisterForTournament.mockResolvedValue({
+      registrationId: 99,
+      status: "registered",
+    });
+    mockEnqueueCommunityRoleSync.mockRejectedValue(new Error("discord down"));
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 5 },
+        error: null,
+      }),
+    });
+
+    const result = await registerForTournament(10);
+    await flushMicrotasks();
+
+    expect(result).toEqual({
+      success: true,
+      data: { registrationId: 99, status: "registered" },
+    });
+  });
+});
+
+// ── cancelRegistration — Discord member role remove ────────────────────────
+
+describe("cancelRegistration — Discord member role remove", () => {
+  it("enqueues member role remove when user has no remaining registrations", async () => {
+    mockCancelRegistration.mockResolvedValue(undefined);
+    mockEnqueueCommunityRoleSync.mockResolvedValue(undefined);
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+
+    const fromMock = jest.fn();
+    // First call: tournament lookup for community_id
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 5 },
+        error: null,
+      }),
+    });
+    // Second call: count remaining registrations — returns 0
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      is: jest.fn().mockResolvedValue({ count: 0, error: null }),
+    });
+    (mockSupabase.from as jest.Mock) = fromMock;
+
+    const result = await cancelRegistration(100, 5);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    expect(mockEnqueueCommunityRoleSync).toHaveBeenCalledWith(
+      mockSupabase,
+      5,
+      ["user-123"],
+      "member",
+      "remove",
+      "tournament_registration_cancel:100"
+    );
+  });
+
+  it("does NOT enqueue role remove when user still has active registrations", async () => {
+    mockCancelRegistration.mockResolvedValue(undefined);
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+
+    const fromMock = jest.fn();
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 5 },
+        error: null,
+      }),
+    });
+    // Still has 1 active registration
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      is: jest.fn().mockResolvedValue({ count: 1, error: null }),
+    });
+    (mockSupabase.from as jest.Mock) = fromMock;
+
+    const result = await cancelRegistration(100, 5);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    expect(mockEnqueueCommunityRoleSync).not.toHaveBeenCalled();
+  });
+
+  it("returns success even when role sync rejects", async () => {
+    mockCancelRegistration.mockResolvedValue(undefined);
+    mockEnqueueCommunityRoleSync.mockRejectedValue(new Error("discord down"));
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+
+    const fromMock = jest.fn();
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 5 },
+        error: null,
+      }),
+    });
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      is: jest.fn().mockResolvedValue({ count: 0, error: null }),
+    });
+    (mockSupabase.from as jest.Mock) = fromMock;
+
+    const result = await cancelRegistration(100, 5);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+  });
+});
+
+// ── withdrawFromTournament — Discord member role remove ────────────────────
+
+describe("withdrawFromTournament — Discord member role remove", () => {
+  it("enqueues member role remove when user has no remaining registrations", async () => {
+    mockWithdrawFromTournament.mockResolvedValue(undefined);
+    mockEnqueueCommunityRoleSync.mockResolvedValue(undefined);
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+
+    const fromMock = jest.fn();
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 5 },
+        error: null,
+      }),
+    });
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      is: jest.fn().mockResolvedValue({ count: 0, error: null }),
+    });
+    (mockSupabase.from as jest.Mock) = fromMock;
+
+    const result = await withdrawFromTournament(5);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    expect(mockEnqueueCommunityRoleSync).toHaveBeenCalledWith(
+      mockSupabase,
+      5,
+      ["user-123"],
+      "member",
+      "remove",
+      "tournament_withdraw:5"
+    );
+  });
+
+  it("does NOT enqueue role remove when user still has active registrations", async () => {
+    mockWithdrawFromTournament.mockResolvedValue(undefined);
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+
+    const fromMock = jest.fn();
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 5 },
+        error: null,
+      }),
+    });
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      is: jest.fn().mockResolvedValue({ count: 2, error: null }),
+    });
+    (mockSupabase.from as jest.Mock) = fromMock;
+
+    const result = await withdrawFromTournament(5);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    expect(mockEnqueueCommunityRoleSync).not.toHaveBeenCalled();
+  });
+
+  it("returns success even when role sync rejects", async () => {
+    mockWithdrawFromTournament.mockResolvedValue(undefined);
+    mockEnqueueCommunityRoleSync.mockRejectedValue(new Error("discord down"));
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+
+    const fromMock = jest.fn();
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 5 },
+        error: null,
+      }),
+    });
+    fromMock.mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      is: jest.fn().mockResolvedValue({ count: 0, error: null }),
+    });
+    (mockSupabase.from as jest.Mock) = fromMock;
+
+    const result = await withdrawFromTournament(5);
+    await flushMicrotasks();
+
+    expect(result).toEqual({ success: true, data: { success: true } });
   });
 });

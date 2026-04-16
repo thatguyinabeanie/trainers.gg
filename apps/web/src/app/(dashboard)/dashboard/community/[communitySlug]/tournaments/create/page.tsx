@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
+import {
+  getCommunityBySlug,
+  getDiscordServerByCommunityId,
+} from "@trainers/supabase";
+
+import { createClientReadOnly } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { CreateTournamentClient } from "./create-tournament-client";
 
@@ -15,6 +21,12 @@ export default async function DashboardCreateTournamentPage({
 }: PageProps) {
   const { communitySlug } = await params;
 
+  const supabase = await createClientReadOnly();
+  const community = await getCommunityBySlug(supabase, communitySlug);
+  const discordInstalled = community
+    ? !!(await getDiscordServerByCommunityId(supabase, community.id))
+    : false;
+
   return (
     <>
       <PageHeader>
@@ -27,7 +39,10 @@ export default async function DashboardCreateTournamentPage({
         </Link>
       </PageHeader>
       <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
-        <CreateTournamentClient communitySlug={communitySlug} />
+        <CreateTournamentClient
+          communitySlug={communitySlug}
+          discordInstalled={discordInstalled}
+        />
       </div>
     </>
   );

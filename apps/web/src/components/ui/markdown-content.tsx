@@ -62,7 +62,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
             </pre>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-teal-600/30 text-muted-foreground mb-3 border-l-4 pl-4 italic">
+            <blockquote className="text-muted-foreground mb-3 border-l-4 border-teal-600/30 pl-4 italic">
               {children}
             </blockquote>
           ),
