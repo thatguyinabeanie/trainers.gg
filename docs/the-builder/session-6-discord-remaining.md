@@ -25,6 +25,56 @@ The branch has ~157 commits ahead of `origin/discord-bot`. Pre-push checks:
 
 1. **OAuth2 redirect URL:** ensure `https://trainers.gg/api/discord/install-callback` is listed in the OAuth2 tab. For local dev, also add `http://localhost:3000/api/discord/install-callback`.
 2. **Interactions Endpoint URL:** set to `https://trainers.gg/api/discord/interactions` after the first production deploy (Discord will PING to verify — the endpoint handles this automatically). For local dev, use ngrok: `ngrok http 3000` and set the tunnel URL as the endpoint.
+3. **Linked Roles Verification URL:** set to `https://trainers.gg/api/discord/linked-roles` (see "Linked Roles" section below — this route does not exist yet and needs to be built).
+
+### Linked Roles (App Role Connections) — NOT YET IMPLEMENTED
+
+Discord's [Linked Roles](https://discord.com/developers/docs/tutorials/configuring-app-metadata-for-linked-roles) feature lets users connect their trainers.gg account from Discord's built-in Connections UI (Profile → Connections → Beanie Bot). Server admins can then create role requirements like "must have a verified trainers.gg account" or "ELO above 1500."
+
+**Current state:** not implemented. The `/link` slash command uses the existing Supabase Auth Discord OAuth flow for identity linking, but that's a different mechanism — it doesn't register metadata with Discord's role connections API.
+
+**What needs to be built:**
+
+1. **Register role connection metadata** — one-time API call to `PUT /applications/{app_id}/role-connections/metadata` defining what metadata the bot provides. Example metadata:
+
+   ```json
+   [
+     {
+       "key": "verified",
+       "name": "Verified Trainer",
+       "description": "Has a verified trainers.gg account",
+       "type": 7
+     },
+     {
+       "key": "elo",
+       "name": "ELO Rating",
+       "description": "Current ELO rating on trainers.gg",
+       "type": 2
+     },
+     {
+       "key": "tournaments_played",
+       "name": "Tournaments Played",
+       "description": "Total tournament entries",
+       "type": 2
+     }
+   ]
+   ```
+
+   Types: `2` = integer_greater_than_or_equal, `7` = boolean_equal. See [metadata types](https://discord.com/developers/docs/resources/application-role-connection-metadata#application-role-connection-metadata-object-application-role-connection-metadata-type).
+
+2. **Verification URL route** — `GET /api/discord/linked-roles`. This is the URL Discord redirects to when a user clicks "Connect" on the Beanie Bot connection in their profile. Flow:
+   - Discord redirects with an OAuth2 code (scope: `role_connections.write identify`)
+   - Exchange code for access token
+   - Use access token to `PUT /users/@me/applications/{app_id}/role-connection` with the user's metadata (verified=true, elo=their rating, tournaments=their count)
+   - Redirect user back to Discord
+
+3. **OAuth scope update** — the bot install flow currently uses `scope=bot+applications.commands`. The linked-roles flow needs a SEPARATE OAuth endpoint with `scope=role_connections.write+identify`. This is a user-initiated flow (not the server-admin install flow), so it lives at a different URL with its own callback.
+
+4. **Metadata refresh** — when a user's ELO changes or they play a new tournament, call `PUT /users/@me/applications/{app_id}/role-connection` with the updated values. This requires storing the user's Discord OAuth access token (with refresh) so the bot can update metadata on their behalf. Possible storage: `discord_user_tokens` table with encrypted refresh token.
+
+**Recommendation:** implement as a follow-up after the base bot ships. The linked-roles feature is high-value (lets server admins gate channels/roles by trainers.gg stats) but it's a self-contained feature with its own OAuth flow, token storage, and metadata management. Scope it as its own design → plan → implementation cycle.
+
+**Developer Portal step (now):** set the "Linked Roles Verification URL" to `https://trainers.gg/api/discord/linked-roles` so Discord knows the bot supports it. The route will 404 until built, but having the URL configured means it's ready when the route lands.
 
 ### Environment variables checklist
 
