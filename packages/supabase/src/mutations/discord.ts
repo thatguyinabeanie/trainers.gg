@@ -377,10 +377,25 @@ export async function recordDeliveryFailure(
     delivered_via_fallback?: boolean;
   }
 ): Promise<{ id: number }> {
+  // Denormalized community_id allows the Failures-tab SELECT policy to avoid a
+  // correlated subquery on discord_servers. One-shot lookup on the failure
+  // path is cheap; the read-side win compounds as the table grows.
+  const { data: server, error: serverError } = await supabase
+    .from("discord_servers")
+    .select("community_id")
+    .eq("id", input.discord_server_id)
+    .single();
+
+  if (serverError)
+    throw new Error(
+      `Failed to resolve community for delivery failure: ${serverError.message}`
+    );
+
   const { data, error } = await supabase
     .from("discord_delivery_failures")
     .insert({
       discord_server_id: input.discord_server_id,
+      community_id: server.community_id,
       type: input.type,
       event_type: input.event_type,
       target: input.target,

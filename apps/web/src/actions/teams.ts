@@ -86,12 +86,18 @@ export async function createTeamAction(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: ownedAlt } = await supabase
+  const { data: ownedAlt, error: ownedAltError } = await supabase
     .from("alts")
     .select("id")
     .eq("id", parsed.data.altId)
     .eq("user_id", user?.id ?? "")
     .maybeSingle();
+  if (ownedAltError) {
+    return {
+      success: false,
+      error: getErrorMessage(ownedAltError, "Failed to verify alt ownership"),
+    };
+  }
   if (!ownedAlt) {
     return { success: false, error: "You do not own this alt." };
   }

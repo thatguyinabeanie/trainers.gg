@@ -646,6 +646,7 @@ export type Database = {
       }
       discord_delivery_failures: {
         Row: {
+          community_id: number
           created_at: string
           delivered_via_fallback: boolean
           discord_server_id: number
@@ -658,6 +659,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          community_id: number
           created_at?: string
           delivered_via_fallback?: boolean
           discord_server_id: number
@@ -670,6 +672,7 @@ export type Database = {
           type: string
         }
         Update: {
+          community_id?: number
           created_at?: string
           delivered_via_fallback?: boolean
           discord_server_id?: number
@@ -683,6 +686,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "discord_delivery_failures_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "discord_delivery_failures_discord_server_id_fkey"
             columns: ["discord_server_id"]
             isOneToOne: false
@@ -693,6 +703,7 @@ export type Database = {
       }
       discord_dm_settings: {
         Row: {
+          created_at: string
           delivery_mode: string
           discord_server_id: number
           event_type: Database["public"]["Enums"]["discord_dm_event_type"]
@@ -700,6 +711,7 @@ export type Database = {
           id: number
         }
         Insert: {
+          created_at?: string
           delivery_mode?: string
           discord_server_id: number
           event_type: Database["public"]["Enums"]["discord_dm_event_type"]
@@ -707,6 +719,7 @@ export type Database = {
           id?: never
         }
         Update: {
+          created_at?: string
           delivery_mode?: string
           discord_server_id?: number
           event_type?: Database["public"]["Enums"]["discord_dm_event_type"]
