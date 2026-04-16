@@ -309,7 +309,11 @@ export function getAllSpeciesNames(): string[] {
 }
 
 /**
- * Get moves that a Pokemon can learn
+ * Get moves that a Pokemon can learn.
+ *
+ * @deprecated Returns all gen-9 moves unfiltered — does NOT check learnsets.
+ * Use `getLegalMoves(species, formatId)` from `format-legality.ts` instead,
+ * which validates against actual learnsets and caches results.
  */
 export function getLearnableMoves(speciesName: string): string[] {
   try {

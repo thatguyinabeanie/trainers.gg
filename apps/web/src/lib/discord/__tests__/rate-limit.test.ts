@@ -5,7 +5,6 @@
 import {
   checkRateLimit,
   _resetRateLimit,
-  _resetRateLimitState,
   PER_USER_LIMIT,
   PER_GUILD_LIMIT,
 } from "../rate-limit";
@@ -261,17 +260,6 @@ describe("_resetRateLimit", () => {
     expect(checkRateLimit(USER_A, GUILD_A).allowed).toBe(false);
 
     _resetRateLimit();
-
-    expect(checkRateLimit(USER_A, GUILD_A).allowed).toBe(true);
-  });
-
-  it("_resetRateLimitState is an alias for _resetRateLimit", () => {
-    for (let i = 0; i < PER_USER_LIMIT; i++) {
-      checkRateLimit(USER_A, GUILD_A);
-    }
-    expect(checkRateLimit(USER_A, GUILD_A).allowed).toBe(false);
-
-    _resetRateLimitState();
 
     expect(checkRateLimit(USER_A, GUILD_A).allowed).toBe(true);
   });

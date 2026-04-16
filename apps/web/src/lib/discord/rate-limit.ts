@@ -174,11 +174,3 @@ export function _resetRateLimit(): void {
   userTimestamps.clear();
   guildTimestamps.clear();
 }
-
-/**
- * @deprecated Use `_resetRateLimit` instead.
- * @internal
- */
-export function _resetRateLimitState(): void {
-  _resetRateLimit();
-}

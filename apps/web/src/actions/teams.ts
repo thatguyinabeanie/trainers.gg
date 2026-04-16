@@ -37,9 +37,10 @@ import {
   pokemonUpdateSchema,
 } from "@trainers/validators";
 
+import { getErrorMessage } from "@trainers/utils";
+
 import { invalidateTeamDetailCache } from "@/lib/cache-invalidation";
 import { createClient } from "@/lib/supabase/server";
-import { getErrorMessage } from "@/lib/utils";
 import { rejectBots, withAction } from "@/actions/utils";
 import { checkFormatChangeLegality } from "@/actions/format-legality-guard";
 import { findLegalityViolation } from "@/actions/_legality";
@@ -64,7 +65,7 @@ export async function createTeamAction(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
-  try {
+  return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();
     const result = await createTeamMutation(
@@ -74,14 +75,8 @@ export async function createTeamAction(
       parsed.data.format
     );
     invalidateTeamDetailCache(result.id);
-    return { success: true, data: { id: result.id } };
-  } catch (error) {
-    console.error("[server-action] createTeamAction:", error);
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to create team"),
-    };
-  }
+    return { id: result.id };
+  }, "Failed to create team");
 }
 
 /**
@@ -192,7 +187,7 @@ export async function forkTeamAction(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
-  try {
+  return withAction(async () => {
     await rejectBots();
     const supabase = await createClient();
     const result = await forkTeamMutation(
@@ -202,14 +197,8 @@ export async function forkTeamAction(
       parsed.data.newName
     );
     invalidateTeamDetailCache(result.id);
-    return { success: true, data: { id: result.id } };
-  } catch (error) {
-    console.error("[server-action] forkTeamAction:", error);
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to fork team"),
-    };
-  }
+    return { id: result.id };
+  }, "Failed to fork team");
 }
 
 // =============================================================================

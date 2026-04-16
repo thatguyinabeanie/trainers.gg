@@ -130,7 +130,8 @@ export default async function DashboardLayout({
       .from("tournaments")
       .select("community_id")
       .in("community_id", communityIds)
-      .eq("status", "active");
+      .eq("status", "active")
+      .limit(500);
     if (tournamentsError) {
       console.error(
         "[DashboardLayout] Failed to load active tournaments:",

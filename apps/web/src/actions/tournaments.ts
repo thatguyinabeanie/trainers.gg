@@ -7,8 +7,6 @@
 
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { getErrorMessage } from "@/lib/utils";
 import {
   createTournament as createTournamentMutation,
   updateTournament as updateTournamentMutation,
@@ -47,6 +45,15 @@ import {
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import {
+  type ActionResult,
+  type DropCategory,
+  dropCategorySchema,
+  dropNotesSchema,
+} from "@trainers/validators";
+import { getErrorMessage } from "@trainers/utils";
+
+import { createClient } from "@/lib/supabase/server";
+import {
   invalidateTournamentCaches,
   invalidateTournamentListCaches,
   invalidateTournamentAndCommunityCaches,
@@ -54,12 +61,6 @@ import {
   invalidatePlayerRankingCaches,
   invalidateDashboardCaches,
 } from "@/lib/cache-invalidation";
-import {
-  type ActionResult,
-  type DropCategory,
-  dropCategorySchema,
-  dropNotesSchema,
-} from "@trainers/validators";
 import { rejectBots } from "./utils";
 import {
   enqueueCommunityChannelNotification,
@@ -495,6 +496,59 @@ export async function registerForTournament(
 }
 
 /**
+ * Private helper — fire-and-forget removal of the Discord "member" role when a
+ * user has no remaining active registrations in the tournament's community.
+ */
+function maybeDemoteMemberRole(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tournamentId: number,
+  sourceEvent: string
+): void {
+  void (async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: tournament } = await supabase
+        .from("tournaments")
+        .select("community_id")
+        .eq("id", tournamentId)
+        .single();
+      if (!tournament) return;
+
+      // Count remaining non-dropped registrations for this user in this community
+      const { count } = await supabase
+        .from("tournament_registrations")
+        .select("id, alts!inner(user_id), tournaments!inner(community_id)", {
+          count: "exact",
+          head: true,
+        })
+        .eq("alts.user_id", user.id)
+        .eq("tournaments.community_id", tournament.community_id)
+        .is("dropped_at", null);
+
+      if (count === 0) {
+        await enqueueCommunityRoleSync(
+          supabase,
+          tournament.community_id,
+          [user.id],
+          "member",
+          "remove",
+          sourceEvent
+        );
+      }
+    } catch (discordErr) {
+      console.error(
+        "[maybeDemoteMemberRole] Discord member role remove sync failed",
+        { tournamentId, sourceEvent, error: String(discordErr) }
+      );
+    }
+  })();
+}
+
+/**
  * Cancel tournament registration
  * Revalidates: tournaments list (registration count changes), individual tournament
  */
@@ -509,49 +563,11 @@ export async function cancelRegistration(
 
     invalidateTournamentListCaches(tournamentId);
 
-    // Fire-and-forget: remove member role if user has no remaining active registrations
-    void (async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data: tournament } = await supabase
-          .from("tournaments")
-          .select("community_id")
-          .eq("id", tournamentId)
-          .single();
-        if (!tournament) return;
-
-        // Count remaining non-dropped registrations for this user in this community
-        const { count } = await supabase
-          .from("tournament_registrations")
-          .select("id, alts!inner(user_id), tournaments!inner(community_id)", {
-            count: "exact",
-            head: true,
-          })
-          .eq("alts.user_id", user.id)
-          .eq("tournaments.community_id", tournament.community_id)
-          .is("dropped_at", null);
-
-        if (count === 0) {
-          await enqueueCommunityRoleSync(
-            supabase,
-            tournament.community_id,
-            [user.id],
-            "member",
-            "remove",
-            `tournament_registration_cancel:${registrationId}`
-          );
-        }
-      } catch (discordErr) {
-        console.error(
-          "[cancelRegistration] Discord member role remove sync failed",
-          { registrationId, tournamentId, error: String(discordErr) }
-        );
-      }
-    })();
+    maybeDemoteMemberRole(
+      supabase,
+      tournamentId,
+      `tournament_registration_cancel:${registrationId}`
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -615,49 +631,11 @@ export async function withdrawFromTournament(
     await withdrawFromTournamentMutation(supabase, tournamentId);
     invalidateTournamentListCaches(tournamentId);
 
-    // Fire-and-forget: remove member role if user has no remaining active registrations
-    void (async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data: tournament } = await supabase
-          .from("tournaments")
-          .select("community_id")
-          .eq("id", tournamentId)
-          .single();
-        if (!tournament) return;
-
-        // Count remaining non-dropped registrations for this user in this community
-        const { count } = await supabase
-          .from("tournament_registrations")
-          .select("id, alts!inner(user_id), tournaments!inner(community_id)", {
-            count: "exact",
-            head: true,
-          })
-          .eq("alts.user_id", user.id)
-          .eq("tournaments.community_id", tournament.community_id)
-          .is("dropped_at", null);
-
-        if (count === 0) {
-          await enqueueCommunityRoleSync(
-            supabase,
-            tournament.community_id,
-            [user.id],
-            "member",
-            "remove",
-            `tournament_withdraw:${tournamentId}`
-          );
-        }
-      } catch (discordErr) {
-        console.error(
-          "[withdrawFromTournament] Discord member role remove sync failed",
-          { tournamentId, error: String(discordErr) }
-        );
-      }
-    })();
+    maybeDemoteMemberRole(
+      supabase,
+      tournamentId,
+      `tournament_withdraw:${tournamentId}`
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {

@@ -7,8 +7,6 @@
 
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { getErrorMessage } from "@/lib/utils";
 import {
   searchUsersForInvite as searchUsersQuery,
   listCommunityGroups as listGroupsQuery,
@@ -19,6 +17,9 @@ import {
   removeStaffCompletely as removeStaffMutation,
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
+import { getErrorMessage } from "@trainers/utils";
+
+import { createClient } from "@/lib/supabase/server";
 import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
 import { enqueueCommunityRoleSync } from "@/lib/discord/enqueue-helpers";
 
