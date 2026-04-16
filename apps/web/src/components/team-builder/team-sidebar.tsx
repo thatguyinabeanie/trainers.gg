@@ -142,11 +142,13 @@ function PokemonChip({
         </span>
       </button>
 
-      {/* Validation indicator — red for errors, amber for warnings */}
+      {/* Validation indicator — red for errors, amber for warnings.
+          Positioned bottom-right to avoid overlap with the remove button
+          which appears at top-right on hover. */}
       {hasIssues && (
         <span
           className={cn(
-            "absolute -top-1 -right-1 size-2 rounded-full",
+            "absolute -right-1 -bottom-1 size-2 rounded-full",
             hasWarningsOnly ? "bg-amber-500" : "bg-destructive"
           )}
         />

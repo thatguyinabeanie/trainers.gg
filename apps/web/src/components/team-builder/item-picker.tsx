@@ -30,6 +30,13 @@ interface ItemPickerProps {
 }
 
 // =============================================================================
+// Module-scope constants
+// =============================================================================
+
+// Dex items don't change at runtime — compute once at module load
+const ALL_ITEMS = getAllItems();
+
+// =============================================================================
 // ItemPicker
 // =============================================================================
 
@@ -51,15 +58,14 @@ export function ItemPicker({
 }: ItemPickerProps) {
   const [search, setSearch] = useState("");
 
-  // Derive the format-scoped item list. getAllItems() is called inside the
-  // component (not at module scope) because the result depends on the formatId
-  // prop. The legal set is undefined when the format has no registered banlist
+  // Derive the format-scoped item list. Only the filtering depends on
+  // formatId — the full item list is computed once at module scope.
+  // The legal set is undefined when the format has no registered banlist
   // (permissive), so we fall back to the full list in that case.
   const legal = formatId ? getLegalItems(formatId) : undefined;
-  const allItems = getAllItems();
   const formatItems = legal
-    ? allItems.filter((name) => legal.has(name))
-    : allItems;
+    ? ALL_ITEMS.filter((name) => legal.has(name))
+    : ALL_ITEMS;
 
   const filtered = search
     ? formatItems.filter((name) =>
