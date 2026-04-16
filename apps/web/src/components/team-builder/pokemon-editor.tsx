@@ -313,6 +313,7 @@ export function PokemonEditor({
             <ItemPicker
               value={pokemon.held_item}
               teamItems={teamItems}
+              formatId={format?.id}
               onSelect={(val) => {
                 onUpdate("held_item", val);
                 closePicker();

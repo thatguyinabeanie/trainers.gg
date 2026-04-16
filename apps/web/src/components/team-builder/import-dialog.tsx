@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 
-import { getLegalSpecies } from "@trainers/pokemon";
+import { getLegalSpecies, getLegalItems } from "@trainers/pokemon";
 
 import {
   parseShowdownText,
@@ -214,13 +214,32 @@ export function ImportDialog({
 
   function checkLegality(candidates: ParsedPokemon[]): string | null {
     if (!formatId) return null;
+
+    // Species check
     const legalSet = getLegalSpecies(formatId);
-    if (legalSet === undefined) return null;
-    const illegal = candidates
-      .map((p) => p.species)
-      .filter((s): s is string => Boolean(s) && !legalSet.has(s));
-    if (illegal.length === 0) return null;
-    return `These Pokémon aren't legal in this format: ${illegal.join(", ")}.`;
+    if (legalSet !== undefined) {
+      const illegal = candidates
+        .map((p) => p.species)
+        .filter((s): s is string => Boolean(s) && !legalSet.has(s));
+      if (illegal.length > 0) {
+        return `These Pokémon aren't legal in this format: ${illegal.join(", ")}.`;
+      }
+    }
+
+    // Item check
+    const legalItems = getLegalItems(formatId);
+    if (legalItems !== undefined) {
+      const illegalItems = candidates
+        .map((p) => p.held_item)
+        .filter(
+          (i): i is string => i !== null && i !== "" && !legalItems.has(i)
+        );
+      if (illegalItems.length > 0) {
+        return `These items aren't legal in this format: ${[...new Set(illegalItems)].join(", ")}.`;
+      }
+    }
+
+    return null;
   }
 
   // ---------------------------------------------------------------------------

@@ -21,6 +21,7 @@ import {
   buildSpeciesSearchIndex,
   getTypeColor,
   getAllItems,
+  getLegalItems,
   NATURE_EFFECTS,
   calculateChampionsHP,
   calculateChampionsStat,
@@ -1124,11 +1125,30 @@ function DefenderPanel({
             list={itemListId}
             value={item}
             onChange={(e) => onItemChange(e.target.value)}
+            onBlur={(e) => {
+              // If the typed value is not in the format-legal item list, reset
+              // it to empty. This catches free-typed illegal items since the
+              // datalist does not hard-restrict the input value.
+              const typed = e.target.value;
+              if (!typed) return;
+              const legalItems = formatId ? getLegalItems(formatId) : undefined;
+              if (legalItems !== undefined && !legalItems.has(typed)) {
+                onItemChange("");
+              }
+            }}
             placeholder="e.g. Sitrus Berry"
             className="border-border bg-background rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
           />
           <datalist id={itemListId}>
-            {ALL_ITEMS.map((i) => (
+            {(formatId
+              ? (() => {
+                  const legalItems = getLegalItems(formatId);
+                  return legalItems
+                    ? ALL_ITEMS.filter((i) => legalItems.has(i))
+                    : ALL_ITEMS;
+                })()
+              : ALL_ITEMS
+            ).map((i) => (
               <option key={i} value={i} />
             ))}
           </datalist>

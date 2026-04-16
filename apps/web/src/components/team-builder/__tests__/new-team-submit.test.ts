@@ -20,9 +20,11 @@ jest.mock("@trainers/validators", () => ({
 }));
 
 const mockGetLegalSpecies = jest.fn();
+const mockGetLegalItems = jest.fn();
 
 jest.mock("@trainers/pokemon", () => ({
   getLegalSpecies: (...args: unknown[]) => mockGetLegalSpecies(...args),
+  getLegalItems: (...args: unknown[]) => mockGetLegalItems(...args),
 }));
 
 // =============================================================================
@@ -36,7 +38,7 @@ import { submitNewTeam } from "../new-team-submit";
 // =============================================================================
 
 /** A minimal parsed pokemon returned by parseShowdownText. */
-function makeParsedPokemon(species: string) {
+function makeParsedPokemon(species: string, held_item: string | null = null) {
   return {
     species,
     ability: "Static",
@@ -45,7 +47,7 @@ function makeParsedPokemon(species: string) {
     move2: null,
     move3: null,
     move4: null,
-    held_item: null,
+    held_item,
     level: 50,
     nickname: null,
     gender: null,
@@ -104,6 +106,7 @@ describe("submitNewTeam", () => {
     });
     // Default: no format legality restriction (permissive)
     mockGetLegalSpecies.mockReturnValue(undefined);
+    mockGetLegalItems.mockReturnValue(undefined);
   });
 
   // ---------------------------------------------------------------------------
@@ -424,5 +427,111 @@ describe("submitNewTeam", () => {
     expect(result).toEqual({ status: "ok", teamId: 42 });
     expect(mockCreateTeamAction).toHaveBeenCalledTimes(1);
     expect(mockAddPokemonToTeamAction).toHaveBeenCalledTimes(2);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Item legality guards
+  // ---------------------------------------------------------------------------
+
+  it("returns { status: 'error' } without creating a team when paste contains an illegal item", async () => {
+    // Booster Energy is banned in gen9monotype
+    const parsed = [
+      makeParsedPokemon("Gardevoir", "Life Orb"), // legal item
+      makeParsedPokemon("Toxapex", "Booster Energy"), // illegal item
+    ];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    const legalItems = new Set(["Life Orb", "Leftovers", "Rocky Helmet"]);
+    mockGetLegalItems.mockReturnValueOnce(legalItems);
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      format: "gen9monotype",
+      mode: "import",
+      paste: "Gardevoir @ Life Orb\nToxapex @ Booster Energy",
+    });
+
+    expect(result.status).toBe("error");
+    expect((result as { status: "error"; error: string }).error).toContain(
+      "Booster Energy"
+    );
+    // Team row must NOT be created
+    expect(mockCreateTeamAction).not.toHaveBeenCalled();
+    expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+  });
+
+  it("deduplicates illegal item names in the error message", async () => {
+    // Two pokemon holding the same illegal item — deduplicated in error
+    const parsed = [
+      makeParsedPokemon("Gardevoir", "Booster Energy"),
+      makeParsedPokemon("Toxapex", "Booster Energy"),
+    ];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    const legalItems = new Set(["Life Orb", "Leftovers"]);
+    mockGetLegalItems.mockReturnValueOnce(legalItems);
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      format: "gen9monotype",
+      mode: "import",
+      paste: "two pokemon with illegal item",
+    });
+
+    expect(result.status).toBe("error");
+    const error = (result as { status: "error"; error: string }).error;
+    // "Booster Energy" appears only once even though two pokemon hold it
+    expect(error.split("Booster Energy").length - 1).toBe(1);
+  });
+
+  it("proceeds normally when all held items are legal in the target format", async () => {
+    const parsed = [
+      makeParsedPokemon("Gardevoir", "Life Orb"),
+      makeParsedPokemon("Toxapex", "Leftovers"),
+    ];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    const legalItems = new Set(["Life Orb", "Leftovers", "Rocky Helmet"]);
+    mockGetLegalItems.mockReturnValueOnce(legalItems);
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      format: "gen9monotype",
+      mode: "import",
+      paste: "Gardevoir @ Life Orb\nToxapex @ Leftovers",
+    });
+
+    expect(result).toEqual({ status: "ok", teamId: 42 });
+    expect(mockCreateTeamAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips item legality check when getLegalItems returns undefined (permissive format)", async () => {
+    const parsed = [makeParsedPokemon("Gardevoir", "Booster Energy")];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    // getLegalItems returns undefined — permissive, no item banlist
+    mockGetLegalItems.mockReturnValueOnce(undefined);
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      mode: "import",
+      paste: "Gardevoir @ Booster Energy",
+    });
+
+    expect(result).toEqual({ status: "ok", teamId: 42 });
+  });
+
+  it("skips item legality check for pokemon with no held item", async () => {
+    const parsed = [
+      makeParsedPokemon("Gardevoir", null), // no item
+    ];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    const legalItems = new Set(["Life Orb"]);
+    mockGetLegalItems.mockReturnValueOnce(legalItems);
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      format: "gen9monotype",
+      mode: "import",
+      paste: "Gardevoir",
+    });
+
+    expect(result).toEqual({ status: "ok", teamId: 42 });
   });
 });

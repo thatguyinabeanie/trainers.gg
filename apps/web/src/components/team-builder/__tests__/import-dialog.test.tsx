@@ -50,10 +50,14 @@ jest.mock("@trainers/validators", () => ({
     mockValidateTeamStructure(...args),
 }));
 
-// Declared only to satisfy references from the skipped legality test block.
-// The real getLegalSpecies is lazy + cheap when formatId is undefined (which
-// is the case in every non-skipped test here), so no jest.mock is needed.
-const mockGetLegalSpecies = jest.fn();
+const mockGetLegalSpecies = jest.fn(() => undefined as Set<string> | undefined);
+const mockGetLegalItems = jest.fn(() => undefined as Set<string> | undefined);
+
+jest.mock("@trainers/pokemon", () => ({
+  getLegalSpecies: (...args: unknown[]) =>
+    mockGetLegalSpecies(args[0] as string),
+  getLegalItems: (...args: unknown[]) => mockGetLegalItems(args[0] as string),
+}));
 
 const mockAddPokemonToTeamAction = jest.fn(() =>
   Promise.resolve({ success: true })
@@ -200,6 +204,9 @@ describe("ImportDialog", () => {
     mockParsePokepaseUrl.mockReturnValue(null);
     mockValidateTeamStructure.mockReturnValue([]);
     mockAddPokemonToTeamAction.mockResolvedValue({ success: true });
+    // Default: permissive — no registered legality lists
+    mockGetLegalSpecies.mockReturnValue(undefined);
+    mockGetLegalItems.mockReturnValue(undefined);
   });
 
   // ---------------------------------------------------------------------------
@@ -470,23 +477,18 @@ describe("ImportDialog", () => {
   // ---------------------------------------------------------------------------
 
   // ---------------------------------------------------------------------------
-  // Format legality guards
+  // Item paste guard
   // ---------------------------------------------------------------------------
 
-  // TODO: These two tests pass in isolation but leak Base UI portal state
-  // that breaks earlier Sheet-lifecycle tests in the suite. The component
-  // logic is covered by the identical guard in new-team-submit.test.ts.
-  // Re-enable once the Sheet portal cleanup can be fixed without touching
-  // the production component.
-  describe.skip("format legality guards", () => {
-    it("shows an inline error and does not call addPokemonToTeamAction when paste contains an illegal species", async () => {
-      // Miraidon is not in the legal set we return for this format
-      const mockMiraidon = { ...mockParsedPikachu, species: "Miraidon" };
-      mockParseShowdownText.mockReturnValueOnce([mockMiraidon]);
-      // Simulate restrictive format — Miraidon not included
-      mockGetLegalSpecies.mockReturnValue(
-        new Set(["Pikachu", "Incineroar", "Flutter Mane"])
-      );
+  describe("item legality guard", () => {
+    it("shows an inline error and does not show preview when paste contains an illegal item", async () => {
+      const mockWithIllegalItem = {
+        ...mockParsedPikachu,
+        held_item: "Booster Energy",
+      };
+      mockParseShowdownText.mockReturnValueOnce([mockWithIllegalItem]);
+      // Simulate format that bans Booster Energy
+      mockGetLegalItems.mockReturnValue(new Set(["Life Orb", "Leftovers"]));
 
       const user = userEvent.setup();
       render(
@@ -495,30 +497,27 @@ describe("ImportDialog", () => {
           open={true}
           onOpenChange={jest.fn()}
           onImportComplete={jest.fn()}
-          formatId="championsvgc2026regma"
+          formatId="gen9monotype"
         />
       );
 
-      await parsePaste(user, "Miraidon @ Choice Specs");
+      await parsePaste(user, "Pikachu @ Booster Energy");
 
       await waitFor(() => {
         expect(screen.getByRole("alert")).toBeInTheDocument();
       });
-      expect(screen.getByRole("alert")).toHaveTextContent("Miraidon");
+      expect(screen.getByRole("alert")).toHaveTextContent("Booster Energy");
 
-      // Import action should never be called
-      expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
       // Preview panel must not appear
       expect(screen.queryByText(/previewing/i)).not.toBeInTheDocument();
+      // Import action should never be called
+      expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
     });
 
-    it("proceeds to preview when all species are legal in the target format", async () => {
-      const mockFlutterMane = { ...mockParsedPikachu, species: "Flutter Mane" };
-      mockParseShowdownText.mockReturnValueOnce([mockFlutterMane]);
-      // Flutter Mane IS in the legal set
-      mockGetLegalSpecies.mockReturnValue(
-        new Set(["Flutter Mane", "Incineroar", "Rillaboom"])
-      );
+    it("proceeds to preview when all held items are legal in the target format", async () => {
+      const mockWithLegalItem = { ...mockParsedPikachu, held_item: "Life Orb" };
+      mockParseShowdownText.mockReturnValueOnce([mockWithLegalItem]);
+      mockGetLegalItems.mockReturnValue(new Set(["Life Orb", "Leftovers"]));
 
       const user = userEvent.setup();
       render(
@@ -527,19 +526,42 @@ describe("ImportDialog", () => {
           open={true}
           onOpenChange={jest.fn()}
           onImportComplete={jest.fn()}
-          formatId="championsvgc2026regma"
+          formatId="gen9monotype"
         />
       );
 
-      await parsePaste(user, "Flutter Mane @ Choice Specs");
+      await parsePaste(user, "Pikachu @ Life Orb");
 
       await waitFor(() => {
-        expect(screen.getByText("Flutter Mane")).toBeInTheDocument();
+        expect(screen.getByText(/previewing/i)).toBeInTheDocument();
       });
-      // Legality error must not appear
-      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-      // Preview panel should be showing
-      expect(screen.getByText(/previewing/i)).toBeInTheDocument();
+    });
+
+    it("proceeds to preview when getLegalItems returns undefined (permissive format)", async () => {
+      const mockWithAnyItem = {
+        ...mockParsedPikachu,
+        held_item: "Booster Energy",
+      };
+      mockParseShowdownText.mockReturnValueOnce([mockWithAnyItem]);
+      // permissive — no item banlist
+      mockGetLegalItems.mockReturnValue(undefined);
+
+      const user = userEvent.setup();
+      render(
+        <ImportDialog
+          team={makeTeam()}
+          open={true}
+          onOpenChange={jest.fn()}
+          onImportComplete={jest.fn()}
+          formatId="gen9vgc2026regi"
+        />
+      );
+
+      await parsePaste(user, "Pikachu @ Booster Energy");
+
+      await waitFor(() => {
+        expect(screen.getByText(/previewing/i)).toBeInTheDocument();
+      });
     });
   });
 });
