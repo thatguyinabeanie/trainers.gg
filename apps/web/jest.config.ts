@@ -6,6 +6,12 @@ const config: Config = createConfig({
   testEnvironment: "jsdom",
   extensionsToTreatAsEsm: [".ts", ".tsx"],
   moduleNameMapper: { "^@/(.*)$": "<rootDir>/src/$1" },
+  // ESM-only packages that need to be transformed by ts-jest.
+  // pnpm hoists to node_modules/.pnpm/ — the pattern must match that structure.
+  transformIgnorePatterns: [
+    "node_modules/.pnpm/(?!(jose|workflow)@)",
+    "node_modules/(?!(\\.pnpm|jose|workflow)/)",
+  ],
   setupFilesAfterEnv: ["<rootDir>/src/test-setup.ts"],
   testMatch: ["<rootDir>/src/**/__tests__/**/*.test.{ts,tsx}"],
   collectCoverageFrom: [

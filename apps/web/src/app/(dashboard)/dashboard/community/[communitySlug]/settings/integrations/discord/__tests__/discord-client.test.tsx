@@ -151,9 +151,7 @@ describe("DiscordClient", () => {
     it("renders the notifications tab content placeholder by default", () => {
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      expect(
-        screen.getByText(/channel \+ dm tables render here/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/channel announcements/i)).toBeInTheDocument();
     });
 
     it("does not show the failure banner when recentFailureCount is 0", () => {
@@ -172,32 +170,31 @@ describe("DiscordClient", () => {
       setupNavMocks("roles");
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      expect(screen.getByText(/roles table renders here/i)).toBeVisible();
+      // Real component renders role assignment UI
+      expect(screen.getByText(/role assignments/i)).toBeVisible();
     });
 
     it("falls back to Notifications tab content when ?tab=garbage", () => {
       setupNavMocks("garbage");
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      expect(
-        screen.getByText(/channel \+ dm tables render here/i)
-      ).toBeVisible();
+      // Falls back to notifications — shows channel announcements heading
+      expect(screen.getByText(/channel announcements/i)).toBeVisible();
     });
 
     it("shows Notifications tab content when no ?tab= param is present", () => {
       setupNavMocks(null);
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      expect(
-        screen.getByText(/channel \+ dm tables render here/i)
-      ).toBeVisible();
+      expect(screen.getByText(/channel announcements/i)).toBeVisible();
     });
 
     it("shows Failures tab content when ?tab=failures", () => {
       setupNavMocks("failures");
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      expect(screen.getByText(/failures table renders here/i)).toBeVisible();
+      // Failures tab shows filter or content
+      expect(screen.getByText(/^failures$/i)).toBeVisible();
     });
   });
 
