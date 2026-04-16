@@ -506,7 +506,8 @@ describe("command handler error fallback", () => {
     await capturedWaitUntilPromise;
 
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Command /test failed"),
+      "Command failed:",
+      "test",
       expect.any(Error)
     );
     consoleSpy.mockRestore();

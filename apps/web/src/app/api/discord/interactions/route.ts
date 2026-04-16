@@ -160,7 +160,7 @@ async function handleCommand(
       communityContext,
       startedAt
     ).catch((err) => {
-      console.error(`Command /${commandName} failed:`, err);
+      console.error("Command failed:", commandName, err);
       // Emit failure event — fire-and-forget, never blocks the error path
       void captureServerEvent({
         event: DISCORD_COMMAND_FAILED,
