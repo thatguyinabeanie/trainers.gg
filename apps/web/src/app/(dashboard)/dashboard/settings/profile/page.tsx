@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Save, Check, X } from "lucide-react";
 import { SpritePicker } from "@/components/profile/sprite-picker";
+import { DiscordProfilePrivacyRow } from "@/components/settings/discord-profile-privacy-row";
 import { toast } from "sonner";
 import { COUNTRIES } from "@trainers/utils";
 import {
@@ -53,6 +54,7 @@ export default function ProfileSettingsPage() {
 
   const [altId, setAltId] = useState<number | null>(null);
   const [altAvatarUrl, setAltAvatarUrl] = useState<string | null>(null);
+  const [showDiscordPublicly, setShowDiscordPublicly] = useState(false);
 
   const displayName = user ? getUserDisplayName(user) : "";
 
@@ -72,6 +74,7 @@ export default function ProfileSettingsPage() {
         setOriginalCountry(profile.country ?? "");
         setAltId(profile.mainAltId);
         setAltAvatarUrl(profile.altAvatarUrl);
+        setShowDiscordPublicly(profile.showDiscordPublicly);
       }
       setIsLoading(false);
     }
@@ -314,6 +317,21 @@ export default function ProfileSettingsPage() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Privacy section */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-base font-medium">Privacy</h3>
+            <p className="text-muted-foreground text-sm">
+              Control what information is visible on your public profile.
+            </p>
+          </div>
+          <div className="bg-card rounded-lg border px-4 py-3">
+            {!isLoading && (
+              <DiscordProfilePrivacyRow initialEnabled={showDiscordPublicly} />
+            )}
+          </div>
         </div>
 
         <Button onClick={handleSave} disabled={!canSave}>
