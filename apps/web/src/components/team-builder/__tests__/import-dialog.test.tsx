@@ -53,6 +53,9 @@ jest.mock("@trainers/validators", () => ({
 const mockGetLegalSpecies = jest.fn(() => undefined as Set<string> | undefined);
 const mockGetLegalItems = jest.fn(() => undefined as Set<string> | undefined);
 const mockGetLegalMoves = jest.fn(() => undefined as Set<string> | undefined);
+const mockGetLegalTeraTypes = jest.fn(
+  () => undefined as Set<string> | undefined
+);
 
 jest.mock("@trainers/pokemon", () => ({
   getLegalSpecies: (...args: unknown[]) =>
@@ -60,6 +63,8 @@ jest.mock("@trainers/pokemon", () => ({
   getLegalItems: (...args: unknown[]) => mockGetLegalItems(args[0] as string),
   getLegalMoves: (...args: unknown[]) =>
     mockGetLegalMoves(args[0] as string, args[1] as string),
+  getLegalTeraTypes: (...args: unknown[]) =>
+    mockGetLegalTeraTypes(args[0] as string),
 }));
 
 const mockAddPokemonToTeamAction = jest.fn(() =>
@@ -210,6 +215,7 @@ describe("ImportDialog", () => {
     // Default: permissive — no registered legality lists
     mockGetLegalSpecies.mockReturnValue(undefined);
     mockGetLegalItems.mockReturnValue(undefined);
+    mockGetLegalTeraTypes.mockReturnValue(undefined);
   });
 
   // ---------------------------------------------------------------------------
@@ -561,6 +567,73 @@ describe("ImportDialog", () => {
       );
 
       await parsePaste(user, "Pikachu @ Booster Energy");
+
+      await waitFor(() => {
+        expect(screen.getByText(/previewing/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Tera type paste guard
+  // ---------------------------------------------------------------------------
+
+  describe("tera type legality guard", () => {
+    it("shows an inline error when paste contains an illegal tera type", async () => {
+      const mockWithTera = {
+        ...mockParsedPikachu,
+        tera_type: "Fire",
+      };
+      mockParseShowdownText.mockReturnValueOnce([mockWithTera]);
+      // Empty set = no Tera allowed
+      mockGetLegalTeraTypes.mockReturnValue(new Set());
+
+      const user = userEvent.setup();
+      render(
+        <ImportDialog
+          team={makeTeam()}
+          open={true}
+          onOpenChange={jest.fn()}
+          onImportComplete={jest.fn()}
+          formatId="championsvgc2026regma"
+        />
+      );
+
+      await parsePaste(user, "Pikachu\nTera Type: Fire");
+
+      await waitFor(() => {
+        expect(screen.getByRole("alert")).toBeInTheDocument();
+      });
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        /tera isn't allowed/i
+      );
+      // Preview panel must not appear
+      expect(screen.queryByText(/previewing/i)).not.toBeInTheDocument();
+    });
+
+    it("proceeds to preview when tera types are legal", async () => {
+      const mockWithTera = {
+        ...mockParsedPikachu,
+        tera_type: "Fire",
+      };
+      mockParseShowdownText.mockReturnValueOnce([mockWithTera]);
+      // All 18 types legal
+      mockGetLegalTeraTypes.mockReturnValue(
+        new Set(["Fire", "Water", "Grass"])
+      );
+
+      const user = userEvent.setup();
+      render(
+        <ImportDialog
+          team={makeTeam()}
+          open={true}
+          onOpenChange={jest.fn()}
+          onImportComplete={jest.fn()}
+          formatId="gen9vgc2026regi"
+        />
+      );
+
+      await parsePaste(user, "Pikachu\nTera Type: Fire");
 
       await waitFor(() => {
         expect(screen.getByText(/previewing/i)).toBeInTheDocument();

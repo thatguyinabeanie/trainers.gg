@@ -8,6 +8,7 @@ import {
   getLegalItems,
   getLegalMoves,
   getLegalSpecies,
+  getLegalTeraTypes,
 } from "@trainers/pokemon";
 
 import {
@@ -258,6 +259,22 @@ export function ImportDialog({
     }
     if (illegalMoves.length > 0) {
       return `Illegal moves: ${illegalMoves.join("; ")}.`;
+    }
+
+    // Tera type check
+    const legalTera = getLegalTeraTypes(formatId);
+    if (legalTera !== undefined) {
+      const illegalTera = candidates
+        .map((p) => p.tera_type)
+        .filter((t): t is string => {
+          if (!t) return false;
+          return !legalTera.has(t);
+        });
+      if (illegalTera.length > 0) {
+        return legalTera.size === 0
+          ? "Tera isn't allowed in this format."
+          : `Illegal Tera types: ${[...new Set(illegalTera)].join(", ")}.`;
+      }
     }
 
     return null;

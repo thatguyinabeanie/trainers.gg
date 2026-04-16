@@ -22,6 +22,7 @@ import {
   getTypeColor,
   getAllItems,
   getLegalItems,
+  getLegalTeraTypes,
   NATURE_EFFECTS,
   calculateChampionsHP,
   calculateChampionsStat,
@@ -1180,21 +1181,36 @@ function DefenderPanel({
         </div>
 
         {/* Tera */}
-        <div className="flex flex-col gap-0.5">
-          <label className="text-muted-foreground text-[10px]">Tera</label>
-          <select
-            value={teraType}
-            onChange={(e) => onTeraChange(e.target.value)}
-            className="border-border bg-background rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
-          >
-            <option value="">None</option>
-            {ALL_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </div>
+        {(() => {
+          const legalTera = formatId ? getLegalTeraTypes(formatId) : undefined;
+          const teraDisabled = legalTera !== undefined && legalTera.size === 0;
+          const teraOptions = legalTera
+            ? ALL_TYPES.filter((t) => legalTera.has(t))
+            : ALL_TYPES;
+          return (
+            <div className="flex flex-col gap-0.5">
+              <label className="text-muted-foreground text-[10px]">Tera</label>
+              {teraDisabled ? (
+                <span className="text-muted-foreground px-1 py-1 text-xs">
+                  Not allowed
+                </span>
+              ) : (
+                <select
+                  value={teraType}
+                  onChange={(e) => onTeraChange(e.target.value)}
+                  className="border-border bg-background rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                >
+                  <option value="">None</option>
+                  {teraOptions.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Stats — grid rows: Label | Base | Slider/SP | EVs/SP | Total | ± */}
