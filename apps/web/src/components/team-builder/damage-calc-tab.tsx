@@ -1129,11 +1129,17 @@ function DefenderPanel({
               // If the typed value is not in the format-legal item list, reset
               // it to empty. This catches free-typed illegal items since the
               // datalist does not hard-restrict the input value.
+              // Case-insensitive comparison so "life orb" matches "Life Orb".
               const typed = e.target.value;
               if (!typed) return;
               const legalItems = formatId ? getLegalItems(formatId) : undefined;
-              if (legalItems !== undefined && !legalItems.has(typed)) {
-                onItemChange("");
+              if (legalItems !== undefined) {
+                const legalLower = new Set(
+                  [...legalItems].map((i) => i.toLowerCase())
+                );
+                if (!legalLower.has(typed.toLowerCase())) {
+                  onItemChange("");
+                }
               }
             }}
             placeholder="e.g. Sitrus Berry"

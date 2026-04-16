@@ -70,7 +70,7 @@ export async function submitNewTeam(
         if (illegalItems.length > 0) {
           return {
             status: "error",
-            error: `Cannot import. These items aren't legal in ${input.format}: ${[...new Set(illegalItems)].join(", ")}.`,
+            error: `Cannot import. These items aren't legal in this format: ${[...new Set(illegalItems)].join(", ")}.`,
           };
         }
       }
