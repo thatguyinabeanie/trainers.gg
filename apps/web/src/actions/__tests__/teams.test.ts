@@ -235,13 +235,11 @@ describe("updateTeamAction", () => {
     const result = await updateTeamAction(10, { format: "gen9vgc2026regi" });
 
     expect(result.success).toBe(false);
-    // The guard throws inside withAction — verify the thrown error mentions Mew.
-    // getErrorMessage mock returns the fallback, but we can inspect the arg.
-    expect(mockTrainersGetErrorMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining("Mew") }),
-      "Failed to update team",
-      expect.anything()
-    );
+    // The guard now returns directly — verify the error message mentions Mew
+    if (!result.success) {
+      expect(result.error).toContain("Mew");
+      expect(result.error).toContain("Remove them before changing format");
+    }
     expect(mockUpdateTeam).not.toHaveBeenCalled();
   });
 
@@ -276,6 +274,19 @@ describe("updateTeamAction", () => {
     expect(mockUpdateTeam).toHaveBeenCalledWith(mockSupabase, 10, {
       name: "New Name",
     });
+  });
+
+  it("returns an error when the team is not found during a format change", async () => {
+    mockGetTeamWithPokemon.mockResolvedValue(null);
+
+    const result = await updateTeamAction(10, { format: "gen9vgc2026regi" });
+
+    expect(result.success).toBe(false);
+    // The guard now returns directly instead of throwing inside withAction
+    if (!result.success) {
+      expect(result.error).toContain("Team not found");
+    }
+    expect(mockUpdateTeam).not.toHaveBeenCalled();
   });
 });
 
@@ -414,6 +425,9 @@ describe("addPokemonToTeamAction", () => {
     const result = await addPokemonToTeamAction(10, fakePokemon, 1);
 
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Failed to add pokemon to team");
+    }
     expect(mockAddPokemonToTeam).not.toHaveBeenCalled();
   });
 
@@ -421,6 +435,18 @@ describe("addPokemonToTeamAction", () => {
     const result = await addPokemonToTeamAction(10, fakePokemon, 0);
 
     expect(result).toEqual({ success: false, error: expect.any(String) });
+    expect(mockAddPokemonToTeam).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when the team is not found", async () => {
+    mockGetTeamWithPokemon.mockResolvedValue(null);
+
+    const result = await addPokemonToTeamAction(10, fakePokemon, 1);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Team not found. It may have been deleted.",
+    });
     expect(mockAddPokemonToTeam).not.toHaveBeenCalled();
   });
 });
@@ -480,6 +506,9 @@ describe("updatePokemonAction", () => {
     const result = await updatePokemonAction(1, 55, { nickname: "Sparky" });
 
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Failed to update pokemon");
+    }
     expect(mockUpdatePokemon).not.toHaveBeenCalled();
   });
 
@@ -487,6 +516,18 @@ describe("updatePokemonAction", () => {
     const result = await updatePokemonAction(0, 55, { nickname: "Sparky" });
 
     expect(result).toEqual({ success: false, error: expect.any(String) });
+    expect(mockUpdatePokemon).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when the team is not found", async () => {
+    mockGetTeamWithPokemon.mockResolvedValue(null);
+
+    const result = await updatePokemonAction(1, 55, { nickname: "Sparky" });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Team not found. It may have been deleted.",
+    });
     expect(mockUpdatePokemon).not.toHaveBeenCalled();
   });
 });

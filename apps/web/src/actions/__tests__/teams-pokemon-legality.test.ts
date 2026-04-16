@@ -258,13 +258,16 @@ describe("addPokemonToTeamAction — legality guards", () => {
     expect(mockIsLegalSpecies).not.toHaveBeenCalled();
   });
 
-  it("skips legality check when the team is not found", async () => {
+  it("returns error when the team is not found", async () => {
     mockGetTeamWithPokemon.mockResolvedValue(null);
-    mockAddPokemonToTeam.mockResolvedValue({ pokemonId: 77 });
 
     const result = await addPokemonToTeamAction(10, legalPokemon, 1);
 
-    expect(result).toEqual({ success: true, data: { pokemonId: 77 } });
+    expect(result).toEqual({
+      success: false,
+      error: "Team not found. It may have been deleted.",
+    });
+    expect(mockAddPokemonToTeam).not.toHaveBeenCalled();
     expect(mockIsLegalSpecies).not.toHaveBeenCalled();
   });
 });
