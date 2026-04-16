@@ -223,13 +223,17 @@ function countMigrations() {
  * 3. Build URL from project ref and password (direct connection via db host)
  */
 function getDatabaseUrl(projectRef) {
-  // Prefer non-pooling URL for seeding (required for auth.users writes)
+  // Prefer non-pooling URL for seeding (required for auth.users writes).
+  // Pooled/non-pooling URLs from the Supabase integration embed credentials —
+  // we must NOT pass an explicit `password` option when using them, because
+  // postgres.js options take precedence over URL auth and would either
+  // override the real password or pass `undefined` when the env var is unset.
   const nonPoolingUrl =
     process.env.SUPABASE_POSTGRES_URL_NON_POOLING ||
     process.env.POSTGRES_URL_NON_POOLING;
   if (nonPoolingUrl) {
     console.log(`   Using non-pooling connection (direct)`);
-    return nonPoolingUrl;
+    return { url: nonPoolingUrl, needsExplicitPassword: false };
   }
 
   // Fall back to pooled URL (may not work for auth schema)
@@ -237,18 +241,21 @@ function getDatabaseUrl(projectRef) {
     process.env.SUPABASE_POSTGRES_URL || process.env.POSTGRES_URL;
   if (pooledUrl) {
     console.log(`   ⚠️  Using pooled connection (may fail for auth.users)`);
-    return pooledUrl;
+    return { url: pooledUrl, needsExplicitPassword: false };
   }
 
-  // Build direct connection URL — use db.<ref>.supabase.co (region-independent)
-  // Password is NOT embedded in the URL — callers must pass it via the `password`
-  // option to the postgres client to avoid the secret appearing in logs or error messages.
+  // Build direct connection URL — use db.<ref>.supabase.co (region-independent).
+  // Password is NOT embedded in the URL — callers must pass it via the
+  // `password` option so the secret never appears in logs or error messages.
   if (!process.env.POSTGRES_PASSWORD) {
     return null;
   }
 
   console.log(`   Building direct connection URL`);
-  return `postgresql://postgres@db.${projectRef}.supabase.co:5432/postgres`;
+  return {
+    url: `postgresql://postgres@db.${projectRef}.supabase.co:5432/postgres`,
+    needsExplicitPassword: true,
+  };
 }
 
 /**
@@ -272,22 +279,28 @@ async function runSeedSql(projectRef) {
 
   console.log(`   Found ${existingSeeds.length} seed files`);
 
-  const connectionUrl = getDatabaseUrl(projectRef);
-  if (!connectionUrl) {
+  const connection = getDatabaseUrl(projectRef);
+  if (!connection) {
     console.log(`   ❌ No database connection URL available`);
     return false;
   }
 
   console.log(`   Connecting to database...`);
 
-  // Pass password via options rather than embedding it in the URL so it
-  // never appears in logs, error messages, or future console.log calls.
-  const sql = postgres(connectionUrl, {
-    password: process.env.POSTGRES_PASSWORD,
-    // Supabase direct/pooled connections require SSL — enforce here uniformly
-    // for pooled, non-pooling, and fallback URLs.
-    ssl: "require",
-    // Increase timeout for seed operations
+  // postgres.js options:
+  //   ssl: true — widely-supported across postgres.js versions; Supabase
+  //   direct/pooled connections require TLS.
+  //   password — only supply when the URL came from the fallback branch
+  //   (the only branch that intentionally omits credentials). Supplying it
+  //   on pooled/non-pooling URLs would either override the embedded password
+  //   or pass `undefined` in environments that only provide the URL, both
+  //   of which break auth.
+  //   connect_timeout / idle_timeout / max_lifetime — increased for seeding.
+  const sql = postgres(connection.url, {
+    ssl: true,
+    ...(connection.needsExplicitPassword
+      ? { password: process.env.POSTGRES_PASSWORD }
+      : {}),
     connect_timeout: 30,
     idle_timeout: 30,
     max_lifetime: 60,

@@ -663,22 +663,21 @@ function PlayerNav({
               <SidebarMenuItem key={item.label}>
                 {item.disabled ? (
                   <Tooltip>
+                    {/* Make the visible button itself the trigger so hover,
+                        focus, and screen-reader behavior all align with the
+                        disabled control users actually see. */}
                     <TooltipTrigger
                       render={
-                        <span
-                          tabIndex={0}
+                        <SidebarMenuButton
+                          className="opacity-50"
                           aria-disabled="true"
                           aria-label={`${item.label} — Coming soon, in beta`}
+                          onClick={(e) => e.preventDefault()}
                         />
                       }
                     >
-                      <SidebarMenuButton
-                        className="pointer-events-none opacity-50"
-                        tooltip={item.label}
-                      >
-                        <item.icon className="size-4 shrink-0" />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
+                      <item.icon className="size-4 shrink-0" />
+                      <span>{item.label}</span>
                     </TooltipTrigger>
                     <TooltipContent side="right">
                       Coming soon — in beta

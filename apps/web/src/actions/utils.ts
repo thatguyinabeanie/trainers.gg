@@ -18,7 +18,11 @@ export async function rejectBots(): Promise<void> {
   const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
   if (bypassHeader && bypassSecret && bypassHeader === bypassSecret) {
-    console.debug("[rejectBots] Bypassed via automation header");
+    // Dev + CI only — visibility during tests without leaking bypass activity
+    // or contributing log noise in production.
+    if (process.env.NODE_ENV !== "production") {
+      console.debug("[rejectBots] Bypassed via automation header");
+    }
     return;
   }
 
