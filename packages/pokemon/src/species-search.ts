@@ -9,6 +9,7 @@ import { Dex } from "@pkmn/dex";
 import { Generations } from "@pkmn/data";
 
 import { getFormatById } from "./formats";
+import { getLegalMoves } from "./format-legality";
 import { getLearnableMoves } from "./validation";
 
 // Local Generations instance — supports any generation, not just gen9
@@ -24,6 +25,35 @@ function getCachedLearnableMoves(species: string): string[] {
     learnableMovesCache.set(species, moves);
   }
   return moves;
+}
+
+/**
+ * Lowercase, format-aware learnable-move lookup used by the free-text search.
+ *
+ * Wraps `getLegalMoves(species, formatId)` with a per-(species, format) cache
+ * of the lowercased move-name array. The underlying `getLegalMoves` already
+ * caches its `ReadonlySet<string>` result, but query-time substring matching
+ * needs the array form lowercased once — caching avoids re-lowercasing
+ * hundreds of moves per species on every keystroke.
+ *
+ * Returns `undefined` when learnset legality is not computable (e.g. a format
+ * outside the simulator), signalling the caller to skip move matching for
+ * that species rather than treating an empty set as "no moves".
+ */
+const lowercaseLegalMovesCache = new Map<string, string[] | undefined>();
+
+function getLowercaseLegalMoves(
+  species: string,
+  formatId: string
+): string[] | undefined {
+  const cacheKey = `${formatId}::${species}`;
+  if (lowercaseLegalMovesCache.has(cacheKey)) {
+    return lowercaseLegalMovesCache.get(cacheKey);
+  }
+  const legal = getLegalMoves(species, formatId);
+  const lowered = legal ? Array.from(legal, (m) => m.toLowerCase()) : undefined;
+  lowercaseLegalMovesCache.set(cacheKey, lowered);
+  return lowered;
 }
 
 // =============================================================================
@@ -105,7 +135,9 @@ export function buildSpeciesSearchIndex(
  * Search a species index built by `buildSpeciesSearchIndex`.
  *
  * Filtering rules:
- * - `query`: case-insensitive substring match against species name, ability names, and type names
+ * - `query`: case-insensitive substring match against species name, ability
+ *    names, type names, and — when `options.formatId` is supplied —
+ *    learnable-move names for that format
  * - `types`: species must have at least one of the specified types (OR logic)
  * - `abilities`: species must have at least one of the specified abilities (OR logic)
  * - `moves`: species must be able to learn ALL specified moves (AND logic) — uses `getLearnableMoves()`
@@ -136,9 +168,17 @@ export function searchSpecies(
     maxBaseStat?: Partial<
       Record<keyof SpeciesSearchEntry["baseStats"], number>
     >;
+    /**
+     * Active format ID. When set, the free-text `query` additionally matches
+     * against learnable move names (e.g. "tail" surfaces Tailwind learners).
+     * Move-name matching is skipped for formats whose legality is not
+     * computable (the function falls back to name/type/ability matching).
+     */
+    formatId?: string;
   }
 ): SpeciesSearchEntry[] {
   const normalizedQuery = query.trim().toLowerCase();
+  const queryFormatId = options?.formatId;
 
   // Precompute normalized filter arrays once (outside the per-entry loop)
   const normalizedTypes =
@@ -165,7 +205,19 @@ export function searchSpecies(
         t.toLowerCase().includes(normalizedQuery)
       );
 
-      if (!inName && !inAbilities && !inTypes) return false;
+      // Move-name matching only runs when the caller passed a formatId so
+      // we know which learnsets are in scope. The lookup is cached per
+      // (species, format) — first keystroke per species is the only slow
+      // call, subsequent keystrokes are O(moves) string scans.
+      let inMoves = false;
+      if (!inName && !inAbilities && !inTypes && queryFormatId) {
+        const lowerMoves = getLowercaseLegalMoves(entry.species, queryFormatId);
+        if (lowerMoves) {
+          inMoves = lowerMoves.some((m) => m.includes(normalizedQuery));
+        }
+      }
+
+      if (!inName && !inAbilities && !inTypes && !inMoves) return false;
     }
 
     // -- Types filter (OR: species must have at least one matching type) --

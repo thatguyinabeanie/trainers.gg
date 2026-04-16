@@ -340,4 +340,51 @@ describe("searchSpecies", () => {
       expect(results).toHaveLength(0);
     });
   });
+
+  // ==========================================================================
+  // Free-text query move matching (formatId-aware)
+  // When the caller passes options.formatId, the query string also matches
+  // against learnable move names — typing "tail" surfaces Tailwind learners
+  // even though no species/type/ability contains "tail".
+  // ==========================================================================
+
+  describe("query matches move names when formatId is supplied", () => {
+    const FORMAT = "gen9vgc2026regi";
+
+    it("returns Tailwind learners when searching 'tail' (matches Iron Tail, Tail Slap, Tailwind, etc.)", () => {
+      const results = searchSpecies(index, "tail", { formatId: FORMAT });
+      const names = results.map((e) => e.species);
+      // Whimsicott is a canonical Tailwind setter
+      expect(names).toContain("Whimsicott");
+      // The query should surface many more species than the only one whose
+      // name contains "tail" (Farigiraf), proving move matching is active.
+      expect(results.length).toBeGreaterThan(5);
+    });
+
+    it("returns species learning Moonblast when searching 'moonblast'", () => {
+      const results = searchSpecies(index, "moonblast", { formatId: FORMAT });
+      const names = results.map((e) => e.species);
+      // Sylveon is a textbook Moonblast user
+      expect(names).toContain("Sylveon");
+    });
+
+    it("falls back to name/type/ability matching when formatId is omitted", () => {
+      // Without a formatId, "tail" should only match species whose name,
+      // type, or ability literally contains the substring — no move matching.
+      const results = searchSpecies(index, "tail");
+      for (const entry of results) {
+        const hasTextualMatch =
+          entry.species.toLowerCase().includes("tail") ||
+          entry.types.some((t) => t.toLowerCase().includes("tail")) ||
+          entry.abilities.some((a) => a.toLowerCase().includes("tail"));
+        expect(hasTextualMatch).toBe(true);
+      }
+    });
+
+    it("name matches still take priority and don't require move lookup", () => {
+      // 'pika' matches by name, the move-lookup branch should not exclude it
+      const results = searchSpecies(index, "pika", { formatId: FORMAT });
+      expect(results.map((e) => e.species)).toContain("Pikachu");
+    });
+  });
 });

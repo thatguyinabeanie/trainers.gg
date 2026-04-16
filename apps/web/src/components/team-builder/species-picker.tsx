@@ -248,13 +248,17 @@ export function SpeciesPicker({
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<SpeciesFilterState>(DEFAULT_FILTERS);
 
-  // Derived list — search + filter + format legality.
+  // Derived list — search + filter + format legality. Passing `formatId`
+  // lets the free-text query also match learnable move names (e.g. typing
+  // "tail" surfaces Tailwind learners). Without a formatId the query falls
+  // back to name/type/ability matching only.
   const matched = searchSpecies(speciesIndex, query, {
     types: filters.types,
     abilities: filters.abilities,
     moves: filters.moves,
     minBaseStat: filters.minBaseStat,
     maxBaseStat: filters.maxBaseStat,
+    formatId,
   });
   const legal = formatId
     ? matched.filter((e) => isLegalSpecies(e.species, formatId))
