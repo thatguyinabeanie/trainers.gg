@@ -1,8 +1,10 @@
 import {
+  getLegalAbilities,
   getLegalItems,
   getLegalMoves,
   getLegalSpecies,
   getLegalTeraTypes,
+  isLegalAbility,
   isLegalItem,
   isLegalMove,
   isLegalSpecies,
@@ -171,5 +173,45 @@ describe("format-legality — tera types", () => {
 
   it("isLegalTeraType returns false for a type in a no-Tera format", () => {
     expect(isLegalTeraType("Fire", "championsvgc2026regma")).toBe(false);
+  });
+});
+
+describe("format-legality — abilities", () => {
+  it("marks Intimidate legal on Incineroar in Reg I", () => {
+    expect(isLegalAbility("Intimidate", "Incineroar", "gen9vgc2026regi")).toBe(
+      true
+    );
+  });
+
+  it("marks Moody illegal in Gen 9 OU (format-banned)", () => {
+    expect(isLegalAbility("Moody", "Smeargle", "gen9ou")).toBe(false);
+  });
+
+  it("marks an ability the species doesn't have as illegal", () => {
+    expect(isLegalAbility("Intimidate", "Pikachu", "gen9vgc2026regi")).toBe(
+      false
+    );
+  });
+
+  it("returns a set of the species' legal abilities", () => {
+    const legal = getLegalAbilities("Incineroar", "gen9vgc2026regi");
+    expect(legal?.has("Intimidate")).toBe(true);
+    expect(legal?.has("Blaze")).toBe(true);
+  });
+
+  it("returns undefined for unknown formats (permissive)", () => {
+    expect(getLegalAbilities("Pikachu", "unknown-format-id")).toBeUndefined();
+    expect(isLegalAbility("Static", "Pikachu", "unknown-format-id")).toBe(true);
+  });
+
+  it("returns all species abilities for Champions (no ability banlist)", () => {
+    const legal = getLegalAbilities("Incineroar", "championsvgc2026regma");
+    expect(legal).toBeInstanceOf(Set);
+    expect(legal?.has("Intimidate")).toBe(true);
+    expect(legal?.has("Blaze")).toBe(true);
+  });
+
+  it("isLegalAbility returns true for empty string (no ability selected)", () => {
+    expect(isLegalAbility("", "Pikachu", "gen9vgc2026regi")).toBe(true);
   });
 });
