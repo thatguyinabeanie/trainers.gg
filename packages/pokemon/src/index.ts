@@ -194,3 +194,21 @@ export {
   type StatusName,
   getMoveHelperText,
 } from "./move-helpers";
+
+// Battle-time speed modifier helpers (stage / item / status / weather / tailwind)
+export {
+  type SpeedModifiers,
+  type SpeedTierLabel,
+  type SpeedAffectingItem,
+  applySpeedModifiers,
+  getSpeedTierLabel,
+  groupBySpeed,
+  getSpeedAffectingItems,
+} from "./speed-helpers";
+
+// Curated meta-relevant speed tier datasets (per format)
+export {
+  type MetaSpeedEntry,
+  type SpeedAbility,
+  getMetaSpeedTiers,
+} from "./meta-speed-tiers";
