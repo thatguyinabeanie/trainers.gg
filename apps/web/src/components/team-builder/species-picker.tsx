@@ -107,13 +107,16 @@ function SpeciesRow({ entry, isCurrent, onSelect }: SpeciesRowProps) {
         />
       </div>
 
-      {/* Info — name + type pills on top, abilities muted below. */}
+      {/* Info — name + type pills on top, abilities muted below. The name
+          span carries `min-w-0` so it can shrink and truncate as a last
+          resort if the column is unusually narrow; type pills stay
+          `shrink-0` so they never collapse. */}
       <div className="flex min-w-0 flex-col gap-0.5">
-        <div className="flex items-center gap-1.5">
-          <span className="text-foreground truncate text-sm font-semibold">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="text-foreground min-w-0 truncate text-sm font-semibold">
             {entry.species}
           </span>
-          <div className="flex gap-1">
+          <div className="flex shrink-0 gap-1">
             {entry.types.map((type) => (
               <span
                 key={type}

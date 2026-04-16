@@ -7,9 +7,11 @@
 
 @theme inline {
   /* Custom max-width tokens used across the app */
-  /* Team builder is tuned for a 1440px sweet spot — past that the
-     fixed 240/1fr/460 grid stops looking balanced. */
-  --container-builder: 90rem; /* 1440px */
+  /* Team builder is tuned for a 1536px sweet spot — wide enough that the
+     middle column accommodates long species names in the picker (e.g.
+     "Calyrex-Shadow", "Iron Valiant") without truncation, while keeping
+     the 240 / 1fr / 460 grid balanced. */
+  --container-builder: 96rem; /* 1536px */
   /* Right-rail analytics panel — fixed 460px so Speed/Calc tabs have
      consistent room without resizing the editor center column. */
   --container-rail: 28.75rem; /* 460px */

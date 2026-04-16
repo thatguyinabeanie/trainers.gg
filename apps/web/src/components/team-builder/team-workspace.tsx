@@ -116,7 +116,7 @@ interface TeamWorkspaceProps {
  * Manages selected pokemon state and composes the type chart, editor card
  * (team strip + pokemon editor), and analytics rail.
  *
- * Layout — fixed 3-column grid sized to a 1440px sweet spot:
+ * Layout — fixed 3-column grid inside a 1536px container:
  *   - LEFT (240px): TypeChartPanel — defensive coverage table
  *   - CENTER (1fr): Editor card — TeamStrip on top, PokemonEditor below
  *   - RIGHT (460px): AnalyticsRail — Speed / Calc tabs
@@ -320,10 +320,10 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     .filter((p): p is Tables<"pokemon"> => p !== null);
 
   return (
-    // max-w-builder (1440px) is tuned for the team builder — the
-    // dashboard normally uses max-w-screen-2xl (1536px), but the
-    // 240/1fr/460 grid stops looking balanced past 1440px. Token
-    // declared in globals.css as --container-builder.
+    // max-w-builder (1536px) is tuned for the team builder — wide enough
+    // that the middle column accommodates long species names in the picker
+    // without truncation, while keeping the 240/1fr/460 grid balanced.
+    // Token declared in globals.css as --container-builder.
     <div
       data-testid="team-workspace"
       className="max-w-builder mx-auto w-full px-4 py-6 md:px-6"
