@@ -21,17 +21,27 @@ The branch has ~157 commits ahead of `origin/discord-bot`. Pre-push checks:
 
 ## 2. Discord Developer Portal Setup
 
-**Bot application already exists.** Verify these post-deploy configuration steps:
+**Bot application already exists.** Discord OAuth for user sign-in is already configured through Supabase Auth (provider: discord). Verify these post-deploy configuration steps for the **bot-specific** flows:
 
-1. **OAuth2 redirect URL:** ensure `https://trainers.gg/api/discord/install-callback` is listed in the OAuth2 tab. For local dev, also add `http://localhost:3000/api/discord/install-callback`.
+1. **OAuth2 redirect URL:** ensure `https://trainers.gg/api/discord/install-callback` is listed in the OAuth2 tab. This is for the **bot server-install** flow (community leader adds bot to their guild), NOT the user sign-in flow (which goes through Supabase's own callback). For local dev, also add `http://localhost:3000/api/discord/install-callback`.
 2. **Interactions Endpoint URL:** set to `https://trainers.gg/api/discord/interactions` after the first production deploy (Discord will PING to verify — the endpoint handles this automatically). For local dev, use ngrok: `ngrok http 3000` and set the tunnel URL as the endpoint.
 3. **Linked Roles Verification URL:** set to `https://trainers.gg/api/discord/linked-roles` (see "Linked Roles" section below — this route does not exist yet and needs to be built).
+
+### Three distinct Discord OAuth flows
+
+| Flow                             | Purpose                                                 | Scopes                            | Callback                                            | Who triggers          |
+| -------------------------------- | ------------------------------------------------------- | --------------------------------- | --------------------------------------------------- | --------------------- |
+| **User sign-in**                 | "Sign in with Discord" on trainers.gg                   | `identify email`                  | Supabase Auth callback (already configured)         | Any user              |
+| **Bot server-install**           | Add Beanie Bot to a Discord server                      | `bot applications.commands`       | `/api/discord/install-callback` (built in Phase 2a) | Community leader      |
+| **Linked Roles** (not yet built) | Connect trainers.gg account from Discord Connections UI | `role_connections.write identify` | `/api/discord/linked-roles` (not yet built)         | Any user from Discord |
+
+The first flow uses Supabase's Discord OAuth credentials (configured in Supabase Dashboard → Auth → Providers). The second and third use the bot application's credentials from the Discord Developer Portal. These MAY be the same Discord application or separate ones — if the same app is used for both, the redirect URLs for all three callbacks need to be listed in the same OAuth2 tab.
 
 ### Linked Roles (App Role Connections) — NOT YET IMPLEMENTED
 
 Discord's [Linked Roles](https://discord.com/developers/docs/tutorials/configuring-app-metadata-for-linked-roles) feature lets users connect their trainers.gg account from Discord's built-in Connections UI (Profile → Connections → Beanie Bot). Server admins can then create role requirements like "must have a verified trainers.gg account" or "ELO above 1500."
 
-**Current state:** not implemented. The `/link` slash command uses the existing Supabase Auth Discord OAuth flow for identity linking, but that's a different mechanism — it doesn't register metadata with Discord's role connections API.
+**Current state:** not implemented. The user sign-in via Supabase Auth already establishes a Discord identity link (`auth.identities` provider=discord), and the `/link` slash command directs users to that same Supabase flow. But neither registers metadata with Discord's role connections API — that's a separate mechanism.
 
 **What needs to be built:**
 
