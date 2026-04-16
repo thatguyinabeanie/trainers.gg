@@ -86,7 +86,10 @@ export function DiscordClient({
         />
       )}
 
-      <Tabs value={currentTab} onValueChange={(v) => onTabChange(v as Tab)}>
+      <Tabs
+        value={currentTab}
+        onValueChange={(v) => onTabChange(isTab(v) ? v : "notifications")}
+      >
         <TabsList>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
