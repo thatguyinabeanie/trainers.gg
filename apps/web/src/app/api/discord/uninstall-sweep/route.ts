@@ -20,6 +20,7 @@
 import { DISCORD_BOT_UNINSTALLED } from "@trainers/posthog";
 import { listDiscordServers, deleteDiscordServer } from "@trainers/supabase";
 
+import { requireCronAuth } from "@/lib/cron-auth";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
   getGuild,
@@ -34,11 +35,9 @@ import { captureServerEvent } from "@/lib/posthog/server";
 // =============================================================================
 
 export async function GET(request: Request): Promise<Response> {
-  // Verify Vercel cron authorization
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  // Verify Vercel cron authorization. Fails closed if CRON_SECRET is unset.
+  const unauthorized = requireCronAuth(request);
+  if (unauthorized) return unauthorized;
 
   const supabase = createServiceRoleClient();
   const servers = await listDiscordServers(supabase);

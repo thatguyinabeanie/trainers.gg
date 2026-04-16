@@ -17,6 +17,7 @@
 
 import { start } from "workflow/api";
 
+import { requireCronAuth } from "@/lib/cron-auth";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getGuildMembersWithRole, getErrorCode } from "@/lib/discord/api";
 import {
@@ -43,11 +44,9 @@ const MAPPING_BATCH = 20;
 // =============================================================================
 
 export async function GET(request: Request): Promise<Response> {
-  // Verify Vercel cron authorization
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  // Verify Vercel cron authorization. Fails closed if CRON_SECRET is unset.
+  const unauthorized = requireCronAuth(request);
+  if (unauthorized) return unauthorized;
 
   const supabase = createServiceRoleClient();
 

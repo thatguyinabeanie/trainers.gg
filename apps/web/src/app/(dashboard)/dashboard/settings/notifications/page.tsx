@@ -68,7 +68,16 @@ export default async function NotificationSettingsPage() {
         .select("discord_dm_warn_until")
         .eq("id", user.id)
         .maybeSingle()
-        .then(({ data }) => data),
+        .then(({ data, error }) => {
+          if (error) {
+            console.error(
+              "[NotificationSettings] Failed to load Discord DM warning state:",
+              error
+            );
+            return null;
+          }
+          return data;
+        }),
     ]);
 
   // Build a full preferences map with all 11 keys, defaulting missing rows to false

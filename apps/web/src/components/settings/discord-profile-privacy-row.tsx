@@ -22,18 +22,28 @@ export function DiscordProfilePrivacyRow({
     // Optimistic update
     setEnabled(next);
     startTransition(async () => {
-      const result = await setShowDiscordPubliclyAction(next);
-      if (!result.success) {
-        // Rollback on failure
+      try {
+        const result = await setShowDiscordPubliclyAction(next);
+        if (!result.success) {
+          // Rollback on failure
+          setEnabled(!next);
+          toast.error(result.error);
+          return;
+        }
+        toast.success(
+          next
+            ? "Discord handle will show on your profile"
+            : "Discord handle hidden"
+        );
+      } catch (error) {
+        // Server Action threw (network error, unexpected server error) — the
+        // {success:false} path above only handles returned failures. Rollback
+        // optimistic state and surface a fallback toast so the switch never
+        // gets stuck in the wrong position without feedback.
         setEnabled(!next);
-        toast.error(result.error);
-        return;
+        toast.error("Something went wrong. Please try again.");
+        console.error("[DiscordProfilePrivacyRow] Toggle failed:", error);
       }
-      toast.success(
-        next
-          ? "Discord handle will show on your profile"
-          : "Discord handle hidden"
-      );
     });
   }
 

@@ -14,6 +14,7 @@ import {
   type RESTPostAPIApplicationCommandsJSONBody,
 } from "discord-api-types/v10";
 
+import { requireCronAuth } from "@/lib/cron-auth";
 import {
   DiscordAPIError,
   registerGlobalCommands,
@@ -26,11 +27,10 @@ import { commandRegistry } from "@/lib/discord/commands";
 // =============================================================================
 
 export async function POST(request: Request): Promise<Response> {
-  // Verify secret — prevents randos from triggering re-registration
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  // Verify secret — prevents randos from triggering re-registration.
+  // Fails closed if CRON_SECRET is unset (returns 500).
+  const unauthorized = requireCronAuth(request);
+  if (unauthorized) return unauthorized;
 
   const { searchParams } = new URL(request.url);
   const guildId = searchParams.get("guild_id");

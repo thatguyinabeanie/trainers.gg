@@ -7,6 +7,9 @@ import React from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
+
+import { ALL_DM_EVENT_TYPES } from "@trainers/supabase";
+
 import { LinkedIdentitiesSection } from "../linked-identities-section";
 
 // =============================================================================
@@ -706,7 +709,11 @@ describe("LinkedIdentitiesSection", () => {
       });
 
       expect(screen.getByText(/DM notifications/)).toBeInTheDocument();
-      expect(screen.getByText(/7 of 11 enabled/)).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          new RegExp(`7 of ${ALL_DM_EVENT_TYPES.length} enabled`)
+        )
+      ).toBeInTheDocument();
     });
 
     it("Manage link points to /dashboard/settings/notifications#discord-dms", async () => {
@@ -750,7 +757,11 @@ describe("LinkedIdentitiesSection", () => {
         expect(screen.getByText("Discord")).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/0 of 11 enabled/)).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          new RegExp(`0 of ${ALL_DM_EVENT_TYPES.length} enabled`)
+        )
+      ).toBeInTheDocument();
     });
 
     it("does NOT render DM summary for non-Discord linked providers", async () => {

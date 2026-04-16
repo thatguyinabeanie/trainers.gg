@@ -284,6 +284,9 @@ async function runSeedSql(projectRef) {
   // never appears in logs, error messages, or future console.log calls.
   const sql = postgres(connectionUrl, {
     password: process.env.POSTGRES_PASSWORD,
+    // Supabase direct/pooled connections require SSL — enforce here uniformly
+    // for pooled, non-pooling, and fallback URLs.
+    ssl: "require",
     // Increase timeout for seed operations
     connect_timeout: 30,
     idle_timeout: 30,

@@ -36,7 +36,7 @@ jest.mock("../picker-refresh-button", () => ({
 // ── Imports ────────────────────────────────────────────────────────────────
 
 import React from "react";
-import { toast as _toast } from "sonner";
+import { toast } from "sonner";
 import { RoleMappingTable } from "../role-mapping-table";
 import type { DiscordRoleMapping } from "@trainers/supabase";
 
@@ -105,12 +105,15 @@ describe("RoleMappingTable", () => {
       expect(winnerRow?.textContent).toContain("🏆");
     });
 
-    it.skip("shows the hierarchy violation banner when hasHierarchyViolation is true", () => {
+    it("shows the hierarchy violation banner when hasHierarchyViolation is true", () => {
       render(
         <RoleMappingTable {...defaultProps} hasHierarchyViolation={true} />
       );
 
-      expect(screen.getByText(/Move.*Beanie Bot/)).toBeInTheDocument();
+      // The "Move Beanie Bot" copy is split across text + <strong>, so match
+      // against the alert's full textContent rather than a single text node.
+      const alert = screen.getByRole("alert");
+      expect(alert).toHaveTextContent(/Move\s+Beanie Bot\s+above/);
     });
 
     it("does not show hierarchy banner when hasHierarchyViolation is false", () => {
@@ -142,7 +145,7 @@ describe("RoleMappingTable", () => {
   });
 
   describe("toggle interaction", () => {
-    it.skip("shows error toast and rolls back when toggle action fails", async () => {
+    it("shows error toast and rolls back when toggle action fails", async () => {
       mockToggleRoleMappingAction.mockResolvedValueOnce({
         success: false,
         error: "Permission denied",
@@ -172,7 +175,7 @@ describe("RoleMappingTable", () => {
       });
     });
 
-    it.skip("shows error when toggling a row with no existing mapping", async () => {
+    it("shows error when toggling a row with no existing mapping", async () => {
       const user = userEvent.setup();
       // No mappings — so all switches have mappingId = null
       render(<RoleMappingTable {...defaultProps} roleMappings={[]} />);
