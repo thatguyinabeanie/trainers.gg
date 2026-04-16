@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 
-import { getValidAbilities, getAbilityShortDesc } from "@trainers/pokemon";
+import {
+  getValidAbilities,
+  getAbilityShortDesc,
+  getLegalAbilities,
+} from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -17,6 +21,8 @@ interface AbilityPickerProps {
   value: string;
   onSelect: (ability: string) => void;
   onClose: () => void;
+  /** When provided, restricts to format-legal abilities. */
+  formatId?: string;
 }
 
 // =============================================================================
@@ -32,10 +38,18 @@ export function AbilityPicker({
   value,
   onSelect,
   onClose,
+  formatId,
 }: AbilityPickerProps) {
   const [search, setSearch] = useState("");
 
-  const abilities = getValidAbilities(species);
+  // When a format is specified, restrict to format-legal abilities.
+  // Falls back to the full species abilities when getLegalAbilities
+  // returns undefined (unknown/permissive format).
+  const abilities = formatId
+    ? Array.from(
+        getLegalAbilities(species, formatId) ?? getValidAbilities(species)
+      )
+    : getValidAbilities(species);
 
   const filtered = abilities.filter((a) =>
     a.toLowerCase().includes(search.toLowerCase())

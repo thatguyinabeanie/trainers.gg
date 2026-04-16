@@ -3,6 +3,7 @@ import {
   getLegalMoves,
   getLegalSpecies,
   getLegalTeraTypes,
+  isLegalAbility,
 } from "@trainers/pokemon";
 import { type TablesInsert } from "@trainers/supabase";
 import { parseShowdownText } from "@trainers/validators";
@@ -118,6 +119,21 @@ export async function submitNewTeam(
                 : `Cannot import. Illegal Tera types: ${[...new Set(illegalTera)].join(", ")}.`,
           };
         }
+      }
+
+      // Reject the whole paste when any ability is illegal for its species in this format.
+      const illegalAbilities: string[] = [];
+      for (const p of parsed) {
+        if (!p.species || !p.ability) continue;
+        if (!isLegalAbility(p.ability, p.species, input.format)) {
+          illegalAbilities.push(`${p.ability} on ${p.species}`);
+        }
+      }
+      if (illegalAbilities.length > 0) {
+        return {
+          status: "error",
+          error: `Cannot import. Illegal abilities: ${illegalAbilities.join("; ")}.`,
+        };
       }
     }
   }

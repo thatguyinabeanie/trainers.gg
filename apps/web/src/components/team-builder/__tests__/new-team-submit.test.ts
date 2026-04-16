@@ -23,12 +23,14 @@ const mockGetLegalSpecies = jest.fn();
 const mockGetLegalItems = jest.fn();
 const mockGetLegalMoves = jest.fn();
 const mockGetLegalTeraTypes = jest.fn();
+const mockIsLegalAbility = jest.fn();
 
 jest.mock("@trainers/pokemon", () => ({
   getLegalSpecies: (...args: unknown[]) => mockGetLegalSpecies(...args),
   getLegalItems: (...args: unknown[]) => mockGetLegalItems(...args),
   getLegalMoves: (...args: unknown[]) => mockGetLegalMoves(...args),
   getLegalTeraTypes: (...args: unknown[]) => mockGetLegalTeraTypes(...args),
+  isLegalAbility: (...args: unknown[]) => mockIsLegalAbility(...args),
 }));
 
 // =============================================================================
@@ -113,6 +115,7 @@ describe("submitNewTeam", () => {
     mockGetLegalItems.mockReturnValue(undefined);
     mockGetLegalMoves.mockReturnValue(undefined);
     mockGetLegalTeraTypes.mockReturnValue(undefined);
+    mockIsLegalAbility.mockReturnValue(true);
   });
 
   // ---------------------------------------------------------------------------
@@ -730,6 +733,68 @@ describe("submitNewTeam", () => {
       paste: "Pikachu",
     });
 
+    expect(result).toEqual({ status: "ok", teamId: 42 });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Ability legality guards
+  // ---------------------------------------------------------------------------
+
+  it("returns { status: 'error' } without creating a team when paste contains an illegal ability", async () => {
+    const parsed = [{ ...makeParsedPokemon("Smeargle"), ability: "Moody" }];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    // Moody is banned in Gen 9 OU for Smeargle
+    mockIsLegalAbility.mockReturnValue(false);
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      format: "gen9ou",
+      mode: "import",
+      paste: "Smeargle\nAbility: Moody",
+    });
+
+    expect(result.status).toBe("error");
+    expect((result as { status: "error"; error: string }).error).toContain(
+      "Moody"
+    );
+    expect((result as { status: "error"; error: string }).error).toContain(
+      "Smeargle"
+    );
+    expect(mockCreateTeamAction).not.toHaveBeenCalled();
+    expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+  });
+
+  it("proceeds normally when all abilities are legal", async () => {
+    const parsed = [
+      { ...makeParsedPokemon("Incineroar"), ability: "Intimidate" },
+    ];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    mockIsLegalAbility.mockReturnValue(true);
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      format: "gen9vgc2026regi",
+      mode: "import",
+      paste: "Incineroar\nAbility: Intimidate",
+    });
+
+    expect(result).toEqual({ status: "ok", teamId: 42 });
+    expect(mockCreateTeamAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips ability check for pokemon with no ability", async () => {
+    const parsed = [{ ...makeParsedPokemon("Pikachu"), ability: "" }];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    // isLegalAbility should not be called with empty string (the guard skips)
+    mockIsLegalAbility.mockReturnValue(false);
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      mode: "import",
+      paste: "Pikachu",
+    });
+
+    // Empty ability is skipped — not checked
     expect(result).toEqual({ status: "ok", teamId: 42 });
   });
 });

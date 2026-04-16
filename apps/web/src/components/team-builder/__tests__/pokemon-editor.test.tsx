@@ -48,6 +48,10 @@ jest.mock("@trainers/pokemon", () => ({
   getAllItems: jest.fn(() => ["Leftovers"]),
   getItemShortDesc: jest.fn(() => "Restores HP."),
   getAbilityShortDesc: jest.fn(() => "A test ability."),
+  getLegalItems: jest.fn(() => undefined),
+  getLegalMoves: jest.fn(() => undefined),
+  getLegalTeraTypes: jest.fn(() => undefined),
+  getLegalAbilities: jest.fn(() => undefined),
 }));
 
 jest.mock("@pkmn/dex", () => ({

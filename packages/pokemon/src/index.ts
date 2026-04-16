@@ -120,10 +120,12 @@ export {
 
 // Format legality
 export {
+  getLegalAbilities,
   getLegalItems,
   getLegalMoves,
   getLegalSpecies,
   getLegalTeraTypes,
+  isLegalAbility,
   isLegalItem,
   isLegalMove,
   isLegalSpecies,

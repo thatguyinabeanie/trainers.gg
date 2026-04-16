@@ -9,6 +9,7 @@ import {
   getLegalMoves,
   getLegalSpecies,
   getLegalTeraTypes,
+  isLegalAbility,
 } from "@trainers/pokemon";
 
 import {
@@ -275,6 +276,18 @@ export function ImportDialog({
           ? "Tera isn't allowed in this format."
           : `Illegal Tera types: ${[...new Set(illegalTera)].join(", ")}.`;
       }
+    }
+
+    // Ability check — per-species ability legality
+    const illegalAbilities: string[] = [];
+    for (const p of candidates) {
+      if (!p.species || !p.ability) continue;
+      if (!isLegalAbility(p.ability, p.species, formatId)) {
+        illegalAbilities.push(`${p.ability} on ${p.species}`);
+      }
+    }
+    if (illegalAbilities.length > 0) {
+      return `Illegal abilities: ${illegalAbilities.join("; ")}.`;
     }
 
     return null;

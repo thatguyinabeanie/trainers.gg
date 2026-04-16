@@ -56,9 +56,10 @@ export function ItemPicker({
   // prop. The legal set is undefined when the format has no registered banlist
   // (permissive), so we fall back to the full list in that case.
   const legal = formatId ? getLegalItems(formatId) : undefined;
+  const allItems = getAllItems();
   const formatItems = legal
-    ? getAllItems().filter((name) => legal.has(name))
-    : getAllItems();
+    ? allItems.filter((name) => legal.has(name))
+    : allItems;
 
   const filtered = search
     ? formatItems.filter((name) =>

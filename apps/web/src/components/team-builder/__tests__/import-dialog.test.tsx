@@ -56,6 +56,7 @@ const mockGetLegalMoves = jest.fn(() => undefined as Set<string> | undefined);
 const mockGetLegalTeraTypes = jest.fn(
   () => undefined as Set<string> | undefined
 );
+const mockIsLegalAbility = jest.fn(() => true);
 
 jest.mock("@trainers/pokemon", () => ({
   getLegalSpecies: (...args: unknown[]) =>
@@ -65,6 +66,8 @@ jest.mock("@trainers/pokemon", () => ({
     mockGetLegalMoves(args[0] as string, args[1] as string),
   getLegalTeraTypes: (...args: unknown[]) =>
     mockGetLegalTeraTypes(args[0] as string),
+  isLegalAbility: (...args: unknown[]) =>
+    mockIsLegalAbility(args[0] as string, args[1] as string, args[2] as string),
 }));
 
 const mockAddPokemonToTeamAction = jest.fn(() =>
@@ -216,6 +219,7 @@ describe("ImportDialog", () => {
     mockGetLegalSpecies.mockReturnValue(undefined);
     mockGetLegalItems.mockReturnValue(undefined);
     mockGetLegalTeraTypes.mockReturnValue(undefined);
+    mockIsLegalAbility.mockReturnValue(true);
   });
 
   // ---------------------------------------------------------------------------
@@ -634,6 +638,66 @@ describe("ImportDialog", () => {
       );
 
       await parsePaste(user, "Pikachu\nTera Type: Fire");
+
+      await waitFor(() => {
+        expect(screen.getByText(/previewing/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Ability paste guard
+  // ---------------------------------------------------------------------------
+
+  describe("ability legality guard", () => {
+    it("shows an inline error when paste contains an illegal ability", async () => {
+      const mockWithIllegalAbility = {
+        ...mockParsedPikachu,
+        ability: "Moody",
+        species: "Smeargle",
+      };
+      mockParseShowdownText.mockReturnValueOnce([mockWithIllegalAbility]);
+      // Moody is illegal on Smeargle in Gen 9 OU
+      mockIsLegalAbility.mockReturnValue(false);
+
+      const user = userEvent.setup();
+      render(
+        <ImportDialog
+          team={makeTeam()}
+          open={true}
+          onOpenChange={jest.fn()}
+          onImportComplete={jest.fn()}
+          formatId="gen9ou"
+        />
+      );
+
+      await parsePaste(user, "Smeargle\nAbility: Moody");
+
+      await waitFor(() => {
+        expect(screen.getByRole("alert")).toBeInTheDocument();
+      });
+      expect(screen.getByRole("alert")).toHaveTextContent("Moody");
+      // Preview panel must not appear
+      expect(screen.queryByText(/previewing/i)).not.toBeInTheDocument();
+      expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+    });
+
+    it("proceeds to preview when abilities are legal", async () => {
+      mockParseShowdownText.mockReturnValueOnce([mockParsedPikachu]);
+      mockIsLegalAbility.mockReturnValue(true);
+
+      const user = userEvent.setup();
+      render(
+        <ImportDialog
+          team={makeTeam()}
+          open={true}
+          onOpenChange={jest.fn()}
+          onImportComplete={jest.fn()}
+          formatId="gen9vgc2026regi"
+        />
+      );
+
+      await parsePaste(user, "Pikachu @ Light Ball\nAbility: Static");
 
       await waitFor(() => {
         expect(screen.getByText(/previewing/i)).toBeInTheDocument();
