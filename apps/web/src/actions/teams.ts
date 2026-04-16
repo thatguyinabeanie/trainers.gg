@@ -295,6 +295,9 @@ export async function updatePokemonAction(
         (slot) => slot.pokemon_id === parsed.data.pokemonId
       );
       const currentPokemon = currentSlot?.pokemon;
+      if (!currentPokemon) {
+        throw new Error("Pokemon not found on this team.");
+      }
       // Merge current fields with incoming updates so partial updates
       // (e.g. only changing item) still validate against the species
       const merged = { ...currentPokemon, ...parsedData };

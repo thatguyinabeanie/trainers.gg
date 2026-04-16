@@ -218,6 +218,7 @@ describe("ImportDialog", () => {
     // Default: permissive — no registered legality lists
     mockGetLegalSpecies.mockReturnValue(undefined);
     mockGetLegalItems.mockReturnValue(undefined);
+    mockGetLegalMoves.mockReturnValue(undefined);
     mockGetLegalTeraTypes.mockReturnValue(undefined);
     mockIsLegalAbility.mockReturnValue(true);
   });
@@ -571,6 +572,66 @@ describe("ImportDialog", () => {
       );
 
       await parsePaste(user, "Pikachu @ Booster Energy");
+
+      await waitFor(() => {
+        expect(screen.getByText(/previewing/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Move legality guard
+  // ---------------------------------------------------------------------------
+
+  describe("move legality guard", () => {
+    it("shows an inline error when paste contains an illegal move", async () => {
+      const mockWithIllegalMove = {
+        ...mockParsedPikachu,
+        move1: "Hyperspace Hole", // Pikachu can't learn this
+      };
+      mockParseShowdownText.mockReturnValueOnce([mockWithIllegalMove]);
+      mockGetLegalMoves.mockReturnValue(
+        new Set(["Thunderbolt", "Protect", "Fake Out"])
+      );
+
+      const user = userEvent.setup();
+      render(
+        <ImportDialog
+          team={makeTeam()}
+          open={true}
+          onOpenChange={jest.fn()}
+          onImportComplete={jest.fn()}
+          formatId="gen9vgc2026regi"
+        />
+      );
+
+      await parsePaste(user, "Pikachu with illegal move");
+
+      await waitFor(() => {
+        expect(screen.getByRole("alert")).toBeInTheDocument();
+      });
+      expect(screen.getByRole("alert")).toHaveTextContent(/Hyperspace Hole/);
+      expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+    });
+
+    it("proceeds to preview when all moves are legal", async () => {
+      mockParseShowdownText.mockReturnValueOnce([mockParsedPikachu]);
+      mockGetLegalMoves.mockReturnValue(
+        new Set(["Thunderbolt", "Protect", "Fake Out"])
+      );
+
+      const user = userEvent.setup();
+      render(
+        <ImportDialog
+          team={makeTeam()}
+          open={true}
+          onOpenChange={jest.fn()}
+          onImportComplete={jest.fn()}
+          formatId="gen9vgc2026regi"
+        />
+      );
+
+      await parsePaste(user, "Pikachu @ Light Ball\nAbility: Static");
 
       await waitFor(() => {
         expect(screen.getByText(/previewing/i)).toBeInTheDocument();

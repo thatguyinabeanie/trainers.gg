@@ -235,7 +235,8 @@ function buildAttackerFromDb(
         Boolean(m)
       ) as unknown as string[],
     });
-  } catch {
+  } catch (error) {
+    console.warn("[buildAttackerFromDb] Failed to build attacker:", error);
     return null;
   }
 }
@@ -282,7 +283,8 @@ function buildDefenderPokemon(
       curHP: Math.max(1, Math.round((hpPercent / 100) * 1)),
     });
     return poke;
-  } catch {
+  } catch (error) {
+    console.warn("[buildDefenderPokemon] Failed to build defender:", error);
     return null;
   }
 }
@@ -382,7 +384,8 @@ function runCalc(
       rolls,
       defenderMaxHP: defHP,
     };
-  } catch {
+  } catch (error) {
+    console.warn("[runCalc] Failed to run damage calc:", error);
     return null;
   }
 }
@@ -718,16 +721,19 @@ function InlineSpeciesSearch({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Build the species index lazily on first use.
+  // Only cache successful builds — errors return a temporary empty array
+  // so the next render can retry.
   let speciesIndex = speciesIndexCache.get(formatId ?? "");
   if (!speciesIndex) {
     try {
       speciesIndex = buildSpeciesSearchIndex(formatId ?? "gen9vgc2026regg").map(
         (s) => s.species
       );
-    } catch {
+      speciesIndexCache.set(formatId ?? "", speciesIndex);
+    } catch (error) {
+      console.warn("[InlineSpeciesSearch] Failed to build index:", error);
       speciesIndex = [];
     }
-    speciesIndexCache.set(formatId ?? "", speciesIndex);
   }
 
   // Close dropdown on outside click
