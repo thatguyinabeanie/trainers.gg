@@ -31,27 +31,27 @@ interface ShowdownPokemonSet {
   teraType?: string;
 }
 
-// Supported competitive formats - mapping to actual Showdown format IDs
+// Supported competitive formats — mapping our format IDs to the Showdown
+// format display name @pkmn/sim registers. Formats without a direct
+// match are intentionally absent; callers of AdvancedTeamValidator will
+// throw for unknown formats (up from the previous silent OU fallback).
 export const SUPPORTED_FORMATS = {
-  // VGC (Video Game Championship) formats - using OU as fallback since VGC isn't in @pkmn/sim
-  gen9vgc2024: "[Gen 9] OU",
-  gen9vgc2023: "[Gen 9] OU",
+  // VGC (Video Game Championship) formats
+  gen9vgc2024regg: "[Gen 9] VGC 2024 Reg G",
+  gen9vgc2024regh: "[Gen 9] VGC 2024 Reg H",
+  gen9vgc2026regi: "[Gen 9] VGC 2026 Reg I",
+  gen9vgc2026regf: "[Gen 9] VGC 2026 Reg F",
 
-  // Smogon Singles formats
+  // Smogon Singles
   gen9ou: "[Gen 9] OU",
   gen9uu: "[Gen 9] UU",
   gen9ru: "[Gen 9] RU",
   gen9nu: "[Gen 9] NU",
   gen9pu: "[Gen 9] PU",
-
-  // Other popular formats
-  gen9nationaldex: "[Gen 9] OU", // Fallback
   gen9lc: "[Gen 9] LC",
   gen9monotype: "[Gen 9] Monotype",
   gen9anythinggoes: "[Gen 9] Anything Goes",
-
-  // Custom formats
-  gen9battlestadium: "[Gen 9] OU", // Custom fallback
+  gen9ubers: "[Gen 9] Ubers",
 } as const;
 
 export type FormatId = keyof typeof SUPPORTED_FORMATS;
@@ -78,7 +78,7 @@ export class AdvancedTeamValidator {
   private validator: TeamValidator;
   private formatId: string;
 
-  constructor(formatId: FormatId = "gen9vgc2024") {
+  constructor(formatId: FormatId = "gen9vgc2026regi") {
     this.formatId = formatId;
     const actualFormatName = SUPPORTED_FORMATS[formatId];
     const format = SimDex.formats.get(actualFormatName);

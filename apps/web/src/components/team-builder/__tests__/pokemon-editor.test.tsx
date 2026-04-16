@@ -28,6 +28,8 @@ jest.mock("@trainers/pokemon", () => ({
   getValidTeraTypes: jest.fn(() => ["Fire", "Water", "Normal"]),
   calculateStat: jest.fn(() => 150),
   calculateHP: jest.fn(() => 200),
+  calculateChampionsHP: jest.fn(() => 200),
+  calculateChampionsStat: jest.fn(() => 150),
   getNatureMultiplier: jest.fn(() => 1.0),
   calculateNatureBumps: jest.fn(() => [0, 40, 80, 120, 160, 200, 240]),
   NATURE_EFFECTS: {
@@ -46,6 +48,10 @@ jest.mock("@trainers/pokemon", () => ({
   getAllItems: jest.fn(() => ["Leftovers"]),
   getItemShortDesc: jest.fn(() => "Restores HP."),
   getAbilityShortDesc: jest.fn(() => "A test ability."),
+  getLegalItems: jest.fn(() => undefined),
+  getLegalMoves: jest.fn(() => undefined),
+  getLegalTeraTypes: jest.fn(() => undefined),
+  getLegalAbilities: jest.fn(() => undefined),
 }));
 
 jest.mock("@pkmn/dex", () => ({
@@ -135,14 +141,12 @@ function makePokemon(
   };
 }
 
+// PokemonEditor no longer accepts teamId, onSpeciesClick, or onImport.
 const defaultProps = {
-  teamId: 1,
   pokemon: makePokemon(),
   format: { id: "gen9vgc2026regi", label: "SV: Reg I", generation: 9 },
   teamPokemon: [{ pokemon: makePokemon() }],
   onUpdate: jest.fn(),
-  onSpeciesClick: jest.fn(),
-  onImport: jest.fn(),
 };
 
 // =============================================================================
@@ -154,37 +158,6 @@ describe("PokemonEditor", () => {
     jest.clearAllMocks();
   });
 
-  describe("species header", () => {
-    it("renders the pokemon species name", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByText("Incineroar")).toBeInTheDocument();
-    });
-
-    it("renders type pills for the species", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      // getSpeciesTypes mocked to return ["Fire", "Dark"]
-      // "Fire" may appear multiple times (type pill + tera type), use getAllByText
-      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText("Dark")).toBeInTheDocument();
-    });
-
-    it("renders the level input with current value", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      const levelInput = screen.getByLabelText("Pokemon level");
-      expect(levelInput).toHaveValue(50);
-    });
-
-    it("calls onSpeciesClick when species name button is clicked", async () => {
-      const user = userEvent.setup();
-      const onSpeciesClick = jest.fn();
-      render(
-        <PokemonEditor {...defaultProps} onSpeciesClick={onSpeciesClick} />
-      );
-      await user.click(screen.getByText("Incineroar"));
-      expect(onSpeciesClick).toHaveBeenCalled();
-    });
-  });
-
   describe("field display labels", () => {
     it("renders Ability label", () => {
       render(<PokemonEditor {...defaultProps} />);
@@ -193,7 +166,8 @@ describe("PokemonEditor", () => {
 
     it("renders Held Item label", () => {
       render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByText("Held Item")).toBeInTheDocument();
+      // The field label is "Item" (uppercase, abbreviated) in the new layout
+      expect(screen.getByText("Item")).toBeInTheDocument();
     });
 
     it("renders Nature label", () => {
@@ -241,8 +215,8 @@ describe("PokemonEditor", () => {
 
     it("displays current tera type value", () => {
       render(<PokemonEditor {...defaultProps} />);
-      // "Fire" appears as both the type pill and the tera type value
-      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(2);
+      // "Fire" appears as tera type value
+      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(1);
     });
 
     it("displays current moves in move slots", () => {
@@ -320,52 +294,82 @@ describe("PokemonEditor", () => {
     });
   });
 
-  describe("optional fields", () => {
-    it("renders the nickname input", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByLabelText("Pokemon nickname")).toBeInTheDocument();
+  // ---------------------------------------------------------------------------
+  // disabled prop
+  // ---------------------------------------------------------------------------
+
+  describe("disabled prop", () => {
+    it("does NOT open ability picker when disabled=true and ability field is clicked", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      // Clicking on the ability value should not open the picker
+      await user.click(screen.getByText("Intimidate"));
+      expect(
+        screen.queryByPlaceholderText("Search abilities…")
+      ).not.toBeInTheDocument();
     });
 
-    it("renders shiny toggle button", () => {
-      render(<PokemonEditor {...defaultProps} />);
+    it("does NOT open nature picker when disabled=true and nature field is clicked", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      await user.click(screen.getByText("Adamant"));
       expect(
-        screen.getByRole("button", { name: "Toggle shiny" })
+        screen.queryByPlaceholderText("Search natures…")
+      ).not.toBeInTheDocument();
+    });
+
+    it("does NOT open tera picker when disabled=true and tera field is clicked", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      // The tera section button is pointer-events-none so clicks on it should not fire
+      // Verify tera picker (which renders type grid buttons like Water) is absent
+      const teraSection = screen.getByText("Tera Type").closest("div");
+      const teraFieldButton = teraSection?.querySelector("button");
+      if (teraFieldButton) {
+        await user.click(teraFieldButton);
+      }
+      expect(
+        screen.queryByRole("button", { name: "Water" })
+      ).not.toBeInTheDocument();
+    });
+
+    it("does NOT open move picker when disabled=true and a move slot is clicked", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      await user.click(screen.getByText("Fake Out"));
+      expect(
+        screen.queryByPlaceholderText("Search moves…")
+      ).not.toBeInTheDocument();
+    });
+
+    it("opens ability picker normally when disabled=false (regression)", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} disabled={false} />);
+      await user.click(screen.getByText("Intimidate"));
+      expect(
+        screen.getByPlaceholderText("Search abilities…")
       ).toBeInTheDocument();
     });
 
-    it("calls onUpdate with is_shiny true when shiny button is clicked", async () => {
+    it("opens move picker normally when disabled=false (regression)", async () => {
       const user = userEvent.setup();
-      const onUpdate = jest.fn();
-      render(
-        <PokemonEditor
-          {...defaultProps}
-          pokemon={makePokemon({ is_shiny: false })}
-          onUpdate={onUpdate}
-        />
-      );
-      await user.click(screen.getByRole("button", { name: "Toggle shiny" }));
-      expect(onUpdate).toHaveBeenCalledWith("is_shiny", true);
+      render(<PokemonEditor {...defaultProps} disabled={false} />);
+      await user.click(screen.getByText("Fake Out"));
+      expect(screen.getByPlaceholderText("Search moves…")).toBeInTheDocument();
     });
 
-    it("shows gender buttons when pokemon has gender", () => {
-      render(
-        <PokemonEditor
-          {...defaultProps}
-          pokemon={makePokemon({ gender: "Male" })}
-        />
-      );
-      expect(screen.getByText("♂")).toBeInTheDocument();
-      expect(screen.getByText("♀")).toBeInTheDocument();
+    it("preset EV buttons are disabled when disabled=true", () => {
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
     });
 
-    it("hides gender buttons when pokemon gender is null", () => {
-      render(
-        <PokemonEditor
-          {...defaultProps}
-          pokemon={makePokemon({ gender: null })}
-        />
-      );
-      expect(screen.queryByText("♂")).not.toBeInTheDocument();
+    it("all IV inputs are disabled when disabled=true", () => {
+      render(<PokemonEditor {...defaultProps} disabled={true} />);
+      // IvEditor renders spinbuttons for each stat — all should be disabled
+      const inputs = screen.getAllByRole("spinbutton");
+      inputs.forEach((input) => {
+        expect(input).toBeDisabled();
+      });
     });
   });
 
@@ -374,7 +378,7 @@ describe("PokemonEditor", () => {
       render(
         <PokemonEditor
           {...defaultProps}
-          format={{ id: "champions", label: "Champions", generation: 9 }}
+          format={{ id: "champions", label: "Champions", generation: 10 }}
         />
       );
       // IvEditor renders "IVs" header
@@ -385,17 +389,15 @@ describe("PokemonEditor", () => {
       render(<PokemonEditor {...defaultProps} />);
       expect(screen.getByText("IVs")).toBeInTheDocument();
     });
-  });
 
-  describe("level input", () => {
-    it("calls onUpdate with clamped level value on change", async () => {
-      const user = userEvent.setup();
-      const onUpdate = jest.fn();
-      render(<PokemonEditor {...defaultProps} onUpdate={onUpdate} />);
-      const levelInput = screen.getByLabelText("Pokemon level");
-      await user.clear(levelInput);
-      await user.type(levelInput, "75");
-      expect(onUpdate).toHaveBeenCalledWith("level", expect.any(Number));
+    it("shows Stat Points label for champions format", () => {
+      render(
+        <PokemonEditor
+          {...defaultProps}
+          format={{ id: "champions", label: "Champions", generation: 10 }}
+        />
+      );
+      expect(screen.getByText("Stat Points")).toBeInTheDocument();
     });
   });
 });

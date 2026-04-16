@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 import {
   calculateStat,
   calculateHP,
+  calculateChampionsHP,
+  calculateChampionsStat,
   getNatureMultiplier,
   calculateNatureBumps,
   NATURE_EFFECTS,
@@ -26,6 +28,7 @@ import {
 
 const MAX_EV = 252;
 const TOTAL_EV_LIMIT = 510;
+const MAX_SP = 32;
 
 /** Tailwind color tokens for each stat's filled bar. */
 const STAT_BAR_COLORS: Record<StatKey, string> = {
@@ -47,8 +50,19 @@ interface EvEditorProps {
   baseStats: StatValues;
   nature: string;
   level: number;
+  /**
+   * When true, renders the Pokemon Champions Stat Points (SP) input mode
+   * instead of the classic EV draggable bars. SP is 0-32 per stat with no
+   * total budget cap. Champions always uses level 50 and no IVs in its formula.
+   */
+  isStatPoints?: boolean;
   onChange: (stat: StatKey, value: number) => void;
   onPreset: (preset: "reset" | "maxAtk" | "maxBulk") => void;
+  /**
+   * When true, all drag, keyboard, and input interactions are no-ops and
+   * the bars/inputs appear dimmed. Preset buttons are also disabled.
+   */
+  disabled?: boolean;
 }
 
 // =============================================================================
@@ -95,6 +109,31 @@ function getFinalStat(
 }
 
 /**
+ * Calculate the final stat for Champions (SP system).
+ * Level is always 50 in Champions. IVs are not used — baked into the formula.
+ * Nature applies to non-HP stats.
+ */
+function getChampionsFinalStat(
+  stat: StatKey,
+  baseStats: StatValues,
+  sps: StatValues,
+  nature: string
+): number {
+  const base = baseStats[stat];
+  const sp = sps[stat];
+
+  if (stat === "hp") {
+    return calculateChampionsHP(base, sp);
+  }
+
+  const multiplier = getNatureMultiplier(
+    nature,
+    stat as keyof Omit<StatValues, "hp">
+  );
+  return calculateChampionsStat(base, sp, multiplier);
+}
+
+/**
  * Snap an EV value to the nearest nature-bump breakpoint if it is within
  * 2 EVs of one.
  */
@@ -127,6 +166,7 @@ interface StatRowProps {
   isNatureReduced: boolean;
   remaining: number;
   onChange: (value: number) => void;
+  disabled?: boolean;
 }
 
 function StatRow({
@@ -138,6 +178,7 @@ function StatRow({
   isNatureReduced,
   remaining,
   onChange,
+  disabled = false,
 }: StatRowProps) {
   const barRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -170,6 +211,7 @@ function StatRow({
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     // Only primary button (left-click / touch)
     if (e.button !== 0) return;
+    if (disabled) return;
     e.preventDefault();
 
     // Capture the pointer so moves are tracked even outside the element
@@ -215,7 +257,12 @@ function StatRow({
   // -------------------------------------------------------------------------
 
   return (
-    <div className="grid grid-cols-[44px_1fr_48px] items-center gap-2 md:grid-cols-[52px_1fr_56px_48px]">
+    <div
+      className={cn(
+        "grid grid-cols-[44px_1fr_48px] items-center gap-2 md:grid-cols-[52px_1fr_56px_48px]",
+        disabled && "opacity-50"
+      )}
+    >
       {/* Stat label with nature indicator */}
       <span
         className={cn(
@@ -238,8 +285,9 @@ function StatRow({
         aria-valuemax={MAX_EV}
         aria-valuenow={ev}
         aria-label={`${label} EVs`}
-        tabIndex={0}
+        tabIndex={disabled ? -1 : 0}
         onKeyDown={(e) => {
+          if (disabled) return;
           const step = e.shiftKey ? 16 : 4;
           if (e.key === "ArrowRight" || e.key === "ArrowUp") {
             e.preventDefault();
@@ -250,7 +298,8 @@ function StatRow({
           }
         }}
         className={cn(
-          "relative h-6 min-h-[44px] cursor-ew-resize touch-none rounded-full select-none md:h-4 md:min-h-0",
+          "relative h-[7px] touch-none rounded-full select-none",
+          disabled ? "cursor-default" : "cursor-ew-resize",
           "bg-muted focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none"
         )}
       >
@@ -277,6 +326,13 @@ function StatRow({
               />
             );
           })}
+
+        {/* Thumb handle */}
+        <div
+          className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-gray-300 bg-white shadow-sm"
+          style={{ left: `${fillPercent}%` }}
+          aria-hidden="true"
+        />
       </div>
 
       {/* EV numeric input — hidden on mobile, bar + value display is sufficient */}
@@ -286,17 +342,80 @@ function StatRow({
         max={MAX_EV}
         value={ev}
         onChange={(e) => {
+          if (disabled) return;
           const raw = parseInt(e.target.value, 10);
           if (isNaN(raw)) return;
           const clamped = Math.max(0, Math.min(raw, ev + remaining, MAX_EV));
           onChange(clamped);
         }}
+        disabled={disabled}
         className={cn(
           "hidden h-6 w-full rounded border border-transparent bg-transparent px-1 text-right text-xs tabular-nums md:block",
           "hover:border-border focus:border-border focus:outline-none",
           "text-foreground"
         )}
         aria-label={`${label} EV value`}
+      />
+
+      {/* Final calculated stat */}
+      <span className="text-muted-foreground text-right text-xs tabular-nums">
+        {finalStat}
+      </span>
+    </div>
+  );
+}
+
+// =============================================================================
+// SpStatRow — a single stat row for the Champions SP editor
+// =============================================================================
+
+interface SpStatRowProps {
+  statKey: StatKey;
+  sp: number;
+  finalStat: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+}
+
+function SpStatRow({
+  statKey,
+  sp,
+  finalStat,
+  onChange,
+  disabled = false,
+}: SpStatRowProps) {
+  const label = STAT_LABELS[statKey];
+
+  return (
+    <div
+      className={cn(
+        "grid grid-cols-[44px_1fr_48px] items-center gap-2",
+        disabled && "opacity-50"
+      )}
+    >
+      {/* Stat label */}
+      <span className="text-muted-foreground text-right text-xs font-semibold tabular-nums">
+        {label}
+      </span>
+
+      {/* SP number input — 0 to 32 */}
+      <input
+        type="number"
+        min={0}
+        max={MAX_SP}
+        value={sp}
+        onChange={(e) => {
+          if (disabled) return;
+          const raw = parseInt(e.target.value, 10);
+          if (isNaN(raw)) return;
+          onChange(Math.max(0, Math.min(raw, MAX_SP)));
+        }}
+        disabled={disabled}
+        aria-label={`${label} Stat Points`}
+        className={cn(
+          "h-6 w-full rounded border border-transparent bg-transparent px-1 text-right text-xs tabular-nums",
+          "hover:border-border focus:border-border focus:outline-none"
+        )}
       />
 
       {/* Final calculated stat */}
@@ -319,16 +438,47 @@ function StatRow({
  * common EV spreads.
  */
 export function EvEditor({
-  evs,
+  evs: propEvs,
   ivs,
   baseStats,
   nature,
   level,
+  isStatPoints = false,
   onChange,
   onPreset,
+  disabled = false,
 }: EvEditorProps) {
+  // Local EV state for optimistic/instant updates while dragging.
+  // Syncs from props when props change (e.g., after server save or preset).
+  const [localEvs, setLocalEvs] = useState<StatValues>(propEvs);
+  const [prevPropEvs, setPrevPropEvs] = useState<StatValues>(propEvs);
+
+  // Sync local state when props change (render-time state reset pattern).
+  // Compare individual stat values rather than object reference — the parent
+  // may reconstruct propEvs each render even when the values are identical.
+  const evsChanged =
+    prevPropEvs.hp !== propEvs.hp ||
+    prevPropEvs.attack !== propEvs.attack ||
+    prevPropEvs.defense !== propEvs.defense ||
+    prevPropEvs.specialAttack !== propEvs.specialAttack ||
+    prevPropEvs.specialDefense !== propEvs.specialDefense ||
+    prevPropEvs.speed !== propEvs.speed;
+
+  if (evsChanged) {
+    setPrevPropEvs(propEvs);
+    setLocalEvs(propEvs);
+  }
+
+  // Use local EVs for display — updates are instant
+  const evs = localEvs;
   const used = totalEvs(evs);
   const remaining = TOTAL_EV_LIMIT - used;
+
+  // Wrapper that updates local state immediately AND calls parent onChange for debounced save
+  function handleEvChange(stat: StatKey, value: number) {
+    setLocalEvs((prev) => ({ ...prev, [stat]: value }));
+    onChange(stat, value);
+  }
 
   // Look up nature boost/reduce from NATURE_EFFECTS
   const natureEffect = NATURE_EFFECTS[nature];
@@ -336,29 +486,59 @@ export function EvEditor({
   const reducedStat = natureEffect?.reduce ?? null;
 
   // -------------------------------------------------------------------------
-  // Render
+  // Render — SP mode (Champions)
+  // -------------------------------------------------------------------------
+
+  if (isStatPoints) {
+    return (
+      <div className="flex flex-col gap-3">
+        {/* SP stat rows — one number input (0-32) per stat */}
+        <div className="flex flex-col gap-1.5">
+          {STAT_KEYS.map((statKey) => {
+            const finalStat = getChampionsFinalStat(
+              statKey,
+              baseStats,
+              evs,
+              nature
+            );
+            return (
+              <SpStatRow
+                key={statKey}
+                statKey={statKey}
+                sp={evs[statKey]}
+                finalStat={finalStat}
+                onChange={(value) => handleEvChange(statKey, value)}
+                disabled={disabled}
+              />
+            );
+          })}
+        </div>
+
+        {/* Reset button — Max Atk / Max Bulk presets don't apply to SP */}
+        <div className="flex gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 flex-1 text-xs"
+            onClick={() => onPreset("reset")}
+            disabled={disabled}
+          >
+            Reset
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Render — classic EV mode
   // -------------------------------------------------------------------------
 
   return (
     <div className="flex flex-col gap-3">
       {/* Stat rows */}
       <div className="flex flex-col gap-1.5">
-        {/* Column headers */}
-        <div className="grid grid-cols-[44px_1fr_48px] items-center gap-2 md:grid-cols-[52px_1fr_56px_48px]">
-          <span className="text-muted-foreground text-right text-[10px] tracking-wide uppercase">
-            Stat
-          </span>
-          <span className="text-muted-foreground text-center text-[10px] tracking-wide uppercase">
-            EVs
-          </span>
-          <span className="text-muted-foreground hidden text-right text-[10px] tracking-wide uppercase md:block">
-            Val
-          </span>
-          <span className="text-muted-foreground text-right text-[10px] tracking-wide uppercase">
-            Stat
-          </span>
-        </div>
-
         {STAT_KEYS.map((statKey) => {
           const isNatureBoosted = boostedStat === statKey;
           const isNatureReduced = reducedStat === statKey;
@@ -394,8 +574,9 @@ export function EvEditor({
                 // Cap by total budget: other stats' EVs + this new value <= 510
                 const otherTotal = used - evs[statKey];
                 const capped = Math.min(value, TOTAL_EV_LIMIT - otherTotal);
-                onChange(statKey, capped);
+                handleEvChange(statKey, capped);
               }}
+              disabled={disabled}
             />
           );
         })}
@@ -447,6 +628,7 @@ export function EvEditor({
           size="sm"
           className="h-7 flex-1 text-xs"
           onClick={() => onPreset("reset")}
+          disabled={disabled}
         >
           Reset
         </Button>
@@ -456,6 +638,7 @@ export function EvEditor({
           size="sm"
           className="h-7 flex-1 text-xs"
           onClick={() => onPreset("maxAtk")}
+          disabled={disabled}
         >
           Max Atk
         </Button>
@@ -465,6 +648,7 @@ export function EvEditor({
           size="sm"
           className="h-7 flex-1 text-xs"
           onClick={() => onPreset("maxBulk")}
+          disabled={disabled}
         >
           Max Bulk
         </Button>

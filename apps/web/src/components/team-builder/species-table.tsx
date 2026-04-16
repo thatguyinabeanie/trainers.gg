@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
-import { type SpeciesSearchEntry } from "@trainers/pokemon";
+import { type SpeciesSearchEntry, isLegalSpecies } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 import {
@@ -38,6 +38,7 @@ interface SpeciesTableProps {
   currentSpecies: string | null;
   onPreview: (species: string) => void;
   onSelect: (species: string) => void;
+  formatId?: string;
 }
 
 interface SortState {
@@ -133,6 +134,7 @@ export function SpeciesTable({
   currentSpecies,
   onPreview,
   onSelect,
+  formatId,
 }: SpeciesTableProps) {
   const [sort, setSort] = useState<SortState>({
     column: "name",
@@ -148,14 +150,17 @@ export function SpeciesTable({
   }
 
   const sorted = sortEntries(entries, sort);
-  const visible = sorted.slice(0, MAX_VISIBLE_ROWS);
-  const isTruncated = sorted.length > MAX_VISIBLE_ROWS;
+  const filtered = formatId
+    ? sorted.filter((e) => isLegalSpecies(e.species, formatId))
+    : sorted;
+  const visible = filtered.slice(0, MAX_VISIBLE_ROWS);
+  const isTruncated = filtered.length > MAX_VISIBLE_ROWS;
 
   return (
     <div className="flex flex-col overflow-x-auto">
       {isTruncated && (
         <div className="text-muted-foreground border-b px-3 py-1.5 text-xs">
-          Showing {MAX_VISIBLE_ROWS} of {sorted.length} results — search to
+          Showing {MAX_VISIBLE_ROWS} of {filtered.length} results — search to
           narrow
         </div>
       )}

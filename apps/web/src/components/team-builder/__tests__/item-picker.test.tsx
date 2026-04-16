@@ -7,15 +7,26 @@ import React from "react";
 // Module-level mocks
 // =============================================================================
 
+const mockGetLegalItems = jest.fn(
+  (_formatId: string) => undefined as Set<string> | undefined
+);
+
 jest.mock("@trainers/pokemon", () => {
   const itemDescs: Record<string, string> = {
     "Choice Band": "Boosts Attack.",
     Leftovers: "Restores HP each turn.",
     "Life Orb": "Boosts power but hurts user.",
+    "Booster Energy": "Boosts a stat in Paradox terrain.",
   };
   return {
-    getAllItems: jest.fn(() => ["Choice Band", "Leftovers", "Life Orb"]),
+    getAllItems: jest.fn(() => [
+      "Choice Band",
+      "Leftovers",
+      "Life Orb",
+      "Booster Energy",
+    ]),
     getItemShortDesc: jest.fn((name: string) => itemDescs[name] ?? null),
+    getLegalItems: (...args: unknown[]) => mockGetLegalItems(args[0] as string),
   };
 });
 
@@ -35,6 +46,8 @@ describe("ItemPicker", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: permissive — no registered legality list for the format
+    mockGetLegalItems.mockReturnValue(undefined);
   });
 
   describe("rendering", () => {
@@ -123,6 +136,43 @@ describe("ItemPicker", () => {
       render(<ItemPicker {...defaultProps} onClose={onClose} />);
       await user.click(screen.getByText("Choice Band"));
       expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  describe("format legality filtering", () => {
+    it("omits items illegal in the format", () => {
+      // Simulate gen9monotype: Booster Energy is banned, Life Orb is legal
+      mockGetLegalItems.mockReturnValue(
+        new Set(["Choice Band", "Leftovers", "Life Orb"])
+      );
+      render(<ItemPicker {...defaultProps} formatId="gen9monotype" />);
+      expect(screen.queryByText("Booster Energy")).not.toBeInTheDocument();
+      expect(screen.getByText("Life Orb")).toBeInTheDocument();
+    });
+
+    it("renders all items when formatId has no registered legality list", () => {
+      // mockGetLegalItems returns undefined by default (permissive)
+      render(<ItemPicker {...defaultProps} formatId={undefined} />);
+      expect(screen.getByText("Life Orb")).toBeInTheDocument();
+      expect(screen.getByText("Booster Energy")).toBeInTheDocument();
+    });
+
+    it("typing a banned item name in search still returns no results in restricted format", async () => {
+      mockGetLegalItems.mockReturnValue(
+        new Set(["Choice Band", "Leftovers", "Life Orb"])
+      );
+      const user = userEvent.setup();
+      render(<ItemPicker {...defaultProps} formatId="gen9monotype" />);
+      await user.type(screen.getByPlaceholderText("Search items…"), "Booster");
+      expect(screen.queryByText("Booster Energy")).not.toBeInTheDocument();
+      expect(screen.getByText("No items found")).toBeInTheDocument();
+    });
+
+    it("renders all items when formatId is provided but getLegalItems returns undefined", () => {
+      mockGetLegalItems.mockReturnValue(undefined);
+      render(<ItemPicker {...defaultProps} formatId="gen9vgc2026regi" />);
+      expect(screen.getByText("Life Orb")).toBeInTheDocument();
+      expect(screen.getByText("Booster Energy")).toBeInTheDocument();
     });
   });
 });

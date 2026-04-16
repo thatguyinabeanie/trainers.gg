@@ -1,5 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
 
 // =============================================================================
@@ -53,6 +53,22 @@ jest.mock("@trainers/utils", () => ({
   formatTimeAgo: jest.fn(() => "2h ago"),
 }));
 
+// Stub the dialog so tests don't transitively pull in `@/actions/teams`
+// (which loads `next/cache` — incompatible with the Jest environment).
+const mockNewTeamDialog = jest.fn(
+  (props: { open: boolean; initialMode: string }) => (
+    <div
+      data-testid="new-team-dialog"
+      data-open={props.open}
+      data-mode={props.initialMode}
+    />
+  )
+);
+jest.mock("../new-team-dialog", () => ({
+  NewTeamDialog: (props: { open: boolean; initialMode: string }) =>
+    mockNewTeamDialog(props),
+}));
+
 import { TeamsListClient, teamKeys } from "../teams-list-client";
 
 // =============================================================================
@@ -94,10 +110,14 @@ const defaultProps = {
   altId: 42,
   handle: "ash_ketchum",
   activeFormats: [
-    { id: "gen9vgc2024regg", label: "Reg G" },
-    { id: "gen9vgc2024regh", label: "Reg H" },
+    { id: "gen9vgc2024regg", label: "Reg G", game: "Scarlet & Violet" },
+    { id: "gen9vgc2024regh", label: "Reg H", game: "Scarlet & Violet" },
+    {
+      id: "championsvgc2026regma",
+      label: "Reg M-A",
+      game: "Pokemon Champions",
+    },
   ],
-  selectedFormat: undefined,
 } as const;
 
 // =============================================================================
@@ -126,14 +146,17 @@ describe("TeamsListClient", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders format-specific empty state when filtered", () => {
+  it("renders format-specific empty state when format filter is active", () => {
     render(
       <TeamsListClient
         {...defaultProps}
-        initialTeams={[]}
-        selectedFormat="gen9vgc2024regg"
+        initialTeams={[buildTeam({ format: "other-format" })]}
       />
     );
+
+    // Select a format from the dropdown
+    const formatSelect = screen.getAllByRole("combobox")[1];
+    fireEvent.change(formatSelect!, { target: { value: "gen9vgc2024regg" } });
 
     expect(screen.getByText("No teams yet")).toBeInTheDocument();
     expect(
@@ -170,22 +193,23 @@ describe("TeamsListClient", () => {
     expect(screen.getByAltText("Rillaboom")).toBeInTheDocument();
   });
 
-  it("filters teams by selected format", () => {
+  it("filters teams by selected format via dropdown", () => {
     const teams = [
       buildTeam({ id: 1, name: "VGC Team", format: "gen9vgc2024regg" }),
-      buildTeam({ id: 2, name: "Draft Team", format: "gen9draft" }),
+      buildTeam({
+        id: 2,
+        name: "Champions Team",
+        format: "championsvgc2026regma",
+      }),
     ];
 
-    render(
-      <TeamsListClient
-        {...defaultProps}
-        initialTeams={teams}
-        selectedFormat="gen9vgc2024regg"
-      />
-    );
+    render(<TeamsListClient {...defaultProps} initialTeams={teams} />);
+
+    const formatSelect = screen.getAllByRole("combobox")[1];
+    fireEvent.change(formatSelect!, { target: { value: "gen9vgc2024regg" } });
 
     expect(screen.getByText("VGC Team")).toBeInTheDocument();
-    expect(screen.queryByText("Draft Team")).not.toBeInTheDocument();
+    expect(screen.queryByText("Champions Team")).not.toBeInTheDocument();
   });
 
   it("renders New Team and Import Paste buttons", () => {
@@ -198,12 +222,96 @@ describe("TeamsListClient", () => {
     expect(importLinks.length).toBeGreaterThan(0);
   });
 
-  it("renders format filter chips", () => {
+  it("opens the dialog in empty mode when New Team is clicked", () => {
     render(<TeamsListClient {...defaultProps} initialTeams={[buildTeam()]} />);
 
-    expect(screen.getByText("All")).toBeInTheDocument();
-    expect(screen.getByText("Reg G")).toBeInTheDocument();
-    expect(screen.getByText("Reg H")).toBeInTheDocument();
+    // Dialog starts closed
+    expect(screen.getByTestId("new-team-dialog")).toHaveAttribute(
+      "data-open",
+      "false"
+    );
+
+    fireEvent.click(screen.getByText("New Team"));
+
+    const dialog = screen.getByTestId("new-team-dialog");
+    expect(dialog).toHaveAttribute("data-open", "true");
+    expect(dialog).toHaveAttribute("data-mode", "empty");
+  });
+
+  it("opens the dialog in import mode when Import Paste is clicked", () => {
+    render(<TeamsListClient {...defaultProps} initialTeams={[buildTeam()]} />);
+
+    fireEvent.click(screen.getByText("Import Paste"));
+
+    const dialog = screen.getByTestId("new-team-dialog");
+    expect(dialog).toHaveAttribute("data-open", "true");
+    expect(dialog).toHaveAttribute("data-mode", "import");
+  });
+
+  it("renders game and format dropdowns with correct options", () => {
+    render(<TeamsListClient {...defaultProps} initialTeams={[buildTeam()]} />);
+
+    const selects = screen.getAllByRole("combobox");
+    expect(selects).toHaveLength(2);
+
+    // Game dropdown has "All Games" + unique games
+    expect(
+      screen.getByRole("option", { name: "All Games" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Scarlet & Violet" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Pokemon Champions" })
+    ).toBeInTheDocument();
+
+    // Format dropdown has "All Formats"
+    expect(
+      screen.getByRole("option", { name: "All Formats" })
+    ).toBeInTheDocument();
+  });
+
+  it("filters format dropdown when a game is selected", () => {
+    render(<TeamsListClient {...defaultProps} initialTeams={[buildTeam()]} />);
+
+    const gameSelect = screen.getAllByRole("combobox")[0];
+    fireEvent.change(gameSelect!, { target: { value: "Scarlet & Violet" } });
+
+    // Only Scarlet & Violet formats should appear in the format dropdown
+    expect(screen.getByRole("option", { name: "Reg G" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Reg H" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "Reg M-A" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("resets format selection when game changes, showing all teams", () => {
+    const teams = [
+      buildTeam({ id: 1, name: "VGC Team", format: "gen9vgc2024regg" }),
+      buildTeam({
+        id: 2,
+        name: "Champions Team",
+        format: "championsvgc2026regma",
+      }),
+    ];
+
+    render(<TeamsListClient {...defaultProps} initialTeams={teams} />);
+
+    // Select a specific format to narrow the list
+    const formatSelect = screen.getAllByRole("combobox")[1];
+    fireEvent.change(formatSelect!, { target: { value: "gen9vgc2024regg" } });
+
+    // Only VGC Team should be visible
+    expect(screen.getByText("VGC Team")).toBeInTheDocument();
+    expect(screen.queryByText("Champions Team")).not.toBeInTheDocument();
+
+    // Change game — format filter resets to null, all teams become visible
+    const gameSelect = screen.getAllByRole("combobox")[0];
+    fireEvent.change(gameSelect!, { target: { value: "Pokemon Champions" } });
+
+    // Both teams visible again because selectedFormat reset to null
+    expect(screen.getByText("VGC Team")).toBeInTheDocument();
+    expect(screen.getByText("Champions Team")).toBeInTheDocument();
   });
 
   it("links team name to the editor", () => {

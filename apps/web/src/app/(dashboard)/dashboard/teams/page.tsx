@@ -33,8 +33,11 @@ export default async function AllTeamsPage() {
   const supabase = await createClientReadOnly();
 
   // Gate on team builder feature flag
-  const canAccess = await hasTeamBuilderAccess(supabase, user.id);
-  if (!canAccess) {
+  const accessResult = await hasTeamBuilderAccess(supabase, user.id);
+  if (accessResult.access === "error") {
+    throw new Error(accessResult.reason);
+  }
+  if (!accessResult.access) {
     notFound();
   }
 
@@ -51,7 +54,6 @@ export default async function AllTeamsPage() {
         initialTeams={teams}
         alts={alts}
         activeFormats={activeFormats}
-        userId={user.id}
       />
     </>
   );

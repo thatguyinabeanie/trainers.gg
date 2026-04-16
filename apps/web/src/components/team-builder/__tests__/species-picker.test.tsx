@@ -12,6 +12,13 @@ jest.mock("@trainers/pokemon", () => ({
   searchSpecies: jest.fn(
     (index: unknown[], _query: string, _filters: unknown) => index
   ),
+  // Real legality logic: Landorus-Therian is banned in Champions M-A, Incineroar is legal
+  isLegalSpecies: jest.fn((species: string, formatId: string) => {
+    if (formatId === "championsvgc2026regma") {
+      return species !== "Landorus-Therian";
+    }
+    return true;
+  }),
   ALL_TYPES: [
     "Normal",
     "Fire",
@@ -39,32 +46,37 @@ jest.mock("@trainers/pokemon", () => ({
 }));
 
 // Mock child components to isolate SpeciesPicker logic
-jest.mock("../species-detail", () => ({
-  SpeciesDetail: ({
-    species,
-    onSelect,
-  }: {
-    species: { species: string } | null;
-    currentTeam: Array<{ species: string }>;
-    onSelect: (species: string, mode: "defaults" | "blank") => void;
-  }) => (
-    <div data-testid="species-detail">
-      {species ? (
-        <>
-          <span data-testid="detail-species-name">{species.species}</span>
-          <button onClick={() => onSelect(species.species, "defaults")}>
-            Select with defaults
-          </button>
-          <button onClick={() => onSelect(species.species, "blank")}>
-            Select blank
-          </button>
-        </>
-      ) : (
-        <span>Select a species from the table to see details</span>
-      )}
-    </div>
-  ),
-}));
+jest.mock("../species-detail", () => {
+  return {
+    SpeciesDetail: ({
+      species,
+      onSelect,
+    }: {
+      species: { species: string } | null;
+      currentTeam: Array<{ species: string }>;
+      formatId?: string;
+      onSelect: (species: string, mode: "defaults" | "blank") => void;
+    }) => {
+      return (
+        <div data-testid="species-detail">
+          {species ? (
+            <>
+              <span data-testid="detail-species-name">{species.species}</span>
+              <button onClick={() => onSelect(species.species, "defaults")}>
+                Select with defaults
+              </button>
+              <button onClick={() => onSelect(species.species, "blank")}>
+                Select blank
+              </button>
+            </>
+          ) : (
+            <span>Select a species from the table to see details</span>
+          )}
+        </div>
+      );
+    },
+  };
+});
 
 jest.mock("../species-table", () => ({
   SpeciesTable: ({
@@ -170,6 +182,14 @@ const defaultProps = {
 describe("SpeciesPicker", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset searchSpecies to its default pass-through implementation
+    // (some tests override it with mockImplementation — this prevents bleed-through)
+    const { searchSpecies } = jest.requireMock("@trainers/pokemon") as {
+      searchSpecies: jest.Mock;
+    };
+    searchSpecies.mockImplementation(
+      (index: unknown[], _query: string, _filters: unknown) => index
+    );
   });
 
   describe("header", () => {
@@ -346,6 +366,65 @@ describe("SpeciesPicker", () => {
         />
       );
       expect(screen.getByText("Choose a species")).toBeInTheDocument();
+    });
+  });
+
+  describe("SpeciesPicker — format legality detail panel", () => {
+    const championsIndex = [
+      makeEntry("Incineroar", { types: ["Fire", "Dark"] }),
+      makeEntry("Landorus-Therian", { types: ["Ground", "Flying"] }),
+    ];
+
+    it("Select buttons are enabled when previewing any species (no disabled state in detail panel)", async () => {
+      const user = userEvent.setup();
+      render(
+        <SpeciesPicker
+          {...defaultProps}
+          speciesIndex={championsIndex}
+          formatId="championsvgc2026regma"
+        />
+      );
+
+      // Preview Incineroar
+      await user.click(screen.getByTestId("preview-Incineroar"));
+
+      expect(screen.getByTestId("detail-species-name")).toHaveTextContent(
+        "Incineroar"
+      );
+      // No "Not legal" message in the detail panel
+      expect(screen.queryByText(/not legal/i)).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /select with defaults/i })
+      ).not.toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: /select blank/i })
+      ).not.toBeDisabled();
+    });
+
+    it("Select buttons are enabled when previewing a species that was illegal under old dim behavior", async () => {
+      const user = userEvent.setup();
+      render(
+        <SpeciesPicker
+          {...defaultProps}
+          speciesIndex={championsIndex}
+          formatId="championsvgc2026regma"
+        />
+      );
+
+      // In the mock, Landorus-Therian still appears (SpeciesTable mock doesn't filter)
+      await user.click(screen.getByTestId("preview-Landorus-Therian"));
+
+      expect(screen.getByTestId("detail-species-name")).toHaveTextContent(
+        "Landorus-Therian"
+      );
+      // Detail panel no longer shows any disabled/illegal state
+      expect(screen.queryByText(/not legal/i)).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /select with defaults/i })
+      ).not.toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: /select blank/i })
+      ).not.toBeDisabled();
     });
   });
 });

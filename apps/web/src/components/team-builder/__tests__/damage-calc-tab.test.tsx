@@ -16,6 +16,7 @@ const mockDesc = jest.fn(() => "40 - 60 (40% - 60%) -- guaranteed 2HKO");
 const mockCalculate = jest.fn(() => ({
   range: mockRange,
   desc: mockDesc,
+  damage: [40, 60],
 }));
 
 jest.mock("@smogon/calc", () => {
@@ -44,30 +45,57 @@ jest.mock("@smogon/calc", () => {
     Side: MockSide,
     Field: MockField,
     Generations: {
-      get: jest.fn(() => ({})),
+      get: jest.fn(() => ({
+        species: {
+          get: jest.fn(() => ({ types: ["Fire"] })),
+        },
+      })),
     },
   };
 });
 
-// Mock meta-threats to keep the test fast (10 real threats × 4 moves each
-// would run 40+ calculations per render in the AutoSuggestions component).
-jest.mock("../meta-threats", () => ({
-  GEN9_VGC_META_THREATS: [
-    {
-      species: "Incineroar",
-      ability: "Intimidate",
-      nature: "Careful",
-      evs: { hp: 252, atk: 0, def: 4, spa: 0, spd: 252, spe: 0 },
-      moves: ["Fake Out", "Flare Blitz"],
-    },
-    {
-      species: "Flutter Mane",
-      ability: "Protosynthesis",
-      nature: "Timid",
-      evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
-      moves: ["Moonblast", "Shadow Ball"],
-    },
-  ],
+jest.mock("@trainers/pokemon", () => ({
+  getBaseStats: jest.fn(() => ({
+    hp: 78,
+    attack: 84,
+    defense: 78,
+    specialAttack: 109,
+    specialDefense: 85,
+    speed: 100,
+  })),
+  getValidAbilities: jest.fn(() => ["Blaze", "Solar Power"]),
+  getValidNatures: jest.fn(() => ["Hardy", "Timid", "Adamant"]),
+  getMoveData: jest.fn((name: string) => ({
+    name,
+    type: "Fire",
+    category: "Special",
+    basePower: 90,
+    accuracy: 100,
+    shortDesc: "A test move.",
+  })),
+  getAllItems: jest.fn(() => ["Sitrus Berry", "Leftovers"]),
+  NATURE_EFFECTS: {
+    Hardy: {},
+    Timid: { boost: "speed", reduce: "attack" },
+    Adamant: { boost: "attack", reduce: "specialAttack" },
+  },
+  ALL_TYPES: ["Fire", "Water", "Grass", "Normal"],
+  getTypeColor: jest.fn(() => "#ff0000"),
+  buildSpeciesSearchIndex: jest.fn(() => [
+    { species: "Charizard" },
+    { species: "Incineroar" },
+    { species: "Landorus-Therian" },
+  ]),
+  calculateChampionsHP: jest.fn(() => 160),
+  calculateChampionsStat: jest.fn(() => 100),
+  getNatureMultiplier: jest.fn(() => 1.0),
+  // Returns false for Landorus-Therian so legality tests have an illegal species.
+  isLegalSpecies: jest.fn(
+    (species: string, _formatId: string) => species !== "Landorus-Therian"
+  ),
+  getLegalAbilities: jest.fn(() => undefined),
+  getLegalItems: jest.fn((_formatId: string) => undefined),
+  getLegalTeraTypes: jest.fn((_formatId: string) => undefined),
 }));
 
 jest.mock("lucide-react", () => {
@@ -155,19 +183,22 @@ const defaultFormat = {
 describe("DamageCalcTab", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Default: calculations produce meaningful (non-zero) damage ranges
     mockRange.mockReturnValue([40, 60]);
     mockMaxHP.mockReturnValue(200);
     mockDesc.mockReturnValue("40 - 60 (40% - 60%)");
-    mockCalculate.mockReturnValue({ range: mockRange, desc: mockDesc });
+    mockCalculate.mockReturnValue({
+      range: mockRange,
+      desc: mockDesc,
+      damage: [40, 60],
+    });
   });
 
   // ---------------------------------------------------------------------------
-  // Empty state — no Pokemon selected
+  // No attacker (selectedPokemon null) — scaffold render
   // ---------------------------------------------------------------------------
 
   describe("no Pokemon selected", () => {
-    it("renders the 'select a Pokemon' prompt", () => {
+    it("renders 'Pick an attacker to calculate.' in the result area", () => {
       render(
         <DamageCalcTab
           team={makeTeam()}
@@ -176,11 +207,11 @@ describe("DamageCalcTab", () => {
         />
       );
       expect(
-        screen.getByText("Select a Pokémon to see damage calculations")
+        screen.getByText("Pick an attacker to calculate.")
       ).toBeInTheDocument();
     });
 
-    it("does not render calc sections when no Pokemon is selected", () => {
+    it("does not render the direction toggle when no Pokemon is selected", () => {
       render(
         <DamageCalcTab
           team={makeTeam()}
@@ -188,8 +219,82 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
-      expect(screen.queryByText(/attacks/i)).not.toBeInTheDocument();
-      expect(screen.queryByText("Manual Calc")).not.toBeInTheDocument();
+      // Direction toggle buttons (with → arrow) only show when a Pokemon is selected
+      const dirButtons = screen
+        .queryAllByRole("button")
+        .filter((b) => b.textContent?.includes("→"));
+      expect(dirButtons.length).toBe(0);
+    });
+
+    it("renders the Moves section in a dimmed container (opacity-50)", () => {
+      const { container } = render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      // The wrapper div around the moves card should have opacity-50
+      const dimmedDiv = container.querySelector(".opacity-50");
+      expect(dimmedDiv).not.toBeNull();
+    });
+
+    it("renders the Moves section header even without an attacker", () => {
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      expect(screen.getByText("Moves")).toBeInTheDocument();
+    });
+
+    it("renders the Defender section while no attacker is selected", () => {
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      expect(screen.getByText("Defender")).toBeInTheDocument();
+    });
+
+    it("renders the Field Conditions section while no attacker is selected", () => {
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      expect(screen.getByText(/field conditions/i)).toBeInTheDocument();
+    });
+
+    it("renders weather toggle buttons even without an attacker", () => {
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      expect(screen.getByText("Sun")).toBeInTheDocument();
+      expect(screen.getByText("Rain")).toBeInTheDocument();
+    });
+
+    it("does not render old full-page 'select a pokemon' message", () => {
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={null}
+          format={defaultFormat}
+        />
+      );
+      expect(
+        screen.queryByText("Select a Pokémon to use the calculator")
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -198,7 +303,7 @@ describe("DamageCalcTab", () => {
   // ---------------------------------------------------------------------------
 
   describe("with a selected Pokemon", () => {
-    it("shows the species name in the header", () => {
+    it("shows the attacker species name in the direction toggle", () => {
       const pokemon = makePokemon({ species: "Charizard" });
       render(
         <DamageCalcTab
@@ -207,10 +312,11 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
-      expect(screen.getByText("Charizard")).toBeInTheDocument();
+      // The direction toggle shows attacker name
+      expect(screen.getAllByText(/Charizard/).length).toBeGreaterThanOrEqual(1);
     });
 
-    it("shows the 'Manual Calc' toggle button", () => {
+    it("renders the offense direction toggle button", () => {
       const pokemon = makePokemon();
       render(
         <DamageCalcTab
@@ -219,12 +325,11 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
-      expect(
-        screen.getByRole("button", { name: /manual calc/i })
-      ).toBeInTheDocument();
+      // Direction toggle: "Charizard → Incineroar" for offense
+      expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
     });
 
-    it("renders the AutoSuggestions sections (attacks and taking hits)", () => {
+    it("renders the Moves section header", () => {
       const pokemon = makePokemon();
       render(
         <DamageCalcTab
@@ -233,9 +338,19 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
-      // Section headings are uppercase via CSS but text content is plain
-      expect(screen.getByText(/attacks/i)).toBeInTheDocument();
-      expect(screen.getByText(/taking hits/i)).toBeInTheDocument();
+      expect(screen.getByText("Moves")).toBeInTheDocument();
+    });
+
+    it("renders the Defender section header", () => {
+      const pokemon = makePokemon();
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={pokemon}
+          format={defaultFormat}
+        />
+      );
+      expect(screen.getByText("Defender")).toBeInTheDocument();
     });
 
     it("renders Field Conditions section", () => {
@@ -250,7 +365,7 @@ describe("DamageCalcTab", () => {
       expect(screen.getByText(/field conditions/i)).toBeInTheDocument();
     });
 
-    it("renders weather toggle group with all options", () => {
+    it("renders weather toggle buttons with all options", () => {
       const pokemon = makePokemon();
       render(
         <DamageCalcTab
@@ -265,7 +380,7 @@ describe("DamageCalcTab", () => {
       expect(screen.getByText("Snow")).toBeInTheDocument();
     });
 
-    it("renders terrain toggle group with all options", () => {
+    it("renders terrain toggle buttons with abbreviated labels", () => {
       const pokemon = makePokemon();
       render(
         <DamageCalcTab
@@ -274,14 +389,15 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
-      // Terrain names are sliced to 4 chars: Elec, Gras, Psyc, Mist
+      // Terrain labels from TERRAIN_LABELS constant — "Grass" may also appear in
+      // select option lists, so use getAllByText
       expect(screen.getByText("Elec")).toBeInTheDocument();
-      expect(screen.getByText("Gras")).toBeInTheDocument();
-      expect(screen.getByText("Psyc")).toBeInTheDocument();
-      expect(screen.getByText("Mist")).toBeInTheDocument();
+      expect(screen.getAllByText("Grass").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText("Misty")).toBeInTheDocument();
+      expect(screen.getByText("Psych")).toBeInTheDocument();
     });
 
-    it("renders Light Screen, Reflect, and Helping Hand checkboxes", () => {
+    it("renders Your Side and Their Side sections", () => {
       const pokemon = makePokemon();
       render(
         <DamageCalcTab
@@ -290,180 +406,91 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
-      expect(screen.getByText("Light Screen")).toBeInTheDocument();
-      expect(screen.getByText("Reflect")).toBeInTheDocument();
-      expect(screen.getByText("Helping Hand")).toBeInTheDocument();
+      expect(screen.getByText(/your side/i)).toBeInTheDocument();
+      expect(screen.getByText(/their side/i)).toBeInTheDocument();
+    });
+
+    it("renders Reflect chip in both sides", () => {
+      const pokemon = makePokemon();
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={pokemon}
+          format={defaultFormat}
+        />
+      );
+      expect(screen.getAllByText("Reflect").length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("renders helping hand chip (abbreviated H.Hand)", () => {
+      const pokemon = makePokemon();
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={pokemon}
+          format={defaultFormat}
+        />
+      );
+      // The component uses abbreviated "H.Hand" not "Helping Hand"
+      expect(screen.getAllByText("H.Hand").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("renders light screen chip (abbreviated L.Screen)", () => {
+      const pokemon = makePokemon();
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={pokemon}
+          format={defaultFormat}
+        />
+      );
+      // The component uses abbreviated "L.Screen" not "Light Screen"
+      expect(screen.getAllByText("L.Screen").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("renders the move slots for the selected Pokemon", () => {
+      const pokemon = makePokemon();
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={pokemon}
+          format={defaultFormat}
+        />
+      );
+      // Move names appear in both move selector rows and result panel
+      expect(screen.getAllByText("Flamethrower").length).toBeGreaterThanOrEqual(
+        1
+      );
+      expect(screen.getAllByText("Air Slash").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("renders the Your Modifiers section", () => {
+      const pokemon = makePokemon();
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={pokemon}
+          format={defaultFormat}
+        />
+      );
+      expect(screen.getByText("Your Modifiers")).toBeInTheDocument();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Manual Calc form
+  // Verdict labels — based on calc output
   // ---------------------------------------------------------------------------
 
-  describe("Manual Calc form", () => {
-    it("is hidden by default", () => {
-      const pokemon = makePokemon();
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-      expect(screen.queryByText(/manual calc/i)).toBeInTheDocument();
-      // The form itself has three labeled inputs; they should be hidden
-      expect(
-        screen.queryByPlaceholderText("e.g. Charizard")
-      ).not.toBeInTheDocument();
-    });
-
-    it("opens the Manual Calc form when the toggle button is clicked", async () => {
-      const user = userEvent.setup();
-      const pokemon = makePokemon();
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-      await user.click(screen.getByRole("button", { name: /manual calc/i }));
-      expect(screen.getByPlaceholderText("e.g. Charizard")).toBeInTheDocument();
-    });
-
-    it("toggles button label to 'Close' when form is open", async () => {
-      const user = userEvent.setup();
-      const pokemon = makePokemon();
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-      await user.click(screen.getByRole("button", { name: /manual calc/i }));
-      expect(
-        screen.getByRole("button", { name: /close/i })
-      ).toBeInTheDocument();
-    });
-
-    it("closes the form when 'Close' button is clicked", async () => {
-      const user = userEvent.setup();
-      const pokemon = makePokemon();
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-      await user.click(screen.getByRole("button", { name: /manual calc/i }));
-      await user.click(screen.getByRole("button", { name: /close/i }));
-      expect(
-        screen.queryByPlaceholderText("e.g. Charizard")
-      ).not.toBeInTheDocument();
-    });
-
-    it("renders Attacker, Move, and Defender inputs when open", async () => {
-      const user = userEvent.setup();
-      const pokemon = makePokemon();
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-      await user.click(screen.getByRole("button", { name: /manual calc/i }));
-      expect(screen.getByPlaceholderText("e.g. Charizard")).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText("e.g. Flamethrower")
-      ).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("e.g. Kingambit")).toBeInTheDocument();
-    });
-
-    it("renders the Calculate button inside the form", async () => {
-      const user = userEvent.setup();
-      const pokemon = makePokemon();
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-      await user.click(screen.getByRole("button", { name: /manual calc/i }));
-      expect(
-        screen.getByRole("button", { name: /calculate/i })
-      ).toBeInTheDocument();
-    });
-
-    it("does not run a calculation when fields are empty", async () => {
-      const user = userEvent.setup();
-      const pokemon = makePokemon();
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-      await user.click(screen.getByRole("button", { name: /manual calc/i }));
-      // Clear count of calls so far from AutoSuggestions render
-      mockCalculate.mockClear();
-      await user.click(screen.getByRole("button", { name: /calculate/i }));
-      // calculate() should NOT be called with empty inputs
-      expect(mockCalculate).not.toHaveBeenCalled();
-    });
-
-    it("runs a calculation and displays a result row when all inputs are filled", async () => {
-      const user = userEvent.setup();
-      const pokemon = makePokemon();
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-      await user.click(screen.getByRole("button", { name: /manual calc/i }));
-
-      await user.type(
-        screen.getByPlaceholderText("e.g. Charizard"),
-        "Charizard"
-      );
-      await user.type(
-        screen.getByPlaceholderText("e.g. Flamethrower"),
-        "Flamethrower"
-      );
-      await user.type(
-        screen.getByPlaceholderText("e.g. Kingambit"),
-        "Kingambit"
-      );
-
-      mockCalculate.mockClear();
-      await user.click(screen.getByRole("button", { name: /calculate/i }));
-
-      expect(mockCalculate).toHaveBeenCalledTimes(1);
-      // The damage percent range (20.0–30.0%) should be displayed.
-      // 40/200 * 100 = 20.0, 60/200 * 100 = 30.0
-      // The span renders its text across child nodes, so use a function matcher.
-      const rangeSpans = screen.getAllByText((_content, el) => {
-        return el?.textContent === "20–30%";
-      });
-      expect(rangeSpans.length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // DamageBar verdict labels — tested via AutoSuggestions (rendered on mount)
-  // ---------------------------------------------------------------------------
-
-  describe("DamageBar verdict labels", () => {
+  describe("verdict labels from calc output", () => {
     it("shows OHKO verdict when min damage >= 100%", () => {
       // 200/200 = 100% — OHKO
       mockRange.mockReturnValue([200, 200]);
       mockMaxHP.mockReturnValue(200);
+      mockCalculate.mockReturnValue({
+        range: mockRange,
+        desc: mockDesc,
+        damage: [200, 200],
+      });
 
       const pokemon = makePokemon();
       render(
@@ -473,30 +500,18 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
-      // AutoSuggestions renders CalcRows with the verdict label
       expect(screen.getAllByText("OHKO").length).toBeGreaterThanOrEqual(1);
-    });
-
-    it("shows roll verdict when only max damage >= 100%", () => {
-      // min 180/200 = 90%, max 210/200 = 105% → roll
-      mockRange.mockReturnValue([180, 210]);
-      mockMaxHP.mockReturnValue(200);
-
-      const pokemon = makePokemon();
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-      expect(screen.getAllByText("roll").length).toBeGreaterThanOrEqual(1);
     });
 
     it("shows 2HKO verdict when max damage is 50-99%", () => {
       // 100/200 = 50%, 120/200 = 60% → 2HKO
       mockRange.mockReturnValue([100, 120]);
       mockMaxHP.mockReturnValue(200);
+      mockCalculate.mockReturnValue({
+        range: mockRange,
+        desc: mockDesc,
+        damage: [100, 120],
+      });
 
       const pokemon = makePokemon();
       render(
@@ -509,10 +524,15 @@ describe("DamageCalcTab", () => {
       expect(screen.getAllByText("2HKO").length).toBeGreaterThanOrEqual(1);
     });
 
-    it("shows 3HKO verdict when max damage is 33-49%", () => {
-      // 66/200 = 33%, 80/200 = 40% → 3HKO
-      mockRange.mockReturnValue([66, 80]);
+    it("shows 3HKO verdict when max damage is 34-49%", () => {
+      // 68/200 = 34%, 80/200 = 40% → 3HKO
+      mockRange.mockReturnValue([68, 80]);
       mockMaxHP.mockReturnValue(200);
+      mockCalculate.mockReturnValue({
+        range: mockRange,
+        desc: mockDesc,
+        damage: [68, 80],
+      });
 
       const pokemon = makePokemon();
       render(
@@ -527,55 +547,10 @@ describe("DamageCalcTab", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // AutoSuggestions edge cases
+  // Edge cases
   // ---------------------------------------------------------------------------
 
-  describe("AutoSuggestions edge cases", () => {
-    it("shows 'No damage calcs available' when all calculations return 0% damage", () => {
-      // maxPercent = 0 → filtered out
-      mockRange.mockReturnValue([0, 0]);
-      mockMaxHP.mockReturnValue(200);
-
-      const pokemon = makePokemon({
-        move1: "Splash",
-        move2: null,
-        move3: null,
-        move4: null,
-      });
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-      expect(screen.getAllByText("No damage calcs available")).toHaveLength(2); // one for offensive, one for defensive
-    });
-
-    it("shows a failed calculation notice when calculate throws", () => {
-      mockCalculate.mockImplementation(() => {
-        throw new Error("Unknown Pokemon");
-      });
-
-      const pokemon = makePokemon({
-        move1: "Flamethrower",
-        move2: null,
-        move3: null,
-        move4: null,
-      });
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-      // The component counts failed calcs and renders a notice
-      expect(
-        screen.getByText(/calculation.*could not be computed/i)
-      ).toBeInTheDocument();
-    });
-
+  describe("edge cases", () => {
     it("handles a Pokemon with no moves without crashing", () => {
       const pokemon = makePokemon({
         move1: null,
@@ -594,8 +569,30 @@ describe("DamageCalcTab", () => {
       ).not.toThrow();
     });
 
-    it("handles null maxHP (returns null from runCalc) gracefully", () => {
+    it("handles maxHP returning 0 gracefully", () => {
       mockMaxHP.mockReturnValue(0);
+      mockCalculate.mockReturnValue({
+        range: mockRange,
+        desc: mockDesc,
+        damage: [40, 60],
+      });
+
+      const pokemon = makePokemon();
+      expect(() =>
+        render(
+          <DamageCalcTab
+            team={makeTeam()}
+            selectedPokemon={pokemon}
+            format={defaultFormat}
+          />
+        )
+      ).not.toThrow();
+    });
+
+    it("handles calculate throwing an error gracefully", () => {
+      mockCalculate.mockImplementation(() => {
+        throw new Error("Unknown Pokemon");
+      });
 
       const pokemon = makePokemon();
       expect(() =>
@@ -611,13 +608,11 @@ describe("DamageCalcTab", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Field controls
+  // Field condition interactions
   // ---------------------------------------------------------------------------
 
-  describe("field condition checkboxes", () => {
-    // Base UI Checkbox renders a <button> element, not a native checkbox.
-    // Click via the label <span> that is inside the <label> wrapper.
-    it("toggles Light Screen checkbox without crashing", () => {
+  describe("field condition toggles", () => {
+    it("toggles Reflect chip without crashing", () => {
       const pokemon = makePokemon();
       render(
         <DamageCalcTab
@@ -626,12 +621,12 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
-      const label = screen.getByText("Light Screen");
-      fireEvent.click(label);
-      expect(label).toBeInTheDocument();
+      const reflects = screen.getAllByText("Reflect");
+      fireEvent.click(reflects[0]!);
+      expect(reflects[0]).toBeInTheDocument();
     });
 
-    it("toggles Reflect checkbox without crashing", () => {
+    it("toggles H.Hand chip without crashing", () => {
       const pokemon = makePokemon();
       render(
         <DamageCalcTab
@@ -640,12 +635,12 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
-      const label = screen.getByText("Reflect");
-      fireEvent.click(label);
-      expect(label).toBeInTheDocument();
+      const helpingHands = screen.getAllByText("H.Hand");
+      fireEvent.click(helpingHands[0]!);
+      expect(helpingHands[0]).toBeInTheDocument();
     });
 
-    it("toggles Helping Hand checkbox without crashing", () => {
+    it("toggles L.Screen chip without crashing", () => {
       const pokemon = makePokemon();
       render(
         <DamageCalcTab
@@ -654,21 +649,50 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
-      const label = screen.getByText("Helping Hand");
-      fireEvent.click(label);
-      expect(label).toBeInTheDocument();
+      const lightScreens = screen.getAllByText("L.Screen");
+      fireEvent.click(lightScreens[0]!);
+      expect(lightScreens[0]).toBeInTheDocument();
+    });
+
+    it("toggles weather button without crashing", async () => {
+      const user = userEvent.setup();
+      const pokemon = makePokemon();
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={pokemon}
+          format={defaultFormat}
+        />
+      );
+      const sunButton = screen.getByText("Sun");
+      await user.click(sunButton);
+      expect(sunButton).toBeInTheDocument();
+    });
+
+    it("toggles terrain button without crashing", async () => {
+      const user = userEvent.setup();
+      const pokemon = makePokemon();
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={pokemon}
+          format={defaultFormat}
+        />
+      );
+      const elecButton = screen.getByText("Elec");
+      await user.click(elecButton);
+      expect(elecButton).toBeInTheDocument();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Manual Calc error handling
+  // Direction toggle
   // ---------------------------------------------------------------------------
 
-  describe("Manual Calc error handling", () => {
-    it("does not show an error message before Calculate is clicked", async () => {
+  describe("direction toggle", () => {
+    it("switches direction when defense button is clicked", async () => {
       const user = userEvent.setup();
-      const pokemon = makePokemon();
-
+      const pokemon = makePokemon({ species: "Charizard" });
       render(
         <DamageCalcTab
           team={makeTeam()}
@@ -676,39 +700,117 @@ describe("DamageCalcTab", () => {
           format={defaultFormat}
         />
       );
+      // Both offense and defense toggle buttons are rendered
+      const buttons = screen.getAllByRole("button");
+      // The direction toggle has 2 buttons — find the one with defense text
+      const directionButtons = buttons.filter((b) =>
+        b.textContent?.includes("→")
+      );
+      expect(directionButtons.length).toBeGreaterThanOrEqual(2);
+      await user.click(directionButtons[1]!);
+      // Should not crash
+      expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
+    });
+  });
 
-      await user.click(screen.getByRole("button", { name: /manual calc/i }));
-      // Before clicking Calculate, no error text should be visible
+  // ---------------------------------------------------------------------------
+  // Format prop
+  // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
+  // Defender species search legality
+  // ---------------------------------------------------------------------------
+
+  describe("damage calc — defender species search legality", () => {
+    const championsFormat = {
+      id: "championsvgc2026regma",
+      label: "Champions VGC 2026 Reg MA",
+      generation: 9,
+    };
+
+    it("omits illegal species from the search results entirely", async () => {
+      const user = userEvent.setup();
+      const pokemon = makePokemon({ species: "Charizard" });
+
+      render(
+        <DamageCalcTab
+          team={makeTeam([
+            { sort_order: 0, pokemon },
+          ] as TeamWithPokemon["team_pokemon"])}
+          selectedPokemon={pokemon}
+          format={championsFormat}
+        />
+      );
+
+      // Open the defender species search by clicking the ▾ button
+      const speciesButtons = screen
+        .getAllByRole("button")
+        .filter((b) => b.getAttribute("title") === "Click to change species");
+      const defenderButton = speciesButtons[speciesButtons.length - 1]!;
+      await user.click(defenderButton);
+
+      // Use fireEvent.change to set the query — avoids async userEvent sequencing
+      const input = screen.getByPlaceholderText("Search species…");
+      fireEvent.change(input, { target: { value: "lando" } });
+
+      // Landorus-Therian should not appear at all — it is filtered out
+      const landoButton = screen
+        .queryAllByRole("button", { hidden: true })
+        .find((b) => b.textContent?.includes("Landorus-Therian"));
+      expect(landoButton).toBeUndefined();
+
+      // No "Not legal" badge should appear
+      expect(screen.queryByText("Not legal")).not.toBeInTheDocument();
+
+      // Search input stays open (nothing was selected)
       expect(
-        screen.queryByText("Calculation failed — check your inputs")
+        screen.getByPlaceholderText("Search species…")
+      ).toBeInTheDocument();
+    });
+
+    it("allows selection of a legal species", async () => {
+      const user = userEvent.setup();
+      const pokemon = makePokemon({ species: "Charizard" });
+
+      render(
+        <DamageCalcTab
+          team={makeTeam([
+            { sort_order: 0, pokemon },
+          ] as TeamWithPokemon["team_pokemon"])}
+          selectedPokemon={pokemon}
+          format={championsFormat}
+        />
+      );
+
+      // Open the defender species search
+      const speciesButtons = screen
+        .getAllByRole("button")
+        .filter((b) => b.getAttribute("title") === "Click to change species");
+      const defenderButton = speciesButtons[speciesButtons.length - 1]!;
+      await user.click(defenderButton);
+
+      // Use fireEvent.change to set the query — avoids async userEvent sequencing
+      const input = screen.getByPlaceholderText("Search species…");
+      fireEvent.change(input, { target: { value: "incin" } });
+
+      // Incineroar row should be present and enabled (legal)
+      const incineroarButton = screen
+        .getAllByRole("button")
+        .find((b) => b.textContent?.includes("Incineroar"));
+      expect(incineroarButton).toBeDefined();
+      expect(incineroarButton).not.toBeDisabled();
+      expect(incineroarButton).not.toHaveClass("opacity-50");
+
+      // Click Incineroar — defender species should update (input closes)
+      if (incineroarButton) {
+        fireEvent.mouseDown(incineroarButton);
+      }
+      // The input should be closed (search mode exits on selection)
+      expect(
+        screen.queryByPlaceholderText("Search species…")
       ).not.toBeInTheDocument();
     });
-
-    it("does not display a result row before Calculate is clicked", async () => {
-      const user = userEvent.setup();
-      const pokemon = makePokemon();
-
-      render(
-        <DamageCalcTab
-          team={makeTeam()}
-          selectedPokemon={pokemon}
-          format={defaultFormat}
-        />
-      );
-
-      await user.click(screen.getByRole("button", { name: /manual calc/i }));
-      await user.type(
-        screen.getByPlaceholderText("e.g. Charizard"),
-        "Charizard"
-      );
-      // Only the attacker input is filled — no result row yet
-      expect(screen.queryByText(/calculation failed/i)).not.toBeInTheDocument();
-    });
   });
-
-  // ---------------------------------------------------------------------------
-  // format prop is optional
-  // ---------------------------------------------------------------------------
 
   it("renders correctly when format is undefined", () => {
     const pokemon = makePokemon();
@@ -721,5 +823,76 @@ describe("DamageCalcTab", () => {
         />
       )
     ).not.toThrow();
+  });
+
+  it("renders SP mode for Champions format (generation 10)", () => {
+    const pokemon = makePokemon();
+    render(
+      <DamageCalcTab
+        team={makeTeam()}
+        selectedPokemon={pokemon}
+        format={{ id: "champions", label: "Champions", generation: 10 }}
+      />
+    );
+    // SP mode shows "SP" column header in defender panel
+    expect(screen.getByText("SP")).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Move selector interactions
+  // ---------------------------------------------------------------------------
+
+  describe("move selector", () => {
+    it("selects a different move when clicked", async () => {
+      const user = userEvent.setup();
+      const pokemon = makePokemon({
+        move1: "Flamethrower",
+        move2: "Air Slash",
+        move3: null,
+        move4: null,
+      });
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={pokemon}
+          format={defaultFormat}
+        />
+      );
+      // Move names appear in both move selector and result panel — click via row button
+      const allAirSlash = screen.getAllByText("Air Slash");
+      await user.click(allAirSlash[0]!);
+      // Should not crash after selecting a move
+      expect(screen.getAllByText("Air Slash").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("shows damage range for moves with calc output", () => {
+      mockRange.mockReturnValue([40, 60]);
+      mockMaxHP.mockReturnValue(200);
+      mockCalculate.mockReturnValue({
+        range: mockRange,
+        desc: mockDesc,
+        damage: [40, 60],
+      });
+
+      const pokemon = makePokemon({
+        move1: "Flamethrower",
+        move2: null,
+        move3: null,
+        move4: null,
+      });
+      render(
+        <DamageCalcTab
+          team={makeTeam()}
+          selectedPokemon={pokemon}
+          format={defaultFormat}
+        />
+      );
+      // Damage range: 40/200*100=20, 60/200*100=30 — rendered as "20–30%"
+      // The range span renders its text across child nodes so use a text content matcher
+      const rangeSpans = screen.getAllByText(
+        (_content, el) => el?.textContent?.replace(/\s+/g, "") === "20–30%"
+      );
+      expect(rangeSpans.length).toBeGreaterThanOrEqual(1);
+    });
   });
 });

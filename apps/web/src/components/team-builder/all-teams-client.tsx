@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 
+import { NewTeamDialog } from "./new-team-dialog";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -23,7 +25,6 @@ interface AllTeamsClientProps {
   initialTeams: CrossAltTeamListItem[];
   alts: Array<{ id: number; username: string }>;
   activeFormats: GameFormat[];
-  userId: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,8 +43,22 @@ export function AllTeamsClient({
   alts,
   activeFormats,
 }: AllTeamsClientProps) {
+  const [selectedGame, setSelectedGame] = useState<string>("");
   const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
   const [selectedAlt, setSelectedAlt] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"empty" | "import">("empty");
+
+  // Unique game names in the order they appear in activeFormats
+  const uniqueGames = activeFormats.reduce<string[]>((acc, fmt) => {
+    if (!acc.includes(fmt.game)) acc.push(fmt.game);
+    return acc;
+  }, []);
+
+  // Formats filtered to the selected game (or all formats when no game is selected)
+  const formatsForGame = selectedGame
+    ? activeFormats.filter((fmt) => fmt.game === selectedGame)
+    : activeFormats;
 
   const filteredTeams = initialTeams.filter((team) => {
     if (selectedFormat && team.format !== selectedFormat) return false;
@@ -51,9 +66,21 @@ export function AllTeamsClient({
     return true;
   });
 
-  // Default new-team alt: selected alt filter, or first alt
-  const defaultAltUsername = selectedAlt ?? alts[0]?.username ?? "";
-  const newTeamUrl = `/dashboard/alts/${defaultAltUsername}/teams/new`;
+  function openDialog(mode: "empty" | "import") {
+    setDialogMode(mode);
+    setDialogOpen(true);
+  }
+
+  const dialog = (
+    <NewTeamDialog
+      open={dialogOpen}
+      onOpenChange={setDialogOpen}
+      activeFormats={activeFormats}
+      defaultFormat={selectedFormat ?? undefined}
+      initialMode={dialogMode}
+      alts={alts}
+    />
+  );
 
   if (initialTeams.length === 0) {
     return (
@@ -63,20 +90,18 @@ export function AllTeamsClient({
           description="Create your first team or import a Showdown paste."
           action={
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                render={<Link href={`${newTeamUrl}?mode=import`} />}
-              >
+              <Button variant="outline" onClick={() => openDialog("import")}>
                 <Upload className="size-4" />
                 Import Paste
               </Button>
-              <Button render={<Link href={newTeamUrl} />}>
+              <Button onClick={() => openDialog("empty")}>
                 <Plus className="size-4" />
                 New Team
               </Button>
             </div>
           }
         />
+        {dialog}
       </div>
     );
   }
@@ -85,35 +110,37 @@ export function AllTeamsClient({
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
       {/* Toolbar: filters + actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {/* Format chips */}
-          <button
-            onClick={() => setSelectedFormat(null)}
-            className={cn(
-              "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
-              !selectedFormat
-                ? "border-primary bg-primary text-primary-foreground"
-                : "bg-background hover:bg-accent border-transparent"
-            )}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Game selector */}
+          <select
+            value={selectedGame}
+            onChange={(e) => {
+              setSelectedGame(e.target.value);
+              setSelectedFormat(null);
+            }}
+            className="rounded-md border px-2 py-1 text-sm"
           >
-            All
-          </button>
-          {activeFormats.map((fmt) => (
-            <button
-              key={fmt.id}
-              onClick={() =>
-                setSelectedFormat(selectedFormat === fmt.id ? null : fmt.id)
-              }
-              className={cn(
-                "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
-                selectedFormat === fmt.id
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "bg-background hover:bg-accent border-transparent"
-              )}
-            >
-              {fmt.label}
-            </button>
-          ))}
+            <option value="">All Games</option>
+            {uniqueGames.map((game) => (
+              <option key={game} value={game}>
+                {game}
+              </option>
+            ))}
+          </select>
+
+          {/* Format selector — filtered by selected game */}
+          <select
+            value={selectedFormat ?? ""}
+            onChange={(e) => setSelectedFormat(e.target.value || null)}
+            className="rounded-md border px-2 py-1 text-sm"
+          >
+            <option value="">All Formats</option>
+            {formatsForGame.map((fmt) => (
+              <option key={fmt.id} value={fmt.id}>
+                {fmt.label}
+              </option>
+            ))}
+          </select>
 
           {/* Divider — only shown when there are multiple alts */}
           {alts.length > 1 && (
@@ -147,12 +174,12 @@ export function AllTeamsClient({
           <Button
             variant="outline"
             size="sm"
-            render={<Link href={`${newTeamUrl}?mode=import`} />}
+            onClick={() => openDialog("import")}
           >
             <Upload className="size-4" />
             Import Paste
           </Button>
-          <Button size="sm" render={<Link href={newTeamUrl} />}>
+          <Button size="sm" onClick={() => openDialog("empty")}>
             <Plus className="size-4" />
             New Team
           </Button>
@@ -189,6 +216,7 @@ export function AllTeamsClient({
           </tbody>
         </table>
       </div>
+      {dialog}
     </div>
   );
 }

@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 
-import { getLearnableMoves, getMoveData } from "@trainers/pokemon";
+import {
+  getLearnableMoves,
+  getLegalMoves,
+  getMoveData,
+} from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -22,6 +26,8 @@ interface MovePickerProps {
   value: string | null;
   onSelect: (move: string) => void;
   onClose: () => void;
+  /** When provided, the move list is filtered to legal moves for this species in this format. */
+  formatId?: string;
 }
 
 // =============================================================================
@@ -41,11 +47,19 @@ export function MovePicker({
   value,
   onSelect,
   onClose,
+  formatId,
 }: MovePickerProps) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<CategoryFilter>("All");
 
-  const allMoves = getLearnableMoves(species);
+  // When formatId is provided, filter to the species' legal moves for that format.
+  // getLegalMoves returning undefined means the format is permissive — fall back to
+  // all learnable moves. When formatId is absent, use all learnable moves directly.
+  const allMoves = formatId
+    ? Array.from(
+        getLegalMoves(species, formatId) ?? getLearnableMoves(species)
+      ).sort()
+    : getLearnableMoves(species);
 
   // Filter by search text first (cheap string match), then resolve move data
   // only for the narrowed set to avoid unnecessary lookups on every keystroke
@@ -54,18 +68,28 @@ export function MovePicker({
     name.toLowerCase().includes(searchLower)
   );
 
-  const movesWithData = searchFiltered.map((name) => ({
-    name,
-    data: getMoveData(name),
-  }));
+  // Build the visible list eagerly, resolving move data only for entries we
+  // keep. When filtering by category we skip non-matches; either way we stop
+  // at 100 entries to keep rendering fast.
+  const visible: Array<{ name: string; data: ReturnType<typeof getMoveData> }> =
+    [];
+  for (const name of searchFiltered) {
+    const data = getMoveData(name);
+    if (category !== "All" && data?.category !== category) continue;
+    visible.push({ name, data });
+    if (visible.length >= 100) break;
+  }
 
-  const filtered =
-    category === "All"
-      ? movesWithData
-      : movesWithData.filter(({ data }) => data?.category === category);
-
-  // Cap to 100 for performance — search narrows the list further
-  const visible = filtered.slice(0, 100);
+  // Total matching count for the "N moves" hint — only computed when we
+  // hit the cap and need to show how many remain.
+  const totalFiltered =
+    visible.length < 100
+      ? visible.length
+      : category === "All"
+        ? searchFiltered.length
+        : searchFiltered.filter(
+            (name) => getMoveData(name)?.category === category
+          ).length;
 
   function handleSelect(move: string) {
     onSelect(move);
@@ -102,9 +126,9 @@ export function MovePicker({
             {cat}
           </button>
         ))}
-        {filtered.length > 100 && (
+        {totalFiltered > 100 && (
           <span className="text-muted-foreground ml-auto self-center text-xs">
-            {filtered.length} moves — search to narrow
+            {totalFiltered} moves — search to narrow
           </span>
         )}
       </div>

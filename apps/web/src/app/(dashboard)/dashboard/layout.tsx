@@ -58,7 +58,13 @@ export default async function DashboardLayout({
         return false;
       }),
       isSiteAdmin().catch(() => false),
-      hasTeamBuilderAccess(supabase, user.id).catch(() => false),
+      hasTeamBuilderAccess(supabase, user.id).catch((err) => {
+        console.error(
+          "[DashboardLayout] Failed to check team builder access:",
+          err
+        );
+        return { access: "error" as const, reason: String(err) };
+      }),
     ]);
 
   // When sudo mode is active, merge all communities — user's own keep their real
@@ -159,7 +165,7 @@ export default async function DashboardLayout({
   }));
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="max-h-svh overflow-hidden">
       <DashboardSidebar
         user={sidebarUser}
         communities={sidebarCommunities}
@@ -168,10 +174,10 @@ export default async function DashboardLayout({
         isOnboarding={isOnboarding}
         isSiteAdmin={isAdmin}
         isSudoActive={sudoActive}
-        hasTeamBuilderAccess={teamBuilderAccess}
+        hasTeamBuilderAccess={teamBuilderAccess.access === true}
         variant="inset"
       />
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset className="overflow-hidden">{children}</SidebarInset>
     </SidebarProvider>
   );
 }

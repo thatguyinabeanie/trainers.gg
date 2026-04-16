@@ -1,7 +1,11 @@
 import type { TypedClient } from "../client";
 
 /**
- * Check if a user has the site admin role
+ * Check if a user has the site admin role.
+ * Throws on query errors so callers can distinguish "no access" from "system error".
+ *
+ * @param supabase - Typed Supabase client
+ * @param userId - UUID of the user to check
  */
 export async function isSiteAdmin(
   supabase: TypedClient,
@@ -24,8 +28,9 @@ export async function isSiteAdmin(
     .maybeSingle();
 
   if (error) {
-    console.error("Error checking site admin status:", error);
-    return false;
+    throw new Error(
+      `Failed to check site admin status for user ${userId}: ${error.message}`
+    );
   }
 
   return data !== null;

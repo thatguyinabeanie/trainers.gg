@@ -38,8 +38,11 @@ jest.mock("@/lib/cache-invalidation", () => ({
 }));
 
 // @trainers/utils — getErrorMessage used inside withAction
+const mockTrainersGetErrorMessage = jest.fn(
+  (_err: unknown, fallback: string) => fallback
+);
 jest.mock("@trainers/utils", () => ({
-  getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
+  getErrorMessage: (...args: unknown[]) => mockTrainersGetErrorMessage(...args),
 }));
 
 // @trainers/supabase mutations
@@ -51,6 +54,7 @@ const mockAddPokemonToTeam = jest.fn();
 const mockUpdatePokemon = jest.fn();
 const mockRemovePokemonFromTeam = jest.fn();
 const mockReorderTeamPokemon = jest.fn();
+const mockGetTeamWithPokemon = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
   createTeam: (...args: unknown[]) => mockCreateTeam(...args),
@@ -62,6 +66,24 @@ jest.mock("@trainers/supabase", () => ({
   removePokemonFromTeam: (...args: unknown[]) =>
     mockRemovePokemonFromTeam(...args),
   reorderTeamPokemon: (...args: unknown[]) => mockReorderTeamPokemon(...args),
+  getTeamWithPokemon: (...args: unknown[]) => mockGetTeamWithPokemon(...args),
+}));
+
+// @trainers/pokemon — mock legality functions so tests are deterministic
+const mockGetLegalSpecies = jest.fn();
+const mockIsLegalSpecies = jest.fn().mockReturnValue(true);
+const mockIsLegalItem = jest.fn().mockReturnValue(true);
+const mockIsLegalMove = jest.fn().mockReturnValue(true);
+const mockIsLegalAbility = jest.fn().mockReturnValue(true);
+const mockIsLegalTeraType = jest.fn().mockReturnValue(true);
+
+jest.mock("@trainers/pokemon", () => ({
+  getLegalSpecies: (...args: unknown[]) => mockGetLegalSpecies(...args),
+  isLegalSpecies: (...args: unknown[]) => mockIsLegalSpecies(...args),
+  isLegalItem: (...args: unknown[]) => mockIsLegalItem(...args),
+  isLegalMove: (...args: unknown[]) => mockIsLegalMove(...args),
+  isLegalAbility: (...args: unknown[]) => mockIsLegalAbility(...args),
+  isLegalTeraType: (...args: unknown[]) => mockIsLegalTeraType(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -191,6 +213,81 @@ describe("updateTeamAction", () => {
     // Mutation was called with stripped data (no created_by)
     expect(mockUpdateTeam).toHaveBeenCalledWith(mockSupabase, 10, {});
   });
+
+  // ---------------------------------------------------------------------------
+  // Format-change legality guard
+  // ---------------------------------------------------------------------------
+
+  it("blocks a format change when the team holds a species illegal in the target format", async () => {
+    // Team is on gen9vgc2024regh, trying to switch to gen9vgc2026regi.
+    // Mew is not in the gen9vgc2026regi legal set.
+    const illegalLegalSet = new Set(["Charizard", "Pikachu"]); // Mew is absent
+    mockGetLegalSpecies.mockReturnValue(illegalLegalSet);
+    mockGetTeamWithPokemon.mockResolvedValue({
+      id: 10,
+      format: "gen9vgc2024regh",
+      team_pokemon: [
+        { pokemon: { species: "Charizard" } },
+        { pokemon: { species: "Mew" } },
+      ],
+    });
+
+    const result = await updateTeamAction(10, { format: "gen9vgc2026regi" });
+
+    expect(result.success).toBe(false);
+    // The guard now returns directly — verify the error message mentions Mew
+    if (!result.success) {
+      expect(result.error).toContain("Mew");
+      expect(result.error).toContain("Remove them before changing format");
+    }
+    expect(mockUpdateTeam).not.toHaveBeenCalled();
+  });
+
+  it("allows a format change when all current species are legal in the target format", async () => {
+    // All team members are in the legal set for the target format.
+    const allLegalSet = new Set(["Charizard", "Pikachu"]);
+    mockGetLegalSpecies.mockReturnValue(allLegalSet);
+    mockGetTeamWithPokemon.mockResolvedValue({
+      id: 10,
+      format: "gen9vgc2024regh",
+      team_pokemon: [
+        { pokemon: { species: "Charizard" } },
+        { pokemon: { species: "Pikachu" } },
+      ],
+    });
+    mockUpdateTeam.mockResolvedValue(undefined);
+
+    const result = await updateTeamAction(10, { format: "gen9vgc2026regi" });
+
+    expect(result).toEqual({ success: true, data: undefined });
+    expect(mockUpdateTeam).toHaveBeenCalled();
+  });
+
+  it("bypasses the legality check entirely for non-format updates", async () => {
+    mockUpdateTeam.mockResolvedValue(undefined);
+
+    const result = await updateTeamAction(10, { name: "New Name" });
+
+    expect(result).toEqual({ success: true, data: undefined });
+    // getTeamWithPokemon should not have been called — no format field present
+    expect(mockGetTeamWithPokemon).not.toHaveBeenCalled();
+    expect(mockUpdateTeam).toHaveBeenCalledWith(mockSupabase, 10, {
+      name: "New Name",
+    });
+  });
+
+  it("returns an error when the team is not found during a format change", async () => {
+    mockGetTeamWithPokemon.mockResolvedValue(null);
+
+    const result = await updateTeamAction(10, { format: "gen9vgc2026regi" });
+
+    expect(result.success).toBe(false);
+    // The guard now returns directly instead of throwing inside withAction
+    if (!result.success) {
+      expect(result.error).toContain("Team not found");
+    }
+    expect(mockUpdateTeam).not.toHaveBeenCalled();
+  });
 });
 
 // =============================================================================
@@ -284,6 +381,17 @@ describe("addPokemonToTeamAction", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: legality checks pass, team has a format
+    mockIsLegalSpecies.mockReturnValue(true);
+    mockIsLegalItem.mockReturnValue(true);
+    mockIsLegalMove.mockReturnValue(true);
+    mockIsLegalAbility.mockReturnValue(true);
+    mockIsLegalTeraType.mockReturnValue(true);
+    mockGetTeamWithPokemon.mockResolvedValue({
+      id: 10,
+      format: "gen9vgc2025regg",
+      team_pokemon: [],
+    });
   });
 
   it("adds a pokemon and returns the new pokemon id", async () => {
@@ -317,6 +425,9 @@ describe("addPokemonToTeamAction", () => {
     const result = await addPokemonToTeamAction(10, fakePokemon, 1);
 
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Failed to add pokemon to team");
+    }
     expect(mockAddPokemonToTeam).not.toHaveBeenCalled();
   });
 
@@ -324,6 +435,18 @@ describe("addPokemonToTeamAction", () => {
     const result = await addPokemonToTeamAction(10, fakePokemon, 0);
 
     expect(result).toEqual({ success: false, error: expect.any(String) });
+    expect(mockAddPokemonToTeam).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when the team is not found", async () => {
+    mockGetTeamWithPokemon.mockResolvedValue(null);
+
+    const result = await addPokemonToTeamAction(10, fakePokemon, 1);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Team not found. It may have been deleted.",
+    });
     expect(mockAddPokemonToTeam).not.toHaveBeenCalled();
   });
 });
@@ -335,6 +458,24 @@ describe("addPokemonToTeamAction", () => {
 describe("updatePokemonAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: legality checks pass, team has a format with the pokemon
+    mockIsLegalSpecies.mockReturnValue(true);
+    mockIsLegalItem.mockReturnValue(true);
+    mockIsLegalMove.mockReturnValue(true);
+    mockIsLegalAbility.mockReturnValue(true);
+    mockIsLegalTeraType.mockReturnValue(true);
+    mockGetTeamWithPokemon.mockResolvedValue({
+      id: 1,
+      format: "gen9vgc2025regg",
+      team_pokemon: [
+        {
+          id: 1,
+          pokemon_id: 55,
+          team_position: 1,
+          pokemon: { id: 55, species: "Pikachu", ability: "Static" },
+        },
+      ],
+    });
   });
 
   it("updates a pokemon", async () => {
@@ -365,6 +506,9 @@ describe("updatePokemonAction", () => {
     const result = await updatePokemonAction(1, 55, { nickname: "Sparky" });
 
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Failed to update pokemon");
+    }
     expect(mockUpdatePokemon).not.toHaveBeenCalled();
   });
 
@@ -372,6 +516,18 @@ describe("updatePokemonAction", () => {
     const result = await updatePokemonAction(0, 55, { nickname: "Sparky" });
 
     expect(result).toEqual({ success: false, error: expect.any(String) });
+    expect(mockUpdatePokemon).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when the team is not found", async () => {
+    mockGetTeamWithPokemon.mockResolvedValue(null);
+
+    const result = await updatePokemonAction(1, 55, { nickname: "Sparky" });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Team not found. It may have been deleted.",
+    });
     expect(mockUpdatePokemon).not.toHaveBeenCalled();
   });
 });

@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 
-import { getAllItems, getItemShortDesc } from "@trainers/pokemon";
+import {
+  getAllItems,
+  getItemShortDesc,
+  getLegalItems,
+} from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -18,14 +22,19 @@ interface ItemPickerProps {
   onClose: () => void;
   /** Items held by other Pokemon on the team — for duplicate warning. */
   teamItems: string[];
+  /**
+   * When provided, the picker only shows items legal in this format.
+   * If the format has no registered legality list, all items are shown.
+   */
+  formatId?: string;
 }
 
 // =============================================================================
-// Static data — computed once at module load
+// Module-scope constants
 // =============================================================================
 
-/** All Gen 9 item names, sorted alphabetically. */
-const allItems = getAllItems();
+// Dex items don't change at runtime — compute once at module load
+const ALL_ITEMS = getAllItems();
 
 // =============================================================================
 // ItemPicker
@@ -37,20 +46,32 @@ const allItems = getAllItems();
  * Shows a duplicate warning when another team member already holds the item.
  *
  * The list is capped to 80 visible entries; search narrows the results.
+ * When `formatId` is supplied and the format has a registered item banlist,
+ * the picker only shows format-legal items (filtering happens before the cap).
  */
 export function ItemPicker({
   value,
   onSelect,
   onClose,
   teamItems,
+  formatId,
 }: ItemPickerProps) {
   const [search, setSearch] = useState("");
 
+  // Derive the format-scoped item list. Only the filtering depends on
+  // formatId — the full item list is computed once at module scope.
+  // The legal set is undefined when the format has no registered banlist
+  // (permissive), so we fall back to the full list in that case.
+  const legal = formatId ? getLegalItems(formatId) : undefined;
+  const formatItems = legal
+    ? ALL_ITEMS.filter((name) => legal.has(name))
+    : ALL_ITEMS;
+
   const filtered = search
-    ? allItems.filter((name) =>
+    ? formatItems.filter((name) =>
         name.toLowerCase().includes(search.toLowerCase())
       )
-    : allItems;
+    : formatItems;
 
   // Cap to 80 when unsearched — items list can be 1,000+
   const visible = filtered.slice(0, 80);

@@ -5,6 +5,14 @@ import { toast } from "sonner";
 import { Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 import {
+  getLegalItems,
+  getLegalMoves,
+  getLegalSpecies,
+  getLegalTeraTypes,
+  isLegalAbility,
+} from "@trainers/pokemon";
+
+import {
   parseShowdownText,
   parsePokepaseUrl,
   getPokepaseRawUrl,
@@ -38,6 +46,8 @@ interface ImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImportComplete: () => void;
+  /** Format ID for species legality checks. When omitted, all species are allowed. */
+  formatId?: string;
 }
 
 // =============================================================================
@@ -177,10 +187,12 @@ export function ImportDialog({
   open,
   onOpenChange,
   onImportComplete,
+  formatId,
 }: ImportDialogProps) {
   const [paste, setPaste] = useState("");
   const [url, setUrl] = useState("");
   const [parsed, setParsed] = useState<ParsedPokemon[] | null>(null);
+  const [legalityError, setLegalityError] = useState<string | null>(null);
   const [isFetching, startFetchTransition] = useTransition();
   const [isPendingImport, startImportTransition] = useTransition();
 
@@ -197,8 +209,88 @@ export function ImportDialog({
       setPaste("");
       setUrl("");
       setParsed(null);
+      setLegalityError(null);
     }
     onOpenChange(next);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Legality check helper — returns an error string or null
+  // ---------------------------------------------------------------------------
+
+  function checkLegality(candidates: ParsedPokemon[]): string | null {
+    if (!formatId) return null;
+
+    // Species check
+    const legalSet = getLegalSpecies(formatId);
+    if (legalSet !== undefined) {
+      const illegal = candidates
+        .map((p) => p.species)
+        .filter((s): s is string => Boolean(s) && !legalSet.has(s));
+      if (illegal.length > 0) {
+        return `These Pokémon aren't legal in this format: ${illegal.join(", ")}.`;
+      }
+    }
+
+    // Item check
+    const legalItems = getLegalItems(formatId);
+    if (legalItems !== undefined) {
+      const illegalItems = candidates
+        .map((p) => p.held_item)
+        .filter(
+          (i): i is string => i !== null && i !== "" && !legalItems.has(i)
+        );
+      if (illegalItems.length > 0) {
+        return `These items aren't legal in this format: ${[...new Set(illegalItems)].join(", ")}.`;
+      }
+    }
+
+    // Move check — per-species learnset validation
+    const illegalMoves: string[] = [];
+    for (const p of candidates) {
+      if (!p.species) continue;
+      const legalForSpecies = getLegalMoves(p.species, formatId);
+      if (!legalForSpecies) continue;
+      for (const slot of ["move1", "move2", "move3", "move4"] as const) {
+        const move = p[slot];
+        if (move && !legalForSpecies.has(move)) {
+          illegalMoves.push(`${move} on ${p.species}`);
+        }
+      }
+    }
+    if (illegalMoves.length > 0) {
+      return `Illegal moves: ${illegalMoves.join("; ")}.`;
+    }
+
+    // Tera type check
+    const legalTera = getLegalTeraTypes(formatId);
+    if (legalTera !== undefined) {
+      const illegalTera = candidates
+        .map((p) => p.tera_type)
+        .filter((t): t is string => {
+          if (!t) return false;
+          return !legalTera.has(t);
+        });
+      if (illegalTera.length > 0) {
+        return legalTera.size === 0
+          ? "Tera isn't allowed in this format."
+          : `Illegal Tera types: ${[...new Set(illegalTera)].join(", ")}.`;
+      }
+    }
+
+    // Ability check — per-species ability legality
+    const illegalAbilities: string[] = [];
+    for (const p of candidates) {
+      if (!p.species || !p.ability) continue;
+      if (!isLegalAbility(p.ability, p.species, formatId)) {
+        illegalAbilities.push(`${p.ability} on ${p.species}`);
+      }
+    }
+    if (illegalAbilities.length > 0) {
+      return `Illegal abilities: ${illegalAbilities.join("; ")}.`;
+    }
+
+    return null;
   }
 
   // ---------------------------------------------------------------------------
@@ -206,6 +298,7 @@ export function ImportDialog({
   // ---------------------------------------------------------------------------
 
   function handleParsePaste() {
+    setLegalityError(null);
     const text = paste.trim();
     if (!text) {
       toast.error("Paste a Showdown export first.");
@@ -218,6 +311,11 @@ export function ImportDialog({
       );
       return;
     }
+    const illegalMsg = checkLegality(result);
+    if (illegalMsg) {
+      setLegalityError(illegalMsg);
+      return;
+    }
     setParsed(result);
   }
 
@@ -226,6 +324,7 @@ export function ImportDialog({
   // ---------------------------------------------------------------------------
 
   function handleFetchUrl() {
+    setLegalityError(null);
     const input = url.trim();
     if (!input) {
       toast.error("Enter a Pokepaste URL first.");
@@ -266,6 +365,11 @@ export function ImportDialog({
         );
         return;
       }
+      const illegalMsg = checkLegality(result);
+      if (illegalMsg) {
+        setLegalityError(illegalMsg);
+        return;
+      }
       setParsed(result);
     });
   }
@@ -281,6 +385,13 @@ export function ImportDialog({
       toast.error(
         "This team already has 6 Pokémon. Remove some before importing."
       );
+      return;
+    }
+
+    // Final legality safety net — should be caught at parse time, but guard anyway
+    const illegalMsg = checkLegality(parsed);
+    if (illegalMsg) {
+      setLegalityError(illegalMsg);
       return;
     }
 
@@ -355,6 +466,21 @@ export function ImportDialog({
         </SheetHeader>
 
         <div className="flex flex-1 flex-col gap-4 px-4">
+          {/* Legality error — shown when a paste is rejected before preview */}
+          {legalityError && (
+            <div
+              role="alert"
+              className="bg-destructive/10 border-destructive/30 rounded-md border p-2.5"
+            >
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle className="text-destructive size-3.5 shrink-0" />
+                <span className="text-destructive text-xs font-medium">
+                  {legalityError}
+                </span>
+              </div>
+            </div>
+          )}
+
           {parsed ? (
             // Preview mode
             <>

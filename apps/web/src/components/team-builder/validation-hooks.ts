@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { Dex } from "@pkmn/dex";
+
 import {
   type GameFormat,
   type PokemonSet,
@@ -80,7 +82,15 @@ function runValidation(
     const speciesName = pokemon.species ?? "";
     const result = validatePokemon(pokemonSet);
 
+    // Determine if this species is genderless — genderless Pokemon should not
+    // produce gender validation errors (e.g., Magnemite, Staryu, Metagross).
+    const dexSpecies = Dex.species.get(speciesName);
+    const isGenderless = dexSpecies.gender === "N";
+
     for (const err of result.errors) {
+      // Skip gender errors for genderless species
+      if (isGenderless && err.field === "gender") continue;
+
       errors.push({
         pokemonId,
         pokemonName: speciesName,

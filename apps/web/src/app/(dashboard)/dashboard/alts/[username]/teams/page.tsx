@@ -26,15 +26,10 @@ export const metadata = {
 
 interface TeamsPageProps {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ format?: string }>;
 }
 
-export default async function TeamsPage({
-  params,
-  searchParams,
-}: TeamsPageProps) {
+export default async function TeamsPage({ params }: TeamsPageProps) {
   const { username } = await params;
-  const { format: selectedFormat } = await searchParams;
 
   const user = await getUser();
   if (!user) {
@@ -44,8 +39,11 @@ export default async function TeamsPage({
   const supabase = await createClientReadOnly();
 
   // Gate on team builder feature flag (direct DB query — no stale JWT issues).
-  const canAccess = await hasTeamBuilderAccess(supabase, user.id);
-  if (!canAccess) {
+  const accessResult = await hasTeamBuilderAccess(supabase, user.id);
+  if (accessResult.access === "error") {
+    throw new Error(accessResult.reason);
+  }
+  if (!accessResult.access) {
     notFound();
   }
 
@@ -66,7 +64,6 @@ export default async function TeamsPage({
         altId={alt.id}
         handle={username}
         activeFormats={activeFormats}
-        selectedFormat={selectedFormat}
       />
     </>
   );

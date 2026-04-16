@@ -1,10 +1,10 @@
 "use client";
 
+import { useState } from "react";
+
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 import {
   ALL_TYPES,
-  calculateTeamCoverage,
-  calculateTeamSynergy,
   getDefensiveMatchups,
   getMoveType,
   getSpeciesTypes,
@@ -20,6 +20,9 @@ import { TYPE_PILL_COLORS } from "./type-colors";
 // Types
 // =============================================================================
 
+type View = "defensive" | "offensive";
+type Scope = "team" | "selected";
+
 interface TypeCoverageTabProps {
   team: TeamWithPokemon;
   selectedPokemon: Tables<"pokemon"> | null;
@@ -29,36 +32,58 @@ interface TypeCoverageTabProps {
 // Helpers
 // =============================================================================
 
-function multiplierCell(multiplier: number): {
-  label: string;
-  className: string;
-} {
+/** Returns the heatmap cell classes and display label for a defensive multiplier. */
+function heatmapCell(multiplier: number): { label: string; className: string } {
   if (multiplier === 0)
-    return { label: "0", className: "text-muted-foreground italic" };
-  if (multiplier === 0.25)
     return {
-      label: "¼",
-      className: "text-emerald-600 dark:text-emerald-400 font-semibold",
+      label: "0",
+      className: "bg-[#1e293b] text-[#64748b]",
     };
-  if (multiplier === 0.5)
-    return { label: "½", className: "text-green-600 dark:text-green-400" };
-  if (multiplier === 2)
-    return { label: "2", className: "text-red-600 dark:text-red-400" };
   if (multiplier === 4)
     return {
       label: "4",
-      className: "text-red-700 dark:text-red-300 font-bold",
+      className: "bg-[#991b1b] text-white",
     };
-  return { label: "–", className: "text-muted-foreground" };
+  if (multiplier === 2)
+    return {
+      label: "2",
+      className: "bg-[#fca5a5] text-[#7f1d1d]",
+    };
+  if (multiplier === 0.5)
+    return {
+      label: "½",
+      className: "bg-[#bbf7d0] text-[#166534]",
+    };
+  if (multiplier === 0.25)
+    return {
+      label: "¼",
+      className: "bg-[#166534] text-[#dcfce7]",
+    };
+  // neutral
+  return {
+    label: "—",
+    className: "bg-[#f8fafc] text-[#d4d4d8]",
+  };
 }
 
+/** Returns the multiplier for an attacking type vs a Pokemon's defensive matchups. */
+function getDefMult(
+  attackType: PokemonType,
+  matchups: ReturnType<typeof getDefensiveMatchups>
+): number {
+  if (matchups.immunities.includes(attackType)) return 0;
+  return (
+    matchups.weaknesses[attackType] ?? matchups.resistances[attackType] ?? 1
+  );
+}
+
+/** Abbreviate species name for column headers. */
 function abbreviate(species: string): string {
-  // Shorten common long names, otherwise take first 6 chars
   return species.length > 7 ? species.slice(0, 6) + "…" : species;
 }
 
 // =============================================================================
-// Sub-components
+// Shared sub-components
 // =============================================================================
 
 function TypeBadge({ type }: { type: string }) {
@@ -77,86 +102,137 @@ function TypeBadge({ type }: { type: string }) {
   );
 }
 
+/** Shared cell style: fixed size, centered, bold, rounded. */
+const CELL_BASE =
+  "min-w-[40px] rounded px-1 text-center font-semibold text-xs leading-[36px] h-[36px] select-none";
+
 // =============================================================================
-// Team Overview (no Pokemon selected)
+// Toggle group
 // =============================================================================
 
-function TeamOverview({ team }: { team: TeamWithPokemon }) {
-  const teamPokemon = team.team_pokemon
-    .filter((tp) => tp.pokemon !== null)
-    .sort((a, b) => a.team_position - b.team_position)
-    .map((tp) => tp.pokemon!);
+interface ToggleGroupProps<T extends string> {
+  value: T;
+  onChange: (v: T) => void;
+  options: Array<{ value: T; label: string }>;
+}
 
-  const synergy = calculateTeamSynergy(
-    teamPokemon.map((p) => ({ species: p.species }))
+function ToggleGroup<T extends string>({
+  value,
+  onChange,
+  options,
+}: ToggleGroupProps<T>) {
+  return (
+    <div className="border-border bg-muted flex rounded-full border p-0.5">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={cn(
+            "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+            value === opt.value
+              ? "bg-teal-600 text-white shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
   );
+}
 
-  const teamCoverage = calculateTeamCoverage(
-    teamPokemon.map((p) => ({
-      species: p.species,
-      moves: [p.move1, p.move2, p.move3, p.move4].filter((m): m is string =>
-        Boolean(m)
-      ),
-    }))
-  );
+// =============================================================================
+// Defensive heatmap — full team
+// =============================================================================
 
-  const pokemonMatchups = teamPokemon.map((p) => ({
-    pokemon: p,
-    matchups: getDefensiveMatchups(getSpeciesTypes(p.species)),
-  }));
+interface DefensiveTeamMatrixProps {
+  teamPokemon: Tables<"pokemon">[];
+}
 
-  // Types where team has 3+ resistances
-  const resistanceCountByType: Partial<Record<PokemonType, number>> = {};
-  for (const { matchups } of pokemonMatchups) {
-    for (const type of ALL_TYPES) {
-      const mult =
-        matchups.resistances[type] !== undefined
-          ? matchups.resistances[type]
-          : matchups.immunities.includes(type)
-            ? 0
-            : null;
-      if (mult !== null && mult < 1) {
-        resistanceCountByType[type] = (resistanceCountByType[type] ?? 0) + 1;
-      }
-    }
-  }
-
-  const goodResistances = ALL_TYPES.filter(
-    (t) => (resistanceCountByType[t] ?? 0) >= 3
-  );
-
-  const sharedWeaknessWarnings = ALL_TYPES.filter(
-    (t) => (synergy.sharedWeaknesses[t] ?? 0) >= 2
-  );
-
+function DefensiveTeamMatrix({ teamPokemon }: DefensiveTeamMatrixProps) {
+  // At 0 Pokemon, render the type-label scaffold with 6 ghost placeholder columns.
   if (teamPokemon.length === 0) {
+    const ghostCols = [0, 1, 2, 3, 4, 5];
     return (
-      <div className="flex flex-col items-center justify-center p-8">
-        <p className="text-muted-foreground text-sm">
-          Add Pokemon to see type coverage
-        </p>
+      <div className="rounded-lg border bg-white p-3 shadow-sm">
+        <div className="overflow-x-auto">
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
+            <thead>
+              <tr>
+                <th className="w-20 pr-3 text-left" />
+                {ghostCols.map((i) => (
+                  <th key={i} className="min-w-[40px] pb-1.5" />
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {ALL_TYPES.map((attackType) => (
+                <tr key={attackType}>
+                  <td className="py-1 pr-3 text-left">
+                    <TypeBadge type={attackType} />
+                  </td>
+                  {ghostCols.map((i) => (
+                    <td key={i} className="p-0">
+                      <div
+                        className={cn(
+                          CELL_BASE,
+                          "bg-muted text-muted-foreground/30"
+                        )}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   }
 
+  const matchupsByPokemon = teamPokemon.map((p) => ({
+    pokemon: p,
+    matchups: getDefensiveMatchups(getSpeciesTypes(p.species)),
+  }));
+
+  // Collect insights: weaknesses shared by 2+ and 3+ resists
+  const weakCountByType: Partial<Record<PokemonType, number>> = {};
+  const resistCountByType: Partial<Record<PokemonType, number>> = {};
+
+  for (const { matchups } of matchupsByPokemon) {
+    for (const type of ALL_TYPES) {
+      const mult = getDefMult(type, matchups);
+      if (mult > 1) {
+        weakCountByType[type] = (weakCountByType[type] ?? 0) + 1;
+      }
+      if (mult < 1) {
+        resistCountByType[type] = (resistCountByType[type] ?? 0) + 1;
+      }
+    }
+  }
+
+  const sharedWeaknesses = ALL_TYPES.filter(
+    (t) => (weakCountByType[t] ?? 0) >= 2
+  );
+  const goodResistances = ALL_TYPES.filter(
+    (t) => (resistCountByType[t] ?? 0) >= 3
+  );
+
   return (
-    <div className="flex flex-col gap-4 p-3">
-      {/* Defensive Matrix */}
-      <section>
-        <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
-          Defensive Coverage
-        </p>
+    <div className="flex flex-col gap-4">
+      {/* Matrix */}
+      <div className="rounded-lg border bg-white p-3 shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
             <thead>
               <tr>
-                <th className="text-muted-foreground w-16 pr-2 text-left font-medium">
-                  Type
-                </th>
+                {/* Type label column header */}
+                <th className="w-20 pr-3 text-left" />
                 {teamPokemon.map((p) => (
                   <th
                     key={p.id}
-                    className="text-muted-foreground px-1 text-center font-medium"
+                    className="text-muted-foreground min-w-[40px] pb-1.5 text-center text-[10px] font-medium"
                     title={p.species}
                   >
                     {abbreviate(p.species)}
@@ -166,44 +242,22 @@ function TeamOverview({ team }: { team: TeamWithPokemon }) {
             </thead>
             <tbody>
               {ALL_TYPES.map((attackType) => (
-                <tr
-                  key={attackType}
-                  className="border-border/40 border-b last:border-0"
-                >
-                  <td className="py-0.5 pr-2">
+                <tr key={attackType}>
+                  <td className="py-1 pr-3 text-left">
                     <TypeBadge type={attackType} />
                   </td>
-                  {pokemonMatchups.map(({ pokemon, matchups }) => {
-                    const isImmune = matchups.immunities.includes(attackType);
-                    const mult = isImmune
-                      ? 0
-                      : (matchups.weaknesses[attackType] ??
-                        matchups.resistances[attackType] ??
-                        1);
-                    const { label, className } = multiplierCell(mult);
-                    // Build descriptive aria-label for screen readers
-                    const effectiveness =
-                      mult === 0
-                        ? "immune"
-                        : mult === 0.25
-                          ? "4x resistant"
-                          : mult === 0.5
-                            ? "2x resistant"
-                            : mult === 2
-                              ? "2x weak"
-                              : mult === 4
-                                ? "4x weak"
-                                : "neutral";
+                  {matchupsByPokemon.map(({ pokemon, matchups }) => {
+                    const mult = getDefMult(attackType, matchups);
+                    const { label, className } = heatmapCell(mult);
                     return (
-                      <td
-                        key={pokemon.id}
-                        className={cn(
-                          "py-0.5 text-center font-mono",
-                          className
-                        )}
-                        aria-label={`${attackType} vs ${pokemon.species}: ${effectiveness}`}
-                      >
-                        {label}
+                      <td key={pokemon.id} className="p-0">
+                        <div
+                          className={cn(CELL_BASE, className)}
+                          title={`${attackType} vs ${pokemon.species}: ${mult}×`}
+                          aria-label={`${attackType} vs ${pokemon.species}: ${mult}×`}
+                        >
+                          {label}
+                        </div>
                       </td>
                     );
                   })}
@@ -212,72 +266,255 @@ function TeamOverview({ team }: { team: TeamWithPokemon }) {
             </tbody>
           </table>
         </div>
-      </section>
+      </div>
 
       {/* Insights */}
-      {(sharedWeaknessWarnings.length > 0 || goodResistances.length > 0) && (
+      {(sharedWeaknesses.length > 0 || goodResistances.length > 0) && (
+        <DefensiveInsights
+          sharedWeaknesses={sharedWeaknesses}
+          goodResistances={goodResistances}
+          weakCountByType={weakCountByType}
+          resistCountByType={resistCountByType}
+        />
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Defensive heatmap — selected Pokemon
+// =============================================================================
+
+interface DefensiveSelectedProps {
+  pokemon: Tables<"pokemon">;
+}
+
+function DefensiveSelected({ pokemon }: DefensiveSelectedProps) {
+  const types = getSpeciesTypes(pokemon.species);
+  const matchups = getDefensiveMatchups(types);
+
+  const teraType = pokemon.tera_type as PokemonType | null;
+  const teraMatchups = teraType ? getDefensiveMatchups([teraType]) : null;
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Single-pokemon defensive column */}
+      <div className="rounded-lg border bg-white p-3 shadow-sm">
+        <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
+          {pokemon.species} — Defensive
+          {types.length > 0 && (
+            <span className="ml-1.5 inline-flex gap-1 normal-case">
+              {types.map((t) => (
+                <TypeBadge key={t} type={t} />
+              ))}
+            </span>
+          )}
+        </p>
+        <div className="overflow-x-auto">
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
+            <thead>
+              <tr>
+                <th className="w-20 pr-3 text-left" />
+                <th className="text-muted-foreground min-w-[40px] pb-1.5 text-center text-[10px] font-medium">
+                  Current
+                </th>
+                {teraMatchups && (
+                  <th className="text-muted-foreground min-w-[40px] pb-1.5 text-center text-[10px] font-medium">
+                    Tera {teraType}
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {ALL_TYPES.map((attackType) => {
+                const mult = getDefMult(attackType, matchups);
+                const { label, className } = heatmapCell(mult);
+
+                const teraMult = teraMatchups
+                  ? getDefMult(attackType, teraMatchups)
+                  : null;
+                const teraCell =
+                  teraMult !== null ? heatmapCell(teraMult) : null;
+
+                // Skip rows that are neutral in both columns
+                if (mult === 1 && (teraMult === null || teraMult === 1))
+                  return null;
+
+                return (
+                  <tr key={attackType}>
+                    <td className="py-1 pr-3 text-left">
+                      <TypeBadge type={attackType} />
+                    </td>
+                    <td className="p-0">
+                      <div
+                        className={cn(CELL_BASE, className)}
+                        title={`${attackType}: ${mult}×`}
+                      >
+                        {label}
+                      </div>
+                    </td>
+                    {teraCell && (
+                      <td className="p-0">
+                        <div
+                          className={cn(CELL_BASE, teraCell.className)}
+                          title={`Tera ${teraType} vs ${attackType}: ${teraMult}×`}
+                        >
+                          {teraCell.label}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Offensive heatmap — full team
+// =============================================================================
+
+interface OffensiveTeamMatrixProps {
+  teamPokemon: Tables<"pokemon">[];
+}
+
+function OffensiveTeamMatrix({ teamPokemon }: OffensiveTeamMatrixProps) {
+  // At 0 Pokemon, render the type-label scaffold with 6 ghost placeholder columns.
+  if (teamPokemon.length === 0) {
+    const ghostCols = [0, 1, 2, 3, 4, 5];
+    return (
+      <div className="rounded-lg border bg-white p-3 shadow-sm">
+        <div className="overflow-x-auto">
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
+            <thead>
+              <tr>
+                <th className="w-20 pr-3 text-left" />
+                {ghostCols.map((i) => (
+                  <th key={i} className="min-w-[40px] pb-1.5" />
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {ALL_TYPES.map((targetType) => (
+                <tr key={targetType}>
+                  <td className="py-1 pr-3 text-left">
+                    <TypeBadge type={targetType} />
+                  </td>
+                  {ghostCols.map((i) => (
+                    <td key={i} className="p-0">
+                      <div
+                        className={cn(
+                          CELL_BASE,
+                          "bg-muted text-muted-foreground/30"
+                        )}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // For each Pokemon, determine which target types it hits SE via any of its 4 moves
+  const seByPokemon = teamPokemon.map((p) => {
+    const moves = [p.move1, p.move2, p.move3, p.move4].filter(
+      (m): m is string => Boolean(m)
+    );
+    const seTypes = new Set<PokemonType>();
+    for (const moveName of moves) {
+      const moveTypeStr = getMoveType(moveName);
+      if (!moveTypeStr) continue;
+      const moveType = moveTypeStr as PokemonType;
+      for (const targetType of ALL_TYPES) {
+        if (getTypeEffectiveness(moveType, [targetType]) >= 2) {
+          seTypes.add(targetType);
+        }
+      }
+    }
+    return { pokemon: p, seTypes };
+  });
+
+  // Insights: types with no SE coverage across the team
+  const uncoveredTypes = ALL_TYPES.filter(
+    (t) => !seByPokemon.some(({ seTypes }) => seTypes.has(t))
+  );
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="rounded-lg border bg-white p-3 shadow-sm">
+        <div className="overflow-x-auto">
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
+            <thead>
+              <tr>
+                <th className="w-20 pr-3 text-left" />
+                {teamPokemon.map((p) => (
+                  <th
+                    key={p.id}
+                    className="text-muted-foreground min-w-[40px] pb-1.5 text-center text-[10px] font-medium"
+                    title={p.species}
+                  >
+                    {abbreviate(p.species)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {ALL_TYPES.map((targetType) => (
+                <tr key={targetType}>
+                  <td className="py-1 pr-3 text-left">
+                    <TypeBadge type={targetType} />
+                  </td>
+                  {seByPokemon.map(({ pokemon, seTypes }) => {
+                    const hasSE = seTypes.has(targetType);
+                    return (
+                      <td key={pokemon.id} className="p-0">
+                        <div
+                          className={cn(
+                            CELL_BASE,
+                            hasSE
+                              ? "bg-[#bbf7d0] text-[#166534]"
+                              : "bg-[#f8fafc] text-[#d4d4d8]"
+                          )}
+                          title={`${pokemon.species} vs ${targetType}: ${hasSE ? "SE coverage" : "no SE"}`}
+                        >
+                          {hasSE ? "✓" : "—"}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Insights */}
+      {uncoveredTypes.length > 0 && (
         <section>
           <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
-            Insights
+            Coverage Gaps
           </p>
           <div className="flex flex-col gap-1.5">
-            {sharedWeaknessWarnings.map((type) => {
-              const weakCount = synergy.sharedWeaknesses[type] ?? 0;
-              const resistCount = resistanceCountByType[type] ?? 0;
-              return (
-                <div
-                  key={type}
-                  className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-2 py-1 dark:border-red-900/50 dark:bg-red-950/30"
-                >
-                  <span className="text-red-600 dark:text-red-400">⚠</span>
-                  <TypeBadge type={type} />
-                  <span className="text-xs text-red-700 dark:text-red-300">
-                    {weakCount} weak, {resistCount} resist
-                  </span>
-                </div>
-              );
-            })}
-            {goodResistances.map((type) => (
+            {uncoveredTypes.map((type) => (
               <div
                 key={type}
-                className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-2 py-1 dark:border-green-900/50 dark:bg-green-950/30"
+                className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-2 py-1"
               >
-                <span className="text-green-600 dark:text-green-400">✓</span>
+                <span className="text-red-600">⚠</span>
                 <TypeBadge type={type} />
-                <span className="text-xs text-green-700 dark:text-green-300">
-                  {resistanceCountByType[type]}+ resistances
-                </span>
+                <span className="text-xs text-red-700">No SE coverage</span>
               </div>
             ))}
           </div>
-        </section>
-      )}
-
-      {/* Offensive Coverage */}
-      {teamCoverage.coverage.size > 0 && (
-        <section>
-          <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
-            Super-Effective Coverage
-          </p>
-          <div className="flex flex-wrap gap-1">
-            {ALL_TYPES.filter((t) => teamCoverage.coverage.has(t)).map(
-              (type) => (
-                <TypeBadge key={type} type={type} />
-              )
-            )}
-          </div>
-          {teamCoverage.notVeryEffective.size > 0 && (
-            <div className="mt-2">
-              <p className="text-muted-foreground mb-1 text-xs">Not covered:</p>
-              <div className="flex flex-wrap gap-1">
-                {ALL_TYPES.filter((t) =>
-                  teamCoverage.notVeryEffective.has(t)
-                ).map((type) => (
-                  <TypeBadge key={type} type={type} />
-                ))}
-              </div>
-            </div>
-          )}
         </section>
       )}
     </div>
@@ -285,16 +522,14 @@ function TeamOverview({ team }: { team: TeamWithPokemon }) {
 }
 
 // =============================================================================
-// Per-Pokemon View (Pokemon selected)
+// Offensive heatmap — selected Pokemon
 // =============================================================================
 
-function PokemonView({ pokemon }: { pokemon: Tables<"pokemon"> }) {
-  const types = getSpeciesTypes(pokemon.species);
-  const matchups = getDefensiveMatchups(types);
+interface OffensiveSelectedProps {
+  pokemon: Tables<"pokemon">;
+}
 
-  const teraType = pokemon.tera_type as PokemonType | null;
-  const teraMatchups = teraType ? getDefensiveMatchups([teraType]) : null;
-
+function OffensiveSelected({ pokemon }: OffensiveSelectedProps) {
   const moves = [
     pokemon.move1,
     pokemon.move2,
@@ -302,189 +537,137 @@ function PokemonView({ pokemon }: { pokemon: Tables<"pokemon"> }) {
     pokemon.move4,
   ].filter((m): m is string => Boolean(m));
 
+  if (moves.length === 0) {
+    return (
+      <p className="text-muted-foreground py-6 text-center text-sm">
+        Add moves to see offensive coverage.
+      </p>
+    );
+  }
+
+  // For each move, compute its type and which target types it hits SE
+  const moveRows = moves.map((moveName) => {
+    const moveTypeStr = getMoveType(moveName);
+    const moveType = moveTypeStr as PokemonType | null;
+    const seTypes = new Set<PokemonType>();
+    if (moveType) {
+      for (const targetType of ALL_TYPES) {
+        if (getTypeEffectiveness(moveType, [targetType]) >= 2) {
+          seTypes.add(targetType);
+        }
+      }
+    }
+    return { moveName, moveType, seTypes };
+  });
+
   return (
-    <div className="flex flex-col gap-4 p-3">
-      {/* Defensive Profile */}
-      <section>
+    <div className="flex flex-col gap-4">
+      <div className="rounded-lg border bg-white p-3 shadow-sm">
         <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
-          Defensive Matchups
+          {pokemon.species} — Offensive Coverage
         </p>
-        <div className="flex flex-col gap-2">
-          {matchups.immunities.length > 0 && (
-            <div>
-              <p className="text-muted-foreground mb-1 text-xs">Immune (0×)</p>
-              <div className="flex flex-wrap gap-1">
-                {matchups.immunities.map((t) => (
-                  <TypeBadge key={t} type={t} />
+        <div className="overflow-x-auto">
+          <table style={{ borderSpacing: "6px", borderCollapse: "separate" }}>
+            <thead>
+              <tr>
+                <th className="w-20 pr-3 text-left" />
+                {moveRows.map(({ moveName, moveType }) => (
+                  <th
+                    key={moveName}
+                    className="text-muted-foreground min-w-[44px] pb-1 text-center text-[9px] font-medium"
+                    title={moveName}
+                  >
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="max-w-[44px] truncate">{moveName}</span>
+                      {moveType && <TypeBadge type={moveType} />}
+                    </div>
+                  </th>
                 ))}
-              </div>
-            </div>
-          )}
-          {Object.entries(matchups.weaknesses).length > 0 && (
-            <div>
-              <p className="mb-1 text-xs text-red-600 dark:text-red-400">
-                Weak
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {Object.entries(matchups.weaknesses)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(([type, mult]) => (
-                    <span key={type} className="flex items-center gap-0.5">
-                      <TypeBadge type={type} />
-                      <span className="text-muted-foreground text-xs">
-                        {mult}×
-                      </span>
-                    </span>
-                  ))}
-              </div>
-            </div>
-          )}
-          {Object.entries(matchups.resistances).length > 0 && (
-            <div>
-              <p className="mb-1 text-xs text-green-600 dark:text-green-400">
-                Resist
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {Object.entries(matchups.resistances)
-                  .sort(([, a], [, b]) => a - b)
-                  .map(([type, mult]) => (
-                    <span key={type} className="flex items-center gap-0.5">
-                      <TypeBadge key={type} type={type} />
-                      <span className="text-muted-foreground text-xs">
-                        {mult}×
-                      </span>
-                    </span>
-                  ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Tera Comparison */}
-      {teraMatchups && teraType && (
-        <section>
-          <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
-            Tera {teraType} Comparison
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr>
-                  <th className="text-muted-foreground w-20 pr-2 text-left font-medium">
-                    Type
-                  </th>
-                  <th className="text-muted-foreground px-1 text-center font-medium">
-                    Current
-                  </th>
-                  <th className="text-muted-foreground px-1 text-center font-medium">
-                    After Tera
-                  </th>
+              </tr>
+            </thead>
+            <tbody>
+              {ALL_TYPES.map((targetType) => (
+                <tr key={targetType}>
+                  <td className="py-1 pr-3 text-left">
+                    <TypeBadge type={targetType} />
+                  </td>
+                  {moveRows.map(({ moveName, seTypes }) => {
+                    const hasSE = seTypes.has(targetType);
+                    return (
+                      <td key={moveName} className="p-0">
+                        <div
+                          className={cn(
+                            CELL_BASE,
+                            hasSE
+                              ? "bg-[#bbf7d0] text-[#166534]"
+                              : "bg-[#f8fafc] text-[#d4d4d8]"
+                          )}
+                          title={`${moveName} vs ${targetType}: ${hasSE ? "super-effective" : "not SE"}`}
+                        >
+                          {hasSE ? "✓" : "—"}
+                        </div>
+                      </td>
+                    );
+                  })}
                 </tr>
-              </thead>
-              <tbody>
-                {ALL_TYPES.map((attackType) => {
-                  const curImmune = matchups.immunities.includes(attackType);
-                  const curMult = curImmune
-                    ? 0
-                    : (matchups.weaknesses[attackType] ??
-                      matchups.resistances[attackType] ??
-                      1);
-                  const teraImmune =
-                    teraMatchups.immunities.includes(attackType);
-                  const teraMult = teraImmune
-                    ? 0
-                    : (teraMatchups.weaknesses[attackType] ??
-                      teraMatchups.resistances[attackType] ??
-                      1);
-
-                  if (curMult === 1 && teraMult === 1) return null;
-                  const curCell = multiplierCell(curMult);
-                  const teraCell = multiplierCell(teraMult);
-
-                  // Effectiveness descriptions for aria-labels
-                  function describeMultiplier(m: number): string {
-                    if (m === 0) return "immune";
-                    if (m === 0.25) return "4x resistant";
-                    if (m === 0.5) return "2x resistant";
-                    if (m === 2) return "2x weak";
-                    if (m === 4) return "4x weak";
-                    return "neutral";
-                  }
-
-                  return (
-                    <tr
-                      key={attackType}
-                      className="border-border/40 border-b last:border-0"
-                    >
-                      <td className="py-0.5 pr-2">
-                        <TypeBadge type={attackType} />
-                      </td>
-                      <td
-                        className={cn(
-                          "py-0.5 text-center font-mono",
-                          curCell.className
-                        )}
-                        aria-label={`Current: ${attackType} ${describeMultiplier(curMult)}`}
-                      >
-                        {curCell.label}
-                      </td>
-                      <td
-                        className={cn(
-                          "py-0.5 text-center font-mono",
-                          teraCell.className
-                        )}
-                        aria-label={`After Tera: ${attackType} ${describeMultiplier(teraMult)}`}
-                      >
-                        {teraCell.label}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* Move Coverage */}
-      {moves.length > 0 && (
-        <section>
-          <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
-            Move Coverage
-          </p>
-          <div className="flex flex-col gap-2">
-            {moves.map((moveName) => {
-              const moveTypeStr = getMoveType(moveName);
-              if (!moveTypeStr) return null;
-              const moveType = moveTypeStr as PokemonType;
-              const seTypes = ALL_TYPES.filter(
-                (t) => getTypeEffectiveness(moveType, [t]) >= 2
-              );
-              return (
-                <div
-                  key={moveName}
-                  className="flex flex-wrap items-center gap-1"
-                >
-                  <span className="min-w-0 shrink-0 text-xs font-medium">
-                    {moveName}
-                  </span>
-                  <TypeBadge type={moveType} />
-                  {seTypes.length > 0 && (
-                    <>
-                      <span className="text-muted-foreground text-xs">→</span>
-                      {seTypes.map((t) => (
-                        <TypeBadge key={t} type={t} />
-                      ))}
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
+  );
+}
+
+// =============================================================================
+// Defensive Insights
+// =============================================================================
+
+interface DefensiveInsightsProps {
+  sharedWeaknesses: PokemonType[];
+  goodResistances: PokemonType[];
+  weakCountByType: Partial<Record<PokemonType, number>>;
+  resistCountByType: Partial<Record<PokemonType, number>>;
+}
+
+function DefensiveInsights({
+  sharedWeaknesses,
+  goodResistances,
+  weakCountByType,
+  resistCountByType,
+}: DefensiveInsightsProps) {
+  return (
+    <section>
+      <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
+        Insights
+      </p>
+      <div className="flex flex-col gap-1.5">
+        {sharedWeaknesses.map((type) => (
+          <div
+            key={type}
+            className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-2 py-1"
+          >
+            <span className="text-red-600">⚠</span>
+            <TypeBadge type={type} />
+            <span className="text-xs text-red-700">
+              {weakCountByType[type]} members weak
+            </span>
+          </div>
+        ))}
+        {goodResistances.map((type) => (
+          <div
+            key={type}
+            className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-2 py-1"
+          >
+            <span className="text-green-600">✓</span>
+            <TypeBadge type={type} />
+            <span className="text-xs text-green-700">
+              {resistCountByType[type]}+ resistances
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -496,8 +679,60 @@ export function TypeCoverageTab({
   team,
   selectedPokemon,
 }: TypeCoverageTabProps) {
-  if (selectedPokemon) {
-    return <PokemonView pokemon={selectedPokemon} />;
+  const [view, setView] = useState<View>("defensive");
+  const [scope, setScope] = useState<Scope>("team");
+
+  const teamPokemon = team.team_pokemon
+    .filter((tp) => tp.pokemon !== null)
+    .sort((a, b) => a.team_position - b.team_position)
+    .map((tp) => tp.pokemon!);
+
+  // Determine effective scope: fall back to "team" if no Pokemon is selected
+  const effectiveScope = selectedPokemon ? scope : "team";
+
+  function renderContent() {
+    if (view === "defensive") {
+      if (effectiveScope === "selected" && selectedPokemon) {
+        return <DefensiveSelected pokemon={selectedPokemon} />;
+      }
+      return <DefensiveTeamMatrix teamPokemon={teamPokemon} />;
+    }
+    // offensive
+    if (effectiveScope === "selected" && selectedPokemon) {
+      return <OffensiveSelected pokemon={selectedPokemon} />;
+    }
+    return <OffensiveTeamMatrix teamPokemon={teamPokemon} />;
   }
-  return <TeamOverview team={team} />;
+
+  return (
+    <div className="flex flex-col gap-4 p-3">
+      {/* Toggles */}
+      <div className="flex flex-wrap items-center gap-2">
+        <ToggleGroup<View>
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "defensive", label: "Defensive" },
+            { value: "offensive", label: "Offensive" },
+          ]}
+        />
+        <ToggleGroup<Scope>
+          value={effectiveScope}
+          onChange={setScope}
+          options={[
+            { value: "team", label: "Full Team" },
+            { value: "selected", label: "Selected" },
+          ]}
+        />
+        {!selectedPokemon && effectiveScope === "team" && (
+          <span className="text-muted-foreground text-xs">
+            Select a Pokemon to view individually
+          </span>
+        )}
+      </div>
+
+      {/* Matrix */}
+      {renderContent()}
+    </div>
+  );
 }

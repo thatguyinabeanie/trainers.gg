@@ -1,10 +1,31 @@
 import { describe, it, expect } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import React from "react";
 
 // =============================================================================
 // Module-level mocks — must precede the import under test
 // =============================================================================
+
+/** Build a mock benchmark entry in the shape the SpeedTable expects. */
+function makeBenchmark(
+  species: string,
+  baseSpeed: number,
+  neutral252: number,
+  positive252: number
+) {
+  return {
+    species,
+    baseSpeed,
+    minSpeed: Math.floor(neutral252 * 0.67),
+    commonSpeeds: {
+      neutral252,
+      positive252,
+      tailwind: Math.floor(positive252 * 2),
+      scarf: Math.floor(positive252 * 1.5),
+    },
+  };
+}
 
 jest.mock("@trainers/pokemon", () => ({
   getBaseStats: jest.fn(() => ({
@@ -16,12 +37,12 @@ jest.mock("@trainers/pokemon", () => ({
     speed: 130,
   })),
   getNatureMultiplier: jest.fn(() => 1.1),
-  calculateStat: jest.fn((base: number) => Math.floor(base * 2 * 1.1) + 5 + 50),
+  calculateStat: jest.fn(() => 177),
   getFormatSpeedBenchmarks: jest.fn(() => [
-    { species: "Flutter Mane", maxSpeed: 231 },
-    { species: "Urshifu", maxSpeed: 167 },
-    { species: "Incineroar", maxSpeed: 112 },
-    { species: "Amoonguss", maxSpeed: 52 },
+    makeBenchmark("Flutter Mane", 135, 210, 231),
+    makeBenchmark("Urshifu", 97, 152, 167),
+    makeBenchmark("Incineroar", 60, 102, 112),
+    makeBenchmark("Amoonguss", 30, 47, 52),
   ]),
   compareSpeedTier: jest.fn(() => ({
     outspeeds: [
@@ -113,11 +134,41 @@ const TEST_FORMAT = {
 };
 
 // =============================================================================
-// Tests — TeamSpeedOverview (no Pokemon selected)
+// Tests — Speed table (team overview)
 // =============================================================================
 
-describe("SpeedTierTab — TeamSpeedOverview (selectedPokemon=null)", () => {
-  it("renders empty state when team has no pokemon", () => {
+describe("SpeedTierTab — data table", () => {
+  it("renders without crashing with an empty team", () => {
+    expect(() =>
+      render(
+        <SpeedTierTab
+          team={makeTeam([])}
+          selectedPokemon={null}
+          format={TEST_FORMAT}
+        />
+      )
+    ).not.toThrow();
+  });
+
+  it("renders benchmark species in the table", () => {
+    const team = makeTeam([]);
+    render(
+      <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
+    );
+    expect(screen.getByText("Flutter Mane")).toBeInTheDocument();
+    expect(screen.getByText("Incineroar")).toBeInTheDocument();
+  });
+
+  it("renders team member with star prefix", () => {
+    const poke = makePokemon({ id: 1, species: "Urshifu" });
+    const team = makeTeam([makeTeamPokemon(poke, 1)]);
+    render(
+      <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
+    );
+    expect(screen.getByText("★ Urshifu")).toBeInTheDocument();
+  });
+
+  it("renders table column headers", () => {
     render(
       <SpeedTierTab
         team={makeTeam([])}
@@ -125,138 +176,24 @@ describe("SpeedTierTab — TeamSpeedOverview (selectedPokemon=null)", () => {
         format={TEST_FORMAT}
       />
     );
-    expect(
-      screen.getByText("Add Pokemon to see speed tiers")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Pokemon")).toBeInTheDocument();
+    expect(screen.getByText("Base")).toBeInTheDocument();
+    expect(screen.getByText("Tailwind")).toBeInTheDocument();
+    expect(screen.getByText("Scarf")).toBeInTheDocument();
   });
 
-  it("renders team member speed when team has pokemon", () => {
-    const poke = makePokemon({ species: "Urshifu", ev_speed: 252 });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
+  it("renders group-header dividers for speed categories", () => {
     render(
-      <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
     );
-
-    // Species name appears in the team overview list (may also appear in benchmarks)
-    expect(screen.getAllByText("Urshifu").length).toBeGreaterThan(0);
-  });
-
-  it("renders benchmark species from getFormatSpeedBenchmarks", () => {
-    const poke = makePokemon({ species: "Urshifu" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
-    );
-
-    // Benchmarks from within the speed window should appear
-    expect(screen.getByText("Flutter Mane")).toBeInTheDocument();
-  });
-
-  it("renders +Spe indicator next to benchmark entries", () => {
-    const poke = makePokemon({ species: "Urshifu" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
-    );
-
-    const spePills = screen.getAllByText("+Spe");
-    expect(spePills.length).toBeGreaterThan(0);
-  });
-
-  it("renders EV note for team member with EVs", () => {
-    const poke = makePokemon({ ev_speed: 252, nature: "Jolly" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
-    );
-
-    expect(screen.getByText("Jolly, 252 EVs")).toBeInTheDocument();
-  });
-
-  it("renders '0 EVs' note when pokemon has no speed EVs", () => {
-    const poke = makePokemon({ ev_speed: 0, nature: "Adamant" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
-    );
-
-    expect(screen.getByText("Adamant, 0 EVs")).toBeInTheDocument();
-  });
-
-  it("renders speed gap warning when two members have >30 speed difference", () => {
-    // calculateStat is mocked to return a fixed value — override for this case
-    const { calculateStat } = jest.requireMock("@trainers/pokemon") as {
-      calculateStat: jest.MockedFunction<
-        (b: number, iv: number, ev: number, lvl: number, mult: number) => number
-      >;
-    };
-    // Return noticeably different speeds for two different calls
-    calculateStat
-      .mockReturnValueOnce(200) // first pokemon
-      .mockReturnValueOnce(100); // second pokemon
-
-    const poke1 = makePokemon({ id: 1, species: "Flutter Mane" });
-    const poke2 = makePokemon({ id: 2, species: "Amoonguss" });
-    const team = makeTeam([
-      makeTeamPokemon(poke1, 1),
-      makeTeamPokemon(poke2, 2),
-    ]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
-    );
-
-    expect(
-      screen.getByText(/Flutter Mane and Amoonguss have a 100-point speed gap/)
-    ).toBeInTheDocument();
-  });
-
-  it("uses fallback format id when format is undefined", () => {
-    const { getFormatSpeedBenchmarks } = jest.requireMock(
-      "@trainers/pokemon"
-    ) as {
-      getFormatSpeedBenchmarks: jest.MockedFunction<(id: string) => unknown[]>;
-    };
-
-    const poke = makePokemon();
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={null} format={undefined} />
-    );
-
-    expect(getFormatSpeedBenchmarks).toHaveBeenCalledWith("gen9vgc2026regi");
-  });
-
-  it("renders speed category dividers (Fast / Mid / Trick Room)", () => {
-    // Force very different speed values to exercise multiple categories
-    const { calculateStat } = jest.requireMock("@trainers/pokemon") as {
-      calculateStat: jest.MockedFunction<(...args: unknown[]) => number>;
-    };
-    // 170 → Fast, 100 → Mid
-    calculateStat.mockReturnValueOnce(170).mockReturnValueOnce(100);
-
-    const poke1 = makePokemon({ id: 1, species: "Flutter Mane" });
-    const poke2 = makePokemon({ id: 2, species: "Incineroar" });
-    const team = makeTeam([
-      makeTeamPokemon(poke1, 1),
-      makeTeamPokemon(poke2, 2),
-    ]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
-    );
-
-    // At least one category divider should appear
-    const dividers = screen.getAllByText(
-      /Fast \(150\+\)|Mid \(80–150\)|Trick Room \(<80\)/
-    );
-    expect(dividers.length).toBeGreaterThan(0);
+    // Benchmarks span Fast (135 base), Mid (97, 60 base), TR (30 base) — all 3 groups present
+    expect(screen.getByText("Fast (Base 100+)")).toBeInTheDocument();
+    expect(screen.getByText("Mid (Base 60–99)")).toBeInTheDocument();
+    expect(screen.getByText("Trick Room (Base <60)")).toBeInTheDocument();
   });
 
   it("filters out team_pokemon entries where pokemon is null", () => {
@@ -271,231 +208,205 @@ describe("SpeedTierTab — TeamSpeedOverview (selectedPokemon=null)", () => {
     const poke = makePokemon({ species: "Urshifu" });
     const team = makeTeam([makeTeamPokemon(poke, 1), nullEntry]);
 
-    render(
-      <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
-    );
+    expect(() =>
+      render(
+        <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
+      )
+    ).not.toThrow();
+    // Only one ★ Urshifu should appear (null entry is skipped)
+    expect(screen.getByText("★ Urshifu")).toBeInTheDocument();
+  });
 
-    // Should not crash; species still visible (may appear in benchmarks too)
-    expect(screen.getAllByText("Urshifu").length).toBeGreaterThan(0);
+  it("calls getFormatSpeedBenchmarks with format id", () => {
+    const { getFormatSpeedBenchmarks } = jest.requireMock(
+      "@trainers/pokemon"
+    ) as {
+      getFormatSpeedBenchmarks: jest.MockedFunction<(id: string) => unknown[]>;
+    };
+    getFormatSpeedBenchmarks.mockClear();
+    render(
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
+    );
+    expect(getFormatSpeedBenchmarks).toHaveBeenCalledWith("gen9vgc2026regi");
+  });
+
+  it("uses fallback format id when format is undefined", () => {
+    const { getFormatSpeedBenchmarks } = jest.requireMock(
+      "@trainers/pokemon"
+    ) as {
+      getFormatSpeedBenchmarks: jest.MockedFunction<(id: string) => unknown[]>;
+    };
+    getFormatSpeedBenchmarks.mockClear();
+    render(
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={undefined}
+      />
+    );
+    expect(getFormatSpeedBenchmarks).toHaveBeenCalledWith("gen9vgc2026regi");
   });
 });
 
 // =============================================================================
-// Tests — PokemonSpeedView (Pokemon selected)
+// Tests — 0-Pokemon empty team
 // =============================================================================
 
-describe("SpeedTierTab — PokemonSpeedView (selectedPokemon set)", () => {
-  it("renders Base, Tailwind, and Scarf speed cards", () => {
-    const poke = makePokemon({ species: "Urshifu" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
+describe("SpeedTierTab — 0 Pokemon, no selected Pokemon", () => {
+  it("renders benchmark rows without crashing", () => {
     render(
-      <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
     );
-
-    expect(screen.getByText("Base")).toBeInTheDocument();
-    expect(screen.getByText("Tailwind")).toBeInTheDocument();
-    expect(screen.getByText("Scarf")).toBeInTheDocument();
-  });
-
-  it("renders 'You outspeed' section header", () => {
-    const poke = makePokemon({ species: "Urshifu" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
-    );
-
-    expect(screen.getByText("You outspeed")).toBeInTheDocument();
-  });
-
-  it("renders outsped-by section header", () => {
-    const poke = makePokemon({ species: "Urshifu" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
-    );
-
-    expect(screen.getByText("You're outsped by")).toBeInTheDocument();
-  });
-
-  it("lists species that the pokemon outspeeds", () => {
-    const poke = makePokemon({ species: "Urshifu" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
-    );
-
-    expect(screen.getByText("Incineroar")).toBeInTheDocument();
-    expect(screen.getByText("Amoonguss")).toBeInTheDocument();
-  });
-
-  it("lists species that outspeed the pokemon", () => {
-    const poke = makePokemon({ species: "Urshifu" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
-    );
-
     expect(screen.getByText("Flutter Mane")).toBeInTheDocument();
+    expect(screen.getByText("Incineroar")).toBeInTheDocument();
   });
 
-  it("renders 'Nothing at max speed' when outspeeds is empty", () => {
-    const { compareSpeedTier } = jest.requireMock("@trainers/pokemon") as {
-      compareSpeedTier: jest.MockedFunction<
-        (...args: unknown[]) => { outspeeds: unknown[]; outspedBy: unknown[] }
-      >;
-    };
-    compareSpeedTier.mockReturnValueOnce({ outspeeds: [], outspedBy: [] });
-
-    const poke = makePokemon({ species: "Amoonguss" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
+  it("does not render SummaryCards (Current / Tailwind / Scarf) at 0 Pokemon", () => {
     render(
-      <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
     );
-
-    expect(screen.getByText("Nothing at max speed")).toBeInTheDocument();
+    expect(screen.queryByText("Current")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tailwind ×2")).not.toBeInTheDocument();
+    expect(screen.queryByText("Scarf ×1.5")).not.toBeInTheDocument();
   });
 
-  it("renders 'Nothing outspeeds you at max speed' when outspedBy is empty", () => {
-    const { compareSpeedTier } = jest.requireMock("@trainers/pokemon") as {
-      compareSpeedTier: jest.MockedFunction<
-        (...args: unknown[]) => { outspeeds: unknown[]; outspedBy: unknown[] }
-      >;
-    };
-    compareSpeedTier.mockReturnValueOnce({
-      outspeeds: [{ species: "Amoonguss", maxSpeed: 52 }],
-      outspedBy: [],
-    });
-
-    const poke = makePokemon({ species: "Flutter Mane" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
+  it("does not render EvSuggestion at 0 Pokemon", () => {
     render(
-      <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
     );
-
-    expect(
-      screen.getByText("Nothing outspeeds you at max speed")
-    ).toBeInTheDocument();
+    // EvSuggestion renders a 💡 hint — no pokemon means no suggestion
+    expect(screen.queryByText(/Speed EVs/)).not.toBeInTheDocument();
   });
 
-  it("shows positive delta (+N) next to outsped species", () => {
-    // calculateStat returns a fixed value; outspeeds mock has maxSpeed: 112
-    // delta = actualSpeed - maxSpeed  (both determined by mocks)
+  it("renders no ★ team-marker rows at 0 Pokemon", () => {
+    render(
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
+    );
+    // No ★ prefix should appear — all rows are benchmark rows
+    const starCells = screen
+      .queryAllByText(/★/)
+      .filter((el) => el.textContent?.includes("★"));
+    expect(starCells.length).toBe(0);
+  });
+
+  it("still renders the stage modifier toggle at 0 Pokemon", () => {
+    render(
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
+    );
+    expect(screen.getByText("Stage")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "—" })).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// Tests — stat stage modifier toggle
+// =============================================================================
+
+describe("SpeedTierTab — stage modifier toggle", () => {
+  it("renders the Stage toggle buttons", () => {
+    render(
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
+    );
+    expect(screen.getByText("Stage")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "—" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "+1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "+2" })).toBeInTheDocument();
+  });
+
+  it("shows speed multiplier note when stage is active", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpeedTierTab
+        team={makeTeam([])}
+        selectedPokemon={null}
+        format={TEST_FORMAT}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "+1" }));
+    expect(screen.getByText(/×1\.5 applied to all speeds/)).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// Tests — summary cards (when Pokemon is selected)
+// =============================================================================
+
+describe("SpeedTierTab — summary cards (selectedPokemon set)", () => {
+  it("renders Current, Tailwind ×2, and Scarf ×1.5 summary cards", () => {
     const poke = makePokemon({ species: "Urshifu" });
     const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
     render(
       <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
     );
-
-    // There should be at least one delta indicator prefixed with "+"
-    const plusDeltas = screen.getAllByText(/^\+\d+$/);
-    expect(plusDeltas.length).toBeGreaterThan(0);
+    expect(screen.getByText("Current")).toBeInTheDocument();
+    expect(screen.getByText("Tailwind ×2")).toBeInTheDocument();
+    expect(screen.getByText("Scarf ×1.5")).toBeInTheDocument();
   });
 
-  it("shows negative delta (-N) next to faster species", () => {
-    // Make the pokemon slow (actualSpeed=80) so Flutter Mane (231) genuinely outspeeds
-    const { calculateStat } = jest.requireMock("@trainers/pokemon") as {
-      calculateStat: jest.MockedFunction<(...args: unknown[]) => number>;
-    };
-    calculateStat.mockReturnValue(80);
-
+  it("does not render summary cards when no Pokemon is selected", () => {
     const poke = makePokemon({ species: "Urshifu" });
     const team = makeTeam([makeTeamPokemon(poke, 1)]);
+    render(
+      <SpeedTierTab team={team} selectedPokemon={null} format={TEST_FORMAT} />
+    );
+    expect(screen.queryByText("Tailwind ×2")).not.toBeInTheDocument();
+    expect(screen.queryByText("Scarf ×1.5")).not.toBeInTheDocument();
+  });
 
+  it("renders the selected pokemon highlighted in the table with summary cards", () => {
+    const poke = makePokemon({ id: 1, species: "Urshifu" });
+    const team = makeTeam([makeTeamPokemon(poke, 1)]);
     render(
       <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
     );
-
-    // outspedBy: Flutter Mane maxSpeed 231, actualSpeed=80 → delta = 231 - 80 = 151 → "-151"
-    const minusDeltas = screen.getAllByText(/^-\d+$/);
-    expect(minusDeltas.length).toBeGreaterThan(0);
-  });
-
-  it("shows EV suggestion when adding EVs would outspeed a benchmark", () => {
-    // Make calculateStat return a low base speed so that adding EVs bumps over a benchmark
-    const { calculateStat, getFormatSpeedBenchmarks } = jest.requireMock(
-      "@trainers/pokemon"
-    ) as {
-      calculateStat: jest.MockedFunction<(...args: unknown[]) => number>;
-      getFormatSpeedBenchmarks: jest.MockedFunction<
-        (id: string) => { species: string; maxSpeed: number }[]
-      >;
-    };
-
-    getFormatSpeedBenchmarks.mockReturnValueOnce([
-      { species: "Urshifu", maxSpeed: 100 },
-    ]);
-
-    // First call: actual speed = 98 (below benchmark)
-    // Second call onwards: bumped speed = 104 (above benchmark)
-    calculateStat
-      .mockReturnValueOnce(98) // actual speed
-      .mockReturnValueOnce(104); // +4 EVs step
-
-    const poke = makePokemon({ species: "Incineroar", ev_speed: 0 });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
-    );
-
-    // Suggestion banner should be visible
-    expect(screen.getByText(/outspeeds max Urshifu/)).toBeInTheDocument();
-  });
-
-  it("uses fallback format id when format is undefined", () => {
-    const { compareSpeedTier } = jest.requireMock("@trainers/pokemon") as {
-      compareSpeedTier: jest.MockedFunction<
-        (species: string, speed: number, formatId: string) => unknown
-      >;
-    };
-
-    const poke = makePokemon({ species: "Urshifu" });
-    const team = makeTeam([makeTeamPokemon(poke, 1)]);
-
-    render(
-      <SpeedTierTab team={team} selectedPokemon={poke} format={undefined} />
-    );
-
-    expect(compareSpeedTier).toHaveBeenCalledWith(
-      "Urshifu",
-      expect.any(Number),
-      "gen9vgc2026regi"
-    );
+    // Summary cards visible
+    expect(screen.getByText("Current")).toBeInTheDocument();
+    // Team member still in table
+    expect(screen.getByText("★ Urshifu")).toBeInTheDocument();
   });
 
   it("returns 0 speed when getBaseStats returns null", () => {
-    const { getBaseStats, compareSpeedTier } = jest.requireMock(
-      "@trainers/pokemon"
-    ) as {
-      getBaseStats: jest.MockedFunction<(species: string) => null | object>;
-      compareSpeedTier: jest.MockedFunction<
-        (...args: unknown[]) => { outspeeds: unknown[]; outspedBy: unknown[] }
-      >;
+    const { getBaseStats } = jest.requireMock("@trainers/pokemon") as {
+      getBaseStats: jest.MockedFunction<(species: string) => null>;
     };
     getBaseStats.mockReturnValueOnce(null);
-    // compareSpeedTier will receive speed=0 in this case
-    compareSpeedTier.mockReturnValueOnce({ outspeeds: [], outspedBy: [] });
 
     const poke = makePokemon({ species: "UnknownMon" });
     const team = makeTeam([makeTeamPokemon(poke, 1)]);
 
     // Should not crash
-    render(
-      <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
-    );
-
-    expect(compareSpeedTier).toHaveBeenCalledWith(
-      "UnknownMon",
-      0,
-      expect.any(String)
-    );
+    expect(() =>
+      render(
+        <SpeedTierTab team={team} selectedPokemon={poke} format={TEST_FORMAT} />
+      )
+    ).not.toThrow();
   });
 });

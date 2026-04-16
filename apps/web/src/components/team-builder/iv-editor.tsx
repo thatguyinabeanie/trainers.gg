@@ -23,6 +23,11 @@ const MAX_IV = 31;
 interface IvEditorProps {
   ivs: StatValues;
   onChange: (stat: StatKey, value: number) => void;
+  /**
+   * When true, all IV inputs are disabled and the strip appears dimmed.
+   * Use this to render a placeholder shell when no species is selected.
+   */
+  disabled?: boolean;
 }
 
 // =============================================================================
@@ -46,7 +51,7 @@ function buildSummary(ivs: IvEditorProps["ivs"]): string {
  * Displays 6 numeric inputs (0–31) in a 2-column grid. When any IV deviates
  * from the default of 31 a summary line is shown above the grid.
  */
-export function IvEditor({ ivs, onChange }: IvEditorProps) {
+export function IvEditor({ ivs, onChange, disabled = false }: IvEditorProps) {
   const hasNonStandard = STAT_KEYS.some((key) => ivs[key] !== MAX_IV);
   const summary = hasNonStandard ? buildSummary(ivs) : null;
 
@@ -55,7 +60,7 @@ export function IvEditor({ ivs, onChange }: IvEditorProps) {
   // -------------------------------------------------------------------------
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex flex-col gap-2", disabled && "opacity-50")}>
       {/* Header */}
       <div className="flex items-baseline gap-2">
         <span className="text-xs font-semibold tracking-wide uppercase">
@@ -95,12 +100,14 @@ export function IvEditor({ ivs, onChange }: IvEditorProps) {
                 max={MAX_IV}
                 value={value}
                 onChange={(e) => {
+                  if (disabled) return;
                   const raw = parseInt(e.target.value, 10);
                   if (isNaN(raw)) return;
                   // Clamp to 0–31
                   const clamped = Math.max(0, Math.min(raw, MAX_IV));
                   onChange(statKey, clamped);
                 }}
+                disabled={disabled}
                 aria-label={`${STAT_LABELS[statKey]} IV`}
                 className={cn(
                   "h-6 min-w-0 px-1 text-right text-xs tabular-nums",

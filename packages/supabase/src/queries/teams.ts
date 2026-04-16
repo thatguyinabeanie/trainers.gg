@@ -155,7 +155,7 @@ export async function getTeamsForUser(
       is_public,
       updated_at,
       created_at,
-      alt:alts!created_by(username),
+      alt:alts!teams_created_by_fkey!inner(username),
       team_pokemon(
         id,
         team_position,
