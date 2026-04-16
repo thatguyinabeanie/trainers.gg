@@ -301,6 +301,21 @@ async function processDmQueue(supabase: TypedClient): Promise<DmStats> {
       await sendDM(item.discord_user_id, buildDmPayload(item));
       await markDmSent(supabase, item.id);
       sent++;
+
+      // Clear any stale DM-blocked warning — only when DMs actually succeeded.
+      // Gate on the column being non-null to avoid pointless writes.
+      try {
+        await supabase
+          .from("users")
+          .update({ discord_dm_warn_until: null })
+          .eq("id", item.user_id)
+          .not("discord_dm_warn_until", "is", null);
+      } catch (warnErr) {
+        console.error(
+          "[notify] failed to clear discord_dm_warn_until",
+          warnErr
+        );
+      }
     } catch (e: unknown) {
       if (getErrorCode(e) === 50007) {
         // DMs are closed — try fallback channel if configured
@@ -319,6 +334,23 @@ async function processDmQueue(supabase: TypedClient): Promise<DmStats> {
         } else {
           await markDmFailed(supabase, item.id, "dm_closed");
           failed++;
+        }
+
+        // DMs are still blocked regardless of whether fallback succeeded —
+        // set the warn flag so the user can fix their Discord privacy settings.
+        try {
+          const warnUntil = new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1000
+          ).toISOString();
+          await supabase
+            .from("users")
+            .update({ discord_dm_warn_until: warnUntil })
+            .eq("id", item.user_id);
+        } catch (warnErr) {
+          console.error(
+            "[notify] failed to set discord_dm_warn_until",
+            warnErr
+          );
         }
       } else if (e instanceof DiscordRateLimitError) {
         // Leave pending — no state mutation

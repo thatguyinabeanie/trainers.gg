@@ -169,18 +169,35 @@ function makeServer(overrides: Partial<{ id: number; guild_id: string }> = {}) {
 // =============================================================================
 
 const originalEnv = process.env;
+
+// Chainable builder returned by FAKE_CLIENT.from(tableName).
+// Supports select/update/eq/not/maybeSingle — all return `this` so
+// arbitrary chains resolve without throwing.  Tests that need to assert
+// specific calls can spy on individual methods.
+const fakeBuilder = {
+  select: jest.fn().mockReturnThis(),
+  update: jest.fn().mockReturnThis(),
+  eq: jest.fn().mockReturnThis(),
+  not: jest.fn().mockReturnThis(),
+  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+};
+
 const FAKE_CLIENT = {
   _role: "service",
-  from: jest.fn().mockReturnValue({
-    select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-  }),
+  from: jest.fn().mockReturnValue(fakeBuilder),
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
   process.env = { ...originalEnv, CRON_SECRET };
+
+  // Reset fakeBuilder methods and restore default behaviour
+  fakeBuilder.select.mockReturnThis();
+  fakeBuilder.update.mockReturnThis();
+  fakeBuilder.eq.mockReturnThis();
+  fakeBuilder.not.mockReturnThis();
+  fakeBuilder.maybeSingle.mockResolvedValue({ data: null, error: null });
+  FAKE_CLIENT.from.mockReturnValue(fakeBuilder);
 
   mockCreateServiceRoleClient.mockReturnValue(FAKE_CLIENT);
   mockListPendingNotifications.mockResolvedValue([]);
@@ -563,5 +580,66 @@ describe("DM — rate limit (429)", () => {
     const errs = body.dmErrors as Array<{ id: number; reason: string }>;
     expect(errs).toHaveLength(1);
     expect(errs[0]).toMatchObject({ id: item.id, reason: "rate_limited" });
+  });
+});
+
+// =============================================================================
+// 13. DM warn flag — set on 50007, clear on success
+// =============================================================================
+
+describe("DM warn flag", () => {
+  it("sets discord_dm_warn_until on DM 50007 failure without fallback", async () => {
+    jest.useFakeTimers();
+    const NOW = new Date("2026-04-14T12:00:00.000Z").getTime();
+    jest.setSystemTime(NOW);
+
+    const item = makeDmItem({
+      id: 30,
+      user_id: "user-warn-test",
+      fallback_channel_id: null,
+    });
+    mockListPendingDmNotifications.mockResolvedValue([item]);
+    mockIsDmEnabledForUser.mockResolvedValue(true);
+
+    const dmErr = new Error("DMs closed");
+    mockSendDM.mockRejectedValue(dmErr);
+    mockGetErrorCode.mockReturnValue(50007);
+
+    await GET(makeRequest("GET", `Bearer ${CRON_SECRET}`));
+
+    const expectedWarnUntil = new Date(
+      NOW + 30 * 24 * 60 * 60 * 1000
+    ).toISOString();
+
+    // The route calls supabase.from("users").update(...).eq(...)
+    expect(FAKE_CLIENT.from).toHaveBeenCalledWith("users");
+    expect(fakeBuilder.update).toHaveBeenCalledWith({
+      discord_dm_warn_until: expectedWarnUntil,
+    });
+    expect(fakeBuilder.eq).toHaveBeenCalledWith("id", item.user_id);
+
+    jest.useRealTimers();
+  });
+
+  it("clears discord_dm_warn_until on successful DM delivery", async () => {
+    const item = makeDmItem({ id: 31, user_id: "user-clear-test" });
+    mockListPendingDmNotifications.mockResolvedValue([item]);
+    mockIsDmEnabledForUser.mockResolvedValue(true);
+    mockSendDM.mockResolvedValue({ id: "msg-ok" });
+
+    await GET(makeRequest("GET", `Bearer ${CRON_SECRET}`));
+
+    // The route calls supabase.from("users").update({ discord_dm_warn_until: null })
+    //   .eq("id", user_id).not("discord_dm_warn_until", "is", null)
+    expect(FAKE_CLIENT.from).toHaveBeenCalledWith("users");
+    expect(fakeBuilder.update).toHaveBeenCalledWith({
+      discord_dm_warn_until: null,
+    });
+    expect(fakeBuilder.eq).toHaveBeenCalledWith("id", item.user_id);
+    expect(fakeBuilder.not).toHaveBeenCalledWith(
+      "discord_dm_warn_until",
+      "is",
+      null
+    );
   });
 });
