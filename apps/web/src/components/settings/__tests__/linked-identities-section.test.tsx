@@ -3,10 +3,38 @@
  * Verifies UI rendering, connect/disconnect functionality, and lockout protection
  */
 
+import React from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 import { LinkedIdentitiesSection } from "../linked-identities-section";
+
+// =============================================================================
+// Module-level mocks
+// =============================================================================
+
+// Mock next/link as a simple anchor
+jest.mock("next/link", () => ({
+  __esModule: true,
+  default: ({
+    children,
+    href,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    href: string;
+  } & Record<string, unknown>) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
+// Mock TanStack Query — useQuery returns data from our per-test variable
+const mockUseQuery = jest.fn(() => ({ data: 0 }));
+jest.mock("@tanstack/react-query", () => ({
+  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+}));
 
 // Mock dependencies
 const mockSignInWithOAuth = jest.fn().mockResolvedValue({ error: null });
@@ -80,6 +108,8 @@ describe("LinkedIdentitiesSection", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUserIdentities = [];
+    // Reset useQuery to return 0 enabled DM preferences by default
+    mockUseQuery.mockReturnValue({ data: 0 });
     mockGetBlueskyStatus.mockResolvedValue({
       success: true,
       data: { did: null, pdsStatus: null, handle: null },
@@ -643,6 +673,103 @@ describe("LinkedIdentitiesSection", () => {
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("Failed to unlink Bluesky");
       });
+    });
+  });
+
+  describe("Discord DM summary", () => {
+    it("does NOT render DM summary when Discord is not linked", async () => {
+      // mockUserIdentities is empty — Discord not linked
+      render(<LinkedIdentitiesSection />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Discord")).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/DM notifications/)).not.toBeInTheDocument();
+    });
+
+    it("renders DM summary when Discord is linked", async () => {
+      mockUseQuery.mockReturnValue({ data: 7 });
+      mockUserIdentities = [
+        {
+          id: "identity-1",
+          user_id: "user-123",
+          identity_id: "discord-123",
+          provider: "discord",
+        },
+      ];
+
+      render(<LinkedIdentitiesSection />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Discord")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/DM notifications/)).toBeInTheDocument();
+      expect(screen.getByText(/7 of 11 enabled/)).toBeInTheDocument();
+    });
+
+    it("Manage link points to /dashboard/settings/notifications#discord-dms", async () => {
+      mockUseQuery.mockReturnValue({ data: 3 });
+      mockUserIdentities = [
+        {
+          id: "identity-1",
+          user_id: "user-123",
+          identity_id: "discord-123",
+          provider: "discord",
+        },
+      ];
+
+      render(<LinkedIdentitiesSection />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Discord")).toBeInTheDocument();
+      });
+
+      const manageLink = screen.getByRole("link", { name: /Manage/i });
+      expect(manageLink).toHaveAttribute(
+        "href",
+        "/dashboard/settings/notifications#discord-dms"
+      );
+    });
+
+    it("shows 0 enabled when no DM preferences are set", async () => {
+      mockUseQuery.mockReturnValue({ data: 0 });
+      mockUserIdentities = [
+        {
+          id: "identity-1",
+          user_id: "user-123",
+          identity_id: "discord-123",
+          provider: "discord",
+        },
+      ];
+
+      render(<LinkedIdentitiesSection />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Discord")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/0 of 11 enabled/)).toBeInTheDocument();
+    });
+
+    it("does NOT render DM summary for non-Discord linked providers", async () => {
+      mockUserIdentities = [
+        {
+          id: "identity-1",
+          user_id: "user-123",
+          identity_id: "x-123",
+          provider: "x",
+        },
+      ];
+
+      render(<LinkedIdentitiesSection />);
+
+      await waitFor(() => {
+        expect(screen.getByText("X")).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/DM notifications/)).not.toBeInTheDocument();
     });
   });
 });

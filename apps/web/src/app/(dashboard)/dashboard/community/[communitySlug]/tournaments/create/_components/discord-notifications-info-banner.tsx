@@ -12,7 +12,7 @@ export function DiscordNotificationsInfoBanner() {
   if (dismissed) return null;
 
   return (
-    <Alert className="mb-4 flex items-start gap-3 border-primary/20 bg-primary/5">
+    <Alert className="border-primary/20 bg-primary/5 mb-4 flex items-start gap-3">
       <span className="text-xl leading-none">🤖</span>
       <AlertDescription className="flex-1">
         Discord notifications are configured for this community — announcements
