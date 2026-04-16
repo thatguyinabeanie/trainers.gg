@@ -173,7 +173,6 @@ jobs:
         if: always()
         with:
           files: "**/test-results/**/*.xml"
-          check_name: Test Results / web
           comment_title: "Test Results / web"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
@@ -226,7 +225,6 @@ jobs:
         if: always()
         with:
           files: "**/test-results/**/*.xml"
-          check_name: Test Results / mobile
           comment_title: "Test Results / mobile"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
@@ -286,7 +284,6 @@ jobs:
         if: always()
         with:
           files: "**/test-results/**/*.xml"
-          check_name: Test Results / packages
           comment_title: "Test Results / packages"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 

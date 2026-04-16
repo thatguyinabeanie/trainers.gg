@@ -3,7 +3,7 @@ import nextjsConfig from "@trainers/eslint-config/nextjs";
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
-    ignores: ["scripts/**"],
+    ignores: ["scripts/**", "src/app/.well-known/**"],
   },
   ...nextjsConfig,
   {

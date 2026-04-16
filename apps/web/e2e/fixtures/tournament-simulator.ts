@@ -111,6 +111,15 @@ const PLAYER_ACCOUNTS = [
 // -- Production Safety --
 
 function assertNotProductionDatabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+
+  // Localhost URLs are never production — local dev/CI with `supabase start`.
+  if (
+    /(^|\/\/)(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(supabaseUrl)
+  ) {
+    return;
+  }
+
   const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
   // Fail-closed: if we can't verify, block rather than assume safe
   if (!productionRef) {
@@ -119,7 +128,6 @@ function assertNotProductionDatabase() {
         "cannot verify this is not the production database."
     );
   }
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const match = supabaseUrl.match(/https:\/\/([a-z0-9]+)\.supabase\.co/i);
   const currentRef = match?.[1];
   if (!currentRef) {
@@ -795,7 +803,7 @@ export class TournamentSimulator {
         .eq("id", this.tournamentId);
 
       if (error) {
-        if (error.message.includes("audit log")) {
+        if (/audit log/i.test(error.message)) {
           this.log(
             `Cleanup skipped — audit_log immutability trigger prevents deletion. ` +
               `Run 'pnpm db:reset' to clean up. Tournament: ${this.tournamentSlug}`

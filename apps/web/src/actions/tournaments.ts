@@ -61,6 +61,11 @@ import {
   dropNotesSchema,
 } from "@trainers/validators";
 import { rejectBots } from "./utils";
+import {
+  enqueueCommunityChannelNotification,
+  enqueueCommunityDms,
+  enqueueCommunityRoleSync,
+} from "@/lib/discord/enqueue-helpers";
 
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
@@ -92,6 +97,21 @@ export async function createTournament(data: {
     const supabase = await createClient();
     const result = await createTournamentMutation(supabase, data);
     // Note: Don't revalidate list yet - tournament is created as draft
+
+    // Fire-and-forget: notify Discord that a tournament was created (draft)
+    void enqueueCommunityChannelNotification(
+      supabase,
+      data.communityId,
+      "tournament_created",
+      `tournament_created:${result.id}`,
+      {
+        tournament_id: result.id,
+        tournament_name: data.name,
+        tournament_slug: result.slug,
+        start_date: data.startDate ?? null,
+      }
+    );
+
     return { success: true, data: result };
   } catch (error) {
     return {
@@ -153,6 +173,37 @@ export async function publishTournament(
 
     await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
 
+    // Fire-and-forget: notify Discord that registration is now open
+    void (async () => {
+      try {
+        const { data: tournament } = await supabase
+          .from("tournaments")
+          .select("id, name, slug, community_id, start_date")
+          .eq("id", tournamentId)
+          .single();
+        if (tournament) {
+          await enqueueCommunityChannelNotification(
+            supabase,
+            tournament.community_id,
+            "registration_opens",
+            `registration_opens:${tournamentId}`,
+            {
+              tournament_id: tournament.id,
+              tournament_name: tournament.name,
+              tournament_slug: tournament.slug,
+              start_date: tournament.start_date,
+              registration_url: `/tournaments/${tournament.slug}`,
+            }
+          );
+        }
+      } catch (discordErr) {
+        console.error(
+          "[publishTournament] Discord registration_opens enqueue failed",
+          { tournamentId, error: String(discordErr) }
+        );
+      }
+    })();
+
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -205,6 +256,58 @@ export async function completeTournament(
     await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
     invalidatePlayerRankingCaches();
     invalidateDashboardCaches();
+
+    // Fire-and-forget: notify Discord the tournament ended + sync winner role
+    void (async () => {
+      try {
+        const { data: tournament } = await supabase
+          .from("tournaments")
+          .select("id, name, slug, community_id")
+          .eq("id", tournamentId)
+          .single();
+        if (!tournament) return;
+
+        // Channel notification: tournament ended
+        await enqueueCommunityChannelNotification(
+          supabase,
+          tournament.community_id,
+          "tournament_ended",
+          `tournament_ended:${tournamentId}`,
+          {
+            tournament_id: tournament.id,
+            tournament_name: tournament.name,
+            tournament_slug: tournament.slug,
+          }
+        );
+
+        // Assign winner role to rank-1 finisher(s)
+        const { data: winnerRows } = await supabase
+          .from("tournament_standings")
+          .select("alts(user_id)")
+          .eq("tournament_id", tournamentId)
+          .eq("rank", 1);
+
+        const winnerUserIds = (winnerRows ?? [])
+          .map((row) => (row.alts as { user_id: string } | null)?.user_id)
+          .filter((id): id is string => Boolean(id));
+
+        if (winnerUserIds.length > 0) {
+          await enqueueCommunityRoleSync(
+            supabase,
+            tournament.community_id,
+            winnerUserIds,
+            "winner",
+            "add",
+            `tournament_ended:${tournamentId}`
+          );
+        }
+      } catch (discordErr) {
+        console.error(
+          "[completeTournament] Discord tournament_ended enqueue failed",
+          { tournamentId, error: String(discordErr) }
+        );
+      }
+    })();
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -348,6 +451,37 @@ export async function registerForTournament(
 
     invalidateTournamentListCaches(tournamentId);
 
+    // Fire-and-forget: sync member role — the player is joining the community via tournament
+    void (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: tournament } = await supabase
+          .from("tournaments")
+          .select("community_id")
+          .eq("id", tournamentId)
+          .single();
+        if (!tournament) return;
+
+        await enqueueCommunityRoleSync(
+          supabase,
+          tournament.community_id,
+          [user.id],
+          "member",
+          "add",
+          `tournament_registration:${result.registrationId}`
+        );
+      } catch (discordErr) {
+        console.error(
+          "[registerForTournament] Discord member role sync failed",
+          { tournamentId, error: String(discordErr) }
+        );
+      }
+    })();
+
     return {
       success: true,
       data: { registrationId: result.registrationId, status: result.status },
@@ -374,6 +508,50 @@ export async function cancelRegistration(
     await cancelRegistrationMutation(supabase, registrationId);
 
     invalidateTournamentListCaches(tournamentId);
+
+    // Fire-and-forget: remove member role if user has no remaining active registrations
+    void (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: tournament } = await supabase
+          .from("tournaments")
+          .select("community_id")
+          .eq("id", tournamentId)
+          .single();
+        if (!tournament) return;
+
+        // Count remaining non-dropped registrations for this user in this community
+        const { count } = await supabase
+          .from("tournament_registrations")
+          .select("id, alts!inner(user_id), tournaments!inner(community_id)", {
+            count: "exact",
+            head: true,
+          })
+          .eq("alts.user_id", user.id)
+          .eq("tournaments.community_id", tournament.community_id)
+          .is("dropped_at", null);
+
+        if (count === 0) {
+          await enqueueCommunityRoleSync(
+            supabase,
+            tournament.community_id,
+            [user.id],
+            "member",
+            "remove",
+            `tournament_registration_cancel:${registrationId}`
+          );
+        }
+      } catch (discordErr) {
+        console.error(
+          "[cancelRegistration] Discord member role remove sync failed",
+          { registrationId, tournamentId, error: String(discordErr) }
+        );
+      }
+    })();
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -436,6 +614,50 @@ export async function withdrawFromTournament(
     const supabase = await createClient();
     await withdrawFromTournamentMutation(supabase, tournamentId);
     invalidateTournamentListCaches(tournamentId);
+
+    // Fire-and-forget: remove member role if user has no remaining active registrations
+    void (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: tournament } = await supabase
+          .from("tournaments")
+          .select("community_id")
+          .eq("id", tournamentId)
+          .single();
+        if (!tournament) return;
+
+        // Count remaining non-dropped registrations for this user in this community
+        const { count } = await supabase
+          .from("tournament_registrations")
+          .select("id, alts!inner(user_id), tournaments!inner(community_id)", {
+            count: "exact",
+            head: true,
+          })
+          .eq("alts.user_id", user.id)
+          .eq("tournaments.community_id", tournament.community_id)
+          .is("dropped_at", null);
+
+        if (count === 0) {
+          await enqueueCommunityRoleSync(
+            supabase,
+            tournament.community_id,
+            [user.id],
+            "member",
+            "remove",
+            `tournament_withdraw:${tournamentId}`
+          );
+        }
+      } catch (discordErr) {
+        console.error(
+          "[withdrawFromTournament] Discord member role remove sync failed",
+          { tournamentId, error: String(discordErr) }
+        );
+      }
+    })();
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -738,6 +960,71 @@ export async function generatePairings(
     const supabase = await createClient();
     const result = await generateRoundPairingsMutation(supabase, roundId);
     invalidateTournamentCaches(tournamentId);
+
+    // Fire-and-forget: DM both players in each newly created match (match_seeded)
+    void (async () => {
+      try {
+        const { data: tournament } = await supabase
+          .from("tournaments")
+          .select("id, name, slug, community_id")
+          .eq("id", tournamentId)
+          .single();
+        if (!tournament) return;
+
+        // Fetch the matches just created for this round
+        const { data: matches } = await supabase
+          .from("tournament_matches")
+          .select(
+            "id, alt1_id, alt2_id, is_bye, alt1:alts!tournament_matches_alt1_id_fkey(user_id, username), alt2:alts!tournament_matches_alt2_id_fkey(user_id, username)"
+          )
+          .eq("round_id", roundId)
+          .eq("is_bye", false);
+
+        if (!matches || matches.length === 0) return;
+
+        // DM each player in each non-bye match
+        for (const match of matches) {
+          const alt1 = match.alt1 as {
+            user_id: string;
+            username: string;
+          } | null;
+          const alt2 = match.alt2 as {
+            user_id: string;
+            username: string;
+          } | null;
+          if (!alt1 || !alt2) continue;
+
+          const playerUserIds = [alt1.user_id, alt2.user_id];
+          const matchPayload = {
+            match_id: match.id,
+            tournament_id: tournament.id,
+            tournament_name: tournament.name,
+            tournament_slug: tournament.slug,
+            opponent_name_for: {
+              [alt1.user_id]: alt2.username,
+              [alt2.user_id]: alt1.username,
+            },
+          };
+
+          void enqueueCommunityDms(
+            supabase,
+            tournament.community_id,
+            playerUserIds,
+            "match_ready",
+            `match_ready:${match.id}`,
+            matchPayload
+          );
+          // TODO(phase-4e): enqueue match_starting_soon DM ~15min before match.scheduled_at
+          // Requires a time-based cron or scheduled task. See docs/superpowers/specs/2026-04-11-discord-bot-design.md § Notification Event Types.
+        }
+      } catch (discordErr) {
+        console.error(
+          "[generatePairings] Discord match_ready DM enqueue failed",
+          { roundId, tournamentId, error: String(discordErr) }
+        );
+      }
+    })();
+
     return {
       success: true,
       data: {
@@ -1117,6 +1404,82 @@ export async function reportMatchResult(
       player2GamesWon
     );
     invalidateTournamentCaches(tournamentId);
+
+    // Fire-and-forget: channel notification + DM confirmation to both players
+    void (async () => {
+      try {
+        const [{ data: tournament }, { data: match }] = await Promise.all([
+          supabase
+            .from("tournaments")
+            .select("id, name, slug, community_id")
+            .eq("id", tournamentId)
+            .single(),
+          supabase
+            .from("tournament_matches")
+            .select(
+              "id, alt1_id, alt2_id, alt1:alts!tournament_matches_alt1_id_fkey(user_id, username), alt2:alts!tournament_matches_alt2_id_fkey(user_id, username)"
+            )
+            .eq("id", matchId)
+            .single(),
+        ]);
+
+        if (!tournament || !match) return;
+
+        const alt1 = match.alt1 as {
+          user_id: string;
+          username: string;
+        } | null;
+        const alt2 = match.alt2 as {
+          user_id: string;
+          username: string;
+        } | null;
+
+        const winnerUsername =
+          match.alt1_id === winnerAltId
+            ? (alt1?.username ?? "Unknown")
+            : (alt2?.username ?? "Unknown");
+
+        const resultPayload = {
+          match_id: matchId,
+          tournament_id: tournament.id,
+          tournament_name: tournament.name,
+          tournament_slug: tournament.slug,
+          winner_alt_id: winnerAltId,
+          winner_username: winnerUsername,
+          score: `${player1GamesWon}-${player2GamesWon}`,
+        };
+
+        // Channel notification
+        void enqueueCommunityChannelNotification(
+          supabase,
+          tournament.community_id,
+          "match_result_reported",
+          `match_result_reported:${matchId}`,
+          resultPayload
+        );
+
+        // DM confirmation to both players
+        const playerUserIds = [alt1?.user_id, alt2?.user_id].filter(
+          (id): id is string => Boolean(id)
+        );
+        if (playerUserIds.length > 0) {
+          void enqueueCommunityDms(
+            supabase,
+            tournament.community_id,
+            playerUserIds,
+            "match_result_to_confirm",
+            `match_result_to_confirm:${matchId}`,
+            resultPayload
+          );
+        }
+      } catch (discordErr) {
+        console.error(
+          "[reportMatchResult] Discord match_result_to_confirm enqueue failed",
+          { matchId, tournamentId, error: String(discordErr) }
+        );
+      }
+    })();
+
     return { success: true, data: { success: true } };
   } catch (error) {
     return {

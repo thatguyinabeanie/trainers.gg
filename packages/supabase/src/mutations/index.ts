@@ -111,3 +111,22 @@ export {
   removePokemonFromTeam,
   reorderTeamPokemon,
 } from "./teams";
+
+// Discord bot mutations
+export {
+  createDiscordServer,
+  deleteDiscordServer,
+  deleteDiscordServerByGuildId,
+  upsertChannelMapping,
+  deleteChannelMapping,
+  upsertDmSetting,
+  deleteDmSetting,
+  setDmPreference,
+  upsertRoleMapping,
+  toggleRoleMapping,
+  deleteRoleMapping,
+  recordChannelFailure,
+  resetChannelFailures,
+  markChannelEmailSent,
+  recordDeliveryFailure,
+} from "./discord";

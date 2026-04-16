@@ -60,6 +60,11 @@ const config: Config = {
   // lets Jest intercept the require before Node resolution runs.
   moduleNameMapper: {
     "^@babel/runtime/(.*)$": "<rootDir>/node_modules/@babel/runtime/$1",
+    // jest-expo's setup.js requires expo-modules-core and its subpaths
+    // (e.g. polyfill/dangerous-internal) from its own pnpm-isolated
+    // location; map them to the app's node_modules symlink.
+    "^expo-modules-core$": "<rootDir>/node_modules/expo-modules-core",
+    "^expo-modules-core/(.*)$": "<rootDir>/node_modules/expo-modules-core/$1",
   },
 
   collectCoverageFrom: [

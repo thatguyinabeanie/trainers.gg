@@ -167,6 +167,7 @@ jest.mock("lucide-react", () => ({
   BarChart3: () => <svg data-testid="icon-bar-chart" />,
   FileText: () => <svg data-testid="icon-file-text" />,
   GraduationCap: () => <svg data-testid="icon-graduation-cap" />,
+  Plug: () => <svg data-testid="icon-plug" />,
 }));
 
 // Mock supabase client
@@ -480,6 +481,82 @@ describe("DashboardSidebar", () => {
       const settingsItems = screen.getAllByText("Settings");
       // Staff should have fewer Settings items than owner
       expect(settingsItems.length).toBeLessThanOrEqual(2);
+    });
+
+    it("renders Integrations nav item for owner communities", () => {
+      render(
+        <DashboardSidebar
+          user={baseUser}
+          alts={baseAlts}
+          communities={baseCommunities}
+          selectedAltUsername={null}
+        />
+      );
+      expect(screen.getByText("Integrations")).toBeInTheDocument();
+    });
+
+    it("Integrations link points to discord integrations route", () => {
+      render(
+        <DashboardSidebar
+          user={baseUser}
+          alts={baseAlts}
+          communities={baseCommunities}
+          selectedAltUsername={null}
+        />
+      );
+      // The SidebarMenuButton mock renders the Link (renderProp) and children
+      // separately, so "Integrations" text is a sibling of the <a> tag.
+      // Find the <a> inside the same sidebar-menu-button container.
+      const integrationsText = screen.getByText("Integrations");
+      const menuButton = integrationsText.closest(
+        "[data-testid='sidebar-menu-button']"
+      );
+      expect(menuButton).not.toBeNull();
+      const link = menuButton?.querySelector("a");
+      expect(link).not.toBeNull();
+      expect(link?.getAttribute("href")).toBe(
+        "/dashboard/community/pallet-town/settings/integrations/discord"
+      );
+    });
+
+    it("Integrations entry is active when on an integrations sub-path", () => {
+      (usePathname as jest.Mock).mockReturnValue(
+        "/dashboard/community/pallet-town/settings/integrations/discord"
+      );
+      render(
+        <DashboardSidebar
+          user={baseUser}
+          alts={baseAlts}
+          communities={baseCommunities}
+          selectedAltUsername={null}
+        />
+      );
+      // Find the SidebarMenuButton wrapping Integrations — data-active should be true
+      const integrationsText = screen.getByText("Integrations");
+      const menuButton = integrationsText.closest(
+        "[data-testid='sidebar-menu-button']"
+      );
+      expect(menuButton).not.toBeNull();
+      expect(menuButton?.getAttribute("data-active")).toBe("true");
+    });
+
+    it("does not render Integrations nav item for non-owner staff", () => {
+      const staffCommunities = [
+        {
+          ...baseCommunities[0]!,
+          role: "staff" as const,
+          slug: "pallet-town",
+        },
+      ];
+      render(
+        <DashboardSidebar
+          user={baseUser}
+          alts={baseAlts}
+          communities={staffCommunities}
+          selectedAltUsername={null}
+        />
+      );
+      expect(screen.queryByText("Integrations")).not.toBeInTheDocument();
     });
 
     it("shows owner role label in community header", () => {
