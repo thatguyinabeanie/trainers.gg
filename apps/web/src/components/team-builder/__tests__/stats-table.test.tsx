@@ -296,10 +296,17 @@ describe("StatsTable", () => {
   });
 
   describe("nature indicators", () => {
-    it("shows + on the boosted stat label and - on the reduced stat label", () => {
+    it("shows + on the boosted stat label and − on the reduced stat label", () => {
       renderStatsTable({ pokemon: buildPokemon({ nature: "Adamant" }) });
-      expect(screen.getByText("Atk+")).toBeInTheDocument();
-      expect(screen.getByText("SpA-")).toBeInTheDocument();
+      // The +/− are rendered as small suffix spans next to the label so
+      // the Final column stays a separate, full-width number. Find the
+      // suffix by its accessibility label.
+      expect(
+        screen.getByLabelText("Atk is boosted by nature")
+      ).toBeInTheDocument();
+      expect(
+        screen.getByLabelText("SpA is reduced by nature")
+      ).toBeInTheDocument();
     });
 
     it("hides nature indicators in Champions format (natures don't affect stats)", () => {
@@ -307,8 +314,12 @@ describe("StatsTable", () => {
         pokemon: buildPokemon({ nature: "Adamant" }),
         format: championsFormat,
       });
-      expect(screen.queryByText("Atk+")).not.toBeInTheDocument();
-      expect(screen.queryByText("SpA-")).not.toBeInTheDocument();
+      expect(
+        screen.queryByLabelText("Atk is boosted by nature")
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByLabelText("SpA is reduced by nature")
+      ).not.toBeInTheDocument();
     });
   });
 });

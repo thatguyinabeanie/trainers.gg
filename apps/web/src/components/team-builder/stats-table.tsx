@@ -175,17 +175,32 @@ function StatRow({
 
   return (
     <>
-      {/* Stat label */}
+      {/* Stat label — nature +/− is a small suffix that supplements the Final
+          column rather than replacing it. The suffix communicates which stat
+          the nature boosts/drops without taking the place of the calculated
+          final value rendered to the right. */}
       <span
         className={cn(
-          "text-muted-foreground text-right text-[10px] font-semibold tracking-wide uppercase",
-          isNatureBoosted && "text-stat-good",
-          isNatureReduced && "text-destructive"
+          "text-muted-foreground text-right text-[10px] font-semibold tracking-wide uppercase"
         )}
       >
         {label}
-        {isNatureBoosted && "+"}
-        {isNatureReduced && "-"}
+        {isNatureBoosted && (
+          <span
+            className="text-stat-good ml-0.5 text-[11px]"
+            aria-label={`${label} is boosted by nature`}
+          >
+            +
+          </span>
+        )}
+        {isNatureReduced && (
+          <span
+            className="text-destructive ml-0.5 text-[11px]"
+            aria-label={`${label} is reduced by nature`}
+          >
+            −
+          </span>
+        )}
       </span>
 
       {/* Base */}
@@ -402,8 +417,13 @@ export function StatsTable({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* 4-col grid: stat label · base · points · final */}
-      <div className="grid grid-cols-[36px_56px_minmax(150px,1fr)_50px] items-center gap-x-2.5 gap-y-2.5">
+      {/* 4-col grid: stat label · base · points · final.
+          Sized in rem for clarity:
+            - 2.75rem (44px) — stat label, fits "SpA+" / "SpD−"
+            - 3rem  (48px) — base value (3-digit max)
+            - minmax(0,1fr) — points block (numeric input + slider)
+            - 3.25rem (52px) — final value (3-digit max in Geist Mono) */}
+      <div className="grid grid-cols-[2.75rem_3rem_minmax(0,1fr)_3.25rem] items-center gap-x-2.5 gap-y-2.5">
         {/* Header row — left column blank */}
         <span aria-hidden="true" />
         <span className="text-muted-foreground text-center text-[10px] font-semibold tracking-wide uppercase">
