@@ -231,6 +231,23 @@ describe("getMoveHelperText", () => {
     });
   });
 
+  describe("drain", () => {
+    it("Giga Drain — heals user for 1/2 damage dealt", () => {
+      const move = buildMove({ category: "Special", drain: [1, 2] });
+      expect(getMoveHelperText(move)).toBe("heals user for 1/2 damage dealt");
+    });
+
+    it("Draining Kiss — heals user for 3/4 damage dealt", () => {
+      const move = buildMove({ category: "Special", drain: [3, 4] });
+      expect(getMoveHelperText(move)).toBe("heals user for 3/4 damage dealt");
+    });
+
+    it("falls back to a percent for non-canonical drain ratios", () => {
+      const move = buildMove({ category: "Special", drain: [2, 5] });
+      expect(getMoveHelperText(move)).toBe("heals user for 40% damage dealt");
+    });
+  });
+
   describe("self-destruct", () => {
     it("Explosion — user faints", () => {
       const move = buildMove({ selfdestruct: "always" });

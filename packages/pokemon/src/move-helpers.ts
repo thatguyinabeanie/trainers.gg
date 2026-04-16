@@ -107,13 +107,16 @@ const TERRAIN_LABELS: Record<string, string> = {
   psychicterrain: "Psychic Terrain",
 };
 
+// Each entry is a complete, self-describing phrase. Most read as "sets <thing>",
+// but Tailwind's verb is "doubles", so we store the full phrase here rather
+// than special-casing it at the call site.
 const SCREEN_LABELS: Record<string, string> = {
-  reflect: "Reflect (halves physical damage for 5 turns)",
-  lightscreen: "Light Screen (halves special damage for 5 turns)",
-  auroraveil: "Aurora Veil (halves damage for 5 turns)",
-  safeguard: "Safeguard (prevents status for 5 turns)",
-  tailwind: "team Speed for 4 turns",
-  mist: "Mist (prevents stat drops for 5 turns)",
+  reflect: "sets Reflect (halves physical damage for 5 turns)",
+  lightscreen: "sets Light Screen (halves special damage for 5 turns)",
+  auroraveil: "sets Aurora Veil (halves damage for 5 turns)",
+  safeguard: "sets Safeguard (prevents status for 5 turns)",
+  tailwind: "doubles team Speed for 4 turns",
+  mist: "sets Mist (prevents stat drops for 5 turns)",
 };
 
 function statKey(key: string): string {
@@ -177,10 +180,9 @@ function formatDrain(drain: readonly [number, number]): string | null {
   return `heals user for ${pct}% damage dealt`;
 }
 
-function formatHeal(heal: readonly number[]): string | null {
+function formatHeal(heal: readonly [number, number]): string | null {
   // heal: [num, den] → fraction of max HP restored
-  const num = heal[0];
-  const den = heal[1];
+  const [num, den] = heal;
   if (!num || !den) return null;
   if (num === 1 && den === 2) return "restores 1/2 max HP";
   if (num === 1 && den === 4) return "restores 1/4 max HP";
@@ -249,7 +251,9 @@ export function getMoveHelperText(move: MoveHelperInput): string {
 
   // Healing moves (e.g., Recover, Roost).
   if (move.heal && move.heal.length === 2) {
-    const h = formatHeal(move.heal);
+    // Length check above narrows `readonly number[]` to a 2-tuple at runtime;
+    // assert the tuple shape here so `formatHeal`'s contract is enforced.
+    const h = formatHeal(move.heal as readonly [number, number]);
     if (h) parts.push(h);
   }
 
@@ -264,15 +268,12 @@ export function getMoveHelperText(move: MoveHelperInput): string {
   }
 
   // Side conditions — screens, Tailwind, Safeguard, etc.
+  // Each `SCREEN_LABELS` entry is already a complete phrase; for unknown
+  // side conditions, fall back to "sets <id>".
   if (move.sideCondition) {
     const label = SCREEN_LABELS[move.sideCondition];
     if (label) {
-      // Tailwind reads naturally as "doubles team Speed for 4 turns".
-      if (move.sideCondition === "tailwind") {
-        parts.push(`doubles ${label}`);
-      } else {
-        parts.push(`sets ${label}`);
-      }
+      parts.push(label);
     } else {
       parts.push(`sets ${move.sideCondition}`);
     }

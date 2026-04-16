@@ -105,11 +105,13 @@ export const lightTokens: SemanticTokens = {
   sidebarBorder: colors.neutral[200],
   sidebarRing: colors.neutral[400],
 
-  // Stat tiers (light mode — tuned for AA contrast on bg-card / neutral-50).
-  statLow: { l: 0.58, c: 0.18, h: 25 }, // warm coral
-  statMid: { l: 0.62, c: 0.16, h: 70 }, // amber
-  statGood: { l: 0.55, c: 0.18, h: 145 }, // green
-  statGreat: { l: 0.5, c: 0.14, h: 220 }, // cool blue-teal (away from primary 185)
+  // Stat tiers (light mode — tuned for WCAG AA contrast (≥4.5:1) on bg-card
+  // / neutral-50). Lightness values were chosen against an sRGB-luminance
+  // calculation; see PR review for the audit.
+  statLow: { l: 0.54, c: 0.18, h: 25 }, // warm coral — 5.32:1
+  statMid: { l: 0.55, c: 0.16, h: 70 }, // amber — 4.78:1
+  statGood: { l: 0.5, c: 0.18, h: 145 }, // green — 5.23:1
+  statGreat: { l: 0.46, c: 0.14, h: 220 }, // cool blue (away from primary 185) — 6.07:1
 };
 
 export const darkTokens: SemanticTokens = {

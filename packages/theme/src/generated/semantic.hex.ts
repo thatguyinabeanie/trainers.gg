@@ -39,10 +39,10 @@ export const semanticColors = {
     "sidebarAccentForeground": "#171717",
     "sidebarBorder": "#e5e5e5",
     "sidebarRing": "#a1a1a1",
-    "statLow": "#cf4040",
-    "statMid": "#c17000",
-    "statGood": "#008b1d",
-    "statGreat": "#00739a"
+    "statLow": "#c13234",
+    "statMid": "#aa5b00",
+    "statGood": "#007b01",
+    "statGreat": "#00678d"
   },
   "dark": {
     "background": "#0a0a0a",
