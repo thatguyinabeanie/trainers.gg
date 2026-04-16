@@ -3342,6 +3342,7 @@ export type Database = {
           country: string | null
           created_at: string | null
           did: string | null
+          discord_dm_warn_until: string | null
           email: string | null
           external_accounts: Json | null
           first_name: string | null
@@ -3370,6 +3371,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           did?: string | null
+          discord_dm_warn_until?: string | null
           email?: string | null
           external_accounts?: Json | null
           first_name?: string | null
@@ -3398,6 +3400,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           did?: string | null
+          discord_dm_warn_until?: string | null
           email?: string | null
           external_accounts?: Json | null
           first_name?: string | null
