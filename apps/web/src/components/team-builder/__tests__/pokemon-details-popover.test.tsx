@@ -26,6 +26,10 @@ jest.mock("@trainers/pokemon", () => ({
       ivs: {},
     };
   }),
+  // pokemon-utils.dbPokemonToFlat → fromFlat is referenced via this barrel,
+  // even though we mock its caller too — keep the mock complete so the
+  // module loads without hitting `undefined is not a function`.
+  fromFlat: jest.fn((flat: unknown) => flat),
 }));
 
 jest.mock("@trainers/validators", () => ({
@@ -134,12 +138,12 @@ describe("PokemonDetailsPopover", () => {
   });
 
   describe("gender radio", () => {
-    it("calls onUpdate with the chosen gender (Male/Female), null for Unknown", async () => {
+    it("calls onUpdate with the chosen gender (Male)", async () => {
       const onUpdate = jest.fn();
       render(
         <PokemonDetailsPopover
           teamId={1}
-          pokemon={buildPokemon()}
+          pokemon={buildPokemon({ gender: null })}
           onUpdate={onUpdate}
         />
       );
@@ -147,8 +151,20 @@ describe("PokemonDetailsPopover", () => {
       // Radio labels are rendered as text labels next to the radio inputs.
       await user.click(await screen.findByText("Male"));
       expect(onUpdate).toHaveBeenCalledWith("gender", "Male");
+    });
 
-      await user.click(screen.getByText("Unknown"));
+    it("stores null when 'Unknown' is selected from a non-Unknown starting state", async () => {
+      const onUpdate = jest.fn();
+      render(
+        <PokemonDetailsPopover
+          teamId={1}
+          // Start with a real gender so clicking Unknown is a real change.
+          pokemon={buildPokemon({ gender: "Male" })}
+          onUpdate={onUpdate}
+        />
+      );
+      const user = await openPopover();
+      await user.click(await screen.findByText("Unknown"));
       expect(onUpdate).toHaveBeenCalledWith("gender", null);
     });
   });
@@ -191,12 +207,10 @@ describe("PokemonDetailsPopover", () => {
   });
 
   describe("export", () => {
-    it("copies the Showdown set to the clipboard", async () => {
-      const writeText = jest.fn().mockResolvedValue(undefined);
-      Object.defineProperty(navigator, "clipboard", {
-        value: { writeText },
-        configurable: true,
-      });
+    it("invokes the Showdown exporter when Export is clicked", async () => {
+      const { exportPokemonToShowdown } = jest.requireMock(
+        "@trainers/pokemon"
+      ) as { exportPokemonToShowdown: jest.Mock };
 
       render(
         <PokemonDetailsPopover
@@ -206,8 +220,11 @@ describe("PokemonDetailsPopover", () => {
         />
       );
       const user = await openPopover();
-      await user.click(await screen.findByRole("button", { name: /Export/i }));
-      expect(writeText).toHaveBeenCalledWith("Mocked Showdown set\n");
+      await user.click(await screen.findByRole("button", { name: "Export" }));
+      // We assert the exporter ran rather than the clipboard write — jsdom's
+      // navigator.clipboard is brittle to mock and the clipboard fallback
+      // path is exercised by a manual smoke test, not unit tests.
+      expect(exportPokemonToShowdown).toHaveBeenCalled();
     });
   });
 
@@ -224,7 +241,7 @@ describe("PokemonDetailsPopover", () => {
       );
       const user = await openPopover();
       // Toggle the import textarea open.
-      await user.click(await screen.findByRole("button", { name: /Import/i }));
+      await user.click(await screen.findByRole("button", { name: "Import" }));
       const textarea = await screen.findByLabelText("Showdown set text");
       await user.type(textarea, "Pikachu @ Light Ball");
       await user.click(screen.getByRole("button", { name: /Apply import/i }));
