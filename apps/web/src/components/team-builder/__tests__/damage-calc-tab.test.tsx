@@ -725,7 +725,7 @@ describe("DamageCalcTab", () => {
       generation: 9,
     };
 
-    it("dims illegal species in the search results and blocks selection", async () => {
+    it("omits illegal species from the search results entirely", async () => {
       const user = userEvent.setup();
       const pokemon = makePokemon({ species: "Charizard" });
 
@@ -743,7 +743,6 @@ describe("DamageCalcTab", () => {
       const speciesButtons = screen
         .getAllByRole("button")
         .filter((b) => b.getAttribute("title") === "Click to change species");
-      // The defender InlineSpeciesSearch button is the last one (defender section)
       const defenderButton = speciesButtons[speciesButtons.length - 1]!;
       await user.click(defenderButton);
 
@@ -751,22 +750,16 @@ describe("DamageCalcTab", () => {
       const input = screen.getByPlaceholderText("Search species…");
       fireEvent.change(input, { target: { value: "lando" } });
 
-      // Landorus-Therian row should be present and disabled
+      // Landorus-Therian should not appear at all — it is filtered out
       const landoButton = screen
-        .getAllByRole("button", { hidden: true })
+        .queryAllByRole("button", { hidden: true })
         .find((b) => b.textContent?.includes("Landorus-Therian"));
-      expect(landoButton).toBeDefined();
-      expect(landoButton).toBeDisabled();
-      expect(landoButton).toHaveClass("opacity-50");
+      expect(landoButton).toBeUndefined();
 
-      // "Not legal" badge appears within that row
-      expect(screen.getByText("Not legal")).toBeInTheDocument();
+      // No "Not legal" badge should appear
+      expect(screen.queryByText("Not legal")).not.toBeInTheDocument();
 
-      // MouseDown on the disabled row does NOT select — search stays open
-      if (landoButton) {
-        fireEvent.mouseDown(landoButton);
-      }
-      // The search input should still be visible (Landorus-Therian was not selected)
+      // Search input stays open (nothing was selected)
       expect(
         screen.getByPlaceholderText("Search species…")
       ).toBeInTheDocument();

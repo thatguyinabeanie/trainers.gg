@@ -437,81 +437,53 @@ describe("SpeciesTable — format legality", () => {
     jest.clearAllMocks();
   });
 
-  it("dims an illegal species row with opacity-50 and renders 'Not legal' badge", () => {
-    const entry = makeEntry({ species: "Landorus-Therian" });
-    const { container } = render(
+  it("omits an illegal species entirely from the rendered list", () => {
+    const entries = [
+      makeEntry({ species: "Landorus-Therian" }),
+      makeEntry({ species: "Incineroar" }),
+    ];
+    render(
       <SpeciesTable
         {...defaultProps}
-        entries={[entry]}
+        entries={entries}
         formatId={CHAMPIONS_FORMAT}
       />
     );
 
-    // Row should have opacity-50
-    const dimmedRows = container.querySelectorAll("tr.opacity-50");
-    expect(dimmedRows.length).toBe(1);
+    // Illegal species should not appear in the table at all
+    expect(screen.queryByText("Landorus-Therian")).not.toBeInTheDocument();
 
-    // Badge text should appear
-    expect(screen.getByText("Not legal")).toBeInTheDocument();
+    // Legal species is still present
+    expect(screen.getByText("Incineroar")).toBeInTheDocument();
+
+    // No dim class or badge for illegal species
+    expect(screen.queryByText("Not legal")).not.toBeInTheDocument();
   });
 
-  it("does not call onSelect when an illegal row is double-clicked, but does call onPreview on click", async () => {
-    const onPreview = jest.fn();
+  it("calls onSelect when a legal species row is double-clicked", async () => {
     const onSelect = jest.fn();
     const user = userEvent.setup();
 
-    const entry = makeEntry({ species: "Landorus-Therian" });
+    const entry = makeEntry({ species: "Incineroar" });
     render(
       <SpeciesTable
         {...defaultProps}
         entries={[entry]}
         formatId={CHAMPIONS_FORMAT}
-        onPreview={onPreview}
         onSelect={onSelect}
       />
     );
 
-    // Single click still previews
-    await user.click(screen.getByText("Landorus-Therian"));
-    expect(onPreview).toHaveBeenCalledWith("Landorus-Therian");
-
-    // Double click does NOT select
-    await user.dblClick(screen.getByText("Landorus-Therian"));
-    expect(onSelect).not.toHaveBeenCalled();
-  });
-
-  it("does not dim a legal species and onSelect fires on double-click", async () => {
-    const onSelect = jest.fn();
-    const user = userEvent.setup();
-
-    const entry = makeEntry({ species: "Incineroar" });
-    const { container } = render(
-      <SpeciesTable
-        {...defaultProps}
-        entries={[entry]}
-        formatId={CHAMPIONS_FORMAT}
-        onSelect={onSelect}
-      />
-    );
-
-    // No opacity-50 class on any data row
-    const dimmedRows = container.querySelectorAll("tr.opacity-50");
-    expect(dimmedRows.length).toBe(0);
-
-    // No "Not legal" badge
-    expect(screen.queryByText("Not legal")).not.toBeInTheDocument();
-
-    // Double-click selects normally
     await user.dblClick(screen.getByText("Incineroar"));
     expect(onSelect).toHaveBeenCalledWith("Incineroar");
   });
 
-  it("does not dim any rows when formatId is an unknown format", () => {
+  it("renders all species when formatId has no registered legality (permissive)", () => {
     const entries = [
       makeEntry({ species: "Landorus-Therian" }),
       makeEntry({ species: "Incineroar" }),
     ];
-    const { container } = render(
+    render(
       <SpeciesTable
         {...defaultProps}
         entries={entries}
@@ -519,11 +491,28 @@ describe("SpeciesTable — format legality", () => {
       />
     );
 
-    // No rows should be dimmed for an unknown format
-    const dimmedRows = container.querySelectorAll("tr.opacity-50");
-    expect(dimmedRows.length).toBe(0);
+    // Unknown format — no filtering — all entries appear
+    expect(screen.getByText("Landorus-Therian")).toBeInTheDocument();
+    expect(screen.getByText("Incineroar")).toBeInTheDocument();
 
     // No badges should appear
     expect(screen.queryByText("Not legal")).not.toBeInTheDocument();
+  });
+
+  it("renders all species when no formatId is provided", () => {
+    const entries = [
+      makeEntry({ species: "Landorus-Therian" }),
+      makeEntry({ species: "Incineroar" }),
+    ];
+    render(
+      <SpeciesTable
+        {...defaultProps}
+        entries={entries}
+        // no formatId
+      />
+    );
+
+    expect(screen.getByText("Landorus-Therian")).toBeInTheDocument();
+    expect(screen.getByText("Incineroar")).toBeInTheDocument();
   });
 });

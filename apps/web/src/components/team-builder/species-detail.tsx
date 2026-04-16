@@ -5,7 +5,6 @@ import {
   getMoveType,
   getMoveCategory,
   getMoveBP,
-  isLegalSpecies,
   type SpeciesSearchEntry,
 } from "@trainers/pokemon";
 
@@ -25,7 +24,7 @@ import { CATEGORY_COLORS, CATEGORY_LABELS } from "./move-category-ui";
 interface SpeciesDetailProps {
   species: SpeciesSearchEntry | null;
   currentTeam: Array<{ species: string }>;
-  /** Active format ID. When set, illegal species disable the Select buttons. */
+  /** Active format ID. Retained for API stability; illegal species are filtered upstream. */
   formatId?: string;
   onSelect: (species: string, mode: "defaults" | "blank") => void;
 }
@@ -41,7 +40,7 @@ interface SpeciesDetailProps {
 export function SpeciesDetail({
   species,
   currentTeam,
-  formatId,
+  formatId: _formatId,
   onSelect,
 }: SpeciesDetailProps) {
   if (!species) {
@@ -53,9 +52,6 @@ export function SpeciesDetail({
       </div>
     );
   }
-
-  // Determine legality — false only when a format is specified and the species is banned
-  const legal = formatId ? isLegalSpecies(species.species, formatId) : true;
 
   // Filter learnable moves down to competitive ones, cap at 10
   const allLearnable = new Set(getLearnableMoves(species.species));
@@ -202,16 +198,10 @@ export function SpeciesDetail({
       </div>
 
       {/* Action buttons */}
-      {!legal && (
-        <p className="text-muted-foreground mb-2 text-xs">
-          Not legal in this format.
-        </p>
-      )}
       <div className="flex gap-2">
         <Button
           className="flex-1"
           size="sm"
-          disabled={!legal}
           onClick={() => onSelect(species.species, "defaults")}
         >
           Select with defaults
@@ -220,7 +210,6 @@ export function SpeciesDetail({
           className="flex-1"
           variant="outline"
           size="sm"
-          disabled={!legal}
           onClick={() => onSelect(species.species, "blank")}
         >
           Select blank

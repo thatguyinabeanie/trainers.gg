@@ -6,8 +6,6 @@ import Image from "next/image";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type SpeciesSearchEntry, isLegalSpecies } from "@trainers/pokemon";
 
-import { Badge } from "@/components/ui/badge";
-
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -152,14 +150,17 @@ export function SpeciesTable({
   }
 
   const sorted = sortEntries(entries, sort);
-  const visible = sorted.slice(0, MAX_VISIBLE_ROWS);
-  const isTruncated = sorted.length > MAX_VISIBLE_ROWS;
+  const filtered = formatId
+    ? sorted.filter((e) => isLegalSpecies(e.species, formatId))
+    : sorted;
+  const visible = filtered.slice(0, MAX_VISIBLE_ROWS);
+  const isTruncated = filtered.length > MAX_VISIBLE_ROWS;
 
   return (
     <div className="flex flex-col overflow-x-auto">
       {isTruncated && (
         <div className="text-muted-foreground border-b px-3 py-1.5 text-xs">
-          Showing {MAX_VISIBLE_ROWS} of {sorted.length} results — search to
+          Showing {MAX_VISIBLE_ROWS} of {filtered.length} results — search to
           narrow
         </div>
       )}
@@ -249,9 +250,6 @@ export function SpeciesTable({
             const isCurrent = entry.species === currentSpecies;
             const isPreviewed = entry.species === previewedSpecies;
             const sprite = getPokemonSprite(entry.species);
-            const legal = formatId
-              ? isLegalSpecies(entry.species, formatId)
-              : true;
 
             return (
               <TableRow
@@ -262,14 +260,10 @@ export function SpeciesTable({
                     "border-l-2 border-l-teal-500 bg-teal-50 dark:bg-teal-950/20",
                   isPreviewed &&
                     !isCurrent &&
-                    "border-l-2 border-l-blue-500 bg-blue-50 dark:bg-blue-950/20",
-                  !legal && "opacity-50"
+                    "border-l-2 border-l-blue-500 bg-blue-50 dark:bg-blue-950/20"
                 )}
                 onClick={() => onPreview(entry.species)}
-                onDoubleClick={() => {
-                  if (!legal) return;
-                  onSelect(entry.species);
-                }}
+                onDoubleClick={() => onSelect(entry.species)}
               >
                 {/* Sprite */}
                 <TableCell className="px-2 py-1">
@@ -290,14 +284,6 @@ export function SpeciesTable({
                 {/* Name */}
                 <TableCell className="py-1 font-medium">
                   {entry.species}
-                  {!legal && (
-                    <Badge
-                      variant="outline"
-                      className="border-muted-foreground/30 text-muted-foreground ml-2 text-[10px]"
-                    >
-                      Not legal
-                    </Badge>
-                  )}
                 </TableCell>
 
                 {/* Types */}
