@@ -93,6 +93,7 @@ jest.mock("@trainers/pokemon", () => ({
   isLegalSpecies: jest.fn(
     (species: string, _formatId: string) => species !== "Landorus-Therian"
   ),
+  getLegalItems: jest.fn((_formatId: string) => undefined),
 }));
 
 jest.mock("lucide-react", () => {
