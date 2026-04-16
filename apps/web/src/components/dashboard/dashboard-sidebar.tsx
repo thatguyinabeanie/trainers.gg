@@ -664,7 +664,13 @@ function PlayerNav({
                 {item.disabled ? (
                   <Tooltip>
                     <TooltipTrigger
-                      render={<span tabIndex={0} aria-disabled="true" />}
+                      render={
+                        <span
+                          tabIndex={0}
+                          aria-disabled="true"
+                          aria-label={`${item.label} — Coming soon, in beta`}
+                        />
+                      }
                     >
                       <SidebarMenuButton
                         className="pointer-events-none opacity-50"

@@ -71,10 +71,11 @@ export async function GET(request: Request): Promise<Response> {
    * (Phase 5) does not exist yet and will become the proper destination.
    */
   function redirectWithError(code: string): Response {
-    return Response.redirect(
-      `${baseUrl}/dashboard?discord_install_error=${code}`,
-      303
-    );
+    // Build via URL + searchParams so `code` is properly encoded — defense in
+    // depth against any future caller passing a value with reserved chars.
+    const redirectUrl = new URL("/dashboard", baseUrl);
+    redirectUrl.searchParams.set("discord_install_error", code);
+    return Response.redirect(redirectUrl.toString(), 303);
   }
 
   // Step 1: Discord explicitly denied (user clicked "Cancel" on the auth page)

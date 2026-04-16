@@ -108,7 +108,11 @@ const getCachedDiscordHandle = (userId: string, handle: string) =>
       // Only call auth.identities when the user has opted in — saves a round trip
       return getPublicDiscordHandle(supabase, userId);
     },
-    [`player-discord-handle-${userId}`],
+    // Handle is part of the key so a handle-change creates a fresh entry
+    // whose tag (CacheTags.player(newHandle)) matches future invalidations.
+    // Without it, the cached value would live under the userId forever while
+    // the stored tag stayed pinned to the original handle.
+    ["player-discord-handle", userId, handle],
     { tags: [CacheTags.player(handle)] }
   )();
 
