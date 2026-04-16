@@ -79,6 +79,9 @@
       "zod-validation-error": "^4"
     },
     "ignoredBuiltDependencies": [
+      "@nestjs/core",
+      "@swc/core",
+      "cbor-extract",
       "protobufjs"
     ],
     "packageExtensions": {

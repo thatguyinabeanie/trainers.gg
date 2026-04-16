@@ -38,6 +38,8 @@ COMMENT ON POLICY "pokemon_detail_stats_read" ON pokemon_detail_stats
 -- 3. Atomic fork_team RPC
 -- Replaces the multi-step JS forkTeam mutation with a single transaction.
 -- If any step fails, the entire operation rolls back — no partial copies.
+-- Source team must be public OR owned by the caller's alt to prevent
+-- unauthorized copying of private teams.
 
 CREATE OR REPLACE FUNCTION fork_team(
   p_source_team_id bigint,
@@ -58,6 +60,16 @@ BEGIN
   SELECT * INTO v_source FROM teams WHERE id = p_source_team_id;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Source team % not found', p_source_team_id;
+  END IF;
+
+  -- Verify the caller can read the source team:
+  -- must be public OR owned by one of the caller's alts
+  IF NOT v_source.is_public AND NOT EXISTS (
+    SELECT 1 FROM alts
+    WHERE id = v_source.created_by
+      AND user_id = (SELECT auth.uid())
+  ) THEN
+    RAISE EXCEPTION 'Not authorized to fork team %', p_source_team_id;
   END IF;
 
   -- Verify the calling user owns the target alt
@@ -116,3 +128,7 @@ BEGIN
   RETURN v_new_team_id;
 END;
 $$;
+
+-- Lock down execute privileges: authenticated only
+REVOKE ALL ON FUNCTION fork_team(bigint, bigint, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fork_team(bigint, bigint, text) TO authenticated;

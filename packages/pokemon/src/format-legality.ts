@@ -736,7 +736,8 @@ function speciesAbilityNames(speciesObj: Species): string[] {
  * Compute the legal-ability set for a species in a format registered in
  * @pkmn/sim. For each of the species' 1-3 abilities, probes via
  * `TeamValidator.checkAbility` which returns:
- *   - `null`  — no rule matched (legal)
+ *   - `null`           — no rule matched (legal)
+ *   - `""` (empty)     — whitelist rule matched (legal)
  *   - non-empty string — banned (illegal)
  *
  * This catches format-level ability bans (e.g. "Moody" banned in Gen 9 OU)
@@ -773,7 +774,9 @@ function computeLegalAbilitiesFromSim(
         ability,
         {}
       );
-      if (issue === null) legal.add(ability.name);
+      // checkAbility returns null for unmatched rules (legal), '' for a
+      // whitelist match (legal), or a non-empty string for a ban (illegal).
+      if (issue === null || issue === "") legal.add(ability.name);
     }
   } catch (error) {
     console.warn(

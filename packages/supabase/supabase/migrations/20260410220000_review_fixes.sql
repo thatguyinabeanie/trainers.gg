@@ -26,7 +26,7 @@ CREATE INDEX IF NOT EXISTS idx_format_meta_stats_format
 -- =============================================================================
 -- "players_delete_own_pokemon" was created in 20260201000002 and conflicts
 -- with the ownership-scoped "Users can delete pokemon" policy added in
--- 20260410152630_harden_pokemon_rls_and_fork_fk. Multiple permissive DELETE
+-- 20260410023632_add_pokemon_update_delete_rls. Multiple permissive DELETE
 -- policies on the same table cause a pg_multiple_permissive_policies warning
 -- and subtle behavioural differences. Drop the older one.
 

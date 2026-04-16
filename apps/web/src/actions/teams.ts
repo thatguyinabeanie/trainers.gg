@@ -311,7 +311,13 @@ export async function updatePokemonAction(
       error: getErrorMessage(error, "Failed to update pokemon"),
     };
   }
-  const parsedData = pokemonUpdateSchema.parse(data);
+  const parsedData = pokemonUpdateSchema.safeParse(data);
+  if (!parsedData.success) {
+    return {
+      success: false,
+      error: parsedData.error.issues[0]?.message ?? "Invalid pokemon data",
+    };
+  }
   const supabase = await createClient();
 
   // ---------------------------------------------------------------------------
@@ -336,7 +342,7 @@ export async function updatePokemonAction(
     }
     // Merge current fields with incoming updates so partial updates
     // (e.g. only changing item) still validate against the species
-    const merged = { ...currentPokemon, ...parsedData };
+    const merged = { ...currentPokemon, ...parsedData.data };
     const violation = findLegalityViolation(merged, team.format);
     if (violation) return { success: false, error: violation };
   }
@@ -346,7 +352,7 @@ export async function updatePokemonAction(
     await updatePokemonMutation(
       supabase,
       parsed.data.pokemonId,
-      parsedData as Partial<TablesUpdate<"pokemon">>
+      parsedData.data as Partial<TablesUpdate<"pokemon">>
     );
     invalidateTeamDetailCache(parsedTeam.data.teamId);
   }, "Failed to update pokemon");

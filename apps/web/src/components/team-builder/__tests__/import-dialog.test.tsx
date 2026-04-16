@@ -103,18 +103,36 @@ jest.mock("lucide-react", () => {
 // Imports (after mocks)
 // =============================================================================
 
-// Base UI Dialog applies scroll-lock styles and pointer-events restrictions to
-// <html>/<body> when a Sheet is open. If a test ends without formally closing
-// the Sheet these persist across tests, causing userEvent interactions to fail
-// in subsequent tests. Reset them after every test.
+// Use fake timers so Base UI's Sheet exit animations resolve instantly rather
+// than leaving stale portal nodes in the DOM between tests.
+beforeEach(() => {
+  jest.useFakeTimers();
+});
+
 afterEach(() => {
-  document.documentElement.removeAttribute("data-base-ui-scroll-locked");
-  document.body.style.removeProperty("overflow");
-  document.body.style.removeProperty("position");
-  document.body.style.removeProperty("height");
-  document.body.style.removeProperty("width");
-  document.body.style.removeProperty("box-sizing");
-  document.body.style.removeProperty("scroll-behavior");
+  // Flush any pending animation timers from the Sheet's close transition
+  jest.runAllTimers();
+  jest.useRealTimers();
+  // Reset all scroll-lock and inert attributes Base UI may have applied
+  for (const attr of [
+    "data-base-ui-scroll-locked",
+    "data-base-ui-inert",
+    "data-scroll-locked",
+  ]) {
+    document.documentElement.removeAttribute(attr);
+    document.body.removeAttribute(attr);
+  }
+  for (const prop of [
+    "overflow",
+    "position",
+    "height",
+    "width",
+    "box-sizing",
+    "scroll-behavior",
+    "pointer-events",
+  ]) {
+    document.body.style.removeProperty(prop);
+  }
 });
 
 import { ImportDialog } from "../import-dialog";
@@ -210,7 +228,7 @@ async function parsePaste(
 
 describe("ImportDialog", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     mockParseShowdownText.mockReturnValue([mockParsedPikachu]);
     mockParsePokepaseUrl.mockReturnValue(null);
     mockValidateTeamStructure.mockReturnValue([]);
@@ -327,7 +345,7 @@ describe("ImportDialog", () => {
     });
 
     it("Preview Team button is enabled after typing", async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<ImportDialog team={makeTeam()} {...defaultProps} />);
       await user.type(
         screen.getByLabelText("Showdown Paste"),
@@ -349,7 +367,7 @@ describe("ImportDialog", () => {
       // with an empty paste — simulate by temporarily enabling the button
       // via the component's internal check. We do this by firing the click
       // programmatically while text is whitespace.
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<ImportDialog team={makeTeam()} {...defaultProps} />);
 
       // Type then clear — leaves empty string, button stays disabled.
@@ -370,7 +388,7 @@ describe("ImportDialog", () => {
 
     it("does not show preview panel when parsing returns no results", async () => {
       mockParseShowdownText.mockReturnValueOnce([]);
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<ImportDialog team={makeTeam()} {...defaultProps} />);
       await user.type(
         screen.getByLabelText("Showdown Paste"),
@@ -392,7 +410,7 @@ describe("ImportDialog", () => {
 
   describe("Preview panel after successful parse", () => {
     it("transitions to preview mode showing species names", async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<ImportDialog team={makeTeam()} {...defaultProps} />);
       await parsePaste(user, "Pikachu @ Light Ball\nAbility: Static");
 
@@ -402,7 +420,7 @@ describe("ImportDialog", () => {
     });
 
     it("shows the preview count message", async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<ImportDialog team={makeTeam()} {...defaultProps} />);
       await parsePaste(user, "Pikachu @ Light Ball\nAbility: Static");
 
@@ -421,7 +439,7 @@ describe("ImportDialog", () => {
       mockValidateTeamStructure.mockReturnValue([
         { message: "Duplicate held items: Light Ball" },
       ]);
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<ImportDialog team={makeTeam()} {...defaultProps} />);
       await parsePaste(user, "Pikachu @ Light Ball\nAbility: Static");
 
@@ -446,7 +464,7 @@ describe("ImportDialog", () => {
   describe("Cancel button", () => {
     it("calls onOpenChange(false) when Cancel is clicked", async () => {
       const onOpenChange = jest.fn();
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(
         <ImportDialog
           team={makeTeam()}
@@ -477,7 +495,7 @@ describe("ImportDialog", () => {
     }
 
     it("Fetch & Preview button is disabled when URL input is empty", async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<ImportDialog team={makeTeam()} {...defaultProps} />);
       await switchToUrlTab(user);
       expect(
@@ -504,7 +522,7 @@ describe("ImportDialog", () => {
       // Simulate format that bans Booster Energy
       mockGetLegalItems.mockReturnValue(new Set(["Life Orb", "Leftovers"]));
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(
         <ImportDialog
           team={makeTeam()}
@@ -533,7 +551,7 @@ describe("ImportDialog", () => {
       mockParseShowdownText.mockReturnValueOnce([mockWithLegalItem]);
       mockGetLegalItems.mockReturnValue(new Set(["Life Orb", "Leftovers"]));
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(
         <ImportDialog
           team={makeTeam()}
@@ -560,7 +578,7 @@ describe("ImportDialog", () => {
       // permissive — no item banlist
       mockGetLegalItems.mockReturnValue(undefined);
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(
         <ImportDialog
           team={makeTeam()}
@@ -594,7 +612,7 @@ describe("ImportDialog", () => {
         new Set(["Thunderbolt", "Protect", "Fake Out"])
       );
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(
         <ImportDialog
           team={makeTeam()}
@@ -620,7 +638,7 @@ describe("ImportDialog", () => {
         new Set(["Thunderbolt", "Protect", "Fake Out"])
       );
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(
         <ImportDialog
           team={makeTeam()}
@@ -653,7 +671,7 @@ describe("ImportDialog", () => {
       // Empty set = no Tera allowed
       mockGetLegalTeraTypes.mockReturnValue(new Set());
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(
         <ImportDialog
           team={makeTeam()}
@@ -687,7 +705,7 @@ describe("ImportDialog", () => {
         new Set(["Fire", "Water", "Grass"])
       );
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(
         <ImportDialog
           team={makeTeam()}
@@ -721,7 +739,7 @@ describe("ImportDialog", () => {
       // Moody is illegal on Smeargle in Gen 9 OU
       mockIsLegalAbility.mockReturnValue(false);
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(
         <ImportDialog
           team={makeTeam()}
@@ -747,7 +765,7 @@ describe("ImportDialog", () => {
       mockParseShowdownText.mockReturnValueOnce([mockParsedPikachu]);
       mockIsLegalAbility.mockReturnValue(true);
 
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(
         <ImportDialog
           team={makeTeam()}
