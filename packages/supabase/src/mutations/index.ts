@@ -116,6 +116,8 @@ export {
 export {
   createDiscordServer,
   deleteDiscordServer,
+  resetNotificationForRetry,
+  resetDmForRetry,
   deleteDiscordServerByGuildId,
   upsertChannelMapping,
   deleteChannelMapping,

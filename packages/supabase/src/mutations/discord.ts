@@ -255,6 +255,47 @@ export async function deleteRoleMapping(
 }
 
 // =============================================================================
+// Retry helpers — reset queue items back to pending
+// =============================================================================
+
+/**
+ * Reset a channel notification queue item to pending for re-delivery.
+ * Sets status='pending', attempts=0, and clears failed_reason.
+ *
+ * @param id - discord_notification_queue.id to reset
+ */
+export async function resetNotificationForRetry(
+  supabase: TypedClient,
+  id: number
+): Promise<void> {
+  const { error } = await supabase
+    .from("discord_notification_queue")
+    .update({ status: "pending", attempts: 0, failed_reason: null })
+    .eq("id", id);
+
+  if (error)
+    throw new Error(`Failed to reset notification for retry: ${error.message}`);
+}
+
+/**
+ * Reset a DM queue item to pending for re-delivery.
+ * Sets status='pending', attempts=0, and clears failed_reason.
+ *
+ * @param id - discord_dm_queue.id to reset
+ */
+export async function resetDmForRetry(
+  supabase: TypedClient,
+  id: number
+): Promise<void> {
+  const { error } = await supabase
+    .from("discord_dm_queue")
+    .update({ status: "pending", attempts: 0, failed_reason: null })
+    .eq("id", id);
+
+  if (error) throw new Error(`Failed to reset DM for retry: ${error.message}`);
+}
+
+// =============================================================================
 // discord_channel_failures — failure tracking
 // =============================================================================
 
