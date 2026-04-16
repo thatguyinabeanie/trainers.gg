@@ -50,11 +50,16 @@ export function checkFormatChangeLegality(
     return { ok: true };
   }
 
-  const illegal = teamPokemon
-    .map((slot) => slot.pokemon?.species ?? null)
-    .filter(
-      (species): species is string => species !== null && !legalSet.has(species)
-    );
+  const illegal = [
+    ...new Set(
+      teamPokemon
+        .map((slot) => slot.pokemon?.species ?? null)
+        .filter(
+          (species): species is string =>
+            species !== null && !legalSet.has(species)
+        )
+    ),
+  ];
 
   if (illegal.length > 0) {
     return { ok: false, illegal };

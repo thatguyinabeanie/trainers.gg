@@ -44,7 +44,8 @@ function makeTeam(): TeamWithPokemon {
 
 function renderContextPanel(
   activeTab: "types" | "speed" | "calc" = "types",
-  onTabChange = jest.fn()
+  onTabChange = jest.fn(),
+  onClose = jest.fn()
 ) {
   render(
     <ContextPanel
@@ -52,9 +53,10 @@ function renderContextPanel(
       selectedPokemon={null}
       activeTab={activeTab}
       onTabChange={onTabChange}
+      onClose={onClose}
     />
   );
-  return { onTabChange };
+  return { onTabChange, onClose };
 }
 
 // =============================================================================
