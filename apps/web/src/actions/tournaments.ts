@@ -39,12 +39,17 @@ import {
   getCurrentUserAlts,
   getUserTeams,
   getUserRegistrationDetails,
+  // Phase management mutations
+  updatePhase as updatePhaseMutation,
+  createPhase as createPhaseMutation,
+  deletePhase as deletePhaseMutation,
+  saveTournamentPhases,
   // Queries (for prepareRound preview)
   getPhaseRoundsWithStats,
   getRoundMatchesWithStats,
   getDiscordServerByCommunityId,
 } from "@trainers/supabase";
-import type { Database } from "@trainers/supabase";
+import type { Enums } from "@trainers/supabase";
 import {
   type ActionResult,
   type DropCategory,
@@ -69,8 +74,8 @@ import {
   enqueueCommunityRoleSync,
 } from "@/lib/discord/enqueue-helpers";
 
-type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
-type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
+type TournamentFormat = Enums<"tournament_format">;
+type TournamentStatus = Enums<"tournament_status">;
 
 // =============================================================================
 // Discord fire-and-forget helper
@@ -312,11 +317,18 @@ export async function completeTournament(
         );
 
         const winnerPromise = (async () => {
-          const { data: winnerRows } = await supabase
+          const { data: winnerRows, error: winnerErr } = await supabase
             .from("tournament_standings")
             .select("alts(user_id)")
             .eq("tournament_id", tournamentId)
             .eq("rank", 1);
+
+          if (winnerErr) {
+            console.error("[completeTournament] Failed to fetch winner rows", {
+              tournamentId,
+              error: String(winnerErr),
+            });
+          }
 
           const winnerUserIds = (winnerRows ?? [])
             .map((row) => (row.alts as { user_id: string } | null)?.user_id)
@@ -964,7 +976,7 @@ export async function generatePairings(
       tournamentId,
       "generatePairings",
       async (t) => {
-        const { data: matches } = await supabase
+        const { data: matches, error: matchesErr } = await supabase
           .from("tournament_matches")
           .select(
             "id, alt1_id, alt2_id, is_bye, alt1:alts!tournament_matches_alt1_id_fkey(user_id, username), alt2:alts!tournament_matches_alt2_id_fkey(user_id, username)"
@@ -972,6 +984,13 @@ export async function generatePairings(
           .eq("round_id", roundId)
           .eq("is_bye", false);
 
+        if (matchesErr) {
+          console.error("[generatePairings] Failed to fetch matches", {
+            roundId,
+            error: String(matchesErr),
+          });
+          return;
+        }
         if (!matches || matches.length === 0) return;
 
         // Collect all player user IDs across matches, then batch-enqueue DMs
@@ -992,7 +1011,18 @@ export async function generatePairings(
             user_id: string;
             username: string;
           } | null;
-          if (!alt1 || !alt2) continue;
+          if (!alt1 || !alt2) {
+            // Guard against unexpected select shape — log so skips are visible
+            console.warn(
+              "[generatePairings] Match missing alt relation shape",
+              {
+                matchId: match.id,
+                hasAlt1: Boolean(alt1),
+                hasAlt2: Boolean(alt2),
+              }
+            );
+            continue;
+          }
 
           const playerUserIds = [alt1.user_id, alt2.user_id];
           allPlayerUserIds.push(...playerUserIds);
@@ -1126,7 +1156,9 @@ export async function dropPlayer(
 }
 
 /**
- * Drop yourself from the tournament (player self-service)
+ * Drop yourself from the tournament (player self-service).
+ * Finds the caller's registered alt for this specific tournament — avoids
+ * silently dropping the wrong alt when the user has multiple alts.
  */
 export async function dropFromTournament(
   tournamentId: number
@@ -1134,12 +1166,34 @@ export async function dropFromTournament(
   try {
     await rejectBots();
     const supabase = await createClient();
+
+    // Get all alts for the current user
     const alts = await getCurrentUserAlts(supabase);
-    const altId = alts[0]?.id;
-    if (!altId) {
+    if (!alts.length) {
       return { success: false, error: "No player profile found" };
     }
-    await dropPlayerMutation(supabase, tournamentId, altId);
+
+    const altIds = alts.map((a) => a.id);
+
+    // Find which alt (if any) is registered for this tournament
+    const { data: registration, error: regErr } = await supabase
+      .from("tournament_registrations")
+      .select("alt_id")
+      .eq("tournament_id", tournamentId)
+      .in("alt_id", altIds)
+      .not("status", "eq", "dropped")
+      .maybeSingle();
+
+    if (regErr) throw regErr;
+
+    if (!registration) {
+      return {
+        success: false,
+        error: "You are not registered for this tournament.",
+      };
+    }
+
+    await dropPlayerMutation(supabase, tournamentId, registration.alt_id);
     invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -1226,10 +1280,12 @@ export async function bulkForceCheckIn(
     }
 
     // Get registrations to verify they all belong to the same tournament
-    const { data: registrations } = await supabase
+    const { data: registrations, error: regsErr } = await supabase
       .from("tournament_registrations")
       .select("id, tournament_id")
       .in("id", registrationIds);
+
+    if (regsErr) throw regsErr;
 
     if (!registrations || registrations.length === 0) {
       throw new Error("No registrations found");
@@ -1298,10 +1354,12 @@ export async function bulkRemovePlayers(
     }
 
     // Get registrations to verify they all belong to the same tournament
-    const { data: registrations } = await supabase
+    const { data: registrations, error: regsErr } = await supabase
       .from("tournament_registrations")
       .select("id, tournament_id")
       .in("id", registrationIds);
+
+    if (regsErr) throw regsErr;
 
     if (!registrations || registrations.length === 0) {
       throw new Error("No registrations found");
@@ -1419,7 +1477,7 @@ export async function reportMatchResult(
         );
         if (!server) return;
 
-        const { data: match } = await supabase
+        const { data: match, error: matchErr } = await supabase
           .from("tournament_matches")
           .select(
             "id, alt1_id, alt2_id, alt1:alts!tournament_matches_alt1_id_fkey(user_id, username), alt2:alts!tournament_matches_alt2_id_fkey(user_id, username)"
@@ -1427,6 +1485,13 @@ export async function reportMatchResult(
           .eq("id", matchId)
           .single();
 
+        if (matchErr) {
+          console.error("[reportMatchResult] Failed to fetch match", {
+            matchId,
+            error: String(matchErr),
+          });
+          return;
+        }
         if (!match) return;
 
         const alt1 = match.alt1 as { user_id: string; username: string } | null;
@@ -1516,11 +1581,13 @@ export async function prepareRound(
     const supabase = await createClient();
 
     // Look up the phase type to determine which pairing algorithm to use
-    const { data: phaseData } = await supabase
+    const { data: phaseData, error: phaseErr } = await supabase
       .from("tournament_phases")
       .select("phase_type")
       .eq("id", phaseId)
       .single();
+
+    if (phaseErr) throw phaseErr;
 
     const isElimination = phaseData?.phase_type === "single_elimination";
 
@@ -1658,8 +1725,6 @@ export async function updatePhase(
   try {
     await rejectBots();
     const supabase = await createClient();
-    const { updatePhase: updatePhaseMutation } =
-      await import("@trainers/supabase");
     await updatePhaseMutation(supabase, phaseId, updates);
     invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
@@ -1689,8 +1754,6 @@ export async function createTournamentPhase(
   try {
     await rejectBots();
     const supabase = await createClient();
-    const { createPhase: createPhaseMutation } =
-      await import("@trainers/supabase");
     const result = await createPhaseMutation(supabase, tournamentId, phase);
     invalidateTournamentCaches(tournamentId);
     return { success: true, data: { phaseId: result.phase.id } };
@@ -1712,8 +1775,6 @@ export async function deleteTournamentPhase(
   try {
     await rejectBots();
     const supabase = await createClient();
-    const { deletePhase: deletePhaseMutation } =
-      await import("@trainers/supabase");
     await deletePhaseMutation(supabase, phaseId);
     invalidateTournamentCaches(tournamentId);
     return { success: true, data: { success: true } };
@@ -1752,7 +1813,6 @@ export async function saveTournamentPhasesAction(
   try {
     await rejectBots();
     const supabase = await createClient();
-    const { saveTournamentPhases } = await import("@trainers/supabase");
     const result = await saveTournamentPhases(supabase, tournamentId, phases);
     invalidateTournamentCaches(tournamentId);
     return {

@@ -51,6 +51,18 @@ jest.mock("@/lib/cache-invalidation", () => ({
     mockInvalidateCommunityPageCaches(...args),
 }));
 
+// Mock install-state signing. Preserve verifyInstallState shape to match the
+// global mock from test-setup — the override must provide the full module
+// surface so transitive imports don't see `undefined` for verifyInstallState.
+const mockSignInstallState = jest.fn();
+const mockVerifyInstallState = jest
+  .fn()
+  .mockResolvedValue({ community_id: 1, user_id: "mock-user" });
+jest.mock("@/lib/discord/install-state", () => ({
+  signInstallState: (...args: unknown[]) => mockSignInstallState(...args),
+  verifyInstallState: (...args: unknown[]) => mockVerifyInstallState(...args),
+}));
+
 // Mock @trainers/supabase
 const mockGetDiscordServerByCommunityId = jest.fn();
 const mockGetDiscordServerById = jest.fn();
@@ -123,6 +135,7 @@ import {
   disconnectDiscordServerAction,
   retryNotificationAction,
   listRecentFailuresAction,
+  getDiscordInstallUrlAction,
 } from "../discord-integration";
 
 // =============================================================================
@@ -881,6 +894,250 @@ describe("listRecentFailuresAction", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toBe("Failed to load failure details");
+    }
+  });
+});
+
+// =============================================================================
+// getDiscordInstallUrlAction
+// =============================================================================
+
+describe("getDiscordInstallUrlAction", () => {
+  const originalAppId = process.env.DISCORD_APPLICATION_ID;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.DISCORD_APPLICATION_ID = "test-app-id-123";
+    mockSignInstallState.mockResolvedValue("signed-state-token");
+  });
+
+  afterEach(() => {
+    process.env.DISCORD_APPLICATION_ID = originalAppId;
+  });
+
+  it("returns an error when the user is not authenticated", async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
+
+    const result = await getDiscordInstallUrlAction(1);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Not authenticated");
+    }
+  });
+
+  it("returns an error when DISCORD_APPLICATION_ID is not set", async () => {
+    delete process.env.DISCORD_APPLICATION_ID;
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: { id: "user-abc" } },
+    });
+
+    const result = await getDiscordInstallUrlAction(1);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Discord application is not configured");
+    }
+  });
+
+  it("returns a signed Discord OAuth2 URL with required parameters", async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: { id: "user-abc" } },
+    });
+
+    const result = await getDiscordInstallUrlAction(42);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const { url } = result.data;
+      expect(url).toContain("discord.com/api/oauth2/authorize");
+      expect(url).toContain("client_id=test-app-id-123");
+      expect(url).toContain("redirect_uri=");
+      expect(url).toContain("install-callback");
+      // scope "bot applications.commands" is URL-encoded in the query string
+      expect(url).toContain("scope=");
+      expect(url).toContain("bot");
+      expect(url).toContain("state=signed-state-token");
+    }
+  });
+
+  it("signs the state token with the correct communityId and userId", async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: { id: "user-xyz" } },
+    });
+
+    await getDiscordInstallUrlAction(7);
+
+    expect(mockSignInstallState).toHaveBeenCalledWith({
+      community_id: 7,
+      user_id: "user-xyz",
+    });
+  });
+});
+
+// =============================================================================
+// retryNotificationAction — role_sync branch and unknown type
+// =============================================================================
+
+describe("retryNotificationAction — role_sync and unknown type", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockStart.mockResolvedValue({ runId: "mock-run-id" });
+  });
+
+  const fakeRoleSyncFailure = {
+    id: 30,
+    discord_server_id: 99,
+    type: "role_sync",
+    event_type: "member_joined",
+    target: "discord-user-456",
+    error_code: "50013",
+    error_reason: "Missing permissions",
+    payload: { role_id: "discord-role-abc" },
+    delivered_via_fallback: false,
+    created_at: "2026-01-01T00:00:00Z",
+  };
+
+  it("dispatches syncRoleWorkflow with the role_id from the payload", async () => {
+    mockGetDeliveryFailure.mockResolvedValue(fakeRoleSyncFailure);
+    mockGetDiscordServerById.mockResolvedValue(fakeServer);
+    mockPermission(true);
+
+    const result = await retryNotificationAction(30);
+
+    expect(result).toEqual({ success: true, data: undefined });
+    expect(mockStart).toHaveBeenCalledTimes(1);
+    // Verify syncRoleWorkflow was called with the role_id from the payload
+    const [, args] = mockStart.mock.calls[0] as [unknown, unknown[]];
+    expect(args).toContain("discord-role-abc");
+    expect(args).toContain(fakeServer.guild_id);
+    expect(mockRevalidatePath).toHaveBeenCalled();
+  });
+
+  it("returns an error for an unknown failure type", async () => {
+    const unknownTypeFailure = {
+      ...fakeRoleSyncFailure,
+      id: 40,
+      type: "webhook" as string,
+    };
+    mockGetDeliveryFailure.mockResolvedValue(unknownTypeFailure);
+    mockGetDiscordServerById.mockResolvedValue(fakeServer);
+    mockPermission(true);
+
+    const result = await retryNotificationAction(40);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/unknown failure type/i);
+    }
+  });
+});
+
+// =============================================================================
+// upsertDmSettingAction — channel_only delivery mode
+// =============================================================================
+
+describe("upsertDmSettingAction — channel_only mode", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("saves channel_only mode with a required fallbackChannelId", async () => {
+    mockPermission(true);
+    mockGetDiscordServerByCommunityId.mockResolvedValue(fakeServer);
+    mockUpsertDmSetting.mockResolvedValue(undefined);
+
+    const result = await upsertDmSettingAction({
+      communityId: 1,
+      eventType: "match_ready",
+      deliveryMode: "channel_only",
+      fallbackChannelId: "channel-789",
+    });
+
+    expect(result).toEqual({ success: true, data: undefined });
+    expect(mockUpsertDmSetting).toHaveBeenCalledWith(mockSupabase, {
+      discord_server_id: 99,
+      event_type: "match_ready",
+      delivery_mode: "channel_only",
+      fallback_channel_id: "channel-789",
+    });
+  });
+
+  it("rejects channel_only mode when fallbackChannelId is missing", async () => {
+    const result = await upsertDmSettingAction({
+      communityId: 1,
+      eventType: "match_ready",
+      deliveryMode: "channel_only",
+      // fallbackChannelId intentionally omitted
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+// =============================================================================
+// deleteChannelMappingAction — array branch for discord_servers
+// =============================================================================
+
+describe("deleteChannelMappingAction — discord_servers returned as array", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("picks the first element when discord_servers is an array and deletes the mapping", async () => {
+    // Simulate Supabase returning discord_servers as an array
+    const mockChain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: {
+          id: 5,
+          discord_server_id: 99,
+          discord_servers: [{ community_id: 1 }, { community_id: 2 }],
+        },
+        error: null,
+      }),
+    };
+    mockSupabase.from.mockReturnValue(mockChain);
+    mockPermission(true);
+    mockDeleteChannelMapping.mockResolvedValue(undefined);
+
+    const result = await deleteChannelMappingAction(5);
+
+    expect(result).toEqual({ success: true, data: undefined });
+    // community_id 1 (first element) was used for the permission check
+    expect(mockRpc).toHaveBeenCalledWith("has_community_permission", {
+      p_community_id: 1,
+      permission_key: "community.manage",
+    });
+    expect(mockDeleteChannelMapping).toHaveBeenCalledWith(mockSupabase, 5);
+  });
+});
+
+// =============================================================================
+// upsertChannelMappingAction — throw path after permission passes
+// =============================================================================
+
+describe("upsertChannelMappingAction — upsertChannelMapping throws", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("returns a user-facing error when upsertChannelMapping throws", async () => {
+    mockPermission(true);
+    mockGetDiscordServerByCommunityId.mockResolvedValue(fakeServer);
+    mockUpsertChannelMapping.mockRejectedValue(new Error("DB write failed"));
+
+    const result = await upsertChannelMappingAction({
+      communityId: 1,
+      eventType: "tournament_created",
+      channelId: "123456",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      // getErrorMessage returns the fallback string in tests (mocked above)
+      expect(result.error).toBe("Failed to save channel mapping");
     }
   });
 });

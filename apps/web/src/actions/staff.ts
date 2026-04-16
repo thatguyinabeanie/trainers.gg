@@ -22,6 +22,7 @@ import { getErrorMessage } from "@trainers/utils";
 import { createClient } from "@/lib/supabase/server";
 import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
 import { enqueueCommunityRoleSync } from "@/lib/discord/enqueue-helpers";
+import { rejectBots } from "./utils";
 
 // =============================================================================
 // Staff Search
@@ -73,6 +74,7 @@ export async function inviteStaffMember(
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await addStaffMemberMutation(supabase, communityId, userId);
 
@@ -108,6 +110,7 @@ export async function inviteStaffToGroup(
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await addStaffToGroupMutation(supabase, communityId, userId, groupId);
 
@@ -143,6 +146,7 @@ export async function changeStaffRoleAction(
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await changeRoleMutation(supabase, communityId, userId, newGroupId);
 
@@ -179,6 +183,7 @@ export async function removeStaffAction(
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await removeStaffMutation(supabase, communityId, userId);
 
@@ -214,6 +219,7 @@ export async function unassignStaffAction(
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await removeStaffFromGroupMutation(supabase, communityId, userId);
 

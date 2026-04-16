@@ -65,9 +65,38 @@ export async function createTeamAction(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
-  return withAction(async () => {
+
+  try {
     await rejectBots();
-    const supabase = await createClient();
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to create team"),
+    };
+  }
+
+  const supabase = await createClient();
+
+  // ---------------------------------------------------------------------------
+  // Defense-in-depth: verify the caller owns this alt before inserting.
+  // RLS on `teams` blocks the INSERT if altId isn't owned by the caller,
+  // but that surfaces a raw Postgres error. We return a clean 403-style
+  // message here so callers get a meaningful response.
+  // ---------------------------------------------------------------------------
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: ownedAlt } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("id", parsed.data.altId)
+    .eq("user_id", user?.id ?? "")
+    .maybeSingle();
+  if (!ownedAlt) {
+    return { success: false, error: "You do not own this alt." };
+  }
+
+  return withAction(async () => {
     const result = await createTeamMutation(
       supabase,
       parsed.data.altId,
@@ -337,9 +366,12 @@ export async function updatePokemonAction(
   }
 
   return withAction(async () => {
-    // Only the actual mutation remains inside withAction
+    // Only the actual mutation remains inside withAction.
+    // teamId is passed so updatePokemonMutation can verify the binding
+    // at the SQL level (team_pokemon join), not just in memory.
     await updatePokemonMutation(
       supabase,
+      parsedTeam.data.teamId,
       parsed.data.pokemonId,
       parsedData.data as Partial<TablesUpdate<"pokemon">>
     );

@@ -100,6 +100,16 @@ const setDmPreferenceSchema = z.object({
   enabled: z.boolean(),
 });
 
+// Payload schemas for discord_delivery_failures — each failure type carries a
+// different shape. Validated at retry time to catch malformed DB rows early.
+const channelFailurePayloadSchema = z.record(z.string(), z.unknown());
+
+const dmFailurePayloadSchema = z.record(z.string(), z.unknown());
+
+const roleSyncFailurePayloadSchema = z.object({
+  role_id: z.string().min(1, "role_id is required for role_sync retry"),
+});
+
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -674,39 +684,58 @@ export async function retryNotificationAction(
 
     await requireCommunityManage(supabase, server.community_id);
 
-    const payload = (failure.payload as Record<string, unknown>) ?? {};
-
     switch (failure.type) {
-      case "channel":
+      case "channel": {
+        const parsed = channelFailurePayloadSchema.safeParse(failure.payload);
+        if (!parsed.success) {
+          return { success: false, error: "Invalid notification payload" };
+        }
         await start(sendChannelNotificationWorkflow, [
           failure.target,
           failure.event_type,
-          payload,
+          parsed.data,
           server.id,
         ]);
         break;
-      case "dm":
+      }
+      case "dm": {
+        const parsed = dmFailurePayloadSchema.safeParse(failure.payload);
+        if (!parsed.success) {
+          return { success: false, error: "Invalid notification payload" };
+        }
         await start(sendDmWorkflow, [
           failure.target,
           "",
           failure.event_type as DiscordDmEventType,
-          payload,
+          parsed.data,
           "dm_with_fallback",
           null,
           server.community_id,
           server.id,
         ]);
         break;
-      case "role_sync":
+      }
+      case "role_sync": {
+        const parsed = roleSyncFailurePayloadSchema.safeParse(failure.payload);
+        if (!parsed.success) {
+          return { success: false, error: "Invalid notification payload" };
+        }
+        if (!parsed.data.role_id) {
+          return {
+            success: false,
+            error: "Missing role_id in role_sync payload",
+          };
+        }
         await start(syncRoleWorkflow, [
           server.guild_id,
           failure.target,
-          (payload["role_id"] as string | undefined) ?? "",
+          parsed.data.role_id,
           "add",
           server.id,
           failure.event_type,
         ]);
         break;
+      }
       default:
         return {
           success: false,

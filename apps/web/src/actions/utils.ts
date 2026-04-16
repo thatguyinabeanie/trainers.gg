@@ -39,6 +39,7 @@ export async function withAction<T>(
     return { success: true, data };
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error("[server-action] validation error", error.flatten());
       return {
         success: false,
         error: error.errors[0]?.message ?? "Invalid input",

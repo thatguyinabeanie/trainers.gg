@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getFormatById } from "@trainers/pokemon";
-import { getAltByUsername, getTeamWithPokemon } from "@trainers/supabase";
+import { getTeamWithPokemon } from "@trainers/supabase";
 
 import { createClientReadOnly } from "@/lib/supabase/server";
 import { TeamWorkspace } from "@/components/team-builder/team-workspace";
@@ -26,7 +26,7 @@ interface TeamWorkspacePageProps {
 export default async function TeamWorkspacePage({
   params,
 }: TeamWorkspacePageProps) {
-  const { username, teamId } = await params;
+  const { teamId } = await params;
 
   const numericTeamId = Number(teamId);
   if (Number.isNaN(numericTeamId)) {
@@ -34,17 +34,10 @@ export default async function TeamWorkspacePage({
   }
 
   // Layout validates auth and ownership. Re-fetch here because App Router can't pass data from layout to page.
+  // The alt fetch is intentionally omitted — the page does not use it; the
+  // layout already fetched it and enforced ownership.
   const supabase = await createClientReadOnly();
-
-  // Fetch the alt and team in parallel — they are independent
-  const [alt, team] = await Promise.all([
-    getAltByUsername(supabase, username),
-    getTeamWithPokemon(supabase, numericTeamId),
-  ]);
-
-  if (!alt) {
-    notFound();
-  }
+  const team = await getTeamWithPokemon(supabase, numericTeamId);
 
   if (!team) {
     notFound();

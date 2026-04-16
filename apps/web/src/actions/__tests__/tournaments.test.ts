@@ -1382,14 +1382,31 @@ describe("dropPlayer", () => {
 // ── dropFromTournament ─────────────────────────────────────────────────────
 
 describe("dropFromTournament", () => {
-  it("drops self using first alt and revalidates tournament", async () => {
-    mockGetCurrentUserAlts.mockResolvedValue([{ id: 3, user_id: "user-123" }]);
+  it("drops the registered alt (not just first alt) and revalidates", async () => {
+    // User has two alts; alt_id 7 is the one registered for tournament 5
+    mockGetCurrentUserAlts.mockResolvedValue([
+      { id: 3, user_id: "user-123" },
+      { id: 7, user_id: "user-123" },
+    ]);
     mockDropPlayer.mockResolvedValue(undefined);
+
+    // Mock the tournament_registrations lookup
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      not: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { alt_id: 7 },
+        error: null,
+      }),
+    });
 
     const result = await dropFromTournament(5);
 
     expect(result).toEqual({ success: true, data: { success: true } });
-    expect(mockDropPlayer).toHaveBeenCalledWith(mockSupabase, 5, 3);
+    // Must use the registered alt (7), not the first alt (3)
+    expect(mockDropPlayer).toHaveBeenCalledWith(mockSupabase, 5, 7);
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:5");
   });
 
@@ -1404,9 +1421,43 @@ describe("dropFromTournament", () => {
     });
   });
 
+  it("returns error when no alt is registered for this tournament", async () => {
+    mockGetCurrentUserAlts.mockResolvedValue([{ id: 3, user_id: "user-123" }]);
+
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      not: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: null,
+        error: null,
+      }),
+    });
+
+    const result = await dropFromTournament(5);
+
+    expect(result).toEqual({
+      success: false,
+      error: "You are not registered for this tournament.",
+    });
+    expect(mockDropPlayer).not.toHaveBeenCalled();
+  });
+
   it("returns error when drop mutation throws", async () => {
     mockGetCurrentUserAlts.mockResolvedValue([{ id: 3, user_id: "user-123" }]);
     mockDropPlayer.mockRejectedValue(new Error("already dropped"));
+
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      not: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { alt_id: 3 },
+        error: null,
+      }),
+    });
 
     const result = await dropFromTournament(5);
 

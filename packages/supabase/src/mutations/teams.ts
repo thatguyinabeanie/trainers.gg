@@ -125,13 +125,38 @@ export async function addPokemonToTeam(
 /**
  * Update a pokemon's data — moves, EVs, IVs, ability, item, etc.
  * Only the fields provided in `data` will be updated.
- * Throws if no row was affected (pokemon not found or RLS denied).
+ *
+ * `teamId` is required as a defense-in-depth guard: before updating, we
+ * verify that `pokemonId` is linked to `teamId` via a `team_pokemon` row.
+ * This explicit cross-team binding check prevents updates across teams
+ * even for publicly readable teams. RLS still enforces ownership independently.
+ *
+ * Throws if the pokemon is not on this team, not found, or RLS denied.
  */
 export async function updatePokemon(
   supabase: TypedClient,
+  teamId: number,
   pokemonId: number,
   data: Partial<TablesUpdate<"pokemon">>
 ): Promise<void> {
+  // Verify the pokemonId belongs to teamId at the database level.
+  // This closes the cross-team binding gap for publicly readable teams:
+  // even if an attacker supplies a pokemonId from a different team, the
+  // binding check here will fail before the UPDATE runs.
+  const { data: binding, error: bindingError } = await supabase
+    .from("team_pokemon")
+    .select("pokemon_id")
+    .eq("team_id", teamId)
+    .eq("pokemon_id", pokemonId)
+    .maybeSingle();
+
+  if (bindingError)
+    throw new Error(
+      `Failed to verify pokemon on team: ${bindingError.message}`
+    );
+  if (!binding)
+    throw new Error("Pokemon not found on this team or not authorized");
+
   const { data: rows, error } = await supabase
     .from("pokemon")
     .update(data)
@@ -140,7 +165,7 @@ export async function updatePokemon(
 
   if (error) throw new Error(`Failed to update pokemon: ${error.message}`);
   if (!rows || rows.length === 0)
-    throw new Error("Pokemon not found or not authorized");
+    throw new Error("Pokemon not found on this team or not authorized");
 }
 
 /**

@@ -18,6 +18,17 @@ jest.mock("next/headers", () => ({
   })),
 }));
 
+// Chainable query builder factory — used when tests need mockSupabase.from()
+// to behave like a real Supabase query builder.
+const createMockQueryBuilder = () => {
+  const qb = {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+  };
+  return qb;
+};
+
 // Sentinel Supabase client — passed through to mutations so we can assert it
 const mockSupabase = {
   auth: { getUser: jest.fn() },
@@ -122,6 +133,19 @@ function simulateBot() {
 describe("createTeamAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: caller is authenticated as user "user-123"
+    (mockSupabase.auth.getUser as ReturnType<typeof jest.fn>).mockResolvedValue(
+      { data: { user: { id: "user-123" } } }
+    );
+    // Default: caller owns the alt (from("alts") returns a row)
+    const mockAltQb = createMockQueryBuilder();
+    mockAltQb.maybeSingle.mockResolvedValue({
+      data: { id: 7 },
+      error: null,
+    });
+    (mockSupabase.from as ReturnType<typeof jest.fn>).mockReturnValue(
+      mockAltQb
+    );
   });
 
   it("creates a team and returns the new id", async () => {
@@ -159,6 +183,23 @@ describe("createTeamAction", () => {
     const result = await createTeamAction(0, "Rain Team", "vgc2025");
 
     expect(result).toEqual({ success: false, error: expect.any(String) });
+    expect(mockCreateTeam).not.toHaveBeenCalled();
+  });
+
+  it("returns 'You do not own this alt.' when the caller does not own the altId", async () => {
+    // Ownership check returns no row — caller doesn't own this alt
+    const mockAltQb = createMockQueryBuilder();
+    mockAltQb.maybeSingle.mockResolvedValue({ data: null, error: null });
+    (mockSupabase.from as ReturnType<typeof jest.fn>).mockReturnValue(
+      mockAltQb
+    );
+
+    const result = await createTeamAction(7, "Rain Team", "vgc2025");
+
+    expect(result).toEqual({
+      success: false,
+      error: "You do not own this alt.",
+    });
     expect(mockCreateTeam).not.toHaveBeenCalled();
   });
 });
@@ -484,7 +525,8 @@ describe("updatePokemonAction", () => {
     const result = await updatePokemonAction(1, 55, { nickname: "Sparky" });
 
     expect(result).toEqual({ success: true, data: undefined });
-    expect(mockUpdatePokemon).toHaveBeenCalledWith(mockSupabase, 55, {
+    // teamId (1) is now passed to the mutation so it can verify the binding
+    expect(mockUpdatePokemon).toHaveBeenCalledWith(mockSupabase, 1, 55, {
       nickname: "Sparky",
     });
   });
@@ -527,6 +569,33 @@ describe("updatePokemonAction", () => {
     expect(result).toEqual({
       success: false,
       error: "Team not found. It may have been deleted.",
+    });
+    expect(mockUpdatePokemon).not.toHaveBeenCalled();
+  });
+
+  it("rejects when pokemonId exists but is not on the specified teamId", async () => {
+    // Team exists but the pokemon slot for pokemonId 99 is NOT on team 1.
+    // The in-memory guard (team.team_pokemon.find) returns undefined, so the
+    // action should return an error before calling the mutation.
+    mockGetTeamWithPokemon.mockResolvedValue({
+      id: 1,
+      format: "gen9vgc2025regg",
+      team_pokemon: [
+        {
+          id: 1,
+          pokemon_id: 55, // only pokemonId 55 is on this team
+          team_position: 1,
+          pokemon: { id: 55, species: "Pikachu", ability: "Static" },
+        },
+      ],
+    });
+
+    // Attempt to update pokemonId 99, which belongs to a different team
+    const result = await updatePokemonAction(1, 99, { nickname: "Impostor" });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Pokemon not found on this team.",
     });
     expect(mockUpdatePokemon).not.toHaveBeenCalled();
   });

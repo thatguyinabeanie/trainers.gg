@@ -9,6 +9,16 @@ jest.mock("botid/server", () => ({
   checkBotId: jest.fn().mockResolvedValue({ isBot: false }),
 }));
 
+// Mock rejectBots while preserving the rest of ../utils (withAction, etc.)
+const mockRejectBots = jest.fn().mockResolvedValue(undefined);
+jest.mock("../utils", () => {
+  const actual = jest.requireActual("../utils") as Record<string, unknown>;
+  return {
+    ...actual,
+    rejectBots: (...args: unknown[]) => mockRejectBots(...args),
+  };
+});
+
 // Mock Supabase client
 const mockSupabase = {
   auth: { getUser: jest.fn() },

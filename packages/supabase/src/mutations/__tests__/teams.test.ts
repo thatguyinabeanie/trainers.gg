@@ -324,50 +324,144 @@ describe("teams mutations", () => {
   // ==========================================================================
 
   describe("updatePokemon", () => {
-    it("updates the pokemon row by pokemonId and selects id for row-count check", async () => {
-      const mockClient = createMockClient();
-      // update().eq("id", ...).select("id") resolves to { data: [{ id: 55 }], error: null }
-      mockClient._queryBuilder.select.mockResolvedValue({
-        data: [{ id: 55 }],
-        error: null,
+    /**
+     * Build a mock client where from("team_pokemon") and from("pokemon")
+     * return independent query builders so the two sequential chains don't
+     * interfere with each other.
+     */
+    const createUpdatePokemonMockClient = ({
+      bindingData,
+      bindingError,
+      updateData,
+      updateError,
+    }: {
+      bindingData: unknown;
+      bindingError: unknown;
+      updateData: unknown;
+      updateError: unknown;
+    }) => {
+      // Builder for the team_pokemon binding check
+      const teamPokemonQb = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest
+          .fn()
+          .mockResolvedValue({ data: bindingData, error: bindingError }),
+      };
+
+      // Builder for the pokemon update
+      const pokemonQb = {
+        update: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        select: jest
+          .fn()
+          .mockResolvedValue({ data: updateData, error: updateError }),
+      };
+
+      const fromMock = jest.fn((table: string) => {
+        if (table === "team_pokemon") return teamPokemonQb;
+        if (table === "pokemon") return pokemonQb;
+        return {};
       });
 
-      await updatePokemon(mockClient, 55, {
+      return {
+        from: fromMock,
+        _teamPokemonQb: teamPokemonQb,
+        _pokemonQb: pokemonQb,
+      } as unknown as TypedClient & {
+        _teamPokemonQb: typeof teamPokemonQb;
+        _pokemonQb: typeof pokemonQb;
+      };
+    };
+
+    it("verifies team_pokemon binding then updates the pokemon row", async () => {
+      const mockClient = createUpdatePokemonMockClient({
+        bindingData: { pokemon_id: 55 },
+        bindingError: null,
+        updateData: [{ id: 55 }],
+        updateError: null,
+      });
+
+      await updatePokemon(mockClient as unknown as TypedClient, 3, 55, {
         species: "Koraidon",
         move1: "Collision Course",
       });
 
-      expect(mockClient.from).toHaveBeenCalledWith("pokemon");
-      expect(mockClient._queryBuilder.update).toHaveBeenCalledWith({
+      // Binding check: from("team_pokemon") with correct filters
+      expect(mockClient.from).toHaveBeenNthCalledWith(1, "team_pokemon");
+      expect(mockClient._teamPokemonQb.eq).toHaveBeenCalledWith("team_id", 3);
+      expect(mockClient._teamPokemonQb.eq).toHaveBeenCalledWith(
+        "pokemon_id",
+        55
+      );
+      // Update: from("pokemon") with correct payload
+      expect(mockClient.from).toHaveBeenNthCalledWith(2, "pokemon");
+      expect(mockClient._pokemonQb.update).toHaveBeenCalledWith({
         species: "Koraidon",
         move1: "Collision Course",
       });
-      expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith("id", 55);
-      expect(mockClient._queryBuilder.select).toHaveBeenCalledWith("id");
+      expect(mockClient._pokemonQb.eq).toHaveBeenCalledWith("id", 55);
+      expect(mockClient._pokemonQb.select).toHaveBeenCalledWith("id");
     });
 
-    it("throws when update fails", async () => {
-      const mockClient = createMockClient();
-      mockClient._queryBuilder.select.mockResolvedValue({
-        data: null,
-        error: { message: "row not found" },
+    it("throws when the team_pokemon binding check returns no row", async () => {
+      const mockClient = createUpdatePokemonMockClient({
+        bindingData: null,
+        bindingError: null,
+        updateData: null,
+        updateError: null,
       });
 
       await expect(
-        updatePokemon(mockClient, 55, { species: "Koraidon" })
+        updatePokemon(mockClient as unknown as TypedClient, 3, 55, {
+          species: "Koraidon",
+        })
+      ).rejects.toThrow("Pokemon not found on this team or not authorized");
+    });
+
+    it("throws when the binding query itself errors", async () => {
+      const mockClient = createUpdatePokemonMockClient({
+        bindingData: null,
+        bindingError: { message: "permission denied" },
+        updateData: null,
+        updateError: null,
+      });
+
+      await expect(
+        updatePokemon(mockClient as unknown as TypedClient, 3, 55, {
+          species: "Koraidon",
+        })
+      ).rejects.toThrow("Failed to verify pokemon on team: permission denied");
+    });
+
+    it("throws when update fails", async () => {
+      const mockClient = createUpdatePokemonMockClient({
+        bindingData: { pokemon_id: 55 },
+        bindingError: null,
+        updateData: null,
+        updateError: { message: "row not found" },
+      });
+
+      await expect(
+        updatePokemon(mockClient as unknown as TypedClient, 3, 55, {
+          species: "Koraidon",
+        })
       ).rejects.toThrow("Failed to update pokemon: row not found");
     });
 
     it("throws when no rows are returned (pokemon not found or RLS denied)", async () => {
-      const mockClient = createMockClient();
-      mockClient._queryBuilder.select.mockResolvedValue({
-        data: [],
-        error: null,
+      const mockClient = createUpdatePokemonMockClient({
+        bindingData: { pokemon_id: 55 },
+        bindingError: null,
+        updateData: [],
+        updateError: null,
       });
 
       await expect(
-        updatePokemon(mockClient, 55, { species: "Koraidon" })
-      ).rejects.toThrow("Pokemon not found or not authorized");
+        updatePokemon(mockClient as unknown as TypedClient, 3, 55, {
+          species: "Koraidon",
+        })
+      ).rejects.toThrow("Pokemon not found on this team or not authorized");
     });
   });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -90,6 +91,8 @@ export function ChannelMappingTable({
   serverId,
   communityId,
 }: ChannelMappingTableProps) {
+  const router = useRouter();
+
   // Optimistic state — start with the server-provided mappings
   const [mappings, setMappings] =
     useState<DiscordChannelMapping[]>(channelMappings);
@@ -153,33 +156,49 @@ export function ChannelMappingTable({
   function handleAdd() {
     if (!addEventType || !addChannelId) return;
 
+    // Capture values before the async transition clears them
+    const eventType = addEventType;
+    const channelId = addChannelId;
+
+    // Use a sentinel ID so edit/delete on this row are disabled until the real
+    // ID is available from the server (via router.refresh()).
+    const sentinelId = `optimistic-${crypto.randomUUID()}` as unknown as number;
+
+    // Immediately show the row in the table so the UI feels responsive
+    setMappings((ms) => [
+      ...ms,
+      {
+        id: sentinelId,
+        discord_server_id: serverId,
+        event_type: eventType as unknown as DiscordDmEventType,
+        channel_id: channelId,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    setAddEventType("");
+    setAddChannelId("");
+
     startAddTransition(async () => {
       const result = await upsertChannelMappingAction({
         communityId,
-        eventType: addEventType,
-        channelId: addChannelId,
+        eventType,
+        channelId,
       });
 
       if (!result.success) {
         toast.error(result.error);
+        // Roll back the optimistic row
+        setMappings((ms) => ms.filter((m) => m.id !== sentinelId));
+        // Restore form fields so the user can retry
+        setAddEventType(eventType);
+        setAddChannelId(channelId);
         return;
       }
 
-      // Optimistically add the new row (server will revalidate with real id on next load)
-      setMappings((ms) => [
-        ...ms,
-        {
-          id: result.data.id, // best-effort id from server
-          discord_server_id: serverId,
-          event_type: addEventType as unknown as DiscordDmEventType,
-          channel_id: addChannelId,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-
-      setAddEventType("");
-      setAddChannelId("");
       toast.success("Channel mapping added");
+      // Replace the sentinel row with the real row from the server
+      router.refresh();
     });
   }
 
@@ -214,8 +233,16 @@ export function ChannelMappingTable({
                   label: mapping.event_type,
                   description: "",
                 };
+                // Sentinel IDs are strings cast to number — detect by typeof after
+                // cast back. Optimistic rows must not allow edit/delete until the
+                // real ID is populated via router.refresh().
+                const isOptimistic =
+                  typeof (mapping.id as unknown) === "string";
                 return (
-                  <TableRow key={mapping.id}>
+                  <TableRow
+                    key={String(mapping.id)}
+                    className={cn(isOptimistic && "opacity-60")}
+                  >
                     <TableCell>
                       <p className="font-medium">{meta.label}</p>
                       <p className="text-muted-foreground text-xs">
@@ -226,6 +253,7 @@ export function ChannelMappingTable({
                       <div className="flex items-center gap-1">
                         <Select
                           value={mapping.channel_id}
+                          disabled={isOptimistic}
                           onValueChange={(val) => {
                             if (val) handleChannelChange(mapping.id, val);
                           }}
@@ -251,6 +279,7 @@ export function ChannelMappingTable({
                         size="icon"
                         aria-label="Remove mapping"
                         className="size-8"
+                        disabled={isOptimistic}
                         onClick={() => handleDelete(mapping.id)}
                       >
                         <X className="size-4" />
