@@ -44,7 +44,11 @@ Path-scoped rules in `.claude/rules/` load automatically when working with match
 | Rule                       | Applies To                                                                    |
 | -------------------------- | ----------------------------------------------------------------------------- |
 | `code-style.md`            | All TypeScript/TSX files (`**/*.{ts,tsx}`)                                    |
+| `react-patterns.md`        | All TSX files (`**/*.tsx`)                                                    |
 | `architecture.md`          | All shared packages (`packages/**/*`)                                         |
+| `nextjs-conventions.md`    | Web app files (`apps/web/**/*`)                                               |
+| `mobile-conventions.md`    | Mobile app files (`apps/mobile/**/*`)                                         |
+| `supabase-patterns.md`     | Supabase client code (`packages/supabase/**/*`, `supabase/**/*`)              |
 | `testing-philosophy.md`    | All test files (`**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`, `**/e2e/**`) |
 | `shadcn-ui-primitives.md`  | shadcn/ui component files (`apps/web/src/components/ui/**`)                   |
 | `web-ui-catalog.md`        | All web app TS/TSX files (`apps/web/src/**/*.{ts,tsx}`)                       |
@@ -206,6 +210,14 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 
 **Never deploy edge functions manually.** They deploy automatically during the Vercel build. Never declare in `config.toml`. See `creating-edge-functions` skill for details.
 
+### Scope Discipline
+
+**Only modify files explicitly in scope for the current task.** Do NOT run `pnpm format`, `pnpm lint --fix`, or other repo-wide formatters unless explicitly asked. When dispatching subagents, pass an explicit file allowlist and forbid edits outside it. If unrelated changes sneak in, revert them before committing.
+
+### Completion Claims
+
+**Never declare a PR "ready to merge" before every review thread is resolved and CI is green.** For PR-feedback work, use the `reviewing-pr-feedback` skill — it enforces fetch-all-comments → group → fix → reply → resolve → re-review before completion.
+
 ## Product Vision
 
 trainers.gg is the all-in-one integrated platform for Pokemon fans — one place that connects tools that currently exist in isolation. Not an esports site. Community-first. See `product-vision` and `competitive-landscape` skills for full details.
@@ -226,7 +238,7 @@ When executing implementation plans, always use **subagent-driven development** 
 
 ### Memory
 
-When saving memories (user preferences, feedback, project context), write them to `~/.claude/CLAUDE.md` (the user's private global instructions file), not to the project CLAUDE.md.
+When saving memories (user preferences, feedback, project context), write them to `.claude/CLAUDE.md` (the project-local memories file, checked into the repo). Do NOT write to `~/.claude/CLAUDE.md` — personal preferences stay project-scoped.
 
 If mempalace MCP is available, store design decisions, architecture rationale, and discussion outcomes via `mcp__mempalace__mempalace_add_drawer` with `wing=trainers_gg`. Write session summaries via `mcp__mempalace__mempalace_diary_write`. See `using-mempalace` skill for tool reference, room selection, and what NOT to store.
 
