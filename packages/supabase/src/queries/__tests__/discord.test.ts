@@ -12,9 +12,6 @@ import {
   getRoleMapping,
   getEnabledRoleMappings,
   getChannelFailureCount,
-  listPendingNotifications,
-  listPendingDmNotifications,
-  listPendingRoleSyncs,
   getUserByDiscordId,
   searchTournamentsInCommunity,
   searchUserActiveTournamentRegistrations,
@@ -447,89 +444,6 @@ describe("discord queries", () => {
       await expect(
         getChannelFailureCount(mockClient, 1, "ch-123")
       ).rejects.toThrow("Failed to get channel failure count");
-    });
-  });
-
-  // ===========================================================================
-  // listPendingNotifications
-  // ===========================================================================
-
-  describe("listPendingNotifications", () => {
-    it("filters by status=pending and applies the default limit of 100", async () => {
-      const eqMock = jest.fn().mockReturnThis();
-      const orderMock = jest.fn().mockReturnThis();
-      const limitMock = jest.fn().mockResolvedValue({ data: [], error: null });
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: eqMock,
-        order: orderMock,
-        limit: limitMock,
-      } as unknown as ReturnType<TypedClient["from"]>);
-
-      await listPendingNotifications(mockClient);
-
-      expect(eqMock).toHaveBeenCalledWith("status", "pending");
-      expect(limitMock).toHaveBeenCalledWith(100);
-    });
-
-    it("accepts a custom limit", async () => {
-      const limitMock = jest.fn().mockResolvedValue({ data: [], error: null });
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockReturnThis(),
-        limit: limitMock,
-      } as unknown as ReturnType<TypedClient["from"]>);
-
-      await listPendingNotifications(mockClient, 25);
-
-      expect(limitMock).toHaveBeenCalledWith(25);
-    });
-  });
-
-  // ===========================================================================
-  // listPendingDmNotifications
-  // ===========================================================================
-
-  describe("listPendingDmNotifications", () => {
-    it("filters by status=pending and queries discord_dm_queue", async () => {
-      const eqMock = jest.fn().mockReturnThis();
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: eqMock,
-        order: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-
-      await listPendingDmNotifications(mockClient);
-
-      expect(fromSpy).toHaveBeenCalledWith("discord_dm_queue");
-      expect(eqMock).toHaveBeenCalledWith("status", "pending");
-    });
-  });
-
-  // ===========================================================================
-  // listPendingRoleSyncs
-  // ===========================================================================
-
-  describe("listPendingRoleSyncs", () => {
-    it("filters by status=pending and queries discord_role_sync_queue", async () => {
-      const eqMock = jest.fn().mockReturnThis();
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: eqMock,
-        order: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-
-      await listPendingRoleSyncs(mockClient);
-
-      expect(fromSpy).toHaveBeenCalledWith("discord_role_sync_queue");
-      expect(eqMock).toHaveBeenCalledWith("status", "pending");
     });
   });
 
@@ -1186,32 +1100,26 @@ describe("discord queries", () => {
   // ===========================================================================
 
   describe("listRecentFailures", () => {
+    // Helper: builds the mock chain for the single discord_delivery_failures
+    // query: .select("*").eq().gte().order().limit()
+    function mockDeliveryFailures(
+      rows: unknown[],
+      error: unknown = null
+    ): ReturnType<TypedClient["from"]> {
+      const limitMock = jest.fn().mockResolvedValue({ data: rows, error });
+      const orderMock = jest.fn().mockReturnValue({ limit: limitMock });
+      const gteMock = jest.fn().mockReturnValue({ order: orderMock });
+      const eqMock = jest.fn().mockReturnValue({ gte: gteMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
+      return { select: selectMock } as unknown as ReturnType<
+        TypedClient["from"]
+      >;
+    }
+
     it("returns empty arrays when no failures exist", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-
-      // channel failures query
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        gt: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-
-      // dm failures query
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-
-      // role sync failures query
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
+      jest
+        .spyOn(mockClient, "from")
+        .mockReturnValueOnce(mockDeliveryFailures([]));
 
       const result = await listRecentFailures(mockClient, 1);
 
@@ -1220,35 +1128,29 @@ describe("discord queries", () => {
       expect(result.roleSyncs).toEqual([]);
     });
 
-    it("maps channel failure rows to ChannelFailureRow shape with null fields", async () => {
-      const rawChannelFailure = {
-        id: 1,
-        channel_id: "ch-999",
-        consecutive_failures: 5,
-        last_failed_at: "2026-04-14T10:00:00Z",
-      };
+    it("queries discord_delivery_failures table with server filter", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockReturnValueOnce(mockDeliveryFailures([]));
 
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        gt: jest
-          .fn()
-          .mockResolvedValue({ data: [rawChannelFailure], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
+      await listRecentFailures(mockClient, 42);
+
+      expect(fromSpy).toHaveBeenCalledWith("discord_delivery_failures");
+    });
+
+    it("partitions channel rows into channels array", async () => {
+      const channelRow = {
+        id: 1,
+        type: "channel",
+        target: "ch-999",
+        event_type: "match_ready",
+        error_code: null,
+        error_reason: null,
+        delivered_via_fallback: false,
+        created_at: "2026-04-14T10:00:00Z",
+      };
+      jest
+        .spyOn(mockClient, "from")
+        .mockReturnValueOnce(mockDeliveryFailures([channelRow]));
 
       const result = await listRecentFailures(mockClient, 1);
 
@@ -1256,53 +1158,37 @@ describe("discord queries", () => {
       expect(result.channels[0]).toMatchObject({
         id: 1,
         channel_id: "ch-999",
-        event_type: null,
-        consecutive_failures: 5,
+        event_type: "match_ready",
+        consecutive_failures: 0,
         last_error_code: null,
         last_error_reason: null,
         last_attempt_at: "2026-04-14T10:00:00Z",
         mapping_id: null,
       });
+      expect(result.dms).toEqual([]);
+      expect(result.roleSyncs).toEqual([]);
     });
 
-    it("maps DM failure rows to DmFailureRow shape", async () => {
-      const rawDmFailure = {
+    it("partitions dm rows into dms array", async () => {
+      const dmRow = {
         id: 2,
-        user_id: "user-abc",
-        discord_user_id: "discord-123",
-        event_type: "match_ready" as const,
-        failed_reason: "rate_limited",
+        type: "dm",
+        target: "discord-123",
+        event_type: "match_ready",
+        error_code: null,
+        error_reason: "rate_limited",
+        delivered_via_fallback: false,
         created_at: "2026-04-14T09:00:00Z",
       };
-      const fromSpy = jest.spyOn(mockClient, "from");
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        gt: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        limit: jest
-          .fn()
-          .mockResolvedValue({ data: [rawDmFailure], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
+      jest
+        .spyOn(mockClient, "from")
+        .mockReturnValueOnce(mockDeliveryFailures([dmRow]));
 
       const result = await listRecentFailures(mockClient, 1);
 
       expect(result.dms).toHaveLength(1);
       expect(result.dms[0]).toMatchObject({
         id: 2,
-        user_id: "user-abc",
         discord_user_id: "discord-123",
         event_type: "match_ready",
         error_code: null,
@@ -1311,94 +1197,91 @@ describe("discord queries", () => {
         failed_at: "2026-04-14T09:00:00Z",
         username: null,
       });
+      expect(result.channels).toEqual([]);
+      expect(result.roleSyncs).toEqual([]);
     });
 
-    it("excludes role sync rows with null failed_reason", async () => {
-      const rawRoleSyncWithReason = {
+    it("partitions role sync rows into roleSyncs array", async () => {
+      const roleSyncRow = {
         id: 3,
-        discord_user_id: "discord-456",
-        discord_role_id: "role-789",
-        action: "add",
-        failed_reason: "missing_permissions",
+        type: "role_sync",
+        target: "discord-456",
+        event_type: null,
+        error_code: null,
+        error_reason: "missing_permissions",
+        delivered_via_fallback: false,
         created_at: "2026-04-14T08:00:00Z",
       };
-      const rawRoleSyncNullReason = {
-        id: 4,
-        discord_user_id: "discord-789",
-        discord_role_id: "role-111",
-        action: "remove",
-        failed_reason: null,
-        created_at: "2026-04-14T08:30:00Z",
-      };
-      const fromSpy = jest.spyOn(mockClient, "from");
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        gt: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({
-          data: [rawRoleSyncWithReason, rawRoleSyncNullReason],
-          error: null,
-        }),
-      } as unknown as ReturnType<TypedClient["from"]>);
+      jest
+        .spyOn(mockClient, "from")
+        .mockReturnValueOnce(mockDeliveryFailures([roleSyncRow]));
 
       const result = await listRecentFailures(mockClient, 1);
 
-      // Only the row with a failed_reason is included
       expect(result.roleSyncs).toHaveLength(1);
       expect(result.roleSyncs[0]).toMatchObject({
         id: 3,
         discord_user_id: "discord-456",
-        role_id: "role-789",
-        action: "add",
         failed_reason: "missing_permissions",
         failed_at: "2026-04-14T08:00:00Z",
       });
+      expect(result.channels).toEqual([]);
+      expect(result.dms).toEqual([]);
     });
 
-    it("throws a descriptive error when channel failure query fails", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
+    it("handles mixed row types in a single query result", async () => {
+      const rows = [
+        {
+          id: 1,
+          type: "channel",
+          target: "ch-1",
+          event_type: null,
+          error_code: null,
+          error_reason: null,
+          delivered_via_fallback: false,
+          created_at: "2026-04-14T10:00:00Z",
+        },
+        {
+          id: 2,
+          type: "dm",
+          target: "discord-1",
+          event_type: "match_ready",
+          error_code: null,
+          error_reason: null,
+          delivered_via_fallback: false,
+          created_at: "2026-04-14T09:00:00Z",
+        },
+        {
+          id: 3,
+          type: "role_sync",
+          target: "discord-2",
+          event_type: null,
+          error_code: null,
+          error_reason: "missing_permissions",
+          delivered_via_fallback: false,
+          created_at: "2026-04-14T08:00:00Z",
+        },
+      ];
+      jest
+        .spyOn(mockClient, "from")
+        .mockReturnValueOnce(mockDeliveryFailures(rows));
 
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        gt: jest
-          .fn()
-          .mockResolvedValue({
-            data: null,
-            error: { message: "query failed" },
-          }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-      // DM query — succeeds
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
-      // Role sync query — succeeds
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-      } as unknown as ReturnType<TypedClient["from"]>);
+      const result = await listRecentFailures(mockClient, 1);
+
+      expect(result.channels).toHaveLength(1);
+      expect(result.dms).toHaveLength(1);
+      expect(result.roleSyncs).toHaveLength(1);
+    });
+
+    it("throws a descriptive error when the query fails", async () => {
+      jest
+        .spyOn(mockClient, "from")
+        .mockReturnValueOnce(
+          mockDeliveryFailures([], { message: "query failed" })
+        );
 
       await expect(listRecentFailures(mockClient, 1)).rejects.toThrow(
-        "Failed to list channel failures"
+        "Failed to list recent failures"
       );
     });
   });
@@ -1458,12 +1341,10 @@ describe("discord queries", () => {
       jest.spyOn(mockClient, "from").mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        maybeSingle: jest
-          .fn()
-          .mockResolvedValue({
-            data: null,
-            error: { message: "access denied" },
-          }),
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: "access denied" },
+        }),
       } as unknown as ReturnType<TypedClient["from"]>);
 
       await expect(

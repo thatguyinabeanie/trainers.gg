@@ -50,17 +50,9 @@ export function ScrollVisibilityProvider({
 
   const show = () => {
     "worklet";
-    // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are mutable by design inside worklets
     isVisible.value = withTiming(1, { duration: ANIMATION_DURATION });
   };
 
-  /* eslint-disable react-hooks/immutability --
-   * useAnimatedScrollHandler returns a worklet-scoped handler. Mutating
-   * shared-value `.value` fields inside the worklet is Reanimated's
-   * documented pattern for updating animated state from scroll events.
-   * The immutability rule (react-hooks v7) does not descend into hook
-   * callback arguments to detect the worklet directive.
-   */
   const handleScroll = useAnimatedScrollHandler((event) => {
     "worklet";
     const currentY = event.contentOffset.y;
@@ -92,7 +84,6 @@ export function ScrollVisibilityProvider({
       lastScrollY.value = currentY;
     }
   });
-  /* eslint-enable react-hooks/immutability */
 
   // Animated style for header - slides up when hidden
   const headerAnimatedStyle = useAnimatedStyle(() => {
