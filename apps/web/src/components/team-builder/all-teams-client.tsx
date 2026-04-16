@@ -87,18 +87,24 @@ export function AllTeamsClient({
       <div className="flex flex-1 flex-col items-center justify-center p-8">
         <EmptyState
           title="No teams yet"
-          description="Create your first team or import a Showdown paste."
+          description={
+            alts.length === 0
+              ? "Create an alt first, then come back to build your team."
+              : "Create your first team or import a Showdown paste."
+          }
           action={
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => openDialog("import")}>
-                <Upload className="size-4" />
-                Import Paste
-              </Button>
-              <Button onClick={() => openDialog("empty")}>
-                <Plus className="size-4" />
-                New Team
-              </Button>
-            </div>
+            alts.length > 0 ? (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => openDialog("import")}>
+                  <Upload className="size-4" />
+                  Import Paste
+                </Button>
+                <Button onClick={() => openDialog("empty")}>
+                  <Plus className="size-4" />
+                  New Team
+                </Button>
+              </div>
+            ) : undefined
           }
         />
         {dialog}
@@ -169,21 +175,23 @@ export function AllTeamsClient({
             ))}
         </div>
 
-        {/* Actions */}
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openDialog("import")}
-          >
-            <Upload className="size-4" />
-            Import Paste
-          </Button>
-          <Button size="sm" onClick={() => openDialog("empty")}>
-            <Plus className="size-4" />
-            New Team
-          </Button>
-        </div>
+        {/* Actions — hidden when user has no alts to associate a team with */}
+        {alts.length > 0 && (
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openDialog("import")}
+            >
+              <Upload className="size-4" />
+              Import Paste
+            </Button>
+            <Button size="sm" onClick={() => openDialog("empty")}>
+              <Plus className="size-4" />
+              New Team
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Data table */}

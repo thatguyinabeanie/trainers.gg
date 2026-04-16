@@ -141,11 +141,18 @@ const handleDrop: CommandHandler = async (ctx) => {
     throw new Error(`Failed to mark player as dropped: ${dropError.message}`);
   }
 
-  await (supabase as TypedClient)
+  const { error: regUpdateError } = await (supabase as TypedClient)
     .from("tournament_registrations")
     .update({ status: "dropped" })
     .eq("tournament_id", tournament.value.id)
     .eq("alt_id", alts.id);
+
+  if (regUpdateError) {
+    console.error(
+      "[/drop] Failed to update registration status:",
+      regUpdateError
+    );
+  }
 
   const url = `${SITE_URL}/communities/${communitySlug}/tournaments/${tournament.value.slug}`;
 

@@ -111,10 +111,15 @@ export async function GET(request: Request): Promise<Response> {
             mapping.community_id
           );
           break;
-        default:
-          // Exhaustive check — if a new role_type is added to the enum this
-          // will surface as a TypeScript error in strict mode.
+        default: {
+          // Exhaustive check — TypeScript will error here if a new role_type
+          // is added to the enum without being handled above.
+          const _exhaustive: never = mapping.role_type as never;
+          console.error(
+            `[reconcile-roles] Unknown role_type: ${mapping.role_type}`
+          );
           userIds = [];
+        }
       }
 
       // -----------------------------------------------------------------------
