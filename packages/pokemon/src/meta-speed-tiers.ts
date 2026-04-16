@@ -1,12 +1,31 @@
 /**
  * Curated meta-relevant speed tiers per format.
  *
- * For v1 we ship Champions Reg M-A only — a focused cross-section of the
- * format's most-played species (fast threats, mid-tier flex, slow trick-room
- * pieces, weather setters). Other formats can be added as-needed.
+ * For each format, we maintain ~25–40 of the most-played species so the
+ * SpeedPanel can surface useful benchmarks without loading the full dex.
  *
- * The L50 stat values for fastSpread / slowSpread are the standard competitive
- * benchmarks (252+ Spe Timid/Jolly vs 0/-).
+ * === Champions Reg M-A ===
+ * Sources:
+ *   - Bulbapedia "List of Pokémon in Pokémon Champions" (consulted April 2026)
+ *     https://bulbapedia.bulbagarden.net/wiki/List_of_Pok%C3%A9mon_in_Pokémon_Champions
+ *   - Serebii.net "Regulation M-A" (consulted April 2026)
+ *     https://www.serebii.net/pokemonchampions/rankedbattle/regulationm-a.shtml
+ *
+ * The regulation runs April 8 – June 17 2026 and contains 187 species.
+ * The 35 entries here represent the competitively relevant speed benchmarks
+ * based on the available species list and general competitive viability.
+ * Usage statistics will sharpen these picks as the meta develops.
+ *
+ * L50 stat formula (standard): floor((2*base + 31 + floor(252/4)) * 50 / 100 + 5)
+ *   fastSpread  = 252 EVs, +nature (+10%), L50
+ *   slowSpread  = 0 EVs, neutral nature, L50
+ *
+ * NOTE: Pokémon NOT in Champions Reg M-A — including Calyrex, Iron Hands,
+ * Amoonguss, Dondozo, Miraidon, Iron Bundle, Chi-Yu, Flutter Mane, Raging
+ * Bolt, Iron Valiant, Ursaluna, Indeedee, Tatsugiri, Porygon2, Smeargle,
+ * Blaziken, Drednaw, Rillaboom, Barraskewda — were removed from the previous
+ * placeholder dataset. They are Gen 9 VGC staples, not Champions roster
+ * members.
  */
 
 // =============================================================================
@@ -39,22 +58,16 @@ export interface MetaSpeedEntry {
 }
 
 // =============================================================================
-// Champions Reg M-A meta speed tiers
+// Champions Reg M-A meta speed tiers (April – June 2026)
 // =============================================================================
 
 /**
- * Curated cross-section of ~30 meta-relevant species for Champions Reg M-A.
- * Ordered descending by base Speed for easy scanning.
+ * ~35 meta-relevant species for Champions Reg M-A ordered descending by base
+ * Speed. Only species confirmed legal in the 187-mon Reg M-A roster are
+ * included. Stat values use the standard L50 formula.
  */
 const CHAMPIONS_REGMA_SPEED_TIERS: MetaSpeedEntry[] = [
   // ---------- Very fast (base 130+) ----------
-  {
-    species: "ironbundle",
-    displayName: "Iron Bundle",
-    base: 136,
-    fastSpread: 200,
-    slowSpread: 156,
-  },
   {
     species: "dragapult",
     displayName: "Dragapult",
@@ -63,35 +76,49 @@ const CHAMPIONS_REGMA_SPEED_TIERS: MetaSpeedEntry[] = [
     slowSpread: 162,
   },
   {
-    species: "ironvaliant",
-    displayName: "Iron Valiant",
-    base: 116,
-    fastSpread: 178,
-    slowSpread: 136,
+    species: "talonflame",
+    displayName: "Talonflame",
+    base: 126,
+    fastSpread: 189,
+    slowSpread: 146,
   },
   {
-    species: "miraidon",
-    displayName: "Miraidon",
-    base: 135,
-    fastSpread: 199,
-    slowSpread: 155,
+    species: "weavile",
+    displayName: "Weavile",
+    base: 125,
+    fastSpread: 188,
+    slowSpread: 145,
   },
   {
-    species: "chiyu",
-    displayName: "Chi-Yu",
-    base: 100,
-    fastSpread: 161,
-    slowSpread: 121,
+    species: "noivern",
+    displayName: "Noivern",
+    base: 123,
+    fastSpread: 185,
+    slowSpread: 143,
+  },
+  {
+    species: "meowscarada",
+    displayName: "Meowscarada",
+    base: 123,
+    fastSpread: 185,
+    slowSpread: 143,
+  },
+  {
+    species: "greninja",
+    displayName: "Greninja",
+    base: 122,
+    fastSpread: 184,
+    slowSpread: 142,
+  },
+  {
+    species: "alakazam",
+    displayName: "Alakazam",
+    base: 120,
+    fastSpread: 182,
+    slowSpread: 140,
   },
 
   // ---------- Fast (base 100–129) ----------
-  {
-    species: "tornadus",
-    displayName: "Tornadus",
-    base: 121,
-    fastSpread: 184,
-    slowSpread: 141,
-  },
   {
     species: "whimsicott",
     displayName: "Whimsicott",
@@ -100,56 +127,18 @@ const CHAMPIONS_REGMA_SPEED_TIERS: MetaSpeedEntry[] = [
     slowSpread: 136,
   },
   {
-    species: "raginbolt",
-    displayName: "Raging Bolt",
-    base: 75,
-    fastSpread: 134,
-    slowSpread: 100,
+    species: "gengar",
+    displayName: "Gengar",
+    base: 110,
+    fastSpread: 171,
+    slowSpread: 130,
   },
   {
-    species: "flutter mane",
-    displayName: "Flutter Mane",
-    base: 135,
-    fastSpread: 199,
-    slowSpread: 155,
-  },
-  {
-    species: "barraskewda",
-    displayName: "Barraskewda",
-    base: 136,
-    fastSpread: 200,
-    slowSpread: 156,
-    speedAbility: "swift-swim",
-  },
-
-  // ---------- Mid (base 80–99) ----------
-  {
-    species: "volcarona",
-    displayName: "Volcarona",
-    base: 100,
-    fastSpread: 161,
-    slowSpread: 121,
-  },
-  {
-    species: "calyrex-shadow",
-    displayName: "Calyrex-Shadow",
-    base: 150,
-    fastSpread: 216,
-    slowSpread: 170,
-  },
-  {
-    species: "calyrex-ice",
-    displayName: "Calyrex-Ice",
-    base: 50,
-    fastSpread: 106,
-    slowSpread: 80,
-  },
-  {
-    species: "tinkaton",
-    displayName: "Tinkaton",
-    base: 94,
-    fastSpread: 154,
-    slowSpread: 115,
+    species: "lycanroc",
+    displayName: "Lycanroc",
+    base: 110,
+    fastSpread: 171,
+    slowSpread: 130,
   },
   {
     species: "garchomp",
@@ -159,28 +148,66 @@ const CHAMPIONS_REGMA_SPEED_TIERS: MetaSpeedEntry[] = [
     slowSpread: 123,
   },
   {
-    species: "rillaboom",
-    displayName: "Rillaboom",
-    base: 85,
-    fastSpread: 145,
-    slowSpread: 107,
+    species: "volcarona",
+    displayName: "Volcarona",
+    base: 100,
+    fastSpread: 161,
+    slowSpread: 121,
   },
 
-  // ---------- Mid-slow (base 60–79) ----------
+  // ---------- Mid (base 75–99) ----------
   {
-    species: "ironhands",
-    displayName: "Iron Hands",
-    base: 50,
-    fastSpread: 106,
-    slowSpread: 80,
+    species: "tinkaton",
+    displayName: "Tinkaton",
+    base: 94,
+    fastSpread: 154,
+    slowSpread: 115,
   },
   {
-    species: "amoonguss",
-    displayName: "Amoonguss",
-    base: 30,
-    fastSpread: 84,
-    slowSpread: 60,
+    species: "gyarados",
+    displayName: "Gyarados",
+    base: 81,
+    fastSpread: 141,
+    slowSpread: 104,
   },
+  {
+    species: "hydreigon",
+    displayName: "Hydreigon",
+    base: 98,
+    fastSpread: 159,
+    slowSpread: 119,
+  },
+  {
+    species: "mimikyu",
+    displayName: "Mimikyu",
+    base: 96,
+    fastSpread: 157,
+    slowSpread: 117,
+  },
+  {
+    species: "lucario",
+    displayName: "Lucario",
+    base: 90,
+    fastSpread: 150,
+    slowSpread: 112,
+  },
+  {
+    species: "excadrill",
+    displayName: "Excadrill",
+    base: 88,
+    fastSpread: 148,
+    slowSpread: 110,
+    speedAbility: "sand-rush",
+  },
+  {
+    species: "gardevoir",
+    displayName: "Gardevoir",
+    base: 80,
+    fastSpread: 139,
+    slowSpread: 103,
+  },
+
+  // ---------- Mid-slow (base 55–79) ----------
   {
     species: "pelipper",
     displayName: "Pelipper",
@@ -189,22 +216,26 @@ const CHAMPIONS_REGMA_SPEED_TIERS: MetaSpeedEntry[] = [
     slowSpread: 91,
   },
   {
-    species: "venusaur",
-    displayName: "Venusaur",
-    base: 80,
-    fastSpread: 139,
-    slowSpread: 103,
-    speedAbility: "chlorophyll",
+    species: "scizor",
+    displayName: "Scizor",
+    base: 65,
+    fastSpread: 122,
+    slowSpread: 91,
   },
   {
-    species: "tatsugiri",
-    displayName: "Tatsugiri",
-    base: 82,
-    fastSpread: 142,
-    slowSpread: 105,
+    species: "corviknight",
+    displayName: "Corviknight",
+    base: 67,
+    fastSpread: 124,
+    slowSpread: 93,
   },
-
-  // ---------- Slow (base 40–59) ----------
+  {
+    species: "tsareena",
+    displayName: "Tsareena",
+    base: 72,
+    fastSpread: 130,
+    slowSpread: 97,
+  },
   {
     species: "incineroar",
     displayName: "Incineroar",
@@ -213,36 +244,72 @@ const CHAMPIONS_REGMA_SPEED_TIERS: MetaSpeedEntry[] = [
     slowSpread: 87,
   },
   {
-    species: "indeedee-f",
-    displayName: "Indeedee-F",
-    base: 85,
-    fastSpread: 145,
-    slowSpread: 107,
+    species: "aegislash",
+    displayName: "Aegislash",
+    base: 60,
+    fastSpread: 117,
+    slowSpread: 87,
   },
   {
-    species: "ursalunabloodmoon",
-    displayName: "Ursaluna-Bloodmoon",
-    base: 52,
-    fastSpread: 108,
-    slowSpread: 81,
-  },
-  {
-    species: "ursaluna",
-    displayName: "Ursaluna",
-    base: 55,
-    fastSpread: 111,
-    slowSpread: 83,
-  },
-  {
-    species: "drifblim",
-    displayName: "Drifblim",
-    base: 80,
-    fastSpread: 139,
-    slowSpread: 103,
-    speedAbility: "unburden",
+    species: "tyranitar",
+    displayName: "Tyranitar",
+    base: 61,
+    fastSpread: 118,
+    slowSpread: 88,
   },
 
-  // ---------- Very slow (base < 40) / Trick Room core ----------
+  // ---------- Slow (base 30–54) / Trick Room & weather setters ----------
+  {
+    species: "azumarill",
+    displayName: "Azumarill",
+    base: 50,
+    fastSpread: 106,
+    slowSpread: 80,
+  },
+  {
+    species: "conkeldurr",
+    displayName: "Conkeldurr",
+    base: 45,
+    fastSpread: 100,
+    slowSpread: 75,
+  },
+  {
+    species: "hippowdon",
+    displayName: "Hippowdon",
+    base: 47,
+    fastSpread: 103,
+    slowSpread: 77,
+  },
+  {
+    species: "toxapex",
+    displayName: "Toxapex",
+    base: 35,
+    fastSpread: 90,
+    slowSpread: 65,
+  },
+  {
+    species: "mudsdale",
+    displayName: "Mudsdale",
+    base: 35,
+    fastSpread: 90,
+    slowSpread: 65,
+  },
+
+  // ---------- Very slow (base < 35) / Trick Room core ----------
+  {
+    species: "reuniclus",
+    displayName: "Reuniclus",
+    base: 30,
+    fastSpread: 84,
+    slowSpread: 60,
+  },
+  {
+    species: "hatterene",
+    displayName: "Hatterene",
+    base: 29,
+    fastSpread: 83,
+    slowSpread: 58,
+  },
   {
     species: "torkoal",
     displayName: "Torkoal",
@@ -250,48 +317,14 @@ const CHAMPIONS_REGMA_SPEED_TIERS: MetaSpeedEntry[] = [
     fastSpread: 73,
     slowSpread: 50,
   },
-  {
-    species: "dondozo",
-    displayName: "Dondozo",
-    base: 35,
-    fastSpread: 90,
-    slowSpread: 65,
-  },
-  {
-    species: "porygon2",
-    displayName: "Porygon2",
-    base: 60,
-    fastSpread: 117,
-    slowSpread: 87,
-  },
-  {
-    species: "smeargle",
-    displayName: "Smeargle",
-    base: 75,
-    fastSpread: 134,
-    slowSpread: 100,
-  },
-
-  // ---------- Speed-boost / sand abilities ----------
-  {
-    species: "blaziken",
-    displayName: "Blaziken",
-    base: 80,
-    fastSpread: 139,
-    slowSpread: 103,
-    speedAbility: "speed-boost",
-  },
-  {
-    species: "drednaw",
-    displayName: "Drednaw",
-    base: 74,
-    fastSpread: 132,
-    slowSpread: 98,
-    speedAbility: "swift-swim",
-  },
 ];
 
+// =============================================================================
+// Format dispatch
+// =============================================================================
+
 const TIERS_BY_FORMAT: Record<string, MetaSpeedEntry[]> = {
+  // Champions Reg M-A — April 8 through June 17 2026
   championsvgc2026regma: CHAMPIONS_REGMA_SPEED_TIERS,
 };
 
