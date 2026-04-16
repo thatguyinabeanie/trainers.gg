@@ -27,6 +27,14 @@ const MOCK_TYPES = [
   "Fairy",
 ] as const;
 
+jest.mock("@trainers/pokemon/sprites", () => ({
+  // The chart uses Showdown type icons — mock to a stable URL so tests can
+  // assert the icon source without hitting the network.
+  getShowdownTypeIconUrl: jest.fn(
+    (type: string) => `https://example.test/types/${type}.png`
+  ),
+}));
+
 jest.mock("@trainers/pokemon", () => ({
   ALL_TYPES: MOCK_TYPES,
 
@@ -216,14 +224,22 @@ describe("TypeChartPanel", () => {
     expect(screen.getByTestId("worst-Fighting")).toHaveTextContent("×2");
   });
 
-  it("includes the 3-letter type abbreviation inside each row", () => {
+  it("renders a Showdown type icon (with full type name as alt) per row", () => {
     render(<TypeChartPanel team={[]} />);
 
-    // Per the panel's narrow 56px label column, types render as 3-letter
-    // abbreviations (Fir, Wat, …) with the full name in a title attribute.
+    // The narrow 56px label column uses the Showdown type icon instead of
+    // a 3-letter abbreviation. The full type name surfaces via:
+    //   - the `<img alt>` attribute (screen readers)
+    //   - the wrapper's `aria-label` (focus + tooltip trigger)
+    //   - a hover tooltip (visible — not asserted here, requires user-event)
     const fireRow = screen.getByTestId("type-row-Fire");
-    const pill = within(fireRow).getByText("Fir");
-    expect(pill).toBeInTheDocument();
-    expect(pill).toHaveAttribute("title", "Fire");
+    const icon = within(fireRow).getByRole("img", { name: "Fire" });
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveAttribute("src", "https://example.test/types/Fire.png");
+
+    // Tooltip trigger wrapper exposes the type name to assistive tech.
+    expect(
+      within(fireRow).getByLabelText("Fire", { selector: "span" })
+    ).toBeInTheDocument();
   });
 });

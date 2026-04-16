@@ -6,41 +6,15 @@ import {
   getSpeciesTypes,
   type PokemonType,
 } from "@trainers/pokemon";
+import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
-
-import { TYPE_PILL_COLORS } from "./type-colors";
-
-// =============================================================================
-// Constants
-// =============================================================================
-
-/**
- * 3-letter type abbreviations for the defensive coverage pills.
- * The full type name doesn't fit in the 56px label column without truncation;
- * the legend below still shows full names on hover via the type pill colors.
- */
-const TYPE_ABBR: Record<PokemonType, string> = {
-  Normal: "Nor",
-  Fire: "Fir",
-  Water: "Wat",
-  Electric: "Ele",
-  Grass: "Gra",
-  Ice: "Ice",
-  Fighting: "Fig",
-  Poison: "Poi",
-  Ground: "Gro",
-  Flying: "Fly",
-  Psychic: "Psy",
-  Bug: "Bug",
-  Rock: "Roc",
-  Ghost: "Gho",
-  Dragon: "Dra",
-  Dark: "Dar",
-  Steel: "Ste",
-  Fairy: "Fai",
-};
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // =============================================================================
 // Types
@@ -130,27 +104,54 @@ function buildRowSummaries(team: Tables<"pokemon">[]): RowSummary[] {
 }
 
 // =============================================================================
-// TypePill — full-width pill, mirrors TypeBadge styling for consistency
+// TypeIcon — Showdown type icon with hover tooltip showing the full name
 // =============================================================================
 
-interface TypePillProps {
+interface TypeIconProps {
   type: PokemonType;
 }
 
-function TypePill({ type }: TypePillProps) {
-  const colors = TYPE_PILL_COLORS[type] ?? "bg-stone-400 text-white";
+/**
+ * Defensive coverage row label. Uses the Showdown type icon so the row reads
+ * at a glance (Fire, Water, Electric…) without relying on 3-letter
+ * abbreviations. The full type name is surfaced via:
+ *   1. A shadcn Tooltip on hover/focus (visible).
+ *   2. The `alt` attribute on the underlying `<img>` (screen readers).
+ */
+function TypeIcon({ type }: TypeIconProps) {
   return (
-    <span
-      // title attribute surfaces the full type name on hover so the
-      // 3-letter abbreviation stays accessible.
-      title={type}
-      className={cn(
-        "inline-flex w-full items-center justify-center rounded px-1 py-0.5 text-[10px] leading-none font-semibold",
-        colors
-      )}
-    >
-      {TYPE_ABBR[type] ?? type}
-    </span>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          // Base UI uses the `render` prop instead of `asChild`. The trigger
+          // is the focusable wrapper around the icon — keyboard users can tab
+          // to a row's type label and read the tooltip.
+          <span
+            tabIndex={0}
+            aria-label={type}
+            data-type={type}
+            className={cn(
+              "inline-flex w-full cursor-default items-center justify-center",
+              "outline-ring/40 rounded focus-visible:outline-2"
+            )}
+          >
+            {/* Plain <img> — Showdown CDN serves a fixed-size sprite and
+                `next/image` would over-eagerly request multiple resolutions
+                for ~36px icons. */}
+            <img
+              src={getShowdownTypeIconUrl(type)}
+              alt={type}
+              width={32}
+              height={14}
+              // The Showdown icons are pixel art; preserve crisp edges.
+              className="image-rendering-pixelated h-3.5 w-8 select-none"
+              draggable={false}
+            />
+          </span>
+        }
+      />
+      <TooltipContent>{type}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -215,7 +216,7 @@ export function TypeChartPanel({ team, className }: TypeChartPanelProps) {
                 isQuadWeak && "bg-destructive/5"
               )}
             >
-              <TypePill type={row.type} />
+              <TypeIcon type={row.type} />
 
               {/* Worst multiplier pill */}
               <span
