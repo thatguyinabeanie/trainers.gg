@@ -97,6 +97,19 @@
           "@babel/types": "*"
         }
       }
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@swc/core",
+      "browser-tabs-lock",
+      "bufferutil",
+      "cbor-extract",
+      "core-js",
+      "esbuild",
+      "msw",
+      "sharp",
+      "supabase",
+      "utf-8-validate"
+    ]
   }
 }
