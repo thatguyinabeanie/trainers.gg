@@ -41,8 +41,8 @@
     "@tanstack/react-table": "^8",
     "@tanstack/react-virtual": "^3",
     "@trainers/atproto": "workspace:*",
-    "@trainers/posthog": "workspace:*",
     "@trainers/pokemon": "workspace:*",
+    "@trainers/posthog": "workspace:*",
     "@trainers/supabase": "workspace:*",
     "@trainers/theme": "workspace:*",
     "@trainers/tournaments": "workspace:*",
@@ -50,6 +50,7 @@
     "@trainers/validators": "workspace:*",
     "@vercel/analytics": "^1",
     "@vercel/functions": "^3.4.3",
+    "@workflow/next": "^4.0.3",
     "botid": "^1",
     "class-variance-authority": "^0",
     "clsx": "^2",
@@ -76,7 +77,8 @@
     "shadcn": "^3",
     "sonner": "^2",
     "tailwind-merge": "^3",
-    "vaul": "^1"
+    "vaul": "^1",
+    "workflow": "^4.2.2"
   },
   "devDependencies": {
     "@playwright/test": "^1",
