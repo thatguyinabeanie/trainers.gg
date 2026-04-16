@@ -8,6 +8,29 @@ import { type DiscordIntegrationOverview } from "@trainers/supabase";
 import { DiscordClient } from "../discord-client";
 
 // =============================================================================
+// Stub out child components added in T15/T16 so this suite stays focused
+// on DiscordClient routing/tab logic.
+// =============================================================================
+
+jest.mock("../_components/install-card", () => ({
+  InstallCard: () => <div>Install card stub</div>,
+}));
+
+jest.mock("../_components/status-header", () => ({
+  StatusHeader: ({ server }: { server: { guild_id: string } }) => (
+    <div data-testid="status-header">
+      Status header stub — {server.guild_id}
+    </div>
+  ),
+}));
+
+jest.mock("../_components/failure-banner", () => ({
+  FailureBanner: ({ count }: { count: number }) => (
+    <div data-testid="failure-banner">{count} delivery failures stub</div>
+  ),
+}));
+
+// =============================================================================
 // Module-level mocks
 // =============================================================================
 
@@ -78,12 +101,10 @@ describe("DiscordClient", () => {
       ).toBeInTheDocument();
     });
 
-    it("renders the install card placeholder", () => {
+    it("renders the install card", () => {
       render(<DiscordClient {...defaultProps} overview={null} />);
 
-      expect(
-        screen.getByText(/install card renders here/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/install card stub/i)).toBeInTheDocument();
     });
 
     it("does not render tabs", () => {
@@ -108,12 +129,10 @@ describe("DiscordClient", () => {
       ).toBeInTheDocument();
     });
 
-    it("renders the status header placeholder with guild id", () => {
+    it("renders the StatusHeader with guild id", () => {
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      expect(
-        screen.getByText(/status header renders here/i)
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("status-header")).toBeInTheDocument();
       expect(screen.getByText(/123456789/)).toBeInTheDocument();
     });
 

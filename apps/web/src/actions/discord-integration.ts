@@ -35,6 +35,7 @@ import { getErrorMessage } from "@trainers/utils";
 
 import { CacheTags } from "@/lib/cache";
 import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
+import { signInstallState } from "@/lib/discord/install-state";
 import { createClient } from "@/lib/supabase/server";
 import { rejectBots } from "./utils";
 
@@ -585,6 +586,67 @@ export async function disconnectDiscordServerAction(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to disconnect Discord server"),
+    };
+  }
+}
+
+/**
+ * Generate a signed Discord OAuth2 install URL for the given community.
+ *
+ * Signs an install state token (HMAC-SHA256, 10-min TTL) and embeds it as the
+ * `state` parameter in the Discord authorization URL. The callback route at
+ * `/api/discord/install-callback` verifies this token before creating the
+ * `discord_servers` row.
+ *
+ * Requires an authenticated session — the user's ID is embedded in the state
+ * token so the callback can verify who initiated the install.
+ *
+ * @param communityId - The community to link the bot to after install
+ * @returns `{ url }` — the Discord authorization URL to redirect the user to
+ */
+export async function getDiscordInstallUrlAction(
+  communityId: number
+): Promise<ActionResult<{ url: string }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const applicationId = process.env.DISCORD_APPLICATION_ID;
+    if (!applicationId) {
+      return {
+        success: false,
+        error: "Discord application is not configured",
+      };
+    }
+
+    const state = await signInstallState({
+      community_id: communityId,
+      user_id: user.id,
+    });
+
+    const url = new URL("https://discord.com/api/oauth2/authorize");
+    url.searchParams.set("client_id", applicationId);
+    url.searchParams.set("scope", "bot applications.commands");
+    url.searchParams.set("permissions", "274878024704");
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+    url.searchParams.set(
+      "redirect_uri",
+      `${siteUrl}/api/discord/install-callback`
+    );
+    url.searchParams.set("state", state);
+
+    return { success: true, data: { url: url.toString() } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to generate Discord install URL"),
     };
   }
 }

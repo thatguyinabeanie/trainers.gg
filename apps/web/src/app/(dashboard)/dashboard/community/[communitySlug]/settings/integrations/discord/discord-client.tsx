@@ -7,6 +7,10 @@ import { type DiscordIntegrationOverview } from "@trainers/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type GuildChannel, type GuildRole } from "@/lib/discord/guild-cache";
 
+import { FailureBanner } from "./_components/failure-banner";
+import { InstallCard } from "./_components/install-card";
+import { StatusHeader } from "./_components/status-header";
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -31,7 +35,7 @@ interface Props {
 // Component
 // =============================================================================
 
-export function DiscordClient({ overview }: Props) {
+export function DiscordClient({ community, communitySlug, overview }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -48,10 +52,7 @@ export function DiscordClient({ overview }: Props) {
     return (
       <div className="mx-auto max-w-5xl space-y-4 p-6">
         <PageHeader />
-        {/* State A — install card; placeholder until T15 */}
-        <div className="text-muted-foreground rounded-md border p-8 text-center">
-          Install card renders here (T15).
-        </div>
+        <InstallCard communityId={community.id} />
       </div>
     );
   }
@@ -61,17 +62,18 @@ export function DiscordClient({ overview }: Props) {
   return (
     <div className="mx-auto max-w-5xl space-y-4 p-6">
       <PageHeader />
-      {/* Status header — placeholder until T16 */}
-      <div className="rounded-md border p-4 text-sm">
-        Status header renders here (T16). Installed in guild{" "}
-        {overview.server.guild_id}.
-      </div>
-      {/* Failure banner — placeholder until T16 */}
+      {/* Status header */}
+      <StatusHeader
+        server={overview.server}
+        communitySlug={communitySlug}
+        communityId={community.id}
+      />
+      {/* Failure banner */}
       {failureCount > 0 && (
-        <div className="rounded-md border border-yellow-400 bg-yellow-50 p-3 text-sm">
-          ⚠ {failureCount} delivery failures in the last 24h (banner renders in
-          T16).
-        </div>
+        <FailureBanner
+          count={failureCount}
+          onView={() => onTabChange("failures")}
+        />
       )}
 
       <Tabs value={currentTab} onValueChange={(v) => onTabChange(v as Tab)}>
