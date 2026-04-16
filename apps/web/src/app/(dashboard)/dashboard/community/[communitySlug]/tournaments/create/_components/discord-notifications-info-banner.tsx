@@ -13,7 +13,9 @@ export function DiscordNotificationsInfoBanner() {
 
   return (
     <Alert className="border-primary/20 bg-primary/5 mb-4 flex items-start gap-3">
-      <span className="text-xl leading-none">🤖</span>
+      <span className="text-xl leading-none" aria-hidden="true">
+        🤖
+      </span>
       <AlertDescription className="flex-1">
         Discord notifications are configured for this community — announcements
         will auto-post to mapped channels.
