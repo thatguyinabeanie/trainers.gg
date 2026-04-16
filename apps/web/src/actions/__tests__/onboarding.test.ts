@@ -176,16 +176,13 @@ describe("completeOnboarding", () => {
     expect(result).toEqual({ success: true, error: null });
   });
 
-  it("returns error when bot is detected", async () => {
+  it("throws when bot is detected (rejectBots runs before try block)", async () => {
     mockRejectBots.mockRejectedValueOnce(new Error("Access denied"));
 
-    const result = await completeOnboarding(validInput);
-
-    // rejectBots() throws, caught by the generic catch block
-    expect(result).toEqual({
-      success: false,
-      error: "An unexpected error occurred",
-    });
+    // rejectBots() is outside the try block — throws directly
+    await expect(completeOnboarding(validInput)).rejects.toThrow(
+      "Access denied"
+    );
     // Should not proceed to any DB calls
     expect(mockFrom).not.toHaveBeenCalled();
   });

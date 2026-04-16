@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { getDiscordInstallUrlAction } from "@/actions/discord-integration";
+import { Button } from "@/components/ui/button";
 import { DiscordIcon } from "@/components/icons/discord-icon";
 
 // =============================================================================
@@ -99,19 +100,18 @@ export function InstallCard({ communityId }: InstallCardProps) {
           notifications — all from this page.
         </p>
 
-        <button
+        <Button
           onClick={handleInstall}
           disabled={isLoading}
           className={cn(
-            "inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white transition-opacity",
-            "bg-[#5865F2] hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+            "gap-2 bg-[#5865F2] px-6 py-3 text-white hover:bg-[#5865F2]/90",
             isLoading && "cursor-not-allowed opacity-60"
           )}
           aria-label="Add Beanie Bot to your Discord server"
         >
           <DiscordIcon className="size-4 text-white" />
           {isLoading ? "Redirecting…" : "Add to your server"}
-        </button>
+        </Button>
 
         <p className="mt-4 text-xs text-gray-400">
           Requires a Discord server where you have Manage Server permission.

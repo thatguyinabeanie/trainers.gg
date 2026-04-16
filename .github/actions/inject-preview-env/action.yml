@@ -27,6 +27,9 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Install Supabase CLI
+      uses: supabase/setup-cli@v1
+
     - name: Inject env vars
       shell: bash
       env:

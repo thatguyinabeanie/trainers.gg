@@ -24,8 +24,9 @@ export async function completeOnboarding(data: {
   bio?: string;
   birthDate?: string;
 }) {
+  await rejectBots();
+
   try {
-    await rejectBots();
     const validated = completeOnboardingSchema.parse(data);
 
     const supabase = await createClient();
