@@ -79,4 +79,11 @@ export const CacheTags = {
 
   /** Generate a tag for a specific team (for public team pages) */
   team: (id: number) => `team:${id}`,
+
+  /**
+   * Tag for cached Discord REST data (guild channels + roles) for a specific server.
+   * Invalidated explicitly via refreshDiscordGuildCacheAction — no auto-invalidation
+   * because the data changes in Discord, not trainers.gg.
+   */
+  discordGuild: (serverId: number) => `discord-guild:${serverId}`,
 } as const;
