@@ -216,10 +216,14 @@ describe("TypeChartPanel", () => {
     expect(screen.getByTestId("worst-Fighting")).toHaveTextContent("×2");
   });
 
-  it("includes the type label inside each row", () => {
+  it("includes the 3-letter type abbreviation inside each row", () => {
     render(<TypeChartPanel team={[]} />);
 
+    // Per the panel's narrow 56px label column, types render as 3-letter
+    // abbreviations (Fir, Wat, …) with the full name in a title attribute.
     const fireRow = screen.getByTestId("type-row-Fire");
-    expect(within(fireRow).getByText("Fire")).toBeInTheDocument();
+    const pill = within(fireRow).getByText("Fir");
+    expect(pill).toBeInTheDocument();
+    expect(pill).toHaveAttribute("title", "Fire");
   });
 });

@@ -13,6 +13,36 @@ import { cn } from "@/lib/utils";
 import { TYPE_PILL_COLORS } from "./type-colors";
 
 // =============================================================================
+// Constants
+// =============================================================================
+
+/**
+ * 3-letter type abbreviations for the defensive coverage pills.
+ * The full type name doesn't fit in the 56px label column without truncation;
+ * the legend below still shows full names on hover via the type pill colors.
+ */
+const TYPE_ABBR: Record<PokemonType, string> = {
+  Normal: "Nor",
+  Fire: "Fir",
+  Water: "Wat",
+  Electric: "Ele",
+  Grass: "Gra",
+  Ice: "Ice",
+  Fighting: "Fig",
+  Poison: "Poi",
+  Ground: "Gro",
+  Flying: "Fly",
+  Psychic: "Psy",
+  Bug: "Bug",
+  Rock: "Roc",
+  Ghost: "Gho",
+  Dragon: "Dra",
+  Dark: "Dar",
+  Steel: "Ste",
+  Fairy: "Fai",
+};
+
+// =============================================================================
 // Types
 // =============================================================================
 
@@ -111,12 +141,15 @@ function TypePill({ type }: TypePillProps) {
   const colors = TYPE_PILL_COLORS[type] ?? "bg-stone-400 text-white";
   return (
     <span
+      // title attribute surfaces the full type name on hover so the
+      // 3-letter abbreviation stays accessible.
+      title={type}
       className={cn(
         "inline-flex w-full items-center justify-center rounded px-1 py-0.5 text-[10px] leading-none font-semibold",
         colors
       )}
     >
-      {type}
+      {TYPE_ABBR[type] ?? type}
     </span>
   );
 }
