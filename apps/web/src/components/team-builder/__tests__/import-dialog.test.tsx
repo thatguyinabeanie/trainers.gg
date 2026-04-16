@@ -52,11 +52,14 @@ jest.mock("@trainers/validators", () => ({
 
 const mockGetLegalSpecies = jest.fn(() => undefined as Set<string> | undefined);
 const mockGetLegalItems = jest.fn(() => undefined as Set<string> | undefined);
+const mockGetLegalMoves = jest.fn(() => undefined as Set<string> | undefined);
 
 jest.mock("@trainers/pokemon", () => ({
   getLegalSpecies: (...args: unknown[]) =>
     mockGetLegalSpecies(args[0] as string),
   getLegalItems: (...args: unknown[]) => mockGetLegalItems(args[0] as string),
+  getLegalMoves: (...args: unknown[]) =>
+    mockGetLegalMoves(args[0] as string, args[1] as string),
 }));
 
 const mockAddPokemonToTeamAction = jest.fn(() =>

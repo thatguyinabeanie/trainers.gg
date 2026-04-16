@@ -21,10 +21,12 @@ jest.mock("@trainers/validators", () => ({
 
 const mockGetLegalSpecies = jest.fn();
 const mockGetLegalItems = jest.fn();
+const mockGetLegalMoves = jest.fn();
 
 jest.mock("@trainers/pokemon", () => ({
   getLegalSpecies: (...args: unknown[]) => mockGetLegalSpecies(...args),
   getLegalItems: (...args: unknown[]) => mockGetLegalItems(...args),
+  getLegalMoves: (...args: unknown[]) => mockGetLegalMoves(...args),
 }));
 
 // =============================================================================
@@ -107,6 +109,7 @@ describe("submitNewTeam", () => {
     // Default: no format legality restriction (permissive)
     mockGetLegalSpecies.mockReturnValue(undefined);
     mockGetLegalItems.mockReturnValue(undefined);
+    mockGetLegalMoves.mockReturnValue(undefined);
   });
 
   // ---------------------------------------------------------------------------
@@ -533,5 +536,106 @@ describe("submitNewTeam", () => {
     });
 
     expect(result).toEqual({ status: "ok", teamId: 42 });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Move legality guards
+  // ---------------------------------------------------------------------------
+
+  it("returns { status: 'error' } without creating a team when paste contains an illegal move", async () => {
+    const parsed = [
+      {
+        ...makeParsedPokemon("Pikachu"),
+        move1: "Thunderbolt", // legal
+        move2: "Hyperspace Hole", // illegal for Pikachu in this format
+      },
+    ];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    // Pikachu's legal set does not include Hyperspace Hole
+    mockGetLegalMoves.mockReturnValue(
+      new Set(["Thunderbolt", "Protect", "Fake Out", "U-turn"])
+    );
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      format: "gen9vgc2026regi",
+      mode: "import",
+      paste: "Pikachu\nMove: Hyperspace Hole",
+    });
+
+    expect(result.status).toBe("error");
+    expect((result as { status: "error"; error: string }).error).toContain(
+      "Hyperspace Hole"
+    );
+    expect((result as { status: "error"; error: string }).error).toContain(
+      "Pikachu"
+    );
+    // Team row must NOT be created
+    expect(mockCreateTeamAction).not.toHaveBeenCalled();
+    expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+  });
+
+  it("proceeds normally when all moves are legal for each species", async () => {
+    const parsed = [{ ...makeParsedPokemon("Pikachu"), move1: "Thunderbolt" }];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    mockGetLegalMoves.mockReturnValue(
+      new Set(["Thunderbolt", "Protect", "Fake Out"])
+    );
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      format: "gen9vgc2026regi",
+      mode: "import",
+      paste: "Pikachu",
+    });
+
+    expect(result).toEqual({ status: "ok", teamId: 42 });
+    expect(mockCreateTeamAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips move legality check when getLegalMoves returns undefined (permissive format)", async () => {
+    const parsed = [
+      { ...makeParsedPokemon("Pikachu"), move1: "Hyperspace Hole" },
+    ];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    // getLegalMoves returns undefined — permissive, no move banlist
+    mockGetLegalMoves.mockReturnValue(undefined);
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      mode: "import",
+      paste: "Pikachu",
+    });
+
+    expect(result).toEqual({ status: "ok", teamId: 42 });
+  });
+
+  it("checks all 4 move slots per pokemon and reports all illegal moves", async () => {
+    const parsed = [
+      {
+        ...makeParsedPokemon("Pikachu"),
+        move1: "Thunderbolt", // legal
+        move2: "Hyperspace Hole", // illegal
+        move3: "Protect", // legal
+        move4: "Mind Blown", // illegal
+      },
+    ];
+    mockParseShowdownText.mockReturnValueOnce(parsed);
+    mockGetLegalMoves.mockReturnValue(
+      new Set(["Thunderbolt", "Protect", "Fake Out"])
+    );
+
+    const result = await submitNewTeam({
+      ...BASE_INPUT,
+      format: "gen9vgc2026regi",
+      mode: "import",
+      paste: "Pikachu",
+    });
+
+    expect(result.status).toBe("error");
+    const error = (result as { status: "error"; error: string }).error;
+    expect(error).toContain("Hyperspace Hole");
+    expect(error).toContain("Mind Blown");
+    expect(mockCreateTeamAction).not.toHaveBeenCalled();
   });
 });

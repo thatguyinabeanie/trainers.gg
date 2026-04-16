@@ -4,7 +4,11 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 
-import { getLegalSpecies, getLegalItems } from "@trainers/pokemon";
+import {
+  getLegalItems,
+  getLegalMoves,
+  getLegalSpecies,
+} from "@trainers/pokemon";
 
 import {
   parseShowdownText,
@@ -237,6 +241,23 @@ export function ImportDialog({
       if (illegalItems.length > 0) {
         return `These items aren't legal in this format: ${[...new Set(illegalItems)].join(", ")}.`;
       }
+    }
+
+    // Move check — per-species learnset validation
+    const illegalMoves: string[] = [];
+    for (const p of candidates) {
+      if (!p.species) continue;
+      const legalForSpecies = getLegalMoves(p.species, formatId);
+      if (!legalForSpecies) continue;
+      for (const slot of ["move1", "move2", "move3", "move4"] as const) {
+        const move = p[slot];
+        if (move && !legalForSpecies.has(move)) {
+          illegalMoves.push(`${move} on ${p.species}`);
+        }
+      }
+    }
+    if (illegalMoves.length > 0) {
+      return `Illegal moves: ${illegalMoves.join("; ")}.`;
     }
 
     return null;

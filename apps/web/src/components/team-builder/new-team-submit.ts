@@ -1,4 +1,8 @@
-import { getLegalSpecies, getLegalItems } from "@trainers/pokemon";
+import {
+  getLegalItems,
+  getLegalMoves,
+  getLegalSpecies,
+} from "@trainers/pokemon";
 import { type TablesInsert } from "@trainers/supabase";
 import { parseShowdownText } from "@trainers/validators";
 
@@ -73,6 +77,26 @@ export async function submitNewTeam(
             error: `Cannot import. These items aren't legal in this format: ${[...new Set(illegalItems)].join(", ")}.`,
           };
         }
+      }
+
+      // Reject the whole paste when any move is illegal for its species in this format.
+      const illegalMoves: string[] = [];
+      for (const p of parsed) {
+        if (!p.species) continue;
+        const legalForSpecies = getLegalMoves(p.species, input.format);
+        if (!legalForSpecies) continue;
+        for (const slot of ["move1", "move2", "move3", "move4"] as const) {
+          const move = p[slot];
+          if (move && !legalForSpecies.has(move)) {
+            illegalMoves.push(`${move} on ${p.species}`);
+          }
+        }
+      }
+      if (illegalMoves.length > 0) {
+        return {
+          status: "error",
+          error: `Cannot import. Illegal moves: ${illegalMoves.join("; ")}.`,
+        };
       }
     }
   }
