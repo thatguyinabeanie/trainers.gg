@@ -255,47 +255,6 @@ export async function deleteRoleMapping(
 }
 
 // =============================================================================
-// Retry helpers — reset queue items back to pending
-// =============================================================================
-
-/**
- * Reset a channel notification queue item to pending for re-delivery.
- * Sets status='pending', attempts=0, and clears failed_reason.
- *
- * @param id - discord_notification_queue.id to reset
- */
-export async function resetNotificationForRetry(
-  supabase: TypedClient,
-  id: number
-): Promise<void> {
-  const { error } = await supabase
-    .from("discord_notification_queue")
-    .update({ status: "pending", attempts: 0, failed_reason: null })
-    .eq("id", id);
-
-  if (error)
-    throw new Error(`Failed to reset notification for retry: ${error.message}`);
-}
-
-/**
- * Reset a DM queue item to pending for re-delivery.
- * Sets status='pending', attempts=0, and clears failed_reason.
- *
- * @param id - discord_dm_queue.id to reset
- */
-export async function resetDmForRetry(
-  supabase: TypedClient,
-  id: number
-): Promise<void> {
-  const { error } = await supabase
-    .from("discord_dm_queue")
-    .update({ status: "pending", attempts: 0, failed_reason: null })
-    .eq("id", id);
-
-  if (error) throw new Error(`Failed to reset DM for retry: ${error.message}`);
-}
-
-// =============================================================================
 // discord_channel_failures — failure tracking
 // =============================================================================
 
@@ -398,345 +357,42 @@ export async function markChannelEmailSent(
 }
 
 // =============================================================================
-// discord_notification_queue — channel notification outbox
+// discord_delivery_failures — unified workflow failure log
 // =============================================================================
 
 /**
- * Enqueue a channel notification for delivery by the cron worker.
- * Returns `{ id, created: true }` on success, or `{ id: 0, created: false }` when
- * the (event_type, source_id) pair already exists (ON CONFLICT DO NOTHING).
+ * Log a permanent delivery failure for the admin Failures tab.
+ * Called from workflow steps when a Discord API call hits a terminal error.
  */
-export async function enqueueNotification(
-  supabase: TypedClient,
-  input: {
-    channel_id: string;
-    event_type: string;
-    source_id: string;
-    payload: Record<string, unknown>;
-  }
-): Promise<{ id: number; created: boolean }> {
-  const { data, error } = await supabase
-    .from("discord_notification_queue")
-    .insert({
-      channel_id: input.channel_id,
-      event_type: input.event_type,
-      source_id: input.source_id,
-      payload: input.payload as unknown as Json,
-    })
-    .select("id")
-    .single();
-
-  // Unique constraint violation means the notification was already enqueued
-  if (error) {
-    if (error.code === "23505") {
-      return { id: 0, created: false };
-    }
-    throw new Error(`Failed to enqueue notification: ${error.message}`);
-  }
-
-  return { id: data.id, created: true };
-}
-
-/**
- * Mark a notification queue item as successfully sent.
- */
-export async function markNotificationSent(
-  supabase: TypedClient,
-  id: number
-): Promise<void> {
-  const { error } = await supabase
-    .from("discord_notification_queue")
-    .update({
-      status: "sent",
-      sent_at: new Date().toISOString(),
-    })
-    .eq("id", id);
-
-  if (error)
-    throw new Error(`Failed to mark notification sent: ${error.message}`);
-}
-
-/**
- * Mark a notification queue item as failed and record the failure reason.
- * Increments the attempts counter by fetching the current value first.
- */
-export async function markNotificationFailed(
-  supabase: TypedClient,
-  id: number,
-  reason: string
-): Promise<void> {
-  const { data: current, error: fetchError } = await supabase
-    .from("discord_notification_queue")
-    .select("attempts")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (fetchError)
-    throw new Error(
-      `Failed to fetch notification attempts: ${fetchError.message}`
-    );
-
-  const { error } = await supabase
-    .from("discord_notification_queue")
-    .update({
-      status: "failed",
-      failed_reason: reason,
-      attempts: (current?.attempts ?? 0) + 1,
-    })
-    .eq("id", id);
-
-  if (error)
-    throw new Error(`Failed to mark notification failed: ${error.message}`);
-}
-
-// =============================================================================
-// discord_dm_queue — user DM outbox
-// =============================================================================
-
-/**
- * Enqueue a user DM notification for delivery by the cron worker.
- * Returns `{ id, created: true }` on success, or `{ id: 0, created: false }` when
- * the (event_type, source_id, discord_user_id) triplet already exists.
- */
-export async function enqueueDm(
-  supabase: TypedClient,
-  input: {
-    discord_user_id: string;
-    user_id: string;
-    community_id: number;
-    event_type: DiscordDmEventType;
-    source_id: string;
-    payload: Record<string, unknown>;
-    delivery_mode: "dm_only" | "channel_only" | "dm_with_fallback";
-    fallback_channel_id?: string | null;
-  }
-): Promise<{ id: number; created: boolean }> {
-  const { data, error } = await supabase
-    .from("discord_dm_queue")
-    .insert({
-      discord_user_id: input.discord_user_id,
-      user_id: input.user_id,
-      community_id: input.community_id,
-      event_type: input.event_type,
-      source_id: input.source_id,
-      payload: input.payload as unknown as Json,
-      delivery_mode: input.delivery_mode,
-      fallback_channel_id: input.fallback_channel_id ?? null,
-    })
-    .select("id")
-    .single();
-
-  // Unique constraint violation means the DM was already enqueued
-  if (error) {
-    if (error.code === "23505") {
-      return { id: 0, created: false };
-    }
-    throw new Error(`Failed to enqueue DM: ${error.message}`);
-  }
-
-  return { id: data.id, created: true };
-}
-
-/**
- * Mark a DM queue item as failed and record the failure reason.
- */
-export async function markDmFailed(
-  supabase: TypedClient,
-  id: number,
-  reason: string
-): Promise<void> {
-  const { error } = await supabase
-    .from("discord_dm_queue")
-    .update({
-      status: "failed",
-      failed_reason: reason,
-    })
-    .eq("id", id);
-
-  if (error) throw new Error(`Failed to mark DM failed: ${error.message}`);
-}
-
-/**
- * Mark a DM queue item as skipped (e.g. user opted out, delivery_mode=channel_only).
- * Records the skip reason for observability.
- */
-export async function markDmSkipped(
-  supabase: TypedClient,
-  id: number,
-  reason: string
-): Promise<void> {
-  const { error } = await supabase
-    .from("discord_dm_queue")
-    .update({
-      status: "skipped",
-      failed_reason: reason,
-    })
-    .eq("id", id);
-
-  if (error) throw new Error(`Failed to mark DM skipped: ${error.message}`);
-}
-
-/**
- * Mark a DM queue item as successfully sent.
- */
-export async function markDmSent(
-  supabase: TypedClient,
-  id: number
-): Promise<void> {
-  const { error } = await supabase
-    .from("discord_dm_queue")
-    .update({
-      status: "sent",
-      sent_at: new Date().toISOString(),
-    })
-    .eq("id", id);
-
-  if (error) throw new Error(`Failed to mark DM sent: ${error.message}`);
-}
-
-// =============================================================================
-// discord_role_sync_queue — role assignment outbox
-// =============================================================================
-
-/**
- * Enqueue a role add/remove operation for delivery by the cron worker.
- * Returns `{ id, created: true }` on success, or `{ id: 0, created: false }` when
- * the unique (server, user, role, action, source_event) tuple already exists.
- */
-export async function enqueueRoleSync(
+export async function recordDeliveryFailure(
   supabase: TypedClient,
   input: {
     discord_server_id: number;
-    discord_user_id: string;
-    discord_role_id: string;
-    action: "add" | "remove";
-    source_event: string;
+    type: "channel" | "dm" | "role_sync";
+    event_type: string;
+    target: string;
+    error_code?: string;
+    error_reason: string;
+    payload?: Record<string, unknown>;
+    delivered_via_fallback?: boolean;
   }
-): Promise<{ id: number; created: boolean }> {
+): Promise<{ id: number }> {
   const { data, error } = await supabase
-    .from("discord_role_sync_queue")
+    .from("discord_delivery_failures")
     .insert({
       discord_server_id: input.discord_server_id,
-      discord_user_id: input.discord_user_id,
-      discord_role_id: input.discord_role_id,
-      action: input.action,
-      source_event: input.source_event,
+      type: input.type,
+      event_type: input.event_type,
+      target: input.target,
+      error_code: input.error_code ?? null,
+      error_reason: input.error_reason,
+      payload: (input.payload as unknown as Json) ?? null,
+      delivered_via_fallback: input.delivered_via_fallback ?? false,
     })
     .select("id")
     .single();
 
-  // Unique constraint violation means this sync was already queued
-  if (error) {
-    if (error.code === "23505") {
-      return { id: 0, created: false };
-    }
-    throw new Error(`Failed to enqueue role sync: ${error.message}`);
-  }
-
-  return { id: data.id, created: true };
-}
-
-/**
- * Mark a role sync queue item as completed.
- */
-export async function markRoleSyncComplete(
-  supabase: TypedClient,
-  id: number
-): Promise<void> {
-  const { error } = await supabase
-    .from("discord_role_sync_queue")
-    .update({
-      status: "sent",
-      completed_at: new Date().toISOString(),
-    })
-    .eq("id", id);
-
   if (error)
-    throw new Error(`Failed to mark role sync complete: ${error.message}`);
-}
-
-/**
- * Mark a role sync queue item as failed and record the failure reason.
- */
-export async function markRoleSyncFailed(
-  supabase: TypedClient,
-  id: number,
-  reason: string
-): Promise<void> {
-  const { error } = await supabase
-    .from("discord_role_sync_queue")
-    .update({
-      status: "failed",
-      failed_reason: reason,
-    })
-    .eq("id", id);
-
-  if (error)
-    throw new Error(`Failed to mark role sync failed: ${error.message}`);
-}
-
-// =============================================================================
-// Queue retention helpers (for cron cleanup)
-// =============================================================================
-
-/**
- * Purge sent/failed notification queue items older than the given date.
- * Returns the number of rows deleted.
- */
-export async function purgeOldNotifications(
-  supabase: TypedClient,
-  olderThan: Date
-): Promise<{ deleted: number }> {
-  const { data, error } = await supabase
-    .from("discord_notification_queue")
-    .delete()
-    .in("status", ["sent", "failed"])
-    .lt("created_at", olderThan.toISOString())
-    .select("id");
-
-  if (error)
-    throw new Error(`Failed to purge old notifications: ${error.message}`);
-
-  return { deleted: data?.length ?? 0 };
-}
-
-/**
- * Purge sent/failed/skipped DM queue items older than the given date.
- * Returns the number of rows deleted.
- */
-export async function purgeOldDmQueue(
-  supabase: TypedClient,
-  olderThan: Date
-): Promise<{ deleted: number }> {
-  const { data, error } = await supabase
-    .from("discord_dm_queue")
-    .delete()
-    .in("status", ["sent", "failed", "skipped"])
-    .lt("created_at", olderThan.toISOString())
-    .select("id");
-
-  if (error) throw new Error(`Failed to purge old DM queue: ${error.message}`);
-
-  return { deleted: data?.length ?? 0 };
-}
-
-/**
- * Purge sent/failed role sync queue items older than the given date.
- * Returns the number of rows deleted.
- */
-export async function purgeOldRoleSyncQueue(
-  supabase: TypedClient,
-  olderThan: Date
-): Promise<{ deleted: number }> {
-  const { data, error } = await supabase
-    .from("discord_role_sync_queue")
-    .delete()
-    .in("status", ["sent", "failed"])
-    .lt("created_at", olderThan.toISOString())
-    .select("id");
-
-  if (error)
-    throw new Error(`Failed to purge old role sync queue: ${error.message}`);
-
-  return { deleted: data?.length ?? 0 };
+    throw new Error(`Failed to record delivery failure: ${error.message}`);
+  return { id: data.id };
 }

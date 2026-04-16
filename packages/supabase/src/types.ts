@@ -644,61 +644,49 @@ export type Database = {
           },
         ]
       }
-      discord_dm_queue: {
+      discord_delivery_failures: {
         Row: {
-          attempts: number
-          community_id: number
           created_at: string
-          delivery_mode: string
-          discord_user_id: string
-          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
-          failed_reason: string | null
-          fallback_channel_id: string | null
+          delivered_via_fallback: boolean
+          discord_server_id: number
+          error_code: string | null
+          error_reason: string
+          event_type: string
           id: number
-          payload: Json
-          sent_at: string | null
-          source_id: string
-          status: string
-          user_id: string
+          payload: Json | null
+          target: string
+          type: string
         }
         Insert: {
-          attempts?: number
-          community_id: number
           created_at?: string
-          delivery_mode: string
-          discord_user_id: string
-          event_type: Database["public"]["Enums"]["discord_dm_event_type"]
-          failed_reason?: string | null
-          fallback_channel_id?: string | null
+          delivered_via_fallback?: boolean
+          discord_server_id: number
+          error_code?: string | null
+          error_reason: string
+          event_type: string
           id?: never
-          payload: Json
-          sent_at?: string | null
-          source_id: string
-          status?: string
-          user_id: string
+          payload?: Json | null
+          target: string
+          type: string
         }
         Update: {
-          attempts?: number
-          community_id?: number
           created_at?: string
-          delivery_mode?: string
-          discord_user_id?: string
-          event_type?: Database["public"]["Enums"]["discord_dm_event_type"]
-          failed_reason?: string | null
-          fallback_channel_id?: string | null
+          delivered_via_fallback?: boolean
+          discord_server_id?: number
+          error_code?: string | null
+          error_reason?: string
+          event_type?: string
           id?: never
-          payload?: Json
-          sent_at?: string | null
-          source_id?: string
-          status?: string
-          user_id?: string
+          payload?: Json | null
+          target?: string
+          type?: string
         }
         Relationships: [
           {
-            foreignKeyName: "discord_dm_queue_community_id_fkey"
-            columns: ["community_id"]
+            foreignKeyName: "discord_delivery_failures_discord_server_id_fkey"
+            columns: ["discord_server_id"]
             isOneToOne: false
-            referencedRelation: "communities"
+            referencedRelation: "discord_servers"
             referencedColumns: ["id"]
           },
         ]
@@ -735,45 +723,6 @@ export type Database = {
           },
         ]
       }
-      discord_notification_queue: {
-        Row: {
-          attempts: number
-          channel_id: string
-          created_at: string
-          event_type: string
-          failed_reason: string | null
-          id: number
-          payload: Json
-          sent_at: string | null
-          source_id: string
-          status: string
-        }
-        Insert: {
-          attempts?: number
-          channel_id: string
-          created_at?: string
-          event_type: string
-          failed_reason?: string | null
-          id?: never
-          payload: Json
-          sent_at?: string | null
-          source_id: string
-          status?: string
-        }
-        Update: {
-          attempts?: number
-          channel_id?: string
-          created_at?: string
-          event_type?: string
-          failed_reason?: string | null
-          id?: never
-          payload?: Json
-          sent_at?: string | null
-          source_id?: string
-          status?: string
-        }
-        Relationships: []
-      }
       discord_role_mappings: {
         Row: {
           created_at: string
@@ -802,56 +751,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "discord_role_mappings_discord_server_id_fkey"
-            columns: ["discord_server_id"]
-            isOneToOne: false
-            referencedRelation: "discord_servers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      discord_role_sync_queue: {
-        Row: {
-          action: string
-          attempts: number
-          completed_at: string | null
-          created_at: string
-          discord_role_id: string
-          discord_server_id: number
-          discord_user_id: string
-          failed_reason: string | null
-          id: number
-          source_event: string
-          status: string
-        }
-        Insert: {
-          action: string
-          attempts?: number
-          completed_at?: string | null
-          created_at?: string
-          discord_role_id: string
-          discord_server_id: number
-          discord_user_id: string
-          failed_reason?: string | null
-          id?: never
-          source_event: string
-          status?: string
-        }
-        Update: {
-          action?: string
-          attempts?: number
-          completed_at?: string | null
-          created_at?: string
-          discord_role_id?: string
-          discord_server_id?: number
-          discord_user_id?: string
-          failed_reason?: string | null
-          id?: never
-          source_event?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "discord_role_sync_queue_discord_server_id_fkey"
             columns: ["discord_server_id"]
             isOneToOne: false
             referencedRelation: "discord_servers"

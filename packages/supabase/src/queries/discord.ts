@@ -12,9 +12,7 @@ export type DiscordDmSetting = Tables<"discord_dm_settings">;
 export type DiscordUserDmPreference = Tables<"discord_user_dm_preferences">;
 export type DiscordRoleMapping = Tables<"discord_role_mappings">;
 export type DiscordChannelFailure = Tables<"discord_channel_failures">;
-export type DiscordNotificationQueueItem = Tables<"discord_notification_queue">;
-export type DiscordDmQueueItem = Tables<"discord_dm_queue">;
-export type DiscordRoleSyncQueueItem = Tables<"discord_role_sync_queue">;
+export type DiscordDeliveryFailure = Tables<"discord_delivery_failures">;
 
 export type DiscordDmEventType = Enums<"discord_dm_event_type">;
 export type DiscordRoleType = Enums<"discord_role_type">;
@@ -414,86 +412,6 @@ export async function getChannelFailureCount(
   if (error)
     throw new Error(`Failed to get channel failure count: ${error.message}`);
   return data?.consecutive_failures ?? 0;
-}
-
-// =============================================================================
-// discord_notification_queue (service-role only — for cron)
-// =============================================================================
-
-/**
- * List pending notification queue items, ordered by oldest first.
- * Intended for use by the cron worker (service role client required).
- *
- * @param limit - Maximum number of items to return (default 100)
- */
-export async function listPendingNotifications(
-  supabase: TypedClient,
-  limit = 100
-): Promise<DiscordNotificationQueueItem[]> {
-  const { data, error } = await supabase
-    .from("discord_notification_queue")
-    .select("*")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(limit);
-
-  if (error)
-    throw new Error(`Failed to list pending notifications: ${error.message}`);
-  return data;
-}
-
-// =============================================================================
-// discord_dm_queue (service-role only — for cron)
-// =============================================================================
-
-/**
- * List pending DM queue items, ordered by oldest first.
- * Intended for use by the cron worker (service role client required).
- *
- * @param limit - Maximum number of items to return (default 100)
- */
-export async function listPendingDmNotifications(
-  supabase: TypedClient,
-  limit = 100
-): Promise<DiscordDmQueueItem[]> {
-  const { data, error } = await supabase
-    .from("discord_dm_queue")
-    .select("*")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(limit);
-
-  if (error)
-    throw new Error(
-      `Failed to list pending DM notifications: ${error.message}`
-    );
-  return data;
-}
-
-// =============================================================================
-// discord_role_sync_queue (service-role only — for cron)
-// =============================================================================
-
-/**
- * List pending role sync queue items, ordered by oldest first.
- * Intended for use by the cron worker (service role client required).
- *
- * @param limit - Maximum number of items to return (default 100)
- */
-export async function listPendingRoleSyncs(
-  supabase: TypedClient,
-  limit = 100
-): Promise<DiscordRoleSyncQueueItem[]> {
-  const { data, error } = await supabase
-    .from("discord_role_sync_queue")
-    .select("*")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(limit);
-
-  if (error)
-    throw new Error(`Failed to list pending role syncs: ${error.message}`);
-  return data;
 }
 
 // =============================================================================
@@ -1432,6 +1350,28 @@ export async function getPublicTeamForCommunity(
 }
 
 // =============================================================================
+// discord_delivery_failures
+// =============================================================================
+
+/**
+ * Get a single delivery failure row by ID for the retry action.
+ */
+export async function getDeliveryFailure(
+  supabase: TypedClient,
+  id: number
+): Promise<DiscordDeliveryFailure | null> {
+  const { data, error } = await supabase
+    .from("discord_delivery_failures")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error)
+    throw new Error(`Failed to get delivery failure: ${error.message}`);
+  return data;
+}
+
+// =============================================================================
 // Integration page composite queries
 // =============================================================================
 
@@ -1478,55 +1418,40 @@ export async function getDiscordIntegrationOverview(
 
 /**
  * A channel failure record mapped for display on the Failures tab.
- *
- * Note: discord_channel_failures stores cumulative consecutive failure counts
- * per channel, not individual failure events. Fields that have no equivalent
- * column in the schema (event_type, last_error_code, last_error_reason,
- * mapping_id) are always null.
+ * Sourced from discord_delivery_failures (type='channel').
  */
 export type ChannelFailureRow = {
   id: number;
   channel_id: string;
-  /** Not stored per-failure in this schema — always null. */
-  event_type: null;
+  event_type: string | null;
+  /** Consecutive failure count — looked up separately from discord_channel_failures if needed. */
   consecutive_failures: number;
-  /** Not stored in this schema — always null. */
-  last_error_code: null;
-  /** Not stored in this schema — always null. */
-  last_error_reason: null;
-  /** Maps to last_failed_at on discord_channel_failures. */
+  last_error_code: number | null;
+  last_error_reason: string | null;
   last_attempt_at: string | null;
-  /** Not stored in this schema — always null. */
   mapping_id: null;
 };
 
 /**
- * A failed DM queue row mapped for display on the Failures tab.
+ * A failed DM delivery row mapped for display on the Failures tab.
+ * Sourced from discord_delivery_failures (type='dm').
  */
 export type DmFailureRow = {
   id: number;
   user_id: string;
   discord_user_id: string;
   event_type: DiscordDmEventType;
-  /** discord_dm_queue has no error_code column — always null. */
-  error_code: null;
+  error_code: number | null;
   error_reason: string | null;
-  /**
-   * TODO: discord_dm_queue has no dedicated delivered_via_fallback column.
-   * When this column is added, update this query to read it directly.
-   * For now always false.
-   */
-  delivered_via_fallback: false;
+  delivered_via_fallback: boolean;
   failed_at: string;
-  /**
-   * A join to users/alts would be required to resolve the username.
-   * Not available without additional query — always null for now.
-   */
+  /** Not resolvable without an additional join — always null. */
   username: null;
 };
 
 /**
- * A failed role sync queue row mapped for display on the Failures tab.
+ * A failed role sync delivery row mapped for display on the Failures tab.
+ * Sourced from discord_delivery_failures (type='role_sync').
  */
 export type RoleSyncFailureRow = {
   id: number;
@@ -1542,6 +1467,9 @@ export type RoleSyncFailureRow = {
  * and role sync operations for a Discord server. Used by the Failures tab
  * on the Discord integration page.
  *
+ * Queries discord_delivery_failures (unified log written by Vercel Workflow steps),
+ * splitting rows into channels / dms / roleSyncs by the `type` column.
+ *
  * @param serverId - discord_servers.id
  * @param hours - Number of hours to look back (default 24)
  */
@@ -1556,89 +1484,58 @@ export async function listRecentFailures(
 }> {
   const since = new Date(Date.now() - hours * 3_600_000).toISOString();
 
-  // discord_channel_failures: cumulative counters, filter by last_failed_at
-  const channelFailuresQuery = supabase
-    .from("discord_channel_failures")
-    .select("id, channel_id, consecutive_failures, last_failed_at")
+  const { data, error } = await supabase
+    .from("discord_delivery_failures")
+    .select("*")
     .eq("discord_server_id", serverId)
-    .gte("last_failed_at", since)
-    .gt("consecutive_failures", 0);
-
-  // discord_dm_queue: rows with status='failed' within the time window.
-  // TODO: discord_dm_queue has no discord_server_id FK — when that column is
-  // added, replace the community_id approach with a server_id filter.
-  const dmFailuresQuery = supabase
-    .from("discord_dm_queue")
-    .select(
-      "id, user_id, discord_user_id, event_type, failed_reason, created_at"
-    )
-    .eq("status", "failed")
     .gte("created_at", since)
-    .limit(200);
+    .order("created_at", { ascending: false })
+    .limit(600);
 
-  // discord_role_sync_queue: rows with status='failed' within the time window
-  const roleSyncFailuresQuery = supabase
-    .from("discord_role_sync_queue")
-    .select(
-      "id, discord_user_id, discord_role_id, action, failed_reason, created_at"
-    )
-    .eq("discord_server_id", serverId)
-    .eq("status", "failed")
-    .gte("created_at", since)
-    .limit(200);
+  if (error)
+    throw new Error(`Failed to list recent failures: ${error.message}`);
 
-  const [channelResult, dmResult, roleSyncResult] = await Promise.all([
-    channelFailuresQuery,
-    dmFailuresQuery,
-    roleSyncFailuresQuery,
-  ]);
+  const channels: ChannelFailureRow[] = [];
+  const dms: DmFailureRow[] = [];
+  const roleSyncs: RoleSyncFailureRow[] = [];
 
-  if (channelResult.error)
-    throw new Error(
-      `Failed to list channel failures: ${channelResult.error.message}`
-    );
-  if (dmResult.error)
-    throw new Error(`Failed to list DM failures: ${dmResult.error.message}`);
-  if (roleSyncResult.error)
-    throw new Error(
-      `Failed to list role sync failures: ${roleSyncResult.error.message}`
-    );
-
-  const channels: ChannelFailureRow[] = (channelResult.data ?? []).map(
-    (row) => ({
-      id: row.id,
-      channel_id: row.channel_id,
-      event_type: null,
-      consecutive_failures: row.consecutive_failures,
-      last_error_code: null,
-      last_error_reason: null,
-      last_attempt_at: row.last_failed_at ?? null,
-      mapping_id: null,
-    })
-  );
-
-  const dms: DmFailureRow[] = (dmResult.data ?? []).map((row) => ({
-    id: row.id,
-    user_id: row.user_id,
-    discord_user_id: row.discord_user_id,
-    event_type: row.event_type,
-    error_code: null,
-    error_reason: row.failed_reason ?? null,
-    delivered_via_fallback: false as const,
-    failed_at: row.created_at,
-    username: null,
-  }));
-
-  const roleSyncs: RoleSyncFailureRow[] = (roleSyncResult.data ?? [])
-    .filter((row) => row.failed_reason !== null)
-    .map((row) => ({
-      id: row.id,
-      discord_user_id: row.discord_user_id,
-      role_id: row.discord_role_id,
-      action: row.action as "add" | "remove",
-      failed_reason: row.failed_reason ?? "",
-      failed_at: row.created_at,
-    }));
+  for (const row of data ?? []) {
+    if (row.type === "channel") {
+      channels.push({
+        id: row.id,
+        channel_id: row.target,
+        event_type: row.event_type,
+        // Consecutive failure count is tracked in discord_channel_failures;
+        // not available in this unified log — set to 0 as a default.
+        consecutive_failures: 0,
+        last_error_code: row.error_code ? Number(row.error_code) : null,
+        last_error_reason: row.error_reason,
+        last_attempt_at: row.created_at,
+        mapping_id: null,
+      });
+    } else if (row.type === "dm") {
+      dms.push({
+        id: row.id,
+        user_id: "",
+        discord_user_id: row.target,
+        event_type: row.event_type as DiscordDmEventType,
+        error_code: row.error_code ? Number(row.error_code) : null,
+        error_reason: row.error_reason,
+        delivered_via_fallback: row.delivered_via_fallback,
+        failed_at: row.created_at,
+        username: null,
+      });
+    } else {
+      roleSyncs.push({
+        id: row.id,
+        discord_user_id: row.target,
+        role_id: "",
+        action: "add",
+        failed_reason: row.error_reason,
+        failed_at: row.created_at,
+      });
+    }
+  }
 
   return { channels, dms, roleSyncs };
 }
