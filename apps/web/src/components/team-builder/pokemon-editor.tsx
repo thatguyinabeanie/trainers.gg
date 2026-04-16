@@ -14,7 +14,7 @@ import { AbilityPicker } from "./ability-picker";
 import { EditorHeaderBand } from "./editor-header-band";
 import { ItemPicker } from "./item-picker";
 import { MovePicker } from "./move-picker";
-import { MoveRow } from "./move-row";
+import { MoveListHeader, MoveRow } from "./move-row";
 import { NaturePicker } from "./nature-picker";
 import { StatsTable } from "./stats-table";
 import { TeraPicker } from "./tera-picker";
@@ -261,12 +261,18 @@ export function PokemonEditor({
           )}
           aria-label="Moves"
         >
-          <h4 className="text-muted-foreground mb-3 flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
+          <h4 className="text-muted-foreground mb-2 flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
             <span>Moves</span>
             <span className="text-muted-foreground/70 font-mono text-[11px] tabular-nums">
               {filledMoves} / 4
             </span>
           </h4>
+
+          {/* BP / Acc column labels rendered once here — every MoveRow used
+              to show its own BP/Acc captions, which read as repetitive
+              labels. The header sits directly above the rows since
+              MoveListHeader uses the same grid template as MoveRow. */}
+          <MoveListHeader />
 
           <div className="grid gap-2">
             {MOVE_SLOTS.map((slot) => {

@@ -135,41 +135,62 @@ export function MoveRow({ move, onOpenPicker, className }: MoveRowProps) {
         {catLetter}
       </span>
 
-      {/* BP */}
-      <div className="flex flex-col items-center">
-        <span className="text-muted-foreground text-[9px] font-semibold tracking-wider uppercase">
-          BP
-        </span>
-        <span
-          className={cn(
-            "font-mono text-sm font-semibold tabular-nums",
-            isStatus || move.basePower === 0
-              ? "text-muted-foreground/60"
-              : "text-foreground"
-          )}
-        >
-          {isStatus || move.basePower === 0 ? "—" : move.basePower}
-        </span>
-      </div>
+      {/* BP — column header lives in MoveListHeader so the row stays compact. */}
+      <span
+        className={cn(
+          "text-center font-mono text-sm font-semibold tabular-nums",
+          isStatus || move.basePower === 0
+            ? "text-muted-foreground/60"
+            : "text-foreground"
+        )}
+      >
+        {isStatus || move.basePower === 0 ? "—" : move.basePower}
+      </span>
 
       {/* ACC */}
-      <div className="flex flex-col items-center">
-        <span className="text-muted-foreground text-[9px] font-semibold tracking-wider uppercase">
-          Acc
-        </span>
-        <span
-          className={cn(
-            "font-mono text-sm font-semibold tabular-nums",
-            isStatus
+      <span
+        className={cn(
+          "text-center font-mono text-sm font-semibold tabular-nums",
+          isStatus
+            ? "text-muted-foreground/60"
+            : move.accuracy === true || move.accuracy === 0
               ? "text-muted-foreground/60"
-              : move.accuracy === true || move.accuracy === 0
-                ? "text-muted-foreground/60"
-                : "text-foreground"
-          )}
-        >
-          {isStatus ? "—" : formatAccuracy(move.accuracy)}
-        </span>
-      </div>
+              : "text-foreground"
+        )}
+      >
+        {isStatus ? "—" : formatAccuracy(move.accuracy)}
+      </span>
     </button>
+  );
+}
+
+// =============================================================================
+// MoveListHeader — column labels rendered once above the rows
+// =============================================================================
+
+/**
+ * Column header that mirrors the {@link MoveRow} grid template so the BP/Acc
+ * labels live above the rows once instead of repeating on every row.
+ *
+ * Skip the type/name/category columns — those are self-explanatory at a glance.
+ * Only the rightmost two numeric columns benefit from a label, since "65 / 100"
+ * with no header would be ambiguous.
+ */
+export function MoveListHeader() {
+  return (
+    <div
+      className={cn(
+        // Match the MoveRow template exactly so the BP/Acc headers sit
+        // directly above the columns they label.
+        "grid grid-cols-[52px_minmax(0,1fr)_22px_38px_38px] items-center gap-3 px-3.5 pb-1",
+        "text-muted-foreground text-[9px] font-semibold tracking-wider uppercase"
+      )}
+    >
+      <span aria-hidden="true" />
+      <span aria-hidden="true" />
+      <span aria-hidden="true" />
+      <span className="text-center">BP</span>
+      <span className="text-center">Acc</span>
+    </div>
   );
 }

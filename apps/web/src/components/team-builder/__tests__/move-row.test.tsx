@@ -15,7 +15,7 @@ jest.mock("@trainers/pokemon", () => ({
 
 import { getMoveHelperText, type MoveData } from "@trainers/pokemon";
 
-import { MoveRow } from "../move-row";
+import { MoveListHeader, MoveRow } from "../move-row";
 
 const mockedHelper = jest.mocked(getMoveHelperText);
 
@@ -112,6 +112,15 @@ describe("MoveRow", () => {
       render(<MoveRow move={null} onOpenPicker={jest.fn()} />);
       expect(screen.queryByText("BP")).not.toBeInTheDocument();
       expect(screen.queryByText("Acc")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("MoveListHeader", () => {
+    it("renders BP and Acc column labels exactly once", () => {
+      render(<MoveListHeader />);
+      // Single header row above the move list — replaces per-row BP/Acc captions.
+      expect(screen.getByText("BP")).toBeInTheDocument();
+      expect(screen.getByText("Acc")).toBeInTheDocument();
     });
   });
 });
