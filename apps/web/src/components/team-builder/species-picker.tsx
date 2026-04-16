@@ -1,18 +1,34 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
-import { searchSpecies, type SpeciesSearchEntry } from "@trainers/pokemon";
+import {
+  isLegalSpecies,
+  searchSpecies,
+  type SpeciesSearchEntry,
+} from "@trainers/pokemon";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-import { SpeciesDetail } from "./species-detail";
 import {
   SpeciesFilters,
   DEFAULT_FILTERS,
   type SpeciesFilterState,
 } from "./species-filters";
-import { SpeciesTable } from "./species-table";
+import { TYPE_PILL_COLORS } from "./type-colors";
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+/** Cap visible rows so a wide-open search doesn't render thousands of nodes. */
+const MAX_VISIBLE_ROWS = 200;
+
+/** Stat threshold for the "high stat" highlight (matches the spec's 110+). */
+const HIGH_STAT_THRESHOLD = 110;
 
 // =============================================================================
 // Types
@@ -22,10 +38,183 @@ interface SpeciesPickerProps {
   speciesIndex: SpeciesSearchEntry[];
   currentTeam: Array<{ species: string }>;
   currentSpecies: string | null;
-  /** Active format ID. When set, illegal species are dimmed + select is blocked. */
+  /** Active format ID. When set, illegal species are filtered out. */
   formatId?: string;
+  /**
+   * Single-click row selection callback. Selection always uses default
+   * loadout (first ability). Per the rich-rows spec the legacy "select
+   * blank" flow is dropped — `mode` is left on the signature so the
+   * caller (team-workspace) doesn't have to branch on picker variant.
+   */
   onSelect: (species: string, mode: "defaults" | "blank") => void;
   onCancel: () => void;
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/** Tailwind classes for a stat cell value, highlighting >=110 as "good". */
+function statValueClass(value: number): string {
+  if (value >= HIGH_STAT_THRESHOLD) {
+    return "text-stat-good font-semibold";
+  }
+  return "text-foreground";
+}
+
+// =============================================================================
+// SpeciesRow — one rich row in the picker
+// =============================================================================
+
+interface SpeciesRowProps {
+  entry: SpeciesSearchEntry;
+  isCurrent: boolean;
+  onSelect: () => void;
+}
+
+function SpeciesRow({ entry, isCurrent, onSelect }: SpeciesRowProps) {
+  const sprite = getPokemonSprite(entry.species);
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        "hover:bg-muted/60 grid w-full cursor-pointer items-center gap-3 border-b px-4 py-2.5 text-left transition-colors",
+        // Grid template:
+        //  44px (sprite circle)
+        //  minmax(0, 1fr) (info column: name + types, abilities)
+        //  6 × 2.5rem (stat values: HP, Atk, Def, SpA, SpD, Spe)
+        //  3.5rem (BST rollup with thin divider)
+        "grid-cols-[2.75rem_minmax(0,1fr)_repeat(6,2.5rem)_3.5rem]",
+        isCurrent && "bg-primary/5"
+      )}
+      aria-label={`Select ${entry.species}`}
+    >
+      {/* Sprite — 44px circle with primary-soft radial bg, mirrors the editor
+          header sprite styling. */}
+      <div className="bg-primary/10 flex size-11 shrink-0 items-center justify-center rounded-full">
+        <Image
+          src={sprite.url}
+          alt={entry.species}
+          width={36}
+          height={36}
+          className={cn(
+            "size-9 object-contain",
+            sprite.pixelated && "image-rendering-pixelated"
+          )}
+          unoptimized
+        />
+      </div>
+
+      {/* Info — name + type pills on top, abilities muted below. */}
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-foreground truncate text-sm font-semibold">
+            {entry.species}
+          </span>
+          <div className="flex gap-1">
+            {entry.types.map((type) => (
+              <span
+                key={type}
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+                  TYPE_PILL_COLORS[type as keyof typeof TYPE_PILL_COLORS] ??
+                    "bg-muted text-foreground"
+                )}
+              >
+                {type}
+              </span>
+            ))}
+          </div>
+        </div>
+        <span className="text-muted-foreground truncate text-xs">
+          {entry.abilities.join(" · ")}
+        </span>
+      </div>
+
+      {/* Stats — HP / Atk / Def / SpA / SpD / Spe in Geist Mono */}
+      <span
+        className={cn(
+          "text-center font-mono text-sm tabular-nums",
+          statValueClass(entry.baseStats.hp)
+        )}
+      >
+        {entry.baseStats.hp}
+      </span>
+      <span
+        className={cn(
+          "text-center font-mono text-sm tabular-nums",
+          statValueClass(entry.baseStats.atk)
+        )}
+      >
+        {entry.baseStats.atk}
+      </span>
+      <span
+        className={cn(
+          "text-center font-mono text-sm tabular-nums",
+          statValueClass(entry.baseStats.def)
+        )}
+      >
+        {entry.baseStats.def}
+      </span>
+      <span
+        className={cn(
+          "text-center font-mono text-sm tabular-nums",
+          statValueClass(entry.baseStats.spa)
+        )}
+      >
+        {entry.baseStats.spa}
+      </span>
+      <span
+        className={cn(
+          "text-center font-mono text-sm tabular-nums",
+          statValueClass(entry.baseStats.spd)
+        )}
+      >
+        {entry.baseStats.spd}
+      </span>
+      <span
+        className={cn(
+          "text-center font-mono text-sm tabular-nums",
+          statValueClass(entry.baseStats.spe)
+        )}
+      >
+        {entry.baseStats.spe}
+      </span>
+
+      {/* BST — slightly heavier, thin left divider so it reads as the rollup. */}
+      <span className="border-border/60 text-foreground border-l pl-2 text-center font-mono text-sm font-semibold tabular-nums">
+        {entry.bst}
+      </span>
+    </button>
+  );
+}
+
+// =============================================================================
+// SpeciesRowsHeader — column labels for the stats grid
+// =============================================================================
+
+function SpeciesRowsHeader() {
+  return (
+    <div
+      className={cn(
+        "bg-muted/50 text-muted-foreground sticky top-0 z-10 grid items-center gap-3 border-b px-4 py-1.5 text-[10px] font-semibold tracking-wider uppercase",
+        // Mirror the SpeciesRow grid template so labels align over their columns.
+        "grid-cols-[2.75rem_minmax(0,1fr)_repeat(6,2.5rem)_3.5rem]"
+      )}
+    >
+      <span aria-hidden="true" />
+      <span aria-hidden="true" />
+      <span className="text-center">HP</span>
+      <span className="text-center">Atk</span>
+      <span className="text-center">Def</span>
+      <span className="text-center">SpA</span>
+      <span className="text-center">SpD</span>
+      <span className="text-center">Spe</span>
+      <span className="border-border/60 border-l pl-2 text-center">BST</span>
+    </div>
+  );
 }
 
 // =============================================================================
@@ -33,12 +222,10 @@ interface SpeciesPickerProps {
 // =============================================================================
 
 /**
- * Full-width species picker overlay for the team builder.
- *
- * Left 52%: filterable/sortable species table (single click to preview,
- * double click to select with defaults).
- * Right 48%: species detail panel with type info, competitive moves,
- * team fit analysis, and add buttons.
+ * Single-column rich-row species picker. Each row shows sprite, name + types,
+ * abilities, the six base stats, and BST. Clicking a row selects the species
+ * with default loadout (first ability) — there is no separate "select blank"
+ * flow. The previous split-pane (table + detail) layout has been retired.
  */
 export function SpeciesPicker({
   speciesIndex,
@@ -50,27 +237,25 @@ export function SpeciesPicker({
 }: SpeciesPickerProps) {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<SpeciesFilterState>(DEFAULT_FILTERS);
-  const [previewedSpecies, setPreviewedSpecies] = useState<string | null>(null);
 
-  // Derived — computed during render (React Compiler handles optimization)
-  const filteredEntries = searchSpecies(speciesIndex, query, {
+  // Derived list — search + filter + format legality.
+  const matched = searchSpecies(speciesIndex, query, {
     types: filters.types,
     abilities: filters.abilities,
     moves: filters.moves,
     minBaseStat: filters.minBaseStat,
     maxBaseStat: filters.maxBaseStat,
   });
-
-  const previewedEntry =
-    previewedSpecies !== null
-      ? (filteredEntries.find((e) => e.species === previewedSpecies) ?? null)
-      : null;
+  const legal = formatId
+    ? matched.filter((e) => isLegalSpecies(e.species, formatId))
+    : matched;
+  const visible = legal.slice(0, MAX_VISIBLE_ROWS);
+  const isTruncated = legal.length > MAX_VISIBLE_ROWS;
 
   return (
     <div
-      className="flex flex-1 flex-col overflow-hidden"
+      className="flex h-full flex-1 flex-col overflow-hidden"
       onKeyDown={(e) => {
-        // Escape closes the picker from anywhere inside it
         if (e.key === "Escape") {
           e.preventDefault();
           onCancel();
@@ -85,7 +270,7 @@ export function SpeciesPicker({
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Filters — search + tier chips + role/type/move/stats */}
       <SpeciesFilters
         query={query}
         onQueryChange={setQuery}
@@ -93,32 +278,35 @@ export function SpeciesPicker({
         onFiltersChange={setFilters}
         currentTeam={currentTeam}
         totalCount={speciesIndex.length}
-        filteredCount={filteredEntries.length}
+        filteredCount={legal.length}
       />
 
-      {/* Split layout — stacked vertically on mobile, side-by-side on md+ */}
-      <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
-        {/* Table — full width on mobile, 52% on md+ */}
-        <div className="w-full overflow-y-auto border-r md:w-[52%]">
-          <SpeciesTable
-            entries={filteredEntries}
-            previewedSpecies={previewedSpecies}
-            currentSpecies={currentSpecies}
-            formatId={formatId}
-            onPreview={setPreviewedSpecies}
-            onSelect={(species) => onSelect(species, "defaults")}
-          />
+      {/* Truncation banner */}
+      {isTruncated && (
+        <div className="text-muted-foreground border-b px-4 py-1.5 text-xs">
+          Showing {MAX_VISIBLE_ROWS} of {legal.length} results — search to
+          narrow.
         </div>
+      )}
 
-        {/* Detail panel — full width on mobile, 48% on md+ */}
-        <div className="max-h-[40vh] w-full overflow-y-auto md:max-h-none md:w-[48%]">
-          <SpeciesDetail
-            species={previewedEntry}
-            currentTeam={currentTeam}
-            formatId={formatId}
-            onSelect={onSelect}
-          />
-        </div>
+      {/* Rows + sticky header. The header reads HP / Atk / Def / SpA / SpD /
+          Spe / BST, mirrored from the SpeciesRow grid template. */}
+      <div className="flex-1 overflow-y-auto" data-testid="species-rows">
+        <SpeciesRowsHeader />
+        {visible.length === 0 ? (
+          <div className="text-muted-foreground py-12 text-center text-sm">
+            No Pokémon match your filters. Try broadening your search.
+          </div>
+        ) : (
+          visible.map((entry) => (
+            <SpeciesRow
+              key={entry.species}
+              entry={entry}
+              isCurrent={entry.species === currentSpecies}
+              onSelect={() => onSelect(entry.species, "defaults")}
+            />
+          ))
+        )}
       </div>
     </div>
   );
