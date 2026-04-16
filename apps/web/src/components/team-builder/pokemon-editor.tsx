@@ -101,10 +101,10 @@ function getTeamItems(
  * Composition (top to bottom):
  *   1. EditorHeaderBand — sprite, name, types, and the four loadout fields
  *      (Ability / Item / Tera / Nature).
- *   2. Two-column body:
- *      - Left: Moves list (4 MoveRow slots).
- *      - Right: StatsTable (Showdown-style 3-col stat editor) and a
- *        collapsible Notes textarea.
+ *   2. Single-column stacked body:
+ *      - Moves list (4 MoveRow slots).
+ *      - StatsTable (Showdown-style 3-col stat editor).
+ *      - Collapsible Notes textarea.
  *   3. Inline picker overlays — at most one is open at a time. They render
  *      in-place where the trigger lives so the user keeps surrounding context.
  *
@@ -267,19 +267,16 @@ export function PokemonEditor({
       )}
 
       {/* ===================================================================
-          Body — 2-column grid: moves on the left, stats + notes on the right.
-          The grid divider is a single internal `border-r`; the card itself has
-          no outer border.
+          Body — single column, stacked sections: moves on top, stats below,
+          notes at the bottom. Sections are separated by a single horizontal
+          divider (`border-t`); the card itself has no outer border.
           =================================================================== */}
-      <div className="grid grid-cols-1 border-t md:grid-cols-[1.15fr_1fr]">
+      <div className="border-t">
         {/* -----------------------------------------------------------------
-            LEFT — Moves
+            Moves
             ----------------------------------------------------------------- */}
         <section
-          className={cn(
-            "p-4 md:border-r",
-            disabled && "pointer-events-none opacity-50"
-          )}
+          className={cn("p-4", disabled && "pointer-events-none opacity-50")}
           aria-label="Moves"
         >
           <h4 className="text-muted-foreground mb-2 flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
@@ -336,9 +333,9 @@ export function PokemonEditor({
         </section>
 
         {/* -----------------------------------------------------------------
-            RIGHT — Stats + Notes
+            Stats — sits directly below moves, separated by a horizontal divider.
             ----------------------------------------------------------------- */}
-        <section className="p-4" aria-label="Stats and notes">
+        <section className="border-t p-4" aria-label="Stats">
           <h4 className="text-muted-foreground mb-3 text-xs font-medium tracking-wide uppercase">
             Stats
           </h4>
@@ -355,46 +352,49 @@ export function PokemonEditor({
               StatsTable migration. Restore IV editing once the IV reflow
               design lands — the new surface should sit adjacent to the
               StatsTable, not as its own section. */}
+        </section>
 
-          {/* Notes — collapsible textarea, kept on the right rail under stats */}
-          <div
-            className={cn(
-              "mt-4 border-t pt-4",
-              disabled && "pointer-events-none opacity-50"
-            )}
+        {/* -----------------------------------------------------------------
+            Notes — collapsible textarea, beneath stats with its own divider.
+            ----------------------------------------------------------------- */}
+        <section
+          aria-label="Notes"
+          className={cn(
+            "border-t p-4",
+            disabled && "pointer-events-none opacity-50"
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              if (disabled) return;
+              setNotesOpen((prev) => !prev);
+            }}
+            className="flex w-full items-center justify-between"
+            aria-expanded={notesOpen}
           >
-            <button
-              type="button"
-              onClick={() => {
-                if (disabled) return;
-                setNotesOpen((prev) => !prev);
-              }}
-              className="flex w-full items-center justify-between"
-              aria-expanded={notesOpen}
-            >
-              <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Notes
-              </span>
-              <ChevronDown
-                className={cn(
-                  "text-muted-foreground size-3.5 transition-transform",
-                  notesOpen && "rotate-180"
-                )}
-              />
-            </button>
+            <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              Notes
+            </span>
+            <ChevronDown
+              className={cn(
+                "text-muted-foreground size-3.5 transition-transform",
+                notesOpen && "rotate-180"
+              )}
+            />
+          </button>
 
-            {notesOpen && (
-              <Textarea
-                placeholder="Strategy notes, damage calcs, reminders…"
-                value={pokemon.notes ?? ""}
-                onChange={(e) => onUpdate("notes", e.target.value || null)}
-                rows={4}
-                className="mt-2 resize-none text-sm"
-                aria-label="Pokemon notes"
-                disabled={disabled}
-              />
-            )}
-          </div>
+          {notesOpen && (
+            <Textarea
+              placeholder="Strategy notes, damage calcs, reminders…"
+              value={pokemon.notes ?? ""}
+              onChange={(e) => onUpdate("notes", e.target.value || null)}
+              rows={4}
+              className="mt-2 resize-none text-sm"
+              aria-label="Pokemon notes"
+              disabled={disabled}
+            />
+          )}
         </section>
       </div>
     </div>
