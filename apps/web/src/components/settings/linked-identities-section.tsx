@@ -95,7 +95,7 @@ export function LinkedIdentitiesSection() {
       if (!user?.id) return 0;
       const { count, error } = await supabase
         .from("discord_user_dm_preferences")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
         .eq("enabled", true);
       if (error)
