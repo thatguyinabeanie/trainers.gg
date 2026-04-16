@@ -11,6 +11,7 @@ import {
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { WorkspaceActions } from "@/components/team-builder/workspace-actions";
 
 // =============================================================================
@@ -74,9 +75,10 @@ export default async function TeamWorkspaceLayout({
   const teamsUrl = `/dashboard/alts/${username}/teams`;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-full max-h-dvh flex-col overflow-hidden">
       {/* Header bar */}
       <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3 md:px-4">
+        <SidebarTrigger className="-ml-1" />
         {/* Breadcrumb — "← Teams / Team Name" */}
         <Link
           href={teamsUrl}
@@ -100,12 +102,19 @@ export default async function TeamWorkspaceLayout({
 
         {/* Action buttons — pushed to the right */}
         <div className="ml-auto">
-          <WorkspaceActions team={team} altId={alt.id} handle={username} />
+          <WorkspaceActions
+            team={team}
+            altId={alt.id}
+            handle={username}
+            formatId={format?.id}
+          />
         </div>
       </header>
 
       {/* Page content */}
-      <div className="flex flex-1 flex-col overflow-hidden">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {children}
+      </div>
     </div>
   );
 }

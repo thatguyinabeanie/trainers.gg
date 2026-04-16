@@ -139,4 +139,45 @@ describe("IvEditor", () => {
       expect(onChange).toHaveBeenCalledWith(statKey, 15);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // disabled prop
+  // ---------------------------------------------------------------------------
+
+  describe("disabled prop", () => {
+    it("all IV inputs are disabled when disabled=true", () => {
+      const onChange = jest.fn();
+      render(<IvEditor ivs={allMaxIvs} onChange={onChange} disabled={true} />);
+      const inputs = screen.getAllByRole("spinbutton");
+      expect(inputs).toHaveLength(6);
+      inputs.forEach((input) => {
+        expect(input).toBeDisabled();
+      });
+    });
+
+    it("does NOT call onChange when an IV input is changed while disabled", () => {
+      const onChange = jest.fn();
+      render(<IvEditor ivs={allMaxIvs} onChange={onChange} disabled={true} />);
+      const hpInput = screen.getByLabelText("HP IV");
+      fireEvent.change(hpInput, { target: { value: "20" } });
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("inputs are NOT disabled when disabled=false (default)", () => {
+      const onChange = jest.fn();
+      render(<IvEditor ivs={allMaxIvs} onChange={onChange} />);
+      const inputs = screen.getAllByRole("spinbutton");
+      inputs.forEach((input) => {
+        expect(input).not.toBeDisabled();
+      });
+    });
+
+    it("calls onChange normally when disabled=false (regression)", () => {
+      const onChange = jest.fn();
+      render(<IvEditor ivs={allMaxIvs} onChange={onChange} disabled={false} />);
+      const hpInput = screen.getByLabelText("HP IV");
+      fireEvent.change(hpInput, { target: { value: "20" } });
+      expect(onChange).toHaveBeenCalledWith("hp", 20);
+    });
+  });
 });

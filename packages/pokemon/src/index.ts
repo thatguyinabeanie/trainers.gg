@@ -48,6 +48,8 @@ export {
   getBaseStats,
   calculateHP,
   calculateStat,
+  calculateChampionsHP,
+  calculateChampionsStat,
   getNatureMultiplier,
   calculateStats,
   getStatStageMultiplier,
@@ -115,6 +117,16 @@ export {
   SUPPORTED_FORMATS,
   AdvancedTeamValidator,
 } from "./team-validator";
+
+// Format legality
+export {
+  getLegalItems,
+  getLegalMoves,
+  getLegalSpecies,
+  isLegalItem,
+  isLegalMove,
+  isLegalSpecies,
+} from "./format-legality";
 
 // Competitive format registry (Showdown format IDs + display metadata)
 export {

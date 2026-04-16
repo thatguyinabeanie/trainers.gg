@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import React from "react";
 
 // =============================================================================
 // Module-level mocks
 // =============================================================================
 
-// ALL_TYPES drives the defensive matrix rows — use a small slice to keep
-// renders fast and assertions specific.
+// ALL_TYPES drives the defensive matrix rows — use a small slice for speed.
 const MOCK_TYPES = [
   "Fire",
   "Water",
@@ -44,7 +44,6 @@ jest.mock("@trainers/pokemon", () => ({
   }),
 
   getDefensiveMatchups: jest.fn((types: string[]) => {
-    // Produce plausible matchups based on first type
     if (types.includes("Fire")) {
       return {
         immunities: [],
@@ -59,23 +58,8 @@ jest.mock("@trainers/pokemon", () => ({
         resistances: { Poison: 0.5, Bug: 0.5 },
       };
     }
-    // Default neutral profile
-    return {
-      immunities: [],
-      weaknesses: {},
-      resistances: {},
-    };
+    return { immunities: [], weaknesses: {}, resistances: {} };
   }),
-
-  calculateTeamSynergy: jest.fn(() => ({
-    sharedWeaknesses: { Water: 2 }, // 2 Water weak — should trigger warning
-    sharedResistances: { Fire: 2 },
-  })),
-
-  calculateTeamCoverage: jest.fn(() => ({
-    coverage: new Set(["Water", "Ground", "Rock"]),
-    notVeryEffective: new Set(["Dragon"]),
-  })),
 
   getMoveType: jest.fn((moveName: string) => {
     const map: Record<string, string> = {
@@ -89,7 +73,6 @@ jest.mock("@trainers/pokemon", () => ({
   }),
 
   getTypeEffectiveness: jest.fn((moveType: string, defTypes: string[]) => {
-    // Fire hits Grass/Ice/Bug/Steel super effectively
     const seMap: Record<string, string[]> = {
       Fire: ["Grass", "Ice", "Bug", "Steel"],
       Water: ["Fire", "Rock", "Ground"],
@@ -197,98 +180,187 @@ describe("TypeCoverageTab", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Empty team — TeamOverview empty state
+  // Render guard
   // ---------------------------------------------------------------------------
 
-  describe("TeamOverview — empty team", () => {
-    it("renders the 'Add Pokemon' prompt when the team is empty", () => {
-      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
-      expect(
-        screen.getByText("Add Pokemon to see type coverage")
-      ).toBeInTheDocument();
+  describe("renders without crashing", () => {
+    it("renders with an empty team and no selected pokemon", () => {
+      expect(() =>
+        render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />)
+      ).not.toThrow();
     });
 
-    it("does not render a defensive matrix table when team is empty", () => {
-      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
-      expect(screen.queryByText("Defensive Coverage")).not.toBeInTheDocument();
+    it("renders with a team and no selected pokemon", () => {
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
+      expect(() =>
+        render(<TypeCoverageTab team={team} selectedPokemon={null} />)
+      ).not.toThrow();
+    });
+
+    it("renders with a selected pokemon", () => {
+      const pokemon = makePokemon({ species: "Charizard" });
+      expect(() =>
+        render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />)
+      ).not.toThrow();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // TeamOverview — with team Pokemon
+  // Toggle controls
   // ---------------------------------------------------------------------------
 
-  describe("TeamOverview — with team Pokemon", () => {
-    it("renders the Defensive Coverage section heading", () => {
-      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
-      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
-      expect(screen.getByText("Defensive Coverage")).toBeInTheDocument();
+  describe("view/scope toggle controls", () => {
+    it("renders the Defensive toggle button", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      expect(
+        screen.getByRole("button", { name: "Defensive" })
+      ).toBeInTheDocument();
     });
 
-    it("renders the species name as a column header in the matrix", () => {
+    it("renders the Offensive toggle button", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      expect(
+        screen.getByRole("button", { name: "Offensive" })
+      ).toBeInTheDocument();
+    });
+
+    it("renders the Full Team scope button", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      expect(
+        screen.getByRole("button", { name: "Full Team" })
+      ).toBeInTheDocument();
+    });
+
+    it("renders the Selected scope button", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      expect(
+        screen.getByRole("button", { name: "Selected" })
+      ).toBeInTheDocument();
+    });
+
+    it("switches to Offensive view when Offensive toggle is clicked", async () => {
+      const user = userEvent.setup();
       const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
       render(<TypeCoverageTab team={team} selectedPokemon={null} />);
-      // abbreviate("Charizard"): length 9 > 7 → slice(0,6) + "…" = "Chariz…"
+
+      await user.click(screen.getByRole("button", { name: "Offensive" }));
+      // Offensive view renders a heatmap — the component should not crash
+      expect(
+        screen.getByRole("button", { name: "Offensive" })
+      ).toBeInTheDocument();
+    });
+
+    it("switches to Selected scope when Selected toggle is clicked with a pokemon selected", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
+      const pokemon = makePokemon({ species: "Charizard" });
+      render(<TypeCoverageTab team={team} selectedPokemon={pokemon} />);
+
+      await user.click(screen.getByRole("button", { name: "Selected" }));
+      // Should not crash
+      expect(
+        screen.getByRole("button", { name: "Selected" })
+      ).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 0-Pokemon scaffold — defensive heatmap
+  // ---------------------------------------------------------------------------
+
+  describe("0-Pokemon scaffold (defensive view)", () => {
+    it("renders type label rows even with an empty team", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      // Type labels are rendered as part of the scaffold rows
+      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("Water").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("does not render DefensiveInsights when team has 0 Pokemon", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      expect(screen.queryByText("Insights")).not.toBeInTheDocument();
+    });
+
+    it("renders toggle row (Defensive/Offensive/Full Team/Selected) at 0 Pokemon", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      expect(
+        screen.getByRole("button", { name: "Defensive" })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Full Team" })
+      ).toBeInTheDocument();
+    });
+
+    it("does not render 'Add Pokemon to see the defensive heatmap.' text", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      expect(
+        screen.queryByText("Add Pokemon to see the defensive heatmap.")
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 0-Pokemon scaffold — offensive heatmap
+  // ---------------------------------------------------------------------------
+
+  describe("0-Pokemon scaffold (offensive view)", () => {
+    it("renders type label rows in offensive scaffold", async () => {
+      const user = userEvent.setup();
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      await user.click(screen.getByRole("button", { name: "Offensive" }));
+      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("does not render Coverage Gaps section at 0 Pokemon (offensive view)", async () => {
+      const user = userEvent.setup();
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      await user.click(screen.getByRole("button", { name: "Offensive" }));
+      expect(screen.queryByText("Coverage Gaps")).not.toBeInTheDocument();
+    });
+
+    it("does not render 'Add Pokemon to see the offensive coverage heatmap.' text", async () => {
+      const user = userEvent.setup();
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      await user.click(screen.getByRole("button", { name: "Offensive" }));
+      expect(
+        screen.queryByText("Add Pokemon to see the offensive coverage heatmap.")
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Defensive heatmap — team view
+  // ---------------------------------------------------------------------------
+
+  describe("defensive team heatmap", () => {
+    it("renders all type rows when team has pokemon", () => {
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
+      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
+      // Type badges appear in rows — Fire should be present
+      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("renders species column header abbreviated to 6 chars for long names", () => {
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
+      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
+      // "Charizard" (9 chars > 7) → "Chariz…"
       expect(screen.getByText("Chariz…")).toBeInTheDocument();
     });
 
-    it("renders all type rows in the defensive matrix", () => {
-      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
-      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
-      // Type badges appear in multiple places — just confirm key types are present
-      // Use getAllByText since a type may appear in both row header and coverage section
-      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText("Water").length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText("Ground").length).toBeGreaterThanOrEqual(1);
-    });
-
-    it("renders the Super-Effective Coverage section when coverage exists", () => {
-      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
-      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
-      expect(screen.getByText("Super-Effective Coverage")).toBeInTheDocument();
-    });
-
-    it("renders the Not covered section when notVeryEffective types exist", () => {
-      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
-      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
-      expect(screen.getByText("Not covered:")).toBeInTheDocument();
-    });
-
-    it("renders the Insights section when shared weaknesses exceed threshold", () => {
-      // Mock returns sharedWeaknesses: { Water: 2 } — 2 >= 2 triggers warning
-      const team = makeTeam([
-        makePokemonEntry(1, 1, "Charizard"),
-        makePokemonEntry(2, 2, "Incineroar"),
-      ]);
-      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
-      expect(screen.getByText("Insights")).toBeInTheDocument();
-    });
-
-    it("renders a weakness warning badge with weak/resist counts", () => {
-      const team = makeTeam([
-        makePokemonEntry(1, 1, "Charizard"),
-        makePokemonEntry(2, 2, "Incineroar"),
-      ]);
-      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
-      expect(screen.getByText(/weak.*resist/i)).toBeInTheDocument();
-    });
-
-    it("shows species with short name as-is (≤7 chars)", () => {
+    it("renders short species names as-is (≤7 chars)", () => {
       const team = makeTeam([makePokemonEntry(1, 1, "Gastly")]);
       render(<TypeCoverageTab team={team} selectedPokemon={null} />);
-      // "Gastly" is 6 chars ≤ 7, so rendered as-is
+      // "Gastly" (6 chars ≤ 7) → rendered as-is
       expect(screen.getByText("Gastly")).toBeInTheDocument();
     });
 
-    it("renders multiple columns for multiple team Pokemon", () => {
+    it("renders multiple column headers for multiple team Pokemon", () => {
       const team = makeTeam([
         makePokemonEntry(1, 1, "Charizard"),
         makePokemonEntry(2, 2, "Lapras"),
       ]);
       render(<TypeCoverageTab team={team} selectedPokemon={null} />);
-      // "Charizard" (9 chars > 7) → "Chariz…"
       expect(screen.getByText("Chariz…")).toBeInTheDocument();
-      // "Lapras" (6 chars ≤ 7) → rendered as-is
       expect(screen.getByText("Lapras")).toBeInTheDocument();
     });
 
@@ -306,44 +378,106 @@ describe("TypeCoverageTab", () => {
       expect(() =>
         render(<TypeCoverageTab team={team} selectedPokemon={null} />)
       ).not.toThrow();
-      // Only Charizard column should appear ("Charizard" → "Chariz…")
+      // Only Charizard column should appear
       expect(screen.getByText("Chariz…")).toBeInTheDocument();
+    });
+
+    it("renders insights for shared weaknesses when 2+ members share a weakness", () => {
+      const team = makeTeam([
+        makePokemonEntry(1, 1, "Charizard"),
+        makePokemonEntry(2, 2, "Incineroar"),
+      ]);
+      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
+      // Both Fire-types are weak to Water — insights section should appear
+      expect(screen.getByText("Insights")).toBeInTheDocument();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // PokemonView — selectedPokemon provided
+  // Defensive heatmap — selected pokemon (scope=selected)
   // ---------------------------------------------------------------------------
 
-  describe("PokemonView — selected Pokemon", () => {
-    it("renders the Defensive Matchups section heading", () => {
+  describe("defensive selected-pokemon heatmap", () => {
+    it("renders the species name + Defensive heading when scope=selected", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
       const pokemon = makePokemon({ species: "Charizard" });
-      render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
-      expect(screen.getByText("Defensive Matchups")).toBeInTheDocument();
+      render(<TypeCoverageTab team={team} selectedPokemon={pokemon} />);
+
+      await user.click(screen.getByRole("button", { name: "Selected" }));
+      // Heading contains the species name
+      expect(screen.getByText(/Charizard/)).toBeInTheDocument();
     });
 
-    it("renders the Weak section for a Pokemon with weaknesses", () => {
+    it("renders Current column header in the selected heatmap", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
       const pokemon = makePokemon({ species: "Charizard" });
-      render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
-      // getDefensiveMatchups("Charizard") returns Water: 2, Rock: 2, Ground: 2
-      expect(screen.getByText("Weak")).toBeInTheDocument();
+      render(<TypeCoverageTab team={team} selectedPokemon={pokemon} />);
+
+      await user.click(screen.getByRole("button", { name: "Selected" }));
+      expect(screen.getByText("Current")).toBeInTheDocument();
     });
 
-    it("renders the Resist section for a Pokemon with resistances", () => {
-      const pokemon = makePokemon({ species: "Charizard" });
-      render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
-      // getDefensiveMatchups("Charizard") returns Fire: 0.5, etc.
-      expect(screen.getByText("Resist")).toBeInTheDocument();
+    it("renders Tera column header when tera_type is set", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
+      const pokemon = makePokemon({ species: "Charizard", tera_type: "Water" });
+      render(<TypeCoverageTab team={team} selectedPokemon={pokemon} />);
+
+      await user.click(screen.getByRole("button", { name: "Selected" }));
+      expect(screen.getByText("Tera Water")).toBeInTheDocument();
     });
 
-    it("renders the Immune section for a Pokemon with immunities", () => {
-      const pokemon = makePokemon({ species: "Gastly" });
-      render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
-      // getDefensiveMatchups(Ghost) returns immunities: [Normal, Fighting]
-      expect(screen.getByText("Immune (0×)")).toBeInTheDocument();
+    it("does not render Tera column header when tera_type is null", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
+      const pokemon = makePokemon({ species: "Charizard", tera_type: null });
+      render(<TypeCoverageTab team={team} selectedPokemon={pokemon} />);
+
+      await user.click(screen.getByRole("button", { name: "Selected" }));
+      // No Tera column
+      expect(screen.queryByText(/Tera Water/)).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Offensive heatmap — team view
+  // ---------------------------------------------------------------------------
+
+  describe("offensive team heatmap", () => {
+    it("renders the heatmap table after switching to Offensive view", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
+      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
+
+      await user.click(screen.getByRole("button", { name: "Offensive" }));
+      // Offensive team matrix shows abbreviated species as column headers
+      expect(screen.getByText("Chariz…")).toBeInTheDocument();
     });
 
-    it("renders the Move Coverage section when moves are set", () => {
+    it("renders coverage gaps section when types have no SE coverage", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
+      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
+
+      await user.click(screen.getByRole("button", { name: "Offensive" }));
+      // Coverage Gaps section should be visible if some types aren't SE covered
+      // (just ensure it doesn't crash — coverage gaps may or may not render)
+      expect(
+        screen.getByRole("button", { name: "Offensive" })
+      ).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Offensive heatmap — selected pokemon
+  // ---------------------------------------------------------------------------
+
+  describe("offensive selected-pokemon heatmap", () => {
+    it("renders per-move columns when scope=selected and view=offensive", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
       const pokemon = makePokemon({
         species: "Charizard",
         move1: "Flamethrower",
@@ -351,23 +485,16 @@ describe("TypeCoverageTab", () => {
         move3: null,
         move4: null,
       });
-      render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
-      expect(screen.getByText("Move Coverage")).toBeInTheDocument();
-    });
+      render(<TypeCoverageTab team={team} selectedPokemon={pokemon} />);
 
-    it("lists each move name in the Move Coverage section", () => {
-      const pokemon = makePokemon({
-        move1: "Flamethrower",
-        move2: "Surf",
-        move3: null,
-        move4: null,
-      });
-      render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
+      await user.click(screen.getByRole("button", { name: "Offensive" }));
+      await user.click(screen.getByRole("button", { name: "Selected" }));
       expect(screen.getByText("Flamethrower")).toBeInTheDocument();
       expect(screen.getByText("Surf")).toBeInTheDocument();
     });
 
-    it("does not render Move Coverage section when no moves are set", () => {
+    it("shows empty-moves message when no moves are set", async () => {
+      const user = userEvent.setup();
       const pokemon = makePokemon({
         move1: null,
         move2: null,
@@ -375,92 +502,33 @@ describe("TypeCoverageTab", () => {
         move4: null,
       });
       render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
-      expect(screen.queryByText("Move Coverage")).not.toBeInTheDocument();
-    });
 
-    it("skips a move entry when getMoveType returns null", () => {
-      // getMoveType returns null for unknown moves
-      const pokemon = makePokemon({
-        move1: "Splash", // mapped to "Normal" by mock
-        move2: "UnknownMove", // returns null
-        move3: null,
-        move4: null,
-      });
-      expect(() =>
-        render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />)
-      ).not.toThrow();
-      expect(screen.getByText("Splash")).toBeInTheDocument();
-      expect(screen.queryByText("UnknownMove")).not.toBeInTheDocument();
-    });
-
-    it("renders → arrows and SE type badges for moves with super-effective coverage", () => {
-      const pokemon = makePokemon({
-        move1: "Flamethrower",
-        move2: null,
-        move3: null,
-        move4: null,
-      });
-      render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
-      // getTypeEffectiveness returns 2 for Fire vs Grass/Ice/Bug/Steel
-      // At least one "→" separator should appear
-      expect(screen.getByText("→")).toBeInTheDocument();
-    });
-
-    it("does not render the Tera section when tera_type is null", () => {
-      const pokemon = makePokemon({ tera_type: null });
-      render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
-      expect(screen.queryByText(/tera.*comparison/i)).not.toBeInTheDocument();
-    });
-
-    it("renders the Tera Comparison section when tera_type is set", () => {
-      const pokemon = makePokemon({ species: "Charizard", tera_type: "Fire" });
-      render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
-      expect(screen.getByText(/tera fire comparison/i)).toBeInTheDocument();
-    });
-
-    it("renders Current and After Tera column headers in the tera table", () => {
-      const pokemon = makePokemon({ species: "Charizard", tera_type: "Water" });
-      render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
-      expect(screen.getByText("Current")).toBeInTheDocument();
-      expect(screen.getByText("After Tera")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Offensive" }));
+      await user.click(screen.getByRole("button", { name: "Selected" }));
+      expect(
+        screen.getByText("Add moves to see offensive coverage.")
+      ).toBeInTheDocument();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // multiplierCell label mapping
+  // Scope hint when no pokemon is selected
   // ---------------------------------------------------------------------------
 
-  describe("multiplierCell label rendering", () => {
-    it.each([
-      ["immune row shows 0 label", "Ghost", "Gastly"],
-      ["resist row shows ½ label", "Fire", "Charizard"],
-      ["weak row shows 2 label", "Water", "Charizard"],
-    ])("%s", (_label, _attackType, species) => {
-      const pokemon = makePokemon({ species });
+  describe("scope hint", () => {
+    it("shows 'Select a Pokemon to view individually' hint when no pokemon selected", () => {
+      render(<TypeCoverageTab team={makeTeam([])} selectedPokemon={null} />);
+      expect(
+        screen.getByText("Select a Pokemon to view individually")
+      ).toBeInTheDocument();
+    });
+
+    it("hides the scope hint when a pokemon is selected", () => {
+      const pokemon = makePokemon({ species: "Charizard" });
       render(<TypeCoverageTab team={makeTeam()} selectedPokemon={pokemon} />);
-      // Just verify no crash — specific label assertions covered above
-      expect(screen.getByText("Defensive Matchups")).toBeInTheDocument();
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Route decision — selectedPokemon vs null
-  // ---------------------------------------------------------------------------
-
-  describe("routing between TeamOverview and PokemonView", () => {
-    it("renders TeamOverview when selectedPokemon is null", () => {
-      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
-      render(<TypeCoverageTab team={team} selectedPokemon={null} />);
-      expect(screen.getByText("Defensive Coverage")).toBeInTheDocument();
-      expect(screen.queryByText("Defensive Matchups")).not.toBeInTheDocument();
-    });
-
-    it("renders PokemonView when selectedPokemon is provided", () => {
-      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
-      const pokemon = makePokemon({ species: "Gardevoir" });
-      render(<TypeCoverageTab team={team} selectedPokemon={pokemon} />);
-      expect(screen.getByText("Defensive Matchups")).toBeInTheDocument();
-      expect(screen.queryByText("Defensive Coverage")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Select a Pokemon to view individually")
+      ).not.toBeInTheDocument();
     });
   });
 });

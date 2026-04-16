@@ -5,26 +5,26 @@ import { useState } from "react";
 import {
   type GameFormat,
   getBaseStats,
-  getSpeciesTypes,
+  getMoveData,
+  getValidAbilities,
+  NATURE_EFFECTS,
 } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronDown, Star } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
-import { type StatKey } from "./stat-types";
+import { type StatKey, STAT_LABELS } from "./stat-types";
 import { type ValidationError } from "./validation-hooks";
 import { AbilityPicker } from "./ability-picker";
-import { PokemonImportExport } from "./pokemon-import-export";
+import { NaturePicker } from "./nature-picker";
 import { EvEditor } from "./ev-editor";
 import { ItemPicker } from "./item-picker";
 import { IvEditor } from "./iv-editor";
 import { MovePicker } from "./move-picker";
-import { NaturePicker } from "./nature-picker";
 import { TeraPicker } from "./tera-picker";
-import { TYPE_PILL_COLORS } from "./type-colors";
+import { TYPE_BG_COLORS } from "./type-colors";
 
 // =============================================================================
 // Constants
@@ -48,23 +48,25 @@ const STAT_TO_DB_FIELD: Record<StatKey, string> = {
 type ActivePicker =
   | "ability"
   | "item"
-  | "nature"
   | "tera"
+  | "nature"
   | `move-${number}`
   | null;
 
 interface PokemonEditorProps {
-  teamId: number;
   pokemon: Tables<"pokemon">;
   format: GameFormat | undefined;
   /** All team_pokemon entries — used to collect held items for duplicate detection. */
   teamPokemon: Array<{ pokemon: Tables<"pokemon"> | null }>;
   onUpdate: (field: string, value: unknown) => void;
-  onSpeciesClick: () => void;
-  /** Called after a successful import to refresh the workspace. */
-  onImport: () => void;
   /** Validation errors for this Pokemon's fields — populated by Task 5 display logic. */
   fieldErrors?: ValidationError[];
+  /**
+   * When true, all interactive fields except the species header are inert.
+   * Use this to render the editor as a placeholder shell when no species is selected.
+   * The species picker entry point remains active so the user can still pick a species.
+   */
+  disabled?: boolean;
 }
 
 // =============================================================================
@@ -112,23 +114,22 @@ function getMoveBySlot(
  * Composes all individual picker and editor sub-components.
  *
  * Layout (top to bottom):
- *   1. Species header with type pills and level input
- *   2. 2-column field grid: ability, item, nature, tera type
- *   3. Optional fields row: nickname, gender, shiny toggle
- *   4. Moves: 2x2 grid of move slots
- *   5. EV editor
- *   6. IV editor (hidden for Champions format)
- *   7. Notes collapsible textarea
+ *   1. 3-across field row: ability, held item, tera type
+ *   2. Moves: single-column list with type badge, category, BP, accuracy
+ *   3. EV editor
+ *   4. IV editor (hidden for Champions format)
+ *   5. Notes collapsible textarea
+ *
+ * The species header (name, type pills, nickname, gender, shiny, level,
+ * import/export) is rendered in TeamWorkspace above the editor/panel split.
  */
 export function PokemonEditor({
-  teamId,
   pokemon,
   format,
   teamPokemon,
   onUpdate,
-  onSpeciesClick,
-  onImport,
   fieldErrors,
+  disabled = false,
 }: PokemonEditorProps) {
   // Helper — look up the first error for a given field name.
   function getFieldError(field: string): ValidationError | undefined {
@@ -163,7 +164,6 @@ export function PokemonEditor({
   // Derived values
   // -------------------------------------------------------------------------
 
-  const types = getSpeciesTypes(pokemon.species);
   const baseStats = getBaseStats(pokemon.species) ?? {
     hp: 0,
     attack: 0,
@@ -192,13 +192,16 @@ export function PokemonEditor({
   };
 
   const teamItems = getTeamItems(teamPokemon, pokemon.id);
-  const isChampionsFormat = format?.id === "champions";
+  // Champions is generation 10 — detect by generation field, not format ID,
+  // so all Champions regulation variants are covered.
+  const isChampionsFormat = format?.generation === 10;
 
   // -------------------------------------------------------------------------
   // Handlers
   // -------------------------------------------------------------------------
 
   function openPicker(picker: ActivePicker) {
+    if (disabled) return;
     setActivePicker(picker);
   }
 
@@ -248,71 +251,17 @@ export function PokemonEditor({
   return (
     <div className="flex flex-col gap-0 divide-y">
       {/* ===================================================================
-          Section 1: Species header
+          Section 2: 3-across field row — ability, held item, tera type.
+          Nature has moved to sit adjacent to EVs (Task 3).
           =================================================================== */}
-      <div className="flex items-center gap-3 px-3 py-3 md:px-4">
-        {/* Species name — clickable to open species picker */}
-        <div className="flex flex-col">
-          <button
-            type="button"
-            onClick={onSpeciesClick}
-            className={cn(
-              "flex items-center gap-1 text-lg font-bold",
-              "hover:text-primary transition-colors"
-            )}
-          >
-            {pokemon.species}
-            <ChevronDown className="text-muted-foreground size-4" />
-          </button>
-          {renderFieldError("species")}
-        </div>
-
-        {/* Type pills */}
-        <div className="flex gap-1">
-          {types.map((type) => (
-            <span
-              key={type}
-              className={cn(
-                "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                TYPE_PILL_COLORS[type] ?? "bg-muted text-foreground"
-              )}
-            >
-              {type}
-            </span>
-          ))}
-        </div>
-
-        {/* Level input + import/export */}
-        <div className="ml-auto flex items-center gap-1.5">
-          <span className="text-muted-foreground text-xs">Lv</span>
-          <Input
-            type="number"
-            min={1}
-            max={100}
-            value={pokemon.level ?? 50}
-            onChange={(e) => {
-              const raw = parseInt(e.target.value, 10);
-              if (!isNaN(raw)) {
-                onUpdate("level", Math.max(1, Math.min(100, raw)));
-              }
-            }}
-            className="h-7 w-14 px-1 text-center text-sm"
-            aria-label="Pokemon level"
-          />
-          <PokemonImportExport
-            teamId={teamId}
-            pokemon={pokemon}
-            onUpdate={onImport}
-          />
-        </div>
-      </div>
-
-      {/* ===================================================================
-          Section 2: 2-column field grid (ability, item, nature, tera type)
-          =================================================================== */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-0 divide-y px-3 md:px-4">
+      <div className="flex gap-0 divide-x px-3 py-2 md:px-4">
         {/* Ability */}
-        <div className="col-span-2 py-2">
+        <div
+          className={cn(
+            "flex flex-1 flex-col pr-3",
+            disabled && "pointer-events-none opacity-50"
+          )}
+        >
           <p className="text-muted-foreground mb-1 text-[10px] font-semibold tracking-wide uppercase">
             Ability
           </p>
@@ -326,12 +275,17 @@ export function PokemonEditor({
               }}
               onClose={closePicker}
             />
+          ) : getValidAbilities(pokemon.species).length <= 1 ? (
+            /* Single-ability species: static display, no picker */
+            <div className="flex min-h-[36px] items-center px-2 py-1.5">
+              <span className="text-sm font-medium">{pokemon.ability}</span>
+            </div>
           ) : (
             <button
               type="button"
               onClick={() => openPicker("ability")}
               className={cn(
-                "flex min-h-[44px] w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
+                "flex min-h-[36px] w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
                 "hover:bg-muted/50 transition-colors",
                 getFieldError("ability")
                   ? "border-destructive"
@@ -345,15 +299,21 @@ export function PokemonEditor({
           {renderFieldError("ability")}
         </div>
 
-        {/* Item */}
-        <div className="col-span-2 py-2">
+        {/* Held Item */}
+        <div
+          className={cn(
+            "flex flex-1 flex-col px-3",
+            disabled && "pointer-events-none opacity-50"
+          )}
+        >
           <p className="text-muted-foreground mb-1 text-[10px] font-semibold tracking-wide uppercase">
-            Held Item
+            Item
           </p>
           {activePicker === "item" ? (
             <ItemPicker
               value={pokemon.held_item}
               teamItems={teamItems}
+              formatId={format?.id}
               onSelect={(val) => {
                 onUpdate("held_item", val);
                 closePicker();
@@ -365,7 +325,7 @@ export function PokemonEditor({
               type="button"
               onClick={() => openPicker("item")}
               className={cn(
-                "flex min-h-[44px] w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
+                "flex min-h-[36px] w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
                 "hover:bg-muted/50 transition-colors",
                 getFieldError("item") || getFieldError("heldItem")
                   ? "border-destructive"
@@ -374,52 +334,25 @@ export function PokemonEditor({
             >
               <span
                 className={cn(
-                  "font-medium",
+                  "truncate font-medium",
                   !pokemon.held_item && "text-muted-foreground"
                 )}
               >
                 {pokemon.held_item ?? "None"}
               </span>
-              <ChevronDown className="text-muted-foreground size-3.5" />
+              <ChevronDown className="text-muted-foreground size-3.5 shrink-0" />
             </button>
           )}
           {renderFieldError("item", "heldItem")}
         </div>
 
-        {/* Nature + Tera Type side-by-side */}
-        <div className="py-2">
-          <p className="text-muted-foreground mb-1 text-[10px] font-semibold tracking-wide uppercase">
-            Nature
-          </p>
-          {activePicker === "nature" ? (
-            <NaturePicker
-              value={pokemon.nature}
-              onSelect={(val) => {
-                onUpdate("nature", val);
-                closePicker();
-              }}
-              onClose={closePicker}
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => openPicker("nature")}
-              className={cn(
-                "flex min-h-[44px] w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
-                "hover:bg-muted/50 transition-colors",
-                getFieldError("nature")
-                  ? "border-destructive"
-                  : "border-transparent"
-              )}
-            >
-              <span className="font-medium">{pokemon.nature}</span>
-              <ChevronDown className="text-muted-foreground size-3.5" />
-            </button>
+        {/* Tera Type */}
+        <div
+          className={cn(
+            "flex flex-1 flex-col pl-3",
+            disabled && "pointer-events-none opacity-50"
           )}
-          {renderFieldError("nature")}
-        </div>
-
-        <div className="py-2">
+        >
           <p className="text-muted-foreground mb-1 text-[10px] font-semibold tracking-wide uppercase">
             Tera Type
           </p>
@@ -437,114 +370,48 @@ export function PokemonEditor({
               type="button"
               onClick={() => openPicker("tera")}
               className={cn(
-                "flex min-h-[44px] w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm",
-                "hover:bg-muted/50 transition-colors"
+                "flex min-h-[36px] w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
+                "hover:bg-muted/50 transition-colors",
+                "border-transparent"
               )}
             >
               <span
                 className={cn(
-                  "font-medium",
+                  "truncate font-medium",
                   !pokemon.tera_type && "text-muted-foreground"
                 )}
               >
                 {pokemon.tera_type ?? "None"}
               </span>
-              <ChevronDown className="text-muted-foreground size-3.5" />
+              <ChevronDown className="text-muted-foreground size-3.5 shrink-0" />
             </button>
           )}
         </div>
       </div>
 
       {/* ===================================================================
-          Section 3: Optional fields — nickname, gender, shiny toggle
+          Section 3: Moves — single-column list with type/category/BP/accuracy
           =================================================================== */}
-      <div className="flex items-start gap-3 px-3 py-3 md:px-4">
-        {/* Nickname */}
-        <div className="flex flex-1 flex-col">
-          <Input
-            placeholder="Nickname"
-            value={pokemon.nickname ?? ""}
-            onChange={(e) => onUpdate("nickname", e.target.value || null)}
-            className={cn(
-              "h-7 text-sm",
-              getFieldError("nickname") && "border-destructive"
-            )}
-            aria-label="Pokemon nickname"
-          />
-          {renderFieldError("nickname")}
-        </div>
-
-        {/* Gender selector — only when species has gender differences */}
-        {pokemon.gender !== null && (
-          <div className="flex flex-col items-start">
-            <div
-              className={cn(
-                "flex gap-0.5 rounded border p-0.5",
-                getFieldError("gender") && "border-destructive"
-              )}
-            >
-              {(["Male", "Female"] as const).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => onUpdate("gender", g)}
-                  className={cn(
-                    "rounded px-2 py-0.5 text-xs font-medium transition-colors",
-                    pokemon.gender === g
-                      ? g === "Male"
-                        ? "bg-blue-500 text-white"
-                        : "bg-pink-500 text-white"
-                      : "text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  {g === "Male" ? "♂" : "♀"}
-                </button>
-              ))}
-            </div>
-            {renderFieldError("gender")}
-          </div>
+      <div
+        className={cn(
+          "px-3 py-3 md:px-4",
+          disabled && "pointer-events-none opacity-50"
         )}
-
-        {/* Shiny toggle */}
-        <button
-          type="button"
-          onClick={() => onUpdate("is_shiny", !(pokemon.is_shiny ?? false))}
-          aria-label="Toggle shiny"
-          aria-pressed={pokemon.is_shiny ?? false}
-          className={cn(
-            "flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors",
-            pokemon.is_shiny
-              ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-              : "text-muted-foreground hover:bg-muted"
-          )}
-        >
-          <Star
-            className={cn(
-              "size-3.5",
-              pokemon.is_shiny && "fill-yellow-500 text-yellow-500"
-            )}
-          />
-          Shiny
-        </button>
-      </div>
-
-      {/* ===================================================================
-          Section 4: Moves — 2x2 grid
-          =================================================================== */}
-      <div className="px-3 py-3 md:px-4">
+      >
         <div className="mb-2 flex items-center gap-2">
           <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
             Moves
           </p>
           {renderFieldError("moves")}
         </div>
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        <div className="flex flex-col gap-1">
           {MOVE_SLOTS.map((slot) => {
             const moveValue = getMoveBySlot(pokemon, slot);
             const pickerKey = `move-${slot}` as const;
             const isOpen = activePicker === pickerKey;
             const moveField = `move${slot}` as `move${typeof slot}`;
             const moveError = getFieldError(moveField);
+            const moveData = moveValue ? getMoveData(moveValue) : null;
 
             return (
               <div key={slot} className="flex flex-col">
@@ -563,18 +430,19 @@ export function PokemonEditor({
                     type="button"
                     onClick={() => openPicker(pickerKey)}
                     className={cn(
-                      "flex min-h-[44px] w-full items-center justify-between rounded border px-2 py-1.5 text-left text-sm",
+                      "flex min-h-[36px] w-full items-center gap-2 rounded border px-2 py-1.5 text-left text-sm",
                       "hover:bg-muted/50 transition-colors",
                       moveError
                         ? "border-destructive"
                         : !moveValue
                           ? "border-dashed"
-                          : ""
+                          : "border-transparent"
                     )}
                   >
+                    {/* Move name */}
                     <span
                       className={cn(
-                        "truncate text-sm",
+                        "flex-1 truncate text-sm",
                         moveValue
                           ? "font-medium"
                           : "text-muted-foreground text-xs"
@@ -582,7 +450,46 @@ export function PokemonEditor({
                     >
                       {moveValue ?? `Move ${slot}`}
                     </span>
-                    <ChevronDown className="text-muted-foreground ml-1 size-3.5 shrink-0" />
+
+                    {/* Move metadata — only shown when a move is selected */}
+                    {moveData && (
+                      <>
+                        {/* Type badge */}
+                        <span
+                          className={cn(
+                            "shrink-0 rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+                            TYPE_BG_COLORS[
+                              moveData.type as keyof typeof TYPE_BG_COLORS
+                            ] ?? "bg-muted text-foreground"
+                          )}
+                        >
+                          {moveData.type}
+                        </span>
+
+                        {/* Category */}
+                        <span className="text-muted-foreground w-12 shrink-0 text-right text-xs">
+                          {moveData.category}
+                        </span>
+
+                        {/* Base power */}
+                        <span className="text-muted-foreground w-10 shrink-0 text-right font-mono text-xs">
+                          {moveData.basePower > 0
+                            ? `${moveData.basePower} BP`
+                            : "—"}
+                        </span>
+
+                        {/* Accuracy */}
+                        <span className="text-muted-foreground w-8 shrink-0 text-right font-mono text-xs">
+                          {moveData.accuracy === true
+                            ? "—"
+                            : moveData.accuracy === 0
+                              ? "—"
+                              : `${moveData.accuracy}%`}
+                        </span>
+                      </>
+                    )}
+
+                    <ChevronDown className="text-muted-foreground ml-auto size-3.5 shrink-0" />
                   </button>
                 )}
                 {moveError && (
@@ -597,11 +504,67 @@ export function PokemonEditor({
       </div>
 
       {/* ===================================================================
-          Section 5: EV editor
+          Section 4a: Nature row — sits directly above the EV editor.
+          Clicking opens the NaturePicker inline.
+          =================================================================== */}
+      <div
+        className={cn(
+          "px-3 py-2 md:px-4",
+          disabled && "pointer-events-none opacity-50"
+        )}
+      >
+        {activePicker === "nature" ? (
+          <NaturePicker
+            value={pokemon.nature}
+            onSelect={(val) => {
+              onUpdate("nature", val);
+              closePicker();
+            }}
+            onClose={closePicker}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => openPicker("nature")}
+            className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-2 rounded-md border border-transparent px-3 py-2 text-left transition-colors"
+          >
+            <span className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
+              Nature
+            </span>
+            <span className="text-sm font-medium">{pokemon.nature}</span>
+            {/* Nature stat indicators are hidden for Champions — natures exist
+                but don't affect stats in Gen 10 */}
+            {!isChampionsFormat &&
+              (() => {
+                const effect = NATURE_EFFECTS[pokemon.nature];
+                if (!effect?.boost && !effect?.reduce) return null;
+                return (
+                  <>
+                    {effect.boost && (
+                      <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                        +{STAT_LABELS[effect.boost]}
+                      </span>
+                    )}
+                    {effect.reduce && (
+                      <span className="text-xs font-medium text-red-500 dark:text-red-400">
+                        -{STAT_LABELS[effect.reduce]}
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
+          </button>
+        )}
+      </div>
+
+      {/* ===================================================================
+          Section 4: EV / SP editor
+          Champions format uses the Stat Points (SP) system: 0-32 per stat,
+          no IVs, no total budget cap. Classic formats use EVs 0-252, cap 510.
           =================================================================== */}
       <div className="px-3 py-3 md:px-4">
         <p className="text-muted-foreground mb-2 text-[10px] font-semibold tracking-wide uppercase">
-          EVs
+          {isChampionsFormat ? "Stat Points" : "EVs"}
         </p>
         <EvEditor
           evs={evs}
@@ -609,16 +572,18 @@ export function PokemonEditor({
           baseStats={baseStats}
           nature={pokemon.nature}
           level={pokemon.level ?? 50}
+          isStatPoints={isChampionsFormat}
           onChange={(stat, value) =>
             onUpdate(`ev_${statToDbField(stat)}`, value)
           }
           onPreset={handleEvPreset}
+          disabled={disabled}
         />
         {renderFieldError("evs", "evTotal")}
       </div>
 
       {/* ===================================================================
-          Section 6: IV editor (hidden for Champions format)
+          Section 5: IV editor (hidden for Champions format)
           =================================================================== */}
       {!isChampionsFormat && (
         <div className="px-3 py-3 md:px-4">
@@ -627,17 +592,26 @@ export function PokemonEditor({
             onChange={(stat, value) =>
               onUpdate(`iv_${statToDbField(stat)}`, value)
             }
+            disabled={disabled}
           />
         </div>
       )}
 
       {/* ===================================================================
-          Section 7: Notes — collapsible textarea
+          Section 6: Notes — collapsible textarea
           =================================================================== */}
-      <div className="px-3 py-3 md:px-4">
+      <div
+        className={cn(
+          "px-3 py-3 md:px-4",
+          disabled && "pointer-events-none opacity-50"
+        )}
+      >
         <button
           type="button"
-          onClick={() => setNotesOpen((prev) => !prev)}
+          onClick={() => {
+            if (disabled) return;
+            setNotesOpen((prev) => !prev);
+          }}
           className="flex w-full items-center justify-between"
           aria-expanded={notesOpen}
         >
@@ -660,6 +634,7 @@ export function PokemonEditor({
             rows={4}
             className="mt-2 resize-none text-sm"
             aria-label="Pokemon notes"
+            disabled={disabled}
           />
         )}
       </div>

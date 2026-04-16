@@ -262,4 +262,64 @@ describe("EvEditor", () => {
       expect(ticks.length).toBeGreaterThan(0);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // disabled prop
+  // ---------------------------------------------------------------------------
+
+  describe("disabled prop", () => {
+    it("preset buttons are disabled when disabled=true", () => {
+      renderEvEditor({ disabled: true });
+      expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Max Atk" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Max Bulk" })).toBeDisabled();
+    });
+
+    it("does NOT call onPreset when a preset button is clicked while disabled", async () => {
+      const user = userEvent.setup();
+      const { onPreset } = renderEvEditor({ disabled: true });
+      // Clicking a disabled button does nothing — onPreset should not be called
+      await user.click(screen.getByRole("button", { name: "Reset" }));
+      expect(onPreset).not.toHaveBeenCalled();
+    });
+
+    it("does NOT call onChange when EV input is changed while disabled", () => {
+      const { onChange } = renderEvEditor({ disabled: true });
+      const inputs = screen.getAllByRole("spinbutton");
+      fireEvent.change(inputs[0], { target: { value: "100" } });
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("does NOT call onChange when ArrowRight is pressed on slider while disabled", () => {
+      const { onChange } = renderEvEditor({ disabled: true });
+      const sliders = screen.getAllByRole("slider");
+      fireEvent.keyDown(sliders[0], { key: "ArrowRight" });
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("does NOT call onChange when pointer drag starts while disabled", () => {
+      const { onChange } = renderEvEditor({ disabled: true });
+      const sliders = screen.getAllByRole("slider");
+      fireEvent.pointerDown(sliders[0], { button: 0, clientX: 50 });
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("preset buttons are NOT disabled when disabled=false (default)", () => {
+      renderEvEditor();
+      expect(screen.getByRole("button", { name: "Reset" })).not.toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Max Atk" })
+      ).not.toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Max Bulk" })
+      ).not.toBeDisabled();
+    });
+
+    it("calls onPreset when Reset is clicked and disabled=false (regression)", async () => {
+      const user = userEvent.setup();
+      const { onPreset } = renderEvEditor({ disabled: false });
+      await user.click(screen.getByRole("button", { name: "Reset" }));
+      expect(onPreset).toHaveBeenCalledWith("reset");
+    });
+  });
 });
