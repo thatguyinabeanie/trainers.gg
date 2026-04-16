@@ -25,8 +25,8 @@ jest.mock("next/cache", () => ({
   updateTag: (...args: unknown[]) => mockUpdateTag(...args),
 }));
 
-// staff.ts imports getErrorMessage from @/lib/utils
-jest.mock("@/lib/utils", () => ({
+// staff.ts imports getErrorMessage from @trainers/utils
+jest.mock("@trainers/utils", () => ({
   getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
 }));
 
