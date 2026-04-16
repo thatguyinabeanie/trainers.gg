@@ -365,6 +365,85 @@ function computeLegalSpeciesFromSim(
 }
 
 // =============================================================================
+// Items
+// =============================================================================
+
+// TODO(champions-items): No authoritative VGC 2026 Reg M-A held-item legality
+// list has been published yet. The videogameschronicle "all items" guide only
+// enumerates the in-game shop pool (47 items, mostly type-boosting items and
+// Pinch Berries) and does not address competitive legality (no Life Orb,
+// Focus Sash, Choice items, Leftovers, Sitrus Berry, etc.). The official
+// pokemon.com tournaments page redirects to championships.pokemon.com which
+// does not surface item rules either. Until an authoritative source ships,
+// Champions returns `undefined` from `getLegalItems` (permissive — all items
+// allowed) so we don't fabricate a list. Re-source when rules drop and
+// replace this with a `CHAMPIONS_MA_LEGAL_ITEMS` static port.
+
+// Module-level cache — computed once per process (worker) lifetime, mirroring
+// `simSetCache` for species. First call per format probes ~250 gen-9 items
+// through the validator; subsequent calls are synchronous.
+const simItemCache = new Map<string, ReadonlySet<string>>();
+
+/**
+ * Compute the legal-item set for a format registered in @pkmn/sim.
+ * Iterates the gen-9 item table and probes each via TeamValidator.checkItem,
+ * which returns:
+ *   - `null`           — no rule matched (legal)
+ *   - `""` (empty)     — whitelist rule matched (legal)
+ *   - non-empty string — banned (illegal)
+ *
+ * Pikachu is the probe species: unbanned in every supported format and
+ * subject to no item-specific restrictions, so its checkItem result reflects
+ * format-level rules only.
+ *
+ * Nonstandard filter: items with `isNonstandard === "Unobtainable"` are kept
+ * (legacy/transfer-only items that still see competitive use); other
+ * nonstandard values ("Future", "LGPE", "Past", "CAP", "Custom") are excluded
+ * — same convention as the species path.
+ */
+function computeLegalItemsFromSim(
+  formatId: string
+): ReadonlySet<string> | undefined {
+  const cached = simItemCache.get(formatId);
+  if (cached) return cached;
+
+  const simName = SIM_FORMAT_NAME_BY_ID[formatId];
+  if (!simName) return undefined;
+
+  const format = SimDex.formats.get(simName);
+  if (!format?.exists) return undefined;
+
+  const validator = new TeamValidator(format, SimDex);
+  const gen = SimDex.forGen(9);
+
+  // Use a known-legal species as the probe base. Pikachu is unbanned in
+  // every format we target and has no item restriction that could skew
+  // the result.
+  const probeSpecies = gen.species.get("Pikachu");
+  if (!probeSpecies?.exists) return undefined;
+  const baseSet = probeSet(probeSpecies);
+
+  const legal = new Set<string>();
+  for (const item of gen.items.all()) {
+    if (!item.exists) continue;
+    if (item.isNonstandard && item.isNonstandard !== "Unobtainable") {
+      continue;
+    }
+    const issue = validator.checkItem(
+      { ...baseSet, item: item.name },
+      item,
+      {}
+    );
+    // checkItem returns null for unmatched rules (legal), '' for a
+    // whitelist match (legal), or a non-empty string for a ban (illegal).
+    if (issue === null || issue === "") legal.add(item.name);
+  }
+
+  simItemCache.set(formatId, legal);
+  return legal;
+}
+
+// =============================================================================
 // Public API
 // =============================================================================
 
@@ -388,4 +467,32 @@ export function getLegalSpecies(
 export function isLegalSpecies(species: string, formatId: string): boolean {
   const legal = getLegalSpecies(formatId);
   return legal === undefined || legal.has(species);
+}
+
+/**
+ * Returns the set of held items legal in the given format, or `undefined`
+ * if legality cannot be determined (treat as permissive — caller allows
+ * any item).
+ *
+ * Champions: VGC 2026 Reg M-A currently returns `undefined` because no
+ * authoritative item-legality source has been published; see the
+ * `TODO(champions-items)` note above.
+ */
+export function getLegalItems(
+  formatId: string
+): ReadonlySet<string> | undefined {
+  // Champions M-A: permissive until a source publishes item rules.
+  if (formatId === "championsvgc2026regma") return undefined;
+  return computeLegalItemsFromSim(formatId);
+}
+
+/**
+ * True when `item` is legal in `formatId`. Returns true for the empty
+ * string (no held item is always legal) and for any format without
+ * computable legality (permissive default).
+ */
+export function isLegalItem(item: string, formatId: string): boolean {
+  if (!item) return true;
+  const legal = getLegalItems(formatId);
+  return legal === undefined || legal.has(item);
 }

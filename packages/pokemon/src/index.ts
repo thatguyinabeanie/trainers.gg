@@ -118,8 +118,13 @@ export {
   AdvancedTeamValidator,
 } from "./team-validator";
 
-// Format species legality
-export { getLegalSpecies, isLegalSpecies } from "./format-legality";
+// Format legality
+export {
+  getLegalItems,
+  getLegalSpecies,
+  isLegalItem,
+  isLegalSpecies,
+} from "./format-legality";
 
 // Competitive format registry (Showdown format IDs + display metadata)
 export {

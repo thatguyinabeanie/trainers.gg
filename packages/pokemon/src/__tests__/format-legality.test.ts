@@ -1,4 +1,9 @@
-import { getLegalSpecies, isLegalSpecies } from "../format-legality";
+import {
+  getLegalItems,
+  getLegalSpecies,
+  isLegalItem,
+  isLegalSpecies,
+} from "../format-legality";
 
 describe("format-legality — Champions M-A", () => {
   const CHAMPIONS = "championsvgc2026regma";
@@ -71,5 +76,36 @@ describe("format-legality — @pkmn/sim path", () => {
     const first = getLegalSpecies(REG_I);
     const second = getLegalSpecies(REG_I);
     expect(first).toBe(second);
+  });
+});
+
+describe("format-legality — items", () => {
+  it("marks Life Orb legal in VGC Reg I", () => {
+    expect(isLegalItem("Life Orb", "gen9vgc2026regi")).toBe(true);
+  });
+
+  it("marks Focus Sash legal in VGC Reg I", () => {
+    expect(isLegalItem("Focus Sash", "gen9vgc2026regi")).toBe(true);
+  });
+
+  // Champions item legality is currently permissive (see TODO(champions-items)
+  // in format-legality.ts) — no authoritative published list exists yet, so we
+  // skip the Champions-specific assertions until rules are sourced.
+  it.skip("returns a ReadonlySet for Champions M-A", () => {
+    const items = getLegalItems("championsvgc2026regma");
+    expect(items).toBeInstanceOf(Set);
+    expect(items?.has("Life Orb")).toBe(true);
+    expect(items?.size).toBeGreaterThan(20);
+  });
+
+  it("returns undefined for unknown formats (permissive)", () => {
+    expect(getLegalItems("unknown-format-id")).toBeUndefined();
+    expect(isLegalItem("Life Orb", "unknown-format-id")).toBe(true);
+  });
+
+  it("memoizes — repeated calls return the same instance", () => {
+    const a = getLegalItems("gen9vgc2026regi");
+    const b = getLegalItems("gen9vgc2026regi");
+    expect(a).toBe(b);
   });
 });
