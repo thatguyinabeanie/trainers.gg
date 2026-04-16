@@ -183,3 +183,14 @@ export { getAllItems, getItemShortDesc } from "./items";
 
 // Ability data utilities
 export { getAbilityShortDesc } from "./abilities";
+
+// Stat-tier bucketing for color-coded base stats
+export { type StatTier, getStatTier } from "./stat-tiers";
+
+// Plain-English helper text for moves (team builder editor)
+export {
+  type MoveHelperInput,
+  type BoostsTable,
+  type StatusName,
+  getMoveHelperText,
+} from "./move-helpers";

@@ -39,6 +39,15 @@ export interface SemanticTokens {
   sidebarAccentForeground: OklchColor;
   sidebarBorder: OklchColor;
   sidebarRing: OklchColor;
+  // Stat-tier colors for Pokemon base stat coloring.
+  // Tiers are derived by `getStatTier()` from `@trainers/pokemon` —
+  // low (≤60), mid (61-90), good (91-120), great (121+).
+  // The "great" hue is a cooler/bluer teal so it stays visually
+  // distinct from the primary teal accent.
+  statLow: OklchColor;
+  statMid: OklchColor;
+  statGood: OklchColor;
+  statGreat: OklchColor;
 }
 
 export const lightTokens: SemanticTokens = {
@@ -95,6 +104,12 @@ export const lightTokens: SemanticTokens = {
   sidebarAccentForeground: colors.neutral[900],
   sidebarBorder: colors.neutral[200],
   sidebarRing: colors.neutral[400],
+
+  // Stat tiers (light mode — tuned for AA contrast on bg-card / neutral-50).
+  statLow: { l: 0.58, c: 0.18, h: 25 }, // warm coral
+  statMid: { l: 0.62, c: 0.16, h: 70 }, // amber
+  statGood: { l: 0.55, c: 0.18, h: 145 }, // green
+  statGreat: { l: 0.5, c: 0.14, h: 220 }, // cool blue-teal (away from primary 185)
 };
 
 export const darkTokens: SemanticTokens = {
@@ -151,6 +166,12 @@ export const darkTokens: SemanticTokens = {
   sidebarAccentForeground: colors.neutral[50],
   sidebarBorder: { l: 1, c: 0, h: 0 }, // Will be oklch(1 0 0 / 10%)
   sidebarRing: colors.neutral[500],
+
+  // Stat tiers (dark mode — brighter and slightly less saturated for legibility on dark cards).
+  statLow: { l: 0.72, c: 0.16, h: 25 },
+  statMid: { l: 0.78, c: 0.14, h: 75 },
+  statGood: { l: 0.72, c: 0.16, h: 145 },
+  statGreat: { l: 0.7, c: 0.13, h: 220 },
 };
 
 export const semanticTokens = {
