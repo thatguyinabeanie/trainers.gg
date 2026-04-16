@@ -425,3 +425,94 @@ describe("SpeciesTable — sorting", () => {
     expect(mutedCells.length).toBeGreaterThan(0);
   });
 });
+
+// =============================================================================
+// Tests — format legality
+// =============================================================================
+
+const CHAMPIONS_FORMAT = "championsvgc2026regma";
+
+describe("SpeciesTable — format legality", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("omits an illegal species entirely from the rendered list", () => {
+    const entries = [
+      makeEntry({ species: "Landorus-Therian" }),
+      makeEntry({ species: "Incineroar" }),
+    ];
+    render(
+      <SpeciesTable
+        {...defaultProps}
+        entries={entries}
+        formatId={CHAMPIONS_FORMAT}
+      />
+    );
+
+    // Illegal species should not appear in the table at all
+    expect(screen.queryByText("Landorus-Therian")).not.toBeInTheDocument();
+
+    // Legal species is still present
+    expect(screen.getByText("Incineroar")).toBeInTheDocument();
+
+    // No dim class or badge for illegal species
+    expect(screen.queryByText("Not legal")).not.toBeInTheDocument();
+  });
+
+  it("calls onSelect when a legal species row is double-clicked", async () => {
+    const onSelect = jest.fn();
+    const user = userEvent.setup();
+
+    const entry = makeEntry({ species: "Incineroar" });
+    render(
+      <SpeciesTable
+        {...defaultProps}
+        entries={[entry]}
+        formatId={CHAMPIONS_FORMAT}
+        onSelect={onSelect}
+      />
+    );
+
+    await user.dblClick(screen.getByText("Incineroar"));
+    expect(onSelect).toHaveBeenCalledWith("Incineroar");
+  });
+
+  it("renders all species when formatId has no registered legality (permissive)", () => {
+    const entries = [
+      makeEntry({ species: "Landorus-Therian" }),
+      makeEntry({ species: "Incineroar" }),
+    ];
+    render(
+      <SpeciesTable
+        {...defaultProps}
+        entries={entries}
+        formatId="unknown-format-id"
+      />
+    );
+
+    // Unknown format — no filtering — all entries appear
+    expect(screen.getByText("Landorus-Therian")).toBeInTheDocument();
+    expect(screen.getByText("Incineroar")).toBeInTheDocument();
+
+    // No badges should appear
+    expect(screen.queryByText("Not legal")).not.toBeInTheDocument();
+  });
+
+  it("renders all species when no formatId is provided", () => {
+    const entries = [
+      makeEntry({ species: "Landorus-Therian" }),
+      makeEntry({ species: "Incineroar" }),
+    ];
+    render(
+      <SpeciesTable
+        {...defaultProps}
+        entries={entries}
+        // no formatId
+      />
+    );
+
+    expect(screen.getByText("Landorus-Therian")).toBeInTheDocument();
+    expect(screen.getByText("Incineroar")).toBeInTheDocument();
+  });
+});

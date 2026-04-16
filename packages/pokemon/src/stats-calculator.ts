@@ -169,6 +169,44 @@ export function calculateStat(
   return Math.floor(stat * natureMultiplier);
 }
 
+// =============================================================================
+// Pokemon Champions (Gen 10) — SP stat formulas
+// =============================================================================
+
+/**
+ * Calculate HP stat for Pokemon Champions (Gen 10 SP system).
+ *
+ * Formula derived from the Nerd of Now damage calculator:
+ *   floor((base * 2 + 31) * 50 / 100) + 50 + 10 + sp
+ *
+ * Champions always plays at level 50. There are no IVs — base IVs of 31 are
+ * baked into the formula. SP is 0-32 and adds directly to the HP total.
+ *
+ * Special case: base=1 (Shedinja equivalent) always returns 1.
+ */
+export function calculateChampionsHP(base: number, sp: number): number {
+  if (base === 1) return 1;
+  return Math.floor(((base * 2 + 31) * 50) / 100) + 50 + 10 + sp;
+}
+
+/**
+ * Calculate a non-HP stat for Pokemon Champions (Gen 10 SP system).
+ *
+ * Formula derived from the Nerd of Now damage calculator:
+ *   floor(((floor((base * 2 + 31) * 50 / 100) + 5) + sp) * nature)
+ *
+ * Note: nature still applies to stats in Champions, but nature is optional —
+ * pass 1.0 for neutral nature. SP is 0-32 and adds before the nature multiply.
+ */
+export function calculateChampionsStat(
+  base: number,
+  sp: number,
+  natureMultiplier: number
+): number {
+  const inner = Math.floor(((base * 2 + 31) * 50) / 100) + 5;
+  return Math.floor((inner + sp) * natureMultiplier);
+}
+
 /**
  * Get nature multiplier for a stat
  */

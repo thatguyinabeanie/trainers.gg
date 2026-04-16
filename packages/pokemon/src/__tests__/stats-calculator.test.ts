@@ -1,6 +1,8 @@
 import {
   calculateHP,
   calculateStat,
+  calculateChampionsHP,
+  calculateChampionsStat,
   getNatureMultiplier,
   calculateStats,
   calculateBulk,
@@ -326,4 +328,110 @@ describe("getStatStageMultiplier", () => {
     expect(getStatStageMultiplier(7)).toBe(1);
     expect(getStatStageMultiplier(-7)).toBe(1);
   });
+});
+
+// =============================================================================
+// Pokemon Champions (Gen 10) — SP stat formulas
+// =============================================================================
+
+describe("calculateChampionsHP", () => {
+  // Formula: floor((base * 2 + 31) * 50 / 100) + 50 + 10 + sp
+
+  it("calculates HP with 0 SP", () => {
+    // Incineroar base HP 95: floor((95*2+31)*50/100) + 60 = floor(22100/100) + 60 = 110 + 60 = 170 + 0 = 170
+    // Wait: floor((190+31)*50/100) = floor(221*50/100) = floor(11050/100) = floor(110.5) = 110
+    // 110 + 50 + 10 + 0 = 170
+    expect(calculateChampionsHP(95, 0)).toBe(170);
+  });
+
+  it("adds SP directly to the HP total", () => {
+    // Same as above but sp=32: 170 + 32 = 202
+    expect(calculateChampionsHP(95, 32)).toBe(202);
+  });
+
+  it("calculates HP for a low base stat with some SP", () => {
+    // Pikachu base HP 35: floor((35*2+31)*50/100) + 60 + sp
+    // floor(101*50/100) + 60 + sp = floor(5050/100) + 60 + sp = 50 + 60 + sp = 110 + sp
+    expect(calculateChampionsHP(35, 0)).toBe(110);
+    expect(calculateChampionsHP(35, 16)).toBe(126);
+    expect(calculateChampionsHP(35, 32)).toBe(142);
+  });
+
+  it("returns 1 for base 1 (Shedinja equivalent)", () => {
+    expect(calculateChampionsHP(1, 0)).toBe(1);
+    expect(calculateChampionsHP(1, 32)).toBe(1);
+  });
+
+  it.each([
+    // [base, sp, expected]
+    // formula: floor((base*2+31)*50/100) + 60 + sp
+    [100, 0, Math.floor(((200 + 31) * 50) / 100) + 60], // 115 + 60 = 175
+    [108, 0, Math.floor(((216 + 31) * 50) / 100) + 60], // 123 + 60 = 183
+    [50, 10, Math.floor(((100 + 31) * 50) / 100) + 70], // 65 + 70 = 135
+  ])("calculateChampionsHP(base=%i, sp=%i) = %i", (base, sp, expected) => {
+    expect(calculateChampionsHP(base, sp)).toBe(expected);
+  });
+});
+
+describe("calculateChampionsStat", () => {
+  // Formula: floor(((floor((base * 2 + 31) * 50 / 100) + 5) + sp) * nature)
+
+  it("calculates a stat with 0 SP and neutral nature (1.0)", () => {
+    // Incineroar Atk base 115: floor((115*2+31)*50/100) + 5
+    // = floor(261*50/100) + 5 = floor(13050/100) + 5 = 130 + 5 = 135
+    // floor(135 * 1.0) = 135
+    expect(calculateChampionsStat(115, 0, 1.0)).toBe(135);
+  });
+
+  it("adds SP before nature multiply", () => {
+    // Same base but sp=32: floor((135 + 32) * 1.0) = 167
+    expect(calculateChampionsStat(115, 32, 1.0)).toBe(167);
+  });
+
+  it("applies boosting nature (1.1) correctly", () => {
+    // Incineroar Atk base 115, sp=0, 1.1 nature:
+    // floor(135 * 1.1) = floor(148.5) = 148
+    expect(calculateChampionsStat(115, 0, 1.1)).toBe(148);
+  });
+
+  it("applies reducing nature (0.9) correctly", () => {
+    // Incineroar Atk base 115, sp=0, 0.9 nature:
+    // floor(135 * 0.9) = floor(121.5) = 121
+    expect(calculateChampionsStat(115, 0, 0.9)).toBe(121);
+  });
+
+  it("SP adds before nature multiply, not after", () => {
+    // base=100, sp=10, nature=1.1
+    // inner = floor((200+31)*50/100) + 5 = floor(11550/100) + 5 = 115 + 5 = 120 (Wait: 231*50=11550, /100=115.5, floor=115)
+    // Wait: floor((100*2+31)*50/100) = floor(231*50/100) = floor(11550/100) = 115
+    // inner = 115 + 5 = 120
+    // floor((120 + 10) * 1.1) = floor(130 * 1.1) = floor(143) = 143
+    expect(calculateChampionsStat(100, 10, 1.1)).toBe(143);
+    // Verify SP is added before nature: if SP were added after:
+    // floor(120 * 1.1) + 10 = floor(132) + 10 = 142 (different result)
+    expect(calculateChampionsStat(100, 10, 1.1)).not.toBe(142);
+  });
+
+  it.each([
+    // [base, sp, nature, expected]
+    // floor(((floor((base*2+31)*50/100) + 5) + sp) * nature)
+    [60, 0, 1.0, Math.floor((Math.floor(((120 + 31) * 50) / 100) + 5) * 1.0)],
+    [
+      90,
+      32,
+      1.0,
+      Math.floor((Math.floor(((180 + 31) * 50) / 100) + 5 + 32) * 1.0),
+    ],
+    [
+      130,
+      16,
+      1.1,
+      Math.floor((Math.floor(((260 + 31) * 50) / 100) + 5 + 16) * 1.1),
+    ],
+  ])(
+    "calculateChampionsStat(base=%i, sp=%i, nature=%f) = %i",
+    (base, sp, nature, expected) => {
+      expect(calculateChampionsStat(base, sp, nature)).toBe(expected);
+    }
+  );
 });

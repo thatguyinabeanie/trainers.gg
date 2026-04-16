@@ -17,6 +17,7 @@ import {
   updatePokemon as updatePokemonMutation,
   removePokemonFromTeam as removePokemonFromTeamMutation,
   reorderTeamPokemon as reorderTeamPokemonMutation,
+  getTeamWithPokemon,
   type TablesInsert,
   type TablesUpdate,
 } from "@trainers/supabase";
@@ -40,6 +41,8 @@ import { invalidateTeamDetailCache } from "@/lib/cache-invalidation";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import { rejectBots, withAction } from "@/actions/utils";
+import { checkFormatChangeLegality } from "@/actions/format-legality-guard";
+import { findLegalityViolation } from "@/actions/_legality";
 
 // =============================================================================
 // Team CRUD
@@ -104,9 +107,44 @@ export async function updateTeamAction(
       error: parsedData.error.issues[0]?.message ?? "Invalid data",
     };
   }
-  return withAction(async () => {
+
+  try {
     await rejectBots();
-    const supabase = await createClient();
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update team"),
+    };
+  }
+  const supabase = await createClient();
+
+  // ---------------------------------------------------------------------------
+  // Format-change legality guard — runs before withAction so violation
+  // messages aren't sanitized in production
+  // ---------------------------------------------------------------------------
+  if (parsedData.data.format !== undefined) {
+    const team = await getTeamWithPokemon(supabase, parsed.data.teamId);
+    if (team === null) {
+      return {
+        success: false,
+        error: "Team not found. It may have been deleted.",
+      };
+    }
+    const guard = checkFormatChangeLegality(
+      team.team_pokemon,
+      team.format,
+      parsedData.data.format
+    );
+    if (!guard.ok) {
+      return {
+        success: false,
+        error: `These Pokémon aren't legal in the target format: ${guard.illegal.join(", ")}. Remove them before changing format.`,
+      };
+    }
+  }
+
+  return withAction(async () => {
+    // Only the actual mutation remains inside withAction
     await updateTeamMutation(supabase, parsed.data.teamId, parsedData.data);
     invalidateTeamDetailCache(parsed.data.teamId);
   }, "Failed to update team");
@@ -201,9 +239,35 @@ export async function addPokemonToTeamAction(
       error: parsedPokemon.error.issues[0]?.message ?? "Invalid pokemon data",
     };
   }
+
   try {
     await rejectBots();
-    const supabase = await createClient();
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to add pokemon to team"),
+    };
+  }
+  const supabase = await createClient();
+
+  // ---------------------------------------------------------------------------
+  // Legality guard — runs before withAction so violation messages aren't
+  // sanitized in production
+  // ---------------------------------------------------------------------------
+  const team = await getTeamWithPokemon(supabase, parsed.data.teamId);
+  if (team === null) {
+    return {
+      success: false,
+      error: "Team not found. It may have been deleted.",
+    };
+  }
+  if (team.format) {
+    const violation = findLegalityViolation(parsedPokemon.data, team.format);
+    if (violation) return { success: false, error: violation };
+  }
+
+  return withAction(async () => {
+    // Only the actual mutation remains inside withAction
     const result = await addPokemonToTeamMutation(
       supabase,
       parsed.data.teamId,
@@ -211,14 +275,8 @@ export async function addPokemonToTeamAction(
       parsed.data.position
     );
     invalidateTeamDetailCache(parsed.data.teamId);
-    return { success: true, data: { pokemonId: result.pokemonId } };
-  } catch (error) {
-    console.error("[server-action] addPokemonToTeamAction:", error);
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to add pokemon to team"),
-    };
-  }
+    return { pokemonId: result.pokemonId };
+  }, "Failed to add pokemon to team");
 }
 
 /**
@@ -244,10 +302,47 @@ export async function updatePokemonAction(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
-  return withAction(async () => {
+
+  try {
     await rejectBots();
-    const parsedData = pokemonUpdateSchema.parse(data);
-    const supabase = await createClient();
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update pokemon"),
+    };
+  }
+  const parsedData = pokemonUpdateSchema.parse(data);
+  const supabase = await createClient();
+
+  // ---------------------------------------------------------------------------
+  // Legality guard — runs before withAction so violation messages aren't
+  // sanitized in production
+  // ---------------------------------------------------------------------------
+  const team = await getTeamWithPokemon(supabase, parsedTeam.data.teamId);
+  if (team === null) {
+    return {
+      success: false,
+      error: "Team not found. It may have been deleted.",
+    };
+  }
+  if (team.format) {
+    // Find the current pokemon row within the team
+    const currentSlot = team.team_pokemon.find(
+      (slot) => slot.pokemon_id === parsed.data.pokemonId
+    );
+    const currentPokemon = currentSlot?.pokemon;
+    if (!currentPokemon) {
+      return { success: false, error: "Pokemon not found on this team." };
+    }
+    // Merge current fields with incoming updates so partial updates
+    // (e.g. only changing item) still validate against the species
+    const merged = { ...currentPokemon, ...parsedData };
+    const violation = findLegalityViolation(merged, team.format);
+    if (violation) return { success: false, error: violation };
+  }
+
+  return withAction(async () => {
+    // Only the actual mutation remains inside withAction
     await updatePokemonMutation(
       supabase,
       parsed.data.pokemonId,

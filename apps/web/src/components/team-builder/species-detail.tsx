@@ -24,6 +24,8 @@ import { CATEGORY_COLORS, CATEGORY_LABELS } from "./move-category-ui";
 interface SpeciesDetailProps {
   species: SpeciesSearchEntry | null;
   currentTeam: Array<{ species: string }>;
+  /** Active format ID. Retained for API stability; illegal species are filtered upstream. */
+  formatId?: string;
   onSelect: (species: string, mode: "defaults" | "blank") => void;
 }
 
@@ -38,6 +40,7 @@ interface SpeciesDetailProps {
 export function SpeciesDetail({
   species,
   currentTeam,
+  formatId: _formatId,
   onSelect,
 }: SpeciesDetailProps) {
   if (!species) {

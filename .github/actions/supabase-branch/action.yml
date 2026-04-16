@@ -35,13 +35,30 @@ runs:
       run: |
         # Check if branch already exists
         EXISTING=$(supabase --experimental branches list --project-ref "$PROJECT_REF" --output json \
-          | jq -r --arg name "$GIT_BRANCH" '.[] | select(.git_branch == $name) | .id // empty')
+          | jq -r --arg name "$GIT_BRANCH" '.[] | select(.name == $name or .git_branch == $name) | .id // empty')
 
         if [ -z "$EXISTING" ]; then
           echo "Creating Supabase branch for $GIT_BRANCH..."
-          supabase --experimental branches create "$GIT_BRANCH" --project-ref "$PROJECT_REF"
+          CREATE_ERR=$(mktemp)
+          if supabase --experimental branches create "$GIT_BRANCH" --project-ref "$PROJECT_REF" 2>"$CREATE_ERR"; then
+            # Associate the git branch so future list-by-git_branch lookups also match.
+            supabase --experimental branches update "$GIT_BRANCH" --git-branch "$GIT_BRANCH" --project-ref "$PROJECT_REF" \
+              || echo "::warning::Failed to set git_branch association — non-fatal"
+          else
+            CREATE_MSG=$(cat "$CREATE_ERR")
+            # 409 = branch already exists on Supabase side (list/create race or stale state).
+            # Proceed to the get-polling loop; it will find the branch if it truly exists.
+            if printf '%s' "$CREATE_MSG" | grep -qiE '409|already exists|Failed to insert'; then
+              echo "::warning::Create returned conflict; proceeding to poll branches get: $CREATE_MSG"
+            else
+              echo "::error::Supabase branch create failed: $CREATE_MSG"
+              rm -f "$CREATE_ERR"
+              exit 1
+            fi
+          fi
+          rm -f "$CREATE_ERR"
         else
-          echo "Supabase branch already exists for $GIT_BRANCH"
+          echo "Supabase branch already exists for $GIT_BRANCH (id=$EXISTING)"
         fi
 
         # Get branch credentials and extract project ref.

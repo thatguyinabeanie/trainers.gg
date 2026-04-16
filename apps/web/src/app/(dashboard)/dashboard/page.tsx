@@ -18,6 +18,7 @@ import {
 } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 import { DASHBOARD_ALT_COOKIE } from "@/components/dashboard/sidebar-helpers";
+import { PageHeader } from "@/components/dashboard/page-header";
 
 import { HomeClient } from "./home-client";
 import { LiveMatchBar, type ActiveMatch } from "./components/live-match-bar";
@@ -178,39 +179,42 @@ export default async function DashboardHomePage() {
   const username = (user.user_metadata?.username as string) ?? "";
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="space-y-6">
-        {/* Live match bar — server-rendered */}
-        {activeMatch && <LiveMatchBar match={activeMatch} />}
+    <>
+      <PageHeader title="Dashboard" />
+      <div className="flex flex-1 flex-col gap-4 p-4">
+        <div className="space-y-6">
+          {/* Live match bar — server-rendered */}
+          {activeMatch && <LiveMatchBar match={activeMatch} />}
 
-        {/* Stats row — server-rendered */}
-        <DashboardStats
-          winRate={stats.winRate}
-          winRateSub={stats.winRateSub}
-          rating={stats.rating}
-          ratingSub={stats.ratingSub}
-          record={stats.record}
-          recordSub={stats.recordSub}
-          tournaments={stats.tournaments}
-          tournamentsSub={stats.tournamentsSub}
-          tournamentsSubAccent={stats.tournamentsSubAccent}
-        />
+          {/* Stats row — server-rendered */}
+          <DashboardStats
+            winRate={stats.winRate}
+            winRateSub={stats.winRateSub}
+            rating={stats.rating}
+            ratingSub={stats.ratingSub}
+            record={stats.record}
+            recordSub={stats.recordSub}
+            tournaments={stats.tournaments}
+            tournamentsSub={stats.tournamentsSub}
+            tournamentsSubAccent={stats.tournamentsSubAccent}
+          />
 
-        {/* Client component — handles interactivity only */}
-        <HomeClient
-          alts={alts.map((a) => ({
-            id: a.id,
-            username: a.username,
-            avatar_url: a.avatar_url,
-            is_public: a.is_public,
-          }))}
-          mainAltId={mainAltId}
-          initialBulkStats={bulkStats}
-          initialBulkRatings={bulkRatings}
-          selectedAltUsername={selectedAltUsername}
-          username={username}
-        />
+          {/* Client component — handles interactivity only */}
+          <HomeClient
+            alts={alts.map((a) => ({
+              id: a.id,
+              username: a.username,
+              avatar_url: a.avatar_url,
+              is_public: a.is_public,
+            }))}
+            mainAltId={mainAltId}
+            initialBulkStats={bulkStats}
+            initialBulkRatings={bulkRatings}
+            selectedAltUsername={selectedAltUsername}
+            username={username}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -26,15 +26,10 @@ export const metadata = {
 
 interface TeamsPageProps {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ format?: string }>;
 }
 
-export default async function TeamsPage({
-  params,
-  searchParams,
-}: TeamsPageProps) {
+export default async function TeamsPage({ params }: TeamsPageProps) {
   const { username } = await params;
-  const { format: selectedFormat } = await searchParams;
 
   const user = await getUser();
   if (!user) {
@@ -66,7 +61,6 @@ export default async function TeamsPage({
         altId={alt.id}
         handle={username}
         activeFormats={activeFormats}
-        selectedFormat={selectedFormat}
       />
     </>
   );

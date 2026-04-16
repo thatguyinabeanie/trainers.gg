@@ -7,6 +7,10 @@ import React from "react";
 // Module-level mocks
 // =============================================================================
 
+const mockGetLegalTeraTypes = jest.fn(
+  (_formatId: string): Set<string> | undefined => undefined
+);
+
 jest.mock("@trainers/pokemon", () => ({
   getValidTeraTypes: jest.fn(() => [
     "Normal",
@@ -16,6 +20,8 @@ jest.mock("@trainers/pokemon", () => ({
     "Electric",
     "Stellar",
   ]),
+  getLegalTeraTypes: (...args: unknown[]) =>
+    mockGetLegalTeraTypes(args[0] as string),
 }));
 
 import { TeraPicker } from "../tera-picker";
@@ -101,6 +107,52 @@ describe("TeraPicker", () => {
       render(<TeraPicker {...defaultProps} onSelect={onSelect} />);
       await user.click(screen.getByRole("button", { name: "Stellar" }));
       expect(onSelect).toHaveBeenCalledWith("Stellar");
+    });
+  });
+
+  describe("format filtering", () => {
+    it("renders all types when formatId returns undefined (permissive)", () => {
+      mockGetLegalTeraTypes.mockReturnValueOnce(undefined);
+      render(
+        <TeraPicker
+          value={null}
+          onSelect={jest.fn()}
+          onClose={jest.fn()}
+          formatId="gen9vgc2026regi"
+        />
+      );
+      // All 6 mocked types should render
+      expect(screen.getAllByRole("button")).toHaveLength(6);
+    });
+
+    it("renders empty state when format disallows Tera", () => {
+      mockGetLegalTeraTypes.mockReturnValueOnce(new Set());
+      render(
+        <TeraPicker
+          value={null}
+          onSelect={jest.fn()}
+          onClose={jest.fn()}
+          formatId="championsvgc2026regma"
+        />
+      );
+      expect(screen.queryAllByRole("button")).toHaveLength(0);
+      expect(screen.getByText(/Tera isn't allowed/i)).toBeInTheDocument();
+    });
+
+    it("renders only legal types when format restricts Tera", () => {
+      // Only Fire and Water are legal
+      mockGetLegalTeraTypes.mockReturnValueOnce(new Set(["Fire", "Water"]));
+      render(
+        <TeraPicker
+          value={null}
+          onSelect={jest.fn()}
+          onClose={jest.fn()}
+          formatId="gen9monotype"
+        />
+      );
+      expect(screen.getAllByRole("button")).toHaveLength(2);
+      expect(screen.getByRole("button", { name: "Fire" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Water" })).toBeInTheDocument();
     });
   });
 });

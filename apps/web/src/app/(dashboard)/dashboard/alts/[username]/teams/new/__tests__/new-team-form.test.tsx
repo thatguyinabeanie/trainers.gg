@@ -49,6 +49,17 @@ jest.mock("@/lib/supabase", () => ({
   useSupabase: jest.fn(() => ({})),
 }));
 
+// Legality functions are called by submitNewTeam during import. Without this
+// mock, the real @pkmn/sim validator runs against ~800 moves per species,
+// causing 20s+ test timeouts. Permissive defaults let the import flow proceed.
+jest.mock("@trainers/pokemon", () => ({
+  getLegalSpecies: jest.fn(() => undefined),
+  getLegalItems: jest.fn(() => undefined),
+  getLegalMoves: jest.fn(() => undefined),
+  getLegalTeraTypes: jest.fn(() => undefined),
+  isLegalAbility: jest.fn(() => true),
+}));
+
 import { NewTeamForm } from "../new-team-form";
 import { type GameFormat } from "@trainers/pokemon";
 
