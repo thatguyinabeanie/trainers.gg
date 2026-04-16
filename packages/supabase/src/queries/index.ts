@@ -280,10 +280,12 @@ export {
 
 // Discord bot queries
 export {
+  getDiscordServerById,
   getDiscordServerByGuildId,
   getDiscordServerByCommunityId,
   getDiscordServerByChannelId,
   listDiscordServers,
+  getRoleMappingById,
   listChannelMappings,
   getChannelMappingsForEvent,
   listDmSettings,
@@ -322,6 +324,10 @@ export {
   searchTournamentsInCommunity,
   searchUserActiveTournamentRegistrations,
   searchPlayersInCommunity,
+  // Integration page composite queries
+  getDiscordIntegrationOverview,
+  listRecentFailures,
+  getPublicDiscordHandle,
   type DiscordServer,
   type DiscordChannelMapping,
   type DiscordDmSetting,
@@ -338,4 +344,8 @@ export {
   type DiscordStandingRow,
   type DiscordPairingRow,
   type DiscordLeaderboardRow,
+  type DiscordIntegrationOverview,
+  type ChannelFailureRow,
+  type DmFailureRow,
+  type RoleSyncFailureRow,
 } from "./discord";

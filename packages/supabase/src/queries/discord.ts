@@ -298,6 +298,61 @@ export async function getRoleMapping(
 }
 
 /**
+ * Get a role mapping by ID, joined with its Discord server's community_id.
+ * Used by server actions that need to check community permission from just a mapping ID.
+ *
+ * @param mappingId - The role mapping row ID
+ */
+export async function getRoleMappingById(
+  supabase: TypedClient,
+  mappingId: number
+): Promise<{
+  id: number;
+  discord_server_id: number;
+  community_id: number;
+} | null> {
+  const { data, error } = await supabase
+    .from("discord_role_mappings")
+    .select("id, discord_server_id, discord_servers!inner(community_id)")
+    .eq("id", mappingId)
+    .maybeSingle();
+
+  if (error)
+    throw new Error(`Failed to fetch role mapping by ID: ${error.message}`);
+  if (!data) return null;
+
+  const server = data.discord_servers;
+  if (!server || Array.isArray(server)) return null;
+
+  return {
+    id: data.id,
+    discord_server_id: data.discord_server_id,
+    community_id: (server as { community_id: number }).community_id,
+  };
+}
+
+/**
+ * Get a Discord server record by its primary key ID.
+ * Returns null if no server row exists with that ID.
+ *
+ * @param id - discord_servers.id (primary key)
+ */
+export async function getDiscordServerById(
+  supabase: TypedClient,
+  id: number
+): Promise<DiscordServer | null> {
+  const { data, error } = await supabase
+    .from("discord_servers")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error)
+    throw new Error(`Failed to get Discord server by ID: ${error.message}`);
+  return data;
+}
+
+/**
  * List only the enabled role mappings for a Discord server.
  * Used when determining which roles should be synced.
  */
@@ -1374,4 +1429,264 @@ export async function getPublicTeamForCommunity(
     tournamentName: tournament.name,
     tournamentSlug: tournament.slug,
   };
+}
+
+// =============================================================================
+// Integration page composite queries
+// =============================================================================
+
+/**
+ * Gets all data the Discord integration page needs in one round trip.
+ * Returns null when the bot isn't installed for this community.
+ */
+export type DiscordIntegrationOverview = {
+  server: DiscordServer;
+  channelMappings: DiscordChannelMapping[];
+  dmSettings: DiscordDmSetting[];
+  roleMappings: DiscordRoleMapping[];
+  /** Number of channel failure records updated in the last 24 hours. */
+  recentFailureCount: number;
+};
+
+export async function getDiscordIntegrationOverview(
+  supabase: TypedClient,
+  communityId: number
+): Promise<DiscordIntegrationOverview | null> {
+  const server = await getDiscordServerByCommunityId(supabase, communityId);
+  if (!server) return null;
+
+  const [channelMappings, dmSettings, roleMappings, channelFailures] =
+    await Promise.all([
+      listChannelMappings(supabase, server.id),
+      listDmSettings(supabase, server.id),
+      listRoleMappings(supabase, server.id),
+      listChannelFailures(supabase, server.id),
+    ]);
+
+  return {
+    server,
+    channelMappings,
+    dmSettings,
+    roleMappings,
+    recentFailureCount: channelFailures.length,
+  };
+}
+
+// =============================================================================
+// Failures tab queries
+// =============================================================================
+
+/**
+ * A channel failure record mapped for display on the Failures tab.
+ *
+ * Note: discord_channel_failures stores cumulative consecutive failure counts
+ * per channel, not individual failure events. Fields that have no equivalent
+ * column in the schema (event_type, last_error_code, last_error_reason,
+ * mapping_id) are always null.
+ */
+export type ChannelFailureRow = {
+  id: number;
+  channel_id: string;
+  /** Not stored per-failure in this schema — always null. */
+  event_type: null;
+  consecutive_failures: number;
+  /** Not stored in this schema — always null. */
+  last_error_code: null;
+  /** Not stored in this schema — always null. */
+  last_error_reason: null;
+  /** Maps to last_failed_at on discord_channel_failures. */
+  last_attempt_at: string | null;
+  /** Not stored in this schema — always null. */
+  mapping_id: null;
+};
+
+/**
+ * A failed DM queue row mapped for display on the Failures tab.
+ */
+export type DmFailureRow = {
+  id: number;
+  user_id: string;
+  discord_user_id: string;
+  event_type: DiscordDmEventType;
+  /** discord_dm_queue has no error_code column — always null. */
+  error_code: null;
+  error_reason: string | null;
+  /**
+   * TODO: discord_dm_queue has no dedicated delivered_via_fallback column.
+   * When this column is added, update this query to read it directly.
+   * For now always false.
+   */
+  delivered_via_fallback: false;
+  failed_at: string;
+  /**
+   * A join to users/alts would be required to resolve the username.
+   * Not available without additional query — always null for now.
+   */
+  username: null;
+};
+
+/**
+ * A failed role sync queue row mapped for display on the Failures tab.
+ */
+export type RoleSyncFailureRow = {
+  id: number;
+  discord_user_id: string;
+  role_id: string;
+  action: "add" | "remove";
+  failed_reason: string;
+  failed_at: string;
+};
+
+/**
+ * Returns the last N hours of failures across channel notifications, DMs,
+ * and role sync operations for a Discord server. Used by the Failures tab
+ * on the Discord integration page.
+ *
+ * @param serverId - discord_servers.id
+ * @param hours - Number of hours to look back (default 24)
+ */
+export async function listRecentFailures(
+  supabase: TypedClient,
+  serverId: number,
+  hours = 24
+): Promise<{
+  channels: ChannelFailureRow[];
+  dms: DmFailureRow[];
+  roleSyncs: RoleSyncFailureRow[];
+}> {
+  const since = new Date(Date.now() - hours * 3_600_000).toISOString();
+
+  // discord_channel_failures: cumulative counters, filter by last_failed_at
+  const channelFailuresQuery = supabase
+    .from("discord_channel_failures")
+    .select("id, channel_id, consecutive_failures, last_failed_at")
+    .eq("discord_server_id", serverId)
+    .gte("last_failed_at", since)
+    .gt("consecutive_failures", 0);
+
+  // discord_dm_queue: rows with status='failed' within the time window.
+  // TODO: discord_dm_queue has no discord_server_id FK — when that column is
+  // added, replace the community_id approach with a server_id filter.
+  const dmFailuresQuery = supabase
+    .from("discord_dm_queue")
+    .select(
+      "id, user_id, discord_user_id, event_type, failed_reason, created_at"
+    )
+    .eq("status", "failed")
+    .gte("created_at", since)
+    .limit(200);
+
+  // discord_role_sync_queue: rows with status='failed' within the time window
+  const roleSyncFailuresQuery = supabase
+    .from("discord_role_sync_queue")
+    .select(
+      "id, discord_user_id, discord_role_id, action, failed_reason, created_at"
+    )
+    .eq("discord_server_id", serverId)
+    .eq("status", "failed")
+    .gte("created_at", since)
+    .limit(200);
+
+  const [channelResult, dmResult, roleSyncResult] = await Promise.all([
+    channelFailuresQuery,
+    dmFailuresQuery,
+    roleSyncFailuresQuery,
+  ]);
+
+  if (channelResult.error)
+    throw new Error(
+      `Failed to list channel failures: ${channelResult.error.message}`
+    );
+  if (dmResult.error)
+    throw new Error(`Failed to list DM failures: ${dmResult.error.message}`);
+  if (roleSyncResult.error)
+    throw new Error(
+      `Failed to list role sync failures: ${roleSyncResult.error.message}`
+    );
+
+  const channels: ChannelFailureRow[] = (channelResult.data ?? []).map(
+    (row) => ({
+      id: row.id,
+      channel_id: row.channel_id,
+      event_type: null,
+      consecutive_failures: row.consecutive_failures,
+      last_error_code: null,
+      last_error_reason: null,
+      last_attempt_at: row.last_failed_at ?? null,
+      mapping_id: null,
+    })
+  );
+
+  const dms: DmFailureRow[] = (dmResult.data ?? []).map((row) => ({
+    id: row.id,
+    user_id: row.user_id,
+    discord_user_id: row.discord_user_id,
+    event_type: row.event_type,
+    error_code: null,
+    error_reason: row.failed_reason ?? null,
+    delivered_via_fallback: false as const,
+    failed_at: row.created_at,
+    username: null,
+  }));
+
+  const roleSyncs: RoleSyncFailureRow[] = (roleSyncResult.data ?? [])
+    .filter((row) => row.failed_reason !== null)
+    .map((row) => ({
+      id: row.id,
+      discord_user_id: row.discord_user_id,
+      role_id: row.discord_role_id,
+      action: row.action as "add" | "remove",
+      failed_reason: row.failed_reason ?? "",
+      failed_at: row.created_at,
+    }));
+
+  return { channels, dms, roleSyncs };
+}
+
+// =============================================================================
+// Public profile Discord handle
+// =============================================================================
+
+/**
+ * Returns the user's linked Discord handle (username or display name) if one
+ * is linked, else null. Used by the public profile page when
+ * show_discord_publicly=true.
+ *
+ * Reads identity_data.global_name (display name) or identity_data.username
+ * from auth.identities for provider='discord'.
+ *
+ * Requires a service-role client — auth.identities is not accessible to
+ * authenticated users directly. Use createAdminSupabaseClient or
+ * createStaticClient with the service role key for public profile pages.
+ */
+export async function getPublicDiscordHandle(
+  supabase: TypedClient,
+  userId: string
+): Promise<string | null> {
+  const { data, error } = await (
+    supabase as TypedClient & {
+      from: (table: "auth.identities") => ReturnType<TypedClient["from"]>;
+    }
+  )
+    .from("auth.identities" as never)
+    .select("identity_data")
+    .eq("provider", "discord")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error)
+    throw new Error(`Failed to get public Discord handle: ${error.message}`);
+
+  if (!data) return null;
+
+  const identityData = (data as { identity_data: Record<string, unknown> })
+    .identity_data;
+
+  // Discord identity_data contains global_name (display name) or username
+  const handle =
+    (identityData?.global_name as string | null | undefined) ??
+    (identityData?.username as string | null | undefined) ??
+    null;
+
+  return handle;
 }
