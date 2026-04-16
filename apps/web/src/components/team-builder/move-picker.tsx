@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 
-import { getLearnableMoves, getMoveData } from "@trainers/pokemon";
+import {
+  getLearnableMoves,
+  getLegalMoves,
+  getMoveData,
+} from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -22,6 +26,8 @@ interface MovePickerProps {
   value: string | null;
   onSelect: (move: string) => void;
   onClose: () => void;
+  /** When provided, the move list is filtered to legal moves for this species in this format. */
+  formatId?: string;
 }
 
 // =============================================================================
@@ -41,11 +47,19 @@ export function MovePicker({
   value,
   onSelect,
   onClose,
+  formatId,
 }: MovePickerProps) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<CategoryFilter>("All");
 
-  const allMoves = getLearnableMoves(species);
+  // When formatId is provided, filter to the species' legal moves for that format.
+  // getLegalMoves returning undefined means the format is permissive — fall back to
+  // all learnable moves. When formatId is absent, use all learnable moves directly.
+  const allMoves = formatId
+    ? Array.from(
+        getLegalMoves(species, formatId) ?? getLearnableMoves(species)
+      ).sort()
+    : getLearnableMoves(species);
 
   // Filter by search text first (cheap string match), then resolve move data
   // only for the narrowed set to avoid unnecessary lookups on every keystroke

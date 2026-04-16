@@ -2,9 +2,11 @@ import {
   getLegalItems,
   getLegalMoves,
   getLegalSpecies,
+  getLegalTeraTypes,
   isLegalItem,
   isLegalMove,
   isLegalSpecies,
+  isLegalTeraType,
 } from "../format-legality";
 
 describe("format-legality — Champions M-A", () => {
@@ -138,5 +140,36 @@ describe("format-legality — moves", () => {
     const a = getLegalMoves("Pikachu", "gen9vgc2026regi");
     const b = getLegalMoves("Pikachu", "gen9vgc2026regi");
     expect(a).toBe(b);
+  });
+});
+
+describe("format-legality — tera types", () => {
+  it("returns all 18 types for Reg I (no Terastal Clause)", () => {
+    const tera = getLegalTeraTypes("gen9vgc2026regi");
+    expect(tera?.size).toBe(18);
+    expect(tera?.has("Fire")).toBe(true);
+  });
+
+  it("returns empty set for Champions M-A (no Tera — only Megas)", () => {
+    const tera = getLegalTeraTypes("championsvgc2026regma");
+    expect(tera?.size).toBe(0);
+  });
+
+  it("returns empty set when format has Terastal Clause ([Gen 9] Monotype)", () => {
+    const tera = getLegalTeraTypes("gen9monotype");
+    expect(tera?.size).toBe(0);
+  });
+
+  it("returns undefined for unknown formats (permissive)", () => {
+    expect(getLegalTeraTypes("unknown-format-id")).toBeUndefined();
+    expect(isLegalTeraType("Fire", "unknown-format-id")).toBe(true);
+  });
+
+  it("isLegalTeraType returns true for empty string (no tera selected)", () => {
+    expect(isLegalTeraType("", "championsvgc2026regma")).toBe(true);
+  });
+
+  it("isLegalTeraType returns false for a type in a no-Tera format", () => {
+    expect(isLegalTeraType("Fire", "championsvgc2026regma")).toBe(false);
   });
 });

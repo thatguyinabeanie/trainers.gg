@@ -123,9 +123,11 @@ export {
   getLegalItems,
   getLegalMoves,
   getLegalSpecies,
+  getLegalTeraTypes,
   isLegalItem,
   isLegalMove,
   isLegalSpecies,
+  isLegalTeraType,
 } from "./format-legality";
 
 // Competitive format registry (Showdown format IDs + display metadata)

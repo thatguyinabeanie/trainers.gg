@@ -1,6 +1,6 @@
 "use client";
 
-import { getValidTeraTypes } from "@trainers/pokemon";
+import { getLegalTeraTypes, getValidTeraTypes } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,8 @@ interface TeraPickerProps {
   value: string | null;
   onSelect: (type: string) => void;
   onClose: () => void;
+  /** Format ID — when provided, filters to format-legal Tera types. */
+  formatId?: string;
 }
 
 // =============================================================================
@@ -24,8 +26,15 @@ interface TeraPickerProps {
  * Inline Tera Type picker for the team builder Pokemon editor.
  * Displays all valid Tera Types in a colored grid.
  */
-export function TeraPicker({ value, onSelect, onClose }: TeraPickerProps) {
-  const teraTypes = getValidTeraTypes();
+export function TeraPicker({
+  value,
+  onSelect,
+  onClose,
+  formatId,
+}: TeraPickerProps) {
+  const allTypes = getValidTeraTypes();
+  const legal = formatId ? getLegalTeraTypes(formatId) : undefined;
+  const teraTypes = legal ? allTypes.filter((t) => legal.has(t)) : allTypes;
 
   function handleSelect(type: string) {
     onSelect(type);
@@ -34,6 +43,11 @@ export function TeraPicker({ value, onSelect, onClose }: TeraPickerProps) {
 
   return (
     <div className="bg-popover rounded-lg border p-3 shadow-md">
+      {teraTypes.length === 0 && (
+        <p className="text-muted-foreground px-1 py-4 text-center text-xs">
+          Tera isn&apos;t allowed in this format.
+        </p>
+      )}
       <div className="grid grid-cols-4 gap-1.5">
         {teraTypes.map((type) => {
           const colorClass =

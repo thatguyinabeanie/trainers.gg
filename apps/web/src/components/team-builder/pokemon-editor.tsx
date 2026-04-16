@@ -364,6 +364,7 @@ export function PokemonEditor({
                 closePicker();
               }}
               onClose={closePicker}
+              formatId={format?.id}
             />
           ) : (
             <button
@@ -424,6 +425,7 @@ export function PokemonEditor({
                       closePicker();
                     }}
                     onClose={closePicker}
+                    formatId={format?.id}
                   />
                 ) : (
                   <button

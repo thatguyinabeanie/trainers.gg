@@ -7,6 +7,10 @@ import React from "react";
 // Module-level mocks
 // =============================================================================
 
+const mockGetLegalMoves = jest.fn(
+  (_species: string, _formatId: string): Set<string> | undefined => undefined
+);
+
 jest.mock("@trainers/pokemon", () => {
   const moveData: Record<
     string,
@@ -51,6 +55,22 @@ jest.mock("@trainers/pokemon", () => {
       accuracy: 100,
       shortDesc: "User switches out after attacking.",
     },
+    Protect: {
+      name: "Protect",
+      type: "Normal",
+      category: "Status",
+      basePower: 0,
+      accuracy: true,
+      shortDesc: "Protects the user from most moves.",
+    },
+    "Hyperspace Hole": {
+      name: "Hyperspace Hole",
+      type: "Psychic",
+      category: "Special",
+      basePower: 80,
+      accuracy: true,
+      shortDesc: "Ignores protection moves.",
+    },
     Thunderbolt: {
       name: "Thunderbolt",
       type: "Electric",
@@ -64,10 +84,16 @@ jest.mock("@trainers/pokemon", () => {
     getLearnableMoves: jest.fn(() => [
       "Fake Out",
       "Flare Blitz",
+      "Hyperspace Hole",
       "Knock Off",
-      "U-turn",
+      "Protect",
       "Thunderbolt",
+      "U-turn",
     ]),
+    getLegalMoves: jest.fn(
+      (species: string, formatId: string): Set<string> | undefined =>
+        mockGetLegalMoves(species, formatId)
+    ),
     getMoveData: jest.fn((name: string) => moveData[name] ?? null),
   };
 });
@@ -102,7 +128,8 @@ describe("MovePicker", () => {
 
     it("renders type badges for moves", () => {
       render(<MovePicker {...defaultProps} />);
-      expect(screen.getByText("Normal")).toBeInTheDocument();
+      // Multiple Normal-type moves (Fake Out + Protect)
+      expect(screen.getAllByText("Normal").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText("Fire")).toBeInTheDocument();
     });
 
@@ -111,7 +138,9 @@ describe("MovePicker", () => {
       // Multiple Physical moves → multiple "P" labels
       const physLabels = screen.getAllByText("P");
       expect(physLabels.length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText("S")).toBeInTheDocument();
+      // Multiple Special moves (Thunderbolt + Hyperspace Hole) → multiple "S" labels
+      const specLabels = screen.getAllByText("S");
+      expect(specLabels.length).toBeGreaterThanOrEqual(1);
     });
 
     it("renders base power for damaging moves", () => {
@@ -215,6 +244,64 @@ describe("MovePicker", () => {
       render(<MovePicker {...defaultProps} onClose={onClose} />);
       await user.click(screen.getByText("U-turn"));
       expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  describe("format legality filtering", () => {
+    it("omits moves the species can't learn in this format", () => {
+      // getLegalMoves returns a Set that includes Protect but NOT Hyperspace Hole
+      mockGetLegalMoves.mockReturnValueOnce(
+        new Set([
+          "Fake Out",
+          "Flare Blitz",
+          "Knock Off",
+          "Protect",
+          "Thunderbolt",
+          "U-turn",
+        ])
+      );
+      render(
+        <MovePicker
+          species="Pikachu"
+          value={null}
+          onSelect={jest.fn()}
+          onClose={jest.fn()}
+          formatId="gen9vgc2026regi"
+        />
+      );
+      expect(screen.queryByText("Hyperspace Hole")).not.toBeInTheDocument();
+      expect(screen.getByText("Protect")).toBeInTheDocument();
+    });
+
+    it("renders all moves when formatId is absent (permissive)", () => {
+      // No formatId — falls through to getLearnableMoves, getLegalMoves not called
+      render(
+        <MovePicker
+          species="Pikachu"
+          value={null}
+          onSelect={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+      expect(screen.getByText("Protect")).toBeInTheDocument();
+      expect(screen.getByText("Hyperspace Hole")).toBeInTheDocument();
+    });
+
+    it("renders all moves when getLegalMoves returns undefined for the format (permissive)", () => {
+      // formatId provided but getLegalMoves returns undefined (permissive format)
+      mockGetLegalMoves.mockReturnValueOnce(undefined);
+      render(
+        <MovePicker
+          species="Pikachu"
+          value={null}
+          onSelect={jest.fn()}
+          onClose={jest.fn()}
+          formatId="gen9vgc2026regi"
+        />
+      );
+      // Falls back to getLearnableMoves — all moves shown
+      expect(screen.getByText("Protect")).toBeInTheDocument();
+      expect(screen.getByText("Hyperspace Hole")).toBeInTheDocument();
     });
   });
 });
