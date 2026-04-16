@@ -4,6 +4,7 @@ import {
   getTeamsForAltList,
   getTeamWithPokemon,
   getTeamsForAltByFormatFull,
+  getTeamsForUser,
 } from "../teams";
 import type { TypedClient } from "../../client";
 
@@ -455,6 +456,154 @@ describe("teams queries", () => {
       expect(selectArg).toContain("team_pokemon");
       expect(selectArg).toContain("species");
       expect(selectArg).toContain("is_shiny");
+    });
+  });
+
+  // ==========================================================================
+  // getTeamsForUser
+  // ==========================================================================
+
+  describe("getTeamsForUser", () => {
+    const makeRawTeam = (overrides?: Record<string, unknown>) => ({
+      id: 1,
+      name: "Test Team",
+      format: "gen9vgc2025regg",
+      is_public: false,
+      updated_at: "2025-01-02T00:00:00Z",
+      created_at: "2025-01-01T00:00:00Z",
+      alt: { username: "ash_ketchum" },
+      team_pokemon: [
+        {
+          id: 1,
+          team_position: 0,
+          pokemon: {
+            id: 1,
+            species: "Koraidon",
+            is_shiny: false,
+          },
+        },
+      ],
+      ...overrides,
+    });
+
+    it("returns teams with alt_username flattened from the alt join", async () => {
+      const raw = makeRawTeam();
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: [raw],
+        error: null,
+      });
+
+      const result = await getTeamsForUser(mockClient, "user-uuid-1");
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        id: 1,
+        name: "Test Team",
+        format: "gen9vgc2025regg",
+        alt_username: "ash_ketchum",
+      });
+      // The raw `alt` key must be stripped from the output
+      expect(result[0]).not.toHaveProperty("alt");
+    });
+
+    it("filters by the userId via eq on alts.user_id", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      await getTeamsForUser(mockClient, "user-uuid-1");
+
+      expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
+        "alts.user_id",
+        "user-uuid-1"
+      );
+    });
+
+    it("orders results by updated_at descending", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      await getTeamsForUser(mockClient, "user-uuid-1");
+
+      expect(mockClient._queryBuilder.order).toHaveBeenCalledWith(
+        "updated_at",
+        { ascending: false }
+      );
+    });
+
+    it("returns empty array when the user has no teams", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const result = await getTeamsForUser(mockClient, "user-uuid-1");
+
+      expect(result).toEqual([]);
+    });
+
+    it("returns empty array when data is null", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: null,
+        error: null,
+      });
+
+      const result = await getTeamsForUser(mockClient, "user-uuid-1");
+
+      expect(result).toEqual([]);
+    });
+
+    it("throws when Supabase returns an error", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: null,
+        error: { message: "permission denied" },
+      });
+
+      await expect(getTeamsForUser(mockClient, "user-uuid-1")).rejects.toThrow(
+        "Failed to fetch teams for user: permission denied"
+      );
+    });
+
+    it("flattens teams from multiple alts with their respective usernames", async () => {
+      const rawTeams = [
+        makeRawTeam({ id: 1, alt: { username: "ash_ketchum" } }),
+        makeRawTeam({ id: 2, name: "Team 2", alt: { username: "red_champ" } }),
+      ];
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: rawTeams,
+        error: null,
+      });
+
+      const result = await getTeamsForUser(mockClient, "user-uuid-1");
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({ id: 1, alt_username: "ash_ketchum" });
+      expect(result[1]).toMatchObject({ id: 2, alt_username: "red_champ" });
+    });
+
+    it("uses the !inner join syntax to enforce the user_id filter at DB level", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.order.mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      await getTeamsForUser(mockClient, "user-uuid-1");
+
+      const selectArg = mockClient._queryBuilder.select.mock
+        .calls[0]?.[0] as string;
+      // The !inner modifier is required — a plain left join does NOT filter parent rows
+      expect(selectArg).toContain("alts!teams_created_by_fkey!inner");
     });
   });
 });

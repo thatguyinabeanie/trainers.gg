@@ -806,6 +806,13 @@ function computeLegalAbilitiesForChampions(
 }
 
 // =============================================================================
+// Format ID Constants
+// =============================================================================
+
+/** Format ID for Champions VGC 2026 Regulation M-A. */
+const CHAMPIONS_MA_FORMAT_ID = "championsvgc2026regma";
+
+// =============================================================================
 // Tera Types
 // =============================================================================
 
@@ -830,6 +837,12 @@ const ALL_TERA_TYPES: readonly string[] = [
   "Steel",
   "Fairy",
 ];
+
+/** Cached empty tera set for Champions format (no Terastallization). */
+const EMPTY_TERA_SET: ReadonlySet<string> = new Set();
+
+/** Cached full tera types set for standard formats. */
+const ALL_TERA_SET: ReadonlySet<string> = new Set(ALL_TERA_TYPES);
 
 /**
  * Check whether a format's ruleset includes the Terastal Clause, which
@@ -857,7 +870,7 @@ function formatUsesTerastalClause(formatId: string): boolean {
 export function getLegalSpecies(
   formatId: string
 ): ReadonlySet<string> | undefined {
-  if (formatId === "championsvgc2026regma") {
+  if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return CHAMPIONS_MA_LEGAL_SPECIES;
   }
   return computeLegalSpeciesFromSim(formatId);
@@ -880,7 +893,7 @@ export function isLegalSpecies(species: string, formatId: string): boolean {
 export function getLegalItems(
   formatId: string
 ): ReadonlySet<string> | undefined {
-  if (formatId === "championsvgc2026regma") return CHAMPIONS_MA_LEGAL_ITEMS;
+  if (formatId === CHAMPIONS_MA_FORMAT_ID) return CHAMPIONS_MA_LEGAL_ITEMS;
   return computeLegalItemsFromSim(formatId);
 }
 
@@ -907,7 +920,7 @@ export function getLegalMoves(
   species: string,
   formatId: string
 ): ReadonlySet<string> | undefined {
-  if (formatId === "championsvgc2026regma") {
+  if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return computeLegalMovesForChampions(species);
   }
   return computeLegalMovesFromSim(species, formatId);
@@ -939,7 +952,7 @@ export function getLegalAbilities(
   species: string,
   formatId: string
 ): ReadonlySet<string> | undefined {
-  if (formatId === "championsvgc2026regma") {
+  if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return computeLegalAbilitiesForChampions(species);
   }
   return computeLegalAbilitiesFromSim(species, formatId);
@@ -973,15 +986,15 @@ export function getLegalTeraTypes(
   formatId: string
 ): ReadonlySet<string> | undefined {
   // Champions M-A has no Tera — only Mega Evolutions.
-  if (formatId === "championsvgc2026regma") {
-    return new Set();
+  if (formatId === CHAMPIONS_MA_FORMAT_ID) {
+    return EMPTY_TERA_SET;
   }
   // Unknown / unregistered formats → permissive.
   if (!SIM_FORMAT_NAME_BY_ID[formatId]) return undefined;
   // Formats that explicitly ban Terastallization → empty set.
-  if (formatUsesTerastalClause(formatId)) return new Set();
+  if (formatUsesTerastalClause(formatId)) return EMPTY_TERA_SET;
   // All other registered formats → full 18-type set.
-  return new Set(ALL_TERA_TYPES);
+  return ALL_TERA_SET;
 }
 
 /**
