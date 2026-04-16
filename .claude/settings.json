@@ -75,7 +75,8 @@
       "WebFetch(domain:www.serebii.net)",
       "WebFetch(domain:www.pikalytics.com)",
       "WebFetch(domain:old.reddit.com)",
-      "WebFetch(domain:www.reddit.com)"
+      "WebFetch(domain:www.reddit.com)",
+      "WebFetch(domain:bulbapedia.bulbagarden.net)"
     ]
   },
   "hooks": {
