@@ -83,7 +83,7 @@ function PokemonChip({
     // Slot exists in DB but has no species yet — treat like choosing
     return (
       <div
-        className="bg-muted/40 relative flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-dashed md:h-20 md:w-20"
+        className="bg-muted/40 relative flex h-16 w-16 shrink-0 items-center justify-center rounded-xl md:h-20 md:w-20"
         aria-label="Empty slot"
       />
     );
@@ -199,9 +199,9 @@ function EmptySlot({ onClick, onDragOver, onDrop }: EmptySlotProps) {
       onDragOver={onDragOver}
       onDrop={onDrop}
       className={cn(
-        "flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border-2 border-dashed md:h-20 md:w-20",
-        "text-muted-foreground hover:border-primary hover:text-primary",
-        "transition-colors"
+        "bg-muted/30 flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl md:h-20 md:w-20",
+        "text-muted-foreground hover:bg-muted/60 hover:text-primary",
+        "transition-colors duration-150"
       )}
       aria-label="Add Pokémon"
     >
@@ -377,7 +377,7 @@ export function TeamStrip({
         return (
           <div
             key={`empty-${i}`}
-            className="bg-muted/20 flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-transparent md:h-20 md:w-20"
+            className="bg-muted/20 flex h-16 w-16 shrink-0 items-center justify-center rounded-xl md:h-20 md:w-20"
             aria-label={`Empty slot ${slotIdx + 1}`}
           />
         );
