@@ -214,9 +214,17 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 
 **Only modify files explicitly in scope for the current task.** Do NOT run `pnpm format`, `pnpm lint --fix`, or other repo-wide formatters unless explicitly asked. When dispatching subagents, pass an explicit file allowlist and forbid edits outside it. If unrelated changes sneak in, revert them before committing.
 
+### Destructive Actions
+
+**Words like "clean up", "reorganize", "fix up", or "sort out" are ambiguous — never default to delete.** When the request could mean move/merge/archive/rename, confirm the user's intended semantics before running any bulk-delete (rm -rf, mass DELETE, `mempalace_delete_drawer` in a loop, dropping tables, wiping directories). Default to the least destructive interpretation and present destructive options via `AskUserQuestion` with a non-destructive first option.
+
 ### Completion Claims
 
 **Never declare a PR "ready to merge" before every review thread is resolved and CI is green.** For PR-feedback work, use the `reviewing-pr-feedback` skill — it enforces fetch-all-comments → group → fix → reply → resolve → re-review before completion.
+
+**No "deferred" / "follow-up" / "for future" buckets.** When reviewing PRs, databases, caching, or code, address every finding in the current session. Only label something as deferred if the user explicitly tells you to. Review skills (`reviewing-pr-feedback`, `reviewing-pr`, `reviewing-database`, `reviewing-caching`) all share this rule — see the "No Deferrals" section in each.
+
+**Enumerate every CI check by name with pass/fail/pending before declaring CI green.** "CI is running" or "CI looks good" is not evidence — list each check (Lint, Typecheck, Tests, codecov/patch, E2E, preview deploys) and its current status. See Phase 1 of `reviewing-pr-feedback` and the report format in the `pre-push-checker` agent.
 
 ## Product Vision
 

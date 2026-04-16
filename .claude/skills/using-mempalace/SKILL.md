@@ -89,6 +89,18 @@ Use `agent_name` to identify which agent wrote the entry (e.g., `"planner"`, `"c
 
 The current `trainers_gg` wing has accumulated junk-drawer content from bulk file imports. Do not repeat this pattern.
 
+## Bulk Operations — Confirm Before Destroying
+
+When the user says "clean up", "fix up", "reorganize", or "sort out" the mempalace (or any bulk content), **never default to delete**. These words are ambiguous — they can mean move/merge/re-tag/archive, and deletion destroys information the user may still need.
+
+Required flow before any bulk delete:
+
+1. Summarize what you propose to do in one sentence (e.g., "delete 806 drawers in room X" vs "move 806 drawers from room X to room Y")
+2. Ask the user via `AskUserQuestion` to pick between: reorganize, archive/merge, delete, or cancel
+3. Only proceed with the chosen action
+
+Applies to: `mempalace_delete_drawer`, any loop that calls it, any direct ChromaDB/DB manipulation of mempalace storage, and any batch operation over more than ~5 drawers.
+
 ## When to Search vs Store
 
 | Situation                                  | Action                                           |

@@ -7,6 +7,10 @@ description: Use when reviewing or implementing caching — covers Next.js unsta
 
 Checklist and patterns for caching at the Next.js server layer and TanStack Query client layer.
 
+## No Deferrals
+
+Caching is required at implementation time (see "Caching Requirements" below). When reviewing caching, every missing tag, helper, or TanStack Query wrapper gets fixed in the current session — not labeled as "follow-up" or "future polish". Only defer when the user explicitly says to. Match this to the PR feedback rule in `reviewing-pr-feedback`.
+
 ## Caching Decision Tree
 
 Every page needs a caching strategy at **both** layers. Server caching (`unstable_cache`) and client caching (TanStack Query) serve different purposes and are decided independently.

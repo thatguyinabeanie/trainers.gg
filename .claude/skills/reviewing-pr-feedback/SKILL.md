@@ -21,16 +21,30 @@ This loop repeats until a review cycle produces zero actionable comments.
 ## Phase 1: CI Check
 
 ```bash
-gh pr checks <pr-number> --watch
+gh pr checks <pr-number>
 ```
 
-Fix any failures locally before touching review comments:
+**Enumerate every check by name with pass/fail/pending — do not say "CI is running" or "CI looks good".** Report in a table so a missed failure (e.g., codecov patch coverage) cannot hide inside "running":
+
+| Check           | Status       | Notes                     |
+| --------------- | ------------ | ------------------------- |
+| Lint            | PASS/FAIL/⏳ | —                         |
+| Typecheck       | PASS/FAIL/⏳ | —                         |
+| Unit tests      | PASS/FAIL/⏳ | X passed, Y failed        |
+| E2E             | PASS/FAIL/⏳ | —                         |
+| codecov/patch   | PASS/FAIL/⏳ | must enumerate explicitly |
+| codecov/project | PASS/FAIL/⏳ | must enumerate explicitly |
+| Vercel preview  | PASS/FAIL/⏳ | —                         |
+| (any other)     | PASS/FAIL/⏳ | —                         |
+
+If any check is FAIL, fix it locally before touching review comments:
 
 - Lint: `pnpm lint`
 - Types: `pnpm typecheck`
 - Tests: `pnpm test`
+- Codecov failures: often fixed by adding tests for uncovered lines on the changed patch
 
-Push fixes. CI re-runs automatically.
+Push fixes. CI re-runs automatically. Re-enumerate after each push — never assume a previous failure is fixed without confirming status has turned to PASS.
 
 ## Phase 2: Fetch Review Comments
 
