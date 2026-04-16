@@ -265,7 +265,7 @@ describe("AnalyticsRail", () => {
     );
 
     const rail = screen.getByTestId("analytics-rail");
-    expect(rail.className).toContain("w-[460px]");
+    expect(rail.className).toContain("w-rail");
     expect(rail.className).toContain("flex-shrink-0");
   });
 

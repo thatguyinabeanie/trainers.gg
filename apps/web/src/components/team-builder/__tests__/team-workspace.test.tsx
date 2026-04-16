@@ -273,14 +273,16 @@ describe("TeamWorkspace", () => {
       render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
       const grid = screen.getByTestId("team-workspace-grid");
       expect(grid).toBeInTheDocument();
-      // grid template columns class — fixed 240 / 1fr / 460
-      expect(grid.className).toContain("grid-cols-[240px_1fr_460px]");
+      // grid template columns class — fixed 240 / 1fr (with 0 min) / 460
+      expect(grid.className).toContain(
+        "grid-cols-[15rem_minmax(0,1fr)_28.75rem]"
+      );
     });
 
-    it("uses the 1440px max-width container", () => {
+    it("uses the builder max-width container", () => {
       render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
       const container = screen.getByTestId("team-workspace");
-      expect(container.className).toContain("max-w-[1440px]");
+      expect(container.className).toContain("max-w-builder");
     });
 
     it("mounts TypeChartPanel on the left", () => {

@@ -305,16 +305,22 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     .filter((p): p is Tables<"pokemon"> => p !== null);
 
   return (
-    // Custom max-w-[1440px]: the dashboard normally uses max-w-screen-2xl
-    // (1536px), but the team builder is tuned for a 1440px sweet spot — the
-    // 240/1fr/460 grid stops looking balanced past that width.
+    // max-w-builder (1440px) is tuned for the team builder — the
+    // dashboard normally uses max-w-screen-2xl (1536px), but the
+    // 240/1fr/460 grid stops looking balanced past 1440px. Token
+    // declared in globals.css as --container-builder.
     <div
       data-testid="team-workspace"
-      className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-6"
+      className="max-w-builder mx-auto w-full px-4 py-6 md:px-6"
     >
       <div
         data-testid="team-workspace-grid"
-        className="grid grid-cols-[240px_1fr_460px] items-start gap-4 md:gap-6"
+        // grid-cols-[15rem_minmax(0,1fr)_28.75rem] = 240/auto/460. The
+        // `minmax(0,1fr)` is critical — without the explicit `0` minimum,
+        // the editor column inflates to its min-content (long species
+        // names, picker tables) and pushes the right rail off-balance,
+        // which is what made the workspace look shifted.
+        className="grid grid-cols-[15rem_minmax(0,1fr)_28.75rem] items-start gap-4 md:gap-6"
       >
         {/* LEFT — Defensive type chart (always visible, even during picker) */}
         <TypeChartPanel team={teamPokemonList} />

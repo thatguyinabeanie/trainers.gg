@@ -72,7 +72,7 @@ export function AnalyticsRail({
     <div
       data-testid="analytics-rail"
       className={cn(
-        "bg-card w-[460px] flex-shrink-0 overflow-hidden rounded-lg shadow-sm",
+        "bg-card w-rail flex-shrink-0 overflow-hidden rounded-lg shadow-sm",
         className
       )}
     >

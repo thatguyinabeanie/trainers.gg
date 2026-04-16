@@ -6,6 +6,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Custom max-width tokens used across the app */
+  /* Team builder is tuned for a 1440px sweet spot — past that the
+     fixed 240/1fr/460 grid stops looking balanced. */
+  --container-builder: 90rem; /* 1440px */
+  /* Right-rail analytics panel — fixed 460px so Speed/Calc tabs have
+     consistent room without resizing the editor center column. */
+  --container-rail: 28.75rem; /* 460px */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
