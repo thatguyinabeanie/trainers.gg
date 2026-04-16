@@ -38,43 +38,8 @@ jest.mock("next/image", () => ({
 }));
 
 jest.mock("@trainers/pokemon", () => ({
-  getBaseStats: jest.fn(() => ({
-    hp: 95,
-    attack: 115,
-    defense: 90,
-    specialAttack: 80,
-    specialDefense: 90,
-    speed: 60,
-  })),
-  getSpeciesTypes: jest.fn(() => ["Fire", "Dark"]),
-  getValidAbilities: jest.fn(() => ["Intimidate"]),
-  getLearnableMoves: jest.fn(() => ["Fake Out", "Flare Blitz"]),
-  getValidNatures: jest.fn(() => ["Adamant", "Jolly"]),
-  getValidTeraTypes: jest.fn(() => ["Fire", "Water"]),
-  calculateStat: jest.fn(() => 150),
-  calculateHP: jest.fn(() => 200),
-  calculateChampionsHP: jest.fn(() => 200),
-  calculateChampionsStat: jest.fn(() => 150),
-  getNatureMultiplier: jest.fn(() => 1.0),
-  getStatTier: jest.fn(() => "good"),
-  calculateNatureBumps: jest.fn(() => [0, 40, 80]),
   buildSpeciesSearchIndex: jest.fn(() => []),
-  searchSpecies: jest.fn(() => []),
-  NATURE_EFFECTS: {
-    Adamant: { boost: "attack", reduce: "specialAttack" },
-  },
-  getMoveData: jest.fn((name: string) => ({
-    name,
-    type: "Normal",
-    category: "Physical",
-    basePower: 80,
-    accuracy: 100,
-    shortDesc: "A test move.",
-  })),
-  getMoveHelperText: jest.fn(() => ""),
-  getAllItems: jest.fn(() => ["Leftovers"]),
-  getItemShortDesc: jest.fn(() => "Restores HP."),
-  getAbilityShortDesc: jest.fn(() => "A test ability."),
+  getValidAbilities: jest.fn(() => ["Intimidate"]),
 }));
 
 jest.mock("@trainers/pokemon/sprites", () => ({
@@ -84,30 +49,6 @@ jest.mock("@trainers/pokemon/sprites", () => ({
     h: 96,
     pixelated: false,
   })),
-}));
-
-jest.mock("@pkmn/dex", () => ({
-  Dex: {
-    forGen: jest.fn(() => ({
-      moves: {
-        get: jest.fn((name: string) => ({
-          exists: true,
-          name,
-          type: "Normal",
-          category: "Physical",
-          basePower: 80,
-          accuracy: 100,
-          shortDesc: "A test move.",
-        })),
-      },
-      items: {
-        all: jest.fn(() => [
-          { exists: true, name: "Leftovers", shortDesc: "Restores HP." },
-        ]),
-        get: jest.fn(() => ({ exists: true, shortDesc: "Restores HP." })),
-      },
-    })),
-  },
 }));
 
 jest.mock("sonner", () => ({
@@ -127,22 +68,105 @@ jest.mock("@/actions/teams", () => ({
   removePokemonFromTeamAction: jest.fn().mockResolvedValue({ success: true }),
 }));
 
-// Mock the tab components to avoid rendering their full implementations
-jest.mock("../type-coverage-tab", () => ({
-  TypeCoverageTab: () => (
-    <div data-testid="type-coverage-tab">Type coverage content</div>
+// Mock validation hook — keep behavior simple, return no errors.
+jest.mock("../validation-hooks", () => ({
+  useTeamValidation: jest.fn(() => ({ pokemonErrors: new Map() })),
+}));
+
+// Mock the heavy panels and the editor — assert prop pass-through via data-* attrs.
+jest.mock("../type-chart-panel", () => ({
+  TypeChartPanel: jest.fn(({ team }: { team: Array<{ id: number }> }) => (
+    <div data-testid="type-chart-panel" data-team-size={team.length}>
+      type-chart
+    </div>
+  )),
+}));
+
+jest.mock("../analytics-rail", () => ({
+  AnalyticsRail: jest.fn(
+    ({
+      team,
+      selectedPokemon,
+      format,
+    }: {
+      team: { id: number };
+      selectedPokemon: { id: number } | null;
+      format: { id: string } | undefined;
+    }) => (
+      <div
+        data-testid="analytics-rail"
+        data-team-id={team.id}
+        data-selected-id={selectedPokemon ? selectedPokemon.id : "none"}
+        data-format-id={format ? format.id : "none"}
+      >
+        analytics-rail
+      </div>
+    )
   ),
 }));
-jest.mock("../speed-tier-tab", () => ({
-  SpeedTierTab: () => (
-    <div data-testid="speed-tier-tab">Speed tier content</div>
+
+jest.mock("../pokemon-editor", () => ({
+  PokemonEditor: jest.fn(
+    ({
+      pokemon,
+      disabled,
+      className,
+    }: {
+      pokemon: { id: number; species: string };
+      disabled?: boolean;
+      className?: string;
+    }) => (
+      <div
+        data-testid="pokemon-editor"
+        data-pokemon-id={pokemon.id}
+        data-species={pokemon.species}
+        data-disabled={disabled ? "true" : "false"}
+        data-classname={className ?? ""}
+      >
+        pokemon-editor
+      </div>
+    )
   ),
 }));
-jest.mock("../damage-calc-tab", () => ({
-  DamageCalcTab: () => (
-    <div data-testid="damage-calc-tab">Damage calc content</div>
+
+jest.mock("../team-strip", () => ({
+  TeamStrip: jest.fn(
+    ({
+      pokemon,
+      selectedPokemonId,
+      onSelect,
+      onAddNew,
+    }: {
+      pokemon: Array<{
+        pokemon_id: number;
+        pokemon: { species: string } | null;
+      }>;
+      selectedPokemonId: number | null;
+      onSelect: (id: number) => void;
+      onAddNew: () => void;
+    }) => (
+      <div
+        data-testid="team-strip"
+        data-selected-id={selectedPokemonId ?? "none"}
+        data-count={pokemon.length}
+      >
+        <button data-testid="team-strip-add" onClick={onAddNew}>
+          add
+        </button>
+        {pokemon.map((tp) => (
+          <button
+            key={tp.pokemon_id}
+            data-testid={`team-strip-chip-${tp.pokemon_id}`}
+            onClick={() => onSelect(tp.pokemon_id)}
+          >
+            {tp.pokemon?.species ?? "empty"}
+          </button>
+        ))}
+      </div>
+    )
   ),
 }));
+
 jest.mock("../species-picker", () => ({
   SpeciesPicker: ({ onCancel }: { onCancel: () => void }) => (
     <div data-testid="species-picker">
@@ -244,89 +268,134 @@ describe("TeamWorkspace", () => {
     mockInvalidateQueries.mockClear();
   });
 
+  describe("3-column grid layout", () => {
+    it("renders the outer 3-column grid wrapper", () => {
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+      const grid = screen.getByTestId("team-workspace-grid");
+      expect(grid).toBeInTheDocument();
+      // grid template columns class — fixed 240 / 1fr / 460
+      expect(grid.className).toContain("grid-cols-[240px_1fr_460px]");
+    });
+
+    it("uses the 1440px max-width container", () => {
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+      const container = screen.getByTestId("team-workspace");
+      expect(container.className).toContain("max-w-[1440px]");
+    });
+
+    it("mounts TypeChartPanel on the left", () => {
+      const team = makeTeam([
+        makePokemonEntry(1, 1, "Incineroar"),
+        makePokemonEntry(2, 2, "Garchomp"),
+      ]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+      const chart = screen.getByTestId("type-chart-panel");
+      expect(chart).toBeInTheDocument();
+      expect(chart.getAttribute("data-team-size")).toBe("2");
+    });
+
+    it("mounts AnalyticsRail on the right with team + selected pokemon + format", () => {
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+      const rail = screen.getByTestId("analytics-rail");
+      expect(rail).toBeInTheDocument();
+      expect(rail.getAttribute("data-team-id")).toBe("1");
+      expect(rail.getAttribute("data-selected-id")).toBe("1");
+      expect(rail.getAttribute("data-format-id")).toBe("gen9vgc2026regi");
+    });
+
+    it("mounts TeamStrip + PokemonEditor in the center column", () => {
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+      expect(screen.getByTestId("team-strip")).toBeInTheDocument();
+      expect(screen.getByTestId("pokemon-editor")).toBeInTheDocument();
+    });
+
+    it("strips the editor's outer card chrome via className override", () => {
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+      const editor = screen.getByTestId("pokemon-editor");
+      // The override is the same pattern AnalyticsRail uses for its panels.
+      expect(editor.getAttribute("data-classname")).toContain("bg-transparent");
+      expect(editor.getAttribute("data-classname")).toContain("shadow-none");
+    });
+  });
+
   describe("placeholder shell (0 Pokémon)", () => {
-    it("does NOT show 'No Pokémon yet' text", () => {
+    it("renders the disabled placeholder editor when team is empty", () => {
       render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
-      expect(screen.queryByText("No Pokémon yet")).not.toBeInTheDocument();
+      const editor = screen.getByTestId("pokemon-editor");
+      expect(editor.getAttribute("data-disabled")).toBe("true");
+      // Sentinel id: -1
+      expect(editor.getAttribute("data-pokemon-id")).toBe("-1");
     });
 
-    it("renders the team sidebar even with no pokemon", () => {
+    it("still mounts TypeChartPanel and AnalyticsRail with empty team", () => {
       render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
-      const sidebar = screen.getByLabelText("Team sidebar");
-      expect(sidebar).toBeInTheDocument();
+      expect(screen.getByTestId("type-chart-panel")).toBeInTheDocument();
+      expect(screen.getByTestId("analytics-rail")).toBeInTheDocument();
     });
 
-    it("renders 'Choose a Pokémon' label in the species header", () => {
+    it("does NOT show the species picker before any interaction", () => {
       render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
-      expect(
-        screen.getByRole("button", { name: "Choose a Pokémon" })
-      ).toBeInTheDocument();
-    });
-
-    it("clicking 'Choose a Pokémon' opens the species picker", async () => {
-      const user = userEvent.setup();
-      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
-
-      await user.click(
-        screen.getByRole("button", { name: "Choose a Pokémon" })
-      );
-
-      expect(screen.getByTestId("species-picker")).toBeInTheDocument();
-    });
-
-    it("renders the disabled placeholder editor (ability/item/move sections present but dimmed)", () => {
-      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
-      // PokemonEditor renders with disabled=true → sections are wrapped in
-      // opacity-50 pointer-events-none. Verify at least one dimmed wrapper exists.
-      const dimmed = document.querySelectorAll(
-        ".opacity-50.pointer-events-none, .pointer-events-none.opacity-50"
-      );
-      expect(dimmed.length).toBeGreaterThan(0);
-    });
-
-    it("does NOT show the species picker before any interaction in placeholder state", () => {
-      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
-      // The placeholder editor is fully dimmed — no stray picker should appear.
       expect(screen.queryByTestId("species-picker")).not.toBeInTheDocument();
     });
   });
 
   describe("with pokemon", () => {
-    it("does NOT render 'Choose a Pokémon' or 'No Pokémon yet' when pokemon exist", () => {
-      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
-      render(<TeamWorkspace {...defaultProps} team={team} />);
-      expect(screen.queryByText("No Pokémon yet")).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("button", { name: "Choose a Pokémon" })
-      ).not.toBeInTheDocument();
-    });
-
-    it("renders the team sidebar when pokemon exist", () => {
-      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
-      render(<TeamWorkspace {...defaultProps} team={team} />);
-      const sidebar = screen.getByLabelText("Team sidebar");
-      expect(sidebar).toBeInTheDocument();
-    });
-
     it("renders the first pokemon's editor by default", () => {
-      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      const team = makeTeam([
+        makePokemonEntry(1, 1, "Incineroar"),
+        makePokemonEntry(2, 2, "Garchomp"),
+      ]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
-      // The species name appears in both the strip chip and the editor header;
-      // verify the editor header button (has the ▾ arrow indicator)
-      const editorHeader = screen.getAllByText("Incineroar");
-      expect(editorHeader.length).toBeGreaterThanOrEqual(2);
+      const editor = screen.getByTestId("pokemon-editor");
+      // First sorted entry — pokemon_id 1 (Incineroar)
+      expect(editor.getAttribute("data-pokemon-id")).toBe("1");
+      expect(editor.getAttribute("data-species")).toBe("Incineroar");
+      expect(editor.getAttribute("data-disabled")).toBe("false");
     });
 
-    it("renders context panel with tab headers", () => {
-      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+    it("selecting a different chip in TeamStrip updates the editor's pokemon prop", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([
+        makePokemonEntry(1, 1, "Incineroar"),
+        makePokemonEntry(2, 2, "Garchomp"),
+      ]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
-      expect(screen.getByRole("tab", { name: "Types" })).toBeInTheDocument();
-      expect(screen.getByRole("tab", { name: "Speed" })).toBeInTheDocument();
-      expect(screen.getByRole("tab", { name: "Calc" })).toBeInTheDocument();
+
+      // Default selection
+      expect(
+        screen.getByTestId("pokemon-editor").getAttribute("data-pokemon-id")
+      ).toBe("1");
+
+      await user.click(screen.getByTestId("team-strip-chip-2"));
+
+      // After selecting Garchomp's chip, the editor should remount with pokemon_id 2
+      expect(
+        screen.getByTestId("pokemon-editor").getAttribute("data-pokemon-id")
+      ).toBe("2");
+      expect(
+        screen.getByTestId("pokemon-editor").getAttribute("data-species")
+      ).toBe("Garchomp");
     });
 
-    it("shows 'Select a Pokémon to edit' when no pokemon is selected (no pokemon in strip entry with pokemon)", () => {
-      // This case happens when the selected entry's pokemon is null
+    it("selecting a chip propagates the new selection to AnalyticsRail", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([
+        makePokemonEntry(1, 1, "Incineroar"),
+        makePokemonEntry(2, 2, "Garchomp"),
+      ]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("team-strip-chip-2"));
+
+      expect(
+        screen.getByTestId("analytics-rail").getAttribute("data-selected-id")
+      ).toBe("2");
+    });
+
+    it("shows 'Select a Pokémon to edit' when the selected entry has no pokemon", () => {
       const team: TeamWithPokemon = {
         ...makeTeam([]),
         team_pokemon: [
@@ -344,21 +413,47 @@ describe("TeamWorkspace", () => {
     });
   });
 
-  describe("context panel tab switching", () => {
-    it("switches to Speed tab when clicked", async () => {
+  describe("species picker overlay", () => {
+    it("clicking the team strip's add button opens the species picker", async () => {
       const user = userEvent.setup();
-      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
-      render(<TeamWorkspace {...defaultProps} team={team} />);
-      await user.click(screen.getByRole("tab", { name: "Speed" }));
-      expect(screen.getByTestId("speed-tier-tab")).toBeInTheDocument();
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+
+      expect(screen.queryByTestId("species-picker")).not.toBeInTheDocument();
+
+      await user.click(screen.getByTestId("team-strip-add"));
+
+      expect(screen.getByTestId("species-picker")).toBeInTheDocument();
     });
 
-    it("switches to Calc tab when clicked", async () => {
+    it("when picker is open, the editor is unmounted but type chart + rail remain visible", async () => {
       const user = userEvent.setup();
       const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
-      await user.click(screen.getByRole("tab", { name: "Calc" }));
-      expect(screen.getByTestId("damage-calc-tab")).toBeInTheDocument();
+
+      await user.click(screen.getByTestId("team-strip-add"));
+
+      // Picker visible
+      expect(screen.getByTestId("species-picker")).toBeInTheDocument();
+      // Editor and team strip replaced by picker
+      expect(screen.queryByTestId("pokemon-editor")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("team-strip")).not.toBeInTheDocument();
+      // Side rails still visible
+      expect(screen.getByTestId("type-chart-panel")).toBeInTheDocument();
+      expect(screen.getByTestId("analytics-rail")).toBeInTheDocument();
+    });
+
+    it("cancel restores the editor card", async () => {
+      const user = userEvent.setup();
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+
+      await user.click(screen.getByTestId("team-strip-add"));
+      expect(screen.getByTestId("species-picker")).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+      expect(screen.queryByTestId("species-picker")).not.toBeInTheDocument();
+      expect(screen.getByTestId("team-strip")).toBeInTheDocument();
+      expect(screen.getByTestId("pokemon-editor")).toBeInTheDocument();
     });
   });
 });
