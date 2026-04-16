@@ -63,6 +63,7 @@ const mockToggleRoleMapping = jest.fn();
 const mockSetDmPreference = jest.fn();
 const mockDeleteDiscordServer = jest.fn();
 const mockGetDeliveryFailure = jest.fn();
+const mockListRecentFailures = jest.fn();
 const mockStart = jest.fn();
 
 jest.mock("workflow/api", () => ({
@@ -87,6 +88,7 @@ jest.mock("@trainers/supabase", () => ({
   setDmPreference: (...args: unknown[]) => mockSetDmPreference(...args),
   deleteDiscordServer: (...args: unknown[]) => mockDeleteDiscordServer(...args),
   getDeliveryFailure: (...args: unknown[]) => mockGetDeliveryFailure(...args),
+  listRecentFailures: (...args: unknown[]) => mockListRecentFailures(...args),
 }));
 
 // Import actions under test — must come AFTER all jest.mock() calls
@@ -101,6 +103,7 @@ import {
   refreshDiscordGuildCacheAction,
   disconnectDiscordServerAction,
   retryNotificationAction,
+  listRecentFailuresAction,
 } from "../discord-integration";
 
 // =============================================================================
@@ -775,6 +778,90 @@ describe("retryNotificationAction", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toMatch(/not found/i);
+    }
+  });
+});
+
+// =============================================================================
+// listRecentFailuresAction
+// =============================================================================
+
+describe("listRecentFailuresAction", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("returns FORBIDDEN when caller lacks community.manage permission", async () => {
+    mockGetDiscordServerById.mockResolvedValue(fakeServer);
+    mockPermission(false);
+
+    const result = await listRecentFailuresAction(99);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.code).toBe("FORBIDDEN");
+    }
+  });
+
+  it("returns error when Discord server is not found", async () => {
+    mockGetDiscordServerById.mockResolvedValue(null);
+
+    const result = await listRecentFailuresAction(999);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/not found/i);
+    }
+  });
+
+  it("returns structured failure data on success", async () => {
+    mockGetDiscordServerById.mockResolvedValue(fakeServer);
+    mockPermission(true);
+    mockListRecentFailures.mockResolvedValue({
+      channels: [{ id: 1, event_type: "tournament_created" }],
+      dms: [{ id: 2, event_type: "match_ready" }],
+      roleSyncs: [],
+    });
+
+    const result = await listRecentFailuresAction(99);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.channelFailures).toHaveLength(1);
+      expect(result.data.dmFailures).toHaveLength(1);
+      expect(result.data.roleSyncFailures).toHaveLength(0);
+    }
+  });
+
+  it("returns empty arrays when no failures exist", async () => {
+    mockGetDiscordServerById.mockResolvedValue(fakeServer);
+    mockPermission(true);
+    mockListRecentFailures.mockResolvedValue({
+      channels: [],
+      dms: [],
+      roleSyncs: [],
+    });
+
+    const result = await listRecentFailuresAction(99);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.channelFailures).toEqual([]);
+      expect(result.data.dmFailures).toEqual([]);
+      expect(result.data.roleSyncFailures).toEqual([]);
+    }
+  });
+
+  it("returns an error when listRecentFailures throws", async () => {
+    mockGetDiscordServerById.mockResolvedValue(fakeServer);
+    mockPermission(true);
+    mockListRecentFailures.mockRejectedValue(new Error("DB error"));
+
+    const result = await listRecentFailuresAction(99);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Failed to load failure details");
     }
   });
 });

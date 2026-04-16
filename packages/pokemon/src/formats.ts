@@ -189,6 +189,19 @@ export const VGC_FORMATS: GameFormat[] = [
     active: false,
   },
   {
+    id: "gen9vgc2024regh",
+    game: "Scarlet & Violet",
+    gameShort: "SV",
+    generation: 9,
+    category: "VGC",
+    year: 2024,
+    regulation: "H",
+    label: "SV: Reg H",
+    showdownName: "[Gen 9] VGC 2024 Reg H",
+    doubles: true,
+    active: false,
+  },
+  {
     id: "gen9vgc2024regg",
     game: "Scarlet & Violet",
     gameShort: "SV",
@@ -605,3 +618,35 @@ export function getAvailableGames(): typeof AVAILABLE_GAMES {
 
 /** Get all Showdown format IDs */
 export const ALL_FORMAT_IDS = VGC_FORMATS.map((f) => f.id);
+
+// =============================================================================
+// Sim compatibility helpers
+// =============================================================================
+
+/**
+ * Format IDs that exist in VGC_FORMATS but are NOT supported by @pkmn/sim.
+ * Used to filter the VGC registry down to sim-compatible entries.
+ *
+ * - championsvgc2026regma: Gen 10 format — @pkmn/sim only knows gen 9.
+ */
+export const SIM_UNSUPPORTED_FORMAT_IDS: ReadonlySet<string> = new Set([
+  "championsvgc2026regma",
+]);
+
+/**
+ * Build a `Record<string, string>` mapping format ID → Showdown display name
+ * for all VGC formats that are supported by @pkmn/sim.
+ *
+ * Entries in `SIM_UNSUPPORTED_FORMAT_IDS` are excluded so callers can spread
+ * the result into a sim-backed format map without accidentally including
+ * formats the sim doesn't know about.
+ */
+export function buildVgcShowdownNameMap(): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const format of VGC_FORMATS) {
+    if (!SIM_UNSUPPORTED_FORMAT_IDS.has(format.id)) {
+      map[format.id] = format.showdownName;
+    }
+  }
+  return map;
+}

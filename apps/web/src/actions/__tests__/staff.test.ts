@@ -25,26 +25,44 @@ jest.mock("next/cache", () => ({
   updateTag: (...args: unknown[]) => mockUpdateTag(...args),
 }));
 
-// Mock getErrorMessage (used directly in staff actions)
+// staff.ts imports getErrorMessage from @/lib/utils
 jest.mock("@/lib/utils", () => ({
   getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
 }));
 
+// Mock cache-invalidation helper
+const mockInvalidateCommunityPageCaches = jest.fn();
+jest.mock("@/lib/cache-invalidation", () => ({
+  invalidateCommunityPageCaches: (...args: unknown[]) =>
+    mockInvalidateCommunityPageCaches(...args),
+}));
+
 // Mock @trainers/supabase mutations and queries
 const mockSearchUsersForInvite = jest.fn();
+const mockListCommunityGroups = jest.fn();
 const mockAddStaffMember = jest.fn();
 const mockAddStaffToGroup = jest.fn();
 const mockChangeStaffRole = jest.fn();
+const mockRemoveStaffFromGroup = jest.fn();
 const mockRemoveStaffCompletely = jest.fn();
 jest.mock("@trainers/supabase", () => ({
   searchUsersForInvite: (...args: unknown[]) =>
     mockSearchUsersForInvite(...args),
-  listCommunityGroups: jest.fn(),
+  listCommunityGroups: (...args: unknown[]) => mockListCommunityGroups(...args),
   addStaffMember: (...args: unknown[]) => mockAddStaffMember(...args),
   addStaffToGroup: (...args: unknown[]) => mockAddStaffToGroup(...args),
   changeStaffRole: (...args: unknown[]) => mockChangeStaffRole(...args),
+  removeStaffFromGroup: (...args: unknown[]) =>
+    mockRemoveStaffFromGroup(...args),
   removeStaffCompletely: (...args: unknown[]) =>
     mockRemoveStaffCompletely(...args),
+}));
+
+// Mock enqueue helpers — critical: verify correct roleType and action args
+const mockEnqueueCommunityRoleSync = jest.fn().mockResolvedValue(undefined);
+jest.mock("@/lib/discord/enqueue-helpers", () => ({
+  enqueueCommunityRoleSync: (...args: unknown[]) =>
+    mockEnqueueCommunityRoleSync(...args),
 }));
 
 import {
@@ -52,7 +70,10 @@ import {
   inviteStaffMember,
   inviteStaffToGroup,
   changeStaffRoleAction,
+  moveStaffToGroup,
   removeStaffAction,
+  unassignStaffAction,
+  getOrganizationGroups,
 } from "../staff";
 
 // =============================================================================
@@ -96,22 +117,41 @@ describe("inviteStaffMember", () => {
     jest.clearAllMocks();
   });
 
-  it("adds a staff member and revalidates the community page by slug", async () => {
+  it("adds staff and enqueues role sync with 'staff' + 'add'", async () => {
     mockAddStaffMember.mockResolvedValue(undefined);
 
     const result = await inviteStaffMember(1, "user-uuid-789", "team-rocket");
 
-    expect(result).toEqual({
-      success: true,
-      data: { success: true },
-    });
+    expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockAddStaffMember).toHaveBeenCalledWith(
       mockSupabase,
       1,
       "user-uuid-789"
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
+    expect(mockInvalidateCommunityPageCaches).toHaveBeenCalledWith(
+      "team-rocket",
+      1
+    );
+    // Critical: verify correct roleType and action
+    expect(mockEnqueueCommunityRoleSync).toHaveBeenCalledWith(
+      mockSupabase,
+      1,
+      ["user-uuid-789"],
+      "staff",
+      "add",
+      "staff_added:1:user-uuid-789"
+    );
+  });
+
+  it("returns error when mutation throws", async () => {
+    mockAddStaffMember.mockRejectedValue(new Error("DB error"));
+
+    const result = await inviteStaffMember(1, "user-uuid-789");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to add staff member",
+    });
   });
 });
 
@@ -124,28 +164,26 @@ describe("inviteStaffToGroup", () => {
     jest.clearAllMocks();
   });
 
-  it("adds a staff member to a specific group and revalidates the community page", async () => {
+  it("adds staff to group and enqueues role sync with 'staff' + 'add'", async () => {
     mockAddStaffToGroup.mockResolvedValue(undefined);
 
-    const result = await inviteStaffToGroup(
-      1,
-      "user-uuid-789",
-      10,
-      "team-rocket"
-    );
+    const result = await inviteStaffToGroup(1, "user-456", 10, "slug");
 
-    expect(result).toEqual({
-      success: true,
-      data: { success: true },
-    });
+    expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockAddStaffToGroup).toHaveBeenCalledWith(
       mockSupabase,
       1,
-      "user-uuid-789",
+      "user-456",
       10
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
+    expect(mockEnqueueCommunityRoleSync).toHaveBeenCalledWith(
+      mockSupabase,
+      1,
+      ["user-456"],
+      "staff",
+      "add",
+      "staff_added:1:user-456"
+    );
   });
 });
 
@@ -158,28 +196,42 @@ describe("changeStaffRoleAction", () => {
     jest.clearAllMocks();
   });
 
-  it("changes a staff member group and revalidates the community page", async () => {
+  it("changes group and does NOT call role sync", async () => {
     mockChangeStaffRole.mockResolvedValue(undefined);
 
-    const result = await changeStaffRoleAction(
-      1,
-      "user-uuid-789",
-      5,
-      "team-rocket"
-    );
+    const result = await changeStaffRoleAction(1, "user-789", 5, "slug");
 
-    expect(result).toEqual({
-      success: true,
-      data: { success: true },
-    });
+    expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockChangeStaffRole).toHaveBeenCalledWith(
       mockSupabase,
       1,
-      "user-uuid-789",
+      "user-789",
       5
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
+    expect(mockInvalidateCommunityPageCaches).toHaveBeenCalledWith("slug", 1);
+    expect(mockEnqueueCommunityRoleSync).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// moveStaffToGroup (alias)
+// =============================================================================
+
+describe("moveStaffToGroup", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("delegates to changeStaffRoleAction", async () => {
+    mockChangeStaffRole.mockResolvedValue(undefined);
+
+    const result = await moveStaffToGroup(1, "user-789", 5, "slug");
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    expect(mockChangeStaffRole).toHaveBeenCalledWith(
+      mockSupabase,
+      1,
+      "user-789",
+      5
+    );
   });
 });
 
@@ -192,34 +244,106 @@ describe("removeStaffAction", () => {
     jest.clearAllMocks();
   });
 
-  it("removes a staff member and revalidates the community page", async () => {
+  it("removes staff and enqueues role sync with 'staff' + 'remove'", async () => {
     mockRemoveStaffCompletely.mockResolvedValue(undefined);
 
-    const result = await removeStaffAction(1, "user-uuid-789", "team-rocket");
+    const result = await removeStaffAction(1, "user-123", "slug");
 
-    expect(result).toEqual({
-      success: true,
-      data: { success: true },
-    });
+    expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockRemoveStaffCompletely).toHaveBeenCalledWith(
       mockSupabase,
       1,
-      "user-uuid-789"
+      "user-123"
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
+    // Critical: verify roleType is "staff" and action is "remove" (not "add")
+    expect(mockEnqueueCommunityRoleSync).toHaveBeenCalledWith(
+      mockSupabase,
+      1,
+      ["user-123"],
+      "staff",
+      "remove",
+      "staff_removed:1:user-123"
+    );
   });
 
-  it("returns an error when the mutation throws", async () => {
-    mockRemoveStaffCompletely.mockRejectedValue(
-      new Error("Cannot remove owner")
+  it("returns error when mutation throws", async () => {
+    mockRemoveStaffCompletely.mockRejectedValue(new Error("FK violation"));
+
+    const result = await removeStaffAction(1, "user-123");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to remove staff member",
+    });
+  });
+});
+
+// =============================================================================
+// unassignStaffAction
+// =============================================================================
+
+describe("unassignStaffAction", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("unassigns from group and does NOT call role sync", async () => {
+    mockRemoveStaffFromGroup.mockResolvedValue(undefined);
+
+    const result = await unassignStaffAction(1, "user-123", "slug");
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    expect(mockRemoveStaffFromGroup).toHaveBeenCalledWith(
+      mockSupabase,
+      1,
+      "user-123"
     );
+    expect(mockEnqueueCommunityRoleSync).not.toHaveBeenCalled();
+  });
 
-    const result = await removeStaffAction(1, "user-uuid-789", "team-rocket");
+  it("returns error when mutation throws", async () => {
+    mockRemoveStaffFromGroup.mockRejectedValue(new Error("Not found"));
 
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toBe("Failed to remove staff member");
-    }
+    const result = await unassignStaffAction(1, "user-123");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to unassign staff member",
+    });
+  });
+});
+
+// =============================================================================
+// getOrganizationGroups
+// =============================================================================
+
+describe("getOrganizationGroups", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("returns groups on success", async () => {
+    const groups = [
+      {
+        id: 1,
+        name: "Judges",
+        description: null,
+        role: null,
+        memberCount: 3,
+      },
+    ];
+    mockListCommunityGroups.mockResolvedValue(groups);
+
+    const result = await getOrganizationGroups(1);
+
+    expect(result).toEqual({ success: true, data: groups });
+    expect(mockListCommunityGroups).toHaveBeenCalledWith(mockSupabase, 1);
+  });
+
+  it("returns error when query throws", async () => {
+    mockListCommunityGroups.mockRejectedValue(new Error("DB error"));
+
+    const result = await getOrganizationGroups(1);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to fetch groups",
+    });
   });
 });

@@ -54,7 +54,6 @@ export {
   calculateStats,
   getStatStageMultiplier,
   formatStats,
-  getStatColor,
   calculateBulk,
 } from "./stats-calculator";
 
@@ -139,6 +138,8 @@ export {
   POKEMON_GAMES,
   VGC_FORMATS,
   ALL_FORMAT_IDS,
+  SIM_UNSUPPORTED_FORMAT_IDS,
+  buildVgcShowdownNameMap,
   getFormatById,
   getFormatLabel,
   getFormatsByGame,

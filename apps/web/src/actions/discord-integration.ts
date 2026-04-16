@@ -183,7 +183,7 @@ const DISCORD_SETTINGS_PATH =
  * Discord server linked. Conflicts on (discord_server_id, channel_id, event_type)
  * are idempotent (Supabase upsert).
  *
- * @returns `{ id }` of the created/updated channel mapping row
+ * @returns `{ id }` of the Discord server (not the channel mapping row, which is an upsert with no returned ID)
  */
 export async function upsertChannelMappingAction(
   input: z.infer<typeof upsertChannelMappingSchema>

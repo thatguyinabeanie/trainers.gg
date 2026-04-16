@@ -5,6 +5,7 @@ import { Dex } from "@pkmn/dex";
 import {
   type GameFormat,
   type PokemonSet,
+  type PokemonValidationError,
   validatePokemon,
 } from "@trainers/pokemon";
 import { type TeamWithPokemon } from "@trainers/supabase";
@@ -16,15 +17,11 @@ import { dbPokemonToPokemonSet } from "./pokemon-utils";
 // Types
 // =============================================================================
 
-export interface ValidationError {
+export interface ValidationError extends PokemonValidationError {
   /** DB pokemon.id — used to group errors by Pokemon */
   pokemonId: number;
   /** Species name for display */
   pokemonName: string;
-  /** Field key: 'ability' | 'item' | 'move1' | 'evTotal' | 'species' | 'nickname' | 'gender' | 'moves' etc. */
-  field: string;
-  message: string;
-  severity: "error" | "warning";
 }
 
 /** The DB pokemon row shape — NonNullable<TeamWithPokemon["team_pokemon"][number]["pokemon"]> */

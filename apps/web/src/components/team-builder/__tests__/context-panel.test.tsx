@@ -114,14 +114,7 @@ describe("ContextPanel", () => {
     it("calls onTabChange with 'speed' when Speed tab is clicked", async () => {
       const user = userEvent.setup();
       const onTabChange = jest.fn();
-      render(
-        <ContextPanel
-          team={makeTeam()}
-          selectedPokemon={null}
-          activeTab="types"
-          onTabChange={onTabChange}
-        />
-      );
+      renderContextPanel("types", onTabChange);
       await user.click(screen.getByRole("tab", { name: "Speed" }));
       expect(onTabChange).toHaveBeenCalledWith("speed");
     });
@@ -129,14 +122,7 @@ describe("ContextPanel", () => {
     it("calls onTabChange with 'calc' when Calc tab is clicked", async () => {
       const user = userEvent.setup();
       const onTabChange = jest.fn();
-      render(
-        <ContextPanel
-          team={makeTeam()}
-          selectedPokemon={null}
-          activeTab="types"
-          onTabChange={onTabChange}
-        />
-      );
+      renderContextPanel("types", onTabChange);
       await user.click(screen.getByRole("tab", { name: "Calc" }));
       expect(onTabChange).toHaveBeenCalledWith("calc");
     });

@@ -50,6 +50,7 @@ export function checkFormatChangeLegality(
     return { ok: true };
   }
 
+  // Deduplicate — same species can fill multiple slots
   const illegal = [
     ...new Set(
       teamPokemon

@@ -1,5 +1,7 @@
 import { TeamValidator, Dex as SimDex } from "@pkmn/sim";
 import type { PokemonSet } from "./types";
+import type { PokemonValidationError } from "./validation";
+import { buildVgcShowdownNameMap } from "./formats";
 
 // Type for Showdown's PokemonSet format
 interface ShowdownPokemonSet {
@@ -32,15 +34,13 @@ interface ShowdownPokemonSet {
 }
 
 // Supported competitive formats — mapping our format IDs to the Showdown
-// format display name @pkmn/sim registers. Formats without a direct
-// match are intentionally absent; callers of AdvancedTeamValidator will
-// throw for unknown formats (up from the previous silent OU fallback).
-export const SUPPORTED_FORMATS = {
-  // VGC (Video Game Championship) formats
-  gen9vgc2024regg: "[Gen 9] VGC 2024 Reg G",
-  gen9vgc2024regh: "[Gen 9] VGC 2024 Reg H",
-  gen9vgc2026regi: "[Gen 9] VGC 2026 Reg I",
-  gen9vgc2026regf: "[Gen 9] VGC 2026 Reg F",
+// format display name @pkmn/sim registers. VGC entries are derived from the
+// VGC_FORMATS registry (filtered to sim-supported formats). Smogon Singles
+// entries are kept explicit. Formats without a direct match are intentionally
+// absent; callers of AdvancedTeamValidator will throw for unknown formats.
+export const SUPPORTED_FORMATS: Record<string, string> = {
+  // VGC (Video Game Championship) formats — sourced from VGC_FORMATS registry
+  ...buildVgcShowdownNameMap(),
 
   // Smogon Singles
   gen9ou: "[Gen 9] OU",
@@ -52,15 +52,12 @@ export const SUPPORTED_FORMATS = {
   gen9monotype: "[Gen 9] Monotype",
   gen9anythinggoes: "[Gen 9] Anything Goes",
   gen9ubers: "[Gen 9] Ubers",
-} as const;
+};
 
-export type FormatId = keyof typeof SUPPORTED_FORMATS;
+export type FormatId = string;
 
-export interface TeamValidationError {
+export interface TeamValidationError extends PokemonValidationError {
   pokemon?: number; // 0-indexed position in team
-  field: string;
-  message: string;
-  severity: "error" | "warning";
 }
 
 export interface TeamValidationResult {
@@ -80,7 +77,7 @@ export class AdvancedTeamValidator {
 
   constructor(formatId: FormatId = "gen9vgc2026regi") {
     this.formatId = formatId;
-    const actualFormatName = SUPPORTED_FORMATS[formatId];
+    const actualFormatName = SUPPORTED_FORMATS[formatId] ?? "";
     const format = SimDex.formats.get(actualFormatName);
     if (!format || !format.exists) {
       throw new Error(`Format ${formatId} (${actualFormatName}) not found`);
@@ -97,7 +94,7 @@ export class AdvancedTeamValidator {
     // Update validator if format changed
     if (format !== this.formatId) {
       this.formatId = format;
-      const actualFormatName = SUPPORTED_FORMATS[format as FormatId];
+      const actualFormatName = SUPPORTED_FORMATS[format] ?? "";
       const formatObj = SimDex.formats.get(actualFormatName);
       if (!formatObj || !formatObj.exists) {
         throw new Error(`Format ${format} (${actualFormatName}) not found`);
@@ -155,7 +152,7 @@ export class AdvancedTeamValidator {
       isValid: errors.length === 0,
       errors,
       warnings,
-      format: SUPPORTED_FORMATS[format as FormatId] || format,
+      format: SUPPORTED_FORMATS[format] ?? format,
       teamSize: team.length,
     };
   }

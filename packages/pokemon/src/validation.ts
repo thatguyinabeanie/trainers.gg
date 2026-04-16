@@ -10,6 +10,7 @@ const currentGen = gens.get(9);
 export interface PokemonValidationError {
   field: string;
   message: string;
+  severity: "error" | "warning";
 }
 
 export interface PokemonValidationResult {
@@ -45,6 +46,7 @@ export function validatePokemon(
       errors.push({
         field: "species",
         message: `Pokemon species "${pokemonSet.species}" does not exist`,
+        severity: "error",
       });
       // If species doesn't exist, we can't validate further
       return { isValid: false, errors };
@@ -56,6 +58,7 @@ export function validatePokemon(
       errors.push({
         field: "nature",
         message: `Nature "${pokemonSet.nature}" does not exist`,
+        severity: "error",
       });
     }
 
@@ -65,6 +68,7 @@ export function validatePokemon(
       errors.push({
         field: "ability",
         message: `Ability "${pokemonSet.ability}" does not exist`,
+        severity: "error",
       });
     } else {
       // Check if Pokemon can have this ability
@@ -75,6 +79,7 @@ export function validatePokemon(
         errors.push({
           field: "ability",
           message: `${pokemonSet.species} cannot have ability "${pokemonSet.ability}"`,
+          severity: "error",
         });
       }
     }
@@ -86,6 +91,7 @@ export function validatePokemon(
         errors.push({
           field: "heldItem",
           message: `Item "${pokemonSet.heldItem}" does not exist`,
+          severity: "error",
         });
       }
     }
@@ -97,16 +103,19 @@ export function validatePokemon(
         errors.push({
           field: "gender",
           message: `${pokemonSet.species} cannot be male`,
+          severity: "error",
         });
       } else if (genderRatio?.F === 0 && pokemonSet.gender === "Female") {
         errors.push({
           field: "gender",
           message: `${pokemonSet.species} cannot be female`,
+          severity: "error",
         });
       } else if (genderRatio === null && pokemonSet.gender !== undefined) {
         errors.push({
           field: "gender",
           message: `${pokemonSet.species} is genderless`,
+          severity: "error",
         });
       }
     }
@@ -124,6 +133,7 @@ export function validatePokemon(
       errors.push({
         field: "moves",
         message: "Pokemon cannot have duplicate moves",
+        severity: "error",
       });
     }
 
@@ -134,6 +144,7 @@ export function validatePokemon(
           errors.push({
             field: `move${index + 1}`,
             message: `Move "${moveId}" does not exist`,
+            severity: "error",
           });
         } else {
           // Check if Pokemon can learn this move
@@ -158,6 +169,7 @@ export function validatePokemon(
       errors.push({
         field: "evs",
         message: `Total EVs (${totalEvs}) cannot exceed 510`,
+        severity: "error",
       });
     }
 
@@ -167,6 +179,7 @@ export function validatePokemon(
         errors.push({
           field: `ev${stat.charAt(0).toUpperCase() + stat.slice(1)}`,
           message: `${stat} EVs must be between 0 and 252`,
+          severity: "error",
         });
       }
     }
@@ -177,6 +190,7 @@ export function validatePokemon(
         errors.push({
           field: `iv${stat.charAt(0).toUpperCase() + stat.slice(1)}`,
           message: `${stat} IVs must be between 0 and 31`,
+          severity: "error",
         });
       }
     }
@@ -189,6 +203,7 @@ export function validatePokemon(
         errors.push({
           field: "teraType",
           message: `Tera Type "${pokemonSet.teraType}" does not exist`,
+          severity: "error",
         });
       }
     }
@@ -198,12 +213,14 @@ export function validatePokemon(
       errors.push({
         field: "level",
         message: "Level must be between 1 and 100",
+        severity: "error",
       });
     }
   } catch (error) {
     errors.push({
       field: "general",
       message: `Validation error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      severity: "error",
     });
   }
 

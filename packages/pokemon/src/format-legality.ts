@@ -254,17 +254,19 @@ const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
 
 import { Dex as SimDex, TeamValidator } from "@pkmn/sim";
 import type { PokemonSet, Species } from "@pkmn/sim";
+import { buildVgcShowdownNameMap } from "./formats";
 
 /**
  * Map our format IDs to the Showdown format display name that
- * `@pkmn/sim` registers. Formats not listed here fall back to
- * `undefined` (permissive) until someone adds them.
+ * `@pkmn/sim` registers. VGC entries are derived from the VGC_FORMATS
+ * registry (filtered to sim-supported formats). Formats not listed here
+ * fall back to `undefined` (permissive) until someone adds them.
  */
 const SIM_FORMAT_NAME_BY_ID: Record<string, string> = {
-  gen9vgc2026regi: "[Gen 9] VGC 2026 Reg I",
-  gen9vgc2026regf: "[Gen 9] VGC 2026 Reg F",
-  gen9vgc2024regg: "[Gen 9] VGC 2024 Reg G",
-  gen9vgc2024regh: "[Gen 9] VGC 2024 Reg H",
+  // VGC formats — sourced from VGC_FORMATS registry (excludes gen-10 Champions)
+  ...buildVgcShowdownNameMap(),
+
+  // Smogon Singles
   gen9ou: "[Gen 9] OU",
   gen9uu: "[Gen 9] UU",
   gen9ru: "[Gen 9] RU",
@@ -790,6 +792,9 @@ function computeLegalAbilitiesFromSim(
   return legal;
 }
 
+/** Module-scope cache for Champions ability lookups. */
+const championsAbilityCache = new Map<string, ReadonlySet<string>>();
+
 /**
  * Compute the legal-ability set for a Champions: VGC 2026 Reg M-A species.
  * Returns the species' own abilities filtered through the Champions ability
@@ -798,14 +803,19 @@ function computeLegalAbilitiesFromSim(
 function computeLegalAbilitiesForChampions(
   species: string
 ): ReadonlySet<string> | undefined {
+  const cached = championsAbilityCache.get(species);
+  if (cached) return cached;
+
   const gen = SimDex.forGen(9);
   const speciesObj = gen.species.get(species);
   if (!speciesObj?.exists) return undefined;
-  return new Set(
+  const legal: ReadonlySet<string> = new Set(
     speciesAbilityNames(speciesObj).filter(
       (name) => !CHAMPIONS_MA_ABILITY_BANLIST.has(name)
     )
   );
+  championsAbilityCache.set(species, legal);
+  return legal;
 }
 
 // =============================================================================

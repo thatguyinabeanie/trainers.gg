@@ -42,7 +42,10 @@ async function checkIsStaff(
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId);
 
-  if (error) return false;
+  if (error) {
+    console.error("[checkIsStaff] Failed to check staff status:", error);
+    return false;
+  }
   return (count ?? 0) > 0;
 }
 
@@ -56,10 +59,28 @@ export default async function NotificationSettingsPage() {
 
   const [preferences, isStaff, dmPreferenceRows, discordHandle, userRow] =
     await Promise.all([
-      getNotificationPreferences(supabase, user.id).catch(() => null),
+      getNotificationPreferences(supabase, user.id).catch((err) => {
+        console.error(
+          "[NotificationSettings] Failed to load preferences:",
+          err
+        );
+        return null;
+      }),
       checkIsStaff(supabase, user.id),
-      listDmPreferences(supabase, user.id).catch(() => []),
-      getPublicDiscordHandle(supabase, user.id).catch(() => null),
+      listDmPreferences(supabase, user.id).catch((err) => {
+        console.error(
+          "[NotificationSettings] Failed to load DM preferences:",
+          err
+        );
+        return [];
+      }),
+      getPublicDiscordHandle(supabase, user.id).catch((err) => {
+        console.error(
+          "[NotificationSettings] Failed to load Discord handle:",
+          err
+        );
+        return null;
+      }),
       supabase
         .from("users")
         .select("discord_dm_warn_until")

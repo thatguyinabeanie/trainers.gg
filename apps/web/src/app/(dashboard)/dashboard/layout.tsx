@@ -57,7 +57,10 @@ export default async function DashboardLayout({
         console.error("[DashboardLayout] Failed to check sudo mode:", err);
         return false;
       }),
-      isSiteAdmin().catch(() => false),
+      isSiteAdmin().catch((err) => {
+        console.error("[DashboardLayout] Failed to check site admin:", err);
+        return false;
+      }),
       hasTeamBuilderAccess(supabase, user.id).catch((err) => {
         console.error(
           "[DashboardLayout] Failed to check team builder access:",
