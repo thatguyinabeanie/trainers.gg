@@ -368,16 +368,137 @@ function computeLegalSpeciesFromSim(
 // Items
 // =============================================================================
 
-// TODO(champions-items): No authoritative VGC 2026 Reg M-A held-item legality
-// list has been published yet. The videogameschronicle "all items" guide only
-// enumerates the in-game shop pool (47 items, mostly type-boosting items and
-// Pinch Berries) and does not address competitive legality (no Life Orb,
-// Focus Sash, Choice items, Leftovers, Sitrus Berry, etc.). The official
-// pokemon.com tournaments page redirects to championships.pokemon.com which
-// does not surface item rules either. Until an authoritative source ships,
-// Champions returns `undefined` from `getLegalItems` (permissive — all items
-// allowed) so we don't fabricate a list. Re-source when rules drop and
-// replace this with a `CHAMPIONS_MA_LEGAL_ITEMS` static port.
+/**
+ * Every held item legal in Champions: VGC 2026 Reg M-A.
+ *
+ * Ported from Serebii's Champions items listing (serebii.net/pokemonchampions/items.shtml,
+ * captured 2026-04-15). Champions has a curated item pool: 30 hold items,
+ * 59 Mega Stones, and 28 Berries. Notably absent vs. gen-9 SV: Life Orb,
+ * Choice Band, Choice Specs, Assault Vest, Rocky Helmet, Eviolite, Safety
+ * Goggles, and most competitive staples beyond Choice Scarf.
+ */
+const CHAMPIONS_MA_LEGAL_ITEMS: ReadonlySet<string> = new Set([
+  // Hold items (30)
+  "Black Belt",
+  "Black Glasses",
+  "Bright Powder",
+  "Charcoal",
+  "Choice Scarf",
+  "Dragon Fang",
+  "Fairy Feather",
+  "Focus Band",
+  "Focus Sash",
+  "Hard Stone",
+  "King's Rock",
+  "Leftovers",
+  "Light Ball",
+  "Magnet",
+  "Mental Herb",
+  "Metal Coat",
+  "Miracle Seed",
+  "Mystic Water",
+  "Never-Melt Ice",
+  "Poison Barb",
+  "Quick Claw",
+  "Scope Lens",
+  "Sharp Beak",
+  "Shell Bell",
+  "Silk Scarf",
+  "Silver Powder",
+  "Soft Sand",
+  "Spell Tag",
+  "Twisted Spoon",
+  "White Herb",
+  // Mega Stones (59)
+  "Abomasite",
+  "Absolite",
+  "Aerodactylite",
+  "Aggronite",
+  "Alakazite",
+  "Altarianite",
+  "Ampharosite",
+  "Audinite",
+  "Banettite",
+  "Beedrillite",
+  "Blastoisinite",
+  "Cameruptite",
+  "Chandelurite",
+  "Charizardite X",
+  "Charizardite Y",
+  "Chesnaughtite",
+  "Chimechite",
+  "Clefablite",
+  "Crabominite",
+  "Delphoxite",
+  "Dragoninite",
+  "Drampanite",
+  "Emboarite",
+  "Excadrite",
+  "Feraligite",
+  "Floettite",
+  "Froslassite",
+  "Galladite",
+  "Garchompite",
+  "Gardevoirite",
+  "Gengarite",
+  "Glalitite",
+  "Glimmoranite",
+  "Golurkite",
+  "Greninjite",
+  "Gyaradosite",
+  "Hawluchanite",
+  "Heracronite",
+  "Houndoominite",
+  "Kangaskhanite",
+  "Lopunnite",
+  "Lucarionite",
+  "Manectite",
+  "Medichamite",
+  "Meganiumite",
+  "Meowsticite",
+  "Pidgeotite",
+  "Pinsirite",
+  "Sablenite",
+  "Scizorite",
+  "Scovillainite",
+  "Sharpedonite",
+  "Skarmorite",
+  "Slowbronite",
+  "Starminite",
+  "Steelixite",
+  "Tyranitarite",
+  "Venusaurite",
+  "Victreebelite",
+  // Berries (28)
+  "Aspear Berry",
+  "Babiri Berry",
+  "Charti Berry",
+  "Cheri Berry",
+  "Chesto Berry",
+  "Chilan Berry",
+  "Chople Berry",
+  "Coba Berry",
+  "Colbur Berry",
+  "Haban Berry",
+  "Kasib Berry",
+  "Kebia Berry",
+  "Leppa Berry",
+  "Lum Berry",
+  "Occa Berry",
+  "Oran Berry",
+  "Passho Berry",
+  "Payapa Berry",
+  "Pecha Berry",
+  "Persim Berry",
+  "Rawst Berry",
+  "Rindo Berry",
+  "Roseli Berry",
+  "Shuca Berry",
+  "Sitrus Berry",
+  "Tanga Berry",
+  "Wacan Berry",
+  "Yache Berry",
+]);
 
 // Module-level cache — computed once per process (worker) lifetime, mirroring
 // `simSetCache` for species. First call per format probes ~250 gen-9 items
@@ -447,18 +568,13 @@ function computeLegalItemsFromSim(
 // Moves
 // =============================================================================
 
-// TODO(champions-moves-banlist): No VGC 2026 Reg M-A move banlist has been
-// published as of 2026-04-15. Sources checked:
-//   1. pokemon.com/us/play-pokemon/about/tournaments-rules/ — 404
-//   2. championships.pokemon.com/en-us/tournaments/ — 404
-//   3. smogon.com/forums/forums/vgc.199/ — no Champions / Reg M-A threads
-//   4. pikalytics.com — usage stats only, no move banlist
+// Champions M-A has no published format-level move bans (verified 2026-04-15
+// via serebii.net/pokemonchampions/rankedbattle/, Reg M-A rules page, and
+// serebii.net/pokemonchampions/moves.shtml — the game curates a ~500 move
+// pool per species but has no additional format-level bans on top). Empty
+// set means Champions goes through the sim-backed learnset path with gen-9
+// data; species in Champions are all gen-9 entries so learnsets resolve.
 //   5. serebii.net/vgc/ — no Champions info on overview page
-//   6. videogameschronicle.com/guide/pokemon-champions-all-items-in-pokemon-champions/ — item guide only
-//   7. reddit.com/r/VGC/.json — unable to fetch (blocked)
-//   8. old.reddit.com/r/PokemonChampions/ — unable to fetch (blocked)
-// Revisit when official rules drop. Empty set means Champions goes through the
-// sim-backed learnset path with no format-level move bans applied on top.
 const CHAMPIONS_MA_MOVE_BANLIST: ReadonlySet<string> = new Set();
 
 // Cache key: `${species}::${formatId}`. Iterating the full move list per
@@ -561,12 +677,10 @@ function computeLegalMovesForChampions(
 // Abilities
 // =============================================================================
 
-// TODO(champions-abilities): No VGC 2026 Reg M-A ability banlist has been
-// published as of 2026-04-15. Empty set means all species abilities are legal.
-// Add entries when announced.
-const CHAMPIONS_MA_ABILITY_BANLIST: ReadonlySet<string> = new Set([
-  // TODO(champions-abilities): no published ability banlist. Add entries when announced.
-]);
+// Champions M-A has no format-level ability bans (verified 2026-04-15 via
+// serebii.net/pokemonchampions — Reg M-A rules page lists no ability restrictions;
+// the game assigns abilities per species with no additional format bans).
+const CHAMPIONS_MA_ABILITY_BANLIST: ReadonlySet<string> = new Set();
 
 // Cache key: `${species}::${formatId}`. Species have 1-3 abilities; cache on
 // first request per combination.
@@ -716,16 +830,11 @@ export function isLegalSpecies(species: string, formatId: string): boolean {
  * Returns the set of held items legal in the given format, or `undefined`
  * if legality cannot be determined (treat as permissive — caller allows
  * any item).
- *
- * Champions: VGC 2026 Reg M-A currently returns `undefined` because no
- * authoritative item-legality source has been published; see the
- * `TODO(champions-items)` note above.
  */
 export function getLegalItems(
   formatId: string
 ): ReadonlySet<string> | undefined {
-  // Champions M-A: permissive until a source publishes item rules.
-  if (formatId === "championsvgc2026regma") return undefined;
+  if (formatId === "championsvgc2026regma") return CHAMPIONS_MA_LEGAL_ITEMS;
   return computeLegalItemsFromSim(formatId);
 }
 

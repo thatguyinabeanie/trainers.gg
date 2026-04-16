@@ -94,14 +94,26 @@ describe("format-legality — items", () => {
     expect(isLegalItem("Focus Sash", "gen9vgc2026regi")).toBe(true);
   });
 
-  // Champions item legality is currently permissive (see TODO(champions-items)
-  // in format-legality.ts) — no authoritative published list exists yet, so we
-  // skip the Champions-specific assertions until rules are sourced.
-  it.skip("returns a ReadonlySet for Champions M-A", () => {
+  it("returns the Champions M-A static item set (30 hold + 59 Mega Stones + 28 Berries)", () => {
     const items = getLegalItems("championsvgc2026regma");
     expect(items).toBeInstanceOf(Set);
-    expect(items?.has("Life Orb")).toBe(true);
-    expect(items?.size).toBeGreaterThan(20);
+    // Hold items
+    expect(items?.has("Choice Scarf")).toBe(true);
+    expect(items?.has("Focus Sash")).toBe(true);
+    expect(items?.has("Leftovers")).toBe(true);
+    // Mega Stones
+    expect(items?.has("Venusaurite")).toBe(true);
+    expect(items?.has("Charizardite X")).toBe(true);
+    expect(items?.has("Chandelurite")).toBe(true); // Champions-new
+    // Berries
+    expect(items?.has("Sitrus Berry")).toBe(true);
+    expect(items?.has("Lum Berry")).toBe(true);
+    // NOT in Champions
+    expect(items?.has("Life Orb")).toBe(false);
+    expect(items?.has("Choice Band")).toBe(false);
+    expect(items?.has("Assault Vest")).toBe(false);
+    // Total: 30 + 59 + 28 = 117
+    expect(items?.size).toBe(117);
   });
 
   it("returns undefined for unknown formats (permissive)", () => {
