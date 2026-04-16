@@ -453,8 +453,18 @@ export function EvEditor({
   const [localEvs, setLocalEvs] = useState<StatValues>(propEvs);
   const [prevPropEvs, setPrevPropEvs] = useState<StatValues>(propEvs);
 
-  // Sync local state when props change (render-time state reset pattern)
-  if (prevPropEvs !== propEvs) {
+  // Sync local state when props change (render-time state reset pattern).
+  // Compare individual stat values rather than object reference — the parent
+  // may reconstruct propEvs each render even when the values are identical.
+  const evsChanged =
+    prevPropEvs.hp !== propEvs.hp ||
+    prevPropEvs.attack !== propEvs.attack ||
+    prevPropEvs.defense !== propEvs.defense ||
+    prevPropEvs.specialAttack !== propEvs.specialAttack ||
+    prevPropEvs.specialDefense !== propEvs.specialDefense ||
+    prevPropEvs.speed !== propEvs.speed;
+
+  if (evsChanged) {
     setPrevPropEvs(propEvs);
     setLocalEvs(propEvs);
   }

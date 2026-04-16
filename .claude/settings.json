@@ -61,7 +61,22 @@
       "Bash(npm test:*)",
       "Bash(git -C /Users/beanie/source/the-builder-polish show HEAD:packages/pokemon/src/__tests__/team-validator.test.ts)",
       "Bash(git:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(command -v yq)",
+      "Bash(yq eval *)",
+      "Bash(command -v actionlint)",
+      "Bash(actionlint /Users/beanie/source/the-builder-polish/.github/actions/supabase-branch/action.yml)",
+      "Bash(bash -n /tmp/supabase-branch-run.sh)",
+      "WebFetch(domain:www.videogameschronicle.com)",
+      "WebFetch(domain:www.pokemon.com)",
+      "WebFetch(domain:championships.pokemon.com)",
+      "WebFetch(domain:www.smogon.com)",
+      "WebFetch(domain:www.serebii.net)",
+      "WebFetch(domain:www.pikalytics.com)",
+      "WebFetch(domain:old.reddit.com)",
+      "WebFetch(domain:www.reddit.com)",
+      "WebFetch(domain:bulbapedia.bulbagarden.net)"
     ]
   },
   "hooks": {

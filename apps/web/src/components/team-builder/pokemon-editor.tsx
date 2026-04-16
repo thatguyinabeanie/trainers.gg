@@ -274,6 +274,7 @@ export function PokemonEditor({
                 closePicker();
               }}
               onClose={closePicker}
+              formatId={format?.id}
             />
           ) : getValidAbilities(pokemon.species).length <= 1 ? (
             /* Single-ability species: static display, no picker */

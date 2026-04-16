@@ -38,8 +38,11 @@ jest.mock("@/lib/cache-invalidation", () => ({
 }));
 
 // @trainers/utils — getErrorMessage used inside withAction
+const mockTrainersGetErrorMessage = jest.fn(
+  (_err: unknown, fallback: string) => fallback
+);
 jest.mock("@trainers/utils", () => ({
-  getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
+  getErrorMessage: (...args: unknown[]) => mockTrainersGetErrorMessage(...args),
 }));
 
 // @trainers/supabase mutations
@@ -66,10 +69,21 @@ jest.mock("@trainers/supabase", () => ({
   getTeamWithPokemon: (...args: unknown[]) => mockGetTeamWithPokemon(...args),
 }));
 
-// @trainers/pokemon — mock getLegalSpecies so tests are deterministic
+// @trainers/pokemon — mock legality functions so tests are deterministic
 const mockGetLegalSpecies = jest.fn();
+const mockIsLegalSpecies = jest.fn().mockReturnValue(true);
+const mockIsLegalItem = jest.fn().mockReturnValue(true);
+const mockIsLegalMove = jest.fn().mockReturnValue(true);
+const mockIsLegalAbility = jest.fn().mockReturnValue(true);
+const mockIsLegalTeraType = jest.fn().mockReturnValue(true);
+
 jest.mock("@trainers/pokemon", () => ({
   getLegalSpecies: (...args: unknown[]) => mockGetLegalSpecies(...args),
+  isLegalSpecies: (...args: unknown[]) => mockIsLegalSpecies(...args),
+  isLegalItem: (...args: unknown[]) => mockIsLegalItem(...args),
+  isLegalMove: (...args: unknown[]) => mockIsLegalMove(...args),
+  isLegalAbility: (...args: unknown[]) => mockIsLegalAbility(...args),
+  isLegalTeraType: (...args: unknown[]) => mockIsLegalTeraType(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -221,8 +235,12 @@ describe("updateTeamAction", () => {
     const result = await updateTeamAction(10, { format: "gen9vgc2026regi" });
 
     expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toContain(
-      "Mew"
+    // The guard throws inside withAction — verify the thrown error mentions Mew.
+    // getErrorMessage mock returns the fallback, but we can inspect the arg.
+    expect(mockTrainersGetErrorMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining("Mew") }),
+      "Failed to update team",
+      expect.anything()
     );
     expect(mockUpdateTeam).not.toHaveBeenCalled();
   });
@@ -352,6 +370,17 @@ describe("addPokemonToTeamAction", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: legality checks pass, team has a format
+    mockIsLegalSpecies.mockReturnValue(true);
+    mockIsLegalItem.mockReturnValue(true);
+    mockIsLegalMove.mockReturnValue(true);
+    mockIsLegalAbility.mockReturnValue(true);
+    mockIsLegalTeraType.mockReturnValue(true);
+    mockGetTeamWithPokemon.mockResolvedValue({
+      id: 10,
+      format: "gen9vgc2025regg",
+      team_pokemon: [],
+    });
   });
 
   it("adds a pokemon and returns the new pokemon id", async () => {
@@ -403,6 +432,24 @@ describe("addPokemonToTeamAction", () => {
 describe("updatePokemonAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: legality checks pass, team has a format with the pokemon
+    mockIsLegalSpecies.mockReturnValue(true);
+    mockIsLegalItem.mockReturnValue(true);
+    mockIsLegalMove.mockReturnValue(true);
+    mockIsLegalAbility.mockReturnValue(true);
+    mockIsLegalTeraType.mockReturnValue(true);
+    mockGetTeamWithPokemon.mockResolvedValue({
+      id: 1,
+      format: "gen9vgc2025regg",
+      team_pokemon: [
+        {
+          id: 1,
+          pokemon_id: 55,
+          team_position: 1,
+          pokemon: { id: 55, species: "Pikachu", ability: "Static" },
+        },
+      ],
+    });
   });
 
   it("updates a pokemon", async () => {
