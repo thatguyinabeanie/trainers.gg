@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   type GameFormat,
   buildSpeciesSearchIndex,
+  getFormatById,
   getValidAbilities,
 } from "@trainers/pokemon";
 import {
@@ -74,6 +75,12 @@ const PLACEHOLDER_POKEMON: Tables<"pokemon"> = {
 // `analytics-rail.tsx`.
 const EDITOR_CHROME_OVERRIDE =
   "bg-transparent shadow-none rounded-none overflow-visible";
+
+// Default format used as a fallback when the team has no format set on it.
+// The same id is used as the species index fallback below — keeping a single
+// constant ensures the species picker, type chart, and Speed/Calc panels all
+// agree on which format they're operating in when no team format is selected.
+const DEFAULT_FORMAT_ID = "gen9vgc2026regi";
 
 // Module-level cache — buildSpeciesSearchIndex iterates all species (~1,200+),
 // so we cache per format ID to avoid re-computing on every render.
@@ -146,7 +153,15 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   // Validation
   const { pokemonErrors } = useTeamValidation(team.team_pokemon, format);
 
-  const speciesIndex = getCachedSpeciesIndex(format?.id ?? "gen9vgc2026regi");
+  // Resolve the active format with a default fallback so downstream panels
+  // (SpeedPanel, CalcPanel, type chart filters) always have a format to drive
+  // their calculations off — otherwise SpeedPanel renders the
+  // "Speed tiers require a known format" empty state for any team that hasn't
+  // had a format set on the row.
+  const resolvedFormat: GameFormat | undefined =
+    format ?? getFormatById(DEFAULT_FORMAT_ID);
+
+  const speciesIndex = getCachedSpeciesIndex(format?.id ?? DEFAULT_FORMAT_ID);
 
   // Clear the debounce timer on unmount to prevent setState on an unmounted
   // component. If there is a pending save, fire it immediately — the server
@@ -376,7 +391,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
               <PokemonEditor
                 key="placeholder"
                 pokemon={PLACEHOLDER_POKEMON}
-                format={format}
+                format={resolvedFormat}
                 teamPokemon={[]}
                 onUpdate={() => {
                   /* no-op: disabled placeholder */
@@ -389,7 +404,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
               <PokemonEditor
                 key={selectedEntry.pokemon.id}
                 pokemon={selectedEntry.pokemon}
-                format={format}
+                format={resolvedFormat}
                 teamPokemon={team.team_pokemon}
                 onUpdate={(field, value) =>
                   handlePokemonUpdate(selectedEntry.pokemon!.id, field, value)
@@ -411,7 +426,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
         <AnalyticsRail
           team={team}
           selectedPokemon={selectedEntry?.pokemon ?? null}
-          format={format}
+          format={resolvedFormat}
         />
       </div>
 
