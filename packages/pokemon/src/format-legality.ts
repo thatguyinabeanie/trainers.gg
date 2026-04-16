@@ -9,6 +9,10 @@
  *   that as "permissive — all legal."
  */
 
+// Library tsconfig uses ES2022 without DOM — ambient console declaration
+// so warn calls compile without adding @types/node or DOM lib.
+declare const console: { warn(...data: unknown[]): void };
+
 // =============================================================================
 // Champions: VGC 2026 Reg M-A
 // =============================================================================
@@ -336,28 +340,36 @@ function computeLegalSpeciesFromSim(
   const gen = SimDex.forGen(9);
   const legal = new Set<string>();
 
-  for (const species of gen.species.all()) {
-    if (!species.exists) continue;
-    if (species.isNonstandard && species.isNonstandard !== "Unobtainable") {
-      continue;
+  try {
+    for (const species of gen.species.all()) {
+      if (!species.exists) continue;
+      if (species.isNonstandard && species.isNonstandard !== "Unobtainable") {
+        continue;
+      }
+      const issues = validator.validateSet(probeSet(species), {});
+      if (issues === null) {
+        legal.add(species.name);
+        continue;
+      }
+      // Accept species whose only issues are move-legality errors — those
+      // stem from our probe move choice, not a species-level ban.
+      const speciesIssues = issues.filter(
+        (issue) =>
+          !issue.includes("can't learn") &&
+          !issue.includes("can not learn") &&
+          !issue.includes("EVs") &&
+          !issue.includes("moves")
+      );
+      if (speciesIssues.length === 0) {
+        legal.add(species.name);
+      }
     }
-    const issues = validator.validateSet(probeSet(species), {});
-    if (issues === null) {
-      legal.add(species.name);
-      continue;
-    }
-    // Accept species whose only issues are move-legality errors — those
-    // stem from our probe move choice, not a species-level ban.
-    const speciesIssues = issues.filter(
-      (issue) =>
-        !issue.includes("can't learn") &&
-        !issue.includes("can not learn") &&
-        !issue.includes("EVs") &&
-        !issue.includes("moves")
+  } catch (error) {
+    console.warn(
+      `[format-legality] Failed to compute species for ${formatId}:`,
+      error
     );
-    if (speciesIssues.length === 0) {
-      legal.add(species.name);
-    }
+    return undefined; // permissive fallback — don't cache error result
   }
 
   simSetCache.set(formatId, legal);
@@ -545,19 +557,28 @@ function computeLegalItemsFromSim(
   const baseSet = probeSet(probeSpecies);
 
   const legal = new Set<string>();
-  for (const item of gen.items.all()) {
-    if (!item.exists) continue;
-    if (item.isNonstandard && item.isNonstandard !== "Unobtainable") {
-      continue;
+
+  try {
+    for (const item of gen.items.all()) {
+      if (!item.exists) continue;
+      if (item.isNonstandard && item.isNonstandard !== "Unobtainable") {
+        continue;
+      }
+      const issue = validator.checkItem(
+        { ...baseSet, item: item.name },
+        item,
+        {}
+      );
+      // checkItem returns null for unmatched rules (legal), '' for a
+      // whitelist match (legal), or a non-empty string for a ban (illegal).
+      if (issue === null || issue === "") legal.add(item.name);
     }
-    const issue = validator.checkItem(
-      { ...baseSet, item: item.name },
-      item,
-      {}
+  } catch (error) {
+    console.warn(
+      `[format-legality] Failed to compute items for ${formatId}:`,
+      error
     );
-    // checkItem returns null for unmatched rules (legal), '' for a
-    // whitelist match (legal), or a non-empty string for a ban (illegal).
-    if (issue === null || issue === "") legal.add(item.name);
+    return undefined; // permissive fallback — don't cache error result
   }
 
   simItemCache.set(formatId, legal);
@@ -614,12 +635,20 @@ function computeLegalMovesFromSim(
   const validator = new TeamValidator(format, SimDex);
   const legal = new Set<string>();
 
-  for (const move of gen.moves.all()) {
-    if (!move.exists) continue;
-    if (move.isNonstandard && move.isNonstandard !== "Unobtainable") continue;
+  try {
+    for (const move of gen.moves.all()) {
+      if (!move.exists) continue;
+      if (move.isNonstandard && move.isNonstandard !== "Unobtainable") continue;
 
-    const issues = validator.checkCanLearn(move, speciesObj);
-    if (issues === null) legal.add(move.name);
+      const issues = validator.checkCanLearn(move, speciesObj);
+      if (issues === null) legal.add(move.name);
+    }
+  } catch (error) {
+    console.warn(
+      `[format-legality] Failed to compute moves for ${species} in ${formatId}:`,
+      error
+    );
+    return undefined; // permissive fallback — don't cache error result
   }
 
   simMoveCache.set(cacheKey, legal);
@@ -660,13 +689,22 @@ function computeLegalMovesForChampions(
   const validator = new TeamValidator(format, SimDex);
 
   const legal = new Set<string>();
-  for (const move of gen.moves.all()) {
-    if (!move.exists) continue;
-    if (move.isNonstandard && move.isNonstandard !== "Unobtainable") continue;
-    if (CHAMPIONS_MA_MOVE_BANLIST.has(move.name)) continue;
-    if (validator.checkCanLearn(move, speciesObj) === null) {
-      legal.add(move.name);
+
+  try {
+    for (const move of gen.moves.all()) {
+      if (!move.exists) continue;
+      if (move.isNonstandard && move.isNonstandard !== "Unobtainable") continue;
+      if (CHAMPIONS_MA_MOVE_BANLIST.has(move.name)) continue;
+      if (validator.checkCanLearn(move, speciesObj) === null) {
+        legal.add(move.name);
+      }
     }
+  } catch (error) {
+    console.warn(
+      `[format-legality] Failed to compute Champions moves for ${species}:`,
+      error
+    );
+    return undefined; // permissive fallback — don't cache error result
   }
 
   championsMoveCache.set(species, legal);
@@ -725,16 +763,24 @@ function computeLegalAbilitiesFromSim(
   const validator = new TeamValidator(format, SimDex);
   const legal = new Set<string>();
 
-  for (const name of speciesAbilityNames(speciesObj)) {
-    const ability = gen.abilities.get(name);
-    if (!ability?.exists) continue;
-    const baseSet = probeSet(speciesObj);
-    const issue = validator.checkAbility(
-      { ...baseSet, ability: ability.name },
-      ability,
-      {}
+  try {
+    for (const name of speciesAbilityNames(speciesObj)) {
+      const ability = gen.abilities.get(name);
+      if (!ability?.exists) continue;
+      const baseSet = probeSet(speciesObj);
+      const issue = validator.checkAbility(
+        { ...baseSet, ability: ability.name },
+        ability,
+        {}
+      );
+      if (issue === null) legal.add(ability.name);
+    }
+  } catch (error) {
+    console.warn(
+      `[format-legality] Failed to compute abilities for ${species} in ${formatId}:`,
+      error
     );
-    if (issue === null) legal.add(ability.name);
+    return undefined; // permissive fallback — don't cache error result
   }
 
   simAbilityCache.set(cacheKey, legal);

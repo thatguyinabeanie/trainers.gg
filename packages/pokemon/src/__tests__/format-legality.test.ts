@@ -126,6 +126,10 @@ describe("format-legality — items", () => {
     const b = getLegalItems("gen9vgc2026regi");
     expect(a).toBe(b);
   });
+
+  it("isLegalItem returns true for empty string (no item selected)", () => {
+    expect(isLegalItem("", "gen9vgc2026regi")).toBe(true);
+  });
 });
 
 describe("format-legality — moves", () => {
@@ -154,6 +158,10 @@ describe("format-legality — moves", () => {
     const a = getLegalMoves("Pikachu", "gen9vgc2026regi");
     const b = getLegalMoves("Pikachu", "gen9vgc2026regi");
     expect(a).toBe(b);
+  });
+
+  it("isLegalMove returns true for empty string (no move selected)", () => {
+    expect(isLegalMove("", "Pikachu", "gen9vgc2026regi")).toBe(true);
   });
 });
 
