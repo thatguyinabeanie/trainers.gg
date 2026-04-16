@@ -802,12 +802,10 @@ describe("/drop", () => {
       .mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        maybeSingle: jest
-          .fn()
-          .mockResolvedValue({
-            data: { id: 10, status: "dropped" },
-            error: null,
-          }),
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { id: 10, status: "dropped" },
+          error: null,
+        }),
       });
 
     await handler(makeCommandContext());
@@ -836,12 +834,10 @@ describe("/drop", () => {
       .mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        maybeSingle: jest
-          .fn()
-          .mockResolvedValue({
-            data: { id: 10, status: "active" },
-            error: null,
-          }),
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { id: 10, status: "active" },
+          error: null,
+        }),
       })
       // tournament_player_stats update
       .mockReturnValueOnce({
