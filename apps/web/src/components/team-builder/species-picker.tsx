@@ -84,9 +84,8 @@ function SpeciesRow({ entry, isCurrent, onSelect }: SpeciesRowProps) {
         // Grid template:
         //  44px (sprite circle)
         //  minmax(0, 1fr) (info column: name + types, abilities)
-        //  6 × 2.5rem (stat values: HP, Atk, Def, SpA, SpD, Spe)
-        //  3.5rem (BST rollup with thin divider)
-        "grid-cols-[2.75rem_minmax(0,1fr)_repeat(6,2.5rem)_3.5rem]",
+        //  auto (compact stats block — see StatsCells below, ~240px wide)
+        "grid-cols-[2.75rem_minmax(0,1fr)_auto]",
         isCurrent && "bg-primary/5"
       )}
       aria-label={`Select ${entry.species}`}
@@ -136,60 +135,65 @@ function SpeciesRow({ entry, isCurrent, onSelect }: SpeciesRowProps) {
         </span>
       </div>
 
-      {/* Stats — HP / Atk / Def / SpA / SpD / Spe in Geist Mono */}
-      <span
-        className={cn(
-          "text-center font-mono text-sm tabular-nums",
-          statValueClass(entry.baseStats.hp)
-        )}
-      >
-        {entry.baseStats.hp}
-      </span>
-      <span
-        className={cn(
-          "text-center font-mono text-sm tabular-nums",
-          statValueClass(entry.baseStats.atk)
-        )}
-      >
-        {entry.baseStats.atk}
-      </span>
-      <span
-        className={cn(
-          "text-center font-mono text-sm tabular-nums",
-          statValueClass(entry.baseStats.def)
-        )}
-      >
-        {entry.baseStats.def}
-      </span>
-      <span
-        className={cn(
-          "text-center font-mono text-sm tabular-nums",
-          statValueClass(entry.baseStats.spa)
-        )}
-      >
-        {entry.baseStats.spa}
-      </span>
-      <span
-        className={cn(
-          "text-center font-mono text-sm tabular-nums",
-          statValueClass(entry.baseStats.spd)
-        )}
-      >
-        {entry.baseStats.spd}
-      </span>
-      <span
-        className={cn(
-          "text-center font-mono text-sm tabular-nums",
-          statValueClass(entry.baseStats.spe)
-        )}
-      >
-        {entry.baseStats.spe}
-      </span>
+      {/* Stats — HP / Atk / Def / SpA / SpD / Spe in Geist Mono, plus BST
+          rollup with a thin left divider. Compact (~240px) so the info
+          column gets the visual weight. Mirror this template in
+          SpeciesRowsHeader. */}
+      <div className="grid grid-cols-[repeat(6,1.75rem)_2.5rem] items-center gap-1.5">
+        <span
+          className={cn(
+            "text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.hp)
+          )}
+        >
+          {entry.baseStats.hp}
+        </span>
+        <span
+          className={cn(
+            "text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.atk)
+          )}
+        >
+          {entry.baseStats.atk}
+        </span>
+        <span
+          className={cn(
+            "text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.def)
+          )}
+        >
+          {entry.baseStats.def}
+        </span>
+        <span
+          className={cn(
+            "text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.spa)
+          )}
+        >
+          {entry.baseStats.spa}
+        </span>
+        <span
+          className={cn(
+            "text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.spd)
+          )}
+        >
+          {entry.baseStats.spd}
+        </span>
+        <span
+          className={cn(
+            "text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.spe)
+          )}
+        >
+          {entry.baseStats.spe}
+        </span>
 
-      {/* BST — slightly heavier, thin left divider so it reads as the rollup. */}
-      <span className="border-border/60 text-foreground border-l pl-2 text-center font-mono text-sm font-semibold tabular-nums">
-        {entry.bst}
-      </span>
+        {/* BST — slightly heavier, thin left divider so it reads as the rollup. */}
+        <span className="border-border/60 text-foreground border-l pl-2 text-center font-mono text-xs font-semibold tabular-nums">
+          {entry.bst}
+        </span>
+      </div>
     </button>
   );
 }
@@ -202,20 +206,23 @@ function SpeciesRowsHeader() {
   return (
     <div
       className={cn(
-        "bg-muted/50 text-muted-foreground sticky top-0 z-10 grid items-center gap-3 border-b px-4 py-1.5 text-[10px] font-semibold tracking-wider uppercase",
-        // Mirror the SpeciesRow grid template so labels align over their columns.
-        "grid-cols-[2.75rem_minmax(0,1fr)_repeat(6,2.5rem)_3.5rem]"
+        "bg-muted/50 text-muted-foreground sticky top-0 z-10 grid items-center gap-3 border-b px-4 py-1.5 text-xs font-medium tracking-wide uppercase",
+        // Mirror the SpeciesRow grid template so the stats block aligns
+        // over the per-row stats.
+        "grid-cols-[2.75rem_minmax(0,1fr)_auto]"
       )}
     >
       <span aria-hidden="true" />
       <span aria-hidden="true" />
-      <span className="text-center">HP</span>
-      <span className="text-center">Atk</span>
-      <span className="text-center">Def</span>
-      <span className="text-center">SpA</span>
-      <span className="text-center">SpD</span>
-      <span className="text-center">Spe</span>
-      <span className="border-border/60 border-l pl-2 text-center">BST</span>
+      <div className="grid grid-cols-[repeat(6,1.75rem)_2.5rem] items-center gap-1.5">
+        <span className="text-center">HP</span>
+        <span className="text-center">Atk</span>
+        <span className="text-center">Def</span>
+        <span className="text-center">SpA</span>
+        <span className="text-center">SpD</span>
+        <span className="text-center">Spe</span>
+        <span className="border-border/60 border-l pl-2 text-center">BST</span>
+      </div>
     </div>
   );
 }
