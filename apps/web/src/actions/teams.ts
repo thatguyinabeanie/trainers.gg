@@ -42,6 +42,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import { rejectBots, withAction } from "@/actions/utils";
 import { checkFormatChangeLegality } from "@/actions/format-legality-guard";
+import { findLegalityViolation } from "@/actions/_legality";
 
 // =============================================================================
 // Team CRUD
@@ -230,6 +231,16 @@ export async function addPokemonToTeamAction(
   try {
     await rejectBots();
     const supabase = await createClient();
+
+    // -------------------------------------------------------------------------
+    // Legality guard — validate species/item/ability/moves/tera against format
+    // -------------------------------------------------------------------------
+    const team = await getTeamWithPokemon(supabase, parsed.data.teamId);
+    if (team?.format) {
+      const violation = findLegalityViolation(parsedPokemon.data, team.format);
+      if (violation) return { success: false, error: violation };
+    }
+
     const result = await addPokemonToTeamMutation(
       supabase,
       parsed.data.teamId,
@@ -274,6 +285,24 @@ export async function updatePokemonAction(
     await rejectBots();
     const parsedData = pokemonUpdateSchema.parse(data);
     const supabase = await createClient();
+
+    // -------------------------------------------------------------------------
+    // Legality guard — merge current row with incoming updates, then validate
+    // -------------------------------------------------------------------------
+    const team = await getTeamWithPokemon(supabase, parsedTeam.data.teamId);
+    if (team?.format) {
+      // Find the current pokemon row within the team
+      const currentSlot = team.team_pokemon.find(
+        (slot) => slot.pokemon_id === parsed.data.pokemonId
+      );
+      const currentPokemon = currentSlot?.pokemon;
+      // Merge current fields with incoming updates so partial updates
+      // (e.g. only changing item) still validate against the species
+      const merged = { ...currentPokemon, ...parsedData };
+      const violation = findLegalityViolation(merged, team.format);
+      if (violation) throw new Error(violation);
+    }
+
     await updatePokemonMutation(
       supabase,
       parsed.data.pokemonId,
