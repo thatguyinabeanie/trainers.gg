@@ -300,8 +300,16 @@ export function SpeciesPicker({
       )}
 
       {/* Rows + sticky header. The header reads HP / Atk / Def / SpA / SpD /
-          Spe / BST, mirrored from the SpeciesRow grid template. */}
-      <div className="flex-1 overflow-y-auto" data-testid="species-rows">
+          Spe / BST, mirrored from the SpeciesRow grid template.
+          `max-h-[60vh]` caps the rows region so it scrolls independently of
+          the picker chrome (header, filters, truncation banner). The picker
+          overlays the editor card which has no intrinsic height, so without
+          an explicit cap the rows would render their natural height and the
+          page would scroll instead of the rows. */}
+      <div
+        className="max-h-[60vh] flex-1 overflow-y-auto"
+        data-testid="species-rows"
+      >
         <SpeciesRowsHeader />
         {visible.length === 0 ? (
           <div className="text-muted-foreground py-12 text-center text-sm">
