@@ -2,6 +2,10 @@
  * @jest-environment node
  */
 
+// Unmock install-state — the global test-setup mocks it to avoid jose ESM
+// issues in JSDOM tests, but this file tests the real implementation.
+jest.unmock("@/lib/discord/install-state");
+
 import { signInstallState, verifyInstallState } from "../install-state";
 
 // Set up env before the module is loaded

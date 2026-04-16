@@ -31,15 +31,14 @@ jest.mock("@/workflows/sync-role", () => ({
   syncRoleWorkflow: jest.fn(),
 }));
 
-// jose is ESM-only and fails to parse in Jest's CJS environment.
-// Mock it globally since it's only used server-side (install-state signing).
-jest.mock("jose", () => ({
-  SignJWT: jest.fn().mockReturnValue({
-    setProtectedHeader: jest.fn().mockReturnThis(),
-    setExpirationTime: jest.fn().mockReturnThis(),
-    sign: jest.fn().mockResolvedValue("mock-jwt-token"),
-  }),
-  jwtVerify: jest.fn().mockResolvedValue({
-    payload: { community_id: 1, user_id: "mock-user" },
-  }),
+// install-state uses jose (ESM-only) for JWT signing/verification.
+// Mock it globally so test suites that transitively import it via
+// actions/discord-integration don't fail on ESM parse. The actual
+// install-state test overrides this mock with jest.mock("@/lib/discord/install-state")
+// in its own file to use the real jose via transformIgnorePatterns.
+jest.mock("@/lib/discord/install-state", () => ({
+  signInstallState: jest.fn().mockResolvedValue("mock-signed-state"),
+  verifyInstallState: jest
+    .fn()
+    .mockResolvedValue({ community_id: 1, user_id: "mock-user" }),
 }));
