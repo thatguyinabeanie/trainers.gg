@@ -147,36 +147,35 @@ describe("TeamStrip", () => {
       expect(screen.getByAltText("Charizard")).toBeInTheDocument();
     });
 
-    it("displays species name on each chip", () => {
+    it("uses species name as the chip's accessible label (sprite-only chips)", () => {
       render(
         <TeamStrip
           {...defaultStripProps}
           pokemon={[makePokemonEntry(1, 1, "Arcanine")]}
         />
       );
-      expect(screen.getByText("Arcanine")).toBeInTheDocument();
+      // Species name surfaces via aria-label + image alt — visible name was
+      // dropped per the sprite-only chip design (mockup 01-overall-layout).
+      expect(screen.getByLabelText("Arcanine")).toBeInTheDocument();
+      expect(screen.getByAltText("Arcanine")).toBeInTheDocument();
     });
 
-    it("displays nickname when set instead of species name", () => {
-      render(
-        <TeamStrip
-          {...defaultStripProps}
-          pokemon={[makePokemonEntry(1, 1, "Pikachu", { nickname: "Sparky" })]}
-        />
-      );
-      expect(screen.getByText("Sparky")).toBeInTheDocument();
-    });
-
-    it("displays held item when set", () => {
+    it("does not render the species name or held item as visible text", () => {
       render(
         <TeamStrip
           {...defaultStripProps}
           pokemon={[
-            makePokemonEntry(1, 1, "Pikachu", { heldItem: "Leftovers" }),
+            makePokemonEntry(1, 1, "Pikachu", {
+              nickname: "Sparky",
+              heldItem: "Leftovers",
+            }),
           ]}
         />
       );
-      expect(screen.getByText("Leftovers")).toBeInTheDocument();
+      // Sprite-only chips: nickname/species/item live in tooltip content, not
+      // visible text. Tooltip popup renders in a portal only when hovered.
+      expect(screen.queryByText("Sparky")).not.toBeInTheDocument();
+      expect(screen.queryByText("Leftovers")).not.toBeInTheDocument();
     });
   });
 
@@ -191,11 +190,13 @@ describe("TeamStrip", () => {
           pokemon={[makePokemonEntry(1, 1, "Pikachu")]}
         />
       );
-      // Click the select button (has aria-pressed), not the remove button
-      const selectBtn = screen
-        .getAllByRole("button", { name: /Pikachu/i })
-        .find((el) => el.hasAttribute("aria-pressed"));
-      await user.click(selectBtn!);
+      // Click the select button (has aria-pressed) inside the chip.
+      // The chip wrapper is labeled "Pikachu" via aria-label; its child
+      // button has aria-pressed and contains the sprite image.
+      const chip = screen.getByLabelText("Pikachu");
+      const selectBtn = chip.querySelector("button[aria-pressed]");
+      expect(selectBtn).not.toBeNull();
+      await user.click(selectBtn as HTMLElement);
       expect(onSelect).toHaveBeenCalledWith(1);
     });
   });
