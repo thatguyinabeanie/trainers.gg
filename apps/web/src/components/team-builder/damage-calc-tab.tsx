@@ -21,6 +21,7 @@ import {
   buildSpeciesSearchIndex,
   getTypeColor,
   getAllItems,
+  getLegalAbilities,
   getLegalItems,
   getLegalTeraTypes,
   NATURE_EFFECTS,
@@ -1083,7 +1084,14 @@ function DefenderPanel({
   onStatusChange,
   onHpPercentChange,
 }: DefenderPanelProps) {
-  const validAbilities = getValidAbilities(species);
+  // When a format is specified, restrict to format-legal abilities.
+  // Falls back to the full species abilities when getLegalAbilities
+  // returns undefined (unknown/permissive format).
+  const defenderAbilities = formatId
+    ? Array.from(
+        getLegalAbilities(species, formatId) ?? getValidAbilities(species)
+      )
+    : getValidAbilities(species);
   const validNatures = getValidNatures();
   const itemListId = useId();
 
@@ -1110,7 +1118,7 @@ function DefenderPanel({
             className="border-border bg-background rounded border px-1 py-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
           >
             <option value="">—</option>
-            {validAbilities.map((a) => (
+            {defenderAbilities.map((a) => (
               <option key={a} value={a}>
                 {a}
               </option>
