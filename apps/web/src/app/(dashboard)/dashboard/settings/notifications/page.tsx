@@ -1,11 +1,34 @@
 import { redirect } from "next/navigation";
+
+import {
+  getNotificationPreferences,
+  listDmPreferences,
+  getPublicDiscordHandle,
+  type DiscordDmEventType,
+} from "@trainers/supabase";
+
 import { createClient, getUser } from "@/lib/supabase/server";
-import { getNotificationPreferences } from "@trainers/supabase";
+import { DiscordDmPreferencesSection } from "@/components/settings/discord-dm-preferences-section";
 import { NotificationPreferencesForm } from "./notification-preferences-form";
 
 export const metadata = {
   title: "Notification Settings — trainers.gg",
 };
+
+/** All 11 Discord DM event types — used to build the full preferences map. */
+const ALL_DM_EVENT_TYPES: DiscordDmEventType[] = [
+  "match_ready",
+  "match_starting_soon",
+  "match_result_to_confirm",
+  "match_disputed",
+  "team_sheet_needed",
+  "team_sheet_approved",
+  "team_sheet_rejected",
+  "you_dropped",
+  "top_cut_made",
+  "tournament_starting",
+  "tournament_cancelled",
+];
 
 /**
  * Check if a user has any staff roles by looking at organization_staff membership.
@@ -31,15 +54,42 @@ export default async function NotificationSettingsPage() {
 
   const supabase = await createClient();
 
-  const [preferences, isStaff] = await Promise.all([
-    getNotificationPreferences(supabase, user.id).catch(() => null),
-    checkIsStaff(supabase, user.id),
-  ]);
+  const [preferences, isStaff, dmPreferenceRows, discordHandle, userRow] =
+    await Promise.all([
+      getNotificationPreferences(supabase, user.id).catch(() => null),
+      checkIsStaff(supabase, user.id),
+      listDmPreferences(supabase, user.id).catch(() => []),
+      getPublicDiscordHandle(supabase, user.id).catch(() => null),
+      supabase
+        .from("users")
+        .select("discord_dm_warn_until")
+        .eq("id", user.id)
+        .maybeSingle()
+        .then(({ data }) => data),
+    ]);
+
+  // Build a full preferences map with all 11 keys, defaulting missing rows to false
+  const dmPreferences = Object.fromEntries(
+    ALL_DM_EVENT_TYPES.map((eventType) => {
+      const row = dmPreferenceRows.find((r) => r.event_type === eventType);
+      return [eventType, row?.enabled ?? false];
+    })
+  ) as Record<DiscordDmEventType, boolean>;
 
   return (
-    <NotificationPreferencesForm
-      initialPreferences={preferences}
-      isStaff={isStaff}
-    />
+    <div className="space-y-10">
+      <NotificationPreferencesForm
+        initialPreferences={preferences}
+        isStaff={isStaff}
+      />
+
+      <div id="discord-dms" className="scroll-mt-20">
+        <DiscordDmPreferencesSection
+          discordHandle={discordHandle}
+          initialPreferences={dmPreferences}
+          discordDmWarnUntil={userRow?.discord_dm_warn_until ?? null}
+        />
+      </div>
+    </div>
   );
 }
