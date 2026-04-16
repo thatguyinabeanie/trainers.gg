@@ -21,31 +21,10 @@ The branch has ~157 commits ahead of `origin/discord-bot`. Pre-push checks:
 
 ## 2. Discord Developer Portal Setup
 
-Before the bot can receive interactions or be installed, two Discord applications need to be created.
+**Bot application already exists.** Verify these post-deploy configuration steps:
 
-### Dev application
-
-1. Go to https://discord.com/developers/applications
-2. Click "New Application" → name it "Beanie Bot (Dev)"
-3. **Bot tab:**
-   - Click "Add Bot"
-   - Copy the **Bot Token** → set as `DISCORD_BOT_TOKEN` in `.env.local`
-   - Enable "Message Content Intent" if needed (currently we don't read message content, so likely not needed)
-4. **General Information tab:**
-   - Copy **Application ID** → set as `DISCORD_APPLICATION_ID` in `.env.local`
-   - Copy **Public Key** → set as `DISCORD_PUBLIC_KEY` in `.env.local`
-5. **OAuth2 tab:**
-   - Add redirect URL: `http://localhost:3000/api/discord/install-callback` (for local dev)
-6. **Interactions Endpoint URL:** leave blank for now — set after deploying to Vercel (see section 4)
-
-### Production application
-
-Same steps as above but:
-
-- Name: "Beanie Bot"
-- Redirect URL: `https://trainers.gg/api/discord/install-callback`
-- Interactions Endpoint URL: `https://trainers.gg/api/discord/interactions` (set after first deploy)
-- Store production credentials in Vercel environment variables (not `.env.local`)
+1. **OAuth2 redirect URL:** ensure `https://trainers.gg/api/discord/install-callback` is listed in the OAuth2 tab. For local dev, also add `http://localhost:3000/api/discord/install-callback`.
+2. **Interactions Endpoint URL:** set to `https://trainers.gg/api/discord/interactions` after the first production deploy (Discord will PING to verify — the endpoint handles this automatically). For local dev, use ngrok: `ngrok http 3000` and set the tunnel URL as the endpoint.
 
 ### Environment variables checklist
 
