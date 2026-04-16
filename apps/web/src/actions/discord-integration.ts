@@ -12,9 +12,8 @@
 
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { updateTag } from "next/cache";
-import { z } from "@trainers/validators";
+import { revalidatePath, updateTag } from "next/cache";
+import { start } from "workflow/api";
 
 import {
   getDiscordServerByCommunityId,
@@ -27,20 +26,24 @@ import {
   toggleRoleMapping,
   setDmPreference,
   deleteDiscordServer,
-  resetNotificationForRetry,
-  resetDmForRetry,
+  getDeliveryFailure,
   listRecentFailures,
   type ChannelFailureRow,
   type DmFailureRow,
+  type DiscordDmEventType,
   type RoleSyncFailureRow,
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
+import { z } from "@trainers/validators";
 import { getErrorMessage } from "@trainers/utils";
 
 import { CacheTags } from "@/lib/cache";
 import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
 import { signInstallState } from "@/lib/discord/install-state";
 import { createClient } from "@/lib/supabase/server";
+import { sendChannelNotificationWorkflow } from "@/workflows/send-channel-notification";
+import { sendDmWorkflow } from "@/workflows/send-dm";
+import { syncRoleWorkflow } from "@/workflows/sync-role";
 import { rejectBots } from "./utils";
 
 // =============================================================================
@@ -660,59 +663,80 @@ export async function getDiscordInstallUrlAction(
 // =============================================================================
 
 /**
- * Reset a failed channel notification queue item back to pending so the cron
- * worker will re-attempt delivery.
+ * Retry a failed delivery by looking up the `discord_delivery_failures` row
+ * and dispatching the appropriate workflow.
  *
- * Resolves the owning community via the notification → channel → server join
- * and requires `community.manage` permission.
+ * Handles all failure types:
+ * - "channel" → sendChannelNotificationWorkflow
+ * - "dm"      → sendDmWorkflow
+ * - "role_sync" → syncRoleWorkflow
  *
- * @param notificationId - discord_notification_queue.id to retry
+ * Resolves the owning community via the failure → server join and requires
+ * `community.manage` permission.
+ *
+ * @param failureId - discord_delivery_failures.id to retry
  */
 export async function retryNotificationAction(
-  notificationId: number
+  failureId: number
 ): Promise<ActionResult<void>> {
   try {
     await rejectBots();
     const supabase = await createClient();
 
-    // Fetch the notification row (channel_id is a Discord text snowflake, not a FK)
-    const { data: notifRow, error: notifError } = await supabase
-      .from("discord_notification_queue")
-      .select("id, channel_id")
-      .eq("id", notificationId)
-      .maybeSingle();
-
-    if (notifError)
-      throw new Error(`Failed to resolve notification: ${notifError.message}`);
-    if (!notifRow) {
-      return { success: false, error: "Notification not found" };
+    const failure = await getDeliveryFailure(supabase, failureId);
+    if (!failure) {
+      return { success: false, error: "Failure record not found" };
     }
 
-    // Resolve community via discord_channels (channel_id text → discord_server_id → community_id)
-    const { data: channelRow, error: channelError } = await supabase
-      .from("discord_channels")
-      .select("discord_server_id, discord_servers!inner(community_id)")
-      .eq("channel_id", notifRow.channel_id)
-      .limit(1)
-      .maybeSingle();
-
-    if (channelError)
-      throw new Error(`Failed to resolve channel: ${channelError.message}`);
-
-    const serverData = channelRow?.discord_servers;
-    const communityId = Array.isArray(serverData)
-      ? (serverData[0] as { community_id: number } | undefined)?.community_id
-      : (serverData as { community_id: number } | null)?.community_id;
-
-    if (!communityId) {
-      return {
-        success: false,
-        error: "Could not resolve community for notification",
-      };
+    const server = await getDiscordServerById(
+      supabase,
+      failure.discord_server_id
+    );
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
     }
 
-    await requireCommunityManage(supabase, communityId);
-    await resetNotificationForRetry(supabase, notificationId);
+    await requireCommunityManage(supabase, server.community_id);
+
+    const payload = (failure.payload as Record<string, unknown>) ?? {};
+
+    switch (failure.type) {
+      case "channel":
+        await start(sendChannelNotificationWorkflow, [
+          failure.target,
+          failure.event_type,
+          payload,
+          server.id,
+        ]);
+        break;
+      case "dm":
+        await start(sendDmWorkflow, [
+          failure.target,
+          "",
+          failure.event_type as DiscordDmEventType,
+          payload,
+          "dm_with_fallback",
+          null,
+          server.community_id,
+          server.id,
+        ]);
+        break;
+      case "role_sync":
+        await start(syncRoleWorkflow, [
+          server.guild_id,
+          failure.target,
+          (payload["role_id"] as string | undefined) ?? "",
+          "add",
+          server.id,
+          failure.event_type,
+        ]);
+        break;
+      default:
+        return {
+          success: false,
+          error: `Unknown failure type: ${String(failure.type)}`,
+        };
+    }
 
     revalidatePath(DISCORD_SETTINGS_PATH, "page");
     return { success: true, data: undefined };
@@ -774,49 +798,6 @@ export async function listRecentFailuresAction(serverId: number): Promise<
     return {
       success: false,
       error: getErrorMessage(error, "Failed to load failure details"),
-    };
-  }
-}
-
-/**
- * Reset a failed DM queue item back to pending so the cron worker will
- * re-attempt delivery.
- *
- * Uses `discord_dm_queue.community_id` directly (denormalized column) and
- * requires `community.manage` permission on that community.
- *
- * @param dmId - discord_dm_queue.id to retry
- */
-export async function retryDmNotificationAction(
-  dmId: number
-): Promise<ActionResult<void>> {
-  try {
-    await rejectBots();
-    const supabase = await createClient();
-
-    const { data: dmRow, error: dmError } = await supabase
-      .from("discord_dm_queue")
-      .select("id, community_id")
-      .eq("id", dmId)
-      .maybeSingle();
-
-    if (dmError)
-      throw new Error(`Failed to resolve DM queue item: ${dmError.message}`);
-    if (!dmRow) {
-      return { success: false, error: "DM notification not found" };
-    }
-
-    await requireCommunityManage(supabase, dmRow.community_id);
-    await resetDmForRetry(supabase, dmId);
-
-    revalidatePath(DISCORD_SETTINGS_PATH, "page");
-    return { success: true, data: undefined };
-  } catch (error) {
-    const forbidden = asForbidden(error);
-    if (forbidden) return forbidden;
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to retry DM notification"),
     };
   }
 }

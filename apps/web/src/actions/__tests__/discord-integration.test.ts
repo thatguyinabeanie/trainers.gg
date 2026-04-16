@@ -62,8 +62,14 @@ const mockUpsertRoleMapping = jest.fn();
 const mockToggleRoleMapping = jest.fn();
 const mockSetDmPreference = jest.fn();
 const mockDeleteDiscordServer = jest.fn();
-const mockResetNotificationForRetry = jest.fn();
-const mockResetDmForRetry = jest.fn();
+const mockGetDeliveryFailure = jest.fn();
+const mockStart = jest.fn();
+
+jest.mock("workflow/api", () => ({
+  start: (...args: unknown[]) => mockStart(...args),
+  getRun: jest.fn(),
+  resumeHook: jest.fn(),
+}));
 
 jest.mock("@trainers/supabase", () => ({
   getDiscordServerByCommunityId: (...args: unknown[]) =>
@@ -80,9 +86,7 @@ jest.mock("@trainers/supabase", () => ({
   toggleRoleMapping: (...args: unknown[]) => mockToggleRoleMapping(...args),
   setDmPreference: (...args: unknown[]) => mockSetDmPreference(...args),
   deleteDiscordServer: (...args: unknown[]) => mockDeleteDiscordServer(...args),
-  resetNotificationForRetry: (...args: unknown[]) =>
-    mockResetNotificationForRetry(...args),
-  resetDmForRetry: (...args: unknown[]) => mockResetDmForRetry(...args),
+  getDeliveryFailure: (...args: unknown[]) => mockGetDeliveryFailure(...args),
 }));
 
 // Import actions under test — must come AFTER all jest.mock() calls
@@ -97,7 +101,6 @@ import {
   refreshDiscordGuildCacheAction,
   disconnectDiscordServerAction,
   retryNotificationAction,
-  retryDmNotificationAction,
 } from "../discord-integration";
 
 // =============================================================================
@@ -686,50 +689,38 @@ describe("disconnectDiscordServerAction", () => {
 describe("retryNotificationAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockStart.mockResolvedValue({ runId: "mock-run-id" });
   });
 
-  /**
-   * The action makes two from() calls:
-   *   1. discord_notification_queue — fetch id + channel_id
-   *   2. discord_channels — join to discord_servers for community_id
-   */
-  function mockNotifLookup(
-    notifData: { id: number; channel_id: string } | null,
-    channelData: {
-      discord_server_id: number;
-      discord_servers: { community_id: number };
-    } | null
-  ) {
-    let callCount = 0;
-    mockSupabase.from.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        // First call: notification lookup
-        return {
-          select: jest.fn().mockReturnThis(),
-          eq: jest.fn().mockReturnThis(),
-          maybeSingle: jest
-            .fn()
-            .mockResolvedValue({ data: notifData, error: null }),
-        };
-      }
-      // Second call: channel lookup
-      return {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        maybeSingle: jest
-          .fn()
-          .mockResolvedValue({ data: channelData, error: null }),
-      };
-    });
-  }
+  const fakeChannelFailure = {
+    id: 10,
+    discord_server_id: 99,
+    type: "channel",
+    event_type: "tournament_created",
+    target: "chan-discord-id",
+    error_code: "50013",
+    error_reason: "Missing permissions",
+    payload: { embeds: [] },
+    delivered_via_fallback: false,
+    created_at: "2026-01-01T00:00:00Z",
+  };
+
+  const fakeDmFailure = {
+    id: 20,
+    discord_server_id: 99,
+    type: "dm",
+    event_type: "match_ready",
+    target: "discord-user-123",
+    error_code: "50007",
+    error_reason: "dm_closed",
+    payload: { content: "Your match is ready" },
+    delivered_via_fallback: false,
+    created_at: "2026-01-01T00:00:00Z",
+  };
 
   it("returns FORBIDDEN when caller lacks permission", async () => {
-    mockNotifLookup(
-      { id: 10, channel_id: "chan-1" },
-      { discord_server_id: 99, discord_servers: { community_id: 1 } }
-    );
+    mockGetDeliveryFailure.mockResolvedValue(fakeChannelFailure);
+    mockGetDiscordServerById.mockResolvedValue(fakeServer);
     mockPermission(false);
 
     const result = await retryNotificationAction(10);
@@ -740,31 +731,32 @@ describe("retryNotificationAction", () => {
     }
   });
 
-  it("resets the notification and revalidates the page on success", async () => {
-    mockNotifLookup(
-      { id: 10, channel_id: "chan-1" },
-      { discord_server_id: 99, discord_servers: { community_id: 1 } }
-    );
+  it("dispatches sendChannelNotificationWorkflow for channel failures", async () => {
+    mockGetDeliveryFailure.mockResolvedValue(fakeChannelFailure);
+    mockGetDiscordServerById.mockResolvedValue(fakeServer);
     mockPermission(true);
-    mockResetNotificationForRetry.mockResolvedValue(undefined);
 
     const result = await retryNotificationAction(10);
 
     expect(result).toEqual({ success: true, data: undefined });
-    expect(mockResetNotificationForRetry).toHaveBeenCalledWith(
-      mockSupabase,
-      10
-    );
+    expect(mockStart).toHaveBeenCalledTimes(1);
     expect(mockRevalidatePath).toHaveBeenCalled();
   });
 
-  it("returns error when notification is not found", async () => {
-    // First from() returns null (notification not found)
-    mockSupabase.from.mockReturnValue({
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-    });
+  it("dispatches sendDmWorkflow for DM failures", async () => {
+    mockGetDeliveryFailure.mockResolvedValue(fakeDmFailure);
+    mockGetDiscordServerById.mockResolvedValue(fakeServer);
+    mockPermission(true);
+
+    const result = await retryNotificationAction(20);
+
+    expect(result).toEqual({ success: true, data: undefined });
+    expect(mockStart).toHaveBeenCalledTimes(1);
+    expect(mockRevalidatePath).toHaveBeenCalled();
+  });
+
+  it("returns error when failure record is not found", async () => {
+    mockGetDeliveryFailure.mockResolvedValue(null);
 
     const result = await retryNotificationAction(999);
 
@@ -773,66 +765,12 @@ describe("retryNotificationAction", () => {
       expect(result.error).toMatch(/not found/i);
     }
   });
-});
 
-// =============================================================================
-// retryDmNotificationAction
-// =============================================================================
+  it("returns error when Discord server is not found", async () => {
+    mockGetDeliveryFailure.mockResolvedValue(fakeChannelFailure);
+    mockGetDiscordServerById.mockResolvedValue(null);
 
-describe("retryDmNotificationAction", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("returns FORBIDDEN when caller lacks permission", async () => {
-    const mockChain = {
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      maybeSingle: jest.fn().mockResolvedValue({
-        data: { id: 20, community_id: 1 },
-        error: null,
-      }),
-    };
-    mockSupabase.from.mockReturnValue(mockChain);
-    mockPermission(false);
-
-    const result = await retryDmNotificationAction(20);
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.code).toBe("FORBIDDEN");
-    }
-  });
-
-  it("resets the DM queue item and revalidates the page on success", async () => {
-    const mockChain = {
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      maybeSingle: jest.fn().mockResolvedValue({
-        data: { id: 20, community_id: 1 },
-        error: null,
-      }),
-    };
-    mockSupabase.from.mockReturnValue(mockChain);
-    mockPermission(true);
-    mockResetDmForRetry.mockResolvedValue(undefined);
-
-    const result = await retryDmNotificationAction(20);
-
-    expect(result).toEqual({ success: true, data: undefined });
-    expect(mockResetDmForRetry).toHaveBeenCalledWith(mockSupabase, 20);
-    expect(mockRevalidatePath).toHaveBeenCalled();
-  });
-
-  it("returns error when DM queue item is not found", async () => {
-    const mockChain = {
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-    };
-    mockSupabase.from.mockReturnValue(mockChain);
-
-    const result = await retryDmNotificationAction(999);
+    const result = await retryNotificationAction(10);
 
     expect(result.success).toBe(false);
     if (!result.success) {

@@ -11,10 +11,7 @@ import {
 } from "@trainers/supabase";
 import { formatTimeAgo } from "@trainers/utils";
 
-import {
-  retryNotificationAction,
-  retryDmNotificationAction,
-} from "@/actions/discord-integration";
+import { retryNotificationAction } from "@/actions/discord-integration";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -165,12 +162,7 @@ export function FailuresTable({
     setRetryingId(key);
 
     try {
-      let result;
-      if (row.kind === "channel") {
-        result = await retryNotificationAction(row.data.id);
-      } else {
-        result = await retryDmNotificationAction(row.data.id);
-      }
+      const result = await retryNotificationAction(row.data.id);
 
       if (!result.success) {
         toast.error(result.error);
@@ -194,12 +186,7 @@ export function FailuresTable({
       let successCount = 0;
 
       for (const row of retryable) {
-        let result;
-        if (row.kind === "channel") {
-          result = await retryNotificationAction(row.data.id);
-        } else {
-          result = await retryDmNotificationAction(row.data.id);
-        }
+        const result = await retryNotificationAction(row.data.id);
         if (result.success) successCount++;
       }
 

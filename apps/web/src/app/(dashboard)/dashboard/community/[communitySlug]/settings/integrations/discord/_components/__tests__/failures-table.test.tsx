@@ -8,13 +8,10 @@ import userEvent from "@testing-library/user-event";
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
 const mockRetryNotificationAction = jest.fn();
-const mockRetryDmNotificationAction = jest.fn();
 
 jest.mock("@/actions/discord-integration", () => ({
   retryNotificationAction: (...args: unknown[]) =>
     mockRetryNotificationAction(...args),
-  retryDmNotificationAction: (...args: unknown[]) =>
-    mockRetryDmNotificationAction(...args),
 }));
 
 jest.mock("sonner", () => ({
@@ -81,10 +78,6 @@ const defaultProps = {
 beforeEach(() => {
   jest.clearAllMocks();
   mockRetryNotificationAction.mockResolvedValue({
-    success: true,
-    data: undefined,
-  });
-  mockRetryDmNotificationAction.mockResolvedValue({
     success: true,
     data: undefined,
   });
@@ -189,7 +182,7 @@ describe("FailuresTable", () => {
       });
     });
 
-    it("calls retryDmNotificationAction for DM failures", async () => {
+    it("calls retryNotificationAction for DM failures", async () => {
       const user = userEvent.setup();
       render(<FailuresTable {...defaultProps} channelFailures={[]} />);
 
@@ -197,7 +190,7 @@ describe("FailuresTable", () => {
       await user.click(retryBtn);
 
       await waitFor(() => {
-        expect(mockRetryDmNotificationAction).toHaveBeenCalledWith(10);
+        expect(mockRetryNotificationAction).toHaveBeenCalledWith(10);
       });
     });
 

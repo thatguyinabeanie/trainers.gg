@@ -9,10 +9,9 @@
  *   The helper silently no-ops when the community has no Discord server installed.
  */
 
+import { start } from "workflow/api";
+
 import {
-  enqueueNotification,
-  enqueueDm,
-  enqueueRoleSync,
   getDiscordServerByCommunityId,
   getChannelMappingsForEvent,
   getEnabledRoleMappings,
@@ -21,6 +20,10 @@ import {
   type DiscordRoleType,
   type TypedClient,
 } from "@trainers/supabase";
+
+import { sendChannelNotificationWorkflow } from "@/workflows/send-channel-notification";
+import { sendDmWorkflow } from "@/workflows/send-dm";
+import { syncRoleWorkflow } from "@/workflows/sync-role";
 
 // =============================================================================
 // Channel notification helper
@@ -59,15 +62,15 @@ export async function enqueueCommunityChannelNotification(
     );
     if (channelMappings.length === 0) return; // No channel configured for this event
 
-    // Enqueue one notification per configured channel
+    // Start one workflow per configured channel (fire-and-forget)
     await Promise.all(
       channelMappings.map((mapping) =>
-        enqueueNotification(supabase, {
-          channel_id: mapping.channel_id,
-          event_type: eventType,
-          source_id: sourceId,
+        start(sendChannelNotificationWorkflow, [
+          mapping.channel_id,
+          eventType,
           payload,
-        })
+          server.id,
+        ])
       )
     );
   } catch (error) {
@@ -131,16 +134,16 @@ export async function enqueueCommunityDms(
 
     await Promise.all(
       Array.from(discordIdMap.entries()).map(([userId, discordUserId]) =>
-        enqueueDm(supabase, {
-          discord_user_id: discordUserId,
-          user_id: userId,
-          community_id: communityId,
-          event_type: eventType,
-          source_id: `${sourceId}:${discordUserId}`,
+        start(sendDmWorkflow, [
+          discordUserId,
+          userId,
+          eventType,
           payload,
-          delivery_mode: deliveryMode,
-          fallback_channel_id: fallbackChannelId,
-        })
+          deliveryMode,
+          fallbackChannelId,
+          communityId,
+          server.id,
+        ])
       )
     );
   } catch (error) {
@@ -197,13 +200,14 @@ export async function enqueueCommunityRoleSync(
 
     await Promise.all(
       Array.from(discordIdMap.values()).map((discordUserId) =>
-        enqueueRoleSync(supabase, {
-          discord_server_id: server.id,
-          discord_user_id: discordUserId,
-          discord_role_id: mapping.discord_role_id,
+        start(syncRoleWorkflow, [
+          server.guild_id,
+          discordUserId,
+          mapping.discord_role_id,
           action,
-          source_event: sourceEvent,
-        })
+          server.id,
+          sourceEvent,
+        ])
       )
     );
   } catch (error) {
