@@ -7,6 +7,7 @@ import {
   updateFeatureFlag,
   deleteFeatureFlag,
   hasTeamBuilderAccess,
+  type AccessCheckResult,
 } from "../feature-flags";
 import type { TypedClient } from "../../client";
 
@@ -654,7 +655,7 @@ describe("feature-flags queries", () => {
       (isSiteAdmin as jest.Mock).mockResolvedValue(false);
     });
 
-    it("returns true when the team_builder flag is globally enabled", async () => {
+    it("returns { access: true } when the team_builder flag is globally enabled", async () => {
       const mockClient = createMockClient();
       setupFlag(mockClient, {
         id: 1,
@@ -665,10 +666,10 @@ describe("feature-flags queries", () => {
 
       const result = await hasTeamBuilderAccess(mockClient, USER_ID);
 
-      expect(result).toBe(true);
+      expect(result).toEqual<AccessCheckResult>({ access: true });
     });
 
-    it("returns true when user ID is in metadata.allowed_users (flag disabled)", async () => {
+    it("returns { access: true } when user ID is in metadata.allowed_users (flag disabled)", async () => {
       const mockClient = createMockClient();
       setupFlag(mockClient, {
         id: 1,
@@ -679,10 +680,10 @@ describe("feature-flags queries", () => {
 
       const result = await hasTeamBuilderAccess(mockClient, USER_ID);
 
-      expect(result).toBe(true);
+      expect(result).toEqual<AccessCheckResult>({ access: true });
     });
 
-    it("returns true when user is site_admin (flag disabled, not in allowlist)", async () => {
+    it("returns { access: true } when user is site_admin (flag disabled, not in allowlist)", async () => {
       const mockClient = createMockClient();
       setupFlag(mockClient, {
         id: 1,
@@ -694,10 +695,10 @@ describe("feature-flags queries", () => {
 
       const result = await hasTeamBuilderAccess(mockClient, USER_ID);
 
-      expect(result).toBe(true);
+      expect(result).toEqual<AccessCheckResult>({ access: true });
     });
 
-    it("returns false when flag is disabled, user not in allowlist, and not an admin", async () => {
+    it("returns { access: false } when flag is disabled, user not in allowlist, and not an admin", async () => {
       const mockClient = createMockClient();
       setupFlag(mockClient, {
         id: 1,
@@ -708,19 +709,19 @@ describe("feature-flags queries", () => {
 
       const result = await hasTeamBuilderAccess(mockClient, USER_ID);
 
-      expect(result).toBe(false);
+      expect(result).toEqual<AccessCheckResult>({ access: false });
     });
 
-    it("returns false when the feature_flag row does not exist (null)", async () => {
+    it("returns { access: false } when the feature_flag row does not exist (null)", async () => {
       const mockClient = createMockClient();
       setupFlag(mockClient, null);
 
       const result = await hasTeamBuilderAccess(mockClient, USER_ID);
 
-      expect(result).toBe(false);
+      expect(result).toEqual<AccessCheckResult>({ access: false });
     });
 
-    it("returns false when metadata has no allowed_users field", async () => {
+    it("returns { access: false } when metadata has no allowed_users field", async () => {
       const mockClient = createMockClient();
       setupFlag(mockClient, {
         id: 1,
@@ -731,10 +732,10 @@ describe("feature-flags queries", () => {
 
       const result = await hasTeamBuilderAccess(mockClient, USER_ID);
 
-      expect(result).toBe(false);
+      expect(result).toEqual<AccessCheckResult>({ access: false });
     });
 
-    it("returns false on database error from getFeatureFlag (fail-closed)", async () => {
+    it("returns { access: 'error', reason } on database error from getFeatureFlag", async () => {
       const mockClient = createMockClient();
       mockClient._queryBuilder.maybeSingle.mockResolvedValue({
         data: null,
@@ -743,10 +744,13 @@ describe("feature-flags queries", () => {
 
       const result = await hasTeamBuilderAccess(mockClient, USER_ID);
 
-      expect(result).toBe(false);
+      expect(result.access).toBe("error");
+      expect((result as { access: "error"; reason: string }).reason).toContain(
+        "DB connection lost"
+      );
     });
 
-    it("returns false when isSiteAdmin throws (fail-closed)", async () => {
+    it("returns { access: 'error', reason } when isSiteAdmin throws", async () => {
       const mockClient = createMockClient();
       setupFlag(mockClient, {
         id: 1,
@@ -760,17 +764,46 @@ describe("feature-flags queries", () => {
 
       const result = await hasTeamBuilderAccess(mockClient, USER_ID);
 
-      expect(result).toBe(false);
+      expect(result.access).toBe("error");
+      expect((result as { access: "error"; reason: string }).reason).toContain(
+        "Role check failed"
+      );
+    });
+
+    it("error result includes userId context in the console log", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.maybeSingle.mockResolvedValue({
+        data: null,
+        error: new Error("connection timeout"),
+      });
+      const consoleSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      await hasTeamBuilderAccess(mockClient, USER_ID);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[hasTeamBuilderAccess]"),
+        USER_ID,
+        expect.any(Error)
+      );
+      consoleSpy.mockRestore();
     });
 
     it.each([
-      ["globally enabled flag", true, [] as string[], false, true],
-      ["user in allowlist", false, [USER_ID], false, true],
-      ["site admin override", false, [] as string[], true, true],
-      ["no access conditions met", false, [] as string[], false, false],
+      ["globally enabled flag", true, [] as string[], false, true as const],
+      ["user in allowlist", false, [USER_ID], false, true as const],
+      ["site admin override", false, [] as string[], true, true as const],
+      [
+        "no access conditions met",
+        false,
+        [] as string[],
+        false,
+        false as const,
+      ],
     ])(
-      "returns %s → %s",
-      async (_label, enabled, allowedUsers, isAdmin, expected) => {
+      "access result for %s is %s",
+      async (_label, enabled, allowedUsers, isAdmin, expectedAccess) => {
         const mockClient = createMockClient();
         setupFlag(mockClient, {
           id: 1,
@@ -782,7 +815,7 @@ describe("feature-flags queries", () => {
 
         const result = await hasTeamBuilderAccess(mockClient, USER_ID);
 
-        expect(result).toBe(expected);
+        expect(result.access).toBe(expectedAccess);
       }
     );
   });

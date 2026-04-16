@@ -36,6 +36,7 @@ function makeJwt(claims: Record<string, unknown>): string {
 // Capture the latest state setter invocations so we can inspect them.
 const mockSetHasAccess = jest.fn<(value: boolean) => void>();
 const mockSetIsLoading = jest.fn<(value: boolean) => void>();
+const mockSetError = jest.fn<(value: string | null) => void>();
 
 // Track effects so we can run them manually.
 const capturedEffects: Array<() => void | (() => void)> = [];
@@ -44,9 +45,11 @@ jest.mock("react", () => ({
   // useState returns [initialValue, setter] in call order:
   //   call 1 → hasAccess (initial: false)
   //   call 2 → isLoading (initial: true)
+  //   call 3 → error (initial: null)
   useState: jest.fn((initial: unknown) => {
     if (initial === false) return [false, mockSetHasAccess];
     if (initial === true) return [true, mockSetIsLoading];
+    if (initial === null) return [null, mockSetError];
     return [initial, jest.fn()];
   }),
   // useEffect captures the callback so tests can invoke it.
@@ -118,15 +121,19 @@ describe("useTeamBuilderAccess", () => {
   // ---------------------------------------------------------------------------
 
   describe("initial return value", () => {
-    it("returns hasAccess:false and isLoading:true before the effect resolves", () => {
+    it("returns hasAccess:false, isLoading:true, error:null before the effect resolves", () => {
       const result = useTeamBuilderAccess({
         getSupabaseClient: () => makeSupabaseClient(null),
         user: makeUser(),
       });
 
-      // Before any effect runs, useState initialises: hasAccess=false, isLoading=true.
+      // Before any effect runs, useState initialises: hasAccess=false, isLoading=true, error=null.
       // userLoading defaults to false, so isLoading = false || true = true.
-      expect(result).toEqual({ hasAccess: false, isLoading: true });
+      expect(result).toEqual({
+        hasAccess: false,
+        isLoading: true,
+        error: null,
+      });
     });
 
     it("reflects userLoading:true in isLoading even when internal loading is false", () => {
@@ -230,7 +237,7 @@ describe("useTeamBuilderAccess", () => {
   // ---------------------------------------------------------------------------
 
   describe("when JWT is malformed", () => {
-    it("catches JSON.parse errors and sets hasAccess:false", async () => {
+    it("catches JSON.parse errors, sets hasAccess:false, and populates error", async () => {
       // A JWT whose payload segment is not valid base64url-encoded JSON.
       const malformedJwt = "header.!!not-valid-base64!!.signature";
       const client = makeSupabaseClient(makeSession(malformedJwt));
@@ -243,6 +250,8 @@ describe("useTeamBuilderAccess", () => {
 
       expect(mockSetHasAccess).toHaveBeenCalledWith(false);
       expect(mockSetIsLoading).toHaveBeenCalledWith(false);
+      // An error message should be surfaced via setError
+      expect(mockSetError).toHaveBeenCalledWith(expect.any(String));
 
       consoleSpy.mockRestore();
     });
@@ -266,7 +275,7 @@ describe("useTeamBuilderAccess", () => {
       consoleSpy.mockRestore();
     });
 
-    it("catches errors when getSession rejects", async () => {
+    it("catches errors when getSession rejects and sets error message", async () => {
       const failingClient = {
         auth: {
           getSession: jest
@@ -286,6 +295,7 @@ describe("useTeamBuilderAccess", () => {
 
       expect(mockSetHasAccess).toHaveBeenCalledWith(false);
       expect(mockSetIsLoading).toHaveBeenCalledWith(false);
+      expect(mockSetError).toHaveBeenCalledWith("network error");
       expect(consoleSpy).toHaveBeenCalledWith(
         "Error reading team_builder_access JWT claim:",
         expect.any(Error)

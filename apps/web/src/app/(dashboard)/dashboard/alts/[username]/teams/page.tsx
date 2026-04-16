@@ -39,8 +39,11 @@ export default async function TeamsPage({ params }: TeamsPageProps) {
   const supabase = await createClientReadOnly();
 
   // Gate on team builder feature flag (direct DB query — no stale JWT issues).
-  const canAccess = await hasTeamBuilderAccess(supabase, user.id);
-  if (!canAccess) {
+  const accessResult = await hasTeamBuilderAccess(supabase, user.id);
+  if (accessResult.access === "error") {
+    throw new Error(accessResult.reason);
+  }
+  if (!accessResult.access) {
     notFound();
   }
 

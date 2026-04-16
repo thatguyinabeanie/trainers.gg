@@ -6,6 +6,13 @@ import {
 import { type Tables } from "@trainers/supabase";
 
 // =============================================================================
+// Gender validation
+// =============================================================================
+
+const VALID_GENDERS = ["Male", "Female"] as const;
+type PokemonGender = (typeof VALID_GENDERS)[number];
+
+// =============================================================================
 // DB → PokemonSetFlat / PokemonSet conversion
 // =============================================================================
 
@@ -27,7 +34,9 @@ export function dbPokemonToFlat(pokemon: Tables<"pokemon">): PokemonSetFlat {
     level: pokemon.level ?? 50,
     isShiny: pokemon.is_shiny ?? false,
     teraType: pokemon.tera_type ?? undefined,
-    gender: (pokemon.gender as "Male" | "Female" | undefined) ?? undefined,
+    gender: VALID_GENDERS.includes(pokemon.gender as PokemonGender)
+      ? (pokemon.gender as PokemonGender)
+      : undefined,
     formatLegal: true,
     evHp: pokemon.ev_hp ?? 0,
     evAttack: pokemon.ev_attack ?? 0,

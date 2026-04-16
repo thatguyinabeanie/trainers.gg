@@ -28,6 +28,8 @@ interface TeamBuilderAccessHook {
 export interface TeamBuilderAccessResult {
   hasAccess: boolean;
   isLoading: boolean;
+  /** Non-null when a system error occurred during the access check. */
+  error: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,6 +53,7 @@ export function useTeamBuilderAccess(
   const { getSupabaseClient, user, userLoading = false } = params;
   const [hasAccess, setHasAccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function checkClaim() {
@@ -77,8 +80,11 @@ export function useTeamBuilderAccess(
         } else {
           setHasAccess(false);
         }
-      } catch (error) {
-        console.error("Error reading team_builder_access JWT claim:", error);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Unknown error checking access";
+        console.error("Error reading team_builder_access JWT claim:", err);
+        setError(message);
         setHasAccess(false);
       } finally {
         setIsLoading(false);
@@ -88,5 +94,5 @@ export function useTeamBuilderAccess(
     checkClaim();
   }, [user, getSupabaseClient]);
 
-  return { hasAccess, isLoading: userLoading || isLoading };
+  return { hasAccess, isLoading: userLoading || isLoading, error };
 }
