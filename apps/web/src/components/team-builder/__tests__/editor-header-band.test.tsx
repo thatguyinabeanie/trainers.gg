@@ -192,6 +192,32 @@ describe("EditorHeaderBand", () => {
     });
   });
 
+  describe("details popover slot", () => {
+    it("renders the ⋯ trigger when detailsPopover is wired", () => {
+      render(
+        <EditorHeaderBand
+          pokemon={buildPokemon()}
+          format={undefined}
+          onOpenAbilityPicker={jest.fn()}
+          onOpenItemPicker={jest.fn()}
+          onOpenTeraPicker={jest.fn()}
+          onOpenNaturePicker={jest.fn()}
+          detailsPopover={{ teamId: 1, onUpdate: jest.fn() }}
+        />
+      );
+      expect(
+        screen.getByRole("button", { name: /More Pokémon details/i })
+      ).toBeInTheDocument();
+    });
+
+    it("does not render the ⋯ trigger when detailsPopover is omitted", () => {
+      renderBand();
+      expect(
+        screen.queryByRole("button", { name: /More Pokémon details/i })
+      ).not.toBeInTheDocument();
+    });
+  });
+
   describe("species picker affordance", () => {
     it("renders sprite + name as a clickable button when onOpenSpeciesPicker is provided", async () => {
       const user = userEvent.setup();

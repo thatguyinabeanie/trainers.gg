@@ -13,6 +13,7 @@ import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 
+import { PokemonDetailsPopover } from "./pokemon-details-popover";
 import { TYPE_PILL_COLORS } from "./type-colors";
 
 // =============================================================================
@@ -34,6 +35,14 @@ interface EditorHeaderBandProps {
    * omitted, the sprite + name render as static decoration (e.g., the
    * disabled placeholder editor). */
   onOpenSpeciesPicker?: () => void;
+  /** Optional. When provided, the rightmost ⋯ slot renders the per-Pokémon
+   * details popover (nickname, gender, shiny, level, import/export). The
+   * popover needs the team id and an update callback to write back. */
+  detailsPopover?: {
+    teamId: number;
+    onUpdate: (field: string, value: unknown) => void;
+    onImported?: () => void;
+  };
   /** When true, all loadout field buttons render as static text — no clicks. */
   disabled?: boolean;
   className?: string;
@@ -122,6 +131,7 @@ export function EditorHeaderBand({
   onOpenTeraPicker,
   onOpenNaturePicker,
   onOpenSpeciesPicker,
+  detailsPopover,
   disabled = false,
   className,
 }: EditorHeaderBandProps) {
@@ -205,8 +215,11 @@ export function EditorHeaderBand({
 
   return (
     <div
+      // 7-col grid: identity (sprite + name span 2) · ability · item · tera ·
+      // nature · ⋯ details popover. The popover is only rendered when wired
+      // by the parent — its column slot still reserves space via `auto`.
       className={cn(
-        "from-primary/5 to-card grid grid-cols-[auto_minmax(160px,1fr)_auto_auto_auto_auto] items-center gap-3.5 border-b bg-gradient-to-b px-4 py-3",
+        "from-primary/5 to-card grid grid-cols-[auto_minmax(160px,1fr)_auto_auto_auto_auto_auto] items-center gap-3.5 border-b bg-gradient-to-b px-4 py-3",
         className
       )}
     >
@@ -292,6 +305,21 @@ export function EditorHeaderBand({
         <FieldButton label="Nature" onClick={onOpenNaturePicker}>
           {pokemon.nature}
         </FieldButton>
+      )}
+
+      {/* Per-Pokémon details popover (nickname, gender, shiny, level,
+          import/export). Reserves a column slot only when the parent wires
+          it — render nothing otherwise so the grid template still aligns. */}
+      {detailsPopover ? (
+        <PokemonDetailsPopover
+          teamId={detailsPopover.teamId}
+          pokemon={pokemon}
+          onUpdate={detailsPopover.onUpdate}
+          onImported={detailsPopover.onImported}
+          disabled={disabled}
+        />
+      ) : (
+        <span aria-hidden="true" />
       )}
     </div>
   );

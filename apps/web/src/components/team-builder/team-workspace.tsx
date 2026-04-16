@@ -416,6 +416,8 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
                     mode: "change",
                   })
                 }
+                teamId={team.id}
+                onImported={() => router.refresh()}
                 fieldErrors={selectedFieldErrors}
                 className={EDITOR_CHROME_OVERRIDE}
               />

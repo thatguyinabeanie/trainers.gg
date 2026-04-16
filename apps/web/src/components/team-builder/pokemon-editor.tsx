@@ -42,6 +42,12 @@ interface PokemonEditorProps {
    * the sprite/name in the editor header band invokes it. Omit to render
    * the identity block as static (placeholder editor). */
   onOpenSpeciesPicker?: () => void;
+  /** Optional team id — when provided, the per-mon details popover (and
+   * its embedded import flow) renders in the header band's ⋯ slot. */
+  teamId?: number;
+  /** Optional. Called after a successful per-mon import so the parent can
+   * trigger a router.refresh(). Forwarded into PokemonDetailsPopover. */
+  onImported?: () => void;
   /** Validation errors for this Pokemon's fields — populated by Task 5 display logic. */
   fieldErrors?: ValidationError[];
   /**
@@ -113,6 +119,8 @@ export function PokemonEditor({
   teamPokemon,
   onUpdate,
   onOpenSpeciesPicker,
+  teamId,
+  onImported,
   fieldErrors,
   disabled = false,
   className,
@@ -189,6 +197,13 @@ export function PokemonEditor({
         onOpenTeraPicker={() => openPicker("tera")}
         onOpenNaturePicker={() => openPicker("nature")}
         onOpenSpeciesPicker={onOpenSpeciesPicker}
+        // Only mount the ⋯ details popover when we have a teamId — the
+        // disabled/placeholder editor (no real Pokémon row) skips it.
+        detailsPopover={
+          teamId !== undefined && !disabled
+            ? { teamId, onUpdate, onImported }
+            : undefined
+        }
         disabled={disabled}
       />
 
