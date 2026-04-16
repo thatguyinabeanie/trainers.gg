@@ -98,9 +98,10 @@ function getTeamItems(
  *   3. Inline picker overlays — at most one is open at a time. They render
  *      in-place where the trigger lives so the user keeps surrounding context.
  *
- * The species header chrome (nickname, gender, shiny, level, import/export)
- * lives in TeamWorkspace above the editor/panel split — only the four loadout
- * fields belong inside this card.
+ * Per-Pokémon metadata (nickname, gender, shiny, level, import/export) is
+ * NOT exposed by the new 3-column layout — those values still round-trip
+ * through Showdown import/export and the sprite render, but no editor UI is
+ * wired up yet (tracked as a follow-up; see Task 6 design audit).
  */
 export function PokemonEditor({
   pokemon,

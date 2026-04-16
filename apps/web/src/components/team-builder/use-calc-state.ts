@@ -351,10 +351,9 @@ const DEFAULT_DEFENDER_EVS: DefenderEvs = {
 /**
  * Owns the entire damage-calc state machine for the team builder.
  *
- * Both the legacy {@link DamageCalcTab} and the new {@link CalcPanel} can
- * consume this hook so calc math stays in one place. State **does not** reset
- * on `selectedPokemon` change — callers should drive that with a `key` on the
- * consuming component (per `react-patterns.md`).
+ * Consumed by {@link CalcPanel} so calc math stays in one place. State **does
+ * not** reset on `selectedPokemon` change — callers should drive that with a
+ * `key` on the consuming component (per `react-patterns.md`).
  */
 export function useCalcState({
   selectedPokemon,
