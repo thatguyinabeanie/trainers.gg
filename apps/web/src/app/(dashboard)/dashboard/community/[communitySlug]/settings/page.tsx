@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, use } from "react";
+import Link from "next/link";
 import { Camera, Loader2, X, Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkdownContent } from "@/components/ui/markdown-content";
@@ -108,7 +109,11 @@ export default function DashboardSettingsPage({ params }: PageProps) {
               Community not found.
             </p>
           ) : (
-            <SettingsForm org={org} onSaved={refetch} />
+            <SettingsForm
+              org={org}
+              communitySlug={communitySlug}
+              onSaved={refetch}
+            />
           )}
         </div>
       </div>
@@ -143,10 +148,11 @@ interface SettingsFormProps {
     social_links: unknown;
     logo_url: string | null;
   };
+  communitySlug: string;
   onSaved: () => void;
 }
 
-function SettingsForm({ org, onSaved }: SettingsFormProps) {
+function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
   const [isPending, startTransition] = useTransition();
   const [isLogoUploading, startLogoTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -166,7 +172,7 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
       getDiscordServerByCommunityId(client, org.id),
     [org.id]
   );
-  const _discordInstalled = discordServer != null;
+  const discordInstalled = discordServer != null;
 
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -333,7 +339,12 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
 
         {/* Social Links card */}
         <DashboardCard label="Social Links">
-          <SocialLinksEditor links={socialLinks} onChange={setSocialLinks} />
+          <SocialLinksEditor
+            links={socialLinks}
+            onChange={setSocialLinks}
+            communitySlug={communitySlug}
+            discordInstalled={discordInstalled}
+          />
         </DashboardCard>
       </div>
 
@@ -444,13 +455,19 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
 // Social Links Editor
 // ============================================================================
 
+interface SocialLinksEditorProps {
+  links: CommunitySocialLink[];
+  onChange: (links: CommunitySocialLink[]) => void;
+  communitySlug: string;
+  discordInstalled: boolean;
+}
+
 function SocialLinksEditor({
   links,
   onChange,
-}: {
-  links: CommunitySocialLink[];
-  onChange: (links: CommunitySocialLink[]) => void;
-}) {
+  communitySlug,
+  discordInstalled,
+}: SocialLinksEditorProps) {
   const addLink = () => {
     onChange([...links, { platform: "website", url: "" }]);
   };
@@ -483,7 +500,7 @@ function SocialLinksEditor({
     <div className="space-y-2">
       {links.map((link, index) => (
         <div key={index} className="space-y-1.5">
-          <div className="flex items-center">
+          <div className="flex items-center gap-1.5">
             {/* Platform prefix — fixed width, muted background */}
             <div
               className={cn(
@@ -534,8 +551,27 @@ function SocialLinksEditor({
               placeholder={
                 PLATFORM_PLACEHOLDERS[link.platform] ?? "https://..."
               }
-              className="min-w-0 flex-1 rounded-l-none"
+              className={cn(
+                "min-w-0 flex-1 rounded-l-none",
+                // Remove right rounding when the discord chip is adjacent
+                link.platform === "discord" &&
+                  discordInstalled &&
+                  "rounded-r-none"
+              )}
             />
+
+            {/* Discord "bot installed — configure" chip */}
+            {link.platform === "discord" && discordInstalled && (
+              <Link
+                href={`/dashboard/community/${communitySlug}/settings/integrations/discord`}
+                className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 inline-flex shrink-0 items-center gap-1 rounded-r-md border px-3 py-2 text-xs font-medium no-underline"
+                data-testid="discord-bot-chip"
+              >
+                <span>🤖</span>
+                <span>Bot installed — configure</span>
+                <span aria-hidden>›</span>
+              </Link>
+            )}
 
             {/* Remove button */}
             <button
@@ -543,7 +579,7 @@ function SocialLinksEditor({
               onClick={() => removeLink(index)}
               aria-label="Remove social link"
               className={cn(
-                "ml-1.5 shrink-0 rounded-md p-1.5 transition-colors",
+                "shrink-0 rounded-md p-1.5 transition-colors",
                 "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
               )}
             >
