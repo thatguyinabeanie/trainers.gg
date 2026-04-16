@@ -21,7 +21,6 @@ import { addPokemonToTeamAction, updatePokemonAction } from "@/actions/teams";
 import { AnalyticsRail } from "@/components/team-builder/analytics-rail";
 import { PokemonEditor } from "@/components/team-builder/pokemon-editor";
 import { TeamStrip } from "@/components/team-builder/team-strip";
-import { TypeChartPanel } from "@/components/team-builder/type-chart-panel";
 
 import { SpeciesPicker } from "./species-picker";
 import { useTeamValidation } from "./validation-hooks";
@@ -114,16 +113,19 @@ interface TeamWorkspaceProps {
 
 /**
  * Client component that orchestrates the team editor workspace.
- * Manages selected pokemon state and composes the type chart, editor card
- * (team strip + pokemon editor), and analytics rail.
+ * Manages selected pokemon state and composes the editor card
+ * (team strip + pokemon editor) and analytics rail.
  *
- * Layout — fixed 3-column grid inside a 1536px container:
- *   - LEFT (240px): TypeChartPanel — defensive coverage table
- *   - CENTER (1fr): Editor card — TeamStrip on top, PokemonEditor below
- *   - RIGHT (460px): AnalyticsRail — Speed / Calc tabs
+ * Layout — fixed 2-column grid inside a 1536px container:
+ *   - LEFT (1fr): Editor card — TeamStrip on top, PokemonEditor below
+ *   - RIGHT (460px): AnalyticsRail — Types / Speed / Calc tabs
+ *
+ * The type chart now lives inside the analytics rail's Types tab, which
+ * gives the editor column ~300px more width while keeping coverage analysis
+ * accessible without a dedicated left column.
  *
  * Species picker overlay: when open, replaces the center column only so the
- * left type chart and right analytics rail stay visible for cross-reference.
+ * right analytics rail stays visible for cross-reference.
  */
 export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   const router = useRouter();
@@ -456,14 +458,6 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   // Render
   // ---------------------------------------------------------------------------
 
-  // Pre-compute the team's pokemon list (for TypeChartPanel) — filter out null
-  // entries that exist when a slot is allocated but species not yet picked.
-  // Uses the optimistic-patched array so type coverage updates the moment a
-  // user picks a tera type or changes a held item.
-  const teamPokemonList = teamPokemon
-    .map((tp) => tp.pokemon)
-    .filter((p): p is Tables<"pokemon"> => p !== null);
-
   return (
     // max-w-builder (1536px) is tuned for the team builder — wide enough
     // that the middle column accommodates long species names in the picker
@@ -475,17 +469,14 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     >
       <div
         data-testid="team-workspace-grid"
-        // grid-cols-[15rem_minmax(0,1fr)_28.75rem] = 240/auto/460. The
-        // `minmax(0,1fr)` is critical — without the explicit `0` minimum,
-        // the editor column inflates to its min-content (long species
-        // names, picker tables) and pushes the right rail off-balance,
-        // which is what made the workspace look shifted.
-        className="grid grid-cols-[15rem_minmax(0,1fr)_28.75rem] items-start gap-4 md:gap-6"
+        // grid-cols-[minmax(0,1fr)_28.75rem] = auto/460. The type chart
+        // moved into the analytics rail's Types tab so the editor column
+        // gains ~300px compared to the old 3-column layout. `minmax(0,1fr)`
+        // is still critical — without the explicit `0` minimum the editor
+        // column inflates to its min-content width.
+        className="grid grid-cols-[minmax(0,1fr)_28.75rem] items-start gap-4 md:gap-6"
       >
-        {/* LEFT — Defensive type chart (always visible, even during picker) */}
-        <TypeChartPanel team={teamPokemonList} />
-
-        {/* CENTER — Editor card (TeamStrip + PokemonEditor) OR species picker
+        {/* LEFT/CENTER — Editor card (TeamStrip + PokemonEditor) OR species picker
             overlay. The picker replaces the editor card in this column only,
             keeping the type chart on the left and analytics rail on the right
             visible for cross-reference. */}
@@ -576,9 +567,12 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
           </div>
         )}
 
-        {/* RIGHT — Analytics rail (Speed / Calc tabs at fixed 460px) */}
+        {/* RIGHT — Analytics rail (Types / Speed / Calc tabs at fixed 460px).
+            We pass an optimistically-patched team object so the type chart
+            inside the Types tab reflects field edits (tera type, species
+            changes) the instant the user makes them — same as the editor. */}
         <AnalyticsRail
-          team={team}
+          team={{ ...team, team_pokemon: teamPokemon }}
           selectedPokemon={selectedEntry?.pokemon ?? null}
           format={resolvedFormat}
         />

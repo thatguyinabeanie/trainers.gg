@@ -9,12 +9,15 @@ import { cn } from "@/lib/utils";
 
 import { CalcPanel } from "./calc-panel";
 import { SpeedPanel } from "./speed-panel";
+import { TypeChartPanel } from "./type-chart-panel";
 
 // =============================================================================
 // Types
 // =============================================================================
 
-type AnalyticsTab = "speed" | "calc";
+// Types is first — it's the most-used analysis tool and benefits from being
+// the default landing tab. Speed and Calc follow in the order they were before.
+type AnalyticsTab = "types" | "speed" | "calc";
 
 interface AnalyticsRailProps {
   team: TeamWithPokemon;
@@ -33,11 +36,12 @@ interface TabDef {
 // =============================================================================
 
 const TABS: TabDef[] = [
+  { id: "types", label: "Types" },
   { id: "speed", label: "Speed" },
   { id: "calc", label: "Calc" },
 ];
 
-// SpeedPanel and CalcPanel each render their own card chrome
+// SpeedPanel, CalcPanel, and TypeChartPanel each render their own card chrome
 // (`bg-card overflow-hidden rounded-lg shadow-sm`) so they can also be used
 // standalone. When mounted inside AnalyticsRail — which provides its own
 // chrome on the outer container at a fixed 460px width — we pass these
@@ -52,10 +56,11 @@ const PANEL_CHROME_OVERRIDE =
 // =============================================================================
 
 /**
- * Right-rail tabbed wrapper that hosts the Speed and Calc panels at a fixed
- * 460px width. Tab state lives on the rail (so switching pokemon does not
- * reset the active tab), while each panel keeps its own internal state and
- * resets via its own `key` strategy on `selectedPokemon` change.
+ * Right-rail tabbed wrapper that hosts the Types, Speed, and Calc panels at a
+ * fixed 460px width. Types is the default tab — it's the most-used analysis
+ * tool. Tab state lives on the rail (so switching pokemon does not reset the
+ * active tab), while each panel keeps its own internal state and resets via
+ * its own `key` strategy on `selectedPokemon` change.
  *
  * The non-active panel is unmounted (not just hidden) so we don't keep
  * running its calculations.
@@ -66,7 +71,7 @@ export function AnalyticsRail({
   format,
   className,
 }: AnalyticsRailProps) {
-  const [activeTab, setActiveTab] = useState<AnalyticsTab>("speed");
+  const [activeTab, setActiveTab] = useState<AnalyticsTab>("types");
 
   return (
     <div
@@ -80,7 +85,7 @@ export function AnalyticsRail({
       <div
         role="tablist"
         aria-label="Analytics"
-        className="bg-muted/50 grid grid-cols-2 border-b"
+        className="bg-muted/50 grid grid-cols-3 border-b"
       >
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -108,7 +113,21 @@ export function AnalyticsRail({
       </div>
 
       {/* Body — only the active panel is mounted */}
-      {activeTab === "speed" ? (
+      {activeTab === "types" ? (
+        <div
+          role="tabpanel"
+          id="analytics-rail-panel-types"
+          aria-labelledby="analytics-rail-tab-types"
+          data-testid="analytics-rail-body-types"
+        >
+          <TypeChartPanel
+            team={team.team_pokemon
+              .map((tp) => tp.pokemon)
+              .filter((p): p is Tables<"pokemon"> => p !== null)}
+            className={PANEL_CHROME_OVERRIDE}
+          />
+        </div>
+      ) : activeTab === "speed" ? (
         <div
           role="tabpanel"
           id="analytics-rail-panel-speed"

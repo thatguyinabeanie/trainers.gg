@@ -3,11 +3,25 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // =============================================================================
-// Module-level mocks — stub SpeedPanel and CalcPanel so we test rail behavior
-// in isolation, without dragging in their @smogon/calc / pokemon-data
+// Module-level mocks — stub TypeChartPanel, SpeedPanel, and CalcPanel so we
+// test rail behavior in isolation, without dragging in their pokemon-data
 // machinery. Each stub exposes the props it received via data-* attributes
 // so we can assert on what the rail actually passed through.
 // =============================================================================
+
+jest.mock("../type-chart-panel", () => ({
+  TypeChartPanel: jest.fn(
+    ({ team, className }: { team: { id: number }[]; className?: string }) => (
+      <div
+        data-testid="mock-type-chart-panel"
+        data-team-size={team.length}
+        data-classname={className ?? ""}
+      >
+        type-chart-panel
+      </div>
+    )
+  ),
+}));
 
 jest.mock("../speed-panel", () => ({
   SpeedPanel: jest.fn(
@@ -144,7 +158,7 @@ const defaultFormat = {
 // =============================================================================
 
 describe("AnalyticsRail", () => {
-  it("renders both tab labels", () => {
+  it("renders all three tab labels (Types | Speed | Calc)", () => {
     const charizard = makePokemon();
     render(
       <AnalyticsRail
@@ -154,11 +168,12 @@ describe("AnalyticsRail", () => {
       />
     );
 
+    expect(screen.getByRole("tab", { name: "Types" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Speed" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Calc" })).toBeInTheDocument();
   });
 
-  it("defaults to the Speed tab — SpeedPanel mounts, CalcPanel does not", () => {
+  it("defaults to the Types tab — TypeChartPanel mounts, others do not", () => {
     const charizard = makePokemon();
     render(
       <AnalyticsRail
@@ -168,15 +183,54 @@ describe("AnalyticsRail", () => {
       />
     );
 
-    expect(screen.getByTestId("mock-speed-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-type-chart-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("mock-speed-panel")).not.toBeInTheDocument();
     expect(screen.queryByTestId("mock-calc-panel")).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Types" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+  });
+
+  it("TypeChartPanel receives the team's filled pokemon list", () => {
+    const charizard = makePokemon({ id: 1, species: "Charizard" });
+    const blastoise = makePokemon({ id: 2, species: "Blastoise" });
+    render(
+      <AnalyticsRail
+        team={makeTeam([charizard, blastoise])}
+        selectedPokemon={charizard}
+        format={defaultFormat}
+      />
+    );
+
+    const typePanel = screen.getByTestId("mock-type-chart-panel");
+    expect(typePanel.getAttribute("data-team-size")).toBe("2");
+  });
+
+  it("clicking Speed unmounts TypeChartPanel and mounts SpeedPanel", async () => {
+    const user = userEvent.setup();
+    const charizard = makePokemon();
+    render(
+      <AnalyticsRail
+        team={makeTeam([charizard])}
+        selectedPokemon={charizard}
+        format={defaultFormat}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "Speed" }));
+
+    expect(
+      screen.queryByTestId("mock-type-chart-panel")
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("mock-speed-panel")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Speed" })).toHaveAttribute(
       "aria-selected",
       "true"
     );
   });
 
-  it("clicking Calc unmounts SpeedPanel and mounts CalcPanel", async () => {
+  it("clicking Calc mounts CalcPanel, unmounts the rest", async () => {
     const user = userEvent.setup();
     const charizard = makePokemon();
     render(
@@ -189,6 +243,9 @@ describe("AnalyticsRail", () => {
 
     await user.click(screen.getByRole("tab", { name: "Calc" }));
 
+    expect(
+      screen.queryByTestId("mock-type-chart-panel")
+    ).not.toBeInTheDocument();
     expect(screen.queryByTestId("mock-speed-panel")).not.toBeInTheDocument();
     expect(screen.getByTestId("mock-calc-panel")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Calc" })).toHaveAttribute(
@@ -197,7 +254,7 @@ describe("AnalyticsRail", () => {
     );
   });
 
-  it("clicking Speed after Calc unmounts CalcPanel and remounts SpeedPanel", async () => {
+  it("clicking Types after Speed remounts TypeChartPanel and unmounts SpeedPanel", async () => {
     const user = userEvent.setup();
     const charizard = makePokemon();
     render(
@@ -208,11 +265,11 @@ describe("AnalyticsRail", () => {
       />
     );
 
-    await user.click(screen.getByRole("tab", { name: "Calc" }));
     await user.click(screen.getByRole("tab", { name: "Speed" }));
+    await user.click(screen.getByRole("tab", { name: "Types" }));
 
-    expect(screen.getByTestId("mock-speed-panel")).toBeInTheDocument();
-    expect(screen.queryByTestId("mock-calc-panel")).not.toBeInTheDocument();
+    expect(screen.getByTestId("mock-type-chart-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("mock-speed-panel")).not.toBeInTheDocument();
   });
 
   it("tab state persists across selectedPokemon changes", async () => {
@@ -269,7 +326,7 @@ describe("AnalyticsRail", () => {
     expect(rail.className).toContain("flex-shrink-0");
   });
 
-  it("passes neutralizing chrome class to SpeedPanel and CalcPanel", async () => {
+  it("passes neutralizing chrome class to TypeChartPanel, SpeedPanel, and CalcPanel", async () => {
     const user = userEvent.setup();
     const charizard = makePokemon();
     render(
@@ -279,6 +336,14 @@ describe("AnalyticsRail", () => {
         format={defaultFormat}
       />
     );
+
+    // Types tab is active by default
+    const types = screen.getByTestId("mock-type-chart-panel");
+    expect(types.getAttribute("data-classname")).toContain("bg-transparent");
+    expect(types.getAttribute("data-classname")).toContain("shadow-none");
+    expect(types.getAttribute("data-classname")).toContain("rounded-none");
+
+    await user.click(screen.getByRole("tab", { name: "Speed" }));
 
     const speed = screen.getByTestId("mock-speed-panel");
     expect(speed.getAttribute("data-classname")).toContain("bg-transparent");
@@ -293,7 +358,8 @@ describe("AnalyticsRail", () => {
     expect(calc.getAttribute("data-classname")).toContain("rounded-none");
   });
 
-  it("renders empty speed state when no Pokemon is selected", () => {
+  it("renders empty speed state when no Pokemon is selected (on Speed tab)", async () => {
+    const user = userEvent.setup();
     render(
       <AnalyticsRail
         team={makeTeam()}
@@ -302,13 +368,16 @@ describe("AnalyticsRail", () => {
       />
     );
 
+    await user.click(screen.getByRole("tab", { name: "Speed" }));
+
     expect(screen.queryByTestId("mock-speed-panel")).not.toBeInTheDocument();
     expect(
       screen.getByTestId("analytics-rail-speed-empty")
     ).toBeInTheDocument();
   });
 
-  it("renders empty speed state when format is undefined", () => {
+  it("renders empty speed state when format is undefined (on Speed tab)", async () => {
+    const user = userEvent.setup();
     const charizard = makePokemon();
     render(
       <AnalyticsRail
@@ -317,6 +386,8 @@ describe("AnalyticsRail", () => {
         format={undefined}
       />
     );
+
+    await user.click(screen.getByRole("tab", { name: "Speed" }));
 
     expect(screen.queryByTestId("mock-speed-panel")).not.toBeInTheDocument();
     expect(

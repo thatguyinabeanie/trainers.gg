@@ -74,14 +74,8 @@ jest.mock("../validation-hooks", () => ({
 }));
 
 // Mock the heavy panels and the editor — assert prop pass-through via data-* attrs.
-jest.mock("../type-chart-panel", () => ({
-  TypeChartPanel: jest.fn(({ team }: { team: Array<{ id: number }> }) => (
-    <div data-testid="type-chart-panel" data-team-size={team.length}>
-      type-chart
-    </div>
-  )),
-}));
-
+// TypeChartPanel is now mounted inside AnalyticsRail (Types tab) — no longer
+// rendered directly by TeamWorkspace, so we only mock AnalyticsRail here.
 jest.mock("../analytics-rail", () => ({
   AnalyticsRail: jest.fn(
     ({
@@ -89,13 +83,19 @@ jest.mock("../analytics-rail", () => ({
       selectedPokemon,
       format,
     }: {
-      team: { id: number };
+      team: {
+        id: number;
+        team_pokemon: Array<{ pokemon: { id: number } | null }>;
+      };
       selectedPokemon: { id: number } | null;
       format: { id: string } | undefined;
     }) => (
       <div
         data-testid="analytics-rail"
         data-team-id={team.id}
+        data-team-size={
+          team.team_pokemon.filter((tp) => tp.pokemon !== null).length
+        }
         data-selected-id={selectedPokemon ? selectedPokemon.id : "none"}
         data-format-id={format ? format.id : "none"}
       >
@@ -289,32 +289,20 @@ describe("TeamWorkspace", () => {
     mockInvalidateQueries.mockClear();
   });
 
-  describe("3-column grid layout", () => {
-    it("renders the outer 3-column grid wrapper", () => {
+  describe("2-column grid layout", () => {
+    it("renders the outer 2-column grid wrapper (editor | analytics rail)", () => {
       render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
       const grid = screen.getByTestId("team-workspace-grid");
       expect(grid).toBeInTheDocument();
-      // grid template columns class — fixed 240 / 1fr (with 0 min) / 460
-      expect(grid.className).toContain(
-        "grid-cols-[15rem_minmax(0,1fr)_28.75rem]"
-      );
+      // grid template columns class — 1fr (with 0 min) / 460px rail.
+      // TypeChartPanel lives inside the rail's Types tab now.
+      expect(grid.className).toContain("grid-cols-[minmax(0,1fr)_28.75rem]");
     });
 
     it("uses the builder max-width container", () => {
       render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
       const container = screen.getByTestId("team-workspace");
       expect(container.className).toContain("max-w-builder");
-    });
-
-    it("mounts TypeChartPanel on the left", () => {
-      const team = makeTeam([
-        makePokemonEntry(1, 1, "Incineroar"),
-        makePokemonEntry(2, 2, "Garchomp"),
-      ]);
-      render(<TeamWorkspace {...defaultProps} team={team} />);
-      const chart = screen.getByTestId("type-chart-panel");
-      expect(chart).toBeInTheDocument();
-      expect(chart.getAttribute("data-team-size")).toBe("2");
     });
 
     it("mounts AnalyticsRail on the right with team + selected pokemon + format", () => {
@@ -327,7 +315,19 @@ describe("TeamWorkspace", () => {
       expect(rail.getAttribute("data-format-id")).toBe("gen9vgc2026regi");
     });
 
-    it("mounts TeamStrip + PokemonEditor in the center column", () => {
+    it("passes optimistically-patched team to AnalyticsRail (type chart sees live edits)", () => {
+      const team = makeTeam([
+        makePokemonEntry(1, 1, "Incineroar"),
+        makePokemonEntry(2, 2, "Garchomp"),
+      ]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+      const rail = screen.getByTestId("analytics-rail");
+      expect(rail).toBeInTheDocument();
+      // Two filled slots → team_size attr should reflect the actual pokemon count
+      expect(rail.getAttribute("data-team-size")).toBe("2");
+    });
+
+    it("mounts TeamStrip + PokemonEditor in the left column", () => {
       const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
       expect(screen.getByTestId("team-strip")).toBeInTheDocument();
@@ -353,9 +353,8 @@ describe("TeamWorkspace", () => {
       expect(editor.getAttribute("data-pokemon-id")).toBe("-1");
     });
 
-    it("still mounts TypeChartPanel and AnalyticsRail with empty team", () => {
+    it("still mounts AnalyticsRail with empty team", () => {
       render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
-      expect(screen.getByTestId("type-chart-panel")).toBeInTheDocument();
       expect(screen.getByTestId("analytics-rail")).toBeInTheDocument();
     });
 
@@ -448,7 +447,7 @@ describe("TeamWorkspace", () => {
       expect(screen.getByTestId("species-picker")).toBeInTheDocument();
     });
 
-    it("when picker is open, the editor is unmounted but type chart + rail remain visible", async () => {
+    it("when picker is open, the editor is unmounted but the analytics rail remains visible", async () => {
       const user = userEvent.setup();
       const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
@@ -460,8 +459,7 @@ describe("TeamWorkspace", () => {
       // Editor and team strip replaced by picker
       expect(screen.queryByTestId("pokemon-editor")).not.toBeInTheDocument();
       expect(screen.queryByTestId("team-strip")).not.toBeInTheDocument();
-      // Side rails still visible
-      expect(screen.getByTestId("type-chart-panel")).toBeInTheDocument();
+      // Analytics rail (which hosts the type chart in its Types tab) stays visible
       expect(screen.getByTestId("analytics-rail")).toBeInTheDocument();
     });
 
