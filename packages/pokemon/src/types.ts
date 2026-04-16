@@ -1,3 +1,6 @@
+/** Maximum number of Pokemon in a single team. */
+export const MAX_TEAM_SIZE = 6;
+
 /**
  * Core Pokemon information shared across all formats
  */

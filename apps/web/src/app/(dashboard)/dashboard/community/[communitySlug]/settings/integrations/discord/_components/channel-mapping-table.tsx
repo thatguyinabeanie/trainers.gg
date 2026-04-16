@@ -5,6 +5,8 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  ALL_CHANNEL_EVENT_TYPES,
+  type DiscordChannelEventType,
   type DiscordChannelMapping,
   type DiscordDmEventType,
 } from "@trainers/supabase";
@@ -45,12 +47,6 @@ import { PickerRefreshButton } from "./picker-refresh-button";
 // Types
 // =============================================================================
 
-type ChannelEventType =
-  | "tournament_created"
-  | "registration_opens"
-  | "tournament_ended"
-  | "match_result_reported";
-
 interface ChannelMappingTableProps {
   channelMappings: DiscordChannelMapping[];
   guildChannels: GuildChannel[];
@@ -63,7 +59,7 @@ interface ChannelMappingTableProps {
 // =============================================================================
 
 const CHANNEL_EVENT_LABELS: Record<
-  ChannelEventType,
+  DiscordChannelEventType,
   { label: string; description: string }
 > = {
   tournament_created: {
@@ -84,10 +80,6 @@ const CHANNEL_EVENT_LABELS: Record<
   },
 };
 
-const ALL_CHANNEL_EVENT_TYPES = Object.keys(
-  CHANNEL_EVENT_LABELS
-) as ChannelEventType[];
-
 // =============================================================================
 // Component
 // =============================================================================
@@ -103,14 +95,16 @@ export function ChannelMappingTable({
     useState<DiscordChannelMapping[]>(channelMappings);
 
   // Add-row form state
-  const [addEventType, setAddEventType] = useState<ChannelEventType | "">("");
+  const [addEventType, setAddEventType] = useState<
+    DiscordChannelEventType | ""
+  >("");
   const [addChannelId, setAddChannelId] = useState("");
   const [addPending, startAddTransition] = useTransition();
 
   // The event types that already have a mapping (used to filter the add-form dropdown)
   const mappedEventTypes = new Set(mappings.map((m) => m.event_type));
   const unmappedEventTypes = ALL_CHANNEL_EVENT_TYPES.filter(
-    (t) => !mappedEventTypes.has(t as DiscordDmEventType)
+    (t) => !mappedEventTypes.has(t)
   );
 
   // ── Channel change (immediate commit) ─────────────────────────────────────
@@ -129,7 +123,7 @@ export function ChannelMappingTable({
 
     void upsertChannelMappingAction({
       communityId,
-      eventType: mapping.event_type as ChannelEventType,
+      eventType: mapping.event_type as DiscordChannelEventType,
       channelId: newChannelId,
     }).then((result) => {
       if (!result.success) {
@@ -215,7 +209,7 @@ export function ChannelMappingTable({
             <TableBody>
               {mappings.map((mapping) => {
                 const meta = CHANNEL_EVENT_LABELS[
-                  mapping.event_type as ChannelEventType
+                  mapping.event_type as DiscordChannelEventType
                 ] ?? {
                   label: mapping.event_type,
                   description: "",
@@ -283,7 +277,9 @@ export function ChannelMappingTable({
             <div className="flex flex-wrap items-center gap-2">
               <Select
                 value={addEventType}
-                onValueChange={(v) => setAddEventType(v as ChannelEventType)}
+                onValueChange={(v) =>
+                  setAddEventType(v as DiscordChannelEventType)
+                }
               >
                 <SelectTrigger className="w-52">
                   <SelectValue placeholder="Event type" />
@@ -291,7 +287,7 @@ export function ChannelMappingTable({
                 <SelectContent>
                   {unmappedEventTypes.map((t) => (
                     <SelectItem key={t} value={t}>
-                      {CHANNEL_EVENT_LABELS[t].label}
+                      {CHANNEL_EVENT_LABELS[t]?.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

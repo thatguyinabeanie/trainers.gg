@@ -13,6 +13,7 @@
 
 // Types and conversion utilities
 export {
+  MAX_TEAM_SIZE,
   type PokemonCore,
   type PokemonStats,
   type PokemonMoves,

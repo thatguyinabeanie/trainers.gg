@@ -16,6 +16,7 @@ import {
   getChannelMappingsForEvent,
   getEnabledRoleMappings,
   getDmSetting,
+  type DiscordServer,
   type DiscordDmEventType,
   type DiscordRoleType,
   type TypedClient,
@@ -43,16 +44,20 @@ import { syncRoleWorkflow } from "@/workflows/sync-role";
  * @param eventType     - The Discord channel event type string
  * @param sourceId      - Stable unique ID for idempotency (e.g. "tournament_created:42")
  * @param payload       - Event-specific payload stored in the queue row
+ * @param options       - Optional pre-resolved values to skip redundant DB lookups
  */
 export async function enqueueCommunityChannelNotification(
   supabase: TypedClient,
   communityId: number,
   eventType: string,
   sourceId: string,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
+  options?: { server?: DiscordServer }
 ): Promise<void> {
   try {
-    const server = await getDiscordServerByCommunityId(supabase, communityId);
+    const server =
+      options?.server ??
+      (await getDiscordServerByCommunityId(supabase, communityId));
     if (!server) return; // Community has no Discord bot installed — no-op
 
     const channelMappings = await getChannelMappingsForEvent(
@@ -103,6 +108,7 @@ export async function enqueueCommunityChannelNotification(
  * @param eventType     - The Discord DM event type enum value
  * @param sourceId      - Stable ID for idempotency per (event_type, source_id, discord_user_id)
  * @param payload       - Event-specific payload
+ * @param options       - Optional pre-resolved values to skip redundant DB lookups
  */
 export async function enqueueCommunityDms(
   supabase: TypedClient,
@@ -110,12 +116,15 @@ export async function enqueueCommunityDms(
   userIds: string[],
   eventType: DiscordDmEventType,
   sourceId: string,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
+  options?: { server?: DiscordServer }
 ): Promise<void> {
   if (userIds.length === 0) return;
 
   try {
-    const server = await getDiscordServerByCommunityId(supabase, communityId);
+    const server =
+      options?.server ??
+      (await getDiscordServerByCommunityId(supabase, communityId));
     if (!server) return; // No Discord server — no-op
 
     // Resolve user IDs to Discord snowflake IDs (only linked accounts returned)
@@ -174,6 +183,7 @@ export async function enqueueCommunityDms(
  * @param roleType      - Role type to add/remove ("staff" | "member" | "winner" | ...)
  * @param action        - "add" or "remove"
  * @param sourceEvent   - Descriptive source event string for audit trail
+ * @param options       - Optional pre-resolved values to skip redundant DB lookups
  */
 export async function enqueueCommunityRoleSync(
   supabase: TypedClient,
@@ -181,12 +191,15 @@ export async function enqueueCommunityRoleSync(
   userIds: string[],
   roleType: DiscordRoleType,
   action: "add" | "remove",
-  sourceEvent: string
+  sourceEvent: string,
+  options?: { server?: DiscordServer }
 ): Promise<void> {
   if (userIds.length === 0) return;
 
   try {
-    const server = await getDiscordServerByCommunityId(supabase, communityId);
+    const server =
+      options?.server ??
+      (await getDiscordServerByCommunityId(supabase, communityId));
     if (!server) return; // No Discord server — no-op
 
     // Find enabled role mapping for this role type

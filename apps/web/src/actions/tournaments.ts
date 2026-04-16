@@ -42,6 +42,7 @@ import {
   // Queries (for prepareRound preview)
   getPhaseRoundsWithStats,
   getRoundMatchesWithStats,
+  getDiscordServerByCommunityId,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import {
@@ -70,6 +71,47 @@ import {
 
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
+
+// =============================================================================
+// Discord fire-and-forget helper
+// =============================================================================
+
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * Run a Discord notification callback as fire-and-forget.
+ * Fetches the tournament row, passes it to the callback, and swallows errors
+ * so the primary server action is never affected.
+ */
+function fireAndForgetDiscord(
+  supabase: SupabaseClient,
+  tournamentId: number,
+  source: string,
+  callback: (tournament: {
+    id: number;
+    name: string;
+    slug: string;
+    community_id: number;
+    start_date: string | null;
+  }) => Promise<void>
+): void {
+  void (async () => {
+    try {
+      const { data: tournament } = await supabase
+        .from("tournaments")
+        .select("id, name, slug, community_id, start_date")
+        .eq("id", tournamentId)
+        .single();
+      if (!tournament) return;
+      await callback(tournament);
+    } catch (discordErr) {
+      console.error(`[${source}] Discord enqueue failed`, {
+        tournamentId,
+        error: String(discordErr),
+      });
+    }
+  })();
+}
 
 // =============================================================================
 // Tournament CRUD
@@ -174,36 +216,21 @@ export async function publishTournament(
 
     await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
 
-    // Fire-and-forget: notify Discord that registration is now open
-    void (async () => {
-      try {
-        const { data: tournament } = await supabase
-          .from("tournaments")
-          .select("id, name, slug, community_id, start_date")
-          .eq("id", tournamentId)
-          .single();
-        if (tournament) {
-          await enqueueCommunityChannelNotification(
-            supabase,
-            tournament.community_id,
-            "registration_opens",
-            `registration_opens:${tournamentId}`,
-            {
-              tournament_id: tournament.id,
-              tournament_name: tournament.name,
-              tournament_slug: tournament.slug,
-              start_date: tournament.start_date,
-              registration_url: `/tournaments/${tournament.slug}`,
-            }
-          );
+    fireAndForgetDiscord(supabase, tournamentId, "publishTournament", (t) =>
+      enqueueCommunityChannelNotification(
+        supabase,
+        t.community_id,
+        "registration_opens",
+        `registration_opens:${tournamentId}`,
+        {
+          tournament_id: t.id,
+          tournament_name: t.name,
+          tournament_slug: t.slug,
+          start_date: t.start_date,
+          registration_url: `/tournaments/${t.slug}`,
         }
-      } catch (discordErr) {
-        console.error(
-          "[publishTournament] Discord registration_opens enqueue failed",
-          { tournamentId, error: String(discordErr) }
-        );
-      }
-    })();
+      )
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -258,57 +285,59 @@ export async function completeTournament(
     invalidatePlayerRankingCaches();
     invalidateDashboardCaches();
 
-    // Fire-and-forget: notify Discord the tournament ended + sync winner role
-    void (async () => {
-      try {
-        const { data: tournament } = await supabase
-          .from("tournaments")
-          .select("id, name, slug, community_id")
-          .eq("id", tournamentId)
-          .single();
-        if (!tournament) return;
-
-        // Channel notification: tournament ended
-        await enqueueCommunityChannelNotification(
+    fireAndForgetDiscord(
+      supabase,
+      tournamentId,
+      "completeTournament",
+      async (t) => {
+        // Resolve the server once — passed to each helper to avoid redundant lookups
+        const server = await getDiscordServerByCommunityId(
           supabase,
-          tournament.community_id,
+          t.community_id
+        );
+        if (!server) return;
+
+        // Channel notification + winner role sync in parallel
+        const channelPromise = enqueueCommunityChannelNotification(
+          supabase,
+          t.community_id,
           "tournament_ended",
           `tournament_ended:${tournamentId}`,
           {
-            tournament_id: tournament.id,
-            tournament_name: tournament.name,
-            tournament_slug: tournament.slug,
+            tournament_id: t.id,
+            tournament_name: t.name,
+            tournament_slug: t.slug,
+          },
+          { server }
+        );
+
+        const winnerPromise = (async () => {
+          const { data: winnerRows } = await supabase
+            .from("tournament_standings")
+            .select("alts(user_id)")
+            .eq("tournament_id", tournamentId)
+            .eq("rank", 1);
+
+          const winnerUserIds = (winnerRows ?? [])
+            .map((row) => (row.alts as { user_id: string } | null)?.user_id)
+            .filter((id): id is string => Boolean(id));
+
+          if (winnerUserIds.length > 0) {
+            await enqueueCommunityRoleSync(
+              supabase,
+              t.community_id,
+              winnerUserIds,
+              "winner",
+              "add",
+              `tournament_ended:${tournamentId}`,
+              { server }
+            );
           }
-        );
+        })();
 
-        // Assign winner role to rank-1 finisher(s)
-        const { data: winnerRows } = await supabase
-          .from("tournament_standings")
-          .select("alts(user_id)")
-          .eq("tournament_id", tournamentId)
-          .eq("rank", 1);
-
-        const winnerUserIds = (winnerRows ?? [])
-          .map((row) => (row.alts as { user_id: string } | null)?.user_id)
-          .filter((id): id is string => Boolean(id));
-
-        if (winnerUserIds.length > 0) {
-          await enqueueCommunityRoleSync(
-            supabase,
-            tournament.community_id,
-            winnerUserIds,
-            "winner",
-            "add",
-            `tournament_ended:${tournamentId}`
-          );
-        }
-      } catch (discordErr) {
-        console.error(
-          "[completeTournament] Discord tournament_ended enqueue failed",
-          { tournamentId, error: String(discordErr) }
-        );
+        await Promise.all([channelPromise, winnerPromise]);
       }
-    })();
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -452,36 +481,26 @@ export async function registerForTournament(
 
     invalidateTournamentListCaches(tournamentId);
 
-    // Fire-and-forget: sync member role — the player is joining the community via tournament
-    void (async () => {
-      try {
+    fireAndForgetDiscord(
+      supabase,
+      tournamentId,
+      "registerForTournament",
+      async (t) => {
         const {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data: tournament } = await supabase
-          .from("tournaments")
-          .select("community_id")
-          .eq("id", tournamentId)
-          .single();
-        if (!tournament) return;
-
         await enqueueCommunityRoleSync(
           supabase,
-          tournament.community_id,
+          t.community_id,
           [user.id],
           "member",
           "add",
           `tournament_registration:${result.registrationId}`
         );
-      } catch (discordErr) {
-        console.error(
-          "[registerForTournament] Discord member role sync failed",
-          { tournamentId, error: String(discordErr) }
-        );
       }
-    })();
+    );
 
     return {
       success: true,
@@ -939,17 +958,12 @@ export async function generatePairings(
     const result = await generateRoundPairingsMutation(supabase, roundId);
     invalidateTournamentCaches(tournamentId);
 
-    // Fire-and-forget: DM both players in each newly created match (match_seeded)
-    void (async () => {
-      try {
-        const { data: tournament } = await supabase
-          .from("tournaments")
-          .select("id, name, slug, community_id")
-          .eq("id", tournamentId)
-          .single();
-        if (!tournament) return;
-
-        // Fetch the matches just created for this round
+    // Fire-and-forget: DM both players in each newly created match
+    fireAndForgetDiscord(
+      supabase,
+      tournamentId,
+      "generatePairings",
+      async (t) => {
         const { data: matches } = await supabase
           .from("tournament_matches")
           .select(
@@ -960,7 +974,15 @@ export async function generatePairings(
 
         if (!matches || matches.length === 0) return;
 
-        // DM each player in each non-bye match
+        // Collect all player user IDs across matches, then batch-enqueue DMs
+        // so enqueueCommunityDms resolves server + DM settings once instead of per match.
+        const allPlayerUserIds: string[] = [];
+        const perMatchPayloads: Array<{
+          matchId: number;
+          playerUserIds: string[];
+          payload: Record<string, unknown>;
+        }> = [];
+
         for (const match of matches) {
           const alt1 = match.alt1 as {
             user_id: string;
@@ -973,35 +995,37 @@ export async function generatePairings(
           if (!alt1 || !alt2) continue;
 
           const playerUserIds = [alt1.user_id, alt2.user_id];
-          const matchPayload = {
-            match_id: match.id,
-            tournament_id: tournament.id,
-            tournament_name: tournament.name,
-            tournament_slug: tournament.slug,
-            opponent_name_for: {
-              [alt1.user_id]: alt2.username,
-              [alt2.user_id]: alt1.username,
-            },
-          };
-
-          void enqueueCommunityDms(
-            supabase,
-            tournament.community_id,
+          allPlayerUserIds.push(...playerUserIds);
+          perMatchPayloads.push({
+            matchId: match.id,
             playerUserIds,
-            "match_ready",
-            `match_ready:${match.id}`,
-            matchPayload
-          );
-          // TODO(phase-4e): enqueue match_starting_soon DM ~15min before match.scheduled_at
-          // Requires a time-based cron or scheduled task. See docs/superpowers/specs/2026-04-11-discord-bot-design.md § Notification Event Types.
+            payload: {
+              tournament_id: t.id,
+              tournament_name: t.name,
+              tournament_slug: t.slug,
+              opponent_name_for: {
+                [alt1.user_id]: alt2.username,
+                [alt2.user_id]: alt1.username,
+              },
+            },
+          });
         }
-      } catch (discordErr) {
-        console.error(
-          "[generatePairings] Discord match_ready DM enqueue failed",
-          { roundId, tournamentId, error: String(discordErr) }
+
+        // Enqueue all match DMs concurrently
+        await Promise.all(
+          perMatchPayloads.map((m) =>
+            enqueueCommunityDms(
+              supabase,
+              t.community_id,
+              m.playerUserIds,
+              "match_ready",
+              `match_ready:${m.matchId}`,
+              { match_id: m.matchId, ...m.payload }
+            )
+          )
         );
       }
-    })();
+    );
 
     return {
       success: true,
@@ -1383,34 +1407,30 @@ export async function reportMatchResult(
     );
     invalidateTournamentCaches(tournamentId);
 
-    // Fire-and-forget: channel notification + DM confirmation to both players
-    void (async () => {
-      try {
-        const [{ data: tournament }, { data: match }] = await Promise.all([
-          supabase
-            .from("tournaments")
-            .select("id, name, slug, community_id")
-            .eq("id", tournamentId)
-            .single(),
-          supabase
-            .from("tournament_matches")
-            .select(
-              "id, alt1_id, alt2_id, alt1:alts!tournament_matches_alt1_id_fkey(user_id, username), alt2:alts!tournament_matches_alt2_id_fkey(user_id, username)"
-            )
-            .eq("id", matchId)
-            .single(),
-        ]);
+    fireAndForgetDiscord(
+      supabase,
+      tournamentId,
+      "reportMatchResult",
+      async (t) => {
+        // Resolve the server once — passed to each helper to avoid redundant lookups
+        const server = await getDiscordServerByCommunityId(
+          supabase,
+          t.community_id
+        );
+        if (!server) return;
 
-        if (!tournament || !match) return;
+        const { data: match } = await supabase
+          .from("tournament_matches")
+          .select(
+            "id, alt1_id, alt2_id, alt1:alts!tournament_matches_alt1_id_fkey(user_id, username), alt2:alts!tournament_matches_alt2_id_fkey(user_id, username)"
+          )
+          .eq("id", matchId)
+          .single();
 
-        const alt1 = match.alt1 as {
-          user_id: string;
-          username: string;
-        } | null;
-        const alt2 = match.alt2 as {
-          user_id: string;
-          username: string;
-        } | null;
+        if (!match) return;
+
+        const alt1 = match.alt1 as { user_id: string; username: string } | null;
+        const alt2 = match.alt2 as { user_id: string; username: string } | null;
 
         const winnerUsername =
           match.alt1_id === winnerAltId
@@ -1419,44 +1439,44 @@ export async function reportMatchResult(
 
         const resultPayload = {
           match_id: matchId,
-          tournament_id: tournament.id,
-          tournament_name: tournament.name,
-          tournament_slug: tournament.slug,
+          tournament_id: t.id,
+          tournament_name: t.name,
+          tournament_slug: t.slug,
           winner_alt_id: winnerAltId,
           winner_username: winnerUsername,
           score: `${player1GamesWon}-${player2GamesWon}`,
         };
 
-        // Channel notification
-        void enqueueCommunityChannelNotification(
+        // Channel notification + DM confirmation in parallel
+        const channelPromise = enqueueCommunityChannelNotification(
           supabase,
-          tournament.community_id,
+          t.community_id,
           "match_result_reported",
           `match_result_reported:${matchId}`,
-          resultPayload
+          resultPayload,
+          { server }
         );
 
-        // DM confirmation to both players
         const playerUserIds = [alt1?.user_id, alt2?.user_id].filter(
           (id): id is string => Boolean(id)
         );
-        if (playerUserIds.length > 0) {
-          void enqueueCommunityDms(
-            supabase,
-            tournament.community_id,
-            playerUserIds,
-            "match_result_to_confirm",
-            `match_result_to_confirm:${matchId}`,
-            resultPayload
-          );
-        }
-      } catch (discordErr) {
-        console.error(
-          "[reportMatchResult] Discord match_result_to_confirm enqueue failed",
-          { matchId, tournamentId, error: String(discordErr) }
-        );
+
+        const dmPromise =
+          playerUserIds.length > 0
+            ? enqueueCommunityDms(
+                supabase,
+                t.community_id,
+                playerUserIds,
+                "match_result_to_confirm",
+                `match_result_to_confirm:${matchId}`,
+                resultPayload,
+                { server }
+              )
+            : Promise.resolve();
+
+        await Promise.all([channelPromise, dmPromise]);
       }
-    })();
+    );
 
     return { success: true, data: { success: true } };
   } catch (error) {

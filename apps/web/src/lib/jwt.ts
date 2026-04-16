@@ -7,6 +7,8 @@
  * policies on the database side.
  */
 
+import { decodeBase64Url } from "@trainers/supabase/hooks";
+
 /**
  * Decode a raw JWT and return its payload as a typed object.
  * Returns `null` when the token is malformed or decoding fails.
@@ -17,7 +19,7 @@ export function decodeJwtClaims<T>(token: string): T | null {
   try {
     const segment = token.split(".")[1];
     if (!segment) return null;
-    return JSON.parse(Buffer.from(segment, "base64url").toString()) as T;
+    return JSON.parse(decodeBase64Url(segment)) as T;
   } catch {
     return null;
   }

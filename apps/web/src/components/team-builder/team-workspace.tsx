@@ -71,6 +71,22 @@ const PLACEHOLDER_POKEMON: Tables<"pokemon"> = {
   created_at: null,
 };
 
+// Module-level cache — buildSpeciesSearchIndex iterates all species (~1,200+),
+// so we cache per format ID to avoid re-computing on every render.
+const speciesIndexCache = new Map<
+  string,
+  ReturnType<typeof buildSpeciesSearchIndex>
+>();
+
+function getCachedSpeciesIndex(formatId: string) {
+  let index = speciesIndexCache.get(formatId);
+  if (!index) {
+    index = buildSpeciesSearchIndex(formatId);
+    speciesIndexCache.set(formatId, index);
+  }
+  return index;
+}
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -131,8 +147,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   // Validation
   const { pokemonErrors } = useTeamValidation(team.team_pokemon, format);
 
-  // Build species search index for the format (derived value — React Compiler handles memoization)
-  const speciesIndex = buildSpeciesSearchIndex(format?.id ?? "gen9vgc2026regi");
+  const speciesIndex = getCachedSpeciesIndex(format?.id ?? "gen9vgc2026regi");
 
   // Clear both debounce timers on unmount to prevent setState on an unmounted component.
   // If there is a pending save, fire it immediately — the server action will still execute

@@ -86,6 +86,12 @@ jest.mock("@trainers/supabase", () => ({
     "tournament_starting",
     "tournament_cancelled",
   ],
+  ALL_CHANNEL_EVENT_TYPES: [
+    "tournament_created",
+    "registration_opens",
+    "tournament_ended",
+    "match_result_reported",
+  ],
   getDiscordServerByCommunityId: (...args: unknown[]) =>
     mockGetDiscordServerByCommunityId(...args),
   getDiscordServerById: (...args: unknown[]) =>

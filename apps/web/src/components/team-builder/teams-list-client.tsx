@@ -6,7 +6,11 @@ import Link from "next/link";
 import { Plus, Upload } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
-import { type GameFormat, getFormatLabel } from "@trainers/pokemon";
+import {
+  type GameFormat,
+  getFormatLabel,
+  MAX_TEAM_SIZE,
+} from "@trainers/pokemon";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { getTeamsForAltList, type TeamListItem } from "@trainers/supabase";
 import { formatTimeAgo } from "@trainers/utils";
@@ -32,7 +36,7 @@ export const teamKeys = {
 // ---------------------------------------------------------------------------
 
 /** Number of sprite slots to render per team row. */
-const SPRITE_SLOTS = 6;
+const SPRITE_SLOTS = MAX_TEAM_SIZE;
 
 // ---------------------------------------------------------------------------
 // Component

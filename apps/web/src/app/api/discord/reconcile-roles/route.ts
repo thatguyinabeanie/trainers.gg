@@ -150,31 +150,33 @@ export async function GET(request: Request): Promise<Response> {
           : new Set([...current].filter((id) => !discordIds.has(id)));
 
       // -----------------------------------------------------------------------
-      // 5. Start workflow for each delta
+      // 5. Start workflows for each delta (concurrent per mapping)
       // -----------------------------------------------------------------------
-      for (const userId of shouldAdd) {
-        await start(syncRoleWorkflow, [
+      const addPromises = [...shouldAdd].map((userId) =>
+        start(syncRoleWorkflow, [
           mapping.guild_id,
           userId,
           mapping.discord_role_id,
           "add",
           mapping.discord_server_id,
           mapping.role_type,
-        ]);
-        stats.adds++;
-      }
+        ])
+      );
 
-      for (const userId of shouldRemove) {
-        await start(syncRoleWorkflow, [
+      const removePromises = [...shouldRemove].map((userId) =>
+        start(syncRoleWorkflow, [
           mapping.guild_id,
           userId,
           mapping.discord_role_id,
           "remove",
           mapping.discord_server_id,
           mapping.role_type,
-        ]);
-        stats.removes++;
-      }
+        ])
+      );
+
+      await Promise.all([...addPromises, ...removePromises]);
+      stats.adds += shouldAdd.size;
+      stats.removes += shouldRemove.size;
     } catch (e: unknown) {
       // Surface per-mapping errors without aborting the entire batch.
       stats.errors.push({ mappingId: mapping.id, code: getErrorCode(e) });

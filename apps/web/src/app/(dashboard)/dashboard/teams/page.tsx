@@ -41,10 +41,10 @@ export default async function AllTeamsPage() {
     notFound();
   }
 
-  const [teams, alts, activeFormats] = await Promise.all([
+  const activeFormats = getActiveFormats();
+  const [teams, alts] = await Promise.all([
     getTeamsForUser(supabase, user.id),
     getCurrentUserAlts(supabase),
-    Promise.resolve(getActiveFormats()),
   ]);
 
   return (

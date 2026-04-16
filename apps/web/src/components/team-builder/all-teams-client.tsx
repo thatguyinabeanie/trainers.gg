@@ -5,7 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Plus, Upload } from "lucide-react";
 
-import { type GameFormat, getFormatLabel } from "@trainers/pokemon";
+import {
+  type GameFormat,
+  getFormatLabel,
+  MAX_TEAM_SIZE,
+} from "@trainers/pokemon";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type CrossAltTeamListItem } from "@trainers/supabase";
 import { formatTimeAgo } from "@trainers/utils";
@@ -32,7 +36,7 @@ interface AllTeamsClientProps {
 // ---------------------------------------------------------------------------
 
 /** Number of sprite slots to render per team row. */
-const SPRITE_SLOTS = 6;
+const SPRITE_SLOTS = MAX_TEAM_SIZE;
 
 // ---------------------------------------------------------------------------
 // Component

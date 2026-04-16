@@ -31,6 +31,7 @@ jest.mock("next/image", () => ({
 
 jest.mock("@trainers/pokemon", () => ({
   getFormatLabel: jest.fn((id: string) => id.toUpperCase()),
+  MAX_TEAM_SIZE: 6,
 }));
 
 jest.mock("@trainers/pokemon/sprites", () => ({

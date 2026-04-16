@@ -183,18 +183,19 @@ export function FailuresTable({
   function handleRetryAll() {
     startRefreshTransition(async () => {
       const retryable = filterRows(rows, filter);
-      let successCount = 0;
 
-      for (const row of retryable) {
-        const result = await retryNotificationAction(row.data.id);
-        if (result.success) successCount++;
-      }
+      const results = await Promise.allSettled(
+        retryable.map((row) => retryNotificationAction(row.data.id))
+      );
+
+      const successCount = results.filter(
+        (r) => r.status === "fulfilled" && r.value.success
+      ).length;
 
       if (successCount > 0) {
         toast.success(
           `${successCount} item${successCount !== 1 ? "s" : ""} queued for retry`
         );
-        // Remove retried rows optimistically
         const retriedIds = new Set(
           retryable.map((r) => `${r.kind}-${r.data.id}`)
         );

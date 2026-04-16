@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   type DiscordDmSetting,
   type DiscordDmEventType,
+  ALL_DM_EVENT_TYPES,
 } from "@trainers/supabase";
 
 import { upsertDmSettingAction } from "@/actions/discord-integration";
@@ -59,19 +60,7 @@ interface DmRowState {
 // Constants
 // =============================================================================
 
-const DM_EVENT_TYPES: DiscordDmEventType[] = [
-  "match_ready",
-  "match_starting_soon",
-  "match_result_to_confirm",
-  "match_disputed",
-  "team_sheet_needed",
-  "team_sheet_approved",
-  "team_sheet_rejected",
-  "you_dropped",
-  "top_cut_made",
-  "tournament_starting",
-  "tournament_cancelled",
-];
+const DM_EVENT_TYPES = ALL_DM_EVENT_TYPES;
 
 const DM_EVENT_LABELS: Record<
   DiscordDmEventType,

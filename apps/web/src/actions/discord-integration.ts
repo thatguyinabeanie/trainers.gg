@@ -32,6 +32,7 @@ import {
   type DmFailureRow,
   ALL_DM_EVENT_TYPES,
   type DiscordDmEventType,
+  ALL_CHANNEL_EVENT_TYPES,
   type RoleSyncFailureRow,
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
@@ -51,17 +52,6 @@ import { rejectBots } from "./utils";
 // Types
 // =============================================================================
 
-/** DM event types — derived from the shared constant for z.enum(). */
-const DISCORD_DM_EVENT_TYPES = ALL_DM_EVENT_TYPES;
-
-/** Discord channel notification event types (matches discord_channels.event_type usage) */
-const CHANNEL_EVENT_TYPES = [
-  "tournament_created",
-  "registration_opens",
-  "tournament_ended",
-  "match_result_reported",
-] as const;
-
 /** Discord role types (matches discord_role_type enum) */
 const DISCORD_ROLE_TYPES = [
   "member",
@@ -77,14 +67,14 @@ const DISCORD_ROLE_TYPES = [
 
 const upsertChannelMappingSchema = z.object({
   communityId: z.number().int().positive(),
-  eventType: z.enum(CHANNEL_EVENT_TYPES),
+  eventType: z.enum(ALL_CHANNEL_EVENT_TYPES),
   channelId: z.string().min(1, "Channel ID is required"),
 });
 
 const upsertDmSettingSchema = z
   .object({
     communityId: z.number().int().positive(),
-    eventType: z.enum(DISCORD_DM_EVENT_TYPES),
+    eventType: z.enum(ALL_DM_EVENT_TYPES),
     deliveryMode: z.enum(["dm_only", "channel_only", "dm_with_fallback"]),
     fallbackChannelId: z.string().optional().nullable(),
   })
@@ -106,7 +96,7 @@ const upsertRoleMappingSchema = z.object({
 });
 
 const setDmPreferenceSchema = z.object({
-  eventType: z.enum(DISCORD_DM_EVENT_TYPES),
+  eventType: z.enum(ALL_DM_EVENT_TYPES),
   enabled: z.boolean(),
 });
 
@@ -157,6 +147,30 @@ function asForbidden(error: unknown): ActionResult<never> | undefined {
   return undefined;
 }
 
+/**
+ * Require community.manage permission and a linked Discord server.
+ * Returns the Discord server row or an ActionResult error.
+ */
+async function requireDiscordServer(
+  supabase: SupabaseClient,
+  communityId: number
+): Promise<
+  | { server: Awaited<ReturnType<typeof getDiscordServerByCommunityId>> & {} }
+  | { error: ActionResult<never> }
+> {
+  await requireCommunityManage(supabase, communityId);
+  const server = await getDiscordServerByCommunityId(supabase, communityId);
+  if (!server) {
+    return {
+      error: {
+        success: false,
+        error: "Discord server not installed for this community",
+      },
+    };
+  }
+  return { server };
+}
+
 /** The revalidatePath target for the Discord integration settings page. */
 const DISCORD_SETTINGS_PATH =
   "/dashboard/community/[communitySlug]/settings/integrations/discord";
@@ -181,18 +195,9 @@ export async function upsertChannelMappingAction(
     await rejectBots();
     const parsed = upsertChannelMappingSchema.parse(input);
     const supabase = await createClient();
-    await requireCommunityManage(supabase, parsed.communityId);
-
-    const server = await getDiscordServerByCommunityId(
-      supabase,
-      parsed.communityId
-    );
-    if (!server) {
-      return {
-        success: false,
-        error: "Discord server not installed for this community",
-      };
-    }
+    const result = await requireDiscordServer(supabase, parsed.communityId);
+    if ("error" in result) return result.error;
+    const { server } = result;
 
     await upsertChannelMapping(supabase, {
       discord_server_id: server.id,
@@ -291,18 +296,9 @@ export async function upsertDmSettingAction(
     await rejectBots();
     const parsed = upsertDmSettingSchema.parse(input);
     const supabase = await createClient();
-    await requireCommunityManage(supabase, parsed.communityId);
-
-    const server = await getDiscordServerByCommunityId(
-      supabase,
-      parsed.communityId
-    );
-    if (!server) {
-      return {
-        success: false,
-        error: "Discord server not installed for this community",
-      };
-    }
+    const result = await requireDiscordServer(supabase, parsed.communityId);
+    if ("error" in result) return result.error;
+    const { server } = result;
 
     await upsertDmSetting(supabase, {
       discord_server_id: server.id,
@@ -379,18 +375,9 @@ export async function upsertRoleMappingAction(
     await rejectBots();
     const parsed = upsertRoleMappingSchema.parse(input);
     const supabase = await createClient();
-    await requireCommunityManage(supabase, parsed.communityId);
-
-    const server = await getDiscordServerByCommunityId(
-      supabase,
-      parsed.communityId
-    );
-    if (!server) {
-      return {
-        success: false,
-        error: "Discord server not installed for this community",
-      };
-    }
+    const result = await requireDiscordServer(supabase, parsed.communityId);
+    if ("error" in result) return result.error;
+    const { server } = result;
 
     await upsertRoleMapping(supabase, {
       discord_server_id: server.id,

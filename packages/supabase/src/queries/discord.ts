@@ -32,6 +32,16 @@ export const ALL_DM_EVENT_TYPES = [
   "tournament_cancelled",
 ] as const satisfies readonly DiscordDmEventType[];
 
+/** All Discord channel notification event types — single source of truth. */
+export const ALL_CHANNEL_EVENT_TYPES = [
+  "tournament_created",
+  "registration_opens",
+  "tournament_ended",
+  "match_result_reported",
+] as const;
+
+export type DiscordChannelEventType = (typeof ALL_CHANNEL_EVENT_TYPES)[number];
+
 // =============================================================================
 // discord_servers
 // =============================================================================

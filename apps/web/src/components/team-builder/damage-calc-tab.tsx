@@ -52,23 +52,17 @@ interface DefenderEvs {
   spe: number;
 }
 
-interface DefenderBoosts {
+interface StatBoosts {
   atk: number;
   def: number;
   spa: number;
   spd: number;
   spe: number;
 }
+type AttackerBoosts = StatBoosts;
+type DefenderBoosts = StatBoosts;
 
-interface AttackerBoosts {
-  atk: number;
-  def: number;
-  spa: number;
-  spd: number;
-  spe: number;
-}
-
-interface AttackerSideState {
+interface BaseSideState {
   reflect: boolean;
   lightScreen: boolean;
   auroraVeil: boolean;
@@ -76,14 +70,8 @@ interface AttackerSideState {
   helpingHand: boolean;
   friendGuard: boolean;
 }
-
-interface DefenderSideState {
-  reflect: boolean;
-  lightScreen: boolean;
-  auroraVeil: boolean;
-  tailwind: boolean;
-  helpingHand: boolean;
-  friendGuard: boolean;
+type AttackerSideState = BaseSideState;
+interface DefenderSideState extends BaseSideState {
   stealthRock: boolean;
   spikes: number;
   saltCure: boolean;
@@ -302,25 +290,29 @@ function buildField(
   direction: "offense" | "defense"
 ): Field {
   // When direction is "defense", attacker/defender sides swap
-  const aSide = direction === "offense" ? attackerSide : defenderSide;
-  const dSide = direction === "offense" ? defenderSide : attackerSide;
+  const aSide: BaseSideState =
+    direction === "offense" ? attackerSide : defenderSide;
+  const dSide: AttackerSideState | DefenderSideState =
+    direction === "offense" ? defenderSide : attackerSide;
 
+  // All BaseSideState fields are shared — access directly without guards
   const aSmogon = new Side({
-    isReflect: "reflect" in aSide ? aSide.reflect : false,
-    isLightScreen: "lightScreen" in aSide ? aSide.lightScreen : false,
-    isAuroraVeil: "auroraVeil" in aSide ? aSide.auroraVeil : false,
-    isTailwind: "tailwind" in aSide ? aSide.tailwind : false,
-    isHelpingHand: "helpingHand" in aSide ? aSide.helpingHand : false,
-    isFriendGuard: "friendGuard" in aSide ? aSide.friendGuard : false,
+    isReflect: aSide.reflect,
+    isLightScreen: aSide.lightScreen,
+    isAuroraVeil: aSide.auroraVeil,
+    isTailwind: aSide.tailwind,
+    isHelpingHand: aSide.helpingHand,
+    isFriendGuard: aSide.friendGuard,
   });
 
   const dSmogon = new Side({
-    isReflect: "reflect" in dSide ? dSide.reflect : false,
-    isLightScreen: "lightScreen" in dSide ? dSide.lightScreen : false,
-    isAuroraVeil: "auroraVeil" in dSide ? dSide.auroraVeil : false,
-    isTailwind: "tailwind" in dSide ? dSide.tailwind : false,
-    isHelpingHand: "helpingHand" in dSide ? dSide.helpingHand : false,
-    isFriendGuard: "friendGuard" in dSide ? dSide.friendGuard : false,
+    isReflect: dSide.reflect,
+    isLightScreen: dSide.lightScreen,
+    isAuroraVeil: dSide.auroraVeil,
+    isTailwind: dSide.tailwind,
+    isHelpingHand: dSide.helpingHand,
+    isFriendGuard: dSide.friendGuard,
+    // Defender-specific fields — only present on DefenderSideState
     isSR:
       "stealthRock" in dSide ? (dSide as DefenderSideState).stealthRock : false,
     spikes: "spikes" in dSide ? (dSide as DefenderSideState).spikes : 0,
@@ -415,7 +407,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Card({
+function CalcCard({
   children,
   className,
 }: {
@@ -1102,7 +1094,7 @@ function DefenderPanel({
   const itemListId = useId();
 
   return (
-    <Card>
+    <CalcCard>
       <SectionHeader>Defender</SectionHeader>
 
       {/* Species inline search — clickable name that opens a search input */}
@@ -1332,7 +1324,7 @@ function DefenderPanel({
           <span className="text-muted-foreground text-xs">%</span>
         </div>
       </div>
-    </Card>
+    </CalcCard>
   );
 }
 
@@ -1397,7 +1389,7 @@ function FieldConditions({
   onDefenderSideChange,
 }: FieldConditionsProps) {
   return (
-    <Card>
+    <CalcCard>
       <SectionHeader>Field Conditions</SectionHeader>
       <div className="flex flex-col gap-3">
         {/* Mode toggle */}
@@ -1647,7 +1639,7 @@ function FieldConditions({
           </div>
         </div>
       </div>
-    </Card>
+    </CalcCard>
   );
 }
 
@@ -1967,7 +1959,7 @@ export function DamageCalcTab({
 
       {/* Move selector — dimmed and non-interactive without an attacker */}
       <div className={cn(!hasAttacker && "pointer-events-none opacity-50")}>
-        <Card>
+        <CalcCard>
           <SectionHeader>Moves</SectionHeader>
           <div className="flex flex-col gap-0.5">
             {moves.map((moveName, idx) => (
@@ -1987,7 +1979,7 @@ export function DamageCalcTab({
               />
             ))}
           </div>
-        </Card>
+        </CalcCard>
       </div>
 
       {/* Attacker modifiers — dimmed and non-interactive without an attacker */}
