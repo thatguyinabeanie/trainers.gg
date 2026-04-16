@@ -1,7 +1,9 @@
 import {
   getLegalItems,
+  getLegalMoves,
   getLegalSpecies,
   isLegalItem,
+  isLegalMove,
   isLegalSpecies,
 } from "../format-legality";
 
@@ -106,6 +108,35 @@ describe("format-legality — items", () => {
   it("memoizes — repeated calls return the same instance", () => {
     const a = getLegalItems("gen9vgc2026regi");
     const b = getLegalItems("gen9vgc2026regi");
+    expect(a).toBe(b);
+  });
+});
+
+describe("format-legality — moves", () => {
+  it("marks Protect legal on Incineroar in Reg I", () => {
+    expect(isLegalMove("Protect", "Incineroar", "gen9vgc2026regi")).toBe(true);
+  });
+
+  it("marks Hyperspace Hole illegal on Pikachu (can't learn)", () => {
+    expect(isLegalMove("Hyperspace Hole", "Pikachu", "gen9vgc2026regi")).toBe(
+      false
+    );
+  });
+
+  it("returns a learnset-filtered set for Champions species", () => {
+    const legal = getLegalMoves("Incineroar", "championsvgc2026regma");
+    expect(legal).toBeInstanceOf(Set);
+    expect(legal?.has("Fake Out")).toBe(true);
+    expect(legal?.has("Hyperspace Hole")).toBe(false);
+  });
+
+  it("returns permissive true for unknown formats", () => {
+    expect(isLegalMove("Protect", "Pikachu", "unknown-format-id")).toBe(true);
+  });
+
+  it("memoizes per (species, format) pair", () => {
+    const a = getLegalMoves("Pikachu", "gen9vgc2026regi");
+    const b = getLegalMoves("Pikachu", "gen9vgc2026regi");
     expect(a).toBe(b);
   });
 });

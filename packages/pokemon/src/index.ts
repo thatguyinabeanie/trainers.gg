@@ -121,8 +121,10 @@ export {
 // Format legality
 export {
   getLegalItems,
+  getLegalMoves,
   getLegalSpecies,
   isLegalItem,
+  isLegalMove,
   isLegalSpecies,
 } from "./format-legality";
 

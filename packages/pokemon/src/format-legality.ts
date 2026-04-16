@@ -444,6 +444,120 @@ function computeLegalItemsFromSim(
 }
 
 // =============================================================================
+// Moves
+// =============================================================================
+
+// TODO(champions-moves-banlist): No VGC 2026 Reg M-A move banlist has been
+// published as of 2026-04-15. Sources checked:
+//   1. pokemon.com/us/play-pokemon/about/tournaments-rules/ — 404
+//   2. championships.pokemon.com/en-us/tournaments/ — 404
+//   3. smogon.com/forums/forums/vgc.199/ — no Champions / Reg M-A threads
+//   4. pikalytics.com — usage stats only, no move banlist
+//   5. serebii.net/vgc/ — no Champions info on overview page
+//   6. videogameschronicle.com/guide/pokemon-champions-all-items-in-pokemon-champions/ — item guide only
+//   7. reddit.com/r/VGC/.json — unable to fetch (blocked)
+//   8. old.reddit.com/r/PokemonChampions/ — unable to fetch (blocked)
+// Revisit when official rules drop. Empty set means Champions goes through the
+// sim-backed learnset path with no format-level move bans applied on top.
+const CHAMPIONS_MA_MOVE_BANLIST: ReadonlySet<string> = new Set();
+
+// Cache key: `${species}::${formatId}`. Iterating the full move list per
+// species is expensive (~800 moves per call); cache on first request per
+// combination.
+const simMoveCache = new Map<string, ReadonlySet<string>>();
+
+/**
+ * Compute the legal-move set for a species in a format registered in
+ * @pkmn/sim. Uses `TeamValidator.checkCanLearn` which is purely
+ * learnset-based (format-level move bans like OU's Shed Tail ban are
+ * NOT reflected — `checkCanLearn` returns null as long as the species
+ * can learn the move via any legal source).
+ *
+ * Nonstandard filter: moves with `isNonstandard !== null` are skipped
+ * unless the value is `"Unobtainable"` (legacy/transfer-only moves
+ * that still see competitive use).
+ */
+function computeLegalMovesFromSim(
+  species: string,
+  formatId: string
+): ReadonlySet<string> | undefined {
+  const cacheKey = `${species}::${formatId}`;
+  const cached = simMoveCache.get(cacheKey);
+  if (cached) return cached;
+
+  const simName = SIM_FORMAT_NAME_BY_ID[formatId];
+  if (!simName) return undefined;
+
+  const format = SimDex.formats.get(simName);
+  if (!format?.exists) return undefined;
+
+  const gen = SimDex.forGen(9);
+  const speciesObj = gen.species.get(species);
+  if (!speciesObj?.exists) return undefined;
+
+  const validator = new TeamValidator(format, SimDex);
+  const legal = new Set<string>();
+
+  for (const move of gen.moves.all()) {
+    if (!move.exists) continue;
+    if (move.isNonstandard && move.isNonstandard !== "Unobtainable") continue;
+
+    const issues = validator.checkCanLearn(move, speciesObj);
+    if (issues === null) legal.add(move.name);
+  }
+
+  simMoveCache.set(cacheKey, legal);
+  return legal;
+}
+
+// Champions move cache is keyed by species only — all Champions species
+// use the same gen-9 AG base validator and the same (currently empty)
+// format-level banlist.
+const championsMoveCache = new Map<string, ReadonlySet<string>>();
+
+/**
+ * Compute the legal-move set for a Champions: VGC 2026 Reg M-A species.
+ *
+ * All Champions-roster species exist in the gen-9 pokedex (including
+ * Hisui/Paldea/Galar regional forms), so `checkCanLearn` works against
+ * gen-9 sim data.
+ *
+ * Uses Anything Goes as the base validator — it has an empty banlist,
+ * so `checkCanLearn` operates purely on learnset data with no format-
+ * level move bans leaking through. Champions-specific bans are applied
+ * on top via `CHAMPIONS_MA_MOVE_BANLIST`.
+ */
+function computeLegalMovesForChampions(
+  species: string
+): ReadonlySet<string> | undefined {
+  const cached = championsMoveCache.get(species);
+  if (cached) return cached;
+
+  const gen = SimDex.forGen(9);
+  const speciesObj = gen.species.get(species);
+  if (!speciesObj?.exists) return undefined;
+
+  // Use AG as a permissive base validator — empty banlist, purely
+  // learnset-based checkCanLearn with no format-specific restrictions.
+  const format = SimDex.formats.get("[Gen 9] Anything Goes");
+  if (!format?.exists) return undefined;
+  const validator = new TeamValidator(format, SimDex);
+
+  const legal = new Set<string>();
+  for (const move of gen.moves.all()) {
+    if (!move.exists) continue;
+    if (move.isNonstandard && move.isNonstandard !== "Unobtainable") continue;
+    if (CHAMPIONS_MA_MOVE_BANLIST.has(move.name)) continue;
+    if (validator.checkCanLearn(move, speciesObj) === null) {
+      legal.add(move.name);
+    }
+  }
+
+  championsMoveCache.set(species, legal);
+  return legal;
+}
+
+// =============================================================================
 // Public API
 // =============================================================================
 
@@ -495,4 +609,37 @@ export function isLegalItem(item: string, formatId: string): boolean {
   if (!item) return true;
   const legal = getLegalItems(formatId);
   return legal === undefined || legal.has(item);
+}
+
+/**
+ * Returns the set of moves that `species` can legally use in `formatId`,
+ * or `undefined` if legality cannot be determined (treat as permissive).
+ *
+ * First call per (species, format) pair is expensive (~800 moves iterated
+ * through `TeamValidator.checkCanLearn`); subsequent calls return a
+ * cached `ReadonlySet`.
+ */
+export function getLegalMoves(
+  species: string,
+  formatId: string
+): ReadonlySet<string> | undefined {
+  if (formatId === "championsvgc2026regma") {
+    return computeLegalMovesForChampions(species);
+  }
+  return computeLegalMovesFromSim(species, formatId);
+}
+
+/**
+ * True when `move` is legal for `species` in `formatId`. Returns true
+ * for the empty string (no move is always legal) and for any format
+ * without computable legality (permissive default).
+ */
+export function isLegalMove(
+  move: string,
+  species: string,
+  formatId: string
+): boolean {
+  if (!move) return true;
+  const legal = getLegalMoves(species, formatId);
+  return legal === undefined || legal.has(move);
 }
