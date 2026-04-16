@@ -203,8 +203,10 @@ describe("SpeciesPicker (rich rows)", () => {
       expect(bstCells).toHaveLength(3);
     });
 
-    it("renders the column header (HP / Atk / Def / SpA / SpD / Spe / BST)", () => {
+    it("renders the column header (Types + HP / Atk / Def / SpA / SpD / Spe / BST)", () => {
       render(<SpeciesPicker {...defaultProps} />);
+      // Types now lives in its own column with a dedicated header.
+      expect(screen.getByText("Types")).toBeInTheDocument();
       expect(screen.getByText("HP")).toBeInTheDocument();
       expect(screen.getByText("Atk")).toBeInTheDocument();
       expect(screen.getByText("Def")).toBeInTheDocument();
@@ -212,6 +214,31 @@ describe("SpeciesPicker (rich rows)", () => {
       expect(screen.getByText("SpD")).toBeInTheDocument();
       expect(screen.getByText("Spe")).toBeInTheDocument();
       expect(screen.getByText("BST")).toBeInTheDocument();
+    });
+
+    it("renders type pills inside each row (in the dedicated types column)", () => {
+      render(<SpeciesPicker {...defaultProps} />);
+      // Each species in the fixture has at least one type that should render
+      // as a pill — assert by text content.
+      expect(screen.getByText("Fire")).toBeInTheDocument();
+      expect(screen.getByText("Dark")).toBeInTheDocument();
+      expect(screen.getByText("Grass")).toBeInTheDocument();
+      // Two-type species (Gastrodon = Water/Ground) — both pills appear.
+      expect(screen.getByText("Water")).toBeInTheDocument();
+      expect(screen.getByText("Ground")).toBeInTheDocument();
+    });
+  });
+
+  describe("scroll", () => {
+    it("rows container is scrollable (capped height + overflow-y-auto)", () => {
+      render(<SpeciesPicker {...defaultProps} />);
+      const rows = screen.getByTestId("species-rows");
+      // The rows container caps its own height so it scrolls independently
+      // of the picker chrome. We check the class names directly because the
+      // rendered max-h is in arbitrary-value form (max-h-[60vh]) and JSDOM
+      // does not compute layout.
+      expect(rows.className).toContain("overflow-y-auto");
+      expect(rows.className).toContain("max-h-[60vh]");
     });
   });
 
@@ -241,6 +268,20 @@ describe("SpeciesPicker (rich rows)", () => {
         defaultProps.speciesIndex,
         "inc",
         expect.any(Object)
+      );
+    });
+
+    it("forwards the active formatId so move-name matching activates", async () => {
+      const user = userEvent.setup();
+      const { searchSpecies } = jest.requireMock("@trainers/pokemon") as {
+        searchSpecies: jest.Mock;
+      };
+      render(<SpeciesPicker {...defaultProps} formatId="gen9vgc2026regi" />);
+      await user.type(screen.getByTestId("search-input"), "tail");
+      expect(searchSpecies).toHaveBeenCalledWith(
+        defaultProps.speciesIndex,
+        "tail",
+        expect.objectContaining({ formatId: "gen9vgc2026regi" })
       );
     });
   });

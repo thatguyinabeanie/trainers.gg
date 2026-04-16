@@ -81,11 +81,13 @@ function SpeciesRow({ entry, isCurrent, onSelect }: SpeciesRowProps) {
       onClick={onSelect}
       className={cn(
         "hover:bg-muted/60 grid w-full cursor-pointer items-center gap-3 border-b px-4 py-2.5 text-left transition-colors",
-        // Grid template:
+        // Grid template (must mirror SpeciesRowsHeader):
         //  44px (sprite circle)
-        //  minmax(0, 1fr) (info column: name + types, abilities)
+        //  minmax(0, 1fr) (info column: name on top, abilities muted below)
+        //  minmax(7rem, auto) (types column — fits two pills comfortably,
+        //    one-type species don't waste space)
         //  auto (compact stats block — see StatsCells below, ~240px wide)
-        "grid-cols-[2.75rem_minmax(0,1fr)_auto]",
+        "grid-cols-[2.75rem_minmax(0,1fr)_minmax(7rem,auto)_auto]",
         isCurrent && "bg-primary/5"
       )}
       aria-label={`Select ${entry.species}`}
@@ -106,33 +108,34 @@ function SpeciesRow({ entry, isCurrent, onSelect }: SpeciesRowProps) {
         />
       </div>
 
-      {/* Info — name + type pills on top, abilities muted below. The name
-          span carries `min-w-0` so it can shrink and truncate as a last
-          resort if the column is unusually narrow; type pills stay
-          `shrink-0` so they never collapse. */}
+      {/* Info — species name on top, abilities muted below. Types now live
+          in their own column to the right (see next cell). The name span
+          carries `min-w-0` so it can shrink and truncate as a last resort
+          if the column is unusually narrow. */}
       <div className="flex min-w-0 flex-col gap-0.5">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <span className="text-foreground min-w-0 truncate text-sm font-semibold">
-            {entry.species}
-          </span>
-          <div className="flex shrink-0 gap-1">
-            {entry.types.map((type) => (
-              <span
-                key={type}
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                  TYPE_PILL_COLORS[type as keyof typeof TYPE_PILL_COLORS] ??
-                    "bg-muted text-foreground"
-                )}
-              >
-                {type}
-              </span>
-            ))}
-          </div>
-        </div>
+        <span className="text-foreground min-w-0 truncate text-sm font-semibold">
+          {entry.species}
+        </span>
         <span className="text-muted-foreground truncate text-xs">
           {entry.abilities.join(" · ")}
         </span>
+      </div>
+
+      {/* Types column — pills stay `shrink-0` so they never collapse, and
+          the wrapper aligns left so single-type species don't drift. */}
+      <div className="flex flex-wrap items-center gap-1">
+        {entry.types.map((type) => (
+          <span
+            key={type}
+            className={cn(
+              "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+              TYPE_PILL_COLORS[type as keyof typeof TYPE_PILL_COLORS] ??
+                "bg-muted text-foreground"
+            )}
+          >
+            {type}
+          </span>
+        ))}
       </div>
 
       {/* Stats — HP / Atk / Def / SpA / SpD / Spe in Geist Mono, plus BST
@@ -207,13 +210,18 @@ function SpeciesRowsHeader() {
     <div
       className={cn(
         "bg-muted/50 text-muted-foreground sticky top-0 z-10 grid items-center gap-3 border-b px-4 py-1.5 text-xs font-medium tracking-wide uppercase",
-        // Mirror the SpeciesRow grid template so the stats block aligns
-        // over the per-row stats.
-        "grid-cols-[2.75rem_minmax(0,1fr)_auto]"
+        // Mirror the SpeciesRow grid template so each header label sits
+        // above the corresponding row cell.
+        "grid-cols-[2.75rem_minmax(0,1fr)_minmax(7rem,auto)_auto]"
       )}
     >
+      {/* Sprite column has no header label */}
       <span aria-hidden="true" />
+      {/* Name + abilities column has no header label (the search input is
+          the de facto label) */}
       <span aria-hidden="true" />
+      {/* Types column — dedicated header so users can map column to data */}
+      <span>Types</span>
       <div className="grid grid-cols-[repeat(6,1.75rem)_2.5rem] items-center gap-1.5">
         <span className="text-center">HP</span>
         <span className="text-center">Atk</span>
