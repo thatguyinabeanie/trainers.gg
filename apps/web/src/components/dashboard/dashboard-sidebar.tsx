@@ -26,6 +26,7 @@ import {
   BarChart3,
   FileText,
   GraduationCap,
+  Plug,
 } from "lucide-react";
 
 import { formatDisplayUsername } from "@trainers/utils";
@@ -879,15 +880,25 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
     },
   ] as const;
 
-  const settingsItem =
-    community.role === "owner"
-      ? {
-          label: "Settings",
-          href: `${base}/settings`,
-          icon: Settings,
-          isActive: pathname.startsWith(`${base}/settings`),
-        }
-      : null;
+  const isOwner = community.role === "owner";
+
+  const settingsItem = isOwner
+    ? {
+        label: "Settings",
+        href: `${base}/settings`,
+        icon: Settings,
+        isActive: pathname.startsWith(`${base}/settings`),
+      }
+    : null;
+
+  const integrationsItem = isOwner
+    ? {
+        label: "Integrations",
+        href: `${base}/settings/integrations/discord`,
+        icon: Plug,
+        isActive: pathname.startsWith(`${base}/settings/integrations`),
+      }
+    : null;
 
   return (
     <>
@@ -935,6 +946,19 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
                 >
                   <settingsItem.icon className="size-4 shrink-0" />
                   <span>{settingsItem.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+
+            {integrationsItem && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link href={integrationsItem.href} />}
+                  isActive={integrationsItem.isActive}
+                  tooltip={integrationsItem.label}
+                >
+                  <integrationsItem.icon className="size-4 shrink-0" />
+                  <span>{integrationsItem.label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}

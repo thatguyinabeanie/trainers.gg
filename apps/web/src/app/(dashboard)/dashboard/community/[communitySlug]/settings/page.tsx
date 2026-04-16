@@ -6,7 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkdownContent } from "@/components/ui/markdown-content";
 import { toast } from "sonner";
 
-import { getCommunityBySlug } from "@trainers/supabase";
+import {
+  getCommunityBySlug,
+  getDiscordServerByCommunityId,
+} from "@trainers/supabase";
 import { type TypedSupabaseClient } from "@trainers/supabase";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@trainers/validators";
 import {
@@ -157,6 +160,13 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
   const [socialLinks, setSocialLinks] = useState<CommunitySocialLink[]>(() =>
     parseSocialLinks(org.social_links)
   );
+
+  const { data: discordServer } = useSupabaseQuery(
+    (client: TypedSupabaseClient) =>
+      getDiscordServerByCommunityId(client, org.id),
+    [org.id]
+  );
+  const _discordInstalled = discordServer != null;
 
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
