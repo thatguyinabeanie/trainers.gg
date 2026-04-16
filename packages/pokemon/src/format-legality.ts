@@ -558,6 +558,47 @@ function computeLegalMovesForChampions(
 }
 
 // =============================================================================
+// Tera Types
+// =============================================================================
+
+/** All 18 standard Tera types. */
+const ALL_TERA_TYPES: readonly string[] = [
+  "Normal",
+  "Fire",
+  "Water",
+  "Electric",
+  "Grass",
+  "Ice",
+  "Fighting",
+  "Poison",
+  "Ground",
+  "Flying",
+  "Psychic",
+  "Bug",
+  "Rock",
+  "Ghost",
+  "Dragon",
+  "Dark",
+  "Steel",
+  "Fairy",
+];
+
+/**
+ * Check whether a format's ruleset includes the Terastal Clause, which
+ * bans Terastallization entirely. Formats like [Gen 9] Monotype use this.
+ */
+function formatUsesTerastalClause(formatId: string): boolean {
+  const simName = SIM_FORMAT_NAME_BY_ID[formatId];
+  if (!simName) return false;
+  const format = SimDex.formats.get(simName);
+  if (!format?.exists) return false;
+  // The @pkmn/sim TS types don't expose `ruleset` directly — access via
+  // unknown cast with type narrowing per project code-style rules.
+  const ruleset = (format as unknown as { ruleset?: string[] }).ruleset;
+  return ruleset?.some((r: string) => r === "Terastal Clause") ?? false;
+}
+
+// =============================================================================
 // Public API
 // =============================================================================
 
@@ -642,4 +683,39 @@ export function isLegalMove(
   if (!move) return true;
   const legal = getLegalMoves(species, formatId);
   return legal === undefined || legal.has(move);
+}
+
+/**
+ * Returns the set of Tera types legal in the given format, or `undefined`
+ * if legality cannot be determined (treat as permissive).
+ *
+ * - Champions: VGC 2026 Reg M-A → empty set (no Tera — only Mega Evolutions).
+ * - Formats with Terastal Clause (e.g. Monotype) → empty set.
+ * - Other registered sim formats → all 18 standard types.
+ * - Unknown formats → `undefined` (permissive).
+ */
+export function getLegalTeraTypes(
+  formatId: string
+): ReadonlySet<string> | undefined {
+  // Champions M-A has no Tera — only Mega Evolutions.
+  if (formatId === "championsvgc2026regma") {
+    return new Set();
+  }
+  // Unknown / unregistered formats → permissive.
+  if (!SIM_FORMAT_NAME_BY_ID[formatId]) return undefined;
+  // Formats that explicitly ban Terastallization → empty set.
+  if (formatUsesTerastalClause(formatId)) return new Set();
+  // All other registered formats → full 18-type set.
+  return new Set(ALL_TERA_TYPES);
+}
+
+/**
+ * True when `type` is a legal Tera type in `formatId`. Returns true for
+ * the empty string (no Tera is always legal) and for any format without
+ * computable legality (permissive default).
+ */
+export function isLegalTeraType(type: string, formatId: string): boolean {
+  if (!type) return true;
+  const legal = getLegalTeraTypes(formatId);
+  return legal === undefined || legal.has(type);
 }
