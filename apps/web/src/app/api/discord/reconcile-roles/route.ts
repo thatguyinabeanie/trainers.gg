@@ -2,8 +2,8 @@
  * Discord Reconcile Roles Cron
  *
  * Compares the trainers.gg role membership for each enabled role mapping
- * against the current Discord guild state, then enqueues add/remove jobs
- * into `discord_role_sync_queue` for the role-sync cron to apply.
+ * against the current Discord guild state, then starts a syncRoleWorkflow
+ * for each add/remove delta.
  *
  * Processes up to MAPPING_BATCH enabled role mappings per run (oldest first).
  * Winner roles are honorific and are never removed, only added.
@@ -15,6 +15,8 @@
  * GET /api/discord/reconcile-roles
  */
 
+import { start } from "workflow/api";
+
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getGuildMembersWithRole, getErrorCode } from "@/lib/discord/api";
 import {
@@ -25,8 +27,9 @@ import {
   getCommunityWinnerUserIds,
   getCommunityCurrentlyPlayingUserIds,
   getCommunityMemberUserIds,
-  enqueueRoleSync,
 } from "@trainers/supabase";
+
+import { syncRoleWorkflow } from "@/workflows/sync-role";
 
 // =============================================================================
 // Constants
@@ -142,27 +145,29 @@ export async function GET(request: Request): Promise<Response> {
           : new Set([...current].filter((id) => !discordIds.has(id)));
 
       // -----------------------------------------------------------------------
-      // 5. Enqueue deltas
+      // 5. Start workflow for each delta
       // -----------------------------------------------------------------------
       for (const userId of shouldAdd) {
-        await enqueueRoleSync(supabase, {
-          discord_server_id: mapping.discord_server_id,
-          discord_user_id: userId,
-          discord_role_id: mapping.discord_role_id,
-          action: "add",
-          source_event: "reconcile",
-        });
+        await start(syncRoleWorkflow, [
+          mapping.guild_id,
+          userId,
+          mapping.discord_role_id,
+          "add",
+          mapping.discord_server_id,
+          mapping.role_type,
+        ]);
         stats.adds++;
       }
 
       for (const userId of shouldRemove) {
-        await enqueueRoleSync(supabase, {
-          discord_server_id: mapping.discord_server_id,
-          discord_user_id: userId,
-          discord_role_id: mapping.discord_role_id,
-          action: "remove",
-          source_event: "reconcile",
-        });
+        await start(syncRoleWorkflow, [
+          mapping.guild_id,
+          userId,
+          mapping.discord_role_id,
+          "remove",
+          mapping.discord_server_id,
+          mapping.role_type,
+        ]);
         stats.removes++;
       }
     } catch (e: unknown) {

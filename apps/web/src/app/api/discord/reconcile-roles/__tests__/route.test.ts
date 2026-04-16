@@ -13,7 +13,6 @@ const mockGetCommunityParticipantUserIds = jest.fn();
 const mockGetCommunityWinnerUserIds = jest.fn();
 const mockGetCommunityCurrentlyPlayingUserIds = jest.fn();
 const mockGetCommunityMemberUserIds = jest.fn();
-const mockEnqueueRoleSync = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
   listAllEnabledRoleMappingsWithServer: (...args: unknown[]) =>
@@ -30,7 +29,6 @@ jest.mock("@trainers/supabase", () => ({
     mockGetCommunityCurrentlyPlayingUserIds(...args),
   getCommunityMemberUserIds: (...args: unknown[]) =>
     mockGetCommunityMemberUserIds(...args),
-  enqueueRoleSync: (...args: unknown[]) => mockEnqueueRoleSync(...args),
 }));
 
 const mockCreateServiceRoleClient = jest.fn();
@@ -49,11 +47,23 @@ jest.mock("@/lib/discord/api", () => ({
   getErrorCode: (e: unknown) => mockGetErrorCode(e),
 }));
 
+const mockStart = jest.fn();
+
+jest.mock("workflow/api", () => ({
+  start: (...args: unknown[]) => mockStart(...args),
+}));
+
+// syncRoleWorkflow is just used as a reference — mock it as a named export
+jest.mock("@/workflows/sync-role", () => ({
+  syncRoleWorkflow: "mock-sync-role-workflow",
+}));
+
 // =============================================================================
 // Imports (after mocks)
 // =============================================================================
 
 import { GET } from "../route";
+import { syncRoleWorkflow } from "@/workflows/sync-role";
 
 // =============================================================================
 // Helpers
@@ -113,7 +123,7 @@ beforeEach(() => {
   mockGetCommunityWinnerUserIds.mockResolvedValue([]);
   mockGetCommunityCurrentlyPlayingUserIds.mockResolvedValue([]);
   mockGetCommunityMemberUserIds.mockResolvedValue([]);
-  mockEnqueueRoleSync.mockResolvedValue({ id: 1, created: true });
+  mockStart.mockResolvedValue(undefined);
   mockGetErrorCode.mockReturnValue("unknown");
 });
 
@@ -148,7 +158,7 @@ describe("Authorization", () => {
 // =============================================================================
 
 describe("Diff logic — staff role", () => {
-  it("enqueues add(A) and remove(C) for trainers={A,B} discord={B,C}", async () => {
+  it("starts add(A) and remove(C) workflows for trainers={A,B} discord={B,C}", async () => {
     const mapping = makeMapping({ role_type: "staff" });
     mockListAllEnabledRoleMappingsWithServer.mockResolvedValue([mapping]);
 
@@ -163,33 +173,29 @@ describe("Diff logic — staff role", () => {
 
     await GET(makeRequest(`Bearer ${CRON_SECRET}`));
 
-    // discord-A is missing from Discord → enqueue add
-    expect(mockEnqueueRoleSync).toHaveBeenCalledWith(
-      FAKE_CLIENT,
-      expect.objectContaining({ discord_user_id: "discord-A", action: "add" })
+    // discord-A is missing from Discord → start add workflow
+    expect(mockStart).toHaveBeenCalledWith(
+      syncRoleWorkflow,
+      expect.arrayContaining(["discord-A", "add"])
     );
 
-    // discord-C is not in trainers side → enqueue remove
-    expect(mockEnqueueRoleSync).toHaveBeenCalledWith(
-      FAKE_CLIENT,
-      expect.objectContaining({
-        discord_user_id: "discord-C",
-        action: "remove",
-      })
+    // discord-C is not in trainers side → start remove workflow
+    expect(mockStart).toHaveBeenCalledWith(
+      syncRoleWorkflow,
+      expect.arrayContaining(["discord-C", "remove"])
     );
 
-    // discord-B is in both sets → no action
-    const calls = mockEnqueueRoleSync.mock.calls as Array<
-      [unknown, { discord_user_id: string }]
-    >;
-    const involvedUsers = calls.map((c) => c[1].discord_user_id);
+    // discord-B is in both sets → no workflow started for discord-B
+    const calls = mockStart.mock.calls as Array<[unknown, unknown[]]>;
+    const involvedUsers = calls.map((c) => c[1][1]); // discordUserId is index 1
     expect(involvedUsers).not.toContain("discord-B");
   });
 
-  it("passes source_event=reconcile and correct role/server IDs to enqueueRoleSync", async () => {
+  it("passes guild_id, discord_role_id, discord_server_id, and role_type to start()", async () => {
     const mapping = makeMapping({
       discord_server_id: 99,
       discord_role_id: "role-XYZ",
+      guild_id: "guild-888",
       role_type: "staff",
     });
     mockListAllEnabledRoleMappingsWithServer.mockResolvedValue([mapping]);
@@ -199,13 +205,14 @@ describe("Diff logic — staff role", () => {
 
     await GET(makeRequest(`Bearer ${CRON_SECRET}`));
 
-    expect(mockEnqueueRoleSync).toHaveBeenCalledWith(FAKE_CLIENT, {
-      discord_server_id: 99,
-      discord_user_id: "d1",
-      discord_role_id: "role-XYZ",
-      action: "add",
-      source_event: "reconcile",
-    });
+    expect(mockStart).toHaveBeenCalledWith(syncRoleWorkflow, [
+      "guild-888", // guild_id (snowflake)
+      "d1", // discordUserId
+      "role-XYZ", // discord_role_id
+      "add", // action
+      99, // discord_server_id (internal)
+      "staff", // role_type
+    ]);
   });
 });
 
@@ -214,7 +221,7 @@ describe("Diff logic — staff role", () => {
 // =============================================================================
 
 describe("Winner role — honorific, removes suppressed", () => {
-  it("enqueues add(A) but NOT remove(C) for winner role", async () => {
+  it("starts add(A) workflow but NOT remove(C) for winner role", async () => {
     const mapping = makeMapping({ role_type: "winner" });
     mockListAllEnabledRoleMappingsWithServer.mockResolvedValue([mapping]);
 
@@ -227,17 +234,15 @@ describe("Winner role — honorific, removes suppressed", () => {
     await GET(makeRequest(`Bearer ${CRON_SECRET}`));
 
     // add discord-A — they should have the winner role but don't
-    expect(mockEnqueueRoleSync).toHaveBeenCalledWith(
-      FAKE_CLIENT,
-      expect.objectContaining({ discord_user_id: "discord-A", action: "add" })
+    expect(mockStart).toHaveBeenCalledWith(
+      syncRoleWorkflow,
+      expect.arrayContaining(["discord-A", "add"])
     );
 
     // discord-C should NOT be removed — winner roles are honorific
-    const calls = mockEnqueueRoleSync.mock.calls as Array<
-      [unknown, { discord_user_id: string; action: string }]
-    >;
+    const calls = mockStart.mock.calls as Array<[unknown, unknown[]]>;
     const removeCalls = calls.filter(
-      (c) => c[1].discord_user_id === "discord-C" && c[1].action === "remove"
+      (c) => c[1][1] === "discord-C" && c[1][3] === "remove"
     );
     expect(removeCalls).toHaveLength(0);
   });
