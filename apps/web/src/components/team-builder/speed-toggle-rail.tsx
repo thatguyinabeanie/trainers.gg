@@ -18,7 +18,6 @@ export interface SpeedToggleState {
   field: {
     tailwind: boolean;
     weather: Weather;
-    trickRoom: boolean;
   };
   /** Speed stat stage, clamped to [-6, +6] */
   stage: number;
@@ -139,10 +138,6 @@ export function SpeedToggleRail({
     onChange({ ...state, field: { ...state.field, weather: final } });
   }
 
-  function setTrickRoom(next: boolean) {
-    onChange({ ...state, field: { ...state.field, trickRoom: next } });
-  }
-
   function setStage(next: number) {
     onChange({ ...state, stage: clampStage(next) });
   }
@@ -173,11 +168,6 @@ export function SpeedToggleRail({
             label="Tailwind"
             active={state.field.tailwind}
             onClick={() => setTailwind(!state.field.tailwind)}
-          />
-          <Pill
-            label="Trick Room"
-            active={state.field.trickRoom}
-            onClick={() => setTrickRoom(!state.field.trickRoom)}
           />
           {weatherOptions.map((w) => (
             <Pill

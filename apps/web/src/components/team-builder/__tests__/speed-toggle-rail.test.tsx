@@ -43,7 +43,7 @@ function makeState(
   overrides: Partial<SpeedToggleState> = {}
 ): SpeedToggleState {
   return {
-    field: { tailwind: false, weather: "none", trickRoom: false },
+    field: { tailwind: false, weather: "none" },
     stage: 0,
     item: "",
     status: "healthy",
@@ -169,7 +169,7 @@ describe("SpeedToggleRail — weather toggles", () => {
     render(
       <SpeedToggleRail
         state={makeState({
-          field: { tailwind: false, weather: "sun", trickRoom: false },
+          field: { tailwind: false, weather: "sun" },
         })}
         onChange={onChange}
         format={CHAMPIONS_FORMAT}
@@ -190,7 +190,7 @@ describe("SpeedToggleRail — weather toggles", () => {
     render(
       <SpeedToggleRail
         state={makeState({
-          field: { tailwind: false, weather: "sun", trickRoom: false },
+          field: { tailwind: false, weather: "sun" },
         })}
         onChange={onChange}
         format={CHAMPIONS_FORMAT}

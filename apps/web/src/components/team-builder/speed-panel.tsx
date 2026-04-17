@@ -50,7 +50,7 @@ interface ScoredMon {
 // =============================================================================
 
 const DEFAULT_TOGGLE_STATE: SpeedToggleState = {
-  field: { tailwind: false, weather: "none", trickRoom: false },
+  field: { tailwind: false, weather: "none" },
   stage: 0,
   item: "",
   status: "healthy",
@@ -366,8 +366,7 @@ function SpeedPanelInner({
     }),
   }));
 
-  // Trick Room: reverse the visual ordering so the slowest tier sits at top.
-  const orderedTiers = toggle.field.trickRoom ? tiers.slice().reverse() : tiers;
+  const orderedTiers = tiers;
 
   // ---- render --------------------------------------------------------------
 
@@ -438,11 +437,7 @@ function SpeedPanelInner({
 
       {/* L4 — Tier list (full panel width) --------------------------------- */}
       <div className="max-h-[calc(100vh-24rem)] overflow-y-auto">
-        <SpeedTierList
-          tiers={orderedTiers}
-          selectedSpeed={effectiveSpeed}
-          trickRoom={toggle.field.trickRoom}
-        />
+        <SpeedTierList tiers={orderedTiers} selectedSpeed={effectiveSpeed} />
       </div>
     </div>
   );
