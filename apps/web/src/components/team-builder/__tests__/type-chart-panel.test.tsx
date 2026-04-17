@@ -6,6 +6,18 @@ import React from "react";
 // Module-level mocks — keep ALL_TYPES at full 18 so the panel renders 18 rows.
 // =============================================================================
 
+// Tooltip uses Base UI portals — mock to simple pass-through wrappers so the
+// TypeSymbolIcon renders inline without needing a full JSDOM provider.
+jest.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ render: renderProp }: { render: React.ReactNode }) => (
+    <>{renderProp}</>
+  ),
+  TooltipContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+}));
+
 const MOCK_TYPES = [
   "Normal",
   "Fire",
@@ -28,11 +40,6 @@ const MOCK_TYPES = [
 ] as const;
 
 jest.mock("@trainers/pokemon/sprites", () => ({
-  // The chart uses Showdown type icons — mock to a stable URL so tests can
-  // assert the icon source without hitting the network.
-  getShowdownTypeIconUrl: jest.fn(
-    (type: string) => `https://example.test/types/${type}.png`
-  ),
   getPokemonSprite: jest.fn(() => ({
     url: "https://example.test/sprite.png",
     w: 96,
@@ -347,22 +354,18 @@ describe("TypeChartPanel", () => {
   // Type icons
   // ---------------------------------------------------------------------------
 
-  it("renders a Showdown type icon (with full type name as alt) per row", () => {
+  it("renders a round type symbol icon (role=img, aria-label = type name) per row", () => {
     const team = [makePokemon({ id: 1, species: "Charizard" })];
     render(<TypeChartPanel team={team} />);
 
-    // The narrow label column uses the Showdown type icon. The full type name
-    // surfaces via the `<img alt>` attribute (screen readers) and the wrapper's
-    // `aria-label` (focus + tooltip trigger).
+    // Each row's label column uses TypeSymbolIcon — a <span role="img"> with
+    // aria-label equal to the type name. No text or src attribute is required
+    // (it's a lucide-react glyph, not an <img> tag).
     const fireRow = screen.getByTestId("type-row-Fire");
     const icon = within(fireRow).getByRole("img", { name: "Fire" });
     expect(icon).toBeInTheDocument();
-    expect(icon).toHaveAttribute("src", "https://example.test/types/Fire.png");
-
-    // Tooltip trigger wrapper exposes the type name to assistive tech.
-    expect(
-      within(fireRow).getByLabelText("Fire", { selector: "span" })
-    ).toBeInTheDocument();
+    // data-type attribute helps with visual debugging / CSS selection
+    expect(icon).toHaveAttribute("data-type", "Fire");
   });
 
   // ---------------------------------------------------------------------------

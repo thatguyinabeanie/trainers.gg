@@ -8,10 +8,7 @@ import {
   getSpeciesTypes,
   type PokemonType,
 } from "@trainers/pokemon";
-import {
-  getPokemonSprite,
-  getShowdownTypeIconUrl,
-} from "@trainers/pokemon/sprites";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -20,6 +17,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+import { TypeSymbolIcon } from "./type-symbol-icon";
 
 // =============================================================================
 // Types
@@ -122,7 +121,7 @@ function buildMatrix(team: Tables<"pokemon">[]): MatrixRow[] {
 }
 
 // =============================================================================
-// TypeIcon — Showdown type icon with hover tooltip showing the full name
+// TypeIcon — round type symbol icon with hover tooltip showing the full name
 // =============================================================================
 
 interface TypeIconProps {
@@ -130,37 +129,15 @@ interface TypeIconProps {
 }
 
 /**
- * Defensive coverage row label. Showdown type icon so the row reads at a
- * glance without leaning on 3-letter abbreviations. Full type name surfaces
- * via the tooltip and the underlying `<img alt>` for screen readers.
+ * Defensive coverage row label. Uses TypeSymbolIcon (round glyph on colored
+ * background, no text) so the label column stays compact and reads at a glance.
+ * Full type name surfaces via the Tooltip and the wrapper's aria-label.
  */
 function TypeIcon({ type }: TypeIconProps) {
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <span
-            tabIndex={0}
-            aria-label={type}
-            data-type={type}
-            className={cn(
-              "inline-flex w-full cursor-default items-center justify-center",
-              "outline-ring/40 rounded focus-visible:outline-2"
-            )}
-          >
-            <img
-              src={getShowdownTypeIconUrl(type)}
-              alt={type}
-              width={32}
-              height={14}
-              className="image-rendering-pixelated h-3.5 w-8 select-none"
-              draggable={false}
-            />
-          </span>
-        }
-      />
-      <TooltipContent>{type}</TooltipContent>
-    </Tooltip>
+    <span className="inline-flex w-full items-center justify-center">
+      <TypeSymbolIcon type={type} size={18} />
+    </span>
   );
 }
 

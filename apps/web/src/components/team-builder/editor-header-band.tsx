@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 
 import { PokemonDetailsPopover } from "./pokemon-details-popover";
 import { TYPE_PILL_COLORS } from "./type-colors";
+import { TypeSymbolIcon } from "./type-symbol-icon";
 
 // =============================================================================
 // Types
@@ -271,15 +272,7 @@ export function EditorHeaderBand({
         {types.length > 0 && (
           <div className="flex gap-1">
             {types.map((type) => (
-              <span
-                key={type}
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                  TYPE_PILL_COLORS[type] ?? "bg-muted text-foreground"
-                )}
-              >
-                {type}
-              </span>
+              <TypeSymbolIcon key={type} type={type as PokemonType} size={16} />
             ))}
           </div>
         )}

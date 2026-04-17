@@ -8,7 +8,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-import { TYPE_PILL_COLORS } from "./type-colors";
+import { TypeSymbolIcon } from "./type-symbol-icon";
 
 // =============================================================================
 // Types
@@ -101,15 +101,9 @@ export function MoveRow({ move, onOpenPicker, className }: MoveRowProps) {
         className
       )}
     >
-      {/* Type pill */}
-      <span
-        className={cn(
-          "rounded px-1.5 py-0.5 text-center text-[10px] leading-none font-semibold",
-          TYPE_PILL_COLORS[move.type as PokemonType | "Stellar"] ??
-            "bg-muted text-foreground"
-        )}
-      >
-        {move.type}
+      {/* Type symbol icon */}
+      <span className="flex items-center justify-center">
+        <TypeSymbolIcon type={move.type as PokemonType | "Stellar"} size={20} />
       </span>
 
       {/* Name + helper */}

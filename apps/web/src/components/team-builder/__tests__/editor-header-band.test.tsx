@@ -27,6 +27,18 @@ jest.mock("@trainers/pokemon/sprites", () => ({
   })),
 }));
 
+// Tooltip uses Base UI portals — mock to simple pass-through wrappers so the
+// TypeSymbolIcon renders inline without needing a full JSDOM provider.
+jest.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ render: renderProp }: { render: React.ReactNode }) => (
+    <>{renderProp}</>
+  ),
+  TooltipContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+}));
+
 // next/image renders an <img> in tests so query-by-alt works.
 // Strip next/image-specific boolean props React doesn't understand as DOM attrs.
 jest.mock("next/image", () => ({
@@ -154,15 +166,18 @@ describe("EditorHeaderBand", () => {
     });
 
     it("renders the sprite image", () => {
-      renderBand();
-      const img = screen.getByRole("img");
+      renderBand({ species: "Incineroar" });
+      // Use alt text to disambiguate from the type symbol icons (which use role="img" too).
+      const img = screen.getByRole("img", { name: "Incineroar" });
       expect(img).toHaveAttribute("src", "https://example.test/sprite.png");
     });
 
-    it("renders both type pills for a dual-typed species", () => {
+    it("renders both type icons (role=img) for a dual-typed species", () => {
       renderBand();
-      expect(screen.getByText("Fire")).toBeInTheDocument();
-      expect(screen.getByText("Dark")).toBeInTheDocument();
+      // Types now render as TypeSymbolIcon (round glyph, no text) —
+      // each has role="img" with aria-label = type name.
+      expect(screen.getByRole("img", { name: "Fire" })).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Dark" })).toBeInTheDocument();
     });
   });
 

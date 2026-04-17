@@ -13,6 +13,18 @@ jest.mock("@trainers/pokemon", () => ({
   getMoveHelperText: jest.fn(() => "+1 priority"),
 }));
 
+// Tooltip uses Base UI portals — mock to simple pass-through wrappers so the
+// TypeSymbolIcon renders inline without needing a full JSDOM provider.
+jest.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ render: renderProp }: { render: React.ReactNode }) => (
+    <>{renderProp}</>
+  ),
+  TooltipContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+}));
+
 import { getMoveHelperText, type MoveData } from "@trainers/pokemon";
 
 import { MoveListHeader, MoveRow } from "../move-row";
@@ -64,9 +76,10 @@ describe("MoveRow", () => {
       expect(screen.getByText("100")).toBeInTheDocument();
     });
 
-    it("renders the type pill with the move's type", () => {
+    it("renders the type as a round symbol icon (role=img, aria-label = type)", () => {
       render(<MoveRow move={physicalMove} onOpenPicker={jest.fn()} />);
-      expect(screen.getByText("Dark")).toBeInTheDocument();
+      // Type now renders as TypeSymbolIcon — no text, role="img" with aria-label.
+      expect(screen.getByRole("img", { name: "Dark" })).toBeInTheDocument();
     });
 
     it("calls onOpenPicker when the row is clicked", async () => {
