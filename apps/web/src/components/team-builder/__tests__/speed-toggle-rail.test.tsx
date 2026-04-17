@@ -204,6 +204,38 @@ describe("SpeedToggleRail — weather toggles", () => {
   });
 });
 
+describe("SpeedToggleRail — layout", () => {
+  it("renders as a horizontal flex row (flex-row class)", () => {
+    const onChange = jest.fn();
+    render(
+      <SpeedToggleRail
+        state={makeState()}
+        onChange={onChange}
+        format={CHAMPIONS_FORMAT}
+      />
+    );
+
+    const rail = screen.getByTestId("speed-toggle-rail");
+    expect(rail.className).toMatch(/flex-row/);
+  });
+
+  it("renders all four groups: Field, Stage, Item, Status", () => {
+    const onChange = jest.fn();
+    render(
+      <SpeedToggleRail
+        state={makeState()}
+        onChange={onChange}
+        format={CHAMPIONS_FORMAT}
+      />
+    );
+
+    expect(screen.getByText("Field")).toBeInTheDocument();
+    expect(screen.getByText("Stage")).toBeInTheDocument();
+    expect(screen.getByText("Item")).toBeInTheDocument();
+    expect(screen.getByText("Status")).toBeInTheDocument();
+  });
+});
+
 describe("SpeedToggleRail — no Opp EVs toggle", () => {
   it("does not render an Opp EVs toggle (min/max are always shown as columns)", () => {
     const onChange = jest.fn();

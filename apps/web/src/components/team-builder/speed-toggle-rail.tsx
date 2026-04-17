@@ -110,9 +110,12 @@ function GroupHeader({ children }: GroupHeaderProps) {
 // =============================================================================
 
 /**
- * Left column of the SpeedPanel body. A pure-controlled toggle rail that lets
- * the user pose "what-if" questions about the selected pokémon's effective
- * speed: opponent EVs, field effects, stat stage, item, status.
+ * Horizontal toggle bar rendered above the SpeedTierList. A pure-controlled
+ * component that lets the user pose "what-if" questions about the selected
+ * Pokémon's effective speed: field effects, stat stage, item, status.
+ *
+ * The four groups (Field / Stage / Item / Status) flow in a flex row and
+ * wrap when the panel narrows.
  */
 export function SpeedToggleRail({
   state,
@@ -158,24 +161,24 @@ export function SpeedToggleRail({
     <div
       data-testid="speed-toggle-rail"
       className={cn(
-        "bg-muted/30 flex w-[140px] shrink-0 flex-col gap-3 border-r p-2.5",
+        "bg-muted/30 flex flex-row flex-wrap gap-3 border-b px-3 py-2",
         className
       )}
     >
       {/* Field -------------------------------------------------------------- */}
       <div className="flex flex-col gap-1.5">
         <GroupHeader>Field</GroupHeader>
-        <Pill
-          label="Tailwind"
-          active={state.field.tailwind}
-          onClick={() => setTailwind(!state.field.tailwind)}
-        />
-        <Pill
-          label="Trick Room"
-          active={state.field.trickRoom}
-          onClick={() => setTrickRoom(!state.field.trickRoom)}
-        />
-        <div className="grid grid-cols-2 gap-1">
+        <div className="flex flex-row flex-wrap gap-1">
+          <Pill
+            label="Tailwind"
+            active={state.field.tailwind}
+            onClick={() => setTailwind(!state.field.tailwind)}
+          />
+          <Pill
+            label="Trick Room"
+            active={state.field.trickRoom}
+            onClick={() => setTrickRoom(!state.field.trickRoom)}
+          />
           {weatherOptions.map((w) => (
             <Pill
               key={w}
@@ -191,7 +194,7 @@ export function SpeedToggleRail({
       {/* Stage stepper ------------------------------------------------------ */}
       <div className="flex flex-col gap-1.5">
         <GroupHeader>Stage</GroupHeader>
-        <div className="bg-card grid grid-cols-[22px_1fr_22px] overflow-hidden rounded-md border">
+        <div className="bg-card grid grid-cols-[22px_32px_22px] overflow-hidden rounded-md border">
           <button
             type="button"
             aria-label="Decrement speed stage"
@@ -232,7 +235,7 @@ export function SpeedToggleRail({
           aria-label="Held item"
           value={state.item}
           onChange={(e) => setItem(e.target.value)}
-          className="bg-card text-foreground w-full rounded-md border px-1.5 py-1 text-xs"
+          className="bg-card text-foreground rounded-md border px-1.5 py-1 text-xs"
         >
           <option value="">None</option>
           {items.map((item) => (
@@ -250,7 +253,7 @@ export function SpeedToggleRail({
           aria-label="Status condition"
           value={state.status}
           onChange={(e) => setStatus(e.target.value as "healthy" | "paralyzed")}
-          className="bg-card text-foreground w-full rounded-md border px-1.5 py-1 text-xs"
+          className="bg-card text-foreground rounded-md border px-1.5 py-1 text-xs"
         >
           <option value="healthy">Healthy</option>
           <option value="paralyzed">Paralyzed</option>

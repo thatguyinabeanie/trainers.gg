@@ -383,6 +383,35 @@ describe("SpeedPanel — team partitions", () => {
   });
 });
 
+describe("SpeedPanel — layout", () => {
+  it("renders the toggle rail above the tier list (both present, no side-by-side grid)", () => {
+    const selected = makePokemon({ id: 1, species: "Floette" });
+    render(
+      <SpeedPanel
+        selectedPokemon={selected}
+        team={[selected]}
+        format={FORMAT}
+      />
+    );
+
+    const rail = screen.getByTestId("speed-toggle-rail");
+    const tierList = screen.getByTestId("speed-tier-list");
+
+    // Both must be in the document.
+    expect(rail).toBeInTheDocument();
+    expect(tierList).toBeInTheDocument();
+
+    // Toggle rail must be a horizontal flex row.
+    expect(rail.className).toMatch(/flex-row/);
+
+    // They must NOT share the same parent — the old 2-col layout put them as
+    // siblings inside a single flex div. In the new layout the tier list is
+    // inside a scroll wrapper that is a sibling of the rail, so the rail and
+    // tier list should NOT be direct siblings of each other.
+    expect(rail.parentElement).not.toBe(tierList.parentElement);
+  });
+});
+
 describe("SpeedPanel — state reset on selectedPokemon change", () => {
   it("resets toggle state when selectedPokemon switches", async () => {
     const user = userEvent.setup();
