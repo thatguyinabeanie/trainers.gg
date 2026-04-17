@@ -18,7 +18,7 @@ import {
   DEFAULT_FILTERS,
   type SpeciesFilterState,
 } from "./species-filters";
-import { TYPE_PILL_COLORS } from "./type-colors";
+import { TypeSymbolIcon } from "./type-symbol-icon";
 
 // =============================================================================
 // Constants
@@ -29,6 +29,23 @@ const MAX_VISIBLE_ROWS = 200;
 
 /** Stat threshold for the "high stat" highlight (matches the spec's 110+). */
 const HIGH_STAT_THRESHOLD = 110;
+
+/**
+ * Shared Tailwind grid template for both the header row and each data row.
+ * Having a single constant guarantees column-for-column alignment.
+ *
+ *   2.75rem  — sprite circle
+ *   minmax(0,1fr) — name + abilities info column
+ *   3rem     — types column: fits two 20px icons + 4px gap comfortably
+ *   auto     — stats block (HP/Atk/Def/SpA/SpD/Spe + BST divider)
+ */
+const ROW_GRID = "grid-cols-[2.75rem_minmax(0,1fr)_3rem_auto]";
+
+/**
+ * Shared Tailwind grid template for the inner stats cells (6 stat cols + BST).
+ * Extracted so the header and body cells always use identical column widths.
+ */
+const STATS_GRID = "grid-cols-[repeat(6,1.75rem)_2.5rem]";
 
 // =============================================================================
 // Types
@@ -50,6 +67,14 @@ interface SpeciesPickerProps {
   onCancel: () => void;
 }
 
+type SortCol = "name" | "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "bst";
+type SortDir = "asc" | "desc";
+
+interface SortState {
+  col: SortCol;
+  dir: SortDir;
+}
+
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -60,6 +85,24 @@ function statValueClass(value: number): string {
     return "text-stat-good font-semibold";
   }
   return "text-foreground";
+}
+
+/** Sort a list of entries by the given column and direction. */
+function sortEntries(
+  entries: SpeciesSearchEntry[],
+  sort: SortState
+): SpeciesSearchEntry[] {
+  return [...entries].sort((a, b) => {
+    let cmp: number;
+    if (sort.col === "name") {
+      cmp = a.species.localeCompare(b.species);
+    } else if (sort.col === "bst") {
+      cmp = a.bst - b.bst;
+    } else {
+      cmp = a.baseStats[sort.col] - b.baseStats[sort.col];
+    }
+    return sort.dir === "asc" ? cmp : -cmp;
+  });
 }
 
 // =============================================================================
@@ -81,13 +124,8 @@ function SpeciesRow({ entry, isCurrent, onSelect }: SpeciesRowProps) {
       onClick={onSelect}
       className={cn(
         "hover:bg-muted/60 grid w-full cursor-pointer items-center gap-3 border-b px-4 py-2.5 text-left transition-colors",
-        // Grid template (must mirror SpeciesRowsHeader):
-        //  44px (sprite circle)
-        //  minmax(0, 1fr) (info column: name on top, abilities muted below)
-        //  minmax(7rem, auto) (types column — fits two pills comfortably,
-        //    one-type species don't waste space)
-        //  auto (compact stats block — see StatsCells below, ~240px wide)
-        "grid-cols-[2.75rem_minmax(0,1fr)_minmax(7rem,auto)_auto]",
+        // Must mirror SpeciesRowsHeader (both use ROW_GRID).
+        ROW_GRID,
         isCurrent && "bg-primary/5"
       )}
       aria-label={`Select ${entry.species}`}
@@ -109,9 +147,8 @@ function SpeciesRow({ entry, isCurrent, onSelect }: SpeciesRowProps) {
       </div>
 
       {/* Info — species name on top, abilities muted below. Types now live
-          in their own column to the right (see next cell). The name span
-          carries `min-w-0` so it can shrink and truncate as a last resort
-          if the column is unusually narrow. */}
+          in their own column to the right. The name span carries `min-w-0`
+          so it can shrink and truncate as a last resort when narrow. */}
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="text-foreground min-w-0 truncate text-sm font-semibold">
           {entry.species}
@@ -121,28 +158,24 @@ function SpeciesRow({ entry, isCurrent, onSelect }: SpeciesRowProps) {
         </span>
       </div>
 
-      {/* Types column — pills stay `shrink-0` so they never collapse, and
-          the wrapper aligns left so single-type species don't drift. */}
-      <div className="flex flex-wrap items-center gap-1">
+      {/* Types column — fixed 3rem (min-w-12) so single-type and dual-type
+          species occupy the same column width. Icons are 20px each, two of
+          them + 4px gap fits inside 44px. Aligns left so single-type mons
+          don't drift to centre. */}
+      <div className="flex min-w-12 items-center gap-1">
         {entry.types.map((type) => (
-          <span
+          <TypeSymbolIcon
             key={type}
-            className={cn(
-              "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-              TYPE_PILL_COLORS[type as keyof typeof TYPE_PILL_COLORS] ??
-                "bg-muted text-foreground"
-            )}
-          >
-            {type}
-          </span>
+            type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
+            size={20}
+          />
         ))}
       </div>
 
       {/* Stats — HP / Atk / Def / SpA / SpD / Spe in Geist Mono, plus BST
-          rollup with a thin left divider. Compact (~240px) so the info
-          column gets the visual weight. Mirror this template in
-          SpeciesRowsHeader. */}
-      <div className="grid grid-cols-[repeat(6,1.75rem)_2.5rem] items-center gap-1.5">
+          rollup with a thin left divider. Uses STATS_GRID so widths are
+          identical to SpeciesRowsHeader. */}
+      <div className={cn("grid items-center gap-1.5", STATS_GRID)}>
         <span
           className={cn(
             "text-center font-mono text-xs tabular-nums",
@@ -205,31 +238,91 @@ function SpeciesRow({ entry, isCurrent, onSelect }: SpeciesRowProps) {
 // SpeciesRowsHeader — column labels for the stats grid
 // =============================================================================
 
-function SpeciesRowsHeader() {
+/** Arrow indicator shown next to the active sort column. */
+function SortArrow({ dir }: { dir: SortDir }) {
+  return (
+    <span aria-hidden="true" className="ml-0.5 inline-block leading-none">
+      {dir === "asc" ? "↑" : "↓"}
+    </span>
+  );
+}
+
+interface SpeciesRowsHeaderProps {
+  sort: SortState;
+  onSort: (col: SortCol) => void;
+}
+
+function SpeciesRowsHeader({ sort, onSort }: SpeciesRowsHeaderProps) {
+  /** Returns classes for a sortable header button. */
+  function headerBtnClass(col: SortCol) {
+    return cn(
+      "cursor-pointer select-none transition-colors hover:text-foreground",
+      sort.col === col ? "text-foreground" : "text-muted-foreground"
+    );
+  }
+
   return (
     <div
       className={cn(
-        "bg-muted/50 text-muted-foreground sticky top-0 z-10 grid items-center gap-3 border-b px-4 py-1.5 text-xs font-medium tracking-wide uppercase",
-        // Mirror the SpeciesRow grid template so each header label sits
-        // above the corresponding row cell.
-        "grid-cols-[2.75rem_minmax(0,1fr)_minmax(7rem,auto)_auto]"
+        "bg-muted/50 sticky top-0 z-10 grid items-center gap-3 border-b px-4 py-1.5 text-xs font-medium tracking-wide uppercase",
+        // Must mirror SpeciesRow (both use ROW_GRID).
+        ROW_GRID
       )}
     >
-      {/* Sprite column has no header label */}
+      {/* Sprite column — no label */}
       <span aria-hidden="true" />
-      {/* Name + abilities column has no header label (the search input is
-          the de facto label) */}
-      <span aria-hidden="true" />
-      {/* Types column — dedicated header so users can map column to data */}
-      <span>Types</span>
-      <div className="grid grid-cols-[repeat(6,1.75rem)_2.5rem] items-center gap-1.5">
-        <span className="text-center">HP</span>
-        <span className="text-center">Atk</span>
-        <span className="text-center">Def</span>
-        <span className="text-center">SpA</span>
-        <span className="text-center">SpD</span>
-        <span className="text-center">Spe</span>
-        <span className="border-border/60 border-l pl-2 text-center">BST</span>
+
+      {/* Name column — sortable */}
+      <button
+        type="button"
+        className={cn(headerBtnClass("name"), "text-left")}
+        onClick={() => onSort("name")}
+        aria-label="Sort by name"
+      >
+        Name
+        {sort.col === "name" && <SortArrow dir={sort.dir} />}
+      </button>
+
+      {/* Types column — dedicated header */}
+      <span className="text-muted-foreground">Types</span>
+
+      {/* Stats sub-grid — each label is a sortable button, using STATS_GRID */}
+      <div className={cn("grid items-center gap-1.5", STATS_GRID)}>
+        {(
+          [
+            { col: "hp", label: "HP" },
+            { col: "atk", label: "Atk" },
+            { col: "def", label: "Def" },
+            { col: "spa", label: "SpA" },
+            { col: "spd", label: "SpD" },
+            { col: "spe", label: "Spe" },
+          ] as const
+        ).map(({ col, label }) => (
+          <button
+            key={col}
+            type="button"
+            className={cn(headerBtnClass(col), "text-center")}
+            onClick={() => onSort(col)}
+            aria-label={`Sort by ${label}`}
+          >
+            {label}
+            {sort.col === col && <SortArrow dir={sort.dir} />}
+          </button>
+        ))}
+
+        {/* BST — sortable, with thin left divider matching the data rows */}
+        <button
+          type="button"
+          className={cn(
+            headerBtnClass("bst"),
+            "border-border/60 border-l pl-2 text-center"
+          )}
+          onClick={() => onSort("bst")}
+          aria-label="Sort by BST"
+        >
+          BST
+          {sort.col === "bst" && <SortArrow dir={sort.dir} />}
+        </button>
       </div>
     </div>
   );
@@ -240,10 +333,13 @@ function SpeciesRowsHeader() {
 // =============================================================================
 
 /**
- * Single-column rich-row species picker. Each row shows sprite, name + types,
- * abilities, the six base stats, and BST. Clicking a row selects the species
- * with default loadout (first ability) — there is no separate "select blank"
- * flow. The previous split-pane (table + detail) layout has been retired.
+ * Single-column rich-row species picker. Each row shows sprite, name +
+ * abilities, type icons, the six base stats, and BST. Clicking a row selects
+ * the species with default loadout (first ability).
+ *
+ * Sorting: defaults to alphabetical by name. Clicking any stat header switches
+ * to that stat (descending first; click again toggles; clicking a different
+ * header always starts descending). The Name header also toggles asc/desc.
  */
 export function SpeciesPicker({
   speciesIndex,
@@ -255,11 +351,22 @@ export function SpeciesPicker({
 }: SpeciesPickerProps) {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<SpeciesFilterState>(DEFAULT_FILTERS);
+  const [sort, setSort] = useState<SortState>({ col: "name", dir: "asc" });
 
-  // Derived list — search + filter + format legality. Passing `formatId`
-  // lets the free-text query also match learnable move names (e.g. typing
-  // "tail" surfaces Tailwind learners). Without a formatId the query falls
-  // back to name/type/ability matching only.
+  // Handle a click on a column header.
+  function handleSort(col: SortCol) {
+    setSort((prev) => {
+      if (prev.col === col) {
+        // Toggle direction on repeated click.
+        return { col, dir: prev.dir === "asc" ? "desc" : "asc" };
+      }
+      // New column: name sorts ascending by default; stats sort descending
+      // (show strongest first).
+      return { col, dir: col === "name" ? "asc" : "desc" };
+    });
+  }
+
+  // Derived list — search + filter + format legality.
   const matched = searchSpecies(speciesIndex, query, {
     types: filters.types,
     abilities: filters.abilities,
@@ -271,7 +378,10 @@ export function SpeciesPicker({
   const legal = formatId
     ? matched.filter((e) => isLegalSpecies(e.species, formatId))
     : matched;
-  const visible = legal.slice(0, MAX_VISIBLE_ROWS);
+
+  // Sort the filtered results before slicing.
+  const sorted = sortEntries(legal, sort);
+  const visible = sorted.slice(0, MAX_VISIBLE_ROWS);
   const isTruncated = legal.length > MAX_VISIBLE_ROWS;
 
   return (
@@ -311,18 +421,14 @@ export function SpeciesPicker({
         </div>
       )}
 
-      {/* Rows + sticky header. The header reads HP / Atk / Def / SpA / SpD /
-          Spe / BST, mirrored from the SpeciesRow grid template.
+      {/* Rows + sticky header.
           `max-h-[60vh]` caps the rows region so it scrolls independently of
-          the picker chrome (header, filters, truncation banner). The picker
-          overlays the editor card which has no intrinsic height, so without
-          an explicit cap the rows would render their natural height and the
-          page would scroll instead of the rows. */}
+          the picker chrome (header, filters, truncation banner). */}
       <div
         className="max-h-[60vh] flex-1 overflow-y-auto"
         data-testid="species-rows"
       >
-        <SpeciesRowsHeader />
+        <SpeciesRowsHeader sort={sort} onSort={handleSort} />
         {visible.length === 0 ? (
           <div className="text-muted-foreground py-12 text-center text-sm">
             No Pokémon match your filters. Try broadening your search.

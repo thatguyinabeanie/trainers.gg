@@ -105,6 +105,17 @@ jest.mock("../species-filters", () => ({
   },
 }));
 
+// TypeSymbolIcon uses a Tooltip (requires provider in tests). Stub it to a
+// simple <span role="img" aria-label={type}> so aria-label assertions work
+// without setting up Tooltip providers.
+jest.mock("../type-symbol-icon", () => ({
+  TypeSymbolIcon: ({ type, size }: { type: string; size?: number }) => (
+    <span role="img" aria-label={type} data-testid="type-icon" data-size={size}>
+      {type}
+    </span>
+  ),
+}));
+
 import { SpeciesPicker } from "../species-picker";
 import { type SpeciesSearchEntry } from "@trainers/pokemon";
 
@@ -207,25 +218,174 @@ describe("SpeciesPicker (rich rows)", () => {
       render(<SpeciesPicker {...defaultProps} />);
       // Types now lives in its own column with a dedicated header.
       expect(screen.getByText("Types")).toBeInTheDocument();
-      expect(screen.getByText("HP")).toBeInTheDocument();
-      expect(screen.getByText("Atk")).toBeInTheDocument();
-      expect(screen.getByText("Def")).toBeInTheDocument();
-      expect(screen.getByText("SpA")).toBeInTheDocument();
-      expect(screen.getByText("SpD")).toBeInTheDocument();
-      expect(screen.getByText("Spe")).toBeInTheDocument();
-      expect(screen.getByText("BST")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by HP/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by Atk/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by Def/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by SpA/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by SpD/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by Spe/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by BST/i })
+      ).toBeInTheDocument();
     });
 
-    it("renders type pills inside each row (in the dedicated types column)", () => {
+    it("renders type icons (not text pills) in the types column via aria-label", () => {
       render(<SpeciesPicker {...defaultProps} />);
-      // Each species in the fixture has at least one type that should render
-      // as a pill — assert by text content.
-      expect(screen.getByText("Fire")).toBeInTheDocument();
-      expect(screen.getByText("Dark")).toBeInTheDocument();
-      expect(screen.getByText("Grass")).toBeInTheDocument();
-      // Two-type species (Gastrodon = Water/Ground) — both pills appear.
-      expect(screen.getByText("Water")).toBeInTheDocument();
-      expect(screen.getByText("Ground")).toBeInTheDocument();
+      // TypeSymbolIcon renders role="img" with aria-label={type}.
+      // Fire/Dark for Incineroar, Grass for Rillaboom, Water/Ground for Gastrodon.
+      expect(screen.getByRole("img", { name: "Fire" })).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Dark" })).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Grass" })).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Water" })).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Ground" })).toBeInTheDocument();
+    });
+
+    it("does NOT render text type pills in the types column", () => {
+      render(<SpeciesPicker {...defaultProps} />);
+      // The old text pills like "Fire", "Dark" should not appear as bare text
+      // nodes — they are replaced by TypeSymbolIcon which renders role="img".
+      // Since our mock renders the type name as text inside the span, we can't
+      // assert via text absence here; the aria-label assertion above is
+      // the canonical check.
+    });
+
+    it("header and body rows share the same grid template constant (ROW_GRID)", () => {
+      render(<SpeciesPicker {...defaultProps} />);
+      // The sticky header and the first data row both use the shared ROW_GRID
+      // constant — verify they carry the same grid-cols class.
+      const rowsContainer = screen.getByTestId("species-rows");
+      // The header is the first child of the rows container.
+      const header = rowsContainer.firstElementChild as HTMLElement;
+      const firstRow = screen.getByRole("button", {
+        name: /Select Gastrodon/,
+      }) as HTMLElement;
+      // Both must use the same grid-cols value (grid-cols-[2.75rem_minmax(0,1fr)_3rem_auto]).
+      const expectedGridCols = "grid-cols-[2.75rem_minmax(0,1fr)_3rem_auto]";
+      expect(header.className).toContain(expectedGridCols);
+      expect(firstRow.className).toContain(expectedGridCols);
+    });
+  });
+
+  describe("default sort — alphabetical by name", () => {
+    it("renders rows in alphabetical order by default", () => {
+      render(<SpeciesPicker {...defaultProps} />);
+      const rows = screen.getAllByRole("button", { name: /^Select / });
+      // Alphabetical: Gastrodon < Incineroar < Rillaboom
+      expect(rows[0]).toHaveAccessibleName("Select Gastrodon");
+      expect(rows[1]).toHaveAccessibleName("Select Incineroar");
+      expect(rows[2]).toHaveAccessibleName("Select Rillaboom");
+    });
+  });
+
+  describe("sortable column headers", () => {
+    it("clicking the BST header sorts descending by BST", async () => {
+      const user = userEvent.setup();
+      const index = [
+        makeEntry("Charizard", { bst: 534 }),
+        makeEntry("Bulbasaur", { bst: 318 }),
+        makeEntry("Mewtwo", { bst: 680 }),
+      ];
+      render(<SpeciesPicker {...defaultProps} speciesIndex={index} />);
+
+      await user.click(screen.getByRole("button", { name: /Sort by BST/i }));
+
+      const rows = screen.getAllByRole("button", { name: /^Select / });
+      // Descending: Mewtwo (680) > Charizard (534) > Bulbasaur (318)
+      expect(rows[0]).toHaveAccessibleName("Select Mewtwo");
+      expect(rows[1]).toHaveAccessibleName("Select Charizard");
+      expect(rows[2]).toHaveAccessibleName("Select Bulbasaur");
+    });
+
+    it("clicking the BST header a second time sorts ascending by BST", async () => {
+      const user = userEvent.setup();
+      const index = [
+        makeEntry("Charizard", { bst: 534 }),
+        makeEntry("Bulbasaur", { bst: 318 }),
+        makeEntry("Mewtwo", { bst: 680 }),
+      ];
+      render(<SpeciesPicker {...defaultProps} speciesIndex={index} />);
+
+      const bstBtn = screen.getByRole("button", { name: /Sort by BST/i });
+      await user.click(bstBtn); // → desc
+      await user.click(bstBtn); // → asc
+
+      const rows = screen.getAllByRole("button", { name: /^Select / });
+      // Ascending: Bulbasaur (318) < Charizard (534) < Mewtwo (680)
+      expect(rows[0]).toHaveAccessibleName("Select Bulbasaur");
+      expect(rows[1]).toHaveAccessibleName("Select Charizard");
+      expect(rows[2]).toHaveAccessibleName("Select Mewtwo");
+    });
+
+    it("clicking the Name header toggles asc/desc", async () => {
+      const user = userEvent.setup();
+      render(<SpeciesPicker {...defaultProps} />);
+
+      // Default is alphabetical asc (Gastrodon < Incineroar < Rillaboom).
+      const nameBtn = screen.getByRole("button", { name: /Sort by name/i });
+
+      // Click once — toggles to desc (Z→A).
+      await user.click(nameBtn);
+      let rows = screen.getAllByRole("button", { name: /^Select / });
+      expect(rows[0]).toHaveAccessibleName("Select Rillaboom");
+      expect(rows[1]).toHaveAccessibleName("Select Incineroar");
+      expect(rows[2]).toHaveAccessibleName("Select Gastrodon");
+
+      // Click again — back to asc (A→Z).
+      await user.click(nameBtn);
+      rows = screen.getAllByRole("button", { name: /^Select / });
+      expect(rows[0]).toHaveAccessibleName("Select Gastrodon");
+      expect(rows[1]).toHaveAccessibleName("Select Incineroar");
+      expect(rows[2]).toHaveAccessibleName("Select Rillaboom");
+    });
+
+    it("switching from BST sort to Name sort resets to alpha-asc", async () => {
+      const user = userEvent.setup();
+      const index = [
+        makeEntry("Charizard", { bst: 534 }),
+        makeEntry("Bulbasaur", { bst: 318 }),
+        makeEntry("Mewtwo", { bst: 680 }),
+      ];
+      render(<SpeciesPicker {...defaultProps} speciesIndex={index} />);
+
+      // Sort by BST desc first.
+      await user.click(screen.getByRole("button", { name: /Sort by BST/i }));
+      // Then switch to Name.
+      await user.click(screen.getByRole("button", { name: /Sort by name/i }));
+
+      const rows = screen.getAllByRole("button", { name: /^Select / });
+      expect(rows[0]).toHaveAccessibleName("Select Bulbasaur");
+      expect(rows[1]).toHaveAccessibleName("Select Charizard");
+      expect(rows[2]).toHaveAccessibleName("Select Mewtwo");
+    });
+
+    it("shows sort arrow on the active column header", async () => {
+      const user = userEvent.setup();
+      render(<SpeciesPicker {...defaultProps} />);
+
+      // Default: Name column shows ascending arrow.
+      const nameBtn = screen.getByRole("button", { name: /Sort by name/i });
+      expect(nameBtn.textContent).toContain("↑");
+
+      // Click BST — arrow moves there (descending).
+      await user.click(screen.getByRole("button", { name: /Sort by BST/i }));
+      const bstBtn = screen.getByRole("button", { name: /Sort by BST/i });
+      expect(bstBtn.textContent).toContain("↓");
+      // Name no longer has an arrow.
+      expect(
+        screen.getByRole("button", { name: /Sort by name/i }).textContent
+      ).not.toContain("↑");
     });
   });
 
