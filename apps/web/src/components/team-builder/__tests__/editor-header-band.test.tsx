@@ -257,13 +257,11 @@ describe("EditorHeaderBand", () => {
   });
 
   describe("species picker affordance", () => {
-    it("renders sprite + name as a clickable button when onOpenSpeciesPicker is provided", async () => {
+    it("renders the sprite as a clickable button with species picker label when onOpenSpeciesPicker is provided", async () => {
       const user = userEvent.setup();
       const onOpenSpeciesPicker = jest.fn();
       renderBand({ species: "Incineroar" }, { onOpenSpeciesPicker });
 
-      // Single click target labeled with the current species — covers both
-      // sprite and name per the design.
       const trigger = screen.getByRole("button", {
         name: /Change species \(currently Incineroar\)/,
       });
@@ -271,9 +269,8 @@ describe("EditorHeaderBand", () => {
       expect(onOpenSpeciesPicker).toHaveBeenCalledTimes(1);
     });
 
-    it("renders sprite + name as static when onOpenSpeciesPicker is omitted", () => {
+    it("does not render a species-change button when onOpenSpeciesPicker is omitted", () => {
       renderBand({ species: "Incineroar" });
-      // No species-change button — placeholder/static mode.
       expect(
         screen.queryByRole("button", { name: /Change species/ })
       ).not.toBeInTheDocument();
@@ -427,28 +424,79 @@ describe("EditorHeaderBand", () => {
       return onUpdate;
     }
 
-    it("renders the nickname input with species as placeholder when nickname is null", () => {
+    async function openNicknameEdit(user: ReturnType<typeof userEvent.setup>) {
+      const nameBtn = screen.getByRole("button", { name: /Edit nickname/i });
+      await user.click(nameBtn);
+      return screen.getByLabelText("Nickname");
+    }
+
+    it("shows the species name as the primary name button when nickname is null", () => {
       renderBandWithControls({ nickname: null, species: "Incineroar" });
-      const input = screen.getByLabelText("Nickname");
+      const nameBtn = screen.getByRole("button", { name: /Edit nickname/i });
+      expect(nameBtn).toHaveTextContent("Incineroar");
+    });
+
+    it("shows the nickname as the primary name button when nickname is set", () => {
+      renderBandWithControls({ nickname: "Sparky", species: "Incineroar" });
+      const nameBtn = screen.getByRole("button", { name: /Edit nickname/i });
+      expect(nameBtn).toHaveTextContent("Sparky");
+    });
+
+    it("clicking the name button opens an input with species as placeholder when nickname is null", async () => {
+      const user = userEvent.setup();
+      renderBandWithControls({ nickname: null, species: "Incineroar" });
+      const input = await openNicknameEdit(user);
       expect(input).toBeInTheDocument();
       expect(input).toHaveAttribute("placeholder", "Incineroar");
       expect(input).toHaveValue("");
     });
 
-    it("calls onUpdate with the typed nickname on change", async () => {
+    it("clicking the name button opens an input pre-filled with the existing nickname", async () => {
       const user = userEvent.setup();
-      const onUpdate = renderBandWithControls({ nickname: null });
-      await user.type(screen.getByLabelText("Nickname"), "S");
-      expect(onUpdate).toHaveBeenCalledWith("nickname", "S");
+      renderBandWithControls({ nickname: "Sparky", species: "Incineroar" });
+      const input = await openNicknameEdit(user);
+      expect(input).toHaveValue("Sparky");
     });
 
-    it("calls onUpdate with null when nickname is cleared", async () => {
+    it("calls onUpdate with the typed nickname when the input loses focus", async () => {
+      const user = userEvent.setup();
+      const onUpdate = renderBandWithControls({ nickname: null });
+      const input = await openNicknameEdit(user);
+      await user.type(input, "Glacier");
+      await user.tab();
+      expect(onUpdate).toHaveBeenCalledWith("nickname", "Glacier");
+    });
+
+    it("calls onUpdate when Enter is pressed in the nickname input", async () => {
+      const user = userEvent.setup();
+      const onUpdate = renderBandWithControls({ nickname: null });
+      const input = await openNicknameEdit(user);
+      await user.type(input, "Glacier");
+      await user.keyboard("{Enter}");
+      expect(onUpdate).toHaveBeenCalledWith("nickname", "Glacier");
+    });
+
+    it("calls onUpdate with null when nickname is cleared and committed", async () => {
       const user = userEvent.setup();
       const onUpdate = renderBandWithControls({ nickname: "Sparky" });
-      const input = screen.getByLabelText("Nickname");
+      const input = await openNicknameEdit(user);
       await user.clear(input);
-      // Empty string → null
+      await user.tab();
       expect(onUpdate).toHaveBeenLastCalledWith("nickname", null);
+    });
+
+    it("does not call onUpdate when Escape is pressed — reverts to original", async () => {
+      const user = userEvent.setup();
+      const onUpdate = renderBandWithControls({ nickname: "Sparky" });
+      const input = await openNicknameEdit(user);
+      await user.clear(input);
+      await user.type(input, "Changed");
+      await user.keyboard("{Escape}");
+      expect(onUpdate).not.toHaveBeenCalled();
+      expect(screen.queryByLabelText("Nickname")).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Edit nickname/i })
+      ).toHaveTextContent("Sparky");
     });
 
     it("renders gender buttons for ♂, ♀, and — (unknown)", () => {
@@ -525,9 +573,11 @@ describe("EditorHeaderBand", () => {
       expect(onUpdate).toHaveBeenLastCalledWith("level", 1);
     });
 
-    it("does not render the inline controls when detailsPopover is omitted", () => {
+    it("does not render identity controls when detailsPopover is omitted", () => {
       renderBand();
-      expect(screen.queryByLabelText("Nickname")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Edit nickname/i })
+      ).not.toBeInTheDocument();
       expect(screen.queryByLabelText("Male")).not.toBeInTheDocument();
       expect(screen.queryByLabelText("Shiny (off)")).not.toBeInTheDocument();
       expect(screen.queryByLabelText("Level")).not.toBeInTheDocument();
