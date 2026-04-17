@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 export type Weather = "none" | "sun" | "rain" | "sand" | "snow";
 
 export interface SpeedToggleState {
-  oppEVs: "min" | "max";
   field: {
     tailwind: boolean;
     weather: Weather;
@@ -126,10 +125,6 @@ export function SpeedToggleRail({
 
   // ---- helpers --------------------------------------------------------------
 
-  function setOppEVs(next: "min" | "max") {
-    onChange({ ...state, oppEVs: next });
-  }
-
   function setTailwind(next: boolean) {
     onChange({ ...state, field: { ...state.field, tailwind: next } });
   }
@@ -167,25 +162,6 @@ export function SpeedToggleRail({
         className
       )}
     >
-      {/* Opp EVs ------------------------------------------------------------ */}
-      <div className="flex flex-col gap-1.5">
-        <GroupHeader>Opp EVs</GroupHeader>
-        <div className="grid grid-cols-2 gap-1">
-          <Pill
-            label="Min"
-            ariaLabel="Opponent EVs minimum"
-            active={state.oppEVs === "min"}
-            onClick={() => setOppEVs("min")}
-          />
-          <Pill
-            label="Max"
-            ariaLabel="Opponent EVs maximum"
-            active={state.oppEVs === "max"}
-            onClick={() => setOppEVs("max")}
-          />
-        </div>
-      </div>
-
       {/* Field -------------------------------------------------------------- */}
       <div className="flex flex-col gap-1.5">
         <GroupHeader>Field</GroupHeader>

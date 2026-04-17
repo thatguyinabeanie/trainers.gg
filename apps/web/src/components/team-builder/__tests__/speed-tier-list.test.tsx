@@ -18,28 +18,38 @@ function mon(overrides: Partial<SpeedTierMon> = {}): SpeedTierMon {
     name: "Pikachu",
     isYours: false,
     isSelected: false,
+    // Stat columns — use predictable values for column-render assertions.
+    baseSpeed: 90,
+    statMin: 81,
+    statMaxNeutral: 152,
+    statMaxPositive: 167,
     ...overrides,
   };
 }
 
-// Tiers are sorted descending — partition logic depends on speed comparison only,
-// not on input order, so this fixture covers normal play.
+// Tiers sorted descending — the full meta is always shown flat.
 function makeTiers(): SpeedTier[] {
   return [
     {
       speed: 200,
-      mons: [mon({ id: "a", name: "Iron Bundle" })],
+      mons: [mon({ id: "a", name: "Iron Bundle", baseSpeed: 136 })],
     },
     {
       speed: 150,
       mons: [
-        mon({ id: "b", name: "Garchomp", isYours: true, isSelected: true }),
-        mon({ id: "c", name: "Volcarona" }),
+        mon({
+          id: "b",
+          name: "Garchomp",
+          isYours: true,
+          isSelected: true,
+          baseSpeed: 102,
+        }),
+        mon({ id: "c", name: "Volcarona", baseSpeed: 100 }),
       ],
     },
     {
       speed: 80,
-      mons: [mon({ id: "d", name: "Incineroar" })],
+      mons: [mon({ id: "d", name: "Incineroar", baseSpeed: 60 })],
     },
   ];
 }
@@ -47,6 +57,56 @@ function makeTiers(): SpeedTier[] {
 // =============================================================================
 // Tests
 // =============================================================================
+
+describe("SpeedTierList — always-on layout", () => {
+  it("renders all tiers without any neighbor limit", () => {
+    render(<SpeedTierList tiers={makeTiers()} selectedSpeed={150} />);
+
+    // Every tier in the dataset is always visible.
+    expect(screen.getByTestId("tier-200")).toBeInTheDocument();
+    expect(screen.getByTestId("tier-150")).toBeInTheDocument();
+    expect(screen.getByTestId("tier-80")).toBeInTheDocument();
+  });
+
+  it("renders the 5-column table header: BASE, POKÉMON, MIN, NEUTRAL, +SPE", () => {
+    render(<SpeedTierList tiers={makeTiers()} selectedSpeed={150} />);
+
+    const header = screen.getByTestId("speed-table-header");
+    expect(within(header).getByText(/base/i)).toBeInTheDocument();
+    expect(within(header).getByText(/pokémon/i)).toBeInTheDocument();
+    expect(within(header).getByText(/min/i)).toBeInTheDocument();
+    expect(within(header).getByText(/neutral/i)).toBeInTheDocument();
+    expect(within(header).getByText(/\+spe/i)).toBeInTheDocument();
+  });
+
+  it("renders stat columns (min / neutral / positive) for each mon", () => {
+    const tiers: SpeedTier[] = [
+      {
+        speed: 120,
+        mons: [
+          mon({
+            id: "floette",
+            name: "Floette",
+            isYours: true,
+            isSelected: true,
+            baseSpeed: 100,
+            statMin: 76,
+            statMaxNeutral: 152,
+            statMaxPositive: 167,
+          }),
+        ],
+      },
+    ];
+
+    render(<SpeedTierList tiers={tiers} selectedSpeed={120} />);
+
+    expect(screen.getByTestId("stat-min-floette")).toHaveTextContent("76");
+    expect(screen.getByTestId("stat-neutral-floette")).toHaveTextContent("152");
+    expect(screen.getByTestId("stat-positive-floette")).toHaveTextContent(
+      "167"
+    );
+  });
+});
 
 describe("SpeedTierList — grouping", () => {
   it("renders one row per group, regardless of mon count", () => {
@@ -63,6 +123,14 @@ describe("SpeedTierList — grouping", () => {
     const yourTierRow = screen.getByTestId("tier-150");
     expect(within(yourTierRow).getByText("Garchomp")).toBeInTheDocument();
     expect(within(yourTierRow).getByText("Volcarona")).toBeInTheDocument();
+  });
+
+  it("shows the base speed from the first mon in each group", () => {
+    render(<SpeedTierList tiers={makeTiers()} selectedSpeed={150} />);
+
+    // Iron Bundle tier — baseSpeed 136 should appear in the BASE column.
+    const bundleTier = screen.getByTestId("tier-200");
+    expect(within(bundleTier).getByText("136")).toBeInTheDocument();
   });
 });
 
@@ -103,92 +171,28 @@ describe("SpeedTierList — highlights", () => {
   });
 });
 
-describe("SpeedTierList — collapsed neighborCount", () => {
-  it("respects neighborCount when expandedAllMeta=false", () => {
-    const tiers: SpeedTier[] = [
-      { speed: 300, mons: [mon({ id: "a", name: "A" })] },
-      { speed: 250, mons: [mon({ id: "b", name: "B" })] },
-      { speed: 220, mons: [mon({ id: "c", name: "C" })] },
-      { speed: 200, mons: [mon({ id: "d", name: "D" })] },
-      {
-        speed: 150,
-        mons: [
-          mon({ id: "you", name: "You", isYours: true, isSelected: true }),
-        ],
-      },
-      { speed: 100, mons: [mon({ id: "e", name: "E" })] },
-      { speed: 90, mons: [mon({ id: "f", name: "F" })] },
-      { speed: 80, mons: [mon({ id: "g", name: "G" })] },
-      { speed: 60, mons: [mon({ id: "h", name: "H" })] },
-    ];
-
-    render(
-      <SpeedTierList
-        tiers={tiers}
-        selectedSpeed={150}
-        neighborCount={2}
-        expandedAllMeta={false}
-      />
-    );
-
-    // 2 above + your tier + 2 below = 5 visible tiers.
-    // The 2 closest above are 220 and 200 (not 300 and 250).
-    expect(screen.queryByTestId("tier-300")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("tier-250")).not.toBeInTheDocument();
-    expect(screen.getByTestId("tier-220")).toBeInTheDocument();
-    expect(screen.getByTestId("tier-200")).toBeInTheDocument();
-    expect(screen.getByTestId("tier-150")).toBeInTheDocument();
-    expect(screen.getByTestId("tier-100")).toBeInTheDocument();
-    expect(screen.getByTestId("tier-90")).toBeInTheDocument();
-    expect(screen.queryByTestId("tier-80")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("tier-60")).not.toBeInTheDocument();
-  });
-
-  it("renders all tiers when expandedAllMeta=true", () => {
-    const tiers: SpeedTier[] = [
-      { speed: 300, mons: [mon({ id: "a", name: "A" })] },
-      { speed: 200, mons: [mon({ id: "b", name: "B" })] },
-      {
-        speed: 150,
-        mons: [
-          mon({ id: "you", name: "You", isYours: true, isSelected: true }),
-        ],
-      },
-      { speed: 100, mons: [mon({ id: "c", name: "C" })] },
-      { speed: 60, mons: [mon({ id: "d", name: "D" })] },
-    ];
-
-    render(
-      <SpeedTierList
-        tiers={tiers}
-        selectedSpeed={150}
-        neighborCount={1}
-        expandedAllMeta
-      />
-    );
-
-    expect(screen.getByTestId("tier-300")).toBeInTheDocument();
-    expect(screen.getByTestId("tier-200")).toBeInTheDocument();
-    expect(screen.getByTestId("tier-150")).toBeInTheDocument();
-    expect(screen.getByTestId("tier-100")).toBeInTheDocument();
-    expect(screen.getByTestId("tier-60")).toBeInTheDocument();
-  });
-});
-
-describe("SpeedTierList — section labels", () => {
-  it("uses normal section labels in default play", () => {
+describe("SpeedTierList — context hint labels", () => {
+  it("shows normal context hints in default play", () => {
     render(<SpeedTierList tiers={makeTiers()} selectedSpeed={150} />);
 
+    // The hint row appears once above the tier list.
     expect(screen.getByText("↑ Faster than you")).toBeInTheDocument();
-    expect(screen.getByText("→ Your tier")).toBeInTheDocument();
     expect(screen.getByText("↓ Slower than you")).toBeInTheDocument();
   });
 
-  it("uses Trick-Room labels when trickRoom=true", () => {
+  it("shows Trick Room labels when trickRoom=true", () => {
     render(<SpeedTierList tiers={makeTiers()} selectedSpeed={150} trickRoom />);
 
-    expect(screen.getByText("Moves later")).toBeInTheDocument();
-    expect(screen.getByText("Same priority")).toBeInTheDocument();
+    // In Trick Room mode the context hint swaps to "Moves first / Moves later".
     expect(screen.getByText("Moves first")).toBeInTheDocument();
+    expect(screen.getByText("Moves later")).toBeInTheDocument();
+  });
+
+  it("does not render separate per-section labels (faster/your-tier/slower) — flat list only", () => {
+    render(<SpeedTierList tiers={makeTiers()} selectedSpeed={150} />);
+
+    // These old section headers no longer exist — the list is flat.
+    expect(screen.queryByText("→ Your tier")).not.toBeInTheDocument();
+    expect(screen.queryByText("Same priority")).not.toBeInTheDocument();
   });
 });

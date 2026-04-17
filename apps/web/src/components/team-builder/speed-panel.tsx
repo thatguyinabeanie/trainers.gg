@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronDown } from "lucide-react";
 
 import {
   type GameFormat,
@@ -51,7 +50,6 @@ interface ScoredMon {
 // =============================================================================
 
 const DEFAULT_TOGGLE_STATE: SpeedToggleState = {
-  oppEVs: "max",
   field: { tailwind: false, weather: "none", trickRoom: false },
   stage: 0,
   item: "",
@@ -93,6 +91,74 @@ function computeBaseSpeed(
   );
 }
 
+/**
+ * Compute the three display speed columns for a team Pokémon.
+ * These are always shown in the tier list alongside the mon's name.
+ *
+ * - min: 0 EVs, 0 IVs, neutral nature, L50
+ * - maxNeutral: 252 EVs, neutral nature, L50
+ * - maxPositive: 252 EVs, +nature (×1.1), L50
+ *
+ * For Champions (gen 10), uses the SP formula with 0 SP / 32 SP.
+ * Champions supports nature multipliers per the formula — maxPositive uses ×1.1.
+ */
+function computeStatColumns(
+  pokemon: Tables<"pokemon">,
+  format: GameFormat
+): { base: number; min: number; maxNeutral: number; maxPositive: number } {
+  const baseStats = getBaseStats(pokemon.species);
+  if (!baseStats) return { base: 0, min: 0, maxNeutral: 0, maxPositive: 0 };
+
+  const b = baseStats.speed;
+
+  if (format.generation === 10) {
+    return {
+      base: b,
+      min: calculateChampionsStat(b, 0, 1.0),
+      maxNeutral: calculateChampionsStat(b, 32, 1.0),
+      maxPositive: calculateChampionsStat(b, 32, 1.1),
+    };
+  }
+
+  return {
+    base: b,
+    min: calculateStat(b, 0, 0, 50, 1.0),
+    maxNeutral: calculateStat(b, 31, 252, 50, 1.0),
+    maxPositive: calculateStat(b, 31, 252, 50, 1.1),
+  };
+}
+
+/**
+ * Compute the three display speed columns for a meta entry.
+ * Meta entries store fastSpread (252 EVs, +nature) and slowSpread (0 EVs, neutral).
+ * We reconstruct min separately from base speed using the standard formula.
+ */
+function computeMetaStatColumns(
+  entry: MetaSpeedEntry,
+  format: GameFormat
+): { base: number; min: number; maxNeutral: number; maxPositive: number } {
+  const b = entry.base;
+
+  if (format.generation === 10) {
+    // Champions SP-based formula
+    return {
+      base: b,
+      min: calculateChampionsStat(b, 0, 1.0),
+      maxNeutral: calculateChampionsStat(b, 32, 1.0),
+      maxPositive: calculateChampionsStat(b, 32, 1.1),
+    };
+  }
+
+  return {
+    base: b,
+    // entry.slowSpread is 0 EVs neutral — that IS max neutral with 0 EVs.
+    // Min (0 EVs, 0 IVs, neutral) is slightly lower.
+    min: calculateStat(b, 0, 0, 50, 1.0),
+    maxNeutral: calculateStat(b, 31, 252, 50, 1.0),
+    maxPositive: entry.fastSpread, // pre-computed fast spread = 252 EVs + nature
+  };
+}
+
 /** Item id from the toggle state to a SpeedModifiers item value. */
 function toItemMod(item: string): SpeedModifiers["item"] {
   if (!item) return null;
@@ -107,10 +173,11 @@ function toItemMod(item: string): SpeedModifiers["item"] {
  */
 function metaToScoredMon(
   entry: MetaSpeedEntry,
-  toggle: SpeedToggleState
+  toggle: SpeedToggleState,
+  format: GameFormat
 ): ScoredMon {
-  const baseSpeed =
-    toggle.oppEVs === "max" ? entry.fastSpread : entry.slowSpread;
+  // Always use fastSpread for ranking — the tier list shows both columns anyway.
+  const baseSpeed = entry.fastSpread;
 
   const speed = applySpeedModifiers(baseSpeed, {
     ability: entry.speedAbility,
@@ -120,7 +187,9 @@ function metaToScoredMon(
     },
   });
 
+  const statCols = computeMetaStatColumns(entry, format);
   const sprite = safeSprite(entry.species);
+
   return {
     speed,
     mon: {
@@ -129,6 +198,10 @@ function metaToScoredMon(
       spriteUrl: sprite,
       isYours: false,
       isSelected: false,
+      baseSpeed: statCols.base,
+      statMin: statCols.min,
+      statMaxNeutral: statCols.maxNeutral,
+      statMaxPositive: statCols.maxPositive,
     },
   };
 }
@@ -165,6 +238,7 @@ function teamMonToScored(
         },
       };
   const speed = applySpeedModifiers(baseSpeed, mods);
+  const statCols = computeStatColumns(pokemon, format);
   const sprite = safeSprite(pokemon.species);
 
   return {
@@ -175,6 +249,10 @@ function teamMonToScored(
       spriteUrl: sprite,
       isYours: true,
       isSelected,
+      baseSpeed: statCols.base,
+      statMin: statCols.min,
+      statMaxNeutral: statCols.maxNeutral,
+      statMaxPositive: statCols.maxPositive,
     },
   };
 }
@@ -224,7 +302,6 @@ function SpeedPanelInner({
   className,
 }: SpeedPanelProps) {
   const [toggle, setToggle] = useState<SpeedToggleState>(DEFAULT_TOGGLE_STATE);
-  const [allMetaExpanded, setAllMetaExpanded] = useState(false);
 
   // ---- score every relevant mon -------------------------------------------
 
@@ -245,7 +322,7 @@ function SpeedPanelInner({
           entry.species.toLowerCase().replace(/[\s\-_]+/g, "")
         )
     )
-    .map((entry) => metaToScoredMon(entry, toggle));
+    .map((entry) => metaToScoredMon(entry, toggle, format));
 
   const allScored: ScoredMon[] = [...teamScored, ...metaScored];
 
@@ -257,6 +334,7 @@ function SpeedPanelInner({
 
   // ---- summary counts (selected vs all opponents counted) ------------------
   // Opponents = everything that isn't the selected mon (team mates + meta).
+  // Use maxPositive speed for opponents — that's the standard threat assumption.
   const opponents = allScored.filter((s) => !s.mon.isSelected);
   let outspeedCount = 0;
   let tieCount = 0;
@@ -292,21 +370,6 @@ function SpeedPanelInner({
   const orderedTiers = toggle.field.trickRoom ? tiers.slice().reverse() : tiers;
 
   // ---- render --------------------------------------------------------------
-
-  // Total tiers minus what we already show in collapsed neighbor view.
-  const totalTiers = orderedTiers.length;
-  const fasterCount = orderedTiers.filter((t) =>
-    toggle.field.trickRoom ? t.speed < effectiveSpeed : t.speed > effectiveSpeed
-  ).length;
-  const slowerCount = orderedTiers.filter((t) =>
-    toggle.field.trickRoom ? t.speed > effectiveSpeed : t.speed < effectiveSpeed
-  ).length;
-  const yourTierExists = orderedTiers.some((t) => t.speed === effectiveSpeed);
-  const shownInCollapsed =
-    Math.min(3, fasterCount) +
-    (yourTierExists ? 1 : 0) +
-    Math.min(3, slowerCount);
-  const remainingCount = Math.max(0, totalTiers - shownInCollapsed);
 
   const selectedSprite = safeSprite(selectedPokemon.species);
 
@@ -376,45 +439,8 @@ function SpeedPanelInner({
         <SpeedTierList
           tiers={orderedTiers}
           selectedSpeed={effectiveSpeed}
-          neighborCount={3}
           trickRoom={toggle.field.trickRoom}
         />
-      </div>
-
-      {/* L4 — All meta tiers expand ---------------------------------------- */}
-      <div className="border-t">
-        <button
-          type="button"
-          aria-expanded={allMetaExpanded}
-          onClick={() => setAllMetaExpanded((v) => !v)}
-          className="bg-muted/30 hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between px-4 py-2.5 text-xs font-semibold tracking-wide uppercase transition-colors duration-150"
-        >
-          <span>All meta tiers</span>
-          <span className="flex items-center gap-2">
-            {!allMetaExpanded && remainingCount > 0 && (
-              <span className="text-muted-foreground text-[10px] font-medium normal-case">
-                show {remainingCount} more
-              </span>
-            )}
-            <ChevronDown
-              className={cn(
-                "text-muted-foreground size-3.5 transition-transform duration-150",
-                allMetaExpanded ? "rotate-0" : "-rotate-90"
-              )}
-            />
-          </span>
-        </button>
-        {allMetaExpanded && (
-          <div className="max-h-96 overflow-y-auto">
-            <SpeedTierList
-              tiers={orderedTiers}
-              selectedSpeed={effectiveSpeed}
-              neighborCount={3}
-              expandedAllMeta
-              trickRoom={toggle.field.trickRoom}
-            />
-          </div>
-        )}
       </div>
     </div>
   );

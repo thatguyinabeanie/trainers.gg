@@ -43,7 +43,6 @@ function makeState(
   overrides: Partial<SpeedToggleState> = {}
 ): SpeedToggleState {
   return {
-    oppEVs: "max",
     field: { tailwind: false, weather: "none", trickRoom: false },
     stage: 0,
     item: "",
@@ -205,23 +204,28 @@ describe("SpeedToggleRail — weather toggles", () => {
   });
 });
 
-describe("SpeedToggleRail — Opp EVs and status", () => {
-  it("toggles Opp EVs between Min and Max", async () => {
-    const user = userEvent.setup();
+describe("SpeedToggleRail — no Opp EVs toggle", () => {
+  it("does not render an Opp EVs toggle (min/max are always shown as columns)", () => {
     const onChange = jest.fn();
     render(
       <SpeedToggleRail
-        state={makeState({ oppEVs: "max" })}
+        state={makeState()}
         onChange={onChange}
         format={CHAMPIONS_FORMAT}
       />
     );
 
-    await user.click(screen.getByLabelText("Opponent EVs minimum"));
-    const next = onChange.mock.calls[0]![0] as SpeedToggleState;
-    expect(next.oppEVs).toBe("min");
+    // Neither "Min" nor "Max" buttons should exist for Opp EVs.
+    expect(
+      screen.queryByLabelText("Opponent EVs minimum")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Opponent EVs maximum")
+    ).not.toBeInTheDocument();
   });
+});
 
+describe("SpeedToggleRail — status", () => {
   it("emits the chosen status when the dropdown changes", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();

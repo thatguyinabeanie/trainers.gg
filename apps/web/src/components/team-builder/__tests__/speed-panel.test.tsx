@@ -81,6 +81,7 @@ jest.mock("@trainers/pokemon", () => {
       {
         species: "volcarona",
         displayName: "Volcarona",
+        // fastSpread = 120 → ties Floette (base 100 at max-investment neutral = 120)
         base: 100,
         fastSpread: 120,
         slowSpread: 121,
@@ -256,8 +257,7 @@ describe("SpeedPanel — toggles affect numbers", () => {
       />
     );
 
-    // Default oppEVs=max, so Venusaur uses fastSpread=90.
-    // Without sun, Venusaur shows up at speed 90.
+    // Without sun, Venusaur shows up at its fastSpread (90).
     expect(screen.getByTestId("tier-90")).toBeInTheDocument();
 
     // Activate sun.
@@ -304,7 +304,7 @@ describe("SpeedPanel — toggles affect numbers", () => {
     expect(screen.getByTestId("hero-speed")).toHaveTextContent("180");
   });
 
-  it("Trick Room toggle switches section labels", async () => {
+  it("Trick Room toggle switches context hint labels", async () => {
     const user = userEvent.setup();
     const selected = makePokemon({ id: 1, species: "Floette" });
     render(
@@ -315,10 +315,13 @@ describe("SpeedPanel — toggles affect numbers", () => {
       />
     );
 
+    // Default: standard speed order labels.
     expect(screen.getByText("↑ Faster than you")).toBeInTheDocument();
+    expect(screen.getByText("↓ Slower than you")).toBeInTheDocument();
 
     await user.click(screen.getByLabelText("Trick Room"));
 
+    // Trick Room: relabeled — slower = moves first.
     expect(screen.queryByText("↑ Faster than you")).not.toBeInTheDocument();
     expect(screen.getByText("Moves first")).toBeInTheDocument();
     expect(screen.getByText("Moves later")).toBeInTheDocument();
@@ -328,8 +331,7 @@ describe("SpeedPanel — toggles affect numbers", () => {
 describe("SpeedPanel — tie badge", () => {
   it("renders a tie badge on opponents in the selected mon's tier", () => {
     const selected = makePokemon({ id: 1, species: "Floette" });
-    // Floette = 120. Volcarona meta entry has slowSpread=121 / fastSpread=120 (set in mock).
-    // Default oppEVs=max → fastSpread=120, so Volcarona ties Floette.
+    // Floette = 120. Volcarona fastSpread=120 (always used for ranking) → tie.
     render(
       <SpeedPanel
         selectedPokemon={selected}
