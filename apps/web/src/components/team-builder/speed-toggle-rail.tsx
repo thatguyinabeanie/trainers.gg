@@ -7,6 +7,14 @@ import {
 } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
+import { Toggle } from "@/components/ui/toggle";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // =============================================================================
 // Types
@@ -56,37 +64,6 @@ const WEATHER_LABELS: Record<Weather, string> = {
   sand: "Sand",
   snow: "Snow",
 };
-
-// =============================================================================
-// Pill — small toggle button used for binary / enum selections
-// =============================================================================
-
-interface PillProps {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  ariaLabel?: string;
-}
-
-function Pill({ label, active, onClick, ariaLabel }: PillProps) {
-  return (
-    <button
-      type="button"
-      aria-label={ariaLabel ?? label}
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        "flex items-center justify-center gap-1 rounded-lg border px-2.5 py-1 text-xs",
-        "transition-colors duration-150",
-        active
-          ? "bg-primary/10 border-primary text-primary font-semibold"
-          : "bg-card hover:bg-muted text-foreground"
-      )}
-    >
-      {label}
-    </button>
-  );
-}
 
 // =============================================================================
 // GroupHeader — small section caption above each toggle group
@@ -164,19 +141,26 @@ export function SpeedToggleRail({
       <div className="flex flex-col gap-1.5">
         <GroupHeader>Field</GroupHeader>
         <div className="flex flex-row flex-wrap gap-1">
-          <Pill
-            label="Tailwind"
-            active={state.field.tailwind}
-            onClick={() => setTailwind(!state.field.tailwind)}
-          />
+          <Toggle
+            size="sm"
+            variant="outline"
+            pressed={state.field.tailwind}
+            onPressedChange={() => setTailwind(!state.field.tailwind)}
+            aria-label="Tailwind"
+          >
+            Tailwind
+          </Toggle>
           {weatherOptions.map((w) => (
-            <Pill
+            <Toggle
               key={w}
-              label={WEATHER_LABELS[w]}
-              ariaLabel={`Weather ${WEATHER_LABELS[w]}`}
-              active={state.field.weather === w}
-              onClick={() => setWeather(w)}
-            />
+              size="sm"
+              variant="outline"
+              pressed={state.field.weather === w}
+              onPressedChange={() => setWeather(w)}
+              aria-label={`Weather ${WEATHER_LABELS[w]}`}
+            >
+              {WEATHER_LABELS[w]}
+            </Toggle>
           ))}
         </div>
       </div>
@@ -221,33 +205,39 @@ export function SpeedToggleRail({
       {/* Item --------------------------------------------------------------- */}
       <div className="flex flex-col gap-1.5">
         <GroupHeader>Item</GroupHeader>
-        <select
-          aria-label="Held item"
-          value={state.item}
-          onChange={(e) => setItem(e.target.value)}
-          className="bg-card text-foreground rounded-md border px-1.5 py-1 text-xs"
+        <Select
+          value={state.item || ""}
+          onValueChange={(v) => setItem(v ?? "")}
         >
-          <option value="">None</option>
-          {items.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.displayName}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger size="sm" aria-label="Held item">
+            <SelectValue placeholder="None" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None</SelectItem>
+            {items.map((item) => (
+              <SelectItem key={item.id} value={item.id}>
+                {item.displayName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Status ------------------------------------------------------------- */}
       <div className="flex flex-col gap-1.5">
         <GroupHeader>Status</GroupHeader>
-        <select
-          aria-label="Status condition"
+        <Select
           value={state.status}
-          onChange={(e) => setStatus(e.target.value as "healthy" | "paralyzed")}
-          className="bg-card text-foreground rounded-md border px-1.5 py-1 text-xs"
+          onValueChange={(v) => setStatus(v as "healthy" | "paralyzed")}
         >
-          <option value="healthy">Healthy</option>
-          <option value="paralyzed">Paralyzed</option>
-        </select>
+          <SelectTrigger size="sm" aria-label="Status condition">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="healthy">Healthy</SelectItem>
+            <SelectItem value="paralyzed">Paralyzed</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

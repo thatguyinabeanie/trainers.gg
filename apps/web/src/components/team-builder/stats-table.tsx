@@ -17,6 +17,7 @@ import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 
 import {
   type StatKey,
@@ -233,19 +234,15 @@ function StatRow({
             disabled && "opacity-50"
           )}
         />
-        <input
-          type="range"
+        <Slider
           min={0}
           max={pointsMax}
           step={step}
           value={points}
+          onValueChange={(value) => clampAndEmit(value as number)}
           disabled={disabled}
           aria-label={`${label} points slider`}
-          onChange={(e) => {
-            const parsed = parseInt(e.target.value, 10);
-            clampAndEmit(parsed);
-          }}
-          className={cn("w-full", disabled && "opacity-50")}
+          className="w-full"
         />
       </div>
 

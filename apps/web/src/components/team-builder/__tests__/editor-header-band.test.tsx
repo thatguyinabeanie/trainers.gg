@@ -10,6 +10,7 @@ import React from "react";
 jest.mock("@trainers/pokemon", () => ({
   getSpeciesTypes: jest.fn(() => ["Fire", "Dark"]),
   getValidAbilities: jest.fn(() => ["Intimidate", "Flash Fire"]),
+  getMegaStoneForSpecies: jest.fn(() => null),
   formatHasTera: jest.fn(
     (format: { generation?: number } | null | undefined) => {
       if (!format) return false;

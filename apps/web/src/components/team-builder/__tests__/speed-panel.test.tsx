@@ -1,5 +1,5 @@
 import { describe, it, expect, jest } from "@jest/globals";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -300,10 +300,13 @@ describe("SpeedPanel — toggles affect numbers", () => {
       />
     );
 
-    await user.selectOptions(
-      screen.getByLabelText("Held item"),
-      "choice-scarf"
+    await user.click(screen.getByLabelText("Held item"));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("option", { name: /choice scarf/i })
+      ).toBeInTheDocument()
     );
+    await user.click(screen.getByRole("option", { name: /choice scarf/i }));
     // 120 × 1.5 = 180.
     expect(screen.getByTestId("hero-speed")).toHaveTextContent("180");
   });

@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
-
 import { type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { CalcPanel } from "./calc-panel";
 import { SpeedPanel } from "./speed-panel";
@@ -15,31 +14,12 @@ import { TypeChartPanel } from "./type-chart-panel";
 // Types
 // =============================================================================
 
-// Types is first — it's the most-used analysis tool and benefits from being
-// the default landing tab. Speed and Calc follow in the order they were before.
-type AnalyticsTab = "types" | "speed" | "calc";
-
 interface AnalyticsRailProps {
   team: TeamWithPokemon;
   selectedPokemon: Tables<"pokemon"> | null;
   format: GameFormat | undefined;
   className?: string;
 }
-
-interface TabDef {
-  id: AnalyticsTab;
-  label: string;
-}
-
-// =============================================================================
-// Constants
-// =============================================================================
-
-const TABS: TabDef[] = [
-  { id: "types", label: "Types" },
-  { id: "speed", label: "Speed" },
-  { id: "calc", label: "Calc" },
-];
 
 // SpeedPanel, CalcPanel, and TypeChartPanel each render their own card chrome
 // (`bg-card overflow-hidden rounded-lg shadow-sm`) so they can also be used
@@ -71,10 +51,9 @@ export function AnalyticsRail({
   format,
   className,
 }: AnalyticsRailProps) {
-  const [activeTab, setActiveTab] = useState<AnalyticsTab>("types");
-
   return (
-    <div
+    <Tabs
+      defaultValue="types"
       data-testid="analytics-rail"
       className={cn(
         "bg-card w-rail flex-shrink-0 overflow-hidden rounded-lg shadow-sm",
@@ -82,91 +61,73 @@ export function AnalyticsRail({
         className
       )}
     >
-      {/* Tab strip */}
-      <div
-        role="tablist"
-        aria-label="Analytics"
-        className="bg-muted/50 grid grid-cols-3 border-b"
+      <TabsList
+        variant="line"
+        className="bg-muted/50 grid h-auto w-full grid-cols-3 rounded-none border-b px-0 py-0"
       >
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              aria-controls={`analytics-rail-panel-${tab.id}`}
-              id={`analytics-rail-tab-${tab.id}`}
-              data-testid={`analytics-rail-tab-${tab.id}`}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "cursor-pointer px-3 py-2.5 text-center text-xs font-semibold tracking-wide uppercase transition-colors duration-150",
-                isActive
-                  ? "bg-card text-foreground border-primary -mb-px border-b-2"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Body — only the active panel is mounted */}
-      {activeTab === "types" ? (
-        <div
-          role="tabpanel"
-          id="analytics-rail-panel-types"
-          aria-labelledby="analytics-rail-tab-types"
-          data-testid="analytics-rail-body-types"
-          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        <TabsTrigger
+          value="types"
+          className="rounded-none py-2.5 text-xs font-semibold tracking-wide uppercase"
         >
-          <TypeChartPanel
+          Types
+        </TabsTrigger>
+        <TabsTrigger
+          value="speed"
+          className="rounded-none py-2.5 text-xs font-semibold tracking-wide uppercase"
+        >
+          Speed
+        </TabsTrigger>
+        <TabsTrigger
+          value="calc"
+          className="rounded-none py-2.5 text-xs font-semibold tracking-wide uppercase"
+        >
+          Calc
+        </TabsTrigger>
+      </TabsList>
+
+      {/* Body — only the active panel is mounted (keepMounted defaults to false) */}
+      <TabsContent
+        value="types"
+        className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
+      >
+        <TypeChartPanel
+          team={team.team_pokemon
+            .map((tp) => tp.pokemon)
+            .filter((p): p is Tables<"pokemon"> => p !== null)}
+          className={PANEL_CHROME_OVERRIDE}
+        />
+      </TabsContent>
+
+      <TabsContent
+        value="speed"
+        className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
+      >
+        {selectedPokemon && format ? (
+          <SpeedPanel
+            selectedPokemon={selectedPokemon}
             team={team.team_pokemon
               .map((tp) => tp.pokemon)
               .filter((p): p is Tables<"pokemon"> => p !== null)}
-            className={PANEL_CHROME_OVERRIDE}
-          />
-        </div>
-      ) : activeTab === "speed" ? (
-        <div
-          role="tabpanel"
-          id="analytics-rail-panel-speed"
-          aria-labelledby="analytics-rail-tab-speed"
-          data-testid="analytics-rail-body-speed"
-          className="flex min-h-0 flex-1 flex-col overflow-hidden"
-        >
-          {selectedPokemon && format ? (
-            <SpeedPanel
-              selectedPokemon={selectedPokemon}
-              team={team.team_pokemon
-                .map((tp) => tp.pokemon)
-                .filter((p): p is Tables<"pokemon"> => p !== null)}
-              format={format}
-              className={PANEL_CHROME_OVERRIDE}
-            />
-          ) : (
-            <SpeedEmpty hasPokemon={selectedPokemon !== null} />
-          )}
-        </div>
-      ) : (
-        <div
-          role="tabpanel"
-          id="analytics-rail-panel-calc"
-          aria-labelledby="analytics-rail-tab-calc"
-          data-testid="analytics-rail-body-calc"
-          className="flex min-h-0 flex-1 flex-col overflow-hidden"
-        >
-          <CalcPanel
-            team={team}
-            selectedPokemon={selectedPokemon}
             format={format}
             className={PANEL_CHROME_OVERRIDE}
           />
-        </div>
-      )}
-    </div>
+        ) : (
+          <SpeedEmpty hasPokemon={selectedPokemon !== null} />
+        )}
+      </TabsContent>
+
+      <TabsContent
+        value="calc"
+        className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
+      >
+        <CalcPanel
+          team={team}
+          selectedPokemon={selectedPokemon}
+          format={format}
+          className={PANEL_CHROME_OVERRIDE}
+        />
+      </TabsContent>
+    </Tabs>
   );
 }
 

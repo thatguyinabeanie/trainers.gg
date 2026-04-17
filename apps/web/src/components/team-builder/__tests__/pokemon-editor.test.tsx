@@ -61,6 +61,7 @@ jest.mock("@trainers/pokemon", () => ({
       return format.generation === 9;
     }
   ),
+  getMegaStoneForSpecies: jest.fn(() => null),
 }));
 
 jest.mock("@trainers/pokemon/sprites", () => ({

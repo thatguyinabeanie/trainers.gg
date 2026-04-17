@@ -8,6 +8,7 @@ import {
   type GameFormat,
   type PokemonType,
   formatHasTera,
+  getMegaStoneForSpecies,
   getSpeciesTypes,
   getValidAbilities,
 } from "@trainers/pokemon";
@@ -200,6 +201,8 @@ export function EditorHeaderBand({
   // -------------------------------------------------------------------------
 
   const hasTera = formatHasTera(format);
+  // Mega-evolved species must hold their mega stone — the item field is locked.
+  const isMegaLocked = getMegaStoneForSpecies(pokemon.species) !== null;
 
   const sprite = getPokemonSprite(pokemon.species, {
     shiny: pokemon.is_shiny ?? false,
@@ -412,7 +415,7 @@ export function EditorHeaderBand({
 
           <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
 
-          {disabled ? (
+          {disabled || isMegaLocked ? (
             <FieldStatic label="Item">
               {pokemon.held_item ?? "None"}
             </FieldStatic>

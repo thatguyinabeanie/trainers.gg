@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -131,64 +131,23 @@ interface TeamWorkspaceProps {
 export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   const router = useRouter();
 
-  // ---------------------------------------------------------------------------
-  // Optimistic field patches
-  //
-  // Map<pokemonId, Partial<Tables<"pokemon">>> — when the user edits a field
-  // (move, ability, item, EV…) we write the new value here SYNCHRONOUSLY so
-  // the editor re-renders against the new value on the very next paint. The
-  // server save runs in the background — we never block the UI on it.
-  //
-  // Patches survive across pokemon re-fetches until the server-side value
-  // matches the optimistic value, at which point they're cleared (in the
-  // sync effect below). This keeps the "saving" → "saved" round trip seamless
-  // without a flash where the field reverts to the old value while the
-  // request is still in flight.
-  // ---------------------------------------------------------------------------
-  const [optimisticPatches, setOptimisticPatches] = useState<
-    Map<number, Partial<Tables<"pokemon">>>
-  >(() => new Map());
+  const [optimisticTeamPokemon, applyOptimisticPatch] = useOptimistic(
+    team.team_pokemon,
+    (
+      current,
+      {
+        pokemonId,
+        fields,
+      }: { pokemonId: number; fields: Partial<Tables<"pokemon">> }
+    ) =>
+      current.map((tp) =>
+        tp.pokemon_id === pokemonId && tp.pokemon
+          ? { ...tp, pokemon: { ...tp.pokemon, ...fields } }
+          : tp
+      )
+  );
 
-  // Reconcile optimistic patches against the freshly-fetched team data — drop
-  // any field whose server value now matches the optimistic value (the save
-  // landed) so subsequent prop updates flow through cleanly.
-  useEffect(() => {
-    setOptimisticPatches((prev) => {
-      if (prev.size === 0) return prev;
-      const next = new Map(prev);
-      let changed = false;
-      for (const tp of team.team_pokemon) {
-        const patch = next.get(tp.pokemon_id);
-        if (!patch || !tp.pokemon) continue;
-        const remaining: Partial<Tables<"pokemon">> = {};
-        let kept = 0;
-        for (const [field, value] of Object.entries(patch)) {
-          const serverValue = (tp.pokemon as Record<string, unknown>)[field];
-          if (serverValue === value) {
-            changed = true;
-            continue;
-          }
-          (remaining as Record<string, unknown>)[field] = value;
-          kept += 1;
-        }
-        if (kept === 0) {
-          next.delete(tp.pokemon_id);
-        } else if (kept !== Object.keys(patch).length) {
-          next.set(tp.pokemon_id, remaining);
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [team.team_pokemon]);
-
-  // Apply optimistic patches over the server-fetched team_pokemon so every
-  // downstream consumer (editor, type chart, validation, analytics rail) sees
-  // the user's edits the instant they happen.
-  const teamPokemon = team.team_pokemon.map((tp) => {
-    const patch = optimisticPatches.get(tp.pokemon_id);
-    if (!patch || !tp.pokemon) return tp;
-    return { ...tp, pokemon: { ...tp.pokemon, ...patch } };
-  });
+  const teamPokemon = optimisticTeamPokemon;
 
   // Sort pokemon by position and get the first one as default selection
   const sortedPokemon = [...teamPokemon].sort(
@@ -198,13 +157,8 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   const [selectedPokemonId, setSelectedPokemonId] = useState<number | null>(
     sortedPokemon[0]?.pokemon_id ?? null
   );
-  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  // Per-pokemon pending field updates — accumulates fields edited inside the
-  // 500ms debounce window so they save in a single round trip rather than
-  // racing against each other.
-  const pendingUpdatesRef = useRef<Map<number, Partial<Tables<"pokemon">>>>(
-    new Map()
-  );
+  // Field saves: isFieldSavePending. Species changes: isSaving.
+  const [isFieldSavePending, startFieldSaveTransition] = useTransition();
   // Track whether a background save is in flight — drives the inline
   // "Saving…" indicator without disabling any inputs.
   const [isSaving, setIsSaving] = useState(false);
@@ -230,31 +184,6 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
 
   const speciesIndex = getCachedSpeciesIndex(format?.id ?? DEFAULT_FORMAT_ID);
 
-  // Clear the debounce timer on unmount to prevent setState on an unmounted
-  // component. If there are pending field edits, fire them immediately — the
-  // server action will still execute even though we don't await it (the
-  // component is unmounting).
-  useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      const pending = pendingUpdatesRef.current;
-      if (pending.size === 0) return;
-      for (const [pokemonId, updates] of pending) {
-        updatePokemonAction(
-          team.id,
-          pokemonId,
-          updates as Parameters<typeof updatePokemonAction>[2]
-        ).catch((err) => {
-          console.error(
-            "[team-workspace] Failed to flush pending save on unmount:",
-            err
-          );
-        });
-      }
-      pending.clear();
-    };
-  }, []);
-
   const selectedEntry = sortedPokemon.find(
     (tp) => tp.pokemon_id === selectedPokemonId
   );
@@ -266,15 +195,11 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     : [];
 
   // ---------------------------------------------------------------------------
-  // Auto-save handler — optimistic UI + 500ms debounced background save
+  // Field save handler — optimistic UI + immediate background save
   //
-  // Three guarantees:
-  //   1. The change is reflected in the UI on the next paint (optimistic).
-  //   2. The save runs in the background — no inputs are disabled, no
-  //      blocking transition fires.
-  //   3. Multiple field edits inside the 500ms window collapse into a single
-  //      `updatePokemonAction` call so we don't fire one round trip per
-  //      keystroke.
+  // applyOptimisticPatch updates the display on the next paint.
+  // The server save runs in the background via startFieldSaveTransition.
+  // On failure: toast + automatic revert to server state (useOptimistic).
   // ---------------------------------------------------------------------------
 
   function handlePokemonUpdate(
@@ -282,63 +207,31 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     field: string,
     value: unknown
   ) {
-    // 1. Optimistic patch — update local state synchronously so the editor,
-    //    type chart, validation, and analytics rail all see the new value
-    //    immediately. The patch lives until the server save echoes the same
-    //    value back, then is cleared in the reconciliation effect.
-    setOptimisticPatches((prev) => {
-      const next = new Map(prev);
-      const existing = next.get(pokemonId) ?? {};
-      next.set(pokemonId, { ...existing, [field]: value });
-      return next;
-    });
-
-    // 2. Accumulate the field into the pending updates map so a flurry of
-    //    edits coalesces into one save. The 500ms debounce balances "feels
-    //    instant" against "don't hit the API on every keystroke".
-    const pending = pendingUpdatesRef.current.get(pokemonId) ?? {};
-    pending[field as keyof Tables<"pokemon">] = value as never;
-    pendingUpdatesRef.current.set(pokemonId, pending);
-
-    // 3. Reset the debounce — every new edit pushes the save back another
-    //    500ms, so a fast typer only triggers one round trip.
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      void flushPendingSaves();
-    }, 500);
-  }
-
-  /**
-   * Flushes every pending per-pokemon update through `updatePokemonAction`
-   * in parallel. Called by the debounce timer and the species change handler
-   * (so a species change doesn't race with a queued field edit on the
-   * previous species).
-   */
-  async function flushPendingSaves() {
-    const pending = pendingUpdatesRef.current;
-    if (pending.size === 0) return;
-    const batch = Array.from(pending.entries());
-    pending.clear();
-    setIsSaving(true);
-    try {
-      const results = await Promise.all(
-        batch.map(([pokemonId, updates]) =>
-          updatePokemonAction(
-            team.id,
-            pokemonId,
-            updates as Parameters<typeof updatePokemonAction>[2]
-          )
-        )
-      );
-      for (const result of results) {
-        if (!result.success) {
-          toast.error(result.error ?? "Failed to save changes.");
-        }
+    startFieldSaveTransition(async () => {
+      applyOptimisticPatch({ pokemonId, fields: { [field]: value } });
+      const result = await updatePokemonAction(team.id, pokemonId, {
+        [field]: value,
+      } as Parameters<typeof updatePokemonAction>[2]);
+      if (!result.success) {
+        toast.error(result.error ?? "Failed to save changes.");
       }
-    } finally {
-      setIsSaving(false);
-    }
+      router.refresh();
+    });
   }
+
+  // Auto-correct mega stone mismatches in server-fetched data. Runs whenever
+  // the server team changes (after import, paste, or any router.refresh) and
+  // applies the correct stone optimistically + saves it in the background.
+  useEffect(() => {
+    for (const tp of team.team_pokemon) {
+      const pokemon = tp.pokemon;
+      if (!pokemon) continue;
+      const expectedStone = getMegaStoneForSpecies(pokemon.species);
+      if (expectedStone && pokemon.held_item !== expectedStone) {
+        handlePokemonUpdate(pokemon.id, "held_item", expectedStone);
+      }
+    }
+  }, [team.team_pokemon]);
 
   // ---------------------------------------------------------------------------
   // Species picker handlers
@@ -404,10 +297,6 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
       const position =
         [1, 2, 3, 4, 5, 6].find((p) => !usedPositions.has(p)) ?? 1;
 
-      // Flush any queued field edits first so they land before we add a
-      // new pokemon (they can't reference the new pokemon yet, but this
-      // keeps the order deterministic).
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       setIsSaving(true);
       addPokemonToTeamAction(team.id, pokemon, position)
         .then((result) => {
@@ -453,17 +342,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
 
       // Apply an optimistic patch so the editor shows the new species
       // on the next paint without waiting for the server round trip.
-      setOptimisticPatches((prev) => {
-        const next = new Map(prev);
-        next.set(pokemonId, changeFields);
-        return next;
-      });
-
-      // Drop any queued field edits for this pokemon — the species change
-      // wipes moves/EVs/ability anyway, so a stale "set Tackle" save
-      // would race against the species reset.
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      pendingUpdatesRef.current.delete(pokemonId);
+      applyOptimisticPatch({ pokemonId, fields: changeFields });
 
       setIsSaving(true);
       updatePokemonAction(
@@ -475,21 +354,10 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
           if (result.success) {
             router.refresh();
           } else {
-            // Revert optimistic patch on failure
-            setOptimisticPatches((prev) => {
-              const next = new Map(prev);
-              next.delete(pokemonId);
-              return next;
-            });
             toast.error(result.error ?? "Failed to update species.");
           }
         })
         .catch(() => {
-          setOptimisticPatches((prev) => {
-            const next = new Map(prev);
-            next.delete(pokemonId);
-            return next;
-          });
           toast.error("Failed to update species.");
         })
         .finally(() => {
@@ -627,10 +495,8 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
       </div>
 
       {/* Save status indicator — small, fixed, never blocks input.
-          All saves (field edits and species add/change) share the same
-          `isSaving` flag so the user gets a low-key "Saving…" hint
-          without losing focus or interaction. */}
-      {isSaving && (
+          Field saves: isFieldSavePending. Species changes: isSaving. */}
+      {(isSaving || isFieldSavePending) && (
         <div
           role="status"
           aria-live="polite"

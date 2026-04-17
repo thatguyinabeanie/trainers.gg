@@ -731,6 +731,22 @@ function computeLegalItemsFromSim(
 //   5. serebii.net/vgc/ — no Champions info on overview page
 const CHAMPIONS_MA_MOVE_BANLIST: ReadonlySet<string> = new Set();
 
+/**
+ * Extra moves granted to specific Champions species beyond what @pkmn/sim
+ * derives from Gen 9 learnsets. Needed for moves that are isNonstandard='Past'
+ * in Gen 9 data and therefore skipped by the learnset validator.
+ */
+const CHAMPIONS_SPECIES_MOVE_OVERRIDES: ReadonlyMap<
+  string,
+  ReadonlySet<string>
+> = new Map([
+  // Light of Ruin is Floette-Eternal's Gen 6 signature move — never released
+  // officially, marked Past in Gen 9, absent from Gen 9 learnsets.
+  ["Floette-Eternal", new Set(["Light of Ruin"])],
+  ["Floette-Eternal-Mega", new Set(["Light of Ruin"])],
+  ["Floette-Mega", new Set(["Light of Ruin"])],
+]);
+
 // Cache key: `${species}::${formatId}`. Iterating the full move list per
 // species is expensive (~800 moves per call); cache on first request per
 // combination.
@@ -794,6 +810,17 @@ function computeLegalMovesFromSim(
 const championsMoveCache = new Map<string, ReadonlySet<string>>();
 
 /**
+ * Some Champions-exclusive megas derive from a base form whose canonical
+ * name in @pkmn/sim differs from the mega's name minus "-Mega". We redirect
+ * the learnset lookup to the correct base so moves like Light of Ruin (which
+ * belongs to Floette-Eternal, not regular Floette) are recognized as legal.
+ */
+const CHAMPIONS_MEGA_LEARNSET_BASE: Readonly<Record<string, string>> = {
+  "Floette-Mega": "Floette-Eternal",
+  "Floette-Eternal-Mega": "Floette-Eternal",
+};
+
+/**
  * Compute the legal-move set for a Champions: VGC 2026 Reg M-A species.
  *
  * All Champions-roster species exist in the gen-9 pokedex (including
@@ -811,8 +838,12 @@ function computeLegalMovesForChampions(
   const cached = championsMoveCache.get(species);
   if (cached) return cached;
 
+  // For Champions megas derived from non-standard base forms, use the
+  // correct base for learnset lookups (e.g. Floette-Mega → Floette-Eternal).
+  const lookupSpecies = CHAMPIONS_MEGA_LEARNSET_BASE[species] ?? species;
+
   const gen = SimDex.forGen(9);
-  const speciesObj = gen.species.get(species);
+  const speciesObj = gen.species.get(lookupSpecies);
   if (!speciesObj?.exists) return undefined;
 
   // Use AG as a permissive base validator — empty banlist, purely
@@ -838,6 +869,15 @@ function computeLegalMovesForChampions(
       error
     );
     return undefined; // permissive fallback — don't cache error result
+  }
+
+  // Append per-species overrides — moves that @pkmn/sim can't derive from
+  // Gen 9 learnsets (e.g. Past-tagged moves like Light of Ruin).
+  const overrides = CHAMPIONS_SPECIES_MOVE_OVERRIDES.get(species);
+  if (overrides) {
+    for (const moveName of overrides) {
+      legal.add(moveName);
+    }
   }
 
   championsMoveCache.set(species, legal);

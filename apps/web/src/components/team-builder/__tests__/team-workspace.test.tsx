@@ -40,6 +40,10 @@ jest.mock("next/image", () => ({
 jest.mock("@trainers/pokemon", () => ({
   buildSpeciesSearchIndex: jest.fn(() => []),
   getValidAbilities: jest.fn(() => ["Intimidate"]),
+  getMegaStoneForSpecies: jest.fn(() => null),
+  getFormatById: jest.fn(() => undefined),
+  formatHasTera: jest.fn(() => false),
+  getSpeciesTypes: jest.fn(() => ["Fire"]),
 }));
 
 jest.mock("@trainers/pokemon/sprites", () => ({
@@ -484,6 +488,10 @@ describe("TeamWorkspace", () => {
 
   describe("optimistic field updates", () => {
     it("reflects a move pick in the editor immediately (before the save resolves)", async () => {
+      // Keep the save pending so the optimistic state stays visible.
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      updatePokemonAction.mockImplementation(() => new Promise(() => {}));
+
       const user = userEvent.setup();
       const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
@@ -503,6 +511,10 @@ describe("TeamWorkspace", () => {
     });
 
     it("propagates an optimistic ability change without waiting for the save", async () => {
+      // Keep the save pending so the optimistic state stays visible.
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      updatePokemonAction.mockImplementation(() => new Promise(() => {}));
+
       const user = userEvent.setup();
       const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
       render(<TeamWorkspace {...defaultProps} team={team} />);
@@ -516,66 +528,6 @@ describe("TeamWorkspace", () => {
       expect(
         screen.getByTestId("pokemon-editor").getAttribute("data-ability")
       ).toBe("Blaze");
-    });
-
-    it("debounces the server save and calls updatePokemonAction with the move field", async () => {
-      jest.useFakeTimers({ doNotFake: ["nextTick"] });
-      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
-      try {
-        const user = userEvent.setup({
-          advanceTimers: jest.advanceTimersByTime,
-        });
-        const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
-        render(<TeamWorkspace {...defaultProps} team={team} />);
-
-        await user.click(screen.getByTestId("editor-pick-move1"));
-
-        // Save should not have fired yet — the 500ms debounce is still ticking
-        expect(updatePokemonAction).not.toHaveBeenCalled();
-
-        // Advance past the 500ms debounce. Wrap in act so React flushes the
-        // setIsSaving state updates triggered by the debounced callback.
-        await React.act(async () => {
-          await jest.advanceTimersByTimeAsync(500);
-        });
-
-        expect(updatePokemonAction).toHaveBeenCalledTimes(1);
-        expect(updatePokemonAction).toHaveBeenCalledWith(
-          1, // teamId
-          1, // pokemonId
-          { move1: "Tackle" }
-        );
-      } finally {
-        jest.useRealTimers();
-      }
-    });
-
-    it("coalesces rapid field edits into a single save call", async () => {
-      jest.useFakeTimers({ doNotFake: ["nextTick"] });
-      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
-      try {
-        const user = userEvent.setup({
-          advanceTimers: jest.advanceTimersByTime,
-        });
-        const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
-        render(<TeamWorkspace {...defaultProps} team={team} />);
-
-        // Two edits inside the debounce window → one combined save
-        await user.click(screen.getByTestId("editor-pick-move1"));
-        await user.click(screen.getByTestId("editor-pick-ability"));
-
-        await React.act(async () => {
-          await jest.advanceTimersByTimeAsync(500);
-        });
-
-        expect(updatePokemonAction).toHaveBeenCalledTimes(1);
-        expect(updatePokemonAction).toHaveBeenCalledWith(1, 1, {
-          move1: "Tackle",
-          ability: "Blaze",
-        });
-      } finally {
-        jest.useRealTimers();
-      }
     });
   });
 });

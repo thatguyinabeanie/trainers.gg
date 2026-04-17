@@ -169,21 +169,17 @@ describe("StatsTable", () => {
       expect(onUpdate).toHaveBeenCalledWith("ev_hp", 100);
     });
 
-    it("moving the slider emits onUpdate with the EV column name", () => {
+    it("changing the Atk input emits onUpdate with the EV column name", () => {
       const { onUpdate } = renderStatsTable();
-      const slider = screen.getByLabelText("Atk points slider");
-      fireEvent.change(slider, { target: { value: "252" } });
+      const input = screen.getByLabelText("Atk points");
+      fireEvent.change(input, { target: { value: "252" } });
       expect(onUpdate).toHaveBeenCalledWith("ev_attack", 252);
     });
 
-    it("input and slider for the same stat share the same value (stay in sync)", () => {
+    it("the points input reflects the current EV value", () => {
       renderStatsTable({ pokemon: buildPokemon({ ev_hp: 84 }) });
       const input = screen.getByLabelText("HP points") as HTMLInputElement;
-      const slider = screen.getByLabelText(
-        "HP points slider"
-      ) as HTMLInputElement;
       expect(input.value).toBe("84");
-      expect(slider.value).toBe("84");
     });
   });
 
@@ -245,10 +241,10 @@ describe("StatsTable", () => {
       expect(onUpdate).not.toHaveBeenCalled();
     });
 
-    it("does not call onUpdate when moving the slider while disabled", () => {
+    it("does not call onUpdate when changing input while disabled", () => {
       const { onUpdate } = renderStatsTable({ disabled: true });
-      const slider = screen.getByLabelText("Atk points slider");
-      fireEvent.change(slider, { target: { value: "252" } });
+      const input = screen.getByLabelText("Atk points");
+      fireEvent.change(input, { target: { value: "252" } });
       expect(onUpdate).not.toHaveBeenCalled();
     });
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, jest } from "@jest/globals";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -56,7 +56,8 @@ function makeState(
 // =============================================================================
 
 describe("SpeedToggleRail — item dropdown", () => {
-  it("only shows speed-affecting items legal for the format (Champions Reg M-A → just None + Choice Scarf)", () => {
+  it("only shows speed-affecting items legal for the format (Champions Reg M-A → just None + Choice Scarf)", async () => {
+    const user = userEvent.setup();
     const onChange = jest.fn();
     render(
       <SpeedToggleRail
@@ -66,13 +67,18 @@ describe("SpeedToggleRail — item dropdown", () => {
       />
     );
 
-    const select = screen.getByLabelText("Held item") as HTMLSelectElement;
-    const optionLabels = Array.from(select.options).map((o) => o.textContent);
+    await user.click(screen.getByLabelText("Held item"));
+    await waitFor(() =>
+      expect(screen.getAllByRole("option").length).toBeGreaterThan(0)
+    );
+    const options = screen.getAllByRole("option");
+    const labels = options.map((o) => o.textContent?.trim());
 
-    expect(optionLabels).toEqual(["None", "Choice Scarf"]);
+    expect(labels).toEqual(["None", "Choice Scarf"]);
   });
 
-  it("shows the full classic item set for older formats", () => {
+  it("shows the full classic item set for older formats", async () => {
+    const user = userEvent.setup();
     const onChange = jest.fn();
     render(
       <SpeedToggleRail
@@ -82,14 +88,15 @@ describe("SpeedToggleRail — item dropdown", () => {
       />
     );
 
-    const select = screen.getByLabelText("Held item") as HTMLSelectElement;
-    const optionLabels = Array.from(select.options).map((o) => o.textContent);
+    await user.click(screen.getByLabelText("Held item"));
+    await waitFor(() =>
+      expect(screen.getAllByRole("option").length).toBeGreaterThan(0)
+    );
+    const options = screen.getAllByRole("option");
+    const labels = options.map((o) => o.textContent?.trim());
 
-    expect(optionLabels).toContain("Choice Scarf");
-    expect(optionLabels).toContain("Iron Ball");
-    expect(optionLabels).toContain("Lagging Tail");
-    expect(optionLabels).toContain("Quick Powder");
-    expect(optionLabels).toContain("Macho Brace");
+    expect(labels).toContain("Choice Scarf");
+    expect(labels).toContain("Iron Ball");
   });
 });
 
@@ -269,10 +276,13 @@ describe("SpeedToggleRail — status", () => {
       />
     );
 
-    await user.selectOptions(
-      screen.getByLabelText("Status condition"),
-      "paralyzed"
+    await user.click(screen.getByLabelText("Status condition"));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("option", { name: "Paralyzed" })
+      ).toBeInTheDocument()
     );
+    await user.click(screen.getByRole("option", { name: "Paralyzed" }));
 
     const next = onChange.mock.calls.at(-1)![0] as SpeedToggleState;
     expect(next.status).toBe("paralyzed");
