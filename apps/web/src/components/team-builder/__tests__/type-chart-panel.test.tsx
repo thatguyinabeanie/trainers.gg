@@ -1,5 +1,6 @@
-import { describe, it, expect } from "@jest/globals";
+import { describe, it, expect, jest } from "@jest/globals";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import React from "react";
 
 // =============================================================================
@@ -100,6 +101,55 @@ jest.mock("@trainers/pokemon", () => ({
     }
     return { immunities: [], weaknesses: {}, resistances: {} };
   }),
+
+  // Offensive coverage mocks
+  getMoveType: jest.fn((moveName: string) => {
+    const map: Record<string, string> = {
+      Flamethrower: "Fire",
+      Surf: "Water",
+      Tackle: "Normal",
+      WillOWisp: "Fire", // status move — should be filtered by category check
+    };
+    return map[moveName] ?? null;
+  }),
+
+  getMoveCategory: jest.fn((moveName: string) => {
+    const map: Record<string, string> = {
+      Flamethrower: "Special",
+      Surf: "Special",
+      Tackle: "Physical",
+      WillOWisp: "Status",
+    };
+    return map[moveName] ?? null;
+  }),
+
+  getTypeEffectiveness: jest.fn(
+    (attackType: string, defenderTypes: string[]) => {
+      // Simplified type chart for tests
+      const chart: Record<string, Record<string, number>> = {
+        Fire: {
+          Grass: 2,
+          Water: 0.5,
+          Fire: 0.5,
+          Rock: 0.5,
+          Normal: 1,
+        },
+        Water: {
+          Fire: 2,
+          Water: 0.5,
+          Grass: 0.5,
+          Normal: 1,
+        },
+        Normal: {
+          Normal: 1,
+          Ghost: 0,
+          Rock: 0.5,
+        },
+      };
+      const defending = defenderTypes[0] ?? "Normal";
+      return chart[attackType]?.[defending] ?? 1;
+    }
+  ),
 }));
 
 import { TypeChartPanel } from "../type-chart-panel";
@@ -163,13 +213,29 @@ describe("TypeChartPanel", () => {
     }
   });
 
-  it("renders the panel header and footer legend when team has mons", () => {
+  it("renders the panel header and footer legend when team has mons (defensive default)", () => {
     const team = [makePokemon({ id: 1, species: "Charizard" })];
     render(<TypeChartPanel team={team} />);
     expect(screen.getByText("Defensive coverage")).toBeInTheDocument();
     expect(
       screen.getByText("↓ weak · ↑ resist · = neutral")
     ).toBeInTheDocument();
+  });
+
+  it("renders the Defensive / Offensive toggle buttons", () => {
+    const team = [makePokemon({ id: 1, species: "Charizard" })];
+    render(<TypeChartPanel team={team} />);
+    expect(screen.getByTestId("mode-defensive")).toBeInTheDocument();
+    expect(screen.getByTestId("mode-offensive")).toBeInTheDocument();
+    // Defensive is pressed by default
+    expect(screen.getByTestId("mode-defensive")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByTestId("mode-offensive")).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -248,16 +314,16 @@ describe("TypeChartPanel", () => {
     expect(mult).toHaveTextContent("x4");
   });
 
-  it("renders ½ token for 0.5× multiplier and ¼ for 0.25×", () => {
+  it("renders 1/2 token for 0.5× multiplier and 1/4 for 0.25×", () => {
     const charizard = makePokemon({ id: 1, species: "Charizard" });
     render(<TypeChartPanel team={[charizard]} />);
-    // Charizard resists Steel at ×0.5 → "½"
+    // Charizard resists Steel at ×0.5 → "1/2"
     expect(screen.getByTestId(`mult-Steel-${charizard.id}`)).toHaveTextContent(
-      "½"
+      "1/2"
     );
-    // Charizard resists Fire at ×0.25 → "¼"
+    // Charizard resists Fire at ×0.25 → "1/4"
     expect(screen.getByTestId(`mult-Fire-${charizard.id}`)).toHaveTextContent(
-      "¼"
+      "1/4"
     );
   });
 
@@ -392,5 +458,154 @@ describe("TypeChartPanel", () => {
       "aria-label",
       "Blaze (Charizard)"
     );
+  });
+});
+
+// =============================================================================
+// Offensive coverage
+// =============================================================================
+
+describe("TypeChartPanel — offensive mode", () => {
+  it("switches to Offensive mode when the toggle is clicked", async () => {
+    const user = userEvent.setup();
+    const team = [makePokemon({ id: 1, species: "Charizard" })];
+    render(<TypeChartPanel team={team} />);
+
+    // Default is Defensive
+    expect(screen.getByText("Defensive coverage")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("mode-offensive"));
+
+    expect(screen.getByText("Offensive coverage")).toBeInTheDocument();
+    expect(screen.getByTestId("mode-offensive")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByTestId("mode-defensive")).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+  });
+
+  it("switches back to Defensive when Defensive button is clicked", async () => {
+    const user = userEvent.setup();
+    const team = [makePokemon({ id: 1, species: "Charizard" })];
+    render(<TypeChartPanel team={team} />);
+
+    await user.click(screen.getByTestId("mode-offensive"));
+    await user.click(screen.getByTestId("mode-defensive"));
+
+    expect(screen.getByText("Defensive coverage")).toBeInTheDocument();
+  });
+
+  it("shows — for a mon with no damaging moves in offensive mode", async () => {
+    const user = userEvent.setup();
+    // Charizard with no moves set
+    const mon = makePokemon({
+      id: 1,
+      species: "Charizard",
+      move1: null,
+      move2: null,
+      move3: null,
+      move4: null,
+    });
+    render(<TypeChartPanel team={[mon]} />);
+    await user.click(screen.getByTestId("mode-offensive"));
+
+    // All cells for this mon should show the em dash
+    for (const type of MOCK_TYPES) {
+      const cell = screen.getByTestId(`mult-${type}-1`);
+      expect(cell).toHaveTextContent("—");
+    }
+  });
+
+  it("shows — for a mon with only a Status move in offensive mode", async () => {
+    const user = userEvent.setup();
+    // WillOWisp is mocked as a Status category move
+    const mon = makePokemon({
+      id: 1,
+      species: "Charizard",
+      move1: "WillOWisp",
+      move2: null,
+      move3: null,
+      move4: null,
+    });
+    render(<TypeChartPanel team={[mon]} />);
+    await user.click(screen.getByTestId("mode-offensive"));
+
+    for (const type of MOCK_TYPES) {
+      const cell = screen.getByTestId(`mult-${type}-1`);
+      expect(cell).toHaveTextContent("—");
+    }
+  });
+
+  it("shows x2 in green for a Fire move vs a Grass-type defender", async () => {
+    const user = userEvent.setup();
+    // Flamethrower is mocked as Fire type, Special category.
+    // getTypeEffectiveness("Fire", ["Grass"]) → 2 per our mock.
+    const mon = makePokemon({
+      id: 1,
+      species: "Charizard",
+      move1: "Flamethrower",
+      move2: null,
+      move3: null,
+      move4: null,
+    });
+    render(<TypeChartPanel team={[mon]} />);
+    await user.click(screen.getByTestId("mode-offensive"));
+
+    const cell = screen.getByTestId("mult-Grass-1");
+    expect(cell).toHaveTextContent("x2");
+    // In offensive mode x2 is good → emerald (green) text
+    expect(cell.className).toMatch(/emerald/);
+  });
+
+  it("shows 1/2 in red for a Water move vs a Water-type defender", async () => {
+    const user = userEvent.setup();
+    // Surf is mocked as Water type, Special category.
+    // getTypeEffectiveness("Water", ["Water"]) → 0.5 per our mock.
+    const mon = makePokemon({
+      id: 1,
+      species: "Magikarp",
+      move1: "Surf",
+      move2: null,
+      move3: null,
+      move4: null,
+    });
+    render(<TypeChartPanel team={[mon]} />);
+    await user.click(screen.getByTestId("mode-offensive"));
+
+    const cell = screen.getByTestId("mult-Water-1");
+    expect(cell).toHaveTextContent("1/2");
+    // In offensive mode 0.5 is bad (resisted) → destructive (red) text
+    expect(cell.className).toMatch(/destructive/);
+  });
+
+  it("offensive footer legend is correct in offensive mode", async () => {
+    const user = userEvent.setup();
+    const team = [
+      makePokemon({ id: 1, species: "Charizard", move1: "Flamethrower" }),
+    ];
+    render(<TypeChartPanel team={team} />);
+    await user.click(screen.getByTestId("mode-offensive"));
+
+    expect(
+      screen.getByText("↑ super effective · ↓ resisted · = neutral")
+    ).toBeInTheDocument();
+  });
+
+  it("summary positiveCount increments when mon has a SE move in offensive mode", async () => {
+    const user = userEvent.setup();
+    // Two mons: one with Flamethrower (Fire), one with no moves.
+    // Fire vs Grass = x2 → positiveCount for Grass row should be 1.
+    const team = [
+      makePokemon({ id: 1, species: "Charizard", move1: "Flamethrower" }),
+      makePokemon({ id: 2, species: "Magikarp", move1: null }),
+    ];
+    render(<TypeChartPanel team={team} />);
+    await user.click(screen.getByTestId("mode-offensive"));
+
+    // weak- testid holds positiveCount in both modes
+    expect(screen.getByTestId("weak-Grass")).toHaveTextContent("1");
   });
 });
