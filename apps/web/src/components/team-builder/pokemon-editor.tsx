@@ -184,7 +184,10 @@ export function PokemonEditor({
 
   return (
     <div
-      className={cn("bg-card overflow-hidden rounded-lg shadow-sm", className)}
+      className={cn(
+        "bg-card relative overflow-hidden rounded-lg shadow-sm",
+        className
+      )}
     >
       {/* ===================================================================
           Header band — sprite, name, type pills, and the four loadout fields.
@@ -213,58 +216,66 @@ export function PokemonEditor({
           user stays anchored to the field they clicked. Only one is open at a
           time, enforced by the `pickerOpen` discriminated state.
           =================================================================== */}
-      {pickerOpen === "ability" && (
-        <div className="border-b px-4 py-3">
-          <AbilityPicker
-            species={pokemon.species}
-            value={pokemon.ability}
-            onSelect={(val) => {
-              onUpdate("ability", val);
-              closePicker();
-            }}
-            onClose={closePicker}
-            formatId={format?.id}
+      {(pickerOpen === "ability" ||
+        pickerOpen === "item" ||
+        (hasTera && pickerOpen === "tera") ||
+        pickerOpen === "nature") && (
+        <>
+          {/* Backdrop — click outside picker to close */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={closePicker}
+            aria-hidden="true"
           />
-        </div>
-      )}
-      {pickerOpen === "item" && (
-        <div className="border-b px-4 py-3">
-          <ItemPicker
-            value={pokemon.held_item}
-            teamItems={teamItems}
-            formatId={format?.id}
-            onSelect={(val) => {
-              onUpdate("held_item", val);
-              closePicker();
-            }}
-            onClose={closePicker}
-          />
-        </div>
-      )}
-      {hasTera && pickerOpen === "tera" && (
-        <div className="border-b px-4 py-3">
-          <TeraPicker
-            value={pokemon.tera_type}
-            onSelect={(val) => {
-              onUpdate("tera_type", val);
-              closePicker();
-            }}
-            onClose={closePicker}
-            formatId={format?.id}
-          />
-        </div>
-      )}
-      {pickerOpen === "nature" && (
-        <div className="border-b px-4 py-3">
-          <NaturePicker
-            value={pokemon.nature}
-            onSelect={(val) => {
-              onUpdate("nature", val);
-              closePicker();
-            }}
-            onClose={closePicker}
-          />
-        </div>
+          {/* Floating picker panel — top-[69px] = 68px header + 1px border-b */}
+          <div className="bg-card absolute inset-x-0 top-[69px] z-50 max-h-80 overflow-y-auto border-b px-4 py-3 shadow-xl">
+            {pickerOpen === "ability" && (
+              <AbilityPicker
+                species={pokemon.species}
+                value={pokemon.ability}
+                onSelect={(val) => {
+                  onUpdate("ability", val);
+                  closePicker();
+                }}
+                onClose={closePicker}
+                formatId={format?.id}
+              />
+            )}
+            {pickerOpen === "item" && (
+              <ItemPicker
+                value={pokemon.held_item}
+                teamItems={teamItems}
+                formatId={format?.id}
+                onSelect={(val) => {
+                  onUpdate("held_item", val);
+                  closePicker();
+                }}
+                onClose={closePicker}
+              />
+            )}
+            {hasTera && pickerOpen === "tera" && (
+              <TeraPicker
+                value={pokemon.tera_type}
+                onSelect={(val) => {
+                  onUpdate("tera_type", val);
+                  closePicker();
+                }}
+                onClose={closePicker}
+                formatId={format?.id}
+              />
+            )}
+            {pickerOpen === "nature" && (
+              <NaturePicker
+                value={pokemon.nature}
+                onSelect={(val) => {
+                  onUpdate("nature", val);
+                  closePicker();
+                }}
+                onClose={closePicker}
+              />
+            )}
+          </div>
+        </>
       )}
 
       {/* ===================================================================
