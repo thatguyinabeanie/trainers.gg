@@ -171,21 +171,13 @@ describe("SpeedTierList — highlights", () => {
   });
 });
 
-describe("SpeedTierList — context hint labels", () => {
-  it("shows normal context hints in default play", () => {
+describe("SpeedTierList — hint labels removed", () => {
+  it("does NOT render ↑ Faster / ↓ Slower hint row (removed)", () => {
     render(<SpeedTierList tiers={makeTiers()} selectedSpeed={150} />);
 
-    // The hint row appears once above the tier list.
-    expect(screen.getByText("↑ Faster")).toBeInTheDocument();
-    expect(screen.getByText("↓ Slower")).toBeInTheDocument();
-  });
-
-  it("shows Trick Room labels when trickRoom=true", () => {
-    render(<SpeedTierList tiers={makeTiers()} selectedSpeed={150} trickRoom />);
-
-    // In Trick Room mode the context hint swaps to "Moves first / Moves later".
-    expect(screen.getByText("Moves first")).toBeInTheDocument();
-    expect(screen.getByText("Moves later")).toBeInTheDocument();
+    // Hint row was removed — the list is a clean flat table.
+    expect(screen.queryByText("↑ Faster")).not.toBeInTheDocument();
+    expect(screen.queryByText("↓ Slower")).not.toBeInTheDocument();
   });
 
   it("does not render separate per-section labels (faster/your-tier/slower) — flat list only", () => {
@@ -194,5 +186,21 @@ describe("SpeedTierList — context hint labels", () => {
     // These old section headers no longer exist — the list is flat.
     expect(screen.queryByText("→ Your tier")).not.toBeInTheDocument();
     expect(screen.queryByText("Same priority")).not.toBeInTheDocument();
+  });
+
+  it("header and body rows share the same grid-cols class (TIER_GRID constant)", () => {
+    render(<SpeedTierList tiers={makeTiers()} selectedSpeed={150} />);
+
+    // data-tier-grid is applied to both the header <div> and each MonRow <div>.
+    const tieredRows = document.querySelectorAll("[data-tier-grid]");
+    expect(tieredRows.length).toBeGreaterThanOrEqual(2);
+
+    const gridClasses = Array.from(tieredRows).map((el) => {
+      const match = el.className.match(/grid-cols-\S+/);
+      return match ? match[0] : null;
+    });
+
+    const unique = new Set(gridClasses.filter(Boolean));
+    expect(unique.size).toBe(1);
   });
 });

@@ -304,8 +304,7 @@ describe("SpeedPanel — toggles affect numbers", () => {
     expect(screen.getByTestId("hero-speed")).toHaveTextContent("180");
   });
 
-  it("Trick Room toggle switches context hint labels", async () => {
-    const user = userEvent.setup();
+  it("does NOT render a Trick Room toggle (TR removed from toggles)", () => {
     const selected = makePokemon({ id: 1, species: "Floette" });
     render(
       <SpeedPanel
@@ -315,16 +314,7 @@ describe("SpeedPanel — toggles affect numbers", () => {
       />
     );
 
-    // Default: standard speed order labels.
-    expect(screen.getByText("↑ Faster")).toBeInTheDocument();
-    expect(screen.getByText("↓ Slower")).toBeInTheDocument();
-
-    await user.click(screen.getByLabelText("Trick Room"));
-
-    // Trick Room: relabeled — slower = moves first.
-    expect(screen.queryByText("↑ Faster")).not.toBeInTheDocument();
-    expect(screen.getByText("Moves first")).toBeInTheDocument();
-    expect(screen.getByText("Moves later")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Trick Room")).not.toBeInTheDocument();
   });
 });
 
@@ -409,6 +399,45 @@ describe("SpeedPanel — layout", () => {
     // inside a scroll wrapper that is a sibling of the rail, so the rail and
     // tier list should NOT be direct siblings of each other.
     expect(rail.parentElement).not.toBe(tierList.parentElement);
+  });
+
+  it("header row and body rows share the same TIER_GRID column class", () => {
+    const selected = makePokemon({ id: 1, species: "Floette" });
+    render(
+      <SpeedPanel
+        selectedPokemon={selected}
+        team={[selected]}
+        format={FORMAT}
+      />
+    );
+
+    // Both the header and body rows carry data-tier-grid so we can assert
+    // that they use an identical grid-cols-* class.
+    const tieredRows = document.querySelectorAll("[data-tier-grid]");
+    expect(tieredRows.length).toBeGreaterThanOrEqual(2);
+
+    // Extract the grid-cols class from each; they must all be identical.
+    const gridClasses = Array.from(tieredRows).map((el) => {
+      const match = el.className.match(/grid-cols-\S+/);
+      return match ? match[0] : null;
+    });
+
+    const unique = new Set(gridClasses.filter(Boolean));
+    expect(unique.size).toBe(1);
+  });
+
+  it("does NOT render hint labels (↑ Faster / ↓ Slower row removed)", () => {
+    const selected = makePokemon({ id: 1, species: "Floette" });
+    render(
+      <SpeedPanel
+        selectedPokemon={selected}
+        team={[selected]}
+        format={FORMAT}
+      />
+    );
+
+    expect(screen.queryByText("↑ Faster")).not.toBeInTheDocument();
+    expect(screen.queryByText("↓ Slower")).not.toBeInTheDocument();
   });
 });
 

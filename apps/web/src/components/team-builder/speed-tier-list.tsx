@@ -41,15 +41,23 @@ interface SpeedTierListProps {
    * row. No partitioning or neighbor-count logic; all tiers are always shown.
    */
   selectedSpeed: number;
-  /**
-   * Whether to render in Trick Room order (reversed section meaning).
-   * Tier data is passed pre-sorted in the parent; we only relabel sections.
-   */
-  trickRoom?: boolean;
   className?: string;
 }
 
 // (no partition helpers needed — all tiers are always shown)
+
+// =============================================================================
+// Shared grid template — applied to BOTH the header row and each body row so
+// columns are guaranteed to align. Change it in one place and both update.
+//   col 1 BASE:     2rem   (3-digit max stat)
+//   col 2 POKÉMON:  flex   (sprite + name, fills remaining space)
+//   col 3 MIN:      2.5rem (3-digit stat, right-aligned)
+//   col 4 NEUTRAL:  2.5rem
+//   col 5 +SPE:     2.5rem
+// =============================================================================
+
+const TIER_GRID =
+  "grid grid-cols-[2rem_minmax(0,1fr)_2.5rem_2.5rem_2.5rem] gap-2";
 
 // =============================================================================
 // TableHeader — column labels row
@@ -59,21 +67,22 @@ function TableHeader() {
   return (
     <div
       data-testid="speed-table-header"
-      className="bg-muted/20 grid grid-cols-[28px_1fr_32px_40px_36px] border-t px-0"
+      data-tier-grid
+      className={cn(TIER_GRID, "bg-muted/20 border-t px-0")}
     >
-      <div className="text-muted-foreground flex items-center justify-center px-0.5 py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex items-center justify-center py-1.5 text-[9px] font-medium tracking-wide uppercase">
         Base
       </div>
-      <div className="text-muted-foreground flex min-w-0 items-center px-2 py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex min-w-0 items-center py-1.5 text-[9px] font-medium tracking-wide uppercase">
         Pokémon
       </div>
-      <div className="text-muted-foreground flex items-center justify-end px-0.5 py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex items-center justify-end py-1.5 text-[9px] font-medium tracking-wide uppercase">
         Min
       </div>
-      <div className="text-muted-foreground flex items-center justify-end px-0.5 py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex items-center justify-end py-1.5 text-[9px] font-medium tracking-wide uppercase">
         Neutral
       </div>
-      <div className="text-muted-foreground flex items-center justify-end px-0.5 py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex items-center justify-end py-1.5 text-[9px] font-medium tracking-wide uppercase">
         +Spe
       </div>
     </div>
@@ -86,22 +95,37 @@ function TableHeader() {
 
 interface MonRowProps {
   mon: SpeedTierMon;
+  /** Base speed shown in col 1; undefined = render an empty cell (stacked mons). */
+  baseSpeed?: number;
+  isYourTier: boolean;
 }
 
-function MonRow({ mon }: MonRowProps) {
+function MonRow({ mon, baseSpeed, isYourTier }: MonRowProps) {
   return (
     <div
       data-testid={`mon-${mon.id}`}
       data-yours={mon.isYours}
       data-selected={mon.isSelected}
+      data-tier-grid
       className={cn(
-        "grid grid-cols-[1fr_32px_40px_36px] items-center py-0.5",
+        TIER_GRID,
+        "hover:bg-muted/30 items-center border-t py-1 transition-colors duration-100",
         mon.isYours ? "text-primary font-semibold" : "text-muted-foreground",
         mon.isSelected && "text-primary"
       )}
     >
-      {/* Pokémon sprite + name */}
-      <div className="flex min-w-0 items-center gap-1 px-2 text-xs">
+      {/* Base speed — col 1 */}
+      <div
+        className={cn(
+          "flex items-center justify-center font-mono text-xs font-bold",
+          isYourTier ? "text-primary" : "text-muted-foreground"
+        )}
+      >
+        {baseSpeed ?? ""}
+      </div>
+
+      {/* Pokémon sprite + name — col 2 */}
+      <div className="flex min-w-0 items-center gap-1 text-xs">
         {mon.spriteUrl ? (
           <Image
             src={mon.spriteUrl}
@@ -131,26 +155,26 @@ function MonRow({ mon }: MonRowProps) {
         )}
       </div>
 
-      {/* Min */}
+      {/* Min — col 3 */}
       <div
         data-testid={`stat-min-${mon.id}`}
-        className="pr-0.5 text-right font-mono text-xs"
+        className="text-right font-mono text-xs"
       >
         {mon.statMin}
       </div>
 
-      {/* Max Neutral */}
+      {/* Max Neutral — col 4 */}
       <div
         data-testid={`stat-neutral-${mon.id}`}
-        className="pr-0.5 text-right font-mono text-xs"
+        className="text-right font-mono text-xs"
       >
         {mon.statMaxNeutral}
       </div>
 
-      {/* Max Positive */}
+      {/* Max Positive — col 5 */}
       <div
         data-testid={`stat-positive-${mon.id}`}
-        className="pr-0.5 text-right font-mono text-xs font-semibold"
+        className="text-right font-mono text-xs font-semibold"
       >
         {mon.statMaxPositive}
       </div>
@@ -169,36 +193,24 @@ interface TierRowProps {
 
 function TierRow({ tier, isYourTier }: TierRowProps) {
   // All mons in a tier share the same base speed (speed-tie grouping), so use
-  // the first mon's baseSpeed for the left column.
+  // the first mon's baseSpeed for the left column. Subsequent mons in the same
+  // tier show an empty cell so the speed value doesn't repeat.
   const displayBaseSpeed = tier.mons[0]?.baseSpeed ?? tier.speed;
 
   return (
     <div
       data-testid={`tier-${tier.speed}`}
       data-your-tier={isYourTier}
-      className={cn(
-        "grid grid-cols-[28px_1fr] border-t",
-        isYourTier && "from-primary/10 to-card bg-gradient-to-r"
-      )}
+      className={cn(isYourTier && "from-primary/10 to-card bg-gradient-to-r")}
     >
-      {/* BASE SPEED cell — spans all mon rows vertically */}
-      <div
-        className={cn(
-          "flex items-center justify-center border-r font-mono text-xs font-bold",
-          isYourTier
-            ? "bg-primary/10 text-primary"
-            : "bg-muted text-muted-foreground"
-        )}
-      >
-        {displayBaseSpeed}
-      </div>
-
-      {/* Mon rows — stacked vertically, each has name + min/neutral/+spe */}
-      <div className="grid gap-0 py-1">
-        {tier.mons.map((mon) => (
-          <MonRow key={mon.id} mon={mon} />
-        ))}
-      </div>
+      {tier.mons.map((mon, idx) => (
+        <MonRow
+          key={mon.id}
+          mon={mon}
+          baseSpeed={idx === 0 ? displayBaseSpeed : undefined}
+          isYourTier={isYourTier}
+        />
+      ))}
     </div>
   );
 }
@@ -227,23 +239,11 @@ function TierRow({ tier, isYourTier }: TierRowProps) {
 export function SpeedTierList({
   tiers,
   selectedSpeed,
-  trickRoom = false,
   className,
 }: SpeedTierListProps) {
-  // Section labels for Trick Room context — shown above the list.
-  const contextLabel = trickRoom ? "Moves first" : "↑ Faster";
-  const bottomLabel = trickRoom ? "Moves later" : "↓ Slower";
-
   return (
     <div data-testid="speed-tier-list" className={cn("flex-1", className)}>
       <TableHeader />
-      {/* Context hint row — appears once above the tier list */}
-      {tiers.length > 0 && (
-        <div className="text-muted-foreground flex justify-between px-3.5 pt-2 pb-1 text-[9px] font-semibold tracking-wider uppercase">
-          <span>{contextLabel}</span>
-          <span>{bottomLabel}</span>
-        </div>
-      )}
       {tiers.map((tier) => (
         <TierRow
           key={tier.speed}
