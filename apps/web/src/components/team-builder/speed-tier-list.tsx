@@ -68,21 +68,21 @@ function TableHeader() {
     <div
       data-testid="speed-table-header"
       data-tier-grid
-      className={cn(TIER_GRID, "bg-muted/20 border-t px-0")}
+      className={cn(TIER_GRID, "bg-muted/20 border-t px-2")}
     >
-      <div className="text-muted-foreground flex items-center justify-center py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex items-center justify-center overflow-hidden py-1.5 text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
         Base
       </div>
-      <div className="text-muted-foreground flex min-w-0 items-center py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex min-w-0 items-center overflow-hidden py-1.5 text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
         Pokémon
       </div>
-      <div className="text-muted-foreground flex items-center justify-end py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex items-center justify-end overflow-hidden py-1.5 text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
         Min
       </div>
-      <div className="text-muted-foreground flex items-center justify-end py-1.5 text-[9px] font-medium tracking-wide uppercase">
-        Neutral
+      <div className="text-muted-foreground flex items-center justify-end overflow-hidden py-1.5 text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
+        =
       </div>
-      <div className="text-muted-foreground flex items-center justify-end py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex items-center justify-end overflow-hidden py-1.5 text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
         +Spe
       </div>
     </div>
@@ -109,7 +109,7 @@ function MonRow({ mon, baseSpeed, isYourTier }: MonRowProps) {
       data-tier-grid
       className={cn(
         TIER_GRID,
-        "hover:bg-muted/30 items-center border-t py-1 transition-colors duration-100",
+        "hover:bg-muted/30 items-center border-t px-2 py-1 transition-colors duration-100",
         mon.isYours ? "text-primary font-semibold" : "text-muted-foreground",
         mon.isSelected && "text-primary"
       )}
@@ -201,7 +201,7 @@ function TierRow({ tier, isYourTier }: TierRowProps) {
     <div
       data-testid={`tier-${tier.speed}`}
       data-your-tier={isYourTier}
-      className={cn(isYourTier && "from-primary/10 to-card bg-gradient-to-r")}
+      className={cn(isYourTier && "from-primary/10 to-card bg-linear-to-r")}
     >
       {tier.mons.map((mon, idx) => (
         <MonRow

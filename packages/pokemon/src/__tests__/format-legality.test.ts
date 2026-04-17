@@ -31,16 +31,22 @@ describe("format-legality — Champions M-A", () => {
   it("returns a ReadonlySet for Champions M-A", () => {
     const legal = getLegalSpecies(CHAMPIONS);
     expect(legal).toBeInstanceOf(Set);
-    // 217 base entries minus duplicates that resolve to the same canonical name:
-    // - Aegislash-Shield → Aegislash (duplicate, Aegislash already listed)
-    // - Maushold-Three → Maushold (duplicate, Maushold already listed)
-    expect(legal?.size).toBe(215);
+    // 215 base species + 59 mega forms (36 standard + 23 Champions-exclusive)
+    // + Maushold-Four (4-person family form) + Floette-Mega (paste alias for Floette-Eternal-Mega)
+    // minus duplicates: Aegislash-Shield → Aegislash, Maushold-Three → Maushold
+    expect(legal?.size).toBe(276);
   });
 
-  it("excludes Mega forms (they're item-driven, not separately selectable)", () => {
+  it("includes Mega forms using Showdown naming (not 'Mega X' naming)", () => {
     const legal = getLegalSpecies(CHAMPIONS);
+    // Wrong naming format — should not be present
     expect(legal?.has("Mega Venusaur")).toBe(false);
     expect(legal?.has("Mega Charizard X")).toBe(false);
+    // Correct Showdown naming — should be present (standard + Champions-exclusive)
+    expect(legal?.has("Venusaur-Mega")).toBe(true);
+    expect(legal?.has("Charizard-Mega-X")).toBe(true);
+    expect(legal?.has("Greninja-Mega")).toBe(true);
+    // Base species still present
     expect(legal?.has("Venusaur")).toBe(true);
     expect(legal?.has("Charizard")).toBe(true);
   });

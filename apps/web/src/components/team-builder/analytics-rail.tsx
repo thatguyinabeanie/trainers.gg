@@ -49,7 +49,7 @@ const TABS: TabDef[] = [
 // panels' `className` is merged into the outer wrapper via `cn()`, so these
 // values win against the defaults.
 const PANEL_CHROME_OVERRIDE =
-  "bg-transparent shadow-none rounded-none overflow-visible";
+  "bg-transparent shadow-none rounded-none flex flex-col flex-1";
 
 // =============================================================================
 // AnalyticsRail
@@ -78,6 +78,7 @@ export function AnalyticsRail({
       data-testid="analytics-rail"
       className={cn(
         "bg-card w-rail flex-shrink-0 overflow-hidden rounded-lg shadow-sm",
+        "sticky top-4 flex max-h-[calc(100svh-2rem)] flex-col",
         className
       )}
     >
@@ -119,6 +120,7 @@ export function AnalyticsRail({
           id="analytics-rail-panel-types"
           aria-labelledby="analytics-rail-tab-types"
           data-testid="analytics-rail-body-types"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
           <TypeChartPanel
             team={team.team_pokemon
@@ -133,6 +135,7 @@ export function AnalyticsRail({
           id="analytics-rail-panel-speed"
           aria-labelledby="analytics-rail-tab-speed"
           data-testid="analytics-rail-body-speed"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
           {selectedPokemon && format ? (
             <SpeedPanel
@@ -153,6 +156,7 @@ export function AnalyticsRail({
           id="analytics-rail-panel-calc"
           aria-labelledby="analytics-rail-tab-calc"
           data-testid="analytics-rail-body-calc"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
           <CalcPanel
             team={team}

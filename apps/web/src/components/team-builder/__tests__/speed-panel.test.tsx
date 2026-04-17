@@ -66,6 +66,10 @@ jest.mock("@trainers/pokemon", () => {
       return map[species] ?? null;
     }),
     getNatureMultiplier: jest.fn(() => 1.0),
+    // Return undefined so SpeedPanel falls back to the mocked getMetaSpeedTiers
+    // list rather than building entries from the real Champions legal species set.
+    getLegalSpecies: jest.fn(() => undefined),
+    getValidAbilities: jest.fn(() => []),
     // Curated meta entries used by tests:
     //  - Iron Bundle: very fast, no ability impact
     //  - Volcarona: shares the selected mon's tier (tie risk)

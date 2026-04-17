@@ -20,11 +20,10 @@ declare const console: { warn(...data: unknown[]): void };
 /**
  * Every species selectable in Champions: VGC 2026 Reg M-A.
  *
- * Ported from NCP calc (pokedex.js lines 18378–18409). Megas are
- * item-driven battle transformations, not separately selectable species,
- * so every "Mega X" entry from NCP is dropped here. Distinct battle
- * forms (Rotom-Heat, Tauros-Paldea-Combat, Aegislash-Blade, etc.)
- * are retained.
+ * Ported from NCP calc (pokedex.js lines 18378–18409). Mega forms are
+ * also selectable — the species picker auto-assigns the matching mega
+ * stone on select. Distinct battle forms (Rotom-Heat,
+ * Tauros-Paldea-Combat, Aegislash-Blade, etc.) are retained.
  */
 const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
   // Base forms — Pokemon available from launch of Champions
@@ -243,12 +242,75 @@ const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
   "Basculegion-F",
   // Maushold-Three resolves to "Maushold" in @pkmn/dex (base form = 3-person family).
   // "Maushold" is already listed above in base forms, so omitted here.
+  "Maushold-Four",
   "Palafin-Hero",
   "Rotom-Heat",
   "Rotom-Wash",
   "Rotom-Frost",
   "Rotom-Fan",
   "Rotom-Mow",
+  // Mega forms — Champions-exclusive (custom — no @pkmn/dex entry)
+  "Chandelure-Mega",
+  "Chesnaught-Mega",
+  "Chimecho-Mega",
+  "Clefable-Mega",
+  "Crabominable-Mega",
+  "Delphox-Mega",
+  "Dragonite-Mega",
+  "Drampa-Mega",
+  "Emboar-Mega",
+  "Excadrill-Mega",
+  "Feraligatr-Mega",
+  "Floette-Eternal-Mega",
+  "Floette-Mega",
+  "Froslass-Mega",
+  "Glimmora-Mega",
+  "Golurk-Mega",
+  "Greninja-Mega",
+  "Hawlucha-Mega",
+  "Meganium-Mega",
+  "Meowstic-Mega",
+  "Scovillain-Mega",
+  "Skarmory-Mega",
+  "Starmie-Mega",
+  "Victreebel-Mega",
+  // Standard Gen 6/7 mega forms (confirmed legal in Champions M-A)
+  "Abomasnow-Mega",
+  "Absol-Mega",
+  "Aerodactyl-Mega",
+  "Aggron-Mega",
+  "Alakazam-Mega",
+  "Altaria-Mega",
+  "Ampharos-Mega",
+  "Audino-Mega",
+  "Banette-Mega",
+  "Beedrill-Mega",
+  "Blastoise-Mega",
+  "Camerupt-Mega",
+  "Charizard-Mega-X",
+  "Charizard-Mega-Y",
+  "Gallade-Mega",
+  "Garchomp-Mega",
+  "Gardevoir-Mega",
+  "Gengar-Mega",
+  "Glalie-Mega",
+  "Gyarados-Mega",
+  "Heracross-Mega",
+  "Houndoom-Mega",
+  "Kangaskhan-Mega",
+  "Lopunny-Mega",
+  "Lucario-Mega",
+  "Manectric-Mega",
+  "Medicham-Mega",
+  "Pidgeot-Mega",
+  "Pinsir-Mega",
+  "Sableye-Mega",
+  "Scizor-Mega",
+  "Sharpedo-Mega",
+  "Slowbro-Mega",
+  "Steelix-Mega",
+  "Tyranitar-Mega",
+  "Venusaur-Mega",
 ]);
 
 // =============================================================================
@@ -390,7 +452,7 @@ function computeLegalSpeciesFromSim(
  *
  * Ported from Serebii's Champions items listing (serebii.net/pokemonchampions/items.shtml,
  * captured 2026-04-15). Champions has a curated item pool: 30 hold items,
- * 59 Mega Stones, and 28 Berries. Notably absent vs. gen-9 SV: Life Orb,
+ * 23 Mega Stones, and 28 Berries. Notably absent vs. gen-9 SV: Life Orb,
  * Choice Band, Choice Specs, Assault Vest, Rocky Helmet, Eviolite, Safety
  * Goggles, and most competitive staples beyond Choice Scarf.
  */
@@ -427,21 +489,7 @@ const CHAMPIONS_MA_LEGAL_ITEMS: ReadonlySet<string> = new Set([
   "Twisted Spoon",
   "White Herb",
   // Mega Stones (59)
-  "Abomasite",
-  "Absolite",
-  "Aerodactylite",
-  "Aggronite",
-  "Alakazite",
-  "Altarianite",
-  "Ampharosite",
-  "Audinite",
-  "Banettite",
-  "Beedrillite",
-  "Blastoisinite",
-  "Cameruptite",
   "Chandelurite",
-  "Charizardite X",
-  "Charizardite Y",
   "Chesnaughtite",
   "Chimechite",
   "Clefablite",
@@ -454,16 +502,36 @@ const CHAMPIONS_MA_LEGAL_ITEMS: ReadonlySet<string> = new Set([
   "Feraligite",
   "Floettite",
   "Froslassite",
+  "Glimmoranite",
+  "Golurkite",
+  "Greninjite",
+  "Hawluchanite",
+  "Meganiumite",
+  "Meowsticite",
+  "Scovillainite",
+  "Skarmorite",
+  "Starminite",
+  "Victreebelite",
+  "Abomasite",
+  "Absolite",
+  "Aerodactylite",
+  "Aggronite",
+  "Alakazite",
+  "Altarianite",
+  "Ampharosite",
+  "Audinite",
+  "Banettite",
+  "Beedrillite",
+  "Blastoisinite",
+  "Cameruptite",
+  "Charizardite X",
+  "Charizardite Y",
   "Galladite",
   "Garchompite",
   "Gardevoirite",
   "Gengarite",
   "Glalitite",
-  "Glimmoranite",
-  "Golurkite",
-  "Greninjite",
   "Gyaradosite",
-  "Hawluchanite",
   "Heracronite",
   "Houndoominite",
   "Kangaskhanite",
@@ -471,21 +539,15 @@ const CHAMPIONS_MA_LEGAL_ITEMS: ReadonlySet<string> = new Set([
   "Lucarionite",
   "Manectite",
   "Medichamite",
-  "Meganiumite",
-  "Meowsticite",
   "Pidgeotite",
   "Pinsirite",
   "Sablenite",
   "Scizorite",
-  "Scovillainite",
   "Sharpedonite",
-  "Skarmorite",
   "Slowbronite",
-  "Starminite",
   "Steelixite",
   "Tyranitarite",
   "Venusaurite",
-  "Victreebelite",
   // Berries (28)
   "Aspear Berry",
   "Babiri Berry",
@@ -515,6 +577,72 @@ const CHAMPIONS_MA_LEGAL_ITEMS: ReadonlySet<string> = new Set([
   "Tanga Berry",
   "Wacan Berry",
   "Yache Berry",
+]);
+
+/** Maps mega species names to their required mega stone (Champions M-A). */
+const MEGA_SPECIES_TO_STONE: ReadonlyMap<string, string> = new Map([
+  // Champions-exclusive megas
+  ["Chandelure-Mega", "Chandelurite"],
+  ["Chesnaught-Mega", "Chesnaughtite"],
+  ["Chimecho-Mega", "Chimechite"],
+  ["Clefable-Mega", "Clefablite"],
+  ["Crabominable-Mega", "Crabominite"],
+  ["Delphox-Mega", "Delphoxite"],
+  ["Dragonite-Mega", "Dragoninite"],
+  ["Drampa-Mega", "Drampanite"],
+  ["Emboar-Mega", "Emboarite"],
+  ["Excadrill-Mega", "Excadrite"],
+  ["Feraligatr-Mega", "Feraligite"],
+  ["Floette-Eternal-Mega", "Floettite"],
+  ["Floette-Mega", "Floettite"],
+  ["Froslass-Mega", "Froslassite"],
+  ["Glimmora-Mega", "Glimmoranite"],
+  ["Golurk-Mega", "Golurkite"],
+  ["Greninja-Mega", "Greninjite"],
+  ["Hawlucha-Mega", "Hawluchanite"],
+  ["Meganium-Mega", "Meganiumite"],
+  ["Meowstic-Mega", "Meowsticite"],
+  ["Scovillain-Mega", "Scovillainite"],
+  ["Skarmory-Mega", "Skarmorite"],
+  ["Starmie-Mega", "Starminite"],
+  ["Victreebel-Mega", "Victreebelite"],
+  // Standard Gen 6/7 megas
+  ["Abomasnow-Mega", "Abomasite"],
+  ["Absol-Mega", "Absolite"],
+  ["Aerodactyl-Mega", "Aerodactylite"],
+  ["Aggron-Mega", "Aggronite"],
+  ["Alakazam-Mega", "Alakazite"],
+  ["Altaria-Mega", "Altarianite"],
+  ["Ampharos-Mega", "Ampharosite"],
+  ["Audino-Mega", "Audinite"],
+  ["Banette-Mega", "Banettite"],
+  ["Beedrill-Mega", "Beedrillite"],
+  ["Blastoise-Mega", "Blastoisinite"],
+  ["Camerupt-Mega", "Cameruptite"],
+  ["Charizard-Mega-X", "Charizardite X"],
+  ["Charizard-Mega-Y", "Charizardite Y"],
+  ["Gallade-Mega", "Galladite"],
+  ["Garchomp-Mega", "Garchompite"],
+  ["Gardevoir-Mega", "Gardevoirite"],
+  ["Gengar-Mega", "Gengarite"],
+  ["Glalie-Mega", "Glalitite"],
+  ["Gyarados-Mega", "Gyaradosite"],
+  ["Heracross-Mega", "Heracronite"],
+  ["Houndoom-Mega", "Houndoominite"],
+  ["Kangaskhan-Mega", "Kangaskhanite"],
+  ["Lopunny-Mega", "Lopunnite"],
+  ["Lucario-Mega", "Lucarionite"],
+  ["Manectric-Mega", "Manectite"],
+  ["Medicham-Mega", "Medichamite"],
+  ["Pidgeot-Mega", "Pidgeotite"],
+  ["Pinsir-Mega", "Pinsirite"],
+  ["Sableye-Mega", "Sablenite"],
+  ["Scizor-Mega", "Scizorite"],
+  ["Sharpedo-Mega", "Sharpedonite"],
+  ["Slowbro-Mega", "Slowbronite"],
+  ["Steelix-Mega", "Steelixite"],
+  ["Tyranitar-Mega", "Tyranitarite"],
+  ["Venusaur-Mega", "Venusaurite"],
 ]);
 
 // Module-level cache — computed once per process (worker) lifetime, mirroring
@@ -1022,4 +1150,12 @@ export function isLegalTeraType(type: string, formatId: string): boolean {
   if (!type) return true;
   const legal = getLegalTeraTypes(formatId);
   return legal === undefined || legal.has(type);
+}
+
+/**
+ * Returns the mega stone required for the given mega species in Champions M-A,
+ * or null if the species is not a mega form.
+ */
+export function getMegaStoneForSpecies(species: string): string | null {
+  return MEGA_SPECIES_TO_STONE.get(species) ?? null;
 }

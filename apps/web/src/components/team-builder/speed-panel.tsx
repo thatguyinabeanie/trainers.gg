@@ -6,14 +6,17 @@ import Image from "next/image";
 import {
   type GameFormat,
   type MetaSpeedEntry,
+  type SpeedAbility,
   type SpeedModifiers,
   applySpeedModifiers,
   calculateChampionsStat,
   calculateStat,
   getBaseStats,
+  getLegalSpecies,
   getMetaSpeedTiers,
   getNatureMultiplier,
   getSpeedTierLabel,
+  getValidAbilities,
   groupBySpeed,
 } from "@trainers/pokemon";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
@@ -55,6 +58,63 @@ const DEFAULT_TOGGLE_STATE: SpeedToggleState = {
   item: "",
   status: "healthy",
 };
+
+// =============================================================================
+// Full-format speed tier builder
+// =============================================================================
+
+const SPEED_ABILITY_LOOKUP: Partial<Record<string, SpeedAbility>> = {
+  Chlorophyll: "chlorophyll",
+  "Swift Swim": "swift-swim",
+  "Sand Rush": "sand-rush",
+  "Slush Rush": "slush-rush",
+  "Speed Boost": "speed-boost",
+  Unburden: "unburden",
+  "Quick Feet": "quick-feet",
+};
+
+/**
+ * Build MetaSpeedEntry[] for every species in a format's legal-species set.
+ * Used when `getLegalSpecies` returns a bounded whitelist (e.g. Champions Reg
+ * M-A). Returns null when no legal-species set is available, so the caller can
+ * fall back to the curated getMetaSpeedTiers list.
+ */
+function buildFullMetaTiers(
+  legalSpecies: ReadonlySet<string>,
+  format: GameFormat
+): MetaSpeedEntry[] {
+  const isChampions = format.generation === 10;
+  const entries: MetaSpeedEntry[] = [];
+
+  for (const species of legalSpecies) {
+    const stats = getBaseStats(species);
+    if (!stats) continue;
+
+    const b = stats.speed;
+    const fastSpread = isChampions
+      ? calculateChampionsStat(b, 32, 1.1)
+      : calculateStat(b, 31, 252, 50, 1.1);
+    const slowSpread = isChampions
+      ? calculateChampionsStat(b, 0, 1.0)
+      : calculateStat(b, 31, 0, 50, 1.0);
+
+    const abilities = getValidAbilities(species);
+    const speedAbility = abilities
+      .map((a) => SPEED_ABILITY_LOOKUP[a])
+      .find(Boolean) as SpeedAbility | undefined;
+
+    entries.push({
+      species,
+      displayName: species,
+      base: b,
+      fastSpread,
+      slowSpread,
+      speedAbility,
+    });
+  }
+
+  return entries;
+}
 
 // =============================================================================
 // Speed math
@@ -314,7 +374,10 @@ function SpeedPanelInner({
     team.map((p) => p.species.toLowerCase().replace(/[\s\-_]+/g, ""))
   );
 
-  const metaTiers = getMetaSpeedTiers(format.id);
+  const legalSpecies = getLegalSpecies(format.id);
+  const metaTiers = legalSpecies
+    ? buildFullMetaTiers(legalSpecies, format)
+    : getMetaSpeedTiers(format.id);
   const metaScored: ScoredMon[] = metaTiers
     .filter(
       (entry) =>
@@ -374,7 +437,10 @@ function SpeedPanelInner({
 
   return (
     <div
-      className={cn("bg-card overflow-hidden rounded-lg shadow-sm", className)}
+      className={cn(
+        "bg-card flex flex-col overflow-hidden rounded-lg shadow-sm",
+        className
+      )}
     >
       {/* L1 — Hero ---------------------------------------------------------- */}
       <div className="from-primary/5 to-card border-b bg-gradient-to-br px-4 py-3">
@@ -436,7 +502,7 @@ function SpeedPanelInner({
       <SpeedToggleRail state={toggle} onChange={setToggle} format={format} />
 
       {/* L4 — Tier list (full panel width) --------------------------------- */}
-      <div className="max-h-[calc(100vh-24rem)] overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <SpeedTierList tiers={orderedTiers} selectedSpeed={effectiveSpeed} />
       </div>
     </div>

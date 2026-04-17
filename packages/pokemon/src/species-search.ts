@@ -20,6 +20,10 @@ const gens = new Generations(Dex);
 // older-generation Pokemon that are isNonstandard=Past in gen 9.
 const gen9RawDex = Dex.forGen(9);
 
+// Gen 6 raw Dex — fallback for standard Gen 6/7 mega forms that have
+// exists:false in the Gen 9 dex. Mega evolution was removed in Gen 8+.
+const gen6RawDex = Dex.forGen(6);
+
 // Module-level cache for learnable moves — avoids recomputing on every search keystroke
 const learnableMovesCache = new Map<string, string[]>();
 
@@ -172,8 +176,21 @@ export function buildSpeciesSearchIndex(
   if (staticLegal) {
     for (const speciesName of staticLegal) {
       if (addedNames.has(speciesName)) continue;
-      const rawSpecies = gen9RawDex.species.get(speciesName);
+
+      // Try Gen 9 raw dex first (handles Past-tagged base species like Aerodactyl)
+      let rawSpecies = gen9RawDex.species.get(speciesName);
+
+      // Standard Gen 6/7 mega forms have exists:false in Gen 9 — try Gen 6
+      if (!rawSpecies?.exists) {
+        rawSpecies = gen6RawDex.species.get(speciesName);
+      }
+
+      // Custom Champions mega forms (e.g. Greninja-Mega, Chandelure-Mega) are
+      // not present in either @pkmn/dex gen and will be skipped here.
+      // They will not appear in the search index in v1 — a follow-up can add
+      // synthetic entries using the CHAMPIONS_EXCLUSIVE_MEGA_STATS table.
       if (!rawSpecies?.exists) continue;
+
       index.push(makeEntry(rawSpecies));
       addedNames.add(rawSpecies.name);
     }

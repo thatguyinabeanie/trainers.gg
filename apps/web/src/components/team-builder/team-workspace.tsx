@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -9,6 +9,7 @@ import {
   type GameFormat,
   buildSpeciesSearchIndex,
   getFormatById,
+  getMegaStoneForSpecies,
   getValidAbilities,
 } from "@trainers/pokemon";
 import {
@@ -129,11 +130,6 @@ interface TeamWorkspaceProps {
  */
 export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   const router = useRouter();
-  // `isSpeciesChangePending` reflects only species add/change transitions —
-  // those still need a small "Saving…" hint because the team strip doesn't
-  // optimistically render the new slot. Field edits (move/ability/item/EVs)
-  // are fire-and-forget against `optimisticPatches` so they don't toggle this.
-  const [isSpeciesChangePending, startSpeciesTransition] = useTransition();
 
   // ---------------------------------------------------------------------------
   // Optimistic field patches
@@ -141,8 +137,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   // Map<pokemonId, Partial<Tables<"pokemon">>> — when the user edits a field
   // (move, ability, item, EV…) we write the new value here SYNCHRONOUSLY so
   // the editor re-renders against the new value on the very next paint. The
-  // server save runs in the background via `useTransition` — we never block
-  // the UI on it.
+  // server save runs in the background — we never block the UI on it.
   //
   // Patches survive across pokemon re-fetches until the server-side value
   // matches the optimistic value, at which point they're cleared (in the
@@ -349,6 +344,21 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   // Species picker handlers
   // ---------------------------------------------------------------------------
 
+  function handleStripSelect(pokemonId: number) {
+    if (pokemonId === selectedPokemonId) {
+      const entry = sortedPokemon.find((tp) => tp.pokemon_id === pokemonId);
+      if (entry) {
+        setPickerState({
+          open: true,
+          slot: entry.team_position - 1,
+          mode: "change",
+        });
+      }
+    } else {
+      setSelectedPokemonId(pokemonId);
+    }
+  }
+
   function handleAddNew() {
     const nextSlot = sortedPokemon.length;
     setPickerState({ open: true, slot: nextSlot, mode: "add" });
@@ -358,15 +368,21 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     species: string,
     selectMode: "defaults" | "blank"
   ) {
+    // Close the picker immediately — the save runs in the background.
+    setPickerState({ open: false, slot: null, mode: "add" });
+
     if (pickerState.mode === "add") {
       const firstAbility =
         selectMode === "defaults" ? (getValidAbilities(species)[0] ?? "") : "";
+      // Auto-assign the matching mega stone when adding a mega species
+      const megaStone = getMegaStoneForSpecies(species);
       const pokemon: TablesInsert<"pokemon"> = {
         species,
         ability: firstAbility,
         nature: selectMode === "defaults" ? "Hardy" : "",
         move1: "",
         level: 50,
+        ...(megaStone ? { held_item: megaStone } : {}),
         ev_hp: 0,
         ev_attack: 0,
         ev_defense: 0,
@@ -388,21 +404,26 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
       const position =
         [1, 2, 3, 4, 5, 6].find((p) => !usedPositions.has(p)) ?? 1;
 
-      startSpeciesTransition(async () => {
-        // Flush any queued field edits first so they land before we add a
-        // new pokemon (they can't reference the new pokemon yet, but this
-        // keeps the order deterministic).
-        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-        await flushPendingSaves();
-        const result = await addPokemonToTeamAction(team.id, pokemon, position);
-        if (result.success) {
-          setPickerState({ open: false, slot: null, mode: "add" });
-          setSelectedPokemonId(result.data.pokemonId);
-          router.refresh();
-        } else {
-          toast.error(result.error ?? "Failed to add Pokémon.");
-        }
-      });
+      // Flush any queued field edits first so they land before we add a
+      // new pokemon (they can't reference the new pokemon yet, but this
+      // keeps the order deterministic).
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      setIsSaving(true);
+      addPokemonToTeamAction(team.id, pokemon, position)
+        .then((result) => {
+          if (result.success) {
+            setSelectedPokemonId(result.data.pokemonId);
+            router.refresh();
+          } else {
+            toast.error(result.error ?? "Failed to add Pokémon.");
+          }
+        })
+        .catch(() => {
+          toast.error("Failed to add Pokémon.");
+        })
+        .finally(() => {
+          setIsSaving(false);
+        });
     } else {
       // change mode — update existing pokemon's species
       const pokemonId = selectedPokemonId;
@@ -410,43 +431,70 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
 
       const firstAbility =
         selectMode === "defaults" ? (getValidAbilities(species)[0] ?? "") : "";
+      // Auto-assign the matching mega stone when changing to a mega species
+      const megaStone = getMegaStoneForSpecies(species);
 
-      startSpeciesTransition(async () => {
-        // Drop any queued field edits for this pokemon — the species change
-        // wipes moves/EVs/ability anyway, so a stale "set Tackle" save
-        // would race against the species reset.
-        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-        pendingUpdatesRef.current.delete(pokemonId);
-        // Also clear optimistic patches — they're about to be superseded by
-        // the server-fetched defaults.
-        setOptimisticPatches((prev) => {
-          if (!prev.has(pokemonId)) return prev;
-          const next = new Map(prev);
-          next.delete(pokemonId);
-          return next;
-        });
-        const result = await updatePokemonAction(team.id, pokemonId, {
-          species,
-          ability: firstAbility,
-          nature: selectMode === "defaults" ? "Hardy" : "",
-          move1: "",
-          move2: null,
-          move3: null,
-          move4: null,
-          ev_hp: 0,
-          ev_attack: 0,
-          ev_defense: 0,
-          ev_special_attack: 0,
-          ev_special_defense: 0,
-          ev_speed: 0,
-        });
-        if (result.success) {
-          setPickerState({ open: false, slot: null, mode: "add" });
-          router.refresh();
-        } else {
-          toast.error(result.error ?? "Failed to update species.");
-        }
+      const changeFields = {
+        species,
+        ability: firstAbility,
+        nature: selectMode === "defaults" ? "Hardy" : "",
+        move1: "",
+        move2: null,
+        move3: null,
+        move4: null,
+        ...(megaStone ? { held_item: megaStone } : {}),
+        ev_hp: 0,
+        ev_attack: 0,
+        ev_defense: 0,
+        ev_special_attack: 0,
+        ev_special_defense: 0,
+        ev_speed: 0,
+      };
+
+      // Apply an optimistic patch so the editor shows the new species
+      // on the next paint without waiting for the server round trip.
+      setOptimisticPatches((prev) => {
+        const next = new Map(prev);
+        next.set(pokemonId, changeFields);
+        return next;
       });
+
+      // Drop any queued field edits for this pokemon — the species change
+      // wipes moves/EVs/ability anyway, so a stale "set Tackle" save
+      // would race against the species reset.
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      pendingUpdatesRef.current.delete(pokemonId);
+
+      setIsSaving(true);
+      updatePokemonAction(
+        team.id,
+        pokemonId,
+        changeFields as Parameters<typeof updatePokemonAction>[2]
+      )
+        .then((result) => {
+          if (result.success) {
+            router.refresh();
+          } else {
+            // Revert optimistic patch on failure
+            setOptimisticPatches((prev) => {
+              const next = new Map(prev);
+              next.delete(pokemonId);
+              return next;
+            });
+            toast.error(result.error ?? "Failed to update species.");
+          }
+        })
+        .catch(() => {
+          setOptimisticPatches((prev) => {
+            const next = new Map(prev);
+            next.delete(pokemonId);
+            return next;
+          });
+          toast.error("Failed to update species.");
+        })
+        .finally(() => {
+          setIsSaving(false);
+        });
     }
   }
 
@@ -512,7 +560,7 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
                 teamId={team.id}
                 pokemon={teamPokemon}
                 selectedPokemonId={selectedPokemonId}
-                onSelect={setSelectedPokemonId}
+                onSelect={handleStripSelect}
                 onAddNew={handleAddNew}
                 choosingSlot={
                   pickerState.open ? (pickerState.slot ?? undefined) : undefined
@@ -578,11 +626,11 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
         />
       </div>
 
-      {/* Save status indicator — small, fixed, never blocks input. Field
-          saves use `isSaving`; species changes use the transition flag.
-          Both render the same low-key "Saving…" hint so the user gets
-          confirmation without losing focus or interaction. */}
-      {(isSaving || isSpeciesChangePending) && (
+      {/* Save status indicator — small, fixed, never blocks input.
+          All saves (field edits and species add/change) share the same
+          `isSaving` flag so the user gets a low-key "Saving…" hint
+          without losing focus or interaction. */}
+      {isSaving && (
         <div
           role="status"
           aria-live="polite"
