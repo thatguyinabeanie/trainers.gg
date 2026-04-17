@@ -290,7 +290,7 @@ export function TypeChartPanel({ team, className }: TypeChartPanelProps) {
         <>
           {/* Column header row: sprite per mon + ↓ ↑ = summary headers */}
           <div
-            className="bg-muted/50 grid items-center gap-1 px-2 py-1.5"
+            className="bg-muted/50 grid items-center gap-0.5 px-2 py-1"
             style={gridStyle}
           >
             {/* Empty cell over the type-icon column */}
@@ -340,7 +340,7 @@ export function TypeChartPanel({ team, className }: TypeChartPanelProps) {
                   key={row.type}
                   data-testid={`type-row-${row.type}`}
                   className={cn(
-                    "grid items-center gap-1 px-2 py-1 text-xs transition-colors duration-150",
+                    "grid items-center gap-0.5 px-2 py-0.5 text-xs transition-colors duration-150",
                     isQuadWeak && "bg-destructive/5"
                   )}
                   style={gridStyle}
@@ -356,7 +356,7 @@ export function TypeChartPanel({ team, className }: TypeChartPanelProps) {
                         key={`mult-${row.type}-${mon.id}`}
                         data-testid={`mult-${row.type}-${mon.id}`}
                         className={cn(
-                          "inline-flex items-center justify-center rounded px-0.5 py-0.5 font-mono text-[10px] leading-none",
+                          "inline-flex items-center justify-center rounded px-1 py-0 font-mono text-[10px] leading-none",
                           cellClass(mult)
                         )}
                       >
