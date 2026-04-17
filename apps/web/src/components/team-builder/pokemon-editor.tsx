@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { type GameFormat, formatHasTera, getMoveData } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
@@ -172,6 +172,23 @@ export function PokemonEditor({
   const hasTera = formatHasTera(format);
   const teamItems = getTeamItems(teamPokemon, pokemon.id);
 
+  useEffect(() => {
+    const isHeaderPickerOpen =
+      pickerOpen === "ability" ||
+      pickerOpen === "item" ||
+      pickerOpen === "nature" ||
+      (hasTera && pickerOpen === "tera");
+
+    if (!isHeaderPickerOpen) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") closePicker();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [pickerOpen, hasTera]);
+
   // Count filled move slots for the section header counter.
   const filledMoves = MOVE_SLOTS.reduce(
     (count, slot) => count + (getMoveBySlot(pokemon, slot) ? 1 : 0),
@@ -182,13 +199,13 @@ export function PokemonEditor({
   // Render
   // -------------------------------------------------------------------------
 
+  // Render-time state reset — approved pattern per react-patterns.md
+  if (!hasTera && pickerOpen === "tera") {
+    setPickerOpen(null);
+  }
+
   return (
-    <div
-      className={cn(
-        "bg-card relative overflow-hidden rounded-lg shadow-sm",
-        className
-      )}
-    >
+    <div className={cn("bg-card relative rounded-lg shadow-sm", className)}>
       {/* ===================================================================
           Header band — sprite, name, type pills, and the four loadout fields.
           The four fields trigger inline pickers rendered below the band.
@@ -223,7 +240,7 @@ export function PokemonEditor({
         <>
           {/* Backdrop — click outside picker to close */}
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[45]"
             onClick={closePicker}
             aria-hidden="true"
           />
