@@ -261,6 +261,11 @@ export function EditorHeaderBand({
     }
   }
 
+  function startEditingNickname() {
+    setEditNicknameValue(pokemon.nickname ?? "");
+    setIsEditingNickname(true);
+  }
+
   // -------------------------------------------------------------------------
   // Extracted variables
   // -------------------------------------------------------------------------
@@ -347,10 +352,7 @@ export function EditorHeaderBand({
               <button
                 type="button"
                 aria-label="Edit nickname"
-                onClick={() => {
-                  setEditNicknameValue(pokemon.nickname ?? "");
-                  setIsEditingNickname(true);
-                }}
+                onClick={startEditingNickname}
                 disabled={disabled}
                 className="text-foreground truncate text-left text-sm font-semibold hover:underline disabled:cursor-not-allowed disabled:opacity-50"
               >
