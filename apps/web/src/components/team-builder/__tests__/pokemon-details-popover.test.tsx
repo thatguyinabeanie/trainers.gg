@@ -99,6 +99,10 @@ async function openPopover() {
 
 // =============================================================================
 // Tests
+//
+// Note: nickname, gender, shiny, and level have moved to inline controls in
+// EditorHeaderBand. This file covers only the ⋯ popover's scope: Showdown
+// set export and import.
 // =============================================================================
 
 describe("PokemonDetailsPopover", () => {
@@ -107,103 +111,22 @@ describe("PokemonDetailsPopover", () => {
   });
 
   it("renders the trigger button labeled 'More Pokémon details'", () => {
-    render(
-      <PokemonDetailsPopover
-        teamId={1}
-        pokemon={buildPokemon()}
-        onUpdate={jest.fn()}
-      />
-    );
+    render(<PokemonDetailsPopover teamId={1} pokemon={buildPokemon()} />);
     expect(
       screen.getByRole("button", { name: /More Pokémon details/i })
     ).toBeInTheDocument();
   });
 
-  describe("nickname field", () => {
-    it("calls onUpdate with the typed nickname", async () => {
-      const onUpdate = jest.fn();
-      render(
-        <PokemonDetailsPopover
-          teamId={1}
-          pokemon={buildPokemon()}
-          onUpdate={onUpdate}
-        />
-      );
-      const user = await openPopover();
-      const input = await screen.findByLabelText("Nickname");
-      await user.type(input, "S");
-      // Each keystroke triggers an update — assert at least one call.
-      expect(onUpdate).toHaveBeenCalledWith("nickname", "S");
-    });
-  });
-
-  describe("gender radio", () => {
-    it("calls onUpdate with the chosen gender (Male)", async () => {
-      const onUpdate = jest.fn();
-      render(
-        <PokemonDetailsPopover
-          teamId={1}
-          pokemon={buildPokemon({ gender: null })}
-          onUpdate={onUpdate}
-        />
-      );
-      const user = await openPopover();
-      // Radio labels are rendered as text labels next to the radio inputs.
-      await user.click(await screen.findByText("Male"));
-      expect(onUpdate).toHaveBeenCalledWith("gender", "Male");
-    });
-
-    it("stores null when 'Unknown' is selected from a non-Unknown starting state", async () => {
-      const onUpdate = jest.fn();
-      render(
-        <PokemonDetailsPopover
-          teamId={1}
-          // Start with a real gender so clicking Unknown is a real change.
-          pokemon={buildPokemon({ gender: "Male" })}
-          onUpdate={onUpdate}
-        />
-      );
-      const user = await openPopover();
-      await user.click(await screen.findByText("Unknown"));
-      expect(onUpdate).toHaveBeenCalledWith("gender", null);
-    });
-  });
-
-  describe("shiny switch", () => {
-    it("calls onUpdate with the toggled shiny state", async () => {
-      const onUpdate = jest.fn();
-      render(
-        <PokemonDetailsPopover
-          teamId={1}
-          pokemon={buildPokemon({ is_shiny: false })}
-          onUpdate={onUpdate}
-        />
-      );
-      const user = await openPopover();
-      const toggle = await screen.findByLabelText("Shiny");
-      await user.click(toggle);
-      expect(onUpdate).toHaveBeenCalledWith("is_shiny", true);
-    });
-  });
-
-  describe("level field", () => {
-    it("clamps the level to 1..100 and calls onUpdate", async () => {
-      const onUpdate = jest.fn();
-      render(
-        <PokemonDetailsPopover
-          teamId={1}
-          pokemon={buildPokemon({ level: 50 })}
-          onUpdate={onUpdate}
-        />
-      );
-      const user = await openPopover();
-      const input = await screen.findByLabelText("Level");
-      // Replace the value entirely.
-      await user.clear(input);
-      await user.type(input, "150");
-      // Last call should clamp to 100.
-      expect(onUpdate).toHaveBeenLastCalledWith("level", 100);
-    });
+  it("does not render nickname / gender / shiny / level fields (moved inline)", async () => {
+    render(<PokemonDetailsPopover teamId={1} pokemon={buildPokemon()} />);
+    const user = await openPopover();
+    // These controls belong in EditorHeaderBand now — not in the popover.
+    expect(screen.queryByLabelText("Nickname")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Male")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Shiny")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Level")).not.toBeInTheDocument();
+    // Silence unused variable warning.
+    void user;
   });
 
   describe("export", () => {
@@ -212,13 +135,7 @@ describe("PokemonDetailsPopover", () => {
         "@trainers/pokemon"
       ) as { exportPokemonToShowdown: jest.Mock };
 
-      render(
-        <PokemonDetailsPopover
-          teamId={1}
-          pokemon={buildPokemon()}
-          onUpdate={jest.fn()}
-        />
-      );
+      render(<PokemonDetailsPopover teamId={1} pokemon={buildPokemon()} />);
       const user = await openPopover();
       await user.click(await screen.findByRole("button", { name: "Export" }));
       // We assert the exporter ran rather than the clipboard write — jsdom's
@@ -235,7 +152,6 @@ describe("PokemonDetailsPopover", () => {
         <PokemonDetailsPopover
           teamId={42}
           pokemon={buildPokemon()}
-          onUpdate={jest.fn()}
           onImported={onImported}
         />
       );

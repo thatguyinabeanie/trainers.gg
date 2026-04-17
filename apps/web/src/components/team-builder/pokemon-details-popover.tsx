@@ -10,16 +10,11 @@ import { containsProfanity } from "@trainers/validators";
 
 import { updatePokemonAction } from "@/actions/teams";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -33,63 +28,32 @@ interface PokemonDetailsPopoverProps {
   /** Team id — needed for the per-mon import flow that hits updatePokemonAction. */
   teamId: number;
   pokemon: Tables<"pokemon">;
-  /** Field-level updater (debounced in the parent workspace). */
-  onUpdate: (field: string, value: unknown) => void;
   /** Called after a successful import so the parent can router.refresh(). */
   onImported?: () => void;
   disabled?: boolean;
 }
-
-type GenderValue = "Male" | "Female" | "Unknown";
 
 // =============================================================================
 // PokemonDetailsPopover
 // =============================================================================
 
 /**
- * The "more" menu in the editor header band — exposes per-Pokémon metadata
- * (nickname, gender, shiny, level) and per-mon import / export of the
- * Showdown set. Triggered by an Ellipsis icon button at the rightmost slot
- * of the header band.
+ * The "⋯" menu in the editor header band. Scoped to Showdown set import /
+ * export only — nickname, gender, shiny, and level are now inline controls in
+ * the header band itself.
  *
- * Why a popover (not a dialog): these fields are quick edits the user often
- * sets and forgets — a side-panel popover keeps them visible alongside the
- * main editor without taking over the screen.
+ * Why a popover (not a dialog): import/export is a quick one-off action and a
+ * side-panel keeps context visible alongside the main editor.
  */
 export function PokemonDetailsPopover({
   teamId,
   pokemon,
-  onUpdate,
   onImported,
   disabled = false,
 }: PokemonDetailsPopoverProps) {
   const [importText, setImportText] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-
-  // ---------------------------------------------------------------------------
-  // Field handlers — defer to onUpdate so the parent's debounced save fires.
-  // ---------------------------------------------------------------------------
-
-  function handleNicknameChange(value: string) {
-    onUpdate("nickname", value || null);
-  }
-
-  function handleGenderChange(value: GenderValue) {
-    // Database column is nullable: store null for Unknown so we don't persist
-    // a sentinel string.
-    onUpdate("gender", value === "Unknown" ? null : value);
-  }
-
-  function handleShinyChange(value: boolean) {
-    onUpdate("is_shiny", value);
-  }
-
-  function handleLevelChange(value: number) {
-    if (Number.isNaN(value)) return;
-    const clamped = Math.max(1, Math.min(100, value));
-    onUpdate("level", clamped);
-  }
 
   // ---------------------------------------------------------------------------
   // Export — copy this slot's Showdown set to the clipboard.
@@ -183,12 +147,6 @@ export function PokemonDetailsPopover({
   }
 
   // ---------------------------------------------------------------------------
-  // Derived values
-  // ---------------------------------------------------------------------------
-
-  const genderValue: GenderValue = pokemon.gender ?? "Unknown";
-
-  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
@@ -216,77 +174,6 @@ export function PokemonDetailsPopover({
         align="end"
         className="flex w-72 flex-col gap-3 p-3"
       >
-        {/* Nickname */}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="pokemon-nickname" className="text-xs">
-            Nickname
-          </Label>
-          <Input
-            id="pokemon-nickname"
-            value={pokemon.nickname ?? ""}
-            onChange={(e) => handleNicknameChange(e.target.value)}
-            placeholder={pokemon.species || "Nickname"}
-            className="h-8 text-sm"
-            disabled={disabled}
-            maxLength={18}
-          />
-        </div>
-
-        {/* Gender */}
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-xs">Gender</Label>
-          <RadioGroup
-            value={genderValue}
-            onValueChange={(v) => handleGenderChange(v as GenderValue)}
-            className="flex gap-3"
-            disabled={disabled}
-          >
-            {(["Male", "Female", "Unknown"] as const).map((value) => (
-              <label
-                key={value}
-                className="flex cursor-pointer items-center gap-1.5 text-xs"
-              >
-                <RadioGroupItem value={value} />
-                {value}
-              </label>
-            ))}
-          </RadioGroup>
-        </div>
-
-        {/* Shiny */}
-        <div className="flex items-center justify-between">
-          <Label htmlFor="pokemon-shiny" className="text-xs">
-            Shiny
-          </Label>
-          <Switch
-            id="pokemon-shiny"
-            checked={pokemon.is_shiny ?? false}
-            onCheckedChange={handleShinyChange}
-            disabled={disabled}
-          />
-        </div>
-
-        {/* Level */}
-        <div className="flex items-center justify-between">
-          <Label htmlFor="pokemon-level" className="text-xs">
-            Level
-          </Label>
-          <Input
-            id="pokemon-level"
-            type="number"
-            min={1}
-            max={100}
-            value={pokemon.level ?? 50}
-            onChange={(e) =>
-              handleLevelChange(parseInt(e.target.value || "50", 10))
-            }
-            className="h-8 w-20 text-right text-sm tabular-nums"
-            disabled={disabled}
-          />
-        </div>
-
-        <Separator />
-
         {/* Per-Pokémon import / export */}
         <div className="flex flex-col gap-1.5">
           <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">

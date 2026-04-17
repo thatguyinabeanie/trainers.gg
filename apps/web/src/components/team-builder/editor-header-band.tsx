@@ -23,9 +23,8 @@ import { TYPE_PILL_COLORS } from "./type-colors";
 
 interface EditorHeaderBandProps {
   pokemon: Tables<"pokemon">;
-  /** Active game format — currently unused inside the band but kept on the API
-   * so the next refactor task can drive format-aware labels (e.g., disabling
-   * Tera in formats without it). */
+  /** Active game format — drives Tera field visibility and identity control
+   * behaviour (formatHasTera). */
   format: GameFormat | undefined;
   onOpenAbilityPicker: () => void;
   onOpenItemPicker: () => void;
@@ -36,11 +35,12 @@ interface EditorHeaderBandProps {
    * omitted, the sprite + name render as static decoration (e.g., the
    * disabled placeholder editor). */
   onOpenSpeciesPicker?: () => void;
-  /** Optional. When provided, the rightmost ⋯ slot renders the per-Pokémon
-   * details popover (nickname, gender, shiny, level, import/export). The
-   * popover needs the team id and an update callback to write back. */
+  /** Optional. When provided, nickname / gender / shiny / level inline controls
+   * are enabled (via onUpdate), and the ⋯ popover slot renders the Showdown
+   * import/export menu. */
   detailsPopover?: {
     teamId: number;
+    /** Debounced field-level updater wired in the parent workspace. */
     onUpdate: (field: string, value: unknown) => void;
     onImported?: () => void;
   };
@@ -113,16 +113,72 @@ function FieldStatic({ label, children }: FieldStaticProps) {
 }
 
 // =============================================================================
+// GenderButton — compact 3-state gender control (♂ / ♀ / —)
+// =============================================================================
+
+type GenderValue = "Male" | "Female" | null;
+
+const GENDER_OPTIONS: { value: GenderValue; label: string; symbol: string }[] =
+  [
+    { value: "Male", label: "Male", symbol: "♂" },
+    { value: "Female", label: "Female", symbol: "♀" },
+    { value: null, label: "Unknown", symbol: "—" },
+  ];
+
+interface GenderButtonProps {
+  value: GenderValue;
+  onChange: (next: GenderValue) => void;
+  disabled?: boolean;
+}
+
+function GenderButton({ value, onChange, disabled }: GenderButtonProps) {
+  return (
+    <div
+      role="group"
+      aria-label="Gender"
+      className="bg-muted/50 flex overflow-hidden rounded-md border"
+    >
+      {GENDER_OPTIONS.map((opt) => {
+        const isActive = value === opt.value;
+        return (
+          <button
+            key={opt.label}
+            type="button"
+            aria-label={opt.label}
+            aria-pressed={isActive}
+            disabled={disabled}
+            onClick={() => onChange(opt.value)}
+            className={cn(
+              "px-2 py-1 text-xs transition-colors duration-150",
+              isActive
+                ? "bg-primary/10 text-primary font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {opt.symbol}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// =============================================================================
 // EditorHeaderBand
 // =============================================================================
 
 /**
- * Single horizontal band combining identity (sprite + name + type pills) with
- * the four loadout fields (Ability / Item / Tera / Nature) for the editor card.
+ * Single horizontal band combining identity (sprite + name + types) with
+ * inline identity controls (nickname, gender, shiny, level) and the four
+ * loadout fields (Ability / Item / Tera / Nature) for the editor card.
  *
- * Layout: CSS grid with sprite, identity column, then four field buttons.
- * Background uses a subtle teal gradient and a single bottom divider — no
- * surrounding borders.
+ * Layout strategy: two flex rows, each allowing wrap at small widths.
+ * - Row 1: sprite + name + types · [nickname] [gender] [shiny ✦] [level]
+ * - Row 2: Ability · Item · [Tera] · Nature · ⋯
+ *
+ * Inline identity controls are active when `detailsPopover` is wired by the
+ * parent. When omitted (e.g., the placeholder editor), those controls are
+ * hidden — the band reverts to its original minimal appearance.
  */
 export function EditorHeaderBand({
   pokemon,
@@ -156,16 +212,34 @@ export function EditorHeaderBand({
   const validAbilities = getValidAbilities(pokemon.species);
   const isSingleAbility = validAbilities.length <= 1;
 
+  const speciesClickable = !disabled && onOpenSpeciesPicker !== undefined;
+  const showIdentityControls = detailsPopover !== undefined;
+
   // -------------------------------------------------------------------------
-  // Render
+  // Identity control handlers — forward to parent's debounced onUpdate.
   // -------------------------------------------------------------------------
 
-  // Sprite + name + types collapse into a single click target when a species
-  // picker handler is provided and the band is enabled — the entire identity
-  // block becomes the affordance for swapping species. When no handler is
-  // provided (e.g., the disabled placeholder editor), it renders as static
-  // decoration without hover affordances.
-  const speciesClickable = !disabled && onOpenSpeciesPicker !== undefined;
+  function handleNicknameChange(value: string) {
+    detailsPopover?.onUpdate("nickname", value || null);
+  }
+
+  function handleGenderChange(next: GenderValue) {
+    detailsPopover?.onUpdate("gender", next);
+  }
+
+  function handleShinyToggle() {
+    detailsPopover?.onUpdate("is_shiny", !(pokemon.is_shiny ?? false));
+  }
+
+  function handleLevelChange(value: number) {
+    if (Number.isNaN(value)) return;
+    const clamped = Math.max(1, Math.min(100, value));
+    detailsPopover?.onUpdate("level", clamped);
+  }
+
+  // -------------------------------------------------------------------------
+  // Identity block (sprite + name + types)
+  // -------------------------------------------------------------------------
 
   const identityContent = (
     <>
@@ -184,14 +258,11 @@ export function EditorHeaderBand({
         />
       </div>
 
-      {/* Identity — name + type pills */}
+      {/* Name + type pills */}
       <div className="flex min-w-0 flex-col gap-1">
         <span
           className={cn(
             "text-foreground truncate text-base leading-tight font-semibold",
-            // Subtle hover affordance — the underline tells the user the
-            // sprite + name are interactive, without making the band feel
-            // like a giant button.
             speciesClickable && "group-hover:text-primary group-hover:underline"
           )}
         >
@@ -216,119 +287,185 @@ export function EditorHeaderBand({
     </>
   );
 
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
+
   return (
     <div
-      // Grid: identity (sprite + name span 2) · ability · item · [tera] ·
-      // nature · ⋯ details popover. The Tera column is omitted entirely when
-      // the active format doesn't support Terastal. The popover column slot
-      // still reserves space via `auto` when wired by the parent.
       className={cn(
-        "from-primary/5 to-card grid items-center gap-3.5 border-b bg-gradient-to-b px-4 py-3",
-        hasTera
-          ? "grid-cols-[auto_minmax(160px,1fr)_auto_auto_auto_auto_auto]"
-          : "grid-cols-[auto_minmax(160px,1fr)_auto_auto_auto_auto]",
+        "from-primary/5 to-card flex flex-col gap-0 border-b bg-gradient-to-b",
         className
       )}
     >
-      {speciesClickable ? (
-        <button
-          type="button"
-          onClick={onOpenSpeciesPicker}
-          aria-label={`Change species (currently ${pokemon.species})`}
-          // `group` lets the inner name trigger its own hover style above —
-          // grid template above keeps the button spanning sprite + identity
-          // columns so the click target matches the visible identity block.
-          className="group col-span-2 -mx-1 grid grid-cols-[3rem_minmax(160px,1fr)] items-center gap-3.5 rounded-lg px-1 py-1 text-left transition-colors hover:bg-white/40 dark:hover:bg-white/5"
-        >
-          {identityContent}
-        </button>
-      ) : (
-        // Static (placeholder / disabled) — render as a regular grid cell so
-        // the column template still behaves the same.
-        <div className="col-span-2 grid grid-cols-[3rem_minmax(160px,1fr)] items-center gap-3.5">
-          {identityContent}
-        </div>
-      )}
-
-      {/* Ability — static when single-ability species or disabled, button otherwise */}
-      {isSingleAbility || disabled ? (
-        <FieldStatic label="Ability">{pokemon.ability}</FieldStatic>
-      ) : (
-        <FieldButton label="Ability" onClick={onOpenAbilityPicker}>
-          {pokemon.ability}
-        </FieldButton>
-      )}
-
-      {/* Item */}
-      {disabled ? (
-        <FieldStatic label="Item">{pokemon.held_item ?? "None"}</FieldStatic>
-      ) : (
-        <FieldButton label="Item" onClick={onOpenItemPicker}>
-          {pokemon.held_item ?? "None"}
-        </FieldButton>
-      )}
-
-      {/* Tera type — omitted entirely for formats without the Terastal mechanic */}
-      {hasTera &&
-        (disabled ? (
-          <FieldStatic label="Tera">
-            {pokemon.tera_type ? (
-              <span
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                  TYPE_PILL_COLORS[
-                    pokemon.tera_type as PokemonType | "Stellar"
-                  ] ?? "bg-muted text-foreground"
-                )}
-              >
-                {pokemon.tera_type}
-              </span>
-            ) : (
-              "None"
-            )}
-          </FieldStatic>
+      {/* Row 1: identity + inline identity controls ----------------------------- */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-3 pb-1.5">
+        {/* Species block — sprite + name + types */}
+        {speciesClickable ? (
+          <button
+            type="button"
+            onClick={onOpenSpeciesPicker}
+            aria-label={`Change species (currently ${pokemon.species})`}
+            className="group -mx-1 grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-3.5 rounded-lg px-1 py-1 text-left transition-colors hover:bg-white/40 dark:hover:bg-white/5"
+          >
+            {identityContent}
+          </button>
         ) : (
-          <FieldButton label="Tera" onClick={onOpenTeraPicker}>
-            {pokemon.tera_type ? (
-              <span
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                  TYPE_PILL_COLORS[
-                    pokemon.tera_type as PokemonType | "Stellar"
-                  ] ?? "bg-muted text-foreground"
-                )}
-              >
-                {pokemon.tera_type}
+          <div className="grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-3.5">
+            {identityContent}
+          </div>
+        )}
+
+        {/* Inline identity controls — only when a detailsPopover is wired */}
+        {showIdentityControls && (
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Nickname — ~120px input, placeholder = species name */}
+            <input
+              type="text"
+              aria-label="Nickname"
+              value={pokemon.nickname ?? ""}
+              onChange={(e) => handleNicknameChange(e.target.value)}
+              placeholder={pokemon.species}
+              maxLength={18}
+              disabled={disabled}
+              className={cn(
+                "text-foreground placeholder:text-muted-foreground h-7 w-28 rounded-md border bg-transparent px-2 text-xs",
+                "focus:ring-primary/50 focus:ring-2 focus:outline-none",
+                "disabled:cursor-not-allowed disabled:opacity-50"
+              )}
+            />
+
+            {/* Gender — compact 3-button segmented control */}
+            <GenderButton
+              value={(pokemon.gender as GenderValue) ?? null}
+              onChange={handleGenderChange}
+              disabled={disabled}
+            />
+
+            {/* Shiny — star icon button, filled when shiny */}
+            <button
+              type="button"
+              aria-label={pokemon.is_shiny ? "Shiny (on)" : "Shiny (off)"}
+              aria-pressed={pokemon.is_shiny ?? false}
+              onClick={handleShinyToggle}
+              disabled={disabled}
+              className={cn(
+                "flex size-7 items-center justify-center rounded-md border text-sm transition-colors duration-150",
+                pokemon.is_shiny
+                  ? "border-amber-400 bg-amber-400/10 text-amber-500"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground",
+                "disabled:cursor-not-allowed disabled:opacity-50"
+              )}
+            >
+              {/* ✦ filled when shiny, ✧ outline when not */}
+              {pokemon.is_shiny ? "✦" : "✧"}
+            </button>
+
+            {/* Level — compact number input, ~40px wide */}
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground text-[9px] font-semibold tracking-wider uppercase">
+                Lv
               </span>
-            ) : (
-              "None"
-            )}
+              <input
+                type="number"
+                aria-label="Level"
+                min={1}
+                max={100}
+                value={pokemon.level ?? 50}
+                onChange={(e) =>
+                  handleLevelChange(parseInt(e.target.value, 10))
+                }
+                disabled={disabled}
+                className={cn(
+                  "text-foreground h-7 w-10 rounded-md border bg-transparent px-1 text-center font-mono text-xs tabular-nums",
+                  "focus:ring-primary/50 focus:ring-2 focus:outline-none",
+                  "disabled:cursor-not-allowed disabled:opacity-50"
+                )}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Row 2: build controls (ability, item, [tera], nature, ⋯) -------------- */}
+      <div className="flex flex-wrap items-center gap-x-0 gap-y-0.5 px-4 pb-1.5">
+        {/* Ability */}
+        {isSingleAbility || disabled ? (
+          <FieldStatic label="Ability">{pokemon.ability}</FieldStatic>
+        ) : (
+          <FieldButton label="Ability" onClick={onOpenAbilityPicker}>
+            {pokemon.ability}
           </FieldButton>
-        ))}
+        )}
 
-      {/* Nature */}
-      {disabled ? (
-        <FieldStatic label="Nature">{pokemon.nature}</FieldStatic>
-      ) : (
-        <FieldButton label="Nature" onClick={onOpenNaturePicker}>
-          {pokemon.nature}
-        </FieldButton>
-      )}
+        {/* Item */}
+        {disabled ? (
+          <FieldStatic label="Item">{pokemon.held_item ?? "None"}</FieldStatic>
+        ) : (
+          <FieldButton label="Item" onClick={onOpenItemPicker}>
+            {pokemon.held_item ?? "None"}
+          </FieldButton>
+        )}
 
-      {/* Per-Pokémon details popover (nickname, gender, shiny, level,
-          import/export). Reserves a column slot only when the parent wires
-          it — render nothing otherwise so the grid template still aligns. */}
-      {detailsPopover ? (
-        <PokemonDetailsPopover
-          teamId={detailsPopover.teamId}
-          pokemon={pokemon}
-          onUpdate={detailsPopover.onUpdate}
-          onImported={detailsPopover.onImported}
-          disabled={disabled}
-        />
-      ) : (
-        <span aria-hidden="true" />
-      )}
+        {/* Tera type — omitted entirely for formats without Terastal */}
+        {hasTera &&
+          (disabled ? (
+            <FieldStatic label="Tera">
+              {pokemon.tera_type ? (
+                <span
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+                    TYPE_PILL_COLORS[
+                      pokemon.tera_type as PokemonType | "Stellar"
+                    ] ?? "bg-muted text-foreground"
+                  )}
+                >
+                  {pokemon.tera_type}
+                </span>
+              ) : (
+                "None"
+              )}
+            </FieldStatic>
+          ) : (
+            <FieldButton label="Tera" onClick={onOpenTeraPicker}>
+              {pokemon.tera_type ? (
+                <span
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+                    TYPE_PILL_COLORS[
+                      pokemon.tera_type as PokemonType | "Stellar"
+                    ] ?? "bg-muted text-foreground"
+                  )}
+                >
+                  {pokemon.tera_type}
+                </span>
+              ) : (
+                "None"
+              )}
+            </FieldButton>
+          ))}
+
+        {/* Nature */}
+        {disabled ? (
+          <FieldStatic label="Nature">{pokemon.nature}</FieldStatic>
+        ) : (
+          <FieldButton label="Nature" onClick={onOpenNaturePicker}>
+            {pokemon.nature}
+          </FieldButton>
+        )}
+
+        {/* ⋯ popover — Showdown import/export only. Reserves slot when wired. */}
+        {detailsPopover ? (
+          <PokemonDetailsPopover
+            teamId={detailsPopover.teamId}
+            pokemon={pokemon}
+            onImported={detailsPopover.onImported}
+            disabled={disabled}
+          />
+        ) : (
+          <span aria-hidden="true" />
+        )}
+      </div>
     </div>
   );
 }

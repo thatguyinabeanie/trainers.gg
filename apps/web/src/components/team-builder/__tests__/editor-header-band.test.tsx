@@ -1,5 +1,5 @@
 import { describe, it, expect, jest } from "@jest/globals";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -372,8 +372,6 @@ describe("EditorHeaderBand", () => {
     });
 
     it("hides the Tera field when format is undefined (safe default → no tera)", () => {
-      // Render directly without the renderBand helper so we can pass undefined
-      // cleanly — JS treats undefined default params as the default value.
       render(
         <EditorHeaderBand
           pokemon={buildPokemon({ tera_type: "Ghost" })}
@@ -388,6 +386,136 @@ describe("EditorHeaderBand", () => {
       expect(
         screen.queryByRole("button", { name: /Edit Tera/ })
       ).not.toBeInTheDocument();
+    });
+  });
+
+  // ===========================================================================
+  // Inline identity controls (nickname, gender, shiny, level)
+  // ===========================================================================
+
+  describe("inline identity controls", () => {
+    function renderBandWithControls(
+      pokemonOverrides: Partial<Tables<"pokemon">> = {},
+      onUpdate = jest.fn()
+    ) {
+      render(
+        <EditorHeaderBand
+          pokemon={buildPokemon(pokemonOverrides)}
+          format={svFormat}
+          onOpenAbilityPicker={jest.fn()}
+          onOpenItemPicker={jest.fn()}
+          onOpenTeraPicker={jest.fn()}
+          onOpenNaturePicker={jest.fn()}
+          detailsPopover={{ teamId: 1, onUpdate }}
+        />
+      );
+      return onUpdate;
+    }
+
+    it("renders the nickname input with species as placeholder when nickname is null", () => {
+      renderBandWithControls({ nickname: null, species: "Incineroar" });
+      const input = screen.getByLabelText("Nickname");
+      expect(input).toBeInTheDocument();
+      expect(input).toHaveAttribute("placeholder", "Incineroar");
+      expect(input).toHaveValue("");
+    });
+
+    it("calls onUpdate with the typed nickname on change", async () => {
+      const user = userEvent.setup();
+      const onUpdate = renderBandWithControls({ nickname: null });
+      await user.type(screen.getByLabelText("Nickname"), "S");
+      expect(onUpdate).toHaveBeenCalledWith("nickname", "S");
+    });
+
+    it("calls onUpdate with null when nickname is cleared", async () => {
+      const user = userEvent.setup();
+      const onUpdate = renderBandWithControls({ nickname: "Sparky" });
+      const input = screen.getByLabelText("Nickname");
+      await user.clear(input);
+      // Empty string → null
+      expect(onUpdate).toHaveBeenLastCalledWith("nickname", null);
+    });
+
+    it("renders gender buttons for ♂, ♀, and — (unknown)", () => {
+      renderBandWithControls({ gender: null });
+      expect(screen.getByLabelText("Male")).toBeInTheDocument();
+      expect(screen.getByLabelText("Female")).toBeInTheDocument();
+      expect(screen.getByLabelText("Unknown")).toBeInTheDocument();
+    });
+
+    it("calls onUpdate with 'Male' when the ♂ button is clicked", async () => {
+      const user = userEvent.setup();
+      const onUpdate = renderBandWithControls({ gender: null });
+      await user.click(screen.getByLabelText("Male"));
+      expect(onUpdate).toHaveBeenCalledWith("gender", "Male");
+    });
+
+    it("calls onUpdate with 'Female' when the ♀ button is clicked", async () => {
+      const user = userEvent.setup();
+      const onUpdate = renderBandWithControls({ gender: null });
+      await user.click(screen.getByLabelText("Female"));
+      expect(onUpdate).toHaveBeenCalledWith("gender", "Female");
+    });
+
+    it("calls onUpdate with null when — (Unknown) is clicked", async () => {
+      const user = userEvent.setup();
+      const onUpdate = renderBandWithControls({ gender: "Male" });
+      await user.click(screen.getByLabelText("Unknown"));
+      expect(onUpdate).toHaveBeenCalledWith("gender", null);
+    });
+
+    it("renders the shiny toggle button", () => {
+      renderBandWithControls({ is_shiny: false });
+      const btn = screen.getByLabelText("Shiny (off)");
+      expect(btn).toBeInTheDocument();
+      expect(btn).toHaveAttribute("aria-pressed", "false");
+    });
+
+    it("calls onUpdate with true when shiny toggle is clicked (currently off)", async () => {
+      const user = userEvent.setup();
+      const onUpdate = renderBandWithControls({ is_shiny: false });
+      await user.click(screen.getByLabelText("Shiny (off)"));
+      expect(onUpdate).toHaveBeenCalledWith("is_shiny", true);
+    });
+
+    it("calls onUpdate with false when shiny toggle is clicked (currently on)", async () => {
+      const user = userEvent.setup();
+      const onUpdate = renderBandWithControls({ is_shiny: true });
+      await user.click(screen.getByLabelText("Shiny (on)"));
+      expect(onUpdate).toHaveBeenCalledWith("is_shiny", false);
+    });
+
+    it("renders the level input with the current level value", () => {
+      renderBandWithControls({ level: 50 });
+      const input = screen.getByLabelText("Level") as HTMLInputElement;
+      expect(input).toBeInTheDocument();
+      expect(Number(input.value)).toBe(50);
+    });
+
+    it("clamps level to 100 and calls onUpdate with the clamped value", async () => {
+      const user = userEvent.setup();
+      const onUpdate = renderBandWithControls({ level: 50 });
+      const input = screen.getByLabelText("Level");
+      await user.clear(input);
+      await user.type(input, "150");
+      expect(onUpdate).toHaveBeenLastCalledWith("level", 100);
+    });
+
+    it("clamps level to 1 and calls onUpdate with the clamped value", () => {
+      const onUpdate = renderBandWithControls({ level: 50 });
+      const input = screen.getByLabelText("Level");
+      // Use fireEvent.change to bypass controlled-input interaction quirks —
+      // we want to assert the clamping logic, not simulate multi-key user events.
+      fireEvent.change(input, { target: { value: "0" } });
+      expect(onUpdate).toHaveBeenLastCalledWith("level", 1);
+    });
+
+    it("does not render the inline controls when detailsPopover is omitted", () => {
+      renderBand();
+      expect(screen.queryByLabelText("Nickname")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Male")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Shiny (off)")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Level")).not.toBeInTheDocument();
     });
   });
 });
