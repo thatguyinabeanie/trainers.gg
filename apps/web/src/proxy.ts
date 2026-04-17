@@ -83,7 +83,9 @@ export default async function proxy(request: NextRequest) {
       return NextResponse.redirect(signInUrl);
     }
 
-    // Decode JWT to check site_roles claim
+    // Decode JWT to check site_roles claim.
+    // getUser() above already authenticated the token with the Supabase Auth server.
+    // We only read the signed access_token to decode JWT claims — never session.user.
     let isSiteAdmin = false;
     try {
       const {
@@ -133,7 +135,9 @@ export default async function proxy(request: NextRequest) {
   if (user) {
     const impersonationCookie = request.cookies.get("impersonation_mode");
     if (impersonationCookie?.value) {
-      // Verify the user is a site admin before propagating impersonation info
+      // Verify the user is a site admin before propagating impersonation info.
+      // getUser() above already authenticated the token — reading access_token here
+      // is safe; we only decode signed JWT claims, never trust session.user.
       let isAdmin = false;
       try {
         const {

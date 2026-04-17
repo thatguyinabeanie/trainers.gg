@@ -27,26 +27,15 @@ export async function requireSiteAdmin() {
     redirect("/sign-in");
   }
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const adminClient = createServiceRoleClient();
+  const { data: adminRole } = await adminClient
+    .from("user_roles")
+    .select("role_id, roles!inner(name)")
+    .eq("user_id", user.id)
+    .eq("roles.name", "site_admin")
+    .maybeSingle();
 
-  if (!session?.access_token) {
-    redirect("/forbidden");
-  }
-
-  let siteRoles: string[] = [];
-  try {
-    const payload = JSON.parse(atob(session.access_token.split(".")[1]!)) as {
-      site_roles?: string[];
-    };
-    siteRoles = payload.site_roles ?? [];
-  } catch (err) {
-    console.error("[auth] Failed to parse JWT site_roles:", err);
-    redirect("/forbidden");
-  }
-
-  if (!siteRoles.includes("site_admin")) {
+  if (!adminRole) {
     redirect("/forbidden");
   }
 
