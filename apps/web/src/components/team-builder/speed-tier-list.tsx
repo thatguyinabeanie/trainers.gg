@@ -59,21 +59,21 @@ function TableHeader() {
   return (
     <div
       data-testid="speed-table-header"
-      className="bg-muted/20 grid grid-cols-[56px_1fr_40px_52px_52px] border-t px-0"
+      className="bg-muted/20 grid grid-cols-[28px_1fr_32px_40px_36px] border-t px-0"
     >
-      <div className="text-muted-foreground flex items-center justify-center px-1 py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex items-center justify-center px-0.5 py-1.5 text-[9px] font-medium tracking-wide uppercase">
         Base
       </div>
-      <div className="text-muted-foreground flex items-center px-3 py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex min-w-0 items-center px-2 py-1.5 text-[9px] font-medium tracking-wide uppercase">
         Pokémon
       </div>
-      <div className="text-muted-foreground flex items-center justify-end px-1 py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex items-center justify-end px-0.5 py-1.5 text-[9px] font-medium tracking-wide uppercase">
         Min
       </div>
-      <div className="text-muted-foreground flex items-center justify-end px-1 py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex items-center justify-end px-0.5 py-1.5 text-[9px] font-medium tracking-wide uppercase">
         Neutral
       </div>
-      <div className="text-muted-foreground flex items-center justify-end px-1 py-1.5 text-[9px] font-medium tracking-wide uppercase">
+      <div className="text-muted-foreground flex items-center justify-end px-0.5 py-1.5 text-[9px] font-medium tracking-wide uppercase">
         +Spe
       </div>
     </div>
@@ -95,13 +95,13 @@ function MonRow({ mon }: MonRowProps) {
       data-yours={mon.isYours}
       data-selected={mon.isSelected}
       className={cn(
-        "grid grid-cols-[1fr_40px_52px_52px] items-center py-0.5",
+        "grid grid-cols-[1fr_32px_40px_36px] items-center py-0.5",
         mon.isYours ? "text-primary font-semibold" : "text-muted-foreground",
         mon.isSelected && "text-primary"
       )}
     >
       {/* Pokémon sprite + name */}
-      <div className="flex items-center gap-1.5 px-3 text-xs">
+      <div className="flex min-w-0 items-center gap-1 px-2 text-xs">
         {mon.spriteUrl ? (
           <Image
             src={mon.spriteUrl}
@@ -134,7 +134,7 @@ function MonRow({ mon }: MonRowProps) {
       {/* Min */}
       <div
         data-testid={`stat-min-${mon.id}`}
-        className="pr-1 text-right font-mono text-xs"
+        className="pr-0.5 text-right font-mono text-xs"
       >
         {mon.statMin}
       </div>
@@ -142,7 +142,7 @@ function MonRow({ mon }: MonRowProps) {
       {/* Max Neutral */}
       <div
         data-testid={`stat-neutral-${mon.id}`}
-        className="pr-1 text-right font-mono text-xs"
+        className="pr-0.5 text-right font-mono text-xs"
       >
         {mon.statMaxNeutral}
       </div>
@@ -150,7 +150,7 @@ function MonRow({ mon }: MonRowProps) {
       {/* Max Positive */}
       <div
         data-testid={`stat-positive-${mon.id}`}
-        className="pr-1 text-right font-mono text-xs font-semibold"
+        className="pr-0.5 text-right font-mono text-xs font-semibold"
       >
         {mon.statMaxPositive}
       </div>
@@ -177,7 +177,7 @@ function TierRow({ tier, isYourTier }: TierRowProps) {
       data-testid={`tier-${tier.speed}`}
       data-your-tier={isYourTier}
       className={cn(
-        "grid grid-cols-[56px_1fr] border-t",
+        "grid grid-cols-[28px_1fr] border-t",
         isYourTier && "from-primary/10 to-card bg-gradient-to-r"
       )}
     >
@@ -231,8 +231,8 @@ export function SpeedTierList({
   className,
 }: SpeedTierListProps) {
   // Section labels for Trick Room context — shown above the list.
-  const contextLabel = trickRoom ? "Moves first" : "↑ Faster than you";
-  const bottomLabel = trickRoom ? "Moves later" : "↓ Slower than you";
+  const contextLabel = trickRoom ? "Moves first" : "↑ Faster";
+  const bottomLabel = trickRoom ? "Moves later" : "↓ Slower";
 
   return (
     <div data-testid="speed-tier-list" className={cn("flex-1", className)}>

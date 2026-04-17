@@ -316,13 +316,13 @@ describe("SpeedPanel — toggles affect numbers", () => {
     );
 
     // Default: standard speed order labels.
-    expect(screen.getByText("↑ Faster than you")).toBeInTheDocument();
-    expect(screen.getByText("↓ Slower than you")).toBeInTheDocument();
+    expect(screen.getByText("↑ Faster")).toBeInTheDocument();
+    expect(screen.getByText("↓ Slower")).toBeInTheDocument();
 
     await user.click(screen.getByLabelText("Trick Room"));
 
     // Trick Room: relabeled — slower = moves first.
-    expect(screen.queryByText("↑ Faster than you")).not.toBeInTheDocument();
+    expect(screen.queryByText("↑ Faster")).not.toBeInTheDocument();
     expect(screen.getByText("Moves first")).toBeInTheDocument();
     expect(screen.getByText("Moves later")).toBeInTheDocument();
   });

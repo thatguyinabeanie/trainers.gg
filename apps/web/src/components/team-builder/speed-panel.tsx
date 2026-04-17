@@ -434,12 +434,13 @@ function SpeedPanelInner({
       </div>
 
       {/* L3 — Body: toggle rail | tier list -------------------------------- */}
-      <div className="flex">
+      <div className="flex max-h-[calc(100vh-20rem)] overflow-hidden">
         <SpeedToggleRail state={toggle} onChange={setToggle} format={format} />
         <SpeedTierList
           tiers={orderedTiers}
           selectedSpeed={effectiveSpeed}
           trickRoom={toggle.field.trickRoom}
+          className="overflow-y-auto"
         />
       </div>
     </div>

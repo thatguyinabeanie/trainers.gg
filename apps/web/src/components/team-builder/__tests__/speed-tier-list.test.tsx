@@ -176,8 +176,8 @@ describe("SpeedTierList — context hint labels", () => {
     render(<SpeedTierList tiers={makeTiers()} selectedSpeed={150} />);
 
     // The hint row appears once above the tier list.
-    expect(screen.getByText("↑ Faster than you")).toBeInTheDocument();
-    expect(screen.getByText("↓ Slower than you")).toBeInTheDocument();
+    expect(screen.getByText("↑ Faster")).toBeInTheDocument();
+    expect(screen.getByText("↓ Slower")).toBeInTheDocument();
   });
 
   it("shows Trick Room labels when trickRoom=true", () => {
