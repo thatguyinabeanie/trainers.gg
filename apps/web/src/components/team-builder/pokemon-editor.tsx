@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { type GameFormat, getMoveData } from "@trainers/pokemon";
+import { type GameFormat, formatHasTera, getMoveData } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -169,6 +169,7 @@ export function PokemonEditor({
   // Derived values
   // -------------------------------------------------------------------------
 
+  const hasTera = formatHasTera(format);
   const teamItems = getTeamItems(teamPokemon, pokemon.id);
 
   // Count filled move slots for the section header counter.
@@ -194,7 +195,7 @@ export function PokemonEditor({
         format={format}
         onOpenAbilityPicker={() => openPicker("ability")}
         onOpenItemPicker={() => openPicker("item")}
-        onOpenTeraPicker={() => openPicker("tera")}
+        onOpenTeraPicker={hasTera ? () => openPicker("tera") : () => {}}
         onOpenNaturePicker={() => openPicker("nature")}
         onOpenSpeciesPicker={onOpenSpeciesPicker}
         // Only mount the ⋯ details popover when we have a teamId — the
@@ -240,7 +241,7 @@ export function PokemonEditor({
           />
         </div>
       )}
-      {pickerOpen === "tera" && (
+      {hasTera && pickerOpen === "tera" && (
         <div className="border-b px-4 py-3">
           <TeraPicker
             value={pokemon.tera_type}

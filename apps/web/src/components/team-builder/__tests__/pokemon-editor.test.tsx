@@ -54,6 +54,13 @@ jest.mock("@trainers/pokemon", () => ({
   getLegalMoves: jest.fn(() => undefined),
   getLegalTeraTypes: jest.fn(() => undefined),
   getLegalAbilities: jest.fn(() => undefined),
+  // Gate Tera UI based on generation (9 = Scarlet & Violet, 10 = Champions).
+  formatHasTera: jest.fn(
+    (format: { generation?: number } | null | undefined) => {
+      if (!format) return false;
+      return format.generation === 9;
+    }
+  ),
 }));
 
 jest.mock("@trainers/pokemon/sprites", () => ({
@@ -362,6 +369,64 @@ describe("PokemonEditor", () => {
       render(<PokemonEditor {...defaultProps} disabled={false} />);
       await user.click(screen.getByText("Fake Out"));
       expect(screen.getByPlaceholderText("Search moves…")).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Tera field gating — Champions format hides all Tera UI
+  // ---------------------------------------------------------------------------
+
+  describe("Tera field gating (Champions format)", () => {
+    const championsFormat = {
+      id: "championsvgc2026regma",
+      label: "Champions: Reg M-A",
+      generation: 10,
+    };
+
+    it("does not render the Tera field in the header band for Champions format", () => {
+      render(
+        <PokemonEditor
+          {...defaultProps}
+          format={
+            championsFormat as Parameters<typeof PokemonEditor>[0]["format"]
+          }
+        />
+      );
+      // Tera label and button should be absent for Champions
+      expect(screen.queryByText("Tera")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /edit tera/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it("does not open the TeraPicker overlay for Champions format when tera callback fires", () => {
+      render(
+        <PokemonEditor
+          {...defaultProps}
+          format={
+            championsFormat as Parameters<typeof PokemonEditor>[0]["format"]
+          }
+        />
+      );
+      // Since Tera field is hidden there's no way to trigger the picker —
+      // confirm the type grid is not in the DOM at all.
+      expect(
+        screen.queryByRole("button", { name: "Water" })
+      ).not.toBeInTheDocument();
+    });
+
+    it("still renders Ability, Item, and Nature fields for Champions format", () => {
+      render(
+        <PokemonEditor
+          {...defaultProps}
+          format={
+            championsFormat as Parameters<typeof PokemonEditor>[0]["format"]
+          }
+        />
+      );
+      expect(screen.getByText("Ability")).toBeInTheDocument();
+      expect(screen.getByText("Item")).toBeInTheDocument();
+      expect(screen.getByText("Nature")).toBeInTheDocument();
     });
   });
 });

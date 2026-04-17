@@ -146,6 +146,7 @@ export {
   getFormatsByGame,
   getActiveFormats,
   getAvailableGames,
+  formatHasTera,
 } from "./formats";
 
 // Featured Pokemon for avatar picker

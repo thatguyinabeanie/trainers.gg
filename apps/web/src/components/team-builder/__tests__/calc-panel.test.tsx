@@ -91,6 +91,12 @@ jest.mock("@trainers/pokemon", () => ({
   getLegalAbilities: jest.fn(() => undefined),
   getLegalItems: jest.fn(() => undefined),
   getLegalTeraTypes: jest.fn(() => undefined),
+  formatHasTera: jest.fn(
+    (format: { generation?: number } | null | undefined) => {
+      if (!format) return false;
+      return format.generation === 9;
+    }
+  ),
   getMetaSpeedTiers: jest.fn(() => [
     {
       species: "incineroar",

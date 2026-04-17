@@ -10,6 +10,12 @@ import React from "react";
 jest.mock("@trainers/pokemon", () => ({
   getSpeciesTypes: jest.fn(() => ["Fire", "Dark"]),
   getValidAbilities: jest.fn(() => ["Intimidate", "Flash Fire"]),
+  formatHasTera: jest.fn(
+    (format: { generation?: number } | null | undefined) => {
+      if (!format) return false;
+      return format.generation === 9;
+    }
+  ),
 }));
 
 jest.mock("@trainers/pokemon/sprites", () => ({
@@ -86,6 +92,22 @@ function buildPokemon(
   };
 }
 
+// Default to an SV Gen 9 format so the Tera field renders in most tests.
+// Tests that need to verify Tera is HIDDEN pass `format={championsFormat}`.
+const svFormat = {
+  id: "gen9vgc2026regi",
+  game: "Scarlet & Violet",
+  gameShort: "SV",
+  generation: 9,
+  category: "VGC",
+  year: 2026,
+  regulation: "I",
+  label: "SV: Reg I",
+  showdownName: "[Gen 9] VGC 2026 Reg I",
+  doubles: true,
+  active: true,
+};
+
 function renderBand(
   pokemonOverrides: Partial<Tables<"pokemon">> = {},
   handlerOverrides: Partial<{
@@ -94,7 +116,8 @@ function renderBand(
     onOpenTeraPicker: () => void;
     onOpenNaturePicker: () => void;
     onOpenSpeciesPicker?: () => void;
-  }> = {}
+  }> = {},
+  formatOverride: Parameters<typeof EditorHeaderBand>[0]["format"] = svFormat
 ) {
   const handlers = {
     onOpenAbilityPicker: jest.fn(),
@@ -106,7 +129,7 @@ function renderBand(
   render(
     <EditorHeaderBand
       pokemon={buildPokemon(pokemonOverrides)}
-      format={undefined}
+      format={formatOverride}
       {...handlers}
     />
   );
@@ -259,6 +282,112 @@ describe("EditorHeaderBand", () => {
       // Clicking the static label should not trigger the handler
       await user.click(screen.getByText("Levitate"));
       expect(handlers.onOpenAbilityPicker).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Tera field gating (formatHasTera)", () => {
+    // Fixture helpers — build minimal GameFormat-like objects for the mock.
+    const championsFormat = {
+      id: "championsvgc2026regma",
+      game: "Pokemon Champions",
+      gameShort: "Champions",
+      generation: 10,
+      category: "VGC",
+      year: 2026,
+      regulation: "M-A",
+      label: "Champions: Reg M-A",
+      showdownName: "[Champions] VGC 2026 Reg M-A",
+      doubles: true,
+      active: true,
+    };
+
+    const svFormat = {
+      id: "gen9vgc2026regi",
+      game: "Scarlet & Violet",
+      gameShort: "SV",
+      generation: 9,
+      category: "VGC",
+      year: 2026,
+      regulation: "I",
+      label: "SV: Reg I",
+      showdownName: "[Gen 9] VGC 2026 Reg I",
+      doubles: true,
+      active: true,
+    };
+
+    it("hides the Tera field button for a Champions format (no Terastal)", () => {
+      render(
+        <EditorHeaderBand
+          pokemon={buildPokemon({ tera_type: "Fire" })}
+          format={championsFormat}
+          onOpenAbilityPicker={jest.fn()}
+          onOpenItemPicker={jest.fn()}
+          onOpenTeraPicker={jest.fn()}
+          onOpenNaturePicker={jest.fn()}
+        />
+      );
+      // Neither the button nor any visible "Tera" label should be present.
+      expect(
+        screen.queryByRole("button", { name: /Edit Tera/ })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/^Tera$/i, { selector: "span" })
+      ).not.toBeInTheDocument();
+    });
+
+    it("hides the Tera field even when disabled=true for a Champions format", () => {
+      render(
+        <EditorHeaderBand
+          pokemon={buildPokemon({ tera_type: "Fire" })}
+          format={championsFormat}
+          onOpenAbilityPicker={jest.fn()}
+          onOpenItemPicker={jest.fn()}
+          onOpenTeraPicker={jest.fn()}
+          onOpenNaturePicker={jest.fn()}
+          disabled
+        />
+      );
+      expect(
+        screen.queryByRole("button", { name: /Edit Tera/ })
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows the Tera field button for a VGC Gen 9 format (has Terastal)", async () => {
+      const user = userEvent.setup();
+      const onOpenTeraPicker = jest.fn();
+      render(
+        <EditorHeaderBand
+          pokemon={buildPokemon({ tera_type: "Fire" })}
+          format={svFormat}
+          onOpenAbilityPicker={jest.fn()}
+          onOpenItemPicker={jest.fn()}
+          onOpenTeraPicker={onOpenTeraPicker}
+          onOpenNaturePicker={jest.fn()}
+        />
+      );
+      const teraBtn = screen.getByRole("button", { name: /Edit Tera/ });
+      expect(teraBtn).toBeInTheDocument();
+      await user.click(teraBtn);
+      expect(onOpenTeraPicker).toHaveBeenCalledTimes(1);
+    });
+
+    it("hides the Tera field when format is undefined (safe default → no tera)", () => {
+      // Render directly without the renderBand helper so we can pass undefined
+      // cleanly — JS treats undefined default params as the default value.
+      render(
+        <EditorHeaderBand
+          pokemon={buildPokemon({ tera_type: "Ghost" })}
+          format={undefined}
+          onOpenAbilityPicker={jest.fn()}
+          onOpenItemPicker={jest.fn()}
+          onOpenTeraPicker={jest.fn()}
+          onOpenNaturePicker={jest.fn()}
+        />
+      );
+      // formatHasTera(undefined) → false → Tera field hidden
+      expect(
+        screen.queryByRole("button", { name: /Edit Tera/ })
+      ).not.toBeInTheDocument();
     });
   });
 });

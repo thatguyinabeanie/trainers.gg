@@ -4,6 +4,7 @@ import {
   type GameFormat,
   type MetaSpeedEntry,
   ALL_TYPES,
+  formatHasTera,
   getAllItems,
   getLegalAbilities,
   getLegalItems,
@@ -113,6 +114,7 @@ export function CalcDefenderForm({
   const meta: MetaSpeedEntry[] = format ? getMetaSpeedTiers(format.id) : [];
 
   const formatId = format?.id;
+  const hasTera = formatHasTera(format);
   const abilities = formatId
     ? Array.from(
         getLegalAbilities(species, formatId) ?? getValidAbilities(species)
@@ -195,8 +197,8 @@ export function CalcDefenderForm({
         </Field>
       </div>
 
-      {/* Nature + Tera */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* Nature + Tera — Tera field hidden for formats without Terastal */}
+      <div className={hasTera ? "grid grid-cols-2 gap-2" : undefined}>
         <Field label="Nature">
           <select
             value={nature}
@@ -210,26 +212,29 @@ export function CalcDefenderForm({
             ))}
           </select>
         </Field>
-        <Field label="Tera">
-          {teraDisabled ? (
-            <span className="text-muted-foreground px-1 py-1 text-xs">
-              Not allowed
-            </span>
-          ) : (
-            <select
-              value={teraType}
-              onChange={(e) => onTeraChange(e.target.value)}
-              className={selectClass}
-            >
-              <option value="">None</option>
-              {teraOptions.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
+        {hasTera && (
+          <Field label="Tera">
+            {teraDisabled ? (
+              <span className="text-muted-foreground px-1 py-1 text-xs">
+                Not allowed
+              </span>
+            ) : (
+              <select
+                value={teraType}
+                onChange={(e) => onTeraChange(e.target.value)}
+                className={selectClass}
+                data-testid="calc-defender-tera"
+              >
+                <option value="">None</option>
+                {teraOptions.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+        )}
       </div>
 
       {/* EVs grid */}

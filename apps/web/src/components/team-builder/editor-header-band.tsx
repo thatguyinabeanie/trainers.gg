@@ -5,6 +5,7 @@ import Image from "next/image";
 import {
   type GameFormat,
   type PokemonType,
+  formatHasTera,
   getSpeciesTypes,
   getValidAbilities,
 } from "@trainers/pokemon";
@@ -125,7 +126,7 @@ function FieldStatic({ label, children }: FieldStaticProps) {
  */
 export function EditorHeaderBand({
   pokemon,
-  format: _format,
+  format,
   onOpenAbilityPicker,
   onOpenItemPicker,
   onOpenTeraPicker,
@@ -138,6 +139,8 @@ export function EditorHeaderBand({
   // -------------------------------------------------------------------------
   // Derived values
   // -------------------------------------------------------------------------
+
+  const hasTera = formatHasTera(format);
 
   const sprite = getPokemonSprite(pokemon.species, {
     shiny: pokemon.is_shiny ?? false,
@@ -215,11 +218,15 @@ export function EditorHeaderBand({
 
   return (
     <div
-      // 7-col grid: identity (sprite + name span 2) · ability · item · tera ·
-      // nature · ⋯ details popover. The popover is only rendered when wired
-      // by the parent — its column slot still reserves space via `auto`.
+      // Grid: identity (sprite + name span 2) · ability · item · [tera] ·
+      // nature · ⋯ details popover. The Tera column is omitted entirely when
+      // the active format doesn't support Terastal. The popover column slot
+      // still reserves space via `auto` when wired by the parent.
       className={cn(
-        "from-primary/5 to-card grid grid-cols-[auto_minmax(160px,1fr)_auto_auto_auto_auto_auto] items-center gap-3.5 border-b bg-gradient-to-b px-4 py-3",
+        "from-primary/5 to-card grid items-center gap-3.5 border-b bg-gradient-to-b px-4 py-3",
+        hasTera
+          ? "grid-cols-[auto_minmax(160px,1fr)_auto_auto_auto_auto_auto]"
+          : "grid-cols-[auto_minmax(160px,1fr)_auto_auto_auto_auto]",
         className
       )}
     >
@@ -261,42 +268,43 @@ export function EditorHeaderBand({
         </FieldButton>
       )}
 
-      {/* Tera type — render with type pill inline */}
-      {disabled ? (
-        <FieldStatic label="Tera">
-          {pokemon.tera_type ? (
-            <span
-              className={cn(
-                "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                TYPE_PILL_COLORS[
-                  pokemon.tera_type as PokemonType | "Stellar"
-                ] ?? "bg-muted text-foreground"
-              )}
-            >
-              {pokemon.tera_type}
-            </span>
-          ) : (
-            "None"
-          )}
-        </FieldStatic>
-      ) : (
-        <FieldButton label="Tera" onClick={onOpenTeraPicker}>
-          {pokemon.tera_type ? (
-            <span
-              className={cn(
-                "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                TYPE_PILL_COLORS[
-                  pokemon.tera_type as PokemonType | "Stellar"
-                ] ?? "bg-muted text-foreground"
-              )}
-            >
-              {pokemon.tera_type}
-            </span>
-          ) : (
-            "None"
-          )}
-        </FieldButton>
-      )}
+      {/* Tera type — omitted entirely for formats without the Terastal mechanic */}
+      {hasTera &&
+        (disabled ? (
+          <FieldStatic label="Tera">
+            {pokemon.tera_type ? (
+              <span
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+                  TYPE_PILL_COLORS[
+                    pokemon.tera_type as PokemonType | "Stellar"
+                  ] ?? "bg-muted text-foreground"
+                )}
+              >
+                {pokemon.tera_type}
+              </span>
+            ) : (
+              "None"
+            )}
+          </FieldStatic>
+        ) : (
+          <FieldButton label="Tera" onClick={onOpenTeraPicker}>
+            {pokemon.tera_type ? (
+              <span
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+                  TYPE_PILL_COLORS[
+                    pokemon.tera_type as PokemonType | "Stellar"
+                  ] ?? "bg-muted text-foreground"
+                )}
+              >
+                {pokemon.tera_type}
+              </span>
+            ) : (
+              "None"
+            )}
+          </FieldButton>
+        ))}
 
       {/* Nature */}
       {disabled ? (
