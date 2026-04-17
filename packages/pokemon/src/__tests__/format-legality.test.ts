@@ -18,6 +18,12 @@ describe("format-legality — Champions M-A", () => {
     expect(isLegalSpecies("Incineroar", CHAMPIONS)).toBe(true);
   });
 
+  it("marks Aerodactyl as legal in Champions M-A", () => {
+    // Aerodactyl is isNonstandard='Past' in @pkmn/dex (not in SV) but is
+    // explicitly legal in Champions — regression guard for the species picker.
+    expect(isLegalSpecies("Aerodactyl", CHAMPIONS)).toBe(true);
+  });
+
   it("marks Landorus-Therian as illegal in Champions M-A", () => {
     expect(isLegalSpecies("Landorus-Therian", CHAMPIONS)).toBe(false);
   });
@@ -25,7 +31,10 @@ describe("format-legality — Champions M-A", () => {
   it("returns a ReadonlySet for Champions M-A", () => {
     const legal = getLegalSpecies(CHAMPIONS);
     expect(legal).toBeInstanceOf(Set);
-    expect(legal?.size).toBe(217);
+    // 217 base entries minus duplicates that resolve to the same canonical name:
+    // - Aegislash-Shield → Aegislash (duplicate, Aegislash already listed)
+    // - Maushold-Three → Maushold (duplicate, Maushold already listed)
+    expect(legal?.size).toBe(215);
   });
 
   it("excludes Mega forms (they're item-driven, not separately selectable)", () => {

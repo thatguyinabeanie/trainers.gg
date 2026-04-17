@@ -9,11 +9,16 @@ import { Dex } from "@pkmn/dex";
 import { Generations } from "@pkmn/data";
 
 import { getFormatById } from "./formats";
-import { getLegalMoves } from "./format-legality";
+import { getLegalMoves, getLegalSpecies } from "./format-legality";
 import { getLearnableMoves } from "./validation";
 
 // Local Generations instance — supports any generation, not just gen9
 const gens = new Generations(Dex);
+
+// Gen 9 raw Dex — used to look up "Past" species that the @pkmn/data
+// Generations wrapper omits from its iteration. Champions includes many
+// older-generation Pokemon that are isNonstandard=Past in gen 9.
+const gen9RawDex = Dex.forGen(9);
 
 // Module-level cache for learnable moves — avoids recomputing on every search keystroke
 const learnableMovesCache = new Map<string, string[]>();
@@ -80,6 +85,36 @@ export interface SpeciesSearchEntry {
 // =============================================================================
 
 /**
+ * Build a SpeciesSearchEntry from a raw @pkmn/dex species object.
+ * Shared by the Generations-wrapper path and the raw-dex path below.
+ */
+function makeEntry(species: {
+  name: string;
+  types: readonly string[];
+  abilities: object;
+  baseStats: {
+    hp: number;
+    atk: number;
+    def: number;
+    spa: number;
+    spd: number;
+    spe: number;
+  };
+}): SpeciesSearchEntry {
+  const abilities = Object.values(species.abilities).filter(
+    (a): a is string => typeof a === "string" && a.length > 0
+  );
+  const { hp, atk, def, spa, spd, spe } = species.baseStats;
+  return {
+    species: species.name,
+    types: species.types as string[],
+    abilities,
+    baseStats: { hp, atk, def, spa, spd, spe },
+    bst: hp + atk + def + spa + spd + spe,
+  };
+}
+
+/**
  * Build a searchable index of all species in a format's generation.
  *
  * Iterates all existing species in the format's generation and collects
@@ -88,6 +123,15 @@ export interface SpeciesSearchEntry {
  * Format-specific legality (e.g., VGC Reg I banlist) is not applied here.
  *
  * Falls back to generation 9 if the format ID is not found in the registry.
+ *
+ * **Champions / static-roster formats:** When `getLegalSpecies(formatId)`
+ * returns a static whitelist (e.g. Champions Reg M-A), all species in that
+ * whitelist are appended regardless of `isNonstandard`. This is necessary
+ * because the `@pkmn/data` Generations wrapper excludes `isNonstandard=Past`
+ * species from its iteration entirely — Champions includes many Gen 1–6 Pokemon
+ * (Aerodactyl, Beedrill, Kangaskhan, etc.) that @pkmn/dex tags as "Past" and
+ * would otherwise be silently absent from the picker even though
+ * `isLegalSpecies` returns `true` for them.
  *
  * @param formatId - Showdown format ID (e.g., "gen9vgc2026regi")
  * @returns Array of SpeciesSearchEntry objects for every species in the generation
@@ -103,29 +147,36 @@ export function buildSpeciesSearchIndex(
   const safeGen = Math.min(generation, 9) as Parameters<typeof gens.get>[0];
   const gen = gens.get(safeGen);
 
+  // Static legal-species whitelist for this format (undefined = no static list).
+  const staticLegal = getLegalSpecies(formatId);
+
   const index: SpeciesSearchEntry[] = [];
+
+  // Track which species names we've added to avoid duplicates when the static
+  // legal set is merged below.
+  const addedNames = new Set<string>();
 
   for (const species of gen.species) {
     // Only include species that are real and not non-standard (e.g., Pokestar)
     if (!species.exists || species.isNonstandard) continue;
 
-    // Extract ability values from the abilities object { "0": "...", "1": "...", H: "..." }
-    const abilities = Object.values(species.abilities).filter(
-      (a): a is string => typeof a === "string" && a.length > 0
-    );
+    index.push(makeEntry(species));
+    addedNames.add(species.name);
+  }
 
-    const { hp, atk, def, spa, spd, spe } = species.baseStats;
-
-    // BST is the sum of all six base stats
-    const bst = hp + atk + def + spa + spd + spe;
-
-    index.push({
-      species: species.name,
-      types: species.types as string[],
-      abilities,
-      baseStats: { hp, atk, def, spa, spd, spe },
-      bst,
-    });
+  // For formats with a static legal whitelist (e.g. Champions Reg M-A), look up
+  // each legal species directly from the raw gen-9 dex and add any that the
+  // Generations wrapper iteration missed. This captures isNonstandard=Past
+  // species (Aerodactyl, Beedrill, Kangaskhan, all Gen 1–6 Champions picks)
+  // which the @pkmn/data wrapper excludes from its iteration entirely.
+  if (staticLegal) {
+    for (const speciesName of staticLegal) {
+      if (addedNames.has(speciesName)) continue;
+      const rawSpecies = gen9RawDex.species.get(speciesName);
+      if (!rawSpecies?.exists) continue;
+      index.push(makeEntry(rawSpecies));
+      addedNames.add(rawSpecies.name);
+    }
   }
 
   return index;

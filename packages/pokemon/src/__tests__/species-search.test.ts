@@ -3,6 +3,7 @@ import {
   searchSpecies,
   type SpeciesSearchEntry,
 } from "../species-search";
+import { getLegalSpecies } from "../format-legality";
 
 // Build a gen9 index once for all tests — this is the most common format
 const GEN9_FORMAT = "gen9vgc2026regi";
@@ -93,6 +94,66 @@ describe("buildSpeciesSearchIndex", () => {
     const gen8Index = buildSpeciesSearchIndex("gen8vgc2022");
     // Gen 8 has fewer Pokemon than Gen 9
     expect(gen8Index.length).toBeLessThan(gen9Index.length);
+  });
+});
+
+describe("buildSpeciesSearchIndex — Champions Reg M-A", () => {
+  const CHAMPIONS = "championsvgc2026regma";
+
+  it("includes Aerodactyl (isNonstandard=Past but legal in Champions)", () => {
+    const index = buildSpeciesSearchIndex(CHAMPIONS);
+    const names = index.map((e) => e.species);
+    expect(names).toContain("Aerodactyl");
+  });
+
+  it("includes other Past-tagged Champions legal species (spot-check)", () => {
+    const index = buildSpeciesSearchIndex(CHAMPIONS);
+    const names = index.map((e) => e.species);
+    // All of these are isNonstandard='Past' in @pkmn/dex but legal in Champions
+    expect(names).toContain("Beedrill");
+    expect(names).toContain("Kangaskhan");
+    expect(names).toContain("Pinsir");
+    expect(names).toContain("Floette-Eternal");
+    expect(names).toContain("Aegislash");
+    expect(names).toContain("Aegislash-Blade");
+    // Gourgeist base form: @pkmn/dex canonicalizes "Gourgeist-Average" → "Gourgeist"
+    expect(names).toContain("Gourgeist");
+  });
+
+  it("includes standard Champions legal species", () => {
+    const index = buildSpeciesSearchIndex(CHAMPIONS);
+    const names = index.map((e) => e.species);
+    expect(names).toContain("Incineroar");
+    expect(names).toContain("Garchomp");
+    expect(names).toContain("Kingambit");
+    expect(names).toContain("Sneasler");
+    expect(names).toContain("Rotom-Heat");
+  });
+
+  it("does NOT include CAP/custom non-standard entries", () => {
+    // The index excludes Pokestar Studios, CAP, and other truly non-standard entries.
+    // Note: illegal-in-Champions species like Landorus-Therian and Calyrex-Shadow
+    // ARE present in the index (they're real gen-9 Pokemon) — format-specific
+    // legality filtering is the picker's responsibility via isLegalSpecies.
+    const index = buildSpeciesSearchIndex(CHAMPIONS);
+    const names = index.map((e) => e.species);
+    // These are not real playable Pokemon — should never appear
+    expect(names.every((n) => !n.startsWith("CAP"))).toBe(true);
+  });
+
+  it("contains all 217 Champions legal species (superset — format filtering is applied by the picker)", () => {
+    // The index is a superset of the legal set; the picker applies isLegalSpecies separately.
+    // All 217 legal species must be present in the index for the picker to work correctly.
+    const index = buildSpeciesSearchIndex(CHAMPIONS);
+    const names = new Set(index.map((e) => e.species));
+
+    const legalSet = getLegalSpecies(CHAMPIONS);
+    for (const species of legalSet ?? []) {
+      expect(names.has(species)).toBe(true);
+    }
+
+    // Sanity: index has at least 215 entries (it's a superset of the legal set)
+    expect(index.length).toBeGreaterThanOrEqual(215);
   });
 });
 

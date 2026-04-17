@@ -161,7 +161,7 @@ const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
   "Goodra",
   "Klefki",
   "Trevenant",
-  "Gourgeist-Average",
+  "Gourgeist", // canonical base-form name (@pkmn/dex resolves Gourgeist-Average → Gourgeist)
   "Avalugg",
   "Noivern",
   "Decidueye",
@@ -169,7 +169,7 @@ const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
   "Primarina",
   "Toucannon",
   "Crabominable",
-  "Lycanroc-Midday",
+  "Lycanroc", // canonical base-form name (@pkmn/dex resolves Lycanroc-Midday → Lycanroc)
   "Toxapex",
   "Mudsdale",
   "Araquanid",
@@ -227,7 +227,9 @@ const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
   "Zoroark-Hisui",
   "Stunfisk-Galar",
   "Meowstic-F",
-  "Aegislash-Shield",
+  // Aegislash-Shield resolves to "Aegislash" in @pkmn/dex (base form is Shield).
+  // "Aegislash" is already listed above in the base forms section, so it is
+  // intentionally omitted here to avoid a duplicate in the Set.
   "Aegislash-Blade",
   "Goodra-Hisui",
   "Gourgeist-Small",
@@ -239,7 +241,8 @@ const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
   "Lycanroc-Dusk",
   "Morpeko-Hangry",
   "Basculegion-F",
-  "Maushold-Three",
+  // Maushold-Three resolves to "Maushold" in @pkmn/dex (base form = 3-person family).
+  // "Maushold" is already listed above in base forms, so omitted here.
   "Palafin-Hero",
   "Rotom-Heat",
   "Rotom-Wash",
