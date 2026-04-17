@@ -46,10 +46,6 @@ const CHAMPIONS_EXCLUSIVE_MEGA_STATS: ReadonlyMap<
     "Feraligatr-Mega",
     { hp: 85, atk: 160, def: 125, spa: 89, spd: 93, spe: 78 },
   ],
-  [
-    "Floette-Eternal-Mega",
-    { hp: 74, atk: 85, def: 87, spa: 155, spd: 148, spe: 102 },
-  ],
   ["Froslass-Mega", { hp: 70, atk: 80, def: 70, spa: 140, spd: 100, spe: 120 }],
   ["Glimmora-Mega", { hp: 83, atk: 90, def: 105, spa: 150, spd: 96, spe: 101 }],
   ["Golurk-Mega", { hp: 89, atk: 159, def: 105, spa: 70, spd: 105, spe: 55 }],

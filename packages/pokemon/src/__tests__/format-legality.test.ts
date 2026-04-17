@@ -32,9 +32,9 @@ describe("format-legality — Champions M-A", () => {
     const legal = getLegalSpecies(CHAMPIONS);
     expect(legal).toBeInstanceOf(Set);
     // 215 base species + 59 mega forms (36 standard + 23 Champions-exclusive)
-    // + Maushold-Four (4-person family form) + Floette-Mega (paste alias for Floette-Eternal-Mega)
     // minus duplicates: Aegislash-Shield → Aegislash, Maushold-Three → Maushold
-    expect(legal?.size).toBe(276);
+    // Floette-Eternal-Mega removed (Floette-Mega is the Champions name)
+    expect(legal?.size).toBe(275);
   });
 
   it("includes Mega forms using Showdown naming (not 'Mega X' naming)", () => {

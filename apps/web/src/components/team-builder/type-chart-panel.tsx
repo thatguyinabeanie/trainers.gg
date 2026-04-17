@@ -231,7 +231,8 @@ function formatMultiplier(mult: number): string {
  */
 function cellClass(mult: number, mode: CoverageMode): string {
   if (mode === "defensive") {
-    if (mult === 0) return "bg-foreground text-background";
+    if (mult === 0)
+      return "bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 font-bold";
     if (mult === 4) return "bg-destructive/15 text-destructive font-semibold";
     if (mult === 2) return "bg-destructive/10 text-destructive";
     if (mult === 0.25)
@@ -242,7 +243,8 @@ function cellClass(mult: number, mode: CoverageMode): string {
   }
 
   // Offensive — green = good (super effective), red = bad (resisted/immune).
-  if (mult === 0) return "bg-foreground text-background";
+  if (mult === 0)
+    return "bg-muted text-muted-foreground/60 line-through font-semibold";
   if (mult === 4)
     return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-semibold";
   if (mult === 2)

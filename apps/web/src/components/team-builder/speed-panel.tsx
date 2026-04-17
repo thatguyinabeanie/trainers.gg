@@ -44,7 +44,10 @@ interface SpeedPanelProps {
 
 /** Internal record used during speed-tier construction. */
 interface ScoredMon {
+  /** Fast-spread speed — used for tier placement so team mons rank against meta at max investment. */
   speed: number;
+  /** Actual EV-based speed of the selected mon — used only for hero display and summary counts. */
+  actualSpeed: number;
   mon: SpeedTierMon;
 }
 
@@ -252,6 +255,7 @@ function metaToScoredMon(
 
   return {
     speed,
+    actualSpeed: speed, // meta mons: actual = fast spread
     mon: {
       id: `meta-${entry.species}`,
       name: entry.displayName,
@@ -278,31 +282,36 @@ function teamMonToScored(
   toggle: SpeedToggleState,
   isSelected: boolean
 ): ScoredMon {
-  const baseSpeed = computeBaseSpeed(pokemon, format);
-  const mods: SpeedModifiers = isSelected
-    ? {
-        stage: toggle.stage,
-        item: toItemMod(toggle.item),
-        status: toggle.status,
-        ability: pokemon.ability ?? undefined,
-        field: {
-          weather: toggle.field.weather,
-          tailwind: toggle.field.tailwind,
-        },
-      }
-    : {
-        ability: pokemon.ability ?? undefined,
-        field: {
-          weather: toggle.field.weather,
-          tailwind: toggle.field.tailwind,
-        },
-      };
-  const speed = applySpeedModifiers(baseSpeed, mods);
   const statCols = computeStatColumns(pokemon, format);
+  const fieldMods = {
+    ability: pokemon.ability ?? undefined,
+    field: {
+      weather: toggle.field.weather,
+      tailwind: toggle.field.tailwind,
+    },
+  };
+  const selectedMods: SpeedModifiers = {
+    ...fieldMods,
+    stage: toggle.stage,
+    item: toItemMod(toggle.item),
+    status: toggle.status,
+  };
+
+  // Tier placement and hero display both use the actual EV-based speed so the
+  // tier row matches what the hero shows. Meta opponents use their fast spread for
+  // ranking so the comparison is: "your current EVs vs their max investment."
+  const actualBase = computeBaseSpeed(pokemon, format);
+  const speed = applySpeedModifiers(
+    actualBase,
+    isSelected ? selectedMods : fieldMods
+  );
+  const actualSpeed = speed; // same source — keeps ScoredMon.actualSpeed contract
+
   const sprite = safeSprite(pokemon.species);
 
   return {
     speed,
+    actualSpeed,
     mon: {
       id: `team-${pokemon.id}`,
       name: pokemon.species,
@@ -392,8 +401,10 @@ function SpeedPanelInner({
   // ---- selected mon's effective speed -------------------------------------
 
   const selectedScored = teamScored.find((s) => s.mon.isSelected);
+  // speed = fast-spread tier placement; actualSpeed = real EV-based speed for display
   const effectiveSpeed = selectedScored?.speed ?? 0;
-  const tierLabel = getSpeedTierLabel(effectiveSpeed);
+  const heroSpeed = selectedScored?.actualSpeed ?? effectiveSpeed;
+  const tierLabel = getSpeedTierLabel(heroSpeed);
 
   // ---- summary counts (selected vs all opponents counted) ------------------
   // Opponents = everything that isn't the selected mon (team mates + meta).
@@ -403,8 +414,8 @@ function SpeedPanelInner({
   let tieCount = 0;
   let outspedCount = 0;
   for (const opp of opponents) {
-    if (effectiveSpeed > opp.speed) outspeedCount += 1;
-    else if (effectiveSpeed === opp.speed) tieCount += 1;
+    if (heroSpeed > opp.speed) outspeedCount += 1;
+    else if (heroSpeed === opp.speed) tieCount += 1;
     else outspedCount += 1;
   }
 
@@ -419,8 +430,8 @@ function SpeedPanelInner({
       const mon = s.mon;
       if (
         !mon.isYours &&
-        s.speed === effectiveSpeed &&
-        effectiveSpeed > 0 &&
+        s.speed === heroSpeed &&
+        heroSpeed > 0 &&
         !mon.badge
       ) {
         return { ...mon, badge: "tie" };
@@ -471,7 +482,7 @@ function SpeedPanelInner({
             data-testid="hero-speed"
             className="text-primary ml-auto font-mono text-2xl font-bold"
           >
-            {effectiveSpeed}
+            {heroSpeed}
           </span>
         </div>
       </div>

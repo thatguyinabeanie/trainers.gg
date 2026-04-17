@@ -261,7 +261,6 @@ const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
   "Emboar-Mega",
   "Excadrill-Mega",
   "Feraligatr-Mega",
-  "Floette-Eternal-Mega",
   "Floette-Mega",
   "Froslass-Mega",
   "Glimmora-Mega",
@@ -593,7 +592,6 @@ const MEGA_SPECIES_TO_STONE: ReadonlyMap<string, string> = new Map([
   ["Emboar-Mega", "Emboarite"],
   ["Excadrill-Mega", "Excadrite"],
   ["Feraligatr-Mega", "Feraligite"],
-  ["Floette-Eternal-Mega", "Floettite"],
   ["Floette-Mega", "Floettite"],
   ["Froslass-Mega", "Froslassite"],
   ["Glimmora-Mega", "Glimmoranite"],
@@ -743,7 +741,6 @@ const CHAMPIONS_SPECIES_MOVE_OVERRIDES: ReadonlyMap<
   // Light of Ruin is Floette-Eternal's Gen 6 signature move — never released
   // officially, marked Past in Gen 9, absent from Gen 9 learnsets.
   ["Floette-Eternal", new Set(["Light of Ruin"])],
-  ["Floette-Eternal-Mega", new Set(["Light of Ruin"])],
   ["Floette-Mega", new Set(["Light of Ruin"])],
 ]);
 
@@ -817,7 +814,6 @@ const championsMoveCache = new Map<string, ReadonlySet<string>>();
  */
 const CHAMPIONS_MEGA_LEARNSET_BASE: Readonly<Record<string, string>> = {
   "Floette-Mega": "Floette-Eternal",
-  "Floette-Eternal-Mega": "Floette-Eternal",
 };
 
 /**

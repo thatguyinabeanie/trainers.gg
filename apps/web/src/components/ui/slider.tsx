@@ -13,22 +13,34 @@ function Slider({
   max = 100,
   ...props
 }: SliderPrimitive.Root.Props) {
+  // Normalize to array — Base UI always expects number[] for value/defaultValue.
+  // When value is a single number, wrap it; when absent, fall back to defaultValue
+  // (also normalized). Avoids the previous bug where a non-array value caused
+  // _values to fall back to [min, max], rendering two thumbs at the extremes.
   const _values = React.useMemo(
     () =>
       Array.isArray(value)
         ? value
-        : Array.isArray(defaultValue)
-          ? defaultValue
-          : [min, max],
-    [value, defaultValue, min, max]
+        : value !== undefined
+          ? [value]
+          : Array.isArray(defaultValue)
+            ? defaultValue
+            : defaultValue !== undefined
+              ? [defaultValue]
+              : [],
+    [value, defaultValue]
   );
+
+  const isControlled = value !== undefined;
 
   return (
     <SliderPrimitive.Root
       className={cn("data-horizontal:w-full data-vertical:h-full", className)}
       data-slot="slider"
-      defaultValue={defaultValue}
-      value={value}
+      defaultValue={
+        isControlled ? undefined : _values.length > 0 ? _values : undefined
+      }
+      value={isControlled ? _values : undefined}
       min={min}
       max={max}
       thumbAlignment="edge"

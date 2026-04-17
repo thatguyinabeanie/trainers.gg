@@ -57,7 +57,7 @@ interface SpeedTierListProps {
 // =============================================================================
 
 const TIER_GRID =
-  "grid grid-cols-[2rem_minmax(0,1fr)_2.5rem_2.5rem_2.5rem] gap-2";
+  "grid grid-cols-[2.75rem_minmax(0,1fr)_2.5rem_2.5rem_2.5rem] gap-2";
 
 // =============================================================================
 // TableHeader — column labels row
@@ -68,7 +68,10 @@ function TableHeader() {
     <div
       data-testid="speed-table-header"
       data-tier-grid
-      className={cn(TIER_GRID, "bg-muted/20 border-t px-2")}
+      className={cn(
+        TIER_GRID,
+        "bg-card/95 sticky top-0 z-10 border-t px-2 backdrop-blur-sm"
+      )}
     >
       <div className="text-muted-foreground flex items-center justify-center overflow-hidden py-1.5 text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
         Base
@@ -80,10 +83,10 @@ function TableHeader() {
         Min
       </div>
       <div className="text-muted-foreground flex items-center justify-end overflow-hidden py-1.5 text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
-        =
+        Neu
       </div>
       <div className="text-muted-foreground flex items-center justify-end overflow-hidden py-1.5 text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
-        +Spe
+        Max
       </div>
     </div>
   );

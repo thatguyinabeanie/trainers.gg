@@ -75,7 +75,7 @@ function PokemonChip({
     return (
       <div
         className={cn(
-          "border-primary bg-primary/5 relative flex size-16 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 transition-colors"
+          "border-primary bg-primary/5 relative flex size-20 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 transition-colors"
         )}
         aria-label="Choosing species…"
       >
@@ -88,7 +88,7 @@ function PokemonChip({
     // Slot exists in DB but has no species yet — treat like choosing
     return (
       <div
-        className="bg-muted/40 relative flex size-16 shrink-0 items-center justify-center rounded-xl"
+        className="bg-muted/40 relative flex size-20 shrink-0 items-center justify-center rounded-xl"
         aria-label="Empty slot"
       />
     );
@@ -121,7 +121,7 @@ function PokemonChip({
             onDragOver={onDragOver}
             onDrop={onDrop}
             className={cn(
-              "group relative flex size-16 shrink-0 cursor-grab items-center justify-center rounded-xl border-2 transition-colors active:cursor-grabbing",
+              "group relative flex size-20 shrink-0 cursor-grab items-center justify-center rounded-xl border-2 transition-colors active:cursor-grabbing",
               isSelected
                 ? "border-primary bg-primary/10"
                 : "hover:border-border bg-muted/40 hover:bg-muted/60 border-transparent"
@@ -139,7 +139,7 @@ function PokemonChip({
           className="flex size-full items-center justify-center"
           aria-pressed={isSelected}
         >
-          <div className="relative size-12">
+          <div className="relative size-14">
             <Image
               src={sprite.url}
               alt={pokemon.species ?? ""}
@@ -215,7 +215,7 @@ function EmptySlot({ onClick, onDragOver, onDrop }: EmptySlotProps) {
       onDragOver={onDragOver}
       onDrop={onDrop}
       className={cn(
-        "bg-muted/30 flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl md:h-20 md:w-20",
+        "bg-muted/30 flex size-20 shrink-0 flex-col items-center justify-center rounded-xl",
         "text-muted-foreground hover:bg-muted/60 hover:text-primary",
         "transition-colors duration-150"
       )}
@@ -368,7 +368,7 @@ export function TeamStrip({
           return (
             <div
               key={`empty-${i}`}
-              className="border-primary bg-primary/5 flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border-2 md:h-20 md:w-20"
+              className="border-primary bg-primary/5 flex size-20 shrink-0 flex-col items-center justify-center rounded-xl border-2"
               aria-label="Choosing species…"
             >
               <span className="text-primary text-xs font-medium">
@@ -393,7 +393,7 @@ export function TeamStrip({
         return (
           <div
             key={`empty-${i}`}
-            className="bg-muted/20 flex h-16 w-16 shrink-0 items-center justify-center rounded-xl md:h-20 md:w-20"
+            className="bg-muted/20 flex size-20 shrink-0 items-center justify-center rounded-xl"
             aria-label={`Empty slot ${slotIdx + 1}`}
           />
         );

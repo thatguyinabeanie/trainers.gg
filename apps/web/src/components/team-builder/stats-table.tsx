@@ -229,7 +229,7 @@ function StatRow({
             clampAndEmit(parsed);
           }}
           className={cn(
-            "h-7 w-9 rounded border border-transparent bg-transparent px-1 text-right font-mono text-xs tabular-nums",
+            "h-7 w-12 rounded border border-transparent bg-transparent px-1 text-right font-mono text-xs tabular-nums",
             "hover:border-border focus:border-border focus:outline-none",
             disabled && "opacity-50"
           )}
@@ -239,7 +239,11 @@ function StatRow({
           max={pointsMax}
           step={step}
           value={points}
-          onValueChange={(value) => clampAndEmit(value as number)}
+          onValueChange={(value) =>
+            clampAndEmit(
+              Array.isArray(value) ? (value[0] ?? 0) : (value as number)
+            )
+          }
           disabled={disabled}
           aria-label={`${label} points slider`}
           className="w-full"

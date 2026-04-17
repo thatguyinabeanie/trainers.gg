@@ -3,8 +3,9 @@
 import { type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 
+import { Tabs as TabsPrimitive } from "@base-ui/react/tabs";
+
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { CalcPanel } from "./calc-panel";
 import { SpeedPanel } from "./speed-panel";
@@ -52,43 +53,38 @@ export function AnalyticsRail({
   className,
 }: AnalyticsRailProps) {
   return (
-    <Tabs
+    <TabsPrimitive.Root
       defaultValue="types"
       data-testid="analytics-rail"
       className={cn(
         "bg-card w-rail flex-shrink-0 overflow-hidden rounded-lg shadow-sm",
-        "sticky top-4 flex max-h-[calc(100svh-2rem)] flex-col",
+        "sticky top-4 flex max-h-[calc(100svh-6rem)] flex-col",
         className
       )}
     >
-      <TabsList
-        variant="line"
-        className="bg-muted/50 grid h-auto w-full grid-cols-3 rounded-none border-b px-0 py-0"
-      >
-        <TabsTrigger
-          value="types"
-          className="rounded-none py-2.5 text-xs font-semibold tracking-wide uppercase"
-        >
-          Types
-        </TabsTrigger>
-        <TabsTrigger
-          value="speed"
-          className="rounded-none py-2.5 text-xs font-semibold tracking-wide uppercase"
-        >
-          Speed
-        </TabsTrigger>
-        <TabsTrigger
-          value="calc"
-          className="rounded-none py-2.5 text-xs font-semibold tracking-wide uppercase"
-        >
-          Calc
-        </TabsTrigger>
-      </TabsList>
+      {/* Tab strip — Base UI primitives used directly so we own all styling. */}
+      <TabsPrimitive.List className="bg-muted/50 grid grid-cols-3 border-b">
+        {(["types", "speed", "calc"] as const).map((tab) => (
+          <TabsPrimitive.Tab
+            key={tab}
+            value={tab}
+            data-testid={`analytics-rail-tab-${tab}`}
+            className={cn(
+              "text-muted-foreground hover:text-foreground relative cursor-pointer py-2.5 text-center text-xs font-semibold tracking-wide uppercase transition-colors duration-150 outline-none",
+              // Active indicator: primary underline flush with the list border-b
+              "data-active:text-foreground data-active:after:bg-primary data-active:after:absolute data-active:after:inset-x-0 data-active:after:bottom-0 data-active:after:h-0.5 data-active:after:content-['']"
+            )}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </TabsPrimitive.Tab>
+        ))}
+      </TabsPrimitive.List>
 
-      {/* Body — only the active panel is mounted (keepMounted defaults to false) */}
-      <TabsContent
+      {/* Panels — Base UI Panel mounts only when active by default. */}
+      <TabsPrimitive.Panel
         value="types"
-        className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
+        data-testid="analytics-rail-body-types"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden outline-none"
       >
         <TypeChartPanel
           team={team.team_pokemon
@@ -96,11 +92,12 @@ export function AnalyticsRail({
             .filter((p): p is Tables<"pokemon"> => p !== null)}
           className={PANEL_CHROME_OVERRIDE}
         />
-      </TabsContent>
+      </TabsPrimitive.Panel>
 
-      <TabsContent
+      <TabsPrimitive.Panel
         value="speed"
-        className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
+        data-testid="analytics-rail-body-speed"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden outline-none"
       >
         {selectedPokemon && format ? (
           <SpeedPanel
@@ -114,11 +111,12 @@ export function AnalyticsRail({
         ) : (
           <SpeedEmpty hasPokemon={selectedPokemon !== null} />
         )}
-      </TabsContent>
+      </TabsPrimitive.Panel>
 
-      <TabsContent
+      <TabsPrimitive.Panel
         value="calc"
-        className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
+        data-testid="analytics-rail-body-calc"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden outline-none"
       >
         <CalcPanel
           team={team}
@@ -126,8 +124,8 @@ export function AnalyticsRail({
           format={format}
           className={PANEL_CHROME_OVERRIDE}
         />
-      </TabsContent>
-    </Tabs>
+      </TabsPrimitive.Panel>
+    </TabsPrimitive.Root>
   );
 }
 

@@ -68,15 +68,15 @@ describe("SpeedTierList — always-on layout", () => {
     expect(screen.getByTestId("tier-80")).toBeInTheDocument();
   });
 
-  it("renders the 5-column table header: BASE, POKÉMON, MIN, =, +SPE", () => {
+  it("renders the 5-column table header: BASE, POKÉMON, MIN, NEU, MAX", () => {
     render(<SpeedTierList tiers={makeTiers()} selectedSpeed={150} />);
 
     const header = screen.getByTestId("speed-table-header");
     expect(within(header).getByText(/base/i)).toBeInTheDocument();
     expect(within(header).getByText(/pokémon/i)).toBeInTheDocument();
     expect(within(header).getByText(/min/i)).toBeInTheDocument();
-    expect(within(header).getByText("=")).toBeInTheDocument();
-    expect(within(header).getByText(/\+spe/i)).toBeInTheDocument();
+    expect(within(header).getByText(/neu/i)).toBeInTheDocument();
+    expect(within(header).getByText(/max/i)).toBeInTheDocument();
   });
 
   it("renders stat columns (min / neutral / positive) for each mon", () => {
