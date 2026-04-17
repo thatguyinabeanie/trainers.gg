@@ -218,7 +218,7 @@ export function EditorHeaderBand({
   const speciesClickable = !disabled && onOpenSpeciesPicker !== undefined;
   const showIdentityControls = detailsPopover !== undefined;
 
-  const [_isEditingNickname, setIsEditingNickname] = useState(false);
+  const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [editNicknameValue, setEditNicknameValue] = useState(
     pokemon.nickname ?? ""
   );
@@ -245,15 +245,15 @@ export function EditorHeaderBand({
     detailsPopover?.onUpdate("level", clamped);
   }
 
-  function _commitNickname() {
+  function commitNickname() {
     handleNicknameChange(editNicknameValue);
     setIsEditingNickname(false);
   }
 
-  function _handleNicknameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  function handleNicknameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
-      _commitNickname();
+      commitNickname();
     }
     if (e.key === "Escape") {
       setIsEditingNickname(false);
@@ -262,45 +262,35 @@ export function EditorHeaderBand({
   }
 
   // -------------------------------------------------------------------------
-  // Identity block (sprite + name + types)
+  // Extracted variables
   // -------------------------------------------------------------------------
 
-  const identityContent = (
-    <>
-      {/* Sprite: 48x48 circle with primary-soft radial gradient */}
-      <div className="bg-primary/10 flex size-12 shrink-0 items-center justify-center rounded-full">
-        <Image
-          src={sprite.url}
-          alt={pokemon.species}
-          width={sprite.w}
-          height={sprite.h}
-          className={cn(
-            "size-10 object-contain",
-            sprite.pixelated && "image-rendering-pixelated"
-          )}
-          unoptimized
-        />
-      </div>
+  const spriteImage = (
+    <Image
+      src={sprite.url}
+      alt={pokemon.species}
+      width={sprite.w}
+      height={sprite.h}
+      className={cn(
+        "size-9 object-contain",
+        sprite.pixelated && "image-rendering-pixelated"
+      )}
+      unoptimized
+    />
+  );
 
-      {/* Name + type pills */}
-      <div className="flex min-w-0 flex-col gap-1">
-        <span
-          className={cn(
-            "text-foreground truncate text-base leading-tight font-semibold",
-            speciesClickable && "group-hover:text-primary group-hover:underline"
-          )}
-        >
-          {pokemon.species}
-        </span>
-        {types.length > 0 && (
-          <div className="flex gap-1">
-            {types.map((type) => (
-              <TypeSymbolIcon key={type} type={type as PokemonType} size={16} />
-            ))}
-          </div>
-        )}
-      </div>
-    </>
+  const teraContent = pokemon.tera_type ? (
+    <span
+      className={cn(
+        "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
+        TYPE_PILL_COLORS[pokemon.tera_type as PokemonType | "Stellar"] ??
+          "bg-muted text-foreground"
+      )}
+    >
+      {pokemon.tera_type}
+    </span>
+  ) : (
+    "None"
   );
 
   // -------------------------------------------------------------------------
@@ -310,176 +300,216 @@ export function EditorHeaderBand({
   return (
     <div
       className={cn(
-        "from-primary/5 to-card flex flex-col gap-0 border-b bg-gradient-to-b",
+        "from-primary/5 to-card border-b bg-gradient-to-b",
         className
       )}
     >
-      {/* Row 1: identity + inline identity controls ----------------------------- */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-3 pb-1.5">
-        {/* Species block — sprite + name + types */}
-        {speciesClickable ? (
-          <button
-            type="button"
-            onClick={onOpenSpeciesPicker}
-            aria-label={`Change species (currently ${pokemon.species})`}
-            className="group -mx-1 grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-3.5 rounded-lg px-1 py-1 text-left transition-colors hover:bg-white/40 dark:hover:bg-white/5"
-          >
-            {identityContent}
-          </button>
-        ) : (
-          <div className="grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-3.5">
-            {identityContent}
-          </div>
-        )}
-
-        {/* Inline identity controls — only when a detailsPopover is wired */}
-        {showIdentityControls && (
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Nickname — ~120px input, placeholder = species name */}
-            <input
-              type="text"
-              aria-label="Nickname"
-              value={pokemon.nickname ?? ""}
-              onChange={(e) => handleNicknameChange(e.target.value)}
-              placeholder={pokemon.species}
-              maxLength={18}
-              disabled={disabled}
-              className={cn(
-                "text-foreground placeholder:text-muted-foreground h-7 w-28 rounded-md border bg-transparent px-2 text-xs",
-                "focus:ring-primary/50 focus:ring-2 focus:outline-none",
-                "disabled:cursor-not-allowed disabled:opacity-50"
-              )}
-            />
-
-            {/* Gender — compact 3-button segmented control */}
-            <GenderButton
-              value={(pokemon.gender as GenderValue) ?? null}
-              onChange={handleGenderChange}
-              disabled={disabled}
-            />
-
-            {/* Shiny — star icon button, filled when shiny */}
+      <div className="flex h-[68px] items-stretch">
+        {/* ── Zone 1: Identity ──────────────────────────────────────────── */}
+        <div className="flex min-w-0 shrink-0 items-center gap-2.5 px-3">
+          {/* Sprite — opens species picker when available */}
+          {speciesClickable ? (
             <button
               type="button"
-              aria-label={pokemon.is_shiny ? "Shiny (on)" : "Shiny (off)"}
-              aria-pressed={pokemon.is_shiny ?? false}
-              onClick={handleShinyToggle}
-              disabled={disabled}
-              className={cn(
-                "flex size-7 items-center justify-center rounded-md border text-sm transition-colors duration-150",
-                pokemon.is_shiny
-                  ? "border-amber-400 bg-amber-400/10 text-amber-500"
-                  : "bg-muted/50 text-muted-foreground hover:text-foreground",
-                "disabled:cursor-not-allowed disabled:opacity-50"
-              )}
+              aria-label={`Change species (currently ${pokemon.species})`}
+              onClick={onOpenSpeciesPicker}
+              className="bg-primary/10 hover:bg-primary/20 flex size-10 shrink-0 items-center justify-center rounded-full transition-colors"
             >
-              {/* ✦ filled when shiny, ✧ outline when not */}
-              {pokemon.is_shiny ? "✦" : "✧"}
+              {spriteImage}
             </button>
+          ) : (
+            <div className="bg-primary/10 flex size-10 shrink-0 items-center justify-center rounded-full">
+              {spriteImage}
+            </div>
+          )}
 
-            {/* Level — compact number input, ~40px wide */}
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground text-[9px] font-semibold tracking-wider uppercase">
-                Lv
-              </span>
+          {/* Name stack */}
+          <div className="flex min-w-0 flex-col justify-center gap-0.5">
+            {/* Primary line */}
+            {showIdentityControls && isEditingNickname ? (
               <input
-                type="number"
-                aria-label="Level"
-                min={1}
-                max={100}
-                value={pokemon.level ?? 50}
-                onChange={(e) =>
-                  handleLevelChange(parseInt(e.target.value, 10))
-                }
+                type="text"
+                aria-label="Nickname"
+                value={editNicknameValue}
+                onChange={(e) => setEditNicknameValue(e.target.value)}
+                onBlur={commitNickname}
+                onKeyDown={handleNicknameKeyDown}
+                placeholder={pokemon.species}
+                maxLength={18}
+                autoFocus
                 disabled={disabled}
                 className={cn(
-                  "text-foreground h-7 w-10 rounded-md border bg-transparent px-1 text-center font-mono text-xs tabular-nums",
-                  "focus:ring-primary/50 focus:ring-2 focus:outline-none",
-                  "disabled:cursor-not-allowed disabled:opacity-50"
+                  "text-foreground placeholder:text-muted-foreground w-32 rounded border bg-transparent px-1.5 py-0.5 text-sm font-semibold",
+                  "focus:ring-primary/50 focus:ring-1 focus:outline-none"
                 )}
               />
+            ) : showIdentityControls ? (
+              <button
+                type="button"
+                aria-label="Edit nickname"
+                onClick={() => {
+                  setEditNicknameValue(pokemon.nickname ?? "");
+                  setIsEditingNickname(true);
+                }}
+                disabled={disabled}
+                className="text-foreground truncate text-left text-sm font-semibold hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {pokemon.nickname ?? pokemon.species}
+              </button>
+            ) : (
+              <span className="text-foreground truncate text-sm font-semibold">
+                {pokemon.species}
+              </span>
+            )}
+
+            {/* Secondary line */}
+            <div className="flex items-center gap-1.5">
+              {pokemon.nickname &&
+                showIdentityControls &&
+                (speciesClickable ? (
+                  <button
+                    type="button"
+                    aria-label={`Change species (currently ${pokemon.species})`}
+                    onClick={onOpenSpeciesPicker}
+                    className="text-muted-foreground hover:text-foreground truncate text-[10.5px] transition-colors"
+                  >
+                    {pokemon.species}
+                  </button>
+                ) : (
+                  <span className="text-muted-foreground truncate text-[10.5px]">
+                    {pokemon.species}
+                  </span>
+                ))}
+              {types.length > 0 && (
+                <div className="flex gap-1">
+                  {types.map((type) => (
+                    <TypeSymbolIcon
+                      key={type}
+                      type={type as PokemonType}
+                      size={14}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Row 2: build controls (ability, item, [tera], nature, ⋯) -------------- */}
-      <div className="flex flex-wrap items-center gap-x-0 gap-y-0.5 px-4 pb-1.5">
-        {/* Ability */}
-        {isSingleAbility || disabled ? (
-          <FieldStatic label="Ability">{pokemon.ability}</FieldStatic>
-        ) : (
-          <FieldButton label="Ability" onClick={onOpenAbilityPicker}>
-            {pokemon.ability}
-          </FieldButton>
-        )}
+        {/* Divider */}
+        <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
 
-        {/* Item */}
-        {disabled ? (
-          <FieldStatic label="Item">{pokemon.held_item ?? "None"}</FieldStatic>
-        ) : (
-          <FieldButton label="Item" onClick={onOpenItemPicker}>
-            {pokemon.held_item ?? "None"}
-          </FieldButton>
-        )}
+        {/* ── Zone 2: Build fields ──────────────────────────────────────── */}
+        <div className="flex flex-1 items-stretch">
+          {isSingleAbility || disabled ? (
+            <FieldStatic label="Ability">{pokemon.ability}</FieldStatic>
+          ) : (
+            <FieldButton label="Ability" onClick={onOpenAbilityPicker}>
+              {pokemon.ability}
+            </FieldButton>
+          )}
 
-        {/* Tera type — omitted entirely for formats without Terastal */}
-        {hasTera &&
-          (disabled ? (
-            <FieldStatic label="Tera">
-              {pokemon.tera_type ? (
-                <span
-                  className={cn(
-                    "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                    TYPE_PILL_COLORS[
-                      pokemon.tera_type as PokemonType | "Stellar"
-                    ] ?? "bg-muted text-foreground"
-                  )}
-                >
-                  {pokemon.tera_type}
-                </span>
-              ) : (
-                "None"
-              )}
+          <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
+
+          {disabled ? (
+            <FieldStatic label="Item">
+              {pokemon.held_item ?? "None"}
             </FieldStatic>
           ) : (
-            <FieldButton label="Tera" onClick={onOpenTeraPicker}>
-              {pokemon.tera_type ? (
-                <span
-                  className={cn(
-                    "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                    TYPE_PILL_COLORS[
-                      pokemon.tera_type as PokemonType | "Stellar"
-                    ] ?? "bg-muted text-foreground"
-                  )}
-                >
-                  {pokemon.tera_type}
-                </span>
-              ) : (
-                "None"
-              )}
+            <FieldButton label="Item" onClick={onOpenItemPicker}>
+              {pokemon.held_item ?? "None"}
             </FieldButton>
-          ))}
+          )}
 
-        {/* Nature */}
-        {disabled ? (
-          <FieldStatic label="Nature">{pokemon.nature}</FieldStatic>
-        ) : (
-          <FieldButton label="Nature" onClick={onOpenNaturePicker}>
-            {pokemon.nature}
-          </FieldButton>
-        )}
+          {hasTera && (
+            <>
+              <div
+                className="bg-border my-2.5 w-px shrink-0"
+                aria-hidden="true"
+              />
+              {disabled ? (
+                <FieldStatic label="Tera">{teraContent}</FieldStatic>
+              ) : (
+                <FieldButton label="Tera" onClick={onOpenTeraPicker}>
+                  {teraContent}
+                </FieldButton>
+              )}
+            </>
+          )}
 
-        {/* ⋯ popover — Showdown import/export only. Reserves slot when wired. */}
-        {detailsPopover ? (
-          <PokemonDetailsPopover
-            teamId={detailsPopover.teamId}
-            pokemon={pokemon}
-            onImported={detailsPopover.onImported}
-            disabled={disabled}
-          />
-        ) : (
-          <span aria-hidden="true" />
+          <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
+
+          {disabled ? (
+            <FieldStatic label="Nature">{pokemon.nature}</FieldStatic>
+          ) : (
+            <FieldButton label="Nature" onClick={onOpenNaturePicker}>
+              {pokemon.nature}
+            </FieldButton>
+          )}
+        </div>
+
+        {/* ── Zone 3: Meta controls (only when detailsPopover wired) ────── */}
+        {showIdentityControls && (
+          <>
+            <div
+              className="bg-border my-2.5 w-px shrink-0"
+              aria-hidden="true"
+            />
+            <div className="flex shrink-0 items-center gap-1.5 px-3">
+              <GenderButton
+                value={(pokemon.gender as GenderValue) ?? null}
+                onChange={handleGenderChange}
+                disabled={disabled}
+              />
+
+              <button
+                type="button"
+                aria-label={pokemon.is_shiny ? "Shiny (on)" : "Shiny (off)"}
+                aria-pressed={pokemon.is_shiny ?? false}
+                onClick={handleShinyToggle}
+                disabled={disabled}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md border text-sm transition-colors duration-150",
+                  pokemon.is_shiny
+                    ? "border-amber-400 bg-amber-400/10 text-amber-500"
+                    : "bg-muted/50 text-muted-foreground hover:text-foreground",
+                  "disabled:cursor-not-allowed disabled:opacity-50"
+                )}
+              >
+                {pokemon.is_shiny ? "✦" : "✧"}
+              </button>
+
+              <div className="flex items-center gap-1">
+                <span className="text-muted-foreground text-[9px] font-semibold tracking-wider uppercase">
+                  Lv
+                </span>
+                <input
+                  type="number"
+                  aria-label="Level"
+                  min={1}
+                  max={100}
+                  value={pokemon.level ?? 50}
+                  onChange={(e) =>
+                    handleLevelChange(parseInt(e.target.value, 10))
+                  }
+                  disabled={disabled}
+                  className={cn(
+                    "text-foreground h-7 w-10 rounded-md border bg-transparent px-1 text-center font-mono text-xs tabular-nums",
+                    "focus:ring-primary/50 focus:ring-2 focus:outline-none",
+                    "disabled:cursor-not-allowed disabled:opacity-50"
+                  )}
+                />
+              </div>
+
+              {detailsPopover ? (
+                <PokemonDetailsPopover
+                  teamId={detailsPopover.teamId}
+                  pokemon={pokemon}
+                  onImported={detailsPopover.onImported}
+                  disabled={disabled}
+                />
+              ) : null}
+            </div>
+          </>
         )}
       </div>
     </div>
