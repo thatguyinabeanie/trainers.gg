@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import Image from "next/image";
 
 import {
@@ -74,7 +76,7 @@ function FieldButton({
       onClick={onClick}
       aria-label={ariaLabel ?? `Edit ${label}`}
       className={cn(
-        "flex flex-col gap-0.5 rounded-lg px-3 py-1.5 text-left",
+        "flex flex-1 flex-col justify-center gap-0.5 px-3 py-2 text-left",
         "hover:bg-muted/50 transition-colors duration-150"
       )}
     >
@@ -102,7 +104,7 @@ interface FieldStaticProps {
 
 function FieldStatic({ label, children }: FieldStaticProps) {
   return (
-    <div className="flex flex-col gap-0.5 px-3 py-1.5">
+    <div className="flex flex-1 flex-col justify-center gap-0.5 px-3 py-2">
       <span className="text-muted-foreground text-[9px] font-semibold tracking-wider uppercase">
         {label}
       </span>
@@ -216,6 +218,9 @@ export function EditorHeaderBand({
   const speciesClickable = !disabled && onOpenSpeciesPicker !== undefined;
   const showIdentityControls = detailsPopover !== undefined;
 
+  const [_isEditingNickname, setIsEditingNickname] = useState(false);
+  const [editNicknameValue, setEditNicknameValue] = useState("");
+
   // -------------------------------------------------------------------------
   // Identity control handlers — forward to parent's debounced onUpdate.
   // -------------------------------------------------------------------------
@@ -236,6 +241,22 @@ export function EditorHeaderBand({
     if (Number.isNaN(value)) return;
     const clamped = Math.max(1, Math.min(100, value));
     detailsPopover?.onUpdate("level", clamped);
+  }
+
+  function commitNickname() {
+    handleNicknameChange(editNicknameValue);
+    setIsEditingNickname(false);
+  }
+
+  function _handleNicknameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitNickname();
+    }
+    if (e.key === "Escape") {
+      setIsEditingNickname(false);
+      setEditNicknameValue(pokemon.nickname ?? "");
+    }
   }
 
   // -------------------------------------------------------------------------
