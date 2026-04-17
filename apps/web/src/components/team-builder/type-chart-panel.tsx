@@ -1,5 +1,7 @@
 "use client";
 
+import { type CSSProperties } from "react";
+
 import {
   ALL_TYPES,
   getDefensiveMatchups,
@@ -78,15 +80,14 @@ function formatMultiplier(mult: number): string {
 /** Tailwind classes for a matrix multiplier cell, color-coded by intensity. */
 function cellClass(mult: number): string {
   if (mult === 0) return "bg-foreground text-background";
-  if (mult === 4)
-    return "bg-destructive/15 text-destructive font-mono font-semibold";
-  if (mult === 2) return "bg-destructive/10 text-destructive font-mono";
+  if (mult === 4) return "bg-destructive/15 text-destructive font-semibold";
+  if (mult === 2) return "bg-destructive/10 text-destructive";
   if (mult === 0.25)
-    return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-mono font-semibold";
+    return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-semibold";
   if (mult === 0.5)
-    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-mono";
+    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
   // mult === 1 (or fallback)
-  return "bg-muted/30 text-muted-foreground font-mono";
+  return "bg-muted/30 text-muted-foreground";
 }
 
 /** Build per-type rows with team-member multipliers + summary counts. */
@@ -229,8 +230,9 @@ function MonHeaderIcon({ pokemon }: MonHeaderIconProps) {
 // =============================================================================
 
 /**
- * Defensive type matrix — one row per type, one column per team mon, plus
- * three summary columns (↓ weak, ↑ resist, = neutral).
+ * Defensive type matrix — one row per type, one column per team mon (only as
+ * many columns as there are mons — no empty placeholder columns), plus three
+ * summary columns (↓ weak, ↑ resist, = neutral).
  *
  * Cell color tracks the multiplier intensity:
  *   x4  → strong red  (4× weakness — the row also gets a soft red highlight)
@@ -240,35 +242,33 @@ function MonHeaderIcon({ pokemon }: MonHeaderIconProps) {
  *   ¼   → strong green
  *   0   → ink (immunity)
  *
- * Layout fits inside the 460px analytics rail: 6 mon columns × ~32px + the
- * type label + summary columns leaves the multiplier cells around 32–36px
- * wide — wide enough for tokens like "x2" / "½" without truncation.
+ * Layout fits inside the 460px analytics rail: up to 6 mon columns × ~32px
+ * + the type label + summary columns. CSS Grid uses --mon-count so the column
+ * count automatically tracks the actual team size.
  */
 export function TypeChartPanel({ team, className }: TypeChartPanelProps) {
   const rows = buildMatrix(team);
+  const monCount = team.length;
 
-  // Always render 6 mon column slots so the matrix grid stays stable across
-  // partially-filled teams (empty slots render an empty header circle and
-  // empty cells). This avoids the columns jumping around as the user adds
-  // mons — the spec calls for exactly 6 mon columns at all times.
-  const slots: (Tables<"pokemon"> | null)[] = Array.from(
-    { length: 6 },
-    (_, i) => team[i] ?? null
-  );
-
-  // grid-cols-[type_|_6 mon cols_|_3 summary cols].
-  // - 32px type-icon column on the left
-  // - 6 × 1fr for the per-mon cells (they share the remaining width evenly)
-  // - 22px each for the ↓ ↑ = summary columns (single-digit counts fit)
-  const gridTemplate =
-    "grid-cols-[32px_repeat(6,minmax(0,1fr))_22px_22px_22px]";
+  // CSS Grid template:
+  //   32px  — type icon column
+  //   repeat(var(--mon-count), minmax(0, 1fr)) — one column per actual mon
+  //   1.5rem × 3 — summary columns (↓ ↑ =)
+  //
+  // --mon-count is set via inline style so the grid adapts to the real team
+  // size without empty placeholder columns.
+  const gridStyle = {
+    "--mon-count": monCount,
+    gridTemplateColumns:
+      "2rem repeat(var(--mon-count), minmax(0, 1fr)) repeat(3, 1.5rem)",
+  } as CSSProperties;
 
   return (
     <div
       data-testid="type-chart-panel"
       className={cn("bg-card overflow-hidden rounded-lg shadow-sm", className)}
     >
-      {/* Header */}
+      {/* Panel header */}
       <div className="flex items-center justify-between border-b px-3 py-2.5">
         <span className="text-foreground text-sm font-semibold">
           Defensive coverage
@@ -278,144 +278,137 @@ export function TypeChartPanel({ team, className }: TypeChartPanelProps) {
         </span>
       </div>
 
-      {/* Column header row — 6 mon icons + ↓ ↑ = summary headers */}
-      <div
-        className={cn(
-          "bg-muted/50 grid items-center gap-1 px-2 py-1.5",
-          gridTemplate
-        )}
-      >
-        {/* Empty cell above the type-icon column */}
-        <span aria-hidden="true" />
-        {slots.map((slot, idx) =>
-          slot ? (
-            <span
-              key={`mon-header-${slot.id}`}
-              className="flex justify-center"
-              data-testid={`type-chart-mon-col-${idx}`}
-            >
-              <MonHeaderIcon pokemon={slot} />
-            </span>
-          ) : (
-            <span
-              key={`mon-header-empty-${idx}`}
-              data-testid={`type-chart-mon-col-${idx}`}
-              className="flex justify-center"
-              aria-hidden="true"
-            >
-              <span className="bg-muted/30 inline-block size-6 rounded-full" />
-            </span>
-          )
-        )}
-        <span
-          className="text-muted-foreground text-center text-[11px] font-semibold"
-          aria-label="weak count"
-          title="Weak count"
-        >
-          ↓
-        </span>
-        <span
-          className="text-muted-foreground text-center text-[11px] font-semibold"
-          aria-label="resist count"
-          title="Resist count"
-        >
-          ↑
-        </span>
-        <span
-          className="text-muted-foreground text-center text-[11px] font-semibold"
-          aria-label="neutral count"
-          title="Neutral count"
-        >
-          =
-        </span>
-      </div>
+      {/* Empty state — no mons on the team yet */}
+      {monCount === 0 && (
+        <div className="text-muted-foreground px-3 py-6 text-center text-xs">
+          Add Pokémon to your team to see the type chart.
+        </div>
+      )}
 
-      {/* Body — one row per type */}
-      <div className="divide-muted/40 divide-y">
-        {rows.map((row) => {
-          const isQuadWeak = row.worst === 4;
-          return (
-            <div
-              key={row.type}
-              data-testid={`type-row-${row.type}`}
-              className={cn(
-                "grid items-center gap-1 px-2 py-1 text-xs transition-colors duration-150",
-                gridTemplate,
-                isQuadWeak && "bg-destructive/5"
-              )}
-            >
-              {/* Type icon — left column */}
-              <TypeIcon type={row.type} />
+      {/* Matrix — only rendered when there is at least one team mon */}
+      {monCount > 0 && (
+        <>
+          {/* Column header row: sprite per mon + ↓ ↑ = summary headers */}
+          <div
+            className="bg-muted/50 grid items-center gap-1 px-2 py-1.5"
+            style={gridStyle}
+          >
+            {/* Empty cell over the type-icon column */}
+            <span aria-hidden="true" />
 
-              {/* Per-mon multiplier cells (always 6 — empty slots render blank) */}
-              {slots.map((slot, idx) => {
-                if (!slot) {
-                  return (
-                    <span
-                      key={`empty-${row.type}-${idx}`}
-                      data-testid={`mult-${row.type}-empty-${idx}`}
-                      aria-hidden="true"
-                      className="block h-4"
-                    />
-                  );
-                }
-                const mult = row.multipliers[idx] ?? 1;
-                return (
+            {/* One sprite header per actual mon — no placeholder circles */}
+            {team.map((mon, idx) => (
+              <span
+                key={`mon-header-${mon.id}`}
+                className="flex justify-center"
+                data-testid={`type-chart-mon-col-${idx}`}
+              >
+                <MonHeaderIcon pokemon={mon} />
+              </span>
+            ))}
+
+            {/* Summary column headers */}
+            <span
+              className="text-muted-foreground text-center text-[11px] font-semibold"
+              aria-label="weak count"
+              title="Weak count"
+            >
+              ↓
+            </span>
+            <span
+              className="text-muted-foreground text-center text-[11px] font-semibold"
+              aria-label="resist count"
+              title="Resist count"
+            >
+              ↑
+            </span>
+            <span
+              className="text-muted-foreground text-center text-[11px] font-semibold"
+              aria-label="neutral count"
+              title="Neutral count"
+            >
+              =
+            </span>
+          </div>
+
+          {/* Body — one row per type */}
+          <div className="divide-muted/40 divide-y">
+            {rows.map((row) => {
+              const isQuadWeak = row.worst === 4;
+              return (
+                <div
+                  key={row.type}
+                  data-testid={`type-row-${row.type}`}
+                  className={cn(
+                    "grid items-center gap-1 px-2 py-1 text-xs transition-colors duration-150",
+                    isQuadWeak && "bg-destructive/5"
+                  )}
+                  style={gridStyle}
+                >
+                  {/* Type icon — left column */}
+                  <TypeIcon type={row.type} />
+
+                  {/* Per-mon multiplier cells — one per actual team mon */}
+                  {team.map((mon, idx) => {
+                    const mult = row.multipliers[idx] ?? 1;
+                    return (
+                      <span
+                        key={`mult-${row.type}-${mon.id}`}
+                        data-testid={`mult-${row.type}-${mon.id}`}
+                        className={cn(
+                          "inline-flex items-center justify-center rounded px-0.5 py-0.5 font-mono text-[10px] leading-none",
+                          cellClass(mult)
+                        )}
+                      >
+                        {formatMultiplier(mult)}
+                      </span>
+                    );
+                  })}
+
+                  {/* Summary: weak count */}
                   <span
-                    key={`mult-${row.type}-${slot.id}`}
-                    data-testid={`mult-${row.type}-${slot.id}`}
+                    data-testid={`weak-${row.type}`}
                     className={cn(
-                      "inline-flex items-center justify-center rounded px-0.5 py-0.5 text-[10px] leading-none",
-                      cellClass(mult)
+                      "text-center font-mono text-[11px]",
+                      row.weakCount > 0
+                        ? "text-destructive font-semibold"
+                        : "text-muted-foreground/50"
                     )}
                   >
-                    {formatMultiplier(mult)}
+                    {row.weakCount}
                   </span>
-                );
-              })}
 
-              {/* Summary: weak count */}
-              <span
-                data-testid={`weak-${row.type}`}
-                className={cn(
-                  "text-center font-mono text-[11px]",
-                  row.weakCount > 0
-                    ? "text-destructive font-semibold"
-                    : "text-muted-foreground/50"
-                )}
-              >
-                {row.weakCount}
-              </span>
+                  {/* Summary: resist count */}
+                  <span
+                    data-testid={`resist-${row.type}`}
+                    className={cn(
+                      "text-center font-mono text-[11px]",
+                      row.resistCount > 0
+                        ? "font-semibold text-emerald-600 dark:text-emerald-400"
+                        : "text-muted-foreground/50"
+                    )}
+                  >
+                    {row.resistCount}
+                  </span>
 
-              {/* Summary: resist count */}
-              <span
-                data-testid={`resist-${row.type}`}
-                className={cn(
-                  "text-center font-mono text-[11px]",
-                  row.resistCount > 0
-                    ? "font-semibold text-emerald-600 dark:text-emerald-400"
-                    : "text-muted-foreground/50"
-                )}
-              >
-                {row.resistCount}
-              </span>
+                  {/* Summary: neutral count */}
+                  <span
+                    data-testid={`neutral-${row.type}`}
+                    className="text-muted-foreground text-center font-mono text-[11px]"
+                  >
+                    {row.neutralCount}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
 
-              {/* Summary: neutral count */}
-              <span
-                data-testid={`neutral-${row.type}`}
-                className="text-muted-foreground text-center font-mono text-[11px]"
-              >
-                {row.neutralCount}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Footer legend */}
-      <div className="bg-muted/50 text-muted-foreground px-3 py-2 text-[10px]">
-        ↓ weak · ↑ resist · = neutral
-      </div>
+          {/* Footer legend */}
+          <div className="bg-muted/50 text-muted-foreground px-3 py-2 text-[10px]">
+            ↓ weak · ↑ resist · = neutral
+          </div>
+        </>
+      )}
     </div>
   );
 }

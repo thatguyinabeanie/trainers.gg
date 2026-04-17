@@ -144,78 +144,106 @@ function makePokemon(
 // =============================================================================
 
 describe("TypeChartPanel", () => {
+  // ---------------------------------------------------------------------------
+  // Structure
+  // ---------------------------------------------------------------------------
+
   it("renders one row per type (18 rows)", () => {
-    render(<TypeChartPanel team={[]} />);
+    const team = [makePokemon({ id: 1, species: "Charizard" })];
+    render(<TypeChartPanel team={team} />);
     for (const type of MOCK_TYPES) {
       expect(screen.getByTestId(`type-row-${type}`)).toBeInTheDocument();
     }
   });
 
-  it("renders the header and footer legend", () => {
-    render(<TypeChartPanel team={[]} />);
+  it("renders the panel header and footer legend when team has mons", () => {
+    const team = [makePokemon({ id: 1, species: "Charizard" })];
+    render(<TypeChartPanel team={team} />);
     expect(screen.getByText("Defensive coverage")).toBeInTheDocument();
     expect(
       screen.getByText("↓ weak · ↑ resist · = neutral")
     ).toBeInTheDocument();
   });
 
-  it("for an empty team, every count cell is 0", () => {
+  // ---------------------------------------------------------------------------
+  // Empty state
+  // ---------------------------------------------------------------------------
+
+  it("shows empty-state message and no type rows when team is empty", () => {
     render(<TypeChartPanel team={[]} />);
+    expect(
+      screen.getByText(/Add Pokémon to your team to see the type chart/i)
+    ).toBeInTheDocument();
+    // No type rows should render
     for (const type of MOCK_TYPES) {
-      expect(screen.getByTestId(`weak-${type}`)).toHaveTextContent("0");
-      expect(screen.getByTestId(`resist-${type}`)).toHaveTextContent("0");
-      expect(screen.getByTestId(`neutral-${type}`)).toHaveTextContent("0");
+      expect(screen.queryByTestId(`type-row-${type}`)).not.toBeInTheDocument();
     }
   });
 
-  it("counts add up to team size for every row", () => {
+  // ---------------------------------------------------------------------------
+  // Sprite column count = team size
+  // ---------------------------------------------------------------------------
+
+  it("renders exactly 3 mon header columns for a 3-mon team", () => {
     const team = [
       makePokemon({ id: 1, species: "Charizard" }),
       makePokemon({ id: 2, species: "Magikarp" }),
       makePokemon({ id: 3, species: "Gengar" }),
     ];
-
     render(<TypeChartPanel team={team} />);
 
-    for (const type of MOCK_TYPES) {
-      const weak = Number(screen.getByTestId(`weak-${type}`).textContent);
-      const resist = Number(screen.getByTestId(`resist-${type}`).textContent);
-      const neutral = Number(screen.getByTestId(`neutral-${type}`).textContent);
-      expect(weak + resist + neutral).toBe(team.length);
+    // Columns 0, 1, 2 must exist
+    for (let i = 0; i < 3; i++) {
+      expect(screen.getByTestId(`type-chart-mon-col-${i}`)).toBeInTheDocument();
     }
+    // Column 3 must NOT exist — no placeholder circles
+    expect(
+      screen.queryByTestId("type-chart-mon-col-3")
+    ).not.toBeInTheDocument();
   });
+
+  it("renders exactly 6 mon header columns for a full 6-mon team", () => {
+    const team = [
+      makePokemon({ id: 1, species: "Charizard" }),
+      makePokemon({ id: 2, species: "Magikarp" }),
+      makePokemon({ id: 3, species: "Gengar" }),
+      makePokemon({ id: 4, species: "Snorlax" }),
+      makePokemon({ id: 5, species: "Charizard" }),
+      makePokemon({ id: 6, species: "Magikarp" }),
+    ];
+    render(<TypeChartPanel team={team} />);
+    for (let i = 0; i < 6; i++) {
+      expect(screen.getByTestId(`type-chart-mon-col-${i}`)).toBeInTheDocument();
+    }
+    // No 7th column
+    expect(
+      screen.queryByTestId("type-chart-mon-col-6")
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders exactly 1 mon header column for a 1-mon team", () => {
+    const team = [makePokemon({ id: 1, species: "Charizard" })];
+    render(<TypeChartPanel team={team} />);
+    expect(screen.getByTestId("type-chart-mon-col-0")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("type-chart-mon-col-1")
+    ).not.toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Per-cell multipliers
+  // ---------------------------------------------------------------------------
 
   it("shows x4 in the multiplier cell for Charizard's 4× Rock weakness", () => {
     const charizard = makePokemon({ id: 1, species: "Charizard" });
     render(<TypeChartPanel team={[charizard]} />);
-
-    // The multiplier cell for this team member on the Rock row shows x4
     const mult = screen.getByTestId(`mult-Rock-${charizard.id}`);
     expect(mult).toHaveTextContent("x4");
-  });
-
-  it("highlights 4× weakness rows with destructive-soft background", () => {
-    const team = [makePokemon({ id: 1, species: "Charizard" })];
-    render(<TypeChartPanel team={team} />);
-
-    const rockRow = screen.getByTestId("type-row-Rock");
-    expect(rockRow.className).toContain("bg-destructive/5");
-
-    // A neutral row (Dark vs Charizard) should NOT have the highlight
-    const darkRow = screen.getByTestId("type-row-Dark");
-    expect(darkRow.className).not.toContain("bg-destructive/5");
-  });
-
-  it("renders the correct weak count for Charizard (Rock: 1 weak)", () => {
-    const team = [makePokemon({ id: 1, species: "Charizard" })];
-    render(<TypeChartPanel team={team} />);
-    expect(screen.getByTestId("weak-Rock")).toHaveTextContent("1");
   });
 
   it("renders ½ token for 0.5× multiplier and ¼ for 0.25×", () => {
     const charizard = makePokemon({ id: 1, species: "Charizard" });
     render(<TypeChartPanel team={[charizard]} />);
-
     // Charizard resists Steel at ×0.5 → "½"
     expect(screen.getByTestId(`mult-Steel-${charizard.id}`)).toHaveTextContent(
       "½"
@@ -229,30 +257,103 @@ describe("TypeChartPanel", () => {
   it("renders 0 immunity token for Ground vs Charizard", () => {
     const charizard = makePokemon({ id: 1, species: "Charizard" });
     render(<TypeChartPanel team={[charizard]} />);
-
     expect(screen.getByTestId(`mult-Ground-${charizard.id}`)).toHaveTextContent(
       "0"
     );
   });
 
-  it("renders 6 mon column header slots — empty slots show placeholder circles", () => {
-    // One pokemon means 5 empty header slots
-    const charizard = makePokemon({ id: 1, species: "Charizard" });
-    render(<TypeChartPanel team={[charizard]} />);
+  it("Snorlax: Ghost immunity renders as 0 token and Fighting weakness renders as x2", () => {
+    const snorlax = makePokemon({ id: 1, species: "Snorlax" });
+    render(<TypeChartPanel team={[snorlax]} />);
+    expect(screen.getByTestId(`mult-Ghost-${snorlax.id}`)).toHaveTextContent(
+      "0"
+    );
+    expect(screen.getByTestId(`mult-Fighting-${snorlax.id}`)).toHaveTextContent(
+      "x2"
+    );
+  });
 
-    // All 6 col header slots should exist (indices 0–5)
-    for (let i = 0; i < 6; i++) {
-      expect(screen.getByTestId(`type-chart-mon-col-${i}`)).toBeInTheDocument();
+  it("Rock row has 3 multiplier cells for a 3-mon team", () => {
+    const team = [
+      makePokemon({ id: 1, species: "Charizard" }),
+      makePokemon({ id: 2, species: "Magikarp" }),
+      makePokemon({ id: 3, species: "Gengar" }),
+    ];
+    render(<TypeChartPanel team={team} />);
+    // Charizard x4, Magikarp x1 (no entry → default 1), Gengar x1
+    expect(screen.getByTestId("mult-Rock-1")).toHaveTextContent("x4");
+    expect(screen.getByTestId("mult-Rock-2")).toHaveTextContent("x1");
+    expect(screen.getByTestId("mult-Rock-3")).toHaveTextContent("x1");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Row highlighting
+  // ---------------------------------------------------------------------------
+
+  it("highlights 4× weakness rows with bg-destructive/5", () => {
+    const team = [makePokemon({ id: 1, species: "Charizard" })];
+    render(<TypeChartPanel team={team} />);
+
+    const rockRow = screen.getByTestId("type-row-Rock");
+    expect(rockRow.className).toContain("bg-destructive/5");
+
+    // A neutral row (Dark vs Charizard) should NOT have the highlight
+    const darkRow = screen.getByTestId("type-row-Dark");
+    expect(darkRow.className).not.toContain("bg-destructive/5");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Summary counts
+  // ---------------------------------------------------------------------------
+
+  it("renders the correct weak count for Charizard (Rock: 1 weak)", () => {
+    const team = [makePokemon({ id: 1, species: "Charizard" })];
+    render(<TypeChartPanel team={team} />);
+    expect(screen.getByTestId("weak-Rock")).toHaveTextContent("1");
+  });
+
+  it("counts add up to team size for every row", () => {
+    const team = [
+      makePokemon({ id: 1, species: "Charizard" }),
+      makePokemon({ id: 2, species: "Magikarp" }),
+      makePokemon({ id: 3, species: "Gengar" }),
+    ];
+    render(<TypeChartPanel team={team} />);
+
+    for (const type of MOCK_TYPES) {
+      const weak = Number(screen.getByTestId(`weak-${type}`).textContent);
+      const resist = Number(screen.getByTestId(`resist-${type}`).textContent);
+      const neutral = Number(screen.getByTestId(`neutral-${type}`).textContent);
+      expect(weak + resist + neutral).toBe(team.length);
     }
   });
 
-  it("renders a Showdown type icon (with full type name as alt) per row", () => {
-    render(<TypeChartPanel team={[]} />);
+  it("renders correct weak/resist counts for a multi-member team", () => {
+    const team = [
+      makePokemon({ id: 1, species: "Magikarp" }),
+      makePokemon({ id: 2, species: "Gengar" }),
+    ];
+    render(<TypeChartPanel team={team} />);
 
-    // The narrow label column uses the Showdown type icon instead of a
-    // 3-letter abbreviation. The full type name surfaces via:
-    //   - the `<img alt>` attribute (screen readers)
-    //   - the wrapper's `aria-label` (focus + tooltip trigger)
+    // Only Magikarp is weak to Electric (Gengar is neutral)
+    expect(screen.getByTestId("weak-Electric")).toHaveTextContent("1");
+    // Only Gengar is weak to Ghost
+    expect(screen.getByTestId("weak-Ghost")).toHaveTextContent("1");
+    // Gengar is immune to Normal — resist count includes 0 mult
+    expect(screen.getByTestId("resist-Normal")).toHaveTextContent("1");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Type icons
+  // ---------------------------------------------------------------------------
+
+  it("renders a Showdown type icon (with full type name as alt) per row", () => {
+    const team = [makePokemon({ id: 1, species: "Charizard" })];
+    render(<TypeChartPanel team={team} />);
+
+    // The narrow label column uses the Showdown type icon. The full type name
+    // surfaces via the `<img alt>` attribute (screen readers) and the wrapper's
+    // `aria-label` (focus + tooltip trigger).
     const fireRow = screen.getByTestId("type-row-Fire");
     const icon = within(fireRow).getByRole("img", { name: "Fire" });
     expect(icon).toBeInTheDocument();
@@ -264,29 +365,29 @@ describe("TypeChartPanel", () => {
     ).toBeInTheDocument();
   });
 
-  it("Snorlax: Ghost immunity renders as 0 token and Fighting weakness renders as x2", () => {
-    const snorlax = makePokemon({ id: 1, species: "Snorlax" });
-    render(<TypeChartPanel team={[snorlax]} />);
+  // ---------------------------------------------------------------------------
+  // Sprite tooltip
+  // ---------------------------------------------------------------------------
 
-    expect(screen.getByTestId(`mult-Ghost-${snorlax.id}`)).toHaveTextContent(
-      "0"
-    );
-    expect(screen.getByTestId(`mult-Fighting-${snorlax.id}`)).toHaveTextContent(
-      "x2"
-    );
+  it("mon header icon uses species name as aria-label (tooltip trigger)", () => {
+    const charizard = makePokemon({ id: 1, species: "Charizard" });
+    render(<TypeChartPanel team={[charizard]} />);
+
+    // The MonHeaderIcon renders a span with aria-label = species name
+    const headerSpan = screen.getByTestId("mon-header-1");
+    expect(headerSpan).toHaveAttribute("aria-label", "Charizard");
   });
 
-  it("renders correct weak/resist counts for a multi-member team", () => {
-    const team = [
-      makePokemon({ id: 1, species: "Magikarp" }),
-      makePokemon({ id: 2, species: "Gengar" }),
-    ];
-    render(<TypeChartPanel team={team} />);
-
-    // Both Magikarp and Gengar are weak to Electric and Grass
-    expect(screen.getByTestId("weak-Electric")).toHaveTextContent("1"); // only Magikarp
-    expect(screen.getByTestId("weak-Ghost")).toHaveTextContent("1"); // only Gengar
-    // Gengar is immune to Normal — resist count includes 0 mult
-    expect(screen.getByTestId("resist-Normal")).toHaveTextContent("1");
+  it("mon header uses nickname in aria-label when set", () => {
+    const char = makePokemon({
+      id: 1,
+      species: "Charizard",
+      nickname: "Blaze",
+    });
+    render(<TypeChartPanel team={[char]} />);
+    expect(screen.getByTestId("mon-header-1")).toHaveAttribute(
+      "aria-label",
+      "Blaze (Charizard)"
+    );
   });
 });
