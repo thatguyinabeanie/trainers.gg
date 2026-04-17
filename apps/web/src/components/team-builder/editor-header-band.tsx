@@ -219,7 +219,9 @@ export function EditorHeaderBand({
   const showIdentityControls = detailsPopover !== undefined;
 
   const [_isEditingNickname, setIsEditingNickname] = useState(false);
-  const [editNicknameValue, setEditNicknameValue] = useState("");
+  const [editNicknameValue, setEditNicknameValue] = useState(
+    pokemon.nickname ?? ""
+  );
 
   // -------------------------------------------------------------------------
   // Identity control handlers — forward to parent's debounced onUpdate.
@@ -243,7 +245,7 @@ export function EditorHeaderBand({
     detailsPopover?.onUpdate("level", clamped);
   }
 
-  function commitNickname() {
+  function _commitNickname() {
     handleNicknameChange(editNicknameValue);
     setIsEditingNickname(false);
   }
@@ -251,7 +253,7 @@ export function EditorHeaderBand({
   function _handleNicknameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
-      commitNickname();
+      _commitNickname();
     }
     if (e.key === "Escape") {
       setIsEditingNickname(false);
