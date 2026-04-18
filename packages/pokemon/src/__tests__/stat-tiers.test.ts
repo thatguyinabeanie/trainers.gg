@@ -39,7 +39,7 @@ describe("getStatTier", () => {
       expect(getStatTier(Number.NaN)).toBe("low");
     });
 
-    it("coerces Infinity to great (it is finite-checked then > 120)", () => {
+    it("coerces Infinity to low (fails Number.isFinite, returns defensive default)", () => {
       // Infinity fails Number.isFinite → returns "low" by design (defensive default).
       expect(getStatTier(Number.POSITIVE_INFINITY)).toBe("low");
     });

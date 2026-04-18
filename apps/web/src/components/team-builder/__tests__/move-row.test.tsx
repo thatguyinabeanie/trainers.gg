@@ -67,7 +67,9 @@ describe("MoveRow", () => {
       render(<MoveRow move={physicalMove} onOpenPicker={jest.fn()} />);
       expect(screen.getByText("Sucker Punch")).toBeInTheDocument();
       expect(screen.getByText("+1 priority")).toBeInTheDocument();
-      expect(mockedHelper).toHaveBeenCalledWith(physicalMove);
+      expect(mockedHelper).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Sucker Punch" })
+      );
     });
 
     it("renders BP and accuracy as numbers for damaging moves", () => {

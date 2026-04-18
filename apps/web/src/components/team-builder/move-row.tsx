@@ -1,10 +1,14 @@
 "use client";
 
+import { Dex } from "@pkmn/dex";
+
 import {
   type MoveData,
   type PokemonType,
   getMoveHelperText,
 } from "@trainers/pokemon";
+
+const gen9Dex = Dex.forGen(9);
 
 import { cn } from "@/lib/utils";
 
@@ -89,7 +93,7 @@ export function MoveRow({ move, onOpenPicker, className }: MoveRowProps) {
   const { letter: catLetter, classes: catClasses } = categoryChip(
     move.category
   );
-  const helper = getMoveHelperText(move);
+  const helper = getMoveHelperText(gen9Dex.moves.get(move.name));
 
   return (
     <button

@@ -247,48 +247,6 @@ describe("StatsTable", () => {
       fireEvent.change(input, { target: { value: "252" } });
       expect(onUpdate).not.toHaveBeenCalled();
     });
-
-    it("disables Reset and Max preset buttons", () => {
-      renderStatsTable({ disabled: true });
-      expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
-      expect(screen.getByRole("button", { name: "Max bulk" })).toBeDisabled();
-      expect(screen.getByRole("button", { name: "Max Atk" })).toBeDisabled();
-      expect(screen.getByRole("button", { name: "Max Spe" })).toBeDisabled();
-    });
-  });
-
-  describe("preset buttons", () => {
-    it("Reset emits zero for every EV column", () => {
-      const { onUpdate } = renderStatsTable();
-      fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-      expect(onUpdate).toHaveBeenCalledWith("ev_hp", 0);
-      expect(onUpdate).toHaveBeenCalledWith("ev_attack", 0);
-      expect(onUpdate).toHaveBeenCalledWith("ev_defense", 0);
-      expect(onUpdate).toHaveBeenCalledWith("ev_special_attack", 0);
-      expect(onUpdate).toHaveBeenCalledWith("ev_special_defense", 0);
-      expect(onUpdate).toHaveBeenCalledWith("ev_speed", 0);
-    });
-
-    it("Max Atk emits 252 attack and 252 speed", () => {
-      const { onUpdate } = renderStatsTable();
-      fireEvent.click(screen.getByRole("button", { name: "Max Atk" }));
-      expect(onUpdate).toHaveBeenCalledWith("ev_attack", 252);
-      expect(onUpdate).toHaveBeenCalledWith("ev_speed", 252);
-    });
-
-    it("Champions format hides Max bulk/Atk/Spe presets (only Reset remains)", () => {
-      renderStatsTable({ format: championsFormat });
-      expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
-      expect(
-        screen.queryByRole("button", { name: "Max bulk" })
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("button", { name: "Max Atk" })
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("button", { name: "Max Spe" })
-      ).not.toBeInTheDocument();
-    });
   });
 
   describe("nature indicators", () => {

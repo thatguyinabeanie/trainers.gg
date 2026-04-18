@@ -98,41 +98,45 @@ function MoveRow({
   const isStatus = moveData?.category === "Status";
 
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      data-testid={`calc-move-row-${name}`}
+    <div
       data-active={isActive ? "true" : "false"}
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors duration-150",
+        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 transition-colors duration-150",
         isActive
           ? "bg-primary/10 text-primary font-semibold"
           : "hover:bg-muted/60"
       )}
     >
-      <span
-        className="inline-block size-2 shrink-0 rounded-full"
-        style={{ backgroundColor: typeColor }}
-        title={moveData?.type ?? "Unknown"}
-      />
-
-      <span className="min-w-0 flex-1 truncate text-xs">{name}</span>
-
-      {output ? (
+      <button
+        type="button"
+        onClick={onSelect}
+        data-testid={`calc-move-row-${name}`}
+        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+      >
         <span
-          data-testid={`calc-move-pct-${name}`}
-          className={cn(
-            "shrink-0 font-mono text-[11px] tabular-nums",
-            isActive ? "text-primary" : "text-muted-foreground"
-          )}
-        >
-          {output.minPercent}–{output.maxPercent}%
-        </span>
-      ) : (
-        <span className="text-muted-foreground shrink-0 font-mono text-[11px]">
-          —%
-        </span>
-      )}
+          className="inline-block size-2 shrink-0 rounded-full"
+          style={{ backgroundColor: typeColor }}
+          title={moveData?.type ?? "Unknown"}
+        />
+
+        <span className="min-w-0 flex-1 truncate text-xs">{name}</span>
+
+        {output ? (
+          <span
+            data-testid={`calc-move-pct-${name}`}
+            className={cn(
+              "shrink-0 font-mono text-[11px] tabular-nums",
+              isActive ? "text-primary" : "text-muted-foreground"
+            )}
+          >
+            {output.minPercent}–{output.maxPercent}%
+          </span>
+        ) : (
+          <span className="text-muted-foreground shrink-0 font-mono text-[11px]">
+            —%
+          </span>
+        )}
+      </button>
 
       {!isStatus && (
         <label
@@ -140,7 +144,6 @@ function MoveRow({
             "ml-1 flex shrink-0 cursor-pointer items-center gap-1 text-[10px]",
             isCrit ? "text-amber-700" : "text-muted-foreground"
           )}
-          onClick={(e) => e.stopPropagation()}
         >
           <input
             type="checkbox"
@@ -148,10 +151,11 @@ function MoveRow({
             onChange={onToggleCrit}
             className="size-3 cursor-pointer rounded accent-amber-500"
             aria-label={`Crit toggle for ${name}`}
+            data-testid={`calc-move-crit-${name}`}
           />
           Crit
         </label>
       )}
-    </button>
+    </div>
   );
 }

@@ -76,3 +76,9 @@
     transition: background-color 5000s ease-in-out 0s;
   }
 }
+
+@layer utilities {
+  .image-rendering-pixelated {
+    image-rendering: pixelated;
+  }
+}

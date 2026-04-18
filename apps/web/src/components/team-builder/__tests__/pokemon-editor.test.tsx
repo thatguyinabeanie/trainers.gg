@@ -360,11 +360,6 @@ describe("PokemonEditor", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("disables the StatsTable preset buttons when disabled", () => {
-      render(<PokemonEditor {...defaultProps} disabled={true} />);
-      expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
-    });
-
     it("opens the move picker normally when disabled=false (regression)", async () => {
       const user = userEvent.setup();
       render(<PokemonEditor {...defaultProps} disabled={false} />);

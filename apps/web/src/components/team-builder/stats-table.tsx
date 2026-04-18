@@ -16,7 +16,6 @@ import {
 import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
 import {
@@ -364,50 +363,6 @@ export function StatsTable({
     onUpdate(EV_FIELD[stat], value);
   }
 
-  function applyPreset(preset: "reset" | "maxBulk" | "maxAtk" | "maxSpe") {
-    const presets: Record<typeof preset, StatValues> = {
-      reset: {
-        hp: 0,
-        attack: 0,
-        defense: 0,
-        specialAttack: 0,
-        specialDefense: 0,
-        speed: 0,
-      },
-      maxBulk: {
-        hp: 252,
-        attack: 0,
-        defense: 128,
-        specialAttack: 0,
-        specialDefense: 128,
-        speed: 0,
-      },
-      maxAtk: {
-        hp: 4,
-        attack: 252,
-        defense: 0,
-        specialAttack: 0,
-        specialDefense: 0,
-        speed: 252,
-      },
-      maxSpe: {
-        hp: 4,
-        attack: 0,
-        defense: 0,
-        specialAttack: 252,
-        specialDefense: 0,
-        speed: 252,
-      },
-    };
-    const spread = presets[preset];
-    // Update local state immediately so the slider/input reflects the change,
-    // then push each field to the parent for persistence.
-    setLocalEvs(spread);
-    for (const stat of STAT_KEYS) {
-      onUpdate(EV_FIELD[stat], spread[stat]);
-    }
-  }
-
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -474,61 +429,13 @@ export function StatsTable({
         })}
       </div>
 
-      {/* BST + preset buttons */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-muted-foreground text-xs">
-          BST{" "}
-          <span className="text-foreground font-mono font-semibold tabular-nums">
-            {bst}
-          </span>
+      {/* BST */}
+      <span className="text-muted-foreground text-xs">
+        BST{" "}
+        <span className="text-foreground font-mono font-semibold tabular-nums">
+          {bst}
         </span>
-        <div className="flex gap-1.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => applyPreset("reset")}
-            disabled={disabled}
-          >
-            Reset
-          </Button>
-          {!isChampions && (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => applyPreset("maxBulk")}
-                disabled={disabled}
-              >
-                Max bulk
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => applyPreset("maxAtk")}
-                disabled={disabled}
-              >
-                Max Atk
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => applyPreset("maxSpe")}
-                disabled={disabled}
-              >
-                Max Spe
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+      </span>
 
       {/* Display stats footer — points spent */}
       {!isChampions && (

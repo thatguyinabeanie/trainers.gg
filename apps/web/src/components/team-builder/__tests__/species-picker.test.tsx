@@ -252,15 +252,6 @@ describe("SpeciesPicker (rich rows)", () => {
       expect(screen.getByRole("img", { name: "Ground" })).toBeInTheDocument();
     });
 
-    it("does NOT render text type pills in the types column", () => {
-      render(<SpeciesPicker {...defaultProps} />);
-      // The old text pills like "Fire", "Dark" should not appear as bare text
-      // nodes — they are replaced by TypeSymbolIcon which renders role="img".
-      // Since our mock renders the type name as text inside the span, we can't
-      // assert via text absence here; the aria-label assertion above is
-      // the canonical check.
-    });
-
     it("header and body rows share the same grid template constant (ROW_GRID)", () => {
       render(<SpeciesPicker {...defaultProps} />);
       // The sticky header and the first data row both use the shared ROW_GRID

@@ -148,6 +148,21 @@ function buildDefenderPokemon(
 ): Pokemon | null {
   if (!species) return null;
   try {
+    // Build without curHP first so we can call maxHP() to compute the real value.
+    const mon = new Pokemon(gen9, species, {
+      level: 50,
+      nature: asSmogon(nature),
+      ability: asSmogon(ability || null),
+      item: asSmogon(item || null),
+      teraType: asSmogon(teraType || null),
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+      evs,
+      boosts,
+      status: asSmogon(STATUS_MAP[status] ?? ""),
+    });
+    // Clamp hpPercent to [0, 100] before computing current HP.
+    const clampedPct = Math.min(100, Math.max(0, hpPercent));
+    const hpValue = Math.max(1, Math.round((clampedPct / 100) * mon.maxHP()));
     return new Pokemon(gen9, species, {
       level: 50,
       nature: asSmogon(nature),
@@ -158,7 +173,7 @@ function buildDefenderPokemon(
       evs,
       boosts,
       status: asSmogon(STATUS_MAP[status] ?? ""),
-      curHP: Math.max(1, Math.round((hpPercent / 100) * 1)),
+      curHP: hpValue,
     });
   } catch (error) {
     console.warn("[useCalcState] Failed to build defender:", error);
