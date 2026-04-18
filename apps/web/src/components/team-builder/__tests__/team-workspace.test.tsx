@@ -1,5 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -18,11 +18,10 @@ jest.mock("@/lib/supabase", () => ({
   useSupabase: jest.fn(() => ({})),
 }));
 
+// Stable router object shared across all components and test assertions.
+const mockRouter = { push: jest.fn(), refresh: jest.fn() };
 jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(() => ({
-    push: jest.fn(),
-    refresh: jest.fn(),
-  })),
+  useRouter: jest.fn(() => mockRouter),
 }));
 
 jest.mock("next/image", () => ({
@@ -114,6 +113,7 @@ jest.mock("../pokemon-editor", () => ({
     ({
       pokemon,
       onUpdate,
+      onOpenSpeciesPicker,
       disabled,
       className,
     }: {
@@ -124,6 +124,7 @@ jest.mock("../pokemon-editor", () => ({
         ability: string;
       };
       onUpdate: (field: string, value: unknown) => void;
+      onOpenSpeciesPicker?: () => void;
       disabled?: boolean;
       className?: string;
     }) => (
@@ -148,6 +149,14 @@ jest.mock("../pokemon-editor", () => ({
         >
           pick-ability
         </button>
+        {onOpenSpeciesPicker && (
+          <button
+            data-testid="editor-open-species-picker"
+            onClick={onOpenSpeciesPicker}
+          >
+            change-species
+          </button>
+        )}
         pokemon-editor
       </div>
     )
@@ -193,8 +202,31 @@ jest.mock("../team-strip", () => ({
 }));
 
 jest.mock("../species-picker", () => ({
-  SpeciesPicker: ({ onCancel }: { onCancel: () => void }) => (
-    <div data-testid="species-picker">
+  SpeciesPicker: ({
+    onSelect,
+    onCancel,
+    currentSpecies,
+  }: {
+    onSelect: (species: string) => void;
+    onCancel: () => void;
+    currentSpecies: string | null;
+  }) => (
+    <div
+      data-testid="species-picker"
+      data-current-species={currentSpecies ?? "none"}
+    >
+      <button
+        data-testid="species-picker-select"
+        onClick={() => onSelect("Garchomp")}
+      >
+        Select Garchomp
+      </button>
+      <button
+        data-testid="species-picker-select-charizard"
+        onClick={() => onSelect("Charizard")}
+      >
+        Select Charizard
+      </button>
       <button onClick={onCancel}>Cancel</button>
     </div>
   ),
@@ -528,6 +560,526 @@ describe("TeamWorkspace", () => {
       expect(
         screen.getByTestId("pokemon-editor").getAttribute("data-ability")
       ).toBe("Blaze");
+    });
+
+    it("shows a toast and still refreshes when updatePokemonAction returns failure", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      updatePokemonAction.mockResolvedValue({
+        success: false,
+        error: "DB write failed",
+      });
+      const { toast } = jest.requireMock("sonner");
+
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("editor-pick-move1"));
+
+      expect(toast.error).toHaveBeenCalledWith("DB write failed");
+      expect(mockRouter.refresh).toHaveBeenCalled();
+    });
+
+    it("uses fallback error text when updatePokemonAction returns failure without a message", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      updatePokemonAction.mockResolvedValue({ success: false, error: null });
+      const { toast } = jest.requireMock("sonner");
+
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("editor-pick-move1"));
+
+      expect(toast.error).toHaveBeenCalledWith("Failed to save changes.");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // handleStripSelect — re-click opens change picker
+  // ---------------------------------------------------------------------------
+
+  describe("handleStripSelect — re-clicking the selected chip", () => {
+    it("opens the species picker in change mode when clicking the already-selected chip", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      // Click the chip that is already selected (pokemon_id 1 is default selection)
+      await user.click(screen.getByTestId("team-strip-chip-1"));
+
+      expect(screen.getByTestId("species-picker")).toBeInTheDocument();
+      // currentSpecies is passed so picker knows what's already selected
+      expect(
+        screen
+          .getByTestId("species-picker")
+          .getAttribute("data-current-species")
+      ).toBe("Incineroar");
+    });
+
+    it("does NOT open the picker when clicking a different (unselected) chip", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([
+        makePokemonEntry(1, 1, "Incineroar"),
+        makePokemonEntry(2, 2, "Garchomp"),
+      ]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      // Chip 2 is not selected — should switch selection, not open picker
+      await user.click(screen.getByTestId("team-strip-chip-2"));
+
+      expect(screen.queryByTestId("species-picker")).not.toBeInTheDocument();
+      expect(
+        screen.getByTestId("pokemon-editor").getAttribute("data-pokemon-id")
+      ).toBe("2");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // onOpenSpeciesPicker — editor button that opens change picker
+  // ---------------------------------------------------------------------------
+
+  describe("onOpenSpeciesPicker prop from PokemonEditor", () => {
+    it("opens species picker in change mode when editor fires onOpenSpeciesPicker", async () => {
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("editor-open-species-picker"));
+
+      expect(screen.getByTestId("species-picker")).toBeInTheDocument();
+      expect(
+        screen
+          .getByTestId("species-picker")
+          .getAttribute("data-current-species")
+      ).toBe("Incineroar");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // handleSpeciesSelect — add mode
+  // ---------------------------------------------------------------------------
+
+  describe("handleSpeciesSelect — add mode", () => {
+    it("closes the picker immediately on species selection", async () => {
+      const user = userEvent.setup();
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+
+      await user.click(screen.getByTestId("team-strip-add"));
+      expect(screen.getByTestId("species-picker")).toBeInTheDocument();
+
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(screen.queryByTestId("species-picker")).not.toBeInTheDocument();
+    });
+
+    it("calls addPokemonToTeamAction with the selected species and first available position", async () => {
+      const { addPokemonToTeamAction } = jest.requireMock("@/actions/teams");
+      const { getValidAbilities } = jest.requireMock("@trainers/pokemon");
+      getValidAbilities.mockReturnValue(["Rough Skin"]);
+
+      const user = userEvent.setup();
+      // Team has pokemon at positions 1 and 2 — next should be position 3
+      const team = makeTeam([
+        makePokemonEntry(1, 1, "Incineroar"),
+        makePokemonEntry(2, 2, "Arcanine"),
+      ]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      // Click a different chip first to make sure we're not in change mode
+      await user.click(screen.getByTestId("team-strip-add"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(addPokemonToTeamAction).toHaveBeenCalledWith(
+        1, // team.id
+        expect.objectContaining({ species: "Garchomp", ability: "Rough Skin" }),
+        3 // next available position
+      );
+    });
+
+    it("sets isSaving while addPokemonToTeamAction is pending", async () => {
+      const { addPokemonToTeamAction } = jest.requireMock("@/actions/teams");
+      // Keep the promise pending to observe the saving state
+      addPokemonToTeamAction.mockImplementation(() => new Promise(() => {}));
+
+      const user = userEvent.setup();
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+
+      await user.click(screen.getByTestId("team-strip-add"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(
+        screen.getByTestId("team-workspace-save-indicator")
+      ).toBeInTheDocument();
+    });
+
+    it("refreshes and selects the new pokemon on successful add", async () => {
+      const { addPokemonToTeamAction } = jest.requireMock("@/actions/teams");
+      addPokemonToTeamAction.mockResolvedValue({
+        success: true,
+        data: { pokemonId: 42 },
+      });
+
+      const user = userEvent.setup();
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+
+      await user.click(screen.getByTestId("team-strip-add"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      await waitFor(() => {
+        expect(mockRouter.refresh).toHaveBeenCalled();
+      });
+    });
+
+    it("shows toast on add failure with error message", async () => {
+      const { addPokemonToTeamAction } = jest.requireMock("@/actions/teams");
+      addPokemonToTeamAction.mockResolvedValue({
+        success: false,
+        error: "Team is full",
+      });
+      const { toast } = jest.requireMock("sonner");
+
+      const user = userEvent.setup();
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+
+      await user.click(screen.getByTestId("team-strip-add"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(toast.error).toHaveBeenCalledWith("Team is full");
+    });
+
+    it("uses fallback error message when add fails without an error string", async () => {
+      const { addPokemonToTeamAction } = jest.requireMock("@/actions/teams");
+      addPokemonToTeamAction.mockResolvedValue({ success: false, error: null });
+      const { toast } = jest.requireMock("sonner");
+
+      const user = userEvent.setup();
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+
+      await user.click(screen.getByTestId("team-strip-add"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(toast.error).toHaveBeenCalledWith("Failed to add Pokémon.");
+    });
+
+    it("shows toast when addPokemonToTeamAction throws", async () => {
+      const { addPokemonToTeamAction } = jest.requireMock("@/actions/teams");
+      addPokemonToTeamAction.mockRejectedValue(new Error("Network error"));
+      const { toast } = jest.requireMock("sonner");
+
+      const user = userEvent.setup();
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+
+      await user.click(screen.getByTestId("team-strip-add"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(toast.error).toHaveBeenCalledWith("Failed to add Pokémon.");
+    });
+
+    it("clears isSaving after addPokemonToTeamAction resolves", async () => {
+      const { addPokemonToTeamAction } = jest.requireMock("@/actions/teams");
+      addPokemonToTeamAction.mockResolvedValue({
+        success: true,
+        data: { pokemonId: 99 },
+      });
+
+      const user = userEvent.setup();
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+
+      await user.click(screen.getByTestId("team-strip-add"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(
+        screen.queryByTestId("team-workspace-save-indicator")
+      ).not.toBeInTheDocument();
+    });
+
+    it("assigns mega stone as held_item when adding a mega species", async () => {
+      const { addPokemonToTeamAction } = jest.requireMock("@/actions/teams");
+      const { getMegaStoneForSpecies } = jest.requireMock("@trainers/pokemon");
+      getMegaStoneForSpecies.mockReturnValue("Charizardite Y");
+
+      const user = userEvent.setup();
+      render(<TeamWorkspace {...defaultProps} team={makeTeam([])} />);
+
+      await user.click(screen.getByTestId("team-strip-add"));
+      await user.click(screen.getByTestId("species-picker-select-charizard"));
+
+      expect(addPokemonToTeamAction).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ held_item: "Charizardite Y" }),
+        expect.any(Number)
+      );
+    });
+
+    it("picks the first gap in positions rather than always using length+1", async () => {
+      const { addPokemonToTeamAction } = jest.requireMock("@/actions/teams");
+
+      const user = userEvent.setup();
+      // Positions 1, 3 occupied — gap is position 2
+      const team = makeTeam([
+        makePokemonEntry(1, 1, "Incineroar"),
+        makePokemonEntry(3, 3, "Arcanine"),
+      ]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("team-strip-add"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(addPokemonToTeamAction).toHaveBeenCalledWith(
+        1,
+        expect.any(Object),
+        2 // first gap
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // handleSpeciesSelect — change mode
+  // ---------------------------------------------------------------------------
+
+  describe("handleSpeciesSelect — change mode", () => {
+    it("calls updatePokemonAction with the new species fields", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      const { getValidAbilities } = jest.requireMock("@trainers/pokemon");
+      getValidAbilities.mockReturnValue(["Sand Stream"]);
+
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      // Re-click the selected chip to open picker in change mode
+      await user.click(screen.getByTestId("team-strip-chip-1"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(updatePokemonAction).toHaveBeenCalledWith(
+        1, // team.id
+        1, // pokemon.id
+        expect.objectContaining({ species: "Garchomp", ability: "Sand Stream" })
+      );
+    });
+
+    it("sets isSaving while updatePokemonAction is pending in change mode", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      updatePokemonAction.mockImplementation(() => new Promise(() => {}));
+
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("team-strip-chip-1"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(
+        screen.getByTestId("team-workspace-save-indicator")
+      ).toBeInTheDocument();
+    });
+
+    it("refreshes after a successful species change", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      updatePokemonAction.mockResolvedValue({ success: true });
+
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("team-strip-chip-1"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      await waitFor(() => {
+        expect(mockRouter.refresh).toHaveBeenCalled();
+      });
+    });
+
+    it("shows toast when species change fails with error message", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      updatePokemonAction.mockResolvedValue({
+        success: false,
+        error: "Species not allowed in format",
+      });
+      const { toast } = jest.requireMock("sonner");
+
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("team-strip-chip-1"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(toast.error).toHaveBeenCalledWith("Species not allowed in format");
+    });
+
+    it("uses fallback error text when species change fails without a message", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      updatePokemonAction.mockResolvedValue({ success: false, error: null });
+      const { toast } = jest.requireMock("sonner");
+
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("team-strip-chip-1"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(toast.error).toHaveBeenCalledWith("Failed to update species.");
+    });
+
+    it("shows toast when updatePokemonAction throws in change mode", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      updatePokemonAction.mockRejectedValue(new Error("timeout"));
+      const { toast } = jest.requireMock("sonner");
+
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("team-strip-chip-1"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(toast.error).toHaveBeenCalledWith("Failed to update species.");
+    });
+
+    it("shows the saving indicator while updatePokemonAction is in-flight in change mode", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      // Keep the promise pending to observe the saving indicator
+      updatePokemonAction.mockImplementation(() => new Promise(() => {}));
+
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("team-strip-chip-1"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(
+        screen.getByTestId("team-workspace-save-indicator")
+      ).toBeInTheDocument();
+    });
+
+    it("includes mega stone in changeFields when changing to a mega species", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      const { getMegaStoneForSpecies } = jest.requireMock("@trainers/pokemon");
+      getMegaStoneForSpecies.mockReturnValue("Garchompite");
+
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("team-strip-chip-1"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(updatePokemonAction).toHaveBeenCalledWith(
+        1,
+        1,
+        expect.objectContaining({ held_item: "Garchompite" })
+      );
+    });
+
+    it("resets moves to null in changeFields", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      updatePokemonAction.mockResolvedValue({ success: true });
+
+      const user = userEvent.setup();
+      const team = makeTeam([makePokemonEntry(1, 1, "Incineroar")]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      await user.click(screen.getByTestId("team-strip-chip-1"));
+      await user.click(screen.getByTestId("species-picker-select"));
+
+      expect(updatePokemonAction).toHaveBeenCalledWith(
+        1,
+        1,
+        expect.objectContaining({
+          move1: "",
+          move2: null,
+          move3: null,
+          move4: null,
+        })
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mega stone auto-correct effect
+  // ---------------------------------------------------------------------------
+
+  describe("mega stone auto-correct effect", () => {
+    it("calls updatePokemonAction to fix wrong mega stone on mount", async () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      const { getMegaStoneForSpecies } = jest.requireMock("@trainers/pokemon");
+      // Species needs Charizardite Y but currently has nothing
+      getMegaStoneForSpecies.mockImplementation((species: string) =>
+        species === "Charizard" ? "Charizardite Y" : null
+      );
+
+      const team = makeTeam([makePokemonEntry(1, 1, "Charizard")]);
+      // held_item is null — should be auto-corrected
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      // The effect runs on mount and issues a background save
+      expect(updatePokemonAction).toHaveBeenCalledWith(
+        1,
+        1,
+        expect.objectContaining({ held_item: "Charizardite Y" })
+      );
+    });
+
+    it("does NOT call updatePokemonAction when the mega stone is already correct", () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      const { getMegaStoneForSpecies } = jest.requireMock("@trainers/pokemon");
+      getMegaStoneForSpecies.mockReturnValue("Charizardite Y");
+
+      const entry = {
+        ...makePokemonEntry(1, 1, "Charizard"),
+        pokemon: {
+          ...makePokemonEntry(1, 1, "Charizard").pokemon!,
+          held_item: "Charizardite Y", // already correct
+        },
+      };
+      const team = makeTeam([entry]);
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      expect(updatePokemonAction).not.toHaveBeenCalled();
+    });
+
+    it("skips team_pokemon entries with null pokemon", () => {
+      const { updatePokemonAction } = jest.requireMock("@/actions/teams");
+      const { getMegaStoneForSpecies } = jest.requireMock("@trainers/pokemon");
+      getMegaStoneForSpecies.mockReturnValue("SomeMegaStone");
+
+      const team: TeamWithPokemon = {
+        ...makeTeam([]),
+        team_pokemon: [
+          {
+            id: 1,
+            team_id: 1,
+            pokemon_id: null,
+            team_position: 1,
+            pokemon: null,
+          } as unknown as TeamWithPokemon["team_pokemon"][number],
+        ],
+      };
+      render(<TeamWorkspace {...defaultProps} team={team} />);
+
+      // No pokemon object — effect should not call updatePokemonAction
+      expect(updatePokemonAction).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Format fallback
+  // ---------------------------------------------------------------------------
+
+  describe("format fallback", () => {
+    it("renders without crashing when no format is provided", () => {
+      const { getFormatById } = jest.requireMock("@trainers/pokemon");
+      getFormatById.mockReturnValue({
+        id: "gen9vgc2024regh",
+        label: "Default",
+      });
+
+      render(<TeamWorkspace team={makeTeam([])} format={undefined} />);
+      expect(screen.getByTestId("team-workspace")).toBeInTheDocument();
     });
   });
 });
