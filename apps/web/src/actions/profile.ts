@@ -281,6 +281,13 @@ export async function updateProfile(data: {
 
       const pdsStatus = pdsStatusSchema.nullable().parse(userData.pds_status);
 
+      if (pdsStatus !== "external" && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        return {
+          success: false,
+          error: "Server configuration error. Please try again.",
+        };
+      }
+
       // If PDS is pending, failed, or null — provision a new PDS account
       if (
         pdsStatus === "pending" ||
@@ -306,7 +313,7 @@ export async function updateProfile(data: {
             signal: controller.signal,
           });
           if (fnError) {
-            if (controller.signal.aborted) {
+            if (controller.signal.aborted || fnError.name === "AbortError") {
               return {
                 success: false,
                 error: "Request timed out. Please try again.",
@@ -357,7 +364,7 @@ export async function updateProfile(data: {
             signal: controller.signal,
           });
           if (fnError) {
-            if (controller.signal.aborted) {
+            if (controller.signal.aborted || fnError.name === "AbortError") {
               return {
                 success: false,
                 error: "Request timed out. Please try again.",

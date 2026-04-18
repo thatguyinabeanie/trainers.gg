@@ -377,10 +377,8 @@ export function PokemonEditor({
             disabled={disabled}
           />
 
-          {/* TODO(IV reflow): The legacy IvEditor was removed during the
-              StatsTable migration. Restore IV editing once the IV reflow
-              design lands — the new surface should sit adjacent to the
-              StatsTable, not as its own section. */}
+          {/* TODO(IV reflow): Restore IV editing once the IV reflow design
+              lands — the new surface should sit adjacent to StatsTable. */}
         </section>
 
         {/* -----------------------------------------------------------------

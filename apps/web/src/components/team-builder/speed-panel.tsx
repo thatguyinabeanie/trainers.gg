@@ -326,6 +326,10 @@ function teamMonToScored(
   };
 }
 
+function normalizeSpecies(species: string): string {
+  return species.toLowerCase().replace(/[\s\-_]+/g, "");
+}
+
 /** Sprite lookup that swallows any underlying lookup miss. */
 function safeSprite(species: string): string | undefined {
   try {
@@ -379,21 +383,14 @@ function SpeedPanelInner({
   );
 
   // Team species set — used to dedupe meta opponents that overlap with the team.
-  const teamSpeciesIds = new Set(
-    team.map((p) => p.species.toLowerCase().replace(/[\s\-_]+/g, ""))
-  );
+  const teamSpeciesIds = new Set(team.map((p) => normalizeSpecies(p.species)));
 
   const legalSpecies = getLegalSpecies(format.id);
   const metaTiers = legalSpecies
     ? buildFullMetaTiers(legalSpecies, format)
     : getMetaSpeedTiers(format.id);
   const metaScored: ScoredMon[] = metaTiers
-    .filter(
-      (entry) =>
-        !teamSpeciesIds.has(
-          entry.species.toLowerCase().replace(/[\s\-_]+/g, "")
-        )
-    )
+    .filter((entry) => !teamSpeciesIds.has(normalizeSpecies(entry.species)))
     .map((entry) => metaToScoredMon(entry, toggle, format));
 
   const allScored: ScoredMon[] = [...teamScored, ...metaScored];

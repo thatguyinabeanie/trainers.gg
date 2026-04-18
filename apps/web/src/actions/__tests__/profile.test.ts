@@ -11,10 +11,14 @@ const mockAuth = {
   getSession: jest.fn(),
   updateUser: jest.fn(),
 };
+const mockFunctionsInvoke = jest.fn();
 
 const mockSupabaseClient = {
   from: mockFrom,
   auth: mockAuth,
+  functions: {
+    invoke: mockFunctionsInvoke,
+  },
 };
 
 jest.mock("@/lib/supabase/server", () => ({
@@ -484,6 +488,10 @@ describe("updateProfile", () => {
       data: { session: { access_token: "token-123" } },
     });
     mockAuth.updateUser.mockResolvedValue({ error: null });
+    mockFunctionsInvoke.mockResolvedValue({
+      data: { success: true },
+      error: null,
+    });
     global.fetch = jest.fn().mockResolvedValue({
       json: () => Promise.resolve({ success: true }),
     });
@@ -625,11 +633,6 @@ describe("updateProfile", () => {
         })
       );
 
-      // Mock successful edge function call
-      global.fetch = jest.fn().mockResolvedValue({
-        json: () => Promise.resolve({ success: true }),
-      });
-
       // Update users table
       mockFrom.mockReturnValueOnce(
         createQueryBuilder({
@@ -656,15 +659,10 @@ describe("updateProfile", () => {
 
       const result = await updateProfile({ username: "newusername" });
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://test.supabase.co/functions/v1/update-pds-handle",
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith(
+        "update-pds-handle",
         expect.objectContaining({
-          method: "POST",
-          headers: expect.objectContaining({
-            "Content-Type": "application/json",
-            Authorization: "Bearer token-123",
-          }),
-          body: expect.stringContaining("newusername"),
+          body: expect.objectContaining({ username: "newusername" }),
         })
       );
       expect(result.success).toBe(true);
@@ -680,11 +678,6 @@ describe("updateProfile", () => {
           }),
         })
       );
-
-      // Mock provision-pds call
-      global.fetch = jest.fn().mockResolvedValue({
-        json: () => Promise.resolve({ success: true }),
-      });
 
       // Update users table
       mockFrom.mockReturnValueOnce(
@@ -713,12 +706,12 @@ describe("updateProfile", () => {
       const result = await updateProfile({ username: "newusername" });
 
       // Should call provision-pds, not update-pds-handle
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("provision-pds"),
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith(
+        "provision-pds",
         expect.any(Object)
       );
-      expect(global.fetch).not.toHaveBeenCalledWith(
-        expect.stringContaining("update-pds-handle"),
+      expect(mockFunctionsInvoke).not.toHaveBeenCalledWith(
+        "update-pds-handle",
         expect.any(Object)
       );
       expect(result.success).toBe(true);
@@ -764,7 +757,7 @@ describe("updateProfile", () => {
       const result = await updateProfile({ username: "newusername" });
 
       // Should not call any PDS function
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockFunctionsInvoke).not.toHaveBeenCalled();
       expect(result.success).toBe(true);
     });
 
@@ -779,16 +772,13 @@ describe("updateProfile", () => {
         })
       );
 
-      // Mock edge function failure (returns before database update)
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () =>
-          Promise.resolve({
-            success: false,
-            code: "HANDLE_TAKEN",
-            error: "Handle already taken",
-          }),
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: {
+          success: false,
+          code: "HANDLE_TAKEN",
+          error: "Handle already taken",
+        },
+        error: null,
       });
 
       const result = await updateProfile({ username: "takenhandle" });
@@ -808,11 +798,11 @@ describe("updateProfile", () => {
         })
       );
 
-      // Mock fetch timeout
-      global.fetch = jest.fn().mockImplementation(() => {
-        const error = new Error("Timeout");
-        error.name = "AbortError";
-        return Promise.reject(error);
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: null,
+        error: Object.assign(new Error("The signal was aborted"), {
+          name: "AbortError",
+        }),
       });
 
       const result = await updateProfile({ username: "newusername" });
@@ -832,13 +822,9 @@ describe("updateProfile", () => {
         })
       );
 
-      // Mock edge function failure
-      global.fetch = jest.fn().mockResolvedValue({
-        json: () =>
-          Promise.resolve({
-            success: false,
-            error: "PDS API error",
-          }),
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: { success: false, error: "PDS API error" },
+        error: null,
       });
 
       const result = await updateProfile({ username: "newusername" });
@@ -857,14 +843,6 @@ describe("updateProfile", () => {
           }),
         })
       );
-
-      // Mock successful edge function call
-      const mockFetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ success: true }),
-      });
-      global.fetch = mockFetch;
 
       // Update users table
       mockFrom.mockReturnValueOnce(
@@ -893,11 +871,10 @@ describe("updateProfile", () => {
       await updateProfile({ username: "my_user_name123" });
 
       // Should call update-pds-handle with sanitized username (underscores removed)
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("update-pds-handle"),
+      expect(mockFunctionsInvoke).toHaveBeenCalledWith(
+        "update-pds-handle",
         expect.objectContaining({
-          method: "POST",
-          body: expect.stringContaining("myusername123"),
+          body: expect.objectContaining({ username: "myusername123" }),
         })
       );
     });
@@ -1201,9 +1178,8 @@ describe("updateProfile", () => {
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     });
 
-    it("returns error when no session during provision-pds", async () => {
+    it("returns error when provision-pds invoke fails", async () => {
       mockUsernameQuery();
-      mockAuth.getSession.mockResolvedValue({ data: { session: null } });
 
       // PDS status check — null (triggers provision)
       mockFrom.mockReturnValueOnce(
@@ -1215,10 +1191,15 @@ describe("updateProfile", () => {
         })
       );
 
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: null,
+        error: new Error("JWT expired"),
+      });
+
       const result = await updateProfile({ username: "newuser" });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("No active session");
+      expect(result.error).toContain("Failed to connect to server");
     });
 
     it("returns error when NEXT_PUBLIC_SUPABASE_URL missing during provision-pds", async () => {
@@ -1238,7 +1219,7 @@ describe("updateProfile", () => {
       const result = await updateProfile({ username: "newuser" });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Server configuration error");
+      expect(result.error).toContain("Server configuration error");
     });
 
     it("returns error when provision-pds fetch times out", async () => {
@@ -1254,10 +1235,11 @@ describe("updateProfile", () => {
         })
       );
 
-      global.fetch = jest.fn().mockImplementation(() => {
-        const error = new Error("AbortError");
-        error.name = "AbortError";
-        return Promise.reject(error);
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: null,
+        error: Object.assign(new Error("The signal was aborted"), {
+          name: "AbortError",
+        }),
       });
 
       const result = await updateProfile({ username: "newuser" });
@@ -1279,7 +1261,10 @@ describe("updateProfile", () => {
         })
       );
 
-      global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: null,
+        error: new Error("Network error"),
+      });
 
       const result = await updateProfile({ username: "newuser" });
 
@@ -1301,12 +1286,9 @@ describe("updateProfile", () => {
       );
 
       // provision-pds returns ALREADY_PROVISIONED
-      global.fetch = jest.fn().mockResolvedValue({
-        json: () =>
-          Promise.resolve({
-            success: false,
-            code: "ALREADY_PROVISIONED",
-          }),
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: { success: false, code: "ALREADY_PROVISIONED" },
+        error: null,
       });
 
       // Update users table
@@ -1344,9 +1326,9 @@ describe("updateProfile", () => {
         })
       );
 
-      global.fetch = jest.fn().mockResolvedValue({
-        status: 500,
-        json: () => Promise.reject(new Error("not json")),
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: { success: false },
+        error: null,
       });
 
       const result = await updateProfile({ username: "newuser" });
@@ -1368,12 +1350,9 @@ describe("updateProfile", () => {
         })
       );
 
-      global.fetch = jest.fn().mockResolvedValue({
-        json: () =>
-          Promise.resolve({
-            success: false,
-            code: "HANDLE_TAKEN",
-          }),
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: { success: false, code: "HANDLE_TAKEN" },
+        error: null,
       });
 
       const result = await updateProfile({ username: "takenuser" });
@@ -1395,13 +1374,13 @@ describe("updateProfile", () => {
         })
       );
 
-      global.fetch = jest.fn().mockResolvedValue({
-        json: () =>
-          Promise.resolve({
-            success: false,
-            code: "SOME_OTHER_ERROR",
-            error: "Quota exceeded",
-          }),
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: {
+          success: false,
+          code: "SOME_OTHER_ERROR",
+          error: "Quota exceeded",
+        },
+        error: null,
       });
 
       const result = await updateProfile({ username: "newuser" });
@@ -1410,9 +1389,8 @@ describe("updateProfile", () => {
       expect(result.error).toBe("Quota exceeded");
     });
 
-    it("returns error when no session during active PDS handle update", async () => {
+    it("returns error when update-pds-handle invoke fails", async () => {
       mockUsernameQuery();
-      mockAuth.getSession.mockResolvedValue({ data: { session: null } });
 
       // PDS status check — active
       mockFrom.mockReturnValueOnce(
@@ -1424,10 +1402,15 @@ describe("updateProfile", () => {
         })
       );
 
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: null,
+        error: new Error("JWT expired"),
+      });
+
       const result = await updateProfile({ username: "newuser" });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("No active session");
+      expect(result.error).toContain("Failed to update Bluesky handle");
     });
 
     it("returns error when update-pds-handle fetch throws network error", async () => {
@@ -1443,7 +1426,10 @@ describe("updateProfile", () => {
         })
       );
 
-      global.fetch = jest.fn().mockRejectedValue(new Error("Network failure"));
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: null,
+        error: new Error("Network failure"),
+      });
 
       const result = await updateProfile({ username: "newuser" });
 
@@ -1464,9 +1450,9 @@ describe("updateProfile", () => {
         })
       );
 
-      global.fetch = jest.fn().mockResolvedValue({
-        status: 500,
-        json: () => Promise.reject(new Error("bad json")),
+      mockFunctionsInvoke.mockResolvedValueOnce({
+        data: null,
+        error: new Error("parse error"),
       });
 
       const result = await updateProfile({ username: "newuser" });
