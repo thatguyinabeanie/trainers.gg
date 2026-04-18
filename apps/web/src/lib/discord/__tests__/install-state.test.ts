@@ -41,10 +41,17 @@ describe("signInstallState / verifyInstallState", () => {
   describe("verifyInstallState — invalid tokens", () => {
     it("returns null for a tampered token", async () => {
       const token = await signInstallState(VALID_PAYLOAD);
-      // Flip one character in the signature (last segment of the JWT)
+      // Mutate a middle character of the signature with a guaranteed-different
+      // base64url char. Avoid the last character — its low bits land in the
+      // base64url padding region, so swapping 'a'↔'b' there can decode to the
+      // same signature bytes and pass verification (intermittent flake).
       const parts = token.split(".");
       const sig = parts[2]!;
-      parts[2] = sig.slice(0, -1) + (sig.endsWith("a") ? "b" : "a");
+      const mid = Math.floor(sig.length / 2);
+      const original = sig[mid]!;
+      // Pick a char that differs in multiple bit positions and isn't the same.
+      const replacement = original === "Z" ? "a" : "Z";
+      parts[2] = sig.slice(0, mid) + replacement + sig.slice(mid + 1);
       const tampered = parts.join(".");
 
       const result = await verifyInstallState(tampered);
