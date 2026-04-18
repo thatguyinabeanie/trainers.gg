@@ -46,7 +46,7 @@ function categoryChip(category: MoveData["category"]): {
   };
 }
 
-/** Format accuracy: `100%`, `—` for `true` (always hits) or 0 (unknown). */
+/** Format accuracy: `"100"`, `"—"` for `true` (always hits) or 0 (unknown). */
 function formatAccuracy(accuracy: MoveData["accuracy"]): string {
   if (accuracy === true) return "—";
   if (accuracy === 0) return "—";

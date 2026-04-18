@@ -229,9 +229,13 @@ export function getMoveHelperText(move: MoveHelperInput): string {
   // Multi-hit (e.g., Bullet Seed = 2-5 hits, Double Hit = 2 hits).
   if (typeof move.multihit === "number" && move.multihit > 1) {
     parts.push(`hits ${move.multihit} times`);
-  } else if (Array.isArray(move.multihit) && move.multihit.length === 2) {
-    const [min, max] = move.multihit;
-    parts.push(`hits ${min}–${max} times`);
+  } else if (Array.isArray(move.multihit)) {
+    if (move.multihit.length === 1) {
+      parts.push(`hits ${move.multihit[0]} times`);
+    } else if (move.multihit.length >= 2) {
+      const [min, max] = move.multihit;
+      parts.push(`hits ${min}–${max} times`);
+    }
   }
 
   // Recoil / drain.
@@ -245,7 +249,10 @@ export function getMoveHelperText(move: MoveHelperInput): string {
   }
 
   // Self-destruct.
-  if (move.selfdestruct) {
+  if (move.selfdestruct === "ifHit") {
+    // "ifHit" means the user faints only when the move connects.
+    parts.push("user faints if it hits");
+  } else if (move.selfdestruct) {
     parts.push("user faints");
   }
 

@@ -107,7 +107,7 @@ export const lightTokens: SemanticTokens = {
 
   // Stat tiers (light mode — tuned for WCAG AA contrast (≥4.5:1) on bg-card
   // / neutral-50). Lightness values were chosen against an sRGB-luminance
-  // calculation; see PR review for the audit.
+  // calculation.
   statLow: { l: 0.54, c: 0.18, h: 25 }, // warm coral — 5.32:1
   statMid: { l: 0.55, c: 0.16, h: 70 }, // amber — 4.78:1
   statGood: { l: 0.5, c: 0.18, h: 145 }, // green — 5.23:1

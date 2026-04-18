@@ -38,9 +38,10 @@ describe("getMetaSpeedTiers — championsvgc2026regma", () => {
   it("uses lowercase, no-space species ids (Showdown convention)", () => {
     for (const e of entries) {
       // Showdown ids are alphanumeric (with hyphens for forms like indeedee-f).
-      // Forbid uppercase and underscores.
+      // Forbid uppercase, underscores, and spaces.
       expect(e.species).toBe(e.species.toLowerCase());
       expect(e.species).not.toMatch(/_/);
+      expect(e.species).not.toMatch(/\s/);
     }
   });
 

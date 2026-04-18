@@ -266,7 +266,7 @@ function AttackerSection({
           value={status}
           onChange={(e) => onStatusChange(e.target.value)}
           aria-label="Attacker status"
-          className="border-border bg-background h-7 flex-1 rounded border px-1 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+          className="border-border bg-background focus:ring-primary h-7 flex-1 rounded border px-1 text-xs focus:ring-1 focus:outline-none"
         >
           {ATTACKER_STATUS_OPTIONS.map((s) => (
             <option key={s} value={s}>
@@ -311,7 +311,7 @@ function BoostStepper({ label, value, onChange }: BoostStepperProps) {
       <span
         className={cn(
           "min-w-[26px] text-center font-mono text-xs tabular-nums",
-          value > 0 && "font-semibold text-emerald-600",
+          value > 0 && "text-stat-good font-semibold",
           value < 0 && "text-destructive font-semibold"
         )}
       >

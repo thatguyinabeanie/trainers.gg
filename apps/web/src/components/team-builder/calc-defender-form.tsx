@@ -259,7 +259,7 @@ export function CalcDefenderForm({
                 aria-label={`${STAT_LABELS[stat]} EV`}
                 className={cn(
                   "border-border bg-background h-7 rounded border px-1 text-center text-xs tabular-nums",
-                  "focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                  "focus:ring-primary focus:ring-1 focus:outline-none"
                 )}
               />
             </div>
@@ -296,6 +296,7 @@ export function CalcDefenderForm({
                 key={s}
                 type="button"
                 onClick={() => onStatusChange(s)}
+                aria-pressed={active}
                 className={cn(
                   "rounded-md border px-2 py-1 text-[10px] font-medium transition-colors duration-150",
                   active
@@ -396,7 +397,7 @@ function Stepper({ label, value, onChange }: StepperProps) {
       <span
         className={cn(
           "min-w-[28px] text-center font-mono text-xs tabular-nums",
-          value > 0 && "font-semibold text-emerald-600",
+          value > 0 && "text-stat-good font-semibold",
           value < 0 && "text-destructive font-semibold"
         )}
       >

@@ -64,42 +64,45 @@ export function CalcFieldForm({
 }: CalcFieldFormProps) {
   return (
     <div className="flex flex-col gap-2.5">
-      {/* Mode pills */}
-      <PillRow label="Mode">
+      {/* Mode pills — mutually exclusive */}
+      <PillRow label="Mode" radioGroup>
         {(["Doubles", "Singles"] as const).map((g) => (
           <Pill
             key={g}
             active={gameType === g}
             onClick={() => onGameTypeChange(g)}
             testId={`calc-field-mode-${g.toLowerCase()}`}
+            radio
           >
             {g}
           </Pill>
         ))}
       </PillRow>
 
-      {/* Weather */}
-      <PillRow label="Weather">
+      {/* Weather — mutually exclusive */}
+      <PillRow label="Weather" radioGroup>
         {WEATHER_OPTIONS.map((opt) => (
           <Pill
             key={opt.value || "none"}
             active={weather === opt.value}
             onClick={() => onWeatherChange(opt.value)}
             testId={`calc-field-weather-${opt.label.toLowerCase()}`}
+            radio
           >
             {opt.label}
           </Pill>
         ))}
       </PillRow>
 
-      {/* Terrain */}
-      <PillRow label="Terrain">
+      {/* Terrain — mutually exclusive */}
+      <PillRow label="Terrain" radioGroup>
         {TERRAIN_OPTIONS.map((opt) => (
           <Pill
             key={opt.value || "none"}
             active={terrain === opt.value}
             onClick={() => onTerrainChange(opt.value)}
             testId={`calc-field-terrain-${opt.label.toLowerCase()}`}
+            radio
           >
             {opt.label}
           </Pill>
@@ -295,15 +298,22 @@ function SpikesPicker({ value, onChange }: SpikesPickerProps) {
 interface PillRowProps {
   label: string;
   children: React.ReactNode;
+  /** When true, wraps children in role="radiogroup" for mutually-exclusive pill groups. */
+  radioGroup?: boolean;
 }
 
-function PillRow({ label, children }: PillRowProps) {
+function PillRow({ label, children, radioGroup }: PillRowProps) {
   return (
     <div>
       <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">
         {label}
       </p>
-      <div className="flex flex-wrap gap-1">{children}</div>
+      <div
+        className="flex flex-wrap gap-1"
+        {...(radioGroup ? { role: "radiogroup", "aria-label": label } : {})}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -313,14 +323,19 @@ interface PillProps {
   onClick: () => void;
   children: React.ReactNode;
   testId?: string;
+  /** When true, renders with role="radio" + aria-checked for mutually-exclusive groups. */
+  radio?: boolean;
 }
 
-function Pill({ active, onClick, children, testId }: PillProps) {
+function Pill({ active, onClick, children, testId, radio }: PillProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       data-testid={testId}
+      {...(radio
+        ? { role: "radio", "aria-checked": active }
+        : { "aria-pressed": active })}
       className={cn(
         "rounded-md border px-2 py-1 text-[11px] font-medium transition-colors duration-150",
         active
