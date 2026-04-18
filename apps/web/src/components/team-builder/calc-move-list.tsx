@@ -111,6 +111,7 @@ function MoveRow({
         type="button"
         onClick={onSelect}
         data-testid={`calc-move-row-${name}`}
+        aria-pressed={isActive}
         className="flex min-w-0 flex-1 items-center gap-2 text-left"
       >
         <span

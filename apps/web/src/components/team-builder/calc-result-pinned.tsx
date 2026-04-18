@@ -44,10 +44,11 @@ function describeVerdict(output: CalcOutput): {
   if (output.maxPercent >= 50) {
     return { label: "Possible 2HKO", tone: "chance" };
   }
-  if (output.minPercent >= 34) {
+  // 3HKO threshold: 100/3 ≈ 33.34% — anything at or above guarantees a KO in 3 hits.
+  if (output.minPercent >= 100 / 3) {
     return { label: "Guaranteed 3HKO", tone: "guaranteed" };
   }
-  if (output.maxPercent >= 34) {
+  if (output.maxPercent >= 100 / 3) {
     return { label: "Possible 3HKO", tone: "chance" };
   }
   return { label: "No KO", tone: "none" };

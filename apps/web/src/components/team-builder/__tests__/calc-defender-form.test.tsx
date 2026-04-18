@@ -303,8 +303,10 @@ describe("CalcDefenderForm — Target select", () => {
     const rillaboomOptions = Array.from(targetSelect.options).filter(
       (o) => o.value === "Rillaboom"
     );
-    // Should appear exactly once (filtered from teammates, not duplicated)
-    expect(rillaboomOptions.length).toBe(0);
+    // Should appear exactly once — kept in its meta/teammates group so the
+    // controlled <select value={species}> can match. We don't add a separate
+    // "current" option when the species is already in a group.
+    expect(rillaboomOptions.length).toBe(1);
   });
 
   it("renders selects with aria-label for screen readers", () => {
@@ -340,12 +342,11 @@ describe("CalcDefenderForm — Target select", () => {
     expect(optionTexts).toContain("Dragapult");
   });
 
-  it("excludes current species from meta optgroup to avoid duplicate selection", () => {
+  it("keeps current species in meta optgroup so the controlled select matches", () => {
     mockGetMetaSpeedTiers.mockReturnValue([
       { species: "Incineroar", displayName: "Incineroar", speed: 60 },
       { species: "Rillaboom", displayName: "Rillaboom", speed: 85 },
     ]);
-    // species="Incineroar" — should not appear in Meta group
     renderForm({ format: championsFormat });
     const targetSelect = screen.getByTestId(
       "calc-defender-target"
@@ -354,7 +355,9 @@ describe("CalcDefenderForm — Target select", () => {
     const optionValues = Array.from(metaGroup.querySelectorAll("option")).map(
       (o) => o.value
     );
-    expect(optionValues).not.toContain("Incineroar");
+    // The current species (Incineroar) IS rendered so the controlled
+    // <select value={species}> can match — preserving select state.
+    expect(optionValues).toContain("Incineroar");
     expect(optionValues).toContain("Rillaboom");
   });
 
@@ -389,7 +392,8 @@ describe("CalcDefenderForm — Target select", () => {
       (o) => o.value
     );
     expect(optionValues).toContain("Rillaboom");
-    expect(optionValues).not.toContain("Incineroar");
+    // Current species kept in the group so the controlled select matches.
+    expect(optionValues).toContain("Incineroar");
   });
 
   it("calls onSpeciesChange when a new target is selected", async () => {

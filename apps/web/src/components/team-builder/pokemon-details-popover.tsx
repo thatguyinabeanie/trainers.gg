@@ -179,10 +179,8 @@ export function PokemonDetailsPopover({
             type="button"
             variant="ghost"
             size="icon"
-            className={cn(
-              "size-8",
-              disabled && "pointer-events-none opacity-50"
-            )}
+            disabled={disabled}
+            className={cn("size-8", disabled && "opacity-50")}
             aria-label="More Pokémon details"
             title="More details"
           />

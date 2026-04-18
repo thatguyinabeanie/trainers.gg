@@ -162,27 +162,25 @@ export function CalcDefenderForm({
           <option value="">Custom</option>
           {meta.length > 0 && (
             <optgroup label="Meta">
-              {meta
-                .filter((m) => m.displayName !== species)
-                .map((m) => (
-                  <option key={`meta-${m.species}`} value={m.displayName}>
-                    {m.displayName}
-                  </option>
-                ))}
+              {meta.map((m) => (
+                <option key={`meta-${m.species}`} value={m.displayName}>
+                  {m.displayName}
+                </option>
+              ))}
             </optgroup>
           )}
           {teammates.length > 0 && (
             <optgroup label="Your team">
-              {teammates
-                .filter((p) => p.species !== species)
-                .map((p) => (
-                  <option key={`team-${p.id}`} value={p.species}>
-                    {p.species}
-                  </option>
-                ))}
+              {teammates.map((p) => (
+                <option key={`team-${p.id}`} value={p.species}>
+                  {p.species}
+                </option>
+              ))}
             </optgroup>
           )}
-          {/* If species is a custom (non-empty) value not present in any group, show it as a selected option. */}
+          {/* Render the current species as an extra option only when it isn't
+              already in either group — avoids the controlled <select> losing
+              its match (which would render as the leading "Custom" option). */}
           {species !== "" &&
             !meta.some((m) => m.displayName === species) &&
             !teammates.some((p) => p.species === species) && (

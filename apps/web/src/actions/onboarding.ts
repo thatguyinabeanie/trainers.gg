@@ -198,23 +198,20 @@ async function provisionPds(
         signal: controller.signal,
       });
 
-      if (
-        fnError ||
-        (result && !result.success && result.code !== "ALREADY_PROVISIONED")
+      // supabase.functions.invoke returns errors via the `error` field rather
+      // than throwing — abort/timeout shows up as fnError with name "AbortError".
+      if (fnError) {
+        if (controller.signal.aborted || fnError.name === "AbortError") {
+          console.warn("PDS provisioning timed out during onboarding");
+        } else {
+          console.warn("PDS provisioning failed during onboarding:", fnError);
+        }
+      } else if (
+        result &&
+        !result.success &&
+        result.code !== "ALREADY_PROVISIONED"
       ) {
-        console.warn(
-          "PDS provisioning failed during onboarding:",
-          fnError ?? result
-        );
-      }
-    } catch (err) {
-      if (
-        err instanceof Error &&
-        (err.name === "AbortError" || controller.signal.aborted)
-      ) {
-        console.warn("PDS provisioning timed out during onboarding");
-      } else {
-        console.warn("PDS provisioning error during onboarding:", err);
+        console.warn("PDS provisioning failed during onboarding:", result);
       }
     } finally {
       clearTimeout(timeoutId);

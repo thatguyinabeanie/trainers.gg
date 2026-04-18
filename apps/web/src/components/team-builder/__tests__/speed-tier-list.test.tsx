@@ -196,12 +196,18 @@ describe("SpeedTierList — hint labels removed", () => {
     const tieredRows = document.querySelectorAll("[data-tier-grid]");
     expect(tieredRows.length).toBeGreaterThanOrEqual(2);
 
+    // Every tier-grid element MUST carry a grid-cols-* class — flagging a
+    // null here catches the regression where a body row drops the class while
+    // the header keeps it.
     const gridClasses = Array.from(tieredRows).map((el) => {
       const match = el.className.match(/grid-cols-\S+/);
       return match ? match[0] : null;
     });
 
-    const unique = new Set(gridClasses.filter(Boolean));
+    expect(gridClasses).toEqual(
+      gridClasses.map(() => expect.stringMatching(/^grid-cols-/))
+    );
+    const unique = new Set(gridClasses);
     expect(unique.size).toBe(1);
   });
 });

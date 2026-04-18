@@ -112,14 +112,15 @@ describe("MoveRow", () => {
   });
 
   describe("filled row — status move", () => {
-    it("dims BP and ACC and renders em-dash for both", () => {
+    it("dims BP for status moves but still surfaces real accuracy", () => {
       render(<MoveRow move={statusMove} onOpenPicker={jest.fn()} />);
-      // Three em-dashes — category chip (Status), BP, and ACC.
+      // Two em-dashes — category chip (Status) and BP. Accuracy stays
+      // numeric so meaningful info (e.g., Will-O-Wisp 85%) isn't hidden.
       const dashes = screen.getAllByText("—");
-      expect(dashes).toHaveLength(3);
-      // Numeric BP (0 → rendered as "—") and ACC (85 → "—" for status) must NOT appear.
+      expect(dashes).toHaveLength(2);
+      expect(screen.getByText("85%")).toBeInTheDocument();
+      // BP=0 is rendered as "—", not "0".
       expect(screen.queryByText("0")).not.toBeInTheDocument();
-      expect(screen.queryByText("85")).not.toBeInTheDocument();
     });
   });
 

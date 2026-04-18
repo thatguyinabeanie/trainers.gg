@@ -96,8 +96,9 @@ export function MoveRow({ move, onOpenPicker, className }: MoveRowProps) {
   const helperInput = getMoveHelperInput(move.name);
   const helper = helperInput ? getMoveHelperText(helperInput) : "";
 
-  // Compute once; used for both the rendered value and the muted-color decision.
-  const accuracyText = isStatus ? "—" : formatAccuracy(move.accuracy);
+  // formatAccuracy returns "—" for sky-high accuracy (true) — status moves like
+  // Will-O-Wisp still have meaningful numeric accuracy worth surfacing.
+  const accuracyText = formatAccuracy(move.accuracy);
 
   return (
     <button

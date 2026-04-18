@@ -516,7 +516,8 @@ export function ImportDialog({
                     value={paste}
                     onChange={(e) => setPaste(e.target.value)}
                     disabled={isWorking}
-                    className="max-h-44 resize-none overflow-y-auto font-mono text-xs"
+                    rows={8}
+                    className="h-44 resize-none overflow-y-auto font-mono text-xs"
                   />
                   <Button
                     onClick={handleParsePaste}
