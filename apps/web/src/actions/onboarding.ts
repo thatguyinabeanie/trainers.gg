@@ -207,6 +207,15 @@ async function provisionPds(
           fnError ?? result
         );
       }
+    } catch (err) {
+      if (
+        err instanceof Error &&
+        (err.name === "AbortError" || controller.signal.aborted)
+      ) {
+        console.warn("PDS provisioning timed out during onboarding");
+      } else {
+        console.warn("PDS provisioning error during onboarding:", err);
+      }
     } finally {
       clearTimeout(timeoutId);
     }

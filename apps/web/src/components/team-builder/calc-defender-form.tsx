@@ -252,6 +252,10 @@ export function CalcDefenderForm({
                 max={252}
                 value={evs[stat]}
                 onChange={(e) => {
+                  if (e.target.value === "") {
+                    onEvChange(stat, 0);
+                    return;
+                  }
                   const v = parseInt(e.target.value, 10);
                   if (!Number.isNaN(v))
                     onEvChange(stat, Math.max(0, Math.min(252, v)));

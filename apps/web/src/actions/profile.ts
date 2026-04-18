@@ -326,6 +326,21 @@ export async function updateProfile(data: {
             };
           }
           provisionResult = data ?? {};
+        } catch (err) {
+          if (
+            err instanceof Error &&
+            (err.name === "AbortError" || controller.signal.aborted)
+          ) {
+            return {
+              success: false,
+              error: "Request timed out. Please try again.",
+            };
+          }
+          console.error("Failed to call provision-pds:", err);
+          return {
+            success: false,
+            error: "Failed to connect to server. Please try again.",
+          };
         } finally {
           clearTimeout(timeoutId);
         }
@@ -377,6 +392,21 @@ export async function updateProfile(data: {
             };
           }
           updateResult = data ?? {};
+        } catch (err) {
+          if (
+            err instanceof Error &&
+            (err.name === "AbortError" || controller.signal.aborted)
+          ) {
+            return {
+              success: false,
+              error: "Request timed out. Please try again.",
+            };
+          }
+          console.error("Failed to call update-pds-handle:", err);
+          return {
+            success: false,
+            error: "Failed to update Bluesky handle. Please try again.",
+          };
         } finally {
           clearTimeout(timeoutId);
         }
