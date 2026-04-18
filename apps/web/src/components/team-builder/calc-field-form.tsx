@@ -2,6 +2,12 @@
 
 import { cn } from "@/lib/utils";
 
+import {
+  type AttackerSideState,
+  type BaseSideState,
+  type DefenderSideState,
+} from "./use-calc-state";
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -127,11 +133,6 @@ export function CalcFieldForm({
 // Sides form (separate accordion content)
 // =============================================================================
 
-import {
-  type AttackerSideState,
-  type DefenderSideState,
-} from "./use-calc-state";
-
 interface CalcSidesFormProps {
   attackerSide: AttackerSideState;
   defenderSide: DefenderSideState;
@@ -202,7 +203,7 @@ export function CalcSidesForm({
 interface SideBlockProps {
   label: string;
   side: AttackerSideState | DefenderSideState;
-  onChange: (patch: Partial<DefenderSideState>) => void;
+  onChange: (patch: Partial<BaseSideState>) => void;
 }
 
 function SideBlock({ label, side, onChange }: SideBlockProps) {

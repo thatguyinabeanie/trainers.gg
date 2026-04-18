@@ -8,11 +8,11 @@ import {
   getMoveHelperText,
 } from "@trainers/pokemon";
 
-const gen9Dex = Dex.forGen(9);
-
 import { cn } from "@/lib/utils";
 
 import { TypeSymbolIcon } from "./type-symbol-icon";
+
+const gen9Dex = Dex.forGen(9);
 
 // =============================================================================
 // Types
