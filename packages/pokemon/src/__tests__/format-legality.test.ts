@@ -18,6 +18,12 @@ describe("format-legality — Champions M-A", () => {
     expect(isLegalSpecies("Incineroar", CHAMPIONS)).toBe(true);
   });
 
+  it("marks Aerodactyl as legal in Champions M-A", () => {
+    // Aerodactyl is isNonstandard='Past' in @pkmn/dex (not in SV) but is
+    // explicitly legal in Champions — regression guard for the species picker.
+    expect(isLegalSpecies("Aerodactyl", CHAMPIONS)).toBe(true);
+  });
+
   it("marks Landorus-Therian as illegal in Champions M-A", () => {
     expect(isLegalSpecies("Landorus-Therian", CHAMPIONS)).toBe(false);
   });
@@ -25,13 +31,22 @@ describe("format-legality — Champions M-A", () => {
   it("returns a ReadonlySet for Champions M-A", () => {
     const legal = getLegalSpecies(CHAMPIONS);
     expect(legal).toBeInstanceOf(Set);
-    expect(legal?.size).toBe(217);
+    // 215 base species + 59 mega forms (36 standard + 23 Champions-exclusive)
+    // minus duplicates: Aegislash-Shield → Aegislash, Maushold-Three → Maushold
+    // Floette-Eternal-Mega removed (Floette-Mega is the Champions name)
+    expect(legal?.size).toBe(275);
   });
 
-  it("excludes Mega forms (they're item-driven, not separately selectable)", () => {
+  it("includes Mega forms using Showdown naming (not 'Mega X' naming)", () => {
     const legal = getLegalSpecies(CHAMPIONS);
+    // Wrong naming format — should not be present
     expect(legal?.has("Mega Venusaur")).toBe(false);
     expect(legal?.has("Mega Charizard X")).toBe(false);
+    // Correct Showdown naming — should be present (standard + Champions-exclusive)
+    expect(legal?.has("Venusaur-Mega")).toBe(true);
+    expect(legal?.has("Charizard-Mega-X")).toBe(true);
+    expect(legal?.has("Greninja-Mega")).toBe(true);
+    // Base species still present
     expect(legal?.has("Venusaur")).toBe(true);
     expect(legal?.has("Charizard")).toBe(true);
   });

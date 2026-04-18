@@ -7,12 +7,13 @@ import React from "react";
 // Module-level mocks
 // =============================================================================
 
-// searchSpecies drives the filtered list — control it in tests
+// searchSpecies drives the filtered list — control it in tests.
 jest.mock("@trainers/pokemon", () => ({
   searchSpecies: jest.fn(
     (index: unknown[], _query: string, _filters: unknown) => index
   ),
-  // Real legality logic: Landorus-Therian is banned in Champions M-A, Incineroar is legal
+  // Real legality logic: Landorus-Therian is banned in Champions M-A,
+  // Incineroar is legal everywhere we test.
   isLegalSpecies: jest.fn((species: string, formatId: string) => {
     if (formatId === "championsvgc2026regma") {
       return species !== "Landorus-Therian";
@@ -45,72 +46,33 @@ jest.mock("@trainers/pokemon", () => ({
   })),
 }));
 
-// Mock child components to isolate SpeciesPicker logic
-jest.mock("../species-detail", () => {
-  return {
-    SpeciesDetail: ({
-      species,
-      onSelect,
-    }: {
-      species: { species: string } | null;
-      currentTeam: Array<{ species: string }>;
-      formatId?: string;
-      onSelect: (species: string, mode: "defaults" | "blank") => void;
-    }) => {
-      return (
-        <div data-testid="species-detail">
-          {species ? (
-            <>
-              <span data-testid="detail-species-name">{species.species}</span>
-              <button onClick={() => onSelect(species.species, "defaults")}>
-                Select with defaults
-              </button>
-              <button onClick={() => onSelect(species.species, "blank")}>
-                Select blank
-              </button>
-            </>
-          ) : (
-            <span>Select a species from the table to see details</span>
-          )}
-        </div>
-      );
-    },
-  };
-});
-
-jest.mock("../species-table", () => ({
-  SpeciesTable: ({
-    entries,
-    onPreview,
-    onSelect,
-  }: {
-    entries: Array<{ species: string }>;
-    previewedSpecies: string | null;
-    currentSpecies: string | null;
-    onPreview: (species: string) => void;
-    onSelect: (species: string) => void;
-  }) => (
-    <div data-testid="species-table">
-      {entries.map((e) => (
-        <div key={e.species}>
-          <button
-            data-testid={`preview-${e.species}`}
-            onClick={() => onPreview(e.species)}
-          >
-            Preview {e.species}
-          </button>
-          <button
-            data-testid={`select-${e.species}`}
-            onClick={() => onSelect(e.species)}
-          >
-            Select {e.species}
-          </button>
-        </div>
-      ))}
-    </div>
-  ),
+// next/image renders an <img> for ease of testing.
+jest.mock("next/image", () => ({
+  __esModule: true,
+  default: ({
+    unoptimized: _unoptimized,
+    priority: _priority,
+    fill: _fill,
+    loader: _loader,
+    placeholder: _placeholder,
+    ...rest
+  }: Record<string, unknown>) => {
+    return <img {...(rest as React.ImgHTMLAttributes<HTMLImageElement>)} />;
+  },
 }));
 
+// Stub the sprite resolver — the picker only needs the URL to render.
+jest.mock("@trainers/pokemon/sprites", () => ({
+  getPokemonSprite: jest.fn((species: string) => ({
+    url: `https://example.test/${species}.png`,
+    w: 96,
+    h: 96,
+    pixelated: false,
+  })),
+}));
+
+// Keep SpeciesFilters lightweight — only need a search input that drives
+// onQueryChange so we can assert searchSpecies receives the query.
 jest.mock("../species-filters", () => ({
   SpeciesFilters: ({
     query,
@@ -137,10 +99,24 @@ jest.mock("../species-filters", () => ({
     types: [],
     abilities: [],
     moves: [],
+    role: null,
     minBaseStat: {},
     maxBaseStat: {},
   },
 }));
+
+// TypeSymbolIcon uses a Tooltip (requires provider in tests). Stub it to a
+// simple <span role="img" aria-label={type}> so aria-label assertions work
+// without setting up Tooltip providers.
+jest.mock("../type-symbol-icon", () => ({
+  TypeSymbolIcon: ({ type, size }: { type: string; size?: number }) => (
+    <span role="img" aria-label={type} data-testid="type-icon" data-size={size}>
+      {type}
+    </span>
+  ),
+}));
+
+import { within } from "@testing-library/react";
 
 import { SpeciesPicker } from "../species-picker";
 import { type SpeciesSearchEntry } from "@trainers/pokemon";
@@ -179,11 +155,10 @@ const defaultProps = {
 // Tests
 // =============================================================================
 
-describe("SpeciesPicker", () => {
+describe("SpeciesPicker (rich rows)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset searchSpecies to its default pass-through implementation
-    // (some tests override it with mockImplementation — this prevents bleed-through)
+    // Reset searchSpecies to its default pass-through.
     const { searchSpecies } = jest.requireMock("@trainers/pokemon") as {
       searchSpecies: jest.Mock;
     };
@@ -214,169 +189,267 @@ describe("SpeciesPicker", () => {
     });
   });
 
-  describe("filters pane", () => {
+  describe("filters", () => {
     it("renders SpeciesFilters", () => {
       render(<SpeciesPicker {...defaultProps} />);
       expect(screen.getByTestId("species-filters")).toBeInTheDocument();
     });
   });
 
-  describe("species table", () => {
-    it("renders SpeciesTable", () => {
+  describe("rich rows", () => {
+    it("renders one row per matched species with name, abilities, and stats", () => {
       render(<SpeciesPicker {...defaultProps} />);
-      expect(screen.getByTestId("species-table")).toBeInTheDocument();
-    });
-
-    it("passes all speciesIndex entries to the table initially", () => {
-      render(<SpeciesPicker {...defaultProps} />);
-      expect(screen.getByTestId("preview-Incineroar")).toBeInTheDocument();
-      expect(screen.getByTestId("preview-Rillaboom")).toBeInTheDocument();
-      expect(screen.getByTestId("preview-Gastrodon")).toBeInTheDocument();
-    });
-  });
-
-  describe("species detail panel", () => {
-    it("renders SpeciesDetail with null when no species is previewed", () => {
-      render(<SpeciesPicker {...defaultProps} />);
-      expect(screen.getByTestId("species-detail")).toBeInTheDocument();
+      // Names visible
+      expect(screen.getByText("Incineroar")).toBeInTheDocument();
+      expect(screen.getByText("Rillaboom")).toBeInTheDocument();
+      expect(screen.getByText("Gastrodon")).toBeInTheDocument();
+      // Each row exposes a Select button labeled with the species
       expect(
-        screen.getByText("Select a species from the table to see details")
+        screen.getByRole("button", { name: /Select Incineroar/ })
       ).toBeInTheDocument();
     });
 
-    it("shows the previewed species in the detail panel after clicking preview", async () => {
-      const user = userEvent.setup();
+    it("renders the BST value once per row", () => {
       render(<SpeciesPicker {...defaultProps} />);
-      await user.click(screen.getByTestId("preview-Incineroar"));
-      expect(screen.getByTestId("detail-species-name")).toHaveTextContent(
-        "Incineroar"
-      );
+      // Scope each BST assertion to its row button so the check is bound to
+      // the BST column and won't collide with other cells that share the value.
+      const rows = screen.getAllByRole("button", { name: /^Select / });
+      expect(rows).toHaveLength(3);
+      for (const row of rows) {
+        expect(within(row).getByText("505")).toBeInTheDocument();
+      }
     });
 
-    it("updates the previewed species when a different species is previewed", async () => {
-      const user = userEvent.setup();
+    it("renders the column header (Types + HP / Atk / Def / SpA / SpD / Spe / BST)", () => {
       render(<SpeciesPicker {...defaultProps} />);
-      await user.click(screen.getByTestId("preview-Incineroar"));
-      await user.click(screen.getByTestId("preview-Rillaboom"));
-      expect(screen.getByTestId("detail-species-name")).toHaveTextContent(
-        "Rillaboom"
-      );
+      // Types now lives in its own column with a dedicated header.
+      expect(screen.getByText("Types")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by HP/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by Atk/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by Def/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by SpA/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by SpD/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by Spe/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Sort by BST/i })
+      ).toBeInTheDocument();
+    });
+
+    it("renders type icons (not text pills) in the types column via aria-label", () => {
+      render(<SpeciesPicker {...defaultProps} />);
+      // TypeSymbolIcon renders role="img" with aria-label={type}.
+      // Fire/Dark for Incineroar, Grass for Rillaboom, Water/Ground for Gastrodon.
+      expect(screen.getByRole("img", { name: "Fire" })).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Dark" })).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Grass" })).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Water" })).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Ground" })).toBeInTheDocument();
+    });
+
+    it("header and body rows share the same grid template constant (ROW_GRID)", () => {
+      render(<SpeciesPicker {...defaultProps} />);
+      // The sticky header and the first data row both use the shared ROW_GRID
+      // constant — verify they carry the same grid-cols class.
+      const rowsContainer = screen.getByTestId("species-rows");
+      // The header is the first child of the rows container.
+      const header = rowsContainer.firstElementChild as HTMLElement;
+      const firstRow = screen.getByRole("button", {
+        name: /Select Gastrodon/,
+      }) as HTMLElement;
+      // Both must use the same grid-cols value (grid-cols-[2.75rem_minmax(0,1fr)_3rem_auto]).
+      const expectedGridCols = "grid-cols-[2.75rem_minmax(0,1fr)_3rem_auto]";
+      expect(header.className).toContain(expectedGridCols);
+      expect(firstRow.className).toContain(expectedGridCols);
     });
   });
 
-  describe("selection flow", () => {
-    it("calls onSelect with 'defaults' mode when table row is double-clicked (onSelect shortcut)", async () => {
+  describe("default sort — alphabetical by name", () => {
+    it("renders rows in alphabetical order by default", () => {
+      render(<SpeciesPicker {...defaultProps} />);
+      const rows = screen.getAllByRole("button", { name: /^Select / });
+      // Alphabetical: Gastrodon < Incineroar < Rillaboom
+      expect(rows[0]).toHaveAccessibleName("Select Gastrodon");
+      expect(rows[1]).toHaveAccessibleName("Select Incineroar");
+      expect(rows[2]).toHaveAccessibleName("Select Rillaboom");
+    });
+  });
+
+  describe("sortable column headers", () => {
+    it("clicking the BST header sorts descending by BST", async () => {
+      const user = userEvent.setup();
+      const index = [
+        makeEntry("Charizard", { bst: 534 }),
+        makeEntry("Bulbasaur", { bst: 318 }),
+        makeEntry("Mewtwo", { bst: 680 }),
+      ];
+      render(<SpeciesPicker {...defaultProps} speciesIndex={index} />);
+
+      await user.click(screen.getByRole("button", { name: /Sort by BST/i }));
+
+      const rows = screen.getAllByRole("button", { name: /^Select / });
+      // Descending: Mewtwo (680) > Charizard (534) > Bulbasaur (318)
+      expect(rows[0]).toHaveAccessibleName("Select Mewtwo");
+      expect(rows[1]).toHaveAccessibleName("Select Charizard");
+      expect(rows[2]).toHaveAccessibleName("Select Bulbasaur");
+    });
+
+    it("clicking the BST header a second time sorts ascending by BST", async () => {
+      const user = userEvent.setup();
+      const index = [
+        makeEntry("Charizard", { bst: 534 }),
+        makeEntry("Bulbasaur", { bst: 318 }),
+        makeEntry("Mewtwo", { bst: 680 }),
+      ];
+      render(<SpeciesPicker {...defaultProps} speciesIndex={index} />);
+
+      const bstBtn = screen.getByRole("button", { name: /Sort by BST/i });
+      await user.click(bstBtn); // → desc
+      await user.click(bstBtn); // → asc
+
+      const rows = screen.getAllByRole("button", { name: /^Select / });
+      // Ascending: Bulbasaur (318) < Charizard (534) < Mewtwo (680)
+      expect(rows[0]).toHaveAccessibleName("Select Bulbasaur");
+      expect(rows[1]).toHaveAccessibleName("Select Charizard");
+      expect(rows[2]).toHaveAccessibleName("Select Mewtwo");
+    });
+
+    it("clicking the Name header toggles asc/desc", async () => {
+      const user = userEvent.setup();
+      render(<SpeciesPicker {...defaultProps} />);
+
+      // Default is alphabetical asc (Gastrodon < Incineroar < Rillaboom).
+      const nameBtn = screen.getByRole("button", { name: /Sort by name/i });
+
+      // Click once — toggles to desc (Z→A).
+      await user.click(nameBtn);
+      let rows = screen.getAllByRole("button", { name: /^Select / });
+      expect(rows[0]).toHaveAccessibleName("Select Rillaboom");
+      expect(rows[1]).toHaveAccessibleName("Select Incineroar");
+      expect(rows[2]).toHaveAccessibleName("Select Gastrodon");
+
+      // Click again — back to asc (A→Z).
+      await user.click(nameBtn);
+      rows = screen.getAllByRole("button", { name: /^Select / });
+      expect(rows[0]).toHaveAccessibleName("Select Gastrodon");
+      expect(rows[1]).toHaveAccessibleName("Select Incineroar");
+      expect(rows[2]).toHaveAccessibleName("Select Rillaboom");
+    });
+
+    it("switching from BST sort to Name sort resets to alpha-asc", async () => {
+      const user = userEvent.setup();
+      const index = [
+        makeEntry("Charizard", { bst: 534 }),
+        makeEntry("Bulbasaur", { bst: 318 }),
+        makeEntry("Mewtwo", { bst: 680 }),
+      ];
+      render(<SpeciesPicker {...defaultProps} speciesIndex={index} />);
+
+      // Sort by BST desc first.
+      await user.click(screen.getByRole("button", { name: /Sort by BST/i }));
+      // Then switch to Name.
+      await user.click(screen.getByRole("button", { name: /Sort by name/i }));
+
+      const rows = screen.getAllByRole("button", { name: /^Select / });
+      expect(rows[0]).toHaveAccessibleName("Select Bulbasaur");
+      expect(rows[1]).toHaveAccessibleName("Select Charizard");
+      expect(rows[2]).toHaveAccessibleName("Select Mewtwo");
+    });
+
+    it("shows sort arrow on the active column header", async () => {
+      const user = userEvent.setup();
+      render(<SpeciesPicker {...defaultProps} />);
+
+      // Default: Name column shows ascending arrow.
+      const nameBtn = screen.getByRole("button", { name: /Sort by name/i });
+      expect(nameBtn.textContent).toContain("↑");
+
+      // Click BST — arrow moves there (descending).
+      await user.click(screen.getByRole("button", { name: /Sort by BST/i }));
+      const bstBtn = screen.getByRole("button", { name: /Sort by BST/i });
+      expect(bstBtn.textContent).toContain("↓");
+      // Name no longer has an arrow.
+      expect(
+        screen.getByRole("button", { name: /Sort by name/i }).textContent
+      ).not.toContain("↑");
+    });
+  });
+
+  describe("scroll", () => {
+    it("rows container is scrollable (capped height + overflow-y-auto)", () => {
+      render(<SpeciesPicker {...defaultProps} />);
+      const rows = screen.getByTestId("species-rows");
+      // The rows container caps its own height so it scrolls independently
+      // of the picker chrome. We check the class names directly because the
+      // rendered max-h is in arbitrary-value form (max-h-[60vh]) and JSDOM
+      // does not compute layout.
+      expect(rows.className).toContain("overflow-y-auto");
+      expect(rows.className).toContain("max-h-[60vh]");
+    });
+  });
+
+  describe("selection", () => {
+    it("calls onSelect with 'defaults' mode on a single click anywhere on the row", async () => {
       const user = userEvent.setup();
       const onSelect = jest.fn();
       render(<SpeciesPicker {...defaultProps} onSelect={onSelect} />);
-      // SpeciesTable mock calls onSelect with just species; SpeciesPicker wraps it to add "defaults"
-      await user.click(screen.getByTestId("select-Incineroar"));
+
+      // Single click selects with defaults — no separate "blank" flow exists.
+      await user.click(
+        screen.getByRole("button", { name: /Select Incineroar/ })
+      );
       expect(onSelect).toHaveBeenCalledWith("Incineroar", "defaults");
     });
-
-    it("calls onSelect with 'defaults' mode via detail panel button", async () => {
-      const user = userEvent.setup();
-      const onSelect = jest.fn();
-      render(<SpeciesPicker {...defaultProps} onSelect={onSelect} />);
-      // First preview to populate detail panel
-      await user.click(screen.getByTestId("preview-Gastrodon"));
-      await user.click(
-        screen.getByRole("button", { name: /select with defaults/i })
-      );
-      expect(onSelect).toHaveBeenCalledWith("Gastrodon", "defaults");
-    });
-
-    it("calls onSelect with 'blank' mode via detail panel button", async () => {
-      const user = userEvent.setup();
-      const onSelect = jest.fn();
-      render(<SpeciesPicker {...defaultProps} onSelect={onSelect} />);
-      await user.click(screen.getByTestId("preview-Rillaboom"));
-      await user.click(screen.getByRole("button", { name: /select blank/i }));
-      expect(onSelect).toHaveBeenCalledWith("Rillaboom", "blank");
-    });
   });
 
-  describe("search / filter integration", () => {
-    it("calls searchSpecies with the query when the search input changes", async () => {
+  describe("search integration", () => {
+    it("calls searchSpecies with the typed query", async () => {
       const user = userEvent.setup();
       const { searchSpecies } = jest.requireMock("@trainers/pokemon") as {
         searchSpecies: jest.Mock;
       };
       render(<SpeciesPicker {...defaultProps} />);
       await user.type(screen.getByTestId("search-input"), "inc");
-      // searchSpecies should have been called at least once with the typed query
       expect(searchSpecies).toHaveBeenCalledWith(
         defaultProps.speciesIndex,
         "inc",
         expect.any(Object)
       );
     });
-  });
 
-  describe("previewed species cleared when filtered out", () => {
-    it("shows null detail when previewed species is not in filtered results", async () => {
+    it("forwards the active formatId so move-name matching activates", async () => {
       const user = userEvent.setup();
       const { searchSpecies } = jest.requireMock("@trainers/pokemon") as {
         searchSpecies: jest.Mock;
       };
-
-      // Default: returns all entries
-      searchSpecies.mockImplementation((index: SpeciesSearchEntry[]) => index);
-
-      render(<SpeciesPicker {...defaultProps} />);
-
-      // Preview Incineroar
-      await user.click(screen.getByTestId("preview-Incineroar"));
-      expect(screen.getByTestId("detail-species-name")).toHaveTextContent(
-        "Incineroar"
+      render(<SpeciesPicker {...defaultProps} formatId="gen9vgc2026regi" />);
+      await user.type(screen.getByTestId("search-input"), "tail");
+      expect(searchSpecies).toHaveBeenCalledWith(
+        defaultProps.speciesIndex,
+        "tail",
+        expect.objectContaining({ formatId: "gen9vgc2026regi" })
       );
-
-      // Now filter returns only Rillaboom — Incineroar disappears from results
-      searchSpecies.mockImplementation(() => [makeEntry("Rillaboom")]);
-      await user.type(screen.getByTestId("search-input"), "rill");
-
-      // The previewedEntry derivation should return null since Incineroar is gone
-      expect(
-        screen.queryByTestId("detail-species-name")
-      ).not.toBeInTheDocument();
     });
   });
 
-  describe("empty speciesIndex", () => {
-    it("renders without crashing when speciesIndex is empty", () => {
-      render(<SpeciesPicker {...defaultProps} speciesIndex={[]} />);
-      expect(screen.getByText("Choose a species")).toBeInTheDocument();
-    });
-  });
-
-  describe("currentSpecies prop", () => {
-    it("passes currentSpecies to the table for highlighting", () => {
-      // The mock SpeciesTable receives the prop; we verify SpeciesPicker renders without error
-      render(<SpeciesPicker {...defaultProps} currentSpecies="Incineroar" />);
-      expect(screen.getByTestId("species-table")).toBeInTheDocument();
-    });
-  });
-
-  describe("currentTeam prop", () => {
-    it("renders with a non-empty currentTeam without crashing", () => {
-      render(
-        <SpeciesPicker
-          {...defaultProps}
-          currentTeam={[{ species: "Rillaboom" }]}
-        />
-      );
-      expect(screen.getByText("Choose a species")).toBeInTheDocument();
-    });
-  });
-
-  describe("SpeciesPicker — format legality detail panel", () => {
+  describe("format legality", () => {
     const championsIndex = [
       makeEntry("Incineroar", { types: ["Fire", "Dark"] }),
       makeEntry("Landorus-Therian", { types: ["Ground", "Flying"] }),
     ];
 
-    it("Select buttons are enabled when previewing any species (no disabled state in detail panel)", async () => {
-      const user = userEvent.setup();
+    it("hides species that are not legal in the active format", () => {
       render(
         <SpeciesPicker
           {...defaultProps}
@@ -384,47 +457,24 @@ describe("SpeciesPicker", () => {
           formatId="championsvgc2026regma"
         />
       );
-
-      // Preview Incineroar
-      await user.click(screen.getByTestId("preview-Incineroar"));
-
-      expect(screen.getByTestId("detail-species-name")).toHaveTextContent(
-        "Incineroar"
-      );
-      // No "Not legal" message in the detail panel
-      expect(screen.queryByText(/not legal/i)).not.toBeInTheDocument();
+      // Incineroar is legal — its select button is rendered.
       expect(
-        screen.getByRole("button", { name: /select with defaults/i })
-      ).not.toBeDisabled();
+        screen.getByRole("button", { name: /Select Incineroar/ })
+      ).toBeInTheDocument();
+      // Landorus-Therian is banned in M-A — filtered out entirely.
       expect(
-        screen.getByRole("button", { name: /select blank/i })
-      ).not.toBeDisabled();
+        screen.queryByRole("button", { name: /Select Landorus-Therian/ })
+      ).not.toBeInTheDocument();
     });
+  });
 
-    it("Select buttons are enabled when previewing a species that was illegal under old dim behavior", async () => {
-      const user = userEvent.setup();
-      render(
-        <SpeciesPicker
-          {...defaultProps}
-          speciesIndex={championsIndex}
-          formatId="championsvgc2026regma"
-        />
-      );
-
-      // In the mock, Landorus-Therian still appears (SpeciesTable mock doesn't filter)
-      await user.click(screen.getByTestId("preview-Landorus-Therian"));
-
-      expect(screen.getByTestId("detail-species-name")).toHaveTextContent(
-        "Landorus-Therian"
-      );
-      // Detail panel no longer shows any disabled/illegal state
-      expect(screen.queryByText(/not legal/i)).not.toBeInTheDocument();
+  describe("empty state", () => {
+    it("renders without crashing when speciesIndex is empty", () => {
+      render(<SpeciesPicker {...defaultProps} speciesIndex={[]} />);
+      expect(screen.getByText("Choose a species")).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: /select with defaults/i })
-      ).not.toBeDisabled();
-      expect(
-        screen.getByRole("button", { name: /select blank/i })
-      ).not.toBeDisabled();
+        screen.getByText(/No Pokémon match your filters/i)
+      ).toBeInTheDocument();
     });
   });
 });

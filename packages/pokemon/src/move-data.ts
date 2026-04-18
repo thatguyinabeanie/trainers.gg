@@ -6,6 +6,8 @@
 import { Dex } from "@pkmn/dex";
 import { Generations } from "@pkmn/data";
 
+import { type MoveHelperInput } from "./move-helpers";
+
 const gens = new Generations(Dex);
 const gen9 = gens.get(9);
 
@@ -82,4 +84,19 @@ export function getMoveData(moveName: string): MoveData | null {
     accuracy: move.accuracy,
     shortDesc: move.shortDesc,
   };
+}
+
+/**
+ * Get the full dex Move object for a move name as a `MoveHelperInput`.
+ * Returns null if the move does not exist.
+ *
+ * Use this instead of importing `@pkmn/dex` directly in client components —
+ * the dex lookup stays in the shared package and out of the client bundle path.
+ */
+export function getMoveHelperInput(moveName: string): MoveHelperInput | null {
+  const move = gen9Dex.moves.get(moveName);
+  if (!move?.exists) return null;
+  // The full Move object from @pkmn/dex is structurally compatible with
+  // MoveHelperInput — it is a strict superset. The cast is safe here.
+  return move as unknown as MoveHelperInput;
 }

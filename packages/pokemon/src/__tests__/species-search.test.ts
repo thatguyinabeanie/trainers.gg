@@ -3,6 +3,7 @@ import {
   searchSpecies,
   type SpeciesSearchEntry,
 } from "../species-search";
+import { getLegalSpecies } from "../format-legality";
 
 // Build a gen9 index once for all tests — this is the most common format
 const GEN9_FORMAT = "gen9vgc2026regi";
@@ -93,6 +94,95 @@ describe("buildSpeciesSearchIndex", () => {
     const gen8Index = buildSpeciesSearchIndex("gen8vgc2022");
     // Gen 8 has fewer Pokemon than Gen 9
     expect(gen8Index.length).toBeLessThan(gen9Index.length);
+  });
+});
+
+describe("buildSpeciesSearchIndex — Champions Reg M-A", () => {
+  const CHAMPIONS = "championsvgc2026regma";
+
+  it("includes Aerodactyl (isNonstandard=Past but legal in Champions)", () => {
+    const index = buildSpeciesSearchIndex(CHAMPIONS);
+    const names = index.map((e) => e.species);
+    expect(names).toContain("Aerodactyl");
+  });
+
+  it("includes other Past-tagged Champions legal species (spot-check)", () => {
+    const index = buildSpeciesSearchIndex(CHAMPIONS);
+    const names = index.map((e) => e.species);
+    // All of these are isNonstandard='Past' in @pkmn/dex but legal in Champions
+    expect(names).toContain("Beedrill");
+    expect(names).toContain("Kangaskhan");
+    expect(names).toContain("Pinsir");
+    expect(names).toContain("Floette-Eternal");
+    expect(names).toContain("Aegislash");
+    expect(names).toContain("Aegislash-Blade");
+    // Gourgeist base form: @pkmn/dex canonicalizes "Gourgeist-Average" → "Gourgeist"
+    expect(names).toContain("Gourgeist");
+  });
+
+  it("includes standard Champions legal species", () => {
+    const index = buildSpeciesSearchIndex(CHAMPIONS);
+    const names = index.map((e) => e.species);
+    expect(names).toContain("Incineroar");
+    expect(names).toContain("Garchomp");
+    expect(names).toContain("Kingambit");
+    expect(names).toContain("Sneasler");
+    expect(names).toContain("Rotom-Heat");
+  });
+
+  it("does NOT include CAP/custom non-standard entries", () => {
+    // The index excludes Pokestar Studios, CAP, and other truly non-standard entries.
+    // Note: illegal-in-Champions species like Landorus-Therian and Calyrex-Shadow
+    // ARE present in the index (they're real gen-9 Pokemon) — format-specific
+    // legality filtering is the picker's responsibility via isLegalSpecies.
+    const index = buildSpeciesSearchIndex(CHAMPIONS);
+    const names = index.map((e) => e.species);
+    // These are not real playable Pokemon — should never appear
+    expect(names.every((n) => !n.startsWith("CAP"))).toBe(true);
+  });
+
+  it("contains all dex-resolvable Champions legal species (superset — format filtering applied by picker)", () => {
+    // The index contains all legal species that @pkmn/dex can resolve (gen 9 or gen 6
+    // fallback for standard megas). The 22 Champions-exclusive mega forms (Greninja-Mega,
+    // Chandelure-Mega, etc.) have no @pkmn/dex entry at any generation and are intentionally
+    // absent from the index in v1 — they need manual synthesis to be added.
+    const CUSTOM_CHAMPIONS_MEGAS = new Set([
+      "Chandelure-Mega",
+      "Chesnaught-Mega",
+      "Chimecho-Mega",
+      "Clefable-Mega",
+      "Crabominable-Mega",
+      "Delphox-Mega",
+      "Dragonite-Mega",
+      "Drampa-Mega",
+      "Emboar-Mega",
+      "Excadrill-Mega",
+      "Feraligatr-Mega",
+      "Floette-Eternal-Mega",
+      "Froslass-Mega",
+      "Glimmora-Mega",
+      "Golurk-Mega",
+      "Greninja-Mega",
+      "Hawlucha-Mega",
+      "Meganium-Mega",
+      "Meowstic-Mega",
+      "Scovillain-Mega",
+      "Skarmory-Mega",
+      "Starmie-Mega",
+      "Victreebel-Mega",
+    ]);
+
+    const index = buildSpeciesSearchIndex(CHAMPIONS);
+    const names = new Set(index.map((e) => e.species));
+
+    const legalSet = getLegalSpecies(CHAMPIONS);
+    for (const species of legalSet ?? []) {
+      if (CUSTOM_CHAMPIONS_MEGAS.has(species)) continue;
+      expect(names.has(species)).toBe(true);
+    }
+
+    // Sanity: index has at least 215 base entries + standard megas
+    expect(index.length).toBeGreaterThanOrEqual(215);
   });
 });
 
@@ -338,6 +428,53 @@ describe("searchSpecies", () => {
         moves: ["FakeMoveXYZ123"],
       });
       expect(results).toHaveLength(0);
+    });
+  });
+
+  // ==========================================================================
+  // Free-text query move matching (formatId-aware)
+  // When the caller passes options.formatId, the query string also matches
+  // against learnable move names — typing "tail" surfaces Tailwind learners
+  // even though no species/type/ability contains "tail".
+  // ==========================================================================
+
+  describe("query matches move names when formatId is supplied", () => {
+    const FORMAT = "gen9vgc2026regi";
+
+    it("returns Tailwind learners when searching 'tail' (matches Iron Tail, Tail Slap, Tailwind, etc.)", () => {
+      const results = searchSpecies(index, "tail", { formatId: FORMAT });
+      const names = results.map((e) => e.species);
+      // Whimsicott is a canonical Tailwind setter
+      expect(names).toContain("Whimsicott");
+      // The query should surface many more species than the only one whose
+      // name contains "tail" (Farigiraf), proving move matching is active.
+      expect(results.length).toBeGreaterThan(5);
+    });
+
+    it("returns species learning Moonblast when searching 'moonblast'", () => {
+      const results = searchSpecies(index, "moonblast", { formatId: FORMAT });
+      const names = results.map((e) => e.species);
+      // Sylveon is a textbook Moonblast user
+      expect(names).toContain("Sylveon");
+    });
+
+    it("falls back to name/type/ability matching when formatId is omitted", () => {
+      // Without a formatId, "tail" should only match species whose name,
+      // type, or ability literally contains the substring — no move matching.
+      const results = searchSpecies(index, "tail");
+      for (const entry of results) {
+        const hasTextualMatch =
+          entry.species.toLowerCase().includes("tail") ||
+          entry.types.some((t) => t.toLowerCase().includes("tail")) ||
+          entry.abilities.some((a) => a.toLowerCase().includes("tail"));
+        expect(hasTextualMatch).toBe(true);
+      }
+    });
+
+    it("name matches still take priority and don't require move lookup", () => {
+      // 'pika' matches by name, the move-lookup branch should not exclude it
+      const results = searchSpecies(index, "pika", { formatId: FORMAT });
+      expect(results.map((e) => e.species)).toContain("Pikachu");
     });
   });
 });

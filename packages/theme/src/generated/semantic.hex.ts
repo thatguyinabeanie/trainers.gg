@@ -38,7 +38,11 @@ export const semanticColors = {
     "sidebarAccent": "#f5f5f5",
     "sidebarAccentForeground": "#171717",
     "sidebarBorder": "#e5e5e5",
-    "sidebarRing": "#a1a1a1"
+    "sidebarRing": "#a1a1a1",
+    "statLow": "#c13234",
+    "statMid": "#aa5b00",
+    "statGood": "#007b01",
+    "statGreat": "#00678d"
   },
   "dark": {
     "background": "#0a0a0a",
@@ -72,6 +76,10 @@ export const semanticColors = {
     "sidebarAccent": "#262626",
     "sidebarAccentForeground": "#fafafa",
     "sidebarBorder": "#ffffff",
-    "sidebarRing": "#737373"
+    "sidebarRing": "#737373",
+    "statLow": "#f97770",
+    "statMid": "#eba941",
+    "statGood": "#5bbe62",
+    "statGreat": "#00b0d6"
   }
 } as const;

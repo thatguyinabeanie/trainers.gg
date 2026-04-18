@@ -50,6 +50,59 @@ interface UserProfile {
   showDiscordPublicly: boolean;
 }
 
+// --- Helpers ---
+
+type InvokeOutcome<T> =
+  | { kind: "ok"; data: T }
+  | { kind: "timeout" }
+  | { kind: "error"; cause: unknown };
+
+/**
+ * Invoke a Supabase edge function with a 30s abort timeout. Returns a tagged
+ * outcome so callers can map to action error messages without duplicating
+ * try/catch + AbortController plumbing for each function call.
+ */
+async function invokeWithTimeout<T>(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  functionName: string,
+  body: Record<string, unknown>
+): Promise<InvokeOutcome<T>> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const { data, error } = await supabase.functions.invoke<T>(functionName, {
+      body,
+      signal: controller.signal,
+    });
+    if (error) {
+      if (controller.signal.aborted || error.name === "AbortError") {
+        return { kind: "timeout" };
+      }
+      return { kind: "error", cause: error };
+    }
+    // Treat empty body (data == null with no error) as an error rather than
+    // coercing to {} — masking it as success silently sends callers down the
+    // "non-success" branch without the original failure context.
+    if (data == null) {
+      return {
+        kind: "error",
+        cause: new Error(`Edge function "${functionName}" returned no data`),
+      };
+    }
+    return { kind: "ok", data };
+  } catch (err) {
+    if (
+      err instanceof Error &&
+      (err.name === "AbortError" || controller.signal.aborted)
+    ) {
+      return { kind: "timeout" };
+    }
+    return { kind: "error", cause: err };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 // --- Actions ---
 
 /**
@@ -281,82 +334,36 @@ export async function updateProfile(data: {
 
       const pdsStatus = pdsStatusSchema.nullable().parse(userData.pds_status);
 
+      type PdsResult = { success?: boolean; code?: string; error?: string };
+
       // If PDS is pending, failed, or null — provision a new PDS account
       if (
         pdsStatus === "pending" ||
         pdsStatus === "failed" ||
         pdsStatus === null
       ) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session?.access_token) {
-          return { success: false, error: "No active session" };
-        }
-
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        if (!supabaseUrl) {
-          console.error("NEXT_PUBLIC_SUPABASE_URL is not configured");
-          return { success: false, error: "Server configuration error" };
-        }
-
-        // Call provision-pds edge function (30s timeout)
         const pdsUsername = derivePdsUsername(validated.username!, user.id);
+        const outcome = await invokeWithTimeout<PdsResult>(
+          supabase,
+          "provision-pds",
+          { username: pdsUsername }
+        );
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30_000);
-
-        let provisionResponse: Response;
-        try {
-          provisionResponse = await fetch(
-            `${supabaseUrl}/functions/v1/provision-pds`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify({
-                username: pdsUsername,
-              }),
-              signal: controller.signal,
-            }
-          );
-        } catch (fetchError) {
-          if (fetchError instanceof Error && fetchError.name === "AbortError") {
-            return {
-              success: false,
-              error: "Request timed out. Please try again.",
-            };
-          }
-          console.error("Failed to call provision-pds:", fetchError);
+        if (outcome.kind === "timeout") {
+          return {
+            success: false,
+            error: "Request timed out. Please try again.",
+          };
+        }
+        if (outcome.kind === "error") {
+          console.error("Failed to call provision-pds:", outcome.cause);
           return {
             success: false,
             error: "Failed to connect to server. Please try again.",
           };
-        } finally {
-          clearTimeout(timeoutId);
         }
 
-        let provisionResult: {
-          success?: boolean;
-          code?: string;
-          error?: string;
-        };
-        try {
-          provisionResult = await provisionResponse.json();
-        } catch {
-          console.error(
-            "Failed to parse provision-pds response:",
-            provisionResponse.status
-          );
-          return {
-            success: false,
-            error: "Failed to create your Bluesky account. Please try again.",
-          };
-        }
-
+        const provisionResult = outcome.data;
         if (!provisionResult.success) {
           if (provisionResult.code === "HANDLE_TAKEN") {
             return {
@@ -377,69 +384,28 @@ export async function updateProfile(data: {
       }
       // If PDS is active, update the handle on existing PDS account
       else if (pdsStatus === "active") {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session?.access_token) {
-          return { success: false, error: "No active session" };
-        }
-
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        if (!supabaseUrl) {
-          console.error("NEXT_PUBLIC_SUPABASE_URL is not configured");
-          return { success: false, error: "Server configuration error" };
-        }
-
         const pdsUsername = derivePdsUsername(validated.username!, user.id);
+        const outcome = await invokeWithTimeout<PdsResult>(
+          supabase,
+          "update-pds-handle",
+          { username: pdsUsername }
+        );
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30_000);
-
-        let updateResponse: Response;
-        try {
-          updateResponse = await fetch(
-            `${supabaseUrl}/functions/v1/update-pds-handle`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify({ username: pdsUsername }),
-              signal: controller.signal,
-            }
-          );
-        } catch (fetchError) {
-          if (fetchError instanceof Error && fetchError.name === "AbortError") {
-            return {
-              success: false,
-              error: "Request timed out. Please try again.",
-            };
-          }
-          console.error("Failed to call update-pds-handle:", fetchError);
+        if (outcome.kind === "timeout") {
           return {
             success: false,
-            error: "Failed to update Bluesky handle. Please try again.",
+            error: "Request timed out. Please try again.",
           };
-        } finally {
-          clearTimeout(timeoutId);
         }
-
-        let updateResult: { success?: boolean; code?: string; error?: string };
-        try {
-          updateResult = await updateResponse.json();
-        } catch {
-          console.error(
-            "Failed to parse update-pds-handle response:",
-            updateResponse.status
-          );
+        if (outcome.kind === "error") {
+          console.error("Failed to call update-pds-handle:", outcome.cause);
           return {
             success: false,
             error: "Failed to update Bluesky handle. Please try again.",
           };
         }
 
+        const updateResult = outcome.data;
         if (!updateResult.success) {
           if (updateResult.code === "HANDLE_TAKEN") {
             return {

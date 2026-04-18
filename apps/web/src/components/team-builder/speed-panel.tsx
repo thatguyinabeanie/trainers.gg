@@ -1,0 +1,580 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+
+import {
+  type GameFormat,
+  type MetaSpeedEntry,
+  type SpeedAbility,
+  type SpeedModifiers,
+  type SpeedTierLabel,
+  applySpeedModifiers,
+  calculateChampionsStat,
+  calculateStat,
+  getBaseStats,
+  getLegalSpecies,
+  getMetaSpeedTiers,
+  getNatureMultiplier,
+  getSpeedTierLabel,
+  getValidAbilities,
+  groupBySpeed,
+} from "@trainers/pokemon";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
+import { type Tables } from "@trainers/supabase";
+
+import { cn } from "@/lib/utils";
+
+import {
+  type SpeedTier,
+  type SpeedTierMon,
+  SpeedTierList,
+} from "./speed-tier-list";
+import { type SpeedToggleState, SpeedToggleRail } from "./speed-toggle-rail";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+interface SpeedPanelProps {
+  selectedPokemon: Tables<"pokemon">;
+  team: Tables<"pokemon">[];
+  format: GameFormat;
+  className?: string;
+}
+
+/** Internal record used during speed-tier construction. */
+interface ScoredMon {
+  /** Fast-spread speed — used for tier placement so team mons rank against meta at max investment. */
+  speed: number;
+  /** Actual EV-based speed of the selected mon — used only for hero display and summary counts. */
+  actualSpeed: number;
+  mon: SpeedTierMon;
+}
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+const DEFAULT_TOGGLE_STATE: SpeedToggleState = {
+  field: { tailwind: false, weather: "none" },
+  stage: 0,
+  item: "",
+  status: "healthy",
+};
+
+/**
+ * Human-readable labels for each SpeedTierLabel value.
+ * Centralizes the raw-enum → display-label mapping so raw ids never reach the UI.
+ */
+const SPEED_TIER_LABELS: Record<SpeedTierLabel, string> = {
+  "very slow": "Very Slow",
+  slow: "Slow",
+  "mid-slow": "Mid-Slow",
+  mid: "Mid",
+  "mid-fast": "Mid-Fast",
+  fast: "Fast",
+  "very fast": "Very Fast",
+};
+
+// =============================================================================
+// Full-format speed tier builder
+// =============================================================================
+
+const SPEED_ABILITY_LOOKUP: Partial<Record<string, SpeedAbility>> = {
+  Chlorophyll: "chlorophyll",
+  "Swift Swim": "swift-swim",
+  "Sand Rush": "sand-rush",
+  "Slush Rush": "slush-rush",
+  "Speed Boost": "speed-boost",
+  Unburden: "unburden",
+  "Quick Feet": "quick-feet",
+};
+
+/**
+ * Returns true for the Pokémon Champions format (generation 10).
+ * Centralizes this check so all three compute functions stay in lockstep.
+ */
+function isChampionsFormat(format: GameFormat): boolean {
+  return format.generation === 10;
+}
+
+/**
+ * Build MetaSpeedEntry[] for every species in a format's legal-species set.
+ * Used when `getLegalSpecies` returns a bounded whitelist (e.g. Champions Reg
+ * M-A). Returns null when no legal-species set is available, so the caller can
+ * fall back to the curated getMetaSpeedTiers list.
+ */
+function buildFullMetaTiers(
+  legalSpecies: ReadonlySet<string>,
+  format: GameFormat
+): MetaSpeedEntry[] {
+  const champions = isChampionsFormat(format);
+  const entries: MetaSpeedEntry[] = [];
+
+  for (const species of legalSpecies) {
+    const stats = getBaseStats(species);
+    if (!stats) continue;
+
+    const b = stats.speed;
+    const fastSpread = champions
+      ? calculateChampionsStat(b, 32, 1.1)
+      : calculateStat(b, 31, 252, 50, 1.1);
+    const slowSpread = champions
+      ? calculateChampionsStat(b, 0, 1.0)
+      : calculateStat(b, 31, 0, 50, 1.0);
+
+    const abilities = getValidAbilities(species);
+    const speedAbility = abilities
+      .map((a) => SPEED_ABILITY_LOOKUP[a])
+      .find(Boolean) as SpeedAbility | undefined;
+
+    entries.push({
+      species,
+      displayName: species,
+      base: b,
+      fastSpread,
+      slowSpread,
+      speedAbility,
+    });
+  }
+
+  return entries;
+}
+
+// =============================================================================
+// Speed math
+// =============================================================================
+
+/**
+ * Compute the base (pre-modifier) Speed stat for a team Pokémon.
+ * Branches on Champions formula vs classic.
+ */
+function computeBaseSpeed(
+  pokemon: Tables<"pokemon">,
+  format: GameFormat
+): number {
+  const baseStats = getBaseStats(pokemon.species);
+  if (!baseStats) return 0;
+
+  const natureMultiplier = getNatureMultiplier(pokemon.nature, "speed");
+
+  // Champions has its own SP-based stat formula at fixed L50.
+  if (isChampionsFormat(format)) {
+    return calculateChampionsStat(
+      baseStats.speed,
+      pokemon.ev_speed ?? 0,
+      natureMultiplier
+    );
+  }
+
+  return calculateStat(
+    baseStats.speed,
+    pokemon.iv_speed ?? 31,
+    pokemon.ev_speed ?? 0,
+    pokemon.level ?? 50,
+    natureMultiplier
+  );
+}
+
+/**
+ * Compute the three display speed columns for a team Pokémon.
+ * These are always shown in the tier list alongside the mon's name.
+ *
+ * - min: 0 EVs, 0 IVs, neutral nature, L50
+ * - maxNeutral: 252 EVs, neutral nature, L50
+ * - maxPositive: 252 EVs, +nature (×1.1), L50
+ *
+ * For Champions (gen 10), uses the SP formula with 0 SP / 32 SP.
+ * Champions supports nature multipliers per the formula — maxPositive uses ×1.1.
+ */
+function computeStatColumns(
+  pokemon: Tables<"pokemon">,
+  format: GameFormat
+): { base: number; min: number; maxNeutral: number; maxPositive: number } {
+  const baseStats = getBaseStats(pokemon.species);
+  if (!baseStats) return { base: 0, min: 0, maxNeutral: 0, maxPositive: 0 };
+
+  const b = baseStats.speed;
+
+  if (isChampionsFormat(format)) {
+    return {
+      base: b,
+      min: calculateChampionsStat(b, 0, 1.0),
+      maxNeutral: calculateChampionsStat(b, 32, 1.0),
+      maxPositive: calculateChampionsStat(b, 32, 1.1),
+    };
+  }
+
+  return {
+    base: b,
+    min: calculateStat(b, 0, 0, 50, 1.0),
+    maxNeutral: calculateStat(b, 31, 252, 50, 1.0),
+    maxPositive: calculateStat(b, 31, 252, 50, 1.1),
+  };
+}
+
+/**
+ * Compute the three display speed columns for a meta entry.
+ * Meta entries store fastSpread (252 EVs, +nature) and slowSpread (0 EVs, neutral).
+ * We reconstruct min separately from base speed using the standard formula.
+ */
+function computeMetaStatColumns(
+  entry: MetaSpeedEntry,
+  format: GameFormat
+): { base: number; min: number; maxNeutral: number; maxPositive: number } {
+  const b = entry.base;
+
+  if (isChampionsFormat(format)) {
+    // Champions SP-based formula
+    return {
+      base: b,
+      min: calculateChampionsStat(b, 0, 1.0),
+      maxNeutral: calculateChampionsStat(b, 32, 1.0),
+      maxPositive: calculateChampionsStat(b, 32, 1.1),
+    };
+  }
+
+  return {
+    base: b,
+    // entry.slowSpread is 0 EVs neutral — that IS max neutral with 0 EVs.
+    // Min (0 EVs, 0 IVs, neutral) is slightly lower.
+    min: calculateStat(b, 0, 0, 50, 1.0),
+    maxNeutral: calculateStat(b, 31, 252, 50, 1.0),
+    maxPositive: entry.fastSpread, // pre-computed fast spread = 252 EVs + nature
+  };
+}
+
+/** Item id from the toggle state to a SpeedModifiers item value. */
+function toItemMod(item: string): SpeedModifiers["item"] {
+  if (!item) return null;
+  // Cast: we intentionally only allow ids that match the SpeedModifiers union.
+  return item as SpeedModifiers["item"];
+}
+
+/**
+ * Normalize a species string for deduplication comparisons.
+ * Lowercases and strips whitespace, hyphens, and underscores so that
+ * "Flutter Mane", "flutter-mane", and "fluttermane" all match.
+ */
+function normalizeSpeciesId(species: string): string {
+  return species.toLowerCase().replace(/[\s\-_]+/g, "");
+}
+
+/**
+ * Convert an opponent meta entry into an effective-speed scoring + display row.
+ * Only ability + weather + tailwind apply (we don't speculate about their item /
+ * stage / status).
+ */
+function metaToScoredMon(
+  entry: MetaSpeedEntry,
+  toggle: SpeedToggleState,
+  format: GameFormat
+): ScoredMon {
+  // Always use fastSpread for ranking — the tier list shows both columns anyway.
+  const baseSpeed = entry.fastSpread;
+
+  const speed = applySpeedModifiers(baseSpeed, {
+    ability: entry.speedAbility,
+    field: {
+      weather: toggle.field.weather,
+      tailwind: toggle.field.tailwind,
+    },
+  });
+
+  const statCols = computeMetaStatColumns(entry, format);
+  const sprite = safeSprite(entry.species);
+
+  return {
+    speed,
+    actualSpeed: speed, // meta mons: actual = fast spread
+    mon: {
+      id: `meta-${entry.species}`,
+      name: entry.displayName,
+      spriteUrl: sprite,
+      isYours: false,
+      isSelected: false,
+      baseSpeed: statCols.base,
+      statMin: statCols.min,
+      statMaxNeutral: statCols.maxNeutral,
+      statMaxPositive: statCols.maxPositive,
+    },
+  };
+}
+
+/**
+ * Convert a team Pokémon into an effective-speed scoring + display row.
+ *
+ * - For the selected mon: stage / item / status / ability+weather / tailwind all apply.
+ * - For other team members: only ability+weather + tailwind apply.
+ */
+function teamMonToScored(
+  pokemon: Tables<"pokemon">,
+  format: GameFormat,
+  toggle: SpeedToggleState,
+  isSelected: boolean
+): ScoredMon {
+  const statCols = computeStatColumns(pokemon, format);
+  const fieldMods = {
+    ability: pokemon.ability ?? undefined,
+    field: {
+      weather: toggle.field.weather,
+      tailwind: toggle.field.tailwind,
+    },
+  };
+  const selectedMods: SpeedModifiers = {
+    ...fieldMods,
+    stage: toggle.stage,
+    item: toItemMod(toggle.item),
+    status: toggle.status,
+  };
+
+  // Tier placement and hero display both use the actual EV-based speed so the
+  // tier row matches what the hero shows. Meta opponents use their fast spread for
+  // ranking so the comparison is: "your current EVs vs their max investment."
+  const actualBase = computeBaseSpeed(pokemon, format);
+  const speed = applySpeedModifiers(
+    actualBase,
+    isSelected ? selectedMods : fieldMods
+  );
+  const actualSpeed = speed; // same source — keeps ScoredMon.actualSpeed contract
+
+  const sprite = safeSprite(pokemon.species);
+
+  return {
+    speed,
+    actualSpeed,
+    mon: {
+      id: `team-${pokemon.id}`,
+      name: pokemon.species,
+      spriteUrl: sprite,
+      isYours: true,
+      isSelected,
+      baseSpeed: statCols.base,
+      statMin: statCols.min,
+      statMaxNeutral: statCols.maxNeutral,
+      statMaxPositive: statCols.maxPositive,
+    },
+  };
+}
+
+/** Sprite lookup that swallows any underlying lookup miss. */
+function safeSprite(species: string): string | undefined {
+  try {
+    return getPokemonSprite(species).url;
+  } catch {
+    return undefined;
+  }
+}
+
+// =============================================================================
+// SpeedPanel
+// =============================================================================
+
+/**
+ * Right-rail "Speed" panel. Renders the selected Pokémon's speed picture
+ * against its team and the meta, with a toggle rail for what-if exploration.
+ *
+ * State resets when `selectedPokemon` changes (the user is asking "what if for
+ * THIS mon"). We use `key` on the inner stateful subtree to make this reset
+ * idiomatic and effect-free.
+ */
+export function SpeedPanel({
+  selectedPokemon,
+  team,
+  format,
+  className,
+}: SpeedPanelProps) {
+  return (
+    <SpeedPanelInner
+      key={selectedPokemon.id}
+      selectedPokemon={selectedPokemon}
+      team={team}
+      format={format}
+      className={className}
+    />
+  );
+}
+
+function SpeedPanelInner({
+  selectedPokemon,
+  team,
+  format,
+  className,
+}: SpeedPanelProps) {
+  const [toggle, setToggle] = useState<SpeedToggleState>(DEFAULT_TOGGLE_STATE);
+
+  // ---- score every relevant mon -------------------------------------------
+
+  const teamScored: ScoredMon[] = team.map((p) =>
+    teamMonToScored(p, format, toggle, p.id === selectedPokemon.id)
+  );
+
+  // Team species set — used to dedupe meta opponents that overlap with the team.
+  const teamSpeciesIds = new Set(
+    team.map((p) => normalizeSpeciesId(p.species))
+  );
+
+  const legalSpecies = getLegalSpecies(format.id);
+  const metaTiers = legalSpecies
+    ? buildFullMetaTiers(legalSpecies, format)
+    : getMetaSpeedTiers(format.id);
+  const metaScored: ScoredMon[] = metaTiers
+    .filter((entry) => !teamSpeciesIds.has(normalizeSpeciesId(entry.species)))
+    .map((entry) => metaToScoredMon(entry, toggle, format));
+
+  const allScored: ScoredMon[] = [...teamScored, ...metaScored];
+
+  // ---- selected mon's effective speed -------------------------------------
+
+  const selectedScored = teamScored.find((s) => s.mon.isSelected);
+  // speed = fast-spread tier placement; actualSpeed = real EV-based speed for display
+  const effectiveSpeed = selectedScored?.speed ?? 0;
+  const heroSpeed = selectedScored?.actualSpeed ?? effectiveSpeed;
+  const tierLabel = getSpeedTierLabel(heroSpeed);
+
+  // ---- summary counts (selected vs all opponents counted) ------------------
+  // Opponents = everything that isn't the selected mon (team mates + meta).
+  // Use maxPositive speed for opponents — that's the standard threat assumption.
+  const opponents = allScored.filter((s) => !s.mon.isSelected);
+  let outspeedCount = 0;
+  let tieCount = 0;
+  let outspedCount = 0;
+  for (const opp of opponents) {
+    if (heroSpeed > opp.speed) outspeedCount += 1;
+    else if (heroSpeed === opp.speed) tieCount += 1;
+    else outspedCount += 1;
+  }
+
+  // ---- group all mons into tiers ------------------------------------------
+
+  const groups = groupBySpeed(allScored);
+
+  // Tag tie-risk badges on opponents that share the selected mon's tier.
+  const tiers: SpeedTier[] = groups.map((g) => ({
+    speed: g.speed,
+    mons: g.items.map((s) => {
+      const mon = s.mon;
+      if (
+        !mon.isYours &&
+        s.speed === heroSpeed &&
+        heroSpeed > 0 &&
+        !mon.badge
+      ) {
+        return { ...mon, badge: "tie" as const };
+      }
+      return mon;
+    }),
+  }));
+
+  // ---- render --------------------------------------------------------------
+
+  const selectedSprite = safeSprite(selectedPokemon.species);
+
+  return (
+    <div
+      className={cn(
+        "bg-card flex flex-col overflow-hidden rounded-lg shadow-sm",
+        className
+      )}
+    >
+      {/* L1 — Hero ---------------------------------------------------------- */}
+      <div className="from-primary/5 to-card border-b bg-gradient-to-br px-4 py-3">
+        <div className="text-muted-foreground text-[9px] font-semibold tracking-wider uppercase">
+          Selected · {selectedPokemon.species}
+        </div>
+        <div className="mt-2 flex items-center gap-3">
+          <div className="bg-primary/10 flex size-9 items-center justify-center rounded-full">
+            {selectedSprite && (
+              <Image
+                src={selectedSprite}
+                alt=""
+                width={28}
+                height={28}
+                unoptimized
+                className="size-7 object-contain"
+              />
+            )}
+          </div>
+          <span className="text-foreground text-sm font-semibold">Speed</span>
+          <span
+            data-testid="hero-tier-label"
+            className="border-primary text-primary rounded border px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
+          >
+            {SPEED_TIER_LABELS[tierLabel]}
+          </span>
+          <span
+            data-testid="hero-speed"
+            className="text-primary ml-auto font-mono text-2xl font-bold"
+          >
+            {heroSpeed}
+          </span>
+        </div>
+      </div>
+
+      {/* L2 — Summary ------------------------------------------------------- */}
+      <div className="grid grid-cols-3 border-b px-4 py-2.5 text-center">
+        <SummaryCell
+          testId="summary-outspeed"
+          value={outspeedCount}
+          label="outspeed"
+          tone="ok"
+        />
+        <SummaryCell
+          testId="summary-tie"
+          value={tieCount}
+          label="tie"
+          tone="warn"
+        />
+        <SummaryCell
+          testId="summary-outsped"
+          value={outspedCount}
+          label="outsped by"
+          tone="bad"
+        />
+      </div>
+
+      {/* L3 — Toggles (horizontal bar) -------------------------------------- */}
+      <SpeedToggleRail state={toggle} onChange={setToggle} format={format} />
+
+      {/* L4 — Tier list (full panel width) --------------------------------- */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <SpeedTierList tiers={tiers} selectedSpeed={effectiveSpeed} />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// SummaryCell
+// =============================================================================
+
+interface SummaryCellProps {
+  value: number;
+  label: string;
+  tone: "ok" | "warn" | "bad";
+  testId: string;
+}
+
+function SummaryCell({ value, label, tone, testId }: SummaryCellProps) {
+  return (
+    <div className="flex flex-col items-center">
+      <span
+        data-testid={testId}
+        className={cn(
+          "font-mono text-base font-bold",
+          // Use semantic design tokens from @trainers/theme instead of hardcoded
+          // Tailwind palette classes, so these track any future token evolution.
+          tone === "ok" && "text-stat-good",
+          tone === "warn" && "text-stat-mid",
+          tone === "bad" && "text-destructive"
+        )}
+      >
+        {value}
+      </span>
+      <span className="text-muted-foreground mt-1 text-[9px] font-semibold tracking-wider uppercase">
+        {label}
+      </span>
+    </div>
+  );
+}

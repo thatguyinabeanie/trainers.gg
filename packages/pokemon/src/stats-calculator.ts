@@ -3,7 +3,73 @@
  * Calculates actual stats based on base stats, level, nature, EVs, and IVs
  */
 
-import { gen9 } from "./dex";
+import { Dex } from "@pkmn/dex";
+
+/** Base stats for Champions-exclusive mega forms not present in @pkmn/dex. */
+const CHAMPIONS_EXCLUSIVE_MEGA_STATS: ReadonlyMap<
+  string,
+  {
+    hp: number;
+    atk: number;
+    def: number;
+    spa: number;
+    spd: number;
+    spe: number;
+  }
+> = new Map([
+  [
+    "Chandelure-Mega",
+    { hp: 60, atk: 75, def: 110, spa: 175, spd: 110, spe: 90 },
+  ],
+  [
+    "Chesnaught-Mega",
+    { hp: 88, atk: 147, def: 162, spa: 74, spd: 95, spe: 84 },
+  ],
+  ["Chimecho-Mega", { hp: 75, atk: 50, def: 110, spa: 135, spd: 120, spe: 65 }],
+  ["Clefable-Mega", { hp: 95, atk: 80, def: 93, spa: 135, spd: 110, spe: 70 }],
+  [
+    "Crabominable-Mega",
+    { hp: 97, atk: 157, def: 122, spa: 62, spd: 107, spe: 33 },
+  ],
+  ["Delphox-Mega", { hp: 75, atk: 69, def: 72, spa: 159, spd: 125, spe: 134 }],
+  [
+    "Dragonite-Mega",
+    { hp: 91, atk: 124, def: 115, spa: 145, spd: 125, spe: 100 },
+  ],
+  ["Drampa-Mega", { hp: 78, atk: 85, def: 110, spa: 160, spd: 116, spe: 36 }],
+  ["Emboar-Mega", { hp: 110, atk: 148, def: 75, spa: 110, spd: 110, spe: 75 }],
+  [
+    "Excadrill-Mega",
+    { hp: 110, atk: 165, def: 100, spa: 65, spd: 65, spe: 103 },
+  ],
+  [
+    "Feraligatr-Mega",
+    { hp: 85, atk: 160, def: 125, spa: 89, spd: 93, spe: 78 },
+  ],
+  ["Froslass-Mega", { hp: 70, atk: 80, def: 70, spa: 140, spd: 100, spe: 120 }],
+  ["Glimmora-Mega", { hp: 83, atk: 90, def: 105, spa: 150, spd: 96, spe: 101 }],
+  ["Golurk-Mega", { hp: 89, atk: 159, def: 105, spa: 70, spd: 105, spe: 55 }],
+  ["Greninja-Mega", { hp: 72, atk: 125, def: 77, spa: 133, spd: 81, spe: 142 }],
+  ["Hawlucha-Mega", { hp: 78, atk: 137, def: 100, spa: 74, spd: 93, spe: 118 }],
+  ["Meganium-Mega", { hp: 80, atk: 92, def: 115, spa: 143, spd: 115, spe: 80 }],
+  ["Meowstic-Mega", { hp: 74, atk: 65, def: 85, spa: 121, spd: 95, spe: 115 }],
+  [
+    "Scovillain-Mega",
+    { hp: 65, atk: 138, def: 85, spa: 138, spd: 85, spe: 75 },
+  ],
+  [
+    "Skarmory-Mega",
+    { hp: 65, atk: 140, def: 110, spa: 40, spd: 100, spe: 110 },
+  ],
+  [
+    "Starmie-Mega",
+    { hp: 60, atk: 100, def: 105, spa: 130, spd: 105, spe: 120 },
+  ],
+  [
+    "Victreebel-Mega",
+    { hp: 80, atk: 125, def: 85, spa: 135, spd: 95, spe: 70 },
+  ],
+]);
 
 export interface BaseStats {
   hp: number;
@@ -118,10 +184,33 @@ export const POKEMON_BASE_STATS: Record<string, BaseStats> = {
 /**
  * Look up a species' base stats from the Pokédex.
  * Returns null if the species is not found in the dex.
+ *
+ * Resolution order:
+ *   1. Champions-exclusive mega forms (custom table — not in @pkmn/dex)
+ *   2. Gen 9 dex (works for current-gen + Past-tagged species)
+ *   3. Gen 6 dex fallback — standard Gen 6/7 mega forms have exists:false
+ *      in Gen 9 since mega evolution was removed in Gen 8+
  */
 export function getBaseStats(species: string): BaseStats | null {
+  // 1. Champions-exclusive mega forms not in @pkmn/dex
+  const customRaw = CHAMPIONS_EXCLUSIVE_MEGA_STATS.get(species);
+  if (customRaw) {
+    return {
+      hp: customRaw.hp,
+      attack: customRaw.atk,
+      defense: customRaw.def,
+      specialAttack: customRaw.spa,
+      specialDefense: customRaw.spd,
+      speed: customRaw.spe,
+    };
+  }
   try {
-    const s = gen9.species.get(species);
+    // 2. Try Gen 9 first (works for current gen + Past-tagged species)
+    let s = Dex.forGen(9).species.get(species);
+    // 3. Standard Gen 6/7 megas have exists:false in Gen 9 — fall back to Gen 6
+    if (!s?.exists) {
+      s = Dex.forGen(6).species.get(species);
+    }
     if (!s?.exists) return null;
     const { hp, atk, def, spa, spd, spe } = s.baseStats;
     return {

@@ -26,6 +26,7 @@ import { addPokemonToTeamAction } from "@/actions/teams";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet,
   SheetContent,
@@ -35,7 +36,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 
 // =============================================================================
 // Types
@@ -455,9 +455,9 @@ export function ImportDialog({
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col overflow-y-auto sm:max-w-lg"
+        className="flex w-full flex-col overflow-hidden sm:max-w-lg"
       >
-        <SheetHeader>
+        <SheetHeader className="flex-shrink-0">
           <SheetTitle>Import Pokémon</SheetTitle>
           <SheetDescription>
             Add Pokémon to this team from a Showdown paste or Pokepaste URL. Up
@@ -465,99 +465,101 @@ export function ImportDialog({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-4 px-4">
-          {/* Legality error — shown when a paste is rejected before preview */}
-          {legalityError && (
-            <div
-              role="alert"
-              className="bg-destructive/10 border-destructive/30 rounded-md border p-2.5"
-            >
-              <div className="flex items-center gap-1.5">
-                <AlertTriangle className="text-destructive size-3.5 shrink-0" />
-                <span className="text-destructive text-xs font-medium">
-                  {legalityError}
-                </span>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4">
+          <div className="flex flex-col gap-4 py-1">
+            {/* Legality error — shown when a paste is rejected before preview */}
+            {legalityError && (
+              <div
+                role="alert"
+                className="bg-destructive/10 border-destructive/30 rounded-md border p-2.5"
+              >
+                <div className="flex items-center gap-1.5">
+                  <AlertTriangle className="text-destructive size-3.5 shrink-0" />
+                  <span className="text-destructive text-xs font-medium">
+                    {legalityError}
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {parsed ? (
-            // Preview mode
-            <>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
-                <span className="text-sm font-medium">Preview</span>
-              </div>
-              <PreviewPanel
-                parsed={parsed}
-                availableSlots={availableSlots}
-                structuralErrors={structuralErrors}
-              />
-            </>
-          ) : (
-            // Input mode — tabbed
-            <Tabs defaultValue="paste" className="flex flex-1 flex-col">
-              <TabsList className="w-full">
-                <TabsTrigger value="paste" className="flex-1">
-                  Paste Text
-                </TabsTrigger>
-                <TabsTrigger value="url" className="flex-1">
-                  Pokepaste URL
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Paste Text tab */}
-              <TabsContent value="paste" className="flex flex-col gap-3 pt-1">
-                <Label htmlFor="import-paste">Showdown Paste</Label>
-                <Textarea
-                  id="import-paste"
-                  placeholder="Paste your Showdown export here..."
-                  value={paste}
-                  onChange={(e) => setPaste(e.target.value)}
-                  rows={14}
-                  disabled={isWorking}
-                  className="font-mono text-xs"
+            {parsed ? (
+              // Preview mode
+              <>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
+                  <span className="text-sm font-medium">Preview</span>
+                </div>
+                <PreviewPanel
+                  parsed={parsed}
+                  availableSlots={availableSlots}
+                  structuralErrors={structuralErrors}
                 />
-                <Button
-                  onClick={handleParsePaste}
-                  disabled={isWorking || !paste.trim()}
-                  variant="outline"
-                  size="sm"
-                >
-                  Preview Team
-                </Button>
-              </TabsContent>
+              </>
+            ) : (
+              // Input mode — tabbed
+              <Tabs defaultValue="paste" className="flex flex-1 flex-col">
+                <TabsList className="w-full">
+                  <TabsTrigger value="paste" className="flex-1">
+                    Paste Text
+                  </TabsTrigger>
+                  <TabsTrigger value="url" className="flex-1">
+                    Pokepaste URL
+                  </TabsTrigger>
+                </TabsList>
 
-              {/* Pokepaste URL tab */}
-              <TabsContent value="url" className="flex flex-col gap-3 pt-1">
-                <Label htmlFor="import-url">Pokepaste URL</Label>
-                <Input
-                  id="import-url"
-                  type="url"
-                  placeholder="https://pokepast.es/abc1234567890abc"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  disabled={isWorking}
-                />
-                <p className="text-muted-foreground text-xs">
-                  Enter a pokepast.es link. The team will be fetched and
-                  previewed before importing.
-                </p>
-                <Button
-                  onClick={handleFetchUrl}
-                  disabled={isWorking || !url.trim()}
-                  variant="outline"
-                  size="sm"
-                >
-                  {isFetching && <Loader2 className="size-4 animate-spin" />}
-                  Fetch &amp; Preview
-                </Button>
-              </TabsContent>
-            </Tabs>
-          )}
+                {/* Paste Text tab */}
+                <TabsContent value="paste" className="flex flex-col gap-3 pt-1">
+                  <Label htmlFor="import-paste">Showdown Paste</Label>
+                  <Textarea
+                    id="import-paste"
+                    placeholder="Paste your Showdown export here..."
+                    value={paste}
+                    onChange={(e) => setPaste(e.target.value)}
+                    disabled={isWorking}
+                    rows={8}
+                    className="h-44 resize-none overflow-y-auto font-mono text-xs"
+                  />
+                  <Button
+                    onClick={handleParsePaste}
+                    disabled={isWorking || !paste.trim()}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Preview Team
+                  </Button>
+                </TabsContent>
+
+                {/* Pokepaste URL tab */}
+                <TabsContent value="url" className="flex flex-col gap-3 pt-1">
+                  <Label htmlFor="import-url">Pokepaste URL</Label>
+                  <Input
+                    id="import-url"
+                    type="url"
+                    placeholder="https://pokepast.es/abc1234567890abc"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    disabled={isWorking}
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    Enter a pokepast.es link. The team will be fetched and
+                    previewed before importing.
+                  </p>
+                  <Button
+                    onClick={handleFetchUrl}
+                    disabled={isWorking || !url.trim()}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {isFetching && <Loader2 className="size-4 animate-spin" />}
+                    Fetch &amp; Preview
+                  </Button>
+                </TabsContent>
+              </Tabs>
+            )}
+          </div>
         </div>
 
-        <SheetFooter>
+        <SheetFooter className="flex-shrink-0">
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}

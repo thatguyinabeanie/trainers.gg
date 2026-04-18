@@ -31,6 +31,7 @@ jest.mock("@trainers/pokemon", () => ({
   calculateChampionsHP: jest.fn(() => 200),
   calculateChampionsStat: jest.fn(() => 150),
   getNatureMultiplier: jest.fn(() => 1.0),
+  getStatTier: jest.fn(() => "good"),
   calculateNatureBumps: jest.fn(() => [0, 40, 80, 120, 160, 200, 240]),
   NATURE_EFFECTS: {
     Adamant: { boost: "attack", reduce: "specialAttack" },
@@ -45,6 +46,8 @@ jest.mock("@trainers/pokemon", () => ({
     accuracy: 100,
     shortDesc: "A test move.",
   })),
+  getMoveHelperText: jest.fn(() => ""),
+  getMoveHelperInput: jest.fn(() => null),
   getAllItems: jest.fn(() => ["Leftovers"]),
   getItemShortDesc: jest.fn(() => "Restores HP."),
   getAbilityShortDesc: jest.fn(() => "A test ability."),
@@ -52,6 +55,23 @@ jest.mock("@trainers/pokemon", () => ({
   getLegalMoves: jest.fn(() => undefined),
   getLegalTeraTypes: jest.fn(() => undefined),
   getLegalAbilities: jest.fn(() => undefined),
+  // Gate Tera UI based on generation (9 = Scarlet & Violet, 10 = Champions).
+  formatHasTera: jest.fn(
+    (format: { generation?: number } | null | undefined) => {
+      if (!format) return false;
+      return format.generation === 9;
+    }
+  ),
+  getMegaStoneForSpecies: jest.fn(() => null),
+}));
+
+jest.mock("@trainers/pokemon/sprites", () => ({
+  getPokemonSprite: jest.fn(() => ({
+    url: "https://example.test/sprite.png",
+    w: 96,
+    h: 96,
+    pixelated: false,
+  })),
 }));
 
 jest.mock("@pkmn/dex", () => ({
@@ -81,9 +101,20 @@ jest.mock("@pkmn/dex", () => ({
   },
 }));
 
-// Mock pokemon-import-export to avoid pulling in next/cache via @/actions/teams
-jest.mock("../pokemon-import-export", () => ({
-  PokemonImportExport: () => null,
+// next/image renders an <img> in tests so the EditorHeaderBand sprite alt
+// remains queryable.
+jest.mock("next/image", () => ({
+  __esModule: true,
+  default: ({
+    unoptimized: _unoptimized,
+    priority: _priority,
+    fill: _fill,
+    loader: _loader,
+    placeholder: _placeholder,
+    ...rest
+  }: Record<string, unknown>) => {
+    return <img {...(rest as React.ImgHTMLAttributes<HTMLImageElement>)} />;
+  },
 }));
 
 jest.mock("lucide-react", () => {
@@ -141,7 +172,6 @@ function makePokemon(
   };
 }
 
-// PokemonEditor no longer accepts teamId, onSpeciesClick, or onImport.
 const defaultProps = {
   pokemon: makePokemon(),
   format: { id: "gen9vgc2026regi", label: "SV: Reg I", generation: 9 },
@@ -158,182 +188,171 @@ describe("PokemonEditor", () => {
     jest.clearAllMocks();
   });
 
-  describe("field display labels", () => {
-    it("renders Ability label", () => {
+  // ---------------------------------------------------------------------------
+  // Header band — composition smoke test
+  // ---------------------------------------------------------------------------
+
+  describe("header band", () => {
+    it("renders sprite, species name, and the four loadout fields", () => {
       render(<PokemonEditor {...defaultProps} />);
+
+      // Sprite is delegated to next/image and queryable by alt text.
+      expect(screen.getByAltText("Incineroar")).toBeInTheDocument();
+      // Species name in the identity column.
+      expect(screen.getByText("Incineroar")).toBeInTheDocument();
+
+      // All four loadout field labels render in the band.
       expect(screen.getByText("Ability")).toBeInTheDocument();
-    });
-
-    it("renders Held Item label", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      // The field label is "Item" (uppercase, abbreviated) in the new layout
       expect(screen.getByText("Item")).toBeInTheDocument();
-    });
-
-    it("renders Nature label", () => {
-      render(<PokemonEditor {...defaultProps} />);
+      expect(screen.getByText("Tera")).toBeInTheDocument();
       expect(screen.getByText("Nature")).toBeInTheDocument();
-    });
 
-    it("renders Tera Type label", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByText("Tera Type")).toBeInTheDocument();
-    });
-
-    it("renders Moves label", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByText("Moves")).toBeInTheDocument();
-    });
-
-    it("renders EVs label", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      // "EVs" appears as both a section header and column header
-      expect(screen.getAllByText("EVs").length).toBeGreaterThanOrEqual(1);
-    });
-
-    it("renders IVs label", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByText("IVs")).toBeInTheDocument();
-    });
-  });
-
-  describe("current field values", () => {
-    it("displays current ability value", () => {
-      render(<PokemonEditor {...defaultProps} />);
+      // Current values flow through.
       expect(screen.getByText("Intimidate")).toBeInTheDocument();
-    });
-
-    it("displays None when no held item is set", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByText("None")).toBeInTheDocument();
-    });
-
-    it("displays current nature value", () => {
-      render(<PokemonEditor {...defaultProps} />);
+      expect(screen.getByText("None")).toBeInTheDocument(); // held_item
       expect(screen.getByText("Adamant")).toBeInTheDocument();
     });
+  });
 
-    it("displays current tera type value", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      // "Fire" appears as tera type value
-      expect(screen.getAllByText("Fire").length).toBeGreaterThanOrEqual(1);
-    });
+  // ---------------------------------------------------------------------------
+  // Body — Moves section
+  // ---------------------------------------------------------------------------
 
-    it("displays current moves in move slots", () => {
+  describe("moves section", () => {
+    it("renders a MoveRow per slot — 2 filled, 2 empty for the fixture", () => {
       render(<PokemonEditor {...defaultProps} />);
+
+      // Filled rows render move names.
       expect(screen.getByText("Fake Out")).toBeInTheDocument();
       expect(screen.getByText("Flare Blitz")).toBeInTheDocument();
+
+      // Empty slots render the MoveRow empty-slot affordance ("+ Add move")
+      // — there are exactly two for this fixture.
+      const emptySlots = screen.getAllByText("+ Add move");
+      expect(emptySlots).toHaveLength(2);
     });
 
-    it("displays Move N placeholder for empty slots", () => {
+    it("shows the filled / 4 counter in the Moves section header", () => {
       render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByText("Move 3")).toBeInTheDocument();
-      expect(screen.getByText("Move 4")).toBeInTheDocument();
+      expect(screen.getByText("2 / 4")).toBeInTheDocument();
     });
   });
 
-  describe("picker open/close", () => {
-    it("opens ability picker when ability field is clicked", async () => {
+  // ---------------------------------------------------------------------------
+  // Body — StatsTable
+  // ---------------------------------------------------------------------------
+
+  describe("stats section", () => {
+    it("renders the StatsTable surface (Base / Points / Final headers)", () => {
+      render(<PokemonEditor {...defaultProps} />);
+      // StatsTable column headers — proves the new component is mounted.
+      expect(screen.getByText("Base")).toBeInTheDocument();
+      expect(screen.getByText("Points")).toBeInTheDocument();
+      expect(screen.getByText("Final")).toBeInTheDocument();
+    });
+
+    it("renders the Stat Points label for Champions format", () => {
+      render(
+        <PokemonEditor
+          {...defaultProps}
+          format={{ id: "champions", label: "Champions", generation: 10 }}
+        />
+      );
+      expect(screen.getByText("Stat Points")).toBeInTheDocument();
+    });
+
+    it("does NOT render the legacy IVs editor (removed in stats-table refactor)", () => {
+      render(<PokemonEditor {...defaultProps} />);
+      // The legacy IvEditor exposed an "IVs" header — it should be gone now.
+      expect(screen.queryByText("IVs")).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Picker overlays — open/close round-trip
+  // ---------------------------------------------------------------------------
+
+  describe("picker overlays", () => {
+    it("opens the ability picker when the ability field is clicked", async () => {
       const user = userEvent.setup();
       render(<PokemonEditor {...defaultProps} />);
-      await user.click(screen.getByText("Intimidate"));
-      // AbilityPicker renders the search input
+      await user.click(screen.getByRole("button", { name: /edit ability/i }));
       expect(
         screen.getByPlaceholderText("Search abilities…")
       ).toBeInTheDocument();
     });
 
-    it("opens nature picker when nature field is clicked", async () => {
+    it("opens the nature picker when the nature field is clicked", async () => {
       const user = userEvent.setup();
       render(<PokemonEditor {...defaultProps} />);
-      await user.click(screen.getByText("Adamant"));
+      await user.click(screen.getByRole("button", { name: /edit nature/i }));
       expect(
         screen.getByPlaceholderText("Search natures…")
       ).toBeInTheDocument();
     });
 
-    it("opens tera picker when tera type field is clicked", async () => {
+    it("opens the tera picker when the tera field is clicked", async () => {
       const user = userEvent.setup();
       render(<PokemonEditor {...defaultProps} />);
-      // Find the button next to the "Tera Type" label
-      const teraSection = screen.getByText("Tera Type").closest("div");
-      const teraFieldButton = teraSection?.querySelector("button");
-      if (teraFieldButton) {
-        await user.click(teraFieldButton);
-      }
-      // TeraPicker renders type grid buttons
+      await user.click(screen.getByRole("button", { name: /edit tera/i }));
+      // TeraPicker renders type grid buttons.
       expect(screen.getByRole("button", { name: "Water" })).toBeInTheDocument();
     });
 
-    it("opens move picker when a move slot is clicked", async () => {
+    it("opens the move picker when a move slot is clicked", async () => {
       const user = userEvent.setup();
       render(<PokemonEditor {...defaultProps} />);
       await user.click(screen.getByText("Fake Out"));
-      // MovePicker renders the search input
       expect(screen.getByPlaceholderText("Search moves…")).toBeInTheDocument();
     });
   });
 
-  describe("Notes section", () => {
+  // ---------------------------------------------------------------------------
+  // Notes section
+  // ---------------------------------------------------------------------------
+
+  describe("notes section", () => {
     it("renders the Notes toggle button", () => {
       render(<PokemonEditor {...defaultProps} />);
       expect(screen.getByText("Notes")).toBeInTheDocument();
     });
 
-    it("notes textarea is hidden by default", () => {
+    it("hides the textarea by default", () => {
       render(<PokemonEditor {...defaultProps} />);
       expect(screen.queryByLabelText("Pokemon notes")).not.toBeInTheDocument();
     });
 
-    it("reveals notes textarea when Notes toggle is clicked", async () => {
+    it("reveals the textarea when the toggle is clicked", async () => {
       const user = userEvent.setup();
       render(<PokemonEditor {...defaultProps} />);
-      const notesButton = screen.getByRole("button", { name: /notes/i });
-      await user.click(notesButton);
+      await user.click(screen.getByRole("button", { name: /notes/i }));
       expect(screen.getByLabelText("Pokemon notes")).toBeInTheDocument();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // disabled prop
+  // Disabled state — cascades to header band, moves, stats, notes
   // ---------------------------------------------------------------------------
 
   describe("disabled prop", () => {
-    it("does NOT open ability picker when disabled=true and ability field is clicked", async () => {
-      const user = userEvent.setup();
+    it("renders header-band fields as static text (no edit buttons) when disabled", () => {
       render(<PokemonEditor {...defaultProps} disabled={true} />);
-      // Clicking on the ability value should not open the picker
-      await user.click(screen.getByText("Intimidate"));
+      // No FieldButtons for the four loadout fields when disabled.
       expect(
-        screen.queryByPlaceholderText("Search abilities…")
+        screen.queryByRole("button", { name: /edit ability/i })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /edit item/i })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /edit tera/i })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /edit nature/i })
       ).not.toBeInTheDocument();
     });
 
-    it("does NOT open nature picker when disabled=true and nature field is clicked", async () => {
-      const user = userEvent.setup();
-      render(<PokemonEditor {...defaultProps} disabled={true} />);
-      await user.click(screen.getByText("Adamant"));
-      expect(
-        screen.queryByPlaceholderText("Search natures…")
-      ).not.toBeInTheDocument();
-    });
-
-    it("does NOT open tera picker when disabled=true and tera field is clicked", async () => {
-      const user = userEvent.setup();
-      render(<PokemonEditor {...defaultProps} disabled={true} />);
-      // The tera section button is pointer-events-none so clicks on it should not fire
-      // Verify tera picker (which renders type grid buttons like Water) is absent
-      const teraSection = screen.getByText("Tera Type").closest("div");
-      const teraFieldButton = teraSection?.querySelector("button");
-      if (teraFieldButton) {
-        await user.click(teraFieldButton);
-      }
-      expect(
-        screen.queryByRole("button", { name: "Water" })
-      ).not.toBeInTheDocument();
-    });
-
-    it("does NOT open move picker when disabled=true and a move slot is clicked", async () => {
+    it("does NOT open the move picker when a move slot is clicked while disabled", async () => {
       const user = userEvent.setup();
       render(<PokemonEditor {...defaultProps} disabled={true} />);
       await user.click(screen.getByText("Fake Out"));
@@ -342,62 +361,69 @@ describe("PokemonEditor", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("opens ability picker normally when disabled=false (regression)", async () => {
-      const user = userEvent.setup();
-      render(<PokemonEditor {...defaultProps} disabled={false} />);
-      await user.click(screen.getByText("Intimidate"));
-      expect(
-        screen.getByPlaceholderText("Search abilities…")
-      ).toBeInTheDocument();
-    });
-
-    it("opens move picker normally when disabled=false (regression)", async () => {
+    it("opens the move picker normally when disabled=false (regression)", async () => {
       const user = userEvent.setup();
       render(<PokemonEditor {...defaultProps} disabled={false} />);
       await user.click(screen.getByText("Fake Out"));
       expect(screen.getByPlaceholderText("Search moves…")).toBeInTheDocument();
     });
-
-    it("preset EV buttons are disabled when disabled=true", () => {
-      render(<PokemonEditor {...defaultProps} disabled={true} />);
-      expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
-    });
-
-    it("all IV inputs are disabled when disabled=true", () => {
-      render(<PokemonEditor {...defaultProps} disabled={true} />);
-      // IvEditor renders spinbuttons for each stat — all should be disabled
-      const inputs = screen.getAllByRole("spinbutton");
-      inputs.forEach((input) => {
-        expect(input).toBeDisabled();
-      });
-    });
   });
 
-  describe("format-specific behavior", () => {
-    it("hides the IV editor for champions format", () => {
+  // ---------------------------------------------------------------------------
+  // Tera field gating — Champions format hides all Tera UI
+  // ---------------------------------------------------------------------------
+
+  describe("Tera field gating (Champions format)", () => {
+    const championsFormat = {
+      id: "championsvgc2026regma",
+      label: "Champions: Reg M-A",
+      generation: 10,
+    };
+
+    it("does not render the Tera field in the header band for Champions format", () => {
       render(
         <PokemonEditor
           {...defaultProps}
-          format={{ id: "champions", label: "Champions", generation: 10 }}
+          format={
+            championsFormat as Parameters<typeof PokemonEditor>[0]["format"]
+          }
         />
       );
-      // IvEditor renders "IVs" header
-      expect(screen.queryByText("IVs")).not.toBeInTheDocument();
+      // Tera label and button should be absent for Champions
+      expect(screen.queryByText("Tera")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /edit tera/i })
+      ).not.toBeInTheDocument();
     });
 
-    it("shows the IV editor for non-champions formats", () => {
-      render(<PokemonEditor {...defaultProps} />);
-      expect(screen.getByText("IVs")).toBeInTheDocument();
-    });
-
-    it("shows Stat Points label for champions format", () => {
+    it("does not open the TeraPicker overlay for Champions format when tera callback fires", () => {
       render(
         <PokemonEditor
           {...defaultProps}
-          format={{ id: "champions", label: "Champions", generation: 10 }}
+          format={
+            championsFormat as Parameters<typeof PokemonEditor>[0]["format"]
+          }
         />
       );
-      expect(screen.getByText("Stat Points")).toBeInTheDocument();
+      // Since Tera field is hidden there's no way to trigger the picker —
+      // confirm the type grid is not in the DOM at all.
+      expect(
+        screen.queryByRole("button", { name: "Water" })
+      ).not.toBeInTheDocument();
+    });
+
+    it("still renders Ability, Item, and Nature fields for Champions format", () => {
+      render(
+        <PokemonEditor
+          {...defaultProps}
+          format={
+            championsFormat as Parameters<typeof PokemonEditor>[0]["format"]
+          }
+        />
+      );
+      expect(screen.getByText("Ability")).toBeInTheDocument();
+      expect(screen.getByText("Item")).toBeInTheDocument();
+      expect(screen.getByText("Nature")).toBeInTheDocument();
     });
   });
 });

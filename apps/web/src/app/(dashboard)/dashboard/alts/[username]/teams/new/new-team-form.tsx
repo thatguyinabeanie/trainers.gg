@@ -203,9 +203,8 @@ export function NewTeamForm({
             placeholder="Paste a Showdown export here..."
             value={paste}
             onChange={(e) => setPaste(e.target.value)}
-            rows={10}
             disabled={isPending}
-            className="font-mono text-xs"
+            className="max-h-44 resize-none overflow-y-auto font-mono text-xs"
           />
           <p className="text-muted-foreground text-xs">
             Paste your team export from Pokemon Showdown. Up to 6 Pokémon will

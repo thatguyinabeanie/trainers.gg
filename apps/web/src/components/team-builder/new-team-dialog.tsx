@@ -270,9 +270,8 @@ export function NewTeamDialog({
                 placeholder="Paste a Showdown export here..."
                 value={paste}
                 onChange={(e) => setPaste(e.target.value)}
-                rows={8}
                 disabled={isPending}
-                className="font-mono text-xs"
+                className="max-h-40 resize-none overflow-y-auto font-mono text-xs"
               />
               <p className="text-muted-foreground text-xs">
                 Up to 6 Pokémon will be imported.

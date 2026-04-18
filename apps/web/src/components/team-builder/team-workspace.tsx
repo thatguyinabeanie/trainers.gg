@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Calculator, ChevronDown, Star, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 import {
   type GameFormat,
+  DEFAULT_FORMAT_ID,
   buildSpeciesSearchIndex,
-  getSpeciesTypes,
+  getFormatById,
+  getMegaStoneForSpecies,
   getValidAbilities,
 } from "@trainers/pokemon";
 import {
@@ -17,17 +19,13 @@ import {
   type TablesInsert,
 } from "@trainers/supabase";
 
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
 import { addPokemonToTeamAction, updatePokemonAction } from "@/actions/teams";
-import { ContextPanel } from "@/components/team-builder/context-panel";
+import { AnalyticsRail } from "@/components/team-builder/analytics-rail";
 import { PokemonEditor } from "@/components/team-builder/pokemon-editor";
-import { TeamSidebar } from "@/components/team-builder/team-sidebar";
+import { TeamStrip } from "@/components/team-builder/team-strip";
 
-import { PokemonImportExport } from "./pokemon-import-export";
 import { SpeciesPicker } from "./species-picker";
-import { TYPE_PILL_COLORS } from "./type-colors";
-import { type ValidationError, useTeamValidation } from "./validation-hooks";
+import { useTeamValidation } from "./validation-hooks";
 
 // =============================================================================
 // Constants
@@ -71,6 +69,15 @@ const PLACEHOLDER_POKEMON: Tables<"pokemon"> = {
   created_at: null,
 };
 
+// PokemonEditor renders its own card chrome (`bg-card overflow-hidden
+// rounded-lg shadow-sm`) so it can be used standalone. In the new 3-column
+// layout, the center grid cell wraps both TeamStrip and PokemonEditor in a
+// single shared card. We pass these neutralizing utility classes to strip the
+// editor's duplicate chrome — same pattern as `PANEL_CHROME_OVERRIDE` in
+// `analytics-rail.tsx`.
+const EDITOR_CHROME_OVERRIDE =
+  "bg-transparent shadow-none rounded-none overflow-visible";
+
 // Module-level cache — buildSpeciesSearchIndex iterates all species (~1,200+),
 // so we cache per format ID to avoid re-computing on every render.
 const speciesIndexCache = new Map<
@@ -102,40 +109,54 @@ interface TeamWorkspaceProps {
 
 /**
  * Client component that orchestrates the team editor workspace.
- * Manages selected pokemon state and composes the team sidebar,
- * editor panel, and context panel.
+ * Manages selected pokemon state and composes the editor card
+ * (team strip + pokemon editor) and analytics rail.
  *
- * Layout:
- *   - Team sidebar on the far left (64px, 6 pokemon slots stacked vertically)
- *   - Editor panel (left 50%) and context panel (right 50%) side-by-side
- *   - When picker is open: species picker replaces the split panel
+ * Layout — fixed 2-column grid inside a 1536px container:
+ *   - LEFT (1fr): Editor card — TeamStrip on top, PokemonEditor below
+ *   - RIGHT (460px): AnalyticsRail — Types / Speed / Calc tabs
+ *
+ * The type chart now lives inside the analytics rail's Types tab, which
+ * gives the editor column ~300px more width while keeping coverage analysis
+ * accessible without a dedicated left column.
+ *
+ * Species picker overlay: when open, replaces the center column only so the
+ * right analytics rail stays visible for cross-reference.
  */
 export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
-  // Sort pokemon by position and get the first one as default selection
-  const sortedPokemon = [...team.team_pokemon].sort(
-    (a, b) => a.team_position - b.team_position
+  const router = useRouter();
+
+  const [optimisticTeamPokemon, applyOptimisticPatch] = useOptimistic(
+    team.team_pokemon,
+    (
+      current,
+      {
+        pokemonId,
+        fields,
+      }: { pokemonId: number; fields: Partial<Tables<"pokemon">> }
+    ) =>
+      current.map((tp) =>
+        tp.pokemon_id === pokemonId && tp.pokemon
+          ? { ...tp, pokemon: { ...tp.pokemon, ...fields } }
+          : tp
+      )
   );
 
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const teamPokemon = optimisticTeamPokemon;
+
+  // Sort pokemon by position and get the first one as default selection
+  const sortedPokemon = [...teamPokemon].sort(
+    (a, b) => a.team_position - b.team_position
+  );
 
   const [selectedPokemonId, setSelectedPokemonId] = useState<number | null>(
     sortedPokemon[0]?.pokemon_id ?? null
   );
-  const [activeTab, setActiveTab] = useState<"types" | "speed" | "calc">(
-    "types"
-  );
-  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const savedIdleTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingUpdateRef = useRef<{
-    pokemonId: number;
-    field: string;
-    value: unknown;
-  } | null>(null);
-
-  // Context panel visibility + resizable width
-  const [panelOpen, setPanelOpen] = useState(true);
-  const [panelWidthPercent, setPanelWidthPercent] = useState(50);
+  // Field saves: isFieldSavePending. Species changes: isSaving.
+  const [isFieldSavePending, startFieldSaveTransition] = useTransition();
+  // Track whether a background save is in flight — drives the inline
+  // "Saving…" indicator without disabling any inputs.
+  const [isSaving, setIsSaving] = useState(false);
 
   // Species picker state
   const [pickerState, setPickerState] = useState<{
@@ -144,31 +165,23 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     mode: "add" | "change";
   }>({ open: false, slot: null, mode: "add" });
 
-  // Validation
-  const { pokemonErrors } = useTeamValidation(team.team_pokemon, format);
+  // Resolve the active format with a default fallback so downstream panels
+  // (SpeedPanel, CalcPanel, type chart filters) always have a format to drive
+  // their calculations off — otherwise SpeedPanel renders the
+  // "Speed tiers require a known format" empty state for any team that hasn't
+  // had a format set on the row.
+  const resolvedFormat: GameFormat | undefined =
+    format ?? getFormatById(DEFAULT_FORMAT_ID);
 
-  const speciesIndex = getCachedSpeciesIndex(format?.id ?? "gen9vgc2026regi");
+  // Validation runs against the optimistic team and the resolved format so
+  // newly-edited fields contribute to the validation panel immediately. Using
+  // resolvedFormat (never undefined) ensures validation and the editor/analytics
+  // rail all operate on the same format — passing raw `format` would leave
+  // format-less teams validated against no rules while the rest of the UI uses
+  // the default.
+  const { pokemonErrors } = useTeamValidation(teamPokemon, resolvedFormat);
 
-  // Clear both debounce timers on unmount to prevent setState on an unmounted component.
-  // If there is a pending save, fire it immediately — the server action will still execute
-  // even though we don't await it (the component is unmounting).
-  useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      if (savedIdleTimerRef.current) clearTimeout(savedIdleTimerRef.current);
-      if (pendingUpdateRef.current) {
-        const { pokemonId, field, value } = pendingUpdateRef.current;
-        updatePokemonAction(team.id, pokemonId, {
-          [field]: value,
-        } as Parameters<typeof updatePokemonAction>[2]).catch((err) => {
-          console.error(
-            "[team-workspace] Failed to flush pending save on unmount:",
-            err
-          );
-        });
-      }
-    };
-  }, []);
+  const speciesIndex = getCachedSpeciesIndex(format?.id ?? DEFAULT_FORMAT_ID);
 
   const selectedEntry = sortedPokemon.find(
     (tp) => tp.pokemon_id === selectedPokemonId
@@ -176,8 +189,16 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   // True when the team has no pokemon — drives placeholder vs real editor mode
   const isPlaceholder = sortedPokemon.length === 0;
 
+  const selectedFieldErrors = selectedPokemonId
+    ? (pokemonErrors.get(selectedPokemonId) ?? [])
+    : [];
+
   // ---------------------------------------------------------------------------
-  // Auto-save handler — debounced 2s
+  // Field save handler — optimistic UI + immediate background save
+  //
+  // applyOptimisticPatch updates the display on the next paint.
+  // The server save runs in the background via startFieldSaveTransition.
+  // On failure: toast + automatic revert to server state (useOptimistic).
   // ---------------------------------------------------------------------------
 
   function handlePokemonUpdate(
@@ -185,51 +206,74 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     field: string,
     value: unknown
   ) {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    if (savedIdleTimerRef.current) clearTimeout(savedIdleTimerRef.current);
-    // Track the latest pending update so it can be flushed on unmount
-    pendingUpdateRef.current = { pokemonId, field, value };
-    saveTimerRef.current = setTimeout(async () => {
-      // Clear before awaiting so unmount cleanup won't re-fire an in-flight save
-      pendingUpdateRef.current = null;
+    startFieldSaveTransition(async () => {
+      applyOptimisticPatch({ pokemonId, fields: { [field]: value } });
       const result = await updatePokemonAction(team.id, pokemonId, {
         [field]: value,
       } as Parameters<typeof updatePokemonAction>[2]);
       if (!result.success) {
         toast.error(result.error ?? "Failed to save changes.");
       }
-    }, 2000);
+      router.refresh();
+    });
   }
+
+  // Auto-correct mega stone mismatches in server-fetched data. Runs whenever
+  // the server team changes (after import, paste, or any router.refresh) and
+  // applies the correct stone optimistically + saves it in the background.
+  useEffect(() => {
+    for (const tp of team.team_pokemon) {
+      const pokemon = tp.pokemon;
+      if (!pokemon) continue;
+      const expectedStone = getMegaStoneForSpecies(pokemon.species);
+      if (expectedStone && pokemon.held_item !== expectedStone) {
+        handlePokemonUpdate(pokemon.id, "held_item", expectedStone);
+      }
+    }
+  }, [team.team_pokemon]);
 
   // ---------------------------------------------------------------------------
   // Species picker handlers
   // ---------------------------------------------------------------------------
+
+  function handleStripSelect(pokemonId: number) {
+    if (pokemonId === selectedPokemonId) {
+      const entry = sortedPokemon.find((tp) => tp.pokemon_id === pokemonId);
+      if (entry) {
+        setPickerState({
+          open: true,
+          slot: entry.team_position - 1,
+          mode: "change",
+        });
+      }
+    } else {
+      setSelectedPokemonId(pokemonId);
+    }
+  }
 
   function handleAddNew() {
     const nextSlot = sortedPokemon.length;
     setPickerState({ open: true, slot: nextSlot, mode: "add" });
   }
 
-  function handleSpeciesClick() {
-    const slotIndex = sortedPokemon.findIndex(
-      (tp) => tp.pokemon_id === selectedPokemonId
-    );
-    setPickerState({ open: true, slot: slotIndex, mode: "change" });
-  }
-
   function handleSpeciesSelect(
     species: string,
-    selectMode: "defaults" | "blank"
+    _mode: "defaults" = "defaults"
   ) {
+    // Close the picker immediately — the save runs in the background.
+    setPickerState({ open: false, slot: null, mode: "add" });
+
     if (pickerState.mode === "add") {
-      const firstAbility =
-        selectMode === "defaults" ? (getValidAbilities(species)[0] ?? "") : "";
+      const firstAbility = getValidAbilities(species)[0] ?? "";
+      // Auto-assign the matching mega stone when adding a mega species
+      const megaStone = getMegaStoneForSpecies(species);
       const pokemon: TablesInsert<"pokemon"> = {
         species,
         ability: firstAbility,
-        nature: selectMode === "defaults" ? "Hardy" : "",
+        nature: "Hardy",
         move1: "",
         level: 50,
+        ...(megaStone ? { held_item: megaStone } : {}),
         ev_hp: 0,
         ev_attack: 0,
         ev_defense: 0,
@@ -251,47 +295,71 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
       const position =
         [1, 2, 3, 4, 5, 6].find((p) => !usedPositions.has(p)) ?? 1;
 
-      startTransition(async () => {
-        const result = await addPokemonToTeamAction(team.id, pokemon, position);
-        if (result.success) {
-          setPickerState({ open: false, slot: null, mode: "add" });
-          setSelectedPokemonId(result.data.pokemonId);
-          router.refresh();
-        } else {
-          toast.error(result.error ?? "Failed to add Pokémon.");
-        }
-      });
+      setIsSaving(true);
+      addPokemonToTeamAction(team.id, pokemon, position)
+        .then((result) => {
+          if (result.success) {
+            setSelectedPokemonId(result.data.pokemonId);
+            router.refresh();
+          } else {
+            toast.error(result.error ?? "Failed to add Pokémon.");
+          }
+        })
+        .catch(() => {
+          toast.error("Failed to add Pokémon.");
+        })
+        .finally(() => {
+          setIsSaving(false);
+        });
     } else {
       // change mode — update existing pokemon's species
       const pokemonId = selectedPokemonId;
       if (!pokemonId) return;
 
-      const firstAbility =
-        selectMode === "defaults" ? (getValidAbilities(species)[0] ?? "") : "";
+      const firstAbility = getValidAbilities(species)[0] ?? "";
+      // Auto-assign the matching mega stone when changing to a mega species
+      const megaStone = getMegaStoneForSpecies(species);
 
-      startTransition(async () => {
-        const result = await updatePokemonAction(team.id, pokemonId, {
-          species,
-          ability: firstAbility,
-          nature: selectMode === "defaults" ? "Hardy" : "",
-          move1: "",
-          move2: null,
-          move3: null,
-          move4: null,
-          ev_hp: 0,
-          ev_attack: 0,
-          ev_defense: 0,
-          ev_special_attack: 0,
-          ev_special_defense: 0,
-          ev_speed: 0,
+      const changeFields = {
+        species,
+        ability: firstAbility,
+        nature: "Hardy",
+        move1: "",
+        move2: null,
+        move3: null,
+        move4: null,
+        ...(megaStone ? { held_item: megaStone } : {}),
+        ev_hp: 0,
+        ev_attack: 0,
+        ev_defense: 0,
+        ev_special_attack: 0,
+        ev_special_defense: 0,
+        ev_speed: 0,
+      };
+
+      // Apply an optimistic patch so the editor shows the new species
+      // on the next paint without waiting for the server round trip.
+      applyOptimisticPatch({ pokemonId, fields: changeFields });
+
+      setIsSaving(true);
+      updatePokemonAction(
+        team.id,
+        pokemonId,
+        changeFields as Parameters<typeof updatePokemonAction>[2]
+      )
+        .then((result) => {
+          if (result.success) {
+            router.refresh();
+          } else {
+            toast.error(result.error ?? "Failed to update species.");
+          }
+        })
+        .catch(() => {
+          toast.error("Failed to update species.");
+        })
+        .finally(() => {
+          setIsSaving(false);
         });
-        if (result.success) {
-          setPickerState({ open: false, slot: null, mode: "add" });
-          router.refresh();
-        } else {
-          toast.error(result.error ?? "Failed to update species.");
-        }
-      });
     }
   }
 
@@ -300,397 +368,140 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   }
 
   // ---------------------------------------------------------------------------
-  // Species header helpers — field error lookup + inline error rendering
-  // ---------------------------------------------------------------------------
-
-  const selectedFieldErrors: ValidationError[] = selectedPokemonId
-    ? (pokemonErrors.get(selectedPokemonId) ?? [])
-    : [];
-
-  function getSelectedFieldError(field: string): ValidationError | undefined {
-    return selectedFieldErrors.find((e) => e.field === field);
-  }
-
-  function renderSelectedFieldError(...fields: string[]): React.ReactNode {
-    const error = fields.reduce<ValidationError | undefined>(
-      (found, f) => found ?? getSelectedFieldError(f),
-      undefined
-    );
-    if (!error) return null;
-    return (
-      <p
-        className={cn(
-          "mt-0.5 text-xs",
-          error.severity === "warning"
-            ? "text-amber-600 dark:text-amber-500"
-            : "text-destructive"
-        )}
-      >
-        {error.message}
-      </p>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="relative flex min-h-0 flex-1 overflow-hidden">
-      {/* Team sidebar — always visible so "+" button works even with 0 pokemon */}
-      <TeamSidebar
-        teamId={team.id}
-        pokemon={team.team_pokemon}
-        selectedPokemonId={selectedPokemonId}
-        onSelect={setSelectedPokemonId}
-        onAddNew={handleAddNew}
-        choosingSlot={
-          pickerState.open ? (pickerState.slot ?? undefined) : undefined
-        }
-        pokemonErrors={pokemonErrors}
-      />
-
-      {/* Main content area — species picker or split panel */}
-      {pickerState.open ? (
-        <SpeciesPicker
-          speciesIndex={speciesIndex}
-          currentTeam={sortedPokemon
-            .filter((tp) => tp.pokemon !== null)
-            .map((tp) => ({ species: tp.pokemon!.species ?? "" }))}
-          currentSpecies={
-            pickerState.mode === "change"
-              ? (selectedEntry?.pokemon?.species ?? null)
-              : null
-          }
-          formatId={format?.id}
-          onSelect={handleSpeciesSelect}
-          onCancel={handlePickerCancel}
-        />
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          {/* ===================================================================
-              Species header — spans full width above the editor/panel split.
-              Placeholder mode: shows "Choose a Pokémon" that opens the picker.
-              Real mode: shows species name, type pills, nickname, gender, shiny,
-              level, and import/export controls.
-              =================================================================== */}
-          <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2">
-            {isPlaceholder ? (
-              /* Placeholder header — opens the species picker at slot 0 */
-              <button
-                type="button"
-                onClick={handleAddNew}
-                aria-label="Choose a Pokémon"
-                className={cn(
-                  "flex items-center gap-1 text-base font-bold",
-                  "text-muted-foreground hover:text-primary transition-colors"
-                )}
-              >
-                Choose a Pokémon
-                <ChevronDown className="size-3.5" />
-              </button>
-            ) : selectedEntry?.pokemon ? (
-              <>
-                {/* Species name — clickable to open species picker */}
-                <div className="flex flex-col">
-                  <button
-                    type="button"
-                    onClick={handleSpeciesClick}
-                    className={cn(
-                      "flex items-center gap-1 text-base font-bold",
-                      "hover:text-primary transition-colors"
-                    )}
-                  >
-                    {selectedEntry.pokemon.species}
-                    <ChevronDown className="text-muted-foreground size-3.5" />
-                  </button>
-                  {renderSelectedFieldError("species")}
-                </div>
-
-                {/* Type pills */}
-                <div className="flex gap-1">
-                  {getSpeciesTypes(selectedEntry.pokemon.species).map(
-                    (type) => (
-                      <span
-                        key={type}
-                        className={cn(
-                          "rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold",
-                          TYPE_PILL_COLORS[type] ?? "bg-muted text-foreground"
-                        )}
-                      >
-                        {type}
-                      </span>
-                    )
-                  )}
-                </div>
-
-                {/* Separator */}
-                <span className="text-muted-foreground text-xs">·</span>
-
-                {/* Nickname input */}
-                <div className="flex flex-col">
-                  <Input
-                    placeholder="Nickname"
-                    value={selectedEntry.pokemon.nickname ?? ""}
-                    onChange={(e) =>
-                      handlePokemonUpdate(
-                        selectedEntry.pokemon!.id,
-                        "nickname",
-                        e.target.value || null
-                      )
-                    }
-                    className={cn(
-                      "h-6 w-28 px-2 text-xs",
-                      getSelectedFieldError("nickname") && "border-destructive"
-                    )}
-                    aria-label="Pokemon nickname"
-                  />
-                  {renderSelectedFieldError("nickname")}
-                </div>
-
-                {/* Gender selector — only when species has gender differences */}
-                {selectedEntry.pokemon.gender !== null ? (
-                  <div className="flex flex-col items-start">
-                    <div
-                      className={cn(
-                        "flex gap-0.5 rounded border p-0.5",
-                        getSelectedFieldError("gender") && "border-destructive"
-                      )}
-                    >
-                      {(["Male", "Female"] as const).map((g) => (
-                        <button
-                          key={g}
-                          type="button"
-                          onClick={() =>
-                            handlePokemonUpdate(
-                              selectedEntry.pokemon!.id,
-                              "gender",
-                              g
-                            )
-                          }
-                          className={cn(
-                            "rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
-                            selectedEntry.pokemon!.gender === g
-                              ? g === "Male"
-                                ? "bg-blue-500 text-white"
-                                : "bg-pink-500 text-white"
-                              : "text-muted-foreground hover:bg-muted"
-                          )}
-                        >
-                          {g === "Male" ? "♂" : "♀"}
-                        </button>
-                      ))}
-                    </div>
-                    {renderSelectedFieldError("gender")}
-                  </div>
-                ) : (
-                  <span className="text-muted-foreground text-xs">
-                    Genderless
-                  </span>
-                )}
-
-                {/* Shiny toggle */}
-                <button
-                  type="button"
-                  onClick={() =>
-                    handlePokemonUpdate(
-                      selectedEntry.pokemon!.id,
-                      "is_shiny",
-                      !(selectedEntry.pokemon!.is_shiny ?? false)
-                    )
-                  }
-                  aria-label="Toggle shiny"
-                  aria-pressed={selectedEntry.pokemon.is_shiny ?? false}
-                  className={cn(
-                    "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors",
-                    selectedEntry.pokemon.is_shiny
-                      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                      : "text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  <Star
-                    className={cn(
-                      "size-3",
-                      selectedEntry.pokemon.is_shiny &&
-                        "fill-yellow-500 text-yellow-500"
-                    )}
-                  />
-                  {selectedEntry.pokemon.is_shiny ? "Shiny" : ""}
-                </button>
-
-                {/* Level input + import/export — pushed to far right */}
-                <div className="ml-auto flex items-center gap-1.5">
-                  <span className="text-muted-foreground text-xs">Lv</span>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={selectedEntry.pokemon.level ?? 50}
-                    onChange={(e) => {
-                      const raw = parseInt(e.target.value, 10);
-                      if (!isNaN(raw)) {
-                        handlePokemonUpdate(
-                          selectedEntry.pokemon!.id,
-                          "level",
-                          Math.max(1, Math.min(100, raw))
-                        );
-                      }
-                    }}
-                    className="h-6 w-12 px-1 text-center text-xs"
-                    aria-label="Pokemon level"
-                  />
-                  <PokemonImportExport
-                    teamId={team.id}
-                    pokemon={selectedEntry.pokemon}
-                    onUpdate={() => router.refresh()}
-                  />
-                </div>
-              </>
-            ) : null}
+    // max-w-builder (1536px) is tuned for the team builder — wide enough
+    // that the middle column accommodates long species names in the picker
+    // without truncation, while keeping the 240/1fr/460 grid balanced.
+    // Token declared in globals.css as --container-builder.
+    <div
+      data-testid="team-workspace"
+      className="max-w-builder mx-auto w-full px-4 py-6 md:px-6"
+    >
+      <div
+        data-testid="team-workspace-grid"
+        // grid-cols-[minmax(0,1fr)_28.75rem] = auto/460. The type chart
+        // moved into the analytics rail's Types tab so the editor column
+        // gains ~300px compared to the old 3-column layout. `minmax(0,1fr)`
+        // is still critical — without the explicit `0` minimum the editor
+        // column inflates to its min-content width.
+        className="grid grid-cols-[minmax(0,1fr)_28.75rem] items-start gap-4 md:gap-6"
+      >
+        {/* LEFT/CENTER — Editor card (TeamStrip + PokemonEditor) OR species picker
+            overlay. The picker replaces the editor card in this column only,
+            keeping the type chart on the left and analytics rail on the right
+            visible for cross-reference. */}
+        {pickerState.open ? (
+          <div
+            data-testid="team-workspace-center"
+            className="bg-card overflow-hidden rounded-lg shadow-sm"
+          >
+            <SpeciesPicker
+              speciesIndex={speciesIndex}
+              currentTeam={sortedPokemon
+                .filter((tp) => tp.pokemon !== null)
+                .map((tp) => ({ species: tp.pokemon!.species ?? "" }))}
+              currentSpecies={
+                pickerState.mode === "change"
+                  ? (selectedEntry?.pokemon?.species ?? null)
+                  : null
+              }
+              formatId={format?.id}
+              onSelect={handleSpeciesSelect}
+              onCancel={handlePickerCancel}
+            />
           </div>
-
-          {/* Editor + context panel — flex-row, fills remaining height */}
-          <div className="flex min-h-0 flex-1 overflow-hidden">
-            {/* Editor panel — scrolls independently */}
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto border-r">
-              {isPlaceholder ? (
-                /* Placeholder shell — disabled so all pickers are no-ops */
-                <PokemonEditor
-                  key="placeholder"
-                  pokemon={PLACEHOLDER_POKEMON}
-                  format={format}
-                  teamPokemon={[]}
-                  onUpdate={() => {
-                    /* no-op: disabled placeholder */
-                  }}
-                  fieldErrors={[]}
-                  disabled={true}
-                />
-              ) : selectedEntry?.pokemon ? (
-                <PokemonEditor
-                  key={selectedEntry.pokemon.id}
-                  pokemon={selectedEntry.pokemon}
-                  format={format}
-                  teamPokemon={team.team_pokemon}
-                  onUpdate={(field, value) =>
-                    handlePokemonUpdate(selectedEntry.pokemon!.id, field, value)
-                  }
-                  fieldErrors={selectedFieldErrors}
-                />
-              ) : (
-                <div className="flex flex-1 items-center justify-center">
-                  <p className="text-muted-foreground text-sm">
-                    Select a Pokémon to edit
-                  </p>
-                </div>
-              )}
+        ) : (
+          <div
+            data-testid="team-workspace-center"
+            className="bg-card overflow-hidden rounded-lg shadow-sm"
+          >
+            {/* Team strip — horizontal row of 6 chips, sits inside the same
+                card as the editor with a single divider between them. */}
+            <div className="border-b">
+              <TeamStrip
+                teamId={team.id}
+                pokemon={teamPokemon}
+                selectedPokemonId={selectedPokemonId}
+                onSelect={handleStripSelect}
+                onAddNew={handleAddNew}
+                choosingSlot={
+                  pickerState.open ? (pickerState.slot ?? undefined) : undefined
+                }
+                pokemonErrors={pokemonErrors}
+              />
             </div>
 
-            {panelOpen ? (
-              <>
-                {/* Resize handle */}
-                <div
-                  className="hover:bg-primary/20 flex w-1.5 flex-shrink-0 cursor-col-resize items-center justify-center bg-transparent transition-colors"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    const container = e.currentTarget.parentElement;
-                    if (!container) return;
-                    const startX = e.clientX;
-                    const startWidth = panelWidthPercent;
-                    const containerWidth =
-                      container.getBoundingClientRect().width;
-
-                    function onMove(moveEvent: PointerEvent) {
-                      const delta = startX - moveEvent.clientX;
-                      const deltaPercent = (delta / containerWidth) * 100;
-                      const newWidth = Math.min(
-                        75,
-                        Math.max(25, startWidth + deltaPercent)
-                      );
-                      setPanelWidthPercent(newWidth);
-                    }
-
-                    function onUp() {
-                      document.removeEventListener("pointermove", onMove);
-                      document.removeEventListener("pointerup", onUp);
-                    }
-
-                    document.addEventListener("pointermove", onMove);
-                    document.addEventListener("pointerup", onUp);
-                  }}
-                >
-                  {/* Drag dots */}
-                  <div className="flex flex-col gap-0.5">
-                    <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
-                    <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
-                    <span className="bg-muted-foreground/30 block h-0.5 w-0.5 rounded-full" />
-                  </div>
-                </div>
-
-                {/* Context panel */}
-                <div
-                  className="flex min-h-0 flex-shrink-0 flex-col overflow-hidden"
-                  style={{ width: `${panelWidthPercent}%` }}
-                >
-                  <ContextPanel
-                    team={team}
-                    selectedPokemon={selectedEntry?.pokemon ?? null}
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                    onClose={() => setPanelOpen(false)}
-                    format={format}
-                  />
-                </div>
-              </>
+            {/* Editor — chrome neutralized so it reads as one unified card
+                with the team strip above. */}
+            {isPlaceholder ? (
+              <PokemonEditor
+                key="placeholder"
+                pokemon={PLACEHOLDER_POKEMON}
+                format={resolvedFormat}
+                teamPokemon={[]}
+                onUpdate={() => {
+                  /* no-op: disabled placeholder */
+                }}
+                fieldErrors={[]}
+                disabled={true}
+                className={EDITOR_CHROME_OVERRIDE}
+              />
+            ) : selectedEntry?.pokemon ? (
+              <PokemonEditor
+                key={selectedEntry.pokemon.id}
+                pokemon={selectedEntry.pokemon}
+                format={resolvedFormat}
+                teamPokemon={teamPokemon}
+                onUpdate={(field, value) =>
+                  handlePokemonUpdate(selectedEntry.pokemon!.id, field, value)
+                }
+                onOpenSpeciesPicker={() =>
+                  setPickerState({
+                    open: true,
+                    slot: selectedEntry.team_position - 1,
+                    mode: "change",
+                  })
+                }
+                teamId={team.id}
+                onImported={() => router.refresh()}
+                fieldErrors={selectedFieldErrors}
+                className={EDITOR_CHROME_OVERRIDE}
+              />
             ) : (
-              /* Icon rail — shown when panel is closed */
-              <div className="flex w-9 flex-shrink-0 flex-col items-center gap-1 border-l pt-2">
-                <button
-                  type="button"
-                  title="Type Coverage"
-                  aria-label="Open type coverage"
-                  onClick={() => {
-                    setActiveTab("types");
-                    setPanelOpen(true);
-                  }}
-                  className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded text-xs font-semibold transition-colors"
-                >
-                  T
-                </button>
-                <button
-                  type="button"
-                  title="Speed Tiers"
-                  aria-label="Open speed tiers"
-                  onClick={() => {
-                    setActiveTab("speed");
-                    setPanelOpen(true);
-                  }}
-                  className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded transition-colors"
-                >
-                  <Zap className="size-3.5" />
-                </button>
-                <button
-                  type="button"
-                  title="Damage Calc"
-                  aria-label="Open damage calc"
-                  onClick={() => {
-                    setActiveTab("calc");
-                    setPanelOpen(true);
-                  }}
-                  className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-7 items-center justify-center rounded transition-colors"
-                >
-                  <Calculator className="size-3.5" />
-                </button>
+              <div className="flex items-center justify-center px-4 py-12">
+                <p className="text-muted-foreground text-sm">
+                  Select a Pokémon to edit
+                </p>
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Pending overlay while adding/changing species */}
-      {isPending && (
-        <div className="bg-background/50 absolute inset-0 flex items-center justify-center">
-          <p className="text-muted-foreground text-sm">Saving...</p>
+        {/* RIGHT — Analytics rail (Types / Speed / Calc tabs at fixed 460px).
+            We pass an optimistically-patched team object so the type chart
+            inside the Types tab reflects field edits (tera type, species
+            changes) the instant the user makes them — same as the editor. */}
+        <AnalyticsRail
+          team={{ ...team, team_pokemon: teamPokemon }}
+          selectedPokemon={selectedEntry?.pokemon ?? null}
+          format={resolvedFormat}
+        />
+      </div>
+
+      {/* Save status indicator — small, fixed, never blocks input.
+          Field saves: isFieldSavePending. Species changes: isSaving. */}
+      {(isSaving || isFieldSavePending) && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="team-workspace-save-indicator"
+          className="bg-card text-muted-foreground pointer-events-none fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs shadow-sm"
+        >
+          <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+          <span>Saving…</span>
         </div>
       )}
     </div>

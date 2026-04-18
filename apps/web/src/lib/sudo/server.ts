@@ -7,7 +7,11 @@
  */
 
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import {
+  createClient,
+  createServiceRoleClient,
+  getUser,
+} from "@/lib/supabase/server";
 import {
   startSudoSession,
   endSudoSession,
@@ -22,24 +26,18 @@ const SUDO_COOKIE_MAX_AGE = 30 * 60; // 30 minutes in seconds
  * This is a prerequisite for sudo mode but NOT sufficient on its own.
  */
 export async function isSiteAdmin(): Promise<boolean> {
-  const supabase = await createClient();
+  const user = await getUser();
+  if (!user) return false;
 
   try {
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession();
-
-    if (error || !session?.access_token) {
-      return false;
-    }
-
-    // Decode JWT to check site_roles claim
-    const payload = JSON.parse(atob(session.access_token.split(".")[1]!)) as {
-      site_roles?: string[];
-    };
-
-    return payload?.site_roles?.includes("site_admin") ?? false;
+    const supabase = createServiceRoleClient();
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role_id, roles!inner(name)")
+      .eq("user_id", user.id)
+      .eq("roles.name", "site_admin")
+      .maybeSingle();
+    return !!data;
   } catch {
     return false;
   }

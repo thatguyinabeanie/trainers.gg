@@ -2,6 +2,8 @@
  * Pokemon type effectiveness and coverage calculations
  */
 
+import { Dex } from "@pkmn/dex";
+
 import { gen9 } from "./dex";
 
 export type PokemonType =
@@ -296,11 +298,21 @@ export const POKEMON_TYPES: Record<string, PokemonType[]> = {
  */
 export function getSpeciesTypes(species: string): PokemonType[] {
   try {
-    const s = gen9.species.get(species);
-    if (!s?.exists) return [];
-    return s.types.filter((t): t is PokemonType =>
-      (ALL_TYPES as readonly string[]).includes(t)
-    );
+    // Try Gen 9 first (current gen + Past-tagged species like Aerodactyl)
+    const s9 = gen9.species.get(species);
+    if (s9?.exists) {
+      return s9.types.filter((t): t is PokemonType =>
+        (ALL_TYPES as readonly string[]).includes(t)
+      );
+    }
+    // Mega forms and other Past-only species — fall back to Gen 6 raw dex
+    const s6 = Dex.forGen(6).species.get(species);
+    if (s6?.exists) {
+      return s6.types.filter((t): t is PokemonType =>
+        (ALL_TYPES as readonly string[]).includes(t)
+      );
+    }
+    return [];
   } catch {
     return [];
   }

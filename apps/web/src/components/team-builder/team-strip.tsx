@@ -16,6 +16,11 @@ import {
   removePokemonFromTeamAction,
 } from "@/actions/teams";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // =============================================================================
 // Types
@@ -70,7 +75,7 @@ function PokemonChip({
     return (
       <div
         className={cn(
-          "border-primary bg-primary/5 relative flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 transition-colors md:h-20 md:w-20"
+          "border-primary bg-primary/5 relative flex size-20 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 transition-colors"
         )}
         aria-label="Choosing species…"
       >
@@ -83,7 +88,7 @@ function PokemonChip({
     // Slot exists in DB but has no species yet — treat like choosing
     return (
       <div
-        className="bg-muted/40 relative flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-dashed md:h-20 md:w-20"
+        className="bg-muted/40 relative flex size-20 shrink-0 items-center justify-center rounded-xl"
         aria-label="Empty slot"
       />
     );
@@ -99,85 +104,96 @@ function PokemonChip({
           : undefined,
   });
 
+  // Sprite-only chip — species name surfaces via Tooltip on hover, per the
+  // locked design (mockup 01-overall-layout). Held item also surfaces in
+  // the tooltip so the chip stays visually clean.
+  const tooltipLabel = pokemon.nickname
+    ? `${pokemon.nickname} (${pokemon.species ?? "?"})`
+    : (pokemon.species ?? "Unknown");
+
   return (
-    <div
-      draggable
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      className={cn(
-        "group relative flex h-16 w-16 shrink-0 cursor-grab flex-col items-center justify-between rounded-xl border-2 pt-1 pb-1 transition-colors active:cursor-grabbing md:h-20 md:w-20",
-        isSelected
-          ? "border-primary bg-primary/10"
-          : "hover:border-border bg-muted/40 hover:bg-muted/60 border-transparent"
-      )}
-      aria-label={pokemon.species ?? "Unknown"}
-    >
-      {/* Clickable area — select this pokemon */}
-      <button
-        type="button"
-        onClick={onSelect}
-        disabled={isPending}
-        className="flex w-full flex-1 flex-col items-center justify-between gap-0.5 px-1 pt-1"
-        aria-pressed={isSelected}
-      >
-        {/* Sprite */}
-        <div className="relative size-8 shrink-0 md:size-10">
-          <Image
-            src={sprite.url}
-            alt={pokemon.species ?? ""}
-            width={sprite.w}
-            height={sprite.h}
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <div
+            draggable
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
             className={cn(
-              "size-full object-contain",
-              sprite.pixelated && "image-rendering-pixelated"
+              "group relative flex size-20 shrink-0 cursor-grab items-center justify-center rounded-xl border-2 transition-colors active:cursor-grabbing",
+              isSelected
+                ? "border-primary bg-primary/10"
+                : "hover:border-border bg-muted/40 hover:bg-muted/60 border-transparent"
             )}
-            unoptimized
+            aria-label={pokemon.species ?? "Unknown"}
           />
-        </div>
-
-        {/* Species name */}
-        <span className="text-foreground w-full truncate text-center text-[10px] leading-tight font-medium">
-          {pokemon.nickname ?? pokemon.species ?? "?"}
-        </span>
-
-        {/* Held item — muted */}
-        {pokemon.held_item && (
-          <span className="text-muted-foreground w-full truncate text-center text-[9px] leading-tight">
-            {pokemon.held_item}
-          </span>
-        )}
-      </button>
-
-      {/* Validation indicator — red for errors, amber for warnings */}
-      {hasIssues && (
-        <span
-          className={cn(
-            "absolute -top-1 -right-1 size-2.5 rounded-full",
-            hasWarningsOnly ? "bg-amber-500" : "bg-destructive"
-          )}
-        />
-      )}
-
-      {/* Remove button — top-right, visible on hover */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove();
-        }}
-        disabled={isPending}
-        className={cn(
-          "absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full",
-          "bg-destructive text-destructive-foreground opacity-0 transition-opacity",
-          "group-hover:opacity-100 focus-visible:opacity-100",
-          isPending && "pointer-events-none opacity-50"
-        )}
-        aria-label={`Remove ${pokemon.species ?? "Pokémon"}`}
+        }
       >
-        <X className="size-2.5" />
-      </button>
-    </div>
+        {/* Clickable area — select this pokemon. Fills the chip so the
+            entire square is the hit target. */}
+        <button
+          type="button"
+          onClick={onSelect}
+          disabled={isPending}
+          className="flex size-full items-center justify-center"
+          aria-pressed={isSelected}
+        >
+          <div className="relative size-14">
+            <Image
+              src={sprite.url}
+              alt={pokemon.species ?? ""}
+              width={sprite.w}
+              height={sprite.h}
+              className={cn(
+                "size-full object-contain",
+                sprite.pixelated && "image-rendering-pixelated"
+              )}
+              unoptimized
+            />
+          </div>
+        </button>
+
+        {/* Validation indicator — red for errors, amber for warnings */}
+        {hasIssues && (
+          <span
+            className={cn(
+              "absolute -top-1 -right-1 size-2.5 rounded-full",
+              hasWarningsOnly ? "bg-amber-500" : "bg-destructive"
+            )}
+          />
+        )}
+
+        {/* Remove button — top-right, visible on hover */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          disabled={isPending}
+          className={cn(
+            "absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full",
+            "bg-destructive text-destructive-foreground opacity-0 transition-opacity",
+            "group-hover:opacity-100 focus-visible:opacity-100",
+            isPending && "pointer-events-none opacity-50"
+          )}
+          aria-label={`Remove ${pokemon.species ?? "Pokémon"}`}
+        >
+          <X className="size-2.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="flex flex-col">
+          <span className="font-medium">{tooltipLabel}</span>
+          {pokemon.held_item && (
+            <span className="text-muted-foreground text-xs">
+              {pokemon.held_item}
+            </span>
+          )}
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -199,9 +215,9 @@ function EmptySlot({ onClick, onDragOver, onDrop }: EmptySlotProps) {
       onDragOver={onDragOver}
       onDrop={onDrop}
       className={cn(
-        "flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border-2 border-dashed md:h-20 md:w-20",
-        "text-muted-foreground hover:border-primary hover:text-primary",
-        "transition-colors"
+        "bg-muted/30 flex size-20 shrink-0 flex-col items-center justify-center rounded-xl",
+        "text-muted-foreground hover:bg-muted/60 hover:text-primary",
+        "transition-colors duration-150"
       )}
       aria-label="Add Pokémon"
     >
@@ -352,7 +368,7 @@ export function TeamStrip({
           return (
             <div
               key={`empty-${i}`}
-              className="border-primary bg-primary/5 flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border-2 md:h-20 md:w-20"
+              className="border-primary bg-primary/5 flex size-20 shrink-0 flex-col items-center justify-center rounded-xl border-2"
               aria-label="Choosing species…"
             >
               <span className="text-primary text-xs font-medium">
@@ -377,7 +393,7 @@ export function TeamStrip({
         return (
           <div
             key={`empty-${i}`}
-            className="bg-muted/20 flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-transparent md:h-20 md:w-20"
+            className="bg-muted/20 flex size-20 shrink-0 items-center justify-center rounded-xl"
             aria-label={`Empty slot ${slotIdx + 1}`}
           />
         );

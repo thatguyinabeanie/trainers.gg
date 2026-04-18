@@ -6,6 +6,15 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Custom max-width tokens used across the app */
+  /* Team builder is tuned for a 1536px sweet spot — wide enough that the
+     middle column accommodates long species names in the picker (e.g.
+     "Calyrex-Shadow", "Iron Valiant") without truncation, while keeping
+     the 240 / 1fr / 460 grid balanced. */
+  --container-builder: 96rem; /* 1536px */
+  /* Right-rail analytics panel — fixed 460px so Speed/Calc tabs have
+     consistent room without resizing the editor center column. */
+  --container-rail: 28.75rem; /* 460px */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -39,6 +48,10 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-stat-low: var(--stat-low);
+  --color-stat-mid: var(--stat-mid);
+  --color-stat-good: var(--stat-good);
+  --color-stat-great: var(--stat-great);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -61,5 +74,11 @@
     -webkit-box-shadow: 0 0 0px 1000px var(--background) inset;
     -webkit-text-fill-color: var(--foreground);
     transition: background-color 5000s ease-in-out 0s;
+  }
+}
+
+@layer utilities {
+  .image-rendering-pixelated {
+    image-rendering: pixelated;
   }
 }

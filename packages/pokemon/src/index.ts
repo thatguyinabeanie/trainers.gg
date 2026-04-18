@@ -125,6 +125,7 @@ export {
   getLegalMoves,
   getLegalSpecies,
   getLegalTeraTypes,
+  getMegaStoneForSpecies,
   isLegalAbility,
   isLegalItem,
   isLegalMove,
@@ -140,12 +141,14 @@ export {
   VGC_FORMATS,
   ALL_FORMAT_IDS,
   SIM_UNSUPPORTED_FORMAT_IDS,
+  DEFAULT_FORMAT_ID,
   buildVgcShowdownNameMap,
   getFormatById,
   getFormatLabel,
   getFormatsByGame,
   getActiveFormats,
   getAvailableGames,
+  formatHasTera,
 } from "./formats";
 
 // Featured Pokemon for avatar picker
@@ -176,6 +179,7 @@ export {
   getMoveCategory,
   getMoveBP,
   getMoveData,
+  getMoveHelperInput,
 } from "./move-data";
 
 // Item data utilities
@@ -183,3 +187,32 @@ export { getAllItems, getItemShortDesc } from "./items";
 
 // Ability data utilities
 export { getAbilityShortDesc } from "./abilities";
+
+// Stat-tier bucketing for color-coded base stats
+export { type StatTier, getStatTier } from "./stat-tiers";
+
+// Plain-English helper text for moves (team builder editor)
+export {
+  type MoveHelperInput,
+  type BoostsTable,
+  type StatusName,
+  getMoveHelperText,
+} from "./move-helpers";
+
+// Battle-time speed modifier helpers (stage / item / status / weather / tailwind)
+export {
+  type SpeedModifiers,
+  type SpeedTierLabel,
+  type SpeedAffectingItem,
+  applySpeedModifiers,
+  getSpeedTierLabel,
+  groupBySpeed,
+  getSpeedAffectingItems,
+} from "./speed-helpers";
+
+// Curated meta-relevant speed tier datasets (per format)
+export {
+  type MetaSpeedEntry,
+  type SpeedAbility,
+  getMetaSpeedTiers,
+} from "./meta-speed-tiers";

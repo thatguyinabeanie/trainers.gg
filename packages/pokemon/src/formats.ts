@@ -557,6 +557,14 @@ const FORMAT_BY_ID = new Map<string, GameFormat>(
   VGC_FORMATS.map((f) => [f.id, f])
 );
 
+/**
+ * Default format ID used as a fallback when no format is set on a team.
+ * Exported so all consumers (workspace, species picker, type chart, speed/calc
+ * panels) share a single source of truth instead of each defining their own
+ * fallback string.
+ */
+export const DEFAULT_FORMAT_ID = "gen9vgc2026regi";
+
 /** Get a format by its Showdown ID */
 export function getFormatById(id: string): GameFormat | undefined {
   return FORMAT_BY_ID.get(id);
@@ -632,6 +640,30 @@ export const ALL_FORMAT_IDS = VGC_FORMATS.map((f) => f.id);
 export const SIM_UNSUPPORTED_FORMAT_IDS: ReadonlySet<string> = new Set([
   "championsvgc2026regma",
 ]);
+
+// =============================================================================
+// Mechanic capability helpers
+// =============================================================================
+
+/**
+ * Returns true when the format supports the Terastal mechanic.
+ *
+ * Only Gen 9 (Scarlet & Violet) mainline formats have Tera. Gen 10 Pokemon
+ * Champions formats do not — the mechanic was replaced. Pre-Gen 9 formats
+ * obviously never had it either.
+ *
+ * Callers should use this to gate any Tera-specific UI surfaces (tera type
+ * field, tera picker, tera column in the damage calc) so they disappear for
+ * Champions formats without needing per-surface conditionals.
+ *
+ * Accepts `undefined | null` so callers can pass `format?.id` without a
+ * guard — returns `false` (safest default) when the format is unknown.
+ */
+export function formatHasTera(format: GameFormat | undefined | null): boolean {
+  if (!format) return false;
+  // Only Generation 9 (Scarlet & Violet) has the Terastal mechanic.
+  return format.generation === 9;
+}
 
 /**
  * Build a `Record<string, string>` mapping format ID → Showdown display name

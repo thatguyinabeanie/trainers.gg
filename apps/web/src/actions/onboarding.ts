@@ -170,15 +170,6 @@ async function provisionPds(
   pdsUsername: string
 ) {
   try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.access_token) return;
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!supabaseUrl) return;
-
     // Check current PDS status — only provision if pending/failed/null
     const { data: userData } = await supabase
       .from("users")
@@ -199,22 +190,27 @@ async function provisionPds(
     const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
     try {
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/provision-pds`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ username: pdsUsername }),
-          signal: controller.signal,
+      const { data: result, error: fnError } = await supabase.functions.invoke<{
+        success: boolean;
+        code?: string;
+      }>("provision-pds", {
+        body: { username: pdsUsername },
+        signal: controller.signal,
+      });
+
+      // supabase.functions.invoke returns errors via the `error` field rather
+      // than throwing — abort/timeout shows up as fnError with name "AbortError".
+      if (fnError) {
+        if (controller.signal.aborted || fnError.name === "AbortError") {
+          console.warn("PDS provisioning timed out during onboarding");
+        } else {
+          console.warn("PDS provisioning failed during onboarding:", fnError);
         }
-      );
-
-      const result = await response.json();
-
-      if (!result.success && result.code !== "ALREADY_PROVISIONED") {
+      } else if (
+        result &&
+        !result.success &&
+        result.code !== "ALREADY_PROVISIONED"
+      ) {
         console.warn("PDS provisioning failed during onboarding:", result);
       }
     } finally {

@@ -9,6 +9,13 @@ const mockCreateClient = jest.fn();
 const mockStartSudoSession = jest.fn();
 const mockEndSudoSession = jest.fn();
 const mockCheckSudoModeActive = jest.fn();
+const mockGetUser = jest.fn();
+const mockServiceRoleQueryBuilder = {
+  select: jest.fn().mockReturnThis(),
+  eq: jest.fn().mockReturnThis(),
+  maybeSingle: jest.fn(),
+};
+const mockServiceRoleFromFn = jest.fn(() => mockServiceRoleQueryBuilder);
 const mockCookies = {
   get: jest.fn(),
   set: jest.fn(),
@@ -21,6 +28,8 @@ jest.mock("next/headers", () => ({
 
 jest.mock("@/lib/supabase/server", () => ({
   createClient: mockCreateClient,
+  getUser: (...args: unknown[]) => mockGetUser(...args),
+  createServiceRoleClient: () => ({ from: mockServiceRoleFromFn }),
 }));
 
 jest.mock("@trainers/supabase", () => ({
@@ -41,72 +50,44 @@ import {
 describe("sudo/server", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockServiceRoleQueryBuilder.select.mockReturnThis();
+    mockServiceRoleQueryBuilder.eq.mockReturnThis();
+    mockServiceRoleQueryBuilder.maybeSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+    mockServiceRoleFromFn.mockReturnValue(mockServiceRoleQueryBuilder);
   });
 
   describe("isSiteAdmin", () => {
     it("should return true for user with site_admin role", async () => {
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: {
-              session: {
-                access_token: createMockJWT({ site_roles: ["site_admin"] }),
-              },
-            },
-            error: null,
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
+      mockGetUser.mockResolvedValue({ id: "user-123" });
+      mockServiceRoleQueryBuilder.maybeSingle.mockResolvedValueOnce({
+        data: { role_id: 1 },
+        error: null,
+      });
 
       const result = await isSiteAdmin();
       expect(result).toBe(true);
     });
 
     it("should return false for user without site_admin role", async () => {
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: {
-              session: {
-                access_token: createMockJWT({ site_roles: [] }),
-              },
-            },
-            error: null,
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
+      mockGetUser.mockResolvedValue({ id: "user-123" });
+      // Default: maybeSingle returns null → no role
 
       const result = await isSiteAdmin();
       expect(result).toBe(false);
     });
 
     it("should return false when no session exists", async () => {
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: { session: null },
-            error: null,
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
+      mockGetUser.mockResolvedValue(null);
 
       const result = await isSiteAdmin();
       expect(result).toBe(false);
     });
 
     it("should return false when session fetch errors", async () => {
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: { session: null },
-            error: new Error("Auth error"),
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
+      mockGetUser.mockResolvedValue(null);
 
       const result = await isSiteAdmin();
       expect(result).toBe(false);
@@ -115,25 +96,13 @@ describe("sudo/server", () => {
 
   describe("isSudoModeActive", () => {
     it("should return true when all conditions are met", async () => {
-      // Mock site admin check
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: {
-              session: {
-                access_token: createMockJWT({ site_roles: ["site_admin"] }),
-              },
-            },
-            error: null,
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
-
-      // Mock cookie exists
+      mockGetUser.mockResolvedValue({ id: "user-123" });
+      mockServiceRoleQueryBuilder.maybeSingle.mockResolvedValueOnce({
+        data: { role_id: 1 },
+        error: null,
+      });
       mockCookies.get.mockReturnValue({ value: "active" });
-
-      // Mock active session in DB
+      mockCreateClient.mockResolvedValue({});
       mockCheckSudoModeActive.mockResolvedValue(true);
 
       const result = await isSudoModeActive();
@@ -141,39 +110,19 @@ describe("sudo/server", () => {
     });
 
     it("should return false when user is not site admin", async () => {
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: {
-              session: {
-                access_token: createMockJWT({ site_roles: [] }),
-              },
-            },
-            error: null,
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
+      mockGetUser.mockResolvedValue({ id: "user-123" });
+      // Default: no role → isSiteAdmin returns false
 
       const result = await isSudoModeActive();
       expect(result).toBe(false);
     });
 
     it("should return false when sudo cookie is missing", async () => {
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: {
-              session: {
-                access_token: createMockJWT({ site_roles: ["site_admin"] }),
-              },
-            },
-            error: null,
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
-
+      mockGetUser.mockResolvedValue({ id: "user-123" });
+      mockServiceRoleQueryBuilder.maybeSingle.mockResolvedValueOnce({
+        data: { role_id: 1 },
+        error: null,
+      });
       mockCookies.get.mockReturnValue(undefined);
 
       const result = await isSudoModeActive();
@@ -181,21 +130,13 @@ describe("sudo/server", () => {
     });
 
     it("should return false when database session is inactive", async () => {
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: {
-              session: {
-                access_token: createMockJWT({ site_roles: ["site_admin"] }),
-              },
-            },
-            error: null,
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
-
+      mockGetUser.mockResolvedValue({ id: "user-123" });
+      mockServiceRoleQueryBuilder.maybeSingle.mockResolvedValueOnce({
+        data: { role_id: 1 },
+        error: null,
+      });
       mockCookies.get.mockReturnValue({ value: "active" });
+      mockCreateClient.mockResolvedValue({});
       mockCheckSudoModeActive.mockResolvedValue(false);
 
       const result = await isSudoModeActive();
@@ -205,20 +146,14 @@ describe("sudo/server", () => {
 
   describe("activateSudoMode", () => {
     it("should activate sudo mode for site admin", async () => {
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: {
-              session: {
-                access_token: createMockJWT({ site_roles: ["site_admin"] }),
-              },
-            },
-            error: null,
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
+      mockGetUser.mockResolvedValue({ id: "user-123" });
+      mockServiceRoleQueryBuilder.maybeSingle.mockResolvedValueOnce({
+        data: { role_id: 1 },
+        error: null,
+      });
 
+      const mockSupabase = {};
+      mockCreateClient.mockResolvedValue(mockSupabase);
       mockStartSudoSession.mockResolvedValue({
         id: 1,
         user_id: "user-123",
@@ -245,19 +180,8 @@ describe("sudo/server", () => {
     });
 
     it("should throw error for non-admin user", async () => {
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: {
-              session: {
-                access_token: createMockJWT({ site_roles: [] }),
-              },
-            },
-            error: null,
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
+      mockGetUser.mockResolvedValue({ id: "user-123" });
+      // Default: no role → not admin
 
       await expect(activateSudoMode()).rejects.toThrow(
         "Only site admins can activate sudo mode"
@@ -297,40 +221,21 @@ describe("sudo/server", () => {
 
   describe("requireSudoMode", () => {
     it("should not throw when sudo is active", async () => {
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: {
-              session: {
-                access_token: createMockJWT({ site_roles: ["site_admin"] }),
-              },
-            },
-            error: null,
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
-
+      mockGetUser.mockResolvedValue({ id: "user-123" });
+      mockServiceRoleQueryBuilder.maybeSingle.mockResolvedValueOnce({
+        data: { role_id: 1 },
+        error: null,
+      });
       mockCookies.get.mockReturnValue({ value: "active" });
+      mockCreateClient.mockResolvedValue({});
       mockCheckSudoModeActive.mockResolvedValue(true);
 
       await expect(requireSudoMode()).resolves.not.toThrow();
     });
 
     it("should throw when sudo is not active", async () => {
-      const mockSupabase = {
-        auth: {
-          getSession: jest.fn().mockResolvedValue({
-            data: {
-              session: {
-                access_token: createMockJWT({ site_roles: [] }),
-              },
-            },
-            error: null,
-          }),
-        },
-      };
-      mockCreateClient.mockResolvedValue(mockSupabase);
+      mockGetUser.mockResolvedValue({ id: "user-123" });
+      // Default: no role → not admin → sudo not active
 
       await expect(requireSudoMode()).rejects.toThrow(
         "Sudo mode is required for this action"
@@ -377,11 +282,3 @@ describe("sudo/server", () => {
     });
   });
 });
-
-// Helper to create a mock JWT token
-function createMockJWT(payload: object): string {
-  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const body = btoa(JSON.stringify(payload));
-  const signature = "mock-signature";
-  return `${header}.${body}.${signature}`;
-}
