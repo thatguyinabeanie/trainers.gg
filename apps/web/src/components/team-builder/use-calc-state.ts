@@ -10,6 +10,7 @@ import {
   Side,
 } from "@smogon/calc";
 
+import { type GameFormat } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
 // =============================================================================
@@ -64,7 +65,22 @@ export type CalcDirection = "offense" | "defense";
 // Constants
 // =============================================================================
 
-const gen9 = Generations.get(9);
+// Cached Generations instances keyed by generation number so we don't
+// re-construct them on every render. Defaults to Gen 9 when format is absent.
+const generationsCache = new Map<number, ReturnType<typeof Generations.get>>();
+
+function getGen(generationNumber: number) {
+  let gen = generationsCache.get(generationNumber);
+  if (!gen) {
+    // Cast: caller passes a Pokémon-format generation number which `@pkmn/data`
+    // narrows to `GenerationNum`; we accept plain `number` for ergonomics.
+    gen = Generations.get(
+      generationNumber as Parameters<typeof Generations.get>[0]
+    );
+    generationsCache.set(generationNumber, gen);
+  }
+  return gen;
+}
 
 /** Status display label → Smogon status code mapping. */
 export const STATUS_MAP: Record<string, string> = {
@@ -95,13 +111,14 @@ function asSmogon<T>(v: string | null | undefined): T {
 }
 
 function buildAttackerFromDb(
+  gen: ReturnType<typeof Generations.get>,
   db: Tables<"pokemon">,
   boosts: AttackerBoosts,
   status: string
 ): Pokemon | null {
   if (!db.species) return null;
   try {
-    return new Pokemon(gen9, db.species, {
+    return new Pokemon(gen, db.species, {
       level: db.level ?? 50,
       nature: asSmogon(db.nature ?? "Hardy"),
       ability: asSmogon(db.ability),
@@ -136,6 +153,7 @@ function buildAttackerFromDb(
 }
 
 function buildDefenderPokemon(
+  gen: ReturnType<typeof Generations.get>,
   species: string,
   ability: string,
   item: string,
@@ -149,7 +167,7 @@ function buildDefenderPokemon(
   if (!species) return null;
   try {
     // Build without curHP first so we can call maxHP() to compute the real value.
-    const mon = new Pokemon(gen9, species, {
+    const mon = new Pokemon(gen, species, {
       level: 50,
       nature: asSmogon(nature),
       ability: asSmogon(ability || null),
@@ -163,7 +181,7 @@ function buildDefenderPokemon(
     // Clamp hpPercent to [0, 100] before computing current HP.
     const clampedPct = Math.min(100, Math.max(0, hpPercent));
     const hpValue = Math.max(1, Math.round((clampedPct / 100) * mon.maxHP()));
-    return new Pokemon(gen9, species, {
+    return new Pokemon(gen, species, {
       level: 50,
       nature: asSmogon(nature),
       ability: asSmogon(ability || null),
@@ -229,6 +247,7 @@ function buildField(
 }
 
 function runCalc(
+  gen: ReturnType<typeof Generations.get>,
   attacker: Pokemon,
   defender: Pokemon,
   moveName: string,
@@ -236,8 +255,8 @@ function runCalc(
   field: Field
 ): CalcOutput | null {
   try {
-    const move = new Move(gen9, moveName, { isCrit });
-    const result = calculate(gen9, attacker, defender, move, field);
+    const move = new Move(gen, moveName, { isCrit });
+    const result = calculate(gen, attacker, defender, move, field);
     const damage = result.damage;
     if (!damage || (Array.isArray(damage) && damage.length === 0)) return null;
 
@@ -283,6 +302,9 @@ export function getVerdict(minPercent: number, maxPercent: number): Verdict {
 
 export interface UseCalcStateOptions {
   selectedPokemon: Tables<"pokemon"> | null;
+  /** Active game format. Used to select the correct generation for damage calcs.
+   *  Defaults to Generation 9 when absent. */
+  format?: GameFormat;
 }
 
 export interface UseCalcStateReturn {
@@ -372,7 +394,13 @@ const DEFAULT_DEFENDER_EVS: DefenderEvs = {
  */
 export function useCalcState({
   selectedPokemon,
+  format,
 }: UseCalcStateOptions): UseCalcStateReturn {
+  // Resolve the generation from the active format so calcs use the correct
+  // damage mechanics. Falls back to Gen 9 when format is absent or when
+  // @smogon/calc doesn't yet support the format's generation.
+  const gen = getGen(format?.generation ?? 9);
+
   // --- Direction ---
   const [direction, setDirection] = useState<CalcDirection>("offense");
 
@@ -519,11 +547,13 @@ export function useCalcState({
 
     if (direction === "offense") {
       const attacker = buildAttackerFromDb(
+        gen,
         selectedPokemon,
         attackerBoosts,
         attackerStatus
       );
       const defender = buildDefenderPokemon(
+        gen,
         defenderSpecies,
         defenderAbility,
         defenderItem,
@@ -535,11 +565,12 @@ export function useCalcState({
         defenderHpPercent
       );
       if (!attacker || !defender) return null;
-      return runCalc(attacker, defender, moveName, isCrit, field);
+      return runCalc(gen, attacker, defender, moveName, isCrit, field);
     }
 
     // "defense": defender attacks us with the move
     const defenderAsAttacker = buildDefenderPokemon(
+      gen,
       defenderSpecies,
       defenderAbility,
       defenderItem,
@@ -551,12 +582,20 @@ export function useCalcState({
       100
     );
     const ourPokemon = buildAttackerFromDb(
+      gen,
       selectedPokemon,
       EMPTY_BOOSTS,
       "Healthy"
     );
     if (!defenderAsAttacker || !ourPokemon) return null;
-    return runCalc(defenderAsAttacker, ourPokemon, moveName, isCrit, field);
+    return runCalc(
+      gen,
+      defenderAsAttacker,
+      ourPokemon,
+      moveName,
+      isCrit,
+      field
+    );
   }
 
   const moveCalcOutputs: readonly (CalcOutput | null)[] = moves.map((_, idx) =>

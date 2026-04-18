@@ -33,6 +33,10 @@ interface PokemonDetailsPopoverProps {
   disabled?: boolean;
 }
 
+// Sentinel used as the initial prevPokemonId value — ensures the render-time
+// reset fires on the very first render regardless of the actual pokemon.id.
+const SENTINEL = Symbol();
+
 // =============================================================================
 // PokemonDetailsPopover
 // =============================================================================
@@ -54,6 +58,19 @@ export function PokemonDetailsPopover({
   const [importText, setImportText] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+
+  // Reset import UI when the pokemon slot changes (e.g. user clicks a different
+  // slot while the popover is open). Uses the render-time adjustment pattern
+  // from react-patterns.md to stay compliant with set-state-in-effect rule.
+  const [prevPokemonId, setPrevPokemonId] = useState<number | typeof SENTINEL>(
+    SENTINEL
+  );
+  if (pokemon.id !== prevPokemonId) {
+    setPrevPokemonId(pokemon.id);
+    setImportText("");
+    setIsImporting(false);
+    setImportOpen(false);
+  }
 
   // ---------------------------------------------------------------------------
   // Export — copy this slot's Showdown set to the clipboard.
@@ -113,18 +130,22 @@ export function PokemonDetailsPopover({
           : parsed.gender === "F"
             ? ("Female" as const)
             : null,
-      ev_hp: parsed.evs.hp ?? 0,
-      ev_attack: parsed.evs.atk ?? 0,
-      ev_defense: parsed.evs.def ?? 0,
-      ev_special_attack: parsed.evs.spa ?? 0,
-      ev_special_defense: parsed.evs.spd ?? 0,
-      ev_speed: parsed.evs.spe ?? 0,
-      iv_hp: parsed.ivs.hp ?? 31,
-      iv_attack: parsed.ivs.atk ?? 31,
-      iv_defense: parsed.ivs.def ?? 31,
-      iv_special_attack: parsed.ivs.spa ?? 31,
-      iv_special_defense: parsed.ivs.spd ?? 31,
-      iv_speed: parsed.ivs.spe ?? 31,
+      // Preserve existing EV/IV values when the parsed set omits them.
+      // A bare Showdown set (e.g. "Pikachu @ Light Ball") should not destroy
+      // a carefully-tuned spread — only overwrite fields that are explicitly
+      // present in the parsed set.
+      ev_hp: parsed.evs.hp ?? pokemon.ev_hp ?? 0,
+      ev_attack: parsed.evs.atk ?? pokemon.ev_attack ?? 0,
+      ev_defense: parsed.evs.def ?? pokemon.ev_defense ?? 0,
+      ev_special_attack: parsed.evs.spa ?? pokemon.ev_special_attack ?? 0,
+      ev_special_defense: parsed.evs.spd ?? pokemon.ev_special_defense ?? 0,
+      ev_speed: parsed.evs.spe ?? pokemon.ev_speed ?? 0,
+      iv_hp: parsed.ivs.hp ?? pokemon.iv_hp ?? 31,
+      iv_attack: parsed.ivs.atk ?? pokemon.iv_attack ?? 31,
+      iv_defense: parsed.ivs.def ?? pokemon.iv_defense ?? 31,
+      iv_special_attack: parsed.ivs.spa ?? pokemon.iv_special_attack ?? 31,
+      iv_special_defense: parsed.ivs.spd ?? pokemon.iv_special_defense ?? 31,
+      iv_speed: parsed.ivs.spe ?? pokemon.iv_speed ?? 31,
     };
 
     setIsImporting(true);

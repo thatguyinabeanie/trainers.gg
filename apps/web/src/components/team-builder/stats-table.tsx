@@ -359,7 +359,18 @@ export function StatsTable({
   // -------------------------------------------------------------------------
 
   function handleChange(stat: StatKey, value: number) {
-    setLocalEvs((prev) => ({ ...prev, [stat]: value }));
+    const next = { ...evs, [stat]: value };
+    // Dev-only guard: the total must never exceed the 510-point budget. The
+    // slider `budget` prop enforces this in practice, but the assert catches
+    // any future code path (e.g., preset application) that bypasses it.
+    if (process.env.NODE_ENV === "development" && !isChampions) {
+      const total = totalPoints(next);
+      console.assert(
+        total <= TOTAL_EV_LIMIT,
+        `EV budget exceeded: ${total} > ${TOTAL_EV_LIMIT}. Check the caller.`
+      );
+    }
+    setLocalEvs(next);
     onUpdate(EV_FIELD[stat], value);
   }
 

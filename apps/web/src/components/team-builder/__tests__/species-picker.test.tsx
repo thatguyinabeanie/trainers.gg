@@ -116,6 +116,8 @@ jest.mock("../type-symbol-icon", () => ({
   ),
 }));
 
+import { within } from "@testing-library/react";
+
 import { SpeciesPicker } from "../species-picker";
 import { type SpeciesSearchEntry } from "@trainers/pokemon";
 
@@ -209,9 +211,13 @@ describe("SpeciesPicker (rich rows)", () => {
 
     it("renders the BST value once per row", () => {
       render(<SpeciesPicker {...defaultProps} />);
-      const bstCells = screen.getAllByText("505");
-      // Three rows with the default 505 BST
-      expect(bstCells).toHaveLength(3);
+      // Scope each BST assertion to its row button so the check is bound to
+      // the BST column and won't collide with other cells that share the value.
+      const rows = screen.getAllByRole("button", { name: /^Select / });
+      expect(rows).toHaveLength(3);
+      for (const row of rows) {
+        expect(within(row).getByText("505")).toBeInTheDocument();
+      }
     });
 
     it("renders the column header (Types + HP / Atk / Def / SpA / SpD / Spe / BST)", () => {

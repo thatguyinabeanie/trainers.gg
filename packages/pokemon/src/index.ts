@@ -141,6 +141,7 @@ export {
   VGC_FORMATS,
   ALL_FORMAT_IDS,
   SIM_UNSUPPORTED_FORMAT_IDS,
+  DEFAULT_FORMAT_ID,
   buildVgcShowdownNameMap,
   getFormatById,
   getFormatLabel,
@@ -178,6 +179,7 @@ export {
   getMoveCategory,
   getMoveBP,
   getMoveData,
+  getMoveHelperInput,
 } from "./move-data";
 
 // Item data utilities

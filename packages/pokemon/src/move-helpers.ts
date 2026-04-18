@@ -212,13 +212,8 @@ export function getMoveHelperText(move: MoveHelperInput): string {
 
   // Priority — only worth mentioning when non-zero.
   if (typeof move.priority === "number" && move.priority !== 0) {
-    if (move.priority > 0) {
-      parts.push(
-        move.priority === 1 ? "+1 priority" : `+${move.priority} priority`
-      );
-    } else {
-      parts.push(`${move.priority} priority`);
-    }
+    const sign = move.priority > 0 ? "+" : "";
+    parts.push(`${sign}${move.priority} priority`);
   }
 
   // OHKO moves are dramatic enough to call out before anything else.

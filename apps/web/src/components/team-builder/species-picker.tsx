@@ -58,12 +58,11 @@ interface SpeciesPickerProps {
   /** Active format ID. When set, illegal species are filtered out. */
   formatId?: string;
   /**
-   * Single-click row selection callback. Selection always uses default
-   * loadout (first ability). Per the rich-rows spec the legacy "select
-   * blank" flow is dropped — `mode` is left on the signature so the
-   * caller (team-workspace) doesn't have to branch on picker variant.
+   * Single-click row selection callback. Selection always uses the default
+   * loadout (first ability) — `mode` is "defaults" for now, leaving room for
+   * future selection variants (e.g., "blank") without breaking call sites.
    */
-  onSelect: (species: string, mode: "defaults" | "blank") => void;
+  onSelect: (species: string, mode: "defaults") => void;
   onCancel: () => void;
 }
 
@@ -140,7 +139,7 @@ function SpeciesRow({ entry, isCurrent, onSelect }: SpeciesRowProps) {
           height={36}
           className={cn(
             "size-9 object-contain",
-            sprite.pixelated && "image-rendering-pixelated"
+            sprite.pixelated && "[image-rendering:pixelated]"
           )}
           unoptimized
         />

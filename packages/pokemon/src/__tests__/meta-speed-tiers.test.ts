@@ -37,11 +37,9 @@ describe("getMetaSpeedTiers — championsvgc2026regma", () => {
 
   it("uses lowercase, no-space species ids (Showdown convention)", () => {
     for (const e of entries) {
-      // Showdown ids are alphanumeric (with hyphens for forms like indeedee-f).
-      // Forbid uppercase, underscores, and spaces.
-      expect(e.species).toBe(e.species.toLowerCase());
-      expect(e.species).not.toMatch(/_/);
-      expect(e.species).not.toMatch(/\s/);
+      // Showdown ids are strictly alphanumeric with hyphens for alternate forms
+      // (e.g., "indeedee-f"). Forbid uppercase, underscores, and whitespace.
+      expect(e.species).toMatch(/^[a-z0-9-]+$/);
     }
   });
 
@@ -53,14 +51,18 @@ describe("getMetaSpeedTiers — championsvgc2026regma", () => {
   it("includes a sensible spread of fast / mid / slow species", () => {
     expect(entries.some((e) => e.base >= 130)).toBe(true);
     expect(entries.some((e) => e.base >= 80 && e.base < 130)).toBe(true);
+    expect(entries.some((e) => e.base >= 60 && e.base < 80)).toBe(true);
     expect(entries.some((e) => e.base < 60)).toBe(true);
   });
 
   it("entries with speedAbility use a valid ability id", () => {
-    const withAbility = entries.filter((e) => e.speedAbility !== undefined);
+    const withAbility = entries.filter(
+      (e): e is MetaSpeedEntry & { speedAbility: SpeedAbility } =>
+        e.speedAbility !== undefined
+    );
     expect(withAbility.length).toBeGreaterThan(0);
     for (const e of withAbility) {
-      expect(VALID_ABILITIES.has(e.speedAbility!)).toBe(true);
+      expect(VALID_ABILITIES.has(e.speedAbility)).toBe(true);
     }
   });
 });

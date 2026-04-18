@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -15,9 +15,6 @@ const moveDamageMap = new Map<string, [number, number]>([
   ["Flamethrower", [40, 60]],
   ["Air Slash", [25, 35]],
 ]);
-
-// Last-built attacker name (so we can vary calc by attacker if needed).
-let lastDefenderSpecies = "";
 
 const mockRange = jest.fn(() => [80, 120]);
 const mockMaxHP = jest.fn(() => 200);
@@ -47,7 +44,6 @@ jest.mock("@smogon/calc", () => {
   ) {
     this.name = species;
     this.maxHP = mockMaxHP;
-    lastDefenderSpecies = species;
   });
   const MockMove = jest.fn(function (
     this: Record<string, unknown>,
@@ -192,9 +188,6 @@ const defaultFormat = {
   doubles: true,
   active: true,
 };
-
-// Suppress noisy "use of unknown void" warnings from `lastDefenderSpecies`.
-void lastDefenderSpecies;
 
 // =============================================================================
 // Tests

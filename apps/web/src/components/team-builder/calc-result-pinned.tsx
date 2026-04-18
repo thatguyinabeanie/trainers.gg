@@ -26,14 +26,11 @@ interface CalcResultPinnedProps {
 // Helpers
 // =============================================================================
 
-/** Verdict text + tone for display. */
-function describeVerdict(output: CalcOutput | null): {
+/** Verdict text + tone for display. Only called with a non-null output (see ActiveResult). */
+function describeVerdict(output: CalcOutput): {
   label: string;
   tone: "guaranteed" | "chance" | "none";
 } {
-  if (!output) {
-    return { label: "No damage", tone: "none" };
-  }
   // OHKO bands take priority — a roll that can KO in one hit is the headline.
   if (output.minPercent >= 100) {
     return { label: "Guaranteed OHKO", tone: "guaranteed" };

@@ -58,6 +58,8 @@ interface FieldButtonProps {
   onClick: () => void;
   /** Accessible label override — defaults to `Edit ${label}` for screen readers. */
   ariaLabel?: string;
+  /** When true, hides the `›` chevron suffix (e.g. when a pill is already shown). */
+  hideChevron?: boolean;
   children: React.ReactNode;
 }
 
@@ -69,6 +71,7 @@ function FieldButton({
   label,
   onClick,
   ariaLabel,
+  hideChevron = false,
   children,
 }: FieldButtonProps) {
   return (
@@ -86,9 +89,11 @@ function FieldButton({
       </span>
       <span className="text-foreground flex items-center gap-1 text-sm font-medium whitespace-nowrap">
         {children}
-        <span className="text-muted-foreground" aria-hidden="true">
-          ›
-        </span>
+        {!hideChevron && (
+          <span className="text-muted-foreground" aria-hidden="true">
+            ›
+          </span>
+        )}
       </span>
     </button>
   );
@@ -133,6 +138,15 @@ interface GenderButtonProps {
   value: GenderValue;
   onChange: (next: GenderValue) => void;
   disabled?: boolean;
+}
+
+/** Normalise a raw DB gender string to the 3-state GenderValue. Maps legacy
+ * single-char tokens ("M" → "Male", "F" → "Female") and treats anything else
+ * (e.g. "Genderless", "N", unknown future values) as null. */
+function normalizeGender(raw: string | null): GenderValue {
+  if (raw === "Male" || raw === "M") return "Male";
+  if (raw === "Female" || raw === "F") return "Female";
+  return null;
 }
 
 function GenderButton({ value, onChange, disabled }: GenderButtonProps) {
@@ -337,7 +351,9 @@ export function EditorHeaderBand({
             {showIdentityControls && isEditingNickname ? (
               <input
                 type="text"
+                name="nickname"
                 aria-label="Nickname"
+                autoComplete="off"
                 value={editNicknameValue}
                 onChange={(e) => setEditNicknameValue(e.target.value)}
                 onBlur={commitNickname}
@@ -406,7 +422,9 @@ export function EditorHeaderBand({
         {/* ── Zone 2: Build fields ──────────────────────────────────────── */}
         <div className="flex flex-1 items-stretch">
           {isSingleAbility || disabled ? (
-            <FieldStatic label="Ability">{pokemon.ability}</FieldStatic>
+            <FieldStatic label="Ability">
+              {pokemon.ability ?? validAbilities[0] ?? "—"}
+            </FieldStatic>
           ) : (
             <FieldButton label="Ability" onClick={onOpenAbilityPicker}>
               {pokemon.ability}
@@ -434,7 +452,11 @@ export function EditorHeaderBand({
               {disabled ? (
                 <FieldStatic label="Tera">{teraContent}</FieldStatic>
               ) : (
-                <FieldButton label="Tera" onClick={onOpenTeraPicker}>
+                <FieldButton
+                  label="Tera"
+                  onClick={onOpenTeraPicker}
+                  hideChevron={pokemon.tera_type !== null}
+                >
                   {teraContent}
                 </FieldButton>
               )}
@@ -461,7 +483,7 @@ export function EditorHeaderBand({
             />
             <div className="flex shrink-0 items-center gap-1.5 px-3">
               <GenderButton
-                value={(pokemon.gender as GenderValue) ?? null}
+                value={normalizeGender(pokemon.gender)}
                 onChange={handleGenderChange}
                 disabled={disabled}
               />

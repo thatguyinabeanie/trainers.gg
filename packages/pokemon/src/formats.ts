@@ -557,6 +557,14 @@ const FORMAT_BY_ID = new Map<string, GameFormat>(
   VGC_FORMATS.map((f) => [f.id, f])
 );
 
+/**
+ * Default format ID used as a fallback when no format is set on a team.
+ * Exported so all consumers (workspace, species picker, type chart, speed/calc
+ * panels) share a single source of truth instead of each defining their own
+ * fallback string.
+ */
+export const DEFAULT_FORMAT_ID = "gen9vgc2026regi";
+
 /** Get a format by its Showdown ID */
 export function getFormatById(id: string): GameFormat | undefined {
   return FORMAT_BY_ID.get(id);

@@ -47,6 +47,7 @@ jest.mock("@trainers/pokemon", () => ({
     shortDesc: "A test move.",
   })),
   getMoveHelperText: jest.fn(() => ""),
+  getMoveHelperInput: jest.fn(() => null),
   getAllItems: jest.fn(() => ["Leftovers"]),
   getItemShortDesc: jest.fn(() => "Restores HP."),
   getAbilityShortDesc: jest.fn(() => "A test ability."),

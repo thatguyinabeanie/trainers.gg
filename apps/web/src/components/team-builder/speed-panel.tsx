@@ -8,6 +8,7 @@ import {
   type MetaSpeedEntry,
   type SpeedAbility,
   type SpeedModifiers,
+  type SpeedTierLabel,
   applySpeedModifiers,
   calculateChampionsStat,
   calculateStat,
@@ -62,6 +63,20 @@ const DEFAULT_TOGGLE_STATE: SpeedToggleState = {
   status: "healthy",
 };
 
+/**
+ * Human-readable labels for each SpeedTierLabel value.
+ * Centralizes the raw-enum → display-label mapping so raw ids never reach the UI.
+ */
+const SPEED_TIER_LABELS: Record<SpeedTierLabel, string> = {
+  "very slow": "Very Slow",
+  slow: "Slow",
+  "mid-slow": "Mid-Slow",
+  mid: "Mid",
+  "mid-fast": "Mid-Fast",
+  fast: "Fast",
+  "very fast": "Very Fast",
+};
+
 // =============================================================================
 // Full-format speed tier builder
 // =============================================================================
@@ -77,6 +92,14 @@ const SPEED_ABILITY_LOOKUP: Partial<Record<string, SpeedAbility>> = {
 };
 
 /**
+ * Returns true for the Pokémon Champions format (generation 10).
+ * Centralizes this check so all three compute functions stay in lockstep.
+ */
+function isChampionsFormat(format: GameFormat): boolean {
+  return format.generation === 10;
+}
+
+/**
  * Build MetaSpeedEntry[] for every species in a format's legal-species set.
  * Used when `getLegalSpecies` returns a bounded whitelist (e.g. Champions Reg
  * M-A). Returns null when no legal-species set is available, so the caller can
@@ -86,7 +109,7 @@ function buildFullMetaTiers(
   legalSpecies: ReadonlySet<string>,
   format: GameFormat
 ): MetaSpeedEntry[] {
-  const isChampions = format.generation === 10;
+  const champions = isChampionsFormat(format);
   const entries: MetaSpeedEntry[] = [];
 
   for (const species of legalSpecies) {
@@ -94,10 +117,10 @@ function buildFullMetaTiers(
     if (!stats) continue;
 
     const b = stats.speed;
-    const fastSpread = isChampions
+    const fastSpread = champions
       ? calculateChampionsStat(b, 32, 1.1)
       : calculateStat(b, 31, 252, 50, 1.1);
-    const slowSpread = isChampions
+    const slowSpread = champions
       ? calculateChampionsStat(b, 0, 1.0)
       : calculateStat(b, 31, 0, 50, 1.0);
 
@@ -137,7 +160,7 @@ function computeBaseSpeed(
   const natureMultiplier = getNatureMultiplier(pokemon.nature, "speed");
 
   // Champions has its own SP-based stat formula at fixed L50.
-  if (format.generation === 10) {
+  if (isChampionsFormat(format)) {
     return calculateChampionsStat(
       baseStats.speed,
       pokemon.ev_speed ?? 0,
@@ -174,7 +197,7 @@ function computeStatColumns(
 
   const b = baseStats.speed;
 
-  if (format.generation === 10) {
+  if (isChampionsFormat(format)) {
     return {
       base: b,
       min: calculateChampionsStat(b, 0, 1.0),
@@ -202,7 +225,7 @@ function computeMetaStatColumns(
 ): { base: number; min: number; maxNeutral: number; maxPositive: number } {
   const b = entry.base;
 
-  if (format.generation === 10) {
+  if (isChampionsFormat(format)) {
     // Champions SP-based formula
     return {
       base: b,
@@ -227,6 +250,15 @@ function toItemMod(item: string): SpeedModifiers["item"] {
   if (!item) return null;
   // Cast: we intentionally only allow ids that match the SpeedModifiers union.
   return item as SpeedModifiers["item"];
+}
+
+/**
+ * Normalize a species string for deduplication comparisons.
+ * Lowercases and strips whitespace, hyphens, and underscores so that
+ * "Flutter Mane", "flutter-mane", and "fluttermane" all match.
+ */
+function normalizeSpeciesId(species: string): string {
+  return species.toLowerCase().replace(/[\s\-_]+/g, "");
 }
 
 /**
@@ -326,10 +358,6 @@ function teamMonToScored(
   };
 }
 
-function normalizeSpecies(species: string): string {
-  return species.toLowerCase().replace(/[\s\-_]+/g, "");
-}
-
 /** Sprite lookup that swallows any underlying lookup miss. */
 function safeSprite(species: string): string | undefined {
   try {
@@ -383,14 +411,16 @@ function SpeedPanelInner({
   );
 
   // Team species set — used to dedupe meta opponents that overlap with the team.
-  const teamSpeciesIds = new Set(team.map((p) => normalizeSpecies(p.species)));
+  const teamSpeciesIds = new Set(
+    team.map((p) => normalizeSpeciesId(p.species))
+  );
 
   const legalSpecies = getLegalSpecies(format.id);
   const metaTiers = legalSpecies
     ? buildFullMetaTiers(legalSpecies, format)
     : getMetaSpeedTiers(format.id);
   const metaScored: ScoredMon[] = metaTiers
-    .filter((entry) => !teamSpeciesIds.has(normalizeSpecies(entry.species)))
+    .filter((entry) => !teamSpeciesIds.has(normalizeSpeciesId(entry.species)))
     .map((entry) => metaToScoredMon(entry, toggle, format));
 
   const allScored: ScoredMon[] = [...teamScored, ...metaScored];
@@ -431,13 +461,11 @@ function SpeedPanelInner({
         heroSpeed > 0 &&
         !mon.badge
       ) {
-        return { ...mon, badge: "tie" };
+        return { ...mon, badge: "tie" as const };
       }
       return mon;
     }),
   }));
-
-  const orderedTiers = tiers;
 
   // ---- render --------------------------------------------------------------
 
@@ -473,7 +501,7 @@ function SpeedPanelInner({
             data-testid="hero-tier-label"
             className="border-primary text-primary rounded border px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
           >
-            {tierLabel.replace(/-/g, " ")}
+            {SPEED_TIER_LABELS[tierLabel]}
           </span>
           <span
             data-testid="hero-speed"
@@ -511,7 +539,7 @@ function SpeedPanelInner({
 
       {/* L4 — Tier list (full panel width) --------------------------------- */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <SpeedTierList tiers={orderedTiers} selectedSpeed={effectiveSpeed} />
+        <SpeedTierList tiers={tiers} selectedSpeed={effectiveSpeed} />
       </div>
     </div>
   );
@@ -535,8 +563,10 @@ function SummaryCell({ value, label, tone, testId }: SummaryCellProps) {
         data-testid={testId}
         className={cn(
           "font-mono text-base font-bold",
-          tone === "ok" && "text-emerald-600 dark:text-emerald-400",
-          tone === "warn" && "text-amber-600 dark:text-amber-400",
+          // Use semantic design tokens from @trainers/theme instead of hardcoded
+          // Tailwind palette classes, so these track any future token evolution.
+          tone === "ok" && "text-stat-good",
+          tone === "warn" && "text-stat-mid",
           tone === "bad" && "text-destructive"
         )}
       >

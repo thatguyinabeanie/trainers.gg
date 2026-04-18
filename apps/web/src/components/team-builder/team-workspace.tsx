@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 
 import {
   type GameFormat,
+  DEFAULT_FORMAT_ID,
   buildSpeciesSearchIndex,
   getFormatById,
   getMegaStoneForSpecies,
@@ -76,12 +77,6 @@ const PLACEHOLDER_POKEMON: Tables<"pokemon"> = {
 // `analytics-rail.tsx`.
 const EDITOR_CHROME_OVERRIDE =
   "bg-transparent shadow-none rounded-none overflow-visible";
-
-// Default format used as a fallback when the team has no format set on it.
-// The same id is used as the species index fallback below — keeping a single
-// constant ensures the species picker, type chart, and Speed/Calc panels all
-// agree on which format they're operating in when no team format is selected.
-const DEFAULT_FORMAT_ID = "gen9vgc2026regi";
 
 // Module-level cache — buildSpeciesSearchIndex iterates all species (~1,200+),
 // so we cache per format ID to avoid re-computing on every render.
@@ -170,10 +165,6 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     mode: "add" | "change";
   }>({ open: false, slot: null, mode: "add" });
 
-  // Validation runs against the optimistic team so newly-edited fields
-  // contribute to the validation panel as soon as they're typed, not 2s later.
-  const { pokemonErrors } = useTeamValidation(teamPokemon, format);
-
   // Resolve the active format with a default fallback so downstream panels
   // (SpeedPanel, CalcPanel, type chart filters) always have a format to drive
   // their calculations off — otherwise SpeedPanel renders the
@@ -181,6 +172,14 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
   // had a format set on the row.
   const resolvedFormat: GameFormat | undefined =
     format ?? getFormatById(DEFAULT_FORMAT_ID);
+
+  // Validation runs against the optimistic team and the resolved format so
+  // newly-edited fields contribute to the validation panel immediately. Using
+  // resolvedFormat (never undefined) ensures validation and the editor/analytics
+  // rail all operate on the same format — passing raw `format` would leave
+  // format-less teams validated against no rules while the rest of the UI uses
+  // the default.
+  const { pokemonErrors } = useTeamValidation(teamPokemon, resolvedFormat);
 
   const speciesIndex = getCachedSpeciesIndex(format?.id ?? DEFAULT_FORMAT_ID);
 
@@ -259,20 +258,19 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
 
   function handleSpeciesSelect(
     species: string,
-    selectMode: "defaults" | "blank"
+    _mode: "defaults" = "defaults"
   ) {
     // Close the picker immediately — the save runs in the background.
     setPickerState({ open: false, slot: null, mode: "add" });
 
     if (pickerState.mode === "add") {
-      const firstAbility =
-        selectMode === "defaults" ? (getValidAbilities(species)[0] ?? "") : "";
+      const firstAbility = getValidAbilities(species)[0] ?? "";
       // Auto-assign the matching mega stone when adding a mega species
       const megaStone = getMegaStoneForSpecies(species);
       const pokemon: TablesInsert<"pokemon"> = {
         species,
         ability: firstAbility,
-        nature: selectMode === "defaults" ? "Hardy" : "",
+        nature: "Hardy",
         move1: "",
         level: 50,
         ...(megaStone ? { held_item: megaStone } : {}),
@@ -318,15 +316,14 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
       const pokemonId = selectedPokemonId;
       if (!pokemonId) return;
 
-      const firstAbility =
-        selectMode === "defaults" ? (getValidAbilities(species)[0] ?? "") : "";
+      const firstAbility = getValidAbilities(species)[0] ?? "";
       // Auto-assign the matching mega stone when changing to a mega species
       const megaStone = getMegaStoneForSpecies(species);
 
       const changeFields = {
         species,
         ability: firstAbility,
-        nature: selectMode === "defaults" ? "Hardy" : "",
+        nature: "Hardy",
         move1: "",
         move2: null,
         move3: null,

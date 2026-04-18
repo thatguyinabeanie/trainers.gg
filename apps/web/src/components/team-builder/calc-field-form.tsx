@@ -1,5 +1,7 @@
 "use client";
 
+import { type ReactNode } from "react";
+
 import { cn } from "@/lib/utils";
 
 import {
@@ -298,7 +300,7 @@ function SpikesPicker({ value, onChange }: SpikesPickerProps) {
 
 interface PillRowProps {
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
   /** When true, wraps children in role="radiogroup" for mutually-exclusive pill groups. */
   radioGroup?: boolean;
 }
@@ -322,7 +324,7 @@ function PillRow({ label, children, radioGroup }: PillRowProps) {
 interface PillProps {
   active: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
   testId?: string;
   /** When true, renders with role="radio" + aria-checked for mutually-exclusive groups. */
   radio?: boolean;

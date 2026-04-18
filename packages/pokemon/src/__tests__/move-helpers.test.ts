@@ -146,6 +146,11 @@ describe("getMoveHelperText", () => {
       expect(getMoveHelperText(move)).toBe("hits 2 times");
     });
 
+    it("single-element array multihit falls back to 'hits N times'", () => {
+      const move = buildMove({ multihit: [3] });
+      expect(getMoveHelperText(move)).toBe("hits 3 times");
+    });
+
     it("Sheer Cold — one-hit KO", () => {
       const move = buildMove({ ohko: true });
       expect(getMoveHelperText(move)).toBe("one-hit KO if it lands");
@@ -249,9 +254,14 @@ describe("getMoveHelperText", () => {
   });
 
   describe("self-destruct", () => {
-    it("Explosion — user faints", () => {
+    it("Explosion — user faints (always)", () => {
       const move = buildMove({ selfdestruct: "always" });
       expect(getMoveHelperText(move)).toBe("user faints");
+    });
+
+    it("Mind Blown — user faints only if it hits (ifHit)", () => {
+      const move = buildMove({ selfdestruct: "ifHit" });
+      expect(getMoveHelperText(move)).toBe("user faints if it hits");
     });
   });
 

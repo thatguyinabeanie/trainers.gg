@@ -52,6 +52,12 @@ export function AnalyticsRail({
   format,
   className,
 }: AnalyticsRailProps) {
+  // Computed once and shared between TypeChartPanel and SpeedPanel so the
+  // map+filter is not duplicated in the JSX below.
+  const filledTeam = team.team_pokemon
+    .map((tp) => tp.pokemon)
+    .filter((p): p is Tables<"pokemon"> => p !== null);
+
   return (
     <TabsPrimitive.Root
       defaultValue="types"
@@ -86,12 +92,7 @@ export function AnalyticsRail({
         data-testid="analytics-rail-body-types"
         className="flex min-h-0 flex-1 flex-col overflow-hidden outline-none"
       >
-        <TypeChartPanel
-          team={team.team_pokemon
-            .map((tp) => tp.pokemon)
-            .filter((p): p is Tables<"pokemon"> => p !== null)}
-          className={PANEL_CHROME_OVERRIDE}
-        />
+        <TypeChartPanel team={filledTeam} className={PANEL_CHROME_OVERRIDE} />
       </TabsPrimitive.Panel>
 
       <TabsPrimitive.Panel
@@ -102,9 +103,7 @@ export function AnalyticsRail({
         {selectedPokemon && format ? (
           <SpeedPanel
             selectedPokemon={selectedPokemon}
-            team={team.team_pokemon
-              .map((tp) => tp.pokemon)
-              .filter((p): p is Tables<"pokemon"> => p !== null)}
+            team={filledTeam}
             format={format}
             className={PANEL_CHROME_OVERRIDE}
           />

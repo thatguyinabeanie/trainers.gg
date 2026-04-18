@@ -167,7 +167,8 @@ describe("SpeedTierList — highlights", () => {
     render(<SpeedTierList tiers={tiers} selectedSpeed={150} />);
 
     const opponent = screen.getByTestId("mon-opp");
-    expect(within(opponent).getByText("tie")).toBeInTheDocument();
+    // Badge values are mapped through BADGE_LABELS — "tie" renders as "Tie".
+    expect(within(opponent).getByText("Tie")).toBeInTheDocument();
   });
 });
 

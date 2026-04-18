@@ -121,16 +121,20 @@ import { SpeedPanel } from "../speed-panel";
 // Fixtures
 // =============================================================================
 
-const FORMAT: GameFormat = {
-  id: "championsvgc2026regma",
-  game: "Pokemon Champions",
-  gameShort: "Champions",
-  generation: 9, // use 9 so the classic stat formula runs (not Champions SP)
+// generation: 9 is intentional — forces the classic calculateStat path in
+// SpeedPanel even though the id/showdownName reference a Champions (Gen 10)
+// format. This lets us assert on deterministic speed values without mocking
+// the Champions SP formula. Do not bump generation to 10 here.
+const FORMAT_GEN9_FOR_CLASSIC_STAT: GameFormat = {
+  id: "gen9vgc2026regi",
+  game: "Scarlet & Violet",
+  gameShort: "SV",
+  generation: 9,
   category: "VGC",
   year: 2026,
-  regulation: "M-A",
-  label: "Champions: Reg M-A",
-  showdownName: "[Gen 10] Champions VGC 2026 Reg M-A",
+  regulation: "I",
+  label: "SV: Reg I",
+  showdownName: "[Gen 9] VGC 2026 Reg I",
   doubles: true,
   active: true,
 };
@@ -196,7 +200,7 @@ describe("SpeedPanel — hero", () => {
       <SpeedPanel
         selectedPokemon={selected}
         team={[selected]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
@@ -215,7 +219,11 @@ describe("SpeedPanel — summary counts", () => {
     const team = [selected, teammate];
 
     render(
-      <SpeedPanel selectedPokemon={selected} team={team} format={FORMAT} />
+      <SpeedPanel
+        selectedPokemon={selected}
+        team={team}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
+      />
     );
 
     const outspeed = Number(screen.getByTestId("summary-outspeed").textContent);
@@ -235,7 +243,7 @@ describe("SpeedPanel — toggles affect numbers", () => {
       <SpeedPanel
         selectedPokemon={selected}
         team={[selected]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
@@ -257,7 +265,7 @@ describe("SpeedPanel — toggles affect numbers", () => {
       <SpeedPanel
         selectedPokemon={selected}
         team={[selected]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
@@ -280,7 +288,7 @@ describe("SpeedPanel — toggles affect numbers", () => {
       <SpeedPanel
         selectedPokemon={selected}
         team={[selected]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
@@ -296,7 +304,7 @@ describe("SpeedPanel — toggles affect numbers", () => {
       <SpeedPanel
         selectedPokemon={selected}
         team={[selected]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
@@ -317,7 +325,7 @@ describe("SpeedPanel — toggles affect numbers", () => {
       <SpeedPanel
         selectedPokemon={selected}
         team={[selected]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
@@ -333,13 +341,14 @@ describe("SpeedPanel — tie badge", () => {
       <SpeedPanel
         selectedPokemon={selected}
         team={[selected]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
     const yourTier = screen.getByTestId(`tier-${FLOETTE_SPEED}`);
     expect(within(yourTier).getByText("Volcarona")).toBeInTheDocument();
-    expect(within(yourTier).getByText("tie")).toBeInTheDocument();
+    // Badge values are mapped through BADGE_LABELS — "tie" renders as "Tie".
+    expect(within(yourTier).getByText("Tie")).toBeInTheDocument();
   });
 });
 
@@ -350,7 +359,11 @@ describe("SpeedPanel — team partitions", () => {
     const team = [selected, slowTeammate];
 
     render(
-      <SpeedPanel selectedPokemon={selected} team={team} format={FORMAT} />
+      <SpeedPanel
+        selectedPokemon={selected}
+        team={team}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
+      />
     );
 
     expect(screen.getByTestId(`tier-${INCINEROAR_SPEED}`)).toBeInTheDocument();
@@ -364,7 +377,7 @@ describe("SpeedPanel — team partitions", () => {
       <SpeedPanel
         selectedPokemon={selected}
         team={[selected, teammate]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
@@ -387,7 +400,7 @@ describe("SpeedPanel — layout", () => {
       <SpeedPanel
         selectedPokemon={selected}
         team={[selected]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
@@ -414,7 +427,7 @@ describe("SpeedPanel — layout", () => {
       <SpeedPanel
         selectedPokemon={selected}
         team={[selected]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
@@ -439,7 +452,7 @@ describe("SpeedPanel — layout", () => {
       <SpeedPanel
         selectedPokemon={selected}
         team={[selected]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
@@ -458,7 +471,7 @@ describe("SpeedPanel — state reset on selectedPokemon change", () => {
       <SpeedPanel
         selectedPokemon={floette}
         team={[floette, pikachu]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 
@@ -471,7 +484,7 @@ describe("SpeedPanel — state reset on selectedPokemon change", () => {
       <SpeedPanel
         selectedPokemon={pikachu}
         team={[floette, pikachu]}
-        format={FORMAT}
+        format={FORMAT_GEN9_FOR_CLASSIC_STAT}
       />
     );
 

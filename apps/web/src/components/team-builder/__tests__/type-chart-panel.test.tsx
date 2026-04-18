@@ -363,16 +363,17 @@ describe("TypeChartPanel", () => {
   // Row highlighting
   // ---------------------------------------------------------------------------
 
-  it("highlights 4× weakness rows with bg-destructive/5", () => {
+  it("highlights 4× weakness rows with a stable data-highlight attribute", () => {
     const team = [makePokemon({ id: 1, species: "Charizard" })];
     render(<TypeChartPanel team={team} />);
 
+    // Rock is a 4× weakness for Charizard — row carries data-highlight="4x".
     const rockRow = screen.getByTestId("type-row-Rock");
-    expect(rockRow.className).toContain("bg-destructive/5");
+    expect(rockRow).toHaveAttribute("data-highlight", "4x");
 
-    // A neutral row (Dark vs Charizard) should NOT have the highlight
+    // Dark is neutral vs Charizard — no highlight attribute.
     const darkRow = screen.getByTestId("type-row-Dark");
-    expect(darkRow.className).not.toContain("bg-destructive/5");
+    expect(darkRow).not.toHaveAttribute("data-highlight");
   });
 
   // ---------------------------------------------------------------------------
@@ -382,7 +383,7 @@ describe("TypeChartPanel", () => {
   it("renders the correct weak count for Charizard (Rock: 1 weak)", () => {
     const team = [makePokemon({ id: 1, species: "Charizard" })];
     render(<TypeChartPanel team={team} />);
-    expect(screen.getByTestId("weak-Rock")).toHaveTextContent("1");
+    expect(screen.getByTestId("weak-Rock")).toHaveTextContent(/^1$/);
   });
 
   it("counts add up to team size for every row", () => {
@@ -394,9 +395,14 @@ describe("TypeChartPanel", () => {
     render(<TypeChartPanel team={team} />);
 
     for (const type of MOCK_TYPES) {
-      const weak = Number(screen.getByTestId(`weak-${type}`).textContent);
-      const resist = Number(screen.getByTestId(`resist-${type}`).textContent);
-      const neutral = Number(screen.getByTestId(`neutral-${type}`).textContent);
+      const parseCount = (el: HTMLElement): number => {
+        const n = Number(el.textContent?.trim());
+        expect(Number.isFinite(n)).toBe(true); // guard against "—" placeholders
+        return n;
+      };
+      const weak = parseCount(screen.getByTestId(`weak-${type}`));
+      const resist = parseCount(screen.getByTestId(`resist-${type}`));
+      const neutral = parseCount(screen.getByTestId(`neutral-${type}`));
       expect(weak + resist + neutral).toBe(team.length);
     }
   });

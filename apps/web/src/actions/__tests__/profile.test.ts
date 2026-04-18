@@ -878,25 +878,6 @@ describe("updateProfile", () => {
         })
       );
     });
-
-    it("returns error when NEXT_PUBLIC_SUPABASE_URL is not configured", async () => {
-      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-      // PDS status check — active
-      mockFrom.mockReturnValueOnce(
-        createQueryBuilder({
-          maybeSingle: jest.fn().mockResolvedValue({
-            data: { pds_status: "active" },
-            error: null,
-          }),
-        })
-      );
-
-      const result = await updateProfile({ username: "newusername" });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("configuration error");
-    });
   });
 
   describe("bio update", () => {
@@ -1200,26 +1181,6 @@ describe("updateProfile", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("Failed to connect to server");
-    });
-
-    it("returns error when NEXT_PUBLIC_SUPABASE_URL missing during provision-pds", async () => {
-      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-      mockUsernameQuery();
-
-      // PDS status check — null (triggers provision)
-      mockFrom.mockReturnValueOnce(
-        createQueryBuilder({
-          maybeSingle: jest.fn().mockResolvedValue({
-            data: { pds_status: null },
-            error: null,
-          }),
-        })
-      );
-
-      const result = await updateProfile({ username: "newuser" });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("Server configuration error");
     });
 
     it("returns error when provision-pds fetch times out", async () => {

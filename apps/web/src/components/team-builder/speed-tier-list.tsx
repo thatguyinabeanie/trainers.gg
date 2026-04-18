@@ -8,6 +8,15 @@ import { cn } from "@/lib/utils";
 // Types
 // =============================================================================
 
+/** Badge values rendered on the right end of a mon row. */
+export type SpeedTierBadge = "tie" | "threat";
+
+/** Human-readable labels for each badge value. */
+const BADGE_LABELS: Record<SpeedTierBadge, string> = {
+  tie: "Tie",
+  threat: "Threat",
+};
+
 export interface SpeedTierMon {
   /** Unique key (e.g., "team-42" or "meta-dragapult"). */
   id: string;
@@ -17,7 +26,7 @@ export interface SpeedTierMon {
   /** The currently-selected Pokémon within "yours". */
   isSelected: boolean;
   /** Small inline tag rendered on the right end of the row. */
-  badge?: string;
+  badge?: SpeedTierBadge;
   /** Base Speed stat for the BASE SPEED column (left-most). */
   baseSpeed: number;
   /** Min stat: L50, 0 EVs, neutral nature, 0 IVs. */
@@ -153,7 +162,7 @@ function MonRow({ mon, baseSpeed, isYourTier }: MonRowProps) {
                   : "bg-muted text-muted-foreground"
             )}
           >
-            {mon.badge}
+            {BADGE_LABELS[mon.badge]}
           </span>
         )}
       </div>
@@ -198,7 +207,10 @@ function TierRow({ tier, isYourTier }: TierRowProps) {
   // All mons in a tier share the same base speed (speed-tie grouping), so use
   // the first mon's baseSpeed for the left column. Subsequent mons in the same
   // tier show an empty cell so the speed value doesn't repeat.
-  const displayBaseSpeed = tier.mons[0]?.baseSpeed ?? tier.speed;
+  // We intentionally avoid falling back to tier.speed here: a tier with zero
+  // mons should never be rendered, and showing the effective speed in the BASE
+  // column would be misleading (base ≠ effective when modifiers are active).
+  const displayBaseSpeed = tier.mons[0]?.baseSpeed;
 
   return (
     <div

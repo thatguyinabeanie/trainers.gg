@@ -503,6 +503,7 @@ export function TypeChartPanel({ team, className }: TypeChartPanelProps) {
               <div
                 key={row.type}
                 data-testid={`type-row-${row.type}`}
+                data-highlight={shouldHighlightRow(row) ? "4x" : undefined}
                 className={cn(
                   "grid items-center gap-0.5 px-2 py-px text-xs transition-colors duration-150",
                   shouldHighlightRow(row) && "bg-destructive/5"

@@ -1,4 +1,4 @@
-import { describe, it, expect, jest } from "@jest/globals";
+import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
@@ -7,9 +7,14 @@ import React from "react";
 // Module-level mocks
 // =============================================================================
 
-// Mock getMoveHelperText so the row test stays focused on layout/wiring
-// instead of the helper-text grammar (covered by its own unit tests).
+// Mock the pokemon package so the row test stays focused on layout/wiring
+// instead of dex lookups and helper-text grammar (each covered by their own unit tests).
+// getMoveHelperInput returns a stub object; getMoveHelperText returns a canned string.
 jest.mock("@trainers/pokemon", () => ({
+  getMoveHelperInput: jest.fn(() => ({
+    name: "Sucker Punch",
+    category: "Physical",
+  })),
   getMoveHelperText: jest.fn(() => "+1 priority"),
 }));
 
@@ -25,10 +30,15 @@ jest.mock("@/components/ui/tooltip", () => ({
   ),
 }));
 
-import { getMoveHelperText, type MoveData } from "@trainers/pokemon";
+import {
+  getMoveHelperInput,
+  getMoveHelperText,
+  type MoveData,
+} from "@trainers/pokemon";
 
 import { MoveListHeader, MoveRow } from "../move-row";
 
+const mockedHelperInput = jest.mocked(getMoveHelperInput);
 const mockedHelper = jest.mocked(getMoveHelperText);
 
 // =============================================================================
@@ -54,6 +64,10 @@ const statusMove: MoveData = {
 };
 
 beforeEach(() => {
+  mockedHelperInput.mockReturnValue({
+    name: "Sucker Punch",
+    category: "Physical",
+  } as ReturnType<typeof getMoveHelperInput>);
   mockedHelper.mockReturnValue("+1 priority");
 });
 
@@ -67,15 +81,19 @@ describe("MoveRow", () => {
       render(<MoveRow move={physicalMove} onOpenPicker={jest.fn()} />);
       expect(screen.getByText("Sucker Punch")).toBeInTheDocument();
       expect(screen.getByText("+1 priority")).toBeInTheDocument();
+      // getMoveHelperInput is called first to get a full dex object, then
+      // getMoveHelperText receives that object.
+      expect(mockedHelperInput).toHaveBeenCalledWith("Sucker Punch");
       expect(mockedHelper).toHaveBeenCalledWith(
         expect.objectContaining({ name: "Sucker Punch" })
       );
     });
 
-    it("renders BP and accuracy as numbers for damaging moves", () => {
+    it("renders BP and accuracy with % suffix for damaging moves", () => {
       render(<MoveRow move={physicalMove} onOpenPicker={jest.fn()} />);
       expect(screen.getByText("70")).toBeInTheDocument();
-      expect(screen.getByText("100")).toBeInTheDocument();
+      // formatAccuracy appends "%" — accuracy 100 renders as "100%".
+      expect(screen.getByText("100%")).toBeInTheDocument();
     });
 
     it("renders the type as a round symbol icon (role=img, aria-label = type)", () => {
@@ -99,12 +117,8 @@ describe("MoveRow", () => {
       // Three em-dashes — category chip (Status), BP, and ACC.
       const dashes = screen.getAllByText("—");
       expect(dashes).toHaveLength(3);
-      // The two stat cells (BP + ACC) carry the dimmed text class.
-      const dimmed = dashes.filter((el) =>
-        el.classList.contains("text-muted-foreground/60")
-      );
-      expect(dimmed).toHaveLength(2);
-      // Numeric BP/ACC must NOT appear.
+      // Numeric BP (0 → rendered as "—") and ACC (85 → "—" for status) must NOT appear.
+      expect(screen.queryByText("0")).not.toBeInTheDocument();
       expect(screen.queryByText("85")).not.toBeInTheDocument();
     });
   });

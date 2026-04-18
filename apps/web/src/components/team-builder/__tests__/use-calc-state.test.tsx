@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { act, renderHook } from "@testing-library/react";
 
 // =============================================================================
@@ -63,6 +63,7 @@ function makePokemon(
     ev_special_attack: 252,
     ev_special_defense: 0,
     ev_speed: 252,
+    format_legal: true,
     iv_hp: 31,
     iv_attack: 31,
     iv_defense: 31,
@@ -71,7 +72,6 @@ function makePokemon(
     iv_speed: 31,
     notes: null,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
     ...overrides,
   };
 }

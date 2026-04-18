@@ -1,5 +1,7 @@
 "use client";
 
+import { type ReactNode } from "react";
+
 import {
   type GameFormat,
   type MetaSpeedEntry,
@@ -60,6 +62,18 @@ interface CalcDefenderFormProps {
 // =============================================================================
 
 const STATUS_OPTIONS = Object.keys(STATUS_MAP);
+
+/** Human-readable label for each status key — avoids inline string replacement on every render. */
+const STATUS_LABELS: Record<string, string> = {
+  Healthy: "Healthy",
+  Burned: "Burned",
+  Poisoned: "Poisoned",
+  "Badly Poisoned": "Toxic",
+  Paralyzed: "Paralyzed",
+  Asleep: "Asleep",
+  Frozen: "Frozen",
+};
+
 const ALL_ITEMS = getAllItems();
 const STAT_ORDER: (keyof DefenderEvs)[] = [
   "hp",
@@ -141,27 +155,39 @@ export function CalcDefenderForm({
           value={species}
           onChange={(e) => onSpeciesChange(e.target.value)}
           data-testid="calc-defender-target"
+          aria-label="Target"
           className={selectClass}
         >
-          <option value={species}>{species || "Custom"}</option>
+          {/* Stable "Custom" entry — always selectable, value="" means no species. */}
+          <option value="">Custom</option>
           {meta.length > 0 && (
             <optgroup label="Meta">
-              {meta.map((m) => (
-                <option key={`meta-${m.species}`} value={m.displayName}>
-                  {m.displayName}
-                </option>
-              ))}
+              {meta
+                .filter((m) => m.displayName !== species)
+                .map((m) => (
+                  <option key={`meta-${m.species}`} value={m.displayName}>
+                    {m.displayName}
+                  </option>
+                ))}
             </optgroup>
           )}
           {teammates.length > 0 && (
             <optgroup label="Your team">
-              {teammates.map((p) => (
-                <option key={`team-${p.id}`} value={p.species}>
-                  {p.species}
-                </option>
-              ))}
+              {teammates
+                .filter((p) => p.species !== species)
+                .map((p) => (
+                  <option key={`team-${p.id}`} value={p.species}>
+                    {p.species}
+                  </option>
+                ))}
             </optgroup>
           )}
+          {/* If species is a custom (non-empty) value not present in any group, show it as a selected option. */}
+          {species !== "" &&
+            !meta.some((m) => m.displayName === species) &&
+            !teammates.some((p) => p.species === species) && (
+              <option value={species}>{species}</option>
+            )}
         </select>
       </Field>
 
@@ -171,6 +197,7 @@ export function CalcDefenderForm({
           <select
             value={ability}
             onChange={(e) => onAbilityChange(e.target.value)}
+            aria-label="Ability"
             className={selectClass}
           >
             <option value="">—</option>
@@ -185,6 +212,7 @@ export function CalcDefenderForm({
           <select
             value={item}
             onChange={(e) => onItemChange(e.target.value)}
+            aria-label="Item"
             className={selectClass}
           >
             <option value="">—</option>
@@ -203,6 +231,7 @@ export function CalcDefenderForm({
           <select
             value={nature}
             onChange={(e) => onNatureChange(e.target.value)}
+            aria-label="Nature"
             className={selectClass}
           >
             {natures.map((n) => (
@@ -222,6 +251,7 @@ export function CalcDefenderForm({
               <select
                 value={teraType}
                 onChange={(e) => onTeraChange(e.target.value)}
+                aria-label="Tera Type"
                 className={selectClass}
                 data-testid="calc-defender-tera"
               >
@@ -308,7 +338,7 @@ export function CalcDefenderForm({
                     : "border-border bg-background text-muted-foreground hover:bg-muted"
                 )}
               >
-                {s.replace("Badly Poisoned", "Toxic")}
+                {STATUS_LABELS[s] ?? s}
               </button>
             );
           })}
@@ -353,12 +383,12 @@ export function CalcDefenderForm({
 
 const selectClass = cn(
   "border-border bg-background h-7 w-full rounded border px-1 text-xs",
-  "focus:ring-1 focus:ring-teal-500 focus:outline-none"
+  "focus:ring-1 focus:ring-primary focus:outline-none"
 );
 
 interface FieldProps {
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 function Field({ label, children }: FieldProps) {
@@ -370,7 +400,7 @@ function Field({ label, children }: FieldProps) {
   );
 }
 
-function CaptionLabel({ children }: { children: React.ReactNode }) {
+function CaptionLabel({ children }: { children: ReactNode }) {
   return (
     <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
       {children}
@@ -420,7 +450,7 @@ function Stepper({ label, value, onChange }: StepperProps) {
 }
 
 interface PresetButtonProps {
-  children: React.ReactNode;
+  children: ReactNode;
   onClick: () => void;
 }
 

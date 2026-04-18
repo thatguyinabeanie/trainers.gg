@@ -1,5 +1,7 @@
 "use client";
 
+import { type ReactNode } from "react";
+
 import {
   type GameFormat,
   type SpeedAffectingItem,
@@ -31,6 +33,14 @@ export interface SpeedToggleState {
   stage: number;
   /** Empty string = none; otherwise an item id from getSpeedAffectingItems */
   item: string;
+  /**
+   * Current status condition. Only "paralyzed" directly reduces Speed; other
+   * statuses can trigger Quick Feet (+1.5× when statused). Widen this union
+   * when the UI exposes more than two options.
+   *
+   * TODO: expand to full status union ("burn" | "sleep" | "freeze" | "poison" |
+   * "toxic") once the status picker supports them, so callers don't need casts.
+   */
   status: "healthy" | "paralyzed";
 }
 
@@ -70,7 +80,7 @@ const WEATHER_LABELS: Record<Weather, string> = {
 // =============================================================================
 
 interface GroupHeaderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 function GroupHeader({ children }: GroupHeaderProps) {
@@ -100,7 +110,11 @@ export function SpeedToggleRail({
   className,
 }: SpeedToggleRailProps) {
   const items: SpeedAffectingItem[] = getSpeedAffectingItems(format);
-  const weatherOptions: Weather[] = ["sun", "rain", "sand", "snow"];
+
+  // Derived from WEATHER_LABELS so it stays in sync if new weathers are added.
+  const weatherOptions = (Object.keys(WEATHER_LABELS) as Weather[]).filter(
+    (w) => w !== "none"
+  );
 
   // ---- helpers --------------------------------------------------------------
 
@@ -145,7 +159,7 @@ export function SpeedToggleRail({
             size="sm"
             variant="outline"
             pressed={state.field.tailwind}
-            onPressedChange={() => setTailwind(!state.field.tailwind)}
+            onPressedChange={(pressed) => setTailwind(pressed)}
             aria-label="Tailwind"
           >
             Tailwind

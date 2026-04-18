@@ -1,18 +1,15 @@
 "use client";
 
-import { Dex } from "@pkmn/dex";
-
 import {
   type MoveData,
   type PokemonType,
+  getMoveHelperInput,
   getMoveHelperText,
 } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 
 import { TypeSymbolIcon } from "./type-symbol-icon";
-
-const gen9Dex = Dex.forGen(9);
 
 // =============================================================================
 // Types
@@ -46,11 +43,11 @@ function categoryChip(category: MoveData["category"]): {
   };
 }
 
-/** Format accuracy: `"100"`, `"—"` for `true` (always hits) or 0 (unknown). */
+/** Format accuracy: `"100%"`, `"—"` for `true` (always hits) or 0 (unknown). */
 function formatAccuracy(accuracy: MoveData["accuracy"]): string {
   if (accuracy === true) return "—";
   if (accuracy === 0) return "—";
-  return `${accuracy}`;
+  return `${accuracy}%`;
 }
 
 // =============================================================================
@@ -93,7 +90,14 @@ export function MoveRow({ move, onOpenPicker, className }: MoveRowProps) {
   const { letter: catLetter, classes: catClasses } = categoryChip(
     move.category
   );
-  const helper = getMoveHelperText(gen9Dex.moves.get(move.name));
+
+  // getMoveHelperInput keeps the dex lookup in the shared package — no
+  // @pkmn/dex import needed in this client component.
+  const helperInput = getMoveHelperInput(move.name);
+  const helper = helperInput ? getMoveHelperText(helperInput) : "";
+
+  // Compute once; used for both the rendered value and the muted-color decision.
+  const accuracyText = isStatus ? "—" : formatAccuracy(move.accuracy);
 
   return (
     <button
@@ -145,18 +149,14 @@ export function MoveRow({ move, onOpenPicker, className }: MoveRowProps) {
         {isStatus || move.basePower === 0 ? "—" : move.basePower}
       </span>
 
-      {/* ACC */}
+      {/* ACC — single source of truth via accuracyText */}
       <span
         className={cn(
           "text-center font-mono text-sm font-semibold tabular-nums",
-          isStatus
-            ? "text-muted-foreground/60"
-            : move.accuracy === true || move.accuracy === 0
-              ? "text-muted-foreground/60"
-              : "text-foreground"
+          accuracyText === "—" ? "text-muted-foreground/60" : "text-foreground"
         )}
       >
-        {isStatus ? "—" : formatAccuracy(move.accuracy)}
+        {accuracyText}
       </span>
     </button>
   );

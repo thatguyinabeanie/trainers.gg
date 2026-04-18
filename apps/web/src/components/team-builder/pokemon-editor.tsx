@@ -215,7 +215,7 @@ export function PokemonEditor({
         format={format}
         onOpenAbilityPicker={() => openPicker("ability")}
         onOpenItemPicker={() => openPicker("item")}
-        onOpenTeraPicker={hasTera ? () => openPicker("tera") : () => {}}
+        onOpenTeraPicker={() => openPicker("tera")}
         onOpenNaturePicker={() => openPicker("nature")}
         onOpenSpeciesPicker={onOpenSpeciesPicker}
         // Only mount the ⋯ details popover when we have a teamId — the
@@ -337,7 +337,7 @@ export function PokemonEditor({
                       species={pokemon.species}
                       value={moveValue}
                       onSelect={(val) => {
-                        onUpdate(`move${slot}`, val);
+                        onUpdate(moveField, val);
                         closePicker();
                       }}
                       onClose={closePicker}
