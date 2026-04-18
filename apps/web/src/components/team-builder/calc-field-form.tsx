@@ -331,14 +331,23 @@ interface PillProps {
 }
 
 function Pill({ active, onClick, children, testId, radio }: PillProps) {
+  // Roving tabindex for the radio variant — only the active option is in the
+  // tab order; arrow-key handling is delegated to the parent radiogroup since
+  // PillRow already wraps the children with role="radiogroup".
+  const radioProps = radio
+    ? {
+        role: "radio" as const,
+        "aria-checked": active,
+        tabIndex: active ? 0 : -1,
+      }
+    : { "aria-pressed": active };
+
   return (
     <button
       type="button"
       onClick={onClick}
       data-testid={testId}
-      {...(radio
-        ? { role: "radio", "aria-checked": active }
-        : { "aria-pressed": active })}
+      {...radioProps}
       className={cn(
         "rounded-md border px-2 py-1 text-[11px] font-medium transition-colors duration-150",
         active

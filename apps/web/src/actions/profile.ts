@@ -80,7 +80,16 @@ async function invokeWithTimeout<T>(
       }
       return { kind: "error", cause: error };
     }
-    return { kind: "ok", data: (data ?? {}) as T };
+    // Treat empty body (data == null with no error) as an error rather than
+    // coercing to {} — masking it as success silently sends callers down the
+    // "non-success" branch without the original failure context.
+    if (data == null) {
+      return {
+        kind: "error",
+        cause: new Error(`Edge function "${functionName}" returned no data`),
+      };
+    }
+    return { kind: "ok", data };
   } catch (err) {
     if (
       err instanceof Error &&

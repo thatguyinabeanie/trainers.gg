@@ -53,8 +53,9 @@ export function AnalyticsRail({
   className,
 }: AnalyticsRailProps) {
   // Computed once and shared between TypeChartPanel and SpeedPanel so the
-  // map+filter is not duplicated in the JSX below.
-  const filledTeam = team.team_pokemon
+  // map+filter is not duplicated in the JSX below. Guard against shapes that
+  // omit team_pokemon — matches the defensive pattern in CalcPanelInner.
+  const filledTeam = (team.team_pokemon ?? [])
     .map((tp) => tp.pokemon)
     .filter((p): p is Tables<"pokemon"> => p !== null);
 

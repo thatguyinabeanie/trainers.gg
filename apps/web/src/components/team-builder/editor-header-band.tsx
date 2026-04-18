@@ -150,9 +150,22 @@ function normalizeGender(raw: string | null): GenderValue {
 }
 
 function GenderButton({ value, onChange, disabled }: GenderButtonProps) {
+  // Use radiogroup semantics: only the active radio is in the tab order, and
+  // arrow keys move focus through the options. This matches WAI-ARIA radio
+  // group expectations and improves screen-reader output.
+  function handleArrowKey(e: React.KeyboardEvent<HTMLButtonElement>) {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    const currentIdx = GENDER_OPTIONS.findIndex((o) => o.value === value);
+    const delta = e.key === "ArrowRight" ? 1 : -1;
+    const nextIdx =
+      (currentIdx + delta + GENDER_OPTIONS.length) % GENDER_OPTIONS.length;
+    onChange(GENDER_OPTIONS[nextIdx]!.value);
+  }
+
   return (
     <div
-      role="group"
+      role="radiogroup"
       aria-label="Gender"
       className="bg-muted/50 flex overflow-hidden rounded-md border"
     >
@@ -162,10 +175,13 @@ function GenderButton({ value, onChange, disabled }: GenderButtonProps) {
           <button
             key={opt.label}
             type="button"
+            role="radio"
             aria-label={opt.label}
-            aria-pressed={isActive}
+            aria-checked={isActive}
+            tabIndex={isActive ? 0 : -1}
             disabled={disabled}
             onClick={() => onChange(opt.value)}
+            onKeyDown={handleArrowKey}
             className={cn(
               "px-2 py-1 text-xs transition-colors duration-150",
               isActive
@@ -427,7 +443,7 @@ export function EditorHeaderBand({
             </FieldStatic>
           ) : (
             <FieldButton label="Ability" onClick={onOpenAbilityPicker}>
-              {pokemon.ability}
+              {pokemon.ability ?? validAbilities[0] ?? "—"}
             </FieldButton>
           )}
 
