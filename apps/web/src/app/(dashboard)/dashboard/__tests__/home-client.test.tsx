@@ -30,6 +30,12 @@ jest.mock("../components/alts-table", () => ({
   ),
 }));
 
+jest.mock("../components/alts-cards", () => ({
+  AltsCards: (props: { alts: unknown[] }) => (
+    <div data-testid="alts-cards" data-count={props.alts?.length ?? 0} />
+  ),
+}));
+
 jest.mock("../components/live-match-bar", () => ({
   LiveMatchBar: (props: { match: { tournamentName: string } }) => (
     <div data-testid="live-match-bar">{props.match.tournamentName}</div>
