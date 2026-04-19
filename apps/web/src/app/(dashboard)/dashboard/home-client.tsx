@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { AltsCards } from "./components/alts-cards";
 import { AltsTable } from "./components/alts-table";
 import { CreateAltForm } from "./components/create-alt-form";
 
@@ -232,17 +233,33 @@ export function HomeClient({
         </div>
       )}
 
-      {/* Alts table with inline stats and expand/collapse */}
-      <AltsTable
-        alts={alts}
-        mainAltId={mainAltId}
-        bulkStats={initialBulkStats}
-        bulkRatings={initialBulkRatings}
-        selectedAltUsername={selectedAlt}
-        onAltSelect={handleAltSelect}
-        onRefresh={handleRefresh}
-        refreshKey={refreshKey}
-      />
+      {/* Mobile: card list */}
+      <div className="md:hidden">
+        <AltsCards
+          alts={alts}
+          mainAltId={mainAltId}
+          bulkStats={initialBulkStats}
+          bulkRatings={initialBulkRatings}
+          selectedAltUsername={selectedAlt}
+          onAltSelect={handleAltSelect}
+          onRefresh={handleRefresh}
+          refreshKey={refreshKey}
+        />
+      </div>
+
+      {/* Desktop: table with inline stats and expand/collapse */}
+      <div className="hidden md:block">
+        <AltsTable
+          alts={alts}
+          mainAltId={mainAltId}
+          bulkStats={initialBulkStats}
+          bulkRatings={initialBulkRatings}
+          selectedAltUsername={selectedAlt}
+          onAltSelect={handleAltSelect}
+          onRefresh={handleRefresh}
+          refreshKey={refreshKey}
+        />
+      </div>
     </div>
   );
 }
