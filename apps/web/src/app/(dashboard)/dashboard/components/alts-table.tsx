@@ -81,6 +81,11 @@ function AltTableRow({
       <tr
         onClick={onToggle}
         onKeyDown={(e) => {
+          // Ignore keydowns that bubble from nested interactive controls
+          // (avatar popover trigger, visibility toggle) — keyboard users
+          // shouldn't accidentally expand/collapse by pressing Space/Enter
+          // on those inner buttons. Matches the card variant's guard.
+          if (e.currentTarget !== e.target) return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             onToggle();

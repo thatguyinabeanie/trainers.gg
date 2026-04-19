@@ -20,9 +20,11 @@ interface AltVisibilityToggleProps {
 
 /**
  * Visibility toggle (public/private) dot used in both the desktop alts
- * table and the mobile alts cards. Stops click + keyboard event
- * propagation so the row/card header expand toggle doesn't fire when
- * the user changes visibility.
+ * table and the mobile alts cards. Stops click AND keyboard event
+ * propagation on the button so the row/card header expand toggle
+ * doesn't fire when the user changes visibility. The button is
+ * disabled while a visibility update is in flight to prevent
+ * rapid-click double submissions against a stale `isPublic` prop.
  */
 export function AltVisibilityToggle({
   altId,
@@ -30,7 +32,7 @@ export function AltVisibilityToggle({
   onRefresh,
   layout = "button",
 }: AltVisibilityToggleProps) {
-  const [, startVisibilityTransition] = useTransition();
+  const [isPending, startVisibilityTransition] = useTransition();
 
   const handleToggle = () => {
     startVisibilityTransition(async () => {
@@ -43,34 +45,38 @@ export function AltVisibilityToggle({
     });
   };
 
-  const dot = (
-    <span
-      className={cn(
-        "block size-2.5 rounded-full",
-        isPublic ? "bg-emerald-500" : "bg-neutral-300"
-      )}
-    />
-  );
+  const stopKeyboardPropagation = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
 
-  const button = (
+  return (
     <button
       onClick={(e) => {
         e.stopPropagation();
+        if (isPending) return;
         handleToggle();
       }}
-      className={cn(layout === "button" ? "shrink-0 p-1" : "mx-auto block")}
+      onKeyDown={stopKeyboardPropagation}
+      onKeyUp={stopKeyboardPropagation}
+      disabled={isPending}
+      className={cn(
+        layout === "button" ? "shrink-0 p-1" : "mx-auto block",
+        isPending && "cursor-wait opacity-60"
+      )}
       aria-label={isPublic ? "Make private" : "Make public"}
+      aria-busy={isPending || undefined}
       title={
         isPublic
           ? "Public — click to make private"
           : "Private — click to make public"
       }
     >
-      {dot}
+      <span
+        className={cn(
+          "block size-2.5 rounded-full",
+          isPublic ? "bg-emerald-500" : "bg-neutral-300"
+        )}
+      />
     </button>
   );
-
-  // In the table layout the button lives inside a <td> that handles
-  // propagation; keep the button styled for a centered cell.
-  return button;
 }

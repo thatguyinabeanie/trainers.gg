@@ -40,7 +40,12 @@ export function AltAvatarPicker({
     size === "md" ? "text-xs font-bold" : "text-[10px] font-bold";
 
   return (
-    <span onClick={(e) => e.stopPropagation()} className="shrink-0">
+    <span
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      onKeyUp={(e) => e.stopPropagation()}
+      className="shrink-0"
+    >
       <Popover key={`${altId}-${refreshKey}`}>
         <PopoverTrigger
           title="Change avatar"
