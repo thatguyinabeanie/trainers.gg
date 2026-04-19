@@ -1,24 +1,19 @@
 "use client";
 
 import { useTransition } from "react";
-import { Pencil, Star, ChevronDown, ChevronRight } from "lucide-react";
+import { Star, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
-import type { AltStats, PlayerRating } from "@trainers/supabase";
+import { type AltStats, type PlayerRating } from "@trainers/supabase";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
-import { SpritePicker } from "@/components/profile/sprite-picker";
 import { cn } from "@/lib/utils";
-import { updateAltVisibilityAction } from "@/actions/profile";
 import { deleteAltAction } from "@/actions/alts";
 import { formatWinRate } from "../tournaments/tournament-helpers";
 
+import { AltAvatarPicker } from "./alt-avatar-picker";
+import { AltVisibilityToggle } from "./alt-visibility-toggle";
+import { isHighWinRate } from "./alt-row-helpers";
 import { TeamsSubTable } from "./teams-sub-table";
 
 // ---------------------------------------------------------------------------
@@ -48,32 +43,6 @@ export interface AltsTableProps {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function isHighWinRate(wins: number, losses: number): boolean {
-  const total = wins + losses;
-  if (total === 0) return false;
-  return wins / total >= 0.55;
-}
-
-// ---------------------------------------------------------------------------
-// PublicDot
-// ---------------------------------------------------------------------------
-
-function PublicDot({ isPublic }: { isPublic: boolean }) {
-  return (
-    <span
-      className={cn(
-        "mx-auto block size-2 rounded-full",
-        isPublic ? "bg-emerald-500" : "bg-neutral-300"
-      )}
-      title={isPublic ? "Public" : "Private"}
-    />
-  );
-}
-
-// ---------------------------------------------------------------------------
 // AltTableRow
 // ---------------------------------------------------------------------------
 
@@ -100,24 +69,11 @@ function AltTableRow({
   altStats: AltStats | undefined;
   altRating: PlayerRating | null;
 }) {
-  const [, startVisibilityTransition] = useTransition();
-
   const wins = altStats?.matchWins ?? 0;
   const losses = altStats?.matchLosses ?? 0;
   const events = altStats?.tournamentCount ?? 0;
 
   const rating = altRating?.rating ?? null;
-
-  const handleVisibilityChange = (checked: boolean) => {
-    startVisibilityTransition(async () => {
-      const result = await updateAltVisibilityAction(alt.id, checked);
-      if (result.success) {
-        onRefresh();
-      } else {
-        toast.error(result.error ?? "Failed to update visibility");
-      }
-    });
-  };
 
   return (
     <>
@@ -142,36 +98,14 @@ function AltTableRow({
         {/* Handle */}
         <td className="w-[200px] px-3 py-2.5">
           <div className="flex items-center gap-2">
-            {/* Avatar with sprite picker — stop propagation so row click doesn't fire */}
-            <span onClick={(e) => e.stopPropagation()}>
-              <Popover key={`${alt.id}-${refreshKey}`}>
-                <PopoverTrigger
-                  title="Change avatar"
-                  className="group/avatar relative shrink-0 cursor-pointer"
-                >
-                  <div className="relative overflow-hidden rounded-full">
-                    <Avatar className="ring-primary/10 size-7 ring-1">
-                      {alt.avatar_url && (
-                        <AvatarImage src={alt.avatar_url} alt={alt.username} />
-                      )}
-                      <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
-                        {alt.username.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/avatar:bg-black/40">
-                      <Pencil className="size-2.5 text-white opacity-0 drop-shadow-md transition-opacity group-hover/avatar:opacity-100" />
-                    </div>
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-auto p-2">
-                  <SpritePicker
-                    altId={alt.id}
-                    currentAvatarUrl={alt.avatar_url}
-                    onAvatarChange={onRefresh}
-                  />
-                </PopoverContent>
-              </Popover>
-            </span>
+            <AltAvatarPicker
+              altId={alt.id}
+              username={alt.username}
+              avatarUrl={alt.avatar_url}
+              onAvatarChange={onRefresh}
+              refreshKey={refreshKey}
+              size="sm"
+            />
             <span className="flex min-w-0 items-center gap-1.5">
               <span
                 className={cn(
@@ -256,18 +190,12 @@ function AltTableRow({
           className="px-3 py-2.5 text-center"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={() => handleVisibilityChange(!alt.is_public)}
-            className="mx-auto block"
-            aria-label={alt.is_public ? "Make private" : "Make public"}
-            title={
-              alt.is_public
-                ? "Public — click to make private"
-                : "Private — click to make public"
-            }
-          >
-            <PublicDot isPublic={alt.is_public} />
-          </button>
+          <AltVisibilityToggle
+            altId={alt.id}
+            isPublic={alt.is_public}
+            onRefresh={onRefresh}
+            layout="cell"
+          />
         </td>
 
         {/* Chevron */}

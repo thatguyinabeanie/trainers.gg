@@ -24,6 +24,15 @@ jest.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => mockUseIsMobile(),
 }));
 
+// --- @/hooks/use-is-client ---
+// Default to true (post-hydration) so the real layout renders in tests.
+// The production code renders a skeleton until hydration; tests skip that
+// path by asserting directly against the hydrated output.
+const mockUseIsClient = jest.fn(() => true);
+jest.mock("@/hooks/use-is-client", () => ({
+  useIsClient: () => mockUseIsClient(),
+}));
+
 // --- @/components/dashboard/sidebar-helpers ---
 jest.mock("@/components/dashboard/sidebar-helpers", () => ({
   DASHBOARD_ALT_COOKIE: "dashboard-alt",
@@ -182,8 +191,10 @@ function setupMockSupabase() {
 describe("HomeClient", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Re-apply the desktop default — jest.clearAllMocks() wipes implementations
+    // clearAllMocks only wipes call history — re-apply defaults so each
+    // test starts from a known return value.
     mockUseIsMobile.mockReturnValue(false);
+    mockUseIsClient.mockReturnValue(true);
     setupMockSupabase();
   });
 
@@ -214,6 +225,13 @@ describe("HomeClient", () => {
     it("renders empty state when no alts", () => {
       render(<HomeClient {...getDefaultProps({ alts: [] })} />);
       expect(screen.getByText("No alts yet")).toBeInTheDocument();
+    });
+
+    it("renders skeleton (neither AltsTable nor AltsCards) during SSR", () => {
+      mockUseIsClient.mockReturnValue(false);
+      render(<HomeClient {...getDefaultProps()} />);
+      expect(screen.queryByTestId("alts-table")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("alts-cards")).not.toBeInTheDocument();
     });
   });
 

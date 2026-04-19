@@ -1,24 +1,19 @@
 "use client";
 
 import { useTransition } from "react";
-import { Pencil, Star, ChevronDown, ChevronRight } from "lucide-react";
+import { Star, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 import { type AltStats, type PlayerRating } from "@trainers/supabase";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
-import { SpritePicker } from "@/components/profile/sprite-picker";
 import { cn } from "@/lib/utils";
-import { updateAltVisibilityAction } from "@/actions/profile";
 import { deleteAltAction } from "@/actions/alts";
 import { formatWinRate } from "../tournaments/tournament-helpers";
 
+import { AltAvatarPicker } from "./alt-avatar-picker";
+import { AltVisibilityToggle } from "./alt-visibility-toggle";
+import { isHighWinRate } from "./alt-row-helpers";
 import { TeamsSubTable } from "./teams-sub-table";
 
 // ---------------------------------------------------------------------------
@@ -45,16 +40,6 @@ export interface AltsCardsProps {
   onAltSelect: (username: string | null) => void;
   onRefresh: () => void;
   refreshKey: number;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function isHighWinRate(wins: number, losses: number): boolean {
-  const total = wins + losses;
-  if (total === 0) return false;
-  return wins / total >= 0.55;
 }
 
 // ---------------------------------------------------------------------------
@@ -117,24 +102,11 @@ function AltCard({
   altStats: AltStats | undefined;
   altRating: PlayerRating | null;
 }) {
-  const [, startVisibilityTransition] = useTransition();
-
   const wins = altStats?.matchWins ?? 0;
   const losses = altStats?.matchLosses ?? 0;
   const events = altStats?.tournamentCount ?? 0;
   const rating = altRating?.rating ?? null;
   const noRecord = wins + losses === 0;
-
-  const handleVisibilityChange = (checked: boolean) => {
-    startVisibilityTransition(async () => {
-      const result = await updateAltVisibilityAction(alt.id, checked);
-      if (result.success) {
-        onRefresh();
-      } else {
-        toast.error(result.error ?? "Failed to update visibility");
-      }
-    });
-  };
 
   return (
     <div
@@ -162,36 +134,14 @@ function AltCard({
         aria-expanded={isExpanded}
         className="hover:bg-muted/40 flex cursor-pointer items-center gap-3 px-3 py-3"
       >
-        {/* Avatar with sprite picker — stop propagation so header tap doesn't fire */}
-        <span onClick={(e) => e.stopPropagation()} className="shrink-0">
-          <Popover key={`${alt.id}-${refreshKey}`}>
-            <PopoverTrigger
-              title="Change avatar"
-              className="group/avatar relative shrink-0 cursor-pointer"
-            >
-              <div className="relative overflow-hidden rounded-full">
-                <Avatar className="ring-primary/10 size-9 ring-1">
-                  {alt.avatar_url && (
-                    <AvatarImage src={alt.avatar_url} alt={alt.username} />
-                  )}
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                    {alt.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/avatar:bg-black/40">
-                  <Pencil className="size-3 text-white opacity-0 drop-shadow-md transition-opacity group-hover/avatar:opacity-100" />
-                </div>
-              </div>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-auto p-2">
-              <SpritePicker
-                altId={alt.id}
-                currentAvatarUrl={alt.avatar_url}
-                onAvatarChange={onRefresh}
-              />
-            </PopoverContent>
-          </Popover>
-        </span>
+        <AltAvatarPicker
+          altId={alt.id}
+          username={alt.username}
+          avatarUrl={alt.avatar_url}
+          onAvatarChange={onRefresh}
+          refreshKey={refreshKey}
+          size="md"
+        />
 
         {/* Username + Main badge */}
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
@@ -211,27 +161,11 @@ function AltCard({
           )}
         </div>
 
-        {/* Public toggle — stop propagation */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleVisibilityChange(!alt.is_public);
-          }}
-          className="shrink-0 p-1"
-          aria-label={alt.is_public ? "Make private" : "Make public"}
-          title={
-            alt.is_public
-              ? "Public — tap to make private"
-              : "Private — tap to make public"
-          }
-        >
-          <span
-            className={cn(
-              "block size-2.5 rounded-full",
-              alt.is_public ? "bg-emerald-500" : "bg-neutral-300"
-            )}
-          />
-        </button>
+        <AltVisibilityToggle
+          altId={alt.id}
+          isPublic={alt.is_public}
+          onRefresh={onRefresh}
+        />
 
         {/* Chevron */}
         {isExpanded ? (

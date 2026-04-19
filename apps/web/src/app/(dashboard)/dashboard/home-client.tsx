@@ -8,6 +8,7 @@ import { Plus, Users } from "lucide-react";
 import { type AltStats, type PlayerRating } from "@trainers/supabase";
 
 import { useSupabase } from "@/lib/supabase";
+import { useIsClient } from "@/hooks/use-is-client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DASHBOARD_ALT_COOKIE,
@@ -52,6 +53,7 @@ export function HomeClient({
 }: DashboardHomeClientProps) {
   const router = useRouter();
   const supabase = useSupabase();
+  const isClient = useIsClient();
   const isMobile = useIsMobile();
   const toastShown = useRef(false);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -235,10 +237,18 @@ export function HomeClient({
         </div>
       )}
 
-      {/* Conditionally render one layout — mounting both would duplicate
-          useSupabaseQuery calls in the expanded TeamsSubTable and cause
-          scroll/layout conflicts on mobile. */}
-      {isMobile ? (
+      {/* Render exactly one layout. `useIsMobile()` returns false during
+          SSR + initial hydration, so gating on `useIsClient()` first
+          avoids mounting the desktop `AltsTable` for mobile users
+          (which would briefly mount `TeamsSubTable` if a selected alt
+          is restored from the cookie and cause a visible layout shift).
+          The skeleton keeps the viewport stable until the hook settles. */}
+      {!isClient ? (
+        <div
+          aria-hidden
+          className="bg-muted/30 h-40 animate-pulse rounded-lg"
+        />
+      ) : isMobile ? (
         <AltsCards
           alts={alts}
           mainAltId={mainAltId}
