@@ -172,7 +172,10 @@ function getDefaultProps(
 
 describe("AltsCards", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
+    // Safe defaults for async action mocks — tests can override per case
+    mockUpdateAltVisibilityAction.mockResolvedValue({ success: true });
+    mockDeleteAltAction.mockResolvedValue({ success: true });
     window.confirm = jest.fn(() => true);
   });
 
@@ -418,6 +421,40 @@ describe("AltsCards", () => {
     // Clicking the toggle should not bubble up to the header's onClick
     expect(props.onAltSelect).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["Enter", "Enter"],
+    ["Space", " "],
+  ])(
+    "does not toggle expansion when %s is pressed on the visibility toggle",
+    (_name, key) => {
+      const props = getDefaultProps();
+      render(<AltsCards {...props} />);
+
+      // Keydown bubbles from the button to the header; the header guard
+      // should ignore events where currentTarget !== target.
+      fireEvent.keyDown(screen.getByLabelText("Make private"), { key });
+
+      expect(props.onAltSelect).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([
+    ["Enter", "Enter"],
+    ["Space", " "],
+  ])(
+    "does not toggle expansion when %s is pressed on the avatar trigger",
+    (_name, key) => {
+      const props = getDefaultProps();
+      render(<AltsCards {...props} />);
+
+      // First popover-trigger belongs to the first card's avatar
+      const triggers = screen.getAllByTestId("popover-trigger");
+      fireEvent.keyDown(triggers[0]!, { key });
+
+      expect(props.onAltSelect).not.toHaveBeenCalled();
+    }
+  );
 
   // ── Avatar display ──────────────────────────────────────────────────────
 

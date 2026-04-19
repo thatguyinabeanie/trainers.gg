@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { Pencil, Star, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
-import type { AltStats, PlayerRating } from "@trainers/supabase";
+import { type AltStats, type PlayerRating } from "@trainers/supabase";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -147,6 +147,11 @@ function AltCard({
       <div
         onClick={onToggle}
         onKeyDown={(e) => {
+          // Ignore keydowns that bubble from nested interactive controls
+          // (avatar popover trigger, visibility toggle) — keyboard users
+          // shouldn't accidentally expand/collapse by pressing Space/Enter
+          // on those inner buttons.
+          if (e.currentTarget !== e.target) return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             onToggle();

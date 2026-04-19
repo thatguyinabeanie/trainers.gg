@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, Users } from "lucide-react";
 
-import type { AltStats, PlayerRating } from "@trainers/supabase";
+import { type AltStats, type PlayerRating } from "@trainers/supabase";
 
 import { useSupabase } from "@/lib/supabase";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DASHBOARD_ALT_COOKIE,
   COOKIE_MAX_AGE,
@@ -51,6 +52,7 @@ export function HomeClient({
 }: DashboardHomeClientProps) {
   const router = useRouter();
   const supabase = useSupabase();
+  const isMobile = useIsMobile();
   const toastShown = useRef(false);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const [selectedAlt, setSelectedAlt] = useState<string | null>(
@@ -233,8 +235,10 @@ export function HomeClient({
         </div>
       )}
 
-      {/* Mobile: card list */}
-      <div className="md:hidden">
+      {/* Conditionally render one layout — mounting both would duplicate
+          useSupabaseQuery calls in the expanded TeamsSubTable and cause
+          scroll/layout conflicts on mobile. */}
+      {isMobile ? (
         <AltsCards
           alts={alts}
           mainAltId={mainAltId}
@@ -245,10 +249,7 @@ export function HomeClient({
           onRefresh={handleRefresh}
           refreshKey={refreshKey}
         />
-      </div>
-
-      {/* Desktop: table with inline stats and expand/collapse */}
-      <div className="hidden md:block">
+      ) : (
         <AltsTable
           alts={alts}
           mainAltId={mainAltId}
@@ -259,7 +260,7 @@ export function HomeClient({
           onRefresh={handleRefresh}
           refreshKey={refreshKey}
         />
-      </div>
+      )}
     </div>
   );
 }

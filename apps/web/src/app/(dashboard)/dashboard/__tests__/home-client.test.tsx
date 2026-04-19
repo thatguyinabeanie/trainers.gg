@@ -16,6 +16,14 @@ jest.mock("@/lib/supabase", () => ({
   })),
 }));
 
+// --- @/hooks/use-mobile ---
+// Default to desktop (false) so AltsTable renders; tests that want the
+// mobile view can override via mockUseIsMobile.mockReturnValue(true).
+const mockUseIsMobile = jest.fn(() => false);
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
+
 // --- @/components/dashboard/sidebar-helpers ---
 jest.mock("@/components/dashboard/sidebar-helpers", () => ({
   DASHBOARD_ALT_COOKIE: "dashboard-alt",
@@ -174,6 +182,8 @@ function setupMockSupabase() {
 describe("HomeClient", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-apply the desktop default — jest.clearAllMocks() wipes implementations
+    mockUseIsMobile.mockReturnValue(false);
     setupMockSupabase();
   });
 
@@ -182,9 +192,18 @@ describe("HomeClient", () => {
   // ---------------------------------------------------------------------------
 
   describe("alts table", () => {
-    it("renders AltsTable component when alts exist", () => {
+    it("renders AltsTable component on desktop", () => {
+      mockUseIsMobile.mockReturnValue(false);
       render(<HomeClient {...getDefaultProps()} />);
       expect(screen.getByTestId("alts-table")).toBeInTheDocument();
+      expect(screen.queryByTestId("alts-cards")).not.toBeInTheDocument();
+    });
+
+    it("renders AltsCards (not AltsTable) on mobile", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      render(<HomeClient {...getDefaultProps()} />);
+      expect(screen.getByTestId("alts-cards")).toBeInTheDocument();
+      expect(screen.queryByTestId("alts-table")).not.toBeInTheDocument();
     });
 
     it("renders 'Your Alts' heading", () => {
