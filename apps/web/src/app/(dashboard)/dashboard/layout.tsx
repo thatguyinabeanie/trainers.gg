@@ -169,7 +169,7 @@ export default async function DashboardLayout({
   }));
 
   return (
-    <SidebarProvider className="max-h-svh overflow-hidden">
+    <SidebarProvider>
       <DashboardSidebar
         user={sidebarUser}
         communities={sidebarCommunities}
@@ -181,7 +181,7 @@ export default async function DashboardLayout({
         hasTeamBuilderAccess={teamBuilderAccess.access === true}
         variant="inset"
       />
-      <SidebarInset className="overflow-hidden">{children}</SidebarInset>
+      <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );
 }
