@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, Users } from "lucide-react";
 
-import type { AltStats, PlayerRating } from "@trainers/supabase";
+import { type AltStats, type PlayerRating } from "@trainers/supabase";
 
 import { useSupabase } from "@/lib/supabase";
+import { useIsClient } from "@/hooks/use-is-client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DASHBOARD_ALT_COOKIE,
   COOKIE_MAX_AGE,
@@ -15,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { AltsCards } from "./components/alts-cards";
 import { AltsTable } from "./components/alts-table";
 import { CreateAltForm } from "./components/create-alt-form";
 
@@ -50,6 +53,8 @@ export function HomeClient({
 }: DashboardHomeClientProps) {
   const router = useRouter();
   const supabase = useSupabase();
+  const isClient = useIsClient();
+  const isMobile = useIsMobile();
   const toastShown = useRef(false);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const [selectedAlt, setSelectedAlt] = useState<string | null>(
@@ -232,17 +237,44 @@ export function HomeClient({
         </div>
       )}
 
-      {/* Alts table with inline stats and expand/collapse */}
-      <AltsTable
-        alts={alts}
-        mainAltId={mainAltId}
-        bulkStats={initialBulkStats}
-        bulkRatings={initialBulkRatings}
-        selectedAltUsername={selectedAlt}
-        onAltSelect={handleAltSelect}
-        onRefresh={handleRefresh}
-        refreshKey={refreshKey}
-      />
+      {/* Render exactly one layout. `useIsMobile()` returns false during
+          SSR + initial hydration, so gating on `useIsClient()` first
+          avoids mounting the desktop `AltsTable` for mobile users
+          (which would briefly mount `TeamsSubTable` if a selected alt
+          is restored from the cookie and cause a visible layout shift).
+          The skeleton's height is derived from `alts.length` (rows are
+          ~42px, cards are larger on mobile but we don't know the viewport
+          yet pre-hydration) so swapping it for the real layout avoids
+          CLS. */}
+      {!isClient ? (
+        <div
+          aria-hidden
+          className="bg-muted/30 animate-pulse rounded-lg"
+          style={{ height: `${Math.max(alts.length, 1) * 42 + 32}px` }}
+        />
+      ) : isMobile ? (
+        <AltsCards
+          alts={alts}
+          mainAltId={mainAltId}
+          bulkStats={initialBulkStats}
+          bulkRatings={initialBulkRatings}
+          selectedAltUsername={selectedAlt}
+          onAltSelect={handleAltSelect}
+          onRefresh={handleRefresh}
+          refreshKey={refreshKey}
+        />
+      ) : (
+        <AltsTable
+          alts={alts}
+          mainAltId={mainAltId}
+          bulkStats={initialBulkStats}
+          bulkRatings={initialBulkRatings}
+          selectedAltUsername={selectedAlt}
+          onAltSelect={handleAltSelect}
+          onRefresh={handleRefresh}
+          refreshKey={refreshKey}
+        />
+      )}
     </div>
   );
 }

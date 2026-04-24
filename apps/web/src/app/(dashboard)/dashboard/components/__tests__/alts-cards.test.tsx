@@ -66,12 +66,9 @@ jest.mock("@/components/ui/avatar", () => ({
   AvatarImage: ({ src, alt }: { src: string; alt: string }) => (
     <img data-testid="avatar-image" src={src} alt={alt} />
   ),
-  AvatarFallback: ({
-    children,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) => <span data-testid="avatar-fallback">{children}</span>,
+  AvatarFallback: ({ children }: { children: React.ReactNode }) => (
+    <span data-testid="avatar-fallback">{children}</span>
+  ),
 }));
 
 // --- @/components/ui/badge ---
@@ -134,13 +131,13 @@ import { toast } from "sonner";
 
 import { type PlayerRating } from "@trainers/supabase";
 
-import { AltsTable, type AltsTableProps } from "../alts-table";
+import { AltsCards, type AltsCardsProps } from "../alts-cards";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-type Alt = AltsTableProps["alts"][number];
+type Alt = AltsCardsProps["alts"][number];
 
 function buildAlt(overrides: Partial<Alt> = {}): Alt {
   return {
@@ -153,8 +150,8 @@ function buildAlt(overrides: Partial<Alt> = {}): Alt {
 }
 
 function getDefaultProps(
-  overrides: Partial<AltsTableProps> = {}
-): AltsTableProps {
+  overrides: Partial<AltsCardsProps> = {}
+): AltsCardsProps {
   return {
     alts: [
       buildAlt({ id: 1, username: "ash_main" }),
@@ -175,51 +172,48 @@ function getDefaultProps(
 // Tests
 // ---------------------------------------------------------------------------
 
-describe("AltsTable", () => {
+describe("AltsCards", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    // Mock window.confirm for delete tests
+    jest.resetAllMocks();
+    // Safe defaults for async action mocks — tests can override per case
+    mockUpdateAltVisibilityAction.mockResolvedValue({ success: true });
+    mockDeleteAltAction.mockResolvedValue({ success: true });
     window.confirm = jest.fn(() => true);
   });
 
   // ── Rendering ───────────────────────────────────────────────────────────
 
-  it("renders table headers", () => {
-    render(<AltsTable {...getDefaultProps()} />);
-    expect(screen.getByText("Handle")).toBeInTheDocument();
-    expect(screen.getByText("Record")).toBeInTheDocument();
-    expect(screen.getByText("Win %")).toBeInTheDocument();
-    expect(screen.getByText("ELO")).toBeInTheDocument();
-    expect(screen.getByText("Events")).toBeInTheDocument();
-    expect(screen.getByText("Teams")).toBeInTheDocument();
-    expect(screen.getByText("Public")).toBeInTheDocument();
-  });
-
-  it("renders a row for each alt", () => {
-    render(<AltsTable {...getDefaultProps()} />);
+  it("renders a card for each alt", () => {
+    render(<AltsCards {...getDefaultProps()} />);
     expect(screen.getByText("ash_main")).toBeInTheDocument();
     expect(screen.getByText("ash_alt")).toBeInTheDocument();
   });
 
-  it("shows Main badge on the main alt", () => {
-    render(<AltsTable {...getDefaultProps()} />);
-    expect(screen.getByText("Main")).toBeInTheDocument();
-    // Only one Main badge
+  it("renders stat labels on each card", () => {
+    render(<AltsCards {...getDefaultProps()} />);
+    // 2 alts → 2 of each stat label
+    expect(screen.getAllByText("Record")).toHaveLength(2);
+    expect(screen.getAllByText("Win %")).toHaveLength(2);
+    expect(screen.getAllByText("ELO")).toHaveLength(2);
+    expect(screen.getAllByText("Events")).toHaveLength(2);
+  });
+
+  it("shows Main badge on the main alt only", () => {
+    render(<AltsCards {...getDefaultProps()} />);
     expect(screen.getAllByText("Main")).toHaveLength(1);
   });
 
   // ── Stats display ──────────────────────────────────────────────────────
 
-  it("displays dash values when no stats are provided", () => {
-    render(<AltsTable {...getDefaultProps()} />);
-    // Each alt should show "0-0" for record, "—" for win rate and rating
-    const records = screen.getAllByText("0-0");
-    expect(records.length).toBe(2);
+  it("displays zero values when no stats are provided", () => {
+    render(<AltsCards {...getDefaultProps()} />);
+    // Both cards show "0-0" for record
+    expect(screen.getAllByText("0-0")).toHaveLength(2);
   });
 
   it("displays stats when bulkStats are provided", () => {
     render(
-      <AltsTable
+      <AltsCards
         {...getDefaultProps({
           bulkStats: {
             1: { matchWins: 10, matchLosses: 5, tournamentCount: 3 },
@@ -236,7 +230,7 @@ describe("AltsTable", () => {
 
   it("displays rating when bulkRatings are provided", () => {
     render(
-      <AltsTable
+      <AltsCards
         {...getDefaultProps({
           bulkRatings: {
             // The component only reads `.rating`; stub the rest so tests
@@ -249,36 +243,43 @@ describe("AltsTable", () => {
     expect(screen.getByText("1500")).toBeInTheDocument();
   });
 
-  // ── Expand/collapse ────────────────────────────────────────────────────
-
-  it("calls onAltSelect when a row is clicked", () => {
-    const props = getDefaultProps();
-    render(<AltsTable {...props} />);
-    // Use the first row (ash_main) — click on the row itself
-    const firstRow = screen.getByText("ash_main").closest("tr")!;
-    fireEvent.click(firstRow);
-    expect(props.onAltSelect).toHaveBeenCalledWith("ash_main");
+  it("displays em-dash for missing rating", () => {
+    render(<AltsCards {...getDefaultProps()} />);
+    // Each alt with no rating + no record contributes two em-dashes
+    // (ELO and Win %). 2 alts × 2 em-dashes each = 4.
+    expect(screen.getAllByText("—")).toHaveLength(4);
   });
 
-  it("calls onAltSelect(null) when already-selected row is clicked", () => {
+  // ── Expand/collapse ────────────────────────────────────────────────────
+
+  it("calls onAltSelect when a card header is clicked", () => {
+    const props = getDefaultProps();
+    render(<AltsCards {...props} />);
+    const header = screen.getByText("ash_alt").closest('[role="button"]')!;
+    fireEvent.click(header);
+    expect(props.onAltSelect).toHaveBeenCalledWith("ash_alt");
+  });
+
+  it("calls onAltSelect(null) when already-selected card header is clicked", () => {
     const props = getDefaultProps({ selectedAltUsername: "ash_main" });
-    render(<AltsTable {...props} />);
+    render(<AltsCards {...props} />);
     // When expanded, TeamsSubTable mock also renders the username
-    // so use closest tr to click the correct row
-    const row = screen.getAllByText("ash_main")[0]!.closest("tr")!;
-    fireEvent.click(row);
+    const header = screen
+      .getAllByText("ash_main")[0]!
+      .closest('[role="button"]')!;
+    fireEvent.click(header);
     expect(props.onAltSelect).toHaveBeenCalledWith(null);
   });
 
-  it("renders TeamsSubTable when a row is expanded", () => {
+  it("renders TeamsSubTable when a card is expanded", () => {
     render(
-      <AltsTable {...getDefaultProps({ selectedAltUsername: "ash_alt" })} />
+      <AltsCards {...getDefaultProps({ selectedAltUsername: "ash_alt" })} />
     );
     expect(screen.getByTestId("teams-sub-table-2")).toBeInTheDocument();
   });
 
-  it("does not render TeamsSubTable when no row is expanded", () => {
-    render(<AltsTable {...getDefaultProps()} />);
+  it("does not render TeamsSubTable when no card is expanded", () => {
+    render(<AltsCards {...getDefaultProps()} />);
     expect(screen.queryByTestId("teams-sub-table-1")).not.toBeInTheDocument();
     expect(screen.queryByTestId("teams-sub-table-2")).not.toBeInTheDocument();
   });
@@ -287,69 +288,97 @@ describe("AltsTable", () => {
 
   it("toggles expand on Enter key", () => {
     const props = getDefaultProps();
-    render(<AltsTable {...props} />);
-    const row = screen.getByText("ash_alt").closest("tr")!;
-    fireEvent.keyDown(row, { key: "Enter" });
+    render(<AltsCards {...props} />);
+    const header = screen.getByText("ash_alt").closest('[role="button"]')!;
+    fireEvent.keyDown(header, { key: "Enter" });
     expect(props.onAltSelect).toHaveBeenCalledWith("ash_alt");
   });
 
   it("toggles expand on Space key", () => {
     const props = getDefaultProps();
-    render(<AltsTable {...props} />);
-    const row = screen.getByText("ash_alt").closest("tr")!;
-    fireEvent.keyDown(row, { key: " " });
+    render(<AltsCards {...props} />);
+    const header = screen.getByText("ash_alt").closest('[role="button"]')!;
+    fireEvent.keyDown(header, { key: " " });
     expect(props.onAltSelect).toHaveBeenCalledWith("ash_alt");
   });
 
   // ── Delete ──────────────────────────────────────────────────────────────
 
-  it("prevents deleting the main alt and shows error toast", () => {
-    // Expand a non-main alt so TeamsSubTable renders a delete button
-    render(
-      <AltsTable {...getDefaultProps({ selectedAltUsername: "ash_alt" })} />
-    );
-    // The mock TeamsSubTable renders a "Delete alt" button for non-main alts
-    // ash_alt is not the main alt (mainAltId=1, ash_alt id=2)
-    // But handleDelete checks if altId === mainAltId, so this should succeed
-    // To test the main alt protection, we need to expand the main alt
-  });
-
   it("does not render delete button for main alt in TeamsSubTable", () => {
     render(
-      <AltsTable {...getDefaultProps({ selectedAltUsername: "ash_main" })} />
+      <AltsCards {...getDefaultProps({ selectedAltUsername: "ash_main" })} />
     );
-    // The mock TeamsSubTable does not render delete button when isMain=true
     expect(screen.queryByTestId("delete-alt-btn")).not.toBeInTheDocument();
+  });
+
+  it("calls deleteAltAction when delete button is clicked on a non-main alt", async () => {
+    mockDeleteAltAction.mockResolvedValue({ success: true });
+    const props = getDefaultProps({ selectedAltUsername: "ash_alt" });
+    render(<AltsCards {...props} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("delete-alt-btn"));
+    });
+
+    expect(mockDeleteAltAction).toHaveBeenCalledWith(2);
+    expect(toast.success).toHaveBeenCalledWith("Alt deleted");
+    expect(props.onRefresh).toHaveBeenCalled();
+  });
+
+  it("shows error toast when delete fails", async () => {
+    mockDeleteAltAction.mockResolvedValue({
+      success: false,
+      error: "Network error",
+    });
+    render(
+      <AltsCards {...getDefaultProps({ selectedAltUsername: "ash_alt" })} />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("delete-alt-btn"));
+    });
+
+    expect(toast.error).toHaveBeenCalledWith("Network error");
+  });
+
+  it("skips delete when user cancels the confirm prompt", async () => {
+    window.confirm = jest.fn(() => false);
+    render(
+      <AltsCards {...getDefaultProps({ selectedAltUsername: "ash_alt" })} />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("delete-alt-btn"));
+    });
+
+    expect(mockDeleteAltAction).not.toHaveBeenCalled();
   });
 
   // ── Visibility toggle ──────────────────────────────────────────────────
 
-  it("renders public dot for each alt", () => {
-    render(<AltsTable {...getDefaultProps()} />);
-    // ash_main is public, ash_alt is private
-    const publicButton = screen.getByLabelText("Make private");
-    expect(publicButton).toBeInTheDocument();
-    const privateButton = screen.getByLabelText("Make public");
-    expect(privateButton).toBeInTheDocument();
+  it("renders public/private toggle for each alt", () => {
+    render(<AltsCards {...getDefaultProps()} />);
+    expect(screen.getByLabelText("Make private")).toBeInTheDocument();
+    expect(screen.getByLabelText("Make public")).toBeInTheDocument();
   });
 
-  it("calls updateAltVisibilityAction when visibility button is clicked", async () => {
+  it("calls updateAltVisibilityAction when toggle is clicked", async () => {
     mockUpdateAltVisibilityAction.mockResolvedValue({ success: true });
     const props = getDefaultProps();
-    render(<AltsTable {...props} />);
+    render(<AltsCards {...props} />);
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText("Make private"));
     });
 
-    // Alt 1 (ash_main) is public, clicking should toggle to false
+    // ash_main is id=1, is_public=true → clicking toggles to false
     expect(mockUpdateAltVisibilityAction).toHaveBeenCalledWith(1, false);
   });
 
   it("calls onRefresh after successful visibility toggle", async () => {
     mockUpdateAltVisibilityAction.mockResolvedValue({ success: true });
     const props = getDefaultProps();
-    render(<AltsTable {...props} />);
+    render(<AltsCards {...props} />);
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText("Make private"));
@@ -363,7 +392,7 @@ describe("AltsTable", () => {
       success: false,
       error: "Permission denied",
     });
-    render(<AltsTable {...getDefaultProps()} />);
+    render(<AltsCards {...getDefaultProps()} />);
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText("Make private"));
@@ -372,11 +401,9 @@ describe("AltsTable", () => {
     expect(toast.error).toHaveBeenCalledWith("Permission denied");
   });
 
-  it("shows default error message when visibility toggle fails without error", async () => {
-    mockUpdateAltVisibilityAction.mockResolvedValue({
-      success: false,
-    });
-    render(<AltsTable {...getDefaultProps()} />);
+  it("shows default error when visibility toggle fails without error message", async () => {
+    mockUpdateAltVisibilityAction.mockResolvedValue({ success: false });
+    render(<AltsCards {...getDefaultProps()} />);
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText("Make private"));
@@ -385,11 +412,54 @@ describe("AltsTable", () => {
     expect(toast.error).toHaveBeenCalledWith("Failed to update visibility");
   });
 
+  it("does not toggle expansion when the visibility toggle is clicked", () => {
+    const props = getDefaultProps();
+    render(<AltsCards {...props} />);
+
+    fireEvent.click(screen.getByLabelText("Make private"));
+
+    // Clicking the toggle should not bubble up to the header's onClick
+    expect(props.onAltSelect).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["Enter", "Enter"],
+    ["Space", " "],
+  ])(
+    "does not toggle expansion when %s is pressed on the visibility toggle",
+    (_name, key) => {
+      const props = getDefaultProps();
+      render(<AltsCards {...props} />);
+
+      // Keydown bubbles from the button to the header; the header guard
+      // should ignore events where currentTarget !== target.
+      fireEvent.keyDown(screen.getByLabelText("Make private"), { key });
+
+      expect(props.onAltSelect).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([
+    ["Enter", "Enter"],
+    ["Space", " "],
+  ])(
+    "does not toggle expansion when %s is pressed on the avatar trigger",
+    (_name, key) => {
+      const props = getDefaultProps();
+      render(<AltsCards {...props} />);
+
+      // First popover-trigger belongs to the first card's avatar
+      const triggers = screen.getAllByTestId("popover-trigger");
+      fireEvent.keyDown(triggers[0]!, { key });
+
+      expect(props.onAltSelect).not.toHaveBeenCalled();
+    }
+  );
+
   // ── Avatar display ──────────────────────────────────────────────────────
 
   it("shows avatar fallback with first character uppercase", () => {
-    render(<AltsTable {...getDefaultProps()} />);
-    // ash_main -> "A", ash_alt -> "A"
+    render(<AltsCards {...getDefaultProps()} />);
     const fallbacks = screen.getAllByTestId("avatar-fallback");
     expect(fallbacks[0]).toHaveTextContent("A");
     expect(fallbacks[1]).toHaveTextContent("A");
@@ -397,7 +467,7 @@ describe("AltsTable", () => {
 
   it("renders avatar image when avatar_url is provided", () => {
     render(
-      <AltsTable
+      <AltsCards
         {...getDefaultProps({
           alts: [
             buildAlt({

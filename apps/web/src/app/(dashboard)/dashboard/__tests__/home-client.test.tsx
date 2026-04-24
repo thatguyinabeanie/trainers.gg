@@ -16,6 +16,23 @@ jest.mock("@/lib/supabase", () => ({
   })),
 }));
 
+// --- @/hooks/use-mobile ---
+// Default to desktop (false) so AltsTable renders; tests that want the
+// mobile view can override via mockUseIsMobile.mockReturnValue(true).
+const mockUseIsMobile = jest.fn(() => false);
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
+
+// --- @/hooks/use-is-client ---
+// Default to true (post-hydration) so the real layout renders in tests.
+// The production code renders a skeleton until hydration; tests skip that
+// path by asserting directly against the hydrated output.
+const mockUseIsClient = jest.fn(() => true);
+jest.mock("@/hooks/use-is-client", () => ({
+  useIsClient: () => mockUseIsClient(),
+}));
+
 // --- @/components/dashboard/sidebar-helpers ---
 jest.mock("@/components/dashboard/sidebar-helpers", () => ({
   DASHBOARD_ALT_COOKIE: "dashboard-alt",
@@ -27,6 +44,12 @@ jest.mock("@/components/dashboard/sidebar-helpers", () => ({
 jest.mock("../components/alts-table", () => ({
   AltsTable: (props: { alts: unknown[] }) => (
     <div data-testid="alts-table" data-count={props.alts?.length ?? 0} />
+  ),
+}));
+
+jest.mock("../components/alts-cards", () => ({
+  AltsCards: (props: { alts: unknown[] }) => (
+    <div data-testid="alts-cards" data-count={props.alts?.length ?? 0} />
   ),
 }));
 
@@ -168,6 +191,10 @@ function setupMockSupabase() {
 describe("HomeClient", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // clearAllMocks only wipes call history — re-apply defaults so each
+    // test starts from a known return value.
+    mockUseIsMobile.mockReturnValue(false);
+    mockUseIsClient.mockReturnValue(true);
     setupMockSupabase();
   });
 
@@ -176,9 +203,18 @@ describe("HomeClient", () => {
   // ---------------------------------------------------------------------------
 
   describe("alts table", () => {
-    it("renders AltsTable component when alts exist", () => {
+    it("renders AltsTable component on desktop", () => {
+      mockUseIsMobile.mockReturnValue(false);
       render(<HomeClient {...getDefaultProps()} />);
       expect(screen.getByTestId("alts-table")).toBeInTheDocument();
+      expect(screen.queryByTestId("alts-cards")).not.toBeInTheDocument();
+    });
+
+    it("renders AltsCards (not AltsTable) on mobile", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      render(<HomeClient {...getDefaultProps()} />);
+      expect(screen.getByTestId("alts-cards")).toBeInTheDocument();
+      expect(screen.queryByTestId("alts-table")).not.toBeInTheDocument();
     });
 
     it("renders 'Your Alts' heading", () => {
@@ -189,6 +225,13 @@ describe("HomeClient", () => {
     it("renders empty state when no alts", () => {
       render(<HomeClient {...getDefaultProps({ alts: [] })} />);
       expect(screen.getByText("No alts yet")).toBeInTheDocument();
+    });
+
+    it("renders skeleton (neither AltsTable nor AltsCards) during SSR", () => {
+      mockUseIsClient.mockReturnValue(false);
+      render(<HomeClient {...getDefaultProps()} />);
+      expect(screen.queryByTestId("alts-table")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("alts-cards")).not.toBeInTheDocument();
     });
   });
 
