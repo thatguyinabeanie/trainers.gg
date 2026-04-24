@@ -248,7 +248,7 @@ export function AltsCards({
         onAltSelect(null);
         onRefresh();
       } else {
-        toast.error(result.error);
+        toast.error(result.error ?? "Failed to delete alt");
       }
     });
   };

@@ -277,7 +277,7 @@ export function AltsTable({
         onAltSelect(null);
         onRefresh();
       } else {
-        toast.error(result.error);
+        toast.error(result.error ?? "Failed to delete alt");
       }
     });
   };

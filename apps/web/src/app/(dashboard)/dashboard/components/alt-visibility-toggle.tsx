@@ -51,6 +51,7 @@ export function AltVisibilityToggle({
 
   return (
     <button
+      type="button"
       onClick={(e) => {
         e.stopPropagation();
         if (isPending) return;

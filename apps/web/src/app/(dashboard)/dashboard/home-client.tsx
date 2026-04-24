@@ -242,11 +242,15 @@ export function HomeClient({
           avoids mounting the desktop `AltsTable` for mobile users
           (which would briefly mount `TeamsSubTable` if a selected alt
           is restored from the cookie and cause a visible layout shift).
-          The skeleton keeps the viewport stable until the hook settles. */}
+          The skeleton's height is derived from `alts.length` (rows are
+          ~42px, cards are larger on mobile but we don't know the viewport
+          yet pre-hydration) so swapping it for the real layout avoids
+          CLS. */}
       {!isClient ? (
         <div
           aria-hidden
-          className="bg-muted/30 h-40 animate-pulse rounded-lg"
+          className="bg-muted/30 animate-pulse rounded-lg"
+          style={{ height: `${Math.max(alts.length, 1) * 42 + 32}px` }}
         />
       ) : isMobile ? (
         <AltsCards

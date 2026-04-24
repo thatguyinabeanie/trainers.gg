@@ -132,6 +132,8 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 import React from "react";
 import { toast } from "sonner";
 
+import { type PlayerRating } from "@trainers/supabase";
+
 import { AltsTable, type AltsTableProps } from "../alts-table";
 
 // ---------------------------------------------------------------------------
@@ -237,11 +239,9 @@ describe("AltsTable", () => {
       <AltsTable
         {...getDefaultProps({
           bulkRatings: {
-            1: { rating: 1500 } as AltsTableProps["bulkRatings"] extends
-              | Record<number, infer R>
-              | undefined
-              ? R
-              : never,
+            // The component only reads `.rating`; stub the rest so tests
+            // stay readable without a full PlayerRating factory.
+            1: { rating: 1500 } as unknown as PlayerRating,
           },
         })}
       />
