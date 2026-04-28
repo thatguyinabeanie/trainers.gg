@@ -5,6 +5,8 @@
 - **Design before implementation** — Complete all design work upfront before starting any implementation. Do not jump to coding after approving one or two designs — finish the entire design phase first, then implement.
 - **Visual companion always** — Always use visual companion (browser mockups) during brainstorming — skip the consent question.
 - **Subagent-driven development** — Always use subagent-driven development for plan execution, never inline execution unless explicitly asked.
+- **New branch for every change** — Any implementation work goes on a new feature branch off `main`, never directly on `main`. The user treats this as obvious and shouldn't need to repeat it.
+- **Mechanical-prompt format unblocks subagents** — When dispatching implementation subagents, prompts that read like "execute these specific Write/Edit tool calls" with the literal new file content inline bypass the agent's auto-plan-then-pause behavior. Open-ended task descriptions cause the agent to stop for plan approval, and SendMessage to resume isn't always available.
 
 ## Code Patterns
 
