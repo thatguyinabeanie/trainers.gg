@@ -555,7 +555,7 @@ function StaffMobileRow({
                 <DropdownMenuItem
                   key={group.id}
                   disabled={!canMoveHere || isCurrent}
-                  onSelect={() => {
+                  onClick={() => {
                     if (!canMoveHere || isCurrent) return;
                     void onMoveTo(member, { type: "group", group });
                   }}
@@ -571,7 +571,7 @@ function StaffMobileRow({
             })}
             {currentGroupId !== null && canManageMember && (
               <DropdownMenuItem
-                onSelect={() => {
+                onClick={() => {
                   void onMoveTo(member, { type: "unassigned" });
                 }}
               >
@@ -583,7 +583,7 @@ function StaffMobileRow({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onSelect={() => onRemoveMember(member)}
+                  onClick={() => onRemoveMember(member)}
                 >
                   Remove from staff
                 </DropdownMenuItem>
@@ -801,111 +801,17 @@ export function StaffClient({
     const currentGroupId = member.group?.id?.toString() ?? UNASSIGNED_GROUP_ID;
     if (currentGroupId === targetGroupId) return;
 
-    // Dropping onto the unassigned panel → unassign
+    // Delegate the move to the shared handler so desktop drag and mobile
+    // tap-to-assign go through identical permission, optimistic-update,
+    // server-action, and toast logic.
     if (targetGroupId === UNASSIGNED_GROUP_ID) {
-      // Only allow unassign if user can manage the member's current group
-      const currentRole = member.role?.name ?? null;
-      if (!canManageGroup(currentUserRole ?? null, isOwner, currentRole)) {
-        toast.error("You don't have permission to unassign this staff member");
-        return;
-      }
-
-      // Optimistic update
-      setOptimisticMoves((prev) => {
-        const next = new Map(prev);
-        next.set(member.user_id, { group: null });
-        return next;
-      });
-
-      setIsMoving(true);
-      try {
-        const result = await unassignStaffAction(
-          communityId,
-          member.user_id,
-          communitySlug
-        );
-
-        if (result.success) {
-          const name = getDisplayName(
-            member.user?.first_name ?? null,
-            member.user?.last_name ?? null,
-            member.user?.username ?? null
-          );
-          toast.success(`${name} moved to unassigned`);
-          handleSuccess();
-        } else {
-          setOptimisticMoves((prev) => {
-            const next = new Map(prev);
-            next.delete(member.user_id);
-            return next;
-          });
-          toast.error(result.error);
-        }
-      } catch {
-        setOptimisticMoves((prev) => {
-          const next = new Map(prev);
-          next.delete(member.user_id);
-          return next;
-        });
-        toast.error("Failed to unassign staff member");
-      } finally {
-        setIsMoving(false);
-      }
+      await handleMoveTo(member, { type: "unassigned" });
       return;
     }
 
-    // Dropping onto a role group → assign
     const targetGroup = groups.find((g) => g.id.toString() === targetGroupId);
     if (!targetGroup) return;
-
-    const targetRole = targetGroup.role?.name ?? null;
-    if (!canManageGroup(currentUserRole ?? null, isOwner, targetRole)) {
-      toast.error("You don't have permission to assign staff to this group");
-      return;
-    }
-
-    // Optimistic update
-    setOptimisticMoves((prev) => {
-      const next = new Map(prev);
-      next.set(member.user_id, { group: targetGroup });
-      return next;
-    });
-
-    setIsMoving(true);
-    try {
-      const result = await moveStaffToGroup(
-        communityId,
-        member.user_id,
-        targetGroup.id,
-        communitySlug
-      );
-
-      if (result.success) {
-        const name = getDisplayName(
-          member.user?.first_name ?? null,
-          member.user?.last_name ?? null,
-          member.user?.username ?? null
-        );
-        toast.success(`${name} moved to ${targetGroup.name}`);
-        handleSuccess();
-      } else {
-        setOptimisticMoves((prev) => {
-          const next = new Map(prev);
-          next.delete(member.user_id);
-          return next;
-        });
-        toast.error(result.error);
-      }
-    } catch {
-      setOptimisticMoves((prev) => {
-        const next = new Map(prev);
-        next.delete(member.user_id);
-        return next;
-      });
-      toast.error("Failed to move staff member");
-    } finally {
-      setIsMoving(false);
-    }
+    await handleMoveTo(member, { type: "group", group: targetGroup });
   };
 
   const handleDragCancel = () => {
@@ -993,45 +899,11 @@ export function StaffClient({
     }
   };
 
-  // Handle unassign via ✕ button in a role group
+  // Handle unassign via ✕ button in a role group — delegates to the shared
+  // move handler so it goes through identical permission, optimistic-update,
+  // server-action, and toast logic as the drag-end and mobile-dropdown paths.
   const handleUnassignMember = async (member: StaffWithRole) => {
-    setOptimisticMoves((prev) => {
-      const next = new Map(prev);
-      next.set(member.user_id, { group: null });
-      return next;
-    });
-
-    try {
-      const result = await unassignStaffAction(
-        communityId,
-        member.user_id,
-        communitySlug
-      );
-
-      if (result.success) {
-        const name = getDisplayName(
-          member.user?.first_name ?? null,
-          member.user?.last_name ?? null,
-          member.user?.username ?? null
-        );
-        toast.success(`${name} moved to unassigned`);
-        handleSuccess();
-      } else {
-        setOptimisticMoves((prev) => {
-          const next = new Map(prev);
-          next.delete(member.user_id);
-          return next;
-        });
-        toast.error(result.error);
-      }
-    } catch {
-      setOptimisticMoves((prev) => {
-        const next = new Map(prev);
-        next.delete(member.user_id);
-        return next;
-      });
-      toast.error("Failed to unassign staff member");
-    }
+    await handleMoveTo(member, { type: "unassigned" });
   };
 
   const canDragAny =

@@ -2,7 +2,10 @@
 
 import { X } from "lucide-react";
 
-import { type DiscordChannelMapping, type DiscordChannelEventType } from "@trainers/supabase";
+import {
+  type DiscordChannelMapping,
+  type DiscordChannelEventType,
+} from "@trainers/supabase";
 
 import { Button } from "@/components/ui/button";
 import {

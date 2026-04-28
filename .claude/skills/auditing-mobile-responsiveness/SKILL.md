@@ -98,7 +98,7 @@ Static probes catch most issues but not all. Look for these visual patterns:
 
 ### 5 — Catalogue findings by severity
 
-```
+```text
 Critical  — blocks usability (page-level overflow; broken drag-only UX; tap target <30px)
 Important — degrades experience but works (cramped grid; sub-40 tap target on infrequent action)
 Polish    — nice-to-have (text-size bump on small cards; padding tightening)

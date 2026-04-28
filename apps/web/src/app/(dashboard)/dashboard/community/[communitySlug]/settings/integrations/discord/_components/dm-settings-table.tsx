@@ -163,7 +163,7 @@ function DmSettingsTableInner({
         <TableRow>
           <TableHead>Event</TableHead>
           <TableHead>Delivery mode</TableHead>
-          <TableHead>Fallback channel</TableHead>
+          <TableHead>Channel</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

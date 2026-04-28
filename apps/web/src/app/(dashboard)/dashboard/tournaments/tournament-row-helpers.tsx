@@ -161,7 +161,7 @@ export function OpponentSchedule({ entry: _entry }: OpponentScheduleProps) {
   // Placeholder — round-by-round match data is not in the current query.
   // When match data is available, render round rows here.
   return (
-    <div className="bg-background rounded-lg border">
+    <div className="bg-background/60 rounded-lg">
       <div className="overflow-x-auto">
         <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
           <colgroup>
@@ -171,19 +171,31 @@ export function OpponentSchedule({ entry: _entry }: OpponentScheduleProps) {
             <col />
           </colgroup>
           <thead>
-            <tr className="border-b">
-              <td className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase">
+            <tr className="bg-muted/30">
+              <th
+                scope="col"
+                className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase"
+              >
                 RND
-              </td>
-              <td className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase">
+              </th>
+              <th
+                scope="col"
+                className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase"
+              >
                 SCORE
-              </td>
-              <td className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase">
+              </th>
+              <th
+                scope="col"
+                className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase"
+              >
                 MATCHUP
-              </td>
-              <td className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase">
+              </th>
+              <th
+                scope="col"
+                className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase"
+              >
                 OPP TEAM
-              </td>
+              </th>
             </tr>
           </thead>
           <tbody>

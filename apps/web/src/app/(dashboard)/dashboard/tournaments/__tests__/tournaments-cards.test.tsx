@@ -136,49 +136,53 @@ describe("TournamentsCards", () => {
     );
   });
 
-  it("renders format string when present", () => {
+  it.each<{
+    name: string;
+    overrides: Partial<Entry>;
+    expected: string | RegExp;
+    matcher: "single" | "multi-dash";
+  }>([
+    {
+      name: "renders format string when present",
+      overrides: { format: "vgc-2024" },
+      expected: "vgc-2024",
+      matcher: "single",
+    },
+    {
+      name: "renders em-dash when format is null",
+      overrides: { format: null },
+      expected: "—",
+      matcher: "multi-dash",
+    },
+    {
+      name: "renders placement with trophy for 1st place",
+      overrides: { placement: 1 },
+      expected: /1st 🏆/,
+      matcher: "single",
+    },
+    {
+      name: "renders ordinal placement for non-first finishes",
+      overrides: { placement: 3 },
+      expected: "3rd",
+      matcher: "single",
+    },
+    {
+      name: "renders em-dash when placement is null",
+      overrides: { placement: null },
+      expected: "—",
+      matcher: "multi-dash",
+    },
+  ])("$name", ({ overrides, expected, matcher }) => {
     render(
       <TournamentsCards
-        {...getDefaultProps({ entries: [makeEntry({ format: "vgc-2024" })] })}
+        {...getDefaultProps({ entries: [makeEntry(overrides)] })}
       />
     );
-    expect(screen.getByText("vgc-2024")).toBeInTheDocument();
-  });
-
-  it("renders em-dash when format is null", () => {
-    render(
-      <TournamentsCards
-        {...getDefaultProps({ entries: [makeEntry({ format: null })] })}
-      />
-    );
-    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("renders placement with trophy for 1st place", () => {
-    render(
-      <TournamentsCards
-        {...getDefaultProps({ entries: [makeEntry({ placement: 1 })] })}
-      />
-    );
-    expect(screen.getByText(/1st 🏆/)).toBeInTheDocument();
-  });
-
-  it("renders ordinal placement for non-first finishes", () => {
-    render(
-      <TournamentsCards
-        {...getDefaultProps({ entries: [makeEntry({ placement: 3 })] })}
-      />
-    );
-    expect(screen.getByText("3rd")).toBeInTheDocument();
-  });
-
-  it("renders em-dash when placement is null", () => {
-    render(
-      <TournamentsCards
-        {...getDefaultProps({ entries: [makeEntry({ placement: null })] })}
-      />
-    );
-    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(1);
+    if (matcher === "multi-dash") {
+      expect(screen.getAllByText(expected).length).toBeGreaterThanOrEqual(1);
+    } else {
+      expect(screen.getByText(expected)).toBeInTheDocument();
+    }
   });
 
   it("renders W-L record formatted correctly", () => {

@@ -333,16 +333,23 @@ export function ChannelMappingTable({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Empty state — shown before any mapping exists, outside the responsive conditional */}
-        {mappings.length === 0 && unmappedEventTypes.length === 4 && (
-          <p className="text-muted-foreground py-4 text-center text-sm">
-            Add your first channel mapping below to start getting tournament
-            announcements in Discord.
-          </p>
-        )}
+        {/* Empty state — shown before any mapping exists. Derive the empty
+            condition from the source constant so it stays correct when new
+            event types are added. */}
+        {mappings.length === 0 &&
+          unmappedEventTypes.length === ALL_CHANNEL_EVENT_TYPES.length && (
+            <p className="text-muted-foreground py-4 text-center text-sm">
+              Add your first channel mapping below to start getting tournament
+              announcements in Discord.
+            </p>
+          )}
 
-        {/* Responsive table/cards — only shown when at least one mapping exists */}
-        {mappings.length > 0 &&
+        {/* Responsive table/cards.
+            On mobile, render the cards even when mappings.length === 0 so
+            ChannelMappingCards' inline add-form is reachable for the first
+            mapping. On desktop, the empty state + add-form below covers the
+            zero-mapping case so we skip the empty table render. */}
+        {(mappings.length > 0 || (isClient && isMobile)) &&
           (!isClient ? (
             <div
               aria-hidden
@@ -355,8 +362,8 @@ export function ChannelMappingTable({
             <ChannelMappingTableInner {...innerProps} />
           ))}
 
-        {/* Add-row form — rendered outside the responsive conditional so it always appears.
-            ChannelMappingCards renders its own add form inline; hide here on mobile. */}
+        {/* Add-row form — rendered outside the responsive conditional for
+            desktop only; ChannelMappingCards renders its own add form inline. */}
         {unmappedEventTypes.length > 0 && isClient && !isMobile && (
           <div
             className={cn(

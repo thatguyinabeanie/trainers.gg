@@ -51,7 +51,7 @@ export function StatsClient() {
 
         {/* Alt Selector */}
         {alts && alts.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
             <span className="text-muted-foreground text-sm">Viewing:</span>
             <Select
               value={selectedAltId?.toString() || "all"}
