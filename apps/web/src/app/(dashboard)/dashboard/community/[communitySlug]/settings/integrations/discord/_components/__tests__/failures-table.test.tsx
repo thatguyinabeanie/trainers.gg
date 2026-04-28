@@ -2,6 +2,25 @@
  * Tests for FailuresTable
  */
 
+const mockUseIsMobile = jest.fn();
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
+
+const mockUseIsClient = jest.fn();
+jest.mock("@/hooks/use-is-client", () => ({
+  useIsClient: () => mockUseIsClient(),
+}));
+
+jest.mock("../failures-cards", () => ({
+  FailuresCards: (props: { visibleRows?: { kind: string; data: { id: number } }[] }) => (
+    <div
+      data-testid="failures-cards"
+      data-row-count={props.visibleRows?.length ?? 0}
+    />
+  ),
+}));
+
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -77,6 +96,8 @@ const defaultProps = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockUseIsClient.mockReturnValue(true);
+  mockUseIsMobile.mockReturnValue(false);
   mockRetryNotificationAction.mockResolvedValue({
     success: true,
     data: undefined,
@@ -224,6 +245,32 @@ describe("FailuresTable", () => {
       });
       // Row should still be present (not removed)
       expect(screen.getByText("CHANNEL")).toBeInTheDocument();
+    });
+  });
+
+  describe("conditional mount", () => {
+    it("renders skeleton when isClient is false", () => {
+      mockUseIsClient.mockReturnValue(false);
+      mockUseIsMobile.mockReturnValue(false);
+      render(<FailuresTable {...defaultProps} />);
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("failures-cards")).not.toBeInTheDocument();
+    });
+
+    it("renders desktop table when isClient is true and isMobile is false", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(false);
+      render(<FailuresTable {...defaultProps} />);
+      expect(screen.getByRole("table")).toBeInTheDocument();
+      expect(screen.queryByTestId("failures-cards")).not.toBeInTheDocument();
+    });
+
+    it("renders mobile cards when isClient is true and isMobile is true", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(true);
+      render(<FailuresTable {...defaultProps} />);
+      expect(screen.getByTestId("failures-cards")).toBeInTheDocument();
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
     });
   });
 });

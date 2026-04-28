@@ -88,13 +88,15 @@ export function TournamentsListClient({
     <div className="space-y-6">
       {/* Status Tabs */}
       <Tabs value={currentStatus} onValueChange={handleStatusChange}>
-        <TabsList>
-          {statusTabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+          <TabsList>
+            {statusTabs.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value}>
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
       </Tabs>
 
       {/* Content */}

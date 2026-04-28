@@ -18,7 +18,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, children }: PageHeaderProps) {
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-      <SidebarTrigger className="-ml-1" />
+      <SidebarTrigger className="-ml-1 size-10 sm:size-7" />
       <Separator
         orientation="vertical"
         className="mx-1 !h-4 !self-center !bg-neutral-300 dark:!bg-neutral-600"

@@ -105,8 +105,15 @@ jest.mock("lucide-react", () => ({
   Loader2: () => <svg data-testid="icon-loader" />,
   Crown: () => <svg data-testid="icon-crown" />,
   GripVertical: () => <svg data-testid="icon-grip" />,
+  MoreHorizontal: () => <svg data-testid="icon-more" />,
   Search: () => <svg data-testid="icon-search" />,
   Users: () => <svg data-testid="icon-users" />,
+}));
+
+// --- @/hooks/use-mobile ---
+const mockUseIsMobile = jest.fn();
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
 }));
 
 import React from "react";
@@ -182,6 +189,8 @@ function setupQuery(data: StaffWithRole[] | undefined, isLoading = false) {
 describe("StaffClient", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default to desktop so existing drag-and-drop tests exercise their path
+    mockUseIsMobile.mockReturnValue(false);
   });
 
   // ---------------------------------------------------------------------------
@@ -490,6 +499,52 @@ describe("StaffClient", () => {
       } else {
         expect(hint).not.toBeInTheDocument();
       }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mobile vs desktop conditional rendering
+  // ---------------------------------------------------------------------------
+
+  describe("mobile vs desktop", () => {
+    it("renders the desktop drag context when not on mobile", () => {
+      mockUseIsMobile.mockReturnValue(false);
+      setupQuery([makeStaffMember()]);
+      render(<StaffClient {...defaultProps} groups={[makeGroup()]} />);
+      expect(screen.getByTestId("dnd-context")).toBeInTheDocument();
+    });
+
+    it("does not render the desktop drag context on mobile", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      setupQuery([makeStaffMember()]);
+      render(<StaffClient {...defaultProps} groups={[makeGroup()]} />);
+      expect(screen.queryByTestId("dnd-context")).not.toBeInTheDocument();
+    });
+
+    it("shows the mobile-specific tap-to-change hint on mobile", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      setupQuery([makeStaffMember()]);
+      render(
+        <StaffClient
+          {...defaultProps}
+          isOwner={false}
+          currentUserRole="org_admin"
+        />
+      );
+      expect(
+        screen.getByText("Tap a member to change their role")
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText("Drag staff between columns to assign roles")
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders the staff member name in the mobile section list", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      setupQuery([makeStaffMember({ user_id: "u1" })]);
+      render(<StaffClient {...defaultProps} groups={[makeGroup()]} />);
+      // The member's display name should still render in the mobile layout
+      expect(screen.getByText("Ash Ketchum")).toBeInTheDocument();
     });
   });
 });

@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Trophy, ChevronDown, ChevronRight, Loader2, X } from "lucide-react";
+
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getUserTournamentHistory } from "@trainers/supabase";
-import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import type { TypedSupabaseClient } from "@trainers/supabase";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -18,192 +16,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useIsClient } from "@/hooks/use-is-client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   formatDate,
   ordinalSuffix,
   computeSummaryStats,
 } from "./tournament-helpers";
+import {
+  type TournamentEntry,
+  type TournamentBadgeStatus,
+  OpponentSchedule,
+  PlaceCell,
+  SpriteRow,
+  TournamentStatusBadge,
+} from "./tournament-row-helpers";
+import { TournamentsCards } from "./tournaments-cards";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type TournamentEntry = Awaited<
-  ReturnType<typeof getUserTournamentHistory>
->[number];
-
 type FilterChip = "all" | "live" | "upcoming" | "completed";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function spriteUrl(species: string): string {
-  return getPokemonSprite(species).url;
-}
-
-// ---------------------------------------------------------------------------
-// Status badge for the tournament lifecycle
-// The existing StatusBadge doesn't cover "live" / "late_reg" labels we need,
-// so we inline a small variant here.
-// ---------------------------------------------------------------------------
-
-type TournamentBadgeStatus = "live" | "registered" | "late_reg" | "completed";
-
-const badgeConfig: Record<
-  TournamentBadgeStatus,
-  { label: string; className: string }
-> = {
-  live: {
-    label: "Live",
-    className:
-      "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
-  },
-  registered: {
-    label: "Registered",
-    className:
-      "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/25",
-  },
-  late_reg: {
-    label: "Late Reg",
-    className:
-      "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
-  },
-  completed: {
-    label: "Completed",
-    className:
-      "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
-  },
-};
-
-function TournamentStatusBadge({ status }: { status: TournamentBadgeStatus }) {
-  const config = badgeConfig[status];
-  return (
-    <Badge variant="outline" className={cn("text-[10px]", config.className)}>
-      {config.label}
-    </Badge>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Pokemon sprite row (24px, gen5)
-// ---------------------------------------------------------------------------
-
-function SpriteRow({
-  species,
-  size = 24,
-  opacity,
-}: {
-  species: string[];
-  size?: number;
-  opacity?: number;
-}) {
-  if (species.length === 0) {
-    return <span className="text-muted-foreground text-xs">—</span>;
-  }
-  return (
-    <div className="flex">
-      {species.map((s, i) => (
-        <Image
-          key={i}
-          src={spriteUrl(s)}
-          alt={s}
-          width={size}
-          height={size}
-          className="object-contain"
-          style={{ imageRendering: "pixelated", opacity }}
-          unoptimized
-        />
-      ))}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Expanded opponent schedule sub-table
-// ---------------------------------------------------------------------------
-
-function OpponentSchedule({ entry: _entry }: { entry: TournamentEntry }) {
-  // Placeholder — round-by-round match data is not in the current query.
-  // When match data is available, render round rows here.
-  // The existing getUserTournamentHistory does not expose per-round match results.
-  return (
-    <div className="bg-background rounded-lg border">
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
-          <colgroup>
-            <col style={{ width: 36 }} />
-            <col style={{ width: 60 }} />
-            <col style={{ width: "40%" }} />
-            <col />
-          </colgroup>
-          <thead>
-            <tr className="border-b">
-              <td className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase">
-                RND
-              </td>
-              <td className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase">
-                SCORE
-              </td>
-              <td className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase">
-                MATCHUP
-              </td>
-              <td className="text-muted-foreground px-2.5 py-1 text-[10px] font-medium tracking-wider uppercase">
-                OPP TEAM
-              </td>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td
-                colSpan={4}
-                className="text-muted-foreground px-2.5 py-4 text-center text-xs"
-              >
-                Round-by-round data not yet available
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Place cell — teal + trophy for 1st
-// ---------------------------------------------------------------------------
-
-function PlaceCell({
-  placement,
-  playerCount,
-}: {
-  placement: number | null;
-  playerCount?: number | null;
-}) {
-  if (placement === null) {
-    return <span className="text-muted-foreground font-mono text-xs">—</span>;
-  }
-
-  const label = ordinalSuffix(placement);
-  const isFirst = placement === 1;
-
-  return (
-    <span
-      className={cn(
-        "font-mono text-xs font-semibold",
-        isFirst ? "text-teal-600 dark:text-teal-400" : "text-foreground"
-      )}
-    >
-      {isFirst ? `${label} 🏆` : label}
-      {playerCount != null && (
-        <span className="text-muted-foreground font-normal">
-          {" "}
-          / {playerCount}
-        </span>
-      )}
-    </span>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Tournament table row (collapsed + expanded)
@@ -453,6 +287,9 @@ export function TournamentsClient({
   const [selectedFormat, setSelectedFormat] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
+  const isClient = useIsClient();
+  const isMobile = useIsMobile();
+
   const {
     data: history,
     isLoading,
@@ -529,7 +366,7 @@ export function TournamentsClient({
   return (
     <div className="flex flex-col gap-4">
       {/* Heading + filters row */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold tracking-tight">Tournaments</h1>
         <div className="flex items-center gap-2">
           {/* Alt dropdown */}
@@ -537,7 +374,7 @@ export function TournamentsClient({
             value={selectedAlt}
             onValueChange={(v) => setSelectedAlt(v ?? "all")}
           >
-            <SelectTrigger className="h-8 w-[140px] text-xs">
+            <SelectTrigger className="h-9 w-full text-xs sm:h-8 sm:w-[140px]">
               <SelectValue placeholder="All alts" />
             </SelectTrigger>
             <SelectContent>
@@ -554,7 +391,7 @@ export function TournamentsClient({
           {selectedAlt !== "all" && (
             <button
               onClick={() => setSelectedAlt("all")}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground flex size-10 items-center justify-center sm:size-7"
               aria-label="Clear alt filter"
             >
               <X className="size-3.5" />
@@ -566,7 +403,7 @@ export function TournamentsClient({
             value={selectedFormat}
             onValueChange={(v) => setSelectedFormat(v ?? "all")}
           >
-            <SelectTrigger className="h-8 w-[140px] text-xs">
+            <SelectTrigger className="h-9 w-full text-xs sm:h-8 sm:w-[140px]">
               <SelectValue placeholder="All formats" />
             </SelectTrigger>
             <SelectContent>
@@ -583,7 +420,7 @@ export function TournamentsClient({
           {selectedFormat !== "all" && (
             <button
               onClick={() => setSelectedFormat("all")}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground flex size-10 items-center justify-center sm:size-7"
               aria-label="Clear format filter"
             >
               <X className="size-3.5" />
@@ -602,13 +439,27 @@ export function TournamentsClient({
       {/* Summary stats — respond to alt/format filter */}
       <SummaryStats entries={visibleEntries} />
 
-      {/* Empty state or table */}
+      {/* Empty state, skeleton, mobile cards, or desktop table */}
       {entries.length === 0 ? (
         <EmptyState />
       ) : visibleEntries.length === 0 ? (
         <div className="text-muted-foreground rounded-lg border border-dashed py-12 text-center text-sm">
           No tournaments match the current filters.
         </div>
+      ) : !isClient ? (
+        <div
+          aria-hidden
+          className="bg-muted/30 animate-pulse rounded-lg"
+          style={{
+            height: `${Math.max(visibleEntries.length, 3) * 52 + 32}px`,
+          }}
+        />
+      ) : isMobile ? (
+        <TournamentsCards
+          entries={visibleEntries}
+          expandedId={expandedId}
+          onToggle={handleToggle}
+        />
       ) : (
         <div className="overflow-hidden rounded-lg border">
           <div className="overflow-x-auto">

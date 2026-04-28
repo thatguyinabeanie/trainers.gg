@@ -40,9 +40,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { type GuildChannel } from "@/lib/discord/guild-cache";
+import { useIsClient } from "@/hooks/use-is-client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 import { PickerRefreshButton } from "./picker-refresh-button";
+import { ChannelMappingCards } from "./channel-mapping-cards";
 
 // =============================================================================
 // Types
@@ -55,11 +58,26 @@ interface ChannelMappingTableProps {
   communityId: number;
 }
 
+export interface ChannelMappingInnerProps {
+  mappings: DiscordChannelMapping[];
+  guildChannels: GuildChannel[];
+  serverId: number;
+  unmappedEventTypes: DiscordChannelEventType[];
+  addEventType: DiscordChannelEventType | "";
+  addChannelId: string;
+  addPending: boolean;
+  onChannelChange: (mappingId: number, newChannelId: string) => void;
+  onDelete: (mappingId: number) => void;
+  onAddEventTypeChange: (v: DiscordChannelEventType) => void;
+  onAddChannelIdChange: (val: string) => void;
+  onAdd: () => void;
+}
+
 // =============================================================================
 // Constants
 // =============================================================================
 
-const CHANNEL_EVENT_LABELS: Record<
+export const CHANNEL_EVENT_LABELS: Record<
   DiscordChannelEventType,
   { label: string; description: string }
 > = {
@@ -82,6 +100,93 @@ const CHANNEL_EVENT_LABELS: Record<
 };
 
 // =============================================================================
+// Inner table (desktop)
+// =============================================================================
+
+function ChannelMappingTableInner({
+  mappings,
+  guildChannels,
+  serverId,
+  onChannelChange,
+  onDelete,
+}: ChannelMappingInnerProps) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Event</TableHead>
+          <TableHead>Channel</TableHead>
+          <TableHead className="w-16" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {mappings.map((mapping) => {
+          const meta = CHANNEL_EVENT_LABELS[
+            mapping.event_type as DiscordChannelEventType
+          ] ?? {
+            label: mapping.event_type,
+            description: "",
+          };
+          // Sentinel IDs are strings cast to number — detect by typeof after
+          // cast back. Optimistic rows must not allow edit/delete until the
+          // real ID is populated via router.refresh().
+          const isOptimistic = typeof (mapping.id as unknown) === "string";
+          return (
+            <TableRow
+              key={String(mapping.id)}
+              className={cn(isOptimistic && "opacity-60")}
+            >
+              <TableCell>
+                <p className="font-medium">{meta.label}</p>
+                <p className="text-muted-foreground text-xs">
+                  {meta.description}
+                </p>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1">
+                  <Select
+                    value={mapping.channel_id}
+                    disabled={isOptimistic}
+                    onValueChange={(val) => {
+                      if (val) onChannelChange(mapping.id, val);
+                    }}
+                  >
+                    <SelectTrigger className="w-52">
+                      <SelectValue placeholder="Select channel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {guildChannels.map((ch) => (
+                        <SelectItem key={ch.id} value={ch.id}>
+                          #{ch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <PickerRefreshButton serverId={serverId} />
+                </div>
+              </TableCell>
+              <TableCell>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Remove mapping"
+                  className="size-8"
+                  disabled={isOptimistic}
+                  onClick={() => onDelete(mapping.id)}
+                >
+                  <X className="size-4" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -92,6 +197,8 @@ export function ChannelMappingTable({
   communityId,
 }: ChannelMappingTableProps) {
   const router = useRouter();
+  const isClient = useIsClient();
+  const isMobile = useIsMobile();
 
   // Optimistic state — start with the server-provided mappings
   const [mappings, setMappings] =
@@ -202,6 +309,21 @@ export function ChannelMappingTable({
     });
   }
 
+  const innerProps: ChannelMappingInnerProps = {
+    mappings,
+    guildChannels,
+    serverId,
+    unmappedEventTypes,
+    addEventType,
+    addChannelId,
+    addPending,
+    onChannelChange: handleChannelChange,
+    onDelete: handleDelete,
+    onAddEventTypeChange: setAddEventType,
+    onAddChannelIdChange: setAddChannelId,
+    onAdd: handleAdd,
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -211,89 +333,31 @@ export function ChannelMappingTable({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {mappings.length === 0 && unmappedEventTypes.length === 4 ? (
+        {/* Empty state — shown before any mapping exists, outside the responsive conditional */}
+        {mappings.length === 0 && unmappedEventTypes.length === 4 && (
           <p className="text-muted-foreground py-4 text-center text-sm">
             Add your first channel mapping below to start getting tournament
             announcements in Discord.
           </p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Event</TableHead>
-                <TableHead>Channel</TableHead>
-                <TableHead className="w-16" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mappings.map((mapping) => {
-                const meta = CHANNEL_EVENT_LABELS[
-                  mapping.event_type as DiscordChannelEventType
-                ] ?? {
-                  label: mapping.event_type,
-                  description: "",
-                };
-                // Sentinel IDs are strings cast to number — detect by typeof after
-                // cast back. Optimistic rows must not allow edit/delete until the
-                // real ID is populated via router.refresh().
-                const isOptimistic =
-                  typeof (mapping.id as unknown) === "string";
-                return (
-                  <TableRow
-                    key={String(mapping.id)}
-                    className={cn(isOptimistic && "opacity-60")}
-                  >
-                    <TableCell>
-                      <p className="font-medium">{meta.label}</p>
-                      <p className="text-muted-foreground text-xs">
-                        {meta.description}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Select
-                          value={mapping.channel_id}
-                          disabled={isOptimistic}
-                          onValueChange={(val) => {
-                            if (val) handleChannelChange(mapping.id, val);
-                          }}
-                        >
-                          <SelectTrigger className="w-52">
-                            <SelectValue placeholder="Select channel" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {guildChannels.map((ch) => (
-                              <SelectItem key={ch.id} value={ch.id}>
-                                #{ch.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <PickerRefreshButton serverId={serverId} />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Remove mapping"
-                        className="size-8"
-                        disabled={isOptimistic}
-                        onClick={() => handleDelete(mapping.id)}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
         )}
 
-        {/* Add-row form */}
-        {unmappedEventTypes.length > 0 && (
+        {/* Responsive table/cards — only shown when at least one mapping exists */}
+        {mappings.length > 0 &&
+          (!isClient ? (
+            <div
+              aria-hidden
+              className="bg-muted/30 animate-pulse rounded-lg"
+              style={{ height: `${Math.max(mappings.length, 1) * 80 + 32}px` }}
+            />
+          ) : isMobile ? (
+            <ChannelMappingCards {...innerProps} />
+          ) : (
+            <ChannelMappingTableInner {...innerProps} />
+          ))}
+
+        {/* Add-row form — rendered outside the responsive conditional so it always appears.
+            ChannelMappingCards renders its own add form inline; hide here on mobile. */}
+        {unmappedEventTypes.length > 0 && isClient && !isMobile && (
           <div
             className={cn(
               "border-t pt-4",

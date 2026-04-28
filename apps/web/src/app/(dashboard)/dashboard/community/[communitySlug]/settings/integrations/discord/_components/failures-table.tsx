@@ -4,6 +4,9 @@ import { useState, useTransition } from "react";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
+import { useIsClient } from "@/hooks/use-is-client";
+import { useIsMobile } from "@/hooks/use-mobile";
+
 import {
   type ChannelFailureRow,
   type DmFailureRow,
@@ -32,11 +35,13 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
+import { FailuresCards } from "./failures-cards";
+
 // =============================================================================
 // Types
 // =============================================================================
 
-type FailureFilter = "all" | "channels" | "dms";
+export type FailureFilter = "all" | "channels" | "dms";
 
 interface FailuresTableProps {
   channelFailures: ChannelFailureRow[];
@@ -46,7 +51,7 @@ interface FailuresTableProps {
 }
 
 // Unified shape for display
-type UnifiedFailureRow =
+export type UnifiedFailureRow =
   | { kind: "channel"; data: ChannelFailureRow }
   | { kind: "dm"; data: DmFailureRow };
 
@@ -54,7 +59,7 @@ type UnifiedFailureRow =
 // Helpers
 // =============================================================================
 
-function formatEventType(eventType: string | null): string {
+export function formatEventType(eventType: string | null): string {
   if (!eventType) return "Unknown event";
   return eventType
     .split("_")
@@ -62,7 +67,7 @@ function formatEventType(eventType: string | null): string {
     .join(" ");
 }
 
-function buildUnifiedRows(
+export function buildUnifiedRows(
   channelFailures: ChannelFailureRow[],
   dmFailures: DmFailureRow[]
 ): UnifiedFailureRow[] {
@@ -77,7 +82,7 @@ function buildUnifiedRows(
   return [...channels, ...dms];
 }
 
-function filterRows(
+export function filterRows(
   rows: UnifiedFailureRow[],
   filter: FailureFilter
 ): UnifiedFailureRow[] {
@@ -90,7 +95,7 @@ function filterRows(
 // Sub-components
 // =============================================================================
 
-function TypeBadge({ kind }: { kind: "channel" | "dm" }) {
+export function TypeBadge({ kind }: { kind: "channel" | "dm" }) {
   return (
     <Badge
       variant="secondary"
@@ -106,7 +111,7 @@ function TypeBadge({ kind }: { kind: "channel" | "dm" }) {
   );
 }
 
-function FilterPill({
+export function FilterPill({
   active,
   label,
   count,
@@ -134,6 +139,145 @@ function FilterPill({
 }
 
 // =============================================================================
+// FailuresInnerProps
+// =============================================================================
+
+export interface FailuresInnerProps {
+  visibleRows: UnifiedFailureRow[];
+  retryingId: string | null;
+  onRetry: (row: UnifiedFailureRow) => void;
+}
+
+// =============================================================================
+// Inner table (desktop)
+// =============================================================================
+
+function FailuresTableInner({
+  visibleRows,
+  retryingId,
+  onRetry,
+}: FailuresInnerProps) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-20">Type</TableHead>
+          <TableHead>Event</TableHead>
+          <TableHead>Target</TableHead>
+          <TableHead>Reason</TableHead>
+          <TableHead>When</TableHead>
+          <TableHead className="w-24">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {visibleRows.map((row) => {
+          const key = `${row.kind}-${row.data.id}`;
+          const isRetrying = retryingId === key;
+
+          if (row.kind === "channel") {
+            const f = row.data;
+            return (
+              <TableRow key={key}>
+                <TableCell>
+                  <TypeBadge kind="channel" />
+                </TableCell>
+                <TableCell>
+                  <p className="font-medium">
+                    {formatEventType(f.event_type)}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {f.consecutive_failures} consecutive{" "}
+                    {f.consecutive_failures === 1 ? "failure" : "failures"}
+                  </p>
+                </TableCell>
+                <TableCell>
+                  <code className="text-xs">#{f.channel_id}</code>
+                </TableCell>
+                <TableCell>
+                  <span className="text-muted-foreground text-sm">
+                    {f.last_error_reason ?? "Unknown error"}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-muted-foreground text-sm">
+                    {f.last_attempt_at
+                      ? formatTimeAgo(f.last_attempt_at)
+                      : "—"}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onRetry(row)}
+                    disabled={isRetrying}
+                  >
+                    {isRetrying ? "Retrying…" : "Retry"}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          }
+
+          // DM row
+          const f = row.data;
+          return (
+            <TableRow key={key}>
+              <TableCell>
+                <TypeBadge kind="dm" />
+              </TableCell>
+              <TableCell>
+                <p className="font-medium">
+                  {formatEventType(f.event_type)}
+                </p>
+              </TableCell>
+              <TableCell>
+                <code className="text-xs">@{f.discord_user_id}</code>
+              </TableCell>
+              <TableCell>
+                <div>
+                  <span className="text-muted-foreground text-sm">
+                    {f.error_reason ?? "Unknown error"}
+                  </span>
+                  {f.delivered_via_fallback && (
+                    <p className="mt-0.5 text-xs text-emerald-600">
+                      ✓ Delivered via fallback channel
+                    </p>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <span className="text-muted-foreground text-sm">
+                  {formatTimeAgo(f.failed_at)}
+                </span>
+              </TableCell>
+              <TableCell>
+                {f.delivered_via_fallback ? (
+                  <span className="text-muted-foreground text-sm">
+                    No action
+                  </span>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onRetry(row)}
+                    disabled={isRetrying}
+                  >
+                    {isRetrying ? "Retrying…" : "Retry"}
+                  </Button>
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -143,6 +287,8 @@ export function FailuresTable({
   roleSyncFailures: _roleSyncFailures,
   serverId: _serverId,
 }: FailuresTableProps) {
+  const isClient = useIsClient();
+  const isMobile = useIsMobile();
   const [filter, setFilter] = useState<FailureFilter>("all");
   const [rows, setRows] = useState<UnifiedFailureRow[]>(
     buildUnifiedRows(channelFailures, dmFailures)
@@ -207,6 +353,12 @@ export function FailuresTable({
       }
     });
   }
+
+  const innerProps: FailuresInnerProps = {
+    visibleRows,
+    retryingId,
+    onRetry: handleRetry,
+  };
 
   if (rows.length === 0) {
     return (
@@ -280,122 +432,17 @@ export function FailuresTable({
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-20">Type</TableHead>
-              <TableHead>Event</TableHead>
-              <TableHead>Target</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>When</TableHead>
-              <TableHead className="w-24">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visibleRows.map((row) => {
-              const key = `${row.kind}-${row.data.id}`;
-              const isRetrying = retryingId === key;
-
-              if (row.kind === "channel") {
-                const f = row.data;
-                return (
-                  <TableRow key={key}>
-                    <TableCell>
-                      <TypeBadge kind="channel" />
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">
-                        {formatEventType(f.event_type)}
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        {f.consecutive_failures} consecutive{" "}
-                        {f.consecutive_failures === 1 ? "failure" : "failures"}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-xs">#{f.channel_id}</code>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-muted-foreground text-sm">
-                        {f.last_error_reason ?? "Unknown error"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-muted-foreground text-sm">
-                        {f.last_attempt_at
-                          ? formatTimeAgo(f.last_attempt_at)
-                          : "—"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRetry(row)}
-                        disabled={isRetrying}
-                      >
-                        {isRetrying ? "Retrying…" : "Retry"}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              }
-
-              // DM row
-              const f = row.data;
-              return (
-                <TableRow key={key}>
-                  <TableCell>
-                    <TypeBadge kind="dm" />
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-medium">
-                      {formatEventType(f.event_type)}
-                    </p>
-                  </TableCell>
-                  <TableCell>
-                    <code className="text-xs">@{f.discord_user_id}</code>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <span className="text-muted-foreground text-sm">
-                        {f.error_reason ?? "Unknown error"}
-                      </span>
-                      {f.delivered_via_fallback && (
-                        <p className="mt-0.5 text-xs text-emerald-600">
-                          ✓ Delivered via fallback channel
-                        </p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground text-sm">
-                      {formatTimeAgo(f.failed_at)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {f.delivered_via_fallback ? (
-                      <span className="text-muted-foreground text-sm">
-                        No action
-                      </span>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRetry(row)}
-                        disabled={isRetrying}
-                      >
-                        {isRetrying ? "Retrying…" : "Retry"}
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        {!isClient ? (
+          <div
+            aria-hidden
+            className="bg-muted/30 animate-pulse rounded-lg"
+            style={{ height: `${Math.max(visibleRows.length, 1) * 140 + 32}px` }}
+          />
+        ) : isMobile ? (
+          <FailuresCards {...innerProps} />
+        ) : (
+          <FailuresTableInner {...innerProps} />
+        )}
       </CardContent>
       <CardFooter>
         <p className="text-muted-foreground text-xs">

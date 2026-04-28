@@ -33,14 +33,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { type GuildChannel } from "@/lib/discord/guild-cache";
+import { useIsClient } from "@/hooks/use-is-client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { PickerRefreshButton } from "./picker-refresh-button";
+import { DmSettingsCards } from "./dm-settings-cards";
 
 // =============================================================================
 // Types
 // =============================================================================
 
-type DeliveryMode = "channel_only" | "dm_only" | "dm_with_fallback";
+export type DeliveryMode = "channel_only" | "dm_only" | "dm_with_fallback";
 
 interface DmSettingsTableProps {
   dmSettings: DiscordDmSetting[];
@@ -50,7 +53,7 @@ interface DmSettingsTableProps {
 }
 
 // Internal row state (one per event type)
-interface DmRowState {
+export interface DmRowState {
   eventType: DiscordDmEventType;
   mode: DeliveryMode;
   fallbackChannelId: string | null;
@@ -62,7 +65,7 @@ interface DmRowState {
 
 const DM_EVENT_TYPES = ALL_DM_EVENT_TYPES;
 
-const DM_EVENT_LABELS: Record<
+export const DM_EVENT_LABELS: Record<
   DiscordDmEventType,
   { label: string; description: string }
 > = {
@@ -112,7 +115,7 @@ const DM_EVENT_LABELS: Record<
   },
 };
 
-const DELIVERY_MODE_LABELS: Record<DeliveryMode, string> = {
+export const DELIVERY_MODE_LABELS: Record<DeliveryMode, string> = {
   channel_only: "Channel only",
   dm_only: "DM only",
   dm_with_fallback: "DM with fallback",
@@ -122,9 +125,19 @@ const DELIVERY_MODE_LABELS: Record<DeliveryMode, string> = {
 // Helpers
 // =============================================================================
 
-function buildInitialRows(dmSettings: DiscordDmSetting[]): DmRowState[] {
+export interface DmSettingsInnerProps {
+  rows: DmRowState[];
+  guildChannels: GuildChannel[];
+  serverId: number;
+  onRowChange: (
+    eventType: DiscordDmEventType,
+    patch: Partial<Pick<DmRowState, "mode" | "fallbackChannelId">>
+  ) => void;
+}
+
+export function buildDmInitialRows(dmSettings: DiscordDmSetting[]): DmRowState[] {
   const settingsMap = new Map(dmSettings.map((s) => [s.event_type, s]));
-  return DM_EVENT_TYPES.map((eventType) => {
+  return DM_EVENT_TYPES.map((eventType: DiscordDmEventType) => {
     const existing = settingsMap.get(eventType);
     return {
       eventType,
@@ -132,6 +145,100 @@ function buildInitialRows(dmSettings: DiscordDmSetting[]): DmRowState[] {
       fallbackChannelId: existing?.fallback_channel_id ?? null,
     };
   });
+}
+
+// =============================================================================
+// Inner table (desktop)
+// =============================================================================
+
+function DmSettingsTableInner({
+  rows,
+  guildChannels,
+  serverId,
+  onRowChange,
+}: DmSettingsInnerProps) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Event</TableHead>
+          <TableHead>Delivery mode</TableHead>
+          <TableHead>Fallback channel</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => {
+          const meta = DM_EVENT_LABELS[row.eventType];
+          const showFallback = row.mode !== "dm_only";
+
+          return (
+            <TableRow key={row.eventType}>
+              <TableCell>
+                <p className="font-medium">{meta.label}</p>
+                <p className="text-muted-foreground text-xs">
+                  {meta.description}
+                </p>
+              </TableCell>
+              <TableCell>
+                <Select
+                  value={row.mode}
+                  onValueChange={(val) =>
+                    onRowChange(row.eventType, {
+                      mode: val as DeliveryMode,
+                    })
+                  }
+                >
+                  <SelectTrigger className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(
+                      Object.entries(DELIVERY_MODE_LABELS) as [
+                        DeliveryMode,
+                        string,
+                      ][]
+                    ).map(([val, label]) => (
+                      <SelectItem key={val} value={val}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell>
+                {showFallback ? (
+                  <div className="flex items-center gap-1">
+                    <Select
+                      value={row.fallbackChannelId ?? undefined}
+                      onValueChange={(val) =>
+                        onRowChange(row.eventType, {
+                          fallbackChannelId: val,
+                        })
+                      }
+                    >
+                      <SelectTrigger className="w-44">
+                        <SelectValue placeholder="Select channel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {guildChannels.map((ch) => (
+                          <SelectItem key={ch.id} value={ch.id}>
+                            #{ch.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <PickerRefreshButton serverId={serverId} />
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-sm">—</span>
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
 }
 
 // =============================================================================
@@ -144,7 +251,9 @@ export function DmSettingsTable({
   serverId,
   communityId,
 }: DmSettingsTableProps) {
-  const [rows, setRows] = useState<DmRowState[]>(buildInitialRows(dmSettings));
+  const isClient = useIsClient();
+  const isMobile = useIsMobile();
+  const [rows, setRows] = useState<DmRowState[]>(buildDmInitialRows(dmSettings));
 
   function handleRowChange(
     eventType: DiscordDmEventType,
@@ -174,6 +283,13 @@ export function DmSettingsTable({
     });
   }
 
+  const innerProps: DmSettingsInnerProps = {
+    rows,
+    guildChannels,
+    serverId,
+    onRowChange: handleRowChange,
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -184,86 +300,17 @@ export function DmSettingsTable({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Event</TableHead>
-              <TableHead>Delivery mode</TableHead>
-              <TableHead>Fallback channel</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => {
-              const meta = DM_EVENT_LABELS[row.eventType];
-              const showFallback = row.mode !== "dm_only";
-
-              return (
-                <TableRow key={row.eventType}>
-                  <TableCell>
-                    <p className="font-medium">{meta.label}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {meta.description}
-                    </p>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={row.mode}
-                      onValueChange={(val) =>
-                        handleRowChange(row.eventType, {
-                          mode: val as DeliveryMode,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="w-44">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(
-                          Object.entries(DELIVERY_MODE_LABELS) as [
-                            DeliveryMode,
-                            string,
-                          ][]
-                        ).map(([val, label]) => (
-                          <SelectItem key={val} value={val}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    {showFallback ? (
-                      <div className="flex items-center gap-1">
-                        <Select
-                          value={row.fallbackChannelId ?? undefined}
-                          onValueChange={(val) =>
-                            handleRowChange(row.eventType, {
-                              fallbackChannelId: val,
-                            })
-                          }
-                        >
-                          <SelectTrigger className="w-44">
-                            <SelectValue placeholder="Select channel" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {guildChannels.map((ch) => (
-                              <SelectItem key={ch.id} value={ch.id}>
-                                #{ch.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <PickerRefreshButton serverId={serverId} />
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">—</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        {!isClient ? (
+          <div
+            aria-hidden
+            className="bg-muted/30 animate-pulse rounded-lg"
+            style={{ height: `${Math.max(rows.length, 1) * 96 + 32}px` }}
+          />
+        ) : isMobile ? (
+          <DmSettingsCards {...innerProps} />
+        ) : (
+          <DmSettingsTableInner {...innerProps} />
+        )}
       </CardContent>
     </Card>
   );

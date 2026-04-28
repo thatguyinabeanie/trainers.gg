@@ -1,6 +1,29 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+// --- @/hooks/use-mobile ---
+const mockUseIsMobile = jest.fn();
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
+
+// --- @/hooks/use-is-client ---
+const mockUseIsClient = jest.fn();
+jest.mock("@/hooks/use-is-client", () => ({
+  useIsClient: () => mockUseIsClient(),
+}));
+
+// --- ./tournaments-cards ---
+jest.mock("../tournaments-cards", () => ({
+  TournamentsCards: (props: { entries: { id: number }[] }) => (
+    <div data-testid="tournaments-cards">
+      {props.entries.map((e) => (
+        <div key={e.id} data-testid={`mobile-card-${e.id}`} />
+      ))}
+    </div>
+  ),
+}));
+
 // --- @/lib/supabase ---
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: jest.fn(),
@@ -149,6 +172,8 @@ function setupQuery(
 describe("TournamentsClient", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseIsClient.mockReturnValue(true);
+    mockUseIsMobile.mockReturnValue(false);
   });
 
   // ---------------------------------------------------------------------------
@@ -393,6 +418,53 @@ describe("TournamentsClient", () => {
       render(<TournamentsClient selectedAltUsername="ash_alt" />);
       // Entry is still visible because the alt matches
       expect(screen.getByText("Kanto Regional")).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Conditional mount (mobile/desktop)
+  // ---------------------------------------------------------------------------
+
+  describe("conditional mount", () => {
+    it("renders skeleton when isClient is false", () => {
+      mockUseIsClient.mockReturnValue(false);
+      mockUseIsMobile.mockReturnValue(false);
+      setupQuery([makeEntry()]);
+      render(<TournamentsClient selectedAltUsername={null} />);
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("tournaments-cards")
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders desktop table when isClient is true and isMobile is false", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(false);
+      setupQuery([makeEntry()]);
+      render(<TournamentsClient selectedAltUsername={null} />);
+      expect(screen.getByRole("table")).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("tournaments-cards")
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders mobile cards when isClient is true and isMobile is true", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(true);
+      setupQuery([makeEntry()]);
+      render(<TournamentsClient selectedAltUsername={null} />);
+      expect(screen.getByTestId("tournaments-cards")).toBeInTheDocument();
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    });
+
+    it("propagates filter changes to the mobile variant", async () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(true);
+      setupQuery([makeEntry({ id: 1 }), makeEntry({ id: 2 })]);
+      render(<TournamentsClient selectedAltUsername={null} />);
+      // Both entries pass through to the mobile cards stub.
+      expect(screen.getByTestId("mobile-card-1")).toBeInTheDocument();
+      expect(screen.getByTestId("mobile-card-2")).toBeInTheDocument();
     });
   });
 });

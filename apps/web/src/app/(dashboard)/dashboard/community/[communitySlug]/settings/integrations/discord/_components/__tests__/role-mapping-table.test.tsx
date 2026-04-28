@@ -2,6 +2,25 @@
  * Tests for RoleMappingTable
  */
 
+const mockUseIsMobile = jest.fn();
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
+
+const mockUseIsClient = jest.fn();
+jest.mock("@/hooks/use-is-client", () => ({
+  useIsClient: () => mockUseIsClient(),
+}));
+
+jest.mock("../role-mapping-cards", () => ({
+  RoleMappingCards: (props: { rows?: { roleType: string }[] }) => (
+    <div
+      data-testid="role-mapping-cards"
+      data-row-count={props.rows?.length ?? 0}
+    />
+  ),
+}));
+
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -73,6 +92,8 @@ const defaultProps = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockUseIsClient.mockReturnValue(true);
+  mockUseIsMobile.mockReturnValue(false);
   mockToggleRoleMappingAction.mockResolvedValue({
     success: true,
     data: undefined,
@@ -188,6 +209,36 @@ describe("RoleMappingTable", () => {
           "Assign a Discord role before enabling."
         );
       });
+    });
+  });
+
+  describe("conditional mount", () => {
+    it("renders skeleton when isClient is false", () => {
+      mockUseIsClient.mockReturnValue(false);
+      mockUseIsMobile.mockReturnValue(false);
+      render(<RoleMappingTable {...defaultProps} />);
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("role-mapping-cards")
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders desktop table when isClient is true and isMobile is false", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(false);
+      render(<RoleMappingTable {...defaultProps} />);
+      expect(screen.getByRole("table")).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("role-mapping-cards")
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders mobile cards when isClient is true and isMobile is true", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(true);
+      render(<RoleMappingTable {...defaultProps} />);
+      expect(screen.getByTestId("role-mapping-cards")).toBeInTheDocument();
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
     });
   });
 });

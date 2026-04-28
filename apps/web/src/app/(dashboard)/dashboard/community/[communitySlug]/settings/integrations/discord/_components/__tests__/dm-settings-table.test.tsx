@@ -2,6 +2,25 @@
  * Tests for DmSettingsTable
  */
 
+const mockUseIsMobile = jest.fn();
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
+
+const mockUseIsClient = jest.fn();
+jest.mock("@/hooks/use-is-client", () => ({
+  useIsClient: () => mockUseIsClient(),
+}));
+
+jest.mock("../dm-settings-cards", () => ({
+  DmSettingsCards: (props: { rows?: { eventType: string }[] }) => (
+    <div
+      data-testid="dm-settings-cards"
+      data-row-count={props.rows?.length ?? 0}
+    />
+  ),
+}));
+
 import { render, screen, waitFor } from "@testing-library/react";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -67,6 +86,8 @@ const defaultProps = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockUseIsClient.mockReturnValue(true);
+  mockUseIsMobile.mockReturnValue(false);
   mockUpsertDmSettingAction.mockResolvedValue({
     success: true,
     data: undefined,
@@ -164,6 +185,36 @@ describe("DmSettingsTable", () => {
       // All 11 rows should still render with default channel_only
       expect(screen.getByText("Match ready")).toBeInTheDocument();
       expect(screen.getByText("Tournament cancelled")).toBeInTheDocument();
+    });
+  });
+
+  describe("conditional mount", () => {
+    it("renders skeleton when isClient is false", () => {
+      mockUseIsClient.mockReturnValue(false);
+      mockUseIsMobile.mockReturnValue(false);
+      render(<DmSettingsTable {...defaultProps} />);
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("dm-settings-cards")
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders desktop table when isClient is true and isMobile is false", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(false);
+      render(<DmSettingsTable {...defaultProps} />);
+      expect(screen.getByRole("table")).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("dm-settings-cards")
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders mobile cards when isClient is true and isMobile is true", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(true);
+      render(<DmSettingsTable {...defaultProps} />);
+      expect(screen.getByTestId("dm-settings-cards")).toBeInTheDocument();
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
     });
   });
 });

@@ -39,8 +39,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { type GuildRole } from "@/lib/discord/guild-cache";
+import { useIsClient } from "@/hooks/use-is-client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { PickerRefreshButton } from "./picker-refresh-button";
+import { RoleMappingCards } from "./role-mapping-cards";
 
 // =============================================================================
 // Types
@@ -54,7 +57,16 @@ interface RoleMappingTableProps {
   hasHierarchyViolation: boolean;
 }
 
-interface RoleRowState {
+export interface RoleMappingInnerProps {
+  rows: RoleRowState[];
+  guildRoles: GuildRole[];
+  serverId: number;
+  hasHierarchyViolation: boolean;
+  onToggle: (roleType: DiscordRoleType, enabled: boolean) => void;
+  onRoleChange: (roleType: DiscordRoleType, discordRoleId: string) => void;
+}
+
+export interface RoleRowState {
   roleType: DiscordRoleType;
   mappingId: number | null;
   enabled: boolean;
@@ -65,7 +77,7 @@ interface RoleRowState {
 // Constants
 // =============================================================================
 
-const ROLE_TYPES: DiscordRoleType[] = [
+export const ROLE_TYPES: DiscordRoleType[] = [
   "staff",
   "member",
   "participant",
@@ -73,7 +85,7 @@ const ROLE_TYPES: DiscordRoleType[] = [
   "currently_playing",
 ];
 
-const ROLE_TYPE_META: Record<
+export const ROLE_TYPE_META: Record<
   DiscordRoleType,
   { label: string; description: string; emoji?: string }
 > = {
@@ -104,7 +116,7 @@ const ROLE_TYPE_META: Record<
 // Helpers
 // =============================================================================
 
-function buildInitialRows(roleMappings: DiscordRoleMapping[]): RoleRowState[] {
+export function buildInitialRows(roleMappings: DiscordRoleMapping[]): RoleRowState[] {
   const mappingsMap = new Map(roleMappings.map((m) => [m.role_type, m]));
   return ROLE_TYPES.map((roleType) => {
     const existing = mappingsMap.get(roleType);
@@ -117,7 +129,7 @@ function buildInitialRows(roleMappings: DiscordRoleMapping[]): RoleRowState[] {
   });
 }
 
-function syncStatus(
+export function syncStatus(
   row: RoleRowState,
   hasHierarchyViolation: boolean
 ): { label: string; className: string } {
@@ -131,6 +143,85 @@ function syncStatus(
 }
 
 // =============================================================================
+// Inner table (desktop)
+// =============================================================================
+
+function RoleMappingTableInner({
+  rows,
+  guildRoles,
+  serverId,
+  hasHierarchyViolation,
+  onToggle,
+  onRoleChange,
+}: RoleMappingInnerProps) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-12">Enable</TableHead>
+          <TableHead>Role</TableHead>
+          <TableHead>Discord role</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => {
+          const meta = ROLE_TYPE_META[row.roleType];
+          const status = syncStatus(row, hasHierarchyViolation);
+
+          return (
+            <TableRow key={row.roleType}>
+              <TableCell>
+                <Switch
+                  checked={row.enabled}
+                  onCheckedChange={(checked) => onToggle(row.roleType, checked)}
+                  aria-label={`Enable ${meta.label} role sync`}
+                />
+              </TableCell>
+              <TableCell>
+                <p className="font-medium">
+                  {meta.emoji && <span className="mr-1">{meta.emoji}</span>}
+                  {meta.label}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  {meta.description}
+                </p>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1">
+                  <Select
+                    value={row.discordRoleId}
+                    onValueChange={(val) => {
+                      if (val) onRoleChange(row.roleType, val);
+                    }}
+                    disabled={!row.enabled && !row.discordRoleId}
+                  >
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {guildRoles.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <PickerRefreshButton serverId={serverId} />
+                </div>
+              </TableCell>
+              <TableCell>
+                <span className={status.className}>{status.label}</span>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -141,6 +232,8 @@ export function RoleMappingTable({
   communityId,
   hasHierarchyViolation,
 }: RoleMappingTableProps) {
+  const isClient = useIsClient();
+  const isMobile = useIsMobile();
   const [rows, setRows] = useState<RoleRowState[]>(
     buildInitialRows(roleMappings)
   );
@@ -194,6 +287,15 @@ export function RoleMappingTable({
     });
   }
 
+  const innerProps: RoleMappingInnerProps = {
+    rows,
+    guildRoles,
+    serverId,
+    hasHierarchyViolation,
+    onToggle: handleToggle,
+    onRoleChange: handleRoleChange,
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -215,71 +317,17 @@ export function RoleMappingTable({
           </Alert>
         )}
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">Enable</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Discord role</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => {
-              const meta = ROLE_TYPE_META[row.roleType];
-              const status = syncStatus(row, hasHierarchyViolation);
-
-              return (
-                <TableRow key={row.roleType}>
-                  <TableCell>
-                    <Switch
-                      checked={row.enabled}
-                      onCheckedChange={(checked) =>
-                        handleToggle(row.roleType, checked)
-                      }
-                      aria-label={`Enable ${meta.label} role sync`}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-medium">
-                      {meta.emoji && <span className="mr-1">{meta.emoji}</span>}
-                      {meta.label}
-                    </p>
-                    <p className="text-muted-foreground text-xs">
-                      {meta.description}
-                    </p>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Select
-                        value={row.discordRoleId}
-                        onValueChange={(val) => {
-                          if (val) handleRoleChange(row.roleType, val);
-                        }}
-                        disabled={!row.enabled && !row.discordRoleId}
-                      >
-                        <SelectTrigger className="w-44">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {guildRoles.map((role) => (
-                            <SelectItem key={role.id} value={role.id}>
-                              {role.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <PickerRefreshButton serverId={serverId} />
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className={status.className}>{status.label}</span>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        {!isClient ? (
+          <div
+            aria-hidden
+            className="bg-muted/30 animate-pulse rounded-lg"
+            style={{ height: `${Math.max(rows.length, 1) * 80 + 32}px` }}
+          />
+        ) : isMobile ? (
+          <RoleMappingCards {...innerProps} />
+        ) : (
+          <RoleMappingTableInner {...innerProps} />
+        )}
       </CardContent>
       <CardFooter>
         <p className="text-muted-foreground text-xs">
