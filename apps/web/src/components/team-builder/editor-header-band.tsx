@@ -589,15 +589,23 @@ export function EditorHeaderBand({
         className="grid grid-cols-2 border-t md:hidden"
         data-testid="editor-header-band-mobile-fields"
       >
-        <div className="border-r">{abilityField}</div>
-        <div>{itemField}</div>
+        {/* Each cell carries `min-w-0 overflow-hidden` so the FieldButton's
+            `whitespace-nowrap` value text can't push past the cell's column
+            width (e.g. very long ability or item names). The truncate inside
+            FieldButton handles the visual ellipsis. */}
+        <div className="min-w-0 overflow-hidden border-r">{abilityField}</div>
+        <div className="min-w-0 overflow-hidden">{itemField}</div>
         {teraField ? (
           <>
-            <div className="border-t border-r">{teraField}</div>
-            <div className="border-t">{natureField}</div>
+            <div className="min-w-0 overflow-hidden border-t border-r">
+              {teraField}
+            </div>
+            <div className="min-w-0 overflow-hidden border-t">{natureField}</div>
           </>
         ) : (
-          <div className="col-span-2 border-t">{natureField}</div>
+          <div className="col-span-2 min-w-0 overflow-hidden border-t">
+            {natureField}
+          </div>
         )}
       </div>
     </div>

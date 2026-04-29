@@ -317,9 +317,12 @@ describe("EditorHeaderBand", () => {
       // scoping to one container keeps the assertion exact-match).
       expect(desktopFields().getByText("Levitate")).toBeInTheDocument();
 
-      // No Edit Ability button should exist in either layout
+      // No Edit Ability button should exist in either layout — assert both.
       expect(
         desktopFields().queryByRole("button", { name: /Edit Ability/ })
+      ).not.toBeInTheDocument();
+      expect(
+        mobileFields().queryByRole("button", { name: /Edit Ability/ })
       ).not.toBeInTheDocument();
 
       // Clicking the static label should not trigger the handler
