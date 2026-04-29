@@ -1,0 +1,63 @@
+.builderApp {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.builderWorkshell {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.builderWorklane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.builderGrid {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  min-height: 0;
+}
+
+.builderRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+[data-density="compact"] .builderRows {
+  gap: 4px;
+  padding: 8px;
+}
+
+.builderDockbarSlot {
+  flex-shrink: 0;
+  height: 64px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--background);
+}
+
+/* Phase 5 will populate this */
+.builderBottomDrawerSlot {
+  display: none;
+}
+
+.builderCalcdrawerSlot {
+  width: 380px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  background: var(--background);
+  overflow-y: auto;
+}
