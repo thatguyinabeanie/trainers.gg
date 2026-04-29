@@ -46,6 +46,11 @@ import { cn } from "@/lib/utils";
 
 import { PickerRefreshButton } from "./picker-refresh-button";
 import { ChannelMappingCards } from "./channel-mapping-cards";
+import {
+  type ChannelMappingInnerProps,
+  CHANNEL_EVENT_LABELS,
+  getChannelEventMeta,
+} from "./channel-mapping-shared";
 
 // =============================================================================
 // Types
@@ -58,46 +63,12 @@ interface ChannelMappingTableProps {
   communityId: number;
 }
 
-export interface ChannelMappingInnerProps {
-  mappings: DiscordChannelMapping[];
-  guildChannels: GuildChannel[];
-  serverId: number;
-  unmappedEventTypes: DiscordChannelEventType[];
-  addEventType: DiscordChannelEventType | "";
-  addChannelId: string;
-  addPending: boolean;
-  onChannelChange: (mappingId: number, newChannelId: string) => void;
-  onDelete: (mappingId: number) => void;
-  onAddEventTypeChange: (v: DiscordChannelEventType) => void;
-  onAddChannelIdChange: (val: string) => void;
-  onAdd: () => void;
-}
-
-// =============================================================================
-// Constants
-// =============================================================================
-
-export const CHANNEL_EVENT_LABELS: Record<
-  DiscordChannelEventType,
-  { label: string; description: string }
-> = {
-  tournament_created: {
-    label: "Tournament created",
-    description: "When a draft tournament is created",
-  },
-  registration_opens: {
-    label: "Registration opens",
-    description: "When sign-ups open for a tournament",
-  },
-  tournament_ended: {
-    label: "Tournament ended",
-    description: "Final standings + winner announcement",
-  },
-  match_result_reported: {
-    label: "Match result reported",
-    description: "Score reported for a match",
-  },
-};
+// Re-export shared types/constants so prior consumers (e.g. tests) keep
+// working without touching their imports.
+export {
+  type ChannelMappingInnerProps,
+  CHANNEL_EVENT_LABELS,
+} from "./channel-mapping-shared";
 
 // =============================================================================
 // Inner table (desktop)
@@ -121,12 +92,7 @@ function ChannelMappingTableInner({
       </TableHeader>
       <TableBody>
         {mappings.map((mapping) => {
-          const meta = CHANNEL_EVENT_LABELS[
-            mapping.event_type as DiscordChannelEventType
-          ] ?? {
-            label: mapping.event_type,
-            description: "",
-          };
+          const meta = getChannelEventMeta(mapping.event_type);
           // Sentinel IDs are strings cast to number — detect by typeof after
           // cast back. Optimistic rows must not allow edit/delete until the
           // real ID is populated via router.refresh().
@@ -345,22 +311,22 @@ export function ChannelMappingTable({
           )}
 
         {/* Responsive table/cards.
-            On mobile, render the cards even when mappings.length === 0 so
-            ChannelMappingCards' inline add-form is reachable for the first
-            mapping. On desktop, the empty state + add-form below covers the
-            zero-mapping case so we skip the empty table render. */}
-        {(mappings.length > 0 || (isClient && isMobile)) &&
-          (!isClient ? (
-            <div
-              aria-hidden
-              className="bg-muted/30 animate-pulse rounded-lg"
-              style={{ height: `${Math.max(mappings.length, 1) * 80 + 32}px` }}
-            />
-          ) : isMobile ? (
-            <ChannelMappingCards {...innerProps} />
-          ) : (
-            <ChannelMappingTableInner {...innerProps} />
-          ))}
+            Pre-hydration we always render the skeleton so the layout
+            doesn't jump when isMobile resolves. Post-hydration on mobile we
+            render the cards (with their inline add form) even at zero
+            mappings; on desktop we skip the empty table — the empty-state
+            copy + add-form below cover that case. */}
+        {!isClient ? (
+          <div
+            aria-hidden
+            className="bg-muted/30 animate-pulse rounded-lg"
+            style={{ height: `${Math.max(mappings.length, 1) * 80 + 32}px` }}
+          />
+        ) : isMobile ? (
+          <ChannelMappingCards {...innerProps} />
+        ) : mappings.length > 0 ? (
+          <ChannelMappingTableInner {...innerProps} />
+        ) : null}
 
         {/* Add-row form — rendered outside the responsive conditional for
             desktop only; ChannelMappingCards renders its own add form inline. */}

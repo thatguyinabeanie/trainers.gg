@@ -10,7 +10,7 @@ import {
   formatEventType,
   type FailuresInnerProps,
   type UnifiedFailureRow,
-} from "./failures-table";
+} from "./failures-shared";
 
 // =============================================================================
 // FailureCard (per-row)

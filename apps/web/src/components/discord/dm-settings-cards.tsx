@@ -17,7 +17,7 @@ import {
   type DeliveryMode,
   type DmRowState,
   type DmSettingsInnerProps,
-} from "./dm-settings-table";
+} from "./dm-settings-shared";
 import { PickerRefreshButton } from "./picker-refresh-button";
 
 // =============================================================================

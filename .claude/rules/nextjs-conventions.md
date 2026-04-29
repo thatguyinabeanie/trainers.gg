@@ -30,6 +30,45 @@ dashboard/alts/[username]/teams/page.tsx
 
 When adding routes under an existing dynamic segment, `ls` the parent directory first and match the existing `[paramName]`.
 
+### Component Placement: feature directory vs route co-location
+
+Next.js permits route-co-located components in `_components/` (the underscore prefix prevents Next.js from treating the folder as a route segment). It works, but in this project's `(dashboard)` group the route prefix already runs ~70 characters before any filename — adding `_components/` plus a long filename produces 100+-char paths that overflow terminal `git status` output and make import lines wrap.
+
+**Default to `apps/web/src/components/<feature>/` for any feature with more than one or two files.** That is the established pattern in this repo:
+
+| Path pattern (✅ use)                        | Path pattern (❌ avoid for non-trivial features)                                      |
+| -------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `apps/web/src/components/team-builder/*`     | `apps/web/src/app/(dashboard)/dashboard/community/[communitySlug]/team-builder/_components/*` |
+| `apps/web/src/components/discord/*`          | `apps/web/src/app/(dashboard)/dashboard/community/[communitySlug]/settings/integrations/discord/_components/*` |
+| `apps/web/src/components/communities/*`      | `apps/web/src/app/(public)/communities/_components/*`                                  |
+
+**Heuristic** — if the route prefix path is >60 characters, the components MUST live in `components/<feature>/`. Use route-colocated `_components/` only when:
+
+1. The route is shallow (e.g., `apps/web/src/app/foo/page.tsx`), AND
+2. The components are used by exactly ONE route, AND
+3. The directory contains at most 2–3 files including tests.
+
+**Tests follow source.** When you put components in `apps/web/src/components/<feature>/`, their tests go in `apps/web/src/components/<feature>/__tests__/` — not under `apps/web/src/__tests__/components/<feature>/` or anywhere else.
+
+### Sibling components must not import from each other
+
+When two sibling components in the same feature directory share types, constants, or small helpers (a frequent pattern with desktop-table + mobile-cards pairs from the `mobile-responsiveness` rule), put the shared symbols in a co-located `<feature>-shared.ts` (or `.tsx` if JSX is involved). **Both** siblings import from `*-shared`. **Neither** sibling imports from the other.
+
+```
+# Good — shared module breaks the cycle
+components/discord/
+  channel-mapping-shared.ts      // exports ChannelMappingInnerProps, CHANNEL_EVENT_LABELS, getChannelEventMeta
+  channel-mapping-table.tsx       // imports from ./channel-mapping-shared
+  channel-mapping-cards.tsx       // imports from ./channel-mapping-shared
+
+# Bad — cycle that bundlers tolerate but HMR / Fast Refresh can mishandle
+components/discord/
+  channel-mapping-table.tsx       // imports ./channel-mapping-cards
+  channel-mapping-cards.tsx       // imports ./channel-mapping-table  ← cycle
+```
+
+If you're modifying an existing feature whose siblings already form a cycle, fix it before adding more files: extract the shared exports to a new `*-shared.ts` and re-export from both originals for back-compat. CodeRabbit and Copilot both flag these cycles in review.
+
 ## Data Fetching
 
 ### Server Components

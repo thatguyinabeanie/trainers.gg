@@ -382,12 +382,13 @@ export function TeamWorkspace({ team, format }: TeamWorkspaceProps) {
     >
       <div
         data-testid="team-workspace-grid"
-        // grid-cols-[minmax(0,1fr)_28.75rem] = auto/460. The type chart
-        // moved into the analytics rail's Types tab so the editor column
-        // gains ~300px compared to the old 3-column layout. `minmax(0,1fr)`
-        // is still critical — without the explicit `0` minimum the editor
-        // column inflates to its min-content width.
-        className="grid grid-cols-[minmax(0,1fr)_28.75rem] items-start gap-4 md:gap-6"
+        // Stack on phones (the 460px rail blows past a 414px viewport when
+        // forced to render side-by-side). Switch to side-by-side at lg+
+        // (1024px) where 460px rail + ≥560px editor column fits comfortably.
+        // `minmax(0,1fr)` on the editor column is critical at lg+ — without
+        // the explicit `0` minimum the editor column inflates to min-content
+        // and overflows.
+        className="grid grid-cols-1 items-start gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_28.75rem]"
       >
         {/* LEFT/CENTER — Editor card (TeamStrip + PokemonEditor) OR species picker
             overlay. The picker replaces the editor card in this column only,

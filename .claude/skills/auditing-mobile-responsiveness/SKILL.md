@@ -18,6 +18,8 @@ The authoring-time companion is the `mobile-responsiveness` rule (auto-loads on 
 
 Skip for: API routes, edge functions, any change that doesn't render UI.
 
+If you're editing or creating skill docs under `.claude/skills/*` (including this one), invoke `writing-skills` first for the conventions.
+
 ## The audit, end to end
 
 ### 1 — Enumerate URLs by walking the route tree, not by reading imports

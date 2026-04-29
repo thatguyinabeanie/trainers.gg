@@ -20,8 +20,9 @@ import { cn } from "@/lib/utils";
 
 import {
   CHANNEL_EVENT_LABELS,
+  getChannelEventMeta,
   type ChannelMappingInnerProps,
-} from "./channel-mapping-table";
+} from "./channel-mapping-shared";
 import { PickerRefreshButton } from "./picker-refresh-button";
 
 // =============================================================================
@@ -43,12 +44,7 @@ function ChannelMappingCard({
   onChannelChange,
   onDelete,
 }: ChannelMappingCardProps) {
-  const meta = CHANNEL_EVENT_LABELS[
-    mapping.event_type as DiscordChannelEventType
-  ] ?? {
-    label: mapping.event_type,
-    description: "",
-  };
+  const meta = getChannelEventMeta(mapping.event_type);
   // Sentinel IDs are strings cast to number — detect by typeof after cast back.
   const isOptimistic = typeof (mapping.id as unknown) === "string";
 

@@ -17,7 +17,7 @@ import {
   syncStatus,
   type RoleMappingInnerProps,
   type RoleRowState,
-} from "./role-mapping-table";
+} from "./role-mapping-shared";
 import { PickerRefreshButton } from "./picker-refresh-button";
 
 // =============================================================================

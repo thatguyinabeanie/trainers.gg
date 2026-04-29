@@ -825,12 +825,17 @@ export function StaffClient({
     member: StaffWithRole,
     target: { type: "group"; group: CommunityGroup } | { type: "unassigned" }
   ) => {
+    // Always require permission over the member's CURRENT role first —
+    // otherwise a Head Judge could move an Admin into a group they happen
+    // to have permission over (e.g. demoting higher-ranked staff).
+    const currentRole = member.role?.name ?? null;
+    if (currentRole && !canManageGroup(currentUserRole ?? null, isOwner, currentRole)) {
+      toast.error("You don't have permission to manage this staff member");
+      return;
+    }
+
     if (target.type === "unassigned") {
-      const currentRole = member.role?.name ?? null;
-      if (!canManageGroup(currentUserRole ?? null, isOwner, currentRole)) {
-        toast.error("You don't have permission to unassign this staff member");
-        return;
-      }
+      // Source-permission check above already covers the unassign case.
     } else {
       const targetRole = target.group.role?.name ?? null;
       if (!canManageGroup(currentUserRole ?? null, isOwner, targetRole)) {
