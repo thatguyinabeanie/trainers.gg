@@ -376,11 +376,11 @@ export async function toggleRoleMappingAction(
  * Conflicts on (discord_server_id, role_type) update the discord_role_id and
  * reset enabled to true. Requires `community.manage` permission.
  *
- * @returns void on success
+ * @returns The new mapping id on success
  */
 export async function upsertRoleMappingAction(
   input: z.infer<typeof upsertRoleMappingSchema>
-): Promise<ActionResult<void>> {
+): Promise<ActionResult<{ mappingId: number }>> {
   try {
     await rejectBots();
     const parsed = upsertRoleMappingSchema.parse(input);
@@ -389,7 +389,7 @@ export async function upsertRoleMappingAction(
     if ("error" in result) return result.error;
     const { server } = result;
 
-    await upsertRoleMapping(supabase, {
+    const { id } = await upsertRoleMapping(supabase, {
       discord_server_id: server.id,
       role_type: parsed.roleType,
       discord_role_id: parsed.discordRoleId,
@@ -397,7 +397,7 @@ export async function upsertRoleMappingAction(
     });
 
     revalidatePath(DISCORD_SETTINGS_PATH, "page");
-    return { success: true, data: undefined };
+    return { success: true, data: { mappingId: id } };
   } catch (error) {
     const forbidden = asForbidden(error);
     if (forbidden) return forbidden;

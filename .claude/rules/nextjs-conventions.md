@@ -54,7 +54,7 @@ Next.js permits route-co-located components in `_components/` (the underscore pr
 
 When two sibling components in the same feature directory share types, constants, or small helpers (a frequent pattern with desktop-table + mobile-cards pairs from the `mobile-responsiveness` rule), put the shared symbols in a co-located `<feature>-shared.ts` (or `.tsx` if JSX is involved). **Both** siblings import from `*-shared`. **Neither** sibling imports from the other.
 
-```
+```text
 # Good — shared module breaks the cycle
 components/discord/
   channel-mapping-shared.ts      // exports ChannelMappingInnerProps, CHANNEL_EVENT_LABELS, getChannelEventMeta

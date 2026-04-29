@@ -12,16 +12,25 @@ jest.mock("@/hooks/use-is-client", () => ({
   useIsClient: () => mockUseIsClient(),
 }));
 
+let capturedOnRowChange:
+  | ((eventType: string, patch: { mode?: string; fallbackChannelId?: string | null }) => void)
+  | null = null;
 jest.mock("../dm-settings-cards", () => ({
-  DmSettingsCards: (props: { rows?: { eventType: string }[] }) => (
-    <div
-      data-testid="dm-settings-cards"
-      data-row-count={props.rows?.length ?? 0}
-    />
-  ),
+  DmSettingsCards: (props: {
+    rows?: { eventType: string }[];
+    onRowChange: (eventType: string, patch: { mode?: string; fallbackChannelId?: string | null }) => void;
+  }) => {
+    capturedOnRowChange = props.onRowChange;
+    return (
+      <div
+        data-testid="dm-settings-cards"
+        data-row-count={props.rows?.length ?? 0}
+      />
+    );
+  },
 }));
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -215,6 +224,86 @@ describe("DmSettingsTable", () => {
       render(<DmSettingsTable {...defaultProps} />);
       expect(screen.getByTestId("dm-settings-cards")).toBeInTheDocument();
       expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("handleRowChange — channel-mode guard", () => {
+    beforeEach(() => {
+      mockUseIsMobile.mockReturnValue(true); // render cards path so we capture onRowChange
+      capturedOnRowChange = null;
+    });
+
+    it("does not call upsertDmSettingAction when switching to channel_only without a channel pick", async () => {
+      render(
+        <DmSettingsTable
+          {...defaultProps}
+          dmSettings={[
+            makeSetting({
+              event_type: "match_ready" as DiscordDmSetting["event_type"],
+              delivery_mode: "dm_only",
+              fallback_channel_id: null,
+            }),
+          ]}
+        />
+      );
+      expect(capturedOnRowChange).not.toBeNull();
+      // Switch from dm_only to channel_only without selecting a channel.
+      capturedOnRowChange!("match_ready", { mode: "channel_only" });
+      await waitFor(() => {
+        expect(mockUpsertDmSettingAction).not.toHaveBeenCalled();
+      });
+    });
+
+    it("does not call upsertDmSettingAction when switching to dm_with_fallback without a channel pick", async () => {
+      render(
+        <DmSettingsTable
+          {...defaultProps}
+          dmSettings={[
+            makeSetting({
+              event_type: "match_ready" as DiscordDmSetting["event_type"],
+              delivery_mode: "dm_only",
+              fallback_channel_id: null,
+            }),
+          ]}
+        />
+      );
+      capturedOnRowChange!("match_ready", { mode: "dm_with_fallback" });
+      await waitFor(() => {
+        expect(mockUpsertDmSettingAction).not.toHaveBeenCalled();
+      });
+    });
+
+    it("calls upsertDmSettingAction once a channel is picked after the mode switch", async () => {
+      render(
+        <DmSettingsTable
+          {...defaultProps}
+          dmSettings={[
+            makeSetting({
+              event_type: "match_ready" as DiscordDmSetting["event_type"],
+              delivery_mode: "dm_only",
+              fallback_channel_id: null,
+            }),
+          ]}
+        />
+      );
+      // First: mode switch alone — should NOT fire. Flush so the component
+      // re-renders and capturedOnRowChange points to the updated closure.
+      await act(async () => {
+        capturedOnRowChange!("match_ready", { mode: "channel_only" });
+      });
+      expect(mockUpsertDmSettingAction).not.toHaveBeenCalled();
+      // Then: channel pick — should fire with both fields set.
+      capturedOnRowChange!("match_ready", { fallbackChannelId: "ch-222" });
+      await waitFor(() => {
+        expect(mockUpsertDmSettingAction).toHaveBeenCalledTimes(1);
+      });
+      expect(mockUpsertDmSettingAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: "match_ready",
+          deliveryMode: "channel_only",
+          fallbackChannelId: "ch-222",
+        })
+      );
     });
   });
 });

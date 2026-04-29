@@ -468,10 +468,10 @@ describe("upsertRoleMappingAction", () => {
     }
   });
 
-  it("calls upsertRoleMapping with the correct payload on success", async () => {
+  it("calls upsertRoleMapping with the correct payload and returns mappingId on success", async () => {
     mockPermission(true);
     mockGetDiscordServerByCommunityId.mockResolvedValue(fakeServer);
-    mockUpsertRoleMapping.mockResolvedValue(undefined);
+    mockUpsertRoleMapping.mockResolvedValue({ id: 42 });
 
     const result = await upsertRoleMappingAction({
       communityId: 1,
@@ -479,7 +479,7 @@ describe("upsertRoleMappingAction", () => {
       discordRoleId: "role-789",
     });
 
-    expect(result).toEqual({ success: true, data: undefined });
+    expect(result).toEqual({ success: true, data: { mappingId: 42 } });
     expect(mockUpsertRoleMapping).toHaveBeenCalledWith(mockSupabase, {
       discord_server_id: 99,
       role_type: "participant",

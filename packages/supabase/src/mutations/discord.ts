@@ -208,18 +208,23 @@ export async function upsertRoleMapping(
     discord_role_id: string;
     enabled?: boolean;
   }
-): Promise<void> {
-  const { error } = await supabase.from("discord_role_mappings").upsert(
-    {
-      discord_server_id: input.discord_server_id,
-      role_type: input.role_type,
-      discord_role_id: input.discord_role_id,
-      enabled: input.enabled ?? true,
-    },
-    { onConflict: "discord_server_id,role_type" }
-  );
+): Promise<{ id: number }> {
+  const { data, error } = await supabase
+    .from("discord_role_mappings")
+    .upsert(
+      {
+        discord_server_id: input.discord_server_id,
+        role_type: input.role_type,
+        discord_role_id: input.discord_role_id,
+        enabled: input.enabled ?? true,
+      },
+      { onConflict: "discord_server_id,role_type" }
+    )
+    .select("id")
+    .single();
 
   if (error) throw new Error(`Failed to upsert role mapping: ${error.message}`);
+  return { id: data.id };
 }
 
 /**

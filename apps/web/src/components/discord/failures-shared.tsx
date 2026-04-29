@@ -54,7 +54,15 @@ export function buildUnifiedRows(
     kind: "dm",
     data: f,
   }));
-  return [...channels, ...dms];
+  // Sort DESC by failure timestamp so newer failures appear first regardless of
+  // kind. The two row shapes carry the timestamp under different field names —
+  // channel rows use `last_attempt_at` (nullable), DM rows use `failed_at`.
+  // Null `last_attempt_at` falls back to "" so it sorts last.
+  return [...channels, ...dms].sort((a, b) => {
+    const aTime = a.kind === "channel" ? (a.data.last_attempt_at ?? "") : a.data.failed_at;
+    const bTime = b.kind === "channel" ? (b.data.last_attempt_at ?? "") : b.data.failed_at;
+    return bTime.localeCompare(aTime);
+  });
 }
 
 export function filterRows(

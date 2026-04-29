@@ -248,25 +248,33 @@ export function FailuresTable({
 
   function handleRetryAll() {
     startRefreshTransition(async () => {
-      const retryable = filterRows(rows, filter);
+      // Skip DM rows already delivered via fallback — the per-row UI marks
+      // these as "No action" and bulk retry must not sweep them in.
+      const retryable = filterRows(rows, filter).filter(
+        (row) => row.kind === "channel" || !row.data.delivered_via_fallback
+      );
 
       const results = await Promise.allSettled(
         retryable.map((row) => retryNotificationAction(row.data.id))
       );
 
-      const successCount = results.filter(
-        (r) => r.status === "fulfilled" && r.value.success
-      ).length;
+      // Only remove rows whose individual retry actually succeeded — a single
+      // success in a batch must not sweep away the rows whose retries failed.
+      const successfulKeys = new Set(
+        results.flatMap((result, index) =>
+          result.status === "fulfilled" && result.value.success
+            ? [`${retryable[index]!.kind}-${retryable[index]!.data.id}`]
+            : []
+        )
+      );
+      const successCount = successfulKeys.size;
 
       if (successCount > 0) {
         toast.success(
           `${successCount} item${successCount !== 1 ? "s" : ""} queued for retry`
         );
-        const retriedIds = new Set(
-          retryable.map((r) => `${r.kind}-${r.data.id}`)
-        );
         setRows((rs) =>
-          rs.filter((r) => !retriedIds.has(`${r.kind}-${r.data.id}`))
+          rs.filter((r) => !successfulKeys.has(`${r.kind}-${r.data.id}`))
         );
       } else {
         toast.error("No items could be queued for retry");

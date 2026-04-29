@@ -190,6 +190,13 @@ export function DmSettingsTable({
     const fallbackChannelId =
       next.mode === "dm_only" ? null : next.fallbackChannelId || null;
 
+    // Skip the network call when switching to a channel-mode without a channel
+    // pick — the action's Zod schema rejects this combination, which would roll
+    // back the optimistic update before the user can complete the selection.
+    if (next.mode !== "dm_only" && !fallbackChannelId) {
+      return;
+    }
+
     void upsertDmSettingAction({
       communityId,
       eventType,

@@ -216,7 +216,17 @@ export function RoleMappingTable({
       if (!result.success) {
         toast.error(result.error);
         setRows(prev); // rollback
+        return;
       }
+      // Patch the new mapping id into local state so a subsequent toggle works
+      // without tripping the `mappingId == null` guard.
+      setRows((rs) =>
+        rs.map((r) =>
+          r.roleType === roleType
+            ? { ...r, mappingId: result.data.mappingId }
+            : r
+        )
+      );
     });
   }
 

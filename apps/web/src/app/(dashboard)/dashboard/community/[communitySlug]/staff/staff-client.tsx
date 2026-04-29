@@ -42,6 +42,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsClient } from "@/hooks/use-is-client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { InviteStaffDialog } from "./invite-staff-dialog";
 import { RemoveStaffDialog } from "./remove-staff-dialog";
@@ -706,6 +707,7 @@ export function StaffClient({
   currentUserRole,
 }: StaffClientProps) {
   const router = useRouter();
+  const isClient = useIsClient();
   const isMobile = useIsMobile();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [removeStaff, setRemoveStaff] = useState<StaffWithRole | null>(null);
@@ -980,8 +982,19 @@ export function StaffClient({
         </div>
       )}
 
+      {/* Pre-hydration skeleton — prevents the mobile/desktop layout flip on
+          first paint (useIsMobile is `false` on the server, so without this
+          guard phones briefly render the desktop DnD layout). */}
+      {staff.length > 0 && !isClient && (
+        <div
+          aria-hidden
+          className="bg-muted/30 animate-pulse rounded-lg"
+          style={{ height: `${Math.max(staff.length, 3) * 52 + 32}px` }}
+        />
+      )}
+
       {/* Mobile: flat list with per-member dropdown */}
-      {staff.length > 0 && isMobile && (
+      {staff.length > 0 && isClient && isMobile && (
         <StaffMobileList
           ownerStaff={ownerStaff}
           unassignedStaff={unassignedStaff}
@@ -996,7 +1009,7 @@ export function StaffClient({
       )}
 
       {/* Desktop: two-column drag-drop layout */}
-      {staff.length > 0 && !isMobile && (
+      {staff.length > 0 && isClient && !isMobile && (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}

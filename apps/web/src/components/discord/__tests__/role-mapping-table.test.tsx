@@ -12,13 +12,27 @@ jest.mock("@/hooks/use-is-client", () => ({
   useIsClient: () => mockUseIsClient(),
 }));
 
+// Capture onRoleChange and onToggle so tests can invoke them directly.
+// Base UI Select does not expose ARIA options in JSDOM, so we drive the mobile
+// path for the freshly-upserted-row test instead of clicking the desktop Select.
+let capturedOnRoleChange: ((roleType: string, discordRoleId: string) => void) | null = null;
+let capturedOnToggle: ((roleType: string, enabled: boolean) => void) | null = null;
+
 jest.mock("../role-mapping-cards", () => ({
-  RoleMappingCards: (props: { rows?: { roleType: string }[] }) => (
-    <div
-      data-testid="role-mapping-cards"
-      data-row-count={props.rows?.length ?? 0}
-    />
-  ),
+  RoleMappingCards: (props: {
+    rows?: { roleType: string }[];
+    onRoleChange?: (roleType: string, discordRoleId: string) => void;
+    onToggle?: (roleType: string, enabled: boolean) => void;
+  }) => {
+    capturedOnRoleChange = props.onRoleChange ?? null;
+    capturedOnToggle = props.onToggle ?? null;
+    return (
+      <div
+        data-testid="role-mapping-cards"
+        data-row-count={props.rows?.length ?? 0}
+      />
+    );
+  },
 }));
 
 import { render, screen, waitFor } from "@testing-library/react";
@@ -100,7 +114,7 @@ beforeEach(() => {
   });
   mockUpsertRoleMappingAction.mockResolvedValue({
     success: true,
-    data: undefined,
+    data: { mappingId: 999 },
   });
 });
 
@@ -209,6 +223,55 @@ describe("RoleMappingTable", () => {
           "Assign a Discord role before enabling."
         );
       });
+    });
+
+    it("toggle works on a freshly-upserted row (no 'Assign a Discord role' error)", async () => {
+      mockUpsertRoleMappingAction.mockResolvedValueOnce({
+        success: true,
+        data: { mappingId: 777 },
+      });
+      mockToggleRoleMappingAction.mockResolvedValueOnce({
+        success: true,
+        data: undefined,
+      });
+
+      // Stay on the mobile path throughout: Base UI Select does not expose ARIA
+      // options in JSDOM, so we drive callbacks directly via the cards stub.
+      mockUseIsMobile.mockReturnValue(true);
+      capturedOnRoleChange = null;
+      capturedOnToggle = null;
+
+      // Start with NO mappings — every row's mappingId is null locally.
+      render(<RoleMappingTable {...defaultProps} roleMappings={[]} />);
+
+      // The cards stub captured onRoleChange. Call it to simulate the user
+      // picking "role-aaa" for the "staff" role type. This triggers
+      // upsertRoleMappingAction and — on resolve — patches mappingId=777.
+      expect(capturedOnRoleChange).not.toBeNull();
+      capturedOnRoleChange!("staff", "role-aaa");
+
+      // Wait for the upsert action to resolve and patch state.
+      await waitFor(() => {
+        expect(mockUpsertRoleMappingAction).toHaveBeenCalledWith({
+          communityId: 42,
+          roleType: "staff",
+          discordRoleId: "role-aaa",
+        });
+      });
+
+      // The cards stub is re-rendered with the updated rows, so capturedOnToggle
+      // is refreshed. Call it to simulate toggling the staff row off. The
+      // mappingId is now 777 (patched above), so toggleRoleMappingAction must
+      // be called with 777, not trip the null guard.
+      expect(capturedOnToggle).not.toBeNull();
+      capturedOnToggle!("staff", false);
+
+      await waitFor(() => {
+        expect(mockToggleRoleMappingAction).toHaveBeenCalledWith(777, false);
+      });
+      expect(toast.error).not.toHaveBeenCalledWith(
+        "Assign a Discord role before enabling."
+      );
     });
   });
 

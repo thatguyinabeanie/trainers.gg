@@ -23,9 +23,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 
 import { FailuresCards } from "../failures-cards";
 import { type FailuresInnerProps, type UnifiedFailureRow } from "../failures-table";
-import type {
-  ChannelFailureRow,
-  DmFailureRow,
+import {
+  type ChannelFailureRow,
+  type DmFailureRow,
 } from "@trainers/supabase";
 
 // ── Helpers ────────────────────────────────────────────────────────────────

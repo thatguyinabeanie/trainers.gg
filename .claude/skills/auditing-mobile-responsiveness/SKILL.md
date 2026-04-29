@@ -49,7 +49,7 @@ pnpm dev:web
 # Then via Playwright MCP
 browser_resize { width: 393, height: 852 }     # iPhone 14 Pro
 browser_navigate { url: "http://localhost:3000/sign-in" }
-# Sign in as admin (Password123!) — see CLAUDE.md "Test Users" for the table
+# Sign in as admin — see CLAUDE.md "Test Users" for credentials
 ```
 
 Default to **393×852** as the primary mobile viewport. Add **360×800** when you find a borderline overflow (cramped Android), and **768×1024** when checking the breakpoint flip.
@@ -76,15 +76,15 @@ After navigating, take a screenshot and run two evals.
     .slice(0, 10),
 })
 
-// Sub-40px tap targets
+// Sub-40px tap targets — cache the rect once per element to avoid repeated layout reads
 () => [...document.querySelectorAll("button,a,[role=button]")]
-  .filter(el => { const r = el.getBoundingClientRect();
-                  return r.width && r.height && (r.width < 40 || r.height < 40); })
-  .map(el => ({
+  .map(el => ({ el, r: el.getBoundingClientRect() }))
+  .filter(({ r }) => r.width && r.height && (r.width < 40 || r.height < 40))
+  .map(({ el, r }) => ({
     tag: el.tagName.toLowerCase(),
     text: (el.textContent || el.getAttribute("aria-label") || "").slice(0, 30).trim(),
-    w: Math.round(el.getBoundingClientRect().width),
-    h: Math.round(el.getBoundingClientRect().height),
+    w: Math.round(r.width),
+    h: Math.round(r.height),
   }))
 ```
 
@@ -92,7 +92,7 @@ After navigating, take a screenshot and run two evals.
 
 Static probes catch most issues but not all. Look for these visual patterns:
 
-- **"Floating content"** — content sits in a narrow band with empty space on either side. The page has a fixed-width container, a desktop-only multi-column layout that didn't collapse, OR you're seeing a page wider than the viewport with horizontal scroll. Check `scrollWidth` vs `innerWidth` first; if they're equal, look for `min-w-*` / fixed `w-[Npx]` on a parent.
+- **"Floating content"** — content sits in a narrow band with unused space on either side. The page has a fixed-width container, a desktop-only multi-column layout that didn't collapse, OR you're seeing a page wider than the viewport with horizontal scroll. Check `scrollWidth` vs `innerWidth` first; if they're equal, look for `min-w-*` / fixed `w-[Npx]` on a parent.
 - **Cramped 4-column stat strips** — 4 cells of ~21px each on a 375px viewport, labels truncating. Check the `grid-cols-*` value (must collapse to 2 or 1 on phones).
 - **Filter pill rows clipped right** — the row is 391px wide in a 393px viewport, with the rightmost pill half-cut. Needs `overflow-x-auto`.
 - **Drag-and-drop UX with stacked columns** — copy that says "Drag X between columns" while the columns are stacked vertically. Needs a tap-to-X mobile path.
@@ -102,7 +102,7 @@ Static probes catch most issues but not all. Look for these visual patterns:
 
 ```text
 Critical  — blocks usability (page-level overflow; broken drag-only UX; tap target <30px)
-Important — degrades experience but works (cramped grid; sub-40 tap target on infrequent action)
+Important — degrades experience but works (cramped grid; tap target 30–39px on infrequent action)
 Polish    — nice-to-have (text-size bump on small cards; padding tightening)
 ```
 
