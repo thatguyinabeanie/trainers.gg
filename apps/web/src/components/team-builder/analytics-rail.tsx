@@ -37,11 +37,18 @@ const PANEL_CHROME_OVERRIDE =
 // =============================================================================
 
 /**
- * Right-rail tabbed wrapper that hosts the Types, Speed, and Calc panels at a
- * fixed 460px width. Types is the default tab — it's the most-used analysis
- * tool. Tab state lives on the rail (so switching pokemon does not reset the
- * active tab), while each panel keeps its own internal state and resets via
- * its own `key` strategy on `selectedPokemon` change.
+ * Right-rail tabbed wrapper that hosts the Types, Speed, and Calc panels.
+ * Width is responsive: full-width on phones (where the rail stacks below
+ * the editor in TeamWorkspace's `grid-cols-1` layout) and pinned to 460px
+ * (`w-rail`) at lg+ where the rail sits side-by-side with the editor
+ * column in TeamWorkspace's `grid-cols-[minmax(0,1fr)_28.75rem]`. The
+ * `sticky top-4` behavior also activates only at lg+ — when stacked,
+ * the rail scrolls with the page like any other section.
+ *
+ * Types is the default tab — it's the most-used analysis tool. Tab state
+ * lives on the rail (so switching pokemon does not reset the active tab),
+ * while each panel keeps its own internal state and resets via its own
+ * `key` strategy on `selectedPokemon` change.
  *
  * The non-active panel is unmounted (not just hidden) so we don't keep
  * running its calculations.
