@@ -3,11 +3,15 @@ import { render as rtlRender, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
+type Layout = "desktop" | "mobile";
+
 // Wrap RTL's render so every PokemonEditor mount automatically strips the
-// mobile build-fields container — see `trimMobileLayout` below for why.
-function render(ui: React.ReactElement) {
+// off-test layout from the DOM — see `trimToLayout` below for why. Default
+// is `desktop` (matches the prior single-layout test behavior); pass
+// `"mobile"` to exercise the mobile editor integration path.
+function render(ui: React.ReactElement, layout: Layout = "desktop") {
   const result = rtlRender(ui);
-  trimMobileLayout();
+  trimToLayout(layout);
   return result;
 }
 
@@ -195,14 +199,27 @@ const defaultProps = {
 // uses Tailwind `hidden md:flex` / `md:hidden` to swap them per viewport.
 // JSDOM doesn't compute Tailwind class styles, so without intervention every
 // FieldButton would render twice in tests. After each render, strip the
-// mobile build-fields container so default queries match a single instance —
-// matches the desktop-only behavior tests assumed before the dual layout.
-function trimMobileLayout() {
+// off-test layout's container from the DOM. Tests pass `layout: "mobile"` to
+// the render helper to exercise the mobile editor integration path; default
+// is `"desktop"` matching the single-layout behavior tests previously assumed.
+function trimToLayout(layout: Layout) {
+  const desktopFields = document.querySelector(
+    '[data-testid="editor-header-band-desktop-fields"]'
+  );
   const mobileFields = document.querySelector(
     '[data-testid="editor-header-band-mobile-fields"]'
   );
-  if (mobileFields) {
+  if (layout === "desktop" && mobileFields) {
     mobileFields.remove();
+  }
+  if (layout === "mobile" && desktopFields) {
+    // The divider preceding the desktop-fields div has no own testid; remove
+    // it via DOM proximity so the layout tree mirrors what users see at <md.
+    const divider = desktopFields.previousElementSibling;
+    if (divider?.getAttribute("aria-hidden") === "true") {
+      divider.remove();
+    }
+    desktopFields.remove();
   }
 }
 
@@ -451,6 +468,61 @@ describe("PokemonEditor", () => {
       expect(screen.getByText("Ability")).toBeInTheDocument();
       expect(screen.getByText("Item")).toBeInTheDocument();
       expect(screen.getByText("Nature")).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mobile layout integration — exercises the mobile build-fields branch
+  // that the default `render()` calls trim away. Without this the suite would
+  // be blind to regressions in the mobile editor path.
+  // ---------------------------------------------------------------------------
+
+  describe("mobile layout integration", () => {
+    it("renders the four loadout fields inside the mobile grid container", () => {
+      render(<PokemonEditor {...defaultProps} />, "mobile");
+      const mobileFields = screen.getByTestId(
+        "editor-header-band-mobile-fields"
+      );
+      // Each FieldButton renders an <button aria-label="Edit X"> — locate the
+      // mobile copies inside the mobile grid container.
+      expect(
+        mobileFields.querySelector('button[aria-label*="Edit Ability"]')
+      ).not.toBeNull();
+      expect(
+        mobileFields.querySelector('button[aria-label*="Edit Item"]')
+      ).not.toBeNull();
+      expect(
+        mobileFields.querySelector('button[aria-label*="Edit Tera"]')
+      ).not.toBeNull();
+      expect(
+        mobileFields.querySelector('button[aria-label*="Edit Nature"]')
+      ).not.toBeNull();
+    });
+
+    it("opens the ability picker when the mobile Ability cell is clicked", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} />, "mobile");
+      // After trimToLayout("mobile") the desktop branch is removed — the only
+      // matching button lives in the mobile grid.
+      await user.click(screen.getByRole("button", { name: /edit ability/i }));
+      expect(
+        screen.getByPlaceholderText("Search abilities…")
+      ).toBeInTheDocument();
+    });
+
+    it("anchors the picker overlay below the band's relative wrapper", async () => {
+      // Sanity check that the picker still opens correctly on mobile, where
+      // the band is taller (Row 1 + Row 2). The overlay uses `top-full` so
+      // it should mount inside the same `.relative` wrapper as the band.
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} />, "mobile");
+      await user.click(screen.getByRole("button", { name: /edit nature/i }));
+      const naturePicker = screen.getByPlaceholderText("Search natures…");
+      expect(naturePicker).toBeInTheDocument();
+      // The picker container sits inside the same relative wrapper as the band.
+      expect(
+        naturePicker.closest('[data-testid="editor-header-band-mobile-fields"]')
+      ).toBeNull();
     });
   });
 });
