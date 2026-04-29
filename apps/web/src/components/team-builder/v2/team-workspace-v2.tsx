@@ -10,6 +10,7 @@ import { type TeamWithPokemon, type Tables, type TablesUpdate } from "@trainers/
 import { updatePokemonAction } from "@/actions/teams";
 
 import { CalcDrawer } from "./calc/calc-drawer";
+import { CalcStateProvider } from "./calc/calc-state-context";
 import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
 import { useBuilderState } from "./use-builder-state";
@@ -128,64 +129,69 @@ export function TeamWorkspaceV2({
   }, [state.drawer, state.setDrawer]);
 
   return (
-    <div
-      className={s.builderApp}
-      data-density={tweaks.density}
-      data-theme={tweaks.theme}
+    <CalcStateProvider
+      selectedPokemon={slots[state.activeIdx] ?? null}
+      format={format}
+      field={state.field}
+      setField={state.setField}
     >
-      <Topbar
-        team={team}
-        filledCount={filledCount}
-        format={format}
-        username={username}
-        calcOpen={state.calcOpen}
-        onToggleCalc={() => state.setCalcOpen((o) => !o)}
-        onOpenImport={() => console.warn("[Phase 2 stub] open import")}
-        onSave={() => console.warn("[Phase 1 stub] save")}
-      />
+      <div
+        className={s.builderApp}
+        data-density={tweaks.density}
+        data-theme={tweaks.theme}
+      >
+        <Topbar
+          team={team}
+          filledCount={filledCount}
+          format={format}
+          username={username}
+          calcOpen={state.calcOpen}
+          onToggleCalc={() => state.setCalcOpen((o) => !o)}
+          onOpenImport={() => console.warn("[Phase 2 stub] open import")}
+          onSave={() => console.warn("[Phase 1 stub] save")}
+        />
 
-      <div className={s.builderWorkshell}>
-        <div className={s.builderWorklane}>
-          <main className={s.builderGrid}>
-            <section className={s.builderRows}>
-              {slots.map((p, i) => (
-                <PokeRow
-                  key={i}
-                  idx={i}
-                  pokemon={p}
-                  isActive={state.activeIdx === i}
-                  density={tweaks.density}
-                  expandMode={tweaks.expandMode}
-                  onActivate={state.setActiveIdx}
-                  onAdd={handleAdd}
-                  onRemove={handleRemove}
-                  teamPokemon={optimisticTeamPokemon}
-                  format={format}
-                  onPokemonUpdate={handlePokemonUpdate}
-                />
-              ))}
-            </section>
-          </main>
+        <div className={s.builderWorkshell}>
+          <div className={s.builderWorklane}>
+            <main className={s.builderGrid}>
+              <section className={s.builderRows}>
+                {slots.map((p, i) => (
+                  <PokeRow
+                    key={i}
+                    idx={i}
+                    pokemon={p}
+                    isActive={state.activeIdx === i}
+                    density={tweaks.density}
+                    expandMode={tweaks.expandMode}
+                    onActivate={state.setActiveIdx}
+                    onAdd={handleAdd}
+                    onRemove={handleRemove}
+                    teamPokemon={optimisticTeamPokemon}
+                    format={format}
+                    onPokemonUpdate={handlePokemonUpdate}
+                  />
+                ))}
+              </section>
+            </main>
 
-          {/* Phase 5 placeholders — present for layout stability */}
-          <div className={s.builderDockbarSlot} aria-hidden />
-          <div className={s.builderBottomDrawerSlot} aria-hidden />
+            {/* Phase 5 placeholders — present for layout stability */}
+            <div className={s.builderDockbarSlot} aria-hidden />
+            <div className={s.builderBottomDrawerSlot} aria-hidden />
+          </div>
+
+          {tweaks.showCalc && state.calcOpen && (
+            <CalcDrawer
+              open
+              selectedPokemon={slots[state.activeIdx] ?? null}
+              team={team}
+              setActiveIdx={state.setActiveIdx}
+              format={format}
+              activeIdx={state.activeIdx}
+              onClose={() => state.setCalcOpen(false)}
+            />
+          )}
         </div>
-
-        {tweaks.showCalc && state.calcOpen && (
-          <CalcDrawer
-            open
-            selectedPokemon={slots[state.activeIdx] ?? null}
-            team={team}
-            setActiveIdx={state.setActiveIdx}
-            format={format}
-            activeIdx={state.activeIdx}
-            field={state.field}
-            setField={state.setField}
-            onClose={() => state.setCalcOpen(false)}
-          />
-        )}
       </div>
-    </div>
+    </CalcStateProvider>
   );
 }

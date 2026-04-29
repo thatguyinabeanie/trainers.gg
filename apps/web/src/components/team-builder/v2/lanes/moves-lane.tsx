@@ -14,7 +14,11 @@ import {
 
 import { TypeDot } from "../type-dot";
 import { MovePicker } from "../pickers/move-picker";
-import { TYPE_BG_COLORS } from "../../type-colors";
+import { useCalcStateContext } from "../calc/calc-state-context";
+import { CalcDetailCard } from "../calc/calc-detail-card";
+import { getMoveEffectiveness } from "../calc/move-effectiveness";
+import { getMoveTargetInfo } from "../calc/move-target-info";
+import { getVerdict } from "../../use-calc-state";
 
 // =============================================================================
 // Types
@@ -28,14 +32,36 @@ interface MovesLaneProps {
 
 type MoveSlot = "move1" | "move2" | "move3" | "move4";
 
+/** Which popover panel is open for a tile. */
+type TilePanel = "detail" | "picker" | null;
+
 // =============================================================================
 // Helpers
 // =============================================================================
 
 const MOVE_SLOTS: MoveSlot[] = ["move1", "move2", "move3", "move4"];
 
+/** Map move slot key to parallel array index. */
+const SLOT_IDX: Record<MoveSlot, number> = {
+  move1: 0,
+  move2: 1,
+  move3: 2,
+  move4: 3,
+};
+
+type KoTier = "1" | "2" | "3" | "4" | null;
+
+function getKoTier(minPct: number, maxPct: number): KoTier {
+  const verdict = getVerdict(minPct, maxPct);
+  if (verdict === "OHKO") return "1";
+  if (verdict === "2HKO") return "2";
+  if (verdict === "3HKO") return "3";
+  if (maxPct > 0) return "4";
+  return null;
+}
+
 // =============================================================================
-// MoveTile — one move row
+// MoveTile — one calc-aware move row
 // =============================================================================
 
 interface MoveTileProps {
@@ -43,73 +69,198 @@ interface MoveTileProps {
   moveName: string | null;
   species: string;
   format: GameFormat | undefined;
+  attacker: Tables<"pokemon">;
   onPick: (slotKey: MoveSlot, moveName: string) => void;
 }
 
-function MoveTile({ slotKey, moveName, species, format, onPick }: MoveTileProps) {
-  const [open, setOpen] = useState(false);
-  const move = moveName ? getMoveData(moveName) : undefined;
+function MoveTile({
+  slotKey,
+  moveName,
+  species,
+  format,
+  attacker,
+  onPick,
+}: MoveTileProps) {
+  const [panel, setPanel] = useState<TilePanel>(null);
 
-  const typeColorClass = move?.type
-    ? (TYPE_BG_COLORS[move.type as keyof typeof TYPE_BG_COLORS] ?? "bg-muted text-foreground")
-    : "bg-muted text-foreground";
+  const calc = useCalcStateContext();
+  const moveIdx = SLOT_IDX[slotKey];
+  const output = calc.moveCalcOutputs[moveIdx] ?? null;
+
+  const moveData = moveName ? getMoveData(moveName) : null;
+  const isStatus = moveData?.category === "Status";
+  const hasCalc = output !== null && !isStatus;
+
+  const hasDefender = Boolean(calc.defenderSpecies);
+
+  const targetInfo = moveName ? getMoveTargetInfo(moveName) : null;
+  const isSpread = targetInfo?.isSpread ?? false;
+  const foesAlive = calc.field.foesAlive;
+  const allyAlive = calc.field.allyAlive;
+  const spreadApplied =
+    isSpread &&
+    (targetInfo?.kind === "all-foes"
+      ? foesAlive >= 2
+      : foesAlive >= 2 || allyAlive);
+
+  // Display percentages with spread reduction applied
+  const rawMin = output?.minPercent ?? 0;
+  const rawMax = output?.maxPercent ?? 0;
+  const displayMin = spreadApplied ? rawMin * 0.75 : rawMin;
+  const displayMax = spreadApplied ? rawMax * 0.75 : rawMax;
+
+  const koTier = hasCalc ? getKoTier(displayMin, displayMax) : null;
+
+  const eff =
+    moveName && hasDefender && !isStatus
+      ? getMoveEffectiveness(moveName, calc.defenderSpecies)
+      : null;
+
+  function handleContextMenu(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setPanel("picker");
+  }
+
+  function handleClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!moveName) {
+      setPanel("picker");
+      return;
+    }
+    if (hasCalc) {
+      setPanel("detail");
+    } else {
+      setPanel("picker");
+    }
+  }
+
+  const isOpen = panel !== null;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) setPanel(null);
+      }}
+    >
       <PopoverTrigger>
         <button
           type="button"
-          // TODO Phase 4: live damage preview, calc detail card on left-click, move picker on right-click
+          onClick={handleClick}
+          onContextMenu={handleContextMenu}
           className={cn(
-            "grid min-w-0 items-center gap-2 rounded border px-2 py-1.5 text-left transition-colors",
-            moveName
-              ? "bg-card/80 border-border hover:border-border/80 hover:bg-muted/40"
-              : "border-dashed border-border/40 bg-transparent hover:border-border/60"
+            "mvline",
+            moveName ? "mvline--set" : "mvline--empty",
+            koTier === "1" && "mvline--ko1",
+            koTier === "2" && "mvline--ko2",
+            koTier === "3" && "mvline--ko3",
+            koTier === "4" && "mvline--ko4"
           )}
-          style={{ gridTemplateColumns: "12px 1fr auto auto" }}
         >
-          {/* Type dot */}
-          <TypeDot t={move?.type ?? "Normal"} size={10} />
+          {/* Col 1: Type dot */}
+          <TypeDot t={moveData?.type ?? "Normal"} size={10} />
 
-          {/* Move name */}
+          {/* Col 2: Move name */}
           <span
             className={cn(
-              "min-w-0 truncate text-[12.5px] font-medium",
+              "mvline-name",
               !moveName && "text-muted-foreground/50 italic"
             )}
           >
             {moveName ?? `— set move ${MOVE_SLOTS.indexOf(slotKey) + 1}`}
           </span>
 
-          {/* Type badge */}
-          {move?.type && (
-            <span
-              className={cn(
-                "shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold uppercase leading-none",
-                typeColorClass
-              )}
-            >
-              {move.type.slice(0, 3)}
-            </span>
-          )}
+          {/* Col 3: BP */}
+          <span className="mvline-bp">
+            {moveData?.basePower && moveData.basePower > 0
+              ? moveData.basePower
+              : "—"}
+          </span>
 
-          {/* BP */}
-          <span className="text-muted-foreground shrink-0 font-mono text-[11px]">
-            {move?.basePower && move.basePower > 0 ? move.basePower : "—"}
+          {/* Col 4: Calc output or hint */}
+          <span className="mvline-calc">
+            {hasCalc ? (
+              <span className="mvline-calc-inner">
+                <span className="mvline-range">
+                  {displayMin.toFixed(1)}
+                  <span className="mvline-sep">–</span>
+                  {displayMax.toFixed(1)}
+                  <span className="mvline-pct">%</span>
+                </span>
+
+                {koTier && (
+                  <span className={cn("mvline-ko", `mvline-ko--${koTier}`)}>
+                    {koTier === "1"
+                      ? "OHKO"
+                      : koTier === "2"
+                        ? "2HKO"
+                        : koTier === "3"
+                          ? "3HKO"
+                          : "4HKO+"}
+                  </span>
+                )}
+
+                {eff !== null && eff !== 1 && (
+                  <span
+                    className={cn(
+                      "mvline-eff",
+                      eff > 1
+                        ? "mvline-eff--se"
+                        : eff === 0
+                          ? "mvline-eff--imm"
+                          : "mvline-eff--ne"
+                    )}
+                  >
+                    {eff}×
+                  </span>
+                )}
+
+                {spreadApplied && (
+                  <span className="mvline-spread" title="Spread −25%">
+                    spd −25%
+                  </span>
+                )}
+              </span>
+            ) : moveName && isStatus ? (
+              <span className="mvline-status">status</span>
+            ) : moveName && !hasDefender ? (
+              <span className="mvline-no-target">— pick a target —</span>
+            ) : null}
           </span>
         </button>
       </PopoverTrigger>
+
       <PopoverContent side="bottom" align="start" className="w-auto p-0">
-        <MovePicker
-          value={moveName}
-          species={species}
-          format={format}
-          onPick={(name) => {
-            onPick(slotKey, name);
-            setOpen(false);
-          }}
-          onClose={() => setOpen(false)}
-        />
+        {panel === "detail" && moveName && output ? (
+          <CalcDetailCard
+            attacker={attacker}
+            moveName={moveName}
+            baseOutput={output}
+            defender={{
+              species: calc.defenderSpecies,
+              ability: calc.defenderAbility,
+              item: calc.defenderItem,
+              nature: calc.defenderNature,
+            }}
+            format={format}
+            foesAlive={foesAlive}
+            allyAlive={allyAlive}
+            onClose={() => setPanel(null)}
+            onChangeMove={() => setPanel("picker")}
+          />
+        ) : (
+          <MovePicker
+            value={moveName}
+            species={species}
+            format={format}
+            onPick={(name) => {
+              onPick(slotKey, name);
+              setPanel(null);
+            }}
+            onClose={() => setPanel(null)}
+          />
+        )}
       </PopoverContent>
     </Popover>
   );
@@ -120,18 +271,21 @@ function MoveTile({ slotKey, moveName, species, format, onPick }: MoveTileProps)
 // =============================================================================
 
 /**
- * Vertical stack of 4 move tiles.
- * Clicking a tile opens the move picker popover.
+ * Vertical stack of 4 calc-aware move tiles.
  *
- * TODO Phase 4: live damage preview, calc detail card on left-click, move picker on right-click.
+ * Left-click: opens CalcDetailCard when calc data is available, else picker.
+ * Right-click: always opens move picker.
  */
 export function MovesLane({ pokemon, format, onUpdate }: MovesLaneProps) {
-  function handlePick(slotKey: MoveSlot, moveName: string) {
-    onUpdate({ [slotKey]: moveName });
+  function handlePick(slotKey: MoveSlot, name: string) {
+    onUpdate({ [slotKey]: name });
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-1 border-r border-dashed border-border/60 p-3" style={{ minWidth: 200 }}>
+    <div
+      className="flex min-w-0 flex-col gap-1 border-r border-dashed border-border/60 p-3"
+      style={{ minWidth: 200 }}
+    >
       {/* Header */}
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -148,6 +302,7 @@ export function MovesLane({ pokemon, format, onUpdate }: MovesLaneProps) {
             moveName={pokemon[slotKey]}
             species={pokemon.species ?? ""}
             format={format}
+            attacker={pokemon}
             onPick={handlePick}
           />
         ))}

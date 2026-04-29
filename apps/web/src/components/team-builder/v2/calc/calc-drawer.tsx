@@ -3,8 +3,7 @@
 import { type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 
-import { useCalcState } from "../../use-calc-state";
-import { type FieldState } from "../use-builder-state";
+import { useCalcStateContext } from "./calc-state-context";
 import { CalcAttackerBlock } from "./calc-attacker-block";
 import { CalcDefenderBlock } from "./calc-defender-block";
 import { CalcFieldBlock } from "./calc-field-block";
@@ -18,8 +17,6 @@ interface CalcDrawerProps {
   format: GameFormat | undefined;
   /** Active row index — needed for team pip highlighting */
   activeIdx: number;
-  field: FieldState;
-  setField: (field: FieldState) => void;
   onClose: () => void;
 }
 
@@ -29,8 +26,8 @@ interface CalcDrawerProps {
 
 /**
  * Right-rail Damage Calc drawer for the v2 team builder.
- * Internally calls useCalcState; state resets on attacker switch via key prop
- * on CalcDrawerInner (per react-patterns.md state-reset pattern).
+ * Consumes calc state from CalcStateContext (lifted to workspace level in
+ * team-workspace-v2.tsx) so the MovesLane can share the same defender state.
  */
 export function CalcDrawer({
   open,
@@ -39,8 +36,6 @@ export function CalcDrawer({
   setActiveIdx,
   format,
   activeIdx,
-  field,
-  setField,
   onClose,
 }: CalcDrawerProps) {
   if (!open) return null;
@@ -71,15 +66,12 @@ export function CalcDrawer({
           </p>
         </div>
       ) : (
-        <CalcDrawerInner
-          key={selectedPokemon.id}
+        <CalcDrawerContent
           selectedPokemon={selectedPokemon}
           team={team}
           setActiveIdx={setActiveIdx}
           format={format}
           activeIdx={activeIdx}
-          field={field}
-          setField={setField}
         />
       )}
     </aside>
@@ -87,29 +79,26 @@ export function CalcDrawer({
 }
 
 // =============================================================================
-// CalcDrawerInner — keyed by attacker.id so all calc state resets cleanly
+// CalcDrawerContent — consumes context, no local useCalcState call
 // =============================================================================
 
-interface CalcDrawerInnerProps {
+interface CalcDrawerContentProps {
   selectedPokemon: Tables<"pokemon">;
   team: TeamWithPokemon;
   setActiveIdx: (idx: number) => void;
   format: GameFormat | undefined;
   activeIdx: number;
-  field: FieldState;
-  setField: (field: FieldState) => void;
 }
 
-function CalcDrawerInner({
+function CalcDrawerContent({
   selectedPokemon,
   team,
   setActiveIdx,
   format,
   activeIdx,
-  field,
-  setField,
-}: CalcDrawerInnerProps) {
-  const calc = useCalcState({ selectedPokemon, format });
+}: CalcDrawerContentProps) {
+  const calc = useCalcStateContext();
+  const { field, setField } = calc;
 
   // Teammates (other than selected attacker) for defender picker
   const teammates = (team.team_pokemon ?? [])
@@ -123,15 +112,11 @@ function CalcDrawerInner({
     calc.moveCalcOutputs.find((o) => o !== null)?.defenderMaxHP ?? 0;
 
   // Resolve gameType from builder field.doubles so both stay in sync.
-  // useCalcState owns its own gameType state — we initialize it from field
-  // on mount (key-reset handles attacker switch). For user toggles inside
-  // the drawer, we update both calc.setGameType and field.doubles together.
   function handleGameTypeChange(v: "Doubles" | "Singles") {
     calc.setGameType(v);
     setField({ ...field, doubles: v === "Doubles" });
   }
 
-  // Field state setters that pipe foesAlive / allyAlive through builder field
   function handleSetFoesAlive(v: 1 | 2) {
     setField({ ...field, foesAlive: v });
   }
@@ -140,11 +125,9 @@ function CalcDrawerInner({
     setField({ ...field, allyAlive: v });
   }
 
-  // Tera toggle
   function handleToggleAtkTera() {
     setField({ ...field, atkTera: !field.atkTera });
   }
-
 
   return (
     <div className="cd-content">
