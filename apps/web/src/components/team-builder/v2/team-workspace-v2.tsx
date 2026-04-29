@@ -33,6 +33,7 @@ import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
 import { SpeciesPicker } from "./pickers/species-picker";
 import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
+import { TweaksPanel } from "./tweaks/tweaks-panel";
 import { useBuilderState } from "./use-builder-state";
 import s from "./builder.module.css";
 
@@ -204,7 +205,6 @@ export function TeamWorkspaceV2({
       <div
         className={s.builderApp}
         data-density={tweaks.density}
-        data-theme={tweaks.theme}
       >
         <Topbar
           team={team}
@@ -286,6 +286,9 @@ export function TeamWorkspaceV2({
           )}
         </div>
       </div>
+
+      {/* Tweaks floating panel — Phase 6 */}
+      <TweaksPanel tweaks={tweaks} setTweak={state.setTweak} />
 
       {/* Species picker dialog — opened by handleAdd */}
       <Dialog

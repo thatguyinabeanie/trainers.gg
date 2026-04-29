@@ -39,6 +39,26 @@
   padding: 8px;
 }
 
+/* ============================================================
+   Compact density — Phase 6 active row tightening
+   ============================================================ */
+
+/* Tighten the inter-lane gap in the active row */
+[data-density="compact"] .rowActive {
+  gap: 6px;
+}
+
+/* Reduce stat-row vertical padding */
+[data-density="compact"] .laneStats {
+  padding-block: 4px;
+}
+
+/* Identity lane: smaller sprite grid column */
+[data-density="compact"] .laneId {
+  grid-template-columns: 44px 1fr;
+  gap: 8px;
+}
+
 .builderDockbarSlot {
   flex-shrink: 0;
   border-top: 1px solid var(--border);

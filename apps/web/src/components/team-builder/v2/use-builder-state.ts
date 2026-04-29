@@ -39,12 +39,10 @@ interface DefenderOverrides {
 
 type Density = "comfy" | "compact";
 type ExpandMode = "active" | "all";
-type Theme = "dark" | "light";
 
-interface Tweaks {
+export interface Tweaks {
   density: Density;
   expandMode: ExpandMode;
-  theme: Theme;
   showCalc: boolean;
 }
 
@@ -72,7 +70,6 @@ const TWEAKS_STORAGE_KEY = "trainersgg.builder.tweaks.v2";
 const DEFAULT_TWEAKS: Tweaks = {
   density: "comfy",
   expandMode: "active",
-  theme: "dark",
   showCalc: true,
 };
 
