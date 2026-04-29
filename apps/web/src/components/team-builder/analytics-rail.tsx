@@ -64,8 +64,13 @@ export function AnalyticsRail({
       defaultValue="types"
       data-testid="analytics-rail"
       className={cn(
-        "bg-card w-rail flex-shrink-0 overflow-hidden rounded-lg shadow-sm",
-        "sticky top-4 flex max-h-[calc(100svh-6rem)] flex-col",
+        // Full width on phones (where the rail stacks below the editor) so it
+        // never forces page-level horizontal overflow. Pinned to 460px on lg+
+        // when it sits side-by-side with the editor column.
+        "bg-card w-full flex-shrink-0 overflow-hidden rounded-lg shadow-sm lg:w-rail",
+        // sticky top-4 only at lg+ — when stacked on phones, the rail is just
+        // another section of the page and shouldn't pin to the viewport.
+        "flex max-h-[calc(100svh-6rem)] flex-col lg:sticky lg:top-4",
         className
       )}
     >

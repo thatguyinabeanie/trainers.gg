@@ -6,9 +6,11 @@ export default function TeamsLoading() {
     <>
       <PageHeader title="Teams" />
       <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-        {/* Toolbar skeleton */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-1.5">
+        {/* Toolbar skeleton — pills + actions don't fit a single 393px row,
+            stack them on phones, side-by-side at sm+. Pills wrap so they
+            never extend past viewport. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex flex-wrap items-center gap-1.5">
             <Skeleton className="h-7 w-10 rounded-full" />
             <Skeleton className="h-7 w-24 rounded-full" />
             <Skeleton className="h-7 w-28 rounded-full" />

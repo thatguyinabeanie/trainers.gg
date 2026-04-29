@@ -56,6 +56,14 @@ jest.mock("next/image", () => ({
   },
 }));
 
+// useIsMobile drives the desktop-row vs mobile-stack layout decision. Default
+// to desktop (false) so existing tests that count one button per loadout
+// field keep passing — opt into mobile=true in the dedicated layout tests.
+const mockUseIsMobile = jest.fn<() => boolean>();
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
+
 import { getValidAbilities, getSpeciesTypes } from "@trainers/pokemon";
 
 import { EditorHeaderBand } from "../editor-header-band";
@@ -153,6 +161,10 @@ beforeEach(() => {
   // Reset to multi-ability default so each test starts from a known baseline.
   mockedGetValidAbilities.mockReturnValue(["Intimidate", "Flash Fire"]);
   mockedGetSpeciesTypes.mockReturnValue(["Fire", "Dark"]);
+  // Default to desktop layout so the build-field buttons render once inline
+  // (matches the assumption of every existing test). Mobile layout tests opt
+  // into mockUseIsMobile.mockReturnValue(true).
+  mockUseIsMobile.mockReturnValue(false);
 });
 
 // =============================================================================
@@ -582,6 +594,51 @@ describe("EditorHeaderBand", () => {
       expect(screen.queryByLabelText("Male")).not.toBeInTheDocument();
       expect(screen.queryByLabelText("Shiny (off)")).not.toBeInTheDocument();
       expect(screen.queryByLabelText("Level")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("mobile layout", () => {
+    it("renders the build-fields grid below Row 1 when isMobile is true", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      renderBand();
+      expect(
+        screen.getByTestId("editor-header-band-mobile-fields")
+      ).toBeInTheDocument();
+    });
+
+    it("does not render the mobile build-fields grid on desktop", () => {
+      mockUseIsMobile.mockReturnValue(false);
+      renderBand();
+      expect(
+        screen.queryByTestId("editor-header-band-mobile-fields")
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders each loadout button exactly once on mobile (no duplication)", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      renderBand();
+      // Each FieldButton has aria-label "Edit <Label>" — one occurrence per
+      // field whether the layout is desktop-row or mobile-grid.
+      expect(
+        screen.getAllByRole("button", { name: /Edit Ability/ })
+      ).toHaveLength(1);
+      expect(
+        screen.getAllByRole("button", { name: /Edit Item/ })
+      ).toHaveLength(1);
+      expect(
+        screen.getAllByRole("button", { name: /Edit Tera/ })
+      ).toHaveLength(1);
+      expect(
+        screen.getAllByRole("button", { name: /Edit Nature/ })
+      ).toHaveLength(1);
+    });
+
+    it("clicking the mobile Ability cell still triggers onOpenAbilityPicker", async () => {
+      mockUseIsMobile.mockReturnValue(true);
+      const user = userEvent.setup();
+      const handlers = renderBand();
+      await user.click(screen.getByRole("button", { name: /Edit Ability/ }));
+      expect(handlers.onOpenAbilityPicker).toHaveBeenCalledTimes(1);
     });
   });
 });

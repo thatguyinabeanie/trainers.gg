@@ -205,47 +205,53 @@ export function PokemonEditor({
   }
 
   return (
-    <div className={cn("bg-card relative rounded-lg shadow-sm", className)}>
+    <div className={cn("bg-card rounded-lg shadow-sm", className)}>
       {/* ===================================================================
-          Header band — sprite, name, type pills, and the four loadout fields.
-          The four fields trigger inline pickers rendered below the band.
+          Header band + picker overlay — share a relative wrapper so the
+          picker can use `top-full` to anchor to the bottom of the band.
+          The band's height varies between layouts (68px single row at md+,
+          ~128px two-row stack on phones), so absolute pixel offsets like
+          `top-[69px]` would mis-align the picker on mobile.
           =================================================================== */}
-      <EditorHeaderBand
-        pokemon={pokemon}
-        format={format}
-        onOpenAbilityPicker={() => openPicker("ability")}
-        onOpenItemPicker={() => openPicker("item")}
-        onOpenTeraPicker={() => openPicker("tera")}
-        onOpenNaturePicker={() => openPicker("nature")}
-        onOpenSpeciesPicker={onOpenSpeciesPicker}
-        // Only mount the ⋯ details popover when we have a teamId — the
-        // disabled/placeholder editor (no real Pokémon row) skips it.
-        detailsPopover={
-          teamId !== undefined && !disabled
-            ? { teamId, onUpdate, onImported }
-            : undefined
-        }
-        disabled={disabled}
-      />
+      <div className="relative">
+        <EditorHeaderBand
+          pokemon={pokemon}
+          format={format}
+          onOpenAbilityPicker={() => openPicker("ability")}
+          onOpenItemPicker={() => openPicker("item")}
+          onOpenTeraPicker={() => openPicker("tera")}
+          onOpenNaturePicker={() => openPicker("nature")}
+          onOpenSpeciesPicker={onOpenSpeciesPicker}
+          // Only mount the ⋯ details popover when we have a teamId — the
+          // disabled/placeholder editor (no real Pokémon row) skips it.
+          detailsPopover={
+            teamId !== undefined && !disabled
+              ? { teamId, onUpdate, onImported }
+              : undefined
+          }
+          disabled={disabled}
+        />
 
-      {/* ===================================================================
-          Inline picker overlays — render directly under the header band so the
-          user stays anchored to the field they clicked. Only one is open at a
-          time, enforced by the `pickerOpen` discriminated state.
-          =================================================================== */}
-      {(pickerOpen === "ability" ||
-        pickerOpen === "item" ||
-        (hasTera && pickerOpen === "tera") ||
-        pickerOpen === "nature") && (
-        <>
-          {/* Backdrop — click outside picker to close */}
-          <div
-            className="fixed inset-0 z-[45]"
-            onClick={closePicker}
-            aria-hidden="true"
-          />
-          {/* Floating picker panel — top-[69px] = 68px header + 1px border-b */}
-          <div className="bg-card absolute inset-x-0 top-[69px] z-50 max-h-80 overflow-y-auto border-b px-4 py-3 shadow-xl">
+        {/* =================================================================
+            Inline picker overlays — render directly under the header band so
+            the user stays anchored to the field they clicked. Only one is
+            open at a time, enforced by the `pickerOpen` discriminated state.
+            ================================================================= */}
+        {(pickerOpen === "ability" ||
+          pickerOpen === "item" ||
+          (hasTera && pickerOpen === "tera") ||
+          pickerOpen === "nature") && (
+          <>
+            {/* Backdrop — click outside picker to close */}
+            <div
+              className="fixed inset-0 z-[45]"
+              onClick={closePicker}
+              aria-hidden="true"
+            />
+            {/* Floating picker panel — top-full anchors to the bottom edge of
+                the band's relative wrapper, so it stays aligned regardless of
+                whether the band is one or two rows tall. */}
+            <div className="bg-card absolute inset-x-0 top-full z-50 max-h-80 overflow-y-auto border-b px-4 py-3 shadow-xl">
             {pickerOpen === "ability" && (
               <AbilityPicker
                 species={pokemon.species}
@@ -291,9 +297,10 @@ export function PokemonEditor({
                 onClose={closePicker}
               />
             )}
-          </div>
-        </>
-      )}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* ===================================================================
           Body — single column, stacked sections: moves on top, stats below,

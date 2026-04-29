@@ -15,6 +15,7 @@ import {
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type Tables } from "@trainers/supabase";
 
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 import { PokemonDetailsPopover } from "./pokemon-details-popover";
@@ -256,6 +257,15 @@ export function EditorHeaderBand({
     pokemon.nickname ?? ""
   );
 
+  // Phones can't fit identity + 4 build fields + meta controls in a single
+  // h-[68px] row (~530px+ at any width). Stack the build fields below as a
+  // 2-col grid (Row 2) on phones; keep the original single-row layout at md+.
+  // useIsMobile returns false during SSR (getServerSnapshot) so the SSR HTML
+  // matches the desktop layout — mobile users see a brief flash before
+  // hydration, but tests using JSDOM's matchMedia polyfill render the
+  // desktop variant which preserves existing button-count expectations.
+  const isMobile = useIsMobile();
+
   // -------------------------------------------------------------------------
   // Identity control handlers — forward to parent's debounced onUpdate.
   // -------------------------------------------------------------------------
@@ -332,6 +342,54 @@ export function EditorHeaderBand({
   );
 
   // -------------------------------------------------------------------------
+  // Build-field components — extracted so they can render either inline in
+  // the desktop band row or as a 2-col grid below the row on phones (since
+  // identity + 4 fields + meta controls do not fit in a single 393px row).
+  // -------------------------------------------------------------------------
+
+  const abilityField =
+    isSingleAbility || disabled ? (
+      <FieldStatic label="Ability">
+        {pokemon.ability ?? validAbilities[0] ?? "—"}
+      </FieldStatic>
+    ) : (
+      <FieldButton label="Ability" onClick={onOpenAbilityPicker}>
+        {pokemon.ability ?? validAbilities[0] ?? "—"}
+      </FieldButton>
+    );
+
+  const itemField =
+    disabled || isMegaLocked ? (
+      <FieldStatic label="Item">{pokemon.held_item ?? "None"}</FieldStatic>
+    ) : (
+      <FieldButton label="Item" onClick={onOpenItemPicker}>
+        {pokemon.held_item ?? "None"}
+      </FieldButton>
+    );
+
+  const teraField = hasTera ? (
+    disabled ? (
+      <FieldStatic label="Tera">{teraContent}</FieldStatic>
+    ) : (
+      <FieldButton
+        label="Tera"
+        onClick={onOpenTeraPicker}
+        hideChevron={pokemon.tera_type !== null}
+      >
+        {teraContent}
+      </FieldButton>
+    )
+  ) : null;
+
+  const natureField = disabled ? (
+    <FieldStatic label="Nature">{pokemon.nature}</FieldStatic>
+  ) : (
+    <FieldButton label="Nature" onClick={onOpenNaturePicker}>
+      {pokemon.nature}
+    </FieldButton>
+  );
+
+  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
 
@@ -342,9 +400,13 @@ export function EditorHeaderBand({
         className
       )}
     >
+      {/* Row 1: Identity + (build fields at md+) + meta. Always one h-[68px]
+          row. Phones drop the build fields out of this row and render them
+          below in a 2-col grid (Row 2 below). */}
       <div className="flex h-[68px] items-stretch">
-        {/* ── Zone 1: Identity ──────────────────────────────────────────── */}
-        <div className="flex min-w-0 shrink-0 items-center gap-2.5 px-3">
+        {/* ── Zone 1: Identity — flex-1 on phones (fills space left of meta);
+              shrink-0 on md+ where build fields take the middle flex-1 slot. */}
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3 md:flex-none md:shrink-0">
           {/* Sprite — opens species picker when available */}
           {speciesClickable ? (
             <button
@@ -432,63 +494,38 @@ export function EditorHeaderBand({
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
-
-        {/* ── Zone 2: Build fields ──────────────────────────────────────── */}
-        <div className="flex flex-1 items-stretch">
-          {isSingleAbility || disabled ? (
-            <FieldStatic label="Ability">
-              {pokemon.ability ?? validAbilities[0] ?? "—"}
-            </FieldStatic>
-          ) : (
-            <FieldButton label="Ability" onClick={onOpenAbilityPicker}>
-              {pokemon.ability ?? validAbilities[0] ?? "—"}
-            </FieldButton>
-          )}
-
-          <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
-
-          {disabled || isMegaLocked ? (
-            <FieldStatic label="Item">
-              {pokemon.held_item ?? "None"}
-            </FieldStatic>
-          ) : (
-            <FieldButton label="Item" onClick={onOpenItemPicker}>
-              {pokemon.held_item ?? "None"}
-            </FieldButton>
-          )}
-
-          {hasTera && (
-            <>
+        {/* ── Zone 2: Build fields (inline at md+ only — phones move these
+              to Row 2 below to free space for identity + meta in Row 1) ── */}
+        {!isMobile && (
+          <>
+            <div
+              className="bg-border my-2.5 w-px shrink-0"
+              aria-hidden="true"
+            />
+            <div className="flex flex-1 items-stretch">
+              {abilityField}
               <div
                 className="bg-border my-2.5 w-px shrink-0"
                 aria-hidden="true"
               />
-              {disabled ? (
-                <FieldStatic label="Tera">{teraContent}</FieldStatic>
-              ) : (
-                <FieldButton
-                  label="Tera"
-                  onClick={onOpenTeraPicker}
-                  hideChevron={pokemon.tera_type !== null}
-                >
-                  {teraContent}
-                </FieldButton>
+              {itemField}
+              {teraField && (
+                <>
+                  <div
+                    className="bg-border my-2.5 w-px shrink-0"
+                    aria-hidden="true"
+                  />
+                  {teraField}
+                </>
               )}
-            </>
-          )}
-
-          <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
-
-          {disabled ? (
-            <FieldStatic label="Nature">{pokemon.nature}</FieldStatic>
-          ) : (
-            <FieldButton label="Nature" onClick={onOpenNaturePicker}>
-              {pokemon.nature}
-            </FieldButton>
-          )}
-        </div>
+              <div
+                className="bg-border my-2.5 w-px shrink-0"
+                aria-hidden="true"
+              />
+              {natureField}
+            </div>
+          </>
+        )}
 
         {/* ── Zone 3: Meta controls (only when detailsPopover wired) ────── */}
         {showIdentityControls && (
@@ -555,6 +592,28 @@ export function EditorHeaderBand({
           </>
         )}
       </div>
+
+      {/* Row 2: Build fields shown only on phones (conditionally mounted via
+          useIsMobile so tests/JSDOM and SSR render the desktop variant).
+          2-col grid — thin borders between rows/cols replace the inline
+          dividers used in the desktop layout above. */}
+      {isMobile && (
+        <div
+          className="grid grid-cols-2 border-t"
+          data-testid="editor-header-band-mobile-fields"
+        >
+          <div className="border-r">{abilityField}</div>
+          <div>{itemField}</div>
+          {teraField ? (
+            <>
+              <div className="border-t border-r">{teraField}</div>
+              <div className="border-t">{natureField}</div>
+            </>
+          ) : (
+            <div className="col-span-2 border-t">{natureField}</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
