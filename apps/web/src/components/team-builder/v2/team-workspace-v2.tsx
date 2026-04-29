@@ -9,6 +9,7 @@ import { type TeamWithPokemon, type Tables, type TablesUpdate } from "@trainers/
 
 import { updatePokemonAction } from "@/actions/teams";
 
+import { CalcDrawer } from "./calc/calc-drawer";
 import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
 import { useBuilderState } from "./use-builder-state";
@@ -172,11 +173,17 @@ export function TeamWorkspaceV2({
         </div>
 
         {tweaks.showCalc && state.calcOpen && (
-          <aside className={s.builderCalcdrawerSlot} aria-hidden>
-            <div className="p-4 text-sm text-muted-foreground">
-              [Phase 3] Calc drawer
-            </div>
-          </aside>
+          <CalcDrawer
+            open
+            selectedPokemon={slots[state.activeIdx] ?? null}
+            team={team}
+            setActiveIdx={state.setActiveIdx}
+            format={format}
+            activeIdx={state.activeIdx}
+            field={state.field}
+            setField={state.setField}
+            onClose={() => state.setCalcOpen(false)}
+          />
         )}
       </div>
     </div>

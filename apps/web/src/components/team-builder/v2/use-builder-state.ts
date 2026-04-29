@@ -11,7 +11,7 @@ type Terrain = "grassy" | "electric" | "psychic" | "misty" | null;
 type DefStatus = "healthy" | "paralyzed";
 type StatKey = "hp" | "atk" | "def" | "spa" | "spd" | "spe";
 
-interface FieldState {
+export interface FieldState {
   doubles: boolean;
   weather: Weather;
   terrain: Terrain;
