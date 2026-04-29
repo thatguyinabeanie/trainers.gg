@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import Link from "next/link";
 
 import { type GameFormat } from "@trainers/pokemon";
@@ -38,6 +38,8 @@ interface TopbarProps {
   onJumpToPokemon: (pokemonId: number) => void;
   /** Runs immediate (non-debounced) validation. */
   onValidate: () => void;
+  /** Pre-rendered ExportMenu dropdown — passed from parent so Topbar stays stateless about export logic. */
+  exportMenu?: ReactNode;
 }
 
 // =============================================================================
@@ -87,6 +89,7 @@ export function Topbar({
   validationErrors,
   onJumpToPokemon,
   onValidate,
+  exportMenu,
 }: TopbarProps) {
   const teamsUrl = `/dashboard/alts/${username}/teams`;
   const [validateOpen, setValidateOpen] = useState(false);
@@ -168,6 +171,7 @@ export function Topbar({
           <Button variant="outline" size="sm" onClick={onOpenImport}>
             Import
           </Button>
+          {exportMenu}
 
           {/* Validate button */}
           <Popover open={validateOpen} onOpenChange={handleValidateOpen}>
@@ -225,6 +229,7 @@ export function Topbar({
         <Button variant="outline" size="sm" onClick={onOpenImport} className="h-7 text-xs">
           Import
         </Button>
+        {exportMenu}
 
         {/* Validate button */}
         <Popover open={validateOpen} onOpenChange={handleValidateOpen}>

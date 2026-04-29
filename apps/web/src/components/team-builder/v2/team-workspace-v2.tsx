@@ -24,6 +24,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { ExportMenu } from "../export-menu";
+import { ImportDialog } from "../import-dialog";
 import { useTeamValidation } from "../validation-hooks";
 import { CalcDrawer } from "./calc/calc-drawer";
 import { CalcStateProvider } from "./calc/calc-state-context";
@@ -91,6 +93,9 @@ export function TeamWorkspaceV2({
 
   /** Slot index (0-based) for which the species picker is open. null = closed. */
   const [addPickerForSlot, setAddPickerForSlot] = useState<number | null>(null);
+
+  /** Controls the import sheet. */
+  const [importOpen, setImportOpen] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Optimistic team-pokemon state — Phase 2 write path
@@ -238,11 +243,12 @@ export function TeamWorkspaceV2({
           username={username}
           calcOpen={state.calcOpen}
           onToggleCalc={() => state.setCalcOpen((o) => !o)}
-          onOpenImport={() => console.warn("[Phase 2 stub] open import")}
+          onOpenImport={() => setImportOpen(true)}
           onSave={() => console.warn("[Phase 1 stub] save")}
           validationErrors={validationErrors}
           onJumpToPokemon={handleJumpToPokemon}
           onValidate={validate}
+          exportMenu={<ExportMenu team={team} />}
         />
 
         <div className={s.builderWorkshell}>
@@ -327,6 +333,15 @@ export function TeamWorkspaceV2({
 
       {/* Tweaks floating panel — Phase 6 */}
       <TweaksPanel tweaks={tweaks} setTweak={state.setTweak} />
+
+      {/* Import dialog — opened by topbar Import button */}
+      <ImportDialog
+        team={team}
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImportComplete={() => router.refresh()}
+        formatId={format?.id}
+      />
 
       {/* Species picker dialog — opened by handleAdd */}
       <Dialog
