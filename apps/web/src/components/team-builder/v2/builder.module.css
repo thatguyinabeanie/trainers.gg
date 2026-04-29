@@ -3,6 +3,28 @@
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
+
+  /* ── KO-tier semantic tokens ─────────────────────────────────────────────
+     Red    (OHKO)   → reuses --destructive so it respects theme values.
+     Amber  (2HKO)   → no project warning token yet; defined locally.
+                        Two variants: bg (brighter) and fg (darker for text).
+     Yellow (3HKO)   → no project caution token yet; defined locally.
+                        Two variants: bg (brighter) and fg (darker for text).
+     Green           → super-effective indicator; defined locally.
+     NE              → not-very-effective indicator; defined locally.
+     Shadow/Backdrop → replaces rgba(0,0,0,…) literals for easy future theming.
+  ── */
+  --ko-red: var(--destructive);
+  --ko-amber-bg: oklch(0.7 0.15 80);
+  --ko-amber-fg: oklch(0.65 0.15 80);
+  --ko-amber2-fg: oklch(0.65 0.15 55);
+  --ko-yellow-bg: oklch(0.78 0.15 90);
+  --ko-yellow-fg: oklch(0.72 0.15 90);
+  --ko-green: oklch(0.72 0.2 145);
+  --ko-green-fg: oklch(0.6 0.2 145);
+  --ko-ne: oklch(0.55 0.15 30);
+  --builder-shadow: oklch(0 0 0 / 30%);
+  --builder-backdrop: oklch(0 0 0 / 25%);
 }
 
 .builderWorkshell {
@@ -125,7 +147,7 @@
   overflow: hidden;
   border-top: 1px solid var(--border);
   background: var(--background);
-  box-shadow: 0 -4px 32px -8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 -4px 32px -8px var(--builder-shadow);
   max-height: 0;
   opacity: 0;
   transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
@@ -140,7 +162,7 @@
   position: fixed;
   inset: 0;
   z-index: 20;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--builder-backdrop);
   backdrop-filter: blur(1px);
 }
 
@@ -548,13 +570,13 @@
 }
 
 :global(.cd-result--ohko) {
-  border-color: color-mix(in oklch, oklch(0.55 0.2 27) 40%, var(--border));
-  background: color-mix(in oklch, oklch(0.55 0.2 27) 8%, var(--card));
+  border-color: color-mix(in oklch, var(--ko-red) 40%, var(--border));
+  background: color-mix(in oklch, var(--ko-red) 8%, var(--card));
 }
 
 :global(.cd-result--roll) {
-  border-color: color-mix(in oklch, oklch(0.7 0.15 80) 40%, var(--border));
-  background: color-mix(in oklch, oklch(0.7 0.15 80) 8%, var(--card));
+  border-color: color-mix(in oklch, var(--ko-amber-bg) 40%, var(--border));
+  background: color-mix(in oklch, var(--ko-amber-bg) 8%, var(--card));
 }
 
 :global(.cd-result-l) {
@@ -612,12 +634,12 @@
 
 :global(.cd-result--ohko .cd-result-fill),
 :global(.cd-result--ohko .cd-result-fill-min) {
-  background: oklch(0.55 0.2 27);
+  background: var(--ko-red);
 }
 
 :global(.cd-result--roll .cd-result-fill),
 :global(.cd-result--roll .cd-result-fill-min) {
-  background: oklch(0.7 0.15 80);
+  background: var(--ko-amber-bg);
 }
 
 :global(.cd-result-r) {
@@ -660,13 +682,13 @@
 }
 
 :global(.cd-verdict--ohko) {
-  background: color-mix(in oklch, oklch(0.55 0.2 27) 20%, var(--background));
-  color: oklch(0.55 0.2 27);
+  background: color-mix(in oklch, var(--ko-red) 20%, var(--background));
+  color: var(--ko-red);
 }
 
 :global(.cd-verdict--2hko) {
-  background: color-mix(in oklch, oklch(0.7 0.15 80) 20%, var(--background));
-  color: oklch(0.65 0.15 80);
+  background: color-mix(in oklch, var(--ko-amber-bg) 20%, var(--background));
+  color: var(--ko-amber-fg);
 }
 
 /* Spread badge */
@@ -682,8 +704,8 @@
 }
 
 :global(.cd-spread-badge--on) {
-  background: color-mix(in oklch, oklch(0.7 0.15 80) 20%, var(--background));
-  color: oklch(0.65 0.15 80);
+  background: color-mix(in oklch, var(--ko-amber-bg) 20%, var(--background));
+  color: var(--ko-amber-fg);
 }
 
 :global(.cd-spread-badge--off) {
@@ -867,18 +889,18 @@
 
 /* KO tier ring/text emphasis */
 :global(.mvline--ko1) {
-  border-color: color-mix(in oklch, oklch(0.55 0.2 27) 50%, var(--border)) !important;
-  background: color-mix(in oklch, oklch(0.55 0.2 27) 8%, var(--card));
+  border-color: color-mix(in oklch, var(--ko-red) 50%, var(--border)) !important;
+  background: color-mix(in oklch, var(--ko-red) 8%, var(--card));
 }
 
 :global(.mvline--ko2) {
-  border-color: color-mix(in oklch, oklch(0.68 0.15 55) 45%, var(--border)) !important;
-  background: color-mix(in oklch, oklch(0.68 0.15 55) 6%, var(--card));
+  border-color: color-mix(in oklch, var(--ko-amber2-fg) 45%, var(--border)) !important;
+  background: color-mix(in oklch, var(--ko-amber2-fg) 6%, var(--card));
 }
 
 :global(.mvline--ko3) {
-  border-color: color-mix(in oklch, oklch(0.78 0.15 90) 40%, var(--border)) !important;
-  background: color-mix(in oklch, oklch(0.78 0.15 90) 5%, var(--card));
+  border-color: color-mix(in oklch, var(--ko-yellow-bg) 40%, var(--border)) !important;
+  background: color-mix(in oklch, var(--ko-yellow-bg) 5%, var(--card));
 }
 
 :global(.mvline--ko4) {
@@ -959,18 +981,18 @@
 }
 
 :global(.mvline-ko--1) {
-  background: color-mix(in oklch, oklch(0.55 0.2 27) 20%, var(--background));
-  color: oklch(0.55 0.2 27);
+  background: color-mix(in oklch, var(--ko-red) 20%, var(--background));
+  color: var(--ko-red);
 }
 
 :global(.mvline-ko--2) {
-  background: color-mix(in oklch, oklch(0.68 0.15 55) 20%, var(--background));
-  color: oklch(0.65 0.15 55);
+  background: color-mix(in oklch, var(--ko-amber2-fg) 20%, var(--background));
+  color: var(--ko-amber2-fg);
 }
 
 :global(.mvline-ko--3) {
-  background: color-mix(in oklch, oklch(0.78 0.15 90) 20%, var(--background));
-  color: oklch(0.72 0.15 90);
+  background: color-mix(in oklch, var(--ko-yellow-bg) 20%, var(--background));
+  color: var(--ko-yellow-fg);
 }
 
 :global(.mvline-ko--4) {
@@ -989,13 +1011,13 @@
 }
 
 :global(.mvline-eff--se) {
-  background: color-mix(in oklch, oklch(0.72 0.2 145) 20%, var(--background));
-  color: oklch(0.6 0.2 145);
+  background: color-mix(in oklch, var(--ko-green) 20%, var(--background));
+  color: var(--ko-green-fg);
 }
 
 :global(.mvline-eff--ne) {
-  background: color-mix(in oklch, oklch(0.55 0.15 30) 20%, var(--background));
-  color: oklch(0.55 0.15 30);
+  background: color-mix(in oklch, var(--ko-ne) 20%, var(--background));
+  color: var(--ko-ne);
 }
 
 :global(.mvline-eff--imm) {
@@ -1011,8 +1033,8 @@
   font-weight: 600;
   padding: 1px 4px;
   border-radius: 4px;
-  background: color-mix(in oklch, oklch(0.7 0.15 80) 20%, var(--background));
-  color: oklch(0.65 0.15 80);
+  background: color-mix(in oklch, var(--ko-amber-bg) 20%, var(--background));
+  color: var(--ko-amber-fg);
   white-space: nowrap;
 }
 
@@ -1157,15 +1179,15 @@
 }
 
 :global(.mvdetail-bigpct.mvdetail-ko--1) {
-  color: oklch(0.55 0.2 27);
+  color: var(--ko-red);
 }
 
 :global(.mvdetail-bigpct.mvdetail-ko--2) {
-  color: oklch(0.65 0.15 55);
+  color: var(--ko-amber2-fg);
 }
 
 :global(.mvdetail-bigpct.mvdetail-ko--3) {
-  color: oklch(0.72 0.15 90);
+  color: var(--ko-yellow-fg);
 }
 
 :global(.mvdetail-pct-sep) {
@@ -1185,15 +1207,15 @@
   text-transform: uppercase;
 }
 
-:global(.mvdetail-ko--1) { color: oklch(0.55 0.2 27); }
-:global(.mvdetail-ko--2) { color: oklch(0.65 0.15 55); }
-:global(.mvdetail-ko--3) { color: oklch(0.72 0.15 90); }
+:global(.mvdetail-ko--1) { color: var(--ko-red); }
+:global(.mvdetail-ko--2) { color: var(--ko-amber2-fg); }
+:global(.mvdetail-ko--3) { color: var(--ko-yellow-fg); }
 :global(.mvdetail-ko--4) { color: var(--muted-foreground); }
 
 :global(.mvdetail-spread-tag) {
   font-size: 10px;
   font-weight: 500;
-  color: oklch(0.65 0.15 80);
+  color: var(--ko-amber-fg);
 }
 
 :global(.mvdetail-meta) {
