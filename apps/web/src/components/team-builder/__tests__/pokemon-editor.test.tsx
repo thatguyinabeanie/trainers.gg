@@ -1,7 +1,15 @@
 import { describe, it, expect } from "@jest/globals";
-import { render, screen } from "@testing-library/react";
+import { render as rtlRender, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
+
+// Wrap RTL's render so every PokemonEditor mount automatically strips the
+// mobile build-fields container — see `trimMobileLayout` below for why.
+function render(ui: React.ReactElement) {
+  const result = rtlRender(ui);
+  trimMobileLayout();
+  return result;
+}
 
 // =============================================================================
 // Module-level mocks
@@ -183,9 +191,28 @@ const defaultProps = {
 // Tests
 // =============================================================================
 
+// EditorHeaderBand renders both desktop and mobile layouts simultaneously and
+// uses Tailwind `hidden md:flex` / `md:hidden` to swap them per viewport.
+// JSDOM doesn't compute Tailwind class styles, so without intervention every
+// FieldButton would render twice in tests. After each render, strip the
+// mobile build-fields container so default queries match a single instance —
+// matches the desktop-only behavior tests assumed before the dual layout.
+function trimMobileLayout() {
+  const mobileFields = document.querySelector(
+    '[data-testid="editor-header-band-mobile-fields"]'
+  );
+  if (mobileFields) {
+    mobileFields.remove();
+  }
+}
+
 describe("PokemonEditor", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    // No-op cleanup — Testing Library handles DOM cleanup between tests.
   });
 
   // ---------------------------------------------------------------------------

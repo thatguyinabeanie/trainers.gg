@@ -56,13 +56,37 @@ jest.mock("next/image", () => ({
   },
 }));
 
-// useIsMobile drives the desktop-row vs mobile-stack layout decision. Default
-// to desktop (false) so existing tests that count one button per loadout
-// field keep passing — opt into mobile=true in the dedicated layout tests.
-const mockUseIsMobile = jest.fn<() => boolean>();
-jest.mock("@/hooks/use-mobile", () => ({
-  useIsMobile: () => mockUseIsMobile(),
-}));
+// EditorHeaderBand renders both layouts simultaneously and uses Tailwind
+// `hidden md:flex` / `md:hidden` to show only the right one per viewport.
+// JSDOM doesn't compute Tailwind class styles, so without intervention every
+// FieldButton would appear twice — once in the desktop row, once in the
+// mobile grid — breaking single-match queries like `getByRole`.
+//
+// `renderBand` removes the layout that's not under test from the DOM after
+// render. Default is `desktop` (matches the prior `useIsMobile()`-based test
+// behavior); mobile layout tests pass `layout: "mobile"` to flip it.
+type Layout = "desktop" | "mobile";
+
+function trimToLayout(layout: Layout) {
+  const desktopFields = document.querySelector(
+    '[data-testid="editor-header-band-desktop-fields"]'
+  );
+  const mobileFields = document.querySelector(
+    '[data-testid="editor-header-band-mobile-fields"]'
+  );
+  if (layout === "desktop" && mobileFields) {
+    mobileFields.remove();
+  }
+  if (layout === "mobile" && desktopFields) {
+    // The divider preceding the desktop-fields div has no own testid; remove
+    // it via DOM proximity so the layout stays visually clean during tests.
+    const divider = desktopFields.previousElementSibling;
+    if (divider?.getAttribute("aria-hidden") === "true") {
+      divider.remove();
+    }
+    desktopFields.remove();
+  }
+}
 
 import { getValidAbilities, getSpeciesTypes } from "@trainers/pokemon";
 
@@ -138,7 +162,8 @@ function renderBand(
     onOpenNaturePicker: () => void;
     onOpenSpeciesPicker?: () => void;
   }> = {},
-  formatOverride: Parameters<typeof EditorHeaderBand>[0]["format"] = svFormat
+  formatOverride: Parameters<typeof EditorHeaderBand>[0]["format"] = svFormat,
+  layout: Layout = "desktop"
 ) {
   const handlers = {
     onOpenAbilityPicker: jest.fn(),
@@ -154,6 +179,7 @@ function renderBand(
       {...handlers}
     />
   );
+  trimToLayout(layout);
   return handlers;
 }
 
@@ -161,10 +187,6 @@ beforeEach(() => {
   // Reset to multi-ability default so each test starts from a known baseline.
   mockedGetValidAbilities.mockReturnValue(["Intimidate", "Flash Fire"]);
   mockedGetSpeciesTypes.mockReturnValue(["Fire", "Dark"]);
-  // Default to desktop layout so the build-field buttons render once inline
-  // (matches the assumption of every existing test). Mobile layout tests opt
-  // into mockUseIsMobile.mockReturnValue(true).
-  mockUseIsMobile.mockReturnValue(false);
 });
 
 // =============================================================================
@@ -390,6 +412,8 @@ describe("EditorHeaderBand", () => {
           onOpenNaturePicker={jest.fn()}
         />
       );
+      // Trim mobile copy so the desktop Tera button is the only match.
+      trimToLayout("desktop");
       const teraBtn = screen.getByRole("button", { name: /Edit Tera/ });
       expect(teraBtn).toBeInTheDocument();
       await user.click(teraBtn);
@@ -434,6 +458,10 @@ describe("EditorHeaderBand", () => {
           detailsPopover={{ teamId: 1, onUpdate }}
         />
       );
+      // Identity controls live in Row 1 only (no duplication), but build
+      // fields render twice — strip the mobile copy so build-field queries
+      // don't double-match in tests that aren't layout-aware.
+      trimToLayout("desktop");
       return onUpdate;
     }
 
@@ -598,27 +626,32 @@ describe("EditorHeaderBand", () => {
   });
 
   describe("mobile layout", () => {
-    it("renders the build-fields grid below Row 1 when isMobile is true", () => {
-      mockUseIsMobile.mockReturnValue(true);
-      renderBand();
+    it("renders both desktop and mobile build-fields containers", () => {
+      // CSS-based responsive layout — both branches mount in the DOM (one is
+      // hidden via Tailwind `hidden md:flex` / `md:hidden` per viewport).
+      // Render WITHOUT trimming so we can assert both testids exist.
+      render(
+        <EditorHeaderBand
+          pokemon={buildPokemon()}
+          format={svFormat}
+          onOpenAbilityPicker={jest.fn()}
+          onOpenItemPicker={jest.fn()}
+          onOpenTeraPicker={jest.fn()}
+          onOpenNaturePicker={jest.fn()}
+        />
+      );
+      expect(
+        screen.getByTestId("editor-header-band-desktop-fields")
+      ).toBeInTheDocument();
       expect(
         screen.getByTestId("editor-header-band-mobile-fields")
       ).toBeInTheDocument();
     });
 
-    it("does not render the mobile build-fields grid on desktop", () => {
-      mockUseIsMobile.mockReturnValue(false);
-      renderBand();
-      expect(
-        screen.queryByTestId("editor-header-band-mobile-fields")
-      ).not.toBeInTheDocument();
-    });
-
-    it("renders each loadout button exactly once on mobile (no duplication)", () => {
-      mockUseIsMobile.mockReturnValue(true);
-      renderBand();
-      // Each FieldButton has aria-label "Edit <Label>" — one occurrence per
-      // field whether the layout is desktop-row or mobile-grid.
+    it("renders one set of FieldButtons inside the mobile grid", () => {
+      const handlers = renderBand({}, {}, svFormat, "mobile");
+      // After trimToLayout("mobile"), the desktop branch is removed — every
+      // FieldButton query should match exactly once.
       expect(
         screen.getAllByRole("button", { name: /Edit Ability/ })
       ).toHaveLength(1);
@@ -631,14 +664,37 @@ describe("EditorHeaderBand", () => {
       expect(
         screen.getAllByRole("button", { name: /Edit Nature/ })
       ).toHaveLength(1);
+      // The remaining buttons are inside the mobile grid container.
+      const mobileFields = screen.getByTestId(
+        "editor-header-band-mobile-fields"
+      );
+      expect(
+        mobileFields.querySelector('button[aria-label*="Edit Ability"]')
+      ).not.toBeNull();
+      // Ignore the unused handlers reference.
+      void handlers;
     });
 
-    it("clicking the mobile Ability cell still triggers onOpenAbilityPicker", async () => {
-      mockUseIsMobile.mockReturnValue(true);
+    it("clicking the mobile Ability cell triggers onOpenAbilityPicker", async () => {
       const user = userEvent.setup();
-      const handlers = renderBand();
+      const handlers = renderBand({}, {}, svFormat, "mobile");
       await user.click(screen.getByRole("button", { name: /Edit Ability/ }));
       expect(handlers.onOpenAbilityPicker).toHaveBeenCalledTimes(1);
+    });
+
+    it("collapses Nature to span both columns when the format has no Tera", () => {
+      // Render in mobile layout with a Champions (Gen 10) format — formatHasTera
+      // returns false, so the mobile grid renders Ability+Item on row 1 and
+      // Nature spanning both columns on row 2.
+      const championsFormat = { ...svFormat, generation: 10 };
+      renderBand({}, {}, championsFormat, "mobile");
+      const mobileFields = screen.getByTestId(
+        "editor-header-band-mobile-fields"
+      );
+      // The col-span-2 cell wraps the Nature field exclusively.
+      const natureCell = mobileFields.querySelector(".col-span-2");
+      expect(natureCell).not.toBeNull();
+      expect(natureCell!.textContent).toContain("Nature");
     });
   });
 });

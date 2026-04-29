@@ -15,7 +15,6 @@ import {
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type Tables } from "@trainers/supabase";
 
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 import { PokemonDetailsPopover } from "./pokemon-details-popover";
@@ -257,15 +256,6 @@ export function EditorHeaderBand({
     pokemon.nickname ?? ""
   );
 
-  // Phones can't fit identity + 4 build fields + meta controls in a single
-  // h-[68px] row (~530px+ at any width). Stack the build fields below as a
-  // 2-col grid (Row 2) on phones; keep the original single-row layout at md+.
-  // useIsMobile returns false during SSR (getServerSnapshot) so the SSR HTML
-  // matches the desktop layout — mobile users see a brief flash before
-  // hydration, but tests using JSDOM's matchMedia polyfill render the
-  // desktop variant which preserves existing button-count expectations.
-  const isMobile = useIsMobile();
-
   // -------------------------------------------------------------------------
   // Identity control handlers — forward to parent's debounced onUpdate.
   // -------------------------------------------------------------------------
@@ -495,37 +485,33 @@ export function EditorHeaderBand({
         </div>
 
         {/* ── Zone 2: Build fields (inline at md+ only — phones move these
-              to Row 2 below to free space for identity + meta in Row 1) ── */}
-        {!isMobile && (
-          <>
-            <div
-              className="bg-border my-2.5 w-px shrink-0"
-              aria-hidden="true"
-            />
-            <div className="flex flex-1 items-stretch">
-              {abilityField}
+              to Row 2 below to free space for identity + meta in Row 1).
+              CSS-based hiding (`hidden md:flex` / `md:hidden`) instead of
+              `useIsMobile()` so the SSR HTML is mobile-safe and there's no
+              hydration flash of the overflowing desktop layout on phones. */}
+        <div
+          className="bg-border my-2.5 hidden w-px shrink-0 md:block"
+          aria-hidden="true"
+        />
+        <div
+          className="hidden flex-1 items-stretch md:flex"
+          data-testid="editor-header-band-desktop-fields"
+        >
+          {abilityField}
+          <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
+          {itemField}
+          {teraField && (
+            <>
               <div
                 className="bg-border my-2.5 w-px shrink-0"
                 aria-hidden="true"
               />
-              {itemField}
-              {teraField && (
-                <>
-                  <div
-                    className="bg-border my-2.5 w-px shrink-0"
-                    aria-hidden="true"
-                  />
-                  {teraField}
-                </>
-              )}
-              <div
-                className="bg-border my-2.5 w-px shrink-0"
-                aria-hidden="true"
-              />
-              {natureField}
-            </div>
-          </>
-        )}
+              {teraField}
+            </>
+          )}
+          <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
+          {natureField}
+        </div>
 
         {/* ── Zone 3: Meta controls (only when detailsPopover wired) ────── */}
         {showIdentityControls && (
@@ -593,27 +579,27 @@ export function EditorHeaderBand({
         )}
       </div>
 
-      {/* Row 2: Build fields shown only on phones (conditionally mounted via
-          useIsMobile so tests/JSDOM and SSR render the desktop variant).
-          2-col grid — thin borders between rows/cols replace the inline
-          dividers used in the desktop layout above. */}
-      {isMobile && (
-        <div
-          className="grid grid-cols-2 border-t"
-          data-testid="editor-header-band-mobile-fields"
-        >
-          <div className="border-r">{abilityField}</div>
-          <div>{itemField}</div>
-          {teraField ? (
-            <>
-              <div className="border-t border-r">{teraField}</div>
-              <div className="border-t">{natureField}</div>
-            </>
-          ) : (
-            <div className="col-span-2 border-t">{natureField}</div>
-          )}
-        </div>
-      )}
+      {/* Row 2: Build fields shown only on phones (`md:hidden`). 2-col grid;
+          thin borders between rows/cols replace the inline dividers used in
+          the desktop layout above. The desktop branch's `hidden md:flex`
+          ensures display:none excludes its FieldButtons from the keyboard
+          tab order and accessibility tree on phones, so the duplicate render
+          doesn't create a11y collisions. */}
+      <div
+        className="grid grid-cols-2 border-t md:hidden"
+        data-testid="editor-header-band-mobile-fields"
+      >
+        <div className="border-r">{abilityField}</div>
+        <div>{itemField}</div>
+        {teraField ? (
+          <>
+            <div className="border-t border-r">{teraField}</div>
+            <div className="border-t">{natureField}</div>
+          </>
+        ) : (
+          <div className="col-span-2 border-t">{natureField}</div>
+        )}
+      </div>
     </div>
   );
 }
