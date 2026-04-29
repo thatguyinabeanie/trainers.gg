@@ -66,7 +66,7 @@ export function ListPicker<T extends string>({
   return (
     <div
       className="bg-popover text-popover-foreground flex flex-col overflow-hidden rounded-lg border shadow-md"
-      style={{ width }}
+      style={{ width, maxWidth: "calc(100vw - 2rem)" }}
     >
       {/* Title eyebrow */}
       <div className="flex items-center justify-between border-b px-3 py-2">

@@ -56,7 +56,7 @@ export function ValidationPopover({ errors, onJumpToPokemon }: ValidationPopover
   const warnCount = errors.filter((e) => e.severity === "warning").length;
 
   return (
-    <div className="flex w-80 flex-col overflow-hidden rounded-lg">
+    <div className="flex w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg">
       {/* Header */}
       <div className="border-b px-3 py-2.5">
         <span className="text-sm font-semibold">

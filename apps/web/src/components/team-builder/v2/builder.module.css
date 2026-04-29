@@ -23,8 +23,15 @@
 .builderGrid {
   flex: 1;
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: hidden;
   min-height: 0;
+}
+
+/* Allow horizontal scroll on desktop where the active row min-width kicks in */
+@media (min-width: 768px) {
+  .builderGrid {
+    overflow-x: auto;
+  }
 }
 
 .builderRows {
@@ -699,6 +706,68 @@
   align-items: stretch;
   min-width: 900px;
   overflow: visible;
+}
+
+/* ============================================================
+   Mobile active row — single-column stacked layout (< md / 768px)
+   ============================================================ */
+
+@media (max-width: 767px) {
+  /* Remove the 900px min-width so the row fits the phone viewport */
+  .rowActive {
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Rib becomes a slim horizontal bar at the top */
+  .rib {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    padding: 4px 10px;
+    border-right: none;
+    border-bottom: 1px dashed var(--border);
+  }
+
+  /* Identity lane: full width, horizontal (sprite + meta side-by-side) */
+  .laneId {
+    width: 100%;
+    grid-template-columns: 56px 1fr;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  /* Setup lane: full width */
+  .laneSetup {
+    width: 100%;
+    border-top: 1px solid var(--border);
+    padding: 4px 0;
+  }
+
+  /* Moves lane: full width */
+  .laneMoves {
+    width: 100%;
+    border-top: 1px solid var(--border);
+    flex: none;
+  }
+
+  /* Stats lane: full width */
+  .laneStats {
+    width: 100%;
+    border-top: 1px solid var(--border);
+    flex: none;
+  }
+
+  /* Meta lane: full width, horizontal row instead of column */
+  .laneMeta {
+    width: 100%;
+    flex-direction: row;
+    gap: 16px;
+    justify-content: flex-start;
+    border-top: 1px solid var(--border);
+    padding: 6px 12px;
+  }
 }
 
 /* Left slot rib */

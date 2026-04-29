@@ -68,7 +68,7 @@ export function BottomDrawer({ drawer, onClose, children }: BottomDrawerProps) {
         aria-hidden={!open}
         aria-label={title}
         className={cn(
-          "relative z-30 flex max-h-[70vh] flex-col overflow-hidden border-t bg-background shadow-[0_-4px_32px_-8px_rgba(0,0,0,0.3)]",
+          "relative z-30 flex max-h-[70vh] w-full max-w-full flex-col overflow-hidden border-t bg-background shadow-[0_-4px_32px_-8px_rgba(0,0,0,0.3)]",
           "transition-[max-height,opacity] duration-300 ease-out",
           open ? "max-h-[70vh] opacity-100" : "max-h-0 opacity-0"
         )}

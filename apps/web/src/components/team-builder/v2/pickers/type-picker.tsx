@@ -36,7 +36,7 @@ interface TypePickerProps {
  */
 export function TypePicker({ value, onPick, onClose, legalTypes }: TypePickerProps) {
   return (
-    <div className="bg-popover text-popover-foreground w-56 rounded-lg border p-2 shadow-md">
+    <div className="bg-popover text-popover-foreground w-56 max-w-[calc(100vw-2rem)] rounded-lg border p-2 shadow-md">
       {/* Header */}
       <div className="mb-2 flex items-center justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">

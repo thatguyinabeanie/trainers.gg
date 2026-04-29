@@ -41,7 +41,7 @@ export function Dockbar({ drawer, onOpen, team, format }: DockbarProps) {
     <div
       role="toolbar"
       aria-label="Builder tools"
-      className="flex items-center gap-2 border-t bg-background px-3 py-2"
+      className="flex min-w-0 flex-wrap items-center gap-2 border-t bg-background px-3 py-2"
     >
       {/* Type matchups pill */}
       <button
@@ -50,20 +50,20 @@ export function Dockbar({ drawer, onOpen, team, format }: DockbarProps) {
         title="Defensive type matchups"
         aria-pressed={drawer === "matchups"}
         className={cn(
-          "flex items-center gap-2 rounded-full border px-3 py-1.5 text-left transition-colors duration-150",
+          "flex min-w-0 shrink items-center gap-2 rounded-full border px-3 py-1.5 text-left transition-colors duration-150",
           drawer === "matchups"
             ? "border-primary bg-primary/10 text-primary"
             : "border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50"
         )}
       >
-        <span className="text-[15px] leading-none" aria-hidden>
+        <span className="shrink-0 text-[15px] leading-none" aria-hidden>
           ▦
         </span>
-        <span className="flex flex-col gap-0">
+        <span className="flex min-w-0 flex-col gap-0">
           <span className="text-xs font-semibold leading-tight">
             Type matchups
           </span>
-          <span className="flex items-center gap-1 font-mono text-[10px] leading-tight text-muted-foreground">
+          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-tight text-muted-foreground">
             <span
               className={cn(
                 "font-semibold",
@@ -84,10 +84,10 @@ export function Dockbar({ drawer, onOpen, team, format }: DockbarProps) {
             >
               {coveredCount}
             </span>
-            <span>covered</span>
+            <span className="hidden sm:inline">covered</span>
           </span>
         </span>
-        <span className="ml-1 text-[10px] text-muted-foreground" aria-hidden>
+        <span className="ml-1 shrink-0 text-[10px] text-muted-foreground" aria-hidden>
           {drawer === "matchups" ? "▾" : "▴"}
         </span>
       </button>
@@ -99,29 +99,29 @@ export function Dockbar({ drawer, onOpen, team, format }: DockbarProps) {
         title="Speed tier ladder"
         aria-pressed={drawer === "speed"}
         className={cn(
-          "flex items-center gap-2 rounded-full border px-3 py-1.5 text-left transition-colors duration-150",
+          "flex min-w-0 shrink items-center gap-2 rounded-full border px-3 py-1.5 text-left transition-colors duration-150",
           drawer === "speed"
             ? "border-primary bg-primary/10 text-primary"
             : "border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50"
         )}
       >
-        <span className="text-[15px] leading-none" aria-hidden>
+        <span className="shrink-0 text-[15px] leading-none" aria-hidden>
           ≫
         </span>
-        <span className="flex flex-col gap-0">
+        <span className="flex min-w-0 flex-col gap-0">
           <span className="text-xs font-semibold leading-tight">
             Speed tiers
           </span>
-          <span className="flex items-center gap-1 font-mono text-[10px] leading-tight text-muted-foreground">
+          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-tight text-muted-foreground">
             <span className="font-semibold">
               {fastest > 0 ? fastest : "—"}
             </span>
             <span>fastest</span>
-            <span className="opacity-40">·</span>
-            <span>vs format</span>
+            <span className="hidden opacity-40 sm:inline">·</span>
+            <span className="hidden sm:inline">vs format</span>
           </span>
         </span>
-        <span className="ml-1 text-[10px] text-muted-foreground" aria-hidden>
+        <span className="ml-1 shrink-0 text-[10px] text-muted-foreground" aria-hidden>
           {drawer === "speed" ? "▾" : "▴"}
         </span>
       </button>
@@ -129,7 +129,7 @@ export function Dockbar({ drawer, onOpen, team, format }: DockbarProps) {
       {/* Spacer */}
       <span className="flex-1" />
 
-      {/* Esc hint */}
+      {/* Esc hint — desktop only */}
       <span className="hidden items-center gap-1 font-mono text-[10px] text-muted-foreground sm:flex">
         <kbd className="rounded border border-border bg-muted px-1 py-0.5 text-[9px] font-semibold">
           Esc

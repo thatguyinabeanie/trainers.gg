@@ -3,6 +3,14 @@
 import { type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+
 import { useCalcStateContext } from "./calc-state-context";
 import { CalcAttackerBlock } from "./calc-attacker-block";
 import { CalcDefenderBlock } from "./calc-defender-block";
@@ -38,7 +46,59 @@ export function CalcDrawer({
   activeIdx,
   onClose,
 }: CalcDrawerProps) {
+  const isMobile = useIsMobile();
+
   if (!open) return null;
+
+  // On mobile: render as a full-screen Sheet from the right.
+  // On desktop: render as the inline right-rail aside (existing behaviour).
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+        <SheetContent
+          side="right"
+          className="w-full max-w-[calc(100vw-1rem)] overflow-y-auto p-0 sm:max-w-[380px]"
+          showCloseButton={false}
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Damage Calc</SheetTitle>
+          </SheetHeader>
+
+          {/* Reuse the same inner layout */}
+          <header className="cd-head">
+            <div className="cd-head-l">
+              <span className="cd-eyebrow cd-eyebrow--sm">DAMAGE CALC</span>
+              <span className="cd-head-sub">live · inherits attacker</span>
+            </div>
+            <button
+              type="button"
+              className="cd-close"
+              onClick={onClose}
+              aria-label="Close damage calc"
+            >
+              ×
+            </button>
+          </header>
+
+          {!selectedPokemon ? (
+            <div className="cd-empty">
+              <p className="text-muted-foreground text-xs">
+                Select a Pokémon to calc damage.
+              </p>
+            </div>
+          ) : (
+            <CalcDrawerContent
+              selectedPokemon={selectedPokemon}
+              team={team}
+              setActiveIdx={setActiveIdx}
+              format={format}
+              activeIdx={activeIdx}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <aside className="cd-drawer" aria-label="Damage Calc">

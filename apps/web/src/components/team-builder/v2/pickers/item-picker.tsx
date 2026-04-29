@@ -65,7 +65,7 @@ export function ItemPicker({
   const visible = filtered.slice(0, MAX_VISIBLE);
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-72 flex-col overflow-hidden rounded-lg border shadow-md">
+    <div className="bg-popover text-popover-foreground flex w-72 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">

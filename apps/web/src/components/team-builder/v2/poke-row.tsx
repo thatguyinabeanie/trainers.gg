@@ -251,7 +251,7 @@ function ActiveRowShell({
   return (
     <div
       className={cn(
-        "overflow-x-auto rounded-lg",
+        "overflow-x-hidden rounded-lg md:overflow-x-auto",
         density === "comfy" ? "" : ""
       )}
     >

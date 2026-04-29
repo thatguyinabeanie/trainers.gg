@@ -108,71 +108,137 @@ export function Topbar({
   }
 
   return (
-    <header className="bg-background/95 sticky top-0 z-30 flex h-12 shrink-0 items-center gap-3 border-b px-3 backdrop-blur md:px-4">
-      {/* LEFT — brand + breadcrumb */}
-      <div className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm">
-        <Link
-          href="/dashboard"
-          className="font-extrabold tracking-wide text-primary"
-          style={{ fontFamily: "var(--font-sans)" }}
-        >
-          trainers.gg
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        <Link
-          href={teamsUrl}
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          {username}
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        {/* Team name — read-only display in Phase 1 */}
-        <Input
-          defaultValue={team.name}
-          readOnly
-          className="h-6 w-32 border-transparent bg-transparent px-1.5 text-sm font-medium shadow-none focus-visible:border-border focus-visible:ring-0 md:w-44"
-          aria-label="Team name"
-        />
-      </div>
+    <header className="bg-background/95 sticky top-0 z-30 shrink-0 border-b backdrop-blur">
+      {/*
+       * MOBILE: two rows stacked
+       *   Row 1 — identity: brand · breadcrumb · team name · format pill
+       *   Row 2 — actions: Import · Validate · Calc · Save
+       * DESKTOP (md+): single row identical to pre-mobile behaviour
+       */}
 
-      {/* CENTER — format pill + stat blocks */}
-      <div className="flex flex-1 items-center justify-center gap-4">
-        {format && (
-          <Badge variant="secondary" className="shrink-0">
-            <span className="mr-1 inline-block size-1.5 rounded-full bg-primary" />
-            {format.label}
-          </Badge>
-        )}
-        <div className="hidden items-center gap-4 sm:flex">
-          <StatBlock label="Slots" value={`${filledCount}/6`} />
-          <StatBlock label="Record" value="—·—" />
-          <StatBlock label="WR" value="—%" />
+      {/* ── Row 1 — identity ───────────────────────────────────────── */}
+      <div className="flex h-12 items-center gap-2 px-3 md:gap-3 md:px-4">
+        {/* LEFT — brand + breadcrumb */}
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm">
+          <Link
+            href="/dashboard"
+            className="font-extrabold tracking-wide text-primary"
+            style={{ fontFamily: "var(--font-sans)" }}
+          >
+            trainers.gg
+          </Link>
+          <span className="text-muted-foreground">/</span>
+          <Link
+            href={teamsUrl}
+            className="hidden text-muted-foreground transition-colors hover:text-foreground sm:inline"
+          >
+            {username}
+          </Link>
+          <span className="hidden text-muted-foreground sm:inline">/</span>
+          {/* Team name — read-only display */}
+          <Input
+            defaultValue={team.name}
+            readOnly
+            className="h-6 w-28 border-transparent bg-transparent px-1.5 text-sm font-medium shadow-none focus-visible:border-border focus-visible:ring-0 sm:w-32 md:w-44"
+            aria-label="Team name"
+          />
+        </div>
+
+        {/* CENTER — format pill + stat blocks */}
+        <div className="flex flex-1 items-center justify-center gap-4">
+          {format && (
+            <Badge variant="secondary" className="shrink-0">
+              <span className="mr-1 inline-block size-1.5 rounded-full bg-primary" />
+              {format.label}
+            </Badge>
+          )}
+          {/* Stat blocks — hidden on phones (< sm), shown sm+ */}
+          <div className="hidden items-center gap-4 sm:flex">
+            <StatBlock label="Slots" value={`${filledCount}/6`} />
+            <StatBlock label="Record" value="—·—" />
+            <StatBlock label="WR" value="—%" />
+          </div>
+        </div>
+
+        {/* RIGHT on desktop (md+) — action buttons inline */}
+        <div className="hidden shrink-0 items-center gap-1 md:flex">
+          <Button variant="ghost" size="sm">
+            ⌘K
+          </Button>
+          <Button variant="outline" size="sm" onClick={onOpenImport}>
+            Import
+          </Button>
+
+          {/* Validate button */}
+          <Popover open={validateOpen} onOpenChange={handleValidateOpen}>
+            <PopoverTrigger
+              render={
+                <button
+                  type="button"
+                  className={cn(
+                    "relative inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground",
+                    hasErrors && "border-destructive/50 text-destructive hover:border-destructive hover:text-destructive",
+                    hasWarnings && !hasErrors && "border-amber-400/50 text-amber-600 hover:border-amber-400 dark:text-amber-400"
+                  )}
+                >
+                  Validate
+                  {hasIssues && (
+                    <span
+                      className={cn(
+                        "absolute -right-0.5 -top-0.5 size-2 rounded-full",
+                        hasErrors ? "bg-destructive" : "bg-amber-500"
+                      )}
+                      aria-hidden="true"
+                    />
+                  )}
+                </button>
+              }
+            />
+            <PopoverContent
+              side="bottom"
+              align="end"
+              className="w-auto max-w-[calc(100vw-2rem)] p-0"
+            >
+              <ValidationPopover
+                errors={validationErrors}
+                onJumpToPokemon={handleJumpToPokemon}
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggleCalc}
+            data-on={calcOpen}
+          >
+            ⚔ Calc
+          </Button>
+          <Button size="sm" onClick={onSave}>
+            Save
+          </Button>
         </div>
       </div>
 
-      {/* RIGHT — action buttons */}
-      <div className="flex shrink-0 items-center gap-1">
-        <Button variant="ghost" size="sm" className="hidden md:inline-flex">
-          ⌘K
-        </Button>
-        <Button variant="outline" size="sm" onClick={onOpenImport}>
-          Import paste
+      {/* ── Row 2 — action row (phones only, hidden md+) ─────────────── */}
+      <div className="flex h-10 items-center gap-1 border-t px-3 md:hidden">
+        <Button variant="outline" size="sm" onClick={onOpenImport} className="h-7 text-xs">
+          Import
         </Button>
 
-        {/* Validate button — opens popover with full summary */}
+        {/* Validate button */}
         <Popover open={validateOpen} onOpenChange={handleValidateOpen}>
           <PopoverTrigger
             render={
               <button
                 type="button"
                 className={cn(
-                  "relative hidden h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex",
+                  "relative inline-flex h-7 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground",
                   hasErrors && "border-destructive/50 text-destructive hover:border-destructive hover:text-destructive",
                   hasWarnings && !hasErrors && "border-amber-400/50 text-amber-600 hover:border-amber-400 dark:text-amber-400"
                 )}
               >
                 Validate
-                {/* Dot indicator — red for errors, amber for warnings */}
                 {hasIssues && (
                   <span
                     className={cn(
@@ -187,8 +253,8 @@ export function Topbar({
           />
           <PopoverContent
             side="bottom"
-            align="end"
-            className="w-auto p-0"
+            align="start"
+            className="w-auto max-w-[calc(100vw-2rem)] p-0"
           >
             <ValidationPopover
               errors={validationErrors}
@@ -202,11 +268,15 @@ export function Topbar({
           size="sm"
           onClick={onToggleCalc}
           data-on={calcOpen}
-          className="hidden md:inline-flex"
+          className="h-7 text-xs"
         >
           ⚔ Calc
         </Button>
-        <Button size="sm" onClick={onSave}>
+
+        {/* Spacer */}
+        <span className="flex-1" />
+
+        <Button size="sm" onClick={onSave} className="h-7 text-xs">
           Save
         </Button>
       </div>
