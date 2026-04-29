@@ -1,16 +1,36 @@
 "use client";
 
-import { useEffect, useOptimistic, useTransition } from "react";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { type GameFormat } from "@trainers/pokemon";
-import { type TeamWithPokemon, type Tables, type TablesUpdate } from "@trainers/supabase";
+import {
+  type TeamWithPokemon,
+  type Tables,
+  type TablesInsert,
+  type TablesUpdate,
+} from "@trainers/supabase";
 
-import { updatePokemonAction } from "@/actions/teams";
+import {
+  addPokemonToTeamAction,
+  removePokemonFromTeamAction,
+  updatePokemonAction,
+} from "@/actions/teams";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { CalcDrawer } from "./calc/calc-drawer";
 import { CalcStateProvider } from "./calc/calc-state-context";
+import { BottomDrawer } from "./dock/bottom-drawer";
+import { Dockbar } from "./dock/dockbar";
+import { HeatmapPanel } from "./dock/heatmap-panel";
+import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
+import { SpeciesPicker } from "./pickers/species-picker";
 import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
 import { useBuilderState } from "./use-builder-state";
@@ -66,6 +86,9 @@ export function TeamWorkspaceV2({
   const state = useBuilderState();
   const { tweaks } = state;
 
+  /** Slot index (0-based) for which the species picker is open. null = closed. */
+  const [addPickerForSlot, setAddPickerForSlot] = useState<number | null>(null);
+
   // ---------------------------------------------------------------------------
   // Optimistic team-pokemon state — Phase 2 write path
   //
@@ -106,16 +129,59 @@ export function TeamWorkspaceV2({
     });
   }
 
-  function handleAdd(_idx: number) {
-    toast("Coming in Phase 5");
+  function handleAdd(idx: number) {
+    setAddPickerForSlot(idx);
   }
 
-  function handleRemove(_idx: number) {
-    toast("Coming in Phase 5");
+  async function handlePickSpecies(speciesId: string) {
+    if (addPickerForSlot === null) return;
+    setAddPickerForSlot(null);
+
+    // Position is 1-indexed
+    const position = addPickerForSlot + 1;
+    // ability / move1 / nature are required by the DB schema; use empty-string
+    // defaults so the user can fill them in via the lane editors.
+    const pokemon: TablesInsert<"pokemon"> = {
+      species: speciesId,
+      ability: "",
+      move1: "",
+      nature: "",
+    };
+
+    startTransition(async () => {
+      const result = await addPokemonToTeamAction(team.id, pokemon, position);
+      if (!result.success) {
+        toast.error(result.error ?? "Failed to add Pokémon.");
+        return;
+      }
+      toast.success(`${speciesId} added to slot ${position}.`);
+      router.refresh();
+    });
+  }
+
+  function handleRemove(pokemonId: number) {
+    if (!window.confirm("Remove this Pokémon from the team?")) return;
+
+    startTransition(async () => {
+      const result = await removePokemonFromTeamAction(team.id, pokemonId);
+      if (!result.success) {
+        toast.error(result.error ?? "Failed to remove Pokémon.");
+        return;
+      }
+      toast.success("Pokémon removed.");
+      router.refresh();
+    });
   }
 
   const slots = buildSlots(optimisticTeamPokemon);
   const filledCount = slots.filter(Boolean).length;
+
+  // onRemove for PokeRow — accepts slot idx, resolves to pokemonId
+  function handleRemoveByIdx(idx: number) {
+    const p = slots[idx];
+    if (!p) return;
+    handleRemove(p.id);
+  }
 
   // Close the bottom drawer on Escape key press
   useEffect(() => {
@@ -165,7 +231,7 @@ export function TeamWorkspaceV2({
                     expandMode={tweaks.expandMode}
                     onActivate={state.setActiveIdx}
                     onAdd={handleAdd}
-                    onRemove={handleRemove}
+                    onRemove={handleRemoveByIdx}
                     teamPokemon={optimisticTeamPokemon}
                     format={format}
                     onPokemonUpdate={handlePokemonUpdate}
@@ -174,9 +240,37 @@ export function TeamWorkspaceV2({
               </section>
             </main>
 
-            {/* Phase 5 placeholders — present for layout stability */}
-            <div className={s.builderDockbarSlot} aria-hidden />
-            <div className={s.builderBottomDrawerSlot} aria-hidden />
+            {/* Phase 5 — dockbar + bottom drawer */}
+            <div className={s.builderDockbarSlot}>
+              <Dockbar
+                drawer={state.drawer}
+                onOpen={(key) =>
+                  state.setDrawer(state.drawer === key ? null : key)
+                }
+                team={optimisticTeamPokemon}
+                format={format}
+              />
+            </div>
+            <div className={s.builderBottomDrawerSlot}>
+              <BottomDrawer
+                drawer={state.drawer}
+                onClose={() => state.setDrawer(null)}
+              >
+                {state.drawer === "matchups" && (
+                  <HeatmapPanel
+                    team={optimisticTeamPokemon}
+                    format={format}
+                  />
+                )}
+                {state.drawer === "speed" && (
+                  <SpeedTiersPanel
+                    team={optimisticTeamPokemon}
+                    activeIdx={state.activeIdx}
+                    format={format}
+                  />
+                )}
+              </BottomDrawer>
+            </div>
           </div>
 
           {tweaks.showCalc && state.calcOpen && (
@@ -192,6 +286,29 @@ export function TeamWorkspaceV2({
           )}
         </div>
       </div>
+
+      {/* Species picker dialog — opened by handleAdd */}
+      <Dialog
+        open={addPickerForSlot !== null}
+        onOpenChange={(open) => {
+          if (!open) setAddPickerForSlot(null);
+        }}
+      >
+        <DialogContent className="max-w-[calc(100vw-2rem)] p-0 sm:max-w-sm">
+          <DialogHeader className="sr-only">
+            <DialogTitle>
+              Add Pokémon to slot{" "}
+              {addPickerForSlot !== null ? addPickerForSlot + 1 : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <SpeciesPicker
+            value={null}
+            format={format}
+            onPick={handlePickSpecies}
+            onClose={() => setAddPickerForSlot(null)}
+          />
+        </DialogContent>
+      </Dialog>
     </CalcStateProvider>
   );
 }
