@@ -105,7 +105,7 @@ export function IdentityLane({
   }
 
   return (
-    <div className="flex min-w-0 shrink-0 gap-3 p-3" style={{ width: 180 }}>
+    <div className="min-w-[200px] max-w-[260px] flex-shrink-0 flex gap-3 p-3">
       {/* Sprite — click to open species picker */}
       <div className="flex shrink-0 flex-col items-center gap-1">
         <button
@@ -116,9 +116,6 @@ export function IdentityLane({
         >
           <Sprite species={pokemon.species ?? ""} types={types} size={56} />
         </button>
-        {speciesErrors.map((err, i) => (
-          <FieldError key={i} message={err.message} severity={err.severity} />
-        ))}
       </div>
 
       {/* Meta stack */}
@@ -165,13 +162,15 @@ export function IdentityLane({
         <div className="flex flex-wrap gap-1 pt-0.5">
           {/* Level chip → NumberPicker popover */}
           <Popover open={levelOpen} onOpenChange={setLevelOpen}>
-            <PopoverTrigger>
-              <button
-                type="button"
-                className="bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 font-mono text-[10px] font-medium"
-              >
-                Lv {level}
-              </button>
+            <PopoverTrigger
+              render={
+                <button
+                  type="button"
+                  className="bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 font-mono text-[10px] font-medium"
+                />
+              }
+            >
+              Lv {level}
             </PopoverTrigger>
             <PopoverContent
               side="bottom"
@@ -229,13 +228,15 @@ export function IdentityLane({
           <div className="flex flex-wrap gap-1">
             {/* Dynamax level chip */}
             <Popover open={dmaxOpen} onOpenChange={setDmaxOpen}>
-              <PopoverTrigger>
-                <button
-                  type="button"
-                  className="bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 font-mono text-[10px] font-medium"
-                >
-                  DMax {(pokemon as Record<string, unknown>)["dynamax_level"] as number ?? 10}
-                </button>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className="bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 font-mono text-[10px] font-medium"
+                  />
+                }
+              >
+                DMax {(pokemon as Record<string, unknown>)["dynamax_level"] as number ?? 10}
               </PopoverTrigger>
               <PopoverContent
                 side="bottom"
@@ -260,6 +261,11 @@ export function IdentityLane({
             </Popover>
           </div>
         )}
+
+        {/* Species errors — placed in meta column so they wrap in the wider area */}
+        {speciesErrors.map((err, i) => (
+          <FieldError key={i} message={err.message} severity={err.severity} />
+        ))}
       </div>
     </div>
   );

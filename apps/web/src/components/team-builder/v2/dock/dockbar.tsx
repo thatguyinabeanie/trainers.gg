@@ -41,7 +41,7 @@ export function Dockbar({ drawer, onOpen, team, format }: DockbarProps) {
     <div
       role="toolbar"
       aria-label="Builder tools"
-      className="flex min-w-0 flex-wrap items-center gap-2 border-t bg-background px-3 py-2"
+      className="relative z-40 flex min-w-0 flex-wrap items-center gap-2 border-t bg-background px-3 py-2"
     >
       {/* Type matchups pill */}
       <button

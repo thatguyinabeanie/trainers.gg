@@ -174,9 +174,11 @@ export function CalcResultsBlock({
                 )}
               </div>
 
-              {/* Bar + right readout — or status label */}
-              {isStatus || !output ? (
+              {/* Bar + right readout — or status / no-calc label */}
+              {isStatus ? (
                 <div className="cd-result-status">status</div>
+              ) : !output ? (
+                <div className="cd-result-status">—</div>
               ) : (
                 <>
                   <div className="cd-result-bar">

@@ -86,27 +86,29 @@ export function SetupLane({
       {/* Item row */}
       <div className="flex flex-col">
         <Popover open={itemOpen} onOpenChange={setItemOpen}>
-          <PopoverTrigger>
-            <button
-              type="button"
-              className={cn(
-                "grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60",
-                itemErrors.length > 0 && "ring-1 ring-destructive/40"
-              )}
-              style={{ gridTemplateColumns: "30px 1fr" }}
-            >
-              <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
-                item
-              </span>
-              <span
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
                 className={cn(
-                  "truncate text-xs font-medium",
-                  !pokemon.held_item && "text-muted-foreground/50 italic"
+                  "grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60",
+                  itemErrors.length > 0 && "ring-1 ring-destructive/40"
                 )}
-              >
-                {pokemon.held_item ?? "—"}
-              </span>
-            </button>
+                style={{ gridTemplateColumns: "30px 1fr" }}
+              />
+            }
+          >
+            <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
+              item
+            </span>
+            <span
+              className={cn(
+                "truncate text-xs font-medium",
+                !pokemon.held_item && "text-muted-foreground/50 italic"
+              )}
+            >
+              {pokemon.held_item ?? "—"}
+            </span>
           </PopoverTrigger>
           <PopoverContent side="bottom" align="start" className="w-auto p-0">
             <ItemPicker
@@ -126,27 +128,29 @@ export function SetupLane({
       {/* Ability row */}
       <div className="flex flex-col">
         <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
-          <PopoverTrigger>
-            <button
-              type="button"
-              className={cn(
-                "grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60",
-                abilityErrors.length > 0 && "ring-1 ring-destructive/40"
-              )}
-              style={{ gridTemplateColumns: "30px 1fr" }}
-            >
-              <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
-                abil
-              </span>
-              <span
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
                 className={cn(
-                  "truncate text-xs font-medium",
-                  !pokemon.ability && "text-muted-foreground/50 italic"
+                  "grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60",
+                  abilityErrors.length > 0 && "ring-1 ring-destructive/40"
                 )}
-              >
-                {pokemon.ability || "—"}
-              </span>
-            </button>
+                style={{ gridTemplateColumns: "30px 1fr" }}
+              />
+            }
+          >
+            <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
+              abil
+            </span>
+            <span
+              className={cn(
+                "truncate text-xs font-medium",
+                !pokemon.ability && "text-muted-foreground/50 italic"
+              )}
+            >
+              {pokemon.ability || "—"}
+            </span>
           </PopoverTrigger>
           <PopoverContent side="bottom" align="start" className="w-auto p-0">
             <AbilityPicker
@@ -166,32 +170,34 @@ export function SetupLane({
       {/* Nature row */}
       <div className="flex flex-col">
         <Popover open={natureOpen} onOpenChange={setNatureOpen}>
-          <PopoverTrigger>
-            <button
-              type="button"
-              className={cn(
-                "relative grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60",
-                natureErrors.length > 0 && "ring-1 ring-destructive/40"
-              )}
-              style={{ gridTemplateColumns: "30px 1fr" }}
-            >
-              <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
-                nat
-              </span>
-              <span
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
                 className={cn(
-                  "truncate text-xs font-medium",
-                  !pokemon.nature && "text-muted-foreground/50 italic"
+                  "relative grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60",
+                  natureErrors.length > 0 && "ring-1 ring-destructive/40"
                 )}
-              >
-                {pokemon.nature || "—"}
-              </span>
-              {natUp && natDown && (
-                <span className="text-muted-foreground absolute right-1.5 top-1/2 -translate-y-1/2 font-mono text-[8.5px] tracking-wide">
-                  +{statShortLabel[natUp] ?? natUp}/−{statShortLabel[natDown] ?? natDown}
-                </span>
+                style={{ gridTemplateColumns: "30px 1fr" }}
+              />
+            }
+          >
+            <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
+              nat
+            </span>
+            <span
+              className={cn(
+                "truncate text-xs font-medium",
+                !pokemon.nature && "text-muted-foreground/50 italic"
               )}
-            </button>
+            >
+              {pokemon.nature || "—"}
+            </span>
+            {natUp && natDown && (
+              <span className="text-muted-foreground absolute right-1.5 top-1/2 -translate-y-1/2 font-mono text-[8.5px] tracking-wide">
+                +{statShortLabel[natUp] ?? natUp}/−{statShortLabel[natDown] ?? natDown}
+              </span>
+            )}
           </PopoverTrigger>
           <PopoverContent side="bottom" align="start" className="w-auto p-0">
             <NaturePicker
@@ -209,26 +215,28 @@ export function SetupLane({
       {/* Tera row — hidden when format doesn't support Tera */}
       {showTera && (
         <Popover open={teraOpen} onOpenChange={setTeraOpen}>
-          <PopoverTrigger>
-            <button
-              type="button"
-              className="grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60"
-              style={{ gridTemplateColumns: "30px 1fr" }}
-            >
-              <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
-                tera
-              </span>
-              <span className="flex items-center gap-1.5 text-xs font-medium">
-                {pokemon.tera_type ? (
-                  <>
-                    <TypeDot t={pokemon.tera_type} size={10} />
-                    {pokemon.tera_type}
-                  </>
-                ) : (
-                  <span className="text-muted-foreground/50 italic">—</span>
-                )}
-              </span>
-            </button>
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
+                className="grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60"
+                style={{ gridTemplateColumns: "30px 1fr" }}
+              />
+            }
+          >
+            <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
+              tera
+            </span>
+            <span className="flex items-center gap-1.5 text-xs font-medium">
+              {pokemon.tera_type ? (
+                <>
+                  <TypeDot t={pokemon.tera_type} size={10} />
+                  {pokemon.tera_type}
+                </>
+              ) : (
+                <span className="text-muted-foreground/50 italic">—</span>
+              )}
+            </span>
           </PopoverTrigger>
           <PopoverContent side="bottom" align="start" className="w-auto p-0">
             <TypePicker

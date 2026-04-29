@@ -154,21 +154,24 @@ function MoveTile({
           if (!open) setPanel(null);
         }}
       >
-        <PopoverTrigger>
-          <button
-            type="button"
-            onClick={handleClick}
-            onContextMenu={handleContextMenu}
-            className={cn(
-              "mvline",
-              moveName ? "mvline--set" : "mvline--empty",
-              koTier === "1" && "mvline--ko1",
-              koTier === "2" && "mvline--ko2",
-              koTier === "3" && "mvline--ko3",
-              koTier === "4" && "mvline--ko4",
-              hasError && "ring-1 ring-destructive/50"
-            )}
-          >
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              onClick={handleClick}
+              onContextMenu={handleContextMenu}
+              className={cn(
+                "mvline",
+                moveName ? "mvline--set" : "mvline--empty",
+                koTier === "1" && "mvline--ko1",
+                koTier === "2" && "mvline--ko2",
+                koTier === "3" && "mvline--ko3",
+                koTier === "4" && "mvline--ko4",
+                hasError && "ring-1 ring-destructive/50"
+              )}
+            />
+          }
+        >
             {/* Col 1: Type dot */}
             <TypeDot t={moveData?.type ?? "Normal"} size={10} />
 
@@ -239,7 +242,6 @@ function MoveTile({
                 <span className="mvline-no-target">— pick a target —</span>
               ) : null}
             </span>
-          </button>
         </PopoverTrigger>
 
         <PopoverContent side="bottom" align="start" className="w-auto p-0">

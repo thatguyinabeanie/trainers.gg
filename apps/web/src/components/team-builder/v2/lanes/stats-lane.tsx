@@ -185,49 +185,51 @@ function StatRow({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger>
-        <button
-          type="button"
-          className="flex min-w-0 flex-col items-stretch gap-0.5 rounded border border-transparent p-1 text-center transition-colors hover:border-border/50 hover:bg-muted/40"
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            className="flex min-w-0 flex-col items-stretch gap-0.5 rounded border border-transparent p-1 text-center transition-colors hover:border-border/50 hover:bg-muted/40"
+          />
+        }
+      >
+        {/* Stat label */}
+        <span
+          className={cn(
+            "font-mono text-[9px] font-semibold tracking-wide uppercase",
+            isNatureBoosted
+              ? "text-green-600 dark:text-green-400"
+              : isNatureReduced
+                ? "text-destructive"
+                : baseColorClass
+          )}
         >
-          {/* Stat label */}
+          {label}
+          {isNatureBoosted && <span className="ml-0.5">+</span>}
+          {isNatureReduced && <span className="ml-0.5">−</span>}
+        </span>
+
+        {/* Final stat */}
+        <span className="font-mono text-[12.5px] font-semibold leading-tight">
+          {finalStat}
+        </span>
+
+        {/* Dual-layer bar */}
+        <div className="relative h-1 overflow-hidden rounded-full bg-border/40">
           <span
-            className={cn(
-              "font-mono text-[9px] font-semibold tracking-wide uppercase",
-              isNatureBoosted
-                ? "text-green-600 dark:text-green-400"
-                : isNatureReduced
-                  ? "text-destructive"
-                  : baseColorClass
-            )}
-          >
-            {label}
-            {isNatureBoosted && <span className="ml-0.5">+</span>}
-            {isNatureReduced && <span className="ml-0.5">−</span>}
-          </span>
+            className="absolute inset-y-0 left-0 rounded-full bg-foreground/30"
+            style={{ width: `${finalPct}%` }}
+          />
+          <span
+            className="absolute inset-y-0 left-0 rounded-full bg-primary/80"
+            style={{ width: `${evPct}%` }}
+          />
+        </div>
 
-          {/* Final stat */}
-          <span className="font-mono text-[12.5px] font-semibold leading-tight">
-            {finalStat}
-          </span>
-
-          {/* Dual-layer bar */}
-          <div className="relative h-1 overflow-hidden rounded-full bg-border/40">
-            <span
-              className="absolute inset-y-0 left-0 rounded-full bg-foreground/30"
-              style={{ width: `${finalPct}%` }}
-            />
-            <span
-              className="absolute inset-y-0 left-0 rounded-full bg-primary/80"
-              style={{ width: `${evPct}%` }}
-            />
-          </div>
-
-          {/* EV value */}
-          <span className="text-muted-foreground font-mono text-[9.5px]">
-            {ev}
-          </span>
-        </button>
+        {/* EV value */}
+        <span className="text-muted-foreground font-mono text-[9.5px]">
+          {ev}
+        </span>
       </PopoverTrigger>
       <PopoverContent side="bottom" align="center" className="w-auto p-0">
         <NumberPicker
