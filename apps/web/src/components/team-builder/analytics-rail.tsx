@@ -25,10 +25,10 @@ interface AnalyticsRailProps {
 // SpeedPanel, CalcPanel, and TypeChartPanel each render their own card chrome
 // (`bg-card overflow-hidden rounded-lg shadow-sm`) so they can also be used
 // standalone. When mounted inside AnalyticsRail — which provides its own
-// chrome on the outer container at a fixed 460px width — we pass these
-// neutralizing utility classes to strip the duplicate card styling. The
-// panels' `className` is merged into the outer wrapper via `cn()`, so these
-// values win against the defaults.
+// chrome on the outer container (full-width on phones, `w-rail` 460px at lg+)
+// — we pass these neutralizing utility classes to strip the duplicate card
+// styling. The panels' `className` is merged into the outer wrapper via
+// `cn()`, so these values win against the defaults.
 const PANEL_CHROME_OVERRIDE =
   "bg-transparent shadow-none rounded-none flex flex-col flex-1";
 

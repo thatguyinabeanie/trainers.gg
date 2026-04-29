@@ -80,17 +80,24 @@ function FieldButton({
       onClick={onClick}
       aria-label={ariaLabel ?? `Edit ${label}`}
       className={cn(
-        "flex flex-1 flex-col justify-center gap-0.5 px-3 py-2 text-left",
+        "flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-2 text-left",
         "hover:bg-muted/50 transition-colors duration-150"
       )}
     >
       <span className="text-muted-foreground text-[9px] font-semibold tracking-wider uppercase">
         {label}
       </span>
-      <span className="text-foreground flex items-center gap-1 text-sm font-medium whitespace-nowrap">
-        {children}
+      <span className="text-foreground flex min-w-0 items-center gap-1 text-sm font-medium">
+        {/* `truncate` on the value text so a long ability/item/nature name
+            shows an ellipsis when it can't fit (mobile cells are 50% of a
+            ~393px viewport). The chevron sits outside the truncated span so
+            it stays visible. */}
+        <span className="min-w-0 truncate">{children}</span>
         {!hideChevron && (
-          <span className="text-muted-foreground" aria-hidden="true">
+          <span
+            className="text-muted-foreground shrink-0"
+            aria-hidden="true"
+          >
             ›
           </span>
         )}
@@ -110,11 +117,13 @@ interface FieldStaticProps {
 
 function FieldStatic({ label, children }: FieldStaticProps) {
   return (
-    <div className="flex flex-1 flex-col justify-center gap-0.5 px-3 py-2">
+    <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-2">
       <span className="text-muted-foreground text-[9px] font-semibold tracking-wider uppercase">
         {label}
       </span>
-      <span className="text-foreground text-sm font-medium whitespace-nowrap">
+      {/* `truncate` so the value text shows an ellipsis when it can't fit
+          inside the cell (matches the FieldButton behavior). */}
+      <span className="text-foreground truncate text-sm font-medium">
         {children}
       </span>
     </div>
@@ -590,9 +599,9 @@ export function EditorHeaderBand({
         data-testid="editor-header-band-mobile-fields"
       >
         {/* Each cell carries `min-w-0 overflow-hidden` so the FieldButton's
-            `whitespace-nowrap` value text can't push past the cell's column
-            width (e.g. very long ability or item names). The truncate inside
-            FieldButton handles the visual ellipsis. */}
+            value text can't push past the cell's column width (e.g. very
+            long ability or item names). FieldButton/FieldStatic apply
+            `truncate` to the value span so overflow shows an ellipsis. */}
         <div className="min-w-0 overflow-hidden border-r">{abilityField}</div>
         <div className="min-w-0 overflow-hidden">{itemField}</div>
         {teraField ? (
