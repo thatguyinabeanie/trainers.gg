@@ -7,13 +7,13 @@ import { type DiscordIntegrationOverview } from "@trainers/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type GuildChannel, type GuildRole } from "@/lib/discord/guild-cache";
 
-import { ChannelMappingTable } from "./_components/channel-mapping-table";
-import { DmSettingsTable } from "./_components/dm-settings-table";
-import { FailureBanner } from "./_components/failure-banner";
-import { FailuresTabContent } from "./_components/failures-tab-content";
-import { InstallCard } from "./_components/install-card";
-import { RoleMappingTable } from "./_components/role-mapping-table";
-import { StatusHeader } from "./_components/status-header";
+import { ChannelMappingTable } from "@/components/discord/channel-mapping-table";
+import { DmSettingsTable } from "@/components/discord/dm-settings-table";
+import { FailureBanner } from "@/components/discord/failure-banner";
+import { FailuresTabContent } from "@/components/discord/failures-tab-content";
+import { InstallCard } from "@/components/discord/install-card";
+import { RoleMappingTable } from "@/components/discord/role-mapping-table";
+import { StatusHeader } from "@/components/discord/status-header";
 
 // =============================================================================
 // Types

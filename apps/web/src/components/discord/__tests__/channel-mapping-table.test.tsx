@@ -2,6 +2,25 @@
  * Tests for ChannelMappingTable
  */
 
+const mockUseIsMobile = jest.fn();
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
+
+const mockUseIsClient = jest.fn();
+jest.mock("@/hooks/use-is-client", () => ({
+  useIsClient: () => mockUseIsClient(),
+}));
+
+jest.mock("../channel-mapping-cards", () => ({
+  ChannelMappingCards: (props: { mappings?: { id: number | string }[] }) => (
+    <div
+      data-testid="channel-mapping-cards"
+      data-row-count={props.mappings?.length ?? 0}
+    />
+  ),
+}));
+
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -71,6 +90,8 @@ const defaultProps = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockUseIsClient.mockReturnValue(true);
+  mockUseIsMobile.mockReturnValue(false);
   mockUpsertChannelMappingAction.mockResolvedValue({
     success: true,
     data: { id: 1 },
@@ -174,6 +195,36 @@ describe("ChannelMappingTable", () => {
 
       const addBtn = screen.getByRole("button", { name: /^add$/i });
       expect(addBtn).toBeDisabled();
+    });
+  });
+
+  describe("conditional mount", () => {
+    it("renders skeleton when isClient is false", () => {
+      mockUseIsClient.mockReturnValue(false);
+      mockUseIsMobile.mockReturnValue(false);
+      render(<ChannelMappingTable {...defaultProps} />);
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("channel-mapping-cards")
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders desktop table when isClient is true and isMobile is false", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(false);
+      render(<ChannelMappingTable {...defaultProps} />);
+      expect(screen.getByRole("table")).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("channel-mapping-cards")
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders mobile cards when isClient is true and isMobile is true", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(true);
+      render(<ChannelMappingTable {...defaultProps} />);
+      expect(screen.getByTestId("channel-mapping-cards")).toBeInTheDocument();
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
     });
   });
 });

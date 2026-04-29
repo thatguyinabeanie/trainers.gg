@@ -13,6 +13,23 @@ Object.assign(globalThis, {
 
 import "@testing-library/jest-dom";
 
+// Polyfill window.matchMedia for components using useIsMobile() and other
+// match-media-driven hooks. JSDOM doesn't implement it; the hook subscribes
+// at mount via matchMedia(query).addEventListener.
+if (typeof window !== "undefined" && !window.matchMedia) {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+}
+
 jest.mock("workflow/api", () => ({
   start: jest.fn().mockResolvedValue({ runId: "mock-run-id" }),
   getRun: jest.fn(),

@@ -39,7 +39,7 @@ export function StatsClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between pt-4">
+      <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             Stats & History
@@ -51,7 +51,7 @@ export function StatsClient() {
 
         {/* Alt Selector */}
         {alts && alts.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
             <span className="text-muted-foreground text-sm">Viewing:</span>
             <Select
               value={selectedAltId?.toString() || "all"}
@@ -59,7 +59,7 @@ export function StatsClient() {
                 setSelectedAltId(value === "all" ? null : Number(value))
               }
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="All Alts" />
               </SelectTrigger>
               <SelectContent>

@@ -368,7 +368,10 @@ export function TournamentManageClient({
 
       {/* Audit Log Sheet */}
       <Sheet open={auditSheetOpen} onOpenChange={setAuditSheetOpen}>
-        <SheetContent side="right" className="overflow-y-auto sm:max-w-lg">
+        <SheetContent
+          side="right"
+          className="w-full max-w-[calc(100vw-1rem)] overflow-y-auto sm:max-w-lg"
+        >
           <SheetHeader>
             <SheetTitle>Audit Log</SheetTitle>
             <SheetDescription>

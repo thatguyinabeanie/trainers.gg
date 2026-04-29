@@ -12,11 +12,11 @@ import { DiscordClient } from "../discord-client";
 // on DiscordClient routing/tab logic.
 // =============================================================================
 
-jest.mock("../_components/install-card", () => ({
+jest.mock("@/components/discord/install-card", () => ({
   InstallCard: () => <div>Install card stub</div>,
 }));
 
-jest.mock("../_components/status-header", () => ({
+jest.mock("@/components/discord/status-header", () => ({
   StatusHeader: ({ server }: { server: { guild_id: string } }) => (
     <div data-testid="status-header">
       Status header stub — {server.guild_id}
@@ -24,7 +24,7 @@ jest.mock("../_components/status-header", () => ({
   ),
 }));
 
-jest.mock("../_components/failure-banner", () => ({
+jest.mock("@/components/discord/failure-banner", () => ({
   FailureBanner: ({ count }: { count: number }) => (
     <div data-testid="failure-banner">{count} delivery failures stub</div>
   ),

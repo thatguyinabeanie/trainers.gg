@@ -105,8 +105,21 @@ jest.mock("lucide-react", () => ({
   Loader2: () => <svg data-testid="icon-loader" />,
   Crown: () => <svg data-testid="icon-crown" />,
   GripVertical: () => <svg data-testid="icon-grip" />,
+  MoreHorizontal: () => <svg data-testid="icon-more" />,
   Search: () => <svg data-testid="icon-search" />,
   Users: () => <svg data-testid="icon-users" />,
+}));
+
+// --- @/hooks/use-mobile ---
+const mockUseIsMobile = jest.fn();
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
+
+// --- @/hooks/use-is-client ---
+const mockUseIsClient = jest.fn();
+jest.mock("@/hooks/use-is-client", () => ({
+  useIsClient: () => mockUseIsClient(),
 }));
 
 import React from "react";
@@ -182,6 +195,9 @@ function setupQuery(data: StaffWithRole[] | undefined, isLoading = false) {
 describe("StaffClient", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseIsClient.mockReturnValue(true);
+    // Default to desktop so existing drag-and-drop tests exercise their path
+    mockUseIsMobile.mockReturnValue(false);
   });
 
   // ---------------------------------------------------------------------------
@@ -490,6 +506,106 @@ describe("StaffClient", () => {
       } else {
         expect(hint).not.toBeInTheDocument();
       }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mobile vs desktop conditional rendering
+  // ---------------------------------------------------------------------------
+
+  describe("mobile vs desktop", () => {
+    it("renders the desktop drag context when not on mobile", () => {
+      mockUseIsMobile.mockReturnValue(false);
+      setupQuery([makeStaffMember()]);
+      render(<StaffClient {...defaultProps} groups={[makeGroup()]} />);
+      expect(screen.getByTestId("dnd-context")).toBeInTheDocument();
+    });
+
+    it("does not render the desktop drag context on mobile", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      setupQuery([makeStaffMember()]);
+      render(<StaffClient {...defaultProps} groups={[makeGroup()]} />);
+      expect(screen.queryByTestId("dnd-context")).not.toBeInTheDocument();
+    });
+
+    it("shows the mobile-specific tap-to-change hint on mobile", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      setupQuery([makeStaffMember()]);
+      render(
+        <StaffClient
+          {...defaultProps}
+          isOwner={false}
+          currentUserRole="org_admin"
+        />
+      );
+      expect(
+        screen.getByText("Tap a member to change their role")
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText("Drag staff between columns to assign roles")
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders the staff member name in the mobile section list", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      setupQuery([makeStaffMember({ user_id: "u1" })]);
+      render(<StaffClient {...defaultProps} groups={[makeGroup()]} />);
+      // The member's display name should still render in the mobile layout
+      expect(screen.getByText("Ash Ketchum")).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Hydration guard / conditional mount
+  // ---------------------------------------------------------------------------
+
+  describe("conditional mount", () => {
+    it("renders skeleton when isClient is false", () => {
+      mockUseIsClient.mockReturnValue(false);
+      mockUseIsMobile.mockReturnValue(false);
+      setupQuery([
+        makeStaffMember({ user_id: "u-1" }),
+        makeStaffMember({ user_id: "u-2" }),
+      ]);
+      const { container } = render(
+        <StaffClient
+          {...defaultProps}
+          initialStaff={[
+            makeStaffMember({ user_id: "u-1" }),
+            makeStaffMember({ user_id: "u-2" }),
+          ]}
+        />
+      );
+      // Skeleton is the only aria-hidden block in this view.
+      expect(container.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
+      // Desktop DnD layout (mocked DndContext testid) must not render.
+      expect(screen.queryByTestId("dnd-context")).not.toBeInTheDocument();
+    });
+
+    it("renders desktop DnD when isClient is true and isMobile is false", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(false);
+      setupQuery([makeStaffMember({ user_id: "u-1" })]);
+      render(
+        <StaffClient
+          {...defaultProps}
+          initialStaff={[makeStaffMember({ user_id: "u-1" })]}
+        />
+      );
+      expect(screen.getByTestId("dnd-context")).toBeInTheDocument();
+    });
+
+    it("does not render the DnD layout when isClient is true and isMobile is true", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(true);
+      setupQuery([makeStaffMember({ user_id: "u-1" })]);
+      render(
+        <StaffClient
+          {...defaultProps}
+          initialStaff={[makeStaffMember({ user_id: "u-1" })]}
+        />
+      );
+      expect(screen.queryByTestId("dnd-context")).not.toBeInTheDocument();
     });
   });
 });

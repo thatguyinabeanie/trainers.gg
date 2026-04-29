@@ -61,7 +61,9 @@ export function AltVisibilityToggle({
       onKeyUp={stopKeyboardPropagation}
       disabled={isPending}
       className={cn(
-        layout === "button" ? "shrink-0 p-1" : "mx-auto block",
+        layout === "button"
+          ? "flex size-10 shrink-0 items-center justify-center sm:size-7"
+          : "mx-auto flex size-10 items-center justify-center sm:size-auto sm:p-1",
         isPending && "cursor-wait opacity-60"
       )}
       aria-label={isPublic ? "Make private" : "Make public"}

@@ -2,6 +2,25 @@
  * Tests for FailuresTable
  */
 
+const mockUseIsMobile = jest.fn();
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
+
+const mockUseIsClient = jest.fn();
+jest.mock("@/hooks/use-is-client", () => ({
+  useIsClient: () => mockUseIsClient(),
+}));
+
+jest.mock("../failures-cards", () => ({
+  FailuresCards: (props: { visibleRows?: { kind: string; data: { id: number } }[] }) => (
+    <div
+      data-testid="failures-cards"
+      data-row-count={props.visibleRows?.length ?? 0}
+    />
+  ),
+}));
+
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -77,6 +96,8 @@ const defaultProps = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockUseIsClient.mockReturnValue(true);
+  mockUseIsMobile.mockReturnValue(false);
   mockRetryNotificationAction.mockResolvedValue({
     success: true,
     data: undefined,
@@ -224,6 +245,90 @@ describe("FailuresTable", () => {
       });
       // Row should still be present (not removed)
       expect(screen.getByText("CHANNEL")).toBeInTheDocument();
+    });
+  });
+
+  describe("handleRetryAll", () => {
+    it("excludes DM rows already delivered via fallback from the bulk retry", async () => {
+      const user = userEvent.setup();
+      render(
+        <FailuresTable
+          {...defaultProps}
+          channelFailures={[makeChannelFailure({ id: 1 })]}
+          dmFailures={[makeDmFailure({ id: 99, delivered_via_fallback: true })]}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /retry all/i }));
+
+      await waitFor(() => {
+        // Only the channel failure (id 1) should be retried.
+        // The fallback-delivered DM (id 99) must not be passed to the action.
+        expect(mockRetryNotificationAction).toHaveBeenCalledTimes(1);
+        expect(mockRetryNotificationAction).toHaveBeenCalledWith(1);
+      });
+    });
+
+    it("removes only rows whose individual retry succeeded", async () => {
+      const user = userEvent.setup();
+
+      // Three channel failures: id 1 succeeds, id 2 fails, id 3 succeeds.
+      mockRetryNotificationAction
+        .mockResolvedValueOnce({ success: true, data: undefined })
+        .mockResolvedValueOnce({ success: false, error: "Rate limited" })
+        .mockResolvedValueOnce({ success: true, data: undefined });
+
+      render(
+        <FailuresTable
+          {...defaultProps}
+          channelFailures={[
+            makeChannelFailure({ id: 1, channel_id: "ch-001" }),
+            makeChannelFailure({ id: 2, channel_id: "ch-002" }),
+            makeChannelFailure({ id: 3, channel_id: "ch-003" }),
+          ]}
+          dmFailures={[]}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /retry all/i }));
+
+      await waitFor(() => {
+        expect(mockRetryNotificationAction).toHaveBeenCalledTimes(3);
+      });
+
+      // Rows 1 and 3 succeeded — their channel IDs should be gone.
+      await waitFor(() => {
+        expect(screen.queryByText("#ch-001")).not.toBeInTheDocument();
+        expect(screen.queryByText("#ch-003")).not.toBeInTheDocument();
+        // Row 2 failed — it must remain visible.
+        expect(screen.getByText("#ch-002")).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("conditional mount", () => {
+    it("renders skeleton when isClient is false", () => {
+      mockUseIsClient.mockReturnValue(false);
+      mockUseIsMobile.mockReturnValue(false);
+      render(<FailuresTable {...defaultProps} />);
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("failures-cards")).not.toBeInTheDocument();
+    });
+
+    it("renders desktop table when isClient is true and isMobile is false", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(false);
+      render(<FailuresTable {...defaultProps} />);
+      expect(screen.getByRole("table")).toBeInTheDocument();
+      expect(screen.queryByTestId("failures-cards")).not.toBeInTheDocument();
+    });
+
+    it("renders mobile cards when isClient is true and isMobile is true", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(true);
+      render(<FailuresTable {...defaultProps} />);
+      expect(screen.getByTestId("failures-cards")).toBeInTheDocument();
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
     });
   });
 });

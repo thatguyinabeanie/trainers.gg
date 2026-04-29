@@ -176,7 +176,7 @@ function AltCard({
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-4 gap-2 px-3 pb-3">
+      <div className="grid grid-cols-2 gap-2 px-3 pb-3 sm:grid-cols-4">
         <StatCell label="Record" value={`${wins}-${losses}`} muted={noRecord} />
         <StatCell
           label="Win %"

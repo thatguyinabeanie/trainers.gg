@@ -64,6 +64,36 @@ Keep these in mind — don't wait for review:
 
 See `reviewing-caching` skill for the full caching decision tree.
 
+## Where Components Live (path-length lesson)
+
+**Default: `apps/web/src/components/<feature>/`** — that's the established pattern (`team-builder/`, `communities/`, `dashboard/`, `profile/`, `match/`, `tournaments/`, `discord/`).
+
+Route co-location (`_components/` next to a `page.tsx`) is technically supported by Next.js and fine for **shallow** routes (e.g., `apps/web/src/app/foo/_components/bar.tsx`). It is **wrong** for deeply-nested routes:
+
+- 🚫 `apps/web/src/app/(dashboard)/dashboard/community/[communitySlug]/settings/integrations/discord/_components/channel-mapping-table.tsx` — 130+ chars, overflows `git status` output, import lines wrap.
+- ✅ `apps/web/src/components/discord/channel-mapping-table.tsx` — 60 chars, clean.
+
+**60-char heuristic** — if the route prefix path before any filename is >60 chars, the components MUST live in `apps/web/src/components/<feature>/`. Tests follow source.
+
+### Sibling components must not import from each other
+
+When a feature has a desktop/mobile pair (or any two siblings sharing types/constants/helpers), put the shared symbols in `<feature>-shared.{ts,tsx}` and have **both** siblings import from it:
+
+```
+components/discord/
+  channel-mapping-shared.ts        // exports types, constants, getXxxMeta()
+  channel-mapping-table.tsx         // imports from ./channel-mapping-shared
+  channel-mapping-cards.tsx         // imports from ./channel-mapping-shared
+```
+
+NEVER:
+- Have `channel-mapping-cards.tsx` import from `channel-mapping-table.tsx` (cycle if the table uses cards)
+- Have one sibling re-export from the other to "break" the cycle (still cyclic at module-graph time)
+
+If you find an existing cycle in someone else's module, extract a `*-shared` first, then add your code.
+
+The full rule with the heuristic and concrete examples lives in `.claude/rules/nextjs-conventions.md` ("Component Placement" + "Sibling components must not import from each other"). It auto-loads when editing `apps/web/**/*`.
+
 ## Component & Helper Awareness
 
 When editing web app files, path-scoped rules automatically load:

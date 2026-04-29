@@ -25,14 +25,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Plus,
   Loader2,
   Crown,
   GripVertical,
+  MoreHorizontal,
   Search,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsClient } from "@/hooks/use-is-client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { InviteStaffDialog } from "./invite-staff-dialog";
 import { RemoveStaffDialog } from "./remove-staff-dialog";
 import { moveStaffToGroup, unassignStaffAction } from "@/actions/staff";
@@ -458,6 +469,231 @@ function OwnerGroup({ members }: { members: StaffWithRole[] }) {
 }
 
 // =============================================================================
+// Mobile list — flat sections with per-member tap-to-assign dropdown
+// =============================================================================
+
+interface StaffMobileListProps {
+  ownerStaff: StaffWithRole[];
+  unassignedStaff: StaffWithRole[];
+  staffByGroup: Record<number, StaffWithRole[]>;
+  groups: CommunityGroup[];
+  isOwner: boolean;
+  currentUserRole: string | null;
+  isMoving: boolean;
+  onMoveTo: (
+    member: StaffWithRole,
+    target: { type: "group"; group: CommunityGroup } | { type: "unassigned" }
+  ) => void | Promise<void>;
+  onRemoveMember: (member: StaffWithRole) => void;
+}
+
+interface StaffMobileRowProps {
+  member: StaffWithRole;
+  groups: CommunityGroup[];
+  isOwner: boolean;
+  currentUserRole: string | null;
+  isMoving: boolean;
+  showMenu: boolean;
+  onMoveTo: StaffMobileListProps["onMoveTo"];
+  onRemoveMember: StaffMobileListProps["onRemoveMember"];
+}
+
+function StaffMobileRow({
+  member,
+  groups,
+  isOwner,
+  currentUserRole,
+  isMoving,
+  showMenu,
+  onMoveTo,
+  onRemoveMember,
+}: StaffMobileRowProps) {
+  const initials = getInitials(
+    member.user?.first_name ?? null,
+    member.user?.last_name ?? null,
+    member.user?.username ?? null
+  );
+  const displayName = getDisplayName(
+    member.user?.first_name ?? null,
+    member.user?.last_name ?? null,
+    member.user?.username ?? null
+  );
+  const currentRole = member.role?.name ?? null;
+  const currentGroupId = member.group?.id ?? null;
+  const canManageMember = canManageGroup(currentUserRole, isOwner, currentRole);
+
+  return (
+    <div className="flex min-h-12 items-center gap-3 px-3 py-2">
+      <Avatar className="h-8 w-8 shrink-0">
+        {member.user?.image && (
+          <AvatarImage src={member.user.image} alt={displayName} />
+        )}
+        <AvatarFallback className="text-[11px]">{initials}</AvatarFallback>
+      </Avatar>
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">
+        {displayName}
+      </span>
+      {showMenu && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label={`Manage ${displayName}`}
+            className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-10 shrink-0 items-center justify-center rounded-md transition-colors"
+            disabled={isMoving}
+          >
+            <MoreHorizontal className="size-5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuLabel>Move to</DropdownMenuLabel>
+            {groups.map((group) => {
+              const targetRole = group.role?.name ?? null;
+              const canMoveHere = canManageGroup(
+                currentUserRole,
+                isOwner,
+                targetRole
+              );
+              const isCurrent = currentGroupId === group.id;
+              return (
+                <DropdownMenuItem
+                  key={group.id}
+                  disabled={!canMoveHere || isCurrent}
+                  onClick={() => {
+                    if (!canMoveHere || isCurrent) return;
+                    void onMoveTo(member, { type: "group", group });
+                  }}
+                >
+                  {group.name}
+                  {isCurrent && (
+                    <span className="text-muted-foreground ml-auto text-xs">
+                      Current
+                    </span>
+                  )}
+                </DropdownMenuItem>
+              );
+            })}
+            {currentGroupId !== null && canManageMember && (
+              <DropdownMenuItem
+                onClick={() => {
+                  void onMoveTo(member, { type: "unassigned" });
+                }}
+              >
+                Unassign
+              </DropdownMenuItem>
+            )}
+            {isOwner && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onRemoveMember(member)}
+                >
+                  Remove from staff
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
+  );
+}
+
+interface StaffMobileSectionProps {
+  title: string;
+  members: StaffWithRole[];
+  groups: CommunityGroup[];
+  isOwner: boolean;
+  currentUserRole: string | null;
+  isMoving: boolean;
+  showMenu: boolean;
+  onMoveTo: StaffMobileListProps["onMoveTo"];
+  onRemoveMember: StaffMobileListProps["onRemoveMember"];
+}
+
+function StaffMobileSection({
+  title,
+  members,
+  groups,
+  isOwner,
+  currentUserRole,
+  isMoving,
+  showMenu,
+  onMoveTo,
+  onRemoveMember,
+}: StaffMobileSectionProps) {
+  if (members.length === 0) return null;
+  return (
+    <div className="rounded-lg border">
+      <div className="bg-muted/30 text-muted-foreground flex items-center justify-between border-b px-3 py-2 text-[11px] font-semibold tracking-wide uppercase">
+        <span>{title}</span>
+        <span>{members.length}</span>
+      </div>
+      <div className="divide-y">
+        {members.map((member) => (
+          <StaffMobileRow
+            key={member.user_id}
+            member={member}
+            groups={groups}
+            isOwner={isOwner}
+            currentUserRole={currentUserRole}
+            isMoving={isMoving}
+            showMenu={showMenu && !member.isOwner}
+            onMoveTo={onMoveTo}
+            onRemoveMember={onRemoveMember}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StaffMobileList({
+  ownerStaff,
+  unassignedStaff,
+  staffByGroup,
+  groups,
+  isOwner,
+  currentUserRole,
+  isMoving,
+  onMoveTo,
+  onRemoveMember,
+}: StaffMobileListProps) {
+  const sharedSectionProps = {
+    groups,
+    isOwner,
+    currentUserRole,
+    isMoving,
+    onMoveTo,
+    onRemoveMember,
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <StaffMobileSection
+        title="Owner"
+        members={ownerStaff}
+        showMenu={false}
+        {...sharedSectionProps}
+      />
+      <StaffMobileSection
+        title="Unassigned"
+        members={unassignedStaff}
+        showMenu
+        {...sharedSectionProps}
+      />
+      {groups.map((group) => (
+        <StaffMobileSection
+          key={group.id}
+          title={group.name}
+          members={staffByGroup[group.id] ?? []}
+          showMenu
+          {...sharedSectionProps}
+        />
+      ))}
+    </div>
+  );
+}
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
@@ -471,6 +707,8 @@ export function StaffClient({
   currentUserRole,
 }: StaffClientProps) {
   const router = useRouter();
+  const isClient = useIsClient();
+  const isMobile = useIsMobile();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [removeStaff, setRemoveStaff] = useState<StaffWithRole | null>(null);
   const [activeStaff, setActiveStaff] = useState<StaffWithRole | null>(null);
@@ -565,131 +803,72 @@ export function StaffClient({
     const currentGroupId = member.group?.id?.toString() ?? UNASSIGNED_GROUP_ID;
     if (currentGroupId === targetGroupId) return;
 
-    // Dropping onto the unassigned panel → unassign
+    // Delegate the move to the shared handler so desktop drag and mobile
+    // tap-to-assign go through identical permission, optimistic-update,
+    // server-action, and toast logic.
     if (targetGroupId === UNASSIGNED_GROUP_ID) {
-      // Only allow unassign if user can manage the member's current group
-      const currentRole = member.role?.name ?? null;
-      if (!canManageGroup(currentUserRole ?? null, isOwner, currentRole)) {
-        toast.error("You don't have permission to unassign this staff member");
-        return;
-      }
-
-      // Optimistic update
-      setOptimisticMoves((prev) => {
-        const next = new Map(prev);
-        next.set(member.user_id, { group: null });
-        return next;
-      });
-
-      setIsMoving(true);
-      try {
-        const result = await unassignStaffAction(
-          communityId,
-          member.user_id,
-          communitySlug
-        );
-
-        if (result.success) {
-          const name = getDisplayName(
-            member.user?.first_name ?? null,
-            member.user?.last_name ?? null,
-            member.user?.username ?? null
-          );
-          toast.success(`${name} moved to unassigned`);
-          handleSuccess();
-        } else {
-          setOptimisticMoves((prev) => {
-            const next = new Map(prev);
-            next.delete(member.user_id);
-            return next;
-          });
-          toast.error(result.error);
-        }
-      } catch {
-        setOptimisticMoves((prev) => {
-          const next = new Map(prev);
-          next.delete(member.user_id);
-          return next;
-        });
-        toast.error("Failed to unassign staff member");
-      } finally {
-        setIsMoving(false);
-      }
+      await handleMoveTo(member, { type: "unassigned" });
       return;
     }
 
-    // Dropping onto a role group → assign
     const targetGroup = groups.find((g) => g.id.toString() === targetGroupId);
     if (!targetGroup) return;
-
-    const targetRole = targetGroup.role?.name ?? null;
-    if (!canManageGroup(currentUserRole ?? null, isOwner, targetRole)) {
-      toast.error("You don't have permission to assign staff to this group");
-      return;
-    }
-
-    // Optimistic update
-    setOptimisticMoves((prev) => {
-      const next = new Map(prev);
-      next.set(member.user_id, { group: targetGroup });
-      return next;
-    });
-
-    setIsMoving(true);
-    try {
-      const result = await moveStaffToGroup(
-        communityId,
-        member.user_id,
-        targetGroup.id,
-        communitySlug
-      );
-
-      if (result.success) {
-        const name = getDisplayName(
-          member.user?.first_name ?? null,
-          member.user?.last_name ?? null,
-          member.user?.username ?? null
-        );
-        toast.success(`${name} moved to ${targetGroup.name}`);
-        handleSuccess();
-      } else {
-        setOptimisticMoves((prev) => {
-          const next = new Map(prev);
-          next.delete(member.user_id);
-          return next;
-        });
-        toast.error(result.error);
-      }
-    } catch {
-      setOptimisticMoves((prev) => {
-        const next = new Map(prev);
-        next.delete(member.user_id);
-        return next;
-      });
-      toast.error("Failed to move staff member");
-    } finally {
-      setIsMoving(false);
-    }
+    await handleMoveTo(member, { type: "group", group: targetGroup });
   };
 
   const handleDragCancel = () => {
     setActiveStaff(null);
   };
 
-  // Handle unassign via ✕ button in a role group
-  const handleUnassignMember = async (member: StaffWithRole) => {
+  // Shared move logic — used by both the desktop drag handler and the mobile
+  // tap-to-assign dropdown. Performs the permission check, optimistic update,
+  // server action, and toast in one place.
+  const handleMoveTo = async (
+    member: StaffWithRole,
+    target: { type: "group"; group: CommunityGroup } | { type: "unassigned" }
+  ) => {
+    // Always require permission over the member's CURRENT role first —
+    // otherwise a Head Judge could move an Admin into a group they happen
+    // to have permission over (e.g. demoting higher-ranked staff).
+    const currentRole = member.role?.name ?? null;
+    if (currentRole && !canManageGroup(currentUserRole ?? null, isOwner, currentRole)) {
+      toast.error("You don't have permission to manage this staff member");
+      return;
+    }
+
+    if (target.type === "unassigned") {
+      // Source-permission check above already covers the unassign case.
+    } else {
+      const targetRole = target.group.role?.name ?? null;
+      if (!canManageGroup(currentUserRole ?? null, isOwner, targetRole)) {
+        toast.error("You don't have permission to assign staff to this group");
+        return;
+      }
+    }
+
+    const nextGroup = target.type === "unassigned" ? null : target.group;
+
     setOptimisticMoves((prev) => {
       const next = new Map(prev);
-      next.set(member.user_id, { group: null });
+      next.set(member.user_id, { group: nextGroup });
       return next;
     });
 
+    setIsMoving(true);
     try {
-      const result = await unassignStaffAction(
-        communityId,
-        member.user_id,
-        communitySlug
-      );
+      const result =
+        target.type === "unassigned"
+          ? await unassignStaffAction(
+              communityId,
+              member.user_id,
+              communitySlug
+            )
+          : await moveStaffToGroup(
+              communityId,
+              member.user_id,
+              target.group.id,
+              communitySlug
+            );
 
       if (result.success) {
         const name = getDisplayName(
@@ -697,7 +876,11 @@ export function StaffClient({
           member.user?.last_name ?? null,
           member.user?.username ?? null
         );
-        toast.success(`${name} moved to unassigned`);
+        toast.success(
+          target.type === "unassigned"
+            ? `${name} moved to unassigned`
+            : `${name} moved to ${target.group.name}`
+        );
         handleSuccess();
       } else {
         setOptimisticMoves((prev) => {
@@ -713,8 +896,21 @@ export function StaffClient({
         next.delete(member.user_id);
         return next;
       });
-      toast.error("Failed to unassign staff member");
+      toast.error(
+        target.type === "unassigned"
+          ? "Failed to unassign staff member"
+          : "Failed to move staff member"
+      );
+    } finally {
+      setIsMoving(false);
     }
+  };
+
+  // Handle unassign via ✕ button in a role group — delegates to the shared
+  // move handler so it goes through identical permission, optimistic-update,
+  // server-action, and toast logic as the drag-end and mobile-dropdown paths.
+  const handleUnassignMember = async (member: StaffWithRole) => {
+    await handleMoveTo(member, { type: "unassigned" });
   };
 
   const canDragAny =
@@ -760,7 +956,9 @@ export function StaffClient({
           <h2 className="text-base font-semibold">Staff Management</h2>
           {canDragAny && (
             <p className="text-muted-foreground mt-0.5 text-xs">
-              Drag staff between columns to assign roles
+              {isMobile
+                ? "Tap a member to change their role"
+                : "Drag staff between columns to assign roles"}
             </p>
           )}
         </div>
@@ -784,8 +982,34 @@ export function StaffClient({
         </div>
       )}
 
-      {/* Two-column drag-drop layout */}
-      {staff.length > 0 && (
+      {/* Pre-hydration skeleton — prevents the mobile/desktop layout flip on
+          first paint (useIsMobile is `false` on the server, so without this
+          guard phones briefly render the desktop DnD layout). */}
+      {staff.length > 0 && !isClient && (
+        <div
+          aria-hidden
+          className="bg-muted/30 animate-pulse rounded-lg"
+          style={{ height: `${Math.max(staff.length, 3) * 52 + 32}px` }}
+        />
+      )}
+
+      {/* Mobile: flat list with per-member dropdown */}
+      {staff.length > 0 && isClient && isMobile && (
+        <StaffMobileList
+          ownerStaff={ownerStaff}
+          unassignedStaff={unassignedStaff}
+          staffByGroup={staffByGroup}
+          groups={groups}
+          isOwner={isOwner}
+          currentUserRole={currentUserRole ?? null}
+          isMoving={isMoving}
+          onMoveTo={handleMoveTo}
+          onRemoveMember={(m) => setRemoveStaff(m)}
+        />
+      )}
+
+      {/* Desktop: two-column drag-drop layout */}
+      {staff.length > 0 && isClient && !isMobile && (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}

@@ -25,6 +25,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `creating-edge-functions`  | Creating/updating Supabase edge functions                               |
 | `managing-edge-imports`    | Deno import maps, `deno.json` management                                |
 | `auditing-code`            | Codebase audits for type safety, architecture, maintainability          |
+| `auditing-mobile-responsiveness` | Mobile-viewport audit — overflow probes, tap targets, table→cards punch list |
 | `writing-skills`           | Creating/editing skills, agents, maintaining the architecture           |
 | `using-mempalace`          | Storing/searching decisions, session diaries, knowledge graph           |
 | `design-system`            | Elevation, typography hierarchy, transitions, layout conventions        |
@@ -45,6 +46,7 @@ Path-scoped rules in `.claude/rules/` load automatically when working with match
 | -------------------------- | ----------------------------------------------------------------------------- |
 | `code-style.md`            | All TypeScript/TSX files (`**/*.{ts,tsx}`)                                    |
 | `react-patterns.md`        | All TSX files (`**/*.tsx`)                                                    |
+| `mobile-responsiveness.md` | Web app TSX files (`apps/web/src/**/*.tsx`)                                   |
 | `architecture.md`          | All shared packages (`packages/**/*`)                                         |
 | `nextjs-conventions.md`    | Web app files (`apps/web/**/*`)                                               |
 | `mobile-conventions.md`    | Mobile app files (`apps/mobile/**/*`)                                         |

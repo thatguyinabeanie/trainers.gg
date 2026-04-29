@@ -182,7 +182,7 @@ export function NotificationsPopover() {
       <PopoverTrigger
         suppressHydrationWarning
         className={cn(
-          "relative flex size-8 items-center justify-center rounded-md",
+          "relative flex size-10 items-center justify-center rounded-md sm:size-8",
           "text-muted-foreground hover:text-foreground hover:bg-accent",
           "transition-colors outline-none"
         )}
