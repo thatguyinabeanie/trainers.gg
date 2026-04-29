@@ -2,13 +2,14 @@
 
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 
-import { getSpeciesTypes } from "@trainers/pokemon";
-import { type Tables } from "@trainers/supabase";
+import { getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
+import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 
 import { Sprite } from "./sprite";
 import { TypePill } from "./type-pill";
+import { ActiveRow } from "./lanes/active-row";
 
 // =============================================================================
 // Types
@@ -23,6 +24,10 @@ interface PokeRowProps {
   onActivate: (idx: number) => void;
   onAdd?: (idx: number) => void;
   onRemove?: (idx: number) => void;
+  /** Required for Phase 2 active row editor. */
+  teamPokemon?: TeamWithPokemon["team_pokemon"];
+  format?: GameFormat;
+  onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
 }
 
 // =============================================================================
@@ -51,7 +56,11 @@ function EmptyRow({ idx, density, onAdd }: EmptyRowProps) {
   return (
     <button
       type="button"
-      onClick={() => onAdd?.(idx)}
+      onClick={() => {
+        if (onAdd) {
+          onAdd(idx);
+        }
+      }}
       className={cn(
         "flex w-full items-center gap-3 rounded-lg border border-dashed border-border px-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/30",
         density === "comfy" ? "py-3" : "py-2"
@@ -186,109 +195,61 @@ function CollapsedRow({
 }
 
 // =============================================================================
-// ActiveRow (Phase 1 stub)
+// ActiveRowShell — collapse header + ActiveRow lanes
 // =============================================================================
 
-interface ActiveRowProps {
+interface ActiveRowShellProps {
   idx: number;
   pokemon: Tables<"pokemon">;
   density: "comfy" | "compact";
   onActivate: (idx: number) => void;
   onRemove?: (idx: number) => void;
+  teamPokemon: TeamWithPokemon["team_pokemon"];
+  format: GameFormat | undefined;
+  onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
 }
 
-function ActiveRow({
+function ActiveRowShell({
   idx,
   pokemon,
   density,
   onActivate,
   onRemove,
-}: ActiveRowProps) {
-  const types = getSpeciesTypes(pokemon.species ?? "");
-  const moves = [
-    pokemon.move1,
-    pokemon.move2,
-    pokemon.move3,
-    pokemon.move4,
-  ] as const;
-
+  teamPokemon,
+  format,
+  onPokemonUpdate,
+}: ActiveRowShellProps) {
   return (
     <div
       className={cn(
-        "rounded-lg border-2 border-primary/60 bg-card",
-        density === "comfy" ? "py-2" : "py-1.5"
+        "overflow-x-auto rounded-lg",
+        density === "comfy" ? "" : ""
       )}
     >
-      {/* Collapsed header — same as CollapsedRow but with up chevron */}
-      <div className="flex items-center gap-3 px-3">
-        <SlotRib idx={idx} />
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <Sprite
-            species={pokemon.species ?? ""}
-            size={density === "comfy" ? 44 : 36}
-            types={types}
-          />
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="truncate text-sm font-medium">
-              {pokemon.nickname ? (
-                <>
-                  {pokemon.nickname}{" "}
-                  <span className="text-muted-foreground">
-                    ({pokemon.species ?? "?"})
-                  </span>
-                </>
-              ) : (
-                (pokemon.species ?? "Unknown")
-              )}
-            </span>
-            <div className="flex gap-1">
-              {types.map((t) => (
-                <TypePill key={t} t={t} />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* 4 move names */}
-        <div className="hidden w-52 shrink-0 grid-cols-2 gap-x-3 gap-y-0.5 md:grid">
-          {moves.map((move, i) => (
-            <span
-              key={i}
-              className={cn(
-                "truncate text-xs",
-                move ? "text-foreground" : "text-muted-foreground/40"
-              )}
-            >
-              {move ?? "—"}
-            </span>
-          ))}
-        </div>
-
+      {/* Collapse chevron bar at the top */}
+      <div className="flex items-center gap-2 border-b border-primary/20 bg-primary/5 px-3 py-1.5">
+        <span className="font-mono text-[10px] text-muted-foreground">
+          Slot {idx + 1}
+        </span>
         <button
           type="button"
           onClick={() => onActivate(idx)}
-          className="ml-auto flex size-6 shrink-0 items-center justify-center text-primary transition-colors hover:text-foreground"
+          className="ml-auto flex items-center gap-1 text-muted-foreground text-xs transition-colors hover:text-foreground"
           aria-label="Collapse"
         >
-          <ChevronUp className="size-4" />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove?.(idx);
-          }}
-          className="flex size-6 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-destructive"
-          aria-label={`Remove ${pokemon.species ?? "Pokémon"} from slot ${idx + 1}`}
-        >
-          <X className="size-3.5" />
+          <ChevronUp className="size-3.5" />
         </button>
       </div>
 
-      {/* Phase 2 will replace this stub with the full lane editor */}
-      <div className="row-active-stub p-4 text-sm text-muted-foreground">
-        [Phase 2] Active row editor for slot {idx + 1}
-      </div>
+      {/* Full lane editor */}
+      <ActiveRow
+        idx={idx}
+        pokemon={pokemon}
+        teamPokemon={teamPokemon}
+        format={format}
+        onUpdate={(fields) => onPokemonUpdate?.(pokemon.id, fields)}
+        onRemove={() => onRemove?.(idx)}
+      />
     </div>
   );
 }
@@ -299,8 +260,8 @@ function ActiveRow({
 
 /**
  * A single horizontal slot row in the v2 team builder.
- * Phase 1: empty state and collapsed state are fully implemented.
- * Active/expanded state is a stub pending Phase 2.
+ * Phase 1: empty state and collapsed state.
+ * Phase 2: active/expanded state with full lane editor.
  */
 export function PokeRow({
   idx,
@@ -311,25 +272,27 @@ export function PokeRow({
   onActivate,
   onAdd,
   onRemove,
+  teamPokemon,
+  format,
+  onPokemonUpdate,
 }: PokeRowProps) {
   if (!pokemon) {
     return <EmptyRow idx={idx} density={density} onAdd={onAdd} />;
   }
 
-  // "all" expand mode treats every filled row as active-looking but we still
-  // only render the active stub for the explicitly selected row — Phase 2 will
-  // make all rows editable. For now, expandMode "all" is visually identical to
-  // "active" since the stub provides no real editing affordances.
   const showExpanded = isActive || expandMode === "all";
 
   if (showExpanded) {
     return (
-      <ActiveRow
+      <ActiveRowShell
         idx={idx}
         pokemon={pokemon}
         density={density}
         onActivate={onActivate}
         onRemove={onRemove}
+        teamPokemon={teamPokemon ?? []}
+        format={format}
+        onPokemonUpdate={onPokemonUpdate}
       />
     );
   }

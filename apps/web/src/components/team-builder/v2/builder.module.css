@@ -61,3 +61,128 @@
   background: var(--background);
   overflow-y: auto;
 }
+
+/* ============================================================
+   Active row — Phase 2 lane layout
+   ============================================================ */
+
+/* Row container — allows horizontal scroll if viewport is narrow */
+.rowActive {
+  display: flex;
+  align-items: stretch;
+  min-width: 900px;
+  overflow: visible;
+}
+
+/* Left slot rib */
+.rib {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+/* Identity lane — sprite + nick + level/gender/shiny chips */
+.laneId {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 12px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Setup lane — item/abil/nat/tera stacked rows */
+.laneSetup {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Moves lane — 4 stacked move tiles */
+.laneMoves {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+/* Stats lane — 6-col stat grid */
+.laneStats {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+/* Meta lane — BST/Spe/WR column */
+.laneMeta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Setup row button (item / abil / nat / tera) */
+.setupLine {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  min-width: 0;
+  cursor: pointer;
+  position: relative;
+}
+
+.setupLine:hover {
+  background: var(--muted);
+}
+
+/* Move tile row */
+.mvline {
+  display: grid;
+  grid-template-columns: 12px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--card);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  text-align: left;
+  min-width: 0;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.mvline:hover {
+  border-color: var(--border);
+  background: var(--muted);
+}
+
+/* Stat cell — one per stat in the 6-col grid */
+.stcell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 4px 4px 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 11px;
+  text-align: center;
+  min-width: 0;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.stcell:hover {
+  background: var(--muted);
+  border-color: var(--border);
+}

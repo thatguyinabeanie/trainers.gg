@@ -1,7 +1,5 @@
 "use client";
 
-import { type PokemonType } from "@trainers/pokemon";
-
 import { TYPE_PILL_COLORS } from "@/components/team-builder/type-colors";
 
 // =============================================================================
@@ -9,7 +7,7 @@ import { TYPE_PILL_COLORS } from "@/components/team-builder/type-colors";
 // =============================================================================
 
 interface TypeDotProps {
-  t: PokemonType;
+  t: string;
   size?: number;
 }
 
@@ -21,7 +19,9 @@ interface TypeDotProps {
 export function TypeDot({ t, size = 10 }: TypeDotProps) {
   // TYPE_PILL_COLORS values are like "bg-orange-500 text-white" — we only
   // need the first token for the background; text color is irrelevant on a dot.
-  const bgClass = (TYPE_PILL_COLORS[t] ?? "bg-stone-400").split(" ")[0];
+  const bgClass = (
+    TYPE_PILL_COLORS[t as keyof typeof TYPE_PILL_COLORS] ?? "bg-stone-400"
+  ).split(" ")[0];
 
   return (
     <span

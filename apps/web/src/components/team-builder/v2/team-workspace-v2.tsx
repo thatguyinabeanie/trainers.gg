@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useOptimistic, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { type GameFormat } from "@trainers/pokemon";
-import { type TeamWithPokemon, type Tables } from "@trainers/supabase";
+import { type TeamWithPokemon, type Tables, type TablesUpdate } from "@trainers/supabase";
+
+import { updatePokemonAction } from "@/actions/teams";
 
 import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
@@ -49,17 +53,66 @@ function buildSlots(
 /**
  * Top-level client component for the v2 team builder workspace.
  * Owns layout orchestration: Topbar, PokeRow list, calc drawer slot.
- * All state lives in useBuilderState().
+ * Phase 2: adds optimistic write path via useOptimistic + updatePokemonAction.
  */
 export function TeamWorkspaceV2({
   team,
   format,
   username,
 }: TeamWorkspaceV2Props) {
+  const router = useRouter();
   const state = useBuilderState();
   const { tweaks } = state;
 
-  const slots = buildSlots(team.team_pokemon);
+  // ---------------------------------------------------------------------------
+  // Optimistic team-pokemon state — Phase 2 write path
+  //
+  // applyOptimisticPatch updates the UI on the next paint; the server save runs
+  // in the background via startTransition. On failure: toast + revert.
+  // ---------------------------------------------------------------------------
+
+  const [optimisticTeamPokemon, applyOptimisticPatch] = useOptimistic(
+    team.team_pokemon,
+    (
+      current,
+      {
+        pokemonId,
+        fields,
+      }: { pokemonId: number; fields: Partial<Tables<"pokemon">> }
+    ) =>
+      current.map((tp) =>
+        tp.pokemon_id === pokemonId && tp.pokemon
+          ? { ...tp, pokemon: { ...tp.pokemon, ...fields } }
+          : tp
+      )
+  );
+
+  const [, startTransition] = useTransition();
+
+  function handlePokemonUpdate(
+    pokemonId: number,
+    fields: Partial<TablesUpdate<"pokemon">>
+  ) {
+    startTransition(async () => {
+      applyOptimisticPatch({ pokemonId, fields });
+      const result = await updatePokemonAction(team.id, pokemonId, fields);
+      if (!result.success) {
+        toast.error(result.error ?? "Failed to save changes.");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  function handleAdd(_idx: number) {
+    toast("Coming in Phase 5");
+  }
+
+  function handleRemove(_idx: number) {
+    toast("Coming in Phase 5");
+  }
+
+  const slots = buildSlots(optimisticTeamPokemon);
   const filledCount = slots.filter(Boolean).length;
 
   // Close the bottom drawer on Escape key press
@@ -103,6 +156,11 @@ export function TeamWorkspaceV2({
                   density={tweaks.density}
                   expandMode={tweaks.expandMode}
                   onActivate={state.setActiveIdx}
+                  onAdd={handleAdd}
+                  onRemove={handleRemove}
+                  teamPokemon={optimisticTeamPokemon}
+                  format={format}
+                  onPokemonUpdate={handlePokemonUpdate}
                 />
               ))}
             </section>

@@ -1,7 +1,5 @@
 "use client";
 
-import { type PokemonType } from "@trainers/pokemon";
-
 import { cn } from "@/lib/utils";
 import { TYPE_PILL_COLORS } from "@/components/team-builder/type-colors";
 
@@ -10,7 +8,7 @@ import { TYPE_PILL_COLORS } from "@/components/team-builder/type-colors";
 // =============================================================================
 
 interface TypePillProps {
-  t: PokemonType;
+  t: string;
 }
 
 /**
@@ -18,7 +16,9 @@ interface TypePillProps {
  * Reuses TYPE_PILL_COLORS for consistent type-color mapping across the app.
  */
 export function TypePill({ t }: TypePillProps) {
-  const colorClass = TYPE_PILL_COLORS[t] ?? "bg-stone-400 text-white";
+  const colorClass =
+    TYPE_PILL_COLORS[t as keyof typeof TYPE_PILL_COLORS] ??
+    "bg-stone-400 text-white";
 
   return (
     <span
