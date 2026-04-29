@@ -1,5 +1,5 @@
 import { describe, it, expect, jest } from "@jest/globals";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -55,6 +55,25 @@ jest.mock("next/image", () => ({
     return <img {...(rest as React.ImgHTMLAttributes<HTMLImageElement>)} />;
   },
 }));
+
+// EditorHeaderBand renders both layouts simultaneously and uses Tailwind
+// `hidden md:flex` / `md:hidden` to show only the right one per viewport.
+// JSDOM doesn't compute Tailwind class styles, so without intervention every
+// FieldButton would appear twice — once in the desktop row, once in the
+// mobile grid — breaking single-match queries like `getByRole`.
+//
+// Tests use `within()`-scoped queries to target one layout's container at a
+// time, keeping queries layout-aware without mutating DOM nodes that React
+// rendered. Identity/meta zone elements (sprite, name, gender, level, etc.)
+// only render once in Row 1, so they remain queryable via the top-level
+// `screen` queries.
+function desktopFields() {
+  return within(screen.getByTestId("editor-header-band-desktop-fields"));
+}
+
+function mobileFields() {
+  return within(screen.getByTestId("editor-header-band-mobile-fields"));
+}
 
 import { getValidAbilities, getSpeciesTypes } from "@trainers/pokemon";
 
@@ -190,43 +209,53 @@ describe("EditorHeaderBand", () => {
         tera_type: "Ghost",
         nature: "Jolly",
       });
-      expect(screen.getByText("Intimidate")).toBeInTheDocument();
-      expect(screen.getByText("Choice Scarf")).toBeInTheDocument();
-      expect(screen.getByText("Ghost")).toBeInTheDocument();
-      expect(screen.getByText("Jolly")).toBeInTheDocument();
+      // Build fields render in both layouts (`hidden md:flex` / `md:hidden`);
+      // scope to one container so each value matches a single button.
+      expect(desktopFields().getByText("Intimidate")).toBeInTheDocument();
+      expect(desktopFields().getByText("Choice Scarf")).toBeInTheDocument();
+      expect(desktopFields().getByText("Ghost")).toBeInTheDocument();
+      expect(desktopFields().getByText("Jolly")).toBeInTheDocument();
     });
 
     it("renders 'None' when item or tera type is null", () => {
       renderBand({ held_item: null, tera_type: null });
-      // Two "None" labels — one for item, one for tera
-      expect(screen.getAllByText("None")).toHaveLength(2);
+      // Two "None" labels per layout — one for item, one for tera.
+      expect(desktopFields().getAllByText("None")).toHaveLength(2);
     });
 
     it("calls onOpenAbilityPicker when the Ability button is clicked", async () => {
       const user = userEvent.setup();
       const handlers = renderBand();
-      await user.click(screen.getByRole("button", { name: /Edit Ability/ }));
+      await user.click(
+        desktopFields().getByRole("button", { name: /Edit Ability/ })
+      );
       expect(handlers.onOpenAbilityPicker).toHaveBeenCalledTimes(1);
     });
 
     it("calls onOpenItemPicker when the Item button is clicked", async () => {
       const user = userEvent.setup();
       const handlers = renderBand();
-      await user.click(screen.getByRole("button", { name: /Edit Item/ }));
+      await user.click(
+        desktopFields().getByRole("button", { name: /Edit Item/ })
+      );
       expect(handlers.onOpenItemPicker).toHaveBeenCalledTimes(1);
     });
 
     it("calls onOpenTeraPicker when the Tera button is clicked", async () => {
       const user = userEvent.setup();
       const handlers = renderBand();
-      await user.click(screen.getByRole("button", { name: /Edit Tera/ }));
+      await user.click(
+        desktopFields().getByRole("button", { name: /Edit Tera/ })
+      );
       expect(handlers.onOpenTeraPicker).toHaveBeenCalledTimes(1);
     });
 
     it("calls onOpenNaturePicker when the Nature button is clicked", async () => {
       const user = userEvent.setup();
       const handlers = renderBand();
-      await user.click(screen.getByRole("button", { name: /Edit Nature/ }));
+      await user.click(
+        desktopFields().getByRole("button", { name: /Edit Nature/ })
+      );
       expect(handlers.onOpenNaturePicker).toHaveBeenCalledTimes(1);
     });
   });
@@ -284,16 +313,20 @@ describe("EditorHeaderBand", () => {
       const user = userEvent.setup();
       const handlers = renderBand({ ability: "Levitate" });
 
-      // Ability text is present
-      expect(screen.getByText("Levitate")).toBeInTheDocument();
+      // Ability text is present in the desktop layout (also in mobile, but
+      // scoping to one container keeps the assertion exact-match).
+      expect(desktopFields().getByText("Levitate")).toBeInTheDocument();
 
-      // No Edit Ability button should exist
+      // No Edit Ability button should exist in either layout — assert both.
       expect(
-        screen.queryByRole("button", { name: /Edit Ability/ })
+        desktopFields().queryByRole("button", { name: /Edit Ability/ })
+      ).not.toBeInTheDocument();
+      expect(
+        mobileFields().queryByRole("button", { name: /Edit Ability/ })
       ).not.toBeInTheDocument();
 
       // Clicking the static label should not trigger the handler
-      await user.click(screen.getByText("Levitate"));
+      await user.click(desktopFields().getByText("Levitate"));
       expect(handlers.onOpenAbilityPicker).not.toHaveBeenCalled();
     });
   });
@@ -378,7 +411,10 @@ describe("EditorHeaderBand", () => {
           onOpenNaturePicker={jest.fn()}
         />
       );
-      const teraBtn = screen.getByRole("button", { name: /Edit Tera/ });
+      // Scope to one layout — Tera button renders in both desktop and mobile.
+      const teraBtn = desktopFields().getByRole("button", {
+        name: /Edit Tera/,
+      });
       expect(teraBtn).toBeInTheDocument();
       await user.click(teraBtn);
       expect(onOpenTeraPicker).toHaveBeenCalledTimes(1);
@@ -582,6 +618,72 @@ describe("EditorHeaderBand", () => {
       expect(screen.queryByLabelText("Male")).not.toBeInTheDocument();
       expect(screen.queryByLabelText("Shiny (off)")).not.toBeInTheDocument();
       expect(screen.queryByLabelText("Level")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("mobile layout", () => {
+    it("renders both desktop and mobile build-fields containers", () => {
+      // CSS-based responsive layout — both branches mount in the DOM (one is
+      // hidden via Tailwind `hidden md:flex` / `md:hidden` per viewport).
+      // Render WITHOUT trimming so we can assert both testids exist.
+      render(
+        <EditorHeaderBand
+          pokemon={buildPokemon()}
+          format={svFormat}
+          onOpenAbilityPicker={jest.fn()}
+          onOpenItemPicker={jest.fn()}
+          onOpenTeraPicker={jest.fn()}
+          onOpenNaturePicker={jest.fn()}
+        />
+      );
+      expect(
+        screen.getByTestId("editor-header-band-desktop-fields")
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("editor-header-band-mobile-fields")
+      ).toBeInTheDocument();
+    });
+
+    it("renders one set of FieldButtons inside the mobile grid", () => {
+      renderBand();
+      // Scope queries to the mobile container — each FieldButton renders
+      // exactly once inside it.
+      expect(
+        mobileFields().getByRole("button", { name: /Edit Ability/ })
+      ).toBeInTheDocument();
+      expect(
+        mobileFields().getByRole("button", { name: /Edit Item/ })
+      ).toBeInTheDocument();
+      expect(
+        mobileFields().getByRole("button", { name: /Edit Tera/ })
+      ).toBeInTheDocument();
+      expect(
+        mobileFields().getByRole("button", { name: /Edit Nature/ })
+      ).toBeInTheDocument();
+    });
+
+    it("clicking the mobile Ability cell triggers onOpenAbilityPicker", async () => {
+      const user = userEvent.setup();
+      const handlers = renderBand();
+      await user.click(
+        mobileFields().getByRole("button", { name: /Edit Ability/ })
+      );
+      expect(handlers.onOpenAbilityPicker).toHaveBeenCalledTimes(1);
+    });
+
+    it("collapses Nature to span both columns when the format has no Tera", () => {
+      // Render with a Champions (Gen 10) format — formatHasTera returns false,
+      // so the mobile grid renders Ability+Item on row 1 and Nature spanning
+      // both columns on row 2.
+      const championsFormat = { ...svFormat, generation: 10 };
+      renderBand({}, {}, championsFormat);
+      const mobileContainer = screen.getByTestId(
+        "editor-header-band-mobile-fields"
+      );
+      // The col-span-2 cell wraps the Nature field exclusively.
+      const natureCell = mobileContainer.querySelector(".col-span-2");
+      expect(natureCell).not.toBeNull();
+      expect(natureCell!.textContent).toContain("Nature");
     });
   });
 });

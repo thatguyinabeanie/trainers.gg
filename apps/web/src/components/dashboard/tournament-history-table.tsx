@@ -307,7 +307,7 @@ export function TournamentHistoryTable({ data }: TournamentHistoryTableProps) {
           onChange={(e) => setGlobalFilter(e.target.value)}
           className="max-w-sm"
         />
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           {uniqueAlts.length > 1 && (
             <Select
               value={
@@ -317,7 +317,7 @@ export function TournamentHistoryTable({ data }: TournamentHistoryTableProps) {
                 altFilter?.setFilterValue(value === "all" ? undefined : value)
               }
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by alt" />
               </SelectTrigger>
               <SelectContent>
@@ -341,7 +341,7 @@ export function TournamentHistoryTable({ data }: TournamentHistoryTableProps) {
                 )
               }
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by format" />
               </SelectTrigger>
               <SelectContent>

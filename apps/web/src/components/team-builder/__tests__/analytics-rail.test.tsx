@@ -311,7 +311,7 @@ describe("AnalyticsRail", () => {
     );
   });
 
-  it("container uses the fixed 460px width class", () => {
+  it("container is full-width on phones and pinned to 460px at lg+", () => {
     const charizard = makePokemon();
     render(
       <AnalyticsRail
@@ -322,7 +322,8 @@ describe("AnalyticsRail", () => {
     );
 
     const rail = screen.getByTestId("analytics-rail");
-    expect(rail.className).toContain("w-rail");
+    expect(rail.className).toContain("w-full");
+    expect(rail.className).toContain("lg:w-rail");
     expect(rail.className).toContain("flex-shrink-0");
   });
 

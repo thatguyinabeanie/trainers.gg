@@ -7,21 +7,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function TeamWorkspaceLoading() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Header bar skeleton */}
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-        {/* Breadcrumb skeleton */}
-        <Skeleton className="h-4 w-20" />
-        <span className="text-muted-foreground text-sm">/</span>
-        <Skeleton className="h-4 w-32" />
-        {/* Format badge skeleton */}
-        <Skeleton className="h-5 w-16 rounded-full" />
+      {/* Header bar skeleton — mirrors the responsive layout in layout.tsx:
+          stacks identity above actions on phones, single h-12 row at md+. */}
+      <header className="shrink-0 border-b">
+        <div className="flex flex-col gap-1 px-3 py-2 md:h-12 md:flex-row md:items-center md:gap-2 md:px-4 md:py-0">
+          {/* Identity row */}
+          <div className="flex min-w-0 items-center gap-2">
+            <Skeleton className="h-4 w-20" />
+            <span className="text-muted-foreground text-sm">/</span>
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
 
-        {/* Action buttons skeleton */}
-        <div className="ml-auto flex items-center gap-2">
-          <Skeleton className="h-8 w-20" />
-          <Skeleton className="h-8 w-20" />
-          <Skeleton className="h-8 w-16" />
-          <Skeleton className="h-8 w-22" />
+          {/* Action buttons row */}
+          <div className="flex items-center gap-2 md:ml-auto">
+            <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-8 w-16" />
+          </div>
         </div>
       </header>
 

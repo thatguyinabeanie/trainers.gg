@@ -1,7 +1,22 @@
 import { describe, it, expect } from "@jest/globals";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
+
+// EditorHeaderBand renders both desktop and mobile build-field layouts and
+// uses Tailwind `hidden md:flex` / `md:hidden` to swap them per viewport.
+// JSDOM doesn't compute Tailwind class styles, so every FieldButton appears
+// twice in the DOM. Tests scope build-field queries to one container at a
+// time using `within()`. Identity-zone elements (sprite, name, picker
+// overlays) only render once and remain queryable via the top-level
+// `screen` queries.
+function desktopFields() {
+  return within(screen.getByTestId("editor-header-band-desktop-fields"));
+}
+
+function mobileFields() {
+  return within(screen.getByTestId("editor-header-band-mobile-fields"));
+}
 
 // =============================================================================
 // Module-level mocks
@@ -196,21 +211,24 @@ describe("PokemonEditor", () => {
     it("renders sprite, species name, and the four loadout fields", () => {
       render(<PokemonEditor {...defaultProps} />);
 
-      // Sprite is delegated to next/image and queryable by alt text.
+      // Sprite is delegated to next/image and queryable by alt text — only
+      // rendered once in the identity zone, so top-level screen queries work.
       expect(screen.getByAltText("Incineroar")).toBeInTheDocument();
-      // Species name in the identity column.
+      // Species name in the identity column (Row 1, single instance).
       expect(screen.getByText("Incineroar")).toBeInTheDocument();
 
-      // All four loadout field labels render in the band.
-      expect(screen.getByText("Ability")).toBeInTheDocument();
-      expect(screen.getByText("Item")).toBeInTheDocument();
-      expect(screen.getByText("Tera")).toBeInTheDocument();
-      expect(screen.getByText("Nature")).toBeInTheDocument();
+      // Build-field labels render in both desktop and mobile layouts; scope
+      // queries to one container so each label matches a single element.
+      expect(desktopFields().getByText("Ability")).toBeInTheDocument();
+      expect(desktopFields().getByText("Item")).toBeInTheDocument();
+      expect(desktopFields().getByText("Tera")).toBeInTheDocument();
+      expect(desktopFields().getByText("Nature")).toBeInTheDocument();
 
-      // Current values flow through.
-      expect(screen.getByText("Intimidate")).toBeInTheDocument();
-      expect(screen.getByText("None")).toBeInTheDocument(); // held_item
-      expect(screen.getByText("Adamant")).toBeInTheDocument();
+      // Current values flow through to both layouts — scope to verify desktop
+      // values; equivalent values render in the mobile grid (covered below).
+      expect(desktopFields().getByText("Intimidate")).toBeInTheDocument();
+      expect(desktopFields().getByText("None")).toBeInTheDocument(); // held_item
+      expect(desktopFields().getByText("Adamant")).toBeInTheDocument();
     });
   });
 
@@ -276,7 +294,10 @@ describe("PokemonEditor", () => {
     it("opens the ability picker when the ability field is clicked", async () => {
       const user = userEvent.setup();
       render(<PokemonEditor {...defaultProps} />);
-      await user.click(screen.getByRole("button", { name: /edit ability/i }));
+      // Edit-X buttons render in both layouts — scope click to desktop.
+      await user.click(
+        desktopFields().getByRole("button", { name: /edit ability/i })
+      );
       expect(
         screen.getByPlaceholderText("Search abilities…")
       ).toBeInTheDocument();
@@ -285,7 +306,9 @@ describe("PokemonEditor", () => {
     it("opens the nature picker when the nature field is clicked", async () => {
       const user = userEvent.setup();
       render(<PokemonEditor {...defaultProps} />);
-      await user.click(screen.getByRole("button", { name: /edit nature/i }));
+      await user.click(
+        desktopFields().getByRole("button", { name: /edit nature/i })
+      );
       expect(
         screen.getByPlaceholderText("Search natures…")
       ).toBeInTheDocument();
@@ -294,7 +317,9 @@ describe("PokemonEditor", () => {
     it("opens the tera picker when the tera field is clicked", async () => {
       const user = userEvent.setup();
       render(<PokemonEditor {...defaultProps} />);
-      await user.click(screen.getByRole("button", { name: /edit tera/i }));
+      await user.click(
+        desktopFields().getByRole("button", { name: /edit tera/i })
+      );
       // TeraPicker renders type grid buttons.
       expect(screen.getByRole("button", { name: "Water" })).toBeInTheDocument();
     });
@@ -421,9 +446,66 @@ describe("PokemonEditor", () => {
           }
         />
       );
-      expect(screen.getByText("Ability")).toBeInTheDocument();
-      expect(screen.getByText("Item")).toBeInTheDocument();
-      expect(screen.getByText("Nature")).toBeInTheDocument();
+      // Build-field labels render in both desktop and mobile layouts; scope
+      // to one container for an exact match.
+      expect(desktopFields().getByText("Ability")).toBeInTheDocument();
+      expect(desktopFields().getByText("Item")).toBeInTheDocument();
+      expect(desktopFields().getByText("Nature")).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mobile layout integration — exercises the mobile build-fields branch.
+  // EditorHeaderBand always mounts both layouts; tests scope to one via
+  // `mobileFields()`.
+  // ---------------------------------------------------------------------------
+
+  describe("mobile layout integration", () => {
+    it("renders the four loadout fields inside the mobile grid container", () => {
+      render(<PokemonEditor {...defaultProps} />);
+      // Each FieldButton renders an <button aria-label="Edit X"> in both
+      // desktop and mobile branches — verify the mobile branch has all four.
+      expect(
+        mobileFields().getByRole("button", { name: /Edit Ability/i })
+      ).toBeInTheDocument();
+      expect(
+        mobileFields().getByRole("button", { name: /Edit Item/i })
+      ).toBeInTheDocument();
+      expect(
+        mobileFields().getByRole("button", { name: /Edit Tera/i })
+      ).toBeInTheDocument();
+      expect(
+        mobileFields().getByRole("button", { name: /Edit Nature/i })
+      ).toBeInTheDocument();
+    });
+
+    it("opens the ability picker when the mobile Ability cell is clicked", async () => {
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} />);
+      await user.click(
+        mobileFields().getByRole("button", { name: /edit ability/i })
+      );
+      expect(
+        screen.getByPlaceholderText("Search abilities…")
+      ).toBeInTheDocument();
+    });
+
+    it("anchors the picker overlay below the band's relative wrapper", async () => {
+      // Sanity check that the picker still opens correctly when triggered
+      // from the mobile branch — the overlay uses `top-full` so it mounts
+      // outside the mobile-fields container.
+      const user = userEvent.setup();
+      render(<PokemonEditor {...defaultProps} />);
+      await user.click(
+        mobileFields().getByRole("button", { name: /edit nature/i })
+      );
+      const naturePicker = screen.getByPlaceholderText("Search natures…");
+      expect(naturePicker).toBeInTheDocument();
+      // The picker overlay sits in the band's relative wrapper — outside
+      // the mobile build-fields container.
+      expect(
+        naturePicker.closest('[data-testid="editor-header-band-mobile-fields"]')
+      ).toBeNull();
     });
   });
 });

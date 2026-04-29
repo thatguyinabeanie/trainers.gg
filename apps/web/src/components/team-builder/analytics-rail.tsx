@@ -25,10 +25,10 @@ interface AnalyticsRailProps {
 // SpeedPanel, CalcPanel, and TypeChartPanel each render their own card chrome
 // (`bg-card overflow-hidden rounded-lg shadow-sm`) so they can also be used
 // standalone. When mounted inside AnalyticsRail — which provides its own
-// chrome on the outer container at a fixed 460px width — we pass these
-// neutralizing utility classes to strip the duplicate card styling. The
-// panels' `className` is merged into the outer wrapper via `cn()`, so these
-// values win against the defaults.
+// chrome on the outer container (full-width on phones, `w-rail` 460px at lg+)
+// — we pass these neutralizing utility classes to strip the duplicate card
+// styling. The panels' `className` is merged into the outer wrapper via
+// `cn()`, so these values win against the defaults.
 const PANEL_CHROME_OVERRIDE =
   "bg-transparent shadow-none rounded-none flex flex-col flex-1";
 
@@ -37,11 +37,18 @@ const PANEL_CHROME_OVERRIDE =
 // =============================================================================
 
 /**
- * Right-rail tabbed wrapper that hosts the Types, Speed, and Calc panels at a
- * fixed 460px width. Types is the default tab — it's the most-used analysis
- * tool. Tab state lives on the rail (so switching pokemon does not reset the
- * active tab), while each panel keeps its own internal state and resets via
- * its own `key` strategy on `selectedPokemon` change.
+ * Right-rail tabbed wrapper that hosts the Types, Speed, and Calc panels.
+ * Width is responsive: full-width on phones (where the rail stacks below
+ * the editor in TeamWorkspace's `grid-cols-1` layout) and pinned to 460px
+ * (`w-rail`) at lg+ where the rail sits side-by-side with the editor
+ * column in TeamWorkspace's `grid-cols-[minmax(0,1fr)_28.75rem]`. The
+ * `sticky top-4` behavior also activates only at lg+ — when stacked,
+ * the rail scrolls with the page like any other section.
+ *
+ * Types is the default tab — it's the most-used analysis tool. Tab state
+ * lives on the rail (so switching pokemon does not reset the active tab),
+ * while each panel keeps its own internal state and resets via its own
+ * `key` strategy on `selectedPokemon` change.
  *
  * The non-active panel is unmounted (not just hidden) so we don't keep
  * running its calculations.
@@ -64,8 +71,13 @@ export function AnalyticsRail({
       defaultValue="types"
       data-testid="analytics-rail"
       className={cn(
-        "bg-card w-rail flex-shrink-0 overflow-hidden rounded-lg shadow-sm",
-        "sticky top-4 flex max-h-[calc(100svh-6rem)] flex-col",
+        // Full width on phones (where the rail stacks below the editor) so it
+        // never forces page-level horizontal overflow. Pinned to 460px on lg+
+        // when it sits side-by-side with the editor column.
+        "bg-card w-full flex-shrink-0 overflow-hidden rounded-lg shadow-sm lg:w-rail",
+        // sticky top-4 only at lg+ — when stacked on phones, the rail is just
+        // another section of the page and shouldn't pin to the viewport.
+        "flex max-h-[calc(100svh-6rem)] flex-col lg:sticky lg:top-4",
         className
       )}
     >

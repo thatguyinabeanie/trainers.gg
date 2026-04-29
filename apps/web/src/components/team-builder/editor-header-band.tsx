@@ -80,17 +80,24 @@ function FieldButton({
       onClick={onClick}
       aria-label={ariaLabel ?? `Edit ${label}`}
       className={cn(
-        "flex flex-1 flex-col justify-center gap-0.5 px-3 py-2 text-left",
+        "flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-2 text-left",
         "hover:bg-muted/50 transition-colors duration-150"
       )}
     >
       <span className="text-muted-foreground text-[9px] font-semibold tracking-wider uppercase">
         {label}
       </span>
-      <span className="text-foreground flex items-center gap-1 text-sm font-medium whitespace-nowrap">
-        {children}
+      <span className="text-foreground flex min-w-0 items-center gap-1 text-sm font-medium">
+        {/* `truncate` on the value text so a long ability/item/nature name
+            shows an ellipsis when it can't fit (mobile cells are 50% of a
+            ~393px viewport). The chevron sits outside the truncated span so
+            it stays visible. */}
+        <span className="min-w-0 truncate">{children}</span>
         {!hideChevron && (
-          <span className="text-muted-foreground" aria-hidden="true">
+          <span
+            className="text-muted-foreground shrink-0"
+            aria-hidden="true"
+          >
             ›
           </span>
         )}
@@ -110,11 +117,13 @@ interface FieldStaticProps {
 
 function FieldStatic({ label, children }: FieldStaticProps) {
   return (
-    <div className="flex flex-1 flex-col justify-center gap-0.5 px-3 py-2">
+    <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-2">
       <span className="text-muted-foreground text-[9px] font-semibold tracking-wider uppercase">
         {label}
       </span>
-      <span className="text-foreground text-sm font-medium whitespace-nowrap">
+      {/* `truncate` so the value text shows an ellipsis when it can't fit
+          inside the cell (matches the FieldButton behavior). */}
+      <span className="text-foreground truncate text-sm font-medium">
         {children}
       </span>
     </div>
@@ -332,6 +341,54 @@ export function EditorHeaderBand({
   );
 
   // -------------------------------------------------------------------------
+  // Build-field components — extracted so they can render either inline in
+  // the desktop band row or as a 2-col grid below the row on phones (since
+  // identity + 4 fields + meta controls do not fit in a single 393px row).
+  // -------------------------------------------------------------------------
+
+  const abilityField =
+    isSingleAbility || disabled ? (
+      <FieldStatic label="Ability">
+        {pokemon.ability ?? validAbilities[0] ?? "—"}
+      </FieldStatic>
+    ) : (
+      <FieldButton label="Ability" onClick={onOpenAbilityPicker}>
+        {pokemon.ability ?? validAbilities[0] ?? "—"}
+      </FieldButton>
+    );
+
+  const itemField =
+    disabled || isMegaLocked ? (
+      <FieldStatic label="Item">{pokemon.held_item ?? "None"}</FieldStatic>
+    ) : (
+      <FieldButton label="Item" onClick={onOpenItemPicker}>
+        {pokemon.held_item ?? "None"}
+      </FieldButton>
+    );
+
+  const teraField = hasTera ? (
+    disabled ? (
+      <FieldStatic label="Tera">{teraContent}</FieldStatic>
+    ) : (
+      <FieldButton
+        label="Tera"
+        onClick={onOpenTeraPicker}
+        hideChevron={pokemon.tera_type !== null}
+      >
+        {teraContent}
+      </FieldButton>
+    )
+  ) : null;
+
+  const natureField = disabled ? (
+    <FieldStatic label="Nature">{pokemon.nature}</FieldStatic>
+  ) : (
+    <FieldButton label="Nature" onClick={onOpenNaturePicker}>
+      {pokemon.nature}
+    </FieldButton>
+  );
+
+  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
 
@@ -342,9 +399,13 @@ export function EditorHeaderBand({
         className
       )}
     >
+      {/* Row 1: Identity + (build fields at md+) + meta. Always one h-[68px]
+          row. Phones drop the build fields out of this row and render them
+          below in a 2-col grid (Row 2 below). */}
       <div className="flex h-[68px] items-stretch">
-        {/* ── Zone 1: Identity ──────────────────────────────────────────── */}
-        <div className="flex min-w-0 shrink-0 items-center gap-2.5 px-3">
+        {/* ── Zone 1: Identity — flex-1 on phones (fills space left of meta);
+              shrink-0 on md+ where build fields take the middle flex-1 slot. */}
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3 md:flex-none md:shrink-0">
           {/* Sprite — opens species picker when available */}
           {speciesClickable ? (
             <button
@@ -432,62 +493,33 @@ export function EditorHeaderBand({
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
-
-        {/* ── Zone 2: Build fields ──────────────────────────────────────── */}
-        <div className="flex flex-1 items-stretch">
-          {isSingleAbility || disabled ? (
-            <FieldStatic label="Ability">
-              {pokemon.ability ?? validAbilities[0] ?? "—"}
-            </FieldStatic>
-          ) : (
-            <FieldButton label="Ability" onClick={onOpenAbilityPicker}>
-              {pokemon.ability ?? validAbilities[0] ?? "—"}
-            </FieldButton>
-          )}
-
+        {/* ── Zone 2: Build fields (inline at md+ only — phones move these
+              to Row 2 below to free space for identity + meta in Row 1).
+              CSS-based hiding (`hidden md:flex` / `md:hidden`) instead of
+              `useIsMobile()` so the SSR HTML is mobile-safe and there's no
+              hydration flash of the overflowing desktop layout on phones. */}
+        <div
+          className="bg-border my-2.5 hidden w-px shrink-0 md:block"
+          aria-hidden="true"
+        />
+        <div
+          className="hidden flex-1 items-stretch md:flex"
+          data-testid="editor-header-band-desktop-fields"
+        >
+          {abilityField}
           <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
-
-          {disabled || isMegaLocked ? (
-            <FieldStatic label="Item">
-              {pokemon.held_item ?? "None"}
-            </FieldStatic>
-          ) : (
-            <FieldButton label="Item" onClick={onOpenItemPicker}>
-              {pokemon.held_item ?? "None"}
-            </FieldButton>
-          )}
-
-          {hasTera && (
+          {itemField}
+          {teraField && (
             <>
               <div
                 className="bg-border my-2.5 w-px shrink-0"
                 aria-hidden="true"
               />
-              {disabled ? (
-                <FieldStatic label="Tera">{teraContent}</FieldStatic>
-              ) : (
-                <FieldButton
-                  label="Tera"
-                  onClick={onOpenTeraPicker}
-                  hideChevron={pokemon.tera_type !== null}
-                >
-                  {teraContent}
-                </FieldButton>
-              )}
+              {teraField}
             </>
           )}
-
           <div className="bg-border my-2.5 w-px shrink-0" aria-hidden="true" />
-
-          {disabled ? (
-            <FieldStatic label="Nature">{pokemon.nature}</FieldStatic>
-          ) : (
-            <FieldButton label="Nature" onClick={onOpenNaturePicker}>
-              {pokemon.nature}
-            </FieldButton>
-          )}
+          {natureField}
         </div>
 
         {/* ── Zone 3: Meta controls (only when detailsPopover wired) ────── */}
@@ -553,6 +585,36 @@ export function EditorHeaderBand({
               ) : null}
             </div>
           </>
+        )}
+      </div>
+
+      {/* Row 2: Build fields shown only on phones (`md:hidden`). 2-col grid;
+          thin borders between rows/cols replace the inline dividers used in
+          the desktop layout above. The desktop branch's `hidden md:flex`
+          ensures display:none excludes its FieldButtons from the keyboard
+          tab order and accessibility tree on phones, so the duplicate render
+          doesn't create a11y collisions. */}
+      <div
+        className="grid grid-cols-2 border-t md:hidden"
+        data-testid="editor-header-band-mobile-fields"
+      >
+        {/* Each cell carries `min-w-0 overflow-hidden` so the FieldButton's
+            value text can't push past the cell's column width (e.g. very
+            long ability or item names). FieldButton/FieldStatic apply
+            `truncate` to the value span so overflow shows an ellipsis. */}
+        <div className="min-w-0 overflow-hidden border-r">{abilityField}</div>
+        <div className="min-w-0 overflow-hidden">{itemField}</div>
+        {teraField ? (
+          <>
+            <div className="min-w-0 overflow-hidden border-t border-r">
+              {teraField}
+            </div>
+            <div className="min-w-0 overflow-hidden border-t">{natureField}</div>
+          </>
+        ) : (
+          <div className="col-span-2 min-w-0 overflow-hidden border-t">
+            {natureField}
+          </div>
         )}
       </div>
     </div>

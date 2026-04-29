@@ -38,7 +38,10 @@ export default function SettingsLayout({
           </div>
 
           <div className="border-b">
-            <nav className="flex gap-0">
+            <nav
+              className="-mx-4 flex gap-0 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0"
+              aria-label="Settings sections"
+            >
               {tabs.map((tab) => {
                 const isActive = pathname.startsWith(tab.href);
                 const Icon = tab.icon;
@@ -47,15 +50,17 @@ export default function SettingsLayout({
                   <Link
                     key={tab.href}
                     href={tab.href}
+                    aria-label={tab.label}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                      "flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors sm:px-4",
                       isActive
                         ? "border-primary text-foreground"
                         : "text-muted-foreground hover:text-foreground border-transparent"
                     )}
                   >
-                    <Icon className="h-4 w-4" />
-                    {tab.label}
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{tab.label}</span>
                   </Link>
                 );
               })}
