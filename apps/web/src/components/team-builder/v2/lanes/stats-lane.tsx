@@ -22,6 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+import { type ValidationError } from "../../validation-hooks";
 import {
   type StatKey,
   type StatValues,
@@ -29,6 +30,7 @@ import {
   STAT_LABELS,
 } from "../../stat-types";
 import { NumberPicker } from "../pickers/number-picker";
+import { FieldError } from "../validation/field-error";
 
 // =============================================================================
 // Constants
@@ -63,6 +65,8 @@ interface StatsLaneProps {
   pokemon: Tables<"pokemon">;
   format: GameFormat | undefined;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  /** Validation errors scoped to stat/EV fields. */
+  fieldErrors?: ValidationError[];
 }
 
 // =============================================================================
@@ -253,8 +257,9 @@ function StatRow({
  * 6-stat grid with EV bar visualization and EV number pickers.
  * Supports Champions format (SP system, gen 10).
  * Below the grid: IV editor with a "Show IVs" toggle (collapses by default).
+ * Phase 7: renders inline FieldError chips for EV/stat validation issues.
  */
-export function StatsLane({ pokemon, format, onUpdate }: StatsLaneProps) {
+export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: StatsLaneProps) {
   const [showIvs, setShowIvs] = useState(false);
 
   const evs = getEvs(pokemon);
@@ -276,6 +281,11 @@ export function StatsLane({ pokemon, format, onUpdate }: StatsLaneProps) {
 
   // Detect any non-31 IVs for summary line
   const nonMaxIvs = STAT_KEYS.filter((k) => ivs[k] !== 31);
+
+  // EV / total errors to show below the stat grid
+  const evErrors = fieldErrors.filter(
+    (e) => e.field === "evs" || e.field === "evTotal"
+  );
 
   return (
     <div className="flex min-w-0 flex-col gap-1 border-r border-dashed border-border/60 p-3" style={{ minWidth: 220 }}>
@@ -326,6 +336,11 @@ export function StatsLane({ pokemon, format, onUpdate }: StatsLaneProps) {
           );
         })}
       </div>
+
+      {/* EV total errors */}
+      {evErrors.map((err, i) => (
+        <FieldError key={i} message={err.message} severity={err.severity} />
+      ))}
 
       {/* IV section */}
       <div className="mt-1">

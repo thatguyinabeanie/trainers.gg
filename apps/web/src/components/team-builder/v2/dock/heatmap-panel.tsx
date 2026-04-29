@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/tooltip";
 
 import { TypeDot } from "../type-dot";
-import { effectiveDefensiveMult, normalizeKey } from "./heatmap-effects";
+import { formatSupportsTera } from "../format-gating";
+import { effectiveDefensiveMult } from "./heatmap-effects";
 import { effectiveOffensiveMult } from "./move-type-overrides";
 
 // =============================================================================
@@ -46,17 +47,29 @@ interface MatrixRow {
 // Helpers
 // =============================================================================
 
+/**
+ * Returns the effective defender types for a Pokemon in the heatmap.
+ *
+ * When showTera is true and the Pokemon has a tera_type set, the Tera type
+ * replaces all species types (matching in-game Tera behavior: the Pokemon's
+ * type becomes solely the Tera type for all defensive matchup purposes).
+ * Falls back to species types if tera_type is not set.
+ *
+ * When showTera is false, always returns species types (pre-Tera baseline).
+ */
 function getDefenderTypes(
-  pokemon: Tables<"pokemon">
+  pokemon: Tables<"pokemon">,
+  showTera: boolean
 ): PokemonType[] {
-  // Tera: if tera_type is set and we consider it active — caller passes
-  // the pokemon row directly; we read tera_type if present.
-  // For the heatmap panel, we show static species types (no in-battle Tera).
+  if (showTera && pokemon.tera_type) {
+    return [pokemon.tera_type as PokemonType];
+  }
   return getSpeciesTypes(pokemon.species ?? "") as PokemonType[];
 }
 
 function buildDefensiveMatrix(
-  teamPokemon: TeamWithPokemon["team_pokemon"]
+  teamPokemon: TeamWithPokemon["team_pokemon"],
+  showTera: boolean
 ): MatrixRow[] {
   const pokemons = teamPokemon
     .slice()
@@ -71,7 +84,7 @@ function buildDefensiveMatrix(
     let immuneCount = 0;
 
     for (const p of pokemons) {
-      const defenderTypes = getDefenderTypes(p);
+      const defenderTypes = getDefenderTypes(p, showTera);
       const mult = effectiveDefensiveMult({
         attackingType,
         defenderTypes,
@@ -232,14 +245,25 @@ function MonHeaderIcon({ pokemon }: { pokemon: Tables<"pokemon"> }) {
  * DEFENSIVE (default): rows = 18 attacking types, columns = team slots.
  *   Cell = multiplier the team member TAKES from that type.
  *   Ability/item modifiers applied via effectiveDefensiveMult.
+ *   When showTera is true (Tera-format only): each Pokemon's defender types
+ *   become [tera_type] if set, otherwise fall back to species types.
  *
  * OFFENSIVE: rows = 18 defending types, columns = team slots.
  *   Cell = best multiplier that team member can deal with its damaging moves.
+ *   This matrix is coverage-only (no STAB weighting). Tera does not change
+ *   which types a move hits — it only changes STAB identity. Since this matrix
+ *   does not weight by STAB, the offensive view is invariant to Tera and the
+ *   toggle has no effect on offensive rows (showTera only affects defensive view).
  *
  * Sorted by severity (most weaknesses first) in defensive view.
  */
-export function HeatmapPanel({ team, format: _format }: HeatmapPanelProps) {
+export function HeatmapPanel({ team, format }: HeatmapPanelProps) {
   const [mode, setMode] = useState<CoverageMode>("defensive");
+  // showTera is only meaningful when the format supports Tera.
+  // Defaults to false so the baseline view is always species types.
+  const [showTera, setShowTera] = useState(false);
+
+  const teraSupported = formatSupportsTera(format);
 
   const pokemons = team
     .slice()
@@ -249,9 +273,12 @@ export function HeatmapPanel({ team, format: _format }: HeatmapPanelProps) {
 
   const monCount = pokemons.length;
 
+  // showTera is only active in defensive mode (offensive is coverage-only, not STAB-weighted)
+  const effectiveShowTera = showTera && teraSupported && mode === "defensive";
+
   const rawRows =
     mode === "defensive"
-      ? buildDefensiveMatrix(team)
+      ? buildDefensiveMatrix(team, effectiveShowTera)
       : buildOffensiveMatrix(team);
 
   const rows = mode === "defensive" ? sortDefensive(rawRows) : rawRows;
@@ -269,42 +296,60 @@ export function HeatmapPanel({ team, format: _format }: HeatmapPanelProps) {
 
   return (
     <div data-testid="heatmap-panel" className="flex min-h-0 flex-col overflow-auto">
-      {/* Panel header + toggle */}
+      {/* Panel header + toggles */}
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
         <span className="text-foreground text-sm font-semibold">
           {mode === "defensive" ? "Defensive coverage" : "Offensive coverage"}
         </span>
-        <div
-          role="group"
-          aria-label="Coverage mode"
-          className="bg-muted flex overflow-hidden rounded-md"
-        >
-          <button
-            type="button"
-            aria-pressed={mode === "defensive"}
-            onClick={() => setMode("defensive")}
-            className={cn(
-              "px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
-              mode === "defensive"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+        <div className="flex items-center gap-2">
+          {/* Tera toggle — only shown for Tera-supporting formats, defensive mode only */}
+          {teraSupported && mode === "defensive" && (
+            <button
+              type="button"
+              aria-pressed={showTera}
+              onClick={() => setShowTera((v) => !v)}
+              className={cn(
+                "rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
+                showTera
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {showTera ? "Tera on" : "View as Tera"}
+            </button>
+          )}
+          <div
+            role="group"
+            aria-label="Coverage mode"
+            className="bg-muted flex overflow-hidden rounded-md"
           >
-            Defensive
-          </button>
-          <button
-            type="button"
-            aria-pressed={mode === "offensive"}
-            onClick={() => setMode("offensive")}
-            className={cn(
-              "px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
-              mode === "offensive"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Offensive
-          </button>
+            <button
+              type="button"
+              aria-pressed={mode === "defensive"}
+              onClick={() => setMode("defensive")}
+              className={cn(
+                "px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
+                mode === "defensive"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Defensive
+            </button>
+            <button
+              type="button"
+              aria-pressed={mode === "offensive"}
+              onClick={() => setMode("offensive")}
+              className={cn(
+                "px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
+                mode === "offensive"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Offensive
+            </button>
+          </div>
         </div>
       </div>
 
@@ -469,8 +514,12 @@ export function HeatmapPanel({ team, format: _format }: HeatmapPanelProps) {
           {/* Legend */}
           <div className="bg-muted/30 text-muted-foreground px-3 py-1.5 text-[10px]">
             {mode === "defensive"
-              ? "Columns: ability & item modifiers applied · Tera not simulated"
-              : "Best coverage move per slot · STAB not included"}
+              ? effectiveShowTera
+                ? "Columns: Tera type active · ability & item modifiers applied · Pokemon without a Tera type use species types"
+                : teraSupported
+                  ? "Columns: ability & item modifiers applied · Toggle 'View as Tera' to simulate Tera defensive types"
+                  : "Columns: ability & item modifiers applied"
+              : "Best coverage move per slot · STAB not weighted (Tera does not change move types offensively)"}
           </div>
 
           {/* Legend dots */}

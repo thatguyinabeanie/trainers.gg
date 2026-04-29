@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { useTeamValidation } from "../validation-hooks";
 import { CalcDrawer } from "./calc/calc-drawer";
 import { CalcStateProvider } from "./calc/calc-state-context";
 import { BottomDrawer } from "./dock/bottom-drawer";
@@ -77,6 +78,7 @@ function buildSlots(
  * Top-level client component for the v2 team builder workspace.
  * Owns layout orchestration: Topbar, PokeRow list, calc drawer slot.
  * Phase 2: adds optimistic write path via useOptimistic + updatePokemonAction.
+ * Phase 7: wires useTeamValidation → per-slot error badges + lane field errors.
  */
 export function TeamWorkspaceV2({
   team,
@@ -114,6 +116,18 @@ export function TeamWorkspaceV2({
   );
 
   const [, startTransition] = useTransition();
+
+  // ---------------------------------------------------------------------------
+  // Validation — Phase 7
+  // Debounced reactive validation on every optimistic state change.
+  // pokemonErrors: Map<pokemonId, ValidationError[]> for per-slot lookup.
+  // ---------------------------------------------------------------------------
+
+  const {
+    errors: validationErrors,
+    pokemonErrors,
+    validate,
+  } = useTeamValidation(optimisticTeamPokemon, format);
 
   function handlePokemonUpdate(
     pokemonId: number,
@@ -184,6 +198,17 @@ export function TeamWorkspaceV2({
     handleRemove(p.id);
   }
 
+  /**
+   * Called from the Topbar validation popover when the user clicks an error row.
+   * Finds the slot index for the given pokemonId and activates it.
+   */
+  function handleJumpToPokemon(pokemonId: number) {
+    const slotIdx = slots.findIndex((p) => p?.id === pokemonId);
+    if (slotIdx !== -1) {
+      state.setActiveIdx(slotIdx);
+    }
+  }
+
   // Close the bottom drawer on Escape key press
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -215,28 +240,41 @@ export function TeamWorkspaceV2({
           onToggleCalc={() => state.setCalcOpen((o) => !o)}
           onOpenImport={() => console.warn("[Phase 2 stub] open import")}
           onSave={() => console.warn("[Phase 1 stub] save")}
+          validationErrors={validationErrors}
+          onJumpToPokemon={handleJumpToPokemon}
+          onValidate={validate}
         />
 
         <div className={s.builderWorkshell}>
           <div className={s.builderWorklane}>
             <main className={s.builderGrid}>
               <section className={s.builderRows}>
-                {slots.map((p, i) => (
-                  <PokeRow
-                    key={i}
-                    idx={i}
-                    pokemon={p}
-                    isActive={state.activeIdx === i}
-                    density={tweaks.density}
-                    expandMode={tweaks.expandMode}
-                    onActivate={state.setActiveIdx}
-                    onAdd={handleAdd}
-                    onRemove={handleRemoveByIdx}
-                    teamPokemon={optimisticTeamPokemon}
-                    format={format}
-                    onPokemonUpdate={handlePokemonUpdate}
-                  />
-                ))}
+                {slots.map((p, i) => {
+                  // Look up errors for this slot's pokemon (if any)
+                  const slotPokemonId = p?.id ?? null;
+                  const slotErrors =
+                    slotPokemonId !== null
+                      ? (pokemonErrors.get(slotPokemonId) ?? [])
+                      : [];
+
+                  return (
+                    <PokeRow
+                      key={i}
+                      idx={i}
+                      pokemon={p}
+                      isActive={state.activeIdx === i}
+                      density={tweaks.density}
+                      expandMode={tweaks.expandMode}
+                      onActivate={state.setActiveIdx}
+                      onAdd={handleAdd}
+                      onRemove={handleRemoveByIdx}
+                      teamPokemon={optimisticTeamPokemon}
+                      format={format}
+                      onPokemonUpdate={handlePokemonUpdate}
+                      slotErrors={slotErrors}
+                    />
+                  );
+                })}
               </section>
             </main>
 

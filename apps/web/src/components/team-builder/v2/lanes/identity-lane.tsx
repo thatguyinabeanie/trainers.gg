@@ -13,10 +13,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+import { type ValidationError } from "../../validation-hooks";
 import { Sprite } from "../sprite";
 import { TypePill } from "../type-pill";
 import { formatSupportsDynamax } from "../format-gating";
 import { NumberPicker } from "../pickers/number-picker";
+import { FieldError } from "../validation/field-error";
 
 // =============================================================================
 // Types
@@ -27,6 +29,8 @@ interface IdentityLaneProps {
   format: GameFormat | undefined;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   onOpenSpecies: (anchor: HTMLElement) => void;
+  /** Validation errors scoped to identity fields (species, nickname, gender). */
+  fieldErrors?: ValidationError[];
 }
 
 type GenderValue = "Male" | "Female" | null;
@@ -47,6 +51,10 @@ function nextGender(current: GenderValue): GenderValue {
   return null;
 }
 
+function errorsForField(errors: ValidationError[], field: string): ValidationError[] {
+  return errors.filter((e) => e.field === field);
+}
+
 // =============================================================================
 // IdentityLane
 // =============================================================================
@@ -56,12 +64,14 @@ function nextGender(current: GenderValue): GenderValue {
  * Shows: sprite (clickable → species picker), nickname (inline edit),
  * species label, type pills, level chip, gender toggle, shiny flag.
  * Format-gated: dynamax level + gigantamax flag when format supports Dynamax.
+ * Phase 7: renders inline FieldError chips for identity-scoped validation issues.
  */
 export function IdentityLane({
   pokemon,
   format,
   onUpdate,
   onOpenSpecies,
+  fieldErrors = [],
 }: IdentityLaneProps) {
   const types = getSpeciesTypes(pokemon.species ?? "");
   const nicknameRef = useRef<HTMLInputElement>(null);
@@ -73,6 +83,10 @@ export function IdentityLane({
   const gender = pokemon.gender as GenderValue;
   const isShiny = pokemon.is_shiny ?? false;
   const showDynamax = formatSupportsDynamax(format);
+
+  const nicknameErrors = errorsForField(fieldErrors, "nickname");
+  const speciesErrors = errorsForField(fieldErrors, "species");
+  const genderErrors = errorsForField(fieldErrors, "gender");
 
   function handleNickBlur() {
     const trimmed = nickDraft.trim();
@@ -93,36 +107,47 @@ export function IdentityLane({
   return (
     <div className="flex min-w-0 shrink-0 gap-3 p-3" style={{ width: 180 }}>
       {/* Sprite — click to open species picker */}
-      <button
-        type="button"
-        onClick={(e) => onOpenSpecies(e.currentTarget)}
-        aria-label={`Change species (${pokemon.species})`}
-        className="shrink-0 rounded-full transition-opacity hover:opacity-80"
-      >
-        <Sprite species={pokemon.species ?? ""} types={types} size={56} />
-      </button>
+      <div className="flex shrink-0 flex-col items-center gap-1">
+        <button
+          type="button"
+          onClick={(e) => onOpenSpecies(e.currentTarget)}
+          aria-label={`Change species (${pokemon.species})`}
+          className="shrink-0 rounded-full transition-opacity hover:opacity-80"
+        >
+          <Sprite species={pokemon.species ?? ""} types={types} size={56} />
+        </button>
+        {speciesErrors.map((err, i) => (
+          <FieldError key={i} message={err.message} severity={err.severity} />
+        ))}
+      </div>
 
       {/* Meta stack */}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {/* Nickname input */}
-        <input
-          ref={nicknameRef}
-          type="text"
-          value={nickDraft}
-          onChange={(e) => setNickDraft(e.target.value)}
-          onBlur={handleNickBlur}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") nicknameRef.current?.blur();
-          }}
-          placeholder={pokemon.species ?? "Nickname"}
-          maxLength={24}
-          aria-label="Nickname"
-          className={cn(
-            "bg-transparent w-full min-w-0 truncate text-sm font-semibold outline-none",
-            "border-b border-transparent placeholder:text-muted-foreground/50",
-            "hover:border-border focus:border-primary"
-          )}
-        />
+        <div className="flex flex-col">
+          <input
+            ref={nicknameRef}
+            type="text"
+            value={nickDraft}
+            onChange={(e) => setNickDraft(e.target.value)}
+            onBlur={handleNickBlur}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") nicknameRef.current?.blur();
+            }}
+            placeholder={pokemon.species ?? "Nickname"}
+            maxLength={24}
+            aria-label="Nickname"
+            className={cn(
+              "bg-transparent w-full min-w-0 truncate text-sm font-semibold outline-none",
+              "border-b border-transparent placeholder:text-muted-foreground/50",
+              "hover:border-border focus:border-primary",
+              nicknameErrors.length > 0 && "border-destructive focus:border-destructive"
+            )}
+          />
+          {nicknameErrors.map((err, i) => (
+            <FieldError key={i} message={err.message} severity={err.severity} />
+          ))}
+        </div>
 
         {/* Species label */}
         <span className="text-muted-foreground truncate text-[11px]">
@@ -165,14 +190,22 @@ export function IdentityLane({
           </Popover>
 
           {/* Gender 3-way toggle: ♂ / ♀ / — */}
-          <button
-            type="button"
-            onClick={handleGenderToggle}
-            title="Toggle gender"
-            className="bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 text-[10px] font-medium"
-          >
-            {genderLabel(gender)}
-          </button>
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={handleGenderToggle}
+              title="Toggle gender"
+              className={cn(
+                "bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                genderErrors.length > 0 && "border-destructive"
+              )}
+            >
+              {genderLabel(gender)}
+            </button>
+            {genderErrors.map((err, i) => (
+              <FieldError key={i} message={err.message} severity={err.severity} />
+            ))}
+          </div>
 
           {/* Shiny toggle */}
           <button

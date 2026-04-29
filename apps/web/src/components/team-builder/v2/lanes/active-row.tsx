@@ -5,6 +5,7 @@ import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/
 
 import { cn } from "@/lib/utils";
 
+import { type ValidationError } from "../../validation-hooks";
 import s from "../builder.module.css";
 import { IdentityLane } from "./identity-lane";
 import { SetupLane } from "./setup-lane";
@@ -23,6 +24,22 @@ interface ActiveRowProps {
   format: GameFormat | undefined;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   onRemove: () => void;
+  /** All validation errors for this Pokemon — filtered per lane by field. */
+  fieldErrors?: ValidationError[];
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * Filter the flat fieldErrors list to only those matching any of the given field keys.
+ */
+function errorsForFields(
+  errors: ValidationError[],
+  fields: string[]
+): ValidationError[] {
+  return errors.filter((e) => fields.includes(e.field));
 }
 
 // =============================================================================
@@ -32,6 +49,7 @@ interface ActiveRowProps {
 /**
  * Full expanded row for the active/selected Pokémon slot.
  * Composes the 5 lanes: RIB | IDENTITY | SETUP | MOVES | STATS | META.
+ * Phase 7: passes field-scoped errors to each lane for inline display.
  */
 export function ActiveRow({
   idx,
@@ -40,6 +58,7 @@ export function ActiveRow({
   format,
   onUpdate,
   onRemove,
+  fieldErrors = [],
 }: ActiveRowProps) {
   // Collect held items from sibling pokemon for the item picker duplicate warning
   const teamItems = teamPokemon
@@ -51,6 +70,21 @@ export function ActiveRow({
     // TODO Phase 3: wire to workspace species picker overlay
     // For now, this triggers the species picker popover flow
   }
+
+  // Partition errors to the appropriate lane
+  const identityErrors = errorsForFields(fieldErrors, [
+    "species", "nickname", "gender", "level",
+  ]);
+  const setupErrors = errorsForFields(fieldErrors, [
+    "item", "heldItem", "ability", "nature", "tera_type",
+  ]);
+  const movesErrors = errorsForFields(fieldErrors, [
+    "move1", "move2", "move3", "move4", "moves",
+  ]);
+  const statsErrors = errorsForFields(fieldErrors, [
+    "evs", "evTotal", "ev_hp", "ev_attack", "ev_defense",
+    "ev_special_attack", "ev_special_defense", "ev_speed",
+  ]);
 
   return (
     <div
@@ -86,6 +120,7 @@ export function ActiveRow({
         format={format}
         onUpdate={onUpdate}
         onOpenSpecies={handleOpenSpecies}
+        fieldErrors={identityErrors}
       />
 
       {/* SETUP lane */}
@@ -94,6 +129,7 @@ export function ActiveRow({
         format={format}
         teamItems={teamItems}
         onUpdate={onUpdate}
+        fieldErrors={setupErrors}
       />
 
       {/* MOVES lane */}
@@ -101,6 +137,7 @@ export function ActiveRow({
         pokemon={pokemon}
         format={format}
         onUpdate={onUpdate}
+        fieldErrors={movesErrors}
       />
 
       {/* STATS lane */}
@@ -108,6 +145,7 @@ export function ActiveRow({
         pokemon={pokemon}
         format={format}
         onUpdate={onUpdate}
+        fieldErrors={statsErrors}
       />
 
       {/* META lane */}

@@ -7,6 +7,7 @@ import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/
 
 import { cn } from "@/lib/utils";
 
+import { type ValidationError } from "../validation-hooks";
 import { Sprite } from "./sprite";
 import { TypePill } from "./type-pill";
 import { ActiveRow } from "./lanes/active-row";
@@ -28,16 +29,37 @@ interface PokeRowProps {
   teamPokemon?: TeamWithPokemon["team_pokemon"];
   format?: GameFormat;
   onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
+  /** Validation errors for this slot's pokemon. */
+  slotErrors?: ValidationError[];
 }
 
 // =============================================================================
-// Slot rib — "01", "02", … left-edge label
+// Slot rib — "01", "02", … left-edge label + error dot
 // =============================================================================
 
-function SlotRib({ idx }: { idx: number }) {
+interface SlotRibProps {
+  idx: number;
+  hasError?: boolean;
+  hasWarning?: boolean;
+}
+
+function SlotRib({ idx, hasError, hasWarning }: SlotRibProps) {
   return (
-    <span className="w-7 shrink-0 font-mono text-xs font-medium text-muted-foreground">
+    <span className="relative w-7 shrink-0 font-mono text-xs font-medium text-muted-foreground">
       {String(idx + 1).padStart(2, "0")}
+      {/* Error/warning dot — shown when this slot has validation issues */}
+      {hasError && (
+        <span
+          className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-destructive"
+          aria-label="Has validation errors"
+        />
+      )}
+      {!hasError && hasWarning && (
+        <span
+          className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-amber-500"
+          aria-label="Has validation warnings"
+        />
+      )}
     </span>
   );
 }
@@ -85,6 +107,7 @@ interface CollapsedRowProps {
   density: "comfy" | "compact";
   onActivate: (idx: number) => void;
   onRemove?: (idx: number) => void;
+  slotErrors: ValidationError[];
 }
 
 function CollapsedRow({
@@ -93,6 +116,7 @@ function CollapsedRow({
   density,
   onActivate,
   onRemove,
+  slotErrors,
 }: CollapsedRowProps) {
   const types = getSpeciesTypes(pokemon.species ?? "");
   const moves = [
@@ -102,6 +126,9 @@ function CollapsedRow({
     pokemon.move4,
   ] as const;
 
+  const hasError = slotErrors.some((e) => e.severity === "error");
+  const hasWarning = slotErrors.some((e) => e.severity === "warning");
+
   return (
     <div
       className={cn(
@@ -109,8 +136,8 @@ function CollapsedRow({
         density === "comfy" ? "py-2" : "py-1.5"
       )}
     >
-      {/* Slot rib */}
-      <SlotRib idx={idx} />
+      {/* Slot rib with error/warning dot */}
+      <SlotRib idx={idx} hasError={hasError} hasWarning={hasWarning} />
 
       {/* Sprite + species */}
       <button
@@ -207,6 +234,7 @@ interface ActiveRowShellProps {
   teamPokemon: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
   onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
+  slotErrors: ValidationError[];
 }
 
 function ActiveRowShell({
@@ -218,6 +246,7 @@ function ActiveRowShell({
   teamPokemon,
   format,
   onPokemonUpdate,
+  slotErrors,
 }: ActiveRowShellProps) {
   return (
     <div
@@ -249,6 +278,7 @@ function ActiveRowShell({
         format={format}
         onUpdate={(fields) => onPokemonUpdate?.(pokemon.id, fields)}
         onRemove={() => onRemove?.(idx)}
+        fieldErrors={slotErrors}
       />
     </div>
   );
@@ -262,6 +292,7 @@ function ActiveRowShell({
  * A single horizontal slot row in the v2 team builder.
  * Phase 1: empty state and collapsed state.
  * Phase 2: active/expanded state with full lane editor.
+ * Phase 7: shows error/warning dot on slot rib; passes field errors to active row.
  */
 export function PokeRow({
   idx,
@@ -275,6 +306,7 @@ export function PokeRow({
   teamPokemon,
   format,
   onPokemonUpdate,
+  slotErrors = [],
 }: PokeRowProps) {
   if (!pokemon) {
     return <EmptyRow idx={idx} density={density} onAdd={onAdd} />;
@@ -293,6 +325,7 @@ export function PokeRow({
         teamPokemon={teamPokemon ?? []}
         format={format}
         onPokemonUpdate={onPokemonUpdate}
+        slotErrors={slotErrors}
       />
     );
   }
@@ -304,6 +337,7 @@ export function PokeRow({
       density={density}
       onActivate={onActivate}
       onRemove={onRemove}
+      slotErrors={slotErrors}
     />
   );
 }
