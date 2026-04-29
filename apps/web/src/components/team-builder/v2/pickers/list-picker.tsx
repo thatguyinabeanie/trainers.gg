@@ -21,6 +21,7 @@ interface ListPickerProps<T extends string> {
 }
 
 const MAX_VISIBLE = 200;
+const UNINITIALIZED = Symbol();
 
 // =============================================================================
 // ListPicker
@@ -43,17 +44,21 @@ export function ListPicker<T extends string>({
   emptyHint = "No matches",
 }: ListPickerProps<T>) {
   const [search, setSearch] = useState("");
+  const [prevValue, setPrevValue] = useState<
+    typeof value | typeof UNINITIALIZED
+  >(UNINITIALIZED);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Reset search when value changes (render-time adjustment — avoids set-state-in-effect)
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setSearch("");
+  }
 
   // Auto-focus the search input when the picker opens
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
-
-  // Reset search when the picker re-opens (caller uses key={isOpen} or similar)
-  useEffect(() => {
-    setSearch("");
-  }, [value]);
 
   const lower = search.toLowerCase();
   const filtered = search

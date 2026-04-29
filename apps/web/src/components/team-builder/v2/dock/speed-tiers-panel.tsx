@@ -650,8 +650,8 @@ export function SpeedTiersPanel({
       <div className="min-h-0 flex-1 overflow-y-auto">
         <TierTableHeader />
         {sortedGroups.map((group) => {
-          const isHeroTier = group.speed === heroSpeed && heroSpeed > 0;
-          return group.items.map((scored, idx) => (
+          const _isHeroTier = group.speed === heroSpeed && heroSpeed > 0;
+          return group.items.map((scored, _idx) => (
             <TierMonRow
               key={`${scored.mon.id}-${group.speed}`}
               scored={scored}

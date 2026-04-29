@@ -1,9 +1,10 @@
 "use client";
 
-import { act, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
+import type * as TrainersPokemon from "@trainers/pokemon";
 import { type GameFormat, type MetaSpeedEntry } from "@trainers/pokemon";
 
 import { SpeedTiersPanel } from "../dock/speed-tiers-panel";
@@ -14,7 +15,7 @@ import { SpeedTiersPanel } from "../dock/speed-tiers-panel";
 // =============================================================================
 
 jest.mock("@trainers/pokemon", () => {
-  const actual = jest.requireActual<typeof import("@trainers/pokemon")>(
+  const actual = jest.requireActual<typeof TrainersPokemon>(
     "@trainers/pokemon"
   );
   return {
@@ -30,7 +31,7 @@ jest.mock("@trainers/pokemon", () => {
     // Minimal stat calc — just return the base speed so tests are predictable
     getBaseStats: jest
       .fn()
-      .mockImplementation((species: string) => ({ speed: 0 })),
+      .mockImplementation((_species: string) => ({ speed: 0 })),
     calculateStat: jest.fn().mockReturnValue(0),
     calculateChampionsStat: jest.fn().mockReturnValue(0),
     getNatureMultiplier: jest.fn().mockReturnValue(1.0),
@@ -51,7 +52,6 @@ jest.mock("@trainers/pokemon/sprites", () => ({
 jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
-    // eslint-disable-next-line @next/next/no-img-element
     <img {...props} alt={props.alt ?? ""} />
   ),
 }));
@@ -60,13 +60,13 @@ jest.mock("next/image", () => ({
 // Helpers
 // =============================================================================
 
-const { getMetaSpeedTiers } = jest.requireMock<
-  typeof import("@trainers/pokemon")
->("@trainers/pokemon");
+const { getMetaSpeedTiers } = jest.requireMock<typeof TrainersPokemon>(
+  "@trainers/pokemon"
+);
 
-const { applySpeedModifiers } = jest.requireMock<
-  typeof import("@trainers/pokemon")
->("@trainers/pokemon");
+const { applySpeedModifiers } = jest.requireMock<typeof TrainersPokemon>(
+  "@trainers/pokemon"
+);
 
 /** Minimal gen 9 format for the panel */
 const TEST_FORMAT: GameFormat = {
