@@ -1706,10 +1706,15 @@
   border: none;
 }
 
-/* Breakpoint ticks overlay — pointer-events: none so slider stays interactive */
+/* Breakpoint ticks overlay — pointer-events: none so slider stays interactive.
+ * Inset horizontally by the thumb radius (5px) so tick `left: 0%` and `100%`
+ * line up with the thumb's center at value=min and value=max. */
 .spreadBumps {
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  right: 5px;
   pointer-events: none;
 }
 
