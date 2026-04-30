@@ -3,6 +3,21 @@
 import { useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 import { type GameFormat } from "@trainers/pokemon";
 import {
@@ -15,8 +30,10 @@ import {
 import {
   addPokemonToTeamAction,
   removePokemonFromTeamAction,
+  reorderTeamPokemonAction,
   updatePokemonAction,
 } from "@/actions/teams";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ExportMenu } from "../export-menu";
 import { ImportDialog } from "../import-dialog";
 import { useTeamValidation } from "../validation-hooks";
@@ -185,7 +202,80 @@ export function TeamWorkspaceV2({
     });
   }
 
-  const slots = buildSlots(optimisticTeamPokemon);
+  const isMobile = useIsMobile();
+
+  // ---------------------------------------------------------------------------
+  // DnD sensors — Phase 8
+  // PointerSensor with activationConstraint.distance=8 so click events on the
+  // rib's × button still fire before dragging starts.
+  // KeyboardSensor for accessibility.
+  // ---------------------------------------------------------------------------
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  // ---------------------------------------------------------------------------
+  // Reorder override — Phase 8
+  //
+  // After a drag, we store an ordered list of pokemon IDs so the UI reflects
+  // the new order optimistically while the server action runs. `null` means
+  // "use the default order from buildSlots(optimisticTeamPokemon)".
+  // On router.refresh() this resets naturally (the component re-renders with
+  // the updated team_pokemon positions from the server).
+  // ---------------------------------------------------------------------------
+
+  const [reorderIds, setReorderIds] = useState<(number | null)[] | null>(null);
+
+  const baseSlots = buildSlots(optimisticTeamPokemon);
+
+  // Apply the reorder override if present, otherwise use derived order.
+  const slots: (Tables<"pokemon"> | null)[] = reorderIds
+    ? reorderIds.map((id) =>
+        id === null ? null : (baseSlots.find((p) => p?.id === id) ?? null)
+      )
+    : baseSlots;
+
+  // Stable IDs for dnd-kit: pokemon.id (as string) for filled, placeholder for empty.
+  const itemIds = slots.map((p, i) =>
+    p !== null ? String(p.id) : `__empty__${i}`
+  );
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = itemIds.indexOf(active.id as string);
+    const newIndex = itemIds.indexOf(over.id as string);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const prevSlots = slots;
+    const nextSlots = arrayMove(slots, oldIndex, newIndex);
+
+    // Optimistic update — update display immediately.
+    setReorderIds(nextSlots.map((p) => p?.id ?? null));
+
+    const positions = nextSlots
+      .map((p, i) =>
+        p !== null ? { pokemonId: p.id, position: i + 1 } : null
+      )
+      .filter((x): x is { pokemonId: number; position: number } => x !== null);
+
+    if (positions.length === 0) return;
+
+    const result = await reorderTeamPokemonAction(team.id, positions);
+    if (!result.success) {
+      toast.error(result.error ?? "Failed to reorder team.");
+      // Revert to previous order.
+      setReorderIds(prevSlots.map((p) => p?.id ?? null));
+      return;
+    }
+    // Server confirmed — let router.refresh() restore the canonical order.
+    router.refresh();
+    setReorderIds(null);
+  }
+
   const filledCount = slots.filter(Boolean).length;
 
   // onRemove for PokeRow — accepts slot idx, resolves to pokemonId
@@ -235,31 +325,74 @@ export function TeamWorkspaceV2({
             {/* Editor region — rows scroll inside this region only */}
             <div className={s.editorRegion}>
               <section className={s.builderRows}>
-                {slots.map((p, i) => {
-                  const slotPokemonId = p?.id ?? null;
-                  const slotErrors =
-                    slotPokemonId !== null
-                      ? (pokemonErrors.get(slotPokemonId) ?? [])
-                      : [];
+                {isMobile ? (
+                  // Mobile: no drag-and-drop, render rows directly.
+                  slots.map((p, i) => {
+                    const slotPokemonId = p?.id ?? null;
+                    const slotErrors =
+                      slotPokemonId !== null
+                        ? (pokemonErrors.get(slotPokemonId) ?? [])
+                        : [];
 
-                  return (
-                    <PokeRow
-                      key={i}
-                      idx={i}
-                      pokemon={p}
-                      isActive={state.activeIdx === i}
-                      density="comfy"
-                      expandMode="all"
-                      onActivate={state.setActiveIdx}
-                      onAdd={handleAdd}
-                      onRemove={handleRemoveByIdx}
-                      teamPokemon={optimisticTeamPokemon}
-                      format={format}
-                      onPokemonUpdate={handlePokemonUpdate}
-                      slotErrors={slotErrors}
-                    />
-                  );
-                })}
+                    return (
+                      <PokeRow
+                        key={itemIds[i]}
+                        sortableId={itemIds[i] ?? `__empty__${i}`}
+                        idx={i}
+                        pokemon={p}
+                        isActive={state.activeIdx === i}
+                        density="comfy"
+                        expandMode="all"
+                        onActivate={state.setActiveIdx}
+                        onAdd={handleAdd}
+                        onRemove={handleRemoveByIdx}
+                        teamPokemon={optimisticTeamPokemon}
+                        format={format}
+                        onPokemonUpdate={handlePokemonUpdate}
+                        slotErrors={slotErrors}
+                      />
+                    );
+                  })
+                ) : (
+                  // Desktop: wrap in DnD context for drag-and-drop reordering.
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={itemIds}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {slots.map((p, i) => {
+                        const slotPokemonId = p?.id ?? null;
+                        const slotErrors =
+                          slotPokemonId !== null
+                            ? (pokemonErrors.get(slotPokemonId) ?? [])
+                            : [];
+
+                        return (
+                          <PokeRow
+                            key={itemIds[i]}
+                            sortableId={itemIds[i] ?? `__empty__${i}`}
+                            idx={i}
+                            pokemon={p}
+                            isActive={state.activeIdx === i}
+                            density="comfy"
+                            expandMode="all"
+                            onActivate={state.setActiveIdx}
+                            onAdd={handleAdd}
+                            onRemove={handleRemoveByIdx}
+                            teamPokemon={optimisticTeamPokemon}
+                            format={format}
+                            onPokemonUpdate={handlePokemonUpdate}
+                            slotErrors={slotErrors}
+                          />
+                        );
+                      })}
+                    </SortableContext>
+                  </DndContext>
+                )}
               </section>
             </div>
 
@@ -379,6 +512,8 @@ export function TeamWorkspaceV2({
               team={team}
               format={format}
               onClose={() => state.setCalcOpen(false)}
+              calcDrawerWidth={state.calcDrawerWidth}
+              setCalcDrawerWidth={state.setCalcDrawerWidth}
             />
           )}
         </div>

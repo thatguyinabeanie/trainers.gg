@@ -1,5 +1,7 @@
 "use client";
 
+import { type DraggableAttributes, type DraggableSyntheticListeners } from "@dnd-kit/core";
+
 import { type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/supabase";
 
@@ -24,6 +26,12 @@ interface ActiveRowProps {
   onRemove: () => void;
   /** All validation errors for this Pokemon — filtered per lane by field. */
   fieldErrors?: ValidationError[];
+  /** DnD-kit drag attributes — attached to the drag handle element. */
+  dragAttributes?: DraggableAttributes;
+  /** DnD-kit drag listeners — attached to the drag handle element. */
+  dragListeners?: DraggableSyntheticListeners;
+  /** Whether the row is currently being dragged. */
+  isDragging?: boolean;
 }
 
 // =============================================================================
@@ -57,6 +65,9 @@ export function ActiveRow({
   onUpdate,
   onRemove,
   fieldErrors = [],
+  dragAttributes,
+  dragListeners,
+  isDragging = false,
 }: ActiveRowProps) {
   // Collect held items from sibling pokemon for the item picker duplicate warning
   const teamItems = teamPokemon
@@ -82,17 +93,26 @@ export function ActiveRow({
       className={cn(
         s.rowActive,
         "flex min-w-0 flex-wrap items-stretch overflow-hidden rounded-lg border bg-card",
-        "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]"
+        "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]",
+        isDragging && s.rowDragging
       )}
     >
-      {/* RIB — slot number + remove button */}
+      {/* RIB — slot number (drag handle) + remove button */}
       <div
         className={cn(
           s.rib,
           "flex w-8 shrink-0 flex-col items-center justify-between border-r border-dashed border-border/60 bg-muted/20 py-2"
         )}
       >
-        <span className="font-mono text-[10px] font-medium tracking-wide text-muted-foreground">
+        <span
+          {...dragAttributes}
+          {...dragListeners}
+          className={cn(
+            "font-mono text-[10px] font-medium tracking-wide text-muted-foreground",
+            dragListeners && s.dragHandle
+          )}
+          aria-label={`Drag to reorder slot ${idx + 1}`}
+        >
           {String(idx + 1).padStart(2, "0")}
         </span>
         <button

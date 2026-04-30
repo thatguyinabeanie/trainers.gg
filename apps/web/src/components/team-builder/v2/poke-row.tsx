@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { ChevronDown, X } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
+} from "@dnd-kit/core";
 
 import { getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/supabase";
@@ -18,6 +24,7 @@ import { Sprite } from "./sprite";
 import { TypePill } from "./type-pill";
 import { ActiveRow } from "./lanes/active-row";
 import { SpeciesPicker } from "./pickers/species-picker";
+import s from "./builder.module.css";
 
 // =============================================================================
 // Types
@@ -25,6 +32,9 @@ import { SpeciesPicker } from "./pickers/species-picker";
 
 interface PokeRowProps {
   idx: number;
+  /** Stable ID used by dnd-kit for sorting. Pass `pokemon.id` for filled slots
+   *  or a stable placeholder like `"__empty__0"` for empty slots. */
+  sortableId: string;
   pokemon: Tables<"pokemon"> | null;
   isActive: boolean;
   density: "comfy" | "compact";
@@ -139,6 +149,9 @@ interface CollapsedRowProps {
   onActivate: (idx: number) => void;
   onRemove?: (idx: number) => void;
   slotErrors: ValidationError[];
+  dragAttributes?: DraggableAttributes;
+  dragListeners?: DraggableSyntheticListeners;
+  isDragging?: boolean;
 }
 
 function CollapsedRow({
@@ -148,6 +161,9 @@ function CollapsedRow({
   onActivate,
   onRemove,
   slotErrors,
+  dragAttributes,
+  dragListeners,
+  isDragging = false,
 }: CollapsedRowProps) {
   const types = getSpeciesTypes(pokemon.species ?? "");
   const moves = [
@@ -164,11 +180,34 @@ function CollapsedRow({
     <div
       className={cn(
         "group flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3 transition-colors hover:bg-muted/30",
-        density === "comfy" ? "py-2" : "py-1.5"
+        density === "comfy" ? "py-2" : "py-1.5",
+        isDragging && s.rowDragging
       )}
     >
-      {/* Slot rib with error/warning dot */}
-      <SlotRib idx={idx} hasError={hasError} hasWarning={hasWarning} />
+      {/* Slot rib — drag handle when filled */}
+      <span
+        {...dragAttributes}
+        {...dragListeners}
+        className={cn(
+          "relative w-7 shrink-0 font-mono text-xs font-medium text-muted-foreground",
+          dragListeners && s.dragHandle
+        )}
+        aria-label={dragListeners ? `Drag to reorder slot ${idx + 1}` : undefined}
+      >
+        {String(idx + 1).padStart(2, "0")}
+        {hasError && (
+          <span
+            className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-destructive"
+            aria-label="Has validation errors"
+          />
+        )}
+        {!hasError && hasWarning && (
+          <span
+            className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-amber-500"
+            aria-label="Has validation warnings"
+          />
+        )}
+      </span>
 
       {/* Sprite + species */}
       <button
@@ -256,6 +295,9 @@ interface ActiveRowShellProps {
   format: GameFormat | undefined;
   onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
   slotErrors: ValidationError[];
+  dragAttributes?: DraggableAttributes;
+  dragListeners?: DraggableSyntheticListeners;
+  isDragging?: boolean;
 }
 
 function ActiveRowShell({
@@ -266,6 +308,9 @@ function ActiveRowShell({
   format,
   onPokemonUpdate,
   slotErrors,
+  dragAttributes,
+  dragListeners,
+  isDragging = false,
 }: ActiveRowShellProps) {
   return (
     <div className="overflow-x-hidden rounded-lg">
@@ -277,6 +322,9 @@ function ActiveRowShell({
         onUpdate={(fields) => onPokemonUpdate?.(pokemon.id, fields)}
         onRemove={() => onRemove?.(idx)}
         fieldErrors={slotErrors}
+        dragAttributes={dragAttributes}
+        dragListeners={dragListeners}
+        isDragging={isDragging}
       />
     </div>
   );
@@ -291,9 +339,11 @@ function ActiveRowShell({
  * Phase 1: empty state and collapsed state.
  * Phase 2: active/expanded state with full lane editor.
  * Phase 7: shows error/warning dot on slot rib; passes field errors to active row.
+ * Phase 8: drag-and-drop reordering via dnd-kit. Empty slots are non-draggable.
  */
 export function PokeRow({
   idx,
+  sortableId,
   pokemon,
   isActive,
   density,
@@ -306,9 +356,32 @@ export function PokeRow({
   onPokemonUpdate,
   slotErrors = [],
 }: PokeRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: sortableId,
+    // Empty slots must not be draggable — they have no pokemon to reorder.
+    disabled: pokemon === null,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
   if (!pokemon) {
+    // Empty slot — sortable ref still attached so it can act as a drop target,
+    // but drag is disabled so it won't be picked up.
     return (
-      <EmptyRow idx={idx} density={density} format={format} onAdd={onAdd} />
+      <div ref={setNodeRef} style={style}>
+        <EmptyRow idx={idx} density={density} format={format} onAdd={onAdd} />
+      </div>
     );
   }
 
@@ -316,26 +389,36 @@ export function PokeRow({
 
   if (showExpanded) {
     return (
-      <ActiveRowShell
-        idx={idx}
-        pokemon={pokemon}
-        onRemove={onRemove}
-        teamPokemon={teamPokemon ?? []}
-        format={format}
-        onPokemonUpdate={onPokemonUpdate}
-        slotErrors={slotErrors}
-      />
+      <div ref={setNodeRef} style={style}>
+        <ActiveRowShell
+          idx={idx}
+          pokemon={pokemon}
+          onRemove={onRemove}
+          teamPokemon={teamPokemon ?? []}
+          format={format}
+          onPokemonUpdate={onPokemonUpdate}
+          slotErrors={slotErrors}
+          dragAttributes={attributes}
+          dragListeners={listeners}
+          isDragging={isDragging}
+        />
+      </div>
     );
   }
 
   return (
-    <CollapsedRow
-      idx={idx}
-      pokemon={pokemon}
-      density={density}
-      onActivate={onActivate}
-      onRemove={onRemove}
-      slotErrors={slotErrors}
-    />
+    <div ref={setNodeRef} style={style}>
+      <CollapsedRow
+        idx={idx}
+        pokemon={pokemon}
+        density={density}
+        onActivate={onActivate}
+        onRemove={onRemove}
+        slotErrors={slotErrors}
+        dragAttributes={attributes}
+        dragListeners={listeners}
+        isDragging={isDragging}
+      />
+    </div>
   );
 }

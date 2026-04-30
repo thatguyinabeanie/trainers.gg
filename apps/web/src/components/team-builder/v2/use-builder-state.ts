@@ -48,6 +48,8 @@ interface BuilderState {
   setDrawer: (drawer: DrawerKey) => void;
   panelHeightPct: number;
   setPanelHeightPct: (n: number) => void;
+  calcDrawerWidth: number;
+  setCalcDrawerWidth: (n: number) => void;
   field: FieldState;
   setField: (field: FieldState) => void;
   defenderOverrides: DefenderOverrides;
@@ -67,6 +69,17 @@ const MAX_PANEL_HEIGHT_PCT = 80;
 function clampPanelHeight(n: number): number {
   if (Number.isNaN(n)) return DEFAULT_PANEL_HEIGHT_PCT;
   return Math.min(MAX_PANEL_HEIGHT_PCT, Math.max(MIN_PANEL_HEIGHT_PCT, n));
+}
+
+const CALC_DRAWER_WIDTH_STORAGE_KEY = "trainersgg.builder.calcDrawerWidth.v1";
+
+const DEFAULT_CALC_DRAWER_WIDTH = 380;
+const MIN_CALC_DRAWER_WIDTH = 320;
+const MAX_CALC_DRAWER_WIDTH = 640;
+
+function clampCalcDrawerWidth(n: number): number {
+  if (Number.isNaN(n)) return DEFAULT_CALC_DRAWER_WIDTH;
+  return Math.min(MAX_CALC_DRAWER_WIDTH, Math.max(MIN_CALC_DRAWER_WIDTH, n));
 }
 
 const DEFAULT_FIELD: FieldState = {
@@ -109,6 +122,18 @@ export function useBuilderState(): BuilderState {
     }
     return DEFAULT_PANEL_HEIGHT_PCT;
   });
+  const [calcDrawerWidth, setCalcDrawerWidthState] = useState<number>(() => {
+    if (typeof window === "undefined") return DEFAULT_CALC_DRAWER_WIDTH;
+    try {
+      const stored = localStorage.getItem(CALC_DRAWER_WIDTH_STORAGE_KEY);
+      if (stored !== null) {
+        return clampCalcDrawerWidth(parseInt(stored, 10));
+      }
+    } catch {
+      // localStorage unavailable — use default
+    }
+    return DEFAULT_CALC_DRAWER_WIDTH;
+  });
   const [field, setField] = useState<FieldState>(DEFAULT_FIELD);
   const [defenderOverrides, setDefenderOverrides] = useState<DefenderOverrides>(
     {}
@@ -123,6 +148,16 @@ export function useBuilderState(): BuilderState {
     }
   }
 
+  function setCalcDrawerWidth(n: number) {
+    const clamped = clampCalcDrawerWidth(n);
+    setCalcDrawerWidthState(clamped);
+    try {
+      localStorage.setItem(CALC_DRAWER_WIDTH_STORAGE_KEY, String(clamped));
+    } catch {
+      // Storage write failure is non-fatal — width just won't persist
+    }
+  }
+
   return {
     activeIdx,
     setActiveIdx,
@@ -132,6 +167,8 @@ export function useBuilderState(): BuilderState {
     setDrawer,
     panelHeightPct,
     setPanelHeightPct,
+    calcDrawerWidth,
+    setCalcDrawerWidth,
     field,
     setField,
     defenderOverrides,

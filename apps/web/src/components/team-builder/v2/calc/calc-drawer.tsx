@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef } from "react";
+
 import { type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 
@@ -10,11 +12,15 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 import { useCalcStateContext } from "./calc-state-context";
 import { CalcDefenderBlock } from "./calc-defender-block";
 import { CalcFieldBlock } from "./calc-field-block";
 import { CalcResultsBlock } from "./calc-results-block";
+
+const MIN_WIDTH = 320;
+const MAX_WIDTH = 640;
 
 interface CalcDrawerProps {
   open: boolean;
@@ -22,6 +28,8 @@ interface CalcDrawerProps {
   team: TeamWithPokemon;
   format: GameFormat | undefined;
   onClose: () => void;
+  calcDrawerWidth: number;
+  setCalcDrawerWidth: (n: number) => void;
 }
 
 // =============================================================================
@@ -39,8 +47,14 @@ export function CalcDrawer({
   team,
   format,
   onClose,
+  calcDrawerWidth,
+  setCalcDrawerWidth,
 }: CalcDrawerProps) {
   const isMobile = useIsMobile();
+
+  // Drag state — stored in refs so pointer events don't trigger re-renders
+  const dragInitialX = useRef<number>(0);
+  const dragInitialWidth = useRef<number>(0);
 
   if (!open) return null;
 
@@ -93,7 +107,63 @@ export function CalcDrawer({
   }
 
   return (
-    <aside className="cd-drawer" aria-label="Damage Calc">
+    <aside
+      className="cd-drawer"
+      aria-label="Damage Calc"
+      style={{ width: `${calcDrawerWidth}px` }}
+    >
+      {/* Drag-resize handle — left edge, desktop only */}
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-valuemin={MIN_WIDTH}
+        aria-valuemax={MAX_WIDTH}
+        aria-valuenow={calcDrawerWidth}
+        tabIndex={0}
+        className={cn(
+          "cd-resizer",
+          "absolute top-0 bottom-0 left-0 w-1 cursor-col-resize",
+          "hover:bg-primary/40 focus-visible:bg-primary/40",
+          "pointer-events-auto touch-none outline-none"
+        )}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          dragInitialX.current = e.clientX;
+          dragInitialWidth.current = calcDrawerWidth;
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={(e) => {
+          if (!(e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId))
+            return;
+          // Handle is on the LEFT edge — drag left grows, drag right shrinks
+          const delta = e.clientX - dragInitialX.current;
+          const next = Math.min(
+            MAX_WIDTH,
+            Math.max(MIN_WIDTH, dragInitialWidth.current - delta)
+          );
+          setCalcDrawerWidth(next);
+        }}
+        onPointerUp={(e) => {
+          (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight") {
+            // Right grows the drawer (handle on left edge, growing = more space)
+            setCalcDrawerWidth(
+              Math.min(MAX_WIDTH, calcDrawerWidth + 10)
+            );
+          } else if (e.key === "ArrowLeft") {
+            setCalcDrawerWidth(
+              Math.max(MIN_WIDTH, calcDrawerWidth - 10)
+            );
+          } else if (e.key === "Home") {
+            setCalcDrawerWidth(MIN_WIDTH);
+          } else if (e.key === "End") {
+            setCalcDrawerWidth(MAX_WIDTH);
+          }
+        }}
+      />
+
       {/* Header */}
       <header className="cd-head">
         <div className="cd-head-l">
