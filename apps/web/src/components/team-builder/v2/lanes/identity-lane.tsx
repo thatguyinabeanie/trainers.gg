@@ -169,9 +169,36 @@ export function IdentityLane({
     <Popover open={speciesOpen} onOpenChange={setSpeciesOpen}>
     <div className="flex min-w-0 gap-3 p-3">
       {/* ── Sprite column ─────────────────────────────────────────── */}
-        <div className="flex shrink-0 flex-col items-center justify-center gap-1 self-center">
-          {/* "Pokemon" eyebrow label, centered above the sprite */}
-          <span className={s.formLabel}>Pokemon</span>
+        <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
+          {/* Species pill — typeable control above the sprite */}
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
+                aria-label={`Change species (${pokemon.species ?? "none"})`}
+                className={cn(
+                  "border-border bg-background hover:border-primary focus-visible:border-primary",
+                  "flex w-36 items-center gap-1 rounded-md border px-2 py-1.5 text-left text-xs",
+                  "outline-none transition-colors sm:w-40 md:w-44"
+                )}
+              />
+            }
+          >
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate",
+                pokemon.species
+                  ? "text-foreground font-medium"
+                  : "text-muted-foreground"
+              )}
+              title={pokemon.species ?? undefined}
+            >
+              {pokemon.species ?? "Choose species…"}
+            </span>
+            <span aria-hidden className="text-muted-foreground text-[9px]">
+              ▾
+            </span>
+          </PopoverTrigger>
 
           {/* Sprite — 144×144, click to open species picker */}
           <PopoverTrigger
@@ -234,40 +261,10 @@ export function IdentityLane({
         </PopoverContent>
 
       {/* ── Form column ───────────────────────────────────────────── */}
-      <div className="flex min-w-0 w-56 shrink-0 flex-col justify-center gap-0.5">
+      <div className="flex min-w-0 w-64 shrink-0 flex-col justify-center gap-0.5">
 
-        {/* BANNER — species pill + nickname + chips */}
+        {/* BANNER — nickname + chips rows */}
         <div className={s.idBanner}>
-          {/* Row 0: Species pill — typeable control that opens the picker */}
-          <PopoverTrigger
-            render={
-              <button
-                type="button"
-                aria-label={`Change species (${pokemon.species ?? "none"})`}
-                className={cn(
-                  "border-border bg-background hover:border-primary focus-visible:border-primary",
-                  "flex w-full items-center gap-1 rounded-md border px-2 py-1.5 text-left text-xs",
-                  "outline-none transition-colors"
-                )}
-              />
-            }
-          >
-            <span
-              className={cn(
-                "min-w-0 flex-1 truncate",
-                pokemon.species
-                  ? "text-foreground font-medium"
-                  : "text-muted-foreground"
-              )}
-              title={pokemon.species ?? undefined}
-            >
-              {pokemon.species ?? "Choose species…"}
-            </span>
-            <span aria-hidden className="text-muted-foreground text-[9px]">
-              ▾
-            </span>
-          </PopoverTrigger>
-
           {/* Row 1: Nickname input */}
           <div className="flex flex-col">
             <input
@@ -467,7 +464,7 @@ export function IdentityLane({
               }
             >
               <span className={s.formLabel}>Nat</span>
-              <span className="flex flex-col leading-tight">
+              <span className="flex min-w-0 items-baseline gap-1.5">
                 <span
                   className={cn(
                     "text-foreground text-[11.5px]",
@@ -477,9 +474,8 @@ export function IdentityLane({
                   {pokemon.nature || "—"}
                 </span>
                 {natUp && natDown && (
-                  <span className="text-muted-foreground font-mono text-[9px] leading-tight">
-                    +{STAT_SHORT[natUp] ?? natUp} / −
-                    {STAT_SHORT[natDown] ?? natDown}
+                  <span className="text-muted-foreground font-mono text-[9px] whitespace-nowrap">
+                    +{STAT_SHORT[natUp] ?? natUp}/−{STAT_SHORT[natDown] ?? natDown}
                   </span>
                 )}
               </span>
