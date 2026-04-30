@@ -49,3 +49,12 @@ export function formatSupportsZMoves(format: GameFormat | undefined): boolean {
 export function formatSupportsIvs(format: GameFormat | undefined): boolean {
   return !!format && !isChampionsFormat(format);
 }
+
+/**
+ * Returns true when the Level field should be shown in the identity form.
+ * Champions formats always play at Lv 50, so exposing a level picker is
+ * confusing and unnecessary — hide it there, show it everywhere else.
+ */
+export function formatSupportsLevel(format: GameFormat | undefined): boolean {
+  return !isChampionsFormat(format);
+}

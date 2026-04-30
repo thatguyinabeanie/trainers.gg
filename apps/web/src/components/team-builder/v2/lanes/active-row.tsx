@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { type ValidationError } from "../../validation-hooks";
 import s from "../builder.module.css";
 import { IdentityLane } from "./identity-lane";
-import { SetupLane } from "./setup-lane";
 import { MovesLane } from "./moves-lane";
 import { StatsLane } from "./stats-lane";
 
@@ -47,8 +46,8 @@ function errorsForFields(
 
 /**
  * Full expanded row for the active/selected Pokémon slot.
- * Composes the 5 lanes: RIB | IDENTITY | SETUP | MOVES | STATS | META.
- * Phase 7: passes field-scoped errors to each lane for inline display.
+ * Composes the lanes: RIB | IDENTITY+LOADOUT | MOVES | STATS.
+ * Identity lane now includes all loadout fields (item, ability, nature, tera).
  */
 export function ActiveRow({
   idx,
@@ -65,11 +64,9 @@ export function ActiveRow({
     .map((tp) => tp.pokemon!.held_item)
     .filter((item): item is string => item !== null);
 
-  // Partition errors to the appropriate lane
+  // Identity lane receives both identity and loadout errors
   const identityErrors = errorsForFields(fieldErrors, [
     "species", "nickname", "gender", "level",
-  ]);
-  const setupErrors = errorsForFields(fieldErrors, [
     "item", "heldItem", "ability", "nature", "tera_type",
   ]);
   const movesErrors = errorsForFields(fieldErrors, [
@@ -108,21 +105,13 @@ export function ActiveRow({
         </button>
       </div>
 
-      {/* IDENTITY lane */}
+      {/* IDENTITY + LOADOUT lane */}
       <IdentityLane
-        pokemon={pokemon}
-        format={format}
-        onUpdate={onUpdate}
-        fieldErrors={identityErrors}
-      />
-
-      {/* SETUP lane */}
-      <SetupLane
         pokemon={pokemon}
         format={format}
         teamItems={teamItems}
         onUpdate={onUpdate}
-        fieldErrors={setupErrors}
+        fieldErrors={identityErrors}
       />
 
       {/* MOVES lane */}

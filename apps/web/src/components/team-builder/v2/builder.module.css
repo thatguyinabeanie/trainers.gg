@@ -1453,6 +1453,64 @@
   text-align: center;
 }
 
+/* ============================================================
+   Identity + Loadout merged form-sheet layout
+   ============================================================ */
+
+/* Banner: nickname row + chips row, separated from form rows below */
+.idBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+/* Loadout form row — label on the left, value on the right */
+.formRow {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+  transition: background 0.1s;
+}
+
+.formRow:hover {
+  background: var(--muted);
+}
+
+/* Uppercase muted label in the left column */
+.formLabel {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+/* Value span — right column of the form row */
+.formValue {
+  font-size: 11.5px;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
 /* Stat cell — one per stat in the 6-col grid */
 .stcell {
   display: flex;
