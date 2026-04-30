@@ -474,8 +474,14 @@ export function IdentityLane({
                   {pokemon.nature || "—"}
                 </span>
                 {natUp && natDown && (
-                  <span className="text-muted-foreground font-mono text-[9px] whitespace-nowrap">
-                    +{STAT_SHORT[natUp] ?? natUp}/−{STAT_SHORT[natDown] ?? natDown}
+                  <span className="font-mono text-[9px] whitespace-nowrap">
+                    <span className="text-emerald-600 dark:text-emerald-400">
+                      +{STAT_SHORT[natUp] ?? natUp}
+                    </span>
+                    <span className="text-muted-foreground">/</span>
+                    <span className="text-rose-600 dark:text-rose-400">
+                      −{STAT_SHORT[natDown] ?? natDown}
+                    </span>
                   </span>
                 )}
               </span>
