@@ -81,24 +81,85 @@
   gap: 8px;
 }
 
-.builderPanels {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  padding: 0 12px 12px;
-}
-
-/* Two-column on wide viewports — better use of horizontal space */
-@media (min-width: 1280px) {
-  .builderPanels {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
-}
-
 /* ============================================================
-   Inline analytics panels — sit below .builderRows inside .builderGrid
+   Inline analytics panel — Type matchups / Speed tiers
+   Renders inline in the worklane scroll area, between the rows and the
+   pinned dock bar. Not an overlay — content joins the document flow so
+   the rows can scroll up to make room for it.
    ============================================================ */
+
+.inlinePanel {
+  display: flex;
+  flex-direction: column;
+  margin: 0 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  overflow: hidden;
+}
+
+.inlinePanelHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.inlinePanelHeadL {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inlinePanelEyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.inlinePanelTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.inlinePanelSub {
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+
+.inlinePanelClose {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.inlinePanelClose:hover {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.inlinePanelBody {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 
 .heatmap {
   display: flex;

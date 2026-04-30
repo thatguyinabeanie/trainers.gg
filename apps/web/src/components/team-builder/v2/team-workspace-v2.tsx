@@ -29,7 +29,7 @@ import { ImportDialog } from "../import-dialog";
 import { useTeamValidation } from "../validation-hooks";
 import { CalcDrawer } from "./calc/calc-drawer";
 import { CalcStateProvider } from "./calc/calc-state-context";
-import { CollapsiblePanel } from "./dock/collapsible-panel";
+import { Dockbar } from "./dock/dockbar";
 import { HeatmapPanel } from "./dock/heatmap-panel";
 import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
 import { SpeciesPicker } from "./pickers/species-picker";
@@ -271,30 +271,64 @@ export function TeamWorkspaceV2({
                 })}
               </section>
 
-              <section className={s.builderPanels}>
-                <CollapsiblePanel
-                  eyebrow="DEFENSIVE"
-                  title="Type matchups"
-                  subtitle="18 attacking types × your 6 slots"
-                  defaultOpen
-                >
-                  <HeatmapPanel team={optimisticTeamPokemon} format={format} />
-                </CollapsiblePanel>
-
-                <CollapsiblePanel
-                  eyebrow="SPEED"
-                  title="Speed tiers"
-                  subtitle="Your team vs the format · all values @ Lv 50"
-                  defaultOpen
-                >
-                  <SpeedTiersPanel
-                    team={optimisticTeamPokemon}
-                    activeIdx={state.activeIdx}
-                    format={format}
-                  />
-                </CollapsiblePanel>
-              </section>
+              {/* Inline analytics panel — opens above the dock when a pill is
+                  active. Renders in the document flow so the rows + panel scroll
+                  together; no overlay, no backdrop. */}
+              {state.drawer !== null && (
+                <section className={s.inlinePanel}>
+                  <header className={s.inlinePanelHead}>
+                    <div className={s.inlinePanelHeadL}>
+                      <span className={s.inlinePanelEyebrow}>
+                        {state.drawer === "matchups" ? "DEFENSIVE" : "SPEED"}
+                      </span>
+                      <span className={s.inlinePanelTitle}>
+                        {state.drawer === "matchups"
+                          ? "Defensive type coverage"
+                          : "Speed tier ladder"}
+                      </span>
+                      <span className={s.inlinePanelSub}>
+                        {state.drawer === "matchups"
+                          ? "18 attacking types × your 6 slots"
+                          : "Your team vs the format · all values @ Lv 50"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => state.setDrawer(null)}
+                      aria-label="Close panel"
+                      title="Close panel"
+                      className={s.inlinePanelClose}
+                    >
+                      ×
+                    </button>
+                  </header>
+                  <div className={s.inlinePanelBody}>
+                    {state.drawer === "matchups" && (
+                      <HeatmapPanel
+                        team={optimisticTeamPokemon}
+                        format={format}
+                      />
+                    )}
+                    {state.drawer === "speed" && (
+                      <SpeedTiersPanel
+                        team={optimisticTeamPokemon}
+                        activeIdx={state.activeIdx}
+                        format={format}
+                      />
+                    )}
+                  </div>
+                </section>
+              )}
             </main>
+
+            <Dockbar
+              drawer={state.drawer}
+              onOpen={(key) =>
+                state.setDrawer(state.drawer === key ? null : key)
+              }
+              team={optimisticTeamPokemon}
+              format={format}
+            />
           </div>
 
           {tweaks.showCalc && state.calcOpen && (

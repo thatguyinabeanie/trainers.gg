@@ -46,11 +46,15 @@ export interface Tweaks {
   showCalc: boolean;
 }
 
+type DrawerKey = "matchups" | "speed" | null;
+
 interface BuilderState {
   activeIdx: number;
   setActiveIdx: (idx: number) => void;
   calcOpen: boolean;
   setCalcOpen: (updater: boolean | ((prev: boolean) => boolean)) => void;
+  drawer: DrawerKey;
+  setDrawer: (drawer: DrawerKey) => void;
   field: FieldState;
   setField: (field: FieldState) => void;
   defenderOverrides: DefenderOverrides;
@@ -98,6 +102,7 @@ const DEFAULT_FIELD: FieldState = {
 export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
   const [calcOpen, setCalcOpen] = useState(true);
+  const [drawer, setDrawer] = useState<DrawerKey>(null);
   const [field, setField] = useState<FieldState>(DEFAULT_FIELD);
   const [defenderOverrides, setDefenderOverrides] = useState<DefenderOverrides>(
     {}
@@ -136,6 +141,8 @@ export function useBuilderState(): BuilderState {
     setActiveIdx,
     calcOpen,
     setCalcOpen,
+    drawer,
+    setDrawer,
     field,
     setField,
     defenderOverrides,
