@@ -77,14 +77,14 @@ export function MovePicker({
   const rowVirtualizer = useVirtualizer({
     count: filteredMoves.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 64,
+    estimateSize: () => 72,
     overscan: 5,
   });
 
   const categories: CategoryFilter[] = ["All", "Physical", "Special", "Status"];
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-[460px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
+    <div className="bg-popover text-popover-foreground flex w-[580px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -130,7 +130,7 @@ export function MovePicker({
       </div>
 
       {/* Move list — virtualized */}
-      <div ref={scrollRef} className="max-h-72 overflow-y-auto p-1">
+      <div ref={scrollRef} className="max-h-[480px] overflow-y-auto p-1">
         {filteredMoves.length === 0 ? (
           <p className="text-muted-foreground py-4 text-center text-sm">
             No moves found
