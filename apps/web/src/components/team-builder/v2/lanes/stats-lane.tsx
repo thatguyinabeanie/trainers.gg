@@ -400,6 +400,7 @@ function StatRow({
 
       {/* Col 5: Slider with optional breakpoint ticks */}
       <div className={s.spreadSliderWrap}>
+        <div className={s.spreadSliderTrack} aria-hidden />
         <input
           type="range"
           min={0}
