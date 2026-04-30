@@ -144,9 +144,10 @@ export function MovePicker({
     : getLearnableMoves(species);
 
   // Apply search + type + category filters.
-  // Search matches the move name, its shortDesc, and its type so the user
-  // can find e.g. "burn", "priority", "drain", or "fire" without remembering
-  // a specific move name.
+  // Search matches the move name, its shortDesc, type, and category so the
+  // user can find moves by effect ("burn", "priority", "drain"), by type
+  // ("fire"), or by category ("physical", "status") without remembering a
+  // specific move name.
   const lower = search.toLowerCase();
   const rows: MoveRow[] = [];
   for (const name of allMoves) {
@@ -157,7 +158,8 @@ export function MovePicker({
       const matches =
         name.toLowerCase().includes(lower) ||
         data?.shortDesc?.toLowerCase().includes(lower) ||
-        data?.type?.toLowerCase().includes(lower);
+        data?.type?.toLowerCase().includes(lower) ||
+        data?.category?.toLowerCase().includes(lower);
       if (!matches) continue;
     }
     rows.push({ name, data });
@@ -220,7 +222,7 @@ export function MovePicker({
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by name, effect, or type…"
+        placeholder="Search by name, effect, type, or category…"
         className="bg-muted/40 border-b px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus:bg-card"
       />
 
