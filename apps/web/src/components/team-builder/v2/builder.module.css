@@ -909,8 +909,8 @@
     auto              /* Acc */
     minmax(0, 1fr);   /* description OR calc pill */
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
+  gap: 14px;
+  padding: 7px 12px;
   background: var(--card);
   border: 1px solid transparent;
   border-radius: 6px;
