@@ -470,17 +470,20 @@ export function IdentityLane({
               }
             >
               <span className={s.formLabel}>Nat</span>
-              <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-                <span
-                  className={cn(
-                    s.formValue,
-                    !pokemon.nature && "text-muted-foreground/50 italic"
-                  )}
-                >
-                  {pokemon.nature || "—"}
-                </span>
+              <span
+                className={cn(
+                  s.formValue,
+                  !pokemon.nature && "text-muted-foreground/50 italic"
+                )}
+                title={
+                  natUp && natDown
+                    ? `+${STAT_SHORT[natUp] ?? natUp} / -${STAT_SHORT[natDown] ?? natDown}`
+                    : undefined
+                }
+              >
+                {pokemon.nature || "—"}
                 {natUp && natDown && (
-                  <span className="text-muted-foreground font-mono text-[8.5px] tracking-wide shrink-0">
+                  <span className="text-muted-foreground ml-1 font-mono text-[9px] tracking-wide">
                     +{STAT_SHORT[natUp] ?? natUp}/−{STAT_SHORT[natDown] ?? natDown}
                   </span>
                 )}
