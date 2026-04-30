@@ -891,8 +891,13 @@
   background: var(--muted);
 }
 
-/* Move tile row */
-.mvline {
+/* Move tile row — :global() because lanes/moves-lane.tsx references it as a
+   plain string class via cn("mvline", ...) rather than via the CSS-module
+   `s.mvline` import. Without :global() this rule was hashed and never
+   applied, leaving the button at default inline-block layout — which made
+   the inner mvline-calc (display: flex / block-level) wrap onto a new line
+   below the move name. */
+:global(.mvline) {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -921,7 +926,7 @@
   flex-shrink: 0;
 }
 
-.mvline:hover {
+:global(.mvline):hover {
   border-color: var(--border);
   background: var(--muted);
 }

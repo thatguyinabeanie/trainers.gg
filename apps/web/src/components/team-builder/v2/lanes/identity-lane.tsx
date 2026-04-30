@@ -97,9 +97,17 @@ export function IdentityLane({
 
   function handleNickBlur() {
     const trimmed = nickDraft.trim();
-    const next = trimmed === "" ? null : trimmed;
+    // Treat "empty" OR "matches species" as "no nickname" so the displayed
+    // name falls back to the species without storing a redundant override.
+    const next =
+      trimmed === "" || trimmed === pokemon.species ? null : trimmed;
     if (next !== pokemon.nickname) {
       onUpdate({ nickname: next });
+      // Reflect the canonical state in the input — e.g. if the user typed the
+      // species name, snap the field back to empty so future edits start clean.
+      if (next === null && nickDraft !== "") {
+        setNickDraft("");
+      }
     }
   }
 
@@ -143,10 +151,14 @@ export function IdentityLane({
             placeholder={pokemon.species ?? "Nickname"}
             maxLength={24}
             aria-label="Nickname"
+            // When no nickname is set, the input is empty and the placeholder
+            // shows the species in foreground color (bold) — same look as a
+            // typed nickname. User can click in and start typing to override;
+            // clearing back to empty (or matching species) saves nickname=null.
             className={cn(
               "bg-transparent w-full min-w-0 truncate text-sm font-bold outline-none",
-              "border-b border-transparent placeholder:text-muted-foreground/50",
-              "hover:border-border focus:border-primary",
+              "border-b border-transparent placeholder:text-foreground placeholder:font-bold",
+              "hover:border-border focus:border-primary focus:placeholder:text-muted-foreground/40",
               "leading-snug",
               nicknameErrors.length > 0 && "border-destructive focus:border-destructive"
             )}
