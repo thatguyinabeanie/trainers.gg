@@ -11,6 +11,7 @@ import {
   getMoveData,
   type GameFormat,
 } from "@trainers/pokemon";
+import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
 import {
@@ -20,7 +21,6 @@ import {
 } from "@/components/ui/popover";
 
 import { CATEGORY_ICON_URLS } from "../../move-category-ui";
-import { TYPE_BG_COLORS } from "../../type-colors";
 
 // =============================================================================
 // Types
@@ -57,14 +57,6 @@ function categoryLetter(cat: string | undefined): string {
   if (cat === "Special") return "S";
   if (cat === "Status") return "St";
   return "—";
-}
-
-function typePillClass(type: string | undefined): string {
-  if (!type) return "bg-muted text-foreground";
-  return (
-    TYPE_BG_COLORS[type as keyof typeof TYPE_BG_COLORS] ??
-    "bg-muted text-foreground"
-  );
 }
 
 function sortMoves(rows: MoveRow[], sort: SortState): MoveRow[] {
@@ -151,14 +143,23 @@ export function MovePicker({
       ).sort()
     : getLearnableMoves(species);
 
-  // Apply search + type + category filters
+  // Apply search + type + category filters.
+  // Search matches the move name, its shortDesc, and its type so the user
+  // can find e.g. "burn", "priority", "drain", or "fire" without remembering
+  // a specific move name.
   const lower = search.toLowerCase();
   const rows: MoveRow[] = [];
   for (const name of allMoves) {
-    if (lower && !name.toLowerCase().includes(lower)) continue;
     const data = getMoveData(name);
     if (typeFilter && data?.type !== typeFilter) continue;
     if (categoryFilter && data?.category !== categoryFilter) continue;
+    if (lower) {
+      const matches =
+        name.toLowerCase().includes(lower) ||
+        data?.shortDesc?.toLowerCase().includes(lower) ||
+        data?.type?.toLowerCase().includes(lower);
+      if (!matches) continue;
+    }
     rows.push({ name, data });
   }
 
@@ -167,7 +168,7 @@ export function MovePicker({
   const rowVirtualizer = useVirtualizer({
     count: sorted.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 64,
+    estimateSize: () => 48,
     overscan: 5,
   });
 
@@ -186,16 +187,18 @@ export function MovePicker({
     );
   }
 
-  // Shared row grid: name+desc | type | cat | bp | acc
-  // 1fr     — name + description
-  // 5rem    — type pill (fits "ELECTRIC", "FIGHTING")
-  // 2.5rem  — category letter
-  // 2.5rem  — bp
-  // 3rem    — accuracy
-  const ROW_GRID = "grid-cols-[minmax(0,1fr)_5rem_2.5rem_2.5rem_3rem]";
+  // Shared row grid: name | description | type | cat | bp | acc
+  // 9rem        — name (fits up to ~22 chars; truncates beyond)
+  // minmax(0,1fr) — description (truncates with title tooltip)
+  // 5rem        — type pill (fits "ELECTRIC", "FIGHTING")
+  // 2.5rem      — category icon
+  // 2.5rem      — bp
+  // 3rem        — accuracy
+  const ROW_GRID =
+    "grid-cols-[9rem_minmax(0,1fr)_5rem_2.5rem_2.5rem_3rem]";
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-[720px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
+    <div className="bg-popover text-popover-foreground flex w-[820px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -233,13 +236,19 @@ export function MovePicker({
           {/* Name column */}
           <button
             type="button"
-            className={cn(headerBtnClass("name"), "text-left")}
+            className={cn(
+              headerBtnClass("name"),
+              "flex items-center justify-start gap-0.5"
+            )}
             onClick={() => handleSort("name")}
             aria-label="Sort by name"
           >
             Name
             <SortArrow active={sort.col === "name"} dir={sort.dir} />
           </button>
+
+          {/* Description column — not sortable */}
+          <span className="text-muted-foreground text-left">Effect</span>
 
           {/* Type column — header doubles as a filter dropdown trigger */}
           <Popover open={typeOpen} onOpenChange={setTypeOpen}>
@@ -291,12 +300,18 @@ export function MovePicker({
                       setTypeOpen(false);
                     }}
                     className={cn(
-                      "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-tight",
-                      typePillClass(t),
-                      typeFilter === t && "ring-2 ring-primary ring-offset-1"
+                      "flex items-center justify-center rounded p-1",
+                      typeFilter === t && "ring-2 ring-primary"
                     )}
+                    aria-label={t}
                   >
-                    {t}
+                    <img
+                      src={getShowdownTypeIconUrl(t)}
+                      alt={t}
+                      width={32}
+                      height={14}
+                      className="h-6 w-auto [image-rendering:pixelated]"
+                    />
                   </button>
                 ))}
               </div>
@@ -371,7 +386,10 @@ export function MovePicker({
           {/* BP column */}
           <button
             type="button"
-            className={cn(headerBtnClass("bp"), "text-right")}
+            className={cn(
+              headerBtnClass("bp"),
+              "flex items-center justify-end gap-0.5"
+            )}
             onClick={() => handleSort("bp")}
             aria-label="Sort by base power"
           >
@@ -382,7 +400,10 @@ export function MovePicker({
           {/* Accuracy column */}
           <button
             type="button"
-            className={cn(headerBtnClass("acc"), "text-right")}
+            className={cn(
+              headerBtnClass("acc"),
+              "flex items-center justify-end gap-0.5"
+            )}
             onClick={() => handleSort("acc")}
             aria-label="Sort by accuracy"
           >
@@ -428,29 +449,38 @@ export function MovePicker({
                       ROW_GRID
                     )}
                   >
-                    {/* Name + secondary effect — vertical stack */}
-                    <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="truncate text-sm font-medium">
-                        {moveName}
-                      </span>
-                      {move?.shortDesc &&
-                        move.shortDesc !== "No additional effect." && (
-                          <span className="text-muted-foreground line-clamp-2 text-[11px] leading-tight">
-                            {move.shortDesc}
-                          </span>
-                        )}
+                    {/* Name */}
+                    <span
+                      className="min-w-0 truncate text-sm font-medium"
+                      title={moveName}
+                    >
+                      {moveName}
                     </span>
 
-                    {/* Type pill */}
+                    {/* Description (effect) */}
+                    <span
+                      className="text-muted-foreground min-w-0 truncate text-xs"
+                      title={move?.shortDesc ?? undefined}
+                    >
+                      {move?.shortDesc &&
+                      move.shortDesc !== "No additional effect."
+                        ? move.shortDesc
+                        : ""}
+                    </span>
+
+                    {/* Type pill — Showdown retro sprite */}
                     <span className="flex justify-center">
-                      <span
-                        className={cn(
-                          "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-tight",
-                          typePillClass(move?.type)
-                        )}
-                      >
-                        {move?.type ?? "—"}
-                      </span>
+                      {move?.type ? (
+                        <img
+                          src={getShowdownTypeIconUrl(move.type)}
+                          alt={move.type}
+                          width={32}
+                          height={14}
+                          className="h-6 w-auto [image-rendering:pixelated]"
+                        />
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
                     </span>
 
                     {/* Category icon — orange burst (Physical), blue swirl (Special), grey oval (Status) */}
@@ -461,7 +491,7 @@ export function MovePicker({
                           alt={move.category}
                           width={32}
                           height={14}
-                          className="h-3.5 w-auto [image-rendering:pixelated]"
+                          className="h-6 w-auto [image-rendering:pixelated]"
                         />
                       ) : (
                         <span className="text-muted-foreground font-mono text-xs">
