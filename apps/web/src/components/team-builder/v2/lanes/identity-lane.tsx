@@ -195,7 +195,7 @@ export function IdentityLane({
                 nickname: null,
                 held_item: null,
                 ability: "",
-                nature: "",
+                nature: "Hardy",
                 tera_type: null,
                 gender: null,
                 is_shiny: false,
