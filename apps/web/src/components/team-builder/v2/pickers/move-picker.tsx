@@ -220,7 +220,7 @@ export function MovePicker({
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search moves…"
+        placeholder="Search by name, effect, or type…"
         className="bg-muted/40 border-b px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus:bg-card"
       />
 
