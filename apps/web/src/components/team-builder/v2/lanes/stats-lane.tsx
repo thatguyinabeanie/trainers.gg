@@ -59,6 +59,39 @@ const IV_FIELD: Record<StatKey, keyof Tables<"pokemon">> = {
 
 /** Design-source total EV display cap — intentionally 508 to match the design bundle. */
 const EV_DISPLAY_MAX = 508;
+const EV_PER_STAT_MAX = 252;
+const EV_STEP = 4;
+
+/** Pokemon Champions Reg M-A: max 66 stat points across all stats, max 32 per stat, step of 1. */
+const SP_TOTAL_MAX = 66;
+const SP_PER_STAT_MAX = 32;
+const SP_STEP = 1;
+
+/** Per-format stat-investment caps. Champions uses SP, everything else uses EV. */
+interface StatBudget {
+  total: number;
+  perStat: number;
+  step: number;
+  /** Short label used in pickers + total chip ("EV" or "SP"). */
+  label: string;
+}
+
+function getStatBudget(isChampions: boolean): StatBudget {
+  if (isChampions) {
+    return {
+      total: SP_TOTAL_MAX,
+      perStat: SP_PER_STAT_MAX,
+      step: SP_STEP,
+      label: "SP",
+    };
+  }
+  return {
+    total: EV_DISPLAY_MAX,
+    perStat: EV_PER_STAT_MAX,
+    step: EV_STEP,
+    label: "EV",
+  };
+}
 
 // =============================================================================
 // Types
@@ -168,6 +201,7 @@ interface StatRowProps {
   isNatureReduced: boolean;
   evFieldKey: keyof Tables<"pokemon">;
   totalEv: number;
+  budget: StatBudget;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
 }
 
@@ -180,6 +214,7 @@ function StatRow({
   isNatureReduced,
   evFieldKey,
   totalEv,
+  budget,
   onUpdate,
 }: StatRowProps) {
   const [open, setOpen] = useState(false);
@@ -195,8 +230,14 @@ function StatRow({
       ? "text-destructive"
       : tierTextClass(tier);
 
-  const remainingEv = Math.max(0, 508 - totalEv + ev);
-  const evBudget = Math.min(252, remainingEv);
+  // Cap this stat's investment at whichever is smaller: per-stat max OR
+  // the remaining team-wide budget (after subtracting other stats' investment).
+  const otherStatsInvestment = totalEv - ev;
+  const remainingForThisStat = Math.max(
+    0,
+    budget.total - otherStatsInvestment
+  );
+  const investBudget = Math.min(budget.perStat, remainingForThisStat);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -231,20 +272,20 @@ function StatRow({
         {/* Col 3: Final stat value (mono) */}
         <span className={s.statValue}>{finalStat}</span>
 
-        {/* Col 4: EV count (muted) */}
+        {/* Col 4: Investment count (muted) — EV in standard formats, SP in Champions */}
         <span className={s.statEv}>{ev}</span>
       </PopoverTrigger>
       <PopoverContent side="bottom" align="center" className="w-auto p-0">
         <NumberPicker
-          title={`EV · ${label}`}
+          title={`${budget.label} · ${label}`}
           value={ev}
           min={0}
-          max={252}
-          step={4}
-          suffix="/ 252"
-          hint={`Total used: ${totalEv} / ${EV_DISPLAY_MAX}`}
+          max={budget.perStat}
+          step={budget.step}
+          suffix={`/ ${budget.perStat}`}
+          hint={`Total used: ${totalEv} / ${budget.total} ${budget.label}`}
           onChange={(v) => {
-            const clamped = Math.min(v, evBudget);
+            const clamped = Math.min(v, investBudget);
             onUpdate({ [evFieldKey]: clamped });
           }}
           onClose={() => setOpen(false)}
@@ -281,6 +322,7 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
   const isChampions = isChampionsFormat(format);
   const showIvSection = formatSupportsIvs(format);
   const totalEv = totalEvs(evs);
+  const budget = getStatBudget(isChampions);
 
   const rawBase = getBaseStats(pokemon.species ?? "");
   const base: StatValues = rawBase ?? {
@@ -305,21 +347,21 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
       className="flex min-w-0 flex-1 flex-col gap-0.5 border-r border-dashed border-border/60 px-3 py-2"
       style={{ minWidth: 260 }}
     >
-      {/* Header with total EV chip */}
+      {/* Header with total investment chip */}
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
-          Spread
+          {isChampions ? "Stat points" : "Spread"}
         </span>
         <span
           className={cn(
             "font-mono text-[10px]",
-            totalEv > EV_DISPLAY_MAX
+            totalEv > budget.total
               ? "text-destructive font-semibold"
               : "text-muted-foreground"
           )}
         >
           {totalEv}
-          <span className="text-muted-foreground/60">/{EV_DISPLAY_MAX}</span>
+          <span className="text-muted-foreground/60">/{budget.total}</span>
         </span>
       </div>
 
@@ -347,6 +389,7 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
               isNatureReduced={natDown === statKey}
               evFieldKey={EV_FIELD[statKey]}
               totalEv={totalEv}
+              budget={budget}
               onUpdate={onUpdate}
             />
           );

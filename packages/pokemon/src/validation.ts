@@ -2,6 +2,7 @@ import { Dex } from "@pkmn/dex";
 import { Generations } from "@pkmn/data";
 import type { PokemonSet, PokemonSetFlat } from "./types";
 import { fromFlat } from "./types";
+import { isChampionsFormat, type GameFormat } from "./formats";
 
 // Initialize Pokemon data for the current generation (9 = Scarlet/Violet)
 const gens = new Generations(Dex);
@@ -28,16 +29,29 @@ export type {
 } from "./types";
 
 /**
- * Validates a Pokemon's data against the current generation's rules
+ * Validates a Pokemon's data against the current generation's rules.
+ *
+ * `format` is optional — when provided, the validator uses format-specific
+ * stat-investment caps (Champions uses 66 SP total / 32 SP per stat instead
+ * of 508 EV / 252 EV).
  */
 export function validatePokemon(
-  pokemon: PokemonSetFlat | PokemonSet
+  pokemon: PokemonSetFlat | PokemonSet,
+  format?: GameFormat
 ): PokemonValidationResult {
   const errors: PokemonValidationError[] = [];
 
   // Convert to structured format if flat
   const pokemonSet: PokemonSet =
     "moves" in pokemon ? pokemon : fromFlat(pokemon);
+
+  // Stat-investment caps depend on the format. Champions Reg M-A uses SP
+  // (Stat Points): 66 total, 32 per stat. Everything else uses EV: 510 total,
+  // 252 per stat. Caller may pass `format` to opt into format-aware caps.
+  const championsRules = isChampionsFormat(format);
+  const investTotalMax = championsRules ? 66 : 510;
+  const investPerStatMax = championsRules ? 32 : 252;
+  const investLabel = championsRules ? "SP" : "EV";
 
   try {
     // Validate species exists.
@@ -186,25 +200,27 @@ export function validatePokemon(
       }
     }
 
-    // Validate EVs using structured format
-    const totalEvs = Object.values(pokemonSet.evs).reduce(
+    // Validate stat investment using structured format. Caps depend on the
+    // format — Champions uses SP (66 total / 32 per stat); standard uses EV
+    // (510 total / 252 per stat).
+    const totalInvestment = Object.values(pokemonSet.evs).reduce(
       (sum, ev) => sum + ev,
       0
     );
-    if (totalEvs > 510) {
+    if (totalInvestment > investTotalMax) {
       errors.push({
         field: "evs",
-        message: `Total EVs (${totalEvs}) cannot exceed 510`,
+        message: `Total ${investLabel} (${totalInvestment}) cannot exceed ${investTotalMax}`,
         severity: "error",
       });
     }
 
-    // Validate individual EV values
+    // Validate individual investment values
     for (const [stat, value] of Object.entries(pokemonSet.evs)) {
-      if (value < 0 || value > 252) {
+      if (value < 0 || value > investPerStatMax) {
         errors.push({
           field: `ev${stat.charAt(0).toUpperCase() + stat.slice(1)}`,
-          message: `${stat} EVs must be between 0 and 252`,
+          message: `${stat} ${investLabel} must be between 0 and ${investPerStatMax}`,
           severity: "error",
         });
       }
