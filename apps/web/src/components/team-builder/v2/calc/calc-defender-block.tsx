@@ -7,6 +7,7 @@ import {
   getValidNatures,
   getLegalAbilities,
   getMetaSpeedTiers,
+  isLegalSpecies,
 } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
@@ -108,8 +109,24 @@ export function CalcDefenderBlock({
       )
     : getValidAbilities(defenderSpecies);
 
-  // Meta options for the target group
+  // Meta options for the target group (already curated per format)
   const meta = format ? getMetaSpeedTiers(format.id) : [];
+
+  // Filter the hardcoded VGC presets down to species legal in the active
+  // format. For Champions Reg M-A this drops the entire VGC roster (Flutter
+  // Mane, Calyrex, Miraidon, etc.) and only the Meta optgroup + teammates
+  // remain — which is correct.
+  const presets = formatId
+    ? CALC_TARGETS.filter((t) => isLegalSpecies(t.species, formatId))
+    : CALC_TARGETS;
+
+  // Defensive: also filter teammates by legality so a stale team can't
+  // surface a non-legal defender via the "Your team" optgroup.
+  const legalTeammates = formatId
+    ? teammates.filter(
+        (p) => p.species && isLegalSpecies(p.species, formatId)
+      )
+    : teammates;
 
   // The item select shows QUICK_ITEMS plus the current item if not already there
   const itemOptions = [
@@ -118,8 +135,8 @@ export function CalcDefenderBlock({
   ];
 
   function handleTargetChange(value: string) {
-    // Check CALC_TARGETS first for full preset
-    const preset = CALC_TARGETS.find((t) => t.species === value);
+    // Check the format-filtered presets first for full spread
+    const preset = presets.find((t) => t.species === value);
     if (preset) {
       resetDefenderForSpecies(preset.species, {
         ability: preset.ability,
@@ -144,7 +161,7 @@ export function CalcDefenderBlock({
           onChange={(e) => handleTargetChange(e.target.value)}
           aria-label="Defender target"
         >
-          {CALC_TARGETS.map((t) => (
+          {presets.map((t) => (
             <option key={t.species} value={t.species}>
               {t.name}
             </option>
@@ -158,9 +175,9 @@ export function CalcDefenderBlock({
               ))}
             </optgroup>
           )}
-          {teammates.length > 0 && (
+          {legalTeammates.length > 0 && (
             <optgroup label="Your team">
-              {teammates.map((p) => (
+              {legalTeammates.map((p) => (
                 <option key={`team-${p.id}`} value={p.species ?? ""}>
                   {p.nickname ?? p.species ?? "—"}
                 </option>
