@@ -1467,10 +1467,11 @@
   margin-bottom: 4px;
 }
 
-/* Loadout form row — label on the left, value on the right */
+/* Loadout form row — label on the left, value on the right.
+   Label column wide enough for "Ability" / "Nature" without truncating. */
 .formRow {
   display: grid;
-  grid-template-columns: 40px 1fr;
+  grid-template-columns: 60px minmax(0, 1fr);
   align-items: center;
   gap: 6px;
   padding: 3px 4px;

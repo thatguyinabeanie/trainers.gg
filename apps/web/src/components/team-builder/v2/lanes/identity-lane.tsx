@@ -166,7 +166,7 @@ export function IdentityLane({
   const currentTeam: Array<{ species: string }> = [];
 
   return (
-    <div className="flex min-w-0 flex-shrink-0 gap-3 p-3">
+    <div className="flex min-w-0 gap-3 p-3">
       {/* ── Sprite column ─────────────────────────────────────────── */}
       <Popover open={speciesOpen} onOpenChange={setSpeciesOpen}>
         <div className="flex shrink-0 flex-col gap-1.5">
@@ -260,7 +260,7 @@ export function IdentityLane({
       </Popover>
 
       {/* ── Form column ───────────────────────────────────────────── */}
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+      <div className="flex min-w-0 w-56 shrink-0 flex-col justify-center gap-0.5">
 
         {/* BANNER — nickname + chips rows */}
         <div className={s.idBanner}>
