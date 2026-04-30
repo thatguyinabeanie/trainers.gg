@@ -172,24 +172,28 @@ function MoveTile({
             />
           }
         >
-            {/* Col 1: Type dot */}
-            <TypeDot t={moveData?.type ?? "Normal"} size={10} />
+            {/* Col 1: Type dot (empty slot shows transparent placeholder for consistent column width) */}
+            {moveName ? (
+              <TypeDot t={moveData?.type ?? "Normal"} size={10} />
+            ) : (
+              <span style={{ width: 10, height: 10, display: "inline-block" }} aria-hidden />
+            )}
 
             {/* Col 2: Move name */}
             <span
               className={cn(
                 "mvline-name",
-                !moveName && "text-muted-foreground/50 italic"
+                !moveName && "text-muted-foreground/50"
               )}
             >
-              {moveName ?? `— set move ${MOVE_SLOTS.indexOf(slotKey) + 1}`}
+              {moveName ?? "+ Add move"}
             </span>
 
             {/* Col 3: BP */}
             <span className="mvline-bp">
-              {moveData?.basePower && moveData.basePower > 0
+              {moveName && moveData?.basePower && moveData.basePower > 0
                 ? moveData.basePower
-                : "—"}
+                : moveName ? "—" : ""}
             </span>
 
             {/* Col 4: Calc output or hint */}
@@ -303,7 +307,7 @@ export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: Moves
   return (
     <div
       className="flex min-w-0 flex-1 flex-col gap-1 border-r border-dashed border-border/60 p-3"
-      style={{ minWidth: 220 }}
+      style={{ minWidth: 240 }}
     >
       {/* Header */}
       <div className="mb-1 flex items-baseline justify-between">

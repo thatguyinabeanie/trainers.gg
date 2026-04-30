@@ -36,13 +36,17 @@ interface SetupLaneProps {
 }
 
 // =============================================================================
-// SetupLane
+// SetupLane  (conceptually the "Loadout" lane)
 // =============================================================================
 
 /**
- * Four stacked setup rows: item / ability / nature / tera.
- * Each row is a trigger button that opens the appropriate picker popover.
- * Tera row is hidden when the format does not support Terastallization.
+ * Loadout lane — vertical strip of labeled chips.
+ *
+ * Each chip has a small uppercase prefix label on a darker inset background
+ * (`item / abil / nat / tera`) and the value to its right.
+ * Each chip is the picker trigger. Tera chip hidden when format doesn't
+ * support Terastallization.
+ *
  * Phase 7: renders inline FieldError chips beneath offending fields.
  */
 export function SetupLane({
@@ -82,8 +86,14 @@ export function SetupLane({
   const natureErrors = fieldErrors.filter((e) => e.field === "nature");
 
   return (
-    <div className={cn(s.laneSetup, "flex flex-col justify-center gap-0.5 border-r border-dashed border-border/60 px-3 py-2")} style={{ minWidth: 140 }}>
-      {/* Item row */}
+    <div
+      className={cn(
+        s.laneSetup,
+        "flex flex-col justify-center gap-1.5 border-r border-dashed border-border/60 px-3 py-2"
+      )}
+      style={{ minWidth: 220 }}
+    >
+      {/* Item chip */}
       <div className="flex flex-col">
         <Popover open={itemOpen} onOpenChange={setItemOpen}>
           <PopoverTrigger
@@ -91,19 +101,16 @@ export function SetupLane({
               <button
                 type="button"
                 className={cn(
-                  "grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60",
+                  s.chipLabeled,
                   itemErrors.length > 0 && "ring-1 ring-destructive/40"
                 )}
-                style={{ gridTemplateColumns: "30px 1fr" }}
               />
             }
           >
-            <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
-              item
-            </span>
+            <span className={s.chipPrefix}>item</span>
             <span
               className={cn(
-                "truncate text-xs font-medium",
+                s.chipValue,
                 !pokemon.held_item && "text-muted-foreground/50 italic"
               )}
             >
@@ -125,7 +132,7 @@ export function SetupLane({
         ))}
       </div>
 
-      {/* Ability row */}
+      {/* Ability chip */}
       <div className="flex flex-col">
         <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
           <PopoverTrigger
@@ -133,19 +140,16 @@ export function SetupLane({
               <button
                 type="button"
                 className={cn(
-                  "grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60",
+                  s.chipLabeled,
                   abilityErrors.length > 0 && "ring-1 ring-destructive/40"
                 )}
-                style={{ gridTemplateColumns: "30px 1fr" }}
               />
             }
           >
-            <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
-              abil
-            </span>
+            <span className={s.chipPrefix}>abil</span>
             <span
               className={cn(
-                "truncate text-xs font-medium",
+                s.chipValue,
                 !pokemon.ability && "text-muted-foreground/50 italic"
               )}
             >
@@ -167,7 +171,7 @@ export function SetupLane({
         ))}
       </div>
 
-      {/* Nature row */}
+      {/* Nature chip */}
       <div className="flex flex-col">
         <Popover open={natureOpen} onOpenChange={setNatureOpen}>
           <PopoverTrigger
@@ -175,29 +179,28 @@ export function SetupLane({
               <button
                 type="button"
                 className={cn(
-                  "relative grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60",
+                  s.chipLabeled,
                   natureErrors.length > 0 && "ring-1 ring-destructive/40"
                 )}
-                style={{ gridTemplateColumns: "30px 1fr" }}
               />
             }
           >
-            <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
-              nat
-            </span>
-            <span
-              className={cn(
-                "truncate text-xs font-medium",
-                !pokemon.nature && "text-muted-foreground/50 italic"
-              )}
-            >
-              {pokemon.nature || "—"}
-            </span>
-            {natUp && natDown && (
-              <span className="text-muted-foreground absolute right-1.5 top-1/2 -translate-y-1/2 font-mono text-[8.5px] tracking-wide">
-                +{statShortLabel[natUp] ?? natUp}/−{statShortLabel[natDown] ?? natDown}
+            <span className={s.chipPrefix}>nat</span>
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span
+                className={cn(
+                  s.chipValue,
+                  !pokemon.nature && "text-muted-foreground/50 italic"
+                )}
+              >
+                {pokemon.nature || "—"}
               </span>
-            )}
+              {natUp && natDown && (
+                <span className="text-muted-foreground font-mono text-[8.5px] tracking-wide">
+                  +{statShortLabel[natUp] ?? natUp}/−{statShortLabel[natDown] ?? natDown}
+                </span>
+              )}
+            </span>
           </PopoverTrigger>
           <PopoverContent side="bottom" align="start" className="w-auto p-0">
             <NaturePicker
@@ -212,29 +215,23 @@ export function SetupLane({
         ))}
       </div>
 
-      {/* Tera row — hidden when format doesn't support Tera */}
+      {/* Tera chip — hidden when format doesn't support Tera */}
       {showTera && (
         <Popover open={teraOpen} onOpenChange={setTeraOpen}>
           <PopoverTrigger
             render={
-              <button
-                type="button"
-                className="grid gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-muted/60"
-                style={{ gridTemplateColumns: "30px 1fr" }}
-              />
+              <button type="button" className={s.chipLabeled} />
             }
           >
-            <span className="text-muted-foreground self-baseline font-mono text-[9px] font-medium tracking-wider uppercase">
-              tera
-            </span>
-            <span className="flex items-center gap-1.5 text-xs font-medium">
+            <span className={s.chipPrefix}>tera</span>
+            <span className="flex items-center gap-1.5">
               {pokemon.tera_type ? (
                 <>
                   <TypeDot t={pokemon.tera_type} size={10} />
-                  {pokemon.tera_type}
+                  <span className={s.chipValue}>{pokemon.tera_type}</span>
                 </>
               ) : (
-                <span className="text-muted-foreground/50 italic">—</span>
+                <span className={cn(s.chipValue, "text-muted-foreground/50 italic")}>—</span>
               )}
             </span>
           </PopoverTrigger>

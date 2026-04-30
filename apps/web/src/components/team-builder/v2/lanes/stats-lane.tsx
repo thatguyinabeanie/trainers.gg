@@ -31,6 +31,7 @@ import {
 } from "../../stat-types";
 import { NumberPicker } from "../pickers/number-picker";
 import { FieldError } from "../validation/field-error";
+import s from "../builder.module.css";
 
 // =============================================================================
 // Constants
@@ -134,8 +135,19 @@ function computeFinalStat(
   return calculateStat(b, iv, ev, level, mult);
 }
 
-/** Tailwind color class from stat tier */
-function tierColor(tier: string): string {
+/** CSS custom property string for the stat-tier bar fill color. */
+function tierBarColor(tier: string): string {
+  switch (tier) {
+    case "low": return "var(--color-stat-low, var(--stat-low, oklch(0.7 0.15 30)))";
+    case "mid": return "var(--color-stat-mid, var(--stat-mid, oklch(0.75 0.15 80)))";
+    case "good": return "var(--color-stat-good, var(--stat-good, oklch(0.7 0.2 140)))";
+    case "great": return "var(--color-stat-great, var(--stat-great, oklch(0.6 0.22 145)))";
+    default: return "var(--muted-foreground)";
+  }
+}
+
+/** Tailwind text color class from stat tier (for label). */
+function tierTextClass(tier: string): string {
   switch (tier) {
     case "low": return "text-stat-low";
     case "mid": return "text-stat-mid";
@@ -146,7 +158,7 @@ function tierColor(tier: string): string {
 }
 
 // =============================================================================
-// StatRow
+// StatRow — one horizontal stat row
 // =============================================================================
 
 interface StatRowProps {
@@ -175,10 +187,15 @@ function StatRow({
   const [open, setOpen] = useState(false);
   const label = STAT_LABELS[statKey];
   const tier = getStatTier(base);
-  const baseColorClass = tierColor(tier);
 
-  const evPct = Math.min(100, (ev / 252) * 100);
-  const finalPct = Math.min(100, (finalStat / 250) * 100);
+  // Bar fill = finalStat / 250, clamped to 100%
+  const barPct = Math.min(100, (finalStat / 250) * 100);
+  const barColor = tierBarColor(tier);
+  const labelTextClass = isNatureBoosted
+    ? "text-green-600 dark:text-green-400"
+    : isNatureReduced
+      ? "text-destructive"
+      : tierTextClass(tier);
 
   const remainingEv = Math.max(0, 508 - totalEv + ev);
   const evBudget = Math.min(252, remainingEv);
@@ -189,47 +206,35 @@ function StatRow({
         render={
           <button
             type="button"
-            className="flex min-w-0 flex-col items-stretch gap-0.5 rounded border border-transparent p-1 text-center transition-colors hover:border-border/50 hover:bg-muted/40"
+            className={s.statRow}
           />
         }
       >
-        {/* Stat label */}
+        {/* Col 1: Stat label, color-coded */}
         <span
-          className={cn(
-            "font-mono text-[9px] font-semibold tracking-wide uppercase",
-            isNatureBoosted
-              ? "text-green-600 dark:text-green-400"
-              : isNatureReduced
-                ? "text-destructive"
-                : baseColorClass
-          )}
+          className={cn(s.statLabel, labelTextClass)}
         >
           {label}
           {isNatureBoosted && <span className="ml-0.5">+</span>}
           {isNatureReduced && <span className="ml-0.5">−</span>}
         </span>
 
-        {/* Final stat */}
-        <span className="font-mono text-[12.5px] font-semibold leading-tight">
-          {finalStat}
-        </span>
-
-        {/* Dual-layer bar */}
-        <div className="relative h-1 overflow-hidden rounded-full bg-border/40">
+        {/* Col 2: Horizontal bar */}
+        <div className={s.statBar}>
           <span
-            className="absolute inset-y-0 left-0 rounded-full bg-foreground/30"
-            style={{ width: `${finalPct}%` }}
-          />
-          <span
-            className="absolute inset-y-0 left-0 rounded-full bg-primary/80"
-            style={{ width: `${evPct}%` }}
+            className={s.statBarFill}
+            style={{
+              width: `${barPct}%`,
+              background: barColor,
+            }}
           />
         </div>
 
-        {/* EV value */}
-        <span className="text-muted-foreground font-mono text-[9.5px]">
-          {ev}
-        </span>
+        {/* Col 3: Final stat value (mono) */}
+        <span className={s.statValue}>{finalStat}</span>
+
+        {/* Col 4: EV count (muted) */}
+        <span className={s.statEv}>{ev}</span>
       </PopoverTrigger>
       <PopoverContent side="bottom" align="center" className="w-auto p-0">
         <NumberPicker
@@ -256,9 +261,16 @@ function StatRow({
 // =============================================================================
 
 /**
- * 6-stat grid with EV bar visualization and EV number pickers.
+ * Spread lane — 6 horizontal stat rows with bars.
+ *
+ * Each row layout (CSS grid):
+ *   [stat label, color-coded] [bar] [final stat value, mono] [EV count, muted]
+ *
+ * Bar fill width = finalStat / 250 * 100% (clamped), colored by stat tier.
+ * Click on a row opens the EV NumberPicker for that stat.
+ *
  * Supports Champions format (SP system, gen 10).
- * Below the grid: IV editor with a "Show IVs" toggle (collapses by default).
+ * Below the rows: IV editor with a "Show IVs" toggle (collapses by default).
  * Phase 7: renders inline FieldError chips for EV/stat validation issues.
  */
 export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: StatsLaneProps) {
@@ -284,13 +296,16 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
   // Detect any non-31 IVs for summary line
   const nonMaxIvs = STAT_KEYS.filter((k) => ivs[k] !== 31);
 
-  // EV / total errors to show below the stat grid
+  // EV / total errors to show below the stat rows
   const evErrors = fieldErrors.filter(
     (e) => e.field === "evs" || e.field === "evTotal"
   );
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1 border-r border-dashed border-border/60 p-3" style={{ minWidth: 280 }}>
+    <div
+      className="flex min-w-0 flex-1 flex-col gap-1 border-r border-dashed border-border/60 p-3"
+      style={{ minWidth: 280 }}
+    >
       {/* Header with total EV chip */}
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -309,8 +324,8 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
         </span>
       </div>
 
-      {/* 6-stat grid */}
-      <div className="grid grid-cols-6 gap-1">
+      {/* 6 horizontal stat rows */}
+      <div className="flex flex-col">
         {STAT_KEYS.map((statKey) => {
           const finalStat = computeFinalStat(
             statKey,

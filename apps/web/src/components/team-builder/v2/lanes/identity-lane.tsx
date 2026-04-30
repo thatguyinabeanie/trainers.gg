@@ -39,7 +39,7 @@ type GenderValue = "Male" | "Female" | null;
 // Helpers
 // =============================================================================
 
-function genderLabel(g: GenderValue): string {
+function genderSymbol(g: GenderValue): string {
   if (g === "Male") return "♂";
   if (g === "Female") return "♀";
   return "—";
@@ -60,11 +60,18 @@ function errorsForField(errors: ValidationError[], field: string): ValidationErr
 // =============================================================================
 
 /**
- * Left-most lane in the active row.
- * Shows: sprite (clickable → species picker), nickname (inline edit),
- * species label, type pills, level chip, gender toggle, shiny flag.
- * Format-gated: dynamax level + gigantamax flag when format supports Dynamax.
- * Phase 7: renders inline FieldError chips for identity-scoped validation issues.
+ * Left-most lane in the active row — redesigned for the PokeRow overhaul.
+ *
+ * Structure:
+ *   [sprite 128×128] | [meta column]
+ *                        - Name (editable inline input, bold)
+ *                        - Muted meta line: "Lv 50 · ♂"
+ *                        - Type pills
+ *                        - Chip row: shiny + gender + dynamax (format-gated)
+ *                        - Species validation chip
+ *
+ * Sprite click → opens species picker.
+ * Level text click → opens NumberPicker popover.
  */
 export function IdentityLane({
   pokemon,
@@ -104,23 +111,25 @@ export function IdentityLane({
     onUpdate({ is_shiny: !isShiny });
   }
 
-  return (
-    <div className="flex min-w-[240px] flex-shrink-0 gap-4 p-3">
-      {/* Sprite — click to open species picker */}
-      <div className="flex shrink-0 flex-col items-center gap-1">
-        <button
-          type="button"
-          onClick={(e) => onOpenSpecies(e.currentTarget)}
-          aria-label={`Change species (${pokemon.species})`}
-          className="shrink-0 rounded-full transition-opacity hover:opacity-80"
-        >
-          <Sprite species={pokemon.species ?? ""} types={types} size={96} />
-        </button>
-      </div>
+  // Muted meta line text: "Lv 50 · ♂" or "Lv 50 · ♀" or just "Lv 50"
+  const genderSuffix =
+    gender === "Male" ? " · ♂" : gender === "Female" ? " · ♀" : "";
 
-      {/* Meta stack */}
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {/* Nickname input */}
+  return (
+    <div className="flex min-w-[240px] flex-shrink-0 gap-3 p-3">
+      {/* Sprite — 128×128, click to open species picker */}
+      <button
+        type="button"
+        onClick={(e) => onOpenSpecies(e.currentTarget)}
+        aria-label={`Change species (${pokemon.species})`}
+        className="shrink-0 transition-opacity hover:opacity-80"
+      >
+        <Sprite species={pokemon.species ?? ""} types={types} size={128} />
+      </button>
+
+      {/* Meta column — stacked tight to the right of the sprite */}
+      <div className="flex min-w-0 flex-1 flex-col gap-1 justify-center">
+        {/* Name field — editable inline input (nickname, falls back to species) */}
         <div className="flex flex-col">
           <input
             ref={nicknameRef}
@@ -135,9 +144,10 @@ export function IdentityLane({
             maxLength={24}
             aria-label="Nickname"
             className={cn(
-              "bg-transparent w-full min-w-0 truncate text-sm font-semibold outline-none",
+              "bg-transparent w-full min-w-0 truncate text-sm font-bold outline-none",
               "border-b border-transparent placeholder:text-muted-foreground/50",
               "hover:border-border focus:border-primary",
+              "leading-snug",
               nicknameErrors.length > 0 && "border-destructive focus:border-destructive"
             )}
           />
@@ -146,31 +156,19 @@ export function IdentityLane({
           ))}
         </div>
 
-        {/* Species label */}
-        <span className="text-muted-foreground truncate text-[11px]">
-          {pokemon.species}
-        </span>
-
-        {/* Type pills */}
-        <div className="flex flex-wrap gap-1">
-          {types.map((t) => (
-            <TypePill key={t} t={t} />
-          ))}
-        </div>
-
-        {/* Chip row: Level / Gender / Shiny */}
-        <div className="flex flex-wrap gap-1 pt-0.5">
-          {/* Level chip → NumberPicker popover */}
+        {/* Muted meta line: "Lv 50 · ♂" — level is clickable */}
+        <div className="flex items-center gap-1">
           <Popover open={levelOpen} onOpenChange={setLevelOpen}>
             <PopoverTrigger
               render={
                 <button
                   type="button"
-                  className="bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 font-mono text-[10px] font-medium"
+                  className="text-muted-foreground hover:text-foreground text-[11px] transition-colors"
                 />
               }
             >
               Lv {level}
+              {genderSuffix}
             </PopoverTrigger>
             <PopoverContent
               side="bottom"
@@ -187,7 +185,17 @@ export function IdentityLane({
               />
             </PopoverContent>
           </Popover>
+        </div>
 
+        {/* Type pills */}
+        <div className="flex flex-wrap gap-1">
+          {types.map((t) => (
+            <TypePill key={t} t={t} />
+          ))}
+        </div>
+
+        {/* Chip row: Gender toggle + Shiny toggle + Dynamax (format-gated) */}
+        <div className="flex flex-wrap items-center gap-1 pt-0.5">
           {/* Gender 3-way toggle: ♂ / ♀ / — */}
           <div className="flex flex-col">
             <button
@@ -199,7 +207,7 @@ export function IdentityLane({
                 genderErrors.length > 0 && "border-destructive"
               )}
             >
-              {genderLabel(gender)}
+              {genderSymbol(gender)}
             </button>
             {genderErrors.map((err, i) => (
               <FieldError key={i} message={err.message} severity={err.severity} />
@@ -221,12 +229,9 @@ export function IdentityLane({
           >
             ✦
           </button>
-        </div>
 
-        {/* Dynamax chips — only shown when format supports it */}
-        {showDynamax && (
-          <div className="flex flex-wrap gap-1">
-            {/* Dynamax level chip */}
+          {/* Dynamax level chip — only shown when format supports it */}
+          {showDynamax && (
             <Popover open={dmaxOpen} onOpenChange={setDmaxOpen}>
               <PopoverTrigger
                 render={
@@ -259,10 +264,10 @@ export function IdentityLane({
                 />
               </PopoverContent>
             </Popover>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Species errors — placed in meta column so they wrap in the wider area */}
+        {/* Species validation errors — below the chip row */}
         {speciesErrors.map((err, i) => (
           <FieldError key={i} message={err.message} severity={err.severity} />
         ))}

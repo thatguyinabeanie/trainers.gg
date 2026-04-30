@@ -104,10 +104,9 @@
   padding-block: 4px;
 }
 
-/* Identity lane: smaller sprite grid column */
+/* Identity lane: compact — smaller sprite; flex direction stays */
 [data-density="compact"] .laneId {
-  grid-template-columns: 44px 1fr;
-  gap: 8px;
+  min-width: 200px;
 }
 
 /* ============================================================
@@ -786,8 +785,8 @@
   /* Identity lane: full width, horizontal (sprite + meta side-by-side) */
   .laneId {
     width: 100%;
-    grid-template-columns: 56px 1fr;
-    gap: 10px;
+    flex-direction: row;
+    align-items: stretch;
     padding: 10px;
   }
 
@@ -832,13 +831,12 @@
   flex-shrink: 0;
 }
 
-/* Identity lane — sprite + nick + level/gender/shiny chips */
+/* Identity lane — 128px sprite + meta column (flex row) */
 .laneId {
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  gap: 12px;
-  align-items: center;
+  display: flex;
+  align-items: stretch;
   flex-shrink: 0;
+  min-width: 240px;
 }
 
 /* Setup lane — item/abil/nat/tera stacked rows */
@@ -1392,4 +1390,121 @@
 .stcell:hover {
   background: var(--muted);
   border-color: var(--border);
+}
+
+/* ============================================================
+   PokeRow overhaul — Loadout (chip-labeled), Spread (stat rows),
+   Moves (empty tile style)
+   ============================================================ */
+
+/* Chip-labeled — unified picker trigger for item / abil / nat / tera */
+.chipLabeled {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px 4px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  text-align: left;
+  width: 100%;
+}
+
+.chipLabeled:hover {
+  border-color: var(--primary);
+}
+
+/* Prefix label inside a chip (e.g. "item", "abil") */
+.chipPrefix {
+  background: var(--background);
+  color: var(--muted-foreground);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  flex-shrink: 0;
+}
+
+/* Value text inside a chip */
+.chipValue {
+  font-size: 11.5px;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Stat row — one per stat in the horizontal spread view */
+.statRow {
+  display: grid;
+  grid-template-columns: 28px 1fr 38px 32px;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 2px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.1s;
+  background: transparent;
+  border: none;
+  text-align: left;
+  width: 100%;
+}
+
+.statRow:hover {
+  background: var(--muted);
+}
+
+/* Horizontal bar track */
+.statBar {
+  height: 5px;
+  background: var(--muted);
+  border-radius: 999px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Bar fill — width set via inline style, color via inline style (tier) */
+.statBarFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.15s;
+}
+
+/* Stat label — left-most column */
+.statLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Final stat value — mono, right-aligned */
+.statValue {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* EV count — muted, mono, right-aligned */
+.statEv {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  text-align: right;
 }
