@@ -169,7 +169,10 @@ export function IdentityLane({
     <div className="flex min-w-0 gap-3 p-3">
       {/* ── Sprite column ─────────────────────────────────────────── */}
       <Popover open={speciesOpen} onOpenChange={setSpeciesOpen}>
-        <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
+        <div className="flex shrink-0 flex-col items-center justify-center gap-1 self-center">
+          {/* "Pokemon" eyebrow label, centered above the sprite */}
+          <span className={s.formLabel}>Pokemon</span>
+
           {/* Sprite — 144×144, click to open species picker */}
           <PopoverTrigger
             render={
@@ -183,9 +186,9 @@ export function IdentityLane({
             <Sprite species={pokemon.species ?? ""} types={types} size={144} />
           </PopoverTrigger>
 
-          {/* Species pill — wide enough to fit the longest Pokemon names
-              ("Tauros-Paldea-Combat", "Necrozma-Dawn-Wings", etc.) without
-              truncation. */}
+          {/* Species pill — typeable control that opens the picker. Wide
+              enough to fit the longest names ("Tauros-Paldea-Combat",
+              "Necrozma-Dawn-Wings", etc.) without truncation. */}
           <PopoverTrigger
             render={
               <button
@@ -193,16 +196,15 @@ export function IdentityLane({
                 aria-label={`Change species (${pokemon.species ?? "none"})`}
                 className={cn(
                   "border-border bg-background hover:border-primary focus-visible:border-primary",
-                  "block rounded-md border px-2 py-1.5 text-left text-xs",
-                  "outline-none transition-colors",
-                  "w-44 sm:w-52 md:w-56"
+                  "mt-1 flex w-44 items-center gap-1 rounded-md border px-2 py-1.5 text-left text-xs",
+                  "outline-none transition-colors sm:w-52 md:w-56"
                 )}
               />
             }
           >
             <span
               className={cn(
-                "block truncate",
+                "min-w-0 flex-1 truncate",
                 pokemon.species
                   ? "text-foreground font-medium"
                   : "text-muted-foreground"
@@ -210,6 +212,9 @@ export function IdentityLane({
               title={pokemon.species ?? undefined}
             >
               {pokemon.species ?? "Choose species…"}
+            </span>
+            <span aria-hidden className="text-muted-foreground text-[9px]">
+              ▾
             </span>
           </PopoverTrigger>
         </div>
