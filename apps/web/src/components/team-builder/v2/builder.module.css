@@ -1740,20 +1740,23 @@
   pointer-events: none;
 }
 
-/* Individual tick — diamond on the track at the bump position */
+/* Individual tick — circle outline at the bump position. border picks up
+ * the wrap's currentColor (set per-stat-tier on .spreadSliderWrap). */
 .spreadBumpTick {
   position: absolute;
   top: 50%;
-  width: 7px;
-  height: 7px;
-  background: rgb(220 38 38);
-  transform: translate(-50%, -50%) rotate(45deg);
-  box-shadow: 0 0 0 1.5px var(--card, #fff);
+  width: 9px;
+  height: 9px;
+  background: var(--card, #fff);
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
 }
 
-/* Next breakpoint above current invest — brighter */
+/* Next breakpoint above current invest — thicker ring */
 .spreadBumpTickNext {
-  background: rgb(239 68 68);
+  border-width: 2px;
 }
 
 /* Final stat — col 6, mono bold right-aligned */

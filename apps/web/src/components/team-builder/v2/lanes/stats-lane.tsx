@@ -398,8 +398,10 @@ function StatRow({
         )}
       />
 
-      {/* Col 5: Slider with optional breakpoint ticks */}
-      <div className={s.spreadSliderWrap}>
+      {/* Col 5: Slider with optional breakpoint ticks.
+       * Tier color set on the wrap so both the thumb (background: currentColor)
+       * and the bump rings (border: currentColor) inherit it. */}
+      <div className={cn(s.spreadSliderWrap, tierTextClass(tier))}>
         <div className={s.spreadSliderTrack} aria-hidden />
         <input
           type="range"
@@ -412,12 +414,7 @@ function StatRow({
           aria-valuemin={0}
           aria-valuemax={budget.perStat}
           aria-valuenow={ev}
-          className={cn(
-            s.spreadSlider,
-            isNatureBoosted && "accent-red-500",
-            isNatureReduced && "accent-sky-500",
-            !isNatureBoosted && !isNatureReduced && "accent-primary"
-          )}
+          className={s.spreadSlider}
         />
 
         {/* Breakpoint ticks overlay — only on +nature stat */}
