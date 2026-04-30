@@ -23,7 +23,7 @@ AI memory system for persistent decisions, semantic search, knowledge graph, and
 | `database` | Schema decisions, migrations, indexes, query patterns |
 | `web` | Next.js routes, SSR, caching strategies |
 | `ui-design` | Design tokens, component patterns, visual decisions |
-| `devtools` | DX tooling, CI/CD, dev-slots, testing infra |
+| `devtools` | DX tooling, CI/CD, testing infra |
 | `product` | Feature decisions, user research, prioritization |
 
 Pick the room matching the content's domain. Never use `technical` or `architecture` as catch-all buckets — every piece of content belongs in a specific room.

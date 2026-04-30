@@ -10,7 +10,7 @@
 services:
   pds:
     image: ghcr.io/bluesky-social/pds:latest
-    container_name: trainers-pds-local${PDS_SLOT_SUFFIX:-}
+    container_name: trainers-pds-local
     ports:
       - "${PDS_HOST_PORT:-3001}:3000"
     environment:
@@ -53,4 +53,4 @@ services:
 
 volumes:
   pds-data:
-    name: trainers-pds-local-data${PDS_SLOT_SUFFIX:-}
+    name: trainers-pds-local-data
