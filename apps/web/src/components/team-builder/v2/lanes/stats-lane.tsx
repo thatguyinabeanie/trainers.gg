@@ -639,7 +639,7 @@ export function StatsLane({
   return (
     <div
       className="border-border/60 flex min-w-0 flex-1 flex-col gap-0.5 border-r border-dashed px-3 py-2"
-      style={{ minWidth: 420 }}
+      style={{ minWidth: 352 }}
     >
       {/* Header with total investment chip */}
       <div className="mb-1 flex items-baseline justify-between">
