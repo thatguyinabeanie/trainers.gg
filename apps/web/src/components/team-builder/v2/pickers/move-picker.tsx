@@ -189,15 +189,15 @@ export function MovePicker({
     );
   }
 
-  // Shared row grid: name | description | type | cat | bp | acc
-  // 9rem        — name (fits up to ~22 chars; truncates beyond)
-  // minmax(0,1fr) — description (truncates with title tooltip)
+  // Shared row grid: type | cat | name | description | bp | acc
   // 5rem        — type pill (fits "ELECTRIC", "FIGHTING")
   // 2.5rem      — category icon
+  // 9rem        — name (fits up to ~22 chars; truncates beyond)
+  // minmax(0,1fr) — description (truncates with title tooltip)
   // 2.5rem      — bp
   // 3rem        — accuracy
   const ROW_GRID =
-    "grid-cols-[9rem_minmax(0,1fr)_5rem_2.5rem_2.5rem_3rem]";
+    "grid-cols-[5rem_2.5rem_9rem_minmax(0,1fr)_2.5rem_3rem]";
 
   return (
     <div className="bg-popover text-popover-foreground flex w-[820px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
@@ -235,23 +235,6 @@ export function MovePicker({
             ROW_GRID
           )}
         >
-          {/* Name column */}
-          <button
-            type="button"
-            className={cn(
-              headerBtnClass("name"),
-              "flex items-center justify-start gap-0.5"
-            )}
-            onClick={() => handleSort("name")}
-            aria-label="Sort by name"
-          >
-            Name
-            <SortArrow active={sort.col === "name"} dir={sort.dir} />
-          </button>
-
-          {/* Description column — not sortable */}
-          <span className="text-muted-foreground text-left">Effect</span>
-
           {/* Type column — header doubles as a filter dropdown trigger */}
           <Popover open={typeOpen} onOpenChange={setTypeOpen}>
             <PopoverTrigger
@@ -385,6 +368,23 @@ export function MovePicker({
             </PopoverContent>
           </Popover>
 
+          {/* Name column */}
+          <button
+            type="button"
+            className={cn(
+              headerBtnClass("name"),
+              "flex items-center justify-start gap-0.5"
+            )}
+            onClick={() => handleSort("name")}
+            aria-label="Sort by name"
+          >
+            Name
+            <SortArrow active={sort.col === "name"} dir={sort.dir} />
+          </button>
+
+          {/* Description column — not sortable */}
+          <span className="text-muted-foreground text-left">Effect</span>
+
           {/* BP column */}
           <button
             type="button"
@@ -451,25 +451,6 @@ export function MovePicker({
                       ROW_GRID
                     )}
                   >
-                    {/* Name */}
-                    <span
-                      className="min-w-0 truncate text-sm font-medium"
-                      title={moveName}
-                    >
-                      {moveName}
-                    </span>
-
-                    {/* Description (effect) */}
-                    <span
-                      className="text-muted-foreground min-w-0 truncate text-xs"
-                      title={move?.shortDesc ?? undefined}
-                    >
-                      {move?.shortDesc &&
-                      move.shortDesc !== "No additional effect."
-                        ? move.shortDesc
-                        : ""}
-                    </span>
-
                     {/* Type pill — Showdown retro sprite */}
                     <span className="flex justify-center">
                       {move?.type ? (
@@ -500,6 +481,25 @@ export function MovePicker({
                           {categoryLetter(move?.category)}
                         </span>
                       )}
+                    </span>
+
+                    {/* Name */}
+                    <span
+                      className="min-w-0 truncate text-sm font-medium"
+                      title={moveName}
+                    >
+                      {moveName}
+                    </span>
+
+                    {/* Description (effect) */}
+                    <span
+                      className="text-muted-foreground min-w-0 truncate text-xs"
+                      title={move?.shortDesc ?? undefined}
+                    >
+                      {move?.shortDesc &&
+                      move.shortDesc !== "No additional effect."
+                        ? move.shortDesc
+                        : ""}
                     </span>
 
                     {/* BP */}

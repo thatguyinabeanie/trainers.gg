@@ -896,34 +896,31 @@
    `s.mvline` import. Without :global() this rule was hashed and never
    applied, leaving the button at default inline-block layout — which made
    the inner mvline-calc (display: flex / block-level) wrap onto a new line
-   below the move name. */
+   below the move name.
+   Grid columns mirror the move-picker's column layout:
+   type pill | cat icon | name | description | BP | Acc | calc info */
 :global(.mvline) {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns:
+    auto              /* type pill (img is ~56px wide at h-6) */
+    auto              /* cat icon (~24px wide at h-6) */
+    minmax(0, 7rem)   /* name */
+    minmax(0, 1fr)    /* description */
+    auto              /* BP stat */
+    auto              /* Acc stat */
+    auto;             /* calc info */
   align-items: center;
-  justify-content: flex-start;
-  flex-wrap: nowrap;
   gap: 8px;
   padding: 7px 10px;
   background: var(--card);
   border: 1px solid transparent;
   border-radius: 6px;
   text-align: left;
-  min-width: 0;
   width: 100%;
+  min-width: 0;
   overflow: hidden;
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
-}
-
-/* Make the move-name flex grow + truncate; everything else stays flex-fixed. */
-:global(.mvline) > :global(.mvline-name) {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-:global(.mvline) > :not(:global(.mvline-name)) {
-  flex-shrink: 0;
 }
 
 :global(.mvline):hover {
@@ -967,12 +964,39 @@
 
 /* Move name inside a tile */
 :global(.mvline-name) {
-  font-size: 12.5px;
-  font-weight: 500;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Description cell — muted, truncated, smaller font */
+:global(.mvline-desc) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  line-height: 1.2;
+}
+
+/* Type pill slot — fixed min-width so empty slots reserve the column */
+:global(.mvline-type) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+}
+
+/* Category icon slot — fixed min-width so empty slots reserve the column */
+:global(.mvline-cat) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
 }
 
 /* BP / Acc readout — fixed-width value cells so they align across rows */

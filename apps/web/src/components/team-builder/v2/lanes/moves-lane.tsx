@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { getMoveData, type GameFormat } from "@trainers/pokemon";
+import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -13,7 +14,7 @@ import {
 } from "@/components/ui/popover";
 
 import { type ValidationError } from "../../validation-hooks";
-import { TypeDot } from "../type-dot";
+import { CATEGORY_ICON_URLS } from "../../move-category-ui";
 import { MovePicker } from "../pickers/move-picker";
 import { useCalcStateContext } from "../calc/calc-state-context";
 import { CalcDetailCard } from "../calc/calc-detail-card";
@@ -175,14 +176,29 @@ function MoveTile({
             />
           }
         >
-            {/* Col 1: Type dot (empty slot shows transparent placeholder for consistent column width) */}
-            {moveName ? (
-              <TypeDot t={moveData?.type ?? "Normal"} size={10} />
-            ) : (
-              <span style={{ width: 10, height: 10, display: "inline-block" }} aria-hidden />
-            )}
+            {/* Col 1: Type pill — Showdown retro sprite */}
+            <span className="mvline-type">
+              {moveName && moveData?.type ? (
+                <img
+                  src={getShowdownTypeIconUrl(moveData.type)}
+                  alt={moveData.type}
+                  className="h-6 w-auto [image-rendering:pixelated]"
+                />
+              ) : null}
+            </span>
 
-            {/* Col 2: Move name */}
+            {/* Col 2: Category icon */}
+            <span className="mvline-cat">
+              {moveName && moveData?.category && CATEGORY_ICON_URLS[moveData.category] ? (
+                <img
+                  src={CATEGORY_ICON_URLS[moveData.category]}
+                  alt={moveData.category}
+                  className="h-6 w-auto [image-rendering:pixelated]"
+                />
+              ) : null}
+            </span>
+
+            {/* Col 3: Move name */}
             <span
               className={cn(
                 "mvline-name",
@@ -192,29 +208,40 @@ function MoveTile({
               {moveName ?? "+ Add move"}
             </span>
 
-            {/* Col 3: Meta (BP + Acc + calc info) — stays on the same line as the name */}
-            <span className="mvline-calc">
-              {moveName && (
-                <>
-                  <span className="mvline-stat">
-                    <span className="mvline-stat-label">BP</span>
-                    <span className="mvline-stat-value mvline-stat-value--bp">
-                      {moveData?.basePower && moveData.basePower > 0
-                        ? moveData.basePower
-                        : "—"}
-                    </span>
-                  </span>
-                  <span className="mvline-stat">
-                    <span className="mvline-stat-label">Acc</span>
-                    <span className="mvline-stat-value mvline-stat-value--acc">
-                      {moveData?.accuracy === true || !moveData?.accuracy
-                        ? "—"
-                        : `${moveData.accuracy}%`}
-                    </span>
-                  </span>
-                </>
-              )}
+            {/* Col 4: Description */}
+            <span
+              className="mvline-desc"
+              title={moveData?.shortDesc ?? undefined}
+            >
+              {moveName && moveData?.shortDesc && moveData.shortDesc !== "No additional effect."
+                ? moveData.shortDesc
+                : ""}
+            </span>
 
+            {/* Col 5: BP */}
+            <span className="mvline-stat">
+              <span className="mvline-stat-label">BP</span>
+              <span className="mvline-stat-value mvline-stat-value--bp">
+                {moveName && moveData?.basePower && moveData.basePower > 0
+                  ? moveData.basePower
+                  : moveName ? "—" : ""}
+              </span>
+            </span>
+
+            {/* Col 6: Acc */}
+            <span className="mvline-stat">
+              <span className="mvline-stat-label">Acc</span>
+              <span className="mvline-stat-value mvline-stat-value--acc">
+                {moveName
+                  ? moveData?.accuracy === true || !moveData?.accuracy
+                    ? "—"
+                    : `${moveData.accuracy}%`
+                  : ""}
+              </span>
+            </span>
+
+            {/* Col 7: Calc info group */}
+            <span className="mvline-calc">
               {hasCalc ? (
                 <span className="mvline-calc-inner">
                   <span className="mvline-range">
@@ -257,9 +284,7 @@ function MoveTile({
                     </span>
                   )}
                 </span>
-              ) : moveName && isStatus ? (
-                <span className="mvline-status">status</span>
-              ) : moveName && !hasDefender && calc.calcEnabled ? (
+              ) : moveName && !hasDefender && calc.calcEnabled && !isStatus ? (
                 <span className="mvline-no-target">— pick a target —</span>
               ) : null}
             </span>
