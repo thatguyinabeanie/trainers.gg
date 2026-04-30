@@ -904,7 +904,7 @@
   grid-template-columns:
     auto              /* type pill (img is ~56px wide at h-6) */
     auto              /* cat icon (~24px wide at h-6) */
-    minmax(0, 7rem)   /* name */
+    minmax(0, 11rem)  /* name — fits longest realistic move names */
     minmax(0, 1fr)    /* description */
     auto              /* BP stat */
     auto              /* Acc stat */

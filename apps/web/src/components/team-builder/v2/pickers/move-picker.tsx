@@ -192,12 +192,13 @@ export function MovePicker({
   // Shared row grid: type | cat | name | description | bp | acc
   // 5rem        — type pill (fits "ELECTRIC", "FIGHTING")
   // 2.5rem      — category icon
-  // 9rem        — name (fits up to ~22 chars; truncates beyond)
+  // 11rem       — name (fits the longest realistic move names like
+  //               "Stomping Tantrum", "First Impression", "Power-Up Punch")
   // minmax(0,1fr) — description (truncates with title tooltip)
   // 2.5rem      — bp
   // 3rem        — accuracy
   const ROW_GRID =
-    "grid-cols-[5rem_2.5rem_9rem_minmax(0,1fr)_2.5rem_3rem]";
+    "grid-cols-[5rem_2.5rem_11rem_minmax(0,1fr)_2.5rem_3rem]";
 
   return (
     <div className="bg-popover text-popover-foreground flex w-[820px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
