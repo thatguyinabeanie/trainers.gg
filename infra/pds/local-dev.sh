@@ -21,17 +21,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Source dev slot library
-if [ -f "$REPO_ROOT/scripts/lib/dev-slots.sh" ]; then
-  source "$REPO_ROOT/scripts/lib/dev-slots.sh"
-  SLOT=$(read_slot)
-else
-  SLOT=0
-  # Fallback slot_port if library not available
-  slot_port() { echo "$1"; }
-fi
-PDS_HOST_PORT=$(slot_port "${PORT_BASE_PDS:-3001}" "$SLOT")
-WEB_PORT=$(slot_port "${PORT_BASE_WEB:-3000}" "$SLOT")
+PDS_HOST_PORT=3001
+WEB_PORT=3000
 
 NGROK_PID_FILE="$SCRIPT_DIR/.ngrok.pid"
 NGROK_LOG_FILE="$SCRIPT_DIR/.ngrok.log"
@@ -149,7 +140,7 @@ PDS_HANDLE_DOMAINS=.trainers.gg,.bsky.social
 EOF
 
     # Start PDS with the env file
-    PDS_HOST_PORT="$PDS_HOST_PORT" PDS_SLOT_SUFFIX="${SLOT:+"-slot-${SLOT}"}" \
+    PDS_HOST_PORT="$PDS_HOST_PORT" \
       docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$PDS_ENV_FILE" up -d
 
     log_info "Waiting for PDS to start..."
