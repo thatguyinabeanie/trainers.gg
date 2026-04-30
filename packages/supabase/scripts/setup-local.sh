@@ -14,21 +14,13 @@ SUPABASE_DIR="$(dirname "$SCRIPT_DIR")"
 ROOT_DIR="$SUPABASE_DIR/../.."
 ENV_FILE="$ROOT_DIR/.env.local"
 
-# Source dev slot library for port-aware configuration
-if [ -f "$ROOT_DIR/scripts/lib/dev-slots.sh" ]; then
-  source "$ROOT_DIR/scripts/lib/dev-slots.sh"
-  SLOT=$(read_slot)
-else
-  SLOT=0
-fi
-
-SUPABASE_API_PORT=$(slot_port "${PORT_BASE_SUPABASE_API:-54321}" "$SLOT")
-SUPABASE_DB_PORT=$(slot_port "${PORT_BASE_SUPABASE_DB:-54322}" "$SLOT")
-SUPABASE_STUDIO_PORT=$(slot_port "${PORT_BASE_SUPABASE_STUDIO:-54323}" "$SLOT")
-SUPABASE_INBUCKET_PORT=$(slot_port "${PORT_BASE_SUPABASE_INBUCKET:-54324}" "$SLOT")
-WEB_PORT=$(slot_port "${PORT_BASE_WEB:-3000}" "$SLOT")
-PDS_PORT=$(slot_port "${PORT_BASE_PDS:-3001}" "$SLOT")
-EXPO_PORT_VAL=$(slot_port "${PORT_BASE_EXPO:-8081}" "$SLOT")
+SUPABASE_API_PORT=54321
+SUPABASE_DB_PORT=54322
+SUPABASE_STUDIO_PORT=54323
+SUPABASE_INBUCKET_PORT=54324
+WEB_PORT=3000
+PDS_PORT=3001
+EXPO_PORT_VAL=8081
 
 # =============================================================================
 # Skip in CI/Production environments
@@ -103,8 +95,6 @@ check_supabase_status() {
   cd "$SUPABASE_DIR"
   if $SUPABASE_CMD status > /dev/null 2>&1; then
     # Supabase CLI says it's running, but verify the expected API port is reachable.
-    # This catches the case where containers from a different dev slot are running
-    # but .env.local points to a different port.
     if curl -sf "http://127.0.0.1:${SUPABASE_API_PORT}/rest/v1/" -o /dev/null 2>/dev/null; then
       return 0
     else

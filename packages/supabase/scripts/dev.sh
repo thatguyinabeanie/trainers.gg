@@ -12,20 +12,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUPABASE_DIR="$(dirname "$SCRIPT_DIR")"
 ROOT_DIR="$SUPABASE_DIR/../.."
 
-# Source dev slot library
-if [ -f "$ROOT_DIR/scripts/lib/dev-slots.sh" ]; then
-  source "$ROOT_DIR/scripts/lib/dev-slots.sh"
-  SLOT=$(read_slot)
-else
-  SLOT=0
-fi
-
 # Supabase project name determines Docker container prefix
-if [ "$SLOT" -gt 0 ]; then
-  SUPABASE_PROJECT="supabase-slot-${SLOT}"
-else
-  SUPABASE_PROJECT="supabase"
-fi
+SUPABASE_PROJECT="supabase"
 
 # Colors
 GREEN='\033[0;32m'
@@ -86,7 +74,7 @@ echo ""
 # =============================================================================
 # Find and tail the API gateway container
 # =============================================================================
-# Container naming: supabase_kong_<project> (e.g., supabase_kong_supabase-slot-1)
+# Container naming: supabase_kong_<project> (e.g., supabase_kong_supabase)
 KONG_CONTAINER=$(docker ps --filter "name=supabase_kong_${SUPABASE_PROJECT}" --format "{{.Names}}" 2>/dev/null | head -1)
 
 if [ -n "$KONG_CONTAINER" ]; then

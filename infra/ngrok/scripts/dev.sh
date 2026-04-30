@@ -13,17 +13,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PKG_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$PKG_DIR/../.." && pwd)"
 
-# Source dev slot library
-if [ -f "$REPO_ROOT/scripts/lib/dev-slots.sh" ]; then
-  source "$REPO_ROOT/scripts/lib/dev-slots.sh"
-  SLOT=$(read_slot)
-  WEB_PORT=$(slot_port "${PORT_BASE_WEB:-3000}" "$SLOT")
-  NGROK_API_PORT=$(slot_port "${PORT_BASE_NGROK_API:-4040}" "$SLOT")
-else
-  SLOT=0
-  WEB_PORT=3000
-  NGROK_API_PORT=4040
-fi
+WEB_PORT=3000
+NGROK_API_PORT=4040
 
 # Colors
 RED='\033[0;31m'
