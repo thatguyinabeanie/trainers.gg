@@ -368,7 +368,14 @@ export function SpeciesPicker({
   const [sort, setSort] = useState<SortState>({ col: "name", dir: "asc" });
 
   // Build the species index — cached at module scope keyed by format id
-  const speciesIndex = getCachedIndex(format);
+  const fullIndex = getCachedIndex(format);
+
+  // Pre-filter by format legality so the picker only ever surfaces species
+  // legal in this format. The denominator shown to the user reflects the
+  // format roster (e.g. ~275 for Champions Reg M-A), not all of gen 9.
+  const speciesIndex = format?.id
+    ? fullIndex.filter((e) => isLegalSpecies(e.species, format.id))
+    : fullIndex;
 
   // Handle a click on a column header
   function handleSort(col: SortCol) {
@@ -383,7 +390,7 @@ export function SpeciesPicker({
     });
   }
 
-  // Derived list — search + filter + format legality
+  // Derived list — search + filter (legality already applied to index)
   const matched = searchSpecies(speciesIndex, query, {
     types: filters.types,
     abilities: filters.abilities,
@@ -392,14 +399,11 @@ export function SpeciesPicker({
     maxBaseStat: filters.maxBaseStat,
     formatId: format?.id,
   });
-  const legal = format?.id
-    ? matched.filter((e) => isLegalSpecies(e.species, format.id))
-    : matched;
 
   // Sort the filtered results before slicing
-  const sorted = sortEntries(legal, sort);
+  const sorted = sortEntries(matched, sort);
   const visible = sorted.slice(0, MAX_VISIBLE_ROWS);
-  const isTruncated = legal.length > MAX_VISIBLE_ROWS;
+  const isTruncated = matched.length > MAX_VISIBLE_ROWS;
 
   return (
     <div
@@ -414,13 +418,13 @@ export function SpeciesPicker({
         onFiltersChange={setFilters}
         currentTeam={currentTeam}
         totalCount={speciesIndex.length}
-        filteredCount={legal.length}
+        filteredCount={matched.length}
       />
 
       {/* Truncation banner */}
       {isTruncated && (
         <div className="text-muted-foreground border-b px-4 py-1.5 text-xs">
-          Showing {MAX_VISIBLE_ROWS} of {legal.length} results — search to
+          Showing {MAX_VISIBLE_ROWS} of {matched.length} results — search to
           narrow.
         </div>
       )}
