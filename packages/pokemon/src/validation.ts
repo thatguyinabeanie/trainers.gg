@@ -40,9 +40,19 @@ export function validatePokemon(
     "moves" in pokemon ? pokemon : fromFlat(pokemon);
 
   try {
-    // Validate species exists
-    const species = currentGen.species.get(pokemonSet.species);
-    if (!species?.exists) {
+    // Validate species exists.
+    //
+    // We check existence via the generation-agnostic `Dex` rather than the
+    // gen-9-scoped `currentGen.species` because @pkmn/data's `Generations`
+    // filters species by what's *legal in that generation's Pokédex*. Many
+    // valid species (Aerodactyl, all pre-Paldea regional formes, the Champions
+    // format's synthetic mega-evolutions like "Chandelure-Mega") aren't in
+    // Scarlet/Violet's Pokédex but absolutely exist as known Pokemon.
+    //
+    // Format-legality (whether the species is allowed in a specific tournament
+    // format) is a separate concern handled elsewhere.
+    const speciesAny = Dex.species.get(pokemonSet.species);
+    if (!speciesAny?.exists) {
       errors.push({
         field: "species",
         message: `Pokemon species "${pokemonSet.species}" does not exist`,
@@ -51,6 +61,10 @@ export function validatePokemon(
       // If species doesn't exist, we can't validate further
       return { isValid: false, errors };
     }
+    // Use the gen-9 species data when available for downstream checks
+    // (abilities, learnable moves) — falls back to the cross-gen Dex entry
+    // so older species still validate cleanly.
+    const species = currentGen.species.get(pokemonSet.species) ?? speciesAny;
 
     // Validate nature
     const nature = currentGen.natures.get(pokemonSet.nature);
