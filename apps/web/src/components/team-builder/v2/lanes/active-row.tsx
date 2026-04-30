@@ -11,7 +11,6 @@ import { IdentityLane } from "./identity-lane";
 import { SetupLane } from "./setup-lane";
 import { MovesLane } from "./moves-lane";
 import { StatsLane } from "./stats-lane";
-import { MetaLane } from "./meta-lane";
 
 // =============================================================================
 // Types
@@ -146,13 +145,6 @@ export function ActiveRow({
         format={format}
         onUpdate={onUpdate}
         fieldErrors={statsErrors}
-      />
-
-      {/* META lane */}
-      <MetaLane
-        pokemon={pokemon}
-        format={format}
-        _format={format}
       />
     </div>
   );

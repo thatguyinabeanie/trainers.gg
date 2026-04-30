@@ -187,14 +187,6 @@ function CollapsedRow({
         ))}
       </div>
 
-      {/* BST / SPE / WR meta */}
-      <div className="hidden shrink-0 items-center gap-3 font-mono text-xs text-muted-foreground lg:flex">
-        {/* TODO Phase 2: compute actual BST and base SPE from species data */}
-        <span>BST —</span>
-        <span>SPE —</span>
-        <span>WR —%</span>
-      </div>
-
       {/* Chevron */}
       <button
         type="button"
