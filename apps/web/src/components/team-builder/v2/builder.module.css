@@ -1685,7 +1685,7 @@
 /* Stat row — Showdown-style 6-column grid per stat */
 .spreadRow {
   display: grid;
-  grid-template-columns: 36px 26px minmax(60px, 1fr) 38px minmax(120px, 2fr) 32px;
+  grid-template-columns: 30px 24px minmax(40px, 1fr) 38px minmax(80px, 2fr) 28px;
   gap: 8px;
   align-items: center;
   padding: 2px 4px;
