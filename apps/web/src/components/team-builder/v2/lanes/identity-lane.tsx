@@ -18,6 +18,7 @@ import { Sprite } from "../sprite";
 import { TypePill } from "../type-pill";
 import { formatSupportsDynamax } from "../format-gating";
 import { NumberPicker } from "../pickers/number-picker";
+import { SpeciesPicker } from "../pickers/species-picker";
 import { FieldError } from "../validation/field-error";
 
 // =============================================================================
@@ -28,7 +29,6 @@ interface IdentityLaneProps {
   pokemon: Tables<"pokemon">;
   format: GameFormat | undefined;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
-  onOpenSpecies: (anchor: HTMLElement) => void;
   /** Validation errors scoped to identity fields (species, nickname, gender). */
   fieldErrors?: ValidationError[];
 }
@@ -60,7 +60,7 @@ function errorsForField(errors: ValidationError[], field: string): ValidationErr
 // =============================================================================
 
 /**
- * Left-most lane in the active row — redesigned for the PokeRow overhaul.
+ * Left-most lane in the active row.
  *
  * Structure:
  *   [sprite 128×128] | [meta column]
@@ -70,14 +70,14 @@ function errorsForField(errors: ValidationError[], field: string): ValidationErr
  *                        - Chip row: shiny + gender + dynamax (format-gated)
  *                        - Species validation chip
  *
- * Sprite click → opens species picker.
+ * Both the sprite and the species-input button open a combobox-style species
+ * picker in a non-modal Popover anchored to the species-input trigger.
  * Level text click → opens NumberPicker popover.
  */
 export function IdentityLane({
   pokemon,
   format,
   onUpdate,
-  onOpenSpecies,
   fieldErrors = [],
 }: IdentityLaneProps) {
   const types = getSpeciesTypes(pokemon.species ?? "");
@@ -85,6 +85,7 @@ export function IdentityLane({
   const [nickDraft, setNickDraft] = useState(pokemon.nickname ?? "");
   const [levelOpen, setLevelOpen] = useState(false);
   const [dmaxOpen, setDmaxOpen] = useState(false);
+  const [speciesOpen, setSpeciesOpen] = useState(false);
 
   const level = pokemon.level ?? 50;
   const gender = pokemon.gender as GenderValue;
@@ -123,42 +124,103 @@ export function IdentityLane({
   const genderSuffix =
     gender === "Male" ? " · ♂" : gender === "Female" ? " · ♀" : "";
 
+  // TODO: pass team siblings for synergy hints
+  const currentTeam: Array<{ species: string }> = [];
+
   return (
     <div className="flex min-w-[240px] flex-shrink-0 gap-3 p-3">
-      {/* Sprite + species picker trigger (stacked column) */}
-      <div className="flex shrink-0 flex-col gap-1.5">
-        {/* Sprite — 128×128, click to open species picker */}
-        <button
-          type="button"
-          onClick={(e) => onOpenSpecies(e.currentTarget)}
-          aria-label={`Change species (${pokemon.species ?? "none"})`}
-          className="shrink-0 transition-opacity hover:opacity-80"
-        >
-          <Sprite species={pokemon.species ?? ""} types={types} size={128} />
-        </button>
-        {/* Species "input" — visually a text input, behaves as a click-to-open
-            trigger for the species picker. Click here OR the sprite above. */}
-        <button
-          type="button"
-          onClick={(e) => onOpenSpecies(e.currentTarget)}
-          aria-label={`Change species (${pokemon.species ?? "none"})`}
-          className={cn(
-            "border-border bg-background hover:border-primary focus-visible:border-primary",
-            "block w-[128px] rounded-md border px-2 py-1.5 text-left text-xs",
-            "outline-none transition-colors"
-          )}
-        >
-          <span
-            className={cn(
-              "block truncate",
-              pokemon.species ? "text-foreground font-medium" : "text-muted-foreground"
-            )}
-            title={pokemon.species ?? undefined}
+      {/* Species picker Popover — wraps both the sprite and the species-input
+          triggers so either one opens the same combobox dropdown. */}
+      <Popover open={speciesOpen} onOpenChange={setSpeciesOpen}>
+        <div className="flex shrink-0 flex-col gap-1.5">
+          {/* Sprite — 128×128, click to open species picker */}
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
+                aria-label={`Change species (${pokemon.species ?? "none"})`}
+                className="shrink-0 transition-opacity hover:opacity-80"
+              />
+            }
           >
-            {pokemon.species ?? "Choose species…"}
-          </span>
-        </button>
-      </div>
+            <Sprite species={pokemon.species ?? ""} types={types} size={128} />
+          </PopoverTrigger>
+
+          {/* Species "input" — visually a text input, behaves as a click-to-open
+              trigger for the species picker. */}
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
+                aria-label={`Change species (${pokemon.species ?? "none"})`}
+                className={cn(
+                  "border-border bg-background hover:border-primary focus-visible:border-primary",
+                  "block w-[128px] rounded-md border px-2 py-1.5 text-left text-xs",
+                  "outline-none transition-colors"
+                )}
+              />
+            }
+          >
+            <span
+              className={cn(
+                "block truncate",
+                pokemon.species
+                  ? "text-foreground font-medium"
+                  : "text-muted-foreground"
+              )}
+              title={pokemon.species ?? undefined}
+            >
+              {pokemon.species ?? "Choose species…"}
+            </span>
+          </PopoverTrigger>
+        </div>
+
+        <PopoverContent
+          side="bottom"
+          align="start"
+          sideOffset={6}
+          className="w-[720px] max-w-[calc(100vw-2rem)] p-0"
+          style={{ maxHeight: "min(60vh, 460px)" }}
+        >
+          <SpeciesPicker
+            value={pokemon.species ?? null}
+            format={format}
+            currentTeam={currentTeam}
+            onPick={(species) => {
+              setSpeciesOpen(false);
+              if (species === pokemon.species) return;
+              setNickDraft("");
+              onUpdate({
+                species,
+                nickname: null,
+                held_item: null,
+                ability: "",
+                nature: "",
+                tera_type: null,
+                gender: null,
+                is_shiny: false,
+                move1: "",
+                move2: null,
+                move3: null,
+                move4: null,
+                ev_hp: 0,
+                ev_attack: 0,
+                ev_defense: 0,
+                ev_special_attack: 0,
+                ev_special_defense: 0,
+                ev_speed: 0,
+                iv_hp: 31,
+                iv_attack: 31,
+                iv_defense: 31,
+                iv_special_attack: 31,
+                iv_special_defense: 31,
+                iv_speed: 31,
+              });
+            }}
+            onClose={() => setSpeciesOpen(false)}
+          />
+        </PopoverContent>
+      </Popover>
 
       {/* Meta column — stacked tight to the right of the sprite */}
       <div className="flex min-w-0 flex-1 flex-col gap-1 justify-center">
@@ -181,7 +243,8 @@ export function IdentityLane({
               "border-b border-transparent placeholder:text-muted-foreground/50 placeholder:font-normal",
               "hover:border-border focus:border-primary",
               "leading-snug",
-              nicknameErrors.length > 0 && "border-destructive focus:border-destructive"
+              nicknameErrors.length > 0 &&
+                "border-destructive focus:border-destructive"
             )}
           />
           {nicknameErrors.map((err, i) => (
@@ -252,7 +315,9 @@ export function IdentityLane({
             type="button"
             onClick={handleShinyToggle}
             aria-pressed={isShiny}
-            title={isShiny ? "Shiny (click to clear)" : "Not shiny (click to set)"}
+            title={
+              isShiny ? "Shiny (click to clear)" : "Not shiny (click to set)"
+            }
             className={cn(
               "border-border rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
               isShiny
@@ -274,7 +339,10 @@ export function IdentityLane({
                   />
                 }
               >
-                DMax {(pokemon as Record<string, unknown>)["dynamax_level"] as number ?? 10}
+                DMax{" "}
+                {((pokemon as Record<string, unknown>)[
+                  "dynamax_level"
+                ] as number) ?? 10}
               </PopoverTrigger>
               <PopoverContent
                 side="bottom"
@@ -284,13 +352,16 @@ export function IdentityLane({
                 <NumberPicker
                   title="Dynamax Level"
                   value={
-                    ((pokemon as Record<string, unknown>)["dynamax_level"] as number) ?? 10
+                    ((pokemon as Record<string, unknown>)[
+                      "dynamax_level"
+                    ] as number) ?? 10
                   }
                   min={0}
                   max={10}
                   onChange={(v) =>
                     onUpdate({
-                      ["dynamax_level" as keyof TablesUpdate<"pokemon">]: v as never,
+                      ["dynamax_level" as keyof TablesUpdate<"pokemon">]:
+                        v as never,
                     })
                   }
                   onClose={() => setDmaxOpen(false)}

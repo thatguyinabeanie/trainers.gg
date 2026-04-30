@@ -1,16 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 
 import { getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 import { type ValidationError } from "../validation-hooks";
 import { Sprite } from "./sprite";
 import { TypePill } from "./type-pill";
 import { ActiveRow } from "./lanes/active-row";
+import { SpeciesPicker } from "./pickers/species-picker";
 
 // =============================================================================
 // Types
@@ -23,10 +30,10 @@ interface PokeRowProps {
   density: "comfy" | "compact";
   expandMode: "active" | "all";
   onActivate: (idx: number) => void;
-  onAdd?: (idx: number) => void;
+  /** Called with the slot index and the chosen species when a species is picked
+   *  for an empty slot. */
+  onAdd?: (idx: number, species: string) => void;
   onRemove?: (idx: number) => void;
-  /** Open the workspace's species picker dialog for this slot. */
-  onOpenSpecies?: (idx: number) => void;
   /** Required for Phase 2 active row editor. */
   teamPokemon?: TeamWithPokemon["team_pokemon"];
   format?: GameFormat;
@@ -73,29 +80,51 @@ function SlotRib({ idx, hasError, hasWarning }: SlotRibProps) {
 interface EmptyRowProps {
   idx: number;
   density: "comfy" | "compact";
-  onAdd?: (idx: number) => void;
+  format?: GameFormat;
+  onAdd?: (idx: number, species: string) => void;
 }
 
-function EmptyRow({ idx, density, onAdd }: EmptyRowProps) {
+function EmptyRow({ idx, density, format, onAdd }: EmptyRowProps) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <button
-      type="button"
-      onClick={() => {
-        if (onAdd) {
-          onAdd(idx);
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            className={cn(
+              "flex w-full items-center gap-3 rounded-lg border border-dashed border-border px-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/30",
+              density === "comfy" ? "py-3" : "py-2"
+            )}
+          />
         }
-      }}
-      className={cn(
-        "flex w-full items-center gap-3 rounded-lg border border-dashed border-border px-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/30",
-        density === "comfy" ? "py-3" : "py-2"
-      )}
-    >
-      <SlotRib idx={idx} />
-      <span className="text-sm text-muted-foreground">+ Add Pokémon</span>
-      <span className="text-xs text-muted-foreground/60">
-        or paste a Showdown set
-      </span>
-    </button>
+      >
+        <SlotRib idx={idx} />
+        <span className="text-sm text-muted-foreground">+ Add Pokémon</span>
+        <span className="text-xs text-muted-foreground/60">
+          or paste a Showdown set
+        </span>
+      </PopoverTrigger>
+
+      <PopoverContent
+        side="bottom"
+        align="start"
+        sideOffset={6}
+        className="w-[720px] max-w-[calc(100vw-2rem)] p-0"
+        style={{ maxHeight: "min(60vh, 460px)" }}
+      >
+        <SpeciesPicker
+          value={null}
+          format={format}
+          onPick={(species) => {
+            onAdd?.(idx, species);
+            setOpen(false);
+          }}
+          onClose={() => setOpen(false)}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -223,7 +252,6 @@ interface ActiveRowShellProps {
   idx: number;
   pokemon: Tables<"pokemon">;
   onRemove?: (idx: number) => void;
-  onOpenSpecies?: (idx: number) => void;
   teamPokemon: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
   onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
@@ -234,7 +262,6 @@ function ActiveRowShell({
   idx,
   pokemon,
   onRemove,
-  onOpenSpecies,
   teamPokemon,
   format,
   onPokemonUpdate,
@@ -249,7 +276,6 @@ function ActiveRowShell({
         format={format}
         onUpdate={(fields) => onPokemonUpdate?.(pokemon.id, fields)}
         onRemove={() => onRemove?.(idx)}
-        onOpenSpecies={(slotIdx) => onOpenSpecies?.(slotIdx)}
         fieldErrors={slotErrors}
       />
     </div>
@@ -275,14 +301,15 @@ export function PokeRow({
   onActivate,
   onAdd,
   onRemove,
-  onOpenSpecies,
   teamPokemon,
   format,
   onPokemonUpdate,
   slotErrors = [],
 }: PokeRowProps) {
   if (!pokemon) {
-    return <EmptyRow idx={idx} density={density} onAdd={onAdd} />;
+    return (
+      <EmptyRow idx={idx} density={density} format={format} onAdd={onAdd} />
+    );
   }
 
   const showExpanded = isActive || expandMode === "all";
@@ -293,7 +320,6 @@ export function PokeRow({
         idx={idx}
         pokemon={pokemon}
         onRemove={onRemove}
-        onOpenSpecies={onOpenSpecies}
         teamPokemon={teamPokemon ?? []}
         format={format}
         onPokemonUpdate={onPokemonUpdate}

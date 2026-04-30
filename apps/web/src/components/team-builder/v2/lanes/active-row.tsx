@@ -23,8 +23,6 @@ interface ActiveRowProps {
   format: GameFormat | undefined;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   onRemove: () => void;
-  /** Open the workspace's species picker dialog for this slot. */
-  onOpenSpecies: (idx: number) => void;
   /** All validation errors for this Pokemon — filtered per lane by field. */
   fieldErrors?: ValidationError[];
 }
@@ -59,7 +57,6 @@ export function ActiveRow({
   format,
   onUpdate,
   onRemove,
-  onOpenSpecies,
   fieldErrors = [],
 }: ActiveRowProps) {
   // Collect held items from sibling pokemon for the item picker duplicate warning
@@ -67,10 +64,6 @@ export function ActiveRow({
     .filter((tp) => tp.pokemon && tp.pokemon.id !== pokemon.id)
     .map((tp) => tp.pokemon!.held_item)
     .filter((item): item is string => item !== null);
-
-  function handleOpenSpecies(_anchor: HTMLElement) {
-    onOpenSpecies(idx);
-  }
 
   // Partition errors to the appropriate lane
   const identityErrors = errorsForFields(fieldErrors, [
@@ -120,7 +113,6 @@ export function ActiveRow({
         pokemon={pokemon}
         format={format}
         onUpdate={onUpdate}
-        onOpenSpecies={handleOpenSpecies}
         fieldErrors={identityErrors}
       />
 
