@@ -466,6 +466,39 @@ describe("StatsLane", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // 11d-no-flip. Adding "+" to the currently-reduced stat does NOT flip the
+  //              previous boost stat to −; it picks a fresh − partner instead.
+  // ---------------------------------------------------------------------------
+  it("typing '+' on the currently-reduced stat doesn't flip the previous boost", () => {
+    // Modest = +SpA / −Atk. User adds "+" to Atk (the currently-reduced stat).
+    // Old buggy behavior: flipped to Adamant (+Atk / −SpA), turning SpA into −.
+    // New correct behavior: SpA loses its +, Atk gains +, picks a fresh −
+    // partner that isn't SpA. Default for +Atk is SpA but that's avoided →
+    // falls back to defense → Lonely (+Atk / −Def).
+    const onUpdate = jest.fn();
+    render(
+      <StatsLane
+        pokemon={makeGarchomp({ nature: "Modest" })}
+        format={VGC_FORMAT}
+        onUpdate={onUpdate}
+      />
+    );
+
+    const atkInput = screen.getByRole("textbox", { name: /atk investment/i });
+    fireEvent.focus(atkInput);
+    fireEvent.change(atkInput, { target: { value: "16+" } });
+    fireEvent.blur(atkInput, { target: { value: "16+" } });
+
+    const calls = onUpdate.mock.calls.map((c) => c[0]);
+    // Nature is some +Atk nature whose −stat is NOT specialAttack
+    const natureCall = calls.find(
+      (c) => typeof c.nature === "string"
+    ) as { nature?: string } | undefined;
+    expect(natureCall?.nature).toBeDefined();
+    expect(natureCall?.nature).not.toBe("Adamant"); // Adamant = +Atk / −SpA — would be a flip
+  });
+
+  // ---------------------------------------------------------------------------
   // 11e. Clearing the suffix on a +nature stat reverts to neutral
   // ---------------------------------------------------------------------------
   it("clearing the '+' on the +nature stat reverts the nature to Serious", () => {

@@ -230,18 +230,49 @@ function parseEvInput(raw: string): {
   return { value, suffix };
 }
 
+const ALL_NATURE_STATS: NatureStat[] = [
+  "attack",
+  "defense",
+  "specialAttack",
+  "specialDefense",
+  "speed",
+];
+
+/**
+ * Pick a fresh nature partner stat (the −stat for a +boost, or the +stat for
+ * a −reduce). Tries the default first; if the default conflicts with `avoid`
+ * (the partner stat we explicitly want to leave alone — typically the
+ * previous boost when we're moving the + somewhere new), falls back to the
+ * first stat that isn't the new mover or `avoid`.
+ */
+function pickFreshPartner(
+  mover: NatureStat,
+  avoid: NatureStat | null,
+  defaults: Record<NatureStat, NatureStat>
+): NatureStat {
+  const def = defaults[mover];
+  if (def !== avoid) return def;
+  return (
+    ALL_NATURE_STATS.find((s) => s !== mover && s !== avoid) ?? def
+  );
+}
+
 /**
  * Given the current nature, the row's stat, and the suffix the user typed,
  * compute what the new nature should be (or null if no change needed).
  *
- * • suffix === "+": ensure +nature on this stat. If current was +stat, no
- *   change. Otherwise pick a nature with `+stat / −X` where X is the current
- *   reduced stat (kept) or a sensible default.
- * • suffix === "-": same logic, mirrored.
- * • suffix === null: if the row's stat WAS +/−nature, switch to neutral
- *   (Serious). Otherwise no change.
+ * Rules (matching user expectation):
+ * • suffix === "+": this stat becomes +nature.
+ *   - If already +stat: no change.
+ *   - If the row's stat is the current −stat (so we'd be moving the + onto a
+ *     stat that was the −): the previous boost stat keeps its neutral status
+ *     (we DO NOT flip it to −); pick a fresh − partner that isn't the
+ *     previous boost or the new boost.
+ *   - Otherwise: keep the existing − partner if any, else pick a default.
+ * • suffix === "-": symmetric.
+ * • suffix === null: if the row's stat WAS +/−, switch to neutral (Serious).
  *
- * HP cannot be a nature stat — always returns null for HP.
+ * HP returns null — HP can't be a nature stat.
  */
 function computeNatureForSuffix(opts: {
   currentNature: string;
@@ -258,15 +289,27 @@ function computeNatureForSuffix(opts: {
 
   if (suffix === "+") {
     if (currentBoost === stat) return null;
-    let reduce = currentReduce;
-    if (!reduce || reduce === stat) reduce = DEFAULT_REDUCE_FOR_BOOST[stat];
+
+    let reduce: NatureStat;
+    if (currentReduce && currentReduce !== stat) {
+      // Keep the existing − partner (no conflict).
+      reduce = currentReduce;
+    } else {
+      // Need fresh − partner. Avoid the previous boost so it isn't flipped.
+      reduce = pickFreshPartner(stat, currentBoost, DEFAULT_REDUCE_FOR_BOOST);
+    }
     return findNatureFor(stat, reduce);
   }
 
   if (suffix === "-") {
     if (currentReduce === stat) return null;
-    let boost = currentBoost;
-    if (!boost || boost === stat) boost = DEFAULT_BOOST_FOR_REDUCE[stat];
+
+    let boost: NatureStat;
+    if (currentBoost && currentBoost !== stat) {
+      boost = currentBoost;
+    } else {
+      boost = pickFreshPartner(stat, currentReduce, DEFAULT_BOOST_FOR_REDUCE);
+    }
     return findNatureFor(boost, stat);
   }
 
