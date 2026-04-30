@@ -13,8 +13,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-import { TYPE_BG_COLORS } from "../../type-colors";
-import { TypeDot } from "../type-dot";
+import { TypeSymbolIcon } from "../../type-symbol-icon";
 
 // =============================================================================
 // Types
@@ -145,10 +144,6 @@ export function MovePicker({
               if (!item) return null;
               const { name: moveName, data: move } = item;
               const isSelected = moveName === value;
-              const typeColor = move?.type
-                ? (TYPE_BG_COLORS[move.type as keyof typeof TYPE_BG_COLORS] ??
-                  "bg-muted text-foreground")
-                : "bg-muted text-foreground";
 
               return (
                 <div
@@ -171,8 +166,16 @@ export function MovePicker({
                       isSelected && "bg-accent text-accent-foreground"
                     )}
                   >
-                    {/* Type dot */}
-                    <TypeDot t={move?.type ?? "Normal"} size={10} />
+                    {/* Type icon — replaces the right-side TYPE pill */}
+                    <TypeSymbolIcon
+                      type={
+                        (move?.type ??
+                          "Normal") as Parameters<
+                          typeof TypeSymbolIcon
+                        >[0]["type"]
+                      }
+                      size={22}
+                    />
 
                     {/* Name + secondary effect — vertical stack, expands to fill */}
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -186,18 +189,6 @@ export function MovePicker({
                           </span>
                         )}
                     </span>
-
-                    {/* Type badge */}
-                    {move?.type && (
-                      <span
-                        className={cn(
-                          "shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold uppercase leading-none",
-                          typeColor
-                        )}
-                      >
-                        {move.type}
-                      </span>
-                    )}
 
                     {/* BP */}
                     <span className="text-muted-foreground w-8 shrink-0 text-right font-mono text-xs">
