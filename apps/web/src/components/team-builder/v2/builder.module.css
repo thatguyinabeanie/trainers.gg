@@ -1444,13 +1444,13 @@
   min-width: 0;
 }
 
-/* Stat row — one per stat in the horizontal spread view */
+/* Stat row — one per stat in the horizontal spread view (compact) */
 .statRow {
   display: grid;
-  grid-template-columns: 28px 1fr 38px 32px;
-  gap: 8px;
+  grid-template-columns: 26px 1fr 34px 28px;
+  gap: 6px;
   align-items: center;
-  padding: 3px 2px;
+  padding: 1px 2px;
   cursor: pointer;
   border-radius: 4px;
   transition: background 0.1s;
@@ -1466,7 +1466,7 @@
 
 /* Horizontal bar track */
 .statBar {
-  height: 5px;
+  height: 4px;
   background: var(--muted);
   border-radius: 999px;
   overflow: hidden;
@@ -1483,7 +1483,7 @@
 
 /* Stat label — left-most column */
 .statLabel {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1496,7 +1496,7 @@
 /* Final stat value — mono, right-aligned */
 .statValue {
   font-family: ui-monospace, SFMono-Regular, monospace;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-align: right;
 }
@@ -1504,7 +1504,7 @@
 /* EV count — muted, mono, right-aligned */
 .statEv {
   font-family: ui-monospace, SFMono-Regular, monospace;
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--muted-foreground);
   text-align: right;
 }

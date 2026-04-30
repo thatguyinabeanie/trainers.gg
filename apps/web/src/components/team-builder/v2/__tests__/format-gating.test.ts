@@ -2,6 +2,7 @@ import { getFormatById, type GameFormat } from "@trainers/pokemon";
 
 import {
   formatSupportsDynamax,
+  formatSupportsIvs,
   formatSupportsMega,
   formatSupportsTera,
   formatSupportsZMoves,
@@ -55,13 +56,36 @@ describe("formatSupportsTera", () => {
     expect(formatSupportsTera(gen6Format)).toBe(false);
   });
 
-  it("returns false for gen 10 (Pokemon Champions — Tera replaced)", () => {
-    const gen10Format = getFormatById("championsvgc2026regma");
-    expect(formatSupportsTera(gen10Format)).toBe(false);
+  it("returns false for Pokemon Champions (no Tera in Champions rules)", () => {
+    const championsFormat = getFormatById("championsvgc2026regma");
+    expect(formatSupportsTera(championsFormat)).toBe(false);
   });
 
   it("returns false for undefined", () => {
     expect(formatSupportsTera(undefined)).toBe(false);
+  });
+});
+
+// =============================================================================
+// formatSupportsIvs
+// =============================================================================
+
+describe("formatSupportsIvs", () => {
+  it("returns true for Scarlet & Violet (gen 9 IV system)", () => {
+    expect(formatSupportsIvs(gen9Format)).toBe(true);
+  });
+
+  it("returns true for Sword & Shield", () => {
+    expect(formatSupportsIvs(gen8Format)).toBe(true);
+  });
+
+  it("returns false for Pokemon Champions (SP system, no IVs)", () => {
+    const championsFormat = getFormatById("championsvgc2026regma");
+    expect(formatSupportsIvs(championsFormat)).toBe(false);
+  });
+
+  it("returns false for undefined", () => {
+    expect(formatSupportsIvs(undefined)).toBe(false);
   });
 });
 

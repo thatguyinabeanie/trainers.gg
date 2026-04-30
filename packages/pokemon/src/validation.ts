@@ -76,31 +76,41 @@ export function validatePokemon(
       });
     }
 
-    // Validate ability
-    const ability = currentGen.abilities.get(pokemonSet.ability);
-    if (!ability?.exists) {
-      errors.push({
-        field: "ability",
-        message: `Ability "${pokemonSet.ability}" does not exist`,
-        severity: "error",
-      });
-    } else {
-      // Check if Pokemon can have this ability
-      const validAbilities = Object.values(species.abilities || {}).filter(
-        Boolean
-      );
-      if (!validAbilities.includes(pokemonSet.ability)) {
+    // Validate ability — skip when unset (empty string is "no ability chosen yet",
+    // not an error). Use Dex for existence (gen-agnostic) so abilities that exist
+    // in older gens but not gen 9 still resolve.
+    if (pokemonSet.ability) {
+      const ability =
+        Dex.abilities.get(pokemonSet.ability) ??
+        currentGen.abilities.get(pokemonSet.ability);
+      if (!ability?.exists) {
         errors.push({
           field: "ability",
-          message: `${pokemonSet.species} cannot have ability "${pokemonSet.ability}"`,
+          message: `Ability "${pokemonSet.ability}" does not exist`,
           severity: "error",
         });
+      } else {
+        // Check if Pokemon can have this ability
+        const validAbilities = Object.values(species.abilities || {}).filter(
+          Boolean
+        );
+        if (!validAbilities.includes(pokemonSet.ability)) {
+          errors.push({
+            field: "ability",
+            message: `${pokemonSet.species} cannot have ability "${pokemonSet.ability}"`,
+            severity: "error",
+          });
+        }
       }
     }
 
-    // Validate held item if provided
+    // Validate held item if provided. Use Dex (cross-gen) so Mega Stones,
+    // Z-Crystals, and other older items that aren't in gen 9's item list
+    // still resolve. Format-legality is enforced separately.
     if (pokemonSet.heldItem) {
-      const item = currentGen.items.get(pokemonSet.heldItem);
+      const item =
+        Dex.items.get(pokemonSet.heldItem) ??
+        currentGen.items.get(pokemonSet.heldItem);
       if (!item?.exists) {
         errors.push({
           field: "heldItem",
@@ -153,7 +163,9 @@ export function validatePokemon(
 
     for (const [index, moveId] of moves.entries()) {
       if (moveId) {
-        const move = currentGen.moves.get(moveId);
+        // Use Dex (cross-gen) so older moves that aren't in gen 9 still
+        // resolve. Format-legality is enforced separately.
+        const move = Dex.moves.get(moveId) ?? currentGen.moves.get(moveId);
         if (!move?.exists) {
           errors.push({
             field: `move${index + 1}`,

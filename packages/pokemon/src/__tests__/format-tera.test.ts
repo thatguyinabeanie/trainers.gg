@@ -73,12 +73,14 @@ describe("formatHasTera", () => {
   // Inline format objects — verifies the check is generation-based
   // ---------------------------------------------------------------------------
 
-  it("returns false for an inline format with generation 10", () => {
+  it("returns false for a Champions format even when generation is 9", () => {
+    // Champions runs on gen 9 mechanics but disables Tera. Discrimination is
+    // by gameShort === "Champions", not the generation number.
     const format: GameFormat = {
-      id: "hypothetical-gen10",
+      id: "hypothetical-champions",
       game: "Pokemon Champions",
       gameShort: "Champions",
-      generation: 10,
+      generation: 9,
       category: "VGC",
       year: 2026,
       regulation: "B",

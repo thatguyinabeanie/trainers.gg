@@ -1,4 +1,8 @@
-import { formatHasTera, type GameFormat } from "@trainers/pokemon";
+import {
+  formatHasTera,
+  isChampionsFormat,
+  type GameFormat,
+} from "@trainers/pokemon";
 
 // =============================================================================
 // format-gating.ts — format feature support helpers
@@ -34,4 +38,14 @@ export function formatSupportsMega(format: GameFormat | undefined): boolean {
  */
 export function formatSupportsZMoves(format: GameFormat | undefined): boolean {
   return !!format && format.generation === 7;
+}
+
+/**
+ * Returns true when IVs are a meaningful concept in the given format.
+ * Champions replaces the IV/EV system with Splendor Points and has no IV
+ * slider — every stat is treated as 31 IVs internally. Hide IV UI in
+ * Champions; show it everywhere else.
+ */
+export function formatSupportsIvs(format: GameFormat | undefined): boolean {
+  return !!format && !isChampionsFormat(format);
 }

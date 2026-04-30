@@ -8,7 +8,7 @@ import { useBuilderState, type Tweaks } from "../use-builder-state";
 // Helpers
 // =============================================================================
 
-const STORAGE_KEY = "trainersgg.builder.tweaks.v2";
+const STORAGE_KEY = "trainersgg.builder.tweaks.v3";
 
 function clearStorage() {
   window.localStorage.clear();
@@ -26,9 +26,9 @@ describe("useBuilderState — default tweaks", () => {
     expect(result.current.tweaks.density).toBe("comfy");
   });
 
-  it("returns expandMode=active by default", () => {
+  it("returns expandMode=all by default", () => {
     const { result } = renderHook(() => useBuilderState());
-    expect(result.current.tweaks.expandMode).toBe("active");
+    expect(result.current.tweaks.expandMode).toBe("all");
   });
 
   it("returns showCalc=true by default", () => {
@@ -132,7 +132,7 @@ describe("useBuilderState — restores tweaks from localStorage on mount", () =>
     const { result } = renderHook(() => useBuilderState());
 
     expect(result.current.tweaks.density).toBe("compact");
-    expect(result.current.tweaks.expandMode).toBe("active"); // default
+    expect(result.current.tweaks.expandMode).toBe("all"); // default
     expect(result.current.tweaks.showCalc).toBe(true); // default
   });
 
@@ -142,7 +142,7 @@ describe("useBuilderState — restores tweaks from localStorage on mount", () =>
     const { result } = renderHook(() => useBuilderState());
 
     expect(result.current.tweaks.density).toBe("comfy");
-    expect(result.current.tweaks.expandMode).toBe("active");
+    expect(result.current.tweaks.expandMode).toBe("all");
     expect(result.current.tweaks.showCalc).toBe(true);
   });
 });

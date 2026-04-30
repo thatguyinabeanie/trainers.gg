@@ -10,6 +10,7 @@ import {
   getBaseStats,
   getNatureMultiplier,
   getStatTier,
+  isChampionsFormat,
   NATURE_EFFECTS,
   type GameFormat,
 } from "@trainers/pokemon";
@@ -29,6 +30,7 @@ import {
   STAT_KEYS,
   STAT_LABELS,
 } from "../../stat-types";
+import { formatSupportsIvs } from "../format-gating";
 import { NumberPicker } from "../pickers/number-picker";
 import { FieldError } from "../validation/field-error";
 import s from "../builder.module.css";
@@ -105,10 +107,6 @@ function totalEvs(evs: StatValues): number {
     evs.specialDefense +
     evs.speed
   );
-}
-
-function isChampionsFormat(format: GameFormat | undefined): boolean {
-  return !!format && format.generation === 10;
 }
 
 function computeFinalStat(
@@ -281,6 +279,7 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
   const level = pokemon.level ?? 50;
   const nature = pokemon.nature ?? "Hardy";
   const isChampions = isChampionsFormat(format);
+  const showIvSection = formatSupportsIvs(format);
   const totalEv = totalEvs(evs);
 
   const rawBase = getBaseStats(pokemon.species ?? "");
@@ -303,8 +302,8 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
 
   return (
     <div
-      className="flex min-w-0 flex-1 flex-col gap-1 border-r border-dashed border-border/60 p-3"
-      style={{ minWidth: 280 }}
+      className="flex min-w-0 flex-1 flex-col gap-0.5 border-r border-dashed border-border/60 px-3 py-2"
+      style={{ minWidth: 260 }}
     >
       {/* Header with total EV chip */}
       <div className="mb-1 flex items-baseline justify-between">
@@ -359,7 +358,8 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
         <FieldError key={i} message={err.message} severity={err.severity} />
       ))}
 
-      {/* IV section */}
+      {/* IV section — hidden in formats without IVs (e.g. Champions) */}
+      {showIvSection && (
       <div className="mt-1">
         {/* IV toggle */}
         <button
@@ -406,6 +406,7 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

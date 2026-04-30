@@ -57,7 +57,13 @@ export const POKEMON_GAMES = {
   champions: {
     name: "Pokemon Champions",
     shortName: "Champions",
-    generation: 10,
+    // Champions runs on Scarlet/Violet-era mechanics (gen 9 base) layered with
+    // its own Champions-specific extensions (Splendor Points instead of EV/IV,
+    // synthetic Mega evolutions, no Tera). It is *not* generation 10 — gen 10
+    // is reserved for Winds and Waves, which hasn't released. Champions-specific
+    // behaviors are discriminated via `gameShort === "Champions"`, not the
+    // generation number. See `isChampionsFormat()` in this file.
+    generation: 9,
   },
   scarletViolet: {
     name: "Scarlet & Violet",
@@ -103,14 +109,18 @@ export type PokemonGame = keyof typeof POKEMON_GAMES;
  */
 export const VGC_FORMATS: GameFormat[] = [
   // =========================================================================
-  // Pokemon Champions (Gen 10) — launching April 2026
+  // Pokemon Champions — launching April 2026
   // =========================================================================
-  // Showdown format IDs TBD — using placeholder convention until confirmed
+  // Champions runs on Scarlet/Violet (gen 9) mechanics with its own SP system
+  // and synthetic Megas — it is NOT generation 10 (gen 10 = Winds and Waves,
+  // unreleased). Champions-specific code paths discriminate via
+  // `gameShort === "Champions"`, not the generation number.
+  // Showdown format IDs TBD — using placeholder convention until confirmed.
   {
     id: "championsvgc2026regma",
     game: "Pokemon Champions",
     gameShort: "Champions",
-    generation: 10,
+    generation: 9,
     category: "VGC",
     year: 2026,
     regulation: "M-A",
@@ -661,8 +671,26 @@ export const SIM_UNSUPPORTED_FORMAT_IDS: ReadonlySet<string> = new Set([
  */
 export function formatHasTera(format: GameFormat | undefined | null): boolean {
   if (!format) return false;
+  // Champions runs on gen 9 mechanics but does NOT include Terastallization —
+  // its Reg M-A rules disable Tera entirely. Discriminate explicitly so a
+  // Champions format with generation === 9 doesn't accidentally light up Tera UI.
+  if (isChampionsFormat(format)) return false;
   // Only Generation 9 (Scarlet & Violet) has the Terastal mechanic.
   return format.generation === 9;
+}
+
+/**
+ * Returns true when the given format is a Pokemon Champions format.
+ *
+ * Champions has its own SP-based stat system, no IVs, synthetic Mega
+ * evolutions, and no Tera — different enough from the standard generation
+ * line that we discriminate by the game tag rather than the generation
+ * number. (Generation 10 is reserved for the upcoming Winds and Waves game.)
+ */
+export function isChampionsFormat(
+  format: GameFormat | undefined | null
+): boolean {
+  return !!format && format.gameShort === "Champions";
 }
 
 /**

@@ -20,6 +20,7 @@ import {
   getSpeedTierLabel,
   getValidAbilities,
   groupBySpeed,
+  isChampionsFormat,
 } from "@trainers/pokemon";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
@@ -120,9 +121,6 @@ const SPEED_ABILITY_LOOKUP: Partial<Record<string, SpeedAbility>> = {
 // Helpers
 // =============================================================================
 
-function isChampionsFormat(format: GameFormat): boolean {
-  return format.generation === 10;
-}
 
 function normalizeSpecies(s: string): string {
   return s.toLowerCase().replace(/[\s\-_]+/g, "");
