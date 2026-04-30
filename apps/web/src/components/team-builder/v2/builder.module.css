@@ -893,10 +893,11 @@
 
 /* Move tile row */
 .mvline {
-  display: grid;
-  grid-template-columns: 12px 1fr auto;
+  display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-items: start;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
   gap: 8px;
   padding: 7px 10px;
   background: var(--card);
@@ -904,9 +905,20 @@
   border-radius: 6px;
   text-align: left;
   min-width: 0;
+  width: 100%;
   overflow: hidden;
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
+}
+
+/* Make the move-name flex grow + truncate; everything else stays flex-fixed. */
+:global(.mvline) > :global(.mvline-name) {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+:global(.mvline) > :not(:global(.mvline-name)) {
+  flex-shrink: 0;
 }
 
 .mvline:hover {
