@@ -488,12 +488,12 @@ export function SpeciesFilters({
           </Button>
         )}
 
-        {/* Result count */}
-        <span className="text-muted-foreground ml-auto text-xs tabular-nums">
-          {filteredCount === totalCount
-            ? `${totalCount} species`
-            : `${filteredCount} of ${totalCount}`}
-        </span>
+        {/* Result count — only when actively narrowing */}
+        {filteredCount !== totalCount && (
+          <span className="text-muted-foreground ml-auto text-xs tabular-nums">
+            {filteredCount} of {totalCount}
+          </span>
+        )}
       </div>
 
       {/* Row 3: Team need suggestions */}
