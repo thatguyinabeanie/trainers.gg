@@ -96,9 +96,12 @@ function MoveTile({
 
   const moveData = moveName ? getMoveData(moveName) : null;
   const isStatus = moveData?.category === "Status";
-  const hasCalc = output !== null && !isStatus;
+  // Only surface calc-derived info (damage range, KO tier, eff pip, spread
+  // badge, "pick a target" hint) when the calc panel is enabled. The engine
+  // still runs in the background so re-enabling the panel is instant.
+  const hasCalc = calc.calcEnabled && output !== null && !isStatus;
 
-  const hasDefender = Boolean(calc.defenderSpecies);
+  const hasDefender = calc.calcEnabled && Boolean(calc.defenderSpecies);
 
   const targetInfo = moveName ? getMoveTargetInfo(moveName) : null;
   const isSpread = targetInfo?.isSpread ?? false;
@@ -189,15 +192,16 @@ function MoveTile({
               {moveName ?? "+ Add move"}
             </span>
 
-            {/* Col 3: BP */}
-            <span className="mvline-bp">
-              {moveName && moveData?.basePower && moveData.basePower > 0
-                ? moveData.basePower
-                : moveName ? "—" : ""}
-            </span>
-
-            {/* Col 4: Calc output or hint */}
+            {/* Col 3: Meta (BP + calc info) — stays on the same line as the name */}
             <span className="mvline-calc">
+              {moveName && (
+                <span className="mvline-bp">
+                  {moveData?.basePower && moveData.basePower > 0
+                    ? moveData.basePower
+                    : "—"}
+                </span>
+              )}
+
               {hasCalc ? (
                 <span className="mvline-calc-inner">
                   <span className="mvline-range">
@@ -242,7 +246,7 @@ function MoveTile({
                 </span>
               ) : moveName && isStatus ? (
                 <span className="mvline-status">status</span>
-              ) : moveName && !hasDefender ? (
+              ) : moveName && !hasDefender && calc.calcEnabled ? (
                 <span className="mvline-no-target">— pick a target —</span>
               ) : null}
             </span>

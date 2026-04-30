@@ -223,6 +223,7 @@ export function TeamWorkspaceV2({
       format={format}
       field={state.field}
       setField={state.setField}
+      calcEnabled={tweaks.showCalc && state.calcOpen}
     >
       <div
         className={s.builderApp}

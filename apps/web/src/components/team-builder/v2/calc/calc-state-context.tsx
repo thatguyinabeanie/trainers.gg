@@ -19,6 +19,13 @@ interface CalcStateContextValue extends UseCalcStateReturn {
   /** Builder-level field state (foesAlive, allyAlive, atkTera). */
   field: FieldState;
   setField: (field: FieldState) => void;
+  /**
+   * Whether calc-derived info should be surfaced in consumers like MovesLane.
+   * The engine still runs (so toggling the drawer back on doesn't pay a re-mount
+   * cost), but UI sites should hide damage previews / KO badges / spread chips
+   * while the calc drawer is closed or the showCalc tweak is off.
+   */
+  calcEnabled: boolean;
 }
 
 const CalcStateContext = createContext<CalcStateContextValue | null>(null);
@@ -32,6 +39,8 @@ interface CalcStateProviderProps {
   format: GameFormat | undefined;
   field: FieldState;
   setField: (field: FieldState) => void;
+  /** Whether the calc panel is currently visible (showCalc tweak && calcOpen). */
+  calcEnabled: boolean;
   children: React.ReactNode;
 }
 
@@ -50,6 +59,7 @@ export function CalcStateProvider({
   format,
   field,
   setField,
+  calcEnabled,
   children,
 }: CalcStateProviderProps) {
   const calc = useCalcState({ selectedPokemon, format });
@@ -58,6 +68,7 @@ export function CalcStateProvider({
     ...calc,
     field,
     setField,
+    calcEnabled,
   };
 
   return (

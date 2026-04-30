@@ -894,8 +894,9 @@
 /* Move tile row */
 .mvline {
   display: grid;
-  grid-template-columns: 12px 1fr auto auto;
+  grid-template-columns: 12px 1fr auto;
   align-items: center;
+  justify-items: start;
   gap: 8px;
   padding: 7px 10px;
   background: var(--card);
@@ -903,6 +904,7 @@
   border-radius: 6px;
   text-align: left;
   min-width: 0;
+  overflow: hidden;
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
 }
@@ -964,18 +966,23 @@
   flex-shrink: 0;
 }
 
-/* Calc output column */
+/* Calc output column — must stay on one line, never wrap */
 :global(.mvline-calc) {
   display: flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  justify-self: end;
 }
 
 :global(.mvline-calc-inner) {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 /* Damage range */
