@@ -125,19 +125,44 @@ export function IdentityLane({
 
   return (
     <div className="flex min-w-[240px] flex-shrink-0 gap-3 p-3">
-      {/* Sprite — 128×128, click to open species picker */}
-      <button
-        type="button"
-        onClick={(e) => onOpenSpecies(e.currentTarget)}
-        aria-label={`Change species (${pokemon.species})`}
-        className="shrink-0 transition-opacity hover:opacity-80"
-      >
-        <Sprite species={pokemon.species ?? ""} types={types} size={128} />
-      </button>
+      {/* Sprite + species picker trigger (stacked column) */}
+      <div className="flex shrink-0 flex-col gap-1.5">
+        {/* Sprite — 128×128, click to open species picker */}
+        <button
+          type="button"
+          onClick={(e) => onOpenSpecies(e.currentTarget)}
+          aria-label={`Change species (${pokemon.species ?? "none"})`}
+          className="shrink-0 transition-opacity hover:opacity-80"
+        >
+          <Sprite species={pokemon.species ?? ""} types={types} size={128} />
+        </button>
+        {/* Species "input" — visually a text input, behaves as a click-to-open
+            trigger for the species picker. Click here OR the sprite above. */}
+        <button
+          type="button"
+          onClick={(e) => onOpenSpecies(e.currentTarget)}
+          aria-label={`Change species (${pokemon.species ?? "none"})`}
+          className={cn(
+            "border-border bg-background hover:border-primary focus-visible:border-primary",
+            "block w-[128px] rounded-md border px-2 py-1.5 text-left text-xs",
+            "outline-none transition-colors"
+          )}
+        >
+          <span
+            className={cn(
+              "block truncate",
+              pokemon.species ? "text-foreground font-medium" : "text-muted-foreground"
+            )}
+            title={pokemon.species ?? undefined}
+          >
+            {pokemon.species ?? "Choose species…"}
+          </span>
+        </button>
+      </div>
 
       {/* Meta column — stacked tight to the right of the sprite */}
       <div className="flex min-w-0 flex-1 flex-col gap-1 justify-center">
-        {/* Name field — editable inline input (nickname, falls back to species) */}
+        {/* Nickname field — optional override of the species name */}
         <div className="flex flex-col">
           <input
             ref={nicknameRef}
@@ -148,17 +173,13 @@ export function IdentityLane({
             onKeyDown={(e) => {
               if (e.key === "Enter") nicknameRef.current?.blur();
             }}
-            placeholder={pokemon.species ?? "Nickname"}
+            placeholder="Nickname"
             maxLength={24}
             aria-label="Nickname"
-            // When no nickname is set, the input is empty and the placeholder
-            // shows the species in foreground color (bold) — same look as a
-            // typed nickname. User can click in and start typing to override;
-            // clearing back to empty (or matching species) saves nickname=null.
             className={cn(
               "bg-transparent w-full min-w-0 truncate text-sm font-bold outline-none",
-              "border-b border-transparent placeholder:text-foreground placeholder:font-bold",
-              "hover:border-border focus:border-primary focus:placeholder:text-muted-foreground/40",
+              "border-b border-transparent placeholder:text-muted-foreground/50 placeholder:font-normal",
+              "hover:border-border focus:border-primary",
               "leading-snug",
               nicknameErrors.length > 0 && "border-destructive focus:border-destructive"
             )}
