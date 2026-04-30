@@ -902,13 +902,12 @@
 :global(.mvline) {
   display: grid;
   grid-template-columns:
-    auto              /* type pill (img is ~56px wide at h-6) */
-    auto              /* cat icon (~24px wide at h-6) */
-    minmax(0, 11rem)  /* name — fits longest realistic move names */
-    minmax(0, 1fr)    /* description */
-    auto              /* BP stat */
-    auto              /* Acc stat */
-    auto;             /* calc info */
+    auto              /* type pill */
+    auto              /* cat icon */
+    minmax(0, 11rem)  /* name */
+    auto              /* BP */
+    auto              /* Acc */
+    minmax(0, 1fr);   /* description OR calc pill */
   align-items: center;
   gap: 8px;
   padding: 7px 10px;
@@ -1157,6 +1156,103 @@
   font-size: 10px;
   color: var(--muted-foreground);
   font-style: italic;
+}
+
+/* Calc pill — replaces the description when calc is on for damage moves.
+ * Tinted by KO tier; contains KO label + range + optional modifier chips. */
+:global(.mvline-pill) {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* KO tier tints — light bg + matching border */
+:global(.mvline-pill--ko1) {
+  background: color-mix(in oklch, var(--ko-red) 10%, var(--card));
+  border-color: color-mix(in oklch, var(--ko-red) 25%, transparent);
+}
+
+:global(.mvline-pill--ko2) {
+  background: color-mix(in oklch, var(--ko-amber2-fg) 10%, var(--card));
+  border-color: color-mix(in oklch, var(--ko-amber2-fg) 22%, transparent);
+}
+
+:global(.mvline-pill--ko3) {
+  background: color-mix(in oklch, var(--ko-yellow-bg) 12%, var(--card));
+  border-color: color-mix(in oklch, var(--ko-yellow-bg) 25%, transparent);
+}
+
+:global(.mvline-pill--ko4) {
+  background: color-mix(in oklch, var(--muted-foreground) 10%, var(--card));
+  border-color: color-mix(in oklch, var(--muted-foreground) 22%, transparent);
+}
+
+/* KO tier label inside the pill */
+:global(.mvline-pill-tier) {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+:global(.mvline-pill-tier--ko1) { color: var(--ko-red); }
+:global(.mvline-pill-tier--ko2) { color: var(--ko-amber2-fg); }
+:global(.mvline-pill-tier--ko3) { color: var(--ko-yellow-fg); }
+:global(.mvline-pill-tier--ko4) { color: var(--muted-foreground); }
+
+/* Range "16.6–20.0%" — primary numeric */
+:global(.mvline-pill-range) {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Modifier group on the right side of the pill */
+:global(.mvline-pill-mods) {
+  margin-left: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Individual modifier chip — tighter than .mvline-eff */
+:global(.mvline-pill-mod) {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
+  line-height: 1;
+  font-weight: 700;
+}
+
+:global(.mvline-pill-mod--se) {
+  background: color-mix(in oklch, var(--ko-green) 14%, transparent);
+  color: color-mix(in oklch, var(--ko-green) 80%, var(--foreground));
+}
+
+:global(.mvline-pill-mod--ne) {
+  background: color-mix(in oklch, var(--ko-red) 14%, transparent);
+  color: color-mix(in oklch, var(--ko-red) 90%, var(--foreground));
+}
+
+:global(.mvline-pill-mod--imm) {
+  background: color-mix(in oklch, var(--muted-foreground) 22%, transparent);
+  color: var(--foreground);
+}
+
+:global(.mvline-pill-mod--spread) {
+  color: var(--muted-foreground);
+  font-weight: 500;
 }
 
 /* ============================================================

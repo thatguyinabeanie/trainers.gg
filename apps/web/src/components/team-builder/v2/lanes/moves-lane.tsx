@@ -208,17 +208,7 @@ function MoveTile({
               {moveName ?? "+ Add move"}
             </span>
 
-            {/* Col 4: Description */}
-            <span
-              className="mvline-desc"
-              title={moveData?.shortDesc ?? undefined}
-            >
-              {moveName && moveData?.shortDesc && moveData.shortDesc !== "No additional effect."
-                ? moveData.shortDesc
-                : ""}
-            </span>
-
-            {/* Col 5: BP */}
+            {/* Col 4: BP */}
             <span className="mvline-stat">
               <span className="mvline-stat-label">BP</span>
               <span className="mvline-stat-value mvline-stat-value--bp">
@@ -228,7 +218,7 @@ function MoveTile({
               </span>
             </span>
 
-            {/* Col 6: Acc */}
+            {/* Col 5: Acc */}
             <span className="mvline-stat">
               <span className="mvline-stat-label">Acc</span>
               <span className="mvline-stat-value mvline-stat-value--acc">
@@ -240,54 +230,52 @@ function MoveTile({
               </span>
             </span>
 
-            {/* Col 7: Calc info group */}
-            <span className="mvline-calc">
-              {hasCalc ? (
-                <span className="mvline-calc-inner">
-                  <span className="mvline-range">
-                    {displayMin.toFixed(1)}
-                    <span className="mvline-sep">–</span>
-                    {displayMax.toFixed(1)}
-                    <span className="mvline-pct">%</span>
-                  </span>
-
-                  {koTier && (
-                    <span className={cn("mvline-ko", `mvline-ko--${koTier}`)}>
-                      {koTier === "1"
-                        ? "OHKO"
-                        : koTier === "2"
-                          ? "2HKO"
-                          : koTier === "3"
-                            ? "3HKO"
-                            : "4HKO+"}
-                    </span>
-                  )}
-
-                  {eff !== null && eff !== 1 && (
-                    <span
-                      className={cn(
-                        "mvline-eff",
-                        eff > 1
-                          ? "mvline-eff--se"
-                          : eff === 0
-                            ? "mvline-eff--imm"
-                            : "mvline-eff--ne"
-                      )}
-                    >
-                      {eff}×
-                    </span>
-                  )}
-
-                  {spreadApplied && (
-                    <span className="mvline-spread" title="Spread −25%">
-                      spd −25%
-                    </span>
-                  )}
+            {/* Col 6: Calc pill (damage moves w/ calc on) OR description */}
+            {hasCalc && koTier ? (
+              <span className={cn("mvline-pill", `mvline-pill--ko${koTier}`)}>
+                <span className={cn("mvline-pill-tier", `mvline-pill-tier--ko${koTier}`)}>
+                  {koTier === "1" ? "OHKO" : koTier === "2" ? "2HKO" : koTier === "3" ? "3HKO" : "4HKO+"}
                 </span>
-              ) : moveName && !hasDefender && calc.calcEnabled && !isStatus ? (
-                <span className="mvline-no-target">— pick a target —</span>
-              ) : null}
-            </span>
+                <span className="mvline-pill-range">
+                  {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%
+                </span>
+                {((eff !== null && eff !== 1) || spreadApplied) && (
+                  <span className="mvline-pill-mods">
+                    {eff !== null && eff !== 1 && (
+                      <span
+                        className={cn(
+                          "mvline-pill-mod",
+                          eff > 1
+                            ? "mvline-pill-mod--se"
+                            : eff === 0
+                              ? "mvline-pill-mod--imm"
+                              : "mvline-pill-mod--ne"
+                        )}
+                        title={eff === 0 ? "Immune" : `${eff}× effectiveness`}
+                      >
+                        {eff}×
+                      </span>
+                    )}
+                    {spreadApplied && (
+                      <span className="mvline-pill-mod mvline-pill-mod--spread" title="Spread −25%">
+                        spread
+                      </span>
+                    )}
+                  </span>
+                )}
+              </span>
+            ) : calc.calcEnabled && moveName && !hasDefender && !isStatus ? (
+              <span className="mvline-no-target">— pick a target —</span>
+            ) : (
+              <span
+                className="mvline-desc"
+                title={moveData?.shortDesc ?? undefined}
+              >
+                {moveName && moveData?.shortDesc && moveData.shortDesc !== "No additional effect."
+                  ? moveData.shortDesc
+                  : ""}
+              </span>
+            )}
         </PopoverTrigger>
 
         <PopoverContent side="bottom" align="start" className="w-auto p-0">
