@@ -67,7 +67,7 @@ export function ItemPicker({
   const rowVirtualizer = useVirtualizer({
     count: filteredItems.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 56,
+    estimateSize: () => 68,
     overscan: 5,
   });
 

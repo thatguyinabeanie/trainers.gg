@@ -77,7 +77,7 @@ export function MovePicker({
   const rowVirtualizer = useVirtualizer({
     count: filteredMoves.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 52,
+    estimateSize: () => 64,
     overscan: 5,
   });
 
@@ -181,7 +181,7 @@ export function MovePicker({
                       </span>
                       {move?.shortDesc &&
                         move.shortDesc !== "No additional effect." && (
-                          <span className="text-muted-foreground truncate text-[11px] leading-tight">
+                          <span className="text-muted-foreground line-clamp-2 text-[11px] leading-tight">
                             {move.shortDesc}
                           </span>
                         )}
