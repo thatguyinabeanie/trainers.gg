@@ -439,9 +439,18 @@ echo ""
 cleanup() {
   log_info "Releasing dev slot $SLOT..."
 
-  # Stop this slot's Supabase containers (targeted, won't touch other slots)
-  log_info "Stopping Supabase (slot $SLOT)..."
-  stop_slot_supabase "$SLOT"
+  # Stop this slot's Supabase containers ONLY when explicitly requested.
+  # Default: leave containers running so Ctrl+C on the Next.js server doesn't
+  # also tear down the database. The next `pnpm dev` re-adopts the same
+  # containers via detect_running_supabase_slot. Stop containers manually with
+  # `pnpm db:stop` (or set TRAINERS_STOP_SUPABASE_ON_EXIT=1 here).
+  if [ "${TRAINERS_STOP_SUPABASE_ON_EXIT:-0}" = "1" ]; then
+    log_info "Stopping Supabase (slot $SLOT) — TRAINERS_STOP_SUPABASE_ON_EXIT=1"
+    stop_slot_supabase "$SLOT"
+  else
+    log_info "Leaving Supabase containers running for slot $SLOT"
+    log_info "  (run \`pnpm db:stop\` to stop them, or set TRAINERS_STOP_SUPABASE_ON_EXIT=1)"
+  fi
 
   # Remove lockfile
   rm -f "$DEV_SLOT_DIR/slot-${SLOT}.lock"
