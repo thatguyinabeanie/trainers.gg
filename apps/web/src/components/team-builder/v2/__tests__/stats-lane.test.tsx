@@ -393,6 +393,102 @@ describe("StatsLane", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // 11b. Typing "12+" in a stat input swaps the nature to +stat
+  // ---------------------------------------------------------------------------
+  it("typing '12+' into SpA input sets ev_special_attack and switches nature to +SpA", () => {
+    const onUpdate = jest.fn();
+    render(
+      <StatsLane
+        pokemon={makeGarchomp({ nature: "Hardy" })}
+        format={VGC_FORMAT}
+        onUpdate={onUpdate}
+      />
+    );
+
+    const spaInput = screen.getByRole("textbox", { name: /spa investment/i });
+    fireEvent.focus(spaInput);
+    fireEvent.change(spaInput, { target: { value: "12+" } });
+    fireEvent.blur(spaInput, { target: { value: "12+" } });
+
+    const calls = onUpdate.mock.calls.map((c) => c[0]);
+    // EV is set (12 snaps to 12 since step=4? — 12 is already a multiple of 4)
+    expect(calls.some((c) => c.ev_special_attack === 12)).toBe(true);
+    // Nature changes to a +SpA nature (Modest is the default since it pairs with −Atk)
+    expect(calls.some((c) => c.nature === "Modest")).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 11c. Typing "12-" in a stat input swaps the nature to -stat
+  // ---------------------------------------------------------------------------
+  it("typing '12-' into Atk input sets ev_attack and switches nature to −Atk", () => {
+    const onUpdate = jest.fn();
+    render(
+      <StatsLane
+        pokemon={makeGarchomp({ nature: "Hardy" })}
+        format={VGC_FORMAT}
+        onUpdate={onUpdate}
+      />
+    );
+
+    const atkInput = screen.getByRole("textbox", { name: /atk investment/i });
+    fireEvent.focus(atkInput);
+    fireEvent.change(atkInput, { target: { value: "12-" } });
+    fireEvent.blur(atkInput, { target: { value: "12-" } });
+
+    const calls = onUpdate.mock.calls.map((c) => c[0]);
+    expect(calls.some((c) => c.ev_attack === 12)).toBe(true);
+    // Nature changes to a −Atk nature (Modest is the default boost partner here too)
+    expect(calls.some((c) => c.nature === "Modest")).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 11d. Typing "+" alone (no number) into a stat input adds +nature with ev=0
+  // ---------------------------------------------------------------------------
+  it("typing '+' into Spe input switches nature to +Spe with ev=0", () => {
+    const onUpdate = jest.fn();
+    render(
+      <StatsLane
+        pokemon={makeGarchomp({ nature: "Hardy" })}
+        format={VGC_FORMAT}
+        onUpdate={onUpdate}
+      />
+    );
+
+    const speInput = screen.getByRole("textbox", { name: /spe investment/i });
+    fireEvent.focus(speInput);
+    fireEvent.change(speInput, { target: { value: "+" } });
+    fireEvent.blur(speInput, { target: { value: "+" } });
+
+    const calls = onUpdate.mock.calls.map((c) => c[0]);
+    expect(calls.some((c) => c.ev_speed === 0)).toBe(true);
+    // Default −stat for +Spe is specialAttack → Jolly
+    expect(calls.some((c) => c.nature === "Jolly")).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 11e. Clearing the suffix on a +nature stat reverts to neutral
+  // ---------------------------------------------------------------------------
+  it("clearing the '+' on the +nature stat reverts the nature to Serious", () => {
+    const onUpdate = jest.fn();
+    render(
+      <StatsLane
+        pokemon={makeGarchomp({ nature: "Adamant", ev_attack: 252 })}
+        format={VGC_FORMAT}
+        onUpdate={onUpdate}
+      />
+    );
+
+    const atkInput = screen.getByRole("textbox", { name: /atk investment/i });
+    fireEvent.focus(atkInput);
+    // User clears the "+" suffix, leaving just the number
+    fireEvent.change(atkInput, { target: { value: "252" } });
+    fireEvent.blur(atkInput, { target: { value: "252" } });
+
+    const calls = onUpdate.mock.calls.map((c) => c[0]);
+    expect(calls.some((c) => c.nature === "Serious")).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
   // 12. Breakpoint tick wrapper renders for +nature stat only
   // ---------------------------------------------------------------------------
   it("bump container renders for +nature (Atk) but not for other stats (Adamant)", () => {

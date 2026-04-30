@@ -181,6 +181,102 @@ const STAT_TEXT_CLASS: Record<StatKey, string> = {
   speed: "text-fuchsia-500 dark:text-fuchsia-400",
 };
 
+/** Canonical neutral nature — the rest (Hardy/Docile/Bashful/Quirky) are duplicates. */
+const NEUTRAL_NATURE = "Serious";
+
+type NatureStat = "attack" | "defense" | "specialAttack" | "specialDefense" | "speed";
+
+/** When the user adds "+" to a stat with no current −nature, default to a sensible reduced stat. */
+const DEFAULT_REDUCE_FOR_BOOST: Record<NatureStat, NatureStat> = {
+  attack: "specialAttack", // → Adamant
+  defense: "specialAttack", // → Impish
+  specialAttack: "attack", // → Modest
+  specialDefense: "attack", // → Calm
+  speed: "specialAttack", // → Jolly
+};
+
+/** When the user adds "−" to a stat with no current +nature, default to a sensible boosted stat. */
+const DEFAULT_BOOST_FOR_REDUCE: Record<NatureStat, NatureStat> = {
+  attack: "specialAttack", // → Modest (−Atk)
+  defense: "specialAttack", // → Mild (−Def)
+  specialAttack: "attack", // → Adamant (−SpA)
+  specialDefense: "attack", // → Naughty (−SpD)
+  speed: "attack", // → Brave (−Spe)
+};
+
+/** Search NATURE_EFFECTS for a nature with the given (boost, reduce) pair. */
+function findNatureFor(boost: NatureStat, reduce: NatureStat): string | null {
+  for (const [name, eff] of Object.entries(NATURE_EFFECTS)) {
+    if (eff.boost === boost && eff.reduce === reduce) return name;
+  }
+  return null;
+}
+
+/**
+ * Parse the EV/SP input as `"12+"`, `"12−"`, `"12-"`, `"12"`, `"+"`, `"−"`, `""`.
+ * Tolerates unicode minus and ASCII hyphen for negative-nature suffix.
+ */
+function parseEvInput(raw: string): {
+  value: number;
+  suffix: "+" | "-" | null;
+} {
+  const trimmed = raw.trim();
+  const match = trimmed.match(/^(\d*)\s*([+\-−])?$/);
+  if (!match) return { value: 0, suffix: null };
+  const numStr = match[1] ?? "";
+  const value = numStr === "" ? 0 : parseInt(numStr, 10);
+  const sym = match[2];
+  const suffix = sym === "+" ? "+" : sym === "-" || sym === "−" ? "-" : null;
+  return { value, suffix };
+}
+
+/**
+ * Given the current nature, the row's stat, and the suffix the user typed,
+ * compute what the new nature should be (or null if no change needed).
+ *
+ * • suffix === "+": ensure +nature on this stat. If current was +stat, no
+ *   change. Otherwise pick a nature with `+stat / −X` where X is the current
+ *   reduced stat (kept) or a sensible default.
+ * • suffix === "-": same logic, mirrored.
+ * • suffix === null: if the row's stat WAS +/−nature, switch to neutral
+ *   (Serious). Otherwise no change.
+ *
+ * HP cannot be a nature stat — always returns null for HP.
+ */
+function computeNatureForSuffix(opts: {
+  currentNature: string;
+  statKey: StatKey;
+  suffix: "+" | "-" | null;
+}): string | null {
+  const { currentNature, statKey, suffix } = opts;
+  if (statKey === "hp") return null;
+  const stat = statKey;
+
+  const current = NATURE_EFFECTS[currentNature] ?? {};
+  const currentBoost = current.boost ?? null;
+  const currentReduce = current.reduce ?? null;
+
+  if (suffix === "+") {
+    if (currentBoost === stat) return null;
+    let reduce = currentReduce;
+    if (!reduce || reduce === stat) reduce = DEFAULT_REDUCE_FOR_BOOST[stat];
+    return findNatureFor(stat, reduce);
+  }
+
+  if (suffix === "-") {
+    if (currentReduce === stat) return null;
+    let boost = currentBoost;
+    if (!boost || boost === stat) boost = DEFAULT_BOOST_FOR_REDUCE[stat];
+    return findNatureFor(boost, stat);
+  }
+
+  // suffix === null — user removed the modifier on this stat
+  if (currentBoost === stat || currentReduce === stat) {
+    return NEUTRAL_NATURE;
+  }
+  return null;
+}
+
 /**
  * Build the display string for the number input from ev + nature affinity.
  * 0+neutral → ""  |  0++nat → "+"  |  0+−nat → "−"
@@ -282,36 +378,62 @@ function StatRow({
   // --- Input display value ---
   const inputDisplay = buildInputDisplay(ev, isNatureBoosted, isNatureReduced);
 
+  // --- Edit buffer: while focused, show what the user is typing instead of
+  //                  the derived display, so the controlled value doesn't
+  //                  fight typing (especially for the "+"/"−" suffix). ---
+  const [inputBuffer, setInputBuffer] = useState<string | null>(null);
+  const displayValue = inputBuffer ?? inputDisplay;
+
   // --- Handle slider change ---
   function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = Number(e.target.value);
     const clamped = Math.min(raw, investBudget);
-    // Snap to nearest step
     const snapped = Math.round(clamped / budget.step) * budget.step;
     onUpdate({ [evFieldKey]: snapped });
   }
 
-  // --- Handle text input change (live) ---
+  // --- Handle text input change (just buffer the typed string) ---
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    // Parse the numeric prefix; ignore the suffix (+/−)
-    const raw = parseInt(e.target.value, 10);
-    const val = Number.isNaN(raw)
-      ? 0
-      : Math.max(0, Math.min(budget.perStat, raw));
-    const clamped = Math.min(val, investBudget);
-    onUpdate({ [evFieldKey]: clamped });
+    setInputBuffer(e.target.value);
   }
 
-  // --- Handle text input blur (clamp/snap) ---
-  function handleInputBlur(e: React.FocusEvent<HTMLInputElement>) {
-    const raw = parseInt(e.target.value, 10);
-    const val = Number.isNaN(raw)
-      ? 0
-      : Math.max(0, Math.min(budget.perStat, raw));
+  // --- Handle text input focus (start editing) ---
+  function handleInputFocus(e: React.FocusEvent<HTMLInputElement>) {
+    setInputBuffer(e.target.value);
+  }
+
+  // --- Commit the buffer: clamp/snap EV, optionally swap nature based on suffix ---
+  function commitInput(raw: string) {
+    const { value: parsedValue, suffix } = parseEvInput(raw);
+    const val = Math.max(0, Math.min(budget.perStat, parsedValue));
     const clamped = Math.min(val, investBudget);
-    // Snap to nearest step for VGC
     const snapped = Math.round(clamped / budget.step) * budget.step;
-    onUpdate({ [evFieldKey]: snapped });
+
+    const newNature = computeNatureForSuffix({
+      currentNature: nature,
+      statKey,
+      suffix,
+    });
+
+    const update: Partial<TablesUpdate<"pokemon">> = { [evFieldKey]: snapped };
+    if (newNature !== null) update.nature = newNature;
+    onUpdate(update);
+    setInputBuffer(null);
+  }
+
+  // --- Handle text input blur ---
+  function handleInputBlur(e: React.FocusEvent<HTMLInputElement>) {
+    commitInput(e.target.value);
+  }
+
+  // --- Enter commits early; Esc reverts ---
+  function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.currentTarget.blur();
+    } else if (e.key === "Escape") {
+      setInputBuffer(null);
+      e.currentTarget.blur();
+    }
   }
 
   return (
@@ -352,14 +474,16 @@ function StatRow({
         )}
       </div>
 
-      {/* Col 4: Text input (shows ev + nature suffix) */}
+      {/* Col 4: Text input. Shows "{ev}{+/−}" reflecting the +/−nature on this
+       * stat. Typing "12+" or "12−" sets EV and swaps the nature accordingly. */}
       <input
         type="text"
         inputMode="numeric"
-        pattern="\d*"
-        value={inputDisplay}
+        value={displayValue}
         onChange={handleInputChange}
+        onFocus={handleInputFocus}
         onBlur={handleInputBlur}
+        onKeyDown={handleInputKeyDown}
         aria-label={`${label} investment`}
         className={cn(
           "focus:ring-primary h-[18px] w-9 rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
