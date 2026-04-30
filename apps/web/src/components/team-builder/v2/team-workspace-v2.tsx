@@ -27,7 +27,6 @@ import { HeatmapPanel } from "./dock/heatmap-panel";
 import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
 import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
-import { TweaksPanel } from "./tweaks/tweaks-panel";
 import { useBuilderState } from "./use-builder-state";
 import s from "./builder.module.css";
 
@@ -86,7 +85,6 @@ export function TeamWorkspaceV2({
 }: TeamWorkspaceV2Props) {
   const router = useRouter();
   const state = useBuilderState();
-  const { tweaks } = state;
 
   /** Controls the import sheet. */
   const [importOpen, setImportOpen] = useState(false);
@@ -214,12 +212,9 @@ export function TeamWorkspaceV2({
       format={format}
       field={state.field}
       setField={state.setField}
-      calcEnabled={tweaks.showCalc && state.calcOpen}
+      calcEnabled={state.calcOpen}
     >
-      <div
-        className={s.builderApp}
-        data-density={tweaks.density}
-      >
+      <div className={s.builderApp}>
         <Topbar
           team={team}
           filledCount={filledCount}
@@ -253,8 +248,8 @@ export function TeamWorkspaceV2({
                       idx={i}
                       pokemon={p}
                       isActive={state.activeIdx === i}
-                      density={tweaks.density}
-                      expandMode={tweaks.expandMode}
+                      density="comfy"
+                      expandMode="all"
                       onActivate={state.setActiveIdx}
                       onAdd={handleAdd}
                       onRemove={handleRemoveByIdx}
@@ -377,7 +372,7 @@ export function TeamWorkspaceV2({
             />
           </div>
 
-          {tweaks.showCalc && state.calcOpen && (
+          {state.calcOpen && (
             <CalcDrawer
               open
               selectedPokemon={slots[state.activeIdx] ?? null}
@@ -388,9 +383,6 @@ export function TeamWorkspaceV2({
           )}
         </div>
       </div>
-
-      {/* Tweaks floating panel — Phase 6 */}
-      <TweaksPanel tweaks={tweaks} setTweak={state.setTweak} />
 
       {/* Import dialog — opened by topbar Import button */}
       <ImportDialog

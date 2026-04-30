@@ -37,15 +37,6 @@ interface DefenderOverrides {
   status?: string;
 }
 
-type Density = "comfy" | "compact";
-type ExpandMode = "active" | "all";
-
-export interface Tweaks {
-  density: Density;
-  expandMode: ExpandMode;
-  showCalc: boolean;
-}
-
 type DrawerKey = "matchups" | "speed" | null;
 
 interface BuilderState {
@@ -61,15 +52,12 @@ interface BuilderState {
   setField: (field: FieldState) => void;
   defenderOverrides: DefenderOverrides;
   setDefenderOverrides: (overrides: DefenderOverrides) => void;
-  tweaks: Tweaks;
-  setTweak: <K extends keyof Tweaks>(key: K, value: Tweaks[K]) => void;
 }
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-const TWEAKS_STORAGE_KEY = "trainersgg.builder.tweaks.v3";
 const PANEL_HEIGHT_STORAGE_KEY = "trainersgg.builder.panelHeightPct.v1";
 
 const DEFAULT_PANEL_HEIGHT_PCT = 40;
@@ -80,12 +68,6 @@ function clampPanelHeight(n: number): number {
   if (Number.isNaN(n)) return DEFAULT_PANEL_HEIGHT_PCT;
   return Math.min(MAX_PANEL_HEIGHT_PCT, Math.max(MIN_PANEL_HEIGHT_PCT, n));
 }
-
-const DEFAULT_TWEAKS: Tweaks = {
-  density: "comfy",
-  expandMode: "all",
-  showCalc: true,
-};
 
 const DEFAULT_FIELD: FieldState = {
   doubles: true,
@@ -109,7 +91,7 @@ const DEFAULT_FIELD: FieldState = {
 
 /**
  * Bundles all workspace-level state for the v2 team builder.
- * Tweaks persist to localStorage; all other state is ephemeral per session.
+ * panelHeightPct persists to localStorage; all other state is ephemeral.
  */
 export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -131,35 +113,6 @@ export function useBuilderState(): BuilderState {
   const [defenderOverrides, setDefenderOverrides] = useState<DefenderOverrides>(
     {}
   );
-  // Lazy initializer runs once on mount (client-only — useState initializer
-  // never runs during SSR). Reads persisted tweaks from localStorage and merges
-  // them with defaults so any new keys added in future versions get a fallback.
-  const [tweaks, setTweaks] = useState<Tweaks>(() => {
-    if (typeof window === "undefined") return DEFAULT_TWEAKS;
-    try {
-      const stored = localStorage.getItem(TWEAKS_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as Partial<Tweaks>;
-        return { ...DEFAULT_TWEAKS, ...parsed };
-      }
-    } catch {
-      // localStorage unavailable (private mode, storage quota) — use defaults
-    }
-    return DEFAULT_TWEAKS;
-  });
-
-  function setTweak<K extends keyof Tweaks>(key: K, value: Tweaks[K]) {
-    setTweaks((prev) => {
-      const next = { ...prev, [key]: value };
-      try {
-        localStorage.setItem(TWEAKS_STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        // Storage write failure is non-fatal — tweaks just won't persist
-      }
-      return next;
-    });
-  }
-
   function setPanelHeightPct(n: number) {
     const clamped = clampPanelHeight(n);
     setPanelHeightPctState(clamped);
@@ -183,7 +136,5 @@ export function useBuilderState(): BuilderState {
     setField,
     defenderOverrides,
     setDefenderOverrides,
-    tweaks,
-    setTweak,
   };
 }
