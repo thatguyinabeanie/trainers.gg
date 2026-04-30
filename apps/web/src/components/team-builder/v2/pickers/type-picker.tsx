@@ -36,7 +36,7 @@ interface TypePickerProps {
  */
 export function TypePicker({ value, onPick, onClose, legalTypes }: TypePickerProps) {
   return (
-    <div className="bg-popover text-popover-foreground w-56 max-w-[calc(100vw-2rem)] rounded-lg border p-2 shadow-md">
+    <div className="bg-popover text-popover-foreground w-72 max-w-[calc(100vw-2rem)] rounded-lg border p-3 shadow-md">
       {/* Header */}
       <div className="mb-2 flex items-center justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -74,7 +74,7 @@ export function TypePicker({ value, onPick, onClose, legalTypes }: TypePickerPro
               }}
               aria-pressed={isSelected}
               className={cn(
-                "flex items-center justify-center rounded py-1.5 text-center text-[9px] font-semibold uppercase tracking-wide transition-all",
+                "flex items-center justify-center rounded py-2 text-center text-[9px] font-semibold uppercase tracking-wide transition-all",
                 colorClass,
                 isSelected && "ring-ring ring-2 ring-offset-1",
                 !isSelected && !isDisabled && "hover:opacity-90 active:scale-95",

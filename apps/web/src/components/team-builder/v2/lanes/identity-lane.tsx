@@ -179,8 +179,8 @@ export function IdentityLane({
           side="bottom"
           align="start"
           sideOffset={6}
-          className="w-[720px] max-w-[calc(100vw-2rem)] p-0"
-          style={{ maxHeight: "min(60vh, 460px)" }}
+          className="w-[920px] max-w-[calc(100vw-2rem)] p-0"
+          style={{ maxHeight: "min(70vh, 640px)" }}
         >
           <SpeciesPicker
             value={pokemon.species ?? null}
@@ -195,7 +195,7 @@ export function IdentityLane({
                 nickname: null,
                 held_item: null,
                 ability: "",
-                nature: "Hardy",
+                nature: "Serious",
                 tera_type: null,
                 gender: null,
                 is_shiny: false,

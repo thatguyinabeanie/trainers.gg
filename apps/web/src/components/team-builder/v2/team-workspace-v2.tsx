@@ -152,13 +152,14 @@ export function TeamWorkspaceV2({
     const position = idx + 1;
     // ability / move1 / nature are required by the DB schema. ability and
     // move1 use empty-string placeholders the user fills in via the lane
-    // editors; nature defaults to the neutral "Hardy" so the row validates
-    // immediately (empty string fails the "Nature '' does not exist" check).
+    // editors; nature defaults to the neutral "Serious" so the row
+    // validates immediately. Serious is the canonical neutral nature in
+    // the picker (Hardy/Docile/Bashful/Quirky are hidden as duplicates).
     const pokemon: TablesInsert<"pokemon"> = {
       species: speciesId,
       ability: "",
       move1: "",
-      nature: "Hardy",
+      nature: "Serious",
     };
 
     startTransition(async () => {

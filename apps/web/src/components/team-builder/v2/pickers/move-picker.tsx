@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useVirtualizer } from "@tanstack/react-virtual";
+
 import {
   getLearnableMoves,
   getLegalMoves,
@@ -28,8 +30,6 @@ interface MovePickerProps {
   onClose: () => void;
 }
 
-const MAX_VISIBLE = 100;
-
 // =============================================================================
 // MovePicker
 // =============================================================================
@@ -37,7 +37,7 @@ const MAX_VISIBLE = 100;
 /**
  * Searchable move picker filtered to species-legal moves in the given format.
  * Category filter (All / Physical / Special / Status) on top.
- * Capped to 100 visible entries.
+ * Virtualized via @tanstack/react-virtual — no row cap.
  *
  * TODO Phase 4: live damage preview, calc detail card on left-click, move picker on right-click.
  */
@@ -51,6 +51,7 @@ export function MovePicker({
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<CategoryFilter>("All");
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -65,27 +66,25 @@ export function MovePicker({
   const lower = search.toLowerCase();
   const searchFiltered = allMoves.filter((m) => m.toLowerCase().includes(lower));
 
-  const visible: Array<{ name: string; data: ReturnType<typeof getMoveData> }> =
+  const filteredMoves: Array<{ name: string; data: ReturnType<typeof getMoveData> }> =
     [];
   for (const name of searchFiltered) {
     const data = getMoveData(name);
     if (category !== "All" && data?.category !== category) continue;
-    visible.push({ name, data });
-    if (visible.length >= MAX_VISIBLE) break;
+    filteredMoves.push({ name, data });
   }
 
-  const totalFiltered =
-    visible.length < MAX_VISIBLE
-      ? visible.length
-      : category === "All"
-        ? searchFiltered.length
-        : searchFiltered.filter((m) => getMoveData(m)?.category === category)
-            .length;
+  const rowVirtualizer = useVirtualizer({
+    count: filteredMoves.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 40,
+    overscan: 5,
+  });
 
   const categories: CategoryFilter[] = ["All", "Physical", "Special", "Status"];
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-[300px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
+    <div className="bg-popover text-popover-foreground flex w-[460px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -128,77 +127,88 @@ export function MovePicker({
             {cat}
           </button>
         ))}
-        {totalFiltered > MAX_VISIBLE && (
-          <span className="text-muted-foreground ml-auto text-[10px]">
-            {totalFiltered} — search to narrow
-          </span>
-        )}
       </div>
 
-      {/* Move list */}
-      <div className="max-h-72 overflow-y-auto p-1">
-        {visible.map(({ name: moveName, data: move }) => {
-          const isSelected = moveName === value;
-          const typeColor = move?.type
-            ? (TYPE_BG_COLORS[move.type as keyof typeof TYPE_BG_COLORS] ??
-              "bg-muted text-foreground")
-            : "bg-muted text-foreground";
-
-          return (
-            <button
-              key={moveName}
-              type="button"
-              onClick={() => {
-                onPick(moveName);
-                onClose();
-              }}
-              className={cn(
-                "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors",
-                "hover:bg-accent hover:text-accent-foreground",
-                isSelected && "bg-accent text-accent-foreground"
-              )}
-            >
-              {/* Type dot */}
-              <TypeDot t={move?.type ?? "Normal"} size={10} />
-
-              {/* Name */}
-              <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                {moveName}
-              </span>
-
-              {/* Type badge */}
-              {move?.type && (
-                <span
-                  className={cn(
-                    "shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold uppercase leading-none",
-                    typeColor
-                  )}
-                >
-                  {move.type}
-                </span>
-              )}
-
-              {/* BP */}
-              <span className="text-muted-foreground w-8 shrink-0 text-right font-mono text-xs">
-                {move?.basePower && move.basePower > 0
-                  ? move.basePower
-                  : "—"}
-              </span>
-
-              {/* Accuracy */}
-              <span className="text-muted-foreground w-8 shrink-0 text-right font-mono text-xs">
-                {move?.accuracy === true || !move?.accuracy
-                  ? "—"
-                  : `${move.accuracy}%`}
-              </span>
-            </button>
-          );
-        })}
-
-        {visible.length === 0 && (
+      {/* Move list — virtualized */}
+      <div ref={scrollRef} className="max-h-72 overflow-y-auto p-1">
+        {filteredMoves.length === 0 ? (
           <p className="text-muted-foreground py-4 text-center text-sm">
             No moves found
           </p>
+        ) : (
+          <div
+            className="relative w-full"
+            style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const item = filteredMoves[virtualRow.index];
+              if (!item) return null;
+              const { name: moveName, data: move } = item;
+              const isSelected = moveName === value;
+              const typeColor = move?.type
+                ? (TYPE_BG_COLORS[move.type as keyof typeof TYPE_BG_COLORS] ??
+                  "bg-muted text-foreground")
+                : "bg-muted text-foreground";
+
+              return (
+                <div
+                  key={moveName}
+                  className="absolute left-0 w-full"
+                  style={{
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPick(moveName);
+                      onClose();
+                    }}
+                    className={cn(
+                      "flex h-full w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      isSelected && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    {/* Type dot */}
+                    <TypeDot t={move?.type ?? "Normal"} size={10} />
+
+                    {/* Name — flex-1 so it expands; min-w-0 + truncate for graceful overflow */}
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                      {moveName}
+                    </span>
+
+                    {/* Type badge */}
+                    {move?.type && (
+                      <span
+                        className={cn(
+                          "shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold uppercase leading-none",
+                          typeColor
+                        )}
+                      >
+                        {move.type}
+                      </span>
+                    )}
+
+                    {/* BP */}
+                    <span className="text-muted-foreground w-8 shrink-0 text-right font-mono text-xs">
+                      {move?.basePower && move.basePower > 0
+                        ? move.basePower
+                        : "—"}
+                    </span>
+
+                    {/* Accuracy */}
+                    <span className="text-muted-foreground w-8 shrink-0 text-right font-mono text-xs">
+                      {move?.accuracy === true || !move?.accuracy
+                        ? "—"
+                        : `${move.accuracy}%`}
+                    </span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

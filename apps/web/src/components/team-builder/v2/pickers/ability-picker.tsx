@@ -57,7 +57,7 @@ export function AbilityPicker({
   );
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-64 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
+    <div className="bg-popover text-popover-foreground flex w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -98,7 +98,7 @@ export function AbilityPicker({
                 onClose();
               }}
               className={cn(
-                "flex w-full flex-col rounded px-2 py-1.5 text-left transition-colors",
+                "flex w-full flex-col rounded px-3 py-2 text-left transition-colors",
                 "hover:bg-accent hover:text-accent-foreground",
                 isSelected && "bg-accent text-accent-foreground"
               )}

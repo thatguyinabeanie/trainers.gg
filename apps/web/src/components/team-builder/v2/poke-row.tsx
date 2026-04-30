@@ -111,8 +111,8 @@ function EmptyRow({ idx, density, format, onAdd }: EmptyRowProps) {
         side="bottom"
         align="start"
         sideOffset={6}
-        className="w-[720px] max-w-[calc(100vw-2rem)] p-0"
-        style={{ maxHeight: "min(60vh, 460px)" }}
+        className="w-[920px] max-w-[calc(100vw-2rem)] p-0"
+        style={{ maxHeight: "min(70vh, 640px)" }}
       >
         <SpeciesPicker
           value={null}

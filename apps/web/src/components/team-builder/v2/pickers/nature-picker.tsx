@@ -109,7 +109,7 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
   }
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-60 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
+    <div className="bg-popover text-popover-foreground flex w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -161,18 +161,18 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
                   <span className={cn(isNeutral && "text-muted-foreground")}>
                     {nature}
                   </span>
-                  <span className="flex items-center gap-1.5 font-mono text-xs">
+                  <span className="flex items-center gap-1 font-mono text-[9.5px]">
                     {isNeutral ? (
                       <span className="text-muted-foreground">—</span>
                     ) : (
                       <>
                         {effect?.boost && (
-                          <span className="font-medium text-green-600 dark:text-green-400">
+                          <span className="rounded bg-green-100 px-1.5 py-0.5 font-semibold uppercase tracking-wide text-green-700 dark:bg-green-900/40 dark:text-green-400">
                             +{STAT_LABELS[effect.boost]}
                           </span>
                         )}
                         {effect?.reduce && (
-                          <span className="font-medium text-red-500 dark:text-red-400">
+                          <span className="rounded bg-red-100 px-1.5 py-0.5 font-semibold uppercase tracking-wide text-red-600 dark:bg-red-900/40 dark:text-red-400">
                             −{STAT_LABELS[effect.reduce]}
                           </span>
                         )}

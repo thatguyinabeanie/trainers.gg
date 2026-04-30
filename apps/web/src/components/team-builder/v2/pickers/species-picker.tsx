@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
+
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import {
   buildSpeciesSearchIndex,
@@ -24,9 +26,6 @@ import {
 // =============================================================================
 // Constants
 // =============================================================================
-
-/** Cap visible rows so a wide-open search doesn't render thousands of nodes. */
-const MAX_VISIBLE_ROWS = 200;
 
 /** Stat threshold for the "high stat" highlight (matches the spec's 110+). */
 const HIGH_STAT_THRESHOLD = 110;
@@ -274,7 +273,7 @@ function SpeciesRowsHeader({ sort, onSort }: SpeciesRowsHeaderProps) {
   return (
     <div
       className={cn(
-        "bg-muted/50 sticky top-0 z-10 grid items-center gap-3 border-b px-4 py-1.5 text-xs font-medium tracking-wide uppercase",
+        "bg-card sticky top-0 z-20 grid items-center gap-3 border-b px-4 py-1.5 text-xs font-medium tracking-wide uppercase",
         // Must mirror SpeciesRow (both use ROW_GRID).
         ROW_GRID
       )}
@@ -367,6 +366,9 @@ export function SpeciesPicker({
   const [filters, setFilters] = useState<SpeciesFilterState>(DEFAULT_FILTERS);
   const [sort, setSort] = useState<SortState>({ col: "name", dir: "asc" });
 
+  // Scroll container ref for the virtualizer
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   // Build the species index — cached at module scope keyed by format id
   const fullIndex = getCachedIndex(format);
 
@@ -400,10 +402,18 @@ export function SpeciesPicker({
     formatId: format?.id,
   });
 
-  // Sort the filtered results before slicing
+  // Sort the full filtered results — virtualization renders only the visible slice
   const sorted = sortEntries(matched, sort);
-  const visible = sorted.slice(0, MAX_VISIBLE_ROWS);
-  const isTruncated = matched.length > MAX_VISIBLE_ROWS;
+
+  // Virtualizer — renders only visible rows, keeping DOM lean regardless of
+  // how many species are in the format roster (e.g. 274 for Champions M-A).
+  const rowVirtualizer = useVirtualizer({
+    count: sorted.length,
+    getScrollElement: () => scrollRef.current,
+    // Dense row height: 44px sprite (size-11) + py-2.5 top + py-2.5 bottom = ~64px
+    estimateSize: () => 64,
+    overscan: 5,
+  });
 
   return (
     <div
@@ -421,33 +431,46 @@ export function SpeciesPicker({
         filteredCount={matched.length}
       />
 
-      {/* Truncation banner */}
-      {isTruncated && (
-        <div className="text-muted-foreground border-b px-4 py-1.5 text-xs">
-          Showing {MAX_VISIBLE_ROWS} of {matched.length} results — search to
-          narrow.
-        </div>
-      )}
-
       {/* Rows + sticky header — scrolls inside the popover bounding box */}
       <div
+        ref={scrollRef}
         className="flex-1 overflow-y-auto"
         data-testid="species-rows"
       >
+        {/* Sticky header sits as the first child so position:sticky works
+            relative to the scroll container. Must appear before the virtualizer
+            positioned container. */}
         <SpeciesRowsHeader sort={sort} onSort={handleSort} />
-        {visible.length === 0 ? (
+
+        {sorted.length === 0 ? (
           <div className="text-muted-foreground py-12 text-center text-sm">
             No Pokémon match your filters. Try broadening your search.
           </div>
         ) : (
-          visible.map((entry) => (
-            <SpeciesRow
-              key={entry.species}
-              entry={entry}
-              isCurrent={entry.species === value}
-              onSelect={() => onPick(entry.species)}
-            />
-          ))
+          /* Virtualizer container — explicit height so the scroll container
+             knows the full content height without rendering every row. */
+          <div
+            className="relative w-full"
+            style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const entry = sorted[virtualRow.index];
+              if (!entry) return null;
+              return (
+                <div
+                  key={virtualRow.key}
+                  className="absolute left-0 right-0"
+                  style={{ top: virtualRow.start }}
+                >
+                  <SpeciesRow
+                    entry={entry}
+                    isCurrent={entry.species === value}
+                    onSelect={() => onPick(entry.species)}
+                  />
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

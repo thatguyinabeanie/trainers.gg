@@ -23,7 +23,9 @@ interface NumberPickerProps {
 // =============================================================================
 
 /**
- * Numeric input popover body — slider + numeric input + +/- buttons + optional hint.
+ * Numeric input popover body — slider-primary layout.
+ * Large value readout + full-width slider as the primary control.
+ * Optional hint text and preset chips below.
  * Clamps value to [min, max] on every change.
  */
 export function NumberPicker({
@@ -32,7 +34,6 @@ export function NumberPicker({
   min,
   max,
   step = 1,
-  suffix,
   hint,
   onChange,
   onClose,
@@ -49,7 +50,7 @@ export function NumberPicker({
   const presets = [0, 4, 84, 132, 252].filter((p) => p >= min && p <= max);
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-60 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
+    <div className="bg-popover text-popover-foreground flex w-[320px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -65,40 +66,18 @@ export function NumberPicker({
         </button>
       </div>
 
-      {/* Value row */}
-      <div className="flex items-center gap-2 px-3 pt-3 pb-1">
-        <button
-          type="button"
-          aria-label="Decrease"
-          onClick={() => clampAndEmit(local - step)}
-          className="bg-muted hover:bg-muted/70 flex size-7 shrink-0 items-center justify-center rounded border text-sm font-bold"
-        >
-          −
-        </button>
-        <input
-          type="number"
-          value={local}
-          min={min}
-          max={max}
-          step={step}
-          onChange={(e) => clampAndEmit(Number(e.target.value))}
-          className="bg-background min-w-0 flex-1 rounded border px-2 py-1 text-center font-mono text-sm outline-none focus:ring-1 focus:ring-primary"
-        />
-        <button
-          type="button"
-          aria-label="Increase"
-          onClick={() => clampAndEmit(local + step)}
-          className="bg-muted hover:bg-muted/70 flex size-7 shrink-0 items-center justify-center rounded border text-sm font-bold"
-        >
-          +
-        </button>
-        {suffix && (
-          <span className="text-muted-foreground shrink-0 text-xs">{suffix}</span>
-        )}
+      {/* Value readout */}
+      <div className="flex items-baseline justify-center gap-1 px-3 pt-4 pb-2">
+        <span className="font-mono text-2xl font-semibold tabular-nums">
+          {local}
+        </span>
+        <span className="text-muted-foreground font-mono text-sm tabular-nums">
+          / {max}
+        </span>
       </div>
 
-      {/* Slider */}
-      <div className="px-3 py-2">
+      {/* Slider — primary control */}
+      <div className="px-3 pb-3">
         <input
           type="range"
           value={local}
@@ -106,7 +85,8 @@ export function NumberPicker({
           max={max}
           step={step}
           onChange={(e) => clampAndEmit(Number(e.target.value))}
-          className="accent-primary w-full"
+          className="accent-primary h-2 w-full cursor-pointer"
+          style={{ height: "8px" }}
         />
       </div>
 

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useVirtualizer } from "@tanstack/react-virtual";
+
 import {
   getAllItems,
   getItemShortDesc,
@@ -26,7 +28,6 @@ interface ItemPickerProps {
 
 // Compute once at module load — items list is static at runtime
 const ALL_ITEMS = getAllItems();
-const MAX_VISIBLE = 80;
 
 // =============================================================================
 // ItemPicker
@@ -35,7 +36,7 @@ const MAX_VISIBLE = 80;
 /**
  * Searchable item picker scoped to format-legal items.
  * Shows a "held" duplicate warning when another team member already holds the item.
- * Capped to 80 visible entries.
+ * Virtualized via @tanstack/react-virtual — no row cap.
  */
 export function ItemPicker({
   value,
@@ -46,6 +47,7 @@ export function ItemPicker({
 }: ItemPickerProps) {
   const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -56,16 +58,21 @@ export function ItemPicker({
     ? ALL_ITEMS.filter((name) => legal.has(name))
     : ALL_ITEMS;
 
-  const filtered = search
+  const filteredItems = search
     ? formatItems.filter((name) =>
         name.toLowerCase().includes(search.toLowerCase())
       )
     : formatItems;
 
-  const visible = filtered.slice(0, MAX_VISIBLE);
+  const rowVirtualizer = useVirtualizer({
+    count: filteredItems.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 56,
+    overscan: 5,
+  });
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-72 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
+    <div className="bg-popover text-popover-foreground flex w-[460px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -91,62 +98,70 @@ export function ItemPicker({
         className="bg-muted/40 border-b px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus:bg-card"
       />
 
-      {/* Count hint */}
-      {filtered.length > MAX_VISIBLE && (
-        <p className="text-muted-foreground border-b px-3 py-1 text-[10px]">
-          {filtered.length} items — search to narrow
-        </p>
-      )}
-
-      {/* Item list */}
-      <div className="max-h-72 overflow-y-auto p-1">
-        {visible.map((itemName) => {
-          const desc = getItemShortDesc(itemName);
-          const isSelected = itemName === value;
-          const isDuplicate = teamItems.includes(itemName);
-
-          return (
-            <button
-              key={itemName}
-              type="button"
-              onClick={() => {
-                onPick(itemName);
-                onClose();
-              }}
-              className={cn(
-                "flex w-full flex-col rounded px-2 py-1.5 text-left transition-colors",
-                "hover:bg-accent hover:text-accent-foreground",
-                isSelected && "bg-accent text-accent-foreground"
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-1.5">
-                <span
-                  className={cn(
-                    "min-w-0 flex-1 truncate text-sm font-medium",
-                    isSelected && "font-semibold"
-                  )}
-                >
-                  {itemName}
-                </span>
-                {isDuplicate && !isSelected && (
-                  <span className="shrink-0 rounded bg-amber-100 px-1 py-0.5 text-[9px] leading-none font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                    held
-                  </span>
-                )}
-              </div>
-              {desc && (
-                <span className="text-muted-foreground mt-0.5 line-clamp-1 text-xs leading-tight">
-                  {desc}
-                </span>
-              )}
-            </button>
-          );
-        })}
-
-        {visible.length === 0 && (
+      {/* Item list — virtualized */}
+      <div ref={scrollRef} className="max-h-72 overflow-y-auto p-1">
+        {filteredItems.length === 0 ? (
           <p className="text-muted-foreground py-4 text-center text-sm">
             No items found
           </p>
+        ) : (
+          <div
+            className="relative w-full"
+            style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const itemName = filteredItems[virtualRow.index];
+              if (!itemName) return null;
+              const desc = getItemShortDesc(itemName);
+              const isSelected = itemName === value;
+              const isDuplicate = teamItems.includes(itemName);
+
+              return (
+                <div
+                  key={itemName}
+                  className="absolute left-0 w-full"
+                  style={{
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPick(itemName);
+                      onClose();
+                    }}
+                    className={cn(
+                      "flex h-full w-full flex-col justify-center rounded px-2 py-1.5 text-left transition-colors",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      isSelected && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "min-w-0 flex-1 truncate text-sm font-medium",
+                          isSelected && "font-semibold"
+                        )}
+                      >
+                        {itemName}
+                      </span>
+                      {isDuplicate && !isSelected && (
+                        <span className="shrink-0 rounded bg-amber-100 px-1 py-0.5 text-[9px] leading-none font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                          held
+                        </span>
+                      )}
+                    </div>
+                    {desc && (
+                      <span className="text-muted-foreground mt-0.5 line-clamp-2 text-xs leading-tight">
+                        {desc}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
