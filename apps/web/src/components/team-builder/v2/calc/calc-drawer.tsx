@@ -12,7 +12,6 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import { useCalcStateContext } from "./calc-state-context";
-import { CalcAttackerBlock } from "./calc-attacker-block";
 import { CalcDefenderBlock } from "./calc-defender-block";
 import { CalcFieldBlock } from "./calc-field-block";
 import { CalcResultsBlock } from "./calc-results-block";
@@ -21,10 +20,7 @@ interface CalcDrawerProps {
   open: boolean;
   selectedPokemon: Tables<"pokemon"> | null;
   team: TeamWithPokemon;
-  setActiveIdx: (idx: number) => void;
   format: GameFormat | undefined;
-  /** Active row index — needed for team pip highlighting */
-  activeIdx: number;
   onClose: () => void;
 }
 
@@ -41,9 +37,7 @@ export function CalcDrawer({
   open,
   selectedPokemon,
   team,
-  setActiveIdx,
   format,
-  activeIdx,
   onClose,
 }: CalcDrawerProps) {
   const isMobile = useIsMobile();
@@ -90,9 +84,7 @@ export function CalcDrawer({
             <CalcDrawerContent
               selectedPokemon={selectedPokemon}
               team={team}
-              setActiveIdx={setActiveIdx}
               format={format}
-              activeIdx={activeIdx}
             />
           )}
         </SheetContent>
@@ -129,9 +121,7 @@ export function CalcDrawer({
         <CalcDrawerContent
           selectedPokemon={selectedPokemon}
           team={team}
-          setActiveIdx={setActiveIdx}
           format={format}
-          activeIdx={activeIdx}
         />
       )}
     </aside>
@@ -145,17 +135,13 @@ export function CalcDrawer({
 interface CalcDrawerContentProps {
   selectedPokemon: Tables<"pokemon">;
   team: TeamWithPokemon;
-  setActiveIdx: (idx: number) => void;
   format: GameFormat | undefined;
-  activeIdx: number;
 }
 
 function CalcDrawerContent({
   selectedPokemon,
   team,
-  setActiveIdx,
   format,
-  activeIdx,
 }: CalcDrawerContentProps) {
   const calc = useCalcStateContext();
   const { field, setField } = calc;
@@ -185,22 +171,8 @@ function CalcDrawerContent({
     setField({ ...field, allyAlive: v });
   }
 
-  function handleToggleAtkTera() {
-    setField({ ...field, atkTera: !field.atkTera });
-  }
-
   return (
     <div className="cd-content">
-      <CalcAttackerBlock
-        attacker={selectedPokemon}
-        attackerIdx={activeIdx}
-        team={team}
-        format={format}
-        setActiveIdx={setActiveIdx}
-        atkTera={field.atkTera}
-        onToggleAtkTera={handleToggleAtkTera}
-      />
-
       <CalcDefenderBlock
         defenderSpecies={calc.defenderSpecies}
         defenderAbility={calc.defenderAbility}

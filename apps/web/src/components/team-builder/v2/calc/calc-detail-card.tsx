@@ -11,6 +11,7 @@ import {
   getVerdict,
   type CalcOutput,
 } from "../../use-calc-state";
+import { formatSupportsTera } from "../format-gating";
 import { TypeDot } from "../type-dot";
 import {
   getMoveTargetInfo,
@@ -98,7 +99,7 @@ export function CalcDetailCard({
   moveName,
   baseOutput,
   defender,
-  format: _format,
+  format,
   foesAlive,
   allyAlive,
   onClose,
@@ -107,6 +108,7 @@ export function CalcDetailCard({
   const [crit, setCrit] = useState(false);
   const [tera, setTera] = useState(false);
   const [screen, setScreen] = useState(false);
+  const showTera = formatSupportsTera(format);
   const [localFoesAlive, setLocalFoesAlive] = useState<1 | 2>(foesAlive);
   const [localAllyAlive, setLocalAllyAlive] = useState(allyAlive);
 
@@ -254,15 +256,17 @@ export function CalcDetailCard({
           />
           Crit
         </label>
-        <label className="mvdetail-tog">
-          <input
-            type="checkbox"
-            checked={tera}
-            onChange={(e) => setTera(e.target.checked)}
-            className="mvdetail-tog-checkbox"
-          />
-          Terastallized
-        </label>
+        {showTera && (
+          <label className="mvdetail-tog">
+            <input
+              type="checkbox"
+              checked={tera}
+              onChange={(e) => setTera(e.target.checked)}
+              className="mvdetail-tog-checkbox"
+            />
+            Terastallized
+          </label>
+        )}
         <label className="mvdetail-tog">
           <input
             type="checkbox"

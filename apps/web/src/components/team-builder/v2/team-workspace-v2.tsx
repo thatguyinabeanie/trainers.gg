@@ -382,9 +382,7 @@ export function TeamWorkspaceV2({
               open
               selectedPokemon={slots[state.activeIdx] ?? null}
               team={team}
-              setActiveIdx={state.setActiveIdx}
               format={format}
-              activeIdx={state.activeIdx}
               onClose={() => state.setCalcOpen(false)}
             />
           )}
