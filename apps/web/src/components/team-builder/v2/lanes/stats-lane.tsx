@@ -7,6 +7,7 @@ import {
   calculateChampionsHP,
   calculateStat,
   calculateChampionsStat,
+  findStatBreakpoints,
   getBaseStats,
   getNatureMultiplier,
   getStatTier,
@@ -17,11 +18,6 @@ import {
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 import { type ValidationError } from "../../validation-hooks";
 import {
@@ -31,7 +27,6 @@ import {
   STAT_LABELS,
 } from "../../stat-types";
 import { formatSupportsIvs } from "../format-gating";
-import { NumberPicker } from "../pickers/number-picker";
 import { FieldError } from "../validation/field-error";
 import s from "../builder.module.css";
 
@@ -157,46 +152,84 @@ function computeFinalStat(
 
   if (isChampions) {
     if (stat === "hp") return calculateChampionsHP(b, ev);
-    const mult = getNatureMultiplier(nature, stat as keyof Omit<StatValues, "hp">);
+    const mult = getNatureMultiplier(
+      nature,
+      stat as keyof Omit<StatValues, "hp">
+    );
     return calculateChampionsStat(b, ev, mult);
   }
 
   if (stat === "hp") return calculateHP(b, iv, ev, level);
-  const mult = getNatureMultiplier(nature, stat as keyof Omit<StatValues, "hp">);
+  const mult = getNatureMultiplier(
+    nature,
+    stat as keyof Omit<StatValues, "hp">
+  );
   return calculateStat(b, iv, ev, level, mult);
 }
 
 /** CSS custom property string for the stat-tier bar fill color. */
 function tierBarColor(tier: string): string {
   switch (tier) {
-    case "low": return "var(--color-stat-low, var(--stat-low, oklch(0.7 0.15 30)))";
-    case "mid": return "var(--color-stat-mid, var(--stat-mid, oklch(0.75 0.15 80)))";
-    case "good": return "var(--color-stat-good, var(--stat-good, oklch(0.7 0.2 140)))";
-    case "great": return "var(--color-stat-great, var(--stat-great, oklch(0.6 0.22 145)))";
-    default: return "var(--muted-foreground)";
+    case "low":
+      return "var(--color-stat-low, var(--stat-low, oklch(0.7 0.15 30)))";
+    case "mid":
+      return "var(--color-stat-mid, var(--stat-mid, oklch(0.75 0.15 80)))";
+    case "good":
+      return "var(--color-stat-good, var(--stat-good, oklch(0.7 0.2 140)))";
+    case "great":
+      return "var(--color-stat-great, var(--stat-great, oklch(0.6 0.22 145)))";
+    default:
+      return "var(--muted-foreground)";
   }
 }
 
 /** Tailwind text color class from stat tier (for label). */
 function tierTextClass(tier: string): string {
   switch (tier) {
-    case "low": return "text-stat-low";
-    case "mid": return "text-stat-mid";
-    case "good": return "text-stat-good";
-    case "great": return "text-stat-great";
-    default: return "text-muted-foreground";
+    case "low":
+      return "text-stat-low";
+    case "mid":
+      return "text-stat-mid";
+    case "good":
+      return "text-stat-good";
+    case "great":
+      return "text-stat-great";
+    default:
+      return "text-muted-foreground";
   }
 }
 
+/**
+ * Build the display string for the number input from ev + nature affinity.
+ * 0+neutral → ""  |  0++nat → "+"  |  0+−nat → "−"
+ * N+neutral → "N"  |  N++nat → "N+"  |  N+−nat → "N−"
+ */
+function buildInputDisplay(
+  ev: number,
+  isNatureBoosted: boolean,
+  isNatureReduced: boolean
+): string {
+  const suffix = isNatureBoosted ? "+" : isNatureReduced ? "−" : "";
+  if (ev === 0) return suffix;
+  return `${ev}${suffix}`;
+}
+
 // =============================================================================
-// StatRow — one horizontal stat row
+// StatRow — one horizontal stat row (6-column grid)
 // =============================================================================
 
 interface StatRowProps {
   statKey: StatKey;
+  /** Final stat with current investment (base + IV + EV + nature + level). */
   finalStat: number;
+  /** Final stat with EV=0 (for the solid base layer of the viz bar). */
+  noEvFinalStat: number;
   ev: number;
   base: number;
+  ivs: StatValues;
+  nature: string;
+  level: number;
+  isChampions: boolean;
   isNatureBoosted: boolean;
   isNatureReduced: boolean;
   evFieldKey: keyof Tables<"pokemon">;
@@ -208,8 +241,13 @@ interface StatRowProps {
 function StatRow({
   statKey,
   finalStat,
+  noEvFinalStat,
   ev,
   base,
+  ivs,
+  nature,
+  level,
+  isChampions,
   isNatureBoosted,
   isNatureReduced,
   evFieldKey,
@@ -217,81 +255,190 @@ function StatRow({
   budget,
   onUpdate,
 }: StatRowProps) {
-  const [open, setOpen] = useState(false);
   const label = STAT_LABELS[statKey];
   const tier = getStatTier(base);
-
-  // Bar fill = finalStat / 250, clamped to 100%
-  const barPct = Math.min(100, (finalStat / 250) * 100);
   const barColor = tierBarColor(tier);
-  const labelTextClass = isNatureBoosted
-    ? "text-green-600 dark:text-green-400"
-    : isNatureReduced
-      ? "text-destructive"
-      : tierTextClass(tier);
 
-  // Cap this stat's investment at whichever is smaller: per-stat max OR
-  // the remaining team-wide budget (after subtracting other stats' investment).
-  const otherStatsInvestment = totalEv - ev;
-  const remainingForThisStat = Math.max(
+  // --- Viz bar layer widths (0→250 final stat space) ---
+  const baseLayerWidth = Math.min(100, (noEvFinalStat / 250) * 100);
+  const investLayerLeft = baseLayerWidth;
+  const investLayerWidth = Math.max(
     0,
-    budget.total - otherStatsInvestment
+    Math.min(100, (finalStat / 250) * 100) - baseLayerWidth
   );
+
+  // --- Slider budget ---
+  const otherStatsInvestment = totalEv - ev;
+  const remainingForThisStat = Math.max(0, budget.total - otherStatsInvestment);
   const investBudget = Math.min(budget.perStat, remainingForThisStat);
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className={s.statRow}
-          />
-        }
-      >
-        {/* Col 1: Stat label, color-coded */}
-        <span
-          className={cn(s.statLabel, labelTextClass)}
-        >
-          {label}
-          {isNatureBoosted && <span className="ml-0.5">+</span>}
-          {isNatureReduced && <span className="ml-0.5">−</span>}
-        </span>
+  // --- Breakpoint ticks (only for +nature stat) ---
+  const breakpoints = isNatureBoosted
+    ? findStatBreakpoints({
+        statKey,
+        base,
+        iv: ivs[statKey],
+        level,
+        natureMultiplier: isChampions
+          ? 1.1
+          : getNatureMultiplier(
+              nature,
+              statKey as keyof Omit<StatValues, "hp">
+            ),
+        perStatMax: budget.perStat,
+        step: budget.step,
+        isChampions,
+      })
+    : [];
 
-        {/* Col 2: Horizontal bar */}
-        <div className={s.statBar}>
+  // The first breakpoint strictly above the current EV is the "next" target
+  const nextBpEv = breakpoints.find((bp) => bp > ev);
+
+  // --- Label color ---
+  const labelTextClass = isNatureBoosted
+    ? "text-red-600 dark:text-red-400"
+    : isNatureReduced
+      ? "text-sky-600 dark:text-sky-400"
+      : tierTextClass(tier);
+
+  // --- Input display value ---
+  const inputDisplay = buildInputDisplay(ev, isNatureBoosted, isNatureReduced);
+
+  // --- Handle slider change ---
+  function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = Number(e.target.value);
+    const clamped = Math.min(raw, investBudget);
+    // Snap to nearest step
+    const snapped = Math.round(clamped / budget.step) * budget.step;
+    onUpdate({ [evFieldKey]: snapped });
+  }
+
+  // --- Handle text input change (live) ---
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    // Parse the numeric prefix; ignore the suffix (+/−)
+    const raw = parseInt(e.target.value, 10);
+    const val = Number.isNaN(raw)
+      ? 0
+      : Math.max(0, Math.min(budget.perStat, raw));
+    const clamped = Math.min(val, investBudget);
+    onUpdate({ [evFieldKey]: clamped });
+  }
+
+  // --- Handle text input blur (clamp/snap) ---
+  function handleInputBlur(e: React.FocusEvent<HTMLInputElement>) {
+    const raw = parseInt(e.target.value, 10);
+    const val = Number.isNaN(raw)
+      ? 0
+      : Math.max(0, Math.min(budget.perStat, raw));
+    const clamped = Math.min(val, investBudget);
+    // Snap to nearest step for VGC
+    const snapped = Math.round(clamped / budget.step) * budget.step;
+    onUpdate({ [evFieldKey]: snapped });
+  }
+
+  return (
+    <div className={s.spreadRow}>
+      {/* Col 1: Stat label, color-coded, with nature chevron */}
+      <span className={cn(s.spreadLabel, labelTextClass)}>
+        {label}
+        {isNatureBoosted && (
+          <span className="text-[9px] font-black tracking-tighter text-red-600 dark:text-red-400">
+            ▲
+          </span>
+        )}
+        {isNatureReduced && (
+          <span className="text-[9px] font-black tracking-tighter text-sky-600 dark:text-sky-400">
+            ▽
+          </span>
+        )}
+      </span>
+
+      {/* Col 2: Base stat number, muted mono */}
+      <span className={s.spreadBase}>{base}</span>
+
+      {/* Col 3: Read-only viz bar (solid base + striped invest) */}
+      <div className={s.spreadVbar}>
+        {/* Solid base layer */}
+        <span
+          className={s.spreadVbarBase}
+          style={{
+            width: `${baseLayerWidth}%`,
+            background: barColor,
+          }}
+        />
+        {/* Striped invest overlay */}
+        {investLayerWidth > 0 && (
           <span
-            className={s.statBarFill}
+            className={s.spreadVbarInvest}
             style={{
-              width: `${barPct}%`,
+              left: `${investLayerLeft}%`,
+              width: `${investLayerWidth}%`,
               background: barColor,
             }}
           />
-        </div>
+        )}
+      </div>
 
-        {/* Col 3: Final stat value (mono) */}
-        <span className={s.statValue}>{finalStat}</span>
+      {/* Col 4: Text input (shows ev + nature suffix) */}
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="\d*"
+        value={inputDisplay}
+        onChange={handleInputChange}
+        onBlur={handleInputBlur}
+        aria-label={`${label} investment`}
+        className={cn(
+          "focus:ring-primary h-[18px] w-9 rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
+          isNatureBoosted && "border-red-400/70 text-red-600 dark:text-red-400",
+          isNatureReduced && "border-sky-400/70 text-sky-600 dark:text-sky-400",
+          !isNatureBoosted &&
+            !isNatureReduced &&
+            "border-border text-foreground"
+        )}
+      />
 
-        {/* Col 4: Investment count (muted) — EV in standard formats, SP in Champions */}
-        <span className={s.statEv}>{ev}</span>
-      </PopoverTrigger>
-      <PopoverContent side="bottom" align="center" className="w-auto p-0">
-        <NumberPicker
-          title={`${budget.label} · ${label}`}
-          value={ev}
+      {/* Col 5: Slider with optional breakpoint ticks */}
+      <div className={s.spreadSliderWrap}>
+        <input
+          type="range"
           min={0}
           max={budget.perStat}
           step={budget.step}
-          suffix={`/ ${budget.perStat}`}
-          hint={`Total used: ${totalEv} / ${budget.total} ${budget.label}`}
-          onChange={(v) => {
-            const clamped = Math.min(v, investBudget);
-            onUpdate({ [evFieldKey]: clamped });
-          }}
-          onClose={() => setOpen(false)}
+          value={ev}
+          onChange={handleSliderChange}
+          aria-label={`${label} slider`}
+          aria-valuemin={0}
+          aria-valuemax={budget.perStat}
+          aria-valuenow={ev}
+          className={cn(
+            s.spreadSlider,
+            isNatureBoosted && "accent-red-500",
+            isNatureReduced && "accent-sky-500",
+            !isNatureBoosted && !isNatureReduced && "accent-primary"
+          )}
         />
-      </PopoverContent>
-    </Popover>
+
+        {/* Breakpoint ticks overlay — only on +nature stat */}
+        {isNatureBoosted && breakpoints.length > 0 && (
+          <div className={s.spreadBumps} data-testid={`bumps-${statKey}`}>
+            {breakpoints.map((bpEv) => (
+              <span
+                key={bpEv}
+                className={cn(
+                  s.spreadBumpTick,
+                  bpEv === nextBpEv && s.spreadBumpTickNext
+                )}
+                style={{ left: `${(bpEv / budget.perStat) * 100}%` }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Col 6: Final stat, mono bold */}
+      <span className={s.spreadFinal}>{finalStat}</span>
+    </div>
   );
 }
 
@@ -300,19 +447,24 @@ function StatRow({
 // =============================================================================
 
 /**
- * Spread lane — 6 horizontal stat rows with bars.
+ * Spread lane — 6 horizontal stat rows in Pokemon Showdown style.
  *
  * Each row layout (CSS grid):
- *   [stat label, color-coded] [bar] [final stat value, mono] [EV count, muted]
+ *   [label 36px] [base# 26px] [viz bar 1fr] [input 38px] [slider 110px] [final# 32px]
  *
- * Bar fill width = finalStat / 250 * 100% (clamped), colored by stat tier.
- * Click on a row opens the EV NumberPicker for that stat.
+ * Viz bar: read-only, solid base layer + striped invest overlay. Maps 0→250 final stat.
+ * Number input: shows EV with Showdown-style nature suffix (+/−).
+ * Slider: the only EV/SP input. Red breakpoint ticks on +nature stat only.
  *
  * Supports Champions format (SP system, gen 10).
  * Below the rows: IV editor with a "Show IVs" toggle (collapses by default).
- * Phase 7: renders inline FieldError chips for EV/stat validation issues.
  */
-export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: StatsLaneProps) {
+export function StatsLane({
+  pokemon,
+  format,
+  onUpdate,
+  fieldErrors = [],
+}: StatsLaneProps) {
   const [showIvs, setShowIvs] = useState(false);
 
   const evs = getEvs(pokemon);
@@ -326,8 +478,12 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
 
   const rawBase = getBaseStats(pokemon.species ?? "");
   const base: StatValues = rawBase ?? {
-    hp: 50, attack: 50, defense: 50,
-    specialAttack: 50, specialDefense: 50, speed: 50,
+    hp: 50,
+    attack: 50,
+    defense: 50,
+    specialAttack: 50,
+    specialDefense: 50,
+    speed: 50,
   };
 
   const natureEffect = NATURE_EFFECTS[nature];
@@ -344,8 +500,8 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
 
   return (
     <div
-      className="flex min-w-0 flex-1 flex-col gap-0.5 border-r border-dashed border-border/60 px-3 py-2"
-      style={{ minWidth: 260 }}
+      className="border-border/60 flex min-w-0 flex-1 flex-col gap-0.5 border-r border-dashed px-3 py-2"
+      style={{ minWidth: 480 }}
     >
       {/* Header with total investment chip */}
       <div className="mb-1 flex items-baseline justify-between">
@@ -368,6 +524,10 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
       {/* 6 horizontal stat rows */}
       <div className="flex flex-col">
         {STAT_KEYS.map((statKey) => {
+          const isNatureBoosted = natUp === statKey;
+          const isNatureReduced = natDown === statKey;
+
+          // Current final stat (with current EVs)
           const finalStat = computeFinalStat(
             statKey,
             base,
@@ -378,15 +538,32 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
             isChampions
           );
 
+          // Final stat with EV=0 (for the solid base layer of the viz bar)
+          const zeroEvs: StatValues = { ...evs, [statKey]: 0 };
+          const noEvFinalStat = computeFinalStat(
+            statKey,
+            base,
+            ivs,
+            zeroEvs,
+            nature,
+            level,
+            isChampions
+          );
+
           return (
             <StatRow
               key={statKey}
               statKey={statKey}
               finalStat={finalStat}
+              noEvFinalStat={noEvFinalStat}
               ev={evs[statKey]}
               base={base[statKey]}
-              isNatureBoosted={natUp === statKey}
-              isNatureReduced={natDown === statKey}
+              ivs={ivs}
+              nature={nature}
+              level={level}
+              isChampions={isChampions}
+              isNatureBoosted={isNatureBoosted}
+              isNatureReduced={isNatureReduced}
               evFieldKey={EV_FIELD[statKey]}
               totalEv={totalEv}
               budget={budget}
@@ -403,52 +580,53 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
 
       {/* IV section — hidden in formats without IVs (e.g. Champions) */}
       {showIvSection && (
-      <div className="mt-1">
-        {/* IV toggle */}
-        <button
-          type="button"
-          onClick={() => setShowIvs((v) => !v)}
-          className="text-muted-foreground flex items-center gap-1 text-[10px] font-medium transition-colors hover:text-foreground"
-        >
-          <span className="font-mono text-[9px]">{showIvs ? "▾" : "▸"}</span>
-          IVs
-          {!showIvs && nonMaxIvs.length > 0 && (
-            <span className="text-amber-500 ml-1 font-mono text-[9.5px]">
-              {nonMaxIvs.map((k) => `${STAT_LABELS[k]}:${ivs[k]}`).join(" ")}
-            </span>
-          )}
-        </button>
+        <div className="mt-1">
+          {/* IV toggle */}
+          <button
+            type="button"
+            onClick={() => setShowIvs((v) => !v)}
+            className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-[10px] font-medium transition-colors"
+          >
+            <span className="font-mono text-[9px]">{showIvs ? "▾" : "▸"}</span>
+            IVs
+            {!showIvs && nonMaxIvs.length > 0 && (
+              <span className="ml-1 font-mono text-[9.5px] text-amber-500">
+                {nonMaxIvs.map((k) => `${STAT_LABELS[k]}:${ivs[k]}`).join(" ")}
+              </span>
+            )}
+          </button>
 
-        {/* IV grid */}
-        {showIvs && (
-          <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1">
-            {STAT_KEYS.map((statKey) => (
-              <label
-                key={statKey}
-                className="flex items-center gap-1.5"
-              >
-                <span className="text-muted-foreground w-7 font-mono text-[9px] font-medium uppercase">
-                  {STAT_LABELS[statKey]}
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  max={31}
-                  value={ivs[statKey]}
-                  onChange={(e) => {
-                    const v = Math.max(0, Math.min(31, Number(e.target.value)));
-                    onUpdate({ [IV_FIELD[statKey]]: v });
-                  }}
-                  className={cn(
-                    "bg-background w-10 rounded border px-1 py-0.5 text-center font-mono text-xs outline-none focus:ring-1 focus:ring-primary",
-                    ivs[statKey] !== 31 && "border-amber-400/60 text-amber-600 dark:text-amber-400"
-                  )}
-                />
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
+          {/* IV grid */}
+          {showIvs && (
+            <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1">
+              {STAT_KEYS.map((statKey) => (
+                <label key={statKey} className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground w-7 font-mono text-[9px] font-medium uppercase">
+                    {STAT_LABELS[statKey]}
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={31}
+                    value={ivs[statKey]}
+                    onChange={(e) => {
+                      const v = Math.max(
+                        0,
+                        Math.min(31, Number(e.target.value))
+                      );
+                      onUpdate({ [IV_FIELD[statKey]]: v });
+                    }}
+                    className={cn(
+                      "bg-background focus:ring-primary w-10 rounded border px-1 py-0.5 text-center font-mono text-xs outline-none focus:ring-1",
+                      ivs[statKey] !== 31 &&
+                        "border-amber-400/60 text-amber-600 dark:text-amber-400"
+                    )}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

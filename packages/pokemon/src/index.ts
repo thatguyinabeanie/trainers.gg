@@ -155,8 +155,8 @@ export {
 // Featured Pokemon for avatar picker
 export { FEATURED_POKEMON } from "./featured-pokemon";
 
-// Nature bump calculator
-export { calculateNatureBumps } from "./nature-bumps";
+// Stat breakpoint calculator
+export { findStatBreakpoints, type FindStatBreakpointsArgs } from "./nature-bumps";
 
 // Speed tier benchmarks and comparison
 export {

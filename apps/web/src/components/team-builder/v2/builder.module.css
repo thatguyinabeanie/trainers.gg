@@ -1586,45 +1586,22 @@
   min-width: 0;
 }
 
-/* Stat row — one per stat in the horizontal spread view (compact) */
-.statRow {
+/* Stat row — Showdown-style 6-column grid per stat */
+.spreadRow {
   display: grid;
-  grid-template-columns: 26px 1fr 34px 28px;
-  gap: 6px;
+  grid-template-columns: 36px 26px 1fr 38px 110px 32px;
+  gap: 8px;
   align-items: center;
-  padding: 1px 2px;
-  cursor: pointer;
+  padding: 2px 4px;
   border-radius: 4px;
-  transition: background 0.1s;
-  background: transparent;
-  border: none;
-  text-align: left;
-  width: 100%;
 }
 
-.statRow:hover {
+.spreadRow:hover {
   background: var(--muted);
 }
 
-/* Horizontal bar track */
-.statBar {
-  height: 4px;
-  background: var(--muted);
-  border-radius: 999px;
-  overflow: hidden;
-  min-width: 0;
-}
-
-/* Bar fill — width set via inline style, color via inline style (tier) */
-.statBarFill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  transition: width 0.15s;
-}
-
-/* Stat label — left-most column */
-.statLabel {
+/* Stat label — col 1, left-aligned, readable */
+.spreadLabel {
   font-size: 9.5px;
   font-weight: 600;
   text-transform: uppercase;
@@ -1633,20 +1610,131 @@
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 1px;
 }
 
-/* Final stat value — mono, right-aligned */
-.statValue {
-  font-family: ui-monospace, SFMono-Regular, monospace;
-  font-size: 11px;
-  font-weight: 600;
-  text-align: right;
-}
-
-/* EV count — muted, mono, right-aligned */
-.statEv {
+/* Base stat number — col 2, muted mono right-aligned */
+.spreadBase {
   font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 9.5px;
   color: var(--muted-foreground);
+  text-align: right;
+}
+
+/* Viz bar track — col 3, read-only */
+.spreadVbar {
+  height: 8px;
+  background: var(--muted);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+}
+
+/* Solid base layer (EV=0 final stat) */
+.spreadVbarBase {
+  display: block;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  border-radius: 999px;
+}
+
+/* Striped invest overlay (EV > 0 portion) */
+.spreadVbarInvest {
+  display: block;
+  height: 100%;
+  position: absolute;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.55) 0,
+    rgba(255, 255, 255, 0.55) 3px,
+    transparent 3px,
+    transparent 7px
+  );
+}
+
+/* Slider container — col 5, relative so ticks overlay */
+.spreadSliderWrap {
+  position: relative;
+  height: 14px;
+}
+
+/* Native range input */
+.spreadSlider {
+  width: 100%;
+  height: 14px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+  outline: none;
+}
+
+.spreadSlider::-webkit-slider-runnable-track {
+  height: 3px;
+  background: var(--muted-foreground);
+  border-radius: 999px;
+  opacity: 0.4;
+}
+
+.spreadSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-top: -3.5px;
+  border: none;
+}
+
+.spreadSlider::-moz-range-track {
+  height: 3px;
+  background: var(--muted-foreground);
+  border-radius: 999px;
+  opacity: 0.4;
+}
+
+.spreadSlider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  border: none;
+}
+
+/* Breakpoint ticks overlay — pointer-events: none so slider stays interactive */
+.spreadBumps {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Individual tick */
+.spreadBumpTick {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 1.5px;
+  background: rgb(220 38 38);
+  border-radius: 1px;
+  transform: translateX(-50%);
+  opacity: 0.7;
+}
+
+/* Next breakpoint above current invest — brighter */
+.spreadBumpTickNext {
+  background: rgb(239 68 68);
+  opacity: 1;
+}
+
+/* Final stat — col 6, mono bold right-aligned */
+.spreadFinal {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 11.5px;
+  font-weight: 700;
   text-align: right;
 }
