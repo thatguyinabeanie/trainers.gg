@@ -169,8 +169,8 @@ export function IdentityLane({
     <div className="flex min-w-0 gap-3 p-3">
       {/* ── Sprite column ─────────────────────────────────────────── */}
       <Popover open={speciesOpen} onOpenChange={setSpeciesOpen}>
-        <div className="flex shrink-0 flex-col gap-1.5">
-          {/* Sprite — 128×128, click to open species picker */}
+        <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
+          {/* Sprite — 144×144, click to open species picker */}
           <PopoverTrigger
             render={
               <button
@@ -180,7 +180,7 @@ export function IdentityLane({
               />
             }
           >
-            <Sprite species={pokemon.species ?? ""} types={types} size={128} />
+            <Sprite species={pokemon.species ?? ""} types={types} size={144} />
           </PopoverTrigger>
 
           {/* Species pill — click to open species picker, responsive width */}
