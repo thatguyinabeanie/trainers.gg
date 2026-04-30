@@ -47,17 +47,34 @@ describe("findStatBreakpoints", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 2. VGC neutral non-HP stat — all breakpoints are multiples of 4 within range
+  // 2. Neutral nature returns [] — only +nature has bonus breakpoints
   // -------------------------------------------------------------------------
-  it("VGC neutral non-HP stat returns multiples of 4 within [4, 252]", () => {
+  it("VGC neutral non-HP stat returns []", () => {
     const result = findStatBreakpoints(
       vgcArgs({ base: 100, iv: 31, level: 50, natureMultiplier: 1.0 })
     );
-    for (const ev of result) {
-      expect(ev % 4).toBe(0);
-      expect(ev).toBeGreaterThanOrEqual(4);
-      expect(ev).toBeLessThanOrEqual(252);
-    }
+    expect(result).toEqual([]);
+  });
+
+  it("VGC −nature non-HP stat returns []", () => {
+    const result = findStatBreakpoints(
+      vgcArgs({ base: 100, iv: 31, level: 50, natureMultiplier: 0.9 })
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("Champions neutral non-HP stat returns []", () => {
+    const result = findStatBreakpoints(
+      champArgs({ base: 100, natureMultiplier: 1.0 })
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("Champions −nature non-HP stat returns []", () => {
+    const result = findStatBreakpoints(
+      champArgs({ base: 100, natureMultiplier: 0.9 })
+    );
+    expect(result).toEqual([]);
   });
 
   // -------------------------------------------------------------------------
@@ -82,32 +99,17 @@ describe("findStatBreakpoints", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 4. VGC HP (Garchomp HP base 108)
+  // 4. HP always returns [] regardless of nature (HP doesn't apply nature)
   // -------------------------------------------------------------------------
-  it("VGC HP (Garchomp HP) is non-empty and strictly increasing", () => {
-    const result = findStatBreakpoints(
-      vgcArgs({ statKey: "hp", base: 108, iv: 31, level: 50 })
-    );
-
-    expect(result.length).toBeGreaterThan(0);
-
-    for (let i = 1; i < result.length; i++) {
-      expect(result[i]).toBeGreaterThan(result[i - 1]!);
-    }
-  });
-
-  // -------------------------------------------------------------------------
-  // 5. VGC HP ignores natureMultiplier (HP formula skips nature)
-  // -------------------------------------------------------------------------
-  it("VGC HP ignores natureMultiplier — results are identical for 1.0 and 1.1", () => {
+  it("VGC HP returns [] for any natureMultiplier", () => {
     const neutral = findStatBreakpoints(
       vgcArgs({ statKey: "hp", base: 108, iv: 31, level: 50, natureMultiplier: 1.0 })
     );
     const boosted = findStatBreakpoints(
       vgcArgs({ statKey: "hp", base: 108, iv: 31, level: 50, natureMultiplier: 1.1 })
     );
-
-    expect(neutral).toEqual(boosted);
+    expect(neutral).toEqual([]);
+    expect(boosted).toEqual([]);
   });
 
   // -------------------------------------------------------------------------
@@ -131,30 +133,17 @@ describe("findStatBreakpoints", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 7. Champions HP (Garchomp HP base 108)
+  // 7. Champions HP returns [] for any nature
   // -------------------------------------------------------------------------
-  it("Champions HP (base 108) is non-empty and each entry is in [1, 32]", () => {
-    const result = findStatBreakpoints(
-      champArgs({ statKey: "hp", base: 108, iv: 0, level: 50, natureMultiplier: 1.0 })
+  it("Champions HP returns [] for any natureMultiplier", () => {
+    const neutral = findStatBreakpoints(
+      champArgs({ statKey: "hp", base: 108, natureMultiplier: 1.0 })
     );
-
-    expect(result.length).toBeGreaterThan(0);
-
-    for (const sp of result) {
-      expect(sp).toBeGreaterThanOrEqual(1);
-      expect(sp).toBeLessThanOrEqual(32);
-    }
-  });
-
-  // -------------------------------------------------------------------------
-  // 8. Champions Shedinja-equivalent (HP base=1) — formula caps at HP=1, no breakpoints
-  // -------------------------------------------------------------------------
-  it("Champions HP base=1 (Shedinja-equivalent) returns empty array", () => {
-    const result = findStatBreakpoints(
-      champArgs({ statKey: "hp", base: 1, iv: 0, level: 50, natureMultiplier: 1.0 })
+    const boosted = findStatBreakpoints(
+      champArgs({ statKey: "hp", base: 108, natureMultiplier: 1.1 })
     );
-
-    expect(result).toEqual([]);
+    expect(neutral).toEqual([]);
+    expect(boosted).toEqual([]);
   });
 
   // -------------------------------------------------------------------------

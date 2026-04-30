@@ -1,11 +1,13 @@
 /**
- * Stat breakpoint calculator
+ * Nature-bonus breakpoint calculator
  *
- * Identifies EV/SP values where the displayed final stat ticks up by 1
- * compared to the previous investment step.
+ * Identifies EV/SP values where the +nature multiplier confers an additional
+ * effective stat point relative to a neutral nature — the "free bonus"
+ * breakpoints players use to invest precisely without waste.
  *
- * Used to render tick marks on the stat-investment slider so players can land
- * precisely on a +1-stat boundary.
+ * Used to render tick marks on the stat-investment slider for the +nature stat.
+ * For neutral or −nature inputs, returns []. For +nature, returns the EV/SP
+ * positions where (statWithNature − statNeutral) increases.
  */
 
 import {
@@ -52,22 +54,33 @@ function computeStatAt(ev: number, args: FindStatBreakpointsArgs): number {
 }
 
 /**
- * Returns the EV/SP values where the displayed final stat would tick up by 1
- * compared to the previous step. Used to render breakpoint ticks on the
- * stat-investment slider so players can land precisely on a +1-stat boundary.
+ * Returns the EV/SP values where the +nature multiplier confers an additional
+ * effective stat point relative to a neutral nature — i.e. the EV/SP positions
+ * where (statWithNature − statNeutral) increases.
+ *
+ * Returns [] for HP, neutral nature (1.0), and −nature (0.9). Only +nature
+ * (1.1) produces non-empty results.
  *
  * Iterates from `step` to `perStatMax` in `step` increments. O(perStatMax / step).
  * Cheap: ≤ 63 iterations for VGC, ≤ 32 for Champions.
  */
 export function findStatBreakpoints(args: FindStatBreakpointsArgs): number[] {
+  if (args.statKey === "hp") return [];
+  if (args.natureMultiplier <= 1.0) return [];
+
+  const neutralArgs: FindStatBreakpointsArgs = {
+    ...args,
+    natureMultiplier: 1.0,
+  };
+
+  const baselineGap = computeStatAt(0, args) - computeStatAt(0, neutralArgs);
+  let prevGap = baselineGap;
+
   const out: number[] = [];
-  let prev = computeStatAt(0, args);
   for (let ev = args.step; ev <= args.perStatMax; ev += args.step) {
-    const cur = computeStatAt(ev, args);
-    if (cur > prev) {
-      out.push(ev);
-      prev = cur;
-    }
+    const gap = computeStatAt(ev, args) - computeStatAt(ev, neutralArgs);
+    if (gap > prevGap) out.push(ev);
+    prevGap = gap;
   }
   return out;
 }
