@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 
 import { getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/supabase";
@@ -228,8 +228,6 @@ function CollapsedRow({
 interface ActiveRowShellProps {
   idx: number;
   pokemon: Tables<"pokemon">;
-  density: "comfy" | "compact";
-  onActivate: (idx: number) => void;
   onRemove?: (idx: number) => void;
   teamPokemon: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
@@ -240,8 +238,6 @@ interface ActiveRowShellProps {
 function ActiveRowShell({
   idx,
   pokemon,
-  density,
-  onActivate,
   onRemove,
   teamPokemon,
   format,
@@ -249,28 +245,7 @@ function ActiveRowShell({
   slotErrors,
 }: ActiveRowShellProps) {
   return (
-    <div
-      className={cn(
-        "overflow-x-hidden rounded-lg",
-        density === "comfy" ? "" : ""
-      )}
-    >
-      {/* Collapse chevron bar at the top */}
-      <div className="flex items-center gap-2 border-b border-primary/20 bg-primary/5 px-3 py-1.5">
-        <span className="font-mono text-[10px] text-muted-foreground">
-          Slot {idx + 1}
-        </span>
-        <button
-          type="button"
-          onClick={() => onActivate(idx)}
-          className="ml-auto flex items-center gap-1 text-muted-foreground text-xs transition-colors hover:text-foreground"
-          aria-label="Collapse"
-        >
-          <ChevronUp className="size-3.5" />
-        </button>
-      </div>
-
-      {/* Full lane editor */}
+    <div className="overflow-x-hidden rounded-lg">
       <ActiveRow
         idx={idx}
         pokemon={pokemon}
@@ -319,8 +294,6 @@ export function PokeRow({
       <ActiveRowShell
         idx={idx}
         pokemon={pokemon}
-        density={density}
-        onActivate={onActivate}
         onRemove={onRemove}
         teamPokemon={teamPokemon ?? []}
         format={format}
