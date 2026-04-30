@@ -221,13 +221,29 @@
    ============================================================ */
 
 :global(.cd-drawer) {
-  width: 380px;
+  /* Width is driven by inline style (calcDrawerWidth px) — no static width here */
   flex-shrink: 0;
   border-left: 1px solid var(--border);
   background: var(--background);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  position: relative; /* needed so .cd-resizer can be absolutely positioned */
+}
+
+/* Drag-resize handle — thin 4px strip on the left edge of the calc drawer.
+   Absolutely positioned; pointer-events set explicitly so the scrollable
+   drawer doesn't swallow events. */
+:global(.cd-resizer) {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  pointer-events: auto;
+  cursor: col-resize;
+  z-index: 10;
+  transition: background 0.12s;
 }
 
 :global(.cd-head) {
@@ -831,6 +847,22 @@
   flex-shrink: 0;
 }
 
+/* Drag handle — the slot number label on the RIB.
+   Only applied on filled, desktop-rendered slots. */
+.dragHandle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+/* While a row is being dragged, dim it slightly. */
+.rowDragging {
+  opacity: 0.5;
+}
+
 /* Identity lane — 128px sprite + meta column (flex row) */
 .laneId {
   display: flex;
@@ -907,7 +939,8 @@
     minmax(0, 11rem)  /* name */
     auto              /* BP */
     auto              /* Acc */
-    minmax(0, 1fr);   /* description OR calc pill */
+    minmax(0, 1fr)    /* description */
+    auto;             /* calc pill / hint (empty when not applicable) */
   align-items: center;
   gap: 14px;
   padding: 7px 12px;

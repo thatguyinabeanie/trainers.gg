@@ -230,7 +230,18 @@ function MoveTile({
               </span>
             </span>
 
-            {/* Col 6: Calc pill (damage moves w/ calc on) OR description */}
+            {/* Col 6: Description (always rendered when present) */}
+            <span
+              className="mvline-desc"
+              title={moveData?.shortDesc ?? undefined}
+            >
+              {moveName && moveData?.shortDesc && moveData.shortDesc !== "No additional effect."
+                ? moveData.shortDesc
+                : ""}
+            </span>
+
+            {/* Col 7: Calc pill (damage moves w/ calc on + defender) OR
+                "pick a target" hint (calc on, no defender). Empty otherwise. */}
             {hasCalc && koTier ? (
               <span className={cn("mvline-pill", `mvline-pill--ko${koTier}`)}>
                 <span className={cn("mvline-pill-tier", `mvline-pill-tier--ko${koTier}`)}>
@@ -267,14 +278,7 @@ function MoveTile({
             ) : calc.calcEnabled && moveName && !hasDefender && !isStatus ? (
               <span className="mvline-no-target">— pick a target —</span>
             ) : (
-              <span
-                className="mvline-desc"
-                title={moveData?.shortDesc ?? undefined}
-              >
-                {moveName && moveData?.shortDesc && moveData.shortDesc !== "No additional effect."
-                  ? moveData.shortDesc
-                  : ""}
-              </span>
+              <span aria-hidden />
             )}
         </PopoverTrigger>
 
