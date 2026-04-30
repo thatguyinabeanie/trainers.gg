@@ -10,7 +10,6 @@ import {
   findStatBreakpoints,
   getBaseStats,
   getNatureMultiplier,
-  getStatTier,
   isChampionsFormat,
   NATURE_EFFECTS,
   type GameFormat,
@@ -167,37 +166,20 @@ function computeFinalStat(
   return calculateStat(b, iv, ev, level, mult);
 }
 
-/** CSS custom property string for the stat-tier bar fill color. */
-function tierBarColor(tier: string): string {
-  switch (tier) {
-    case "low":
-      return "var(--color-stat-low, var(--stat-low, oklch(0.7 0.15 30)))";
-    case "mid":
-      return "var(--color-stat-mid, var(--stat-mid, oklch(0.75 0.15 80)))";
-    case "good":
-      return "var(--color-stat-good, var(--stat-good, oklch(0.7 0.2 140)))";
-    case "great":
-      return "var(--color-stat-great, var(--stat-great, oklch(0.6 0.22 145)))";
-    default:
-      return "var(--muted-foreground)";
-  }
-}
-
-/** Tailwind text color class from stat tier (for label). */
-function tierTextClass(tier: string): string {
-  switch (tier) {
-    case "low":
-      return "text-stat-low";
-    case "mid":
-      return "text-stat-mid";
-    case "good":
-      return "text-stat-good";
-    case "great":
-      return "text-stat-great";
-    default:
-      return "text-muted-foreground";
-  }
-}
+/**
+ * Stat-key colors — fixed per stat regardless of Pokemon (matches the
+ * Showdown / Bulbapedia community convention: HP=red, Atk=orange, Def=amber,
+ * SpA=blue, SpD=green, Spe=pink). Applied as `text-*` so the bar fills (via
+ * `bg-current`), slider thumb and bump rings (via `currentColor`) all inherit.
+ */
+const STAT_TEXT_CLASS: Record<StatKey, string> = {
+  hp: "text-rose-500 dark:text-rose-400",
+  attack: "text-orange-500 dark:text-orange-400",
+  defense: "text-amber-500 dark:text-amber-400",
+  specialAttack: "text-sky-500 dark:text-sky-400",
+  specialDefense: "text-emerald-500 dark:text-emerald-400",
+  speed: "text-fuchsia-500 dark:text-fuchsia-400",
+};
 
 /**
  * Build the display string for the number input from ev + nature affinity.
@@ -256,8 +238,7 @@ function StatRow({
   onUpdate,
 }: StatRowProps) {
   const label = STAT_LABELS[statKey];
-  const tier = getStatTier(base);
-  const barColor = tierBarColor(tier);
+  const statColorClass = STAT_TEXT_CLASS[statKey];
 
   // --- Viz bar layer widths (0→250 final stat space) ---
   const baseLayerWidth = Math.min(100, (noEvFinalStat / 250) * 100);
@@ -294,12 +275,12 @@ function StatRow({
   // The first breakpoint strictly above the current EV is the "next" target
   const nextBpEv = breakpoints.find((bp) => bp > ev);
 
-  // --- Label color ---
+  // --- Label color: nature-direction overrides stat-key color ---
   const labelTextClass = isNatureBoosted
     ? "text-red-600 dark:text-red-400"
     : isNatureReduced
       ? "text-sky-600 dark:text-sky-400"
-      : tierTextClass(tier);
+      : statColorClass;
 
   // --- Input display value ---
   const inputDisplay = buildInputDisplay(ev, isNatureBoosted, isNatureReduced);
@@ -337,7 +318,7 @@ function StatRow({
   }
 
   return (
-    <div className={s.spreadRow}>
+    <div className={cn(s.spreadRow, statColorClass)}>
       {/* Col 1: Stat label, color-coded, with nature chevron */}
       <span className={cn(s.spreadLabel, labelTextClass)}>
         {label}
@@ -356,24 +337,19 @@ function StatRow({
       {/* Col 2: Base stat number, muted mono */}
       <span className={s.spreadBase}>{base}</span>
 
-      {/* Col 3: Read-only viz bar (solid base + striped invest) */}
+      {/* Col 3: Read-only viz bar (solid base + striped invest).
+       * `bg-current` so both layers inherit the stat-key color from the row. */}
       <div className={s.spreadVbar}>
-        {/* Solid base layer */}
         <span
-          className={s.spreadVbarBase}
-          style={{
-            width: `${baseLayerWidth}%`,
-            background: barColor,
-          }}
+          className={cn(s.spreadVbarBase, "bg-current")}
+          style={{ width: `${baseLayerWidth}%` }}
         />
-        {/* Striped invest overlay */}
         {investLayerWidth > 0 && (
           <span
-            className={s.spreadVbarInvest}
+            className={cn(s.spreadVbarInvest, "bg-current")}
             style={{
               left: `${investLayerLeft}%`,
               width: `${investLayerWidth}%`,
-              background: barColor,
             }}
           />
         )}
@@ -399,9 +375,9 @@ function StatRow({
       />
 
       {/* Col 5: Slider with optional breakpoint ticks.
-       * Tier color set on the wrap so both the thumb (background: currentColor)
-       * and the bump rings (border: currentColor) inherit it. */}
-      <div className={cn(s.spreadSliderWrap, tierTextClass(tier))}>
+       * Stat-key color is on the row, so the thumb (background: currentColor)
+       * and the bump rings (border: currentColor) inherit it from the row. */}
+      <div className={s.spreadSliderWrap}>
         <div className={s.spreadSliderTrack} aria-hidden />
         <input
           type="range"
