@@ -77,7 +77,7 @@ export function MovePicker({
   const rowVirtualizer = useVirtualizer({
     count: filteredMoves.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 40,
+    estimateSize: () => 52,
     overscan: 5,
   });
 
@@ -174,9 +174,17 @@ export function MovePicker({
                     {/* Type dot */}
                     <TypeDot t={move?.type ?? "Normal"} size={10} />
 
-                    {/* Name — flex-1 so it expands; min-w-0 + truncate for graceful overflow */}
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                      {moveName}
+                    {/* Name + secondary effect — vertical stack, expands to fill */}
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="truncate text-sm font-medium">
+                        {moveName}
+                      </span>
+                      {move?.shortDesc &&
+                        move.shortDesc !== "No additional effect." && (
+                          <span className="text-muted-foreground truncate text-[11px] leading-tight">
+                            {move.shortDesc}
+                          </span>
+                        )}
                     </span>
 
                     {/* Type badge */}
