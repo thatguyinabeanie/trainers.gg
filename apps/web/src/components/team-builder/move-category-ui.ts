@@ -11,3 +11,14 @@ export const CATEGORY_COLORS: Record<string, string> = {
   Special: "text-blue-500",
   Status: "text-muted-foreground",
 };
+
+/**
+ * Showdown CDN URLs for the canonical Gen-4+ move category icons
+ * (orange burst = Physical, blue swirl = Special, grey oval = Status).
+ * Same CDN this project already uses for type icons in @trainers/pokemon/sprites.
+ */
+export const CATEGORY_ICON_URLS: Record<string, string> = {
+  Physical: "https://play.pokemonshowdown.com/sprites/categories/Physical.png",
+  Special: "https://play.pokemonshowdown.com/sprites/categories/Special.png",
+  Status: "https://play.pokemonshowdown.com/sprites/categories/Status.png",
+};

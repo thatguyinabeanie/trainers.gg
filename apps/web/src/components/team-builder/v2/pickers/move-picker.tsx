@@ -19,6 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+import { CATEGORY_ICON_URLS } from "../../move-category-ui";
 import { TYPE_BG_COLORS } from "../../type-colors";
 
 // =============================================================================
@@ -185,13 +186,13 @@ export function MovePicker({
     );
   }
 
-  // Shared row grid: type | name+desc | cat | bp | acc
-  // 5rem    — type pill (fits "ELECTRIC", "FIGHTING")
+  // Shared row grid: name+desc | type | cat | bp | acc
   // 1fr     — name + description
+  // 5rem    — type pill (fits "ELECTRIC", "FIGHTING")
   // 2.5rem  — category letter
   // 2.5rem  — bp
   // 3rem    — accuracy
-  const ROW_GRID = "grid-cols-[5rem_minmax(0,1fr)_2.5rem_2.5rem_3rem]";
+  const ROW_GRID = "grid-cols-[minmax(0,1fr)_5rem_2.5rem_2.5rem_3rem]";
 
   return (
     <div className="bg-popover text-popover-foreground flex w-[720px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
@@ -229,6 +230,17 @@ export function MovePicker({
             ROW_GRID
           )}
         >
+          {/* Name column */}
+          <button
+            type="button"
+            className={cn(headerBtnClass("name"), "text-left")}
+            onClick={() => handleSort("name")}
+            aria-label="Sort by name"
+          >
+            Name
+            <SortArrow active={sort.col === "name"} dir={sort.dir} />
+          </button>
+
           {/* Type column — header doubles as a filter dropdown trigger */}
           <Popover open={typeOpen} onOpenChange={setTypeOpen}>
             <PopoverTrigger
@@ -297,17 +309,6 @@ export function MovePicker({
               </button>
             </PopoverContent>
           </Popover>
-
-          {/* Name column */}
-          <button
-            type="button"
-            className={cn(headerBtnClass("name"), "text-left")}
-            onClick={() => handleSort("name")}
-            aria-label="Sort by name"
-          >
-            Name
-            <SortArrow active={sort.col === "name"} dir={sort.dir} />
-          </button>
 
           {/* Category column — header doubles as filter */}
           <Popover open={catOpen} onOpenChange={setCatOpen}>
@@ -427,18 +428,6 @@ export function MovePicker({
                       ROW_GRID
                     )}
                   >
-                    {/* Type pill */}
-                    <span className="flex justify-center">
-                      <span
-                        className={cn(
-                          "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-tight",
-                          typePillClass(move?.type)
-                        )}
-                      >
-                        {move?.type ?? "—"}
-                      </span>
-                    </span>
-
                     {/* Name + secondary effect — vertical stack */}
                     <span className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-sm font-medium">
@@ -452,9 +441,33 @@ export function MovePicker({
                         )}
                     </span>
 
-                    {/* Category letter */}
-                    <span className="text-muted-foreground text-center font-mono text-xs">
-                      {categoryLetter(move?.category)}
+                    {/* Type pill */}
+                    <span className="flex justify-center">
+                      <span
+                        className={cn(
+                          "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-tight",
+                          typePillClass(move?.type)
+                        )}
+                      >
+                        {move?.type ?? "—"}
+                      </span>
+                    </span>
+
+                    {/* Category icon — orange burst (Physical), blue swirl (Special), grey oval (Status) */}
+                    <span className="flex justify-center">
+                      {move?.category && CATEGORY_ICON_URLS[move.category] ? (
+                        <img
+                          src={CATEGORY_ICON_URLS[move.category]}
+                          alt={move.category}
+                          width={32}
+                          height={14}
+                          className="h-3.5 w-auto [image-rendering:pixelated]"
+                        />
+                      ) : (
+                        <span className="text-muted-foreground font-mono text-xs">
+                          {categoryLetter(move?.category)}
+                        </span>
+                      )}
                     </span>
 
                     {/* BP */}
