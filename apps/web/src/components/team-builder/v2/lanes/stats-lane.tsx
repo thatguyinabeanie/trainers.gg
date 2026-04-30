@@ -290,7 +290,7 @@ export function StatsLane({ pokemon, format, onUpdate, fieldErrors = [] }: Stats
   );
 
   return (
-    <div className="flex min-w-0 flex-col gap-1 border-r border-dashed border-border/60 p-3" style={{ minWidth: 220 }}>
+    <div className="flex min-w-0 flex-1 flex-col gap-1 border-r border-dashed border-border/60 p-3" style={{ minWidth: 280 }}>
       {/* Header with total EV chip */}
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">

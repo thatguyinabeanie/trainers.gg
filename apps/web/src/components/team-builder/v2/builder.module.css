@@ -49,13 +49,6 @@
   min-height: 0;
 }
 
-/* Allow horizontal scroll on desktop where the active row min-width kicks in */
-@media (min-width: 768px) {
-  .builderGrid {
-    overflow-x: auto;
-  }
-}
-
 .builderRows {
   display: flex;
   flex-direction: column;
@@ -88,83 +81,24 @@
   gap: 8px;
 }
 
-.builderDockbarSlot {
-  flex-shrink: 0;
-  border-top: 1px solid var(--border);
-  background: var(--background);
+.builderPanels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 0 12px 12px;
 }
 
-.builderBottomDrawerSlot {
-  /* Slide-up drawer anchored at the bottom of the worklane */
-  position: sticky;
-  bottom: 0;
-  z-index: 30;
+/* Two-column on wide viewports — better use of horizontal space */
+@media (min-width: 1280px) {
+  .builderPanels {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
 }
 
 /* ============================================================
-   Dock — Phase 5
+   Inline analytics panels — sit below .builderRows inside .builderGrid
    ============================================================ */
-
-.dockbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--background);
-  border-top: 1px solid var(--border);
-}
-
-.dockbtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 9999px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-  color: var(--foreground);
-}
-
-.dockbtn:hover {
-  border-color: color-mix(in oklch, var(--primary) 50%, var(--border));
-  background: var(--muted);
-}
-
-.dockbtn[aria-pressed="true"] {
-  border-color: var(--primary);
-  background: color-mix(in oklch, var(--primary) 10%, var(--background));
-  color: var(--primary);
-}
-
-.drawer {
-  position: relative;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-top: 1px solid var(--border);
-  background: var(--background);
-  box-shadow: 0 -4px 32px -8px var(--builder-shadow);
-  max-height: 0;
-  opacity: 0;
-  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-}
-
-.drawer[aria-hidden="false"] {
-  max-height: 70vh;
-  opacity: 1;
-}
-
-.drawerBackdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  background: var(--builder-backdrop);
-  backdrop-filter: blur(1px);
-}
 
 .heatmap {
   display: flex;
@@ -722,11 +656,13 @@
    Active row — Phase 2 lane layout
    ============================================================ */
 
-/* Row container — allows horizontal scroll if viewport is narrow */
+/* Row container — wraps lanes onto a second line when the worklane is too
+   narrow (e.g. when the CalcDrawer is open). Never forces horizontal scroll. */
 .rowActive {
   display: flex;
   align-items: stretch;
-  min-width: 900px;
+  flex-wrap: wrap;
+  min-width: 0;
   overflow: visible;
 }
 

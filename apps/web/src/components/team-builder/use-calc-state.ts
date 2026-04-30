@@ -70,14 +70,16 @@ export type CalcDirection = "offense" | "defense";
 const generationsCache = new Map<number, ReturnType<typeof Generations.get>>();
 
 function getGen(generationNumber: number) {
-  let gen = generationsCache.get(generationNumber);
+  // @smogon/calc + @pkmn/data only ship damage mechanics for gens 1–9.
+  // Newer formats (e.g. Champions = gen 10) fall back to gen 9 mechanics
+  // so the calc engine doesn't crash trying to look up an undefined gen.
+  const safeGen = Math.min(Math.max(generationNumber, 1), 9);
+  let gen = generationsCache.get(safeGen);
   if (!gen) {
-    // Cast: caller passes a Pokémon-format generation number which `@pkmn/data`
-    // narrows to `GenerationNum`; we accept plain `number` for ergonomics.
     gen = Generations.get(
-      generationNumber as Parameters<typeof Generations.get>[0]
+      safeGen as Parameters<typeof Generations.get>[0]
     );
-    generationsCache.set(generationNumber, gen);
+    generationsCache.set(safeGen, gen);
   }
   return gen;
 }

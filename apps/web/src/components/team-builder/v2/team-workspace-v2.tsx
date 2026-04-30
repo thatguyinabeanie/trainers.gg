@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useOptimistic, useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -29,8 +29,7 @@ import { ImportDialog } from "../import-dialog";
 import { useTeamValidation } from "../validation-hooks";
 import { CalcDrawer } from "./calc/calc-drawer";
 import { CalcStateProvider } from "./calc/calc-state-context";
-import { BottomDrawer } from "./dock/bottom-drawer";
-import { Dockbar } from "./dock/dockbar";
+import { CollapsiblePanel } from "./dock/collapsible-panel";
 import { HeatmapPanel } from "./dock/heatmap-panel";
 import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
 import { SpeciesPicker } from "./pickers/species-picker";
@@ -214,17 +213,6 @@ export function TeamWorkspaceV2({
     }
   }
 
-  // Close the bottom drawer on Escape key press
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && state.drawer !== null) {
-        state.setDrawer(null);
-      }
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [state.drawer, state.setDrawer]);
-
   return (
     <CalcStateProvider
       selectedPokemon={slots[state.activeIdx] ?? null}
@@ -282,39 +270,31 @@ export function TeamWorkspaceV2({
                   );
                 })}
               </section>
-            </main>
 
-            {/* Phase 5 — dockbar + bottom drawer */}
-            <div className={s.builderDockbarSlot}>
-              <Dockbar
-                drawer={state.drawer}
-                onOpen={(key) =>
-                  state.setDrawer(state.drawer === key ? null : key)
-                }
-                team={optimisticTeamPokemon}
-                format={format}
-              />
-            </div>
-            <div className={s.builderBottomDrawerSlot}>
-              <BottomDrawer
-                drawer={state.drawer}
-                onClose={() => state.setDrawer(null)}
-              >
-                {state.drawer === "matchups" && (
-                  <HeatmapPanel
-                    team={optimisticTeamPokemon}
-                    format={format}
-                  />
-                )}
-                {state.drawer === "speed" && (
+              <section className={s.builderPanels}>
+                <CollapsiblePanel
+                  eyebrow="DEFENSIVE"
+                  title="Type matchups"
+                  subtitle="18 attacking types × your 6 slots"
+                  defaultOpen
+                >
+                  <HeatmapPanel team={optimisticTeamPokemon} format={format} />
+                </CollapsiblePanel>
+
+                <CollapsiblePanel
+                  eyebrow="SPEED"
+                  title="Speed tiers"
+                  subtitle="Your team vs the format · all values @ Lv 50"
+                  defaultOpen
+                >
                   <SpeedTiersPanel
                     team={optimisticTeamPokemon}
                     activeIdx={state.activeIdx}
                     format={format}
                   />
-                )}
-              </BottomDrawer>
-            </div>
+                </CollapsiblePanel>
+              </section>
+            </main>
           </div>
 
           {tweaks.showCalc && state.calcOpen && (

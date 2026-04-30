@@ -105,7 +105,7 @@ export function IdentityLane({
   }
 
   return (
-    <div className="min-w-[200px] max-w-[260px] flex-shrink-0 flex gap-3 p-3">
+    <div className="flex min-w-[240px] flex-shrink-0 gap-4 p-3">
       {/* Sprite — click to open species picker */}
       <div className="flex shrink-0 flex-col items-center gap-1">
         <button
@@ -114,7 +114,7 @@ export function IdentityLane({
           aria-label={`Change species (${pokemon.species})`}
           className="shrink-0 rounded-full transition-opacity hover:opacity-80"
         >
-          <Sprite species={pokemon.species ?? ""} types={types} size={56} />
+          <Sprite species={pokemon.species ?? ""} types={types} size={96} />
         </button>
       </div>
 

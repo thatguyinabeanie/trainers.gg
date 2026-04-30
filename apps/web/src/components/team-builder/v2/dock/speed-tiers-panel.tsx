@@ -495,7 +495,9 @@ export function SpeedTiersPanel({
         : String(toggle.stage);
 
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden">
+    /* overflow-x-auto on the outer container ensures the speed tiers table
+       never forces the page to scroll horizontally. */
+    <div className="flex min-h-0 flex-col overflow-x-auto">
       {/* Hero readout */}
       {selectedPokemon && (
         <div className="from-primary/5 to-card border-b bg-gradient-to-br px-4 py-2.5">

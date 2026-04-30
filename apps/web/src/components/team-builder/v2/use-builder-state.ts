@@ -51,8 +51,6 @@ interface BuilderState {
   setActiveIdx: (idx: number) => void;
   calcOpen: boolean;
   setCalcOpen: (updater: boolean | ((prev: boolean) => boolean)) => void;
-  drawer: "matchups" | "speed" | null;
-  setDrawer: (drawer: "matchups" | "speed" | null) => void;
   field: FieldState;
   setField: (field: FieldState) => void;
   defenderOverrides: DefenderOverrides;
@@ -65,11 +63,11 @@ interface BuilderState {
 // Constants
 // =============================================================================
 
-const TWEAKS_STORAGE_KEY = "trainersgg.builder.tweaks.v2";
+const TWEAKS_STORAGE_KEY = "trainersgg.builder.tweaks.v3";
 
 const DEFAULT_TWEAKS: Tweaks = {
   density: "comfy",
-  expandMode: "active",
+  expandMode: "all",
   showCalc: true,
 };
 
@@ -100,7 +98,6 @@ const DEFAULT_FIELD: FieldState = {
 export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
   const [calcOpen, setCalcOpen] = useState(true);
-  const [drawer, setDrawer] = useState<"matchups" | "speed" | null>(null);
   const [field, setField] = useState<FieldState>(DEFAULT_FIELD);
   const [defenderOverrides, setDefenderOverrides] = useState<DefenderOverrides>(
     {}
@@ -139,8 +136,6 @@ export function useBuilderState(): BuilderState {
     setActiveIdx,
     calcOpen,
     setCalcOpen,
-    drawer,
-    setDrawer,
     field,
     setField,
     defenderOverrides,

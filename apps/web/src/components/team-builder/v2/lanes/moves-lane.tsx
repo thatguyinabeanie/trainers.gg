@@ -302,8 +302,8 @@ export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: Moves
 
   return (
     <div
-      className="flex min-w-0 flex-col gap-1 border-r border-dashed border-border/60 p-3"
-      style={{ minWidth: 200 }}
+      className="flex min-w-0 flex-1 flex-col gap-1 border-r border-dashed border-border/60 p-3"
+      style={{ minWidth: 220 }}
     >
       {/* Header */}
       <div className="mb-1 flex items-baseline justify-between">

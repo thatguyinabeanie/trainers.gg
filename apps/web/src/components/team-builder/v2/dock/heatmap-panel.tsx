@@ -295,8 +295,8 @@ export function HeatmapPanel({ team, format }: HeatmapPanelProps) {
   } as CSSProperties;
 
   return (
-    <div data-testid="heatmap-panel" className="flex min-h-0 flex-col overflow-auto">
-      {/* Panel header + toggles */}
+    <div data-testid="heatmap-panel" className="flex min-h-0 flex-col">
+      {/* Panel header + toggles — outside the scroll wrapper so it stays pinned */}
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
         <span className="text-foreground text-sm font-semibold">
           {mode === "defensive" ? "Defensive coverage" : "Offensive coverage"}
@@ -360,7 +360,10 @@ export function HeatmapPanel({ team, format }: HeatmapPanelProps) {
       )}
 
       {monCount > 0 && (
-        <>
+        /* Inner scroll wrapper: the matrix can be wide (18 rows × N cols +
+           summary col). Scroll horizontally inside the panel so the page
+           itself never produces a horizontal scrollbar. */
+        <div className="overflow-x-auto">
           {/* Column headers */}
           <div
             className="bg-muted/50 grid items-center gap-0.5 px-2 py-1"
@@ -379,7 +382,7 @@ export function HeatmapPanel({ team, format }: HeatmapPanelProps) {
           </div>
 
           {/* Type rows */}
-          <div className="divide-muted/40 divide-y overflow-auto">
+          <div className="divide-muted/40 divide-y">
             {rows.map((row) => {
               const maxMult = Math.max(...row.multipliers.map((m) => m ?? 0));
               return (
@@ -539,7 +542,7 @@ export function HeatmapPanel({ team, format }: HeatmapPanelProps) {
               </span>
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
