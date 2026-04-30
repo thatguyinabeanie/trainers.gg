@@ -267,6 +267,7 @@ export function TeamWorkspaceV2({
                       onActivate={state.setActiveIdx}
                       onAdd={handleAdd}
                       onRemove={handleRemoveByIdx}
+                      onOpenSpecies={setAddPickerForSlot}
                       teamPokemon={optimisticTeamPokemon}
                       format={format}
                       onPokemonUpdate={handlePokemonUpdate}

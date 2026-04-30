@@ -23,6 +23,8 @@ interface ActiveRowProps {
   format: GameFormat | undefined;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   onRemove: () => void;
+  /** Open the workspace's species picker dialog for this slot. */
+  onOpenSpecies: (idx: number) => void;
   /** All validation errors for this Pokemon — filtered per lane by field. */
   fieldErrors?: ValidationError[];
 }
@@ -57,6 +59,7 @@ export function ActiveRow({
   format,
   onUpdate,
   onRemove,
+  onOpenSpecies,
   fieldErrors = [],
 }: ActiveRowProps) {
   // Collect held items from sibling pokemon for the item picker duplicate warning
@@ -66,8 +69,7 @@ export function ActiveRow({
     .filter((item): item is string => item !== null);
 
   function handleOpenSpecies(_anchor: HTMLElement) {
-    // TODO Phase 3: wire to workspace species picker overlay
-    // For now, this triggers the species picker popover flow
+    onOpenSpecies(idx);
   }
 
   // Partition errors to the appropriate lane

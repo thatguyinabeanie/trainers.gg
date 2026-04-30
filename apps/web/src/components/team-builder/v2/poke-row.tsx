@@ -25,6 +25,8 @@ interface PokeRowProps {
   onActivate: (idx: number) => void;
   onAdd?: (idx: number) => void;
   onRemove?: (idx: number) => void;
+  /** Open the workspace's species picker dialog for this slot. */
+  onOpenSpecies?: (idx: number) => void;
   /** Required for Phase 2 active row editor. */
   teamPokemon?: TeamWithPokemon["team_pokemon"];
   format?: GameFormat;
@@ -221,6 +223,7 @@ interface ActiveRowShellProps {
   idx: number;
   pokemon: Tables<"pokemon">;
   onRemove?: (idx: number) => void;
+  onOpenSpecies?: (idx: number) => void;
   teamPokemon: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
   onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
@@ -231,6 +234,7 @@ function ActiveRowShell({
   idx,
   pokemon,
   onRemove,
+  onOpenSpecies,
   teamPokemon,
   format,
   onPokemonUpdate,
@@ -245,6 +249,7 @@ function ActiveRowShell({
         format={format}
         onUpdate={(fields) => onPokemonUpdate?.(pokemon.id, fields)}
         onRemove={() => onRemove?.(idx)}
+        onOpenSpecies={(slotIdx) => onOpenSpecies?.(slotIdx)}
         fieldErrors={slotErrors}
       />
     </div>
@@ -270,6 +275,7 @@ export function PokeRow({
   onActivate,
   onAdd,
   onRemove,
+  onOpenSpecies,
   teamPokemon,
   format,
   onPokemonUpdate,
@@ -287,6 +293,7 @@ export function PokeRow({
         idx={idx}
         pokemon={pokemon}
         onRemove={onRemove}
+        onOpenSpecies={onOpenSpecies}
         teamPokemon={teamPokemon ?? []}
         format={format}
         onPokemonUpdate={onPokemonUpdate}
