@@ -114,20 +114,20 @@ export function ActiveRow({
         fieldErrors={identityErrors}
       />
 
-      {/* MOVES lane */}
-      <MovesLane
-        pokemon={pokemon}
-        format={format}
-        onUpdate={onUpdate}
-        fieldErrors={movesErrors}
-      />
-
       {/* STATS lane */}
       <StatsLane
         pokemon={pokemon}
         format={format}
         onUpdate={onUpdate}
         fieldErrors={statsErrors}
+      />
+
+      {/* MOVES lane */}
+      <MovesLane
+        pokemon={pokemon}
+        format={format}
+        onUpdate={onUpdate}
+        fieldErrors={movesErrors}
       />
     </div>
   );
