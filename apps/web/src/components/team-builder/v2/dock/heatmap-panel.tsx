@@ -295,7 +295,7 @@ export function HeatmapPanel({ team, format }: HeatmapPanelProps) {
   } as CSSProperties;
 
   return (
-    <div data-testid="heatmap-panel" className="flex min-h-0 flex-col">
+    <div data-testid="heatmap-panel" className="flex h-full min-h-0 flex-col">
       {/* Panel header + toggles — outside the scroll wrapper so it stays pinned */}
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
         <span className="text-foreground text-sm font-semibold">
@@ -361,9 +361,9 @@ export function HeatmapPanel({ team, format }: HeatmapPanelProps) {
 
       {monCount > 0 && (
         /* Inner scroll wrapper: the matrix can be wide (18 rows × N cols +
-           summary col). Scroll horizontally inside the panel so the page
-           itself never produces a horizontal scrollbar. */
-        <div className="overflow-x-auto">
+           summary col) AND tall (18 type rows). Scroll both axes inside the
+           panel so the worklane editor + dock never need to scroll. */
+        <div className="min-h-0 flex-1 overflow-auto">
           {/* Column headers */}
           <div
             className="bg-muted/50 grid items-center gap-0.5 px-2 py-1"

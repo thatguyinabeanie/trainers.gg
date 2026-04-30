@@ -55,6 +55,8 @@ interface BuilderState {
   setCalcOpen: (updater: boolean | ((prev: boolean) => boolean)) => void;
   drawer: DrawerKey;
   setDrawer: (drawer: DrawerKey) => void;
+  panelHeightPct: number;
+  setPanelHeightPct: (n: number) => void;
   field: FieldState;
   setField: (field: FieldState) => void;
   defenderOverrides: DefenderOverrides;
@@ -68,6 +70,16 @@ interface BuilderState {
 // =============================================================================
 
 const TWEAKS_STORAGE_KEY = "trainersgg.builder.tweaks.v3";
+const PANEL_HEIGHT_STORAGE_KEY = "trainersgg.builder.panelHeightPct.v1";
+
+const DEFAULT_PANEL_HEIGHT_PCT = 40;
+const MIN_PANEL_HEIGHT_PCT = 20;
+const MAX_PANEL_HEIGHT_PCT = 80;
+
+function clampPanelHeight(n: number): number {
+  if (Number.isNaN(n)) return DEFAULT_PANEL_HEIGHT_PCT;
+  return Math.min(MAX_PANEL_HEIGHT_PCT, Math.max(MIN_PANEL_HEIGHT_PCT, n));
+}
 
 const DEFAULT_TWEAKS: Tweaks = {
   density: "comfy",
@@ -103,6 +115,18 @@ export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
   const [calcOpen, setCalcOpen] = useState(true);
   const [drawer, setDrawer] = useState<DrawerKey>(null);
+  const [panelHeightPct, setPanelHeightPctState] = useState<number>(() => {
+    if (typeof window === "undefined") return DEFAULT_PANEL_HEIGHT_PCT;
+    try {
+      const stored = localStorage.getItem(PANEL_HEIGHT_STORAGE_KEY);
+      if (stored !== null) {
+        return clampPanelHeight(Number(stored));
+      }
+    } catch {
+      // localStorage unavailable — use default
+    }
+    return DEFAULT_PANEL_HEIGHT_PCT;
+  });
   const [field, setField] = useState<FieldState>(DEFAULT_FIELD);
   const [defenderOverrides, setDefenderOverrides] = useState<DefenderOverrides>(
     {}
@@ -136,6 +160,16 @@ export function useBuilderState(): BuilderState {
     });
   }
 
+  function setPanelHeightPct(n: number) {
+    const clamped = clampPanelHeight(n);
+    setPanelHeightPctState(clamped);
+    try {
+      localStorage.setItem(PANEL_HEIGHT_STORAGE_KEY, String(clamped));
+    } catch {
+      // Storage write failure is non-fatal — height just won't persist
+    }
+  }
+
   return {
     activeIdx,
     setActiveIdx,
@@ -143,6 +177,8 @@ export function useBuilderState(): BuilderState {
     setCalcOpen,
     drawer,
     setDrawer,
+    panelHeightPct,
+    setPanelHeightPct,
     field,
     setField,
     defenderOverrides,

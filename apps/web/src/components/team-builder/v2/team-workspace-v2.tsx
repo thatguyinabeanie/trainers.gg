@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -95,6 +95,10 @@ export function TeamWorkspaceV2({
 
   /** Controls the import sheet. */
   const [importOpen, setImportOpen] = useState(false);
+
+  /** Ref to the worklane element — used by the panel resizer to compute the
+   *  pointer's offset within the lane during drag. */
+  const worklaneRef = useRef<HTMLDivElement | null>(null);
 
   // ---------------------------------------------------------------------------
   // Optimistic team-pokemon state — Phase 2 write path
@@ -240,11 +244,11 @@ export function TeamWorkspaceV2({
         />
 
         <div className={s.builderWorkshell}>
-          <div className={s.builderWorklane}>
-            <main className={s.builderGrid}>
+          <div className={s.builderWorklane} ref={worklaneRef}>
+            {/* Editor region — rows scroll inside this region only */}
+            <div className={s.editorRegion}>
               <section className={s.builderRows}>
                 {slots.map((p, i) => {
-                  // Look up errors for this slot's pokemon (if any)
                   const slotPokemonId = p?.id ?? null;
                   const slotErrors =
                     slotPokemonId !== null
@@ -270,56 +274,106 @@ export function TeamWorkspaceV2({
                   );
                 })}
               </section>
+            </div>
 
-              {/* Inline analytics panel — opens above the dock when a pill is
-                  active. Renders in the document flow so the rows + panel scroll
-                  together; no overlay, no backdrop. */}
-              {state.drawer !== null && (
-                <section className={s.inlinePanel}>
-                  <header className={s.inlinePanelHead}>
-                    <div className={s.inlinePanelHeadL}>
-                      <span className={s.inlinePanelEyebrow}>
-                        {state.drawer === "matchups" ? "DEFENSIVE" : "SPEED"}
-                      </span>
-                      <span className={s.inlinePanelTitle}>
-                        {state.drawer === "matchups"
-                          ? "Defensive type coverage"
-                          : "Speed tier ladder"}
-                      </span>
-                      <span className={s.inlinePanelSub}>
-                        {state.drawer === "matchups"
-                          ? "18 attacking types × your 6 slots"
-                          : "Your team vs the format · all values @ Lv 50"}
-                      </span>
+            {/* Resizer + analytics panel region — only when panel is open */}
+            {state.drawer !== null && (
+              <>
+                <div
+                  role="separator"
+                  aria-orientation="horizontal"
+                  aria-label="Resize analytics panel"
+                  aria-valuemin={20}
+                  aria-valuemax={80}
+                  aria-valuenow={Math.round(state.panelHeightPct)}
+                  tabIndex={0}
+                  className={s.resizer}
+                  onPointerDown={(e) => {
+                    const target = e.currentTarget;
+                    const worklane = worklaneRef.current;
+                    if (!worklane) return;
+                    target.setPointerCapture(e.pointerId);
+                    const onMove = (ev: PointerEvent) => {
+                      const rect = worklane.getBoundingClientRect();
+                      const offsetFromTop = ev.clientY - rect.top;
+                      const pct =
+                        ((rect.height - offsetFromTop) / rect.height) * 100;
+                      state.setPanelHeightPct(pct);
+                    };
+                    const onUp = () => {
+                      target.releasePointerCapture(e.pointerId);
+                      target.removeEventListener("pointermove", onMove);
+                      target.removeEventListener("pointerup", onUp);
+                    };
+                    target.addEventListener("pointermove", onMove);
+                    target.addEventListener("pointerup", onUp);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      state.setPanelHeightPct(state.panelHeightPct + 5);
+                    } else if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      state.setPanelHeightPct(state.panelHeightPct - 5);
+                    } else if (e.key === "Home") {
+                      e.preventDefault();
+                      state.setPanelHeightPct(20);
+                    } else if (e.key === "End") {
+                      e.preventDefault();
+                      state.setPanelHeightPct(80);
+                    }
+                  }}
+                />
+                <div
+                  className={s.panelRegion}
+                  style={{ flexBasis: `${state.panelHeightPct}%` }}
+                >
+                  <section className={s.inlinePanel}>
+                    <header className={s.inlinePanelHead}>
+                      <div className={s.inlinePanelHeadL}>
+                        <span className={s.inlinePanelEyebrow}>
+                          {state.drawer === "matchups" ? "DEFENSIVE" : "SPEED"}
+                        </span>
+                        <span className={s.inlinePanelTitle}>
+                          {state.drawer === "matchups"
+                            ? "Defensive type coverage"
+                            : "Speed tier ladder"}
+                        </span>
+                        <span className={s.inlinePanelSub}>
+                          {state.drawer === "matchups"
+                            ? "18 attacking types × your 6 slots"
+                            : "Your team vs the format · all values @ Lv 50"}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => state.setDrawer(null)}
+                        aria-label="Close panel"
+                        title="Close panel"
+                        className={s.inlinePanelClose}
+                      >
+                        ×
+                      </button>
+                    </header>
+                    <div className={s.inlinePanelBody}>
+                      {state.drawer === "matchups" && (
+                        <HeatmapPanel
+                          team={optimisticTeamPokemon}
+                          format={format}
+                        />
+                      )}
+                      {state.drawer === "speed" && (
+                        <SpeedTiersPanel
+                          team={optimisticTeamPokemon}
+                          activeIdx={state.activeIdx}
+                          format={format}
+                        />
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => state.setDrawer(null)}
-                      aria-label="Close panel"
-                      title="Close panel"
-                      className={s.inlinePanelClose}
-                    >
-                      ×
-                    </button>
-                  </header>
-                  <div className={s.inlinePanelBody}>
-                    {state.drawer === "matchups" && (
-                      <HeatmapPanel
-                        team={optimisticTeamPokemon}
-                        format={format}
-                      />
-                    )}
-                    {state.drawer === "speed" && (
-                      <SpeedTiersPanel
-                        team={optimisticTeamPokemon}
-                        activeIdx={state.activeIdx}
-                        format={format}
-                      />
-                    )}
-                  </div>
-                </section>
-              )}
-            </main>
+                  </section>
+                </div>
+              </>
+            )}
 
             <Dockbar
               drawer={state.drawer}
