@@ -275,12 +275,9 @@ function StatRow({
   // The first breakpoint strictly above the current EV is the "next" target
   const nextBpEv = breakpoints.find((bp) => bp > ev);
 
-  // --- Label color: nature-direction overrides stat-key color ---
-  const labelTextClass = isNatureBoosted
-    ? "text-red-600 dark:text-red-400"
-    : isNatureReduced
-      ? "text-sky-600 dark:text-sky-400"
-      : statColorClass;
+  // --- Label color: always the stat-key color; nature is shown only via the
+  //                  ▲/▽ chevron next to the label, not by recoloring it. ---
+  const labelTextClass = statColorClass;
 
   // --- Input display value ---
   const inputDisplay = buildInputDisplay(ev, isNatureBoosted, isNatureReduced);
