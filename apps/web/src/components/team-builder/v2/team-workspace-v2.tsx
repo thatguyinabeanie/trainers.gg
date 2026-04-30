@@ -46,21 +46,27 @@ interface TeamWorkspaceV2Props {
 // =============================================================================
 
 /**
- * Builds a stable 6-slot array from team_pokemon, sorted by team_position.
- * Missing positions (1..6) are filled with null.
- * Reuses the same pattern as team-strip.tsx.
+ * Builds a stable 6-slot array from team_pokemon, indexed by team_position.
+ * `slots[i]` is the pokemon at team_position `i + 1`, or null if no row exists
+ * for that position. The UI's slot index → DB position mapping is 1:1, so
+ * handleAdd's `position = idx + 1` always targets the slot the user clicked.
+ *
+ * NB: previously this sorted entries and packed them into [0..n], which meant
+ * a team with positions [3, 4] rendered into UI slots 01/02 — clicking the
+ * visually-empty "03" then hit a duplicate-key violation when the action
+ * inserted at position 3.
  */
 function buildSlots(
   teamPokemon: TeamWithPokemon["team_pokemon"]
 ): (Tables<"pokemon"> | null)[] {
-  const sorted = [...teamPokemon].sort(
-    (a, b) => a.team_position - b.team_position
-  );
-
-  return Array.from({ length: 6 }, (_, i) => {
-    const entry = sorted[i];
-    return entry?.pokemon ?? null;
-  });
+  const slots: (Tables<"pokemon"> | null)[] = Array.from({ length: 6 }, () => null);
+  for (const entry of teamPokemon) {
+    const idx = entry.team_position - 1;
+    if (idx >= 0 && idx < 6) {
+      slots[idx] = entry.pokemon ?? null;
+    }
+  }
+  return slots;
 }
 
 // =============================================================================
@@ -144,13 +150,15 @@ export function TeamWorkspaceV2({
   function handleAdd(idx: number, speciesId: string) {
     // Position is 1-indexed
     const position = idx + 1;
-    // ability / move1 / nature are required by the DB schema; use empty-string
-    // defaults so the user can fill them in via the lane editors.
+    // ability / move1 / nature are required by the DB schema. ability and
+    // move1 use empty-string placeholders the user fills in via the lane
+    // editors; nature defaults to the neutral "Hardy" so the row validates
+    // immediately (empty string fails the "Nature '' does not exist" check).
     const pokemon: TablesInsert<"pokemon"> = {
       species: speciesId,
       ability: "",
       move1: "",
-      nature: "",
+      nature: "Hardy",
     };
 
     startTransition(async () => {

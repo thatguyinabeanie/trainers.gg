@@ -45,13 +45,14 @@ export function CalcAttackerBlock({
   const types = getSpeciesTypes(species);
   const hasTera = formatSupportsTera(format);
 
-  // Build stable 6-slot array — same as team-workspace-v2.tsx buildSlots
-  const slots: (Tables<"pokemon"> | null)[] = Array.from({ length: 6 }, (_, i) => {
-    const entry = [...(team.team_pokemon ?? [])].sort(
-      (a, b) => a.team_position - b.team_position
-    )[i];
-    return entry?.pokemon ?? null;
-  });
+  // Build stable 6-slot array indexed by team_position — same as team-workspace-v2.tsx buildSlots
+  const slots: (Tables<"pokemon"> | null)[] = Array.from({ length: 6 }, () => null);
+  for (const entry of team.team_pokemon ?? []) {
+    const slotIdx = entry.team_position - 1;
+    if (slotIdx >= 0 && slotIdx < 6) {
+      slots[slotIdx] = entry.pokemon ?? null;
+    }
+  }
 
   return (
     <section className="cd-block">
