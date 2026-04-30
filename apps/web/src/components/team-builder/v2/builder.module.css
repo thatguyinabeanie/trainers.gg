@@ -975,12 +975,47 @@
   white-space: nowrap;
 }
 
-/* BP column */
+/* BP / Acc readout — fixed-width value cells so they align across rows */
+:global(.mvline-stat) {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--foreground);
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+:global(.mvline-stat-label) {
+  color: var(--muted-foreground);
+  font-size: 9.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+:global(.mvline-stat-value) {
+  text-align: right;
+  display: inline-block;
+}
+
+:global(.mvline-stat-value--bp) {
+  width: 1.75rem; /* fits 3-digit BP like "140" */
+}
+
+:global(.mvline-stat-value--acc) {
+  width: 2.25rem; /* fits "100%" */
+}
+
+/* Legacy alias — keep .mvline-bp working for any consumer that still uses it */
 :global(.mvline-bp) {
   font-family: var(--font-mono, monospace);
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: var(--foreground);
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Calc output column — must stay on one line, never wrap */

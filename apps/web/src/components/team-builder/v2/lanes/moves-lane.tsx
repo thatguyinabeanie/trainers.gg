@@ -192,14 +192,27 @@ function MoveTile({
               {moveName ?? "+ Add move"}
             </span>
 
-            {/* Col 3: Meta (BP + calc info) — stays on the same line as the name */}
+            {/* Col 3: Meta (BP + Acc + calc info) — stays on the same line as the name */}
             <span className="mvline-calc">
               {moveName && (
-                <span className="mvline-bp">
-                  {moveData?.basePower && moveData.basePower > 0
-                    ? moveData.basePower
-                    : "—"}
-                </span>
+                <>
+                  <span className="mvline-stat">
+                    <span className="mvline-stat-label">BP</span>
+                    <span className="mvline-stat-value mvline-stat-value--bp">
+                      {moveData?.basePower && moveData.basePower > 0
+                        ? moveData.basePower
+                        : "—"}
+                    </span>
+                  </span>
+                  <span className="mvline-stat">
+                    <span className="mvline-stat-label">Acc</span>
+                    <span className="mvline-stat-value mvline-stat-value--acc">
+                      {moveData?.accuracy === true || !moveData?.accuracy
+                        ? "—"
+                        : `${moveData.accuracy}%`}
+                    </span>
+                  </span>
+                </>
               )}
 
               {hasCalc ? (
