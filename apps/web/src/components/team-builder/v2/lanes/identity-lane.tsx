@@ -183,7 +183,9 @@ export function IdentityLane({
             <Sprite species={pokemon.species ?? ""} types={types} size={144} />
           </PopoverTrigger>
 
-          {/* Species pill — click to open species picker, responsive width */}
+          {/* Species pill — wide enough to fit the longest Pokemon names
+              ("Tauros-Paldea-Combat", "Necrozma-Dawn-Wings", etc.) without
+              truncation. */}
           <PopoverTrigger
             render={
               <button
@@ -193,7 +195,7 @@ export function IdentityLane({
                   "border-border bg-background hover:border-primary focus-visible:border-primary",
                   "block rounded-md border px-2 py-1.5 text-left text-xs",
                   "outline-none transition-colors",
-                  "min-w-28 max-w-40 w-32 sm:w-40"
+                  "w-44 sm:w-52 md:w-56"
                 )}
               />
             }
