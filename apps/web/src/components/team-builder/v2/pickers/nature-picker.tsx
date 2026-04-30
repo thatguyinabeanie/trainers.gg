@@ -109,7 +109,7 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
   }
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
+    <div className="bg-popover text-popover-foreground flex w-[420px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -136,7 +136,7 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
       />
 
       {/* Grouped list */}
-      <div className="max-h-64 overflow-y-auto p-1">
+      <div className="max-h-[520px] overflow-y-auto p-1">
         {groups.map((group) => (
           <div key={group.label} className="flex flex-col">
             <div className="text-muted-foreground px-2 pt-1.5 pb-0.5 text-[9.5px] font-medium tracking-wider uppercase">
