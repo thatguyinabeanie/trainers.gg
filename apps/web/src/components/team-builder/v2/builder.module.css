@@ -1679,11 +1679,16 @@
 }
 
 /* Native range input — sits on top, only the thumb is visible (track is
- * transparent so the custom .spreadSliderTrack shows through). */
+ * transparent so the custom .spreadSliderTrack shows through). Absolutely
+ * positioned at top: 0 so its inline-block default doesn't get nudged by
+ * the parent's line-height (caused a ~3.8px vertical offset). */
 .spreadSlider {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 14px;
+  margin: 0;
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
