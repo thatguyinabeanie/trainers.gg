@@ -3,10 +3,6 @@
 import { useEffect, useState } from "react";
 
 import {
-  calculateHP,
-  calculateChampionsHP,
-  calculateStat,
-  calculateChampionsStat,
   findStatBreakpoints,
   getBaseStats,
   getNatureMultiplier,
@@ -24,7 +20,9 @@ import {
   type StatValues,
   STAT_KEYS,
   STAT_LABELS,
+  STAT_COLOR_CLASS,
 } from "../../stat-types";
+import { computeStat } from "../../calc-stat-helpers";
 import { formatSupportsIvs } from "../format-gating";
 import { FieldError } from "../validation/field-error";
 import s from "../builder.module.css";
@@ -138,51 +136,6 @@ function totalEvs(evs: StatValues): number {
     evs.speed
   );
 }
-
-function computeFinalStat(
-  stat: StatKey,
-  base: StatValues,
-  ivs: StatValues,
-  evs: StatValues,
-  nature: string,
-  level: number,
-  isChampions: boolean
-): number {
-  const b = base[stat];
-  const iv = ivs[stat];
-  const ev = evs[stat];
-
-  if (isChampions) {
-    if (stat === "hp") return calculateChampionsHP(b, ev);
-    const mult = getNatureMultiplier(
-      nature,
-      stat as keyof Omit<StatValues, "hp">
-    );
-    return calculateChampionsStat(b, ev, mult);
-  }
-
-  if (stat === "hp") return calculateHP(b, iv, ev, level);
-  const mult = getNatureMultiplier(
-    nature,
-    stat as keyof Omit<StatValues, "hp">
-  );
-  return calculateStat(b, iv, ev, level, mult);
-}
-
-/**
- * Stat-key colors — fixed per stat regardless of Pokemon (matches the
- * Showdown / Bulbapedia community convention: HP=red, Atk=orange, Def=amber,
- * SpA=blue, SpD=green, Spe=pink). Applied as `text-*` so the bar fills (via
- * `bg-current`), slider thumb and bump rings (via `currentColor`) all inherit.
- */
-const STAT_TEXT_CLASS: Record<StatKey, string> = {
-  hp: "text-rose-500 dark:text-rose-400",
-  attack: "text-orange-500 dark:text-orange-400",
-  defense: "text-amber-500 dark:text-amber-400",
-  specialAttack: "text-sky-500 dark:text-sky-400",
-  specialDefense: "text-emerald-500 dark:text-emerald-400",
-  speed: "text-fuchsia-500 dark:text-fuchsia-400",
-};
 
 /** Canonical neutral nature — the rest (Hardy/Docile/Bashful/Quirky) are duplicates. */
 const NEUTRAL_NATURE = "Serious";
@@ -380,7 +333,7 @@ function StatRow({
   onUpdate,
 }: StatRowProps) {
   const label = STAT_LABELS[statKey];
-  const statColorClass = STAT_TEXT_CLASS[statKey];
+  const statColorClass = STAT_COLOR_CLASS[statKey];
 
   // --- Viz bar layer widths (0→250 final stat space) ---
   const baseLayerWidth = Math.min(100, (noEvFinalStat / 250) * 100);
@@ -753,27 +706,26 @@ export function StatsLane({
           const isNatureReduced = natDown === statKey;
 
           // Current final stat (with current EVs)
-          const finalStat = computeFinalStat(
+          const finalStat = computeStat({
             statKey,
-            base,
-            ivs,
-            evs,
+            base: base[statKey],
+            iv: ivs[statKey],
+            ev: evs[statKey],
             nature,
             level,
-            isChampions
-          );
+            isChampions,
+          });
 
           // Final stat with EV=0 (for the solid base layer of the viz bar)
-          const zeroEvs: StatValues = { ...evs, [statKey]: 0 };
-          const noEvFinalStat = computeFinalStat(
+          const noEvFinalStat = computeStat({
             statKey,
-            base,
-            ivs,
-            zeroEvs,
+            base: base[statKey],
+            iv: ivs[statKey],
+            ev: 0,
             nature,
             level,
-            isChampions
-          );
+            isChampions,
+          });
 
           return (
             <StatRow

@@ -675,48 +675,83 @@ export function useCalcState({
     selectedPokemon?.move4 ?? null,
   ];
 
+  // --- Shared calc objects — built once per render, reused across all move outputs ---
+  const effectiveWeather = weather || (inferredWeather ?? "");
+  const effectiveTerrain = terrain || (inferredTerrain ?? "");
+
+  // Offense field: attacker fires at defender
+  const sharedOffenseField = buildField(
+    gameType,
+    effectiveWeather,
+    effectiveTerrain,
+    gravity,
+    attackerSide,
+    defenderSide,
+    direction
+  );
+
+  // Shared attacker (from the active DB row)
+  const sharedAttacker = selectedPokemon
+    ? buildAttackerFromDb(gen, selectedPokemon, attackerBoosts, attackerStatus)
+    : null;
+
+  // Shared defender (with current HP percent for receiving hits)
+  const sharedDefender = buildDefenderPokemon(
+    gen,
+    defenderSpecies,
+    defenderAbility,
+    defenderItem,
+    defenderNature,
+    defenderTera,
+    defenderEvs,
+    defenderIvs,
+    defenderBoosts,
+    defenderStatus,
+    defenderHpPercent
+  );
+
+  // Defender as attacker (built at full HP so offensive stats are correct)
+  const sharedDefenderAsAttacker = buildDefenderPokemon(
+    gen,
+    defenderSpecies,
+    defenderAbility,
+    defenderItem,
+    defenderNature,
+    defenderTera,
+    defenderEvs,
+    defenderIvs,
+    defenderBoosts,
+    defenderStatus,
+    100
+  );
+
+  // Our pokemon as defender (no boosts — they don't apply when receiving)
+  const sharedOurPokemonAsDefender = selectedPokemon
+    ? buildAttackerFromDb(gen, selectedPokemon, EMPTY_BOOSTS, "Healthy")
+    : null;
+
+  // Defense field: defender fires at our pokemon
+  const sharedDefenseField = buildField(
+    gameType,
+    effectiveWeather,
+    effectiveTerrain,
+    gravity,
+    attackerSide,
+    defenderSide,
+    "defense"
+  );
+
   function getCalcOutputForMove(moveIdx: number): CalcOutput | null {
     if (!selectedPokemon) return null;
     const moveName = moves[moveIdx];
     if (!moveName) return null;
 
     const isCrit = critMoves[moveIdx] ?? false;
-    // Use inferred weather/terrain from ability when user hasn't explicitly set them.
-    const effectiveWeather = weather || (inferredWeather ?? "");
-    const effectiveTerrain = terrain || (inferredTerrain ?? "");
-    const field = buildField(
-      gameType,
-      effectiveWeather,
-      effectiveTerrain,
-      gravity,
-      attackerSide,
-      defenderSide,
-      direction
-    );
 
     if (direction === "offense") {
-      const attacker = buildAttackerFromDb(
-        gen,
-        selectedPokemon,
-        attackerBoosts,
-        attackerStatus
-      );
-      const defender = buildDefenderPokemon(
-        gen,
-        defenderSpecies,
-        defenderAbility,
-        defenderItem,
-        defenderNature,
-        defenderTera,
-        defenderEvs,
-        defenderIvs,
-        defenderBoosts,
-        defenderStatus,
-        defenderHpPercent
-      );
-      if (!attacker || !defender) return null;
+      if (!sharedAttacker || !sharedDefender) return null;
       // Forward direction: attacker is on YOUR team — use faintedYours for Last Respects BP.
-      return runCalc(gen, attacker, defender, moveName, isCrit, field, faintedYours);
+      return runCalc(gen, sharedAttacker, sharedDefender, moveName, isCrit, sharedOffenseField, faintedYours);
     }
 
     // "defense": defender attacks us with the move
@@ -747,7 +782,7 @@ export function useCalcState({
       ourPokemon,
       moveName,
       isCrit,
-      field,
+      sharedOffenseField,
       faintedTheirs
     );
   }
@@ -765,58 +800,18 @@ export function useCalcState({
   function computeReverseOutput(moveName: string): CalcOutput | null {
     if (!selectedPokemon) return null;
     if (!moveName) return null;
-
-    const effectiveWeather = weather || (inferredWeather ?? "");
-    const effectiveTerrain = terrain || (inferredTerrain ?? "");
-
-    // For the reverse direction: defender is the attacker, our pokemon is the
-    // defender. buildField with direction="defense" swaps the sides correctly.
-    const field = buildField(
-      gameType,
-      effectiveWeather,
-      effectiveTerrain,
-      gravity,
-      attackerSide,
-      defenderSide,
-      "defense"
-    );
-
-    // Defender (as attacker) — built at full HP (100%) so offensive stats are
-    // correct; HP only matters when it's the receiver.
-    const defenderAsAttacker = buildDefenderPokemon(
-      gen,
-      defenderSpecies,
-      defenderAbility,
-      defenderItem,
-      defenderNature,
-      defenderTera,
-      defenderEvs,
-      defenderIvs,
-      defenderBoosts,
-      defenderStatus,
-      100
-    );
-
-    // Our pokemon (as the defender receiving the hit). Use EMPTY_BOOSTS for
-    // the reverse direction — the attacker's own boosts don't apply to how
-    // they receive incoming damage.
-    const ourPokemon = buildAttackerFromDb(
-      gen,
-      selectedPokemon,
-      EMPTY_BOOSTS,
-      "Healthy"
-    );
-
-    if (!defenderAsAttacker || !ourPokemon) return null;
+    if (!sharedDefenderAsAttacker || !sharedOurPokemonAsDefender) return null;
     // Reverse direction: the defender is attacking — their fainted count applies for Last Respects.
-    return runCalc(gen, defenderAsAttacker, ourPokemon, moveName, false, field, faintedTheirs);
+    return runCalc(gen, sharedDefenderAsAttacker, sharedOurPokemonAsDefender, moveName, false, sharedDefenseField, faintedTheirs);
   }
 
   // Pre-compute outputs for the raw user-set defenderMoves slots (for context
   // consumers that don't have effective move defaults resolved yet).
-  const moveCalcOutputsReverse: readonly (CalcOutput | null)[] = [0, 1, 2, 3].map(
-    (idx) => computeReverseOutput(defenderMoves[idx] ?? "")
-  );
+  // Short-circuit when no defender moves are populated to avoid building objects for nothing.
+  const hasAnyDefenderMove = defenderMoves.some(Boolean);
+  const moveCalcOutputsReverse: readonly (CalcOutput | null)[] = hasAnyDefenderMove
+    ? [0, 1, 2, 3].map((idx) => computeReverseOutput(defenderMoves[idx] ?? ""))
+    : [null, null, null, null];
 
   return {
     direction,

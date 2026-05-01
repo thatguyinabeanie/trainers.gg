@@ -3,17 +3,12 @@
 import { useState } from "react";
 
 import {
-  calculateHP,
-  calculateStat,
-  calculateChampionsHP,
-  calculateChampionsStat,
   findStatBreakpoints,
   getBaseStats,
   getLegalAbilities,
   getNatureMultiplier,
   getSpeciesTypes,
   getValidAbilities,
-  getValidNatures,
   isChampionsFormat,
   NATURE_EFFECTS,
   type GameFormat,
@@ -26,7 +21,8 @@ import {
   type DefenderEvs,
   type DefenderIvs,
 } from "../../use-calc-state";
-import { type StatValues } from "../../stat-types";
+import { type StatValues, STAT_COLOR_CLASS } from "../../stat-types";
+import { computeStat } from "../../calc-stat-helpers";
 import { formatSupportsTera } from "../format-gating";
 import { Sprite } from "../sprite";
 import { TypePill } from "../type-pill";
@@ -64,7 +60,6 @@ export interface CalcDefenderStatsProps {
   setDefenderNature: (v: string) => void;
   setDefenderTera: (v: string) => void;
   setDefenderEv: (stat: keyof DefenderEvs, v: number) => void;
-  setDefenderIv: (stat: keyof DefenderIvs, v: number) => void;
   setDefenderBoost: (stat: keyof DefenderBoosts, v: number) => void;
   setDefenderHpPercent: (v: number) => void;
 }
@@ -72,6 +67,15 @@ export interface CalcDefenderStatsProps {
 // =============================================================================
 // Constants
 // =============================================================================
+
+/** Maps smogon long stat key → DefenderEvs short key (for nature comparison). */
+const LONG_TO_SHORT: Partial<Record<string, keyof DefenderEvs>> = {
+  attack: "atk",
+  defense: "def",
+  specialAttack: "spa",
+  specialDefense: "spd",
+  speed: "spe",
+};
 
 /** Defender stat rows — all 6 in Showdown order. */
 const DEFENDER_STAT_ROWS: {
@@ -81,56 +85,13 @@ const DEFENDER_STAT_ROWS: {
   /** Full long key used in nature calculations. */
   statKey: string;
   label: string;
-  colorClass: string;
 }[] = [
-  {
-    evKey: "hp",
-    ivKey: "hp",
-    boostKey: null,
-    statKey: "hp",
-    label: "HP",
-    colorClass: "text-rose-500 dark:text-rose-400",
-  },
-  {
-    evKey: "atk",
-    ivKey: "atk",
-    boostKey: "atk",
-    statKey: "attack",
-    label: "Atk",
-    colorClass: "text-orange-500 dark:text-orange-400",
-  },
-  {
-    evKey: "def",
-    ivKey: "def",
-    boostKey: "def",
-    statKey: "defense",
-    label: "Def",
-    colorClass: "text-amber-500 dark:text-amber-400",
-  },
-  {
-    evKey: "spa",
-    ivKey: "spa",
-    boostKey: "spa",
-    statKey: "specialAttack",
-    label: "SpA",
-    colorClass: "text-sky-500 dark:text-sky-400",
-  },
-  {
-    evKey: "spd",
-    ivKey: "spd",
-    boostKey: "spd",
-    statKey: "specialDefense",
-    label: "SpD",
-    colorClass: "text-emerald-500 dark:text-emerald-400",
-  },
-  {
-    evKey: "spe",
-    ivKey: "spe",
-    boostKey: "spe",
-    statKey: "speed",
-    label: "Spe",
-    colorClass: "text-fuchsia-500 dark:text-fuchsia-400",
-  },
+  { evKey: "hp", ivKey: "hp", boostKey: null, statKey: "hp", label: "HP" },
+  { evKey: "atk", ivKey: "atk", boostKey: "atk", statKey: "attack", label: "Atk" },
+  { evKey: "def", ivKey: "def", boostKey: "def", statKey: "defense", label: "Def" },
+  { evKey: "spa", ivKey: "spa", boostKey: "spa", statKey: "specialAttack", label: "SpA" },
+  { evKey: "spd", ivKey: "spd", boostKey: "spd", statKey: "specialDefense", label: "SpD" },
+  { evKey: "spe", ivKey: "spe", boostKey: "spe", statKey: "speed", label: "Spe" },
 ];
 
 /** EV caps. */
@@ -152,34 +113,6 @@ function applyStage(base: number, stage: number): number {
   return Math.floor((base * 2) / (2 + Math.abs(stage)));
 }
 
-function computeDefenderStat(opts: {
-  statKey: string;
-  base: number;
-  iv: number;
-  ev: number;
-  nature: string;
-  level: number;
-  isChampions: boolean;
-}): number {
-  const { statKey, base, iv, ev, nature, level, isChampions } = opts;
-
-  if (isChampions) {
-    if (statKey === "hp") return calculateChampionsHP(base, ev);
-    const mult = getNatureMultiplier(
-      nature,
-      statKey as keyof Omit<StatValues, "hp">
-    );
-    return calculateChampionsStat(base, ev, mult);
-  }
-
-  if (statKey === "hp") return calculateHP(base, iv, ev, level);
-  const mult = getNatureMultiplier(
-    nature,
-    statKey as keyof Omit<StatValues, "hp">
-  );
-  return calculateStat(base, iv, ev, level, mult);
-}
-
 /** Total EVs across all 6 stats. */
 function totalDefenderEvs(evs: DefenderEvs): number {
   return evs.hp + evs.atk + evs.def + evs.spa + evs.spd + evs.spe;
@@ -191,11 +124,13 @@ function totalDefenderEvs(evs: DefenderEvs): number {
 
 interface DefenderStatRowProps {
   evKey: keyof DefenderEvs;
-  ivKey: keyof DefenderIvs;
   boostKey: keyof DefenderBoosts | null;
   statKey: string;
   label: string;
-  colorClass: string;
+  /** Pre-computed final stat (base + EV + IV + nature, no boosts). */
+  rawFinal: number;
+  /** Pre-computed final stat with EV=0 (for the solid base layer of viz bar). */
+  rawFinalNoEv: number;
   ev: number;
   iv: number;
   base: number;
@@ -212,11 +147,11 @@ interface DefenderStatRowProps {
 
 function DefenderStatRow({
   evKey,
-  ivKey: _ivKey,
   boostKey,
   statKey,
   label,
-  colorClass,
+  rawFinal,
+  rawFinalNoEv,
   ev,
   iv,
   base,
@@ -230,27 +165,7 @@ function DefenderStatRow({
   setDefenderEv,
   setDefenderBoost,
 }: DefenderStatRowProps) {
-  // --- Final stat without boosts (base + EV + IV + nature) ---
-  const rawFinal = computeDefenderStat({
-    statKey,
-    base,
-    iv,
-    ev,
-    nature,
-    level,
-    isChampions,
-  });
-
-  // --- Final stat without EVs (for the solid base layer of viz bar) ---
-  const rawFinalNoEv = computeDefenderStat({
-    statKey,
-    base,
-    iv,
-    ev: 0,
-    nature,
-    level,
-    isChampions,
-  });
+  const colorClass = STAT_COLOR_CLASS[statKey as keyof typeof STAT_COLOR_CLASS] ?? "";
 
   // --- Stage-adjusted final stat ---
   const finalStat = boostKey ? applyStage(rawFinal, boost) : rawFinal;
@@ -514,7 +429,6 @@ export function CalcDefenderStats({
   setDefenderNature,
   setDefenderTera,
   setDefenderEv,
-  setDefenderIv: _setDefenderIv,
   setDefenderBoost,
   setDefenderHpPercent,
 }: CalcDefenderStatsProps) {
@@ -549,22 +463,13 @@ export function CalcDefenderStats({
   const natUpLong = natureEffect?.boost ?? null;
   const natDownLong = natureEffect?.reduce ?? null;
 
-  // Map long stat keys to short (for nature comparison)
-  const LONG_TO_SHORT: Partial<Record<string, keyof DefenderEvs>> = {
-    attack: "atk",
-    defense: "def",
-    specialAttack: "spa",
-    specialDefense: "spd",
-    speed: "spe",
-  };
-
   const natUpShort = natUpLong ? (LONG_TO_SHORT[natUpLong] ?? null) : null;
   const natDownShort = natDownLong ? (LONG_TO_SHORT[natDownLong] ?? null) : null;
 
   const totalEv = totalDefenderEvs(defenderEvs);
 
   // Compute max HP for current defender (for absolute HP readout)
-  const maxHP = computeDefenderStat({
+  const maxHP = computeStat({
     statKey: "hp",
     base: base.hp,
     iv: defenderIvs.hp,
@@ -582,7 +487,6 @@ export function CalcDefenderStats({
           getValidAbilities(defenderSpecies)
       )
     : getValidAbilities(defenderSpecies);
-  const _allNatures = getValidNatures();
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
@@ -606,8 +510,7 @@ export function CalcDefenderStats({
             <PopoverContent
               align="start"
               side="bottom"
-              className="w-[640px] p-0"
-              style={{ height: "480px", overflow: "hidden" }}
+              className="h-[480px] w-[640px] overflow-hidden p-0"
             >
               <SpeciesPicker
                 value={defenderSpecies}
@@ -705,19 +608,25 @@ export function CalcDefenderStats({
           const isNatureBoosted = natUpShort === row.evKey;
           const isNatureReduced = natDownShort === row.evKey;
           const boost = row.boostKey ? (defenderBoosts[row.boostKey] ?? 0) : 0;
+          const iv = defenderIvs[row.ivKey];
+          const ev = defenderEvs[row.evKey];
+          const base = baseByEvKey[row.evKey];
+
+          const rawFinal = computeStat({ statKey: row.statKey, base, iv, ev, nature, level, isChampions });
+          const rawFinalNoEv = computeStat({ statKey: row.statKey, base, iv, ev: 0, nature, level, isChampions });
 
           return (
             <DefenderStatRow
               key={row.evKey}
               evKey={row.evKey}
-              ivKey={row.ivKey}
               boostKey={row.boostKey}
               statKey={row.statKey}
               label={row.label}
-              colorClass={row.colorClass}
-              ev={defenderEvs[row.evKey]}
-              iv={defenderIvs[row.ivKey]}
-              base={baseByEvKey[row.evKey]}
+              rawFinal={rawFinal}
+              rawFinalNoEv={rawFinalNoEv}
+              ev={ev}
+              iv={iv}
+              base={base}
               nature={nature}
               level={level}
               isChampions={isChampions}

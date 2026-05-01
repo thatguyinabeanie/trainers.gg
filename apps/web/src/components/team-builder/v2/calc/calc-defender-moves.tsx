@@ -46,14 +46,6 @@ const KO_TIER_CLASS: Record<string, string> = {
   "4HKO+": "dmv-pill--4hko",
 };
 
-/** KO tier → label text. */
-const KO_TIER_LABEL: Record<string, string> = {
-  OHKO: "OHKO",
-  "2HKO": "2HKO",
-  "3HKO": "3HKO",
-  "4HKO+": "4HKO+",
-};
-
 /** Moves that cause an SpA self-drop after use. */
 const SPA_DROP_MOVES = new Set([
   "Draco Meteor",
@@ -145,13 +137,9 @@ function DefenderMoveTile({
       ? resolveKoTierLabel(output.minPercent, output.maxPercent)
       : null;
 
-  // Raw damage range
-  const dmgMin = output?.rolls.length
-    ? Math.min(...(output.rolls as number[]))
-    : null;
-  const dmgMax = output?.rolls.length
-    ? Math.max(...(output.rolls as number[]))
-    : null;
+  // Raw damage range — rolls are sorted ascending by @smogon/calc
+  const dmgMin = output?.rolls.length ? output.rolls[0] : null;
+  const dmgMax = output?.rolls.length ? output.rolls[output.rolls.length - 1] : null;
 
   // Accuracy note
   const accuracy =
@@ -183,11 +171,6 @@ function DefenderMoveTile({
                 : "border-border/60",
               isOhko && "dmv-tile--ohko"
             )}
-            style={
-              isOhko
-                ? { background: "oklch(0.95 0.08 25)" }
-                : undefined
-            }
             onClick={() => setPickerOpen(true)}
             aria-label={moveName ? `Change move: ${moveName}` : "Add move"}
           />
@@ -225,7 +208,7 @@ function DefenderMoveTile({
               KO_TIER_CLASS[koTierLabel] ?? "dmv-pill--4hko"
             )}
           >
-            <span>{KO_TIER_LABEL[koTierLabel]}</span>
+            <span>{koTierLabel}</span>
             <span className="opacity-80">
               {output.minPercent.toFixed(1)}–{output.maxPercent.toFixed(1)}%
             </span>

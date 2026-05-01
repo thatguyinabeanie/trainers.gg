@@ -35,11 +35,11 @@ interface CalcFieldBlockProps {
   /** Attacker's ability name — shown in the "inferred from X" badge. */
   attackerAbility?: string | null;
   /** Fainted count for YOUR team (0..5), used for Last Respects BP scaling. */
-  faintedYours?: number;
-  setFaintedYours?: (n: number) => void;
+  faintedYours: number;
+  setFaintedYours: (n: number) => void;
   /** Fainted count for THEIR team (0..5), used for Last Respects BP scaling. */
-  faintedTheirs?: number;
-  setFaintedTheirs?: (n: number) => void;
+  faintedTheirs: number;
+  setFaintedTheirs: (n: number) => void;
 }
 
 // =============================================================================
@@ -231,19 +231,16 @@ export function CalcFieldBlock({
   inferredWeather = null,
   inferredTerrain = null,
   attackerAbility = null,
-  faintedYours = 0,
+  faintedYours,
   setFaintedYours,
-  faintedTheirs = 0,
+  faintedTheirs,
   setFaintedTheirs,
 }: CalcFieldBlockProps) {
   return (
     <div className="flex h-full flex-col gap-2.5 overflow-y-auto">
       {/* ── Col head: eyebrow + Singles/Doubles toggle ─────────────────────── */}
       <div className="flex items-center justify-between border-b pb-2">
-        <span
-          className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em]"
-          style={{ color: "oklch(0.5 0.1 80)" }}
-        >
+        <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] text-amber-600 dark:text-amber-400">
           Field
         </span>
         <div className="flex gap-1">
@@ -373,7 +370,7 @@ export function CalcFieldBlock({
               setAttackerSide({ helpingHand: !attackerSide.helpingHand })
             }
             fainted={faintedYours}
-            setFainted={setFaintedYours ?? (() => {})}
+            setFainted={setFaintedYours}
           />
           <SideCard
             title="Theirs"
@@ -395,7 +392,7 @@ export function CalcFieldBlock({
               setDefenderSide({ stealthRock: !defenderSide.stealthRock })
             }
             fainted={faintedTheirs}
-            setFainted={setFaintedTheirs ?? (() => {})}
+            setFainted={setFaintedTheirs}
           />
         </div>
       </div>

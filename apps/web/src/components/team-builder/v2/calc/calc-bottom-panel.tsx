@@ -25,6 +25,8 @@ import { useDefenderMoves } from "./use-defender-moves";
 interface CalcBottomPanelProps {
   selectedPokemon: Tables<"pokemon"> | null;
   team: TeamWithPokemon;
+  /** Pre-built 6-slot array (team_position aligned), passed from the workspace. */
+  teamSlots: (Tables<"pokemon"> | null)[];
   format: GameFormat | undefined;
   onClose: () => void;
   /** Active attacker slot index (0..5). */
@@ -62,17 +64,16 @@ function computeAttackerHP(pokemon: Tables<"pokemon"> | null, format: GameFormat
 
 /**
  * Bottom-dock damage calc panel for the v2 team builder.
- * Renders as the 3rd inline panel below the team rows (alongside Type matchups
- * and Speed tiers).
  *
- * Phase 2: Attacker block.
- * Phase 3: Defender stats sub-col (this phase).
- * Phase 4: Defender moves sub-col (placeholder).
- * Phase 5: Field block (placeholder).
+ * 3-column layout: Attacker (your team slot) | Field conditions | Defender
+ * (opponent). Opens as a dock-pill-triggered inline panel below the team rows.
+ * Ownership is asymmetric — attacker inherits the active row's data while the
+ * defender is independently configured in this panel.
  */
 export function CalcBottomPanel({
   selectedPokemon: _selectedPokemon,
-  team,
+  team: _team,
+  teamSlots,
   format,
   onClose,
   attackerIdx,
@@ -84,20 +85,12 @@ export function CalcBottomPanel({
 }: CalcBottomPanelProps) {
   const calc = useCalcStateContext();
 
-  // Build a 6-slot pokemon list aligned with team_position (0-indexed)
-  const slotMap: (Tables<"pokemon"> | null)[] = [null, null, null, null, null, null];
-  for (const tp of team.team_pokemon ?? []) {
-    if (tp.pokemon && tp.team_position >= 1 && tp.team_position <= 6) {
-      slotMap[tp.team_position - 1] = tp.pokemon;
-    }
-  }
-
-  const attacker = slotMap[attackerIdx] ?? null;
+  const attacker = teamSlots[attackerIdx] ?? null;
   const attackerName = attacker?.nickname ?? attacker?.species ?? "—";
   const attackerHP = computeAttackerHP(attacker, format);
 
   // Build the flat teammates list (non-null pokemon slots)
-  const teammates = slotMap.filter(
+  const teammates = teamSlots.filter(
     (p): p is NonNullable<typeof p> => p !== null
   );
 
@@ -133,7 +126,7 @@ export function CalcBottomPanel({
       {/* 3-column grid — Phase 5 fills field; Phase 4 fills defender moves */}
       <div className="grid min-h-0 flex-1 grid-cols-[1fr_1fr_2fr] gap-3 overflow-y-auto p-3">
         <CalcAttackerBlock
-          team={team}
+          teamSlots={teamSlots}
           attackerIdx={attackerIdx}
           onPickAttacker={onPickAttacker}
           attackerBoosts={calc.attackerBoosts}
@@ -198,7 +191,6 @@ export function CalcBottomPanel({
               setDefenderNature={calc.setDefenderNature}
               setDefenderTera={calc.setDefenderTera}
               setDefenderEv={calc.setDefenderEv}
-              setDefenderIv={calc.setDefenderIv}
               setDefenderBoost={calc.setDefenderBoost}
               setDefenderHpPercent={calc.setDefenderHpPercent}
             />

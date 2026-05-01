@@ -44,6 +44,8 @@ import {
   useCalcStateContext,
 } from "./calc/calc-state-context";
 import { Dockbar } from "./dock/dockbar";
+import { getTeamDefensiveSummary } from "./dock/heatmap-panel";
+import { getTeamFastestSpeed } from "./dock/speed-tiers-panel";
 import { HeatmapPanel } from "./dock/heatmap-panel";
 import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
 import { Topbar } from "./topbar";
@@ -96,8 +98,9 @@ function buildSlots(
 interface DockbarConnectedProps {
   drawer: "matchups" | "speed" | "calc" | null;
   onOpen: (key: "matchups" | "speed" | "calc") => void;
-  team: TeamWithPokemon["team_pokemon"];
-  format: GameFormat | undefined;
+  weakCount: number;
+  coveredCount: number;
+  fastest: number;
 }
 
 /**
@@ -107,8 +110,9 @@ interface DockbarConnectedProps {
 function DockbarConnected({
   drawer,
   onOpen,
-  team,
-  format,
+  weakCount,
+  coveredCount,
+  fastest,
 }: DockbarConnectedProps) {
   const calc = useCalcStateContext();
 
@@ -116,8 +120,9 @@ function DockbarConnected({
     <Dockbar
       drawer={drawer}
       onOpen={onOpen}
-      team={team}
-      format={format}
+      weakCount={weakCount}
+      coveredCount={coveredCount}
+      fastest={fastest}
       defenderSpecies={calc.defenderSpecies}
       moveCalcOutputs={calc.moveCalcOutputs}
     />
@@ -316,6 +321,11 @@ export function TeamWorkspaceV2({
   }
 
   const filledCount = slots.filter(Boolean).length;
+
+  // Pre-compute dock-pill summaries once here so DockbarConnected never runs
+  // getTeamDefensiveSummary / getTeamFastestSpeed on every EV slider tick.
+  const defensiveSummary = getTeamDefensiveSummary(optimisticTeamPokemon);
+  const fastestSpeed = format ? getTeamFastestSpeed(optimisticTeamPokemon, format) : 0;
 
   // onRemove for PokeRow — accepts slot idx, resolves to pokemonId
   function handleRemoveByIdx(idx: number) {
@@ -542,6 +552,7 @@ export function TeamWorkspaceV2({
                     <CalcBottomPanel
                       selectedPokemon={slots[state.activeIdx] ?? null}
                       team={team}
+                      teamSlots={slots}
                       format={format}
                       onClose={() => state.setDrawer(null)}
                       attackerIdx={state.attackerSlot ?? state.activeIdx}
@@ -565,8 +576,9 @@ export function TeamWorkspaceV2({
               onOpen={(key) =>
                 state.setDrawer(state.drawer === key ? null : key)
               }
-              team={optimisticTeamPokemon}
-              format={format}
+              weakCount={defensiveSummary.weakCount}
+              coveredCount={defensiveSummary.coveredCount}
+              fastest={fastestSpeed}
             />
           </div>
 

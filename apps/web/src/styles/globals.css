@@ -81,4 +81,9 @@
   .image-rendering-pixelated {
     image-rendering: pixelated;
   }
+
+  /* Damage calc move tiles — KO tier tinting */
+  .dmv-tile--ohko {
+    background: oklch(0.95 0.08 25);
+  }
 }

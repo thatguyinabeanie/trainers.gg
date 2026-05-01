@@ -1,16 +1,11 @@
 "use client";
 
-import { type GameFormat } from "@trainers/pokemon";
-import { type TeamWithPokemon } from "@trainers/supabase";
-
 import { cn } from "@/lib/utils";
 
 import {
   getVerdict,
   type CalcOutput,
 } from "../../use-calc-state";
-import { getTeamDefensiveSummary } from "./heatmap-panel";
-import { getTeamFastestSpeed } from "./speed-tiers-panel";
 
 // =============================================================================
 // Types
@@ -19,8 +14,12 @@ import { getTeamFastestSpeed } from "./speed-tiers-panel";
 export interface DockbarProps {
   drawer: "matchups" | "speed" | "calc" | null;
   onOpen: (key: "matchups" | "speed" | "calc") => void;
-  team: TeamWithPokemon["team_pokemon"];
-  format: GameFormat | undefined;
+  /** Pre-computed weak-type count for the matchups pill. */
+  weakCount: number;
+  /** Pre-computed covered-type count for the matchups pill. */
+  coveredCount: number;
+  /** Pre-computed fastest speed for the speed pill. */
+  fastest: number;
   /** Active attacker's defender name, for the calc pill label. */
   defenderSpecies: string;
   /** Calc outputs for all 4 attacker moves, for the calc pill verdict. */
@@ -63,14 +62,12 @@ function getWorstCaseVerdict(
 export function Dockbar({
   drawer,
   onOpen,
-  team,
-  format,
+  weakCount,
+  coveredCount,
+  fastest,
   defenderSpecies,
   moveCalcOutputs,
 }: DockbarProps) {
-  const { weakCount, coveredCount } = getTeamDefensiveSummary(team);
-  const fastest =
-    format ? getTeamFastestSpeed(team, format) : 0;
 
   const calcVerdict = getWorstCaseVerdict(moveCalcOutputs);
   const calcSubLabel = defenderSpecies

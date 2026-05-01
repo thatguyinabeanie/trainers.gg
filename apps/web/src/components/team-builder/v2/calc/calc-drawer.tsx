@@ -159,6 +159,10 @@ function CalcDrawerContent({
         allyAlive={field.allyAlive}
         setFoesAlive={handleSetFoesAlive}
         setAllyAlive={handleSetAllyAlive}
+        faintedYours={0}
+        setFaintedYours={() => {}}
+        faintedTheirs={0}
+        setFaintedTheirs={() => {}}
       />
     </div>
   );

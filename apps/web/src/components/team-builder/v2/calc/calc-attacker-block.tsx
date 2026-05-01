@@ -1,7 +1,7 @@
 "use client";
 
 import { getSpeciesTypes } from "@trainers/pokemon";
-import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
+import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,8 @@ import { AttackerChipStrip } from "./attacker-chip-strip";
 // =============================================================================
 
 interface CalcAttackerBlockProps {
-  team: TeamWithPokemon;
+  /** Pre-built 6-slot array (team_position aligned), passed from the panel. */
+  teamSlots: (Tables<"pokemon"> | null)[];
   /** Active attacker slot (0..5). */
   attackerIdx: number;
   /** Setter for the active attacker slot. */
@@ -52,28 +53,13 @@ const STAT_KEYS: {
  * meta line), an "inherits from row" note, and a 5-row stat-boost grid.
  */
 export function CalcAttackerBlock({
-  team,
+  teamSlots,
   attackerIdx,
   onPickAttacker,
   attackerBoosts,
   setAttackerBoost,
 }: CalcAttackerBlockProps) {
-  // Build a 6-slot pokemon list aligned with team_position (0-indexed)
-  const slotMap: (Tables<"pokemon"> | null)[] = [
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-  ];
-  for (const tp of team.team_pokemon ?? []) {
-    if (tp.pokemon && tp.team_position >= 1 && tp.team_position <= 6) {
-      slotMap[tp.team_position - 1] = tp.pokemon;
-    }
-  }
-
-  const attacker = slotMap[attackerIdx] ?? null;
+  const attacker = teamSlots[attackerIdx] ?? null;
   const attackerTypes = attacker?.species
     ? getSpeciesTypes(attacker.species)
     : [];
@@ -92,7 +78,7 @@ export function CalcAttackerBlock({
 
       {/* chip strip */}
       <AttackerChipStrip
-        pokemon={slotMap}
+        pokemon={teamSlots}
         activeIdx={attackerIdx}
         onPick={onPickAttacker}
       />

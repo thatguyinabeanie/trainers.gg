@@ -45,10 +45,10 @@ export function AttackerChipStrip({
             onClick={() => !isEmpty && onPick(idx)}
             disabled={isEmpty}
             className={cn(
-              "relative flex size-[30px] flex-shrink-0 items-center justify-center rounded border bg-card transition-opacity",
+              "relative flex size-[30px] flex-shrink-0 items-center justify-center rounded bg-card transition-opacity",
               isActive
-                ? "border-primary border-2 shadow-[0_0_0_2px_oklch(0.6_0.13_195_/_0.18)]"
-                : "opacity-55 hover:opacity-90",
+                ? "border-2 border-primary shadow-[0_0_0_2px_oklch(0.6_0.13_195_/_0.18)]"
+                : "border border-border opacity-55 hover:opacity-90",
               isEmpty && "cursor-not-allowed opacity-30"
             )}
             aria-pressed={isActive}
