@@ -78,7 +78,7 @@ export function Dockbar({
     <div
       role="toolbar"
       aria-label="Builder tools"
-      className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 border-t bg-background px-3 py-2"
+      className="flex min-w-0 shrink-0 flex-wrap items-center justify-center gap-2 border-t bg-background px-3 py-2"
     >
       {/* Type matchups pill */}
       <button
@@ -96,11 +96,11 @@ export function Dockbar({
         <span className="shrink-0 text-[15px] leading-none" aria-hidden>
           ▦
         </span>
-        <span className="flex min-w-0 flex-col gap-0">
-          <span className="text-xs font-semibold leading-tight">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="text-xs font-semibold leading-none">
             Type matchups
           </span>
-          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-tight text-muted-foreground">
+          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-none text-muted-foreground">
             <span
               className={cn(
                 "font-semibold",
@@ -145,11 +145,11 @@ export function Dockbar({
         <span className="shrink-0 text-[15px] leading-none" aria-hidden>
           ≫
         </span>
-        <span className="flex min-w-0 flex-col gap-0">
-          <span className="text-xs font-semibold leading-tight">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="text-xs font-semibold leading-none">
             Speed tiers
           </span>
-          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-tight text-muted-foreground">
+          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-none text-muted-foreground">
             <span className="font-semibold">
               {fastest > 0 ? fastest : "—"}
             </span>
@@ -179,11 +179,11 @@ export function Dockbar({
         <span className="shrink-0 text-[15px] leading-none" aria-hidden>
           🎯
         </span>
-        <span className="flex min-w-0 flex-col gap-0">
-          <span className="text-xs font-semibold leading-tight">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="text-xs font-semibold leading-none">
             Damage calc
           </span>
-          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-tight text-muted-foreground">
+          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-none text-muted-foreground">
             <span className="truncate">{calcSubLabel}</span>
             {calcVerdict && (
               <>
@@ -206,7 +206,6 @@ export function Dockbar({
         </span>
       </button>
 
-      <span className="flex-1" />
     </div>
   );
 }
