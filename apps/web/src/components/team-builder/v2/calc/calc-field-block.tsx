@@ -239,6 +239,7 @@ export function CalcFieldBlock({
         <div className="flex gap-1">
           <button
             type="button"
+            aria-pressed={gameType === "Singles"}
             onClick={() => setGameType("Singles")}
             className={cn(
               "rounded px-2 py-0.5 font-mono text-[10px] transition-colors",
@@ -251,6 +252,7 @@ export function CalcFieldBlock({
           </button>
           <button
             type="button"
+            aria-pressed={gameType === "Doubles"}
             onClick={() => setGameType("Doubles")}
             className={cn(
               "rounded px-2 py-0.5 font-mono text-[10px] transition-colors",
