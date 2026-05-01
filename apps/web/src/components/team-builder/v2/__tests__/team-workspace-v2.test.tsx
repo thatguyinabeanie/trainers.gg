@@ -13,7 +13,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
-import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
+import {
+  type Tables,
+  type TablesUpdate,
+  type TeamWithPokemon,
+} from "@trainers/supabase";
 
 // =============================================================================
 // Heavy module mocks — must be declared before any import that references them
@@ -67,15 +71,21 @@ jest.mock("../poke-row", () => ({
     sortableId,
     onAdd,
     onRemove,
+    onPokemonUpdate,
   }: {
     idx: number;
     pokemon: Tables<"pokemon"> | null;
     sortableId: string;
     onAdd: (idx: number, speciesId: string) => void;
     onRemove: (idx: number) => void;
+    onPokemonUpdate?: (
+      pokemonId: number,
+      fields: Partial<TablesUpdate<"pokemon">>
+    ) => void;
   }) => (
     <div data-testid={`poke-row-${idx}`} data-sortable-id={sortableId}>
-      {pokemon?.species ?? "empty"}
+      <span data-testid={`species-${idx}`}>{pokemon?.species ?? "empty"}</span>
+      <span data-testid={`nickname-${idx}`}>{pokemon?.nickname ?? ""}</span>
       <button
         data-testid={`add-${idx}`}
         onClick={() => onAdd(idx, "Pikachu")}
@@ -84,6 +94,14 @@ jest.mock("../poke-row", () => ({
       </button>
       <button data-testid={`remove-${idx}`} onClick={() => onRemove(idx)}>
         Remove
+      </button>
+      <button
+        data-testid={`update-${idx}`}
+        onClick={() =>
+          pokemon && onPokemonUpdate?.(pokemon.id, { nickname: "Sparky" })
+        }
+      >
+        Update nickname
       </button>
     </div>
   ),
@@ -155,10 +173,12 @@ jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 // Toast — capture calls
 const mockToastError = jest.fn();
 const mockToastSuccess = jest.fn();
+const mockToastInfo = jest.fn();
 jest.mock("sonner", () => ({
   toast: {
     error: (...args: unknown[]) => mockToastError(...args),
     success: (...args: unknown[]) => mockToastSuccess(...args),
+    info: (...args: unknown[]) => mockToastInfo(...args),
   },
 }));
 
@@ -263,6 +283,19 @@ function renderWorkspace(
   return render(
     <TeamWorkspaceV2 team={team} format={format} username="ash_ketchum" />
   );
+}
+
+/**
+ * Build a manually-resolvable promise for holding a server action open across
+ * an `await`. Lets a test assert what the UI looks like during the pending
+ * window — the optimistic-UI contract — before the action resolves.
+ */
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolve: (value: T) => void = () => {};
+  const promise = new Promise<T>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
 }
 
 // =============================================================================
@@ -384,7 +417,32 @@ describe("TeamWorkspaceV2 — add pokemon flow", () => {
     });
   });
 
-  it("shows an error toast and does NOT refresh on add failure", async () => {
+  it("renders the new pokemon in the slot optimistically before the server action resolves", async () => {
+    const { promise, resolve } = deferred<{
+      success: true;
+      data: { pokemonId: number };
+    }>();
+    mockAddPokemonToTeamAction.mockImplementationOnce(() => promise);
+
+    const user = userEvent.setup();
+    renderWorkspace(EMPTY_TEAM);
+
+    expect(screen.getByTestId("species-0")).toHaveTextContent("empty");
+
+    await user.click(screen.getByTestId("add-0"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("species-0")).toHaveTextContent("Pikachu");
+    });
+    expect(mockRouterRefresh).not.toHaveBeenCalled();
+
+    resolve({ success: true, data: { pokemonId: 99 } });
+    await waitFor(() => {
+      expect(mockRouterRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it("shows an error toast and refreshes (rolling back the optimistic add) on add failure", async () => {
     mockAddPokemonToTeamAction.mockResolvedValueOnce({
       success: false,
       error: "Slot is full.",
@@ -397,7 +455,7 @@ describe("TeamWorkspaceV2 — add pokemon flow", () => {
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Slot is full.");
-      expect(mockRouterRefresh).not.toHaveBeenCalled();
+      expect(mockRouterRefresh).toHaveBeenCalled();
     });
   });
 
@@ -456,7 +514,33 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
     });
   });
 
-  it("shows error toast and does NOT refresh on removal failure", async () => {
+  it("empties the slot optimistically before the server action resolves", async () => {
+    const { promise, resolve } = deferred<{
+      success: true;
+      data: undefined;
+    }>();
+    mockRemovePokemonFromTeamAction.mockImplementationOnce(() => promise);
+
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    expect(screen.getByTestId("species-0")).toHaveTextContent("Garchomp");
+
+    await user.click(screen.getByTestId("remove-0"));
+    await user.click(screen.getByRole("button", { name: /^remove$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("species-0")).toHaveTextContent("empty");
+    });
+    expect(mockRouterRefresh).not.toHaveBeenCalled();
+
+    resolve({ success: true, data: undefined });
+    await waitFor(() => {
+      expect(mockRouterRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it("shows error toast and refreshes (rolling back the optimistic remove) on removal failure", async () => {
     mockRemovePokemonFromTeamAction.mockResolvedValueOnce({
       success: false,
       error: "Permission denied.",
@@ -470,7 +554,7 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Permission denied.");
-      expect(mockRouterRefresh).not.toHaveBeenCalled();
+      expect(mockRouterRefresh).toHaveBeenCalled();
     });
   });
 
@@ -518,30 +602,118 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
 });
 
 // =============================================================================
+// optimistic placeholder guards — block mutate/remove/reorder for negative ids
+// =============================================================================
+
+describe("TeamWorkspaceV2 — optimistic placeholder guards", () => {
+  /** Team where slot 0 holds a not-yet-saved pokemon (negative id). */
+  const PENDING_TEAM = makeTeam([
+    {
+      id: -1,
+      pokemon_id: -1,
+      team_position: 1,
+      pokemon: makePokemon(-1, "Pikachu"),
+    },
+  ]);
+
+  it("update on a pending placeholder is skipped and shows an info toast", async () => {
+    const user = userEvent.setup();
+    renderWorkspace(PENDING_TEAM);
+
+    await user.click(screen.getByTestId("update-0"));
+
+    await waitFor(() => {
+      expect(mockToastInfo).toHaveBeenCalledWith(
+        expect.stringContaining("Still saving")
+      );
+    });
+    expect(mockUpdatePokemonAction).not.toHaveBeenCalled();
+  });
+
+  it("remove on a pending placeholder is skipped and shows an info toast", async () => {
+    const user = userEvent.setup();
+    renderWorkspace(PENDING_TEAM);
+
+    await user.click(screen.getByTestId("remove-0"));
+    await user.click(screen.getByRole("button", { name: /^remove$/i }));
+
+    await waitFor(() => {
+      expect(mockToastInfo).toHaveBeenCalledWith(
+        expect.stringContaining("Still saving")
+      );
+    });
+    expect(mockRemovePokemonFromTeamAction).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
 // optimistic update + rollback
 // =============================================================================
 
 describe("TeamWorkspaceV2 — optimistic update flow", () => {
-  it("updatePokemonAction is wired and callable", () => {
-    // The component wires handlePokemonUpdate → updatePokemonAction.
-    // Since PokeRow is mocked we verify that the action is importable and
-    // injectable as expected (wiring test — not a shallow prop test).
+  it("calls updatePokemonAction with the team id, pokemon id, and patch fields", async () => {
+    const user = userEvent.setup();
     renderWorkspace();
-    expect(mockUpdatePokemonAction).toBeDefined();
-    expect(typeof mockUpdatePokemonAction).toBe("function");
+
+    await user.click(screen.getByTestId("update-0")); // updates pokemon id 10
+
+    await waitFor(() => {
+      expect(mockUpdatePokemonAction).toHaveBeenCalledWith(1, 10, {
+        nickname: "Sparky",
+      });
+    });
   });
 
-  it("action mock returns the configured failure shape", async () => {
-    // Verify the mock infrastructure works correctly for the error branch.
-    // The component uses this shape to decide whether to call toast.error + router.refresh.
-    mockUpdatePokemonAction.mockResolvedValue({
+  it("renders the patched field optimistically before the server action resolves", async () => {
+    const { promise, resolve } = deferred<{ success: true; data: undefined }>();
+    mockUpdatePokemonAction.mockImplementationOnce(() => promise);
+
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    expect(screen.getByTestId("nickname-0")).toHaveTextContent("");
+
+    await user.click(screen.getByTestId("update-0"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("nickname-0")).toHaveTextContent("Sparky");
+    });
+    expect(mockRouterRefresh).not.toHaveBeenCalled();
+
+    resolve({ success: true, data: undefined });
+    await waitFor(() => {
+      expect(mockRouterRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it("toasts and refreshes (rolling back the optimistic patch) on update failure", async () => {
+    mockUpdatePokemonAction.mockResolvedValueOnce({
       success: false,
       error: "Validation failed.",
     });
 
-    const result = await mockUpdatePokemonAction(1, 10, { ability: "Speed Boost" });
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Validation failed.");
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await user.click(screen.getByTestId("update-0"));
+
+    await waitFor(() => {
+      expect(mockToastError).toHaveBeenCalledWith("Validation failed.");
+      expect(mockRouterRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it("falls back to a generic message when the failure shape omits an error string", async () => {
+    mockUpdatePokemonAction.mockResolvedValueOnce({ success: false });
+
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await user.click(screen.getByTestId("update-0"));
+
+    await waitFor(() => {
+      expect(mockToastError).toHaveBeenCalledWith("Failed to save changes.");
+    });
   });
 });
 
