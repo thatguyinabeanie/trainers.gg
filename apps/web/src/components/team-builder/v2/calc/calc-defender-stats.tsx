@@ -99,10 +99,26 @@ const DEFENDER_STAT_ROWS: {
   { evKey: "spe", ivKey: "spe", boostKey: "spe", statKey: "speed", label: "Spe" },
 ];
 
-/** EV caps. */
 const EV_PER_STAT_MAX = 252;
 const EV_TOTAL_MAX = 510;
 const EV_STEP = 4;
+
+const SP_PER_STAT_MAX = 32;
+const SP_TOTAL_MAX = 66;
+const SP_STEP = 1;
+
+interface StatBudget {
+  perStat: number;
+  total: number;
+  step: number;
+  label: string;
+}
+
+function getDefenderBudget(isChampions: boolean): StatBudget {
+  return isChampions
+    ? { perStat: SP_PER_STAT_MAX, total: SP_TOTAL_MAX, step: SP_STEP, label: "SP" }
+    : { perStat: EV_PER_STAT_MAX, total: EV_TOTAL_MAX, step: EV_STEP, label: "EV" };
+}
 
 // =============================================================================
 // Helpers
@@ -179,8 +195,10 @@ function DefenderStatRow({
   const { baseLayerWidth, investLayerLeft, investLayerWidth } =
     computeVizBarWidths(rawFinal, rawFinalNoEv);
 
+  const budget = getDefenderBudget(isChampions);
+
   // --- EV slider budget ---
-  const investBudget = computeInvestBudget(totalEv, ev, EV_TOTAL_MAX, EV_PER_STAT_MAX);
+  const investBudget = computeInvestBudget(totalEv, ev, budget.total, budget.perStat);
 
   // --- Breakpoint ticks (only for +nature stat) ---
   const breakpoints = isNatureBoosted
@@ -195,8 +213,8 @@ function DefenderStatRow({
               nature,
               statKey as keyof Omit<StatValues, "hp">
             ),
-        perStatMax: EV_PER_STAT_MAX,
-        step: EV_STEP,
+        perStatMax: budget.perStat,
+        step: budget.step,
         isChampions,
       })
     : [];
@@ -212,7 +230,7 @@ function DefenderStatRow({
   function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = Number(e.target.value);
     const clamped = Math.min(raw, investBudget);
-    const snapped = Math.round(clamped / EV_STEP) * EV_STEP;
+    const snapped = Math.round(clamped / budget.step) * budget.step;
     setDefenderEv(evKey, snapped);
   }
 
@@ -229,8 +247,8 @@ function DefenderStatRow({
     const numStr = trimmed.replace(/[+\-−]$/, "");
     const parsed = numStr === "" ? 0 : parseInt(numStr, 10);
     const val = Number.isNaN(parsed) ? 0 : parsed;
-    const clamped = Math.min(val, investBudget, EV_PER_STAT_MAX);
-    const snapped = Math.round(Math.max(0, clamped) / EV_STEP) * EV_STEP;
+    const clamped = Math.min(val, investBudget, budget.perStat);
+    const snapped = Math.round(Math.max(0, clamped) / budget.step) * budget.step;
     setDefenderEv(evKey, snapped);
     setInputBuffer(null);
   }
@@ -324,8 +342,8 @@ function DefenderStatRow({
         <input
           type="range"
           min={0}
-          max={EV_PER_STAT_MAX}
-          step={EV_STEP}
+          max={budget.perStat}
+          step={budget.step}
           value={ev}
           onChange={handleSliderChange}
           aria-label={`${label} EV slider`}
@@ -340,7 +358,7 @@ function DefenderStatRow({
                   s.spreadBumpTick,
                   bpEv === nextBpEv && s.spreadBumpTickNext
                 )}
-                style={{ left: `${(bpEv / EV_PER_STAT_MAX) * 100}%` }}
+                style={{ left: `${(bpEv / budget.perStat) * 100}%` }}
               />
             ))}
           </div>
@@ -581,22 +599,27 @@ export function CalcDefenderStats({
       </div>
 
       {/* ── Stats lane header ─────────────────────────────────────── */}
-      <div className="flex items-baseline justify-between">
-        <span className="font-mono text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Spread
-        </span>
-        <span
-          className={cn(
-            "font-mono text-[10px]",
-            totalEv > EV_TOTAL_MAX
-              ? "text-destructive font-semibold"
-              : "text-muted-foreground"
-          )}
-        >
-          {totalEv}
-          <span className="text-muted-foreground/60">/{EV_TOTAL_MAX}</span>
-        </span>
-      </div>
+      {(() => {
+        const budget = getDefenderBudget(isChampions);
+        return (
+          <div className="flex items-baseline justify-between">
+            <span className="font-mono text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {isChampions ? "Stat points" : "Spread"}
+            </span>
+            <span
+              className={cn(
+                "font-mono text-[10px]",
+                totalEv > budget.total
+                  ? "text-destructive font-semibold"
+                  : "text-muted-foreground"
+              )}
+            >
+              {totalEv}
+              <span className="text-muted-foreground/60">/{budget.total}</span>
+            </span>
+          </div>
+        );
+      })()}
 
       {/* ── Stat rows ─────────────────────────────────────────────── */}
       <div className="flex flex-col">

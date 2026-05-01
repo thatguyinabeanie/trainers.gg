@@ -110,7 +110,7 @@ export function Dockbar({
     <div
       role="toolbar"
       aria-label="Builder tools"
-      className="flex min-w-0 shrink-0 flex-wrap items-center justify-center gap-2 border-t bg-background px-3 py-2"
+      className="flex min-w-0 shrink-0 flex-wrap items-center justify-center gap-2 rounded-b-lg border-t bg-background px-3 py-2"
     >
       {/* Type matchups pill */}
       <DockPill

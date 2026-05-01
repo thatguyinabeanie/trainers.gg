@@ -169,7 +169,7 @@ export function CalcBottomPanel({
           </div>
 
           {/* Split: stats sub-col | moves sub-col */}
-          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_240px] gap-3.5 overflow-y-auto p-3">
+          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3.5 overflow-y-auto p-3">
             <CalcDefenderStats
               defenderSpecies={calc.defenderSpecies}
               defenderAbility={calc.defenderAbility}
