@@ -194,6 +194,14 @@ export async function updateTournament(
       };
     }
 
+    // Short-circuit empty updates so we don't run a no-op DB write and bust
+    // every cache tag for nothing. The settings UI's `buildUpdatePayload`
+    // already filters unchanged fields, but a crafted request could still
+    // send `{}`.
+    if (Object.keys(parsed.data).length === 0) {
+      return { success: true, data: { success: true } };
+    }
+
     const supabase = await createClient();
     await updateTournamentMutation(supabase, tournamentId, parsed.data);
 

@@ -339,6 +339,17 @@ describe("updateTournament", () => {
     expect(result.success).toBe(true);
     expect(mockUpdateTournament).toHaveBeenCalledTimes(1);
   });
+
+  it("short-circuits empty updates without calling the mutation or invalidating", async () => {
+    // Empty object passes schema validation (every field is optional).
+    // The action should treat that as a no-op rather than running a DB
+    // write and busting cache tags.
+    const result = await updateTournament(10, {});
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateTournament).not.toHaveBeenCalled();
+    expect(mockUpdateTag).not.toHaveBeenCalled();
+  });
 });
 
 // ── publishTournament ──────────────────────────────────────────────────────
