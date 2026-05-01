@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
@@ -70,14 +70,12 @@ export function TournamentManageClient({
 
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
-  // Redirect unauthenticated users in an effect, not during render — calling
-  // `router.push()` synchronously while rendering triggers React's
-  // setState-in-render warning and crashes Turbopack's overlay.
-  useEffect(() => {
-    if (!userLoading && !currentUser) {
-      router.push("/sign-in");
-    }
-  }, [userLoading, currentUser, router]);
+  // Auth is enforced by the parent server layout
+  // (`(dashboard)/dashboard/community/[communitySlug]/layout.tsx`), so by the
+  // time we render here the user is authenticated. We don't redirect from
+  // this client — doing so used to fire during a race between the loading
+  // state and `currentUser` resolving, bouncing real users to /sign-in (and
+  // then proxy.ts back to /dashboard) on every navigation.
 
   // Fetch organization by slug
   const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
@@ -190,9 +188,10 @@ export function TournamentManageClient({
     );
   }
 
-  // Auth check — `redirectToSignIn` (declared above) handles the navigation in
-  // an effect; rendering null here while the redirect is in flight avoids the
-  // setState-in-render warning that direct `router.push()` would trigger.
+  // currentUser is guaranteed to exist (the parent server layout redirects
+  // unauthenticated requests). Rendering null here is purely a guard for the
+  // brief client-side window before useCurrentUser resolves; we never bounce
+  // the user away from this page.
   if (!currentUser) {
     return null;
   }

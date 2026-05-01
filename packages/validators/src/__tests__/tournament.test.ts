@@ -204,6 +204,27 @@ describe("updateTournamentSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it.each([
+    ["format", "   "],
+    ["game", "\t\t"],
+    ["gameFormat", "  \n  "],
+  ])("rejects whitespace-only %s", (field, value) => {
+    const result = updateTournamentSchema.safeParse({ [field]: value });
+    expect(result.success).toBe(false);
+  });
+
+  it.each([
+    ["format", "  vgc-doubles  ", "vgc-doubles"],
+    ["game", "  sv  ", "sv"],
+    ["gameFormat", " reg-i ", "reg-i"],
+  ])("trims surrounding whitespace on %s", (field, input, trimmed) => {
+    const result = updateTournamentSchema.safeParse({ [field]: input });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data[field as keyof typeof result.data]).toBe(trimmed);
+    }
+  });
 });
 
 describe("dropCategorySchema", () => {

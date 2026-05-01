@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentBySlug,
@@ -29,16 +27,10 @@ export function TournamentSettingsPageClient({
   communitySlug,
   tournamentSlug,
 }: TournamentSettingsPageClientProps) {
-  const router = useRouter();
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
-  // Redirect unauthenticated users in an effect — `router.push()` during render
-  // triggers React's setState-in-render warning.
-  useEffect(() => {
-    if (!userLoading && !currentUser) {
-      router.push("/sign-in");
-    }
-  }, [userLoading, currentUser, router]);
+  // Auth is enforced by the parent server layout — see the matching note in
+  // tournament-manage-client.tsx for why we don't push() to /sign-in here.
 
   // Fetch organization by slug
   const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
@@ -111,8 +103,9 @@ export function TournamentSettingsPageClient({
     );
   }
 
-  // Auth check — the effect above schedules the redirect; render null while
-  // it's in flight so we don't update Router during this component's render.
+  // currentUser is guaranteed to exist after the server layout's auth check;
+  // this is just a guard for the brief client-side window before
+  // useCurrentUser resolves.
   if (!currentUser) {
     return null;
   }

@@ -186,9 +186,15 @@ describe("CreateTournamentClient", () => {
       isLoading: false,
     });
 
-    render(<CreateTournamentClient communitySlug="test-org" />);
+    const { container } = render(
+      <CreateTournamentClient communitySlug="test-org" />
+    );
 
-    expect(mockPush).toHaveBeenCalledWith("/sign-in");
+    // The parent server layout enforces auth; this client renders null when
+    // currentUser is missing instead of pushing to /sign-in (which used to
+    // race with the loading state and bounce real users to /dashboard).
+    expect(container).toBeEmptyDOMElement();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   // ── Permission denied ────────────────────────────────────────────────────────

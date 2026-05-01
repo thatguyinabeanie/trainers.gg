@@ -70,6 +70,21 @@ export const tournamentStatusSchema = z.enum([
 ]);
 
 /**
+ * Optional trimmed string with a max length. Whitespace is trimmed before the
+ * length check so `"   "` is normalised to `""` and then mapped to
+ * `undefined` (i.e., "field omitted"). Mirrors the `optionalHandle` /
+ * `optionalUrl` pattern in `organization-request.ts`.
+ */
+const optionalTrimmedString = (max: number) =>
+  z
+    .string()
+    .transform((val) => val.trim())
+    .pipe(z.string().min(1).max(max))
+    .or(z.literal(""))
+    .optional()
+    .transform((val) => val || undefined);
+
+/**
  * Schema for updating a tournament.
  *
  * Used at the Server Action boundary (`updateTournament`) to reject crafted
@@ -80,7 +95,7 @@ export const tournamentStatusSchema = z.enum([
 export const updateTournamentSchema = z.object({
   name: tournamentNameSchema.optional(),
   description: tournamentDescriptionSchema,
-  format: z.string().min(1).max(50).optional(),
+  format: optionalTrimmedString(50),
   startDate: isoDateTimeOrNullSchema.optional(),
   endDate: isoDateTimeOrNullSchema.optional(),
   // 4..512 mirrors the input min/max in the settings UI.
@@ -88,8 +103,8 @@ export const updateTournamentSchema = z.object({
   status: tournamentStatusSchema.optional(),
   // Game settings — kept as strings (DB columns are text); concrete values are
   // managed by `@trainers/pokemon` and may evolve as new games/regs ship.
-  game: z.string().min(1).max(50).optional(),
-  gameFormat: z.string().min(1).max(50).optional(),
+  game: optionalTrimmedString(50),
+  gameFormat: optionalTrimmedString(50),
   platform: z.enum(["cartridge", "showdown"]).optional(),
   battleFormat: z.enum(["singles", "doubles"]).optional(),
   // Registration settings.
