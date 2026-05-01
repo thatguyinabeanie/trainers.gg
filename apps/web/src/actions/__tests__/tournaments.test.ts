@@ -350,6 +350,37 @@ describe("updateTournament", () => {
     expect(mockUpdateTournament).not.toHaveBeenCalled();
     expect(mockUpdateTag).not.toHaveBeenCalled();
   });
+
+  it("treats explicit-undefined keys as empty and skips the mutation", async () => {
+    // `Object.keys({ name: undefined }).length` is 1, but the underlying
+    // mutation skips undefined fields — so without stripping, this would
+    // run a no-op DB write and bust cache tags. The action must filter
+    // undefined entries before checking emptiness.
+    const result = await updateTournament(10, {
+      name: undefined,
+      description: undefined,
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateTournament).not.toHaveBeenCalled();
+    expect(mockUpdateTag).not.toHaveBeenCalled();
+  });
+
+  it("forwards only defined fields to the mutation", async () => {
+    mockUpdateTournament.mockResolvedValue(undefined);
+
+    await updateTournament(10, {
+      name: "New Name",
+      description: undefined,
+      game: undefined,
+    });
+
+    expect(mockUpdateTournament).toHaveBeenCalledTimes(1);
+    const [, , updates] = mockUpdateTournament.mock.calls[0];
+    expect(updates).toEqual({ name: "New Name" });
+    expect(updates).not.toHaveProperty("description");
+    expect(updates).not.toHaveProperty("game");
+  });
 });
 
 // ── publishTournament ──────────────────────────────────────────────────────

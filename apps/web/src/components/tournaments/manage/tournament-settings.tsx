@@ -195,25 +195,40 @@ export function TournamentSettings({
     }));
   };
 
+  // Parse a string as an integer without truncating decimals. Returns NaN for
+  // anything other than a clean integer literal — `parseInt` would silently
+  // truncate "32.5" to 32 and accept partially-numeric strings, both of which
+  // can persist a value that doesn't match what the user typed.
+  const parseStrictInt = (value: string): number => {
+    const trimmed = value.trim();
+    if (trimmed === "") return Number.NaN;
+    const parsed = Number(trimmed);
+    return Number.isInteger(parsed) ? parsed : Number.NaN;
+  };
+
   // Validate user input before any save. Returns null on success or an error
   // message on failure. Catches invalid number inputs that would otherwise be
   // coerced to `null` and silently disable the player cap or late-round window.
   const validateForSave = (data: SettingsFormState): string | null => {
     if (!data.name.trim()) return "Tournament name is required.";
     if (data.playerCapEnabled) {
-      const cap = parseInt(data.maxParticipants, 10);
+      const cap = parseStrictInt(data.maxParticipants);
       if (
         Number.isNaN(cap) ||
         cap < PLAYER_CAP_MIN ||
         cap > PLAYER_CAP_MAX
       ) {
-        return `Player cap must be between ${PLAYER_CAP_MIN} and ${PLAYER_CAP_MAX}.`;
+        return `Player cap must be a whole number between ${PLAYER_CAP_MIN} and ${PLAYER_CAP_MAX}.`;
       }
     }
     if (data.allowLateRegistration && data.lateCheckInMaxRound !== null) {
       const round = data.lateCheckInMaxRound;
-      if (round < LATE_ROUND_MIN || round > LATE_ROUND_MAX) {
-        return `Close-after-round must be between ${LATE_ROUND_MIN} and ${LATE_ROUND_MAX}.`;
+      if (
+        !Number.isInteger(round) ||
+        round < LATE_ROUND_MIN ||
+        round > LATE_ROUND_MAX
+      ) {
+        return `Close-after-round must be a whole number between ${LATE_ROUND_MIN} and ${LATE_ROUND_MAX}.`;
       }
     }
     return null;
@@ -239,13 +254,16 @@ export function TournamentSettings({
     if (next.startDate !== prev.startDate) updates.startDate = next.startDate;
     if (next.endDate !== prev.endDate) updates.endDate = next.endDate;
 
-    // validateForSave guarantees a valid cap when the toggle is on, so this
-    // parseInt cannot land on NaN here.
+    // `validateForSave` guarantees these are clean integers when the toggle
+    // is on, so `parseStrictInt` cannot land on NaN here. The previous-cap
+    // path uses the same parser for symmetry — its falsy-fallback is dead
+    // code in practice but keeps the diff symmetric if a future caller
+    // passes a non-validated `prev`.
     const nextCap = next.playerCapEnabled
-      ? parseInt(next.maxParticipants, 10)
+      ? parseStrictInt(next.maxParticipants)
       : null;
     const prevCap = prev.playerCapEnabled
-      ? parseInt(prev.maxParticipants, 10) || null
+      ? parseStrictInt(prev.maxParticipants) || null
       : null;
     if (nextCap !== prevCap) updates.maxParticipants = nextCap;
 
@@ -651,6 +669,7 @@ export function TournamentSettings({
                     placeholder="32"
                     min={PLAYER_CAP_MIN}
                     max={PLAYER_CAP_MAX}
+                    step={1}
                     className="w-32"
                   />
                   <span className="text-muted-foreground text-sm">players</span>
@@ -718,7 +737,11 @@ export function TournamentSettings({
                   type="number"
                   value={formData.lateCheckInMaxRound ?? ""}
                   onChange={(e) => {
-                    const parsed = parseInt(e.target.value, 10);
+                    // Use the strict-integer parser so a pasted decimal like
+                    // "3.7" doesn't silently land in state as 3 — invalid
+                    // input keeps the field cleared until the user types a
+                    // whole number, and validateForSave gates the save.
+                    const parsed = parseStrictInt(e.target.value);
                     setFormData((prev) => ({
                       ...prev,
                       lateCheckInMaxRound: Number.isNaN(parsed) ? null : parsed,
@@ -727,6 +750,7 @@ export function TournamentSettings({
                   placeholder="3"
                   min={LATE_ROUND_MIN}
                   max={LATE_ROUND_MAX}
+                  step={1}
                   disabled={!isEditing}
                   className="w-32"
                 />

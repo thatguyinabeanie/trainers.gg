@@ -194,16 +194,21 @@ export async function updateTournament(
       };
     }
 
-    // Short-circuit empty updates so we don't run a no-op DB write and bust
-    // every cache tag for nothing. The settings UI's `buildUpdatePayload`
-    // already filters unchanged fields, but a crafted request could still
-    // send `{}`.
-    if (Object.keys(parsed.data).length === 0) {
+    // Strip undefined-valued keys before checking emptiness. `Object.keys`
+    // counts explicit-undefined entries (e.g. `{ name: undefined }`), so a
+    // crafted request could otherwise bypass the empty-payload guard and
+    // trigger a no-op DB write + cache bust. Stripping also tightens the
+    // mutation contract — only fields the caller meant to set are forwarded.
+    const cleanUpdates = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, v]) => v !== undefined)
+    ) as typeof parsed.data;
+
+    if (Object.keys(cleanUpdates).length === 0) {
       return { success: true, data: { success: true } };
     }
 
     const supabase = await createClient();
-    await updateTournamentMutation(supabase, tournamentId, parsed.data);
+    await updateTournamentMutation(supabase, tournamentId, cleanUpdates);
 
     // Settings edits surface on the public tournament page and the community
     // list, so invalidate both.

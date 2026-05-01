@@ -940,6 +940,39 @@ describe("TournamentSettings", () => {
         })
       );
     });
+
+    it("rejects a decimal player cap instead of silently truncating it", async () => {
+      // `parseInt("32.5", 10)` would return 32 — a silent value mutation.
+      // The strict-int validator must reject the decimal so the user is
+      // forced to enter a whole number.
+      const { toast } = jest.requireMock("sonner") as {
+        toast: { success: jest.Mock; error: jest.Mock };
+      };
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", max_participants: 32 })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const capInput = screen.getByLabelText("Maximum Players");
+      await user.clear(capInput);
+      await user.type(capInput, "32.5");
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith(
+        "Invalid settings",
+        expect.objectContaining({
+          description: expect.stringMatching(/whole number/i),
+        })
+      );
+    });
   });
 
   // ── Saved-snapshot reset ────────────────────────────────────────────────────
