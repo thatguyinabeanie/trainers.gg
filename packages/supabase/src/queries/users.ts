@@ -41,10 +41,16 @@ export async function getCurrentUser(supabase: TypedClient) {
 
   let alt: Tables<"alts"> | null = null;
   if (user.main_alt_id != null) {
+    // Constrain by `user_id` as well: the `alts` table is publicly readable
+    // (RLS USING (true)), so a corrupted/malicious `main_alt_id` pointing at
+    // another user's alt would otherwise be returned here as the current
+    // user's main. The extra `.eq` makes the lookup return null in that case
+    // and trigger the fallback path below.
     const { data, error } = await supabase
       .from("alts")
       .select("*")
       .eq("id", user.main_alt_id)
+      .eq("user_id", authUser.id)
       .maybeSingle();
     if (error) {
       console.error("[getCurrentUser] main_alt_id lookup failed", {

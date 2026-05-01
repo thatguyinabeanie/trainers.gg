@@ -276,13 +276,27 @@ describe("getCurrentUser", () => {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockImplementation((column: string) => {
               if (column === "id") {
+                // main_alt_id path: .eq("id", X).eq("user_id", Y).maybeSingle()
+                // The double-eq is the security guard — we only return rows
+                // matching BOTH conditions. The mock encodes that here by
+                // checking the second .eq call's user_id arg.
                 return {
-                  maybeSingle: jest
+                  eq: jest
                     .fn()
-                    .mockResolvedValue({ data: altById ?? null, error: null }),
+                    .mockImplementation((col: string, value: string) => ({
+                      maybeSingle: jest.fn().mockResolvedValue({
+                        data:
+                          col === "user_id" &&
+                          altById &&
+                          altById.user_id === value
+                            ? altById
+                            : null,
+                        error: null,
+                      }),
+                    })),
                 };
               }
-              // user_id branch — fallback path uses .order().limit().maybeSingle()
+              // user_id-only branch — fallback path uses .order().limit().maybeSingle()
               return {
                 order: jest.fn().mockReturnValue({
                   limit: jest.fn().mockReturnValue({
@@ -400,10 +414,13 @@ describe("getCurrentUser", () => {
       if (table === "alts") {
         return {
           select: jest.fn().mockReturnValue({
+            // .eq("id", ...).eq("user_id", ...).maybeSingle()
             eq: jest.fn().mockReturnValue({
-              maybeSingle: jest.fn().mockResolvedValue({
-                data: null,
-                error: { message: "rls denied" },
+              eq: jest.fn().mockReturnValue({
+                maybeSingle: jest.fn().mockResolvedValue({
+                  data: null,
+                  error: { message: "rls denied" },
+                }),
               }),
             }),
           }),
@@ -419,5 +436,32 @@ describe("getCurrentUser", () => {
       "[getCurrentUser] main_alt_id lookup failed",
       expect.objectContaining({ userId: "user-123", mainAltId: 1 })
     );
+  });
+
+  it("falls back to oldest alt when main_alt_id points at another user's alt", async () => {
+    // Security guard: `alts` is publicly readable (RLS USING (true)), so a
+    // corrupted/malicious main_alt_id pointing at another user's alt would
+    // otherwise be returned as the current user's main. The double-eq
+    // (`.eq("id", X).eq("user_id", Y)`) makes that lookup return null, and
+    // the fallback path picks the user's own oldest alt instead.
+    const otherUsersAlt = {
+      ...altOne,
+      id: 999,
+      user_id: "different-user",
+      username: "imposter",
+    };
+    mockUserAndAlt({
+      user: { ...baseUserRow, main_alt_id: 999 },
+      // altById belongs to a different user — the double-eq filter must
+      // reject it.
+      altById: otherUsersAlt,
+      altByUserId: altOne,
+    });
+
+    const result = await getCurrentUser(mockClient as unknown as TypedClient);
+
+    expect(result?.alt?.id).toBe(1);
+    expect(result?.alt?.username).toBe("ash_ketchum");
+    expect(result?.alt?.username).not.toBe("imposter");
   });
 });
