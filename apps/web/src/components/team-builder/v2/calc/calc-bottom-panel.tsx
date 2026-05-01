@@ -172,20 +172,12 @@ export function CalcBottomPanel({
           <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3.5 overflow-y-auto p-3">
             <CalcDefenderStats
               defenderSpecies={calc.defenderSpecies}
-              defenderAbility={calc.defenderAbility}
-              defenderItem={calc.defenderItem}
               defenderNature={calc.defenderNature}
-              defenderTera={calc.defenderTera}
               defenderEvs={calc.defenderEvs}
               defenderIvs={calc.defenderIvs}
               defenderBoosts={calc.defenderBoosts}
               defenderHpPercent={calc.defenderHpPercent}
               format={format}
-              setDefenderSpecies={calc.setDefenderSpecies}
-              setDefenderAbility={calc.setDefenderAbility}
-              setDefenderItem={calc.setDefenderItem}
-              setDefenderNature={calc.setDefenderNature}
-              setDefenderTera={calc.setDefenderTera}
               setDefenderEv={calc.setDefenderEv}
               setDefenderBoost={calc.setDefenderBoost}
               setDefenderHpPercent={calc.setDefenderHpPercent}

@@ -5,10 +5,7 @@ import { useState } from "react";
 import {
   findStatBreakpoints,
   getBaseStats,
-  getLegalAbilities,
   getNatureMultiplier,
-  getSpeciesTypes,
-  getValidAbilities,
   isChampionsFormat,
   NATURE_EFFECTS,
   type GameFormat,
@@ -28,19 +25,6 @@ import {
   computeStat,
   computeVizBarWidths,
 } from "../../calc-stat-helpers";
-import { formatSupportsTera } from "../format-gating";
-import { Sprite } from "../sprite";
-import { TypePill } from "../type-pill";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { AbilityPicker } from "../pickers/ability-picker";
-import { ItemPicker } from "../pickers/item-picker";
-import { NaturePicker } from "../pickers/nature-picker";
-import { SpeciesPicker } from "../pickers/species-picker";
-import { TypePicker } from "../pickers/type-picker";
 import { StageDropdown } from "./stage-dropdown";
 import s from "../builder.module.css";
 
@@ -50,20 +34,12 @@ import s from "../builder.module.css";
 
 export interface CalcDefenderStatsProps {
   defenderSpecies: string;
-  defenderAbility: string;
-  defenderItem: string;
   defenderNature: string;
-  defenderTera: string;
   defenderEvs: DefenderEvs;
   defenderIvs: DefenderIvs;
   defenderBoosts: DefenderBoosts;
   defenderHpPercent: number;
   format: GameFormat | undefined;
-  setDefenderSpecies: (v: string) => void;
-  setDefenderAbility: (v: string) => void;
-  setDefenderItem: (v: string) => void;
-  setDefenderNature: (v: string) => void;
-  setDefenderTera: (v: string) => void;
   setDefenderEv: (stat: keyof DefenderEvs, v: number) => void;
   setDefenderBoost: (stat: keyof DefenderBoosts, v: number) => void;
   setDefenderHpPercent: (v: number) => void;
@@ -383,73 +359,32 @@ function DefenderStatRow({
 }
 
 // =============================================================================
-// LoadoutChip — popover trigger for item/abil/nat/tera
-// =============================================================================
-
-interface LoadoutChipProps {
-  label: string;
-  value: string;
-  children: React.ReactNode;
-}
-
-function LoadoutChip({ label, value, children }: LoadoutChipProps) {
-  return (
-    <Popover>
-      <PopoverTrigger className={cn(s.chipLabeled, "w-full")}>
-        <span className={s.chipPrefix}>{label}</span>
-        <span className={cn(s.chipValue, "min-w-0 flex-1 truncate")}>
-          {value || "—"}
-        </span>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        side="bottom"
-        className="w-auto p-0"
-        style={{ maxHeight: "60vh", overflow: "hidden" }}
-      >
-        {children}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-// =============================================================================
 // CalcDefenderStats
 // =============================================================================
 
 /**
  * Defender stats sub-column for the calc bottom panel.
  *
- * Includes:
- * - Mon head (sprite + species name + types) — species is a popover picker
- * - Loadout chips (item / abil / nat / tera) — each opens the matching picker
+ * Renders only the spread section:
  * - Full 6-stat lane (slider-primary, EV input, breakpoint pips, stage dropdown)
  * - HP% slider with absolute HP readout
+ *
+ * The mon head (sprite + species + types) and loadout chips (item / abil / nat / tera)
+ * are rendered by DefenderMonHeader.
  */
 export function CalcDefenderStats({
   defenderSpecies,
-  defenderAbility,
-  defenderItem,
   defenderNature,
-  defenderTera,
   defenderEvs,
   defenderIvs,
   defenderBoosts,
   defenderHpPercent,
   format,
-  setDefenderSpecies,
-  setDefenderAbility,
-  setDefenderItem,
-  setDefenderNature,
-  setDefenderTera,
   setDefenderEv,
   setDefenderBoost,
   setDefenderHpPercent,
 }: CalcDefenderStatsProps) {
   const isChampions = isChampionsFormat(format);
-  const showTera = formatSupportsTera(format);
-
-  const types = defenderSpecies ? getSpeciesTypes(defenderSpecies) : [];
 
   const rawBase = defenderSpecies ? getBaseStats(defenderSpecies) : null;
   const base = rawBase ?? {
@@ -494,110 +429,8 @@ export function CalcDefenderStats({
   });
   const currentHP = Math.max(1, Math.round((defenderHpPercent / 100) * maxHP));
 
-  // Ability list for picker
-  const legalAbilities = format
-    ? Array.from(
-        getLegalAbilities(defenderSpecies, format.id) ??
-          getValidAbilities(defenderSpecies)
-      )
-    : getValidAbilities(defenderSpecies);
-
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      {/* ── Mon head ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2">
-        {/* 60px sprite */}
-        <div className="size-[60px] flex-shrink-0 overflow-hidden rounded-md">
-          <Sprite
-            species={defenderSpecies || "Incineroar"}
-            types={types}
-            size={60}
-          />
-        </div>
-
-        {/* Species name (popover → picker) + types */}
-        <div className="min-w-0 flex-1">
-          <Popover>
-            <PopoverTrigger className="block min-w-0 max-w-full cursor-pointer truncate rounded px-1 py-0.5 text-left text-[13px] font-bold hover:bg-muted">
-              {defenderSpecies || "—"}
-            </PopoverTrigger>
-            <PopoverContent
-              align="start"
-              side="bottom"
-              className="h-[480px] w-[640px] overflow-hidden p-0"
-            >
-              <SpeciesPicker
-                value={defenderSpecies}
-                format={format}
-                onPick={(species) => setDefenderSpecies(species)}
-                onClose={() => undefined}
-              />
-            </PopoverContent>
-          </Popover>
-          <div className="mt-0.5 flex flex-wrap gap-1">
-            {types.map((t) => (
-              <TypePill key={t} t={t} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Loadout chips ─────────────────────────────────────────── */}
-      <div className="flex flex-col gap-0.5">
-        {/* Item */}
-        <Popover>
-          <PopoverTrigger className={cn(s.chipLabeled, "w-full")}>
-            <span className={s.chipPrefix}>item</span>
-            <span className={cn(s.chipValue, "min-w-0 flex-1 truncate")}>
-              {defenderItem || "—"}
-            </span>
-          </PopoverTrigger>
-          <PopoverContent align="start" side="bottom" className="w-auto p-0">
-            <ItemPicker
-              value={defenderItem}
-              format={format}
-              teamItems={[]}
-              onPick={(item) => setDefenderItem(item)}
-              onClose={() => undefined}
-            />
-          </PopoverContent>
-        </Popover>
-
-        {/* Ability */}
-        <LoadoutChip label="abil" value={defenderAbility}>
-          <AbilityPicker
-            value={defenderAbility}
-            species={defenderSpecies}
-            format={format}
-            onPick={(ability) => setDefenderAbility(ability)}
-            onClose={() => undefined}
-          />
-        </LoadoutChip>
-
-        {/* Nature */}
-        <LoadoutChip label="nat" value={defenderNature}>
-          <NaturePicker
-            value={defenderNature}
-            onPick={(nat) => setDefenderNature(nat)}
-            onClose={() => undefined}
-          />
-        </LoadoutChip>
-
-        {/* Tera — only shown for formats that support it */}
-        {showTera && (
-          <LoadoutChip
-            label="tera"
-            value={defenderTera ? `${defenderTera} tera` : "—"}
-          >
-            <TypePicker
-              value={defenderTera}
-              onPick={(type) => setDefenderTera(type)}
-              onClose={() => undefined}
-            />
-          </LoadoutChip>
-        )}
-      </div>
-
       {/* ── Stats lane header ─────────────────────────────────────── */}
       {(() => {
         const budget = getDefenderBudget(isChampions);
@@ -684,12 +517,6 @@ export function CalcDefenderStats({
         </span>
       </div>
 
-      {/* Ability info line — shows legal abilities count as a hint */}
-      {defenderSpecies && legalAbilities.length === 0 && (
-        <p className="font-mono text-[9px] text-muted-foreground/60">
-          No abilities found for format
-        </p>
-      )}
     </div>
   );
 }
