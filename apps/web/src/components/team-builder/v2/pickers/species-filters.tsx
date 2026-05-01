@@ -235,6 +235,7 @@ export function SpeciesFilters({
       <div className="relative">
         <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
         <Input
+          aria-label="Search species"
           placeholder="Search species, abilities, types, moves..."
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}

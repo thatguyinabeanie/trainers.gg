@@ -71,9 +71,12 @@ export function normalizeKey(name: string | null | undefined): string {
  *
  * Resolution order (consistent with in-game priority):
  *   1. Base type matchup via getTypeEffectiveness
- *   2. Wonder Guard: only multipliers > 1 land; everything else becomes 0
- *   3. Item override (Air Balloon → Ground = 0)
- *   4. Ability override — skipped when ABILITY_DISABLING_ITEMS contains item
+ *   2. Item override (Air Balloon → Ground = 0)
+ *   3. Ability override — skipped when ABILITY_DISABLING_ITEMS contains item
+ *      (Iron Ball grounds holder: disables Levitate and other immunities)
+ *   4. Wonder Guard: only multipliers > 1 land; everything else becomes 0
+ *      Applied last so item effects (e.g. Iron Ball on Wonder Guard holder)
+ *      are visible to the Wonder Guard filter.
  */
 export function effectiveDefensiveMult(opts: {
   attackingType: PokemonType;
@@ -86,25 +89,26 @@ export function effectiveDefensiveMult(opts: {
   // 1. Base type matchup
   let mult = getTypeEffectiveness(attackingType, defenderTypes);
 
-  // 2. Wonder Guard: block everything that isn't super-effective
-  const abilityKey = normalizeKey(ability);
-  if (abilityKey === WONDER_GUARD_ABILITY) {
-    return mult > 1 ? mult : 0;
-  }
-
-  // 3. Item override
+  // 2. Item override
   const itemKey = normalizeKey(item);
   const itemOverride = ITEM_TYPE_OVERRIDES[itemKey];
   if (itemOverride && attackingType in itemOverride) {
     mult = itemOverride[attackingType] ?? mult;
   }
 
-  // 4. Ability override (disabled by Iron Ball)
+  // 3. Ability override (disabled by Iron Ball)
+  const abilityKey = normalizeKey(ability);
   if (!ABILITY_DISABLING_ITEMS.has(itemKey)) {
     const abilityOverride = ABILITY_TYPE_OVERRIDES[abilityKey];
     if (abilityOverride && attackingType in abilityOverride) {
       mult = abilityOverride[attackingType] ?? mult;
     }
+  }
+
+  // 4. Wonder Guard: block everything that isn't super-effective (applied after
+  //    item/ability adjustments so Iron Ball + Wonder Guard combos resolve correctly)
+  if (abilityKey === WONDER_GUARD_ABILITY) {
+    return mult > 1 ? mult : 0;
   }
 
   return mult;

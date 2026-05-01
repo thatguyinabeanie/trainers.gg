@@ -1,5 +1,7 @@
 "use client";
 
+import { cn } from "@/lib/utils";
+
 import { TYPE_PILL_COLORS } from "@/components/team-builder/type-colors";
 
 // =============================================================================
@@ -28,7 +30,7 @@ export function TypeDot({ t, size = 10 }: TypeDotProps) {
       role="img"
       aria-label={t}
       style={{ width: size, height: size }}
-      className={`inline-block shrink-0 rounded-full ${bgClass}`}
+      className={cn("inline-block shrink-0 rounded-full", bgClass)}
     />
   );
 }

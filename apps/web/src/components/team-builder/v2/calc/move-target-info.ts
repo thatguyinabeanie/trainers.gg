@@ -21,8 +21,12 @@ export interface MoveTargetInfo {
 
 // ---------------------------------------------------------------------------
 // Known spread move sets
-// Sourced from the same list used in calc-results-block.tsx to keep them
-// consistent.  All-others moves hit the whole field (both foes + ally).
+// All-foes moves hit both opposing slots.
+// All-others moves hit every slot except the user (both foes + ally).
+//
+// NOTE: Single-target moves with non-standard targets (e.g. Pollen Puff, which
+// targets an ally; Tera Blast, which targets a single foe) must NOT be listed
+// here — they are single-target and never receive the spread −25% penalty.
 // ---------------------------------------------------------------------------
 
 /** Hits both opponents. −25% damage when 2 foes alive. */
@@ -60,11 +64,12 @@ const ALL_FOES_MOVES = new Set([
   "Overdrive",
 ]);
 
-/** Hits both opponents AND the ally. −25% when ≥2 targets alive. */
-const ALL_OTHERS_MOVES = new Set([
-  "Pollen Puff",
-  "Tera Blast", // conservative inclusion from the original list
-]);
+/**
+ * Hits both opponents AND the ally. −25% when ≥2 targets alive.
+ * Examples: Flower Shield, Lava Plume (field).
+ * Do NOT add single-target moves here even if they have unusual targets.
+ */
+const ALL_OTHERS_MOVES = new Set<string>();
 
 /** Self-targeting moves (no offensive application). */
 const SELF_MOVES = new Set([

@@ -403,14 +403,28 @@ export function SpeedTiersPanel({
     );
   }
 
-  const pokemons = team
-    .slice()
-    .sort((a, b) => a.team_position - b.team_position)
-    .map((tp) => tp.pokemon)
-    .filter((p): p is Tables<"pokemon"> => p !== null && p !== undefined);
+  // Build a stable 6-slot array keyed by team_position so that activeIdx
+  // (the 0-5 slot index from the workspace) maps to the correct pokemon even
+  // when earlier slots are empty. This mirrors the buildSlots pattern used in
+  // team-workspace-v2.tsx.
+  const slots: (Tables<"pokemon"> | null)[] = Array.from(
+    { length: 6 },
+    () => null
+  );
+  for (const tp of team) {
+    const idx = tp.team_position - 1;
+    if (idx >= 0 && idx < 6 && tp.pokemon) {
+      slots[idx] = tp.pokemon;
+    }
+  }
 
-  // The "selected" pokemon is derived from activeIdx into the sorted pokemon list
-  const selectedPokemon = pokemons[activeIdx] ?? pokemons[0] ?? null;
+  // Derive selected from the slot-indexed array so activeIdx is always correct.
+  const selectedPokemon = slots[activeIdx] ?? null;
+
+  // Filter to non-null for iteration (slots may have gaps).
+  const pokemons = slots.filter(
+    (p): p is Tables<"pokemon"> => p !== null
+  );
 
   const teamScored: ScoredMon[] = pokemons.map((p) =>
     teamMonToScored(p, format, toggle, p.id === selectedPokemon?.id)

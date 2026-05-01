@@ -81,7 +81,8 @@ export const QUIRK_MOVES: Record<
   | { kind: "flying-press" }
   | { kind: "thousand-arrows" }
 > = {
-  "freeze dry": { kind: "freeze-dry" },
+  // Keys must match move.toLowerCase() — Showdown display names use hyphens and spaces.
+  "freeze-dry": { kind: "freeze-dry" },
   "flying press": { kind: "flying-press" },
   "thousand arrows": { kind: "thousand-arrows" },
 };
@@ -171,16 +172,21 @@ export function effectiveOffensiveMult(opts: {
   }
 
   // ---- Quirk: thousand-arrows ------------------------------------------------
+  // Thousand Arrows hits Flying-types at ×1 (ignores their Ground immunity).
+  // For a pure Flying defender, Ground vs Flying is normally immune (×0), but
+  // Thousand Arrows forces a neutral hit regardless. For dual-typed defenders
+  // that include Flying, the Ground immunity is stripped and the remaining
+  // type(s) determine the multiplier — but the result is always ≥1 because
+  // Thousand Arrows can never be resisted by the Flying type itself.
   const quirkTA = QUIRK_MOVES[moveLower];
   if (quirkTA?.kind === "thousand-arrows") {
     const hasFlying = defenderTypes.includes("Flying");
     if (hasFlying) {
       const nonFlyingTypes = defenderTypes.filter((t) => t !== "Flying");
-      const groundMult =
-        nonFlyingTypes.length > 0
-          ? getTypeEffectiveness("Ground", nonFlyingTypes)
-          : 1;
-      return Math.max(groundMult, 1);
+      // Pure Flying: neutral (1×). Mixed: compute Ground vs remaining types.
+      return nonFlyingTypes.length > 0
+        ? getTypeEffectiveness("Ground", nonFlyingTypes)
+        : 1;
     }
     return getTypeEffectiveness("Ground", defenderTypes);
   }

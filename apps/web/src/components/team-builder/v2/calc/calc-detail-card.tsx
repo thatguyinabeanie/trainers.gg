@@ -62,24 +62,17 @@ interface CalcDetailCardProps {
 function applyOverrides(
   output: CalcOutput,
   opts: { crit: boolean; screen: boolean; spreadApplied: boolean }
-): { minPct: number; maxPct: number } {
-  let min = output.minPercent;
-  let max = output.maxPercent;
+): { minPct: number; maxPct: number; factor: number } {
+  const factor =
+    (opts.crit ? 1.5 : 1) *
+    (opts.screen ? 0.5 : 1) *
+    (opts.spreadApplied ? 0.75 : 1);
 
-  if (opts.crit) {
-    min *= 1.5;
-    max *= 1.5;
-  }
-  if (opts.screen) {
-    min *= 0.5;
-    max *= 0.5;
-  }
-  if (opts.spreadApplied) {
-    min *= 0.75;
-    max *= 0.75;
-  }
-
-  return { minPct: min, maxPct: max };
+  return {
+    minPct: output.minPercent * factor,
+    maxPct: output.maxPercent * factor,
+    factor,
+  };
 }
 
 // =============================================================================
@@ -127,7 +120,7 @@ export function CalcDetailCard({
       : // all-others: 2 targets when ally is alive, or still 2 foes
         localFoesAlive >= 2 || localAllyAlive);
 
-  const { minPct, maxPct } = applyOverrides(baseOutput, {
+  const { minPct, maxPct, factor } = applyOverrides(baseOutput, {
     crit,
     screen,
     spreadApplied,
@@ -144,10 +137,13 @@ export function CalcDetailCard({
 
   const eff = getMoveEffectiveness(moveName, defender.species, weather);
 
-  // Raw damage range from rolls
+  // Raw damage range from rolls — scaled by the same override factor used
+  // for the percentages so the two readouts stay consistent.
   const rolls = baseOutput.rolls;
-  const dmgMin = rolls.length > 0 ? (rolls[0] ?? 0) : 0;
-  const dmgMax = rolls.length > 0 ? (rolls[rolls.length - 1] ?? 0) : 0;
+  const rawMin = rolls.length > 0 ? (rolls[0] ?? 0) : 0;
+  const rawMax = rolls.length > 0 ? (rolls[rolls.length - 1] ?? 0) : 0;
+  const dmgMin = Math.round(rawMin * factor);
+  const dmgMax = Math.round(rawMax * factor);
   const defHp = baseOutput.defenderMaxHP;
 
   // KO tier styling

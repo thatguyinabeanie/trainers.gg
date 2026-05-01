@@ -132,7 +132,7 @@ describe("effectiveOffensiveMult — Freeze-Dry", () => {
   it("Freeze-Dry vs pure Water = 2× (forced super-effective)", () => {
     expect(
       effectiveOffensiveMult({
-        move: "freeze dry",
+        move: "Freeze-Dry",
         defenderTypes: ["Water"],
       })
     ).toBe(2);
@@ -142,7 +142,7 @@ describe("effectiveOffensiveMult — Freeze-Dry", () => {
     // Ice is 2× vs Grass — no water quirk applies
     expect(
       effectiveOffensiveMult({
-        move: "freeze dry",
+        move: "Freeze-Dry",
         defenderTypes: ["Grass"],
       })
     ).toBe(2);
@@ -152,7 +152,7 @@ describe("effectiveOffensiveMult — Freeze-Dry", () => {
     // Water forced to ×2; Ground is also Ice super-effective (2×); result = 2 × 2 = 4
     expect(
       effectiveOffensiveMult({
-        move: "freeze dry",
+        move: "Freeze-Dry",
         defenderTypes: ["Water", "Ground"],
       })
     ).toBe(4);
@@ -162,7 +162,7 @@ describe("effectiveOffensiveMult — Freeze-Dry", () => {
     // Water forced to ×2; Grass is also Ice super-effective (2×); result = 2 × 2 = 4
     expect(
       effectiveOffensiveMult({
-        move: "freeze dry",
+        move: "Freeze-Dry",
         defenderTypes: ["Water", "Grass"],
       })
     ).toBe(4);
@@ -171,7 +171,7 @@ describe("effectiveOffensiveMult — Freeze-Dry", () => {
   it("Freeze-Dry vs pure Ice = 0.5× (standard Ice vs Ice, no water bonus)", () => {
     expect(
       effectiveOffensiveMult({
-        move: "freeze dry",
+        move: "Freeze-Dry",
         defenderTypes: ["Ice"],
       })
     ).toBe(0.5);

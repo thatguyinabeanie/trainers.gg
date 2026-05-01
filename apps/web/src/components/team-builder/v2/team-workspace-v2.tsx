@@ -207,6 +207,9 @@ export function TeamWorkspaceV2({
       const result = await updatePokemonAction(team.id, pokemonId, fields);
       if (!result.success) {
         toast.error(result.error ?? "Failed to save changes.");
+        // Refresh to revert the optimistic patch — the server rejected the change
+        // so the UI must roll back to the last known server state.
+        router.refresh();
         return;
       }
       router.refresh();

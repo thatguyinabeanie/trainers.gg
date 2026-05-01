@@ -5,6 +5,8 @@ import Image from "next/image";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type PokemonType } from "@trainers/pokemon";
 
+import { cn } from "@/lib/utils";
+
 // =============================================================================
 // Sprite
 // =============================================================================
@@ -67,7 +69,7 @@ export function Sprite({ species, size = 128, types }: SpriteProps) {
         alt={species}
         width={sprite.w}
         height={sprite.h}
-        className={`object-contain ${sprite.pixelated ? "image-rendering-pixelated" : ""}`}
+        className={cn("object-contain", sprite.pixelated && "image-rendering-pixelated")}
         style={{ width: size * 0.85, height: size * 0.85 }}
         unoptimized
       />

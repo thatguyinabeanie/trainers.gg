@@ -4,6 +4,9 @@ import { useState } from "react";
 
 import { PickerShell } from "./picker-shell";
 
+// Symbol sentinel so the first render always syncs even when value === 0.
+const UNINITIALIZED = Symbol();
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -44,6 +47,17 @@ export function NumberPicker({
   onClose,
 }: NumberPickerProps) {
   const [local, setLocal] = useState(value);
+
+  // Render-time sync: when the parent clamps or updates `value` externally,
+  // reset `local` to match. The Symbol sentinel ensures this fires on the
+  // first render even when value === 0. (react-patterns.md §State Resets)
+  const [prevValue, setPrevValue] = useState<number | typeof UNINITIALIZED>(
+    UNINITIALIZED
+  );
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setLocal(value);
+  }
 
   function clampAndEmit(raw: number) {
     if (Number.isNaN(raw)) return;
