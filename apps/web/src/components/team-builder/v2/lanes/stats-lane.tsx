@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   calculateHP,
@@ -86,6 +86,9 @@ function getStatBudget(isChampions: boolean): StatBudget {
     label: "EV",
   };
 }
+
+const DRAFT_DEBOUNCE_MS = 400;
+const UNINITIALIZED = Symbol();
 
 // =============================================================================
 // Types
@@ -392,6 +395,21 @@ function StatRow({
   const remainingForThisStat = Math.max(0, budget.total - otherStatsInvestment);
   const investBudget = Math.min(budget.perStat, remainingForThisStat);
 
+  // --- EV draft + debounced commit ---
+  // Slider/keyboard updates the local draft synchronously for snappy UI;
+  // a 400ms debounced effect commits the latest value via onUpdate.
+  // The Symbol-sentinel prevEv reset clears the draft when the prop catches
+  // up (parent's optimistic patch landed), avoiding a flicker.
+  const [draftEv, setDraftEv] = useState<number | null>(null);
+  const [prevEv, setPrevEv] = useState<number | typeof UNINITIALIZED>(
+    UNINITIALIZED
+  );
+  if (ev !== prevEv) {
+    setPrevEv(ev);
+    setDraftEv(null);
+  }
+  const displayEv = draftEv ?? ev;
+
   // --- Breakpoint ticks (only for +nature stat) ---
   const breakpoints = isNatureBoosted
     ? findStatBreakpoints({
@@ -412,14 +430,14 @@ function StatRow({
     : [];
 
   // The first breakpoint strictly above the current EV is the "next" target
-  const nextBpEv = breakpoints.find((bp) => bp > ev);
+  const nextBpEv = breakpoints.find((bp) => bp > displayEv);
 
   // --- Label color: always the stat-key color; nature is shown only via the
   //                  ▲/▽ chevron next to the label, not by recoloring it. ---
   const labelTextClass = statColorClass;
 
   // --- Input display value ---
-  const inputDisplay = buildInputDisplay(ev, isNatureBoosted, isNatureReduced);
+  const inputDisplay = buildInputDisplay(displayEv, isNatureBoosted, isNatureReduced);
 
   // --- Edit buffer: while focused, show what the user is typing instead of
   //                  the derived display, so the controlled value doesn't
@@ -427,12 +445,25 @@ function StatRow({
   const [inputBuffer, setInputBuffer] = useState<string | null>(null);
   const displayValue = inputBuffer ?? inputDisplay;
 
+  useEffect(() => {
+    if (draftEv === null) return;
+    const timer = setTimeout(() => {
+      onUpdate({ [evFieldKey]: draftEv });
+    }, DRAFT_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [draftEv, evFieldKey, onUpdate]);
+
+  function flushEvDraft() {
+    if (draftEv === null) return;
+    onUpdate({ [evFieldKey]: draftEv });
+  }
+
   // --- Handle slider change ---
   function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = Number(e.target.value);
     const clamped = Math.min(raw, investBudget);
     const snapped = Math.round(clamped / budget.step) * budget.step;
-    onUpdate({ [evFieldKey]: snapped });
+    setDraftEv(snapped);
   }
 
   // --- Handle text input change (just buffer the typed string) ---
@@ -548,12 +579,14 @@ function StatRow({
           min={0}
           max={budget.perStat}
           step={budget.step}
-          value={ev}
+          value={displayEv}
           onChange={handleSliderChange}
+          onPointerUp={flushEvDraft}
+          onKeyUp={flushEvDraft}
           aria-label={`${label} slider`}
           aria-valuemin={0}
           aria-valuemax={budget.perStat}
-          aria-valuenow={ev}
+          aria-valuenow={displayEv}
           className={s.spreadSlider}
         />
 
@@ -577,6 +610,60 @@ function StatRow({
       {/* Col 6: Final stat, mono bold */}
       <span className={s.spreadFinal}>{finalStat}</span>
     </div>
+  );
+}
+
+// =============================================================================
+// IV input
+// =============================================================================
+
+interface IvInputProps {
+  statKey: StatKey;
+  iv: number;
+  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+}
+
+function IvInput({ statKey, iv, onUpdate }: IvInputProps) {
+  const [draftIv, setDraftIv] = useState<number | null>(null);
+  const [prevIv, setPrevIv] = useState<number | typeof UNINITIALIZED>(
+    UNINITIALIZED
+  );
+  if (iv !== prevIv) {
+    setPrevIv(iv);
+    setDraftIv(null);
+  }
+  const displayIv = draftIv ?? iv;
+
+  useEffect(() => {
+    if (draftIv === null) return;
+    const timer = setTimeout(() => {
+      onUpdate({ [IV_FIELD[statKey]]: draftIv });
+    }, DRAFT_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [draftIv, statKey, onUpdate]);
+
+  function flush() {
+    if (draftIv === null) return;
+    onUpdate({ [IV_FIELD[statKey]]: draftIv });
+  }
+
+  return (
+    <input
+      type="number"
+      min={0}
+      max={31}
+      value={displayIv}
+      onChange={(e) => {
+        const v = Math.max(0, Math.min(31, Number(e.target.value)));
+        setDraftIv(v);
+      }}
+      onBlur={flush}
+      className={cn(
+        "bg-background focus:ring-primary w-10 rounded border px-1 py-0.5 text-center font-mono text-xs outline-none focus:ring-1",
+        displayIv !== 31 &&
+          "border-amber-400/60 text-amber-600 dark:text-amber-400"
+      )}
+    />
   );
 }
 
@@ -742,23 +829,10 @@ export function StatsLane({
                   <span className="text-muted-foreground w-7 font-mono text-[9px] font-medium uppercase">
                     {STAT_LABELS[statKey]}
                   </span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={31}
-                    value={ivs[statKey]}
-                    onChange={(e) => {
-                      const v = Math.max(
-                        0,
-                        Math.min(31, Number(e.target.value))
-                      );
-                      onUpdate({ [IV_FIELD[statKey]]: v });
-                    }}
-                    className={cn(
-                      "bg-background focus:ring-primary w-10 rounded border px-1 py-0.5 text-center font-mono text-xs outline-none focus:ring-1",
-                      ivs[statKey] !== 31 &&
-                        "border-amber-400/60 text-amber-600 dark:text-amber-400"
-                    )}
+                  <IvInput
+                    statKey={statKey}
+                    iv={ivs[statKey]}
+                    onUpdate={onUpdate}
                   />
                 </label>
               ))}
