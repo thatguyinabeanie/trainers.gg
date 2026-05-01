@@ -106,6 +106,7 @@ export {
   tournamentNameSchema,
   tournamentDescriptionSchema,
   tournamentSlugSchema,
+  tournamentStatusSchema,
   createTournamentSchema,
   updateTournamentSchema,
   dropCategorySchema,

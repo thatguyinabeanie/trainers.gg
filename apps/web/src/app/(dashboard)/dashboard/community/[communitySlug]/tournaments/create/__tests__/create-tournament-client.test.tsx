@@ -171,7 +171,7 @@ describe("CreateTournamentClient", () => {
 
   // ── Not authenticated ────────────────────────────────────────────────────────
 
-  it("redirects to sign-in when user is not authenticated", () => {
+  it("renders empty DOM and does not push to /sign-in when currentUser is null", () => {
     const mockPush = jest.fn();
     (useRouter as jest.Mock).mockReturnValue({
       push: mockPush,
@@ -186,9 +186,40 @@ describe("CreateTournamentClient", () => {
       isLoading: false,
     });
 
+    // The parent server layout enforces auth; this client renders null
+    // instead of pushing to /sign-in (which used to race with the loading
+    // state and bounce real users to /dashboard).
+    const { container } = render(
+      <CreateTournamentClient communitySlug="test-org" />
+    );
+
+    expect(container).toBeEmptyDOMElement();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("renders an error card when useCurrentUser surfaces an error", () => {
+    const mockRefresh = jest.fn();
+    (useRouter as jest.Mock).mockReturnValue({
+      push: jest.fn(),
+      replace: jest.fn(),
+      refresh: mockRefresh,
+    });
+    (useCurrentUser as jest.Mock).mockReturnValue({
+      user: undefined,
+      isLoading: false,
+      error: new Error("PostgrestError: rls denied"),
+    });
+    (useSupabaseQuery as jest.Mock).mockReturnValue({
+      data: mockOrganization,
+      isLoading: false,
+    });
+
     render(<CreateTournamentClient communitySlug="test-org" />);
 
-    expect(mockPush).toHaveBeenCalledWith("/sign-in");
+    expect(
+      screen.getByText(/couldn['’]t load your account/i)
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
   });
 
   // ── Permission denied ────────────────────────────────────────────────────────

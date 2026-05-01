@@ -1,4 +1,5 @@
 import type { TypedClient } from "../client";
+import type { Tables } from "../types";
 import { escapeLike } from "@trainers/utils";
 
 /**
@@ -14,7 +15,14 @@ export async function getUserCount(supabase: TypedClient) {
 }
 
 /**
- * Get current authenticated user with alt
+ * Get current authenticated user with their main alt.
+ *
+ * Users can have multiple alts; we resolve the "main" one via
+ * `users.main_alt_id`. If that points to a missing row (deleted alt) or is
+ * null (brand-new account), we fall back to the user's oldest alt by
+ * `created_at`. Returns `null` on any database error so callers can treat
+ * "user unavailable" uniformly with "not signed in" — matches the rest of
+ * this file (`getUserById`, `getUserSpritePreference`, etc.).
  */
 export async function getCurrentUser(supabase: TypedClient) {
   const {
@@ -23,16 +31,57 @@ export async function getCurrentUser(supabase: TypedClient) {
 
   if (!authUser) return null;
 
-  // Fetch user record and main alt in parallel — both only need authUser.id
-  const [userResult, altResult] = await Promise.all([
-    supabase.from("users").select("*").eq("id", authUser.id).single(),
-    supabase.from("alts").select("*").eq("user_id", authUser.id).maybeSingle(),
-  ]);
+  const { data: user, error: userError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", authUser.id)
+    .single();
 
-  if (userResult.error || !userResult.data) return null;
-  if (altResult.error) throw altResult.error;
-  const user = userResult.data;
-  const alt = altResult.data;
+  if (userError || !user) return null;
+
+  let alt: Tables<"alts"> | null = null;
+  if (user.main_alt_id != null) {
+    // Constrain by `user_id` as well: the `alts` table is publicly readable
+    // (RLS USING (true)), so a corrupted/malicious `main_alt_id` pointing at
+    // another user's alt would otherwise be returned here as the current
+    // user's main. The extra `.eq` makes the lookup return null in that case
+    // and trigger the fallback path below.
+    const { data, error } = await supabase
+      .from("alts")
+      .select("*")
+      .eq("id", user.main_alt_id)
+      .eq("user_id", authUser.id)
+      .maybeSingle();
+    if (error) {
+      console.error("[getCurrentUser] main_alt_id lookup failed", {
+        userId: authUser.id,
+        mainAltId: user.main_alt_id,
+        error,
+      });
+      return null;
+    }
+    alt = data;
+  }
+
+  // Fallback to the oldest alt when main_alt_id is null OR the referenced row
+  // is missing (e.g., the alt was deleted but main_alt_id wasn't cleared).
+  if (!alt) {
+    const { data, error } = await supabase
+      .from("alts")
+      .select("*")
+      .eq("user_id", authUser.id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.error("[getCurrentUser] fallback alt lookup failed", {
+        userId: authUser.id,
+        error,
+      });
+      return null;
+    }
+    alt = data;
+  }
 
   return {
     id: user.id,

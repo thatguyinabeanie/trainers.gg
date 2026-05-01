@@ -198,9 +198,10 @@ export function OverviewClient({
         ) : (
           <div className="flex gap-3">
             {upcomingTournaments.map((t) => (
-              <div
+              <Link
                 key={t.id}
-                className="bg-muted border-primary flex-1 rounded-lg border-l-[3px] p-3"
+                href={`/dashboard/community/${communitySlug}/tournaments/${t.slug}/manage`}
+                className="bg-muted border-primary hover:bg-muted/70 focus-visible:ring-ring flex-1 rounded-lg border-l-[3px] p-3 transition-colors focus-visible:ring-2 focus-visible:outline-none"
               >
                 <p className="text-sm font-semibold">{t.name}</p>
                 <p className="text-muted-foreground mt-1 text-xs">
@@ -215,7 +216,7 @@ export function OverviewClient({
                     }}
                   />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

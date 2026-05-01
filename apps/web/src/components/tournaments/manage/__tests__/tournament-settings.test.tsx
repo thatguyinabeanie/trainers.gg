@@ -21,23 +21,14 @@ jest.mock("next/navigation", () => ({
   }),
 }));
 
-const mockUpdateTournamentMutateAsync = jest.fn();
-const mockDeleteTournamentMutateAsync = jest.fn();
-
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseMutation: jest.fn((fn: unknown) => {
-    // Distinguish between updateTournament and deleteTournament based on call order
-    // The component creates two mutations — the first is update, the second is delete
-    const fnStr = String(fn);
-    if (fnStr.includes("delete") || fnStr.includes("Delete")) {
-      return { mutateAsync: mockDeleteTournamentMutateAsync };
-    }
-    return { mutateAsync: mockUpdateTournamentMutateAsync };
-  }),
-}));
-
 jest.mock("@/actions/tournaments", () => ({
   saveTournamentPhasesAction: jest.fn().mockResolvedValue({ success: true }),
+  updateTournament: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: { success: true } }),
+  deleteTournament: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: { success: true } }),
 }));
 
 jest.mock("sonner", () => ({
@@ -152,8 +143,20 @@ function buildPhase(overrides: Partial<Phase> = {}): Phase {
 describe("TournamentSettings", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset window.confirm for delete tests
-    window.confirm = jest.fn(() => true);
+    const actions = jest.requireMock("@/actions/tournaments") as {
+      saveTournamentPhasesAction: jest.Mock;
+      updateTournament: jest.Mock;
+      deleteTournament: jest.Mock;
+    };
+    actions.saveTournamentPhasesAction.mockResolvedValue({ success: true });
+    actions.updateTournament.mockResolvedValue({
+      success: true,
+      data: { success: true },
+    });
+    actions.deleteTournament.mockResolvedValue({
+      success: true,
+      data: { success: true },
+    });
   });
 
   describe("status-dependent UI", () => {
@@ -538,6 +541,23 @@ describe("TournamentSettings", () => {
       ).not.toBeInTheDocument();
     });
 
+    it.each([0, -1])(
+      "treats max_participants=%i as uncapped (matches the DB's NULL OR <= 0 convention)",
+      (value) => {
+        render(
+          <TournamentSettings
+            tournament={buildTournament({ max_participants: value })}
+          />
+        );
+        // Toggle is off, input is hidden — never "cap enabled with 0" because
+        // the user can't save it (validateForSave rejects < 4) and they
+        // shouldn't be stuck.
+        expect(
+          screen.queryByLabelText("Maximum Players")
+        ).not.toBeInTheDocument();
+      }
+    );
+
     it("shows late check-in max round input when allowLateRegistration is true", () => {
       render(
         <TournamentSettings
@@ -565,12 +585,41 @@ describe("TournamentSettings", () => {
   // ── handleSave ───────────────────────────────────────────────────────────────
 
   describe("handleSave", () => {
-    it("calls updateTournamentMutation and saveTournamentPhasesAction on save", async () => {
-      const { saveTournamentPhasesAction } = jest.requireMock(
+    it("calls updateTournament action and saveTournamentPhasesAction on save", async () => {
+      const { saveTournamentPhasesAction, updateTournament } = jest.requireMock(
         "@/actions/tournaments"
-      ) as { saveTournamentPhasesAction: jest.Mock };
-      mockUpdateTournamentMutateAsync.mockResolvedValue(undefined);
-      saveTournamentPhasesAction.mockResolvedValue({ success: true });
+      ) as {
+        saveTournamentPhasesAction: jest.Mock;
+        updateTournament: jest.Mock;
+      };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings tournament={buildTournament({ status: "draft" })} />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      // Type a name change so the diff isn't empty (otherwise the action is
+      // skipped — that's the silent-overwrite fix).
+      const nameInput = screen.getByLabelText("Tournament Name");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Renamed");
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ name: "Renamed" })
+      );
+      expect(saveTournamentPhasesAction).toHaveBeenCalled();
+    });
+
+    it("skips updateTournament action when no fields changed", async () => {
+      const { updateTournament, saveTournamentPhasesAction } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as {
+        updateTournament: jest.Mock;
+        saveTournamentPhasesAction: jest.Mock;
+      };
 
       const user = userEvent.setup();
       render(
@@ -580,9 +629,8 @@ describe("TournamentSettings", () => {
       await user.click(screen.getByRole("button", { name: /edit settings/i }));
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
-      expect(mockUpdateTournamentMutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({ tournamentId: 1 })
-      );
+      expect(updateTournament).not.toHaveBeenCalled();
+      // Phases save still runs since phases editor manages its own state
       expect(saveTournamentPhasesAction).toHaveBeenCalled();
     });
 
@@ -593,8 +641,6 @@ describe("TournamentSettings", () => {
       const { saveTournamentPhasesAction } = jest.requireMock(
         "@/actions/tournaments"
       ) as { saveTournamentPhasesAction: jest.Mock };
-
-      mockUpdateTournamentMutateAsync.mockResolvedValue(undefined);
       saveTournamentPhasesAction.mockResolvedValue({
         success: false,
         error: "Phase save failed",
@@ -614,13 +660,17 @@ describe("TournamentSettings", () => {
       );
     });
 
-    it("shows error toast when updateTournamentMutation throws", async () => {
+    it("shows error toast when updateTournament action returns failure", async () => {
       const { toast } = jest.requireMock("sonner") as {
         toast: { success: jest.Mock; error: jest.Mock };
       };
-      mockUpdateTournamentMutateAsync.mockRejectedValue(
-        new Error("Network error")
-      );
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+      updateTournament.mockResolvedValue({
+        success: false,
+        error: "Network error",
+      });
 
       const user = userEvent.setup();
       render(
@@ -628,6 +678,9 @@ describe("TournamentSettings", () => {
       );
 
       await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput = screen.getByLabelText("Tournament Name");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Renamed");
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
       expect(toast.error).toHaveBeenCalledWith(
@@ -640,9 +693,30 @@ describe("TournamentSettings", () => {
   // ── handleDelete ─────────────────────────────────────────────────────────────
 
   describe("handleDelete", () => {
-    it("calls deleteTournamentMutation when user confirms deletion", async () => {
-      mockDeleteTournamentMutateAsync.mockResolvedValue(undefined);
-      // window.confirm is already mocked to return true in beforeEach
+    it("calls deleteTournament action when user confirms via AlertDialog", async () => {
+      const { deleteTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { deleteTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings tournament={buildTournament({ status: "draft" })} />
+      );
+
+      // Open the AlertDialog
+      await user.click(
+        screen.getByRole("button", { name: /delete tournament/i })
+      );
+      // Confirm via the dialog's "Delete" action button
+      await user.click(screen.getByRole("button", { name: /^delete$/i }));
+
+      expect(deleteTournament).toHaveBeenCalledWith(1);
+    });
+
+    it("does NOT call deleteTournament action when user clicks Cancel in dialog", async () => {
+      const { deleteTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { deleteTournament: jest.Mock };
 
       const user = userEvent.setup();
       render(
@@ -652,34 +726,22 @@ describe("TournamentSettings", () => {
       await user.click(
         screen.getByRole("button", { name: /delete tournament/i })
       );
+      await user.click(screen.getByRole("button", { name: /^cancel$/i }));
 
-      expect(mockDeleteTournamentMutateAsync).toHaveBeenCalledWith({
-        tournamentId: 1,
-      });
+      expect(deleteTournament).not.toHaveBeenCalled();
     });
 
-    it("does NOT call deleteTournamentMutation when user cancels confirmation", async () => {
-      window.confirm = jest.fn(() => false);
-
-      const user = userEvent.setup();
-      render(
-        <TournamentSettings tournament={buildTournament({ status: "draft" })} />
-      );
-
-      await user.click(
-        screen.getByRole("button", { name: /delete tournament/i })
-      );
-
-      expect(mockDeleteTournamentMutateAsync).not.toHaveBeenCalled();
-    });
-
-    it("shows error toast when deleteTournamentMutation throws", async () => {
+    it("shows error toast when deleteTournament action returns failure", async () => {
       const { toast } = jest.requireMock("sonner") as {
         toast: { success: jest.Mock; error: jest.Mock };
       };
-      mockDeleteTournamentMutateAsync.mockRejectedValue(
-        new Error("Delete failed")
-      );
+      const { deleteTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { deleteTournament: jest.Mock };
+      deleteTournament.mockResolvedValue({
+        success: false,
+        error: "Delete failed",
+      });
 
       const user = userEvent.setup();
       render(
@@ -689,6 +751,7 @@ describe("TournamentSettings", () => {
       await user.click(
         screen.getByRole("button", { name: /delete tournament/i })
       );
+      await user.click(screen.getByRole("button", { name: /^delete$/i }));
 
       expect(toast.error).toHaveBeenCalledWith(
         "Error deleting tournament",
@@ -704,9 +767,6 @@ describe("TournamentSettings", () => {
       const { saveTournamentPhasesAction } = jest.requireMock(
         "@/actions/tournaments"
       ) as { saveTournamentPhasesAction: jest.Mock };
-
-      mockUpdateTournamentMutateAsync.mockResolvedValue(undefined);
-      saveTournamentPhasesAction.mockResolvedValue({ success: true });
 
       const phases = [
         buildPhase({ id: 5, name: "Swiss Rounds", status: "pending" }),
@@ -727,6 +787,286 @@ describe("TournamentSettings", () => {
       // Second arg is the converted phases array
       const convertedPhases = callArgs[1] as Array<{ id?: number }>;
       expect(convertedPhases[0]?.id).toBe(5);
+    });
+  });
+
+  // ── buildUpdatePayload — diff guards null DB columns ────────────────────────
+  // These tests pin down the silent-overwrite fix. The form falls back to UI
+  // defaults ("sv"/"reg-i") when DB columns are null, so saving must skip
+  // those fields unless the user actually edited them.
+
+  describe("buildUpdatePayload — null DB columns", () => {
+    it("does not send game/gameFormat when DB values are null and user did not edit", async () => {
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({
+            status: "draft",
+            game: null,
+            game_format: null,
+            platform: null,
+            battle_format: null,
+          })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      // Saved snapshot equals live form (both default to "sv"/"reg-i") so
+      // the diff is empty — no overwrite.
+      expect(updateTournament).not.toHaveBeenCalled();
+    });
+
+    it("sends only the edited field when one game setting changes from a non-null value", async () => {
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", name: "Old Name" })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput = screen.getByLabelText("Tournament Name");
+      await user.clear(nameInput);
+      await user.type(nameInput, "New Name");
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).toHaveBeenCalledTimes(1);
+      const [, updates] = updateTournament.mock.calls[0] ?? [];
+      expect(updates).toEqual({ name: "New Name" });
+    });
+
+    it("sends lateCheckInMaxRound: null when allowLateRegistration is toggled off", async () => {
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({
+            status: "draft",
+            allow_late_registration: true,
+            late_check_in_max_round: 3,
+          })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      // Use getByLabelText since Base UI's Switch derives its accessible name
+      // from htmlFor/id, not aria-label.
+      await user.click(screen.getByLabelText("Late Registration"));
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).toHaveBeenCalledTimes(1);
+      const [, updates] = updateTournament.mock.calls[0] ?? [];
+      expect(updates).toMatchObject({
+        allowLateRegistration: false,
+        lateCheckInMaxRound: null,
+      });
+    });
+
+    it("sends maxParticipants: null when player cap is toggled off", async () => {
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", max_participants: 64 })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      await user.click(screen.getByLabelText("Player Cap"));
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).toHaveBeenCalledTimes(1);
+      const [, updates] = updateTournament.mock.calls[0] ?? [];
+      expect(updates).toMatchObject({ maxParticipants: null });
+    });
+  });
+
+  // ── Save-time validation ────────────────────────────────────────────────────
+  // Without these guards, invalid input (empty name, NaN cap) would silently
+  // persist as empty/null with a "saved successfully" toast.
+
+  describe("validateForSave", () => {
+    it("blocks save and toasts when tournament name is cleared", async () => {
+      const { toast } = jest.requireMock("sonner") as {
+        toast: { success: jest.Mock; error: jest.Mock };
+      };
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings tournament={buildTournament({ status: "draft" })} />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput = screen.getByLabelText("Tournament Name");
+      await user.clear(nameInput);
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith(
+        "Invalid settings",
+        expect.objectContaining({
+          description: expect.stringContaining("required"),
+        })
+      );
+    });
+
+    it("blocks save when player cap is enabled but input is empty", async () => {
+      const { toast } = jest.requireMock("sonner") as {
+        toast: { success: jest.Mock; error: jest.Mock };
+      };
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", max_participants: 32 })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const capInput = screen.getByLabelText("Maximum Players");
+      await user.clear(capInput);
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith(
+        "Invalid settings",
+        expect.objectContaining({
+          description: expect.stringMatching(/player cap/i),
+        })
+      );
+    });
+
+    it("rejects a decimal player cap instead of silently truncating it", async () => {
+      // `parseInt("32.5", 10)` would return 32 — a silent value mutation.
+      // The strict-int validator must reject the decimal so the user is
+      // forced to enter a whole number.
+      const { toast } = jest.requireMock("sonner") as {
+        toast: { success: jest.Mock; error: jest.Mock };
+      };
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", max_participants: 32 })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const capInput = screen.getByLabelText("Maximum Players");
+      await user.clear(capInput);
+      await user.type(capInput, "32.5");
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith(
+        "Invalid settings",
+        expect.objectContaining({
+          description: expect.stringMatching(/whole number/i),
+        })
+      );
+    });
+  });
+
+  // ── Saved-snapshot reset ────────────────────────────────────────────────────
+  // The PR's headline UX fix: cancel after a save reverts to the *just-saved*
+  // values, not the initial mount values (since useSupabaseQuery doesn't
+  // refetch on router.refresh).
+
+  describe("saved-snapshot reset across sequential edits", () => {
+    it("cancel after a second edit reverts to the just-saved name, not the original", async () => {
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", name: "Original" })}
+        />
+      );
+
+      // First edit cycle: rename and save
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput = screen.getByLabelText("Tournament Name");
+      await user.clear(nameInput);
+      await user.type(nameInput, "First Save");
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+      expect(updateTournament).toHaveBeenCalledTimes(1);
+
+      // Second edit cycle: rename again, then cancel
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput2 = screen.getByLabelText("Tournament Name");
+      expect(nameInput2).toHaveValue("First Save");
+      await user.clear(nameInput2);
+      await user.type(nameInput2, "Second Edit");
+      await user.click(screen.getByRole("button", { name: /cancel/i }));
+
+      // Re-enter edit mode to verify the cancel reverted to "First Save",
+      // not "Original" (the prop value at mount).
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput3 = screen.getByLabelText("Tournament Name");
+      expect(nameInput3).toHaveValue("First Save");
+    });
+
+    it("advances saved snapshot after tournament fields persist even if phases fail", async () => {
+      // Partial-success: the tournament update succeeds, but phases save
+      // returns an error. Without the snapshot advance, a follow-up cancel
+      // would revert to pre-save values, contradicting the DB.
+      const { updateTournament, saveTournamentPhasesAction } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as {
+        updateTournament: jest.Mock;
+        saveTournamentPhasesAction: jest.Mock;
+      };
+      saveTournamentPhasesAction.mockResolvedValue({
+        success: false,
+        error: "Phase save failed",
+      });
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", name: "Original" })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput = screen.getByLabelText("Tournament Name");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Persisted");
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+      expect(updateTournament).toHaveBeenCalledTimes(1);
+
+      // Phases failed → editing mode stays open, but snapshot advanced.
+      // Cancel here should revert to the just-persisted "Persisted" name.
+      await user.click(screen.getByRole("button", { name: /cancel/i }));
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      expect(screen.getByLabelText("Tournament Name")).toHaveValue("Persisted");
     });
   });
 });

@@ -133,6 +133,11 @@ jest.mock("@/lib/cache-invalidation", () => ({
     mockUpdateTag("dashboard-stats");
     mockUpdateTag("dashboard-ratings");
   },
+  invalidateCommunityPageCaches: (slug?: string, id?: number) => {
+    mockUpdateTag("communities-list");
+    if (slug) mockUpdateTag(`community:${slug}`);
+    if (id != null) mockUpdateTag(`community:${id}`);
+  },
 }));
 
 jest.mock("botid/server", () => ({
@@ -253,7 +258,7 @@ describe("createTournament", () => {
 // ── updateTournament ───────────────────────────────────────────────────────
 
 describe("updateTournament", () => {
-  it("revalidates tournament tag on success", async () => {
+  it("revalidates tournament + list + community caches on success", async () => {
     mockUpdateTournament.mockResolvedValue(undefined);
 
     const result = await updateTournament(10, { name: "Updated Name" });
@@ -262,9 +267,10 @@ describe("updateTournament", () => {
     expect(mockUpdateTournament).toHaveBeenCalledWith(mockSupabase, 10, {
       name: "Updated Name",
     });
-    // Should revalidate individual tournament but NOT the list
+    // Settings changes (name, game, dates) flow into the public tournament
+    // page AND the community/list views, so all three need to invalidate.
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
-    expect(mockUpdateTag).not.toHaveBeenCalledWith("tournaments-list");
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournaments-list");
   });
 
   it("also revalidates TOURNAMENTS_LIST when status is 'upcoming'", async () => {
@@ -279,12 +285,101 @@ describe("updateTournament", () => {
   it("returns error when the mutation throws", async () => {
     mockUpdateTournament.mockRejectedValue(new Error("fail"));
 
-    const result = await updateTournament(10, { name: "x" });
+    // Use a valid payload — invalid input is rejected at the validation
+    // boundary before the mutation runs (see schema test below).
+    const result = await updateTournament(10, { name: "Valid Name" });
 
     expect(result).toEqual({
       success: false,
       error: "Failed to update tournament",
     });
+  });
+
+  it("rejects invalid input at the validation boundary without calling the mutation", async () => {
+    const result = await updateTournament(10, {
+      // Force a schema failure: name shorter than the 3-char minimum.
+      name: "x",
+    });
+
+    expect(result.success).toBe(false);
+    expect(mockUpdateTournament).not.toHaveBeenCalled();
+    if (!result.success) {
+      expect(result.error).toBe("Invalid tournament settings");
+      expect(result.validationErrors).toBeDefined();
+    }
+  });
+
+  it("rejects an out-of-range player cap before mutating", async () => {
+    const result = await updateTournament(10, {
+      maxParticipants: 99999,
+    });
+
+    expect(result.success).toBe(false);
+    expect(mockUpdateTournament).not.toHaveBeenCalled();
+  });
+
+  it("accepts the full settings payload with all new fields", async () => {
+    mockUpdateTournament.mockResolvedValue(undefined);
+
+    const result = await updateTournament(10, {
+      name: "VGC Regionals",
+      game: "sv",
+      gameFormat: "reg-i",
+      platform: "cartridge",
+      battleFormat: "doubles",
+      registrationType: "open",
+      checkInRequired: true,
+      allowLateRegistration: false,
+      lateCheckInMaxRound: null,
+      startDate: "2026-06-01T00:00:00Z",
+      endDate: null,
+      maxParticipants: 64,
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateTournament).toHaveBeenCalledTimes(1);
+  });
+
+  it("short-circuits empty updates without calling the mutation or invalidating", async () => {
+    // Empty object passes schema validation (every field is optional).
+    // The action should treat that as a no-op rather than running a DB
+    // write and busting cache tags.
+    const result = await updateTournament(10, {});
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateTournament).not.toHaveBeenCalled();
+    expect(mockUpdateTag).not.toHaveBeenCalled();
+  });
+
+  it("treats explicit-undefined keys as empty and skips the mutation", async () => {
+    // `Object.keys({ name: undefined }).length` is 1, but the underlying
+    // mutation skips undefined fields — so without stripping, this would
+    // run a no-op DB write and bust cache tags. The action must filter
+    // undefined entries before checking emptiness.
+    const result = await updateTournament(10, {
+      name: undefined,
+      description: undefined,
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateTournament).not.toHaveBeenCalled();
+    expect(mockUpdateTag).not.toHaveBeenCalled();
+  });
+
+  it("forwards only defined fields to the mutation", async () => {
+    mockUpdateTournament.mockResolvedValue(undefined);
+
+    await updateTournament(10, {
+      name: "New Name",
+      description: undefined,
+      game: undefined,
+    });
+
+    expect(mockUpdateTournament).toHaveBeenCalledTimes(1);
+    const [, , updates] = mockUpdateTournament.mock.calls[0];
+    expect(updates).toEqual({ name: "New Name" });
+    expect(updates).not.toHaveProperty("description");
+    expect(updates).not.toHaveProperty("game");
   });
 });
 
@@ -374,19 +469,37 @@ describe("startRound", () => {
 // ── deleteTournament ───────────────────────────────────────────────────────
 
 describe("deleteTournament", () => {
-  it("deletes successfully without revalidating list (draft only)", async () => {
+  // The action looks up the community BEFORE deleting (so it can invalidate
+  // the community page after the row is gone). Mock that lookup chain.
+  function mockCommunityLookup(community: { slug: string; id: number } | null) {
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: community ? { communities: community } : null,
+            error: null,
+          }),
+        }),
+      }),
+    });
+  }
+
+  it("invalidates list + tournament + community caches after a successful delete", async () => {
     mockDeleteTournament.mockResolvedValue(undefined);
+    mockCommunityLookup({ slug: "test-org", id: 7 });
 
     const result = await deleteTournament(3);
 
     expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockDeleteTournament).toHaveBeenCalledWith(mockSupabase, 3);
-    // Draft tournaments are not public — no list revalidation
-    expect(mockUpdateTag).not.toHaveBeenCalled();
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournaments-list");
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournament:3");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:test-org");
   });
 
-  it("returns error when delete fails", async () => {
+  it("does not invalidate caches when the delete fails", async () => {
     mockDeleteTournament.mockRejectedValue(new Error("not found"));
+    mockCommunityLookup({ slug: "test-org", id: 7 });
 
     const result = await deleteTournament(3);
 
@@ -394,6 +507,9 @@ describe("deleteTournament", () => {
       success: false,
       error: "Failed to delete tournament",
     });
+    // Cache tags must NOT be busted on failure — otherwise every viewer of
+    // the community page pays for an unnecessary refetch of unchanged data.
+    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 });
 // ── forceCheckInPlayer ─────────────────────────────────────────────────────

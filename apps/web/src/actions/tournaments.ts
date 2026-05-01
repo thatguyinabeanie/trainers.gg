@@ -53,8 +53,10 @@ import type { Enums } from "@trainers/supabase";
 import {
   type ActionResult,
   type DropCategory,
+  type UpdateTournamentInput,
   dropCategorySchema,
   dropNotesSchema,
+  updateTournamentSchema,
 } from "@trainers/validators";
 import { getErrorMessage } from "@trainers/utils";
 
@@ -66,6 +68,7 @@ import {
   invalidateTournamentWithTeamCaches,
   invalidatePlayerRankingCaches,
   invalidateDashboardCaches,
+  invalidateCommunityPageCaches,
 } from "@/lib/cache-invalidation";
 import { rejectBots } from "./utils";
 import {
@@ -75,7 +78,6 @@ import {
 } from "@/lib/discord/enqueue-helpers";
 
 type TournamentFormat = Enums<"tournament_format">;
-type TournamentStatus = Enums<"tournament_status">;
 
 // =============================================================================
 // Discord fire-and-forget helper
@@ -170,31 +172,50 @@ export async function createTournament(data: {
 }
 
 /**
- * Update tournament details
- * Revalidates: tournaments list when status changes to 'upcoming' (published)
+ * Update tournament details. Validates the payload, strips undefined-valued
+ * keys, and short-circuits when nothing remains. Always invalidates the
+ * tournament, the tournaments list, and the owning community caches via
+ * `invalidateTournamentAndCommunityCaches` so settings edits surface
+ * immediately on the public tournament page and community list.
  */
 export async function updateTournament(
   tournamentId: number,
-  updates: {
-    name?: string;
-    description?: string;
-    format?: string;
-    startDate?: string;
-    endDate?: string;
-    maxParticipants?: number;
-    status?: TournamentStatus;
-  }
+  updates: UpdateTournamentInput
 ): Promise<ActionResult<{ success: true }>> {
   try {
     await rejectBots();
-    const supabase = await createClient();
-    await updateTournamentMutation(supabase, tournamentId, updates);
 
-    if (updates.status) {
-      await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
-    } else {
-      invalidateTournamentCaches(tournamentId);
+    // Validate at the action boundary — clients can craft requests that
+    // bypass UI constraints (out-of-range cap, unknown registration type,
+    // malformed dates), and the underlying mutation does not reject them.
+    const parsed = updateTournamentSchema.safeParse(updates);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: "Invalid tournament settings",
+        validationErrors: parsed.error.issues.map((i) => i.message),
+      };
     }
+
+    // Strip undefined-valued keys before checking emptiness. `Object.keys`
+    // counts explicit-undefined entries (e.g. `{ name: undefined }`), so a
+    // crafted request could otherwise bypass the empty-payload guard and
+    // trigger a no-op DB write + cache bust. Stripping also tightens the
+    // mutation contract — only fields the caller meant to set are forwarded.
+    const cleanUpdates = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, v]) => v !== undefined)
+    ) as typeof parsed.data;
+
+    if (Object.keys(cleanUpdates).length === 0) {
+      return { success: true, data: { success: true } };
+    }
+
+    const supabase = await createClient();
+    await updateTournamentMutation(supabase, tournamentId, cleanUpdates);
+
+    // Settings edits surface on the public tournament page and the community
+    // list, so invalidate both.
+    await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -444,8 +465,10 @@ export async function archiveTournament(
 }
 
 /**
- * Delete a tournament (draft only)
- * Note: Only draft tournaments can be deleted, so no list revalidation needed
+ * Delete a tournament (draft only). After a successful delete, invalidates the
+ * tournaments list (registration counts and the draft itself disappear) and
+ * the owning community caches so its tournaments tab updates. Invalidation
+ * happens *after* the mutation succeeds — see the inline note for why.
  */
 export async function deleteTournament(
   tournamentId: number
@@ -453,8 +476,24 @@ export async function deleteTournament(
   try {
     await rejectBots();
     const supabase = await createClient();
+    // Resolve community + bust caches AFTER the delete succeeds — invalidating
+    // first would evict cache tags even when the mutation throws (RLS, FK,
+    // status≠draft), forcing every subsequent read to repopulate stale data.
+    // We capture the community link before the row is gone so the post-delete
+    // invalidation can still reach the community page.
+    const { data: link } = await supabase
+      .from("tournaments")
+      .select("communities!tournaments_community_id_fkey(slug, id)")
+      .eq("id", tournamentId)
+      .single();
+
     await deleteTournamentMutation(supabase, tournamentId);
-    // Draft tournaments are not visible on public list, no revalidation needed
+
+    invalidateTournamentListCaches(tournamentId);
+    if (link?.communities && "slug" in link.communities) {
+      const community = link.communities as { slug: string; id: number };
+      invalidateCommunityPageCaches(community.slug, community.id);
+    }
     return { success: true, data: { success: true } };
   } catch (error) {
     return {

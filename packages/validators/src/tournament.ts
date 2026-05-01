@@ -49,11 +49,75 @@ export const createTournamentSchema = z.object({
 });
 
 /**
+ * ISO datetime string accepted by Postgres `timestamptz` columns.
+ * Allows null for clearing a previously-set date.
+ */
+const isoDateTimeOrNullSchema = z
+  .string()
+  .datetime({ offset: true, message: "Invalid datetime" })
+  .nullable();
+
+/**
+ * Tournament status values (mirrors the `tournament_status` Postgres enum).
+ */
+export const tournamentStatusSchema = z.enum([
+  "draft",
+  "upcoming",
+  "active",
+  "paused",
+  "completed",
+  "cancelled",
+]);
+
+/**
+ * Optional string that trims surrounding whitespace and treats a literal
+ * empty string as "field omitted" (mapped to `undefined`).
+ *
+ * Behavior:
+ * - `undefined` / missing key → `undefined`
+ * - `""` → `undefined`
+ * - whitespace-only (e.g., `"   "`) → rejected (trims to `""`, fails `min(1)`,
+ *   and the empty-string branch only matches the literal `""`)
+ * - trimmed length must be 1..`max` after the trim
+ */
+const optionalTrimmedString = (max: number) =>
+  z
+    .string()
+    .transform((val) => val.trim())
+    .pipe(z.string().min(1).max(max))
+    .or(z.literal(""))
+    .optional()
+    .transform((val) => val || undefined);
+
+/**
  * Schema for updating a tournament.
+ *
+ * Used at the Server Action boundary (`updateTournament`) to reject crafted
+ * requests that bypass the UI's client-side guards (out-of-range player cap,
+ * unknown registration types, malformed dates). Every field is optional; an
+ * absent key means "leave unchanged" while `null` clears nullable columns.
  */
 export const updateTournamentSchema = z.object({
   name: tournamentNameSchema.optional(),
   description: tournamentDescriptionSchema,
+  format: optionalTrimmedString(50),
+  startDate: isoDateTimeOrNullSchema.optional(),
+  endDate: isoDateTimeOrNullSchema.optional(),
+  // 4..512 mirrors the input min/max in the settings UI.
+  maxParticipants: z.number().int().min(4).max(512).nullable().optional(),
+  status: tournamentStatusSchema.optional(),
+  // Game settings — kept as strings (DB columns are text); concrete values are
+  // managed by `@trainers/pokemon` and may evolve as new games/regs ship.
+  game: optionalTrimmedString(50),
+  gameFormat: optionalTrimmedString(50),
+  platform: z.enum(["cartridge", "showdown"]).optional(),
+  battleFormat: z.enum(["singles", "doubles"]).optional(),
+  // Registration settings.
+  registrationType: z.enum(["open", "invite_only"]).optional(),
+  checkInRequired: z.boolean().optional(),
+  allowLateRegistration: z.boolean().optional(),
+  // 1..10 mirrors the input min/max in the settings UI.
+  lateCheckInMaxRound: z.number().int().min(1).max(10).nullable().optional(),
 });
 
 /**

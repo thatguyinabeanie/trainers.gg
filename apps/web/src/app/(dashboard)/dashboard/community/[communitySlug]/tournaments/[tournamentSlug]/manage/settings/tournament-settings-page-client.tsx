@@ -5,7 +5,6 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentBySlug,
   getCommunityBySlug,
-  getTournamentPhases,
 } from "@trainers/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
@@ -30,7 +29,14 @@ export function TournamentSettingsPageClient({
   tournamentSlug,
 }: TournamentSettingsPageClientProps) {
   const router = useRouter();
-  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
+  const {
+    user: currentUser,
+    isLoading: userLoading,
+    error: userError,
+  } = useCurrentUser();
+
+  // Auth is enforced server-side by the (dashboard) layout; do not redirect
+  // from this client (causes a /sign-in ↔ /dashboard race).
 
   // Fetch organization by slug
   const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
@@ -41,7 +47,6 @@ export function TournamentSettingsPageClient({
     [communitySlug]
   );
 
-  // Fetch tournament by slug
   const tournamentQueryFn = (
     supabase: Parameters<typeof getTournamentBySlug>[0]
   ) => getTournamentBySlug(supabase, tournamentSlug);
@@ -51,17 +56,7 @@ export function TournamentSettingsPageClient({
     [tournamentSlug]
   );
 
-  // Fetch tournament phases (depends on tournament being loaded)
-  const phasesQueryFn = (
-    supabase: Parameters<typeof getTournamentPhases>[0]
-  ) =>
-    tournament
-      ? getTournamentPhases(supabase, tournament.id)
-      : Promise.resolve([]);
-
-  const { data: phases = [] } = useSupabaseQuery(phasesQueryFn, [
-    tournament?.id,
-  ]);
+  const phases = tournament?.phases ?? [];
 
   // Loading state
   if (userLoading || orgLoading || tournamentLoading) {
@@ -114,9 +109,24 @@ export function TournamentSettingsPageClient({
     );
   }
 
-  // Auth check
+  if (userError) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <ShieldAlert className="text-muted-foreground mb-4 h-12 w-12" />
+          <h3 className="mb-2 text-lg font-semibold">
+            Couldn&apos;t load your account
+          </h3>
+          <p className="text-muted-foreground mb-4 text-center">
+            Try refreshing the page. If this keeps happening, contact support.
+          </p>
+          <Button onClick={() => router.refresh()}>Retry</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!currentUser) {
-    router.push("/sign-in");
     return null;
   }
 
@@ -143,19 +153,19 @@ export function TournamentSettingsPageClient({
     );
   }
 
-  // Build the tournament settings props
   const tournamentForSettings = {
     id: tournament.id,
     name: tournament.name,
     slug: tournament.slug,
     description: tournament.description,
     status: tournament.status ?? "draft",
-    format: tournament.format,
+    game: tournament.game,
+    game_format: tournament.game_format,
+    platform: tournament.platform,
+    battle_format: tournament.battle_format,
     max_participants: tournament.max_participants,
     start_date: tournament.start_date,
     end_date: tournament.end_date,
-    round_time_minutes: tournament.round_time_minutes,
-    // Registration settings
     registration_type: tournament.registration_type,
     check_in_required: tournament.check_in_required,
     allow_late_registration: tournament.allow_late_registration,
@@ -163,6 +173,10 @@ export function TournamentSettingsPageClient({
   };
 
   return (
-    <TournamentSettings tournament={tournamentForSettings} phases={phases} />
+    <TournamentSettings
+      tournament={tournamentForSettings}
+      phases={phases}
+      communitySlug={communitySlug}
+    />
   );
 }
