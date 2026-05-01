@@ -1,4 +1,5 @@
 import type { TypedClient } from "../client";
+import type { Tables } from "../types";
 import { escapeLike } from "@trainers/utils";
 
 /**
@@ -14,7 +15,11 @@ export async function getUserCount(supabase: TypedClient) {
 }
 
 /**
- * Get current authenticated user with alt
+ * Get current authenticated user with their main alt.
+ *
+ * Users can have multiple alts; we resolve the "main" one via
+ * `users.main_alt_id`. Falls back to the oldest alt when `main_alt_id` is null
+ * (newly-created users before they pick a main).
  */
 export async function getCurrentUser(supabase: TypedClient) {
   const {
@@ -23,16 +28,36 @@ export async function getCurrentUser(supabase: TypedClient) {
 
   if (!authUser) return null;
 
-  // Fetch user record and main alt in parallel — both only need authUser.id
-  const [userResult, altResult] = await Promise.all([
-    supabase.from("users").select("*").eq("id", authUser.id).single(),
-    supabase.from("alts").select("*").eq("user_id", authUser.id).maybeSingle(),
-  ]);
+  const { data: user, error: userError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", authUser.id)
+    .single();
 
-  if (userResult.error || !userResult.data) return null;
-  if (altResult.error) throw altResult.error;
-  const user = userResult.data;
-  const alt = altResult.data;
+  if (userError || !user) return null;
+
+  // Resolve the main alt: prefer the row referenced by `main_alt_id`, fall
+  // back to the user's oldest alt for accounts that don't have a main set yet.
+  let alt: Tables<"alts"> | null = null;
+  if (user.main_alt_id != null) {
+    const { data, error } = await supabase
+      .from("alts")
+      .select("*")
+      .eq("id", user.main_alt_id)
+      .maybeSingle();
+    if (error) throw error;
+    alt = data;
+  } else {
+    const { data, error } = await supabase
+      .from("alts")
+      .select("*")
+      .eq("user_id", authUser.id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    alt = data;
+  }
 
   return {
     id: user.id,
