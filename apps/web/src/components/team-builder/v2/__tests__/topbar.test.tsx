@@ -10,6 +10,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
+import { type GameFormat } from "@trainers/pokemon";
 import { type TeamWithPokemon } from "@trainers/supabase";
 
 // =============================================================================
@@ -127,7 +128,7 @@ function renderTopbar(
     <Topbar
       team={makeTeam()}
       filledCount={props.filledCount ?? 2}
-      format={props.format as ReturnType<typeof makeTeam>["team_pokemon"] extends infer T ? any : any}
+      format={props.format as GameFormat | undefined}
       username="ash_ketchum"
       onOpenImport={onOpenImport}
       validationErrors={props.validationErrors ?? []}
@@ -174,7 +175,7 @@ describe("Topbar — basic render", () => {
 
 describe("Topbar — format badge", () => {
   it("renders format label badge when format is provided", () => {
-    renderTopbar({ format: DEFAULT_FORMAT as any });
+    renderTopbar({ format: DEFAULT_FORMAT as unknown as GameFormat });
     expect(screen.getByText("VGC 2026 Reg I")).toBeInTheDocument();
   });
 

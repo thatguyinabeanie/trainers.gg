@@ -10,7 +10,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
-import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
+import { type Tables } from "@trainers/supabase";
 
 // =============================================================================
 // Mocks
@@ -330,7 +330,6 @@ describe("PokeRow — collapsed row", () => {
   });
 
   it("renders nickname with species in parens when nickname is set", () => {
-    const { onActivate } = jest.fn() as unknown as { onActivate: jest.Mock };
     render(
       <PokeRow
         idx={0}

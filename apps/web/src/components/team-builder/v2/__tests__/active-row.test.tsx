@@ -10,7 +10,9 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
-import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
+import { type DraggableAttributes, type DraggableSyntheticListeners } from "@dnd-kit/core";
+
+import { type Tables } from "@trainers/supabase";
 
 // =============================================================================
 // Mocks
@@ -340,8 +342,8 @@ describe("ActiveRow — drag attributes forwarded", () => {
         format={undefined}
         onUpdate={jest.fn()}
         onRemove={jest.fn()}
-        dragAttributes={{ role: "button" } as any}
-        dragListeners={mockListeners as any}
+        dragAttributes={{ role: "button" } as unknown as DraggableAttributes}
+        dragListeners={mockListeners as unknown as DraggableSyntheticListeners}
       />
     );
     // The drag handle renders the slot number AND has the listeners forwarded

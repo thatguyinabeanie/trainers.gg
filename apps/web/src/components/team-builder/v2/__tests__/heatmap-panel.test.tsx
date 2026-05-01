@@ -9,7 +9,7 @@
  *   - Tera toggle visibility / behavior
  */
 
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -263,7 +263,7 @@ describe("HeatmapPanel — weak/resist counts", () => {
     render(<HeatmapPanel team={team} format={undefined} />);
 
     // TOTAL row weakCount for that mon should be 18 (all 18 types at 2x)
-    const totalSection = screen.getByText("TOTAL").closest("[style]");
+    expect(screen.getByText("TOTAL")).toBeInTheDocument();
     // At least one "w" count that's non-zero (destructive color)
     const wTokens = screen.getAllByText(/\d+w/);
     expect(wTokens.length).toBeGreaterThan(0);
