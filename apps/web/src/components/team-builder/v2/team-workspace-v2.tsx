@@ -97,6 +97,72 @@ function buildSlots(
 }
 
 // =============================================================================
+// Optimistic state — actions and placeholder construction
+// =============================================================================
+
+type OptimisticAction =
+  | {
+      kind: "update";
+      pokemonId: number;
+      fields: Partial<Tables<"pokemon">>;
+    }
+  | { kind: "add"; position: number; species: string }
+  | { kind: "remove"; pokemonId: number };
+
+/**
+ * Counter for placeholder ids on optimistic adds. Negative so they can never
+ * collide with real DB ids; decremented per call so multiple concurrent adds
+ * still get unique keys for React reconciliation.
+ */
+let nextOptimisticId = -1;
+
+/**
+ * Build a placeholder team_pokemon entry for an optimistic add. Mirrors the
+ * server-side defaults in addPokemonToTeamAction (ability/move1 empty, neutral
+ * Serious nature) so the optimistic row matches what the DB actually inserts.
+ */
+function buildOptimisticTeamPokemon(species: string, position: number) {
+  const tempId = nextOptimisticId--;
+  const pokemon: Tables<"pokemon"> = {
+    id: tempId,
+    species,
+    ability: "",
+    move1: "",
+    move2: null,
+    move3: null,
+    move4: null,
+    nature: "Serious",
+    nickname: null,
+    notes: null,
+    held_item: null,
+    tera_type: null,
+    gender: null,
+    is_shiny: null,
+    level: null,
+    format_legal: null,
+    created_at: null,
+    ev_hp: null,
+    ev_attack: null,
+    ev_defense: null,
+    ev_special_attack: null,
+    ev_special_defense: null,
+    ev_speed: null,
+    iv_hp: null,
+    iv_attack: null,
+    iv_defense: null,
+    iv_special_attack: null,
+    iv_special_defense: null,
+    iv_speed: null,
+  };
+  return {
+    id: tempId,
+    pokemon_id: tempId,
+    team_position: position,
+    pokemon,
+  };
+}
+
+// =============================================================================
 // DockbarConnected
 // =============================================================================
 
@@ -165,24 +231,32 @@ export function TeamWorkspaceV2({
   // ---------------------------------------------------------------------------
   // Optimistic team-pokemon state
   //
-  // applyOptimisticPatch updates the UI on the next paint; the server save runs
-  // in the background via startTransition. On failure: toast + revert.
+  // applyOptimistic updates the UI on the next paint; the server save runs
+  // in the background via startTransition. router.refresh() is what drives the
+  // transition to completion — at that point useOptimistic reverts to the
+  // (now updated) prop and the optimistic patch is dropped cleanly. On
+  // failure: toast + refresh to roll back to canonical server state.
   // ---------------------------------------------------------------------------
 
-  const [optimisticTeamPokemon, applyOptimisticPatch] = useOptimistic(
+  const [optimisticTeamPokemon, applyOptimistic] = useOptimistic(
     team.team_pokemon,
-    (
-      current,
-      {
-        pokemonId,
-        fields,
-      }: { pokemonId: number; fields: Partial<Tables<"pokemon">> }
-    ) =>
-      current.map((tp) =>
-        tp.pokemon_id === pokemonId && tp.pokemon
-          ? { ...tp, pokemon: { ...tp.pokemon, ...fields } }
-          : tp
-      )
+    (current, action: OptimisticAction) => {
+      if (action.kind === "update") {
+        return current.map((tp) =>
+          tp.pokemon_id === action.pokemonId && tp.pokemon
+            ? { ...tp, pokemon: { ...tp.pokemon, ...action.fields } }
+            : tp
+        );
+      }
+      if (action.kind === "remove") {
+        return current.filter((tp) => tp.pokemon?.id !== action.pokemonId);
+      }
+      // add — replace any existing entry at the same position with a placeholder
+      const filtered = current.filter(
+        (tp) => tp.team_position !== action.position
+      );
+      return [...filtered, buildOptimisticTeamPokemon(action.species, action.position)];
+    }
   );
 
   const [, startTransition] = useTransition();
@@ -203,15 +277,14 @@ export function TeamWorkspaceV2({
     fields: Partial<TablesUpdate<"pokemon">>
   ) {
     startTransition(async () => {
-      applyOptimisticPatch({ pokemonId, fields });
+      applyOptimistic({ kind: "update", pokemonId, fields });
       const result = await updatePokemonAction(team.id, pokemonId, fields);
       if (!result.success) {
         toast.error(result.error ?? "Failed to save changes.");
-        // Refresh to revert the optimistic patch — the server rejected the change
-        // so the UI must roll back to the last known server state.
-        router.refresh();
-        return;
       }
+      // router.refresh runs in both branches — on success it lands the canonical
+      // server state into the prop so useOptimistic reverts cleanly; on failure
+      // it rolls the UI back to last known good.
       router.refresh();
     });
   }
@@ -232,9 +305,13 @@ export function TeamWorkspaceV2({
     };
 
     startTransition(async () => {
+      // Optimistic insert lands on the next paint — the user sees the new
+      // pokemon in the slot before the network round-trip finishes.
+      applyOptimistic({ kind: "add", position, species: speciesId });
       const result = await addPokemonToTeamAction(team.id, pokemon, position);
       if (!result.success) {
         toast.error(result.error ?? "Failed to add Pokémon.");
+        router.refresh();
         return;
       }
       toast.success(`${speciesId} added to slot ${position}.`);
@@ -256,9 +333,13 @@ export function TeamWorkspaceV2({
     const pokemonId = p.id;
 
     startTransition(async () => {
+      // Optimistic remove — the slot empties on the next paint, the server
+      // delete and revalidation run in the background.
+      applyOptimistic({ kind: "remove", pokemonId });
       const result = await removePokemonFromTeamAction(team.id, pokemonId);
       if (!result.success) {
         toast.error(result.error ?? "Failed to remove Pokémon.");
+        router.refresh();
         return;
       }
       toast.success("Pokémon removed.");

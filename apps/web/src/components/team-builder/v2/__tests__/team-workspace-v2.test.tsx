@@ -384,7 +384,37 @@ describe("TeamWorkspaceV2 — add pokemon flow", () => {
     });
   });
 
-  it("shows an error toast and does NOT refresh on add failure", async () => {
+  it("renders the new pokemon in the slot optimistically before the server action resolves", async () => {
+    // Hold the action open — the user must see the species in the slot
+    // before the await ever returns.
+    let resolveAdd: (value: { success: true; data: { pokemonId: number } }) => void = () => {};
+    mockAddPokemonToTeamAction.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAdd = resolve;
+        })
+    );
+
+    const user = userEvent.setup();
+    renderWorkspace(EMPTY_TEAM);
+
+    expect(screen.getByTestId("poke-row-0")).toHaveTextContent("empty");
+
+    await user.click(screen.getByTestId("add-0"));
+
+    // Optimistic UI: species appears in the slot before the server resolves.
+    await waitFor(() => {
+      expect(screen.getByTestId("poke-row-0")).toHaveTextContent("Pikachu");
+    });
+    expect(mockRouterRefresh).not.toHaveBeenCalled();
+
+    resolveAdd({ success: true, data: { pokemonId: 99 } });
+    await waitFor(() => {
+      expect(mockRouterRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it("shows an error toast and refreshes (rolling back the optimistic add) on add failure", async () => {
     mockAddPokemonToTeamAction.mockResolvedValueOnce({
       success: false,
       error: "Slot is full.",
@@ -397,7 +427,9 @@ describe("TeamWorkspaceV2 — add pokemon flow", () => {
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Slot is full.");
-      expect(mockRouterRefresh).not.toHaveBeenCalled();
+      // refresh on failure rolls the UI back to the canonical server state,
+      // dropping the optimistic placeholder.
+      expect(mockRouterRefresh).toHaveBeenCalled();
     });
   });
 
@@ -456,7 +488,37 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
     });
   });
 
-  it("shows error toast and does NOT refresh on removal failure", async () => {
+  it("empties the slot optimistically before the server action resolves", async () => {
+    let resolveRemove: (value: { success: true; data: undefined }) => void = () => {};
+    mockRemovePokemonFromTeamAction.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveRemove = resolve;
+        })
+    );
+
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    // Slot 0 holds the seeded pokemon before removal.
+    expect(screen.getByTestId("poke-row-0")).not.toHaveTextContent("empty");
+
+    await user.click(screen.getByTestId("remove-0"));
+    await user.click(screen.getByRole("button", { name: /^remove$/i }));
+
+    // Optimistic UI: slot empties before the server resolves.
+    await waitFor(() => {
+      expect(screen.getByTestId("poke-row-0")).toHaveTextContent("empty");
+    });
+    expect(mockRouterRefresh).not.toHaveBeenCalled();
+
+    resolveRemove({ success: true, data: undefined });
+    await waitFor(() => {
+      expect(mockRouterRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it("shows error toast and refreshes (rolling back the optimistic remove) on removal failure", async () => {
     mockRemovePokemonFromTeamAction.mockResolvedValueOnce({
       success: false,
       error: "Permission denied.",
@@ -470,7 +532,9 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Permission denied.");
-      expect(mockRouterRefresh).not.toHaveBeenCalled();
+      // refresh on failure rolls the UI back to the canonical server state,
+      // restoring the pokemon that was optimistically removed.
+      expect(mockRouterRefresh).toHaveBeenCalled();
     });
   });
 
