@@ -9,8 +9,6 @@ import {
 } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
-import { cn } from "@/lib/utils";
-
 import { useCalcStateContext } from "./calc-state-context";
 import { CalcAttackerBlock } from "./calc-attacker-block";
 import { CalcDefenderStats } from "./calc-defender-stats";
@@ -99,7 +97,7 @@ export function CalcBottomPanel({
   });
 
   return (
-    <section className={cn("flex h-full flex-col")} aria-label="Damage Calc">
+    <section className="flex min-h-0 flex-1 flex-col" aria-label="Damage Calc">
       {/* Panel header — mono uppercase eyebrow + close */}
       <header className="flex items-center justify-between border-b px-4 py-2">
         <div className="flex items-center gap-3">
@@ -129,7 +127,7 @@ export function CalcBottomPanel({
           attackerBoosts={calc.attackerBoosts}
           setAttackerBoost={calc.setAttackerBoost}
         />
-        <div className="rounded-lg border bg-card p-3 shadow-sm">
+        <div className="min-h-0 overflow-y-auto rounded-lg border bg-card p-3 shadow-sm">
           <CalcFieldBlock
             gameType={calc.gameType}
             setGameType={calc.setGameType}
