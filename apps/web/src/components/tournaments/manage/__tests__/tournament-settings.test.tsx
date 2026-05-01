@@ -541,6 +541,23 @@ describe("TournamentSettings", () => {
       ).not.toBeInTheDocument();
     });
 
+    it.each([0, -1])(
+      "treats max_participants=%i as uncapped (matches the DB's NULL OR <= 0 convention)",
+      (value) => {
+        render(
+          <TournamentSettings
+            tournament={buildTournament({ max_participants: value })}
+          />
+        );
+        // Toggle is off, input is hidden — never "cap enabled with 0" because
+        // the user can't save it (validateForSave rejects < 4) and they
+        // shouldn't be stuck.
+        expect(
+          screen.queryByLabelText("Maximum Players")
+        ).not.toBeInTheDocument();
+      }
+    );
+
     it("shows late check-in max round input when allowLateRegistration is true", () => {
       render(
         <TournamentSettings

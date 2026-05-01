@@ -135,10 +135,17 @@ function buildFormDataFromTournament(
     gameFormat: tournament.game_format || "reg-i",
     platform: (tournament.platform as BattlePlatform) || "cartridge",
     battleFormat: (tournament.battle_format as BattleFormat) || "doubles",
-    maxParticipants: tournament.max_participants?.toString() || "",
-    // Loose null-check (`!= null`) so an omitted prop is treated as uncapped,
-    // not as "cap enabled with empty value".
-    playerCapEnabled: tournament.max_participants != null,
+    // The DB treats `max_participants IS NULL OR <= 0` as "no cap" (see
+    // `waitlist_auto_promotion` RPC: `IF v_max_participants IS NULL OR
+    // v_max_participants <= 0 THEN`). Mirror that here so a 0 in the column
+    // (legacy data, or a manual SQL touch) doesn't surface as the cap toggle
+    // being on with "0" in the input.
+    maxParticipants:
+      tournament.max_participants && tournament.max_participants > 0
+        ? tournament.max_participants.toString()
+        : "",
+    playerCapEnabled:
+      tournament.max_participants != null && tournament.max_participants > 0,
     startDate: tournament.start_date ?? null,
     endDate: tournament.end_date ?? null,
     registrationType:
