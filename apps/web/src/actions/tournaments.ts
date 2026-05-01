@@ -53,8 +53,10 @@ import type { Enums } from "@trainers/supabase";
 import {
   type ActionResult,
   type DropCategory,
+  type UpdateTournamentInput,
   dropCategorySchema,
   dropNotesSchema,
+  updateTournamentSchema,
 } from "@trainers/validators";
 import { getErrorMessage } from "@trainers/utils";
 
@@ -76,7 +78,6 @@ import {
 } from "@/lib/discord/enqueue-helpers";
 
 type TournamentFormat = Enums<"tournament_format">;
-type TournamentStatus = Enums<"tournament_status">;
 
 // =============================================================================
 // Discord fire-and-forget helper
@@ -176,28 +177,25 @@ export async function createTournament(data: {
  */
 export async function updateTournament(
   tournamentId: number,
-  updates: {
-    name?: string;
-    description?: string;
-    format?: string;
-    startDate?: string | null;
-    endDate?: string | null;
-    maxParticipants?: number | null;
-    status?: TournamentStatus;
-    game?: string;
-    gameFormat?: string;
-    platform?: string;
-    battleFormat?: string;
-    registrationType?: string;
-    checkInRequired?: boolean;
-    allowLateRegistration?: boolean;
-    lateCheckInMaxRound?: number | null;
-  }
+  updates: UpdateTournamentInput
 ): Promise<ActionResult<{ success: true }>> {
   try {
     await rejectBots();
+
+    // Validate at the action boundary — clients can craft requests that
+    // bypass UI constraints (out-of-range cap, unknown registration type,
+    // malformed dates), and the underlying mutation does not reject them.
+    const parsed = updateTournamentSchema.safeParse(updates);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: "Invalid tournament settings",
+        validationErrors: parsed.error.issues.map((i) => i.message),
+      };
+    }
+
     const supabase = await createClient();
-    await updateTournamentMutation(supabase, tournamentId, updates);
+    await updateTournamentMutation(supabase, tournamentId, parsed.data);
 
     // Settings edits surface on the public tournament page and the community
     // list, so invalidate both.

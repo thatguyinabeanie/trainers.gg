@@ -285,12 +285,59 @@ describe("updateTournament", () => {
   it("returns error when the mutation throws", async () => {
     mockUpdateTournament.mockRejectedValue(new Error("fail"));
 
-    const result = await updateTournament(10, { name: "x" });
+    // Use a valid payload — invalid input is rejected at the validation
+    // boundary before the mutation runs (see schema test below).
+    const result = await updateTournament(10, { name: "Valid Name" });
 
     expect(result).toEqual({
       success: false,
       error: "Failed to update tournament",
     });
+  });
+
+  it("rejects invalid input at the validation boundary without calling the mutation", async () => {
+    const result = await updateTournament(10, {
+      // Force a schema failure: name shorter than the 3-char minimum.
+      name: "x",
+    });
+
+    expect(result.success).toBe(false);
+    expect(mockUpdateTournament).not.toHaveBeenCalled();
+    if (!result.success) {
+      expect(result.error).toBe("Invalid tournament settings");
+      expect(result.validationErrors).toBeDefined();
+    }
+  });
+
+  it("rejects an out-of-range player cap before mutating", async () => {
+    const result = await updateTournament(10, {
+      maxParticipants: 99999,
+    });
+
+    expect(result.success).toBe(false);
+    expect(mockUpdateTournament).not.toHaveBeenCalled();
+  });
+
+  it("accepts the full settings payload with all new fields", async () => {
+    mockUpdateTournament.mockResolvedValue(undefined);
+
+    const result = await updateTournament(10, {
+      name: "VGC Regionals",
+      game: "sv",
+      gameFormat: "reg-i",
+      platform: "cartridge",
+      battleFormat: "doubles",
+      registrationType: "open",
+      checkInRequired: true,
+      allowLateRegistration: false,
+      lateCheckInMaxRound: null,
+      startDate: "2026-06-01T00:00:00Z",
+      endDate: null,
+      maxParticipants: 64,
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateTournament).toHaveBeenCalledTimes(1);
   });
 });
 

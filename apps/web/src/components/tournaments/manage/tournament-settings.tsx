@@ -136,7 +136,9 @@ function buildFormDataFromTournament(
     platform: (tournament.platform as BattlePlatform) || "cartridge",
     battleFormat: (tournament.battle_format as BattleFormat) || "doubles",
     maxParticipants: tournament.max_participants?.toString() || "",
-    playerCapEnabled: tournament.max_participants !== null,
+    // Loose null-check (`!= null`) so an omitted prop is treated as uncapped,
+    // not as "cap enabled with empty value".
+    playerCapEnabled: tournament.max_participants != null,
     startDate: tournament.start_date ?? null,
     endDate: tournament.end_date ?? null,
     registrationType:
@@ -269,14 +271,21 @@ export function TournamentSettings({
   const handleSave = async () => {
     setIsSaving(true);
 
+    // Snapshot the live state at save start. Inputs aren't disabled mid-save,
+    // so any keystroke that lands between the action call and the snapshot
+    // advance below could otherwise persist one set of values while the saved
+    // snapshot moves to a different set.
+    const liveFormData = formData;
+    const livePhaseConfigs = phaseConfigs;
+
     try {
-      const validationError = validateForSave(formData);
+      const validationError = validateForSave(liveFormData);
       if (validationError) {
         toast.error("Invalid settings", { description: validationError });
         return;
       }
 
-      const updates = buildUpdatePayload(formData, savedFormData);
+      const updates = buildUpdatePayload(liveFormData, savedFormData);
 
       if (Object.keys(updates).length > 0) {
         const result = await updateTournamentAction(tournament.id, updates);
@@ -286,10 +295,10 @@ export function TournamentSettings({
         }
         // Advance the form snapshot as soon as the tournament fields persist;
         // a later phase-save failure won't desync the form from the DB.
-        setSavedFormData(formData);
+        setSavedFormData(liveFormData);
       }
 
-      const phasesForSave = convertPhasesForSave(phaseConfigs);
+      const phasesForSave = convertPhasesForSave(livePhaseConfigs);
       const phasesResult = await saveTournamentPhasesAction(
         tournament.id,
         phasesForSave
@@ -306,7 +315,7 @@ export function TournamentSettings({
         description: "Tournament settings have been updated successfully.",
       });
 
-      setSavedPhaseConfigs(phaseConfigs);
+      setSavedPhaseConfigs(livePhaseConfigs);
       setIsEditing(false);
       router.refresh();
     } catch (error) {
