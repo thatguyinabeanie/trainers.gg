@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSupabaseMutation } from "@/lib/supabase";
-import { updateTournament, deleteTournament } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +13,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -30,7 +39,11 @@ import {
 } from "lucide-react";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { toast } from "sonner";
-import { saveTournamentPhasesAction } from "@/actions/tournaments";
+import {
+  saveTournamentPhasesAction,
+  updateTournament as updateTournamentAction,
+  deleteTournament as deleteTournamentAction,
+} from "@/actions/tournaments";
 import type { PhaseConfig, CutRule } from "@trainers/tournaments/types";
 import { dbPhasesToPhaseConfigs } from "@trainers/tournaments/adapters";
 import {
@@ -62,6 +75,23 @@ interface Phase {
 // DateTimeField is imported from the shared UI component
 // It supports both timestamp and ISO string output via the outputFormat prop
 
+interface FormData {
+  name: string;
+  description: string;
+  game: string;
+  gameFormat: string;
+  platform: BattlePlatform;
+  battleFormat: BattleFormat;
+  maxParticipants: string;
+  playerCapEnabled: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  registrationType: "open" | "invite_only";
+  checkInRequired: boolean;
+  allowLateRegistration: boolean;
+  lateCheckInMaxRound: number | undefined;
+}
+
 interface TournamentSettingsProps {
   tournament: {
     id: number;
@@ -84,18 +114,14 @@ interface TournamentSettingsProps {
     late_check_in_max_round?: number | null;
   };
   phases?: Phase[];
+  /** Used as the post-delete redirect target; falls back to /tournaments. */
+  communitySlug?: string;
 }
 
-export function TournamentSettings({
-  tournament,
-  phases: initialPhases = [],
-}: TournamentSettingsProps) {
-  const router = useRouter();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Form state - all changes are local until Save is clicked
-  const [formData, setFormData] = useState({
+function buildFormDataFromTournament(
+  tournament: TournamentSettingsProps["tournament"]
+): FormData {
+  return {
     name: tournament.name || "",
     description: tournament.description || "",
     game: tournament.game || "sv",
@@ -104,52 +130,44 @@ export function TournamentSettings({
     battleFormat: (tournament.battle_format as BattleFormat) || "doubles",
     maxParticipants: tournament.max_participants?.toString() || "",
     playerCapEnabled: tournament.max_participants !== null,
-    startDate: tournament.start_date || undefined,
-    endDate: tournament.end_date || undefined,
-    // Registration settings
+    startDate: tournament.start_date ?? null,
+    endDate: tournament.end_date ?? null,
     registrationType:
       (tournament.registration_type as "open" | "invite_only") || "open",
     checkInRequired: tournament.check_in_required ?? false,
     allowLateRegistration: tournament.allow_late_registration ?? false,
     lateCheckInMaxRound: tournament.late_check_in_max_round ?? undefined,
-  });
+  };
+}
 
-  // Phase state - local until Save is clicked
+export function TournamentSettings({
+  tournament,
+  phases: initialPhases = [],
+  communitySlug,
+}: TournamentSettingsProps) {
+  const router = useRouter();
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Two snapshots:
+  // - `formData` is the live editing state.
+  // - `savedFormData` mirrors what's actually persisted; it advances after every
+  //   successful save. Cancel resets `formData` to `savedFormData`, and the
+  //   diff between them tells us which fields to send (so we never silently
+  //   overwrite a null DB value with a UI-default like "sv"/"reg-i").
+  const [formData, setFormData] = useState<FormData>(() =>
+    buildFormDataFromTournament(tournament)
+  );
+  const [savedFormData, setSavedFormData] = useState<FormData>(() =>
+    buildFormDataFromTournament(tournament)
+  );
+
   const [phaseConfigs, setPhaseConfigs] = useState<PhaseConfig[]>(() =>
     dbPhasesToPhaseConfigs(initialPhases)
   );
-
-  // Store original phases for comparison
-  const [originalPhases] = useState<Phase[]>(initialPhases);
-
-  const { mutateAsync: updateTournamentMutation } = useSupabaseMutation(
-    (
-      supabase,
-      args: {
-        tournamentId: number;
-        updates: {
-          name?: string;
-          description?: string;
-          format?: string;
-          startDate?: string;
-          endDate?: string;
-          maxParticipants?: number | null;
-          game?: string;
-          gameFormat?: string;
-          platform?: string;
-          battleFormat?: string;
-          registrationType?: string;
-          checkInRequired?: boolean;
-          allowLateRegistration?: boolean;
-          lateCheckInMaxRound?: number | null;
-        };
-      }
-    ) => updateTournament(supabase, args.tournamentId, args.updates)
-  );
-
-  const { mutateAsync: deleteTournamentMutation } = useSupabaseMutation(
-    (supabase, args: { tournamentId: number }) =>
-      deleteTournament(supabase, args.tournamentId)
+  const [savedPhaseConfigs, setSavedPhaseConfigs] = useState<PhaseConfig[]>(
+    () => dbPhasesToPhaseConfigs(initialPhases)
   );
 
   // Convert PhaseConfig to the format expected by the server action
@@ -169,33 +187,64 @@ export function TournamentSettings({
     }));
   };
 
+  // Build an updates payload containing only fields that have changed since the
+  // last successful save. Skipping unchanged fields prevents silently writing
+  // form-level defaults (e.g., "sv") to columns that are null in the database.
+  const buildUpdatePayload = (next: FormData, prev: FormData) => {
+    const updates: Parameters<typeof updateTournamentAction>[1] = {};
+
+    if (next.name !== prev.name) updates.name = next.name;
+    if (next.description !== prev.description)
+      updates.description = next.description;
+    if (next.game !== prev.game) updates.game = next.game;
+    if (next.gameFormat !== prev.gameFormat)
+      updates.gameFormat = next.gameFormat;
+    if (next.platform !== prev.platform) updates.platform = next.platform;
+    if (next.battleFormat !== prev.battleFormat)
+      updates.battleFormat = next.battleFormat;
+    if (next.startDate !== prev.startDate) updates.startDate = next.startDate;
+    if (next.endDate !== prev.endDate) updates.endDate = next.endDate;
+
+    const nextCap = next.playerCapEnabled
+      ? parseInt(next.maxParticipants, 10) || null
+      : null;
+    const prevCap = prev.playerCapEnabled
+      ? parseInt(prev.maxParticipants, 10) || null
+      : null;
+    if (nextCap !== prevCap) updates.maxParticipants = nextCap;
+
+    if (next.registrationType !== prev.registrationType)
+      updates.registrationType = next.registrationType;
+    if (next.checkInRequired !== prev.checkInRequired)
+      updates.checkInRequired = next.checkInRequired;
+    if (next.allowLateRegistration !== prev.allowLateRegistration)
+      updates.allowLateRegistration = next.allowLateRegistration;
+
+    const nextLateRound = next.allowLateRegistration
+      ? (next.lateCheckInMaxRound ?? null)
+      : null;
+    const prevLateRound = prev.allowLateRegistration
+      ? (prev.lateCheckInMaxRound ?? null)
+      : null;
+    if (nextLateRound !== prevLateRound)
+      updates.lateCheckInMaxRound = nextLateRound;
+
+    return updates;
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
 
     try {
-      // Save tournament settings
-      await updateTournamentMutation({
-        tournamentId: tournament.id,
-        updates: {
-          name: formData.name,
-          description: formData.description,
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          maxParticipants: formData.playerCapEnabled
-            ? parseInt(formData.maxParticipants) || null
-            : null,
-          game: formData.game,
-          gameFormat: formData.gameFormat,
-          platform: formData.platform,
-          battleFormat: formData.battleFormat,
-          registrationType: formData.registrationType,
-          checkInRequired: formData.checkInRequired,
-          allowLateRegistration: formData.allowLateRegistration,
-          lateCheckInMaxRound: formData.allowLateRegistration
-            ? (formData.lateCheckInMaxRound ?? null)
-            : null,
-        },
-      });
+      const updates = buildUpdatePayload(formData, savedFormData);
+
+      if (Object.keys(updates).length > 0) {
+        const result = await updateTournamentAction(tournament.id, updates);
+        if (!result.success) {
+          toast.error("Error saving settings", { description: result.error });
+          return;
+        }
+      }
 
       // Save phases in a single batch operation
       const phasesForSave = convertPhasesForSave(phaseConfigs);
@@ -215,6 +264,10 @@ export function TournamentSettings({
         description: "Tournament settings have been updated successfully.",
       });
 
+      // Advance the saved snapshots so a follow-up edit + cancel reverts to
+      // the just-saved values, not the stale prop.
+      setSavedFormData(formData);
+      setSavedPhaseConfigs(phaseConfigs);
       setIsEditing(false);
       router.refresh();
     } catch (error) {
@@ -230,45 +283,27 @@ export function TournamentSettings({
   };
 
   const handleCancel = () => {
-    // Reset form data to original values
-    setFormData({
-      name: tournament.name || "",
-      description: tournament.description || "",
-      game: tournament.game || "sv",
-      gameFormat: tournament.game_format || "reg-i",
-      platform: (tournament.platform as BattlePlatform) || "cartridge",
-      battleFormat: (tournament.battle_format as BattleFormat) || "doubles",
-      maxParticipants: tournament.max_participants?.toString() || "",
-      playerCapEnabled: tournament.max_participants !== null,
-      startDate: tournament.start_date || undefined,
-      endDate: tournament.end_date || undefined,
-      registrationType:
-        (tournament.registration_type as "open" | "invite_only") || "open",
-      checkInRequired: tournament.check_in_required ?? false,
-      allowLateRegistration: tournament.allow_late_registration ?? false,
-      lateCheckInMaxRound: tournament.late_check_in_max_round ?? undefined,
-    });
-    // Reset phases to original
-    setPhaseConfigs(dbPhasesToPhaseConfigs(originalPhases));
+    setFormData(savedFormData);
+    setPhaseConfigs(savedPhaseConfigs);
     setIsEditing(false);
   };
 
   const handleDelete = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this tournament? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
-
+    setIsDeleting(true);
     try {
-      await deleteTournamentMutation({ tournamentId: tournament.id });
+      const result = await deleteTournamentAction(tournament.id);
+      if (!result.success) {
+        toast.error("Error deleting tournament", { description: result.error });
+        return;
+      }
       toast.success("Tournament deleted", {
         description: "The tournament has been permanently deleted.",
       });
-      // Redirect to tournaments list
-      window.location.href = "/tournaments";
+      router.push(
+        communitySlug
+          ? `/dashboard/community/${communitySlug}/tournaments`
+          : "/tournaments"
+      );
     } catch (error) {
       toast.error("Error deleting tournament", {
         description:
@@ -276,6 +311,8 @@ export function TournamentSettings({
             ? error.message
             : "An unexpected error occurred",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -442,7 +479,7 @@ export function TournamentSettings({
               onChange={(val) =>
                 setFormData((prev) => ({
                   ...prev,
-                  startDate: val as string | undefined,
+                  startDate: (val as string | undefined) ?? null,
                 }))
               }
               disabled={!isEditing}
@@ -456,7 +493,7 @@ export function TournamentSettings({
               onChange={(val) =>
                 setFormData((prev) => ({
                   ...prev,
-                  endDate: val as string | undefined,
+                  endDate: (val as string | undefined) ?? null,
                 }))
               }
               minDate={
@@ -694,10 +731,36 @@ export function TournamentSettings({
                     Permanently delete this tournament and all associated data
                   </p>
                 </div>
-                <Button variant="destructive" onClick={handleDelete}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Tournament
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger
+                    render={<Button variant="destructive" />}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Tournament
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete tournament?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This permanently deletes the tournament and all
+                        associated data. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isDeleting}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Deleting…" : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </CardContent>
           </Card>

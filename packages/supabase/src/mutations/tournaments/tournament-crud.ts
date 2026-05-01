@@ -240,8 +240,8 @@ export async function updateTournament(
     name?: string;
     description?: string;
     format?: string;
-    startDate?: string;
-    endDate?: string;
+    startDate?: string | null;
+    endDate?: string | null;
     maxParticipants?: number | null;
     status?: TournamentStatus;
     // Game settings

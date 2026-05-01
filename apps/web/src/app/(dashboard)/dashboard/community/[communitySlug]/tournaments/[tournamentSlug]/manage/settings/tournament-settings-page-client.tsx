@@ -5,7 +5,6 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentBySlug,
   getCommunityBySlug,
-  getTournamentPhases,
 } from "@trainers/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
@@ -41,7 +40,8 @@ export function TournamentSettingsPageClient({
     [communitySlug]
   );
 
-  // Fetch tournament by slug
+  // Fetch tournament by slug — `getTournamentBySlug` returns `phases` joined,
+  // so no separate phases query is needed.
   const tournamentQueryFn = (
     supabase: Parameters<typeof getTournamentBySlug>[0]
   ) => getTournamentBySlug(supabase, tournamentSlug);
@@ -51,17 +51,7 @@ export function TournamentSettingsPageClient({
     [tournamentSlug]
   );
 
-  // Fetch tournament phases (depends on tournament being loaded)
-  const phasesQueryFn = (
-    supabase: Parameters<typeof getTournamentPhases>[0]
-  ) =>
-    tournament
-      ? getTournamentPhases(supabase, tournament.id)
-      : Promise.resolve([]);
-
-  const { data: phases = [] } = useSupabaseQuery(phasesQueryFn, [
-    tournament?.id,
-  ]);
+  const phases = tournament?.phases ?? [];
 
   // Loading state
   if (userLoading || orgLoading || tournamentLoading) {
@@ -151,6 +141,10 @@ export function TournamentSettingsPageClient({
     description: tournament.description,
     status: tournament.status ?? "draft",
     format: tournament.format,
+    game: tournament.game,
+    game_format: tournament.game_format,
+    platform: tournament.platform,
+    battle_format: tournament.battle_format,
     max_participants: tournament.max_participants,
     start_date: tournament.start_date,
     end_date: tournament.end_date,
@@ -163,6 +157,10 @@ export function TournamentSettingsPageClient({
   };
 
   return (
-    <TournamentSettings tournament={tournamentForSettings} phases={phases} />
+    <TournamentSettings
+      tournament={tournamentForSettings}
+      phases={phases}
+      communitySlug={communitySlug}
+    />
   );
 }

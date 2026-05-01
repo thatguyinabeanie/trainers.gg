@@ -179,10 +179,18 @@ export async function updateTournament(
     name?: string;
     description?: string;
     format?: string;
-    startDate?: string;
-    endDate?: string;
-    maxParticipants?: number;
+    startDate?: string | null;
+    endDate?: string | null;
+    maxParticipants?: number | null;
     status?: TournamentStatus;
+    game?: string;
+    gameFormat?: string;
+    platform?: string;
+    battleFormat?: string;
+    registrationType?: string;
+    checkInRequired?: boolean;
+    allowLateRegistration?: boolean;
+    lateCheckInMaxRound?: number | null;
   }
 ): Promise<ActionResult<{ success: true }>> {
   try {
@@ -190,11 +198,10 @@ export async function updateTournament(
     const supabase = await createClient();
     await updateTournamentMutation(supabase, tournamentId, updates);
 
-    if (updates.status) {
-      await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
-    } else {
-      invalidateTournamentCaches(tournamentId);
-    }
+    // Status changes require list-level invalidation; settings changes invalidate
+    // the tournament + community pages so cached public views pick up the new
+    // game/regulation/dates immediately.
+    await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -453,8 +460,8 @@ export async function deleteTournament(
   try {
     await rejectBots();
     const supabase = await createClient();
+    await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
     await deleteTournamentMutation(supabase, tournamentId);
-    // Draft tournaments are not visible on public list, no revalidation needed
     return { success: true, data: { success: true } };
   } catch (error) {
     return {

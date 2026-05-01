@@ -253,7 +253,7 @@ describe("createTournament", () => {
 // ── updateTournament ───────────────────────────────────────────────────────
 
 describe("updateTournament", () => {
-  it("revalidates tournament tag on success", async () => {
+  it("revalidates tournament + list + community caches on success", async () => {
     mockUpdateTournament.mockResolvedValue(undefined);
 
     const result = await updateTournament(10, { name: "Updated Name" });
@@ -262,9 +262,10 @@ describe("updateTournament", () => {
     expect(mockUpdateTournament).toHaveBeenCalledWith(mockSupabase, 10, {
       name: "Updated Name",
     });
-    // Should revalidate individual tournament but NOT the list
+    // Settings changes (name, game, dates) flow into the public tournament
+    // page AND the community/list views, so all three need to invalidate.
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
-    expect(mockUpdateTag).not.toHaveBeenCalledWith("tournaments-list");
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournaments-list");
   });
 
   it("also revalidates TOURNAMENTS_LIST when status is 'upcoming'", async () => {
@@ -374,15 +375,17 @@ describe("startRound", () => {
 // ── deleteTournament ───────────────────────────────────────────────────────
 
 describe("deleteTournament", () => {
-  it("deletes successfully without revalidating list (draft only)", async () => {
+  it("invalidates list + tournament + community caches before deleting", async () => {
     mockDeleteTournament.mockResolvedValue(undefined);
 
     const result = await deleteTournament(3);
 
     expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockDeleteTournament).toHaveBeenCalledWith(mockSupabase, 3);
-    // Draft tournaments are not public — no list revalidation
-    expect(mockUpdateTag).not.toHaveBeenCalled();
+    // Even draft tournaments appear on the community dashboard's draft list,
+    // so deletion must invalidate the surrounding caches.
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournaments-list");
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournament:3");
   });
 
   it("returns error when delete fails", async () => {
