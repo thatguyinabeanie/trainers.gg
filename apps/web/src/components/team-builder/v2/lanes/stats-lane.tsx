@@ -579,7 +579,7 @@ function StatRow({
             onUpdate({ [IV_FIELD[statKey]]: draftIv });
           }}
           className={cn(
-            "focus:ring-primary h-[18px] w-8 rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
+            "focus:ring-primary h-[18px] w-10 rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
             displayIv !== 31
               ? "border-amber-400/60 text-amber-600 dark:text-amber-400"
               : "border-border text-muted-foreground"

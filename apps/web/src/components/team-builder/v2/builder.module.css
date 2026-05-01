@@ -943,7 +943,7 @@
     minmax(0, 10rem)  /* name */
     56px              /* BP — wide enough for "BP 140" */
     72px              /* Acc — wide enough for "ACC 100%" */
-    auto;             /* calc pill / hint (empty when not applicable) */
+    minmax(0, auto);  /* calc — grows to content, consistent alignment */
   align-items: center;
   justify-content: start;
   gap: 6px;
@@ -1202,21 +1202,26 @@
   font-size: 10px;
   color: var(--muted-foreground);
   font-style: italic;
+  border-left: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+  padding-left: 10px;
 }
 
 /* Calc pill — replaces the description when calc is on for damage moves.
  * Tinted by KO tier; contains KO label + range + optional modifier chips. */
 :global(.mvline-pill) {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 5px;
   border: 1px solid transparent;
   font-family: var(--font-mono, monospace);
   font-size: 11px;
   font-weight: 600;
+  border-left: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+  border-radius: 0 5px 5px 0;
+  padding-left: 10px;
 }
 
 /* KO tier tints — light bg + matching border */
@@ -1262,11 +1267,10 @@
   white-space: nowrap;
 }
 
-/* Modifier group on the right side of the pill */
+/* Modifier group — sits right after the range */
 :global(.mvline-pill-mods) {
-  margin-left: auto;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 4px;
   flex-shrink: 0;
 }
@@ -1757,7 +1761,7 @@
     minmax(30px, 0.8fr)  /* viz bar */
     40px          /* EV input */
     minmax(60px, 1.6fr)  /* slider */
-    32px          /* IV input */
+    40px          /* IV input */
     36px;         /* final stat */
   gap: 6px;
   align-items: center;
