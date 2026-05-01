@@ -140,7 +140,9 @@ export async function submitTeam(
     .select("id");
 
   if (pokemonError || !newPokemon) {
-    throw new Error("Failed to create pokemon records.");
+    throw new Error(
+      `Failed to create pokemon records: ${pokemonError?.message ?? "no data returned"}`
+    );
   }
 
   // 7. Link pokemon to team with positions

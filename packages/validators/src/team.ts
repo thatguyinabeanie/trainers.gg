@@ -12,12 +12,11 @@ import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
  * Maps trainers.gg `game_format` values to the corresponding
  * Showdown format IDs used by `@pkmn/sim`.
  */
-export const FORMAT_MAP: Record<string, string> = {
+export const FORMAT_MAP: Record<string, string | null> = {
   "reg-i": "gen9vgc2025regi",
-  // TODO: No official Pokémon Showdown format mapping exists for Pokémon Champions
-  // yet. Using "gen9vgc2025regma" as a placeholder — update FORMAT_MAP and run a
-  // data migration when the official @pkmn/sim format ID is confirmed.
-  "reg-m-a": "gen9vgc2025regma",
+  // Champions Reg MA: no @pkmn/sim format ID yet (no Tera, Stat Points instead of EVs/IVs).
+  // Replace null with the real Showdown ID once @pkmn/sim adds Champions support.
+  "reg-m-a": null,
   "reg-h": "gen9vgc2024regh",
   "reg-g": "gen9vgc2024regg",
   "reg-f": "gen9vgc2024regf",
@@ -184,8 +183,47 @@ export function parseShowdownText(text: string): ParsedTeam {
 }
 
 // ---------------------------------------------------------------------------
-// Structural validation (format-agnostic)
+// Structural validation (format-agnostic + format-specific)
 // ---------------------------------------------------------------------------
+
+/** Pokemon Champions Reg MA: max 32 Stat Points per stat, 66 total. */
+function validateChampionsStatPoints(
+  team: ParsedTeam,
+  errors: ValidationError[]
+): void {
+  const STAT_MAX = 32;
+  const TOTAL_MAX = 66;
+  const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"] as const;
+
+  for (const mon of team) {
+    const stats = [
+      mon.ev_hp,
+      mon.ev_attack,
+      mon.ev_defense,
+      mon.ev_special_attack,
+      mon.ev_special_defense,
+      mon.ev_speed,
+    ];
+
+    for (let i = 0; i < stats.length; i++) {
+      const val = stats[i] ?? 0;
+      if (val > STAT_MAX) {
+        errors.push({
+          source: "structure",
+          message: `${mon.species} has ${val} Stat Points in ${STAT_NAMES[i]} (max ${STAT_MAX}).`,
+        });
+      }
+    }
+
+    const total = stats.reduce((sum, v) => sum + (v ?? 0), 0);
+    if (total > TOTAL_MAX) {
+      errors.push({
+        source: "structure",
+        message: `${mon.species} has ${total} total Stat Points (max ${TOTAL_MAX}).`,
+      });
+    }
+  }
+}
 
 /**
  * Performs structural checks on a parsed team:
@@ -195,8 +233,12 @@ export function parseShowdownText(text: string): ParsedTeam {
  * - Every Pokemon has at least one move
  * - Every Pokemon has an ability
  * - Pokemon nicknames do not contain profanity
+ * - Champions format (reg-m-a): Stat Point limits (max 32 per stat, 66 total)
  */
-export function validateTeamStructure(team: ParsedTeam): ValidationError[] {
+export function validateTeamStructure(
+  team: ParsedTeam,
+  gameFormat?: string
+): ValidationError[] {
   const errors: ValidationError[] = [];
 
   // Team size
@@ -266,6 +308,10 @@ export function validateTeamStructure(team: ParsedTeam): ValidationError[] {
         message: `Pokemon nickname "${mon.nickname}" contains inappropriate content.`,
       });
     }
+  }
+
+  if (gameFormat === "reg-m-a") {
+    validateChampionsStatPoints(team, errors);
   }
 
   return errors;
@@ -393,7 +439,7 @@ export function parseAndValidateTeam(
   }
 
   // 2. Structural validation
-  const structuralErrors = validateTeamStructure(team);
+  const structuralErrors = validateTeamStructure(team, gameFormat);
   errors.push(...structuralErrors);
 
   // 3. Format-specific validation (only if structural checks pass)

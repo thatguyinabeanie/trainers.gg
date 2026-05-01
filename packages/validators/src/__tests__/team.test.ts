@@ -207,6 +207,62 @@ Level: 50
   });
 });
 
+describe("validateTeamStructure — Champions (reg-m-a)", () => {
+  const makeChampionsMon = (overrides: Partial<ReturnType<typeof parseShowdownText>[number]> = {}) =>
+    ({
+      species: "Incineroar",
+      nickname: null,
+      level: 50,
+      ability: "Intimidate",
+      nature: "Careful",
+      held_item: null,
+      move1: "Fake Out",
+      move2: null,
+      move3: null,
+      move4: null,
+      ev_hp: 20,
+      ev_attack: 10,
+      ev_defense: 10,
+      ev_special_attack: 10,
+      ev_special_defense: 10,
+      ev_speed: 6,
+      iv_hp: 31,
+      iv_attack: 31,
+      iv_defense: 31,
+      iv_special_attack: 31,
+      iv_special_defense: 31,
+      iv_speed: 31,
+      tera_type: null,
+      gender: null,
+      is_shiny: false,
+      ...overrides,
+    });
+
+  it("accepts a valid Champions team (66 total, ≤32 per stat)", () => {
+    const errors = validateTeamStructure([makeChampionsMon()], "reg-m-a");
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects a Pokemon with more than 66 total Stat Points", () => {
+    const mon = makeChampionsMon({ ev_hp: 32, ev_attack: 32, ev_defense: 10 });
+    const errors = validateTeamStructure([mon], "reg-m-a");
+    expect(errors.some((e) => e.message.includes("total Stat Points"))).toBe(true);
+  });
+
+  it("rejects a Pokemon with more than 32 in a single stat", () => {
+    const mon = makeChampionsMon({ ev_hp: 33, ev_attack: 0, ev_defense: 0, ev_special_attack: 0, ev_special_defense: 0, ev_speed: 0 });
+    const errors = validateTeamStructure([mon], "reg-m-a");
+    expect(errors.some((e) => e.message.includes("Stat Points in HP"))).toBe(true);
+  });
+
+  it("does not apply Champions stat limits for other formats", () => {
+    // 252 EVs is valid for reg-i
+    const mon = makeChampionsMon({ ev_hp: 252, ev_speed: 252, ev_attack: 0, ev_defense: 0, ev_special_attack: 0, ev_special_defense: 0 });
+    const errors = validateTeamStructure([mon], "reg-i");
+    expect(errors.filter((e) => e.message.includes("Stat Points"))).toHaveLength(0);
+  });
+});
+
 describe("parsePokepaseUrl", () => {
   it("parses a valid Pokepaste URL", () => {
     const result = parsePokepaseUrl("https://pokepast.es/abcdef0123456789");
@@ -260,12 +316,12 @@ describe("getPkmnFormat / FORMAT_MAP", () => {
   it("has entries for all expected formats", () => {
     const expectedKeys = [
       "reg-i",
+      "reg-m-a",
       "reg-h",
       "reg-g",
       "reg-f",
       "reg-e",
       "reg-d",
-      "reg-m-a",
       "ou",
       "uu",
       "ubers",
@@ -274,12 +330,13 @@ describe("getPkmnFormat / FORMAT_MAP", () => {
       "monotype",
     ];
     for (const key of expectedKeys) {
-      expect(FORMAT_MAP[key]).toBeDefined();
+      expect(key in FORMAT_MAP).toBe(true);
     }
   });
 
-  it("maps reg-m-a to gen9vgc2025regma", () => {
-    expect(getPkmnFormat("reg-m-a")).toBe("gen9vgc2025regma");
+  it("returns null for reg-m-a (no @pkmn/sim format yet)", () => {
+    expect(FORMAT_MAP["reg-m-a"]).toBeNull();
+    expect(getPkmnFormat("reg-m-a")).toBeNull();
   });
 });
 

@@ -286,14 +286,15 @@ export function IdentityLane({
             ))}
           </div>
 
-          {/* Row 2: Type pills + gender + shiny */}
-          <div className="flex flex-wrap items-center gap-1">
+          {/* Row 2: Type pills (left) + gender + shiny (right) */}
+          <div className="flex items-center gap-1">
             {/* Type pills */}
             {types.map((t) => (
               <TypePill key={t} t={t} />
             ))}
 
             {/* Gender 3-way toggle: ♂ / ♀ / — */}
+            <div className="ml-auto flex items-center gap-1">
             <div className="flex flex-col">
               <button
                 type="button"
@@ -327,6 +328,7 @@ export function IdentityLane({
               ✦
             </button>
 
+            </div>{/* end ml-auto group */}
           </div>
         </div>
 

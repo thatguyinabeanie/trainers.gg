@@ -62,18 +62,13 @@ export async function registerForTournament(
  */
 export async function updateRegistrationPreferences(
   supabase: TypedClient,
-  tournamentId: number,
+  registrationId: number,
   data: {
     inGameName?: string;
     displayNameOption?: string;
     showCountryFlag?: boolean;
   }
 ) {
-  const alt = await getCurrentAlt(supabase);
-  if (!alt) {
-    throw new Error("Unable to load your account.");
-  }
-
   const { data: registration, error } = await supabase
     .from("tournament_registrations")
     .update({
@@ -81,8 +76,7 @@ export async function updateRegistrationPreferences(
       display_name_option: data.displayNameOption,
       show_country_flag: data.showCountryFlag,
     })
-    .eq("tournament_id", tournamentId)
-    .eq("alt_id", alt.id)
+    .eq("id", registrationId)
     .select("id")
     .single();
 

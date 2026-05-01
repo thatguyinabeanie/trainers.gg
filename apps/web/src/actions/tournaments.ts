@@ -748,6 +748,7 @@ export async function getRegistrationDetailsAction(
  * Used by the "Edit Registration" flow
  */
 export async function updateRegistrationAction(
+  registrationId: number,
   tournamentId: number,
   data: {
     inGameName?: string;
@@ -760,7 +761,7 @@ export async function updateRegistrationAction(
     const supabase = await createClient();
     const result = await updateRegistrationPreferencesMutation(
       supabase,
-      tournamentId,
+      registrationId,
       data
     );
     invalidateTournamentCaches(tournamentId);

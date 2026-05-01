@@ -12,6 +12,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { type ValidationError } from "../../validation-hooks";
 import { CATEGORY_ICON_URLS } from "../../move-category-ui";
@@ -179,37 +184,42 @@ function MoveTile({
             />
           }
         >
-            {/* Col 1: Type pill — Showdown retro sprite */}
-            <span className="mvline-type">
-              {moveName && moveData?.type ? (
-                <img
-                  src={getShowdownTypeIconUrl(moveData.type)}
-                  alt={moveData.type}
-                  className="h-6 w-auto [image-rendering:pixelated]"
-                />
-              ) : null}
+            {/* Col 1: Type + category grouped */}
+            <span className="mvline-type-cat">
+              <span className="mvline-type">
+                {moveName && moveData?.type ? (
+                  <img
+                    src={getShowdownTypeIconUrl(moveData.type)}
+                    alt={moveData.type}
+                    className="h-6 w-auto [image-rendering:pixelated]"
+                  />
+                ) : null}
+              </span>
+              <span className="mvline-cat">
+                {moveName && moveData?.category && CATEGORY_ICON_URLS[moveData.category] ? (
+                  <img
+                    src={CATEGORY_ICON_URLS[moveData.category]}
+                    alt={moveData.category}
+                    className="h-6 w-auto [image-rendering:pixelated]"
+                  />
+                ) : null}
+              </span>
             </span>
 
-            {/* Col 2: Category icon */}
-            <span className="mvline-cat">
-              {moveName && moveData?.category && CATEGORY_ICON_URLS[moveData.category] ? (
-                <img
-                  src={CATEGORY_ICON_URLS[moveData.category]}
-                  alt={moveData.category}
-                  className="h-6 w-auto [image-rendering:pixelated]"
-                />
-              ) : null}
-            </span>
-
-            {/* Col 3: Move name */}
-            <span
-              className={cn(
-                "mvline-name",
-                !moveName && "text-muted-foreground/50"
+            {/* Col 3: Move name — tooltip shows full description on hover */}
+            <Tooltip>
+              <TooltipTrigger className={cn(
+                  "mvline-name",
+                  !moveName && "text-muted-foreground/50"
+                )}>
+                {moveName ?? "+ Add move"}
+              </TooltipTrigger>
+              {moveName && moveData?.shortDesc && (
+                <TooltipContent side="bottom" className="max-w-64 text-xs">
+                  {moveData.shortDesc}
+                </TooltipContent>
               )}
-            >
-              {moveName ?? "+ Add move"}
-            </span>
+            </Tooltip>
 
             {/* Col 4: BP */}
             <span className="mvline-stat">
@@ -233,17 +243,7 @@ function MoveTile({
               </span>
             </span>
 
-            {/* Col 6: Description (always rendered when present) */}
-            <span
-              className="mvline-desc"
-              title={moveData?.shortDesc ?? undefined}
-            >
-              {moveName && moveData?.shortDesc && moveData.shortDesc !== "No additional effect."
-                ? moveData.shortDesc
-                : ""}
-            </span>
-
-            {/* Col 7: Calc pill (damage moves w/ calc on + defender) OR
+            {/* Col 6: Calc pill (damage moves w/ calc on + defender) OR
                 "pick a target" hint (calc on, no defender). Empty otherwise. */}
             {hasCalc && koTier ? (
               <span className={cn("mvline-pill", `mvline-pill--ko${koTier}`)}>
@@ -351,7 +351,7 @@ export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: Moves
   }
 
   return (
-    <div className="flex min-w-[240px] flex-1 flex-col gap-1 border-r border-dashed border-border/60 p-3">
+    <div className="flex min-w-[240px] flex-1 flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3">
       {/* Header */}
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
