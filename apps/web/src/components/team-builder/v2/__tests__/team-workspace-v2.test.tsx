@@ -169,10 +169,12 @@ jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 // Toast — capture calls
 const mockToastError = jest.fn();
 const mockToastSuccess = jest.fn();
+const mockToastInfo = jest.fn();
 jest.mock("sonner", () => ({
   toast: {
     error: (...args: unknown[]) => mockToastError(...args),
     success: (...args: unknown[]) => mockToastSuccess(...args),
+    info: (...args: unknown[]) => mockToastInfo(...args),
   },
 }));
 
@@ -592,6 +594,51 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
       // No pokemon in slot → action should not be called
       expect(mockRemovePokemonFromTeamAction).not.toHaveBeenCalled();
     });
+  });
+});
+
+// =============================================================================
+// optimistic placeholder guards — block mutate/remove/reorder for negative ids
+// =============================================================================
+
+describe("TeamWorkspaceV2 — optimistic placeholder guards", () => {
+  /** Team where slot 0 holds a not-yet-saved pokemon (negative id). */
+  const PENDING_TEAM = makeTeam([
+    {
+      id: -1,
+      pokemon_id: -1,
+      team_position: 1,
+      pokemon: makePokemon(-1, "Pikachu"),
+    },
+  ]);
+
+  it("update on a pending placeholder is skipped and shows an info toast", async () => {
+    const user = userEvent.setup();
+    renderWorkspace(PENDING_TEAM);
+
+    await user.click(screen.getByTestId("update-0"));
+
+    await waitFor(() => {
+      expect(mockToastInfo).toHaveBeenCalledWith(
+        expect.stringContaining("Still saving")
+      );
+    });
+    expect(mockUpdatePokemonAction).not.toHaveBeenCalled();
+  });
+
+  it("remove on a pending placeholder is skipped and shows an info toast", async () => {
+    const user = userEvent.setup();
+    renderWorkspace(PENDING_TEAM);
+
+    await user.click(screen.getByTestId("remove-0"));
+    await user.click(screen.getByRole("button", { name: /^remove$/i }));
+
+    await waitFor(() => {
+      expect(mockToastInfo).toHaveBeenCalledWith(
+        expect.stringContaining("Still saving")
+      );
+    });
+    expect(mockRemovePokemonFromTeamAction).not.toHaveBeenCalled();
   });
 });
 

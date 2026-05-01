@@ -123,6 +123,10 @@ function buildOptimisticTeamPokemon(
   position: number,
   tempId: number
 ): TeamWithPokemon["team_pokemon"][number] {
+  // Numeric and boolean defaults mirror pokemonPayloadSchema's `.default(...)`
+  // values — the same defaults the server applies on insert. Without them the
+  // optimistic row would render with null fields then visibly snap to 50/0/31
+  // when router.refresh lands the canonical row.
   const pokemon: Tables<"pokemon"> = {
     id: tempId,
     species,
@@ -137,22 +141,22 @@ function buildOptimisticTeamPokemon(
     held_item: null,
     tera_type: null,
     gender: null,
-    is_shiny: null,
-    level: null,
+    is_shiny: false,
+    level: 50,
     format_legal: null,
     created_at: null,
-    ev_hp: null,
-    ev_attack: null,
-    ev_defense: null,
-    ev_special_attack: null,
-    ev_special_defense: null,
-    ev_speed: null,
-    iv_hp: null,
-    iv_attack: null,
-    iv_defense: null,
-    iv_special_attack: null,
-    iv_special_defense: null,
-    iv_speed: null,
+    ev_hp: 0,
+    ev_attack: 0,
+    ev_defense: 0,
+    ev_special_attack: 0,
+    ev_special_defense: 0,
+    ev_speed: 0,
+    iv_hp: 31,
+    iv_attack: 31,
+    iv_defense: 31,
+    iv_special_attack: 31,
+    iv_special_defense: 31,
+    iv_speed: 31,
   };
   return {
     id: tempId,
@@ -260,7 +264,10 @@ export function TeamWorkspaceV2({
               : tp
           );
         case "remove":
-          return current.filter((tp) => tp.pokemon?.id !== action.pokemonId);
+          // Filter by pokemon_id (always non-null) rather than pokemon?.id —
+          // the join can theoretically yield `pokemon: null` rows even though
+          // pokemon_id holds the canonical FK.
+          return current.filter((tp) => tp.pokemon_id !== action.pokemonId);
         case "add": {
           // Replace any existing entry at the same position with the placeholder.
           const filtered = current.filter(
@@ -296,6 +303,12 @@ export function TeamWorkspaceV2({
     pokemonId: number,
     fields: Partial<TablesUpdate<"pokemon">>
   ) {
+    // Negative ids are optimistic placeholders — the row hasn't landed in
+    // the DB yet, so the server can't accept an update for it.
+    if (pokemonId < 1) {
+      toast.info("Still saving the new Pokémon — try again in a moment.");
+      return;
+    }
     startTransition(async () => {
       applyOptimistic({ kind: "update", pokemonId, fields });
       const result = await updatePokemonAction(team.id, pokemonId, fields);
@@ -349,6 +362,11 @@ export function TeamWorkspaceV2({
     setRemoveSlotIdx(null);
     if (!p) return;
     const pokemonId = p.id;
+
+    if (pokemonId < 1) {
+      toast.info("Still saving the new Pokémon — try again in a moment.");
+      return;
+    }
 
     startTransition(async () => {
       applyOptimistic({ kind: "remove", pokemonId });
@@ -406,6 +424,14 @@ export function TeamWorkspaceV2({
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+
+    // Block reorder while any optimistic placeholder is pending — its negative
+    // id can't be sent to reorderTeamPokemonAction (rejected by positiveIntSchema)
+    // and a partial reorder would desync the UI from the server.
+    if (optimisticTeamPokemon.some((tp) => tp.pokemon_id < 1)) {
+      toast.info("Still saving the new Pokémon — try reordering in a moment.");
+      return;
+    }
 
     const oldIndex = itemIds.indexOf(active.id as string);
     const newIndex = itemIds.indexOf(over.id as string);
