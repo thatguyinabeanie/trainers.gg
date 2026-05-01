@@ -52,13 +52,13 @@ export interface BaseSideState {
   tailwind: boolean;
   helpingHand: boolean;
   friendGuard: boolean;
-}
-export type AttackerSideState = BaseSideState;
-export interface DefenderSideState extends BaseSideState {
+  protect: boolean;
   stealthRock: boolean;
   spikes: number;
   saltCure: boolean;
 }
+export type AttackerSideState = BaseSideState;
+// DefenderSideState removed — both sides now use BaseSideState directly.
 
 export interface CalcOutput {
   minPercent: number;
@@ -233,14 +233,13 @@ function buildField(
   weather: string,
   terrain: string,
   gravity: boolean,
-  attackerSide: AttackerSideState,
-  defenderSide: DefenderSideState,
+  fairyAura: boolean,
+  attackerSide: BaseSideState,
+  defenderSide: BaseSideState,
   direction: CalcDirection
 ): Field {
-  const aSide: BaseSideState =
-    direction === "offense" ? attackerSide : defenderSide;
-  const dSide: AttackerSideState | DefenderSideState =
-    direction === "offense" ? defenderSide : attackerSide;
+  const aSide = direction === "offense" ? attackerSide : defenderSide;
+  const dSide = direction === "offense" ? defenderSide : attackerSide;
 
   const aSmogon = new Side({
     isReflect: aSide.reflect,
@@ -249,6 +248,10 @@ function buildField(
     isTailwind: aSide.tailwind,
     isHelpingHand: aSide.helpingHand,
     isFriendGuard: aSide.friendGuard,
+    isProtected: aSide.protect,
+    isSR: aSide.stealthRock,
+    spikes: aSide.spikes,
+    isSaltCured: aSide.saltCure,
   });
 
   const dSmogon = new Side({
@@ -258,11 +261,10 @@ function buildField(
     isTailwind: dSide.tailwind,
     isHelpingHand: dSide.helpingHand,
     isFriendGuard: dSide.friendGuard,
-    isSR:
-      "stealthRock" in dSide ? (dSide as DefenderSideState).stealthRock : false,
-    spikes: "spikes" in dSide ? (dSide as DefenderSideState).spikes : 0,
-    isSaltCured:
-      "saltCure" in dSide ? (dSide as DefenderSideState).saltCure : false,
+    isProtected: dSide.protect,
+    isSR: dSide.stealthRock,
+    spikes: dSide.spikes,
+    isSaltCured: dSide.saltCure,
   });
 
   return new Field({
@@ -270,6 +272,7 @@ function buildField(
     weather: asSmogon(weather || null),
     terrain: asSmogon(terrain || null),
     isGravity: gravity,
+    isFairyAura: fairyAura,
     attackerSide: aSmogon,
     defenderSide: dSmogon,
   });
@@ -433,11 +436,13 @@ export interface UseCalcStateReturn {
   setWeather: (v: string) => void;
   setTerrain: (v: string) => void;
   setGravity: (v: boolean) => void;
+  fairyAura: boolean;
+  setFairyAura: (v: boolean) => void;
   // Sides
   attackerSide: AttackerSideState;
-  defenderSide: DefenderSideState;
+  defenderSide: BaseSideState;
   setAttackerSide: (patch: Partial<AttackerSideState>) => void;
-  setDefenderSide: (patch: Partial<DefenderSideState>) => void;
+  setDefenderSide: (patch: Partial<BaseSideState>) => void;
   // Derived results — computed during render
   moves: readonly (string | null)[];
   moveCalcOutputs: readonly (CalcOutput | null)[];
@@ -557,6 +562,7 @@ export function useCalcState({
   const [weather, setWeather] = useState("");
   const [terrain, setTerrain] = useState("");
   const [gravity, setGravity] = useState(false);
+  const [fairyAura, setFairyAura] = useState(false);
   const [attackerSide, setAttackerSideState] = useState<AttackerSideState>({
     reflect: false,
     lightScreen: false,
@@ -564,14 +570,19 @@ export function useCalcState({
     tailwind: false,
     helpingHand: false,
     friendGuard: false,
+    protect: false,
+    stealthRock: false,
+    spikes: 0,
+    saltCure: false,
   });
-  const [defenderSide, setDefenderSideState] = useState<DefenderSideState>({
+  const [defenderSide, setDefenderSideState] = useState<BaseSideState>({
     reflect: false,
     lightScreen: false,
     auroraVeil: false,
     tailwind: false,
     helpingHand: false,
     friendGuard: false,
+    protect: false,
     stealthRock: false,
     spikes: 0,
     saltCure: false,
@@ -626,7 +637,7 @@ export function useCalcState({
     setAttackerSideState((prev) => ({ ...prev, ...patch }));
   }
 
-  function setDefenderSide(patch: Partial<DefenderSideState>) {
+  function setDefenderSide(patch: Partial<BaseSideState>) {
     setDefenderSideState((prev) => ({ ...prev, ...patch }));
   }
 
@@ -685,6 +696,7 @@ export function useCalcState({
     effectiveWeather,
     effectiveTerrain,
     gravity,
+    fairyAura,
     attackerSide,
     defenderSide,
     direction
@@ -736,6 +748,7 @@ export function useCalcState({
     effectiveWeather,
     effectiveTerrain,
     gravity,
+    fairyAura,
     attackerSide,
     defenderSide,
     "defense"
@@ -836,6 +849,8 @@ export function useCalcState({
     setWeather,
     setTerrain,
     setGravity,
+    fairyAura,
+    setFairyAura,
     attackerSide,
     defenderSide,
     setAttackerSide,
