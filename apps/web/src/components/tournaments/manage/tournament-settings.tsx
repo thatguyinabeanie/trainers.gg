@@ -75,7 +75,8 @@ interface Phase {
 // DateTimeField is imported from the shared UI component
 // It supports both timestamp and ISO string output via the outputFormat prop
 
-interface FormData {
+// Named to avoid shadowing the global DOM `FormData` type.
+interface SettingsFormState {
   name: string;
   description: string;
   game: string;
@@ -89,8 +90,14 @@ interface FormData {
   registrationType: "open" | "invite_only";
   checkInRequired: boolean;
   allowLateRegistration: boolean;
-  lateCheckInMaxRound: number | undefined;
+  // Null mirrors the DB column; symmetric with startDate/endDate.
+  lateCheckInMaxRound: number | null;
 }
+
+const PLAYER_CAP_MIN = 4;
+const PLAYER_CAP_MAX = 512;
+const LATE_ROUND_MIN = 1;
+const LATE_ROUND_MAX = 10;
 
 interface TournamentSettingsProps {
   tournament: {
@@ -120,7 +127,7 @@ interface TournamentSettingsProps {
 
 function buildFormDataFromTournament(
   tournament: TournamentSettingsProps["tournament"]
-): FormData {
+): SettingsFormState {
   return {
     name: tournament.name || "",
     description: tournament.description || "",
@@ -136,7 +143,7 @@ function buildFormDataFromTournament(
       (tournament.registration_type as "open" | "invite_only") || "open",
     checkInRequired: tournament.check_in_required ?? false,
     allowLateRegistration: tournament.allow_late_registration ?? false,
-    lateCheckInMaxRound: tournament.late_check_in_max_round ?? undefined,
+    lateCheckInMaxRound: tournament.late_check_in_max_round ?? null,
   };
 }
 
@@ -150,16 +157,15 @@ export function TournamentSettings({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Two snapshots:
-  // - `formData` is the live editing state.
-  // - `savedFormData` mirrors what's actually persisted; it advances after every
-  //   successful save. Cancel resets `formData` to `savedFormData`, and the
-  //   diff between them tells us which fields to send (so we never silently
-  //   overwrite a null DB value with a UI-default like "sv"/"reg-i").
-  const [formData, setFormData] = useState<FormData>(() =>
+  // `savedFormData` mirrors what's actually persisted; it advances after every
+  // successful save so cancel reverts to the last save (not the initial mount)
+  // and the diff against `formData` tells us which fields to send. Without this
+  // diff, a null DB value (e.g., `game = null`) would be silently overwritten
+  // by the UI's display fallback ("sv"/"reg-i").
+  const [formData, setFormData] = useState<SettingsFormState>(() =>
     buildFormDataFromTournament(tournament)
   );
-  const [savedFormData, setSavedFormData] = useState<FormData>(() =>
+  const [savedFormData, setSavedFormData] = useState<SettingsFormState>(() =>
     buildFormDataFromTournament(tournament)
   );
 
@@ -187,10 +193,36 @@ export function TournamentSettings({
     }));
   };
 
-  // Build an updates payload containing only fields that have changed since the
-  // last successful save. Skipping unchanged fields prevents silently writing
-  // form-level defaults (e.g., "sv") to columns that are null in the database.
-  const buildUpdatePayload = (next: FormData, prev: FormData) => {
+  // Validate user input before any save. Returns null on success or an error
+  // message on failure. Catches invalid number inputs that would otherwise be
+  // coerced to `null` and silently disable the player cap or late-round window.
+  const validateForSave = (data: SettingsFormState): string | null => {
+    if (!data.name.trim()) return "Tournament name is required.";
+    if (data.playerCapEnabled) {
+      const cap = parseInt(data.maxParticipants, 10);
+      if (
+        Number.isNaN(cap) ||
+        cap < PLAYER_CAP_MIN ||
+        cap > PLAYER_CAP_MAX
+      ) {
+        return `Player cap must be between ${PLAYER_CAP_MIN} and ${PLAYER_CAP_MAX}.`;
+      }
+    }
+    if (data.allowLateRegistration && data.lateCheckInMaxRound !== null) {
+      const round = data.lateCheckInMaxRound;
+      if (round < LATE_ROUND_MIN || round > LATE_ROUND_MAX) {
+        return `Close-after-round must be between ${LATE_ROUND_MIN} and ${LATE_ROUND_MAX}.`;
+      }
+    }
+    return null;
+  };
+
+  // Diff-only payload: prevents UI defaults like "sv"/"reg-i" from clobbering
+  // null DB columns when the user hasn't actually edited those fields.
+  const buildUpdatePayload = (
+    next: SettingsFormState,
+    prev: SettingsFormState
+  ) => {
     const updates: Parameters<typeof updateTournamentAction>[1] = {};
 
     if (next.name !== prev.name) updates.name = next.name;
@@ -205,8 +237,10 @@ export function TournamentSettings({
     if (next.startDate !== prev.startDate) updates.startDate = next.startDate;
     if (next.endDate !== prev.endDate) updates.endDate = next.endDate;
 
+    // validateForSave guarantees a valid cap when the toggle is on, so this
+    // parseInt cannot land on NaN here.
     const nextCap = next.playerCapEnabled
-      ? parseInt(next.maxParticipants, 10) || null
+      ? parseInt(next.maxParticipants, 10)
       : null;
     const prevCap = prev.playerCapEnabled
       ? parseInt(prev.maxParticipants, 10) || null
@@ -221,10 +255,10 @@ export function TournamentSettings({
       updates.allowLateRegistration = next.allowLateRegistration;
 
     const nextLateRound = next.allowLateRegistration
-      ? (next.lateCheckInMaxRound ?? null)
+      ? next.lateCheckInMaxRound
       : null;
     const prevLateRound = prev.allowLateRegistration
-      ? (prev.lateCheckInMaxRound ?? null)
+      ? prev.lateCheckInMaxRound
       : null;
     if (nextLateRound !== prevLateRound)
       updates.lateCheckInMaxRound = nextLateRound;
@@ -236,6 +270,12 @@ export function TournamentSettings({
     setIsSaving(true);
 
     try {
+      const validationError = validateForSave(formData);
+      if (validationError) {
+        toast.error("Invalid settings", { description: validationError });
+        return;
+      }
+
       const updates = buildUpdatePayload(formData, savedFormData);
 
       if (Object.keys(updates).length > 0) {
@@ -244,9 +284,11 @@ export function TournamentSettings({
           toast.error("Error saving settings", { description: result.error });
           return;
         }
+        // Advance the form snapshot as soon as the tournament fields persist;
+        // a later phase-save failure won't desync the form from the DB.
+        setSavedFormData(formData);
       }
 
-      // Save phases in a single batch operation
       const phasesForSave = convertPhasesForSave(phaseConfigs);
       const phasesResult = await saveTournamentPhasesAction(
         tournament.id,
@@ -264,13 +306,14 @@ export function TournamentSettings({
         description: "Tournament settings have been updated successfully.",
       });
 
-      // Advance the saved snapshots so a follow-up edit + cancel reverts to
-      // the just-saved values, not the stale prop.
-      setSavedFormData(formData);
       setSavedPhaseConfigs(phaseConfigs);
       setIsEditing(false);
       router.refresh();
     } catch (error) {
+      console.error("[tournament-settings] save failed", {
+        tournamentId: tournament.id,
+        error,
+      });
       toast.error("Error saving settings", {
         description:
           error instanceof Error
@@ -305,6 +348,10 @@ export function TournamentSettings({
           : "/tournaments"
       );
     } catch (error) {
+      console.error("[tournament-settings] delete failed", {
+        tournamentId: tournament.id,
+        error,
+      });
       toast.error("Error deleting tournament", {
         description:
           error instanceof Error
@@ -593,8 +640,8 @@ export function TournamentSettings({
                     }
                     disabled={!isEditing}
                     placeholder="32"
-                    min="4"
-                    max="512"
+                    min={PLAYER_CAP_MIN}
+                    max={PLAYER_CAP_MAX}
                     className="w-32"
                   />
                   <span className="text-muted-foreground text-sm">players</span>
@@ -643,8 +690,8 @@ export function TournamentSettings({
                     ...prev,
                     allowLateRegistration: checked,
                     lateCheckInMaxRound: checked
-                      ? prev.lateCheckInMaxRound || 3
-                      : undefined,
+                      ? (prev.lateCheckInMaxRound ?? 3)
+                      : null,
                   }))
                 }
                 disabled={!isEditing}
@@ -660,17 +707,17 @@ export function TournamentSettings({
                 <Input
                   id="lateCheckInMaxRound"
                   type="number"
-                  value={formData.lateCheckInMaxRound || ""}
-                  onChange={(e) =>
+                  value={formData.lateCheckInMaxRound ?? ""}
+                  onChange={(e) => {
+                    const parsed = parseInt(e.target.value, 10);
                     setFormData((prev) => ({
                       ...prev,
-                      lateCheckInMaxRound:
-                        parseInt(e.target.value) || undefined,
-                    }))
-                  }
+                      lateCheckInMaxRound: Number.isNaN(parsed) ? null : parsed,
+                    }));
+                  }}
                   placeholder="3"
-                  min="1"
-                  max="10"
+                  min={LATE_ROUND_MIN}
+                  max={LATE_ROUND_MAX}
                   disabled={!isEditing}
                   className="w-32"
                 />

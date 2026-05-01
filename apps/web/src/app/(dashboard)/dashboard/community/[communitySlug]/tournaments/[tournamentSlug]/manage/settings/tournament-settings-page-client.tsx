@@ -40,8 +40,6 @@ export function TournamentSettingsPageClient({
     [communitySlug]
   );
 
-  // Fetch tournament by slug — `getTournamentBySlug` returns `phases` joined,
-  // so no separate phases query is needed.
   const tournamentQueryFn = (
     supabase: Parameters<typeof getTournamentBySlug>[0]
   ) => getTournamentBySlug(supabase, tournamentSlug);
@@ -133,14 +131,12 @@ export function TournamentSettingsPageClient({
     );
   }
 
-  // Build the tournament settings props
   const tournamentForSettings = {
     id: tournament.id,
     name: tournament.name,
     slug: tournament.slug,
     description: tournament.description,
     status: tournament.status ?? "draft",
-    format: tournament.format,
     game: tournament.game,
     game_format: tournament.game_format,
     platform: tournament.platform,
@@ -148,8 +144,6 @@ export function TournamentSettingsPageClient({
     max_participants: tournament.max_participants,
     start_date: tournament.start_date,
     end_date: tournament.end_date,
-    round_time_minutes: tournament.round_time_minutes,
-    // Registration settings
     registration_type: tournament.registration_type,
     check_in_required: tournament.check_in_required,
     allow_late_registration: tournament.allow_late_registration,

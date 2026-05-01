@@ -133,6 +133,11 @@ jest.mock("@/lib/cache-invalidation", () => ({
     mockUpdateTag("dashboard-stats");
     mockUpdateTag("dashboard-ratings");
   },
+  invalidateCommunityPageCaches: (slug?: string, id?: number) => {
+    mockUpdateTag("communities-list");
+    if (slug) mockUpdateTag(`community:${slug}`);
+    if (id != null) mockUpdateTag(`community:${id}`);
+  },
 }));
 
 jest.mock("botid/server", () => ({
@@ -375,21 +380,37 @@ describe("startRound", () => {
 // ── deleteTournament ───────────────────────────────────────────────────────
 
 describe("deleteTournament", () => {
-  it("invalidates list + tournament + community caches before deleting", async () => {
+  // The action looks up the community BEFORE deleting (so it can invalidate
+  // the community page after the row is gone). Mock that lookup chain.
+  function mockCommunityLookup(community: { slug: string; id: number } | null) {
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: community ? { communities: community } : null,
+            error: null,
+          }),
+        }),
+      }),
+    });
+  }
+
+  it("invalidates list + tournament + community caches after a successful delete", async () => {
     mockDeleteTournament.mockResolvedValue(undefined);
+    mockCommunityLookup({ slug: "test-org", id: 7 });
 
     const result = await deleteTournament(3);
 
     expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockDeleteTournament).toHaveBeenCalledWith(mockSupabase, 3);
-    // Even draft tournaments appear on the community dashboard's draft list,
-    // so deletion must invalidate the surrounding caches.
     expect(mockUpdateTag).toHaveBeenCalledWith("tournaments-list");
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:3");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:test-org");
   });
 
-  it("returns error when delete fails", async () => {
+  it("does not invalidate caches when the delete fails", async () => {
     mockDeleteTournament.mockRejectedValue(new Error("not found"));
+    mockCommunityLookup({ slug: "test-org", id: 7 });
 
     const result = await deleteTournament(3);
 
@@ -397,6 +418,9 @@ describe("deleteTournament", () => {
       success: false,
       error: "Failed to delete tournament",
     });
+    // Cache tags must NOT be busted on failure — otherwise every viewer of
+    // the community page pays for an unnecessary refetch of unchanged data.
+    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 });
 // ── forceCheckInPlayer ─────────────────────────────────────────────────────

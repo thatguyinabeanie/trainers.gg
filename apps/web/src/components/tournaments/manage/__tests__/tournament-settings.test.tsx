@@ -772,4 +772,251 @@ describe("TournamentSettings", () => {
       expect(convertedPhases[0]?.id).toBe(5);
     });
   });
+
+  // ── buildUpdatePayload — diff guards null DB columns ────────────────────────
+  // These tests pin down the silent-overwrite fix. The form falls back to UI
+  // defaults ("sv"/"reg-i") when DB columns are null, so saving must skip
+  // those fields unless the user actually edited them.
+
+  describe("buildUpdatePayload — null DB columns", () => {
+    it("does not send game/gameFormat when DB values are null and user did not edit", async () => {
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({
+            status: "draft",
+            game: null,
+            game_format: null,
+            platform: null,
+            battle_format: null,
+          })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      // Saved snapshot equals live form (both default to "sv"/"reg-i") so
+      // the diff is empty — no overwrite.
+      expect(updateTournament).not.toHaveBeenCalled();
+    });
+
+    it("sends only the edited field when one game setting changes from a non-null value", async () => {
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", name: "Old Name" })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput = screen.getByLabelText("Tournament Name");
+      await user.clear(nameInput);
+      await user.type(nameInput, "New Name");
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).toHaveBeenCalledTimes(1);
+      const [, updates] = updateTournament.mock.calls[0] ?? [];
+      expect(updates).toEqual({ name: "New Name" });
+    });
+
+    it("sends lateCheckInMaxRound: null when allowLateRegistration is toggled off", async () => {
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({
+            status: "draft",
+            allow_late_registration: true,
+            late_check_in_max_round: 3,
+          })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      // Use getByLabelText since Base UI's Switch derives its accessible name
+      // from htmlFor/id, not aria-label.
+      await user.click(screen.getByLabelText("Late Registration"));
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).toHaveBeenCalledTimes(1);
+      const [, updates] = updateTournament.mock.calls[0] ?? [];
+      expect(updates).toMatchObject({
+        allowLateRegistration: false,
+        lateCheckInMaxRound: null,
+      });
+    });
+
+    it("sends maxParticipants: null when player cap is toggled off", async () => {
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", max_participants: 64 })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      await user.click(screen.getByLabelText("Player Cap"));
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).toHaveBeenCalledTimes(1);
+      const [, updates] = updateTournament.mock.calls[0] ?? [];
+      expect(updates).toMatchObject({ maxParticipants: null });
+    });
+  });
+
+  // ── Save-time validation ────────────────────────────────────────────────────
+  // Without these guards, invalid input (empty name, NaN cap) would silently
+  // persist as empty/null with a "saved successfully" toast.
+
+  describe("validateForSave", () => {
+    it("blocks save and toasts when tournament name is cleared", async () => {
+      const { toast } = jest.requireMock("sonner") as {
+        toast: { success: jest.Mock; error: jest.Mock };
+      };
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings tournament={buildTournament({ status: "draft" })} />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput = screen.getByLabelText("Tournament Name");
+      await user.clear(nameInput);
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith(
+        "Invalid settings",
+        expect.objectContaining({
+          description: expect.stringContaining("required"),
+        })
+      );
+    });
+
+    it("blocks save when player cap is enabled but input is empty", async () => {
+      const { toast } = jest.requireMock("sonner") as {
+        toast: { success: jest.Mock; error: jest.Mock };
+      };
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", max_participants: 32 })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const capInput = screen.getByLabelText("Maximum Players");
+      await user.clear(capInput);
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(updateTournament).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith(
+        "Invalid settings",
+        expect.objectContaining({
+          description: expect.stringMatching(/player cap/i),
+        })
+      );
+    });
+  });
+
+  // ── Saved-snapshot reset ────────────────────────────────────────────────────
+  // The PR's headline UX fix: cancel after a save reverts to the *just-saved*
+  // values, not the initial mount values (since useSupabaseQuery doesn't
+  // refetch on router.refresh).
+
+  describe("saved-snapshot reset across sequential edits", () => {
+    it("cancel after a second edit reverts to the just-saved name, not the original", async () => {
+      const { updateTournament } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { updateTournament: jest.Mock };
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", name: "Original" })}
+        />
+      );
+
+      // First edit cycle: rename and save
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput = screen.getByLabelText("Tournament Name");
+      await user.clear(nameInput);
+      await user.type(nameInput, "First Save");
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+      expect(updateTournament).toHaveBeenCalledTimes(1);
+
+      // Second edit cycle: rename again, then cancel
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput2 = screen.getByLabelText("Tournament Name");
+      expect(nameInput2).toHaveValue("First Save");
+      await user.clear(nameInput2);
+      await user.type(nameInput2, "Second Edit");
+      await user.click(screen.getByRole("button", { name: /cancel/i }));
+
+      // Re-enter edit mode to verify the cancel reverted to "First Save",
+      // not "Original" (the prop value at mount).
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput3 = screen.getByLabelText("Tournament Name");
+      expect(nameInput3).toHaveValue("First Save");
+    });
+
+    it("advances saved snapshot after tournament fields persist even if phases fail", async () => {
+      // Partial-success: the tournament update succeeds, but phases save
+      // returns an error. Without the snapshot advance, a follow-up cancel
+      // would revert to pre-save values, contradicting the DB.
+      const { updateTournament, saveTournamentPhasesAction } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as {
+        updateTournament: jest.Mock;
+        saveTournamentPhasesAction: jest.Mock;
+      };
+      saveTournamentPhasesAction.mockResolvedValue({
+        success: false,
+        error: "Phase save failed",
+      });
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft", name: "Original" })}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      const nameInput = screen.getByLabelText("Tournament Name");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Persisted");
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+      expect(updateTournament).toHaveBeenCalledTimes(1);
+
+      // Phases failed → editing mode stays open, but snapshot advanced.
+      // Cancel here should revert to the just-persisted "Persisted" name.
+      await user.click(screen.getByRole("button", { name: /cancel/i }));
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      expect(screen.getByLabelText("Tournament Name")).toHaveValue("Persisted");
+    });
+  });
 });

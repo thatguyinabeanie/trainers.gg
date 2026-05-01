@@ -66,6 +66,7 @@ import {
   invalidateTournamentWithTeamCaches,
   invalidatePlayerRankingCaches,
   invalidateDashboardCaches,
+  invalidateCommunityPageCaches,
 } from "@/lib/cache-invalidation";
 import { rejectBots } from "./utils";
 import {
@@ -198,9 +199,8 @@ export async function updateTournament(
     const supabase = await createClient();
     await updateTournamentMutation(supabase, tournamentId, updates);
 
-    // Status changes require list-level invalidation; settings changes invalidate
-    // the tournament + community pages so cached public views pick up the new
-    // game/regulation/dates immediately.
+    // Settings edits surface on the public tournament page and the community
+    // list, so invalidate both.
     await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
 
     return { success: true, data: { success: true } };
@@ -460,8 +460,24 @@ export async function deleteTournament(
   try {
     await rejectBots();
     const supabase = await createClient();
-    await invalidateTournamentAndCommunityCaches(supabase, tournamentId);
+    // Resolve community + bust caches AFTER the delete succeeds — invalidating
+    // first would evict cache tags even when the mutation throws (RLS, FK,
+    // status≠draft), forcing every subsequent read to repopulate stale data.
+    // We capture the community link before the row is gone so the post-delete
+    // invalidation can still reach the community page.
+    const { data: link } = await supabase
+      .from("tournaments")
+      .select("communities!tournaments_community_id_fkey(slug, id)")
+      .eq("id", tournamentId)
+      .single();
+
     await deleteTournamentMutation(supabase, tournamentId);
+
+    invalidateTournamentListCaches(tournamentId);
+    if (link?.communities && "slug" in link.communities) {
+      const community = link.communities as { slug: string; id: number };
+      invalidateCommunityPageCaches(community.slug, community.id);
+    }
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
