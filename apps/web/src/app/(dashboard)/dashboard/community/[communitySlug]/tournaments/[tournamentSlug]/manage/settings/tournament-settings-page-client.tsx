@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentBySlug,
@@ -27,10 +28,15 @@ export function TournamentSettingsPageClient({
   communitySlug,
   tournamentSlug,
 }: TournamentSettingsPageClientProps) {
-  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
+  const router = useRouter();
+  const {
+    user: currentUser,
+    isLoading: userLoading,
+    error: userError,
+  } = useCurrentUser();
 
-  // Auth is enforced by the parent server layout — see the matching note in
-  // tournament-manage-client.tsx for why we don't push() to /sign-in here.
+  // Auth is enforced server-side by the (dashboard) layout; do not redirect
+  // from this client (causes a /sign-in ↔ /dashboard race).
 
   // Fetch organization by slug
   const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
@@ -103,9 +109,23 @@ export function TournamentSettingsPageClient({
     );
   }
 
-  // currentUser is guaranteed to exist after the server layout's auth check;
-  // this is just a guard for the brief client-side window before
-  // useCurrentUser resolves.
+  if (userError) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <ShieldAlert className="text-muted-foreground mb-4 h-12 w-12" />
+          <h3 className="mb-2 text-lg font-semibold">
+            Couldn&apos;t load your account
+          </h3>
+          <p className="text-muted-foreground mb-4 text-center">
+            Try refreshing the page. If this keeps happening, contact support.
+          </p>
+          <Button onClick={() => router.refresh()}>Retry</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!currentUser) {
     return null;
   }

@@ -68,14 +68,14 @@ export function TournamentManageClient({
   const [auditSheetOpen, setAuditSheetOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
+  const {
+    user: currentUser,
+    isLoading: userLoading,
+    error: userError,
+  } = useCurrentUser();
 
-  // Auth is enforced by the parent server layout
-  // (`(dashboard)/dashboard/community/[communitySlug]/layout.tsx`), so by the
-  // time we render here the user is authenticated. We don't redirect from
-  // this client — doing so used to fire during a race between the loading
-  // state and `currentUser` resolving, bouncing real users to /sign-in (and
-  // then proxy.ts back to /dashboard) on every navigation.
+  // Auth is enforced server-side by the (dashboard) layout; do not redirect
+  // from this client (causes a /sign-in ↔ /dashboard race).
 
   // Fetch organization by slug
   const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
@@ -188,10 +188,23 @@ export function TournamentManageClient({
     );
   }
 
-  // currentUser is guaranteed to exist (the parent server layout redirects
-  // unauthenticated requests). Rendering null here is purely a guard for the
-  // brief client-side window before useCurrentUser resolves; we never bounce
-  // the user away from this page.
+  if (userError) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <ShieldAlert className="text-muted-foreground mb-4 h-12 w-12" />
+          <h3 className="mb-2 text-lg font-semibold">
+            Couldn&apos;t load your account
+          </h3>
+          <p className="text-muted-foreground mb-4 text-center">
+            Try refreshing the page. If this keeps happening, contact support.
+          </p>
+          <Button onClick={() => router.refresh()}>Retry</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!currentUser) {
     return null;
   }

@@ -18,8 +18,11 @@ export async function getUserCount(supabase: TypedClient) {
  * Get current authenticated user with their main alt.
  *
  * Users can have multiple alts; we resolve the "main" one via
- * `users.main_alt_id`. Falls back to the oldest alt when `main_alt_id` is null
- * (newly-created users before they pick a main).
+ * `users.main_alt_id`. If that points to a missing row (deleted alt) or is
+ * null (brand-new account), we fall back to the user's oldest alt by
+ * `created_at`. Returns `null` on any database error so callers can treat
+ * "user unavailable" uniformly with "not signed in" — matches the rest of
+ * this file (`getUserById`, `getUserSpritePreference`, etc.).
  */
 export async function getCurrentUser(supabase: TypedClient) {
   const {
@@ -36,8 +39,6 @@ export async function getCurrentUser(supabase: TypedClient) {
 
   if (userError || !user) return null;
 
-  // Resolve the main alt: prefer the row referenced by `main_alt_id`, fall
-  // back to the user's oldest alt for accounts that don't have a main set yet.
   let alt: Tables<"alts"> | null = null;
   if (user.main_alt_id != null) {
     const { data, error } = await supabase
@@ -45,9 +46,20 @@ export async function getCurrentUser(supabase: TypedClient) {
       .select("*")
       .eq("id", user.main_alt_id)
       .maybeSingle();
-    if (error) throw error;
+    if (error) {
+      console.error("[getCurrentUser] main_alt_id lookup failed", {
+        userId: authUser.id,
+        mainAltId: user.main_alt_id,
+        error,
+      });
+      return null;
+    }
     alt = data;
-  } else {
+  }
+
+  // Fallback to the oldest alt when main_alt_id is null OR the referenced row
+  // is missing (e.g., the alt was deleted but main_alt_id wasn't cleared).
+  if (!alt) {
     const { data, error } = await supabase
       .from("alts")
       .select("*")
@@ -55,7 +67,13 @@ export async function getCurrentUser(supabase: TypedClient) {
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
-    if (error) throw error;
+    if (error) {
+      console.error("[getCurrentUser] fallback alt lookup failed", {
+        userId: authUser.id,
+        error,
+      });
+      return null;
+    }
     alt = data;
   }
 

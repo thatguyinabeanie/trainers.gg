@@ -294,6 +294,23 @@ describe("OverviewClient — Upcoming Tournaments", () => {
     expect(screen.getByText(/5\/∞ registered/)).toBeInTheDocument();
   });
 
+  it("links each upcoming tournament card to its manage page", () => {
+    // The card was a static div; making it a Link is the affordance owners
+    // expect on the community overview. Asserting the href prevents a future
+    // refactor from silently losing the link.
+    const t = makeUpcomingTournament({
+      name: "Summer Regionals",
+      slug: "summer-regionals",
+    });
+    render(<OverviewClient {...defaultProps} upcomingTournaments={[t]} />);
+
+    const link = screen.getByRole("link", { name: /Summer Regionals/i });
+    expect(link).toHaveAttribute(
+      "href",
+      "/dashboard/community/vgc-league/tournaments/summer-regionals/manage"
+    );
+  });
+
   describe("fill-rate bar clamping", () => {
     it("clamps the fill bar to 100% when registrations exceed max", () => {
       const t = makeUpcomingTournament({

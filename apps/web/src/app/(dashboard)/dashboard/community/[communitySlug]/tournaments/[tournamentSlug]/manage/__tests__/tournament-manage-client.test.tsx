@@ -462,6 +462,50 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
     });
   });
 
+  describe("auth state", () => {
+    it("renders empty DOM and does not push to /sign-in when currentUser is null", () => {
+      // Auth is enforced server-side by the (dashboard) layout. The client
+      // used to push("/sign-in") here, which raced with the loading state
+      // and bounced authenticated users to /dashboard via proxy.ts.
+      (useCurrentUser as jest.Mock).mockReturnValue({
+        user: null,
+        isLoading: false,
+      });
+      setupQueryMocks();
+
+      const { container } = render(
+        <TournamentManageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      expect(container).toBeEmptyDOMElement();
+      expect(mockRouter.push).not.toHaveBeenCalled();
+    });
+
+    it("renders an error card when useCurrentUser surfaces an error", () => {
+      (useCurrentUser as jest.Mock).mockReturnValue({
+        user: undefined,
+        isLoading: false,
+        error: new Error("PostgrestError: rls denied"),
+      });
+      setupQueryMocks();
+
+      render(
+        <TournamentManageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      expect(
+        screen.getByText(/couldn['’]t load your account/i)
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+    });
+  });
+
   describe("Removed tabs", () => {
     it("should fall back to overview for old tab values (registrations, pairings, standings, audit, settings)", async () => {
       const oldTabValues = [

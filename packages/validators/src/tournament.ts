@@ -70,10 +70,15 @@ export const tournamentStatusSchema = z.enum([
 ]);
 
 /**
- * Optional trimmed string with a max length. Whitespace is trimmed before the
- * length check so `"   "` is normalised to `""` and then mapped to
- * `undefined` (i.e., "field omitted"). Mirrors the `optionalHandle` /
- * `optionalUrl` pattern in `organization-request.ts`.
+ * Optional string that trims surrounding whitespace and treats a literal
+ * empty string as "field omitted" (mapped to `undefined`).
+ *
+ * Behavior:
+ * - `undefined` / missing key → `undefined`
+ * - `""` → `undefined`
+ * - whitespace-only (e.g., `"   "`) → rejected (trims to `""`, fails `min(1)`,
+ *   and the empty-string branch only matches the literal `""`)
+ * - trimmed length must be 1..`max` after the trim
  */
 const optionalTrimmedString = (max: number) =>
   z

@@ -216,6 +216,8 @@ describe("updateTournamentSchema", () => {
 
   it.each([
     ["format", "  vgc-doubles  ", "vgc-doubles"],
+    ["format", "vgc-doubles ", "vgc-doubles"],
+    ["format", " vgc-doubles", "vgc-doubles"],
     ["game", "  sv  ", "sv"],
     ["gameFormat", " reg-i ", "reg-i"],
   ])("trims surrounding whitespace on %s", (field, input, trimmed) => {
@@ -224,6 +226,33 @@ describe("updateTournamentSchema", () => {
     if (result.success) {
       expect(result.data[field as keyof typeof result.data]).toBe(trimmed);
     }
+  });
+
+  it.each([["format"], ["game"], ["gameFormat"]] as const)(
+    "maps empty string to undefined on %s (treats as field omitted)",
+    (field) => {
+      const result = updateTournamentSchema.safeParse({ [field]: "" });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data[field as keyof typeof result.data]).toBeUndefined();
+      }
+    }
+  );
+
+  it("accepts a max-length value with surrounding whitespace (trim runs before length check)", () => {
+    const value = `${"a".repeat(50)}  `;
+    const result = updateTournamentSchema.safeParse({ format: value });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.format).toBe("a".repeat(50));
+    }
+  });
+
+  it("rejects a value that exceeds the max length even after trim", () => {
+    const result = updateTournamentSchema.safeParse({
+      format: `${"a".repeat(51)}  `,
+    });
+    expect(result.success).toBe(false);
   });
 });
 
