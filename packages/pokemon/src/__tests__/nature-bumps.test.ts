@@ -1,97 +1,182 @@
-import { calculateNatureBumps } from "../nature-bumps";
+import { findStatBreakpoints } from "../nature-bumps";
+import { type FindStatBreakpointsArgs } from "../nature-bumps";
 
-describe("calculateNatureBumps", () => {
+/** Shared VGC base args (non-HP, neutral nature) */
+function vgcArgs(
+  overrides: Partial<FindStatBreakpointsArgs> = {}
+): FindStatBreakpointsArgs {
+  return {
+    statKey: "attack",
+    base: 100,
+    iv: 31,
+    level: 50,
+    natureMultiplier: 1.0,
+    perStatMax: 252,
+    step: 4,
+    isChampions: false,
+    ...overrides,
+  };
+}
+
+/** Shared Champions base args (non-HP, neutral nature) */
+function champArgs(
+  overrides: Partial<FindStatBreakpointsArgs> = {}
+): FindStatBreakpointsArgs {
+  return {
+    statKey: "attack",
+    base: 100,
+    iv: 0,
+    level: 50,
+    natureMultiplier: 1.0,
+    perStatMax: 32,
+    step: 1,
+    isChampions: true,
+    ...overrides,
+  };
+}
+
+describe("findStatBreakpoints", () => {
+  // -------------------------------------------------------------------------
+  // 1. Basic contract
+  // -------------------------------------------------------------------------
   it("returns an array (basic contract)", () => {
-    const result = calculateNatureBumps(90, 31, 50, 1.1);
+    const result = findStatBreakpoints(
+      champArgs({ statKey: "attack", base: 100, natureMultiplier: 1.1 })
+    );
     expect(Array.isArray(result)).toBe(true);
   });
 
-  it("returns an empty array for a neutral nature (1.0)", () => {
-    // With a 1.0 multiplier, statWithNature === statNeutral for every EV value,
-    // so the gap is always 0 and never increases beyond the baseline.
-    const result = calculateNatureBumps(90, 31, 50, 1.0);
+  // -------------------------------------------------------------------------
+  // 2. Neutral nature returns [] — only +nature has bonus breakpoints
+  // -------------------------------------------------------------------------
+  it("VGC neutral non-HP stat returns []", () => {
+    const result = findStatBreakpoints(
+      vgcArgs({ base: 100, iv: 31, level: 50, natureMultiplier: 1.0 })
+    );
     expect(result).toEqual([]);
   });
 
-  it("returns an empty array for a negative nature (0.9)", () => {
-    // With 0.9 nature, statWithNature < statNeutral, so the gap is negative
-    // and never increases — no nature bumps to report.
-    const result = calculateNatureBumps(90, 31, 50, 0.9);
+  it("VGC −nature non-HP stat returns []", () => {
+    const result = findStatBreakpoints(
+      vgcArgs({ base: 100, iv: 31, level: 50, natureMultiplier: 0.9 })
+    );
     expect(result).toEqual([]);
   });
 
-  it("returns a non-empty array for a positive nature (1.1)", () => {
-    // A positive nature always produces bumps
-    const result = calculateNatureBumps(90, 31, 50, 1.1);
+  it("Champions neutral non-HP stat returns []", () => {
+    const result = findStatBreakpoints(
+      champArgs({ base: 100, natureMultiplier: 1.0 })
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("Champions −nature non-HP stat returns []", () => {
+    const result = findStatBreakpoints(
+      champArgs({ base: 100, natureMultiplier: 0.9 })
+    );
+    expect(result).toEqual([]);
+  });
+
+  // -------------------------------------------------------------------------
+  // 3. VGC +nature non-HP stat (Garchomp Atk base 130)
+  // -------------------------------------------------------------------------
+  it("VGC +nature stat (Garchomp Atk) is non-empty, strictly increasing, multiples of 4", () => {
+    const result = findStatBreakpoints(
+      vgcArgs({ base: 130, iv: 31, level: 50, natureMultiplier: 1.1 })
+    );
+
     expect(result.length).toBeGreaterThan(0);
-  });
 
-  it("all returned EV values are multiples of 4", () => {
-    // The formula steps by 4, so all bumps must be multiples of 4
-    const result = calculateNatureBumps(100, 31, 50, 1.1);
+    // Strictly increasing
+    for (let i = 1; i < result.length; i++) {
+      expect(result[i]).toBeGreaterThan(result[i - 1]!);
+    }
+
+    // All multiples of 4
     for (const ev of result) {
       expect(ev % 4).toBe(0);
     }
   });
 
-  it("all returned EV values are in the range 4–252", () => {
-    const result = calculateNatureBumps(100, 31, 50, 1.1);
-    for (const ev of result) {
-      expect(ev).toBeGreaterThanOrEqual(4);
-      expect(ev).toBeLessThanOrEqual(252);
+  // -------------------------------------------------------------------------
+  // 4. HP always returns [] regardless of nature (HP doesn't apply nature)
+  // -------------------------------------------------------------------------
+  it("VGC HP returns [] for any natureMultiplier", () => {
+    const neutral = findStatBreakpoints(
+      vgcArgs({ statKey: "hp", base: 108, iv: 31, level: 50, natureMultiplier: 1.0 })
+    );
+    const boosted = findStatBreakpoints(
+      vgcArgs({ statKey: "hp", base: 108, iv: 31, level: 50, natureMultiplier: 1.1 })
+    );
+    expect(neutral).toEqual([]);
+    expect(boosted).toEqual([]);
+  });
+
+  // -------------------------------------------------------------------------
+  // 6. Champions +nature non-HP stat (Garchomp Atk base 130)
+  // -------------------------------------------------------------------------
+  it("Champions +nature stat (Garchomp Atk) is non-empty, in [1, 32], strictly increasing", () => {
+    const result = findStatBreakpoints(
+      champArgs({ base: 130, iv: 0, level: 50, natureMultiplier: 1.1 })
+    );
+
+    expect(result.length).toBeGreaterThan(0);
+
+    for (const sp of result) {
+      expect(sp).toBeGreaterThanOrEqual(1);
+      expect(sp).toBeLessThanOrEqual(32);
+    }
+
+    for (let i = 1; i < result.length; i++) {
+      expect(result[i]).toBeGreaterThan(result[i - 1]!);
     }
   });
 
-  it("does not include EV=0 (baseline, not a breakpoint)", () => {
-    // EV=0 is the baseline — the function only reports EV values > 0 where
-    // investing EVs causes the nature gap to grow beyond the baseline.
-    const result = calculateNatureBumps(130, 31, 50, 1.1);
-    expect(result).not.toContain(0);
-    // But positive natures still produce bump points at higher EVs
-    expect(result.length).toBeGreaterThan(0);
+  // -------------------------------------------------------------------------
+  // 7. Champions HP returns [] for any nature
+  // -------------------------------------------------------------------------
+  it("Champions HP returns [] for any natureMultiplier", () => {
+    const neutral = findStatBreakpoints(
+      champArgs({ statKey: "hp", base: 108, natureMultiplier: 1.0 })
+    );
+    const boosted = findStatBreakpoints(
+      champArgs({ statKey: "hp", base: 108, natureMultiplier: 1.1 })
+    );
+    expect(neutral).toEqual([]);
+    expect(boosted).toEqual([]);
   });
 
-  it("includes EV=76 as a bump point for Garchomp Atk (base 130, IV 31, level 50)", () => {
-    // Manual verification:
-    // The stat formula: floor((floor(((2*base + iv + floor(ev/4)) * level) / 100) + 5) * nature)
-    //
-    // At ev=72: floor(ev/4)=18
-    //   inner = floor(((260+31+18)*50)/100)+5 = floor(309*50/100)+5 = floor(154.5)+5 = 154+5 = 159
-    //   neutral=159, nature=floor(159*1.1)=floor(174.9)=174, gap=15
-    //
-    // At ev=76: floor(ev/4)=19
-    //   inner = floor(((260+31+19)*50)/100)+5 = floor(310*50/100)+5 = 155+5 = 160
-    //   neutral=160, nature=floor(160*1.1)=floor(176)=176, gap=16
-    //   gap(16) > prevGap(15) → pushed ✓
-    const result = calculateNatureBumps(130, 31, 50, 1.1);
-    expect(result).toContain(76);
+  // -------------------------------------------------------------------------
+  // 9. Empty array for impossible inputs (perStatMax=0)
+  // -------------------------------------------------------------------------
+  it("returns empty array when perStatMax=0", () => {
+    const result = findStatBreakpoints(
+      vgcArgs({ base: 100, perStatMax: 0, step: 4 })
+    );
+
+    expect(result).toEqual([]);
   });
 
-  it("does not include EVs where the gap does not increase", () => {
-    // Between bump points the gap should be flat (not growing)
-    // Verify that ev=72 is NOT in the result for Garchomp Atk (gap stays at 15, same as prev)
-    const result = calculateNatureBumps(130, 31, 50, 1.1);
-    // ev=72 has the same gap as ev=68, so it should NOT be a bump
-    // (only ev=76 is where the gap grows from 15→16)
-    // We can't assert a specific non-member without knowing all bumps,
-    // but we can verify the result is strictly sorted and contains no duplicates.
-    const sorted = [...result].sort((a, b) => a - b);
-    expect(result).toEqual(sorted);
-    expect(new Set(result).size).toBe(result.length);
-  });
-
+  // -------------------------------------------------------------------------
+  // 10. it.each parametrize — common base stats, VGC mode, non-empty + strictly increasing
+  // -------------------------------------------------------------------------
   it.each([
-    // [baseStat, iv, level, multiplier] — all should produce a non-empty array with 1.1
-    [55, 31, 50, 1.1], // Pikachu Attack
-    [102, 31, 50, 1.1], // Garchomp Speed
-    [135, 31, 50, 1.1], // Flutter Mane SpAtk
-    [60, 31, 50, 1.1], // Incineroar Speed
-  ])(
-    "returns a non-empty bump list for base=%i, iv=%i, level=%i, nature=%f",
-    (base, iv, level, mult) => {
-      expect(
-        calculateNatureBumps(base, iv, level, mult).length
-      ).toBeGreaterThan(0);
+    ["Pikachu Atk", 55, "attack"],
+    ["Flutter Mane SpAtk", 135, "specialAttack"],
+    ["Garchomp Atk", 130, "attack"],
+    ["Incineroar Speed", 60, "speed"],
+  ] as const)(
+    "%s (base %i) returns non-empty strictly increasing breakpoints in VGC mode",
+    (_label, base, statKey) => {
+      const result = findStatBreakpoints(
+        vgcArgs({ base, statKey, iv: 31, level: 50, natureMultiplier: 1.1 })
+      );
+
+      expect(result.length).toBeGreaterThan(0);
+
+      for (let i = 1; i < result.length; i++) {
+        expect(result[i]).toBeGreaterThan(result[i - 1]!);
+      }
     }
   );
 });

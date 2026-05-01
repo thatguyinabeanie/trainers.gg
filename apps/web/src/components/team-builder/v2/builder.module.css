@@ -1,0 +1,1897 @@
+.builderApp {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+
+  /* ── KO-tier semantic tokens ─────────────────────────────────────────────
+     Red    (OHKO)   → reuses --destructive so it respects theme values.
+     Amber  (2HKO)   → no project warning token yet; defined locally.
+                        Two variants: bg (brighter) and fg (darker for text).
+     Yellow (3HKO)   → no project caution token yet; defined locally.
+                        Two variants: bg (brighter) and fg (darker for text).
+     Green           → super-effective indicator; defined locally.
+     NE              → not-very-effective indicator; defined locally.
+     Shadow/Backdrop → replaces rgba(0,0,0,…) literals for easy future theming.
+  ── */
+  --ko-red: var(--destructive);
+  --ko-amber-bg: oklch(0.7 0.15 80);
+  --ko-amber-fg: oklch(0.65 0.15 80);
+  --ko-amber2-fg: oklch(0.65 0.15 55);
+  --ko-yellow-bg: oklch(0.78 0.15 90);
+  --ko-yellow-fg: oklch(0.72 0.15 90);
+  --ko-green: oklch(0.72 0.2 145);
+  --ko-green-fg: oklch(0.6 0.2 145);
+  --ko-ne: oklch(0.55 0.15 30);
+  --builder-shadow: oklch(0 0 0 / 30%);
+  --builder-backdrop: oklch(0 0 0 / 25%);
+}
+
+.builderWorkshell {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.builderWorklane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Editor region — flex grows to fill remaining height; rows scroll inside.
+   No longer wraps the inline panel — the panel lives in its own flex sibling. */
+.editorRegion {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Resizer handle between editor and panel regions. */
+.resizer {
+  flex-shrink: 0;
+  height: 6px;
+  background: var(--border);
+  cursor: row-resize;
+  transition: background 0.12s;
+  touch-action: none;
+}
+
+.resizer:hover,
+.resizer:focus-visible {
+  background: var(--primary);
+  outline: none;
+}
+
+/* Panel region — flex-basis driven by inline style (panelHeightPct%).
+   flex-shrink: 0 so the editor region absorbs height changes, not the panel. */
+.panelRegion {
+  flex-grow: 0;
+  flex-shrink: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.builderRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+[data-density="compact"] .builderRows {
+  gap: 4px;
+  padding: 8px;
+}
+
+/* ============================================================
+   Compact density — active row tightening
+   ============================================================ */
+
+/* Tighten the inter-lane gap in the active row */
+[data-density="compact"] .rowActive {
+  gap: 6px;
+}
+
+/* Reduce stat-row vertical padding */
+[data-density="compact"] .laneStats {
+  padding-block: 4px;
+}
+
+/* Identity lane: compact — smaller sprite; flex direction stays */
+[data-density="compact"] .laneId {
+  min-width: 200px;
+}
+
+/* ============================================================
+   Inline analytics panel — Type matchups / Speed tiers
+   Renders inline in the worklane scroll area, between the rows and the
+   pinned dock bar. Not an overlay — content joins the document flow so
+   the rows can scroll up to make room for it.
+   ============================================================ */
+
+.inlinePanel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 12px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px 10px 0 0;
+  border-bottom: none;
+  background: var(--background);
+  overflow: hidden;
+}
+
+.inlinePanelHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.inlinePanelHeadL {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inlinePanelEyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.inlinePanelTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.inlinePanelSub {
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+
+.inlinePanelClose {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.inlinePanelClose:hover {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.inlinePanelBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+.speedTiers {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.builderCalcdrawerSlot {
+  width: 380px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  background: var(--background);
+  overflow-y: auto;
+}
+
+/* ============================================================
+   Calc drawer
+   ============================================================ */
+
+:global(.cd-drawer) {
+  /* Width is driven by inline style (calcDrawerWidth px) — no static width here */
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  background: var(--background);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  position: relative; /* needed so .cd-resizer can be absolutely positioned */
+}
+
+/* Drag-resize handle — thin 4px strip on the left edge of the calc drawer.
+   Absolutely positioned; pointer-events set explicitly so the scrollable
+   drawer doesn't swallow events. */
+:global(.cd-resizer) {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  pointer-events: auto;
+  cursor: col-resize;
+  z-index: 10;
+  transition: background 0.12s;
+}
+
+:global(.cd-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+:global(.cd-head-l) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+:global(.cd-head-sub) {
+  font-size: 10px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono, monospace);
+}
+
+:global(.cd-close) {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  transition: background 0.12s, color 0.12s;
+}
+
+:global(.cd-close:hover) {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+:global(.cd-empty) {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+:global(.cd-content) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Block sections */
+:global(.cd-block) {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+:global(.cd-block-results) {
+  flex: 1;
+}
+
+:global(.cd-block-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+:global(.cd-eyebrow) {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+:global(.cd-eyebrow--sm) {
+  font-size: 9px;
+}
+
+:global(.cd-attacker-pill) {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 9999px;
+  padding: 1px 6px;
+  line-height: 1.4;
+}
+
+/* Mon row */
+:global(.cd-mon) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+:global(.cd-mon-body) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+:global(.cd-mon-name) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+:global(.cd-mon-meta) {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono, monospace);
+}
+
+:global(.cd-dot) {
+  opacity: 0.5;
+}
+
+/* Team pips */
+:global(.cd-team-pips) {
+  display: flex;
+  gap: 4px;
+}
+
+:global(.cd-pip) {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, border-color 0.12s;
+  color: var(--foreground);
+}
+
+:global(.cd-pip:hover:not(:disabled)) {
+  border-color: var(--primary);
+}
+
+:global(.cd-pip--active) {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+:global(.cd-pip--empty) {
+  opacity: 0.35;
+  cursor: default;
+  color: var(--muted-foreground);
+}
+
+/* Tera checkbox */
+:global(.cd-check) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+:global(.cd-tera-tag) {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+/* Defender stat rows */
+:global(.cd-defstats) {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+:global(.cd-defstat) {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+:global(.cd-defstat-l) {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+:global(.cd-num) {
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  padding: 0 4px;
+  width: 100%;
+  text-align: right;
+}
+
+:global(.cd-num:focus) {
+  outline: none;
+  box-shadow: 0 0 0 2px oklch(0.7 0.15 220 / 0.5);
+  border-color: var(--primary);
+}
+
+:global(.cd-defrow) {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 6px;
+}
+
+:global(.cd-defrow-l) {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+:global(.cd-slider) {
+  flex: 1;
+  height: 6px;
+  cursor: pointer;
+  appearance: none;
+  border-radius: 9999px;
+  background: var(--muted);
+  accent-color: oklch(var(--primary));
+}
+
+:global(.cd-num-out) {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  color: var(--muted-foreground);
+  min-width: 32px;
+  text-align: right;
+}
+
+:global(.cd-stages) {
+  display: flex;
+  gap: 2px;
+}
+
+:global(.cd-stage) {
+  min-width: 28px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  color: var(--muted-foreground);
+}
+
+:global(.cd-stage:hover) {
+  background: var(--muted);
+}
+
+:global(.cd-stage--on) {
+  background: color-mix(in oklch, var(--primary) 15%, var(--background));
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Field toggles */
+:global(.cd-toggles) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+:global(.cd-toggle) {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  line-height: 1.6;
+}
+
+:global(.cd-toggle:hover) {
+  background: var(--muted);
+}
+
+:global(.cd-toggle--on) {
+  background: color-mix(in oklch, var(--primary) 15%, var(--background));
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+:global(.cd-toggle-lbl) {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 2px;
+}
+
+:global(.cd-toggle-sep) {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 2px;
+}
+
+/* Results */
+:global(.cd-results-summary) {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+:global(.cd-results) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+:global(.cd-result) {
+  display: grid;
+  grid-template-columns: 1fr 80px auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--card);
+  transition: border-color 0.1s;
+}
+
+:global(.cd-result--ohko) {
+  border-color: color-mix(in oklch, var(--ko-red) 40%, var(--border));
+  background: color-mix(in oklch, var(--ko-red) 8%, var(--card));
+}
+
+:global(.cd-result--roll) {
+  border-color: color-mix(in oklch, var(--ko-amber-bg) 40%, var(--border));
+  background: color-mix(in oklch, var(--ko-amber-bg) 8%, var(--card));
+}
+
+:global(.cd-result-l) {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+:global(.cd-result-name) {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+:global(.cd-result-bp) {
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+:global(.cd-result-bar) {
+  position: relative;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--muted);
+  overflow: hidden;
+  width: 80px;
+}
+
+:global(.cd-result-fill) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: color-mix(in oklch, var(--primary) 60%, var(--muted));
+  border-radius: 9999px;
+  transition: width 0.15s;
+}
+
+:global(.cd-result-fill-min) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--primary);
+  border-radius: 9999px;
+  transition: width 0.15s;
+}
+
+:global(.cd-result--ohko .cd-result-fill),
+:global(.cd-result--ohko .cd-result-fill-min) {
+  background: var(--ko-red);
+}
+
+:global(.cd-result--roll .cd-result-fill),
+:global(.cd-result--roll .cd-result-fill-min) {
+  background: var(--ko-amber-bg);
+}
+
+:global(.cd-result-r) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+:global(.cd-result-pct) {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+:global(.cd-result-ko) {
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+:global(.cd-result-status) {
+  grid-column: 2 / 4;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+:global(.cd-verdict) {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+:global(.cd-verdict--ohko) {
+  background: color-mix(in oklch, var(--ko-red) 20%, var(--background));
+  color: var(--ko-red);
+}
+
+:global(.cd-verdict--2hko) {
+  background: color-mix(in oklch, var(--ko-amber-bg) 20%, var(--background));
+  color: var(--ko-amber-fg);
+}
+
+/* Spread badge */
+:global(.cd-spread-badge) {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+:global(.cd-spread-badge--on) {
+  background: color-mix(in oklch, var(--ko-amber-bg) 20%, var(--background));
+  color: var(--ko-amber-fg);
+}
+
+:global(.cd-spread-badge--off) {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+:global(.cd-spread-mult) {
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+}
+
+/* ============================================================
+   Active row — lane layout
+   ============================================================ */
+
+/* Row container — wraps lanes onto a second line when the worklane is too
+   narrow (e.g. when the CalcDrawer is open). Never forces horizontal scroll. */
+.rowActive {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  min-width: 0;
+  overflow: visible;
+}
+
+/* ============================================================
+   Mobile active row — single-column stacked layout (< md / 768px)
+   ============================================================ */
+
+@media (max-width: 767px) {
+  /* Remove the 900px min-width so the row fits the phone viewport */
+  .rowActive {
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Rib becomes a slim horizontal bar at the top */
+  .rib {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    padding: 4px 10px;
+    border-right: none;
+    border-bottom: 1px dashed var(--border);
+  }
+
+  /* Identity lane: full width, horizontal (sprite + meta side-by-side) */
+  .laneId {
+    width: 100%;
+    flex-direction: row;
+    align-items: stretch;
+    padding: 10px;
+  }
+
+  /* Setup lane: full width */
+  .laneSetup {
+    width: 100%;
+    border-top: 1px solid var(--border);
+    padding: 4px 0;
+  }
+
+  /* Moves lane: full width */
+  .laneMoves {
+    width: 100%;
+    border-top: 1px solid var(--border);
+    flex: none;
+  }
+
+  /* Stats lane: full width */
+  .laneStats {
+    width: 100%;
+    border-top: 1px solid var(--border);
+    flex: none;
+  }
+
+  /* Meta lane: full width, horizontal row instead of column */
+  .laneMeta {
+    width: 100%;
+    flex-direction: row;
+    gap: 16px;
+    justify-content: flex-start;
+    border-top: 1px solid var(--border);
+    padding: 6px 12px;
+  }
+}
+
+/* Left slot rib */
+.rib {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+/* Drag handle — the slot number label on the RIB.
+   Only applied on filled, desktop-rendered slots. */
+.dragHandle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+/* While a row is being dragged, dim it slightly. */
+.rowDragging {
+  opacity: 0.5;
+}
+
+/* Identity lane — 128px sprite + meta column (flex row) */
+.laneId {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  min-width: 240px;
+}
+
+/* Setup lane — item/abil/nat/tera stacked rows */
+.laneSetup {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Moves lane — 4 stacked move tiles */
+.laneMoves {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+/* Stats lane — 6-col stat grid */
+.laneStats {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+/* Meta lane — BST/Spe/WR column */
+.laneMeta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Setup row button (item / abil / nat / tera) */
+.setupLine {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  min-width: 0;
+  cursor: pointer;
+  position: relative;
+}
+
+.setupLine:hover {
+  background: var(--muted);
+}
+
+/* Move tile row — :global() because lanes/moves-lane.tsx references it as a
+   plain string class via cn("mvline", ...) rather than via the CSS-module
+   `s.mvline` import. Without :global() this rule was hashed and never
+   applied, leaving the button at default inline-block layout — which made
+   the inner mvline-calc (display: flex / block-level) wrap onto a new line
+   below the move name.
+   Grid columns mirror the move-picker's column layout:
+   type pill | cat icon | name | description | BP | Acc | calc info */
+:global(.mvline) {
+  display: grid;
+  grid-template-columns:
+    auto              /* type pill */
+    auto              /* cat icon */
+    minmax(0, 11rem)  /* name */
+    auto              /* BP */
+    auto              /* Acc */
+    minmax(0, 1fr)    /* description */
+    auto;             /* calc pill / hint (empty when not applicable) */
+  align-items: center;
+  gap: 14px;
+  padding: 7px 12px;
+  background: var(--card);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  text-align: left;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+:global(.mvline):hover {
+  border-color: var(--border);
+  background: var(--muted);
+}
+
+/* ============================================================
+   Calc-aware move tile (mvline)
+   ============================================================ */
+
+/* KO tier ring/text emphasis */
+:global(.mvline--ko1) {
+  border-color: color-mix(in oklch, var(--ko-red) 50%, var(--border)) !important;
+  background: color-mix(in oklch, var(--ko-red) 8%, var(--card));
+}
+
+:global(.mvline--ko2) {
+  border-color: color-mix(in oklch, var(--ko-amber2-fg) 45%, var(--border)) !important;
+  background: color-mix(in oklch, var(--ko-amber2-fg) 6%, var(--card));
+}
+
+:global(.mvline--ko3) {
+  border-color: color-mix(in oklch, var(--ko-yellow-bg) 40%, var(--border)) !important;
+  background: color-mix(in oklch, var(--ko-yellow-bg) 5%, var(--card));
+}
+
+:global(.mvline--ko4) {
+  /* neutral — inherits default .mvline styles */
+}
+
+:global(.mvline--set) {
+  border-color: var(--border);
+}
+
+:global(.mvline--empty) {
+  border-style: dashed;
+  border-color: var(--border);
+  opacity: 0.7;
+}
+
+/* Move name inside a tile */
+:global(.mvline-name) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Description cell — muted, truncated, smaller font */
+:global(.mvline-desc) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  line-height: 1.2;
+}
+
+/* Type pill slot — fixed min-width so empty slots reserve the column */
+:global(.mvline-type) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+}
+
+/* Category icon slot — fixed min-width so empty slots reserve the column */
+:global(.mvline-cat) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+}
+
+/* BP / Acc readout — fixed-width value cells so they align across rows */
+:global(.mvline-stat) {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--foreground);
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+:global(.mvline-stat-label) {
+  color: var(--muted-foreground);
+  font-size: 9.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+:global(.mvline-stat-value) {
+  text-align: right;
+  display: inline-block;
+}
+
+:global(.mvline-stat-value--bp) {
+  width: 1.75rem; /* fits 3-digit BP like "140" */
+}
+
+:global(.mvline-stat-value--acc) {
+  width: 2.25rem; /* fits "100%" */
+}
+
+/* Legacy alias — keep .mvline-bp working for any consumer that still uses it */
+:global(.mvline-bp) {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--foreground);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Calc output column — must stay on one line, never wrap */
+:global(.mvline-calc) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  justify-self: end;
+}
+
+:global(.mvline-calc-inner) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/* Damage range */
+:global(.mvline-range) {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--foreground);
+}
+
+:global(.mvline-sep) {
+  color: var(--muted-foreground);
+}
+
+:global(.mvline-pct) {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+/* KO label pills */
+:global(.mvline-ko) {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+:global(.mvline-ko--1) {
+  background: color-mix(in oklch, var(--ko-red) 20%, var(--background));
+  color: var(--ko-red);
+}
+
+:global(.mvline-ko--2) {
+  background: color-mix(in oklch, var(--ko-amber2-fg) 20%, var(--background));
+  color: var(--ko-amber2-fg);
+}
+
+:global(.mvline-ko--3) {
+  background: color-mix(in oklch, var(--ko-yellow-bg) 20%, var(--background));
+  color: var(--ko-yellow-fg);
+}
+
+:global(.mvline-ko--4) {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+/* Effectiveness pip */
+:global(.mvline-eff) {
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 3px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+:global(.mvline-eff--se) {
+  background: color-mix(in oklch, var(--ko-green) 20%, var(--background));
+  color: var(--ko-green-fg);
+}
+
+:global(.mvline-eff--ne) {
+  background: color-mix(in oklch, var(--ko-ne) 20%, var(--background));
+  color: var(--ko-ne);
+}
+
+:global(.mvline-eff--imm) {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+/* Spread badge */
+:global(.mvline-spread) {
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--ko-amber-bg) 20%, var(--background));
+  color: var(--ko-amber-fg);
+  white-space: nowrap;
+}
+
+/* Status / no-target muted hints */
+:global(.mvline-status),
+:global(.mvline-no-target) {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+/* Calc pill — replaces the description when calc is on for damage moves.
+ * Tinted by KO tier; contains KO label + range + optional modifier chips. */
+:global(.mvline-pill) {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* KO tier tints — light bg + matching border */
+:global(.mvline-pill--ko1) {
+  background: color-mix(in oklch, var(--ko-red) 10%, var(--card));
+  border-color: color-mix(in oklch, var(--ko-red) 25%, transparent);
+}
+
+:global(.mvline-pill--ko2) {
+  background: color-mix(in oklch, var(--ko-amber2-fg) 10%, var(--card));
+  border-color: color-mix(in oklch, var(--ko-amber2-fg) 22%, transparent);
+}
+
+:global(.mvline-pill--ko3) {
+  background: color-mix(in oklch, var(--ko-yellow-bg) 12%, var(--card));
+  border-color: color-mix(in oklch, var(--ko-yellow-bg) 25%, transparent);
+}
+
+:global(.mvline-pill--ko4) {
+  background: color-mix(in oklch, var(--muted-foreground) 10%, var(--card));
+  border-color: color-mix(in oklch, var(--muted-foreground) 22%, transparent);
+}
+
+/* KO tier label inside the pill */
+:global(.mvline-pill-tier) {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+:global(.mvline-pill-tier--ko1) { color: var(--ko-red); }
+:global(.mvline-pill-tier--ko2) { color: var(--ko-amber2-fg); }
+:global(.mvline-pill-tier--ko3) { color: var(--ko-yellow-fg); }
+:global(.mvline-pill-tier--ko4) { color: var(--muted-foreground); }
+
+/* Range "16.6–20.0%" — primary numeric */
+:global(.mvline-pill-range) {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Modifier group on the right side of the pill */
+:global(.mvline-pill-mods) {
+  margin-left: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Individual modifier chip — tighter than .mvline-eff */
+:global(.mvline-pill-mod) {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
+  line-height: 1;
+  font-weight: 700;
+}
+
+:global(.mvline-pill-mod--se) {
+  background: color-mix(in oklch, var(--ko-green) 14%, transparent);
+  color: color-mix(in oklch, var(--ko-green) 80%, var(--foreground));
+}
+
+:global(.mvline-pill-mod--ne) {
+  background: color-mix(in oklch, var(--ko-red) 14%, transparent);
+  color: color-mix(in oklch, var(--ko-red) 90%, var(--foreground));
+}
+
+:global(.mvline-pill-mod--imm) {
+  background: color-mix(in oklch, var(--muted-foreground) 22%, transparent);
+  color: var(--foreground);
+}
+
+:global(.mvline-pill-mod--spread) {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+/* ============================================================
+   CalcDetailCard popover
+   ============================================================ */
+
+:global(.mvdetail-card) {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--popover);
+  border-radius: 8px;
+  overflow: hidden;
+  min-width: 300px;
+  max-width: 360px;
+}
+
+:global(.mvdetail-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 6px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+
+:global(.mvdetail-eyebrow) {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+:global(.mvdetail-head-r) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+:global(.mvdetail-change-btn) {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.1s;
+}
+
+:global(.mvdetail-change-btn:hover) {
+  background: color-mix(in oklch, var(--primary) 10%, transparent);
+}
+
+:global(.mvdetail-close) {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  transition: background 0.1s;
+}
+
+:global(.mvdetail-close:hover) {
+  background: var(--muted);
+}
+
+/* Identity row */
+:global(.mvdetail-identity) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+
+:global(.mvdetail-mon),
+:global(.mvdetail-move) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+:global(.mvdetail-arrow) {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+:global(.mvdetail-bp) {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+
+:global(.mvdetail-tera-tag) {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 9999px;
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+/* Result block */
+:global(.mvdetail-result) {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+:global(.mvdetail-bigpct) {
+  font-family: var(--font-mono, monospace);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+
+:global(.mvdetail-bigpct.mvdetail-ko--1) {
+  color: var(--ko-red);
+}
+
+:global(.mvdetail-bigpct.mvdetail-ko--2) {
+  color: var(--ko-amber2-fg);
+}
+
+:global(.mvdetail-bigpct.mvdetail-ko--3) {
+  color: var(--ko-yellow-fg);
+}
+
+:global(.mvdetail-pct-sep) {
+  color: var(--muted-foreground);
+  font-size: 18px;
+}
+
+:global(.mvdetail-pct-unit) {
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+
+:global(.mvdetail-ko) {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:global(.mvdetail-ko--1) { color: var(--ko-red); }
+:global(.mvdetail-ko--2) { color: var(--ko-amber2-fg); }
+:global(.mvdetail-ko--3) { color: var(--ko-yellow-fg); }
+:global(.mvdetail-ko--4) { color: var(--muted-foreground); }
+
+:global(.mvdetail-spread-tag) {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ko-amber-fg);
+}
+
+:global(.mvdetail-meta) {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+
+/* Target row */
+:global(.mvdetail-target-row) {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+:global(.mvdetail-target-tag) {
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--foreground);
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+:global(.mvdetail-target-desc) {
+  font-size: 10px;
+  color: var(--muted-foreground);
+  line-height: 1.4;
+}
+
+/* Toggle row */
+:global(.mvdetail-toggles) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+:global(.mvdetail-tog) {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--foreground);
+}
+
+:global(.mvdetail-tog-checkbox) {
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+  border-radius: 3px;
+  accent-color: oklch(var(--primary));
+}
+
+/* Field row (spread moves) */
+:global(.mvdetail-field-row) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+:global(.mvdetail-field-l) {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+:global(.mvdetail-field-grp) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+:global(.mvdetail-field-lbl) {
+  font-size: 10px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+:global(.mvdetail-tog-btn) {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  line-height: 1.6;
+}
+
+:global(.mvdetail-tog-btn:hover) {
+  background: var(--muted);
+}
+
+:global(.mvdetail-tog-btn--on) {
+  background: color-mix(in oklch, var(--primary) 15%, var(--background));
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Footer */
+:global(.mvdetail-foot) {
+  padding: 6px 12px;
+  font-size: 9.5px;
+  color: var(--muted-foreground);
+  font-style: italic;
+  text-align: center;
+}
+
+/* ============================================================
+   Identity + Loadout merged form-sheet layout
+   ============================================================ */
+
+/* Banner: nickname row + chips row, separated from form rows below */
+.idBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+/* Loadout form row — label on the left, value on the right.
+   Label column wide enough for "Ability" / "Nature" without truncating. */
+.formRow {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+  transition: background 0.1s;
+}
+
+.formRow:hover {
+  background: var(--muted);
+}
+
+/* Uppercase muted label in the left column */
+.formLabel {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+/* Value span — right column of the form row */
+.formValue {
+  font-size: 11.5px;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Stat cell — one per stat in the 6-col grid */
+.stcell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 4px 4px 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 11px;
+  text-align: center;
+  min-width: 0;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.stcell:hover {
+  background: var(--muted);
+  border-color: var(--border);
+}
+
+/* ============================================================
+   PokeRow overhaul — Loadout (chip-labeled), Spread (stat rows),
+   Moves (empty tile style)
+   ============================================================ */
+
+/* Chip-labeled — unified picker trigger for item / abil / nat / tera */
+.chipLabeled {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px 4px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  text-align: left;
+  width: 100%;
+}
+
+.chipLabeled:hover {
+  border-color: var(--primary);
+}
+
+/* Prefix label inside a chip (e.g. "item", "abil") */
+.chipPrefix {
+  background: var(--background);
+  color: var(--muted-foreground);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  flex-shrink: 0;
+}
+
+/* Value text inside a chip */
+.chipValue {
+  font-size: 11.5px;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Stat row — Showdown-style 6-column grid per stat */
+.spreadRow {
+  display: grid;
+  grid-template-columns: 30px 24px minmax(40px, 1fr) 38px minmax(80px, 2fr) 28px;
+  gap: 8px;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.spreadRow:hover {
+  background: var(--muted);
+}
+
+/* Stat label — col 1, left-aligned, readable */
+.spreadLabel {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+/* Base stat number — col 2, muted mono right-aligned */
+.spreadBase {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 9.5px;
+  color: var(--muted-foreground);
+  text-align: right;
+}
+
+/* Viz bar track — col 3, read-only */
+.spreadVbar {
+  height: 8px;
+  background: var(--muted);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+}
+
+/* Solid base layer (EV=0 final stat) */
+.spreadVbarBase {
+  display: block;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  border-radius: 999px;
+}
+
+/* Striped invest overlay (EV > 0 portion) */
+.spreadVbarInvest {
+  display: block;
+  height: 100%;
+  position: absolute;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.55) 0,
+    rgba(255, 255, 255, 0.55) 3px,
+    transparent 3px,
+    transparent 7px
+  );
+}
+
+/* Slider container — col 5, relative so ticks overlay */
+.spreadSliderWrap {
+  position: relative;
+  height: 14px;
+}
+
+/* Custom slider track — drawn at the wrap's vertical center so it lines up
+ * with the bump diamonds (also at top: 50%). Native runnable-track is set
+ * to full input height + transparent so the thumb still centers correctly. */
+.spreadSliderTrack {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--muted-foreground);
+  border-radius: 999px;
+  opacity: 0.4;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Native range input — sits on top, only the thumb is visible (track is
+ * transparent so the custom .spreadSliderTrack shows through). Absolutely
+ * positioned at top: 0 so its inline-block default doesn't get nudged by
+ * the parent's line-height (caused a ~3.8px vertical offset). */
+.spreadSlider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+  outline: none;
+  z-index: 1;
+}
+
+.spreadSlider::-webkit-slider-runnable-track {
+  height: 14px;
+  background: transparent;
+  border: none;
+}
+
+.spreadSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-top: 2px; /* (track 14px - thumb 10px) / 2 → center on track */
+  border: none;
+}
+
+.spreadSlider::-moz-range-track {
+  height: 14px;
+  background: transparent;
+  border: none;
+}
+
+.spreadSlider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  border: none;
+}
+
+/* Breakpoint ticks overlay — pointer-events: none so slider stays interactive.
+ * Inset horizontally by the thumb radius (5px) so tick `left: 0%` and `100%`
+ * line up with the thumb's center at value=min and value=max. */
+.spreadBumps {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  right: 5px;
+  pointer-events: none;
+}
+
+/* Individual tick — circle outline at the bump position. border picks up
+ * the wrap's currentColor (set per-stat-tier on .spreadSliderWrap). */
+.spreadBumpTick {
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  background: var(--card, #fff);
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+}
+
+/* Next breakpoint above current invest — thicker ring */
+.spreadBumpTickNext {
+  border-width: 2px;
+}
+
+/* Final stat — col 6, mono bold right-aligned */
+.spreadFinal {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: right;
+}

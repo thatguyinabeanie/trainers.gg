@@ -4,7 +4,7 @@ import { getFormatById } from "@trainers/pokemon";
 import { getTeamWithPokemon } from "@trainers/supabase";
 
 import { createClientReadOnly } from "@/lib/supabase/server";
-import { TeamWorkspace } from "@/components/team-builder/team-workspace";
+import { TeamWorkspaceV2 } from "@/components/team-builder/v2/team-workspace-v2";
 
 // =============================================================================
 // Metadata
@@ -26,7 +26,7 @@ interface TeamWorkspacePageProps {
 export default async function TeamWorkspacePage({
   params,
 }: TeamWorkspacePageProps) {
-  const { teamId } = await params;
+  const { username, teamId } = await params;
 
   const numericTeamId = Number(teamId);
   if (Number.isNaN(numericTeamId)) {
@@ -45,5 +45,5 @@ export default async function TeamWorkspacePage({
 
   const format = team.format ? getFormatById(team.format) : undefined;
 
-  return <TeamWorkspace team={team} format={format} />;
+  return <TeamWorkspaceV2 team={team} format={format} username={username} />;
 }

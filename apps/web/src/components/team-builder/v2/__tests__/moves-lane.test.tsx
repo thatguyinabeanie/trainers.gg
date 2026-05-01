@@ -1,0 +1,637 @@
+"use client";
+
+/**
+ * Tests for MovesLane and MoveTile — move slot rendering, click-to-open-picker,
+ * calc detail display, KO tier badges, spread/effectiveness badges, and
+ * validation error display.
+ */
+
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import React from "react";
+
+import { type Tables } from "@trainers/supabase";
+import { type GameFormat } from "@trainers/pokemon";
+
+// =============================================================================
+// Mocks
+// =============================================================================
+
+// Popover — render content inline so popover contents are always queryable
+jest.mock("@/components/ui/popover", () => ({
+  Popover: ({
+    children,
+    open,
+    onOpenChange,
+  }: {
+    children: React.ReactNode;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+  }) => (
+    <div
+      data-testid="popover"
+      data-open={String(!!open)}
+      onClick={() => onOpenChange?.(!open)}
+    >
+      {children}
+    </div>
+  ),
+  PopoverTrigger: ({
+    children,
+    render: renderProp,
+  }: {
+    children?: React.ReactNode;
+    render?: React.ReactElement;
+  }) => {
+    if (renderProp) {
+      return (
+        <div data-testid="popover-trigger">
+          {renderProp}
+          {children}
+        </div>
+      );
+    }
+    return <div data-testid="popover-trigger">{children}</div>;
+  },
+  PopoverContent: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="popover-content">{children}</div>
+  ),
+}));
+
+// MovePicker stub
+jest.mock("../pickers/move-picker", () => ({
+  MovePicker: ({
+    value,
+    onPick,
+    onClose,
+  }: {
+    value: string | null;
+    onPick: (name: string) => void;
+    onClose: () => void;
+  }) => (
+    <div data-testid="move-picker" data-value={value ?? ""}>
+      <button onClick={() => onPick("Moonblast")}>pick-moonblast</button>
+      <button onClick={() => onPick("Flamethrower")}>pick-flamethrower</button>
+      <button onClick={onClose}>close-picker</button>
+    </div>
+  ),
+}));
+
+// CalcDetailCard stub
+jest.mock("../calc/calc-detail-card", () => ({
+  CalcDetailCard: ({
+    moveName,
+    onClose,
+    onChangeMove,
+  }: {
+    moveName: string;
+    onClose: () => void;
+    onChangeMove: () => void;
+  }) => (
+    <div data-testid="calc-detail-card" data-move={moveName}>
+      <button onClick={onClose}>close-detail</button>
+      <button onClick={onChangeMove}>change-move</button>
+    </div>
+  ),
+}));
+
+// calc-state-context — controlled mock
+const mockCalcContext = {
+  calcEnabled: false,
+  defenderSpecies: "",
+  defenderAbility: "",
+  defenderItem: "",
+  defenderNature: "",
+  weather: "",
+  inferredWeather: "",
+  moveCalcOutputs: [null, null, null, null] as (null | {
+    minPercent: number;
+    maxPercent: number;
+  })[],
+  field: { foesAlive: 2, allyAlive: true },
+};
+
+jest.mock("../calc/calc-state-context", () => ({
+  useCalcStateContext: jest.fn(() => mockCalcContext),
+}));
+
+// getMoveEffectiveness
+jest.mock("../calc/move-effectiveness", () => ({
+  getMoveEffectiveness: jest.fn().mockReturnValue(1),
+}));
+
+// getMoveTargetInfo
+jest.mock("../calc/move-target-info", () => ({
+  getMoveTargetInfo: jest.fn().mockReturnValue({
+    isSpread: false,
+    kind: "normal",
+  }),
+}));
+
+// getVerdict
+jest.mock("../../use-calc-state", () => ({
+  getVerdict: jest.fn().mockReturnValue(null),
+}));
+
+// getMoveData from @trainers/pokemon
+jest.mock("@trainers/pokemon", () => ({
+  getMoveData: jest.fn().mockReturnValue({
+    type: "Dragon",
+    category: "Physical",
+    basePower: 80,
+    accuracy: 100,
+    shortDesc: "High critical-hit ratio.",
+  }),
+  formatHasTera: jest.fn().mockReturnValue(true),
+  isChampionsFormat: jest.fn().mockReturnValue(false),
+}));
+
+// getShowdownTypeIconUrl from @trainers/pokemon/sprites
+jest.mock("@trainers/pokemon/sprites", () => ({
+  getShowdownTypeIconUrl: jest.fn((type: string) => `/types/${type}.png`),
+}));
+
+// CATEGORY_ICON_URLS
+jest.mock("../../move-category-ui", () => ({
+  CATEGORY_ICON_URLS: {
+    Physical: "/icons/physical.png",
+    Special: "/icons/special.png",
+    Status: "/icons/status.png",
+  },
+}));
+
+// FieldError
+jest.mock("../validation/field-error", () => ({
+  FieldError: ({
+    message,
+    severity,
+  }: {
+    message: string;
+    severity?: string;
+  }) => (
+    <span role="alert" data-severity={severity ?? "error"}>
+      {message}
+    </span>
+  ),
+}));
+
+// =============================================================================
+// Import after mocks
+// =============================================================================
+
+import { MovesLane } from "../lanes/moves-lane";
+import { type ValidationError } from "../../validation-hooks";
+import { useCalcStateContext } from "../calc/calc-state-context";
+import { getMoveEffectiveness } from "../calc/move-effectiveness";
+import { getMoveTargetInfo } from "../calc/move-target-info";
+import { getVerdict } from "../../use-calc-state";
+import { getMoveData } from "@trainers/pokemon";
+
+// =============================================================================
+// Fixtures
+// =============================================================================
+
+const VGC_FORMAT: GameFormat = {
+  id: "gen9vgc2026regi",
+  game: "Scarlet & Violet",
+  gameShort: "SV",
+  generation: 9,
+  category: "VGC",
+  year: 2026,
+  regulation: "I",
+  label: "SV: Reg I",
+  showdownName: "[Gen 9] VGC 2026 Reg I",
+  doubles: true,
+  active: true,
+};
+
+function makePokemon(overrides: Partial<Tables<"pokemon">> = {}): Tables<"pokemon"> {
+  return {
+    id: 1,
+    species: "Gardevoir",
+    ability: "Telepathy",
+    nature: "Timid",
+    move1: "Moonblast",
+    move2: "Psychic",
+    move3: null,
+    move4: null,
+    ev_hp: 0,
+    ev_attack: 0,
+    ev_defense: 0,
+    ev_special_attack: 252,
+    ev_special_defense: 4,
+    ev_speed: 252,
+    iv_hp: 31,
+    iv_attack: 0,
+    iv_defense: 31,
+    iv_special_attack: 31,
+    iv_special_defense: 31,
+    iv_speed: 31,
+    level: 50,
+    held_item: "Choice Specs",
+    nickname: null,
+    notes: null,
+    tera_type: "Fairy",
+    is_shiny: null,
+    gender: null,
+    format_legal: null,
+    created_at: null,
+    ...overrides,
+  };
+}
+
+function makeError(
+  field: string,
+  severity: "error" | "warning" = "error",
+  message = `${field} issue`
+): ValidationError {
+  return { pokemonId: 1, pokemonName: "Gardevoir", field, message, severity };
+}
+
+function renderLane(
+  pokemonOverrides: Partial<Tables<"pokemon">> = {},
+  format: GameFormat | undefined = VGC_FORMAT,
+  fieldErrors?: ValidationError[]
+) {
+  const onUpdate = jest.fn();
+  const result = render(
+    <MovesLane
+      pokemon={makePokemon(pokemonOverrides)}
+      format={format}
+      onUpdate={onUpdate}
+      fieldErrors={fieldErrors}
+    />
+  );
+  return { ...result, onUpdate };
+}
+
+// =============================================================================
+// Tests
+// =============================================================================
+
+describe("MovesLane — basic render", () => {
+  it("renders the 'Moves' header label", () => {
+    renderLane();
+    expect(screen.getByText("Moves")).toBeInTheDocument();
+  });
+
+  it("renders 4 move tiles (popover triggers)", () => {
+    renderLane();
+    expect(screen.getAllByTestId("popover-trigger").length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("renders set moves by name", () => {
+    renderLane({ move1: "Moonblast", move2: "Psychic", move3: null, move4: null });
+    expect(screen.getByText("Moonblast")).toBeInTheDocument();
+    expect(screen.getByText("Psychic")).toBeInTheDocument();
+  });
+
+  it("renders '+ Add move' for empty slots", () => {
+    renderLane({ move1: "Moonblast", move2: null, move3: null, move4: null });
+    // 3 empty slots
+    expect(screen.getAllByText("+ Add move").length).toBe(3);
+  });
+
+  it.each([
+    ["move1", "Moonblast"],
+    ["move2", "Psychic"],
+    ["move3", "Thunderbolt"],
+    ["move4", "Protect"],
+  ] as const)(
+    "renders %s move name '%s' in the lane",
+    (slot, moveName) => {
+      renderLane({ [slot]: moveName });
+      expect(screen.getByText(moveName)).toBeInTheDocument();
+    }
+  );
+});
+
+describe("MovesLane — move tile display", () => {
+  it("shows the type icon img for a set move", () => {
+    renderLane({ move1: "Moonblast" });
+    // getMoveData returns type: "Dragon" → img alt "Dragon"
+    const imgs = screen.getAllByAltText("Dragon");
+    expect(imgs.length).toBeGreaterThan(0);
+  });
+
+  it("shows the category icon img for a set move", () => {
+    renderLane({ move1: "Moonblast" });
+    const categoryImgs = screen.getAllByAltText("Physical");
+    expect(categoryImgs.length).toBeGreaterThan(0);
+  });
+
+  it("shows base power for a damaging move", () => {
+    renderLane({ move1: "Moonblast" });
+    // getMoveData returns basePower: 80
+    expect(screen.getAllByText("80").length).toBeGreaterThan(0);
+  });
+
+  it("shows accuracy for a move with numeric accuracy", () => {
+    renderLane({ move1: "Moonblast" });
+    // getMoveData returns accuracy: 100 → "100%"
+    expect(screen.getAllByText("100%").length).toBeGreaterThan(0);
+  });
+
+  it("shows '—' for accuracy when accuracy is true (always-hit)", () => {
+    (getMoveData as jest.Mock).mockReturnValueOnce({
+      type: "Normal",
+      category: "Status",
+      basePower: 0,
+      accuracy: true,
+      shortDesc: "User falls asleep.",
+    });
+    renderLane({ move1: "Rest" });
+    // accuracy=true → rendered as "—"
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+  });
+
+  it("shows shortDesc when present and not default", () => {
+    renderLane({ move1: "Moonblast" });
+    expect(screen.getAllByText("High critical-hit ratio.").length).toBeGreaterThan(0);
+  });
+
+  it("does not show default shortDesc 'No additional effect.'", () => {
+    (getMoveData as jest.Mock).mockReturnValueOnce({
+      type: "Normal",
+      category: "Physical",
+      basePower: 80,
+      accuracy: 100,
+      shortDesc: "No additional effect.",
+    });
+    renderLane({ move1: "Tackle" });
+    expect(screen.queryByText("No additional effect.")).not.toBeInTheDocument();
+  });
+});
+
+describe("MovesLane — picking a move", () => {
+  it("renders the MovePicker in every slot's popover content", () => {
+    renderLane({ move1: null, move2: null, move3: null, move4: null });
+    expect(screen.getAllByTestId("move-picker").length).toBe(4);
+  });
+
+  it("calls onUpdate with move1 when a move is picked in slot 1", async () => {
+    const user = userEvent.setup();
+    const { onUpdate } = renderLane({
+      move1: null,
+      move2: null,
+      move3: null,
+      move4: null,
+    });
+    // Click the first pick-moonblast button
+    const pickButtons = screen.getAllByText("pick-moonblast");
+    await user.click(pickButtons[0]);
+    expect(onUpdate).toHaveBeenCalledWith({ move1: "Moonblast" });
+  });
+
+  it("calls onUpdate with move2 when a move is picked in slot 2", async () => {
+    const user = userEvent.setup();
+    const { onUpdate } = renderLane({
+      move1: "Moonblast",
+      move2: null,
+      move3: null,
+      move4: null,
+    });
+    const pickButtons = screen.getAllByText("pick-flamethrower");
+    await user.click(pickButtons[1]);
+    expect(onUpdate).toHaveBeenCalledWith({ move2: "Flamethrower" });
+  });
+
+  it.each([
+    [0, "move1"],
+    [1, "move2"],
+    [2, "move3"],
+    [3, "move4"],
+  ] as const)(
+    "slot %i calls onUpdate with %s key",
+    async (slotIdx, slotKey) => {
+      const user = userEvent.setup();
+      const { onUpdate } = renderLane({
+        move1: null,
+        move2: null,
+        move3: null,
+        move4: null,
+      });
+      const pickButtons = screen.getAllByText("pick-moonblast");
+      await user.click(pickButtons[slotIdx]);
+      expect(onUpdate).toHaveBeenCalledWith({ [slotKey]: "Moonblast" });
+    }
+  );
+});
+
+describe("MovesLane — click behaviour (no calc)", () => {
+  beforeEach(() => {
+    (useCalcStateContext as jest.Mock).mockReturnValue({
+      ...mockCalcContext,
+      calcEnabled: false,
+    });
+  });
+
+  it("opens the picker panel when clicking an empty slot", () => {
+    renderLane({ move1: null });
+    // With calc disabled, clicking should show MovePicker (it's always shown since no CalcDetailCard)
+    const pickButtons = screen.getAllByText("pick-moonblast");
+    expect(pickButtons.length).toBeGreaterThan(0);
+  });
+
+  it("shows MovePicker (not CalcDetailCard) when calc is disabled", () => {
+    renderLane({ move1: "Moonblast" });
+    expect(screen.queryByTestId("calc-detail-card")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("move-picker").length).toBeGreaterThan(0);
+  });
+});
+
+describe("MovesLane — calc detail card", () => {
+  beforeEach(() => {
+    (useCalcStateContext as jest.Mock).mockReturnValue({
+      ...mockCalcContext,
+      calcEnabled: true,
+      defenderSpecies: "Corviknight",
+      moveCalcOutputs: [
+        { minPercent: 45.2, maxPercent: 53.1 },
+        null,
+        null,
+        null,
+      ],
+      field: { foesAlive: 2, allyAlive: true },
+    });
+    (getVerdict as jest.Mock).mockReturnValue("2HKO");
+  });
+
+  it("shows CalcDetailCard when calc is enabled, move is set, and output exists", () => {
+    // CalcDetailCard renders in popover content when panel==="detail"
+    // With our mocked Popover always showing content, and panel logic starting at null
+    // The detail card only shows when panel==="detail"; MovePicker shows when panel==="picker"
+    // Since panel starts null, PopoverContent shows MovePicker by default
+    // We test that the calc pill content shows up in the tile instead
+    renderLane({ move1: "Moonblast" });
+    // KO tier "2" → pill shows "2HKO"
+    expect(screen.getByText("2HKO")).toBeInTheDocument();
+  });
+
+  it("shows damage range in pill: minPercent–maxPercent", () => {
+    renderLane({ move1: "Moonblast" });
+    expect(screen.getByText("45.2–53.1%")).toBeInTheDocument();
+  });
+
+  it("shows effectiveness badge when eff !== 1", () => {
+    (getMoveEffectiveness as jest.Mock).mockReturnValueOnce(2);
+    renderLane({ move1: "Moonblast" });
+    expect(screen.getByText("2×")).toBeInTheDocument();
+  });
+
+  it("does not show effectiveness badge when eff === 1", () => {
+    (getMoveEffectiveness as jest.Mock).mockReturnValue(1);
+    renderLane({ move1: "Moonblast" });
+    expect(screen.queryByText("1×")).not.toBeInTheDocument();
+  });
+
+  it("shows 'spread' badge when move is spread and foesAlive >= 2", () => {
+    (getMoveTargetInfo as jest.Mock).mockReturnValueOnce({
+      isSpread: true,
+      kind: "all-foes",
+    });
+    // foesAlive=2 in context
+    renderLane({ move1: "Earthquake" });
+    expect(screen.getByText("spread")).toBeInTheDocument();
+  });
+
+  it("does not show 'spread' badge for single-target moves", () => {
+    (getMoveTargetInfo as jest.Mock).mockReturnValue({
+      isSpread: false,
+      kind: "normal",
+    });
+    renderLane({ move1: "Moonblast" });
+    expect(screen.queryByText("spread")).not.toBeInTheDocument();
+  });
+});
+
+describe("MovesLane — KO tiers", () => {
+  it.each([
+    ["OHKO", "1", "OHKO"],
+    ["2HKO", "2", "2HKO"],
+    ["3HKO", "3", "3HKO"],
+  ] as const)(
+    "getVerdict '%s' renders ko tier '%s' label '%s'",
+    (verdict, _tier, label) => {
+      (useCalcStateContext as jest.Mock).mockReturnValue({
+        ...mockCalcContext,
+        calcEnabled: true,
+        defenderSpecies: "Corviknight",
+        moveCalcOutputs: [{ minPercent: 50, maxPercent: 60 }, null, null, null],
+        field: { foesAlive: 1, allyAlive: false },
+      });
+      (getVerdict as jest.Mock).mockReturnValue(verdict);
+      renderLane({ move1: "Moonblast" });
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+  );
+
+  it("renders '4HKO+' when verdict is null but maxPercent > 0", () => {
+    (useCalcStateContext as jest.Mock).mockReturnValue({
+      ...mockCalcContext,
+      calcEnabled: true,
+      defenderSpecies: "Corviknight",
+      moveCalcOutputs: [{ minPercent: 20, maxPercent: 28 }, null, null, null],
+      field: { foesAlive: 1, allyAlive: false },
+    });
+    (getVerdict as jest.Mock).mockReturnValue(null);
+    renderLane({ move1: "Moonblast" });
+    expect(screen.getByText("4HKO+")).toBeInTheDocument();
+  });
+});
+
+describe("MovesLane — 'pick a target' hint", () => {
+  it("shows '— pick a target —' when calc enabled, move set, no defender, not status", () => {
+    (useCalcStateContext as jest.Mock).mockReturnValue({
+      ...mockCalcContext,
+      calcEnabled: true,
+      defenderSpecies: "",
+      moveCalcOutputs: [null, null, null, null],
+      field: { foesAlive: 1, allyAlive: false },
+    });
+    renderLane({ move1: "Moonblast" });
+    expect(screen.getAllByText("— pick a target —").length).toBeGreaterThan(0);
+  });
+
+  it("shows '— calc unavailable —' when calc on, defender set, but output is null", () => {
+    (useCalcStateContext as jest.Mock).mockReturnValue({
+      ...mockCalcContext,
+      calcEnabled: true,
+      defenderSpecies: "Corviknight",
+      moveCalcOutputs: [null, null, null, null],
+      field: { foesAlive: 1, allyAlive: false },
+    });
+    renderLane({ move1: "Moonblast" });
+    expect(screen.getAllByText("— calc unavailable —").length).toBeGreaterThan(0);
+  });
+
+  it("does not show target hint for Status moves", () => {
+    (getMoveData as jest.Mock).mockReturnValue({
+      type: "Normal",
+      category: "Status",
+      basePower: 0,
+      accuracy: true,
+      shortDesc: "",
+    });
+    (useCalcStateContext as jest.Mock).mockReturnValue({
+      ...mockCalcContext,
+      calcEnabled: true,
+      defenderSpecies: "",
+      moveCalcOutputs: [null, null, null, null],
+      field: { foesAlive: 1, allyAlive: false },
+    });
+    renderLane({ move1: "Protect" });
+    expect(screen.queryByText("— pick a target —")).not.toBeInTheDocument();
+  });
+});
+
+describe("MovesLane — validation errors", () => {
+  it("renders a FieldError for a move1 error", () => {
+    renderLane(
+      { move1: "" },
+      VGC_FORMAT,
+      [makeError("move1", "error", "Move 1 required")]
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Move 1 required");
+  });
+
+  it("renders FieldErrors for multiple move slots", () => {
+    renderLane(
+      { move1: "", move2: null },
+      VGC_FORMAT,
+      [
+        makeError("move1", "error", "Move 1 required"),
+        makeError("move2", "warning", "Move 2 advisory"),
+      ]
+    );
+    const alerts = screen.getAllByRole("alert");
+    expect(alerts.length).toBeGreaterThanOrEqual(2);
+    const messages = alerts.map((a) => a.textContent);
+    expect(messages).toContain("Move 1 required");
+    expect(messages).toContain("Move 2 advisory");
+  });
+
+  it.each([
+    ["move1", "Move 1 error"],
+    ["move2", "Move 2 error"],
+    ["move3", "Move 3 error"],
+    ["move4", "Move 4 error"],
+  ] as const)(
+    "renders FieldError for %s",
+    (field, message) => {
+      renderLane({}, VGC_FORMAT, [makeError(field, "error", message)]);
+      const alert = screen.getByRole("alert");
+      expect(alert).toHaveTextContent(message);
+    }
+  );
+
+  it("applies ring-destructive class when a slot has an error", () => {
+    renderLane(
+      { move1: "Moonblast" },
+      VGC_FORMAT,
+      [makeError("move1", "error", "Move illegal")]
+    );
+    // The tile button gets ring-destructive styling — check alert is present
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+});

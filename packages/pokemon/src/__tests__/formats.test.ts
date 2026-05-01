@@ -28,7 +28,10 @@ describe("getFormatById", () => {
     expect(format).toBeDefined();
     expect(format?.id).toBe("championsvgc2026regma");
     expect(format?.game).toBe("Pokemon Champions");
-    expect(format?.generation).toBe(10);
+    // Champions runs on gen 9 mechanics (gen 10 is reserved for Winds &
+    // Waves). Champions-specific behaviors discriminate on gameShort.
+    expect(format?.generation).toBe(9);
+    expect(format?.gameShort).toBe("Champions");
     expect(format?.active).toBe(true);
   });
 
@@ -118,7 +121,8 @@ describe("getAvailableGames", () => {
     const champions = games.find((g) => g.name === "Pokemon Champions");
 
     expect(champions?.shortName).toBe("Champions");
-    expect(champions?.generation).toBe(10);
+    // Champions uses gen 9 mechanics — gen 10 is reserved for Winds & Waves.
+    expect(champions?.generation).toBe(9);
 
     const sv = games.find((g) => g.name === "Scarlet & Violet");
     expect(sv?.shortName).toBe("SV");
@@ -193,8 +197,8 @@ describe("ALL_FORMAT_IDS", () => {
 });
 
 describe("POKEMON_GAMES", () => {
-  it("defines Pokemon Champions as generation 10", () => {
-    expect(POKEMON_GAMES.champions.generation).toBe(10);
+  it("defines Pokemon Champions on gen 9 mechanics (gen 10 reserved for Winds & Waves)", () => {
+    expect(POKEMON_GAMES.champions.generation).toBe(9);
     expect(POKEMON_GAMES.champions.name).toBe("Pokemon Champions");
     expect(POKEMON_GAMES.champions.shortName).toBe("Champions");
   });
@@ -217,8 +221,10 @@ describe("POKEMON_GAMES", () => {
     expect(keys).toContain("diamondPearl");
   });
 
-  it("generations decrease from Champions (10) to Diamond & Pearl (4)", () => {
-    expect(POKEMON_GAMES.champions.generation).toBeGreaterThan(
+  it("generations decrease from Scarlet & Violet (9) to Diamond & Pearl (4)", () => {
+    // Champions shares gen 9 with Scarlet & Violet (uses SV mechanics);
+    // discriminate Champions via gameShort instead of generation.
+    expect(POKEMON_GAMES.champions.generation).toBe(
       POKEMON_GAMES.scarletViolet.generation
     );
     expect(POKEMON_GAMES.scarletViolet.generation).toBeGreaterThan(
@@ -244,7 +250,8 @@ describe("VGC_FORMATS registry", () => {
     expect(entry).toBeDefined();
     expect(entry?.active).toBe(true);
     expect(entry?.doubles).toBe(true);
-    expect(entry?.generation).toBe(10);
+    expect(entry?.generation).toBe(9);
+    expect(entry?.gameShort).toBe("Champions");
     expect(entry?.label).toBe("Champions: Reg M-A");
   });
 

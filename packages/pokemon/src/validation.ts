@@ -2,6 +2,7 @@ import { Dex } from "@pkmn/dex";
 import { Generations } from "@pkmn/data";
 import type { PokemonSet, PokemonSetFlat } from "./types";
 import { fromFlat } from "./types";
+import { isChampionsFormat, type GameFormat } from "./formats";
 
 // Initialize Pokemon data for the current generation (9 = Scarlet/Violet)
 const gens = new Generations(Dex);
@@ -28,10 +29,15 @@ export type {
 } from "./types";
 
 /**
- * Validates a Pokemon's data against the current generation's rules
+ * Validates a Pokemon's data against the current generation's rules.
+ *
+ * `format` is optional — when provided, the validator uses format-specific
+ * stat-investment caps (Champions uses 66 SP total / 32 SP per stat instead
+ * of 508 EV / 252 EV).
  */
 export function validatePokemon(
-  pokemon: PokemonSetFlat | PokemonSet
+  pokemon: PokemonSetFlat | PokemonSet,
+  format?: GameFormat
 ): PokemonValidationResult {
   const errors: PokemonValidationError[] = [];
 
@@ -39,10 +45,28 @@ export function validatePokemon(
   const pokemonSet: PokemonSet =
     "moves" in pokemon ? pokemon : fromFlat(pokemon);
 
+  // Stat-investment caps depend on the format. Champions Reg M-A uses SP
+  // (Stat Points): 66 total, 32 per stat. Everything else uses EV: 510 total,
+  // 252 per stat. Caller may pass `format` to opt into format-aware caps.
+  const championsRules = isChampionsFormat(format);
+  const investTotalMax = championsRules ? 66 : 510;
+  const investPerStatMax = championsRules ? 32 : 252;
+  const investLabel = championsRules ? "SP" : "EV";
+
   try {
-    // Validate species exists
-    const species = currentGen.species.get(pokemonSet.species);
-    if (!species?.exists) {
+    // Validate species exists.
+    //
+    // We check existence via the generation-agnostic `Dex` rather than the
+    // gen-9-scoped `currentGen.species` because @pkmn/data's `Generations`
+    // filters species by what's *legal in that generation's Pokédex*. Many
+    // valid species (Aerodactyl, all pre-Paldea regional formes, the Champions
+    // format's synthetic mega-evolutions like "Chandelure-Mega") aren't in
+    // Scarlet/Violet's Pokédex but absolutely exist as known Pokemon.
+    //
+    // Format-legality (whether the species is allowed in a specific tournament
+    // format) is a separate concern handled elsewhere.
+    const speciesAny = Dex.species.get(pokemonSet.species);
+    if (!speciesAny?.exists) {
       errors.push({
         field: "species",
         message: `Pokemon species "${pokemonSet.species}" does not exist`,
@@ -51,6 +75,10 @@ export function validatePokemon(
       // If species doesn't exist, we can't validate further
       return { isValid: false, errors };
     }
+    // Use the gen-9 species data when available for downstream checks
+    // (abilities, learnable moves) — falls back to the cross-gen Dex entry
+    // so older species still validate cleanly.
+    const species = currentGen.species.get(pokemonSet.species) ?? speciesAny;
 
     // Validate nature
     const nature = currentGen.natures.get(pokemonSet.nature);
@@ -62,31 +90,41 @@ export function validatePokemon(
       });
     }
 
-    // Validate ability
-    const ability = currentGen.abilities.get(pokemonSet.ability);
-    if (!ability?.exists) {
-      errors.push({
-        field: "ability",
-        message: `Ability "${pokemonSet.ability}" does not exist`,
-        severity: "error",
-      });
-    } else {
-      // Check if Pokemon can have this ability
-      const validAbilities = Object.values(species.abilities || {}).filter(
-        Boolean
-      );
-      if (!validAbilities.includes(pokemonSet.ability)) {
+    // Validate ability — skip when unset (empty string is "no ability chosen yet",
+    // not an error). Use Dex for existence (gen-agnostic) so abilities that exist
+    // in older gens but not gen 9 still resolve.
+    if (pokemonSet.ability) {
+      const ability =
+        Dex.abilities.get(pokemonSet.ability) ??
+        currentGen.abilities.get(pokemonSet.ability);
+      if (!ability?.exists) {
         errors.push({
           field: "ability",
-          message: `${pokemonSet.species} cannot have ability "${pokemonSet.ability}"`,
+          message: `Ability "${pokemonSet.ability}" does not exist`,
           severity: "error",
         });
+      } else {
+        // Check if Pokemon can have this ability
+        const validAbilities = Object.values(species.abilities || {}).filter(
+          Boolean
+        );
+        if (!validAbilities.includes(pokemonSet.ability)) {
+          errors.push({
+            field: "ability",
+            message: `${pokemonSet.species} cannot have ability "${pokemonSet.ability}"`,
+            severity: "error",
+          });
+        }
       }
     }
 
-    // Validate held item if provided
+    // Validate held item if provided. Use Dex (cross-gen) so Mega Stones,
+    // Z-Crystals, and other older items that aren't in gen 9's item list
+    // still resolve. Format-legality is enforced separately.
     if (pokemonSet.heldItem) {
-      const item = currentGen.items.get(pokemonSet.heldItem);
+      const item =
+        Dex.items.get(pokemonSet.heldItem) ??
+        currentGen.items.get(pokemonSet.heldItem);
       if (!item?.exists) {
         errors.push({
           field: "heldItem",
@@ -139,46 +177,40 @@ export function validatePokemon(
 
     for (const [index, moveId] of moves.entries()) {
       if (moveId) {
-        const move = currentGen.moves.get(moveId);
+        // Use Dex (cross-gen) so older moves that aren't in gen 9 still
+        // resolve. Format-legality is enforced separately.
+        const move = Dex.moves.get(moveId) ?? currentGen.moves.get(moveId);
         if (!move?.exists) {
           errors.push({
             field: `move${index + 1}`,
             message: `Move "${moveId}" does not exist`,
             severity: "error",
           });
-        } else {
-          // Check if Pokemon can learn this move
-          // TODO: Learnset validation requires async operations
-          // const learnset = await currentGen.learnsets.get(species.id);
-          // if (learnset && !learnset.can(move.id)) {
-          //   errors.push({
-          //     field: `move${index + 1}`,
-          //     message: `${pokemonSet.species} cannot learn "${moveId}"`,
-          //   });
-          // }
         }
       }
     }
 
-    // Validate EVs using structured format
-    const totalEvs = Object.values(pokemonSet.evs).reduce(
+    // Validate stat investment using structured format. Caps depend on the
+    // format — Champions uses SP (66 total / 32 per stat); standard uses EV
+    // (510 total / 252 per stat).
+    const totalInvestment = Object.values(pokemonSet.evs).reduce(
       (sum, ev) => sum + ev,
       0
     );
-    if (totalEvs > 510) {
+    if (totalInvestment > investTotalMax) {
       errors.push({
         field: "evs",
-        message: `Total EVs (${totalEvs}) cannot exceed 510`,
+        message: `Total ${investLabel} (${totalInvestment}) cannot exceed ${investTotalMax}`,
         severity: "error",
       });
     }
 
-    // Validate individual EV values
+    // Validate individual investment values
     for (const [stat, value] of Object.entries(pokemonSet.evs)) {
-      if (value < 0 || value > 252) {
+      if (value < 0 || value > investPerStatMax) {
         errors.push({
           field: `ev${stat.charAt(0).toUpperCase() + stat.slice(1)}`,
-          message: `${stat} EVs must be between 0 and 252`,
+          message: `${stat} ${investLabel} must be between 0 and ${investPerStatMax}`,
           severity: "error",
         });
       }
@@ -320,11 +352,8 @@ export function getLearnableMoves(speciesName: string): string[] {
     const species = currentGen.species.get(speciesName);
     if (!species?.exists) return [];
 
-    // TODO: Learnset validation requires async operations
-    // const learnset = await currentGen.learnsets.get(species.id);
-    // if (!learnset) return [];
-
-    // For now, return all moves (no filtering)
+    // See getLegalMoves for format-aware learnset queries.
+    // Returns all moves (no learnset filtering — async learnset API not used here)
     const moves: string[] = [];
     for (const move of currentGen.moves) {
       moves.push(move.name);
