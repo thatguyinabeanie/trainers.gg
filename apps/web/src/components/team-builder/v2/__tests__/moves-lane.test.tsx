@@ -345,22 +345,7 @@ describe("MovesLane — move tile display", () => {
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
 
-  it("shows shortDesc when present and not default", () => {
-    renderLane({ move1: "Moonblast" });
-    expect(screen.getAllByText("High critical-hit ratio.").length).toBeGreaterThan(0);
-  });
-
-  it("does not show default shortDesc 'No additional effect.'", () => {
-    (getMoveData as jest.Mock).mockReturnValueOnce({
-      type: "Normal",
-      category: "Physical",
-      basePower: 80,
-      accuracy: 100,
-      shortDesc: "No additional effect.",
-    });
-    renderLane({ move1: "Tackle" });
-    expect(screen.queryByText("No additional effect.")).not.toBeInTheDocument();
-  });
+  // shortDesc is shown in a Tooltip on hover — not tested in unit tests
 });
 
 describe("MovesLane — picking a move", () => {
@@ -440,150 +425,9 @@ describe("MovesLane — click behaviour (no calc)", () => {
   });
 });
 
-describe("MovesLane — calc detail card", () => {
-  beforeEach(() => {
-    (useCalcStateContext as jest.Mock).mockReturnValue({
-      ...mockCalcContext,
-      calcEnabled: true,
-      defenderSpecies: "Corviknight",
-      moveCalcOutputs: [
-        { minPercent: 45.2, maxPercent: 53.1 },
-        null,
-        null,
-        null,
-      ],
-      field: { foesAlive: 2, allyAlive: true },
-    });
-    (getVerdict as jest.Mock).mockReturnValue("2HKO");
-  });
-
-  it("shows CalcDetailCard when calc is enabled, move is set, and output exists", () => {
-    // CalcDetailCard renders in popover content when panel==="detail"
-    // With our mocked Popover always showing content, and panel logic starting at null
-    // The detail card only shows when panel==="detail"; MovePicker shows when panel==="picker"
-    // Since panel starts null, PopoverContent shows MovePicker by default
-    // We test that the calc pill content shows up in the tile instead
-    renderLane({ move1: "Moonblast" });
-    // KO tier "2" → pill shows "2HKO"
-    expect(screen.getByText("2HKO")).toBeInTheDocument();
-  });
-
-  it("shows damage range in pill: minPercent–maxPercent", () => {
-    renderLane({ move1: "Moonblast" });
-    expect(screen.getByText("45.2–53.1%")).toBeInTheDocument();
-  });
-
-  it("shows effectiveness badge when eff !== 1", () => {
-    (getMoveEffectiveness as jest.Mock).mockReturnValueOnce(2);
-    renderLane({ move1: "Moonblast" });
-    expect(screen.getByText("2×")).toBeInTheDocument();
-  });
-
-  it("does not show effectiveness badge when eff === 1", () => {
-    (getMoveEffectiveness as jest.Mock).mockReturnValue(1);
-    renderLane({ move1: "Moonblast" });
-    expect(screen.queryByText("1×")).not.toBeInTheDocument();
-  });
-
-  it("shows 'spread' badge when move is spread and foesAlive >= 2", () => {
-    (getMoveTargetInfo as jest.Mock).mockReturnValueOnce({
-      isSpread: true,
-      kind: "all-foes",
-    });
-    // foesAlive=2 in context
-    renderLane({ move1: "Earthquake" });
-    expect(screen.getByText("spread")).toBeInTheDocument();
-  });
-
-  it("does not show 'spread' badge for single-target moves", () => {
-    (getMoveTargetInfo as jest.Mock).mockReturnValue({
-      isSpread: false,
-      kind: "normal",
-    });
-    renderLane({ move1: "Moonblast" });
-    expect(screen.queryByText("spread")).not.toBeInTheDocument();
-  });
-});
-
-describe("MovesLane — KO tiers", () => {
-  it.each([
-    ["OHKO", "1", "OHKO"],
-    ["2HKO", "2", "2HKO"],
-    ["3HKO", "3", "3HKO"],
-  ] as const)(
-    "getVerdict '%s' renders ko tier '%s' label '%s'",
-    (verdict, _tier, label) => {
-      (useCalcStateContext as jest.Mock).mockReturnValue({
-        ...mockCalcContext,
-        calcEnabled: true,
-        defenderSpecies: "Corviknight",
-        moveCalcOutputs: [{ minPercent: 50, maxPercent: 60 }, null, null, null],
-        field: { foesAlive: 1, allyAlive: false },
-      });
-      (getVerdict as jest.Mock).mockReturnValue(verdict);
-      renderLane({ move1: "Moonblast" });
-      expect(screen.getByText(label)).toBeInTheDocument();
-    }
-  );
-
-  it("renders '4HKO+' when verdict is null but maxPercent > 0", () => {
-    (useCalcStateContext as jest.Mock).mockReturnValue({
-      ...mockCalcContext,
-      calcEnabled: true,
-      defenderSpecies: "Corviknight",
-      moveCalcOutputs: [{ minPercent: 20, maxPercent: 28 }, null, null, null],
-      field: { foesAlive: 1, allyAlive: false },
-    });
-    (getVerdict as jest.Mock).mockReturnValue(null);
-    renderLane({ move1: "Moonblast" });
-    expect(screen.getByText("4HKO+")).toBeInTheDocument();
-  });
-});
-
-describe("MovesLane — 'pick a target' hint", () => {
-  it("shows '— pick a target —' when calc enabled, move set, no defender, not status", () => {
-    (useCalcStateContext as jest.Mock).mockReturnValue({
-      ...mockCalcContext,
-      calcEnabled: true,
-      defenderSpecies: "",
-      moveCalcOutputs: [null, null, null, null],
-      field: { foesAlive: 1, allyAlive: false },
-    });
-    renderLane({ move1: "Moonblast" });
-    expect(screen.getAllByText("— pick a target —").length).toBeGreaterThan(0);
-  });
-
-  it("shows '— calc unavailable —' when calc on, defender set, but output is null", () => {
-    (useCalcStateContext as jest.Mock).mockReturnValue({
-      ...mockCalcContext,
-      calcEnabled: true,
-      defenderSpecies: "Corviknight",
-      moveCalcOutputs: [null, null, null, null],
-      field: { foesAlive: 1, allyAlive: false },
-    });
-    renderLane({ move1: "Moonblast" });
-    expect(screen.getAllByText("— calc unavailable —").length).toBeGreaterThan(0);
-  });
-
-  it("does not show target hint for Status moves", () => {
-    (getMoveData as jest.Mock).mockReturnValue({
-      type: "Normal",
-      category: "Status",
-      basePower: 0,
-      accuracy: true,
-      shortDesc: "",
-    });
-    (useCalcStateContext as jest.Mock).mockReturnValue({
-      ...mockCalcContext,
-      calcEnabled: true,
-      defenderSpecies: "",
-      moveCalcOutputs: [null, null, null, null],
-      field: { foesAlive: 1, allyAlive: false },
-    });
-    renderLane({ move1: "Protect" });
-    expect(screen.queryByText("— pick a target —")).not.toBeInTheDocument();
-  });
-});
+// NOTE: Calc result display (KO tier labels, damage ranges, effectiveness badges,
+// spread badges, "pick a target" hints) was moved to the CalcColumn component.
+// Those behaviors are tested in calc-column.test.tsx.
 
 describe("MovesLane — validation errors", () => {
   it("renders a FieldError for a move1 error", () => {

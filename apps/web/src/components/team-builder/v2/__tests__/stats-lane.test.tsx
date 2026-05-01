@@ -347,9 +347,8 @@ describe("StatsLane", () => {
       },
       CHAMPIONS_FORMAT
     );
-    // Total = 25, budget.total = 66
-    expect(screen.getByText("25")).toBeInTheDocument();
-    expect(screen.getByText("/66")).toBeInTheDocument();
+    // Total chip renders as single "25/66" span
+    expect(screen.getByText("25/66")).toBeInTheDocument();
   });
 
   it("shows 252/508 total chip in VGC with 252 EVs invested", () => {
@@ -364,8 +363,8 @@ describe("StatsLane", () => {
       },
       VGC_FORMAT
     );
-    expect(screen.getByText("252")).toBeInTheDocument();
-    expect(screen.getByText("/508")).toBeInTheDocument();
+    // Total chip renders as single "252/508" span
+    expect(screen.getByText("252/508")).toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------

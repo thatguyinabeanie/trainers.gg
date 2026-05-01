@@ -4,7 +4,7 @@ import React from "react";
 import { TypePill } from "../type-pill";
 
 // =============================================================================
-// TypePill
+// TypePill — now renders a Showdown retro sprite <img>
 // =============================================================================
 
 describe("TypePill", () => {
@@ -27,39 +27,26 @@ describe("TypePill", () => {
     "Rock",
     "Steel",
     "Water",
-  ])("renders the type name text for %s", (type) => {
+  ])("renders an img with alt text for %s", (type) => {
     render(<TypePill t={type} />);
-    expect(screen.getByText(type)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: type })).toBeInTheDocument();
   });
 
-  it("renders as a span element", () => {
+  it("renders as an img element", () => {
     render(<TypePill t="Fire" />);
-    const pill = screen.getByText("Fire");
-    expect(pill.tagName.toLowerCase()).toBe("span");
+    const pill = screen.getByRole("img", { name: "Fire" });
+    expect(pill.tagName.toLowerCase()).toBe("img");
   });
 
-  it("applies a type-specific color class for Fire", () => {
-    render(<TypePill t="Fire" />);
-    const pill = screen.getByText("Fire");
-    // Fire → bg-orange-500 text-white
-    expect(pill.className).toContain("bg-orange-500");
-  });
-
-  it("applies a type-specific color class for Water", () => {
+  it("sets title to the type name", () => {
     render(<TypePill t="Water" />);
-    const pill = screen.getByText("Water");
-    expect(pill.className).toContain("bg-blue-500");
+    const pill = screen.getByRole("img", { name: "Water" });
+    expect(pill).toHaveAttribute("title", "Water");
   });
 
-  it("applies a type-specific color class for Grass", () => {
-    render(<TypePill t="Grass" />);
-    const pill = screen.getByText("Grass");
-    expect(pill.className).toContain("bg-green-500");
-  });
-
-  it("falls back to bg-stone-400 for an unknown type", () => {
-    render(<TypePill t="Unknown" />);
-    const pill = screen.getByText("Unknown");
-    expect(pill.className).toContain("bg-stone-400");
+  it("src points to the Showdown type sprite URL", () => {
+    render(<TypePill t="Fire" />);
+    const pill = screen.getByRole("img", { name: "Fire" });
+    expect(pill).toHaveAttribute("src", expect.stringContaining("Fire"));
   });
 });

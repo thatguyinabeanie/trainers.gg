@@ -1073,7 +1073,7 @@ describe("updateRegistrationAction", () => {
   it("updates registration and revalidates tournament", async () => {
     mockUpdateRegistrationPreferences.mockResolvedValue({ registrationId: 42 });
 
-    const result = await updateRegistrationAction(5, {
+    const result = await updateRegistrationAction(42, 5, {
       inGameName: "Trainer Red",
       showCountryFlag: true,
     });
@@ -1084,7 +1084,7 @@ describe("updateRegistrationAction", () => {
     });
     expect(mockUpdateRegistrationPreferences).toHaveBeenCalledWith(
       mockSupabase,
-      5,
+      42,
       { inGameName: "Trainer Red", showCountryFlag: true }
     );
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:5");
@@ -1095,7 +1095,7 @@ describe("updateRegistrationAction", () => {
       new Error("registration closed")
     );
 
-    const result = await updateRegistrationAction(5, {});
+    const result = await updateRegistrationAction(42, 5, {});
 
     expect(result).toEqual({
       success: false,
