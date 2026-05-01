@@ -483,7 +483,6 @@ export async function registerForTournament(
   }
 ): Promise<ActionResult<{ registrationId: number; status: string }>> {
   try {
-    await rejectBots();
     const supabase = await createClient();
     const result = await registerForTournamentMutation(
       supabase,
