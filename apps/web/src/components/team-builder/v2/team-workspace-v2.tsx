@@ -32,6 +32,7 @@ import {
   removePokemonFromTeamAction,
   reorderTeamPokemonAction,
   updatePokemonAction,
+  updateTeamAction,
 } from "@/actions/teams";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -492,7 +493,7 @@ export function TeamWorkspaceV2({
       format={format}
       field={state.field}
       setField={state.setField}
-      calcEnabled={true}
+      calcEnabled={state.drawer === "calc"}
       faintedYours={state.faintedYours}
       faintedTheirs={state.faintedTheirs}
     >
@@ -506,6 +507,14 @@ export function TeamWorkspaceV2({
           validationErrors={validationErrors}
           onJumpToPokemon={handleJumpToPokemon}
           onValidate={validate}
+          onFormatChange={async (formatId) => {
+            const result = await updateTeamAction(team.id, { format: formatId });
+            if (!result.success) {
+              toast.error(result.error);
+              return;
+            }
+            router.refresh();
+          }}
           exportMenu={<ExportMenu team={team} />}
         />
 
