@@ -13,7 +13,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
-import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
+import {
+  type Tables,
+  type TablesUpdate,
+  type TeamWithPokemon,
+} from "@trainers/supabase";
 
 // =============================================================================
 // Heavy module mocks — must be declared before any import that references them
@@ -76,7 +80,7 @@ jest.mock("../poke-row", () => ({
     onRemove: (idx: number) => void;
     onPokemonUpdate?: (
       pokemonId: number,
-      fields: Partial<Tables<"pokemon">>
+      fields: Partial<TablesUpdate<"pokemon">>
     ) => void;
   }) => (
     <div data-testid={`poke-row-${idx}`} data-sortable-id={sortableId}>
