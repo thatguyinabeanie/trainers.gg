@@ -83,6 +83,9 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px;
+  max-width: 1600px;
+  margin-inline: auto;
+  width: 100%;
 }
 
 [data-density="compact"] .builderRows {
@@ -121,7 +124,9 @@
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
-  margin: 0 12px 0;
+  max-width: calc(1600px - 24px);
+  width: calc(100% - 24px);
+  margin-inline: auto;
   border: 1px solid var(--border);
   border-radius: 10px 10px 0 0;
   border-bottom: none;
@@ -934,17 +939,16 @@
 :global(.mvline) {
   display: grid;
   grid-template-columns:
-    auto              /* type pill */
-    auto              /* cat icon */
-    minmax(0, 11rem)  /* name */
-    auto              /* BP */
-    auto              /* Acc */
-    minmax(0, 1fr)    /* description */
+    max-content       /* type + category — no stretching */
+    minmax(0, 10rem)  /* name */
+    56px              /* BP — wide enough for "BP 140" */
+    72px              /* Acc — wide enough for "ACC 100%" */
     auto;             /* calc pill / hint (empty when not applicable) */
   align-items: center;
-  gap: 14px;
-  padding: 7px 12px;
-  background: var(--card);
+  justify-content: start;
+  gap: 6px;
+  padding: 5px 10px;
+  background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
   text-align: left;
@@ -1002,6 +1006,11 @@
   white-space: nowrap;
   font-size: 13px;
   font-weight: 500;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 /* Description cell — muted, truncated, smaller font */
@@ -1015,20 +1024,24 @@
   line-height: 1.2;
 }
 
-/* Type pill slot — fixed min-width so empty slots reserve the column */
+/* Type + category grouped cell — min-width reserves space for empty rows */
+:global(.mvline-type-cat) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 113px;
+}
+
+/* Type pill slot */
 :global(.mvline-type) {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 56px;
 }
 
-/* Category icon slot — fixed min-width so empty slots reserve the column */
+/* Category icon slot */
 :global(.mvline-cat) {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 28px;
 }
 
 /* BP / Acc readout — fixed-width value cells so they align across rows */
@@ -1718,14 +1731,41 @@
 /* Stat row — Showdown-style 6-column grid per stat */
 .spreadRow {
   display: grid;
-  grid-template-columns: 30px 24px minmax(40px, 1fr) 38px minmax(80px, 2fr) 28px;
-  gap: 8px;
+  grid-template-columns:
+    32px          /* label: "SpD" fits without clipping */
+    30px          /* base stat: 3-digit values like 133 */
+    minmax(30px, 0.8fr)  /* viz bar */
+    40px          /* EV input */
+    minmax(60px, 1.6fr)  /* slider */
+    36px;         /* final stat: 3-digit values like 203 */
+  gap: 6px;
   align-items: center;
   padding: 2px 4px;
   border-radius: 4px;
 }
 
 .spreadRow:hover {
+  background: var(--muted);
+}
+
+/* 7-column variant: adds an IV input column before the final stat */
+.spreadRowWithIv {
+  display: grid;
+  grid-template-columns:
+    32px          /* label */
+    30px          /* base stat */
+    minmax(30px, 0.8fr)  /* viz bar */
+    40px          /* EV input */
+    minmax(60px, 1.6fr)  /* slider */
+    32px          /* IV input */
+    36px;         /* final stat */
+  gap: 6px;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.spreadRowWithIv:hover {
   background: var(--muted);
 }
 
@@ -1750,6 +1790,7 @@
   font-size: 9.5px;
   color: var(--muted-foreground);
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Viz bar track — col 3, read-only */
@@ -1894,4 +1935,5 @@
   font-size: 11.5px;
   font-weight: 700;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }

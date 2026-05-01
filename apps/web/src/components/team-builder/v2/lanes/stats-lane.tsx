@@ -282,7 +282,7 @@ function computeNatureForSuffix(opts: {
 }
 
 // =============================================================================
-// StatRow — one horizontal stat row (6-column grid)
+// StatRow — one horizontal stat row (6 or 7-column grid)
 // =============================================================================
 
 interface StatRowProps {
@@ -302,6 +302,8 @@ interface StatRowProps {
   evFieldKey: keyof Tables<"pokemon">;
   totalEv: number;
   budget: StatBudget;
+  /** When true, renders an inline IV input before the final stat (col 6). */
+  showIv: boolean;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
 }
 
@@ -320,6 +322,7 @@ function StatRow({
   evFieldKey,
   totalEv,
   budget,
+  showIv,
   onUpdate,
 }: StatRowProps) {
   const label = STAT_LABELS[statKey];
@@ -447,8 +450,23 @@ function StatRow({
     }
   }
 
+  // --- IV draft (only used when showIv) ---
+  const iv = ivs[statKey];
+  const [draftIv, setDraftIv] = useState<number | null>(null);
+  const [prevIv, setPrevIv] = useState<number | typeof UNINITIALIZED>(UNINITIALIZED);
+  if (iv !== prevIv) { setPrevIv(iv); setDraftIv(null); }
+  const displayIv = draftIv ?? iv;
+
+  useEffect(() => {
+    if (!showIv || draftIv === null) return;
+    const timer = setTimeout(() => {
+      onUpdate({ [IV_FIELD[statKey]]: draftIv });
+    }, DRAFT_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [draftIv, showIv, statKey, onUpdate]);
+
   return (
-    <div className={cn(s.spreadRow, statColorClass)}>
+    <div className={cn(showIv ? s.spreadRowWithIv : s.spreadRow, statColorClass)}>
       {/* Col 1: Stat label, color-coded, with nature chevron */}
       <span className={cn(s.spreadLabel, labelTextClass)}>
         {label}
@@ -544,63 +562,34 @@ function StatRow({
         )}
       </div>
 
-      {/* Col 6: Final stat, mono bold */}
+      {/* Col 6 (with-IV only): IV input */}
+      {showIv && (
+        <input
+          type="number"
+          min={0}
+          max={31}
+          value={displayIv}
+          aria-label={`${label} IV`}
+          onChange={(e) => {
+            const v = Math.max(0, Math.min(31, Number(e.target.value)));
+            setDraftIv(v);
+          }}
+          onBlur={() => {
+            if (draftIv === null) return;
+            onUpdate({ [IV_FIELD[statKey]]: draftIv });
+          }}
+          className={cn(
+            "focus:ring-primary h-[18px] w-8 rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
+            displayIv !== 31
+              ? "border-amber-400/60 text-amber-600 dark:text-amber-400"
+              : "border-border text-muted-foreground"
+          )}
+        />
+      )}
+
+      {/* Col 6/7: Final stat, mono bold */}
       <span className={s.spreadFinal}>{finalStat}</span>
     </div>
-  );
-}
-
-// =============================================================================
-// IV input
-// =============================================================================
-
-interface IvInputProps {
-  statKey: StatKey;
-  iv: number;
-  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
-}
-
-function IvInput({ statKey, iv, onUpdate }: IvInputProps) {
-  const [draftIv, setDraftIv] = useState<number | null>(null);
-  const [prevIv, setPrevIv] = useState<number | typeof UNINITIALIZED>(
-    UNINITIALIZED
-  );
-  if (iv !== prevIv) {
-    setPrevIv(iv);
-    setDraftIv(null);
-  }
-  const displayIv = draftIv ?? iv;
-
-  useEffect(() => {
-    if (draftIv === null) return;
-    const timer = setTimeout(() => {
-      onUpdate({ [IV_FIELD[statKey]]: draftIv });
-    }, DRAFT_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [draftIv, statKey, onUpdate]);
-
-  function flush() {
-    if (draftIv === null) return;
-    onUpdate({ [IV_FIELD[statKey]]: draftIv });
-  }
-
-  return (
-    <input
-      type="number"
-      min={0}
-      max={31}
-      value={displayIv}
-      onChange={(e) => {
-        const v = Math.max(0, Math.min(31, Number(e.target.value)));
-        setDraftIv(v);
-      }}
-      onBlur={flush}
-      className={cn(
-        "bg-background focus:ring-primary w-10 rounded border px-1 py-0.5 text-center font-mono text-xs outline-none focus:ring-1",
-        displayIv !== 31 &&
-          "border-amber-400/60 text-amber-600 dark:text-amber-400"
-      )}
-    />
   );
 }
 
@@ -627,14 +616,12 @@ export function StatsLane({
   onUpdate,
   fieldErrors = [],
 }: StatsLaneProps) {
-  const [showIvs, setShowIvs] = useState(false);
-
   const evs = getEvs(pokemon);
   const ivs = getIvs(pokemon);
   const level = pokemon.level ?? 50;
   const nature = pokemon.nature ?? "Hardy";
   const isChampions = isChampionsFormat(format);
-  const showIvSection = formatSupportsIvs(format);
+  const showIv = formatSupportsIvs(format);
   const totalEv = totalEvs(evs);
   const budget = getStatBudget(isChampions);
 
@@ -652,9 +639,6 @@ export function StatsLane({
   const natUp = natureEffect?.boost;
   const natDown = natureEffect?.reduce;
 
-  // Detect any non-31 IVs for summary line
-  const nonMaxIvs = STAT_KEYS.filter((k) => ivs[k] !== 31);
-
   // EV / total errors to show below the stat rows
   const evErrors = fieldErrors.filter(
     (e) => e.field === "evs" || e.field === "evTotal"
@@ -665,22 +649,41 @@ export function StatsLane({
       className="border-border/60 flex min-w-0 shrink-0 flex-col gap-0.5 border-r border-dashed px-3 py-2"
       style={{ width: 400, maxWidth: 800 }}
     >
-      {/* Header with total investment chip */}
-      <div className="mb-1 flex items-baseline justify-between">
-        <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
-          {isChampions ? "Stat points" : "Spread"}
+      {/* Column headers */}
+      <div className={cn(
+        "mb-0.5",
+        showIv ? s.spreadRowWithIv : s.spreadRow,
+        "py-0"
+      )}>
+        {/* Col 1: (stat label — no heading) */}
+        <span />
+        {/* Col 2: Base */}
+        <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+          Base
         </span>
+        {/* Col 3: viz bar — no heading */}
+        <span />
+        {/* Col 4: Points / SP */}
+        <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+          {isChampions ? "SP" : "EVs"}
+        </span>
+        {/* Col 5: slider — no heading, but show total */}
         <span
           className={cn(
-            "font-mono text-[10px]",
-            totalEv > budget.total
-              ? "text-destructive font-semibold"
-              : "text-muted-foreground"
+            "text-right font-mono text-[8.5px]",
+            totalEv > budget.total ? "text-destructive font-semibold" : "text-muted-foreground/70"
           )}
         >
-          {totalEv}
-          <span className="text-muted-foreground/60">/{budget.total}</span>
+          {totalEv}/{budget.total}
         </span>
+        {/* Col 6 (with-IV): IVs */}
+        {showIv && (
+          <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+            IVs
+          </span>
+        )}
+        {/* Col 6/7: final — no heading */}
+        <span />
       </div>
 
       {/* 6 horizontal stat rows */}
@@ -728,6 +731,7 @@ export function StatsLane({
               evFieldKey={EV_FIELD[statKey]}
               totalEv={totalEv}
               budget={budget}
+              showIv={showIv}
               onUpdate={onUpdate}
             />
           );
@@ -738,44 +742,6 @@ export function StatsLane({
       {evErrors.map((err, i) => (
         <FieldError key={i} message={err.message} severity={err.severity} />
       ))}
-
-      {/* IV section — hidden in formats without IVs (e.g. Champions) */}
-      {showIvSection && (
-        <div className="mt-1">
-          {/* IV toggle */}
-          <button
-            type="button"
-            onClick={() => setShowIvs((v) => !v)}
-            className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-[10px] font-medium transition-colors"
-          >
-            <span className="font-mono text-[9px]">{showIvs ? "▾" : "▸"}</span>
-            IVs
-            {!showIvs && nonMaxIvs.length > 0 && (
-              <span className="ml-1 font-mono text-[9.5px] text-amber-500">
-                {nonMaxIvs.map((k) => `${STAT_LABELS[k]}:${ivs[k]}`).join(" ")}
-              </span>
-            )}
-          </button>
-
-          {/* IV grid */}
-          {showIvs && (
-            <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1">
-              {STAT_KEYS.map((statKey) => (
-                <label key={statKey} className="flex items-center gap-1.5">
-                  <span className="text-muted-foreground w-7 font-mono text-[9px] font-medium uppercase">
-                    {STAT_LABELS[statKey]}
-                  </span>
-                  <IvInput
-                    statKey={statKey}
-                    iv={ivs[statKey]}
-                    onUpdate={onUpdate}
-                  />
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
