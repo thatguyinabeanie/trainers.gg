@@ -136,6 +136,14 @@ export function CreateTournamentClient({
   const router = useRouter();
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
+  // Redirect unauthenticated users in an effect — `router.push()` during render
+  // triggers React's setState-in-render warning.
+  useEffect(() => {
+    if (!userLoading && !currentUser) {
+      router.push("/sign-in");
+    }
+  }, [userLoading, currentUser, router]);
+
   // Form setup with React Hook Form
   const form = useForm<TournamentFormValues>({
     resolver: zodResolver(tournamentFormSchema),
@@ -398,9 +406,9 @@ export function CreateTournamentClient({
     );
   }
 
-  // Auth check
+  // Auth check — the effect above schedules the redirect; render null while
+  // it's in flight so we don't update Router during this component's render.
   if (!currentUser) {
-    router.push("/sign-in");
     return null;
   }
 

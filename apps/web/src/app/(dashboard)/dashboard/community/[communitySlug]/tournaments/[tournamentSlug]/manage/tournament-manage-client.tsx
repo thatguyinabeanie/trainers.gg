@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
@@ -69,6 +69,15 @@ export function TournamentManageClient({
   const [isPublishing, setIsPublishing] = useState(false);
 
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
+
+  // Redirect unauthenticated users in an effect, not during render — calling
+  // `router.push()` synchronously while rendering triggers React's
+  // setState-in-render warning and crashes Turbopack's overlay.
+  useEffect(() => {
+    if (!userLoading && !currentUser) {
+      router.push("/sign-in");
+    }
+  }, [userLoading, currentUser, router]);
 
   // Fetch organization by slug
   const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
@@ -181,9 +190,10 @@ export function TournamentManageClient({
     );
   }
 
-  // Auth check
+  // Auth check — `redirectToSignIn` (declared above) handles the navigation in
+  // an effect; rendering null here while the redirect is in flight avoids the
+  // setState-in-render warning that direct `router.push()` would trigger.
   if (!currentUser) {
-    router.push("/sign-in");
     return null;
   }
 
