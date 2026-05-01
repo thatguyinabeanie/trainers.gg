@@ -1,65 +1,81 @@
 /**
- * Nature bump calculator
+ * Nature-bonus breakpoint calculator
  *
- * Identifies EV breakpoints where a positive nature (+10%) causes the stat
- * to round up to an extra point compared to a neutral nature.
+ * Identifies EV/SP values where the +nature multiplier confers an additional
+ * effective stat point relative to a neutral nature — the "free bonus"
+ * breakpoints players use to invest precisely without waste.
  *
- * Used to render tick marks on the EV editor slider, showing players exactly
- * where investing EVs gives them a free extra stat point from their nature.
+ * Used to render tick marks on the stat-investment slider for the +nature stat.
+ * For neutral or −nature inputs, returns []. For +nature, returns the EV/SP
+ * positions where (statWithNature − statNeutral) increases.
  */
 
-import { calculateStat } from "./stats-calculator";
+import { type StatKey } from "./stat-keys";
+import {
+  calculateHP,
+  calculateStat,
+  calculateChampionsHP,
+  calculateChampionsStat,
+} from "./stats-calculator";
+
+export interface FindStatBreakpointsArgs {
+  statKey: StatKey;
+  base: number;
+  /** Ignored in Champions (Champions formula has IVs baked in). VGC default 31. */
+  iv: number;
+  /** Ignored in Champions (Champions is fixed level 50). */
+  level: number;
+  /**
+   * Stat-specific nature multiplier: 1.1 (boosted), 1.0 (neutral), 0.9 (reduced).
+   * HP ignores this internally — pass 1.0 for HP.
+   */
+  natureMultiplier: number;
+  /** Per-stat investment cap (e.g. 252 for VGC EV, 32 for Champions SP). */
+  perStatMax: number;
+  /** Investment increment (e.g. 4 for VGC EV, 1 for Champions SP). */
+  step: number;
+  /** Switches between calculateChampions* and calculateHP/calculateStat helpers. */
+  isChampions: boolean;
+}
+
+function computeStatAt(ev: number, args: FindStatBreakpointsArgs): number {
+  const { statKey, base, iv, level, natureMultiplier, isChampions } = args;
+  if (isChampions) {
+    if (statKey === "hp") return calculateChampionsHP(base, ev);
+    return calculateChampionsStat(base, ev, natureMultiplier);
+  }
+  if (statKey === "hp") return calculateHP(base, iv, ev, level);
+  return calculateStat(base, iv, ev, level, natureMultiplier);
+}
 
 /**
- * For a given base stat, IV, level, and nature multiplier, returns an array
- * of EV values (0–252) where the +nature boost causes the stat to round up
- * to an extra point — specifically, the EV breakpoints where the gap between
- * the nature-boosted stat and the neutral stat increases by 1.
+ * Returns the EV/SP values where the +nature multiplier confers an additional
+ * effective stat point relative to a neutral nature — i.e. the EV/SP positions
+ * where (statWithNature − statNeutral) increases.
  *
- * These breakpoints are used as tick marks on the EV slider, showing players
- * exactly where investing EVs gives them a "free" extra stat point from their
- * nature. Only meaningful when natureMultiplier is 1.1 (positive nature).
+ * Returns [] for HP, neutral nature (1.0), and −nature (0.9). Only +nature
+ * (1.1) produces non-empty results.
+ *
+ * Iterates from `step` to `perStatMax` in `step` increments. O(perStatMax / step).
+ * Cheap: ≤ 63 iterations for VGC, ≤ 32 for Champions.
  */
-export function calculateNatureBumps(
-  baseStat: number,
-  iv: number,
-  level: number,
-  natureMultiplier: number
-): number[] {
-  const bumps: number[] = [];
+export function findStatBreakpoints(args: FindStatBreakpointsArgs): number[] {
+  if (args.statKey === "hp") return [];
+  if (args.natureMultiplier <= 1.0) return [];
 
-  // Compute the baseline gap at EV=0 so we only report breakpoints where
-  // investing EVs causes the nature gap to increase beyond the baseline.
-  const baselineNeutral = calculateStat(baseStat, iv, 0, level, 1.0);
-  const baselineNature = calculateStat(
-    baseStat,
-    iv,
-    0,
-    level,
-    natureMultiplier
-  );
-  let prevGap = baselineNature - baselineNeutral;
+  const neutralArgs: FindStatBreakpointsArgs = {
+    ...args,
+    natureMultiplier: 1.0,
+  };
 
-  // Stats only change at multiples of 4 EVs (due to floor(ev/4) in the
-  // stat formula), so we step by 4 for efficiency. Start at 4 since EV=0
-  // is the baseline, not a breakpoint.
-  for (let ev = 4; ev <= 252; ev += 4) {
-    const statNeutral = calculateStat(baseStat, iv, ev, level, 1.0);
-    const statWithNature = calculateStat(
-      baseStat,
-      iv,
-      ev,
-      level,
-      natureMultiplier
-    );
-    const gap = statWithNature - statNeutral;
+  const baselineGap = computeStatAt(0, args) - computeStatAt(0, neutralArgs);
+  let prevGap = baselineGap;
 
-    if (gap > prevGap) {
-      bumps.push(ev);
-    }
-
+  const out: number[] = [];
+  for (let ev = args.step; ev <= args.perStatMax; ev += args.step) {
+    const gap = computeStatAt(ev, args) - computeStatAt(ev, neutralArgs);
+    if (gap > prevGap) out.push(ev);
     prevGap = gap;
   }
-
-  return bumps;
+  return out;
 }

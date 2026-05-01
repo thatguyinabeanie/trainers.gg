@@ -48,7 +48,7 @@ const DEBOUNCE_MS = 1500;
  */
 function runValidation(
   teamPokemon: TeamWithPokemon["team_pokemon"],
-  _format: GameFormat | undefined
+  format: GameFormat | undefined
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -77,7 +77,7 @@ function runValidation(
 
   for (const { pokemonId, pokemon, pokemonSet } of resolved) {
     const speciesName = pokemon.species ?? "";
-    const result = validatePokemon(pokemonSet);
+    const result = validatePokemon(pokemonSet, format);
 
     // Determine if this species is genderless — genderless Pokemon should not
     // produce gender validation errors (e.g., Magnemite, Staryu, Metagross).

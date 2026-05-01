@@ -149,13 +149,18 @@ export {
   getActiveFormats,
   getAvailableGames,
   formatHasTera,
+  isChampionsFormat,
 } from "./formats";
 
 // Featured Pokemon for avatar picker
 export { FEATURED_POKEMON } from "./featured-pokemon";
 
-// Nature bump calculator
-export { calculateNatureBumps } from "./nature-bumps";
+// Canonical stat keys, ordered array, and display labels
+export type { StatKey } from "./stat-keys";
+export { STAT_KEYS, STAT_LABELS } from "./stat-keys";
+
+// Stat breakpoint calculator
+export { findStatBreakpoints, type FindStatBreakpointsArgs } from "./nature-bumps";
 
 // Speed tier benchmarks and comparison
 export {

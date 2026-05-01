@@ -1,0 +1,548 @@
+"use client";
+
+/**
+ * Behavioral tests for CalcDefenderMoves and its inner DefenderMoveTile.
+ *
+ * Covers:
+ *   - "Their moves → your atk" header renders
+ *   - 4 tiles always render (empty slots show "+ Add move")
+ *   - Move name renders for filled slots
+ *   - Type icon rendered for a move with type data
+ *   - KO tier pill renders with correct label (OHKO / 2HKO / 3HKO / 4HKO+)
+ *   - Damage range renders in KO pill: minPercent–maxPercent%
+ *   - Raw damage roll range + HP renders in detail line
+ *   - Accuracy note appended when accuracy is numeric
+ *   - No accuracy note when accuracy is true (always-hit)
+ *   - Debuff notes: −2 SpA after (Draco Meteor), −1 Def/SpD after (Close Combat)
+ *   - Pivot note "pivots out" for U-turn
+ *   - computeReverseOutput called with move name for each filled slot
+ *   - computeReverseOutput NOT called for empty slots
+ *   - onPick called with slotIdx and move name after picking
+ *   - KO pill not rendered when output is null
+ *   - resolveKoTierLabel returns null when maxPercent === 0
+ */
+
+import { render, screen, fireEvent } from "@testing-library/react";
+import React from "react";
+
+import type * as TrainersPokemon from "@trainers/pokemon";
+
+// =============================================================================
+// Mocks
+// =============================================================================
+
+jest.mock("../builder.module.css", () =>
+  new Proxy({}, { get: (_t, k) => k })
+);
+
+// Popover — render children inline
+jest.mock("@/components/ui/popover", () => ({
+  Popover: ({
+    children,
+    open,
+    onOpenChange,
+  }: {
+    children: React.ReactNode;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+  }) => (
+    <div data-testid="popover" data-open={String(!!open)} onClick={() => onOpenChange?.(!open)}>
+      {children}
+    </div>
+  ),
+  PopoverTrigger: ({
+    children,
+    render: renderProp,
+  }: {
+    children?: React.ReactNode;
+    render?: React.ReactElement;
+  }) => (
+    <div data-testid="popover-trigger">
+      {renderProp}
+      {children}
+    </div>
+  ),
+  PopoverContent: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="popover-content">{children}</div>
+  ),
+}));
+
+// MovePicker stub — interactive so we can simulate picking
+jest.mock("../pickers/move-picker", () => ({
+  MovePicker: ({
+    value,
+    onPick,
+    onClose,
+  }: {
+    value: string | null;
+    onPick: (name: string) => void;
+    onClose: () => void;
+  }) => (
+    <div data-testid="move-picker" data-value={value ?? ""}>
+      <button onClick={() => onPick("Flamethrower")}>pick-flamethrower</button>
+      <button onClick={onClose}>close-picker</button>
+    </div>
+  ),
+}));
+
+// @trainers/pokemon — mock getMoveData
+const mockGetMoveData = jest.fn();
+
+jest.mock("@trainers/pokemon", () => {
+  const actual = jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon");
+  return {
+    ...actual,
+    getMoveData: (...args: unknown[]) => mockGetMoveData(...args),
+  };
+});
+
+// @trainers/pokemon/sprites
+jest.mock("@trainers/pokemon/sprites", () => ({
+  getShowdownTypeIconUrl: jest.fn((type: string) => `/types/${type}.png`),
+}));
+
+// getVerdict from use-calc-state
+const mockGetVerdict = jest.fn();
+jest.mock("../../use-calc-state", () => ({
+  ...jest.requireActual("../../use-calc-state"),
+  getVerdict: (...args: unknown[]) => mockGetVerdict(...args),
+}));
+
+// =============================================================================
+// Import after mocks
+// =============================================================================
+
+import { CalcDefenderMoves, type CalcDefenderMovesProps } from "../calc/calc-defender-moves";
+import { type CalcOutput } from "../../use-calc-state";
+
+// =============================================================================
+// Fixtures
+// =============================================================================
+
+const VGC_FORMAT: TrainersPokemon.GameFormat = {
+  id: "gen9vgc2026regi",
+  game: "Scarlet & Violet",
+  gameShort: "SV",
+  generation: 9,
+  category: "VGC",
+  year: 2026,
+  regulation: "I",
+  label: "SV: Reg I",
+  showdownName: "[Gen 9] VGC 2026 Reg I",
+  doubles: true,
+  active: true,
+};
+
+function makeOutput(overrides: Partial<CalcOutput> = {}): CalcOutput {
+  return {
+    minPercent: 45.2,
+    maxPercent: 53.1,
+    desc: "Test damage",
+    rolls: [80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104, 106, 108, 110],
+    defenderMaxHP: 300,
+    ...overrides,
+  };
+}
+
+function makeMoveData(overrides: Partial<{
+  type: string;
+  category: string;
+  basePower: number;
+  accuracy: number | boolean;
+  shortDesc: string;
+}> = {}) {
+  return {
+    type: "Fire",
+    category: "Special",
+    basePower: 90,
+    accuracy: 100,
+    shortDesc: "No additional effect.",
+    ...overrides,
+  };
+}
+
+type EffectiveMoves = [string, string, string, string];
+
+interface RenderProps {
+  effectiveMoves?: EffectiveMoves;
+  computeReverseOutput?: jest.Mock;
+  attackerHP?: number | null;
+  defenderSpecies?: string;
+  format?: TrainersPokemon.GameFormat | undefined;
+  onPick?: jest.Mock;
+}
+
+function renderMoves(props: RenderProps = {}) {
+  const computeReverseOutput = props.computeReverseOutput ?? jest.fn().mockReturnValue(null);
+  const onPick = props.onPick ?? jest.fn();
+
+  const result = render(
+    <CalcDefenderMoves
+      effectiveMoves={props.effectiveMoves ?? ["", "", "", ""]}
+      computeReverseOutput={computeReverseOutput as CalcDefenderMovesProps["computeReverseOutput"]}
+      attackerHP={props.attackerHP ?? null}
+      defenderSpecies={props.defenderSpecies ?? "Incineroar"}
+      format={props.format ?? VGC_FORMAT}
+      onPick={onPick}
+    />
+  );
+
+  return { ...result, computeReverseOutput, onPick };
+}
+
+// =============================================================================
+// Setup
+// =============================================================================
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockGetMoveData.mockReturnValue(makeMoveData());
+  mockGetVerdict.mockReturnValue(null);
+});
+
+// =============================================================================
+// Tests
+// =============================================================================
+
+describe("CalcDefenderMoves — header", () => {
+  it("renders the 'Their moves → your atk' header", () => {
+    renderMoves();
+    expect(screen.getByText("Their moves → your atk")).toBeInTheDocument();
+  });
+});
+
+describe("CalcDefenderMoves — tile rendering", () => {
+  it("renders 4 popover triggers (one per slot)", () => {
+    renderMoves();
+    expect(screen.getAllByTestId("popover-trigger").length).toBe(4);
+  });
+
+  it("shows '+ Add move' for empty slots", () => {
+    renderMoves({ effectiveMoves: ["", "", "", ""] });
+    expect(screen.getAllByText("+ Add move").length).toBe(4);
+  });
+
+  it("renders move names for filled slots", () => {
+    renderMoves({ effectiveMoves: ["Flare Blitz", "Knock Off", "", ""] });
+    expect(screen.getByText("Flare Blitz")).toBeInTheDocument();
+    expect(screen.getByText("Knock Off")).toBeInTheDocument();
+  });
+
+  it.each([
+    [0, "Flamethrower"],
+    [1, "Moonblast"],
+    [2, "Earthquake"],
+    [3, "Protect"],
+  ] as const)(
+    "slot %i renders move name '%s'",
+    (slotIdx, moveName) => {
+      const moves: EffectiveMoves = ["", "", "", ""];
+      moves[slotIdx] = moveName;
+      renderMoves({ effectiveMoves: moves });
+      expect(screen.getByText(moveName)).toBeInTheDocument();
+    }
+  );
+
+  it("renders 4 move pickers in popover content", () => {
+    renderMoves({ effectiveMoves: ["", "", "", ""] });
+    expect(screen.getAllByTestId("move-picker").length).toBe(4);
+  });
+});
+
+describe("CalcDefenderMoves — type icon", () => {
+  it("renders a type icon img for a move with type data", () => {
+    mockGetMoveData.mockReturnValue(makeMoveData({ type: "Fire" }));
+    renderMoves({ effectiveMoves: ["Flare Blitz", "", "", ""] });
+    const img = screen.getByAltText("Fire");
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute("src", "/types/Fire.png");
+  });
+
+  it("does not render a type icon for empty slots (no move name)", () => {
+    renderMoves({ effectiveMoves: ["", "", "", ""] });
+    expect(screen.queryByAltText("Fire")).not.toBeInTheDocument();
+  });
+});
+
+describe("CalcDefenderMoves — KO tier pills", () => {
+  it.each([
+    ["OHKO", "OHKO", 101, 120],
+    ["2HKO", "2HKO", 55, 65],
+    ["3HKO", "3HKO", 38, 42],
+  ] as const)(
+    "getVerdict '%s' renders KO pill with label '%s'",
+    (verdict, label, _min, _max) => {
+      mockGetVerdict.mockReturnValue(verdict);
+      const output = makeOutput({ minPercent: 55, maxPercent: 65 });
+      renderMoves({
+        effectiveMoves: ["Flare Blitz", "", "", ""],
+        computeReverseOutput: jest.fn().mockReturnValue(output),
+      });
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+  );
+
+  it("renders '4HKO+' when verdict is null but maxPercent > 0", () => {
+    mockGetVerdict.mockReturnValue(null);
+    const output = makeOutput({ minPercent: 24, maxPercent: 28 });
+    renderMoves({
+      effectiveMoves: ["Tackle", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+    });
+    expect(screen.getByText("4HKO+")).toBeInTheDocument();
+  });
+
+  it("does NOT render KO pill when output is null", () => {
+    renderMoves({
+      effectiveMoves: ["Flare Blitz", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(null),
+    });
+    expect(screen.queryByText("OHKO")).not.toBeInTheDocument();
+    expect(screen.queryByText("4HKO+")).not.toBeInTheDocument();
+  });
+
+  it("does NOT render KO pill for empty slot", () => {
+    const output = makeOutput();
+    renderMoves({
+      effectiveMoves: ["", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+    });
+    // computeReverseOutput is never called for empty slots
+    expect(screen.queryByText(/HKO/)).not.toBeInTheDocument();
+  });
+
+  it("renders damage range in pill: minPercent–maxPercent%", () => {
+    mockGetVerdict.mockReturnValue("2HKO");
+    const output = makeOutput({ minPercent: 45.2, maxPercent: 53.1 });
+    renderMoves({
+      effectiveMoves: ["Moonblast", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+    });
+    expect(screen.getByText("45.2–53.1%")).toBeInTheDocument();
+  });
+});
+
+describe("CalcDefenderMoves — detail line", () => {
+  it("renders raw damage roll range when rolls are present", () => {
+    mockGetVerdict.mockReturnValue("2HKO");
+    const output = makeOutput({
+      rolls: [80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155],
+      minPercent: 45,
+      maxPercent: 55,
+    });
+    renderMoves({
+      effectiveMoves: ["Moonblast", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+    });
+    // Should render "80–155"
+    expect(screen.getByText(/80.*155/)).toBeInTheDocument();
+  });
+
+  it("appends attacker HP to the detail line when attackerHP is provided", () => {
+    mockGetVerdict.mockReturnValue("2HKO");
+    const output = makeOutput({ rolls: [80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155] });
+    renderMoves({
+      effectiveMoves: ["Moonblast", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+      attackerHP: 300,
+    });
+    expect(screen.getByText(/\/\s*300 HP/)).toBeInTheDocument();
+  });
+
+  it("does NOT append HP when attackerHP is null", () => {
+    mockGetVerdict.mockReturnValue("2HKO");
+    const output = makeOutput({ rolls: [80, 155] });
+    renderMoves({
+      effectiveMoves: ["Moonblast", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+      attackerHP: null,
+    });
+    expect(screen.queryByText(/\/ \d+ HP/)).not.toBeInTheDocument();
+  });
+
+  it("appends accuracy note when accuracy is a number", () => {
+    mockGetMoveData.mockReturnValue(makeMoveData({ accuracy: 85 }));
+    mockGetVerdict.mockReturnValue("2HKO");
+    const output = makeOutput();
+    renderMoves({
+      effectiveMoves: ["Stone Edge", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+    });
+    expect(screen.getByText(/85% acc/)).toBeInTheDocument();
+  });
+
+  it("does NOT append accuracy note when accuracy is true (always-hit)", () => {
+    mockGetMoveData.mockReturnValue(makeMoveData({ accuracy: true }));
+    mockGetVerdict.mockReturnValue("OHKO");
+    const output = makeOutput({ minPercent: 110, maxPercent: 120 });
+    renderMoves({
+      effectiveMoves: ["Swift", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+    });
+    expect(screen.queryByText(/% acc/)).not.toBeInTheDocument();
+  });
+});
+
+describe("CalcDefenderMoves — extra notes (debuff / pivot)", () => {
+  it.each([
+    ["Draco Meteor", "−2 SpA after"],
+    ["Leaf Storm", "−2 SpA after"],
+    ["Overheat", "−2 SpA after"],
+    ["Psycho Boost", "−2 SpA after"],
+    ["Glacial Lance", "−2 SpA after"],
+  ] as const)(
+    "%s shows '%s' note",
+    (moveName, expectedNote) => {
+      mockGetVerdict.mockReturnValue("2HKO");
+      const output = makeOutput();
+      renderMoves({
+        effectiveMoves: [moveName, "", "", ""],
+        computeReverseOutput: jest.fn().mockReturnValue(output),
+      });
+      expect(screen.getByText(new RegExp(expectedNote.replace(/[−+]/g, "."))));
+    }
+  );
+
+  it.each([
+    ["Close Combat", "−1 Def/SpD after"],
+    ["Superpower", "−1 Def/SpD after"],
+  ] as const)(
+    "%s shows '%s' note",
+    (moveName, expectedNote) => {
+      mockGetVerdict.mockReturnValue("2HKO");
+      const output = makeOutput();
+      renderMoves({
+        effectiveMoves: [moveName, "", "", ""],
+        computeReverseOutput: jest.fn().mockReturnValue(output),
+      });
+      expect(screen.getByText(new RegExp(expectedNote.replace(/[−+]/g, "."))));
+    }
+  );
+
+  it.each([
+    ["U-turn", "pivots out"],
+    ["Volt Switch", "pivots out"],
+    ["Flip Turn", "pivots out"],
+    ["Parting Shot", "pivots out"],
+    ["Teleport", "pivots out"],
+  ] as const)(
+    "%s shows 'pivots out' note",
+    (moveName, expectedNote) => {
+      mockGetVerdict.mockReturnValue("2HKO");
+      const output = makeOutput();
+      renderMoves({
+        effectiveMoves: [moveName, "", "", ""],
+        computeReverseOutput: jest.fn().mockReturnValue(output),
+      });
+      expect(screen.getByText(new RegExp(expectedNote)));
+    }
+  );
+
+  it("shows no extra note for a standard move", () => {
+    mockGetVerdict.mockReturnValue("2HKO");
+    const output = makeOutput();
+    renderMoves({
+      effectiveMoves: ["Flamethrower", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+    });
+    expect(screen.queryByText(/SpA after/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/pivots out/)).not.toBeInTheDocument();
+  });
+});
+
+describe("CalcDefenderMoves — computeReverseOutput calls", () => {
+  it("calls computeReverseOutput with the move name for each filled slot", () => {
+    const computeReverseOutput = jest.fn().mockReturnValue(null);
+    renderMoves({
+      effectiveMoves: ["Moonblast", "Psychic", "", ""],
+      computeReverseOutput,
+    });
+    expect(computeReverseOutput).toHaveBeenCalledWith("Moonblast");
+    expect(computeReverseOutput).toHaveBeenCalledWith("Psychic");
+  });
+
+  it("does NOT call computeReverseOutput for empty slots", () => {
+    const computeReverseOutput = jest.fn().mockReturnValue(null);
+    renderMoves({
+      effectiveMoves: ["Moonblast", "", "", ""],
+      computeReverseOutput,
+    });
+    // Only called once (for Moonblast), not for the 3 empty slots
+    expect(computeReverseOutput).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls computeReverseOutput for all 4 slots when all are filled", () => {
+    const computeReverseOutput = jest.fn().mockReturnValue(null);
+    renderMoves({
+      effectiveMoves: ["Moonblast", "Psychic", "Icy Wind", "Protect"],
+      computeReverseOutput,
+    });
+    expect(computeReverseOutput).toHaveBeenCalledTimes(4);
+  });
+});
+
+describe("CalcDefenderMoves — picking a move", () => {
+  it("calls onPick with slotIdx=0 and move name when picking in slot 0", () => {
+    const onPick = jest.fn();
+    renderMoves({ effectiveMoves: ["", "", "", ""], onPick });
+    // Click the first pick-flamethrower button (slot 0's picker)
+    const pickButtons = screen.getAllByText("pick-flamethrower");
+    fireEvent.click(pickButtons[0]);
+    expect(onPick).toHaveBeenCalledWith(0, "Flamethrower");
+  });
+
+  it("calls onPick with slotIdx=2 when picking in slot 2", () => {
+    const onPick = jest.fn();
+    renderMoves({ effectiveMoves: ["", "", "", ""], onPick });
+    const pickButtons = screen.getAllByText("pick-flamethrower");
+    fireEvent.click(pickButtons[2]);
+    expect(onPick).toHaveBeenCalledWith(2, "Flamethrower");
+  });
+
+  it.each([0, 1, 2, 3] as const)(
+    "onPick is called with slotIdx=%i",
+    (slotIdx) => {
+      const onPick = jest.fn();
+      renderMoves({ effectiveMoves: ["", "", "", ""], onPick });
+      const pickButtons = screen.getAllByText("pick-flamethrower");
+      fireEvent.click(pickButtons[slotIdx]);
+      expect(onPick).toHaveBeenCalledWith(slotIdx, "Flamethrower");
+    }
+  );
+});
+
+describe("CalcDefenderMoves — OHKO tile style", () => {
+  it("the tile trigger button gets OHKO class when koTierLabel is OHKO", () => {
+    mockGetVerdict.mockReturnValue("OHKO");
+    const output = makeOutput({ minPercent: 110, maxPercent: 130 });
+    const { container } = renderMoves({
+      effectiveMoves: ["Moonblast", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+    });
+    // The tile button should have the dmv-tile--ohko class
+    const ohkoTile = container.querySelector(".dmv-tile--ohko");
+    expect(ohkoTile).toBeInTheDocument();
+  });
+
+  it("tile does NOT have OHKO class for non-OHKO tiers", () => {
+    mockGetVerdict.mockReturnValue("2HKO");
+    const output = makeOutput({ minPercent: 55, maxPercent: 65 });
+    const { container } = renderMoves({
+      effectiveMoves: ["Moonblast", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+    });
+    expect(container.querySelector(".dmv-tile--ohko")).not.toBeInTheDocument();
+  });
+});
+
+describe("CalcDefenderMoves — KO pill not shown when maxPercent is 0", () => {
+  it("no KO pill when maxPercent is 0 (zero damage)", () => {
+    mockGetVerdict.mockReturnValue(null);
+    const output = makeOutput({ minPercent: 0, maxPercent: 0, rolls: [] });
+    renderMoves({
+      effectiveMoves: ["Protect", "", "", ""],
+      computeReverseOutput: jest.fn().mockReturnValue(output),
+    });
+    expect(screen.queryByText(/HKO/)).not.toBeInTheDocument();
+  });
+});

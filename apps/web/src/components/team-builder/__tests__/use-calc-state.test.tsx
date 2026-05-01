@@ -14,11 +14,21 @@ const mockCalculate = jest.fn(() => ({
   damage: [40, 60],
 }));
 
+// Tracks all Move constructor invocations: [gen, name, opts]
+const mockMoveConstructor = jest.fn();
+
 jest.mock("@smogon/calc", () => {
   const MockPokemon = jest.fn(function (this: Record<string, unknown>) {
     this.maxHP = mockMaxHP;
   });
-  const MockMove = jest.fn();
+  const MockMove = jest.fn(function (
+    this: Record<string, unknown>,
+    gen: unknown,
+    name: unknown,
+    opts: unknown
+  ) {
+    mockMoveConstructor(gen, name, opts);
+  });
   const MockSide = jest.fn();
   const MockField = jest.fn();
   return {
@@ -30,6 +40,12 @@ jest.mock("@smogon/calc", () => {
     Generations: { get: jest.fn(() => ({ species: { get: jest.fn() } })) },
   };
 });
+
+/** Returns the opts passed to new Move(gen, moveName, opts) for a specific move name. */
+function getMoveOptsFor(moveName: string): Record<string, unknown> | undefined {
+  const call = mockMoveConstructor.mock.calls.find((c) => c[1] === moveName);
+  return call ? (call[2] as Record<string, unknown>) : undefined;
+}
 
 import { type Tables } from "@trainers/supabase";
 
@@ -174,6 +190,91 @@ describe("useCalcState", () => {
     act(() => result.current.setDefenderSide({ stealthRock: true }));
     expect(result.current.defenderSide.stealthRock).toBe(true);
     expect(result.current.defenderSide.spikes).toBe(0);
+  });
+});
+
+describe("Last Respects BP scaling", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("applies 50 base BP when faintedYours=0 (forward direction)", () => {
+    renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ move1: "Last Respects", move2: null }),
+        faintedYours: 0,
+      })
+    );
+    const opts = getMoveOptsFor("Last Respects");
+    expect(opts).toBeDefined();
+    expect(opts).toMatchObject({ basePower: 50 });
+  });
+
+  it("applies 150 base BP when faintedYours=2", () => {
+    renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ move1: "Last Respects", move2: null }),
+        faintedYours: 2,
+      })
+    );
+    const opts = getMoveOptsFor("Last Respects");
+    expect(opts).toMatchObject({ basePower: 150 });
+  });
+
+  it("caps at 250 BP when faintedYours=5", () => {
+    renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ move1: "Last Respects", move2: null }),
+        faintedYours: 5,
+      })
+    );
+    const opts = getMoveOptsFor("Last Respects");
+    expect(opts).toMatchObject({ basePower: 250 });
+  });
+
+  it("does NOT apply basePower override for non-scaling moves", () => {
+    renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ move1: "Flamethrower", move2: null }),
+        faintedYours: 3,
+      })
+    );
+    const opts = getMoveOptsFor("Flamethrower");
+    expect(opts).toBeDefined();
+    expect(opts).not.toHaveProperty("basePower");
+  });
+
+  it("computeReverseOutput uses faintedTheirs for Last Respects", () => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ move1: "Flamethrower", move2: null }),
+        faintedTheirs: 3,
+      })
+    );
+    // Clear calls from the initial render, then call computeReverseOutput
+    mockMoveConstructor.mockClear();
+    result.current.computeReverseOutput("Last Respects");
+    const opts = getMoveOptsFor("Last Respects");
+    // faintedTheirs=3 → BP = 50 + 50*3 = 200
+    expect(opts).toMatchObject({ basePower: 200 });
+  });
+
+  it.each<[number, number]>([
+    [0, 50],
+    [1, 100],
+    [2, 150],
+    [3, 200],
+    [4, 250],
+    [5, 250],
+  ])("faintedYours=%i → BP=%i", (fainted, expectedBP) => {
+    renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ move1: "Last Respects", move2: null }),
+        faintedYours: fainted,
+      })
+    );
+    const opts = getMoveOptsFor("Last Respects");
+    expect(opts).toMatchObject({ basePower: expectedBP });
   });
 });
 
