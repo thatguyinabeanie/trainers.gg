@@ -172,8 +172,11 @@ export async function createTournament(data: {
 }
 
 /**
- * Update tournament details
- * Revalidates: tournaments list when status changes to 'upcoming' (published)
+ * Update tournament details. Validates the payload, strips undefined-valued
+ * keys, and short-circuits when nothing remains. Always invalidates the
+ * tournament, the tournaments list, and the owning community caches via
+ * `invalidateTournamentAndCommunityCaches` so settings edits surface
+ * immediately on the public tournament page and community list.
  */
 export async function updateTournament(
   tournamentId: number,
@@ -462,8 +465,10 @@ export async function archiveTournament(
 }
 
 /**
- * Delete a tournament (draft only)
- * Note: Only draft tournaments can be deleted, so no list revalidation needed
+ * Delete a tournament (draft only). After a successful delete, invalidates the
+ * tournaments list (registration counts and the draft itself disappear) and
+ * the owning community caches so its tournaments tab updates. Invalidation
+ * happens *after* the mutation succeeds — see the inline note for why.
  */
 export async function deleteTournament(
   tournamentId: number
