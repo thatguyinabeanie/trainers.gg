@@ -2,6 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
+import type * as TrainersPokemon from "@trainers/pokemon";
+
 import { TypePicker } from "../pickers/type-picker";
 
 // =============================================================================
@@ -10,7 +12,7 @@ import { TypePicker } from "../pickers/type-picker";
 // =============================================================================
 
 jest.mock("@trainers/pokemon", () => {
-  const actual = jest.requireActual<typeof import("@trainers/pokemon")>(
+  const actual = jest.requireActual<typeof TrainersPokemon>(
     "@trainers/pokemon"
   );
   return { ...actual };

@@ -1,4 +1,6 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+
+import type * as TrainersPokemon from "@trainers/pokemon";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -11,7 +13,7 @@ const mockGetLegalAbilities = jest.fn();
 const mockGetAbilityShortDesc = jest.fn();
 
 jest.mock("@trainers/pokemon", () => ({
-  ...jest.requireActual<typeof import("@trainers/pokemon")>("@trainers/pokemon"),
+  ...jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon"),
   getValidAbilities: (...args: unknown[]) => mockGetValidAbilities(...args),
   getLegalAbilities: (...args: unknown[]) => mockGetLegalAbilities(...args),
   getAbilityShortDesc: (...args: unknown[]) => mockGetAbilityShortDesc(...args),

@@ -2,6 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
+import type * as TrainersPokemon from "@trainers/pokemon";
+
 // =============================================================================
 // Mock @trainers/pokemon item functions.
 // getAllItems is called at module load (top-level const), so we mock the module.
@@ -23,7 +25,7 @@ const mockGetLegalItems = jest.fn();
 const mockGetItemShortDesc = jest.fn();
 
 jest.mock("@trainers/pokemon", () => ({
-  ...jest.requireActual<typeof import("@trainers/pokemon")>("@trainers/pokemon"),
+  ...jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon"),
   getAllItems: (...args: unknown[]) => mockGetAllItems(...args),
   getLegalItems: (...args: unknown[]) => mockGetLegalItems(...args),
   getItemShortDesc: (...args: unknown[]) => mockGetItemShortDesc(...args),
