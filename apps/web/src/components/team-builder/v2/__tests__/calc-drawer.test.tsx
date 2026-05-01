@@ -87,10 +87,12 @@ const mockCalcCtx = {
   weather: "",
   terrain: "",
   gravity: false,
+  fairyAura: false,
   setGameType: mockSetGameType,
   setWeather: mockSetWeather,
   setTerrain: mockSetTerrain,
   setGravity: mockSetGravity,
+  setFairyAura: jest.fn(),
   attackerSide: {
     reflect: false,
     lightScreen: false,

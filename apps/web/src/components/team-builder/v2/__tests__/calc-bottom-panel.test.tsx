@@ -60,10 +60,12 @@ const mockCalcCtx = {
   weather: "",
   terrain: "",
   gravity: false,
+  fairyAura: false,
   setGameType: jest.fn(),
   setWeather: jest.fn(),
   setTerrain: jest.fn(),
   setGravity: jest.fn(),
+  setFairyAura: jest.fn(),
   attackerSide: {
     reflect: false,
     lightScreen: false,
@@ -174,6 +176,21 @@ jest.mock("../calc/calc-field-block", () => ({
     gameType: string;
   }) => (
     <div data-testid="calc-field-block" data-game-type={gameType} />
+  ),
+}));
+
+// DefenderMonHeader stub — renders the "vs X · Y HP" badge so header tests still work
+jest.mock("../calc/calc-defender-header", () => ({
+  DefenderMonHeader: ({
+    attackerName,
+    attackerHP,
+  }: {
+    attackerName: string;
+    attackerHP: number | null;
+  }) => (
+    <div data-testid="defender-mon-header">
+      <span>{`vs ${attackerName} · ${attackerHP !== null ? `${attackerHP} HP` : "—"}`}</span>
+    </div>
   ),
 }));
 

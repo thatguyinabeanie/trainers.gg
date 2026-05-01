@@ -16,6 +16,7 @@ import { CalcAttackerBlock } from "./calc-attacker-block";
 import { CalcDefenderStats } from "./calc-defender-stats";
 import { CalcDefenderMoves } from "./calc-defender-moves";
 import { CalcFieldBlock } from "./calc-field-block";
+import { DefenderMonHeader } from "./calc-defender-header";
 import { useDefenderMoves } from "./use-defender-moves";
 
 // =============================================================================
@@ -120,7 +121,7 @@ export function CalcBottomPanel({
       </header>
 
       {/* 3-column grid */}
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_1fr_2fr] gap-3 overflow-y-auto p-3">
+      <div className="grid min-h-0 flex-1 grid-cols-[1fr_1fr_1fr] gap-3 overflow-y-auto p-3">
         <CalcAttackerBlock
           teamSlots={teamSlots}
           attackerIdx={attackerIdx}
@@ -142,6 +143,8 @@ export function CalcBottomPanel({
             setTerrain={calc.setTerrain}
             gravity={calc.gravity}
             setGravity={calc.setGravity}
+            fairyAura={calc.fairyAura}
+            setFairyAura={calc.setFairyAura}
             foesAlive={calc.field.foesAlive}
             allyAlive={calc.field.allyAlive}
             setFoesAlive={(v) => calc.setField({ foesAlive: v })}
@@ -159,16 +162,30 @@ export function CalcBottomPanel({
         {/* Defender column */}
         <div className="flex flex-col rounded-lg border bg-card shadow-sm">
           {/* Col head */}
-          <div className="flex items-center justify-between border-b p-3 pb-2">
+          <div className="flex items-center border-b px-3 py-2">
             <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] text-destructive">
               Defender
             </span>
-            <span className="font-mono text-[10px] text-muted-foreground">
-              vs {attackerName} · {attackerHP !== null ? `${attackerHP} HP` : "—"}
-            </span>
           </div>
 
-          {/* Split: stats sub-col | moves sub-col */}
+          {/* Full-width mon identity header */}
+          <DefenderMonHeader
+            defenderSpecies={calc.defenderSpecies}
+            defenderAbility={calc.defenderAbility}
+            defenderItem={calc.defenderItem}
+            defenderNature={calc.defenderNature}
+            defenderTera={calc.defenderTera}
+            format={format}
+            attackerName={attackerName}
+            attackerHP={attackerHP}
+            setDefenderSpecies={calc.setDefenderSpecies}
+            setDefenderAbility={calc.setDefenderAbility}
+            setDefenderItem={calc.setDefenderItem}
+            setDefenderNature={calc.setDefenderNature}
+            setDefenderTera={calc.setDefenderTera}
+          />
+
+          {/* Stats | Moves split */}
           <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3.5 overflow-y-auto p-3">
             <CalcDefenderStats
               defenderSpecies={calc.defenderSpecies}

@@ -155,6 +155,8 @@ function CalcDrawerContent({
         setTerrain={calc.setTerrain}
         gravity={calc.gravity}
         setGravity={calc.setGravity}
+        fairyAura={calc.fairyAura}
+        setFairyAura={calc.setFairyAura}
         foesAlive={field.foesAlive}
         allyAlive={field.allyAlive}
         setFoesAlive={handleSetFoesAlive}
