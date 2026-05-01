@@ -23,7 +23,6 @@ import { CATEGORY_ICON_URLS } from "../../move-category-ui";
 import { MovePicker } from "../pickers/move-picker";
 import { useCalcStateContext } from "../calc/calc-state-context";
 import { CalcDetailCard } from "../calc/calc-detail-card";
-import { getMoveEffectiveness } from "../calc/move-effectiveness";
 import { getMoveTargetInfo } from "../calc/move-target-info";
 import { getVerdict } from "../../use-calc-state";
 import { FieldError } from "../validation/field-error";
@@ -102,38 +101,24 @@ function MoveTile({
 
   const moveData = moveName ? getMoveData(moveName) : null;
   const isStatus = moveData?.category === "Status";
-  // Only surface calc-derived info (damage range, KO tier, eff pip, spread
-  // badge, "pick a target" hint) when the calc panel is enabled. The engine
-  // still runs in the background so re-enabling the panel is instant.
   const hasCalc = calc.calcEnabled && output !== null && !isStatus;
 
-  const hasDefender = calc.calcEnabled && Boolean(calc.defenderSpecies);
-
-  const targetInfo = moveName ? getMoveTargetInfo(moveName) : null;
-  const isSpread = targetInfo?.isSpread ?? false;
   const foesAlive = calc.field.foesAlive;
   const allyAlive = calc.field.allyAlive;
+
+  // KO tier for button border coloring only
+  const targetInfo = moveName ? getMoveTargetInfo(moveName) : null;
+  const isSpread = targetInfo?.isSpread ?? false;
   const spreadApplied =
     isSpread &&
     (targetInfo?.kind === "all-foes"
       ? foesAlive >= 2
       : foesAlive >= 2 || allyAlive);
-
-  // Display percentages with spread reduction applied
   const rawMin = output?.minPercent ?? 0;
   const rawMax = output?.maxPercent ?? 0;
   const displayMin = spreadApplied ? rawMin * 0.75 : rawMin;
   const displayMax = spreadApplied ? rawMax * 0.75 : rawMax;
-
   const koTier = hasCalc ? getKoTier(displayMin, displayMax) : null;
-
-  // Resolve the effective weather: user-set overrides ability-inferred.
-  const effectiveWeather = calc.weather || calc.inferredWeather;
-
-  const eff =
-    moveName && hasDefender && !isStatus
-      ? getMoveEffectiveness(moveName, calc.defenderSpecies, effectiveWeather)
-      : null;
 
   const hasError = slotErrors.some((e) => e.severity === "error");
 
@@ -184,113 +169,65 @@ function MoveTile({
             />
           }
         >
-            {/* Col 1: Type + category grouped */}
-            <span className="mvline-type-cat">
-              <span className="mvline-type">
-                {moveName && moveData?.type ? (
-                  <img
-                    src={getShowdownTypeIconUrl(moveData.type)}
-                    alt={moveData.type}
-                    className="h-6 w-auto [image-rendering:pixelated]"
-                  />
-                ) : null}
-              </span>
-              <span className="mvline-cat">
-                {moveName && moveData?.category && CATEGORY_ICON_URLS[moveData.category] ? (
-                  <img
-                    src={CATEGORY_ICON_URLS[moveData.category]}
-                    alt={moveData.category}
-                    className="h-6 w-auto [image-rendering:pixelated]"
-                  />
-                ) : null}
-              </span>
+          {/* Col 1: Type + category grouped */}
+          <span className="mvline-type-cat">
+            <span className="mvline-type">
+              {moveName && moveData?.type ? (
+                <img
+                  src={getShowdownTypeIconUrl(moveData.type)}
+                  alt={moveData.type}
+                  className="h-6 w-auto [image-rendering:pixelated]"
+                />
+              ) : null}
             </span>
-
-            {/* Col 3: Move name — tooltip shows full description on hover */}
-            <Tooltip>
-              <TooltipTrigger className={cn(
-                  "mvline-name",
-                  !moveName && "text-muted-foreground/50"
-                )}>
-                {moveName ?? "+ Add move"}
-              </TooltipTrigger>
-              {moveName && moveData?.shortDesc && (
-                <TooltipContent side="bottom" className="max-w-64 text-xs">
-                  {moveData.shortDesc}
-                </TooltipContent>
-              )}
-            </Tooltip>
-
-            {/* Col 4: BP */}
-            <span className="mvline-stat">
-              <span className="mvline-stat-label">BP</span>
-              <span className="mvline-stat-value mvline-stat-value--bp">
-                {moveName && moveData?.basePower && moveData.basePower > 0
-                  ? moveData.basePower
-                  : moveName ? "—" : ""}
-              </span>
+            <span className="mvline-cat">
+              {moveName && moveData?.category && CATEGORY_ICON_URLS[moveData.category] ? (
+                <img
+                  src={CATEGORY_ICON_URLS[moveData.category]}
+                  alt={moveData.category}
+                  className="h-6 w-auto [image-rendering:pixelated]"
+                />
+              ) : null}
             </span>
+          </span>
 
-            {/* Col 5: Acc */}
-            <span className="mvline-stat">
-              <span className="mvline-stat-label">Acc</span>
-              <span className="mvline-stat-value mvline-stat-value--acc">
-                {moveName
-                  ? moveData?.accuracy === true || !moveData?.accuracy
-                    ? "—"
-                    : `${moveData.accuracy}%`
-                  : ""}
-              </span>
-            </span>
-
-            {/* Col 6: Calc pill (damage moves w/ calc on + defender) OR
-                "pick a target" hint (calc on, no defender). Empty otherwise. */}
-            {hasCalc && koTier ? (
-              <span className={cn("mvline-pill", `mvline-pill--ko${koTier}`)}>
-                <span className={cn("mvline-pill-tier", `mvline-pill-tier--ko${koTier}`)}>
-                  {koTier === "1" ? "OHKO" : koTier === "2" ? "2HKO" : koTier === "3" ? "3HKO" : "4HKO+"}
-                </span>
-                <span className="mvline-pill-range">
-                  {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%
-                </span>
-                {((eff !== null && eff !== 1) || spreadApplied) && (
-                  <span className="mvline-pill-mods">
-                    {eff !== null && eff !== 1 && (
-                      <span
-                        className={cn(
-                          "mvline-pill-mod",
-                          eff > 1
-                            ? "mvline-pill-mod--se"
-                            : eff === 0
-                              ? "mvline-pill-mod--imm"
-                              : "mvline-pill-mod--ne"
-                        )}
-                        title={eff === 0 ? "Immune" : `${eff}× effectiveness`}
-                      >
-                        {eff}×
-                      </span>
-                    )}
-                    {spreadApplied && (
-                      <span className="mvline-pill-mod mvline-pill-mod--spread" title="Spread −25%">
-                        spread
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
-            ) : calc.calcEnabled && moveName && !hasDefender && !isStatus ? (
-              <span className="mvline-no-target">— pick a target —</span>
-            ) : calc.calcEnabled && moveName && hasDefender && !isStatus && output === null ? (
-              <span
-                className="mvline-no-target"
-                role="status"
-                title="Damage calc unavailable for this combination"
-              >
-                — calc unavailable —
-              </span>
-            ) : (
-              <span aria-hidden />
+          {/* Col 2: Move name */}
+          <Tooltip>
+            <TooltipTrigger
+              className={cn("mvline-name", !moveName && "text-muted-foreground/50")}
+            >
+              {moveName ?? "+ Add move"}
+            </TooltipTrigger>
+            {moveName && moveData?.shortDesc && (
+              <TooltipContent side="bottom" className="max-w-64 text-xs">
+                {moveData.shortDesc}
+              </TooltipContent>
             )}
+          </Tooltip>
+
+          {/* Col 3: BP */}
+          <span className="mvline-stat">
+            <span className="mvline-stat-label">BP</span>
+            <span className="mvline-stat-value mvline-stat-value--bp">
+              {moveName && moveData?.basePower && moveData.basePower > 0
+                ? moveData.basePower
+                : moveName
+                  ? "—"
+                  : ""}
+            </span>
+          </span>
+
+          {/* Col 4: Acc */}
+          <span className="mvline-stat">
+            <span className="mvline-stat-label">Acc</span>
+            <span className="mvline-stat-value mvline-stat-value--acc">
+              {moveName
+                ? moveData?.accuracy === true || !moveData?.accuracy
+                  ? "—"
+                  : `${moveData.accuracy}%`
+                : ""}
+            </span>
+          </span>
         </PopoverTrigger>
 
         <PopoverContent side="bottom" align="start" className="w-auto p-0">
@@ -326,6 +263,7 @@ function MoveTile({
           )}
         </PopoverContent>
       </Popover>
+
       {/* Inline error chips per move slot */}
       {slotErrors.map((err, i) => (
         <FieldError key={i} message={err.message} severity={err.severity} />
@@ -346,12 +284,21 @@ function MoveTile({
  * Renders inline FieldError chips for move-scoped validation issues.
  */
 export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: MovesLaneProps) {
+  const { calcEnabled } = useCalcStateContext();
+
   function handlePick(slotKey: MoveSlot, name: string) {
     onUpdate({ [slotKey]: name });
   }
 
   return (
-    <div className="flex min-w-[240px] flex-1 flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3">
+    <div
+      className={cn(
+        "flex flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3",
+        calcEnabled
+          ? "w-[280px] shrink-0"
+          : "min-w-[240px] flex-1"
+      )}
+    >
       {/* Header */}
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
