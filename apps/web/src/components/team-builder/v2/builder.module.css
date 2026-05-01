@@ -891,7 +891,7 @@
 .laneStats {
   display: flex;
   flex-direction: column;
-  flex: 1 1 220px;
+  flex: 1 1 340px;
   min-width: 0;
 }
 
