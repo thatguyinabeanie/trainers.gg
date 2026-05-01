@@ -26,6 +26,15 @@ export interface DefenderEvs {
   spe: number;
 }
 
+export type DefenderIvs = {
+  hp: number;
+  atk: number;
+  def: number;
+  spa: number;
+  spd: number;
+  spe: number;
+};
+
 export interface StatBoosts {
   atk: number;
   def: number;
@@ -58,6 +67,9 @@ export interface CalcOutput {
   rolls: readonly number[];
   defenderMaxHP: number;
 }
+
+// Attacker's max HP — used in the "X–Y / HP" detail line for reverse calcs.
+export type AttackerMaxHP = number;
 
 export type CalcDirection = "offense" | "defense";
 
@@ -93,6 +105,20 @@ export const STATUS_MAP: Record<string, string> = {
   Paralyzed: "par",
   Asleep: "slp",
   Frozen: "frz",
+};
+
+/** Ability → inferred weather when no explicit weather is set. */
+const ABILITY_WEATHER_MAP: Record<string, string> = {
+  Drought: "Sun",
+  Drizzle: "Rain",
+  "Sand Stream": "Sand",
+  "Snow Warning": "Snow",
+  "Orichalcum Pulse": "Sun",
+};
+
+/** Ability → inferred terrain when no explicit terrain is set. */
+const ABILITY_TERRAIN_MAP: Record<string, string> = {
+  "Hadron Engine": "Electric",
 };
 
 const EMPTY_BOOSTS: StatBoosts = {
@@ -162,6 +188,7 @@ function buildDefenderPokemon(
   nature: string,
   teraType: string,
   evs: DefenderEvs,
+  ivs: DefenderIvs,
   boosts: DefenderBoosts,
   status: string,
   hpPercent: number
@@ -175,7 +202,7 @@ function buildDefenderPokemon(
       ability: asSmogon(ability || null),
       item: asSmogon(item || null),
       teraType: asSmogon(teraType || null),
-      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+      ivs,
       evs,
       boosts,
       status: asSmogon(STATUS_MAP[status] ?? ""),
@@ -189,7 +216,7 @@ function buildDefenderPokemon(
       ability: asSmogon(ability || null),
       item: asSmogon(item || null),
       teraType: asSmogon(teraType || null),
-      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+      ivs,
       evs,
       boosts,
       status: asSmogon(STATUS_MAP[status] ?? ""),
@@ -248,16 +275,39 @@ function buildField(
   });
 }
 
+// =============================================================================
+// Last Respects / Triumphant Wave BP scaling
+// =============================================================================
+
+/** Move names that scale with fainted ally count. */
+const LAST_RESPECTS_MOVES = new Set(["Last Respects", "Triumphant Wave"]);
+
+/**
+ * Compute the effective base power for Last Respects / Triumphant Wave.
+ * BP = min(250, 50 + 50 × faintedCount)
+ */
+function lastRespectsBP(faintedCount: number): number {
+  return Math.min(250, 50 + 50 * Math.max(0, Math.min(5, faintedCount)));
+}
+
 function runCalc(
   gen: ReturnType<typeof Generations.get>,
   attacker: Pokemon,
   defender: Pokemon,
   moveName: string,
   isCrit: boolean,
-  field: Field
+  field: Field,
+  faintedForMove?: number
 ): CalcOutput | null {
   try {
-    const move = new Move(gen, moveName, { isCrit });
+    const basePowerOverride =
+      LAST_RESPECTS_MOVES.has(moveName) && faintedForMove !== undefined
+        ? lastRespectsBP(faintedForMove)
+        : undefined;
+    const moveOpts = basePowerOverride !== undefined
+      ? { isCrit, basePower: basePowerOverride }
+      : { isCrit };
+    const move = new Move(gen, moveName, moveOpts);
     const result = calculate(gen, attacker, defender, move, field);
     const damage = result.damage;
     if (!damage || (Array.isArray(damage) && damage.length === 0)) return null;
@@ -307,6 +357,18 @@ export interface UseCalcStateOptions {
   /** Active game format. Used to select the correct generation for damage calcs.
    *  Defaults to Generation 9 when absent. */
   format?: GameFormat;
+  /**
+   * Number of fainted Pokémon on YOUR team (0..5).
+   * Applied as a base power multiplier for Last Respects / Triumphant Wave
+   * when the attacker is on your side (forward direction).
+   */
+  faintedYours?: number;
+  /**
+   * Number of fainted Pokémon on THEIR team (0..5).
+   * Applied as a base power multiplier for Last Respects / Triumphant Wave
+   * when the defender fires the move (reverse direction).
+   */
+  faintedTheirs?: number;
 }
 
 export interface UseCalcStateReturn {
@@ -331,20 +393,25 @@ export interface UseCalcStateReturn {
   defenderNature: string;
   defenderTera: string;
   defenderEvs: DefenderEvs;
+  defenderIvs: DefenderIvs;
   defenderBoosts: DefenderBoosts;
   defenderStatus: string;
   defenderHpPercent: number;
+  /** Defender's 4 move slots — used for defense-direction calcs. */
+  defenderMoves: readonly [string, string, string, string];
   setDefenderSpecies: (v: string) => void;
   setDefenderAbility: (v: string) => void;
   setDefenderItem: (v: string) => void;
   setDefenderNature: (v: string) => void;
   setDefenderTera: (v: string) => void;
   setDefenderEv: (stat: keyof DefenderEvs, v: number) => void;
+  setDefenderIv: (stat: keyof DefenderIvs, v: number) => void;
   setDefenderBoost: (stat: keyof DefenderBoosts, v: number) => void;
   setDefenderStatus: (v: string) => void;
   setDefenderHpPercent: (v: number) => void;
+  setDefenderMove: (slotIdx: number, name: string) => void;
   /**
-   * Resets defender stats (EVs, boosts, status, HP) and reasonable defaults
+   * Resets defender stats (EVs, IVs, boosts, status, HP) and reasonable defaults
    * for a new species. Caller can pass overrides for ability/item/nature etc.
    */
   resetDefenderForSpecies: (
@@ -376,6 +443,33 @@ export interface UseCalcStateReturn {
   moveCalcOutputs: readonly (CalcOutput | null)[];
   selectedMoveName: string | null;
   selectedMoveOutput: CalcOutput | null;
+  /**
+   * Reverse-direction calc outputs: each defender move fired at the active
+   * attacker. Parallel to defenderMoves (length 4). null for empty or
+   * uncalculable slots.
+   *
+   * Note: only non-empty slots in defenderMoves are computed. If the moves
+   * come from a preset default (resolved in useDefenderMoves), use
+   * computeReverseOutput() directly with the effective move name.
+   */
+  moveCalcOutputsReverse: readonly (CalcOutput | null)[];
+  /**
+   * Compute a single reverse-direction calc output for any move name.
+   * Useful when the caller has already resolved effective moves from defaults.
+   */
+  computeReverseOutput: (moveName: string) => CalcOutput | null;
+  /**
+   * Inferred weather from the attacker's ability (Drought, Drizzle, etc.).
+   * Exposed so the UI can display a badge. null when ability doesn't set weather
+   * or when the user has explicitly set weather.
+   */
+  inferredWeather: string | null;
+  /**
+   * Inferred terrain from the attacker's ability (Hadron Engine → Electric).
+   * Exposed so the UI can display a badge. null when ability doesn't set terrain
+   * or when the user has explicitly set terrain.
+   */
+  inferredTerrain: string | null;
 }
 
 const DEFAULT_DEFENDER_EVS: DefenderEvs = {
@@ -387,6 +481,22 @@ const DEFAULT_DEFENDER_EVS: DefenderEvs = {
   spe: 0,
 };
 
+const DEFAULT_DEFENDER_IVS: DefenderIvs = {
+  hp: 31,
+  atk: 31,
+  def: 31,
+  spa: 31,
+  spd: 31,
+  spe: 31,
+};
+
+const DEFAULT_DEFENDER_MOVES: [string, string, string, string] = [
+  "",
+  "",
+  "",
+  "",
+];
+
 /**
  * Owns the entire damage-calc state machine for the team builder.
  *
@@ -397,6 +507,8 @@ const DEFAULT_DEFENDER_EVS: DefenderEvs = {
 export function useCalcState({
   selectedPokemon,
   format,
+  faintedYours = 0,
+  faintedTheirs = 0,
 }: UseCalcStateOptions): UseCalcStateReturn {
   // Resolve the generation from the active format so calcs use the correct
   // damage mechanics. Falls back to Gen 9 when format is absent or when
@@ -430,10 +542,15 @@ export function useCalcState({
   const [defenderTera, setDefenderTera] = useState("");
   const [defenderEvs, setDefenderEvs] =
     useState<DefenderEvs>(DEFAULT_DEFENDER_EVS);
+  const [defenderIvs, setDefenderIvs] =
+    useState<DefenderIvs>(DEFAULT_DEFENDER_IVS);
   const [defenderBoosts, setDefenderBoosts] =
     useState<DefenderBoosts>(EMPTY_BOOSTS);
   const [defenderStatus, setDefenderStatus] = useState("Healthy");
   const [defenderHpPercent, setDefenderHpPercent] = useState(100);
+  const [defenderMoves, setDefenderMovesState] = useState<
+    [string, string, string, string]
+  >(DEFAULT_DEFENDER_MOVES);
 
   // --- Field ---
   const [gameType, setGameType] = useState<"Doubles" | "Singles">("Doubles");
@@ -471,6 +588,19 @@ export function useCalcState({
 
   function setAttackerBoost(stat: keyof AttackerBoosts, v: number) {
     setAttackerBoosts((prev) => ({ ...prev, [stat]: v }));
+  }
+
+  function setDefenderIv(stat: keyof DefenderIvs, v: number) {
+    setDefenderIvs((prev) => ({ ...prev, [stat]: Math.min(31, Math.max(0, Math.round(v))) }));
+  }
+
+  function setDefenderMove(slotIdx: number, name: string) {
+    if (slotIdx < 0 || slotIdx > 3) return;
+    setDefenderMovesState((prev) => {
+      const next = [...prev] as [string, string, string, string];
+      next[slotIdx] = name;
+      return next;
+    });
   }
 
   function setDefenderEv(stat: keyof DefenderEvs, v: number) {
@@ -518,10 +648,24 @@ export function useCalcState({
     setDefenderEvs(
       overrides?.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
     );
+    setDefenderIvs(DEFAULT_DEFENDER_IVS);
     setDefenderBoosts(EMPTY_BOOSTS);
     setDefenderStatus("Healthy");
     setDefenderHpPercent(100);
+    setDefenderMovesState(DEFAULT_DEFENDER_MOVES);
   }
+
+  // --- Inferred weather / terrain from attacker ability ---
+  // Only applies when the user has NOT explicitly set weather/terrain.
+  const attackerAbility = selectedPokemon?.ability ?? null;
+  const inferredWeather: string | null =
+    !weather && attackerAbility
+      ? (ABILITY_WEATHER_MAP[attackerAbility] ?? null)
+      : null;
+  const inferredTerrain: string | null =
+    !terrain && attackerAbility
+      ? (ABILITY_TERRAIN_MAP[attackerAbility] ?? null)
+      : null;
 
   // --- Derived values — computed during render so result stays in sync ---
   const moves: readonly (string | null)[] = [
@@ -537,10 +681,13 @@ export function useCalcState({
     if (!moveName) return null;
 
     const isCrit = critMoves[moveIdx] ?? false;
+    // Use inferred weather/terrain from ability when user hasn't explicitly set them.
+    const effectiveWeather = weather || (inferredWeather ?? "");
+    const effectiveTerrain = terrain || (inferredTerrain ?? "");
     const field = buildField(
       gameType,
-      weather,
-      terrain,
+      effectiveWeather,
+      effectiveTerrain,
       gravity,
       attackerSide,
       defenderSide,
@@ -562,12 +709,14 @@ export function useCalcState({
         defenderNature,
         defenderTera,
         defenderEvs,
+        defenderIvs,
         defenderBoosts,
         defenderStatus,
         defenderHpPercent
       );
       if (!attacker || !defender) return null;
-      return runCalc(gen, attacker, defender, moveName, isCrit, field);
+      // Forward direction: attacker is on YOUR team — use faintedYours for Last Respects BP.
+      return runCalc(gen, attacker, defender, moveName, isCrit, field, faintedYours);
     }
 
     // "defense": defender attacks us with the move
@@ -579,6 +728,7 @@ export function useCalcState({
       defenderNature,
       defenderTera,
       defenderEvs,
+      defenderIvs,
       defenderBoosts,
       defenderStatus,
       100
@@ -590,13 +740,15 @@ export function useCalcState({
       "Healthy"
     );
     if (!defenderAsAttacker || !ourPokemon) return null;
+    // Defense direction: defender fires at us — their fainted count applies for Last Respects.
     return runCalc(
       gen,
       defenderAsAttacker,
       ourPokemon,
       moveName,
       isCrit,
-      field
+      field,
+      faintedTheirs
     );
   }
 
@@ -606,6 +758,65 @@ export function useCalcState({
 
   const selectedMoveName = moves[selectedMoveIdx] ?? null;
   const selectedMoveOutput = moveCalcOutputs[selectedMoveIdx] ?? null;
+
+  // --- Reverse-direction: defender's moves aimed at the active attacker ---
+  // Accepts a concrete move name so callers can pass either a user-set override
+  // or a default from useDefenderMoves without needing an extra round-trip.
+  function computeReverseOutput(moveName: string): CalcOutput | null {
+    if (!selectedPokemon) return null;
+    if (!moveName) return null;
+
+    const effectiveWeather = weather || (inferredWeather ?? "");
+    const effectiveTerrain = terrain || (inferredTerrain ?? "");
+
+    // For the reverse direction: defender is the attacker, our pokemon is the
+    // defender. buildField with direction="defense" swaps the sides correctly.
+    const field = buildField(
+      gameType,
+      effectiveWeather,
+      effectiveTerrain,
+      gravity,
+      attackerSide,
+      defenderSide,
+      "defense"
+    );
+
+    // Defender (as attacker) — built at full HP (100%) so offensive stats are
+    // correct; HP only matters when it's the receiver.
+    const defenderAsAttacker = buildDefenderPokemon(
+      gen,
+      defenderSpecies,
+      defenderAbility,
+      defenderItem,
+      defenderNature,
+      defenderTera,
+      defenderEvs,
+      defenderIvs,
+      defenderBoosts,
+      defenderStatus,
+      100
+    );
+
+    // Our pokemon (as the defender receiving the hit). Use EMPTY_BOOSTS for
+    // the reverse direction — the attacker's own boosts don't apply to how
+    // they receive incoming damage.
+    const ourPokemon = buildAttackerFromDb(
+      gen,
+      selectedPokemon,
+      EMPTY_BOOSTS,
+      "Healthy"
+    );
+
+    if (!defenderAsAttacker || !ourPokemon) return null;
+    // Reverse direction: the defender is attacking — their fainted count applies for Last Respects.
+    return runCalc(gen, defenderAsAttacker, ourPokemon, moveName, false, field, faintedTheirs);
+  }
+
+  // Pre-compute outputs for the raw user-set defenderMoves slots (for context
+  // consumers that don't have effective move defaults resolved yet).
+  const moveCalcOutputsReverse: readonly (CalcOutput | null)[] = [0, 1, 2, 3].map(
+    (idx) => computeReverseOutput(defenderMoves[idx] ?? "")
+  );
 
   return {
     direction,
@@ -624,18 +835,22 @@ export function useCalcState({
     defenderNature,
     defenderTera,
     defenderEvs,
+    defenderIvs,
     defenderBoosts,
     defenderStatus,
     defenderHpPercent,
+    defenderMoves,
     setDefenderSpecies,
     setDefenderAbility,
     setDefenderItem,
     setDefenderNature,
     setDefenderTera,
     setDefenderEv,
+    setDefenderIv,
     setDefenderBoost,
     setDefenderStatus,
     setDefenderHpPercent,
+    setDefenderMove,
     resetDefenderForSpecies,
     gameType,
     weather,
@@ -651,7 +866,11 @@ export function useCalcState({
     setDefenderSide,
     moves,
     moveCalcOutputs,
+    moveCalcOutputsReverse,
+    computeReverseOutput,
     selectedMoveName,
     selectedMoveOutput,
+    inferredWeather,
+    inferredTerrain,
   };
 }

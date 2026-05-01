@@ -122,9 +122,12 @@ function MoveTile({
 
   const koTier = hasCalc ? getKoTier(displayMin, displayMax) : null;
 
+  // Resolve the effective weather: user-set overrides ability-inferred.
+  const effectiveWeather = calc.weather || calc.inferredWeather;
+
   const eff =
     moveName && hasDefender && !isStatus
-      ? getMoveEffectiveness(moveName, calc.defenderSpecies)
+      ? getMoveEffectiveness(moveName, calc.defenderSpecies, effectiveWeather)
       : null;
 
   const hasError = slotErrors.some((e) => e.severity === "error");

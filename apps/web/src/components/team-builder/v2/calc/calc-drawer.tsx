@@ -1,7 +1,5 @@
 "use client";
 
-import { useRef } from "react";
-
 import { type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 
@@ -11,16 +9,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
 
 import { useCalcStateContext } from "./calc-state-context";
 import { CalcDefenderBlock } from "./calc-defender-block";
 import { CalcFieldBlock } from "./calc-field-block";
-import { CalcResultsBlock } from "./calc-results-block";
-
-const MIN_WIDTH = 320;
-const MAX_WIDTH = 640;
 
 interface CalcDrawerProps {
   open: boolean;
@@ -28,18 +20,14 @@ interface CalcDrawerProps {
   team: TeamWithPokemon;
   format: GameFormat | undefined;
   onClose: () => void;
-  calcDrawerWidth: number;
-  setCalcDrawerWidth: (n: number) => void;
 }
 
-// =============================================================================
-// CalcDrawer
-// =============================================================================
-
 /**
- * Right-rail Damage Calc drawer for the v2 team builder.
- * Consumes calc state from CalcStateContext (lifted to workspace level in
- * team-workspace-v2.tsx) so the MovesLane can share the same defender state.
+ * Mobile-only Damage Calc Sheet.
+ *
+ * The desktop layout uses the bottom-panel calc (rendered from the dockbar)
+ * as the primary calc surface. This drawer remains as the mobile fallback —
+ * a full-screen Sheet sliding from the right.
  */
 export function CalcDrawer({
   open,
@@ -47,160 +35,56 @@ export function CalcDrawer({
   team,
   format,
   onClose,
-  calcDrawerWidth,
-  setCalcDrawerWidth,
 }: CalcDrawerProps) {
-  const isMobile = useIsMobile();
-
-  // Drag state — stored in refs so pointer events don't trigger re-renders
-  const dragInitialX = useRef<number>(0);
-  const dragInitialWidth = useRef<number>(0);
-
   if (!open) return null;
 
-  // On mobile: render as a full-screen Sheet from the right.
-  // On desktop: render as the inline right-rail aside (existing behaviour).
-  if (isMobile) {
-    return (
-      <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-        <SheetContent
-          side="right"
-          className="w-full max-w-[calc(100vw-1rem)] overflow-y-auto p-0 sm:max-w-[380px]"
-          showCloseButton={false}
-        >
-          <SheetHeader className="sr-only">
-            <SheetTitle>Damage Calc</SheetTitle>
-          </SheetHeader>
-
-          {/* Reuse the same inner layout */}
-          <header className="cd-head">
-            <div className="cd-head-l">
-              <span className="cd-eyebrow cd-eyebrow--sm">DAMAGE CALC</span>
-              <span className="cd-head-sub">live · inherits attacker</span>
-            </div>
-            <button
-              type="button"
-              className="cd-close"
-              onClick={onClose}
-              aria-label="Close damage calc"
-            >
-              ×
-            </button>
-          </header>
-
-          {!selectedPokemon ? (
-            <div className="cd-empty">
-              <p className="text-muted-foreground text-xs">
-                Select a Pokémon to calc damage.
-              </p>
-            </div>
-          ) : (
-            <CalcDrawerContent
-              selectedPokemon={selectedPokemon}
-              team={team}
-              format={format}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
-    );
-  }
-
   return (
-    <aside
-      className="cd-drawer"
-      aria-label="Damage Calc"
-      style={{ width: `${calcDrawerWidth}px` }}
-    >
-      {/* Drag-resize handle — left edge, desktop only */}
-      <div
-        role="separator"
-        aria-orientation="vertical"
-        aria-valuemin={MIN_WIDTH}
-        aria-valuemax={MAX_WIDTH}
-        aria-valuenow={calcDrawerWidth}
-        tabIndex={0}
-        className={cn(
-          "cd-resizer",
-          "absolute top-0 bottom-0 left-0 w-1 cursor-col-resize",
-          "hover:bg-primary/40 focus-visible:bg-primary/40",
-          "pointer-events-auto touch-none outline-none"
+    <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent
+        side="right"
+        className="w-full max-w-[calc(100vw-1rem)] overflow-y-auto p-0 sm:max-w-[380px]"
+        showCloseButton={false}
+      >
+        <SheetHeader className="sr-only">
+          <SheetTitle>Damage Calc</SheetTitle>
+        </SheetHeader>
+
+        <header className="flex items-center justify-between border-b px-4 py-2.5">
+          <div className="flex flex-col gap-px">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Damage calc
+            </span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              live · inherits attacker
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close damage calc"
+            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            ×
+          </button>
+        </header>
+
+        {!selectedPokemon ? (
+          <div className="p-4 text-center">
+            <p className="text-muted-foreground text-xs">
+              Select a Pokémon to calc damage.
+            </p>
+          </div>
+        ) : (
+          <CalcDrawerContent
+            selectedPokemon={selectedPokemon}
+            team={team}
+            format={format}
+          />
         )}
-        onPointerDown={(e) => {
-          e.preventDefault();
-          dragInitialX.current = e.clientX;
-          dragInitialWidth.current = calcDrawerWidth;
-          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-        }}
-        onPointerMove={(e) => {
-          if (!(e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId))
-            return;
-          // Handle is on the LEFT edge — drag left grows, drag right shrinks
-          const delta = e.clientX - dragInitialX.current;
-          const next = Math.min(
-            MAX_WIDTH,
-            Math.max(MIN_WIDTH, dragInitialWidth.current - delta)
-          );
-          setCalcDrawerWidth(next);
-        }}
-        onPointerUp={(e) => {
-          (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowRight") {
-            // Right grows the drawer (handle on left edge, growing = more space)
-            setCalcDrawerWidth(
-              Math.min(MAX_WIDTH, calcDrawerWidth + 10)
-            );
-          } else if (e.key === "ArrowLeft") {
-            setCalcDrawerWidth(
-              Math.max(MIN_WIDTH, calcDrawerWidth - 10)
-            );
-          } else if (e.key === "Home") {
-            setCalcDrawerWidth(MIN_WIDTH);
-          } else if (e.key === "End") {
-            setCalcDrawerWidth(MAX_WIDTH);
-          }
-        }}
-      />
-
-      {/* Header */}
-      <header className="cd-head">
-        <div className="cd-head-l">
-          <span className="cd-eyebrow cd-eyebrow--sm">DAMAGE CALC</span>
-          <span className="cd-head-sub">live · inherits attacker</span>
-        </div>
-        <button
-          type="button"
-          className="cd-close"
-          onClick={onClose}
-          aria-label="Close damage calc"
-        >
-          ×
-        </button>
-      </header>
-
-      {/* Empty state — no attacker selected */}
-      {!selectedPokemon ? (
-        <div className="cd-empty">
-          <p className="text-muted-foreground text-xs">
-            Select a Pokémon to calc damage.
-          </p>
-        </div>
-      ) : (
-        <CalcDrawerContent
-          selectedPokemon={selectedPokemon}
-          team={team}
-          format={format}
-        />
-      )}
-    </aside>
+      </SheetContent>
+    </Sheet>
   );
 }
-
-// =============================================================================
-// CalcDrawerContent — consumes context, no local useCalcState call
-// =============================================================================
 
 interface CalcDrawerContentProps {
   selectedPokemon: Tables<"pokemon">;
@@ -209,25 +93,20 @@ interface CalcDrawerContentProps {
 }
 
 function CalcDrawerContent({
-  selectedPokemon,
+  selectedPokemon: _selectedPokemon,
   team,
   format,
 }: CalcDrawerContentProps) {
   const calc = useCalcStateContext();
   const { field, setField } = calc;
 
-  // Teammates (other than selected attacker) for defender picker
   const teammates = (team.team_pokemon ?? [])
     .map((tp) => tp.pokemon)
     .filter(
-      (p): p is Tables<"pokemon"> => p !== null && p.id !== selectedPokemon.id
+      (p): p is Tables<"pokemon"> =>
+        p !== null && p.id !== _selectedPokemon.id
     );
 
-  // Defender max HP from calc output (from any non-null output)
-  const defenderHp =
-    calc.moveCalcOutputs.find((o) => o !== null)?.defenderMaxHP ?? 0;
-
-  // Resolve gameType from builder field.doubles so both stay in sync.
   function handleGameTypeChange(v: "Doubles" | "Singles") {
     calc.setGameType(v);
     setField({ ...field, doubles: v === "Doubles" });
@@ -242,7 +121,7 @@ function CalcDrawerContent({
   }
 
   return (
-    <div className="cd-content">
+    <div className="flex flex-col">
       <CalcDefenderBlock
         defenderSpecies={calc.defenderSpecies}
         defenderAbility={calc.defenderAbility}
@@ -280,14 +159,6 @@ function CalcDrawerContent({
         allyAlive={field.allyAlive}
         setFoesAlive={handleSetFoesAlive}
         setAllyAlive={handleSetAllyAlive}
-      />
-
-      <CalcResultsBlock
-        moves={calc.moves}
-        moveCalcOutputs={calc.moveCalcOutputs}
-        defenderHp={defenderHp}
-        gameType={calc.gameType}
-        foesAlive={field.foesAlive}
       />
     </div>
   );

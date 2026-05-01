@@ -39,9 +39,19 @@ interface CalcStateProviderProps {
   format: GameFormat | undefined;
   field: FieldState;
   setField: (field: FieldState) => void;
-  /** Whether the calc panel is currently visible (showCalc tweak && calcOpen). */
+  /** Whether calc results should be computed and surfaced (always true in the bottom-panel layout). */
   calcEnabled: boolean;
   children: React.ReactNode;
+  /**
+   * Number of fainted Pokémon on YOUR team (0..5).
+   * Forwarded to useCalcState for Last Respects / Triumphant Wave BP scaling.
+   */
+  faintedYours?: number;
+  /**
+   * Number of fainted Pokémon on THEIR team (0..5).
+   * Forwarded to useCalcState for Last Respects / Triumphant Wave BP scaling.
+   */
+  faintedTheirs?: number;
 }
 
 /**
@@ -61,8 +71,10 @@ export function CalcStateProvider({
   setField,
   calcEnabled,
   children,
+  faintedYours,
+  faintedTheirs,
 }: CalcStateProviderProps) {
-  const calc = useCalcState({ selectedPokemon, format });
+  const calc = useCalcState({ selectedPokemon, format, faintedYours, faintedTheirs });
 
   const value: CalcStateContextValue = {
     ...calc,

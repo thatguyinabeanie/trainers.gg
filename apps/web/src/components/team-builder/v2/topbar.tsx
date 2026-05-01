@@ -28,8 +28,6 @@ interface TopbarProps {
   filledCount: number;
   format: GameFormat | undefined;
   username: string;
-  calcOpen: boolean;
-  onToggleCalc: () => void;
   onOpenImport: () => void;
   onSave: () => void;
   /** Flat list of all validation errors/warnings for the team. */
@@ -82,8 +80,6 @@ export function Topbar({
   filledCount,
   format,
   username,
-  calcOpen,
-  onToggleCalc,
   onOpenImport,
   onSave,
   validationErrors,
@@ -210,14 +206,6 @@ export function Topbar({
             </PopoverContent>
           </Popover>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onToggleCalc}
-            data-on={calcOpen}
-          >
-            ⚔ Calc
-          </Button>
           <Button size="sm" onClick={onSave}>
             Save
           </Button>
@@ -267,16 +255,6 @@ export function Topbar({
             />
           </PopoverContent>
         </Popover>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onToggleCalc}
-          data-on={calcOpen}
-          className="h-7 text-xs"
-        >
-          ⚔ Calc
-        </Button>
 
         {/* Spacer */}
         <span className="flex-1" />

@@ -24,11 +24,6 @@ describe("useBuilderState — ephemeral state defaults", () => {
     expect(result.current.activeIdx).toBe(0);
   });
 
-  it("starts with calcOpen=true", () => {
-    const { result } = renderHook(() => useBuilderState());
-    expect(result.current.calcOpen).toBe(true);
-  });
-
   it("starts with drawer=null", () => {
     const { result } = renderHook(() => useBuilderState());
     expect(result.current.drawer).toBe(null);
@@ -50,14 +45,6 @@ describe("useBuilderState — ephemeral state defaults", () => {
     expect(result.current.drawer).toBe("matchups");
   });
 
-  it("setCalcOpen accepts an updater function", () => {
-    const { result } = renderHook(() => useBuilderState());
-    act(() => {
-      result.current.setCalcOpen((prev) => !prev);
-    });
-    expect(result.current.calcOpen).toBe(false);
-  });
-
   it("field defaults to doubles=true", () => {
     const { result } = renderHook(() => useBuilderState());
     expect(result.current.field.doubles).toBe(true);
@@ -73,66 +60,167 @@ describe("useBuilderState — ephemeral state defaults", () => {
 });
 
 // =============================================================================
-// calcDrawerWidth — localStorage persistence + clamping
+// drawer — calc key supported
 // =============================================================================
 
-describe("useBuilderState — calcDrawerWidth", () => {
+describe("useBuilderState — drawer calc key", () => {
   beforeEach(clearStorage);
 
-  it("defaults to 380 when localStorage is empty", () => {
-    const { result } = renderHook(() => useBuilderState());
-    expect(result.current.calcDrawerWidth).toBe(380);
-  });
-
-  it("setCalcDrawerWidth(500) updates the value", () => {
+  it("setDrawer('calc') sets drawer to 'calc'", () => {
     const { result } = renderHook(() => useBuilderState());
     act(() => {
-      result.current.setCalcDrawerWidth(500);
+      result.current.setDrawer("calc");
     });
-    expect(result.current.calcDrawerWidth).toBe(500);
+    expect(result.current.drawer).toBe("calc");
   });
 
-  it("setCalcDrawerWidth(700) clamps to 640", () => {
+  it("setDrawer(null) clears from 'calc'", () => {
     const { result } = renderHook(() => useBuilderState());
     act(() => {
-      result.current.setCalcDrawerWidth(700);
+      result.current.setDrawer("calc");
     });
-    expect(result.current.calcDrawerWidth).toBe(640);
+    act(() => {
+      result.current.setDrawer(null);
+    });
+    expect(result.current.drawer).toBe(null);
+  });
+});
+
+// =============================================================================
+// Calc workspace tweaks — attackerSlot, faintedYours, faintedTheirs
+// =============================================================================
+
+describe("useBuilderState — attackerSlot", () => {
+  beforeEach(clearStorage);
+
+  it("defaults to null", () => {
+    const { result } = renderHook(() => useBuilderState());
+    expect(result.current.attackerSlot).toBe(null);
   });
 
-  it("setCalcDrawerWidth(100) clamps to 320", () => {
+  it("setAttackerSlot(2) updates the value", () => {
     const { result } = renderHook(() => useBuilderState());
     act(() => {
-      result.current.setCalcDrawerWidth(100);
+      result.current.setAttackerSlot(2);
     });
-    expect(result.current.calcDrawerWidth).toBe(320);
+    expect(result.current.attackerSlot).toBe(2);
+  });
+
+  it("setAttackerSlot(null) clears the value", () => {
+    const { result } = renderHook(() => useBuilderState());
+    act(() => {
+      result.current.setAttackerSlot(3);
+    });
+    act(() => {
+      result.current.setAttackerSlot(null);
+    });
+    expect(result.current.attackerSlot).toBe(null);
+  });
+
+  it("persists slot to localStorage on set", () => {
+    const { result } = renderHook(() => useBuilderState());
+    act(() => {
+      result.current.setAttackerSlot(4);
+    });
+    expect(
+      window.localStorage.getItem("trainersgg.builder.attackerSlot.v1")
+    ).toBe("4");
+  });
+
+  it("removes localStorage entry when set to null", () => {
+    window.localStorage.setItem("trainersgg.builder.attackerSlot.v1", "2");
+    const { result } = renderHook(() => useBuilderState());
+    act(() => {
+      result.current.setAttackerSlot(null);
+    });
+    expect(
+      window.localStorage.getItem("trainersgg.builder.attackerSlot.v1")
+    ).toBe(null);
+  });
+
+  it("reads persisted value from localStorage on remount", () => {
+    window.localStorage.setItem("trainersgg.builder.attackerSlot.v1", "1");
+    const { result } = renderHook(() => useBuilderState());
+    expect(result.current.attackerSlot).toBe(1);
+  });
+});
+
+describe("useBuilderState — faintedYours", () => {
+  beforeEach(clearStorage);
+
+  it("defaults to 0", () => {
+    const { result } = renderHook(() => useBuilderState());
+    expect(result.current.faintedYours).toBe(0);
+  });
+
+  it("setFaintedYours(3) updates the value", () => {
+    const { result } = renderHook(() => useBuilderState());
+    act(() => {
+      result.current.setFaintedYours(3);
+    });
+    expect(result.current.faintedYours).toBe(3);
+  });
+
+  it("setFaintedYours(9) clamps to 5", () => {
+    const { result } = renderHook(() => useBuilderState());
+    act(() => {
+      result.current.setFaintedYours(9);
+    });
+    expect(result.current.faintedYours).toBe(5);
+  });
+
+  it("setFaintedYours(-2) clamps to 0", () => {
+    const { result } = renderHook(() => useBuilderState());
+    act(() => {
+      result.current.setFaintedYours(-2);
+    });
+    expect(result.current.faintedYours).toBe(0);
   });
 
   it("persists to localStorage on set", () => {
     const { result } = renderHook(() => useBuilderState());
     act(() => {
-      result.current.setCalcDrawerWidth(500);
+      result.current.setFaintedYours(2);
     });
     expect(
-      window.localStorage.getItem("trainersgg.builder.calcDrawerWidth.v1")
-    ).toBe("500");
+      window.localStorage.getItem("trainersgg.builder.faintedYours.v1")
+    ).toBe("2");
   });
 
   it("reads persisted value from localStorage on remount", () => {
-    window.localStorage.setItem(
-      "trainersgg.builder.calcDrawerWidth.v1",
-      "560"
-    );
+    window.localStorage.setItem("trainersgg.builder.faintedYours.v1", "4");
     const { result } = renderHook(() => useBuilderState());
-    expect(result.current.calcDrawerWidth).toBe(560);
+    expect(result.current.faintedYours).toBe(4);
+  });
+});
+
+describe("useBuilderState — faintedTheirs", () => {
+  beforeEach(clearStorage);
+
+  it("defaults to 0", () => {
+    const { result } = renderHook(() => useBuilderState());
+    expect(result.current.faintedTheirs).toBe(0);
   });
 
-  it("clamps a persisted out-of-range value on remount", () => {
-    window.localStorage.setItem(
-      "trainersgg.builder.calcDrawerWidth.v1",
-      "999"
-    );
+  it("setFaintedTheirs(5) updates the value", () => {
     const { result } = renderHook(() => useBuilderState());
-    expect(result.current.calcDrawerWidth).toBe(640);
+    act(() => {
+      result.current.setFaintedTheirs(5);
+    });
+    expect(result.current.faintedTheirs).toBe(5);
+  });
+
+  it("setFaintedTheirs(10) clamps to 5", () => {
+    const { result } = renderHook(() => useBuilderState());
+    act(() => {
+      result.current.setFaintedTheirs(10);
+    });
+    expect(result.current.faintedTheirs).toBe(5);
+  });
+
+  it("reads persisted value from localStorage on remount", () => {
+    window.localStorage.setItem("trainersgg.builder.faintedTheirs.v1", "3");
+    const { result } = renderHook(() => useBuilderState());
+    expect(result.current.faintedTheirs).toBe(3);
   });
 });

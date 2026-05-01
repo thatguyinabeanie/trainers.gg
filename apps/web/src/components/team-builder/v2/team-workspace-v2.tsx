@@ -37,8 +37,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ExportMenu } from "../export-menu";
 import { ImportDialog } from "../import-dialog";
 import { useTeamValidation } from "../validation-hooks";
+import { CalcBottomPanel } from "./calc/calc-bottom-panel";
 import { CalcDrawer } from "./calc/calc-drawer";
-import { CalcStateProvider } from "./calc/calc-state-context";
+import {
+  CalcStateProvider,
+  useCalcStateContext,
+} from "./calc/calc-state-context";
 import { Dockbar } from "./dock/dockbar";
 import { HeatmapPanel } from "./dock/heatmap-panel";
 import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
@@ -83,6 +87,41 @@ function buildSlots(
     }
   }
   return slots;
+}
+
+// =============================================================================
+// DockbarConnected
+// =============================================================================
+
+interface DockbarConnectedProps {
+  drawer: "matchups" | "speed" | "calc" | null;
+  onOpen: (key: "matchups" | "speed" | "calc") => void;
+  team: TeamWithPokemon["team_pokemon"];
+  format: GameFormat | undefined;
+}
+
+/**
+ * Wraps Dockbar with calc state read from CalcStateContext.
+ * Must be mounted inside a CalcStateProvider.
+ */
+function DockbarConnected({
+  drawer,
+  onOpen,
+  team,
+  format,
+}: DockbarConnectedProps) {
+  const calc = useCalcStateContext();
+
+  return (
+    <Dockbar
+      drawer={drawer}
+      onOpen={onOpen}
+      team={team}
+      format={format}
+      defenderSpecies={calc.defenderSpecies}
+      moveCalcOutputs={calc.moveCalcOutputs}
+    />
+  );
 }
 
 // =============================================================================
@@ -302,7 +341,9 @@ export function TeamWorkspaceV2({
       format={format}
       field={state.field}
       setField={state.setField}
-      calcEnabled={state.calcOpen}
+      calcEnabled={true}
+      faintedYours={state.faintedYours}
+      faintedTheirs={state.faintedTheirs}
     >
       <div className={s.builderApp}>
         <Topbar
@@ -310,8 +351,6 @@ export function TeamWorkspaceV2({
           filledCount={filledCount}
           format={format}
           username={username}
-          calcOpen={state.calcOpen}
-          onToggleCalc={() => state.setCalcOpen((o) => !o)}
           onOpenImport={() => setImportOpen(true)}
           onSave={() => console.warn("[Phase 1 stub] save")}
           validationErrors={validationErrors}
@@ -448,54 +487,80 @@ export function TeamWorkspaceV2({
                   className={s.panelRegion}
                   style={{ flexBasis: `${state.panelHeightPct}%` }}
                 >
-                  <section className={s.inlinePanel}>
-                    <header className={s.inlinePanelHead}>
-                      <div className={s.inlinePanelHeadL}>
-                        <span className={s.inlinePanelEyebrow}>
-                          {state.drawer === "matchups" ? "DEFENSIVE" : "SPEED"}
-                        </span>
-                        <span className={s.inlinePanelTitle}>
-                          {state.drawer === "matchups"
-                            ? "Defensive type coverage"
-                            : "Speed tier ladder"}
-                        </span>
-                        <span className={s.inlinePanelSub}>
-                          {state.drawer === "matchups"
-                            ? "18 attacking types × your 6 slots"
-                            : "Your team vs the format · all values @ Lv 50"}
-                        </span>
+                  {/* Type matchups and Speed tiers keep their existing header chrome */}
+                  {(state.drawer === "matchups" ||
+                    state.drawer === "speed") && (
+                    <section className={s.inlinePanel}>
+                      <header className={s.inlinePanelHead}>
+                        <div className={s.inlinePanelHeadL}>
+                          <span className={s.inlinePanelEyebrow}>
+                            {state.drawer === "matchups"
+                              ? "DEFENSIVE"
+                              : "SPEED"}
+                          </span>
+                          <span className={s.inlinePanelTitle}>
+                            {state.drawer === "matchups"
+                              ? "Defensive type coverage"
+                              : "Speed tier ladder"}
+                          </span>
+                          <span className={s.inlinePanelSub}>
+                            {state.drawer === "matchups"
+                              ? "18 attacking types × your 6 slots"
+                              : "Your team vs the format · all values @ Lv 50"}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => state.setDrawer(null)}
+                          aria-label="Close panel"
+                          title="Close panel"
+                          className={s.inlinePanelClose}
+                        >
+                          ×
+                        </button>
+                      </header>
+                      <div className={s.inlinePanelBody}>
+                        {state.drawer === "matchups" && (
+                          <HeatmapPanel
+                            team={optimisticTeamPokemon}
+                            format={format}
+                          />
+                        )}
+                        {state.drawer === "speed" && (
+                          <SpeedTiersPanel
+                            team={optimisticTeamPokemon}
+                            activeIdx={state.activeIdx}
+                            format={format}
+                          />
+                        )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => state.setDrawer(null)}
-                        aria-label="Close panel"
-                        title="Close panel"
-                        className={s.inlinePanelClose}
-                      >
-                        ×
-                      </button>
-                    </header>
-                    <div className={s.inlinePanelBody}>
-                      {state.drawer === "matchups" && (
-                        <HeatmapPanel
-                          team={optimisticTeamPokemon}
-                          format={format}
-                        />
-                      )}
-                      {state.drawer === "speed" && (
-                        <SpeedTiersPanel
-                          team={optimisticTeamPokemon}
-                          activeIdx={state.activeIdx}
-                          format={format}
-                        />
-                      )}
-                    </div>
-                  </section>
+                    </section>
+                  )}
+
+                  {/* Calc panel — desktop only; mobile falls back to CalcDrawer Sheet */}
+                  {state.drawer === "calc" && !isMobile && (
+                    <CalcBottomPanel
+                      selectedPokemon={slots[state.activeIdx] ?? null}
+                      team={team}
+                      format={format}
+                      onClose={() => state.setDrawer(null)}
+                      attackerIdx={state.attackerSlot ?? state.activeIdx}
+                      onPickAttacker={(idx) =>
+                        state.setAttackerSlot(
+                          idx === state.activeIdx ? null : idx
+                        )
+                      }
+                      faintedYours={state.faintedYours}
+                      setFaintedYours={state.setFaintedYours}
+                      faintedTheirs={state.faintedTheirs}
+                      setFaintedTheirs={state.setFaintedTheirs}
+                    />
+                  )}
                 </div>
               </>
             )}
 
-            <Dockbar
+            <DockbarConnected
               drawer={state.drawer}
               onOpen={(key) =>
                 state.setDrawer(state.drawer === key ? null : key)
@@ -505,15 +570,14 @@ export function TeamWorkspaceV2({
             />
           </div>
 
-          {state.calcOpen && (
+          {/* Mobile: when the dock "Damage calc" pill is active, show calc as Sheet */}
+          {state.drawer === "calc" && isMobile && (
             <CalcDrawer
               open
               selectedPokemon={slots[state.activeIdx] ?? null}
               team={team}
               format={format}
-              onClose={() => state.setCalcOpen(false)}
-              calcDrawerWidth={state.calcDrawerWidth}
-              setCalcDrawerWidth={state.setCalcDrawerWidth}
+              onClose={() => state.setDrawer(null)}
             />
           )}
         </div>

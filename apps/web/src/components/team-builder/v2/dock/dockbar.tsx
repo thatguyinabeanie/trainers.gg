@@ -5,6 +5,10 @@ import { type TeamWithPokemon } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 
+import {
+  getVerdict,
+  type CalcOutput,
+} from "../../use-calc-state";
 import { getTeamDefensiveSummary } from "./heatmap-panel";
 import { getTeamFastestSpeed } from "./speed-tiers-panel";
 
@@ -13,10 +17,14 @@ import { getTeamFastestSpeed } from "./speed-tiers-panel";
 // =============================================================================
 
 export interface DockbarProps {
-  drawer: "matchups" | "speed" | null;
-  onOpen: (key: "matchups" | "speed") => void;
+  drawer: "matchups" | "speed" | "calc" | null;
+  onOpen: (key: "matchups" | "speed" | "calc") => void;
   team: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
+  /** Active attacker's defender name, for the calc pill label. */
+  defenderSpecies: string;
+  /** Calc outputs for all 4 attacker moves, for the calc pill verdict. */
+  moveCalcOutputs: readonly (CalcOutput | null)[];
 }
 
 // =============================================================================
@@ -24,18 +32,50 @@ export interface DockbarProps {
 // =============================================================================
 
 /**
- * Bottom dock toolbar with two pill buttons: Type matchups and Speed tiers.
+ * Computes the worst-case KO verdict across all move calc outputs.
+ * OHKO > 2HKO > 3HKO > null — returns the highest-damage tier present.
+ */
+function getWorstCaseVerdict(
+  outputs: readonly (CalcOutput | null)[]
+): string | null {
+  let best: string | null = null;
+  for (const output of outputs) {
+    if (!output) continue;
+    const v = getVerdict(output.minPercent, output.maxPercent);
+    if (v === "OHKO") return "OHKO"; // Can't do better
+    if (v === "2HKO" && best !== "OHKO") best = "2HKO";
+    else if (v === "3HKO" && best === null) best = "3HKO";
+  }
+  return best;
+}
+
+/**
+ * Bottom dock toolbar with three pill buttons: Type matchups, Speed tiers,
+ * and Damage calc.
  *
  * Each pill shows live mini-stats derived from the current team:
  *   - Matchups: "<weakCount> weak · <coveredCount> covered"
  *   - Speed: "<fastest> fastest · vs format"
+ *   - Calc: "vs <defender> · <verdict>"
  *
- * The active pill is highlighted. An Esc hint is shown on the trailing end.
+ * The active pill is highlighted.
  */
-export function Dockbar({ drawer, onOpen, team, format }: DockbarProps) {
+export function Dockbar({
+  drawer,
+  onOpen,
+  team,
+  format,
+  defenderSpecies,
+  moveCalcOutputs,
+}: DockbarProps) {
   const { weakCount, coveredCount } = getTeamDefensiveSummary(team);
   const fastest =
     format ? getTeamFastestSpeed(team, format) : 0;
+
+  const calcVerdict = getWorstCaseVerdict(moveCalcOutputs);
+  const calcSubLabel = defenderSpecies
+    ? `vs ${defenderSpecies}`
+    : "no target";
 
   return (
     <div
@@ -123,6 +163,49 @@ export function Dockbar({ drawer, onOpen, team, format }: DockbarProps) {
         </span>
         <span className="ml-1 shrink-0 text-[10px] text-muted-foreground" aria-hidden>
           {drawer === "speed" ? "▾" : "▴"}
+        </span>
+      </button>
+
+      {/* Damage calc pill */}
+      <button
+        type="button"
+        onClick={() => onOpen("calc")}
+        title="Damage calc"
+        aria-pressed={drawer === "calc"}
+        className={cn(
+          "flex min-w-0 shrink items-center gap-2 rounded-full border px-3 py-1.5 text-left transition-colors duration-150",
+          drawer === "calc"
+            ? "border-primary bg-primary/10 text-primary"
+            : "border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50"
+        )}
+      >
+        <span className="shrink-0 text-[15px] leading-none" aria-hidden>
+          🎯
+        </span>
+        <span className="flex min-w-0 flex-col gap-0">
+          <span className="text-xs font-semibold leading-tight">
+            Damage calc
+          </span>
+          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-tight text-muted-foreground">
+            <span className="truncate">{calcSubLabel}</span>
+            {calcVerdict && (
+              <>
+                <span className="opacity-40">·</span>
+                <span className="font-semibold text-primary">
+                  {calcVerdict}
+                </span>
+              </>
+            )}
+            {!calcVerdict && defenderSpecies && (
+              <>
+                <span className="opacity-40">·</span>
+                <span>—</span>
+              </>
+            )}
+          </span>
+        </span>
+        <span className="ml-1 shrink-0 text-[10px] text-muted-foreground" aria-hidden>
+          {drawer === "calc" ? "▾" : "▴"}
         </span>
       </button>
 

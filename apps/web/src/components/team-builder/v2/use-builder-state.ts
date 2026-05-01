@@ -37,23 +37,26 @@ interface DefenderOverrides {
   status?: string;
 }
 
-type DrawerKey = "matchups" | "speed" | null;
+export type DrawerKey = "matchups" | "speed" | "calc" | null;
 
 interface BuilderState {
   activeIdx: number;
   setActiveIdx: (idx: number) => void;
-  calcOpen: boolean;
-  setCalcOpen: (updater: boolean | ((prev: boolean) => boolean)) => void;
   drawer: DrawerKey;
   setDrawer: (drawer: DrawerKey) => void;
   panelHeightPct: number;
   setPanelHeightPct: (n: number) => void;
-  calcDrawerWidth: number;
-  setCalcDrawerWidth: (n: number) => void;
   field: FieldState;
   setField: (field: FieldState) => void;
   defenderOverrides: DefenderOverrides;
   setDefenderOverrides: (overrides: DefenderOverrides) => void;
+  // Calc-specific workspace state
+  attackerSlot: number | null;
+  setAttackerSlot: (idx: number | null) => void;
+  faintedYours: number;
+  setFaintedYours: (n: number) => void;
+  faintedTheirs: number;
+  setFaintedTheirs: (n: number) => void;
 }
 
 // =============================================================================
@@ -71,15 +74,13 @@ function clampPanelHeight(n: number): number {
   return Math.min(MAX_PANEL_HEIGHT_PCT, Math.max(MIN_PANEL_HEIGHT_PCT, n));
 }
 
-const CALC_DRAWER_WIDTH_STORAGE_KEY = "trainersgg.builder.calcDrawerWidth.v1";
+// Calc workspace tweaks — persisted alongside panelHeightPct
+const ATTACKER_SLOT_STORAGE_KEY = "trainersgg.builder.attackerSlot.v1";
+const FAINTED_YOURS_STORAGE_KEY = "trainersgg.builder.faintedYours.v1";
+const FAINTED_THEIRS_STORAGE_KEY = "trainersgg.builder.faintedTheirs.v1";
 
-const DEFAULT_CALC_DRAWER_WIDTH = 380;
-const MIN_CALC_DRAWER_WIDTH = 320;
-const MAX_CALC_DRAWER_WIDTH = 640;
-
-function clampCalcDrawerWidth(n: number): number {
-  if (Number.isNaN(n)) return DEFAULT_CALC_DRAWER_WIDTH;
-  return Math.min(MAX_CALC_DRAWER_WIDTH, Math.max(MIN_CALC_DRAWER_WIDTH, n));
+function clampFainted(n: number): number {
+  return Math.min(5, Math.max(0, Math.round(n)));
 }
 
 const DEFAULT_FIELD: FieldState = {
@@ -108,7 +109,6 @@ const DEFAULT_FIELD: FieldState = {
  */
 export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
-  const [calcOpen, setCalcOpen] = useState(true);
   const [drawer, setDrawer] = useState<DrawerKey>(null);
   const [panelHeightPct, setPanelHeightPctState] = useState<number>(() => {
     if (typeof window === "undefined") return DEFAULT_PANEL_HEIGHT_PCT;
@@ -122,22 +122,48 @@ export function useBuilderState(): BuilderState {
     }
     return DEFAULT_PANEL_HEIGHT_PCT;
   });
-  const [calcDrawerWidth, setCalcDrawerWidthState] = useState<number>(() => {
-    if (typeof window === "undefined") return DEFAULT_CALC_DRAWER_WIDTH;
-    try {
-      const stored = localStorage.getItem(CALC_DRAWER_WIDTH_STORAGE_KEY);
-      if (stored !== null) {
-        return clampCalcDrawerWidth(parseInt(stored, 10));
-      }
-    } catch {
-      // localStorage unavailable — use default
-    }
-    return DEFAULT_CALC_DRAWER_WIDTH;
-  });
   const [field, setField] = useState<FieldState>(DEFAULT_FIELD);
   const [defenderOverrides, setDefenderOverrides] = useState<DefenderOverrides>(
     {}
   );
+
+  // --- Calc workspace tweaks — persisted to localStorage ---
+  const [attackerSlot, setAttackerSlotState] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const stored = localStorage.getItem(ATTACKER_SLOT_STORAGE_KEY);
+      if (stored !== null) {
+        const parsed = Number(stored);
+        return Number.isNaN(parsed) ? null : parsed;
+      }
+    } catch {
+      // localStorage unavailable — use default
+    }
+    return null;
+  });
+
+  const [faintedYours, setFaintedYoursState] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    try {
+      const stored = localStorage.getItem(FAINTED_YOURS_STORAGE_KEY);
+      if (stored !== null) return clampFainted(Number(stored));
+    } catch {
+      // localStorage unavailable — use default
+    }
+    return 0;
+  });
+
+  const [faintedTheirs, setFaintedTheirsState] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    try {
+      const stored = localStorage.getItem(FAINTED_THEIRS_STORAGE_KEY);
+      if (stored !== null) return clampFainted(Number(stored));
+    } catch {
+      // localStorage unavailable — use default
+    }
+    return 0;
+  });
+
   function setPanelHeightPct(n: number) {
     const clamped = clampPanelHeight(n);
     setPanelHeightPctState(clamped);
@@ -148,30 +174,55 @@ export function useBuilderState(): BuilderState {
     }
   }
 
-  function setCalcDrawerWidth(n: number) {
-    const clamped = clampCalcDrawerWidth(n);
-    setCalcDrawerWidthState(clamped);
+  function setAttackerSlot(idx: number | null) {
+    setAttackerSlotState(idx);
     try {
-      localStorage.setItem(CALC_DRAWER_WIDTH_STORAGE_KEY, String(clamped));
+      if (idx === null) {
+        localStorage.removeItem(ATTACKER_SLOT_STORAGE_KEY);
+      } else {
+        localStorage.setItem(ATTACKER_SLOT_STORAGE_KEY, String(idx));
+      }
     } catch {
-      // Storage write failure is non-fatal — width just won't persist
+      // Storage write failure is non-fatal
+    }
+  }
+
+  function setFaintedYours(n: number) {
+    const clamped = clampFainted(n);
+    setFaintedYoursState(clamped);
+    try {
+      localStorage.setItem(FAINTED_YOURS_STORAGE_KEY, String(clamped));
+    } catch {
+      // Storage write failure is non-fatal
+    }
+  }
+
+  function setFaintedTheirs(n: number) {
+    const clamped = clampFainted(n);
+    setFaintedTheirsState(clamped);
+    try {
+      localStorage.setItem(FAINTED_THEIRS_STORAGE_KEY, String(clamped));
+    } catch {
+      // Storage write failure is non-fatal
     }
   }
 
   return {
     activeIdx,
     setActiveIdx,
-    calcOpen,
-    setCalcOpen,
     drawer,
     setDrawer,
     panelHeightPct,
     setPanelHeightPct,
-    calcDrawerWidth,
-    setCalcDrawerWidth,
     field,
     setField,
     defenderOverrides,
     setDefenderOverrides,
+    attackerSlot,
+    setAttackerSlot,
+    faintedYours,
+    setFaintedYours,
+    faintedTheirs,
+    setFaintedTheirs,
   };
 }

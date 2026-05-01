@@ -23,6 +23,8 @@ export interface CalcTarget {
     spd: number;
     spe: number;
   };
+  /** Optional default move set for the "Their moves" reverse-calc column. */
+  moves?: [string, string, string, string];
 }
 
 /** Common VGC / Pokemon Champions meta defensive spread targets. */
@@ -34,6 +36,7 @@ export const CALC_TARGETS: CalcTarget[] = [
     item: "Sitrus Berry",
     nature: "Careful",
     evs: { hp: 252, atk: 0, def: 4, spa: 0, spd: 252, spe: 0 },
+    moves: ["Knock Off", "Flare Blitz", "U-turn", "Fake Out"],
   },
   {
     name: "Flutter Mane",
@@ -42,6 +45,7 @@ export const CALC_TARGETS: CalcTarget[] = [
     item: "Booster Energy",
     nature: "Timid",
     evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
+    moves: ["Moonblast", "Shadow Ball", "Dazzling Gleam", "Icy Wind"],
   },
   {
     name: "Urshifu (Single Strike)",
@@ -50,6 +54,7 @@ export const CALC_TARGETS: CalcTarget[] = [
     item: "Choice Band",
     nature: "Jolly",
     evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+    moves: ["Wicked Blow", "Close Combat", "U-turn", "Sucker Punch"],
   },
   {
     name: "Urshifu (Rapid Strike)",
@@ -58,6 +63,7 @@ export const CALC_TARGETS: CalcTarget[] = [
     item: "Choice Band",
     nature: "Jolly",
     evs: { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 },
+    moves: ["Surging Strikes", "Close Combat", "U-turn", "Aqua Jet"],
   },
   {
     name: "Iron Hands",
@@ -66,6 +72,7 @@ export const CALC_TARGETS: CalcTarget[] = [
     item: "Assault Vest",
     nature: "Brave",
     evs: { hp: 252, atk: 252, def: 0, spa: 0, spd: 4, spe: 0 },
+    moves: ["Drain Punch", "Wild Charge", "Fake Out", "Heavy Slam"],
   },
   {
     name: "Calyrex-Shadow",
@@ -74,6 +81,7 @@ export const CALC_TARGETS: CalcTarget[] = [
     item: "Focus Sash",
     nature: "Timid",
     evs: { hp: 0, atk: 0, def: 4, spa: 252, spd: 0, spe: 252 },
+    moves: ["Astral Barrage", "Psyshock", "Nasty Plot", "Protect"],
   },
   {
     name: "Calyrex-Ice",
