@@ -360,7 +360,9 @@ function probeSet(species: Species): PokemonSet {
   return {
     name: species.name,
     species: species.name,
-    item: "",
+    // Use a required item when the form enforces one (e.g. Ogerpon-Wellspring
+    // needs Wellspring Mask). Probing with "" causes a false species-ban.
+    item: species.requiredItems?.[0] ?? species.requiredItem ?? "",
     ability: species.abilities[0] ?? species.abilities.H ?? "No Ability",
     moves: ["Protect"],
     nature: "Hardy",
