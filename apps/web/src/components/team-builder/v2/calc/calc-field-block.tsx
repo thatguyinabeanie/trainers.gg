@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 import {
   type AttackerSideState,
-  type DefenderSideState,
+  type BaseSideState,
 } from "../../use-calc-state";
 
 // =============================================================================
@@ -16,8 +16,8 @@ interface CalcFieldBlockProps {
   setGameType: (v: "Doubles" | "Singles") => void;
   attackerSide: AttackerSideState;
   setAttackerSide: (patch: Partial<AttackerSideState>) => void;
-  defenderSide: DefenderSideState;
-  setDefenderSide: (patch: Partial<DefenderSideState>) => void;
+  defenderSide: BaseSideState;
+  setDefenderSide: (patch: Partial<BaseSideState>) => void;
   weather: string;
   setWeather: (v: string) => void;
   terrain: string;
