@@ -96,33 +96,33 @@ function buildSlots(
   return slots;
 }
 
-// =============================================================================
-// Optimistic state — actions and placeholder construction
-// =============================================================================
-
 type OptimisticAction =
   | {
       kind: "update";
       pokemonId: number;
-      fields: Partial<Tables<"pokemon">>;
+      fields: Partial<TablesUpdate<"pokemon">>;
     }
-  | { kind: "add"; position: number; species: string }
+  | {
+      kind: "add";
+      position: number;
+      species: string;
+      // Generated in the event handler so the reducer stays pure — React may
+      // invoke the reducer multiple times during reconciliation, and the row
+      // must keep the same React key across every call.
+      tempId: number;
+    }
   | { kind: "remove"; pokemonId: number };
 
 /**
- * Counter for placeholder ids on optimistic adds. Negative so they can never
- * collide with real DB ids; decremented per call so multiple concurrent adds
- * still get unique keys for React reconciliation.
+ * Build a placeholder team_pokemon entry for an optimistic add. Defaults
+ * mirror addPokemonToTeamAction (ability/move1 empty, Serious nature) so
+ * the optimistic row matches what the DB actually inserts.
  */
-let nextOptimisticId = -1;
-
-/**
- * Build a placeholder team_pokemon entry for an optimistic add. Mirrors the
- * server-side defaults in addPokemonToTeamAction (ability/move1 empty, neutral
- * Serious nature) so the optimistic row matches what the DB actually inserts.
- */
-function buildOptimisticTeamPokemon(species: string, position: number) {
-  const tempId = nextOptimisticId--;
+function buildOptimisticTeamPokemon(
+  species: string,
+  position: number,
+  tempId: number
+): TeamWithPokemon["team_pokemon"][number] {
   const pokemon: Tables<"pokemon"> = {
     id: tempId,
     species,
@@ -228,34 +228,54 @@ export function TeamWorkspaceV2({
    *  pointer's offset within the lane during drag. */
   const worklaneRef = useRef<HTMLDivElement | null>(null);
 
+  /**
+   * Counter for placeholder ids on optimistic adds. Negative so they can
+   * never collide with real DB ids (bigint identity columns are always
+   * positive); decremented per call so multiple concurrent adds still get
+   * unique React keys. Lives on a ref so it's instance-scoped — no module-
+   * level shared state across tabs, tests, or HMR reloads.
+   */
+  const nextOptimisticIdRef = useRef(-1);
+
   // ---------------------------------------------------------------------------
   // Optimistic team-pokemon state
   //
-  // applyOptimistic updates the UI on the next paint; the server save runs
-  // in the background via startTransition. router.refresh() is what drives the
-  // transition to completion — at that point useOptimistic reverts to the
-  // (now updated) prop and the optimistic patch is dropped cleanly. On
-  // failure: toast + refresh to roll back to canonical server state.
+  // The reducer must stay pure — React may call it multiple times during
+  // reconciliation. Side effects (e.g., generating temp ids for `add`) live
+  // in the event handler and are passed in via the action payload.
+  //
+  // router.refresh() ends every transition — on success it lands the canonical
+  // server state into the prop so useOptimistic reverts cleanly; on failure
+  // it rolls the UI back to last known good. Both paths must call it.
   // ---------------------------------------------------------------------------
 
   const [optimisticTeamPokemon, applyOptimistic] = useOptimistic(
     team.team_pokemon,
     (current, action: OptimisticAction) => {
-      if (action.kind === "update") {
-        return current.map((tp) =>
-          tp.pokemon_id === action.pokemonId && tp.pokemon
-            ? { ...tp, pokemon: { ...tp.pokemon, ...action.fields } }
-            : tp
-        );
+      switch (action.kind) {
+        case "update":
+          return current.map((tp) =>
+            tp.pokemon_id === action.pokemonId && tp.pokemon
+              ? { ...tp, pokemon: { ...tp.pokemon, ...action.fields } }
+              : tp
+          );
+        case "remove":
+          return current.filter((tp) => tp.pokemon?.id !== action.pokemonId);
+        case "add": {
+          // Replace any existing entry at the same position with the placeholder.
+          const filtered = current.filter(
+            (tp) => tp.team_position !== action.position
+          );
+          return [
+            ...filtered,
+            buildOptimisticTeamPokemon(
+              action.species,
+              action.position,
+              action.tempId
+            ),
+          ];
+        }
       }
-      if (action.kind === "remove") {
-        return current.filter((tp) => tp.pokemon?.id !== action.pokemonId);
-      }
-      // add — replace any existing entry at the same position with a placeholder
-      const filtered = current.filter(
-        (tp) => tp.team_position !== action.position
-      );
-      return [...filtered, buildOptimisticTeamPokemon(action.species, action.position)];
     }
   );
 
@@ -282,9 +302,6 @@ export function TeamWorkspaceV2({
       if (!result.success) {
         toast.error(result.error ?? "Failed to save changes.");
       }
-      // router.refresh runs in both branches — on success it lands the canonical
-      // server state into the prop so useOptimistic reverts cleanly; on failure
-      // it rolls the UI back to last known good.
       router.refresh();
     });
   }
@@ -303,11 +320,12 @@ export function TeamWorkspaceV2({
       move1: "",
       nature: "Serious",
     };
+    // Generate the temp id here, not in the reducer — the reducer must be
+    // pure across React's reconciliation re-invocations.
+    const tempId = nextOptimisticIdRef.current--;
 
     startTransition(async () => {
-      // Optimistic insert lands on the next paint — the user sees the new
-      // pokemon in the slot before the network round-trip finishes.
-      applyOptimistic({ kind: "add", position, species: speciesId });
+      applyOptimistic({ kind: "add", position, species: speciesId, tempId });
       const result = await addPokemonToTeamAction(team.id, pokemon, position);
       if (!result.success) {
         toast.error(result.error ?? "Failed to add Pokémon.");
@@ -333,8 +351,6 @@ export function TeamWorkspaceV2({
     const pokemonId = p.id;
 
     startTransition(async () => {
-      // Optimistic remove — the slot empties on the next paint, the server
-      // delete and revalidation run in the background.
       applyOptimistic({ kind: "remove", pokemonId });
       const result = await removePokemonFromTeamAction(team.id, pokemonId);
       if (!result.success) {
