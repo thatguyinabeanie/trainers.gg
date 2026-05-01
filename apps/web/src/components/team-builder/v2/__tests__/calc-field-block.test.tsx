@@ -8,9 +8,10 @@
  *   - Terrain chip buttons render and toggle correctly
  *   - Singles/Doubles game type toggle
  *   - Gravity toggle button (aria-pressed)
- *   - Tailwind (TW), Reflect, Light Screen toggles for each side
- *   - Helping Hand toggle (Yours side only)
- *   - Stealth Rock toggle (Theirs side only)
+ *   - Fairy Aura toggle button (aria-pressed)
+ *   - Tailwind, Reflect, Light Screen, Aurora Veil toggles for each side (symmetric)
+ *   - Helping Hand toggle (both sides)
+ *   - Stealth Rock toggle (both sides)
  *   - Foes alive stepper (Doubles mode only)
  *   - Ally alive toggle (Doubles mode only)
  *   - Fainted stepper for each side
@@ -21,10 +22,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
 
-import {
-  type AttackerSideState,
-  type DefenderSideState,
-} from "../../use-calc-state";
+import { type BaseSideState } from "../../use-calc-state";
 
 // =============================================================================
 // Mocks
@@ -44,9 +42,7 @@ import { CalcFieldBlock } from "../calc/calc-field-block";
 // Fixtures
 // =============================================================================
 
-function makeAttackerSide(
-  overrides: Partial<AttackerSideState> = {}
-): AttackerSideState {
+function makeSideState(overrides: Partial<BaseSideState> = {}): BaseSideState {
   return {
     reflect: false,
     lightScreen: false,
@@ -54,20 +50,7 @@ function makeAttackerSide(
     tailwind: false,
     helpingHand: false,
     friendGuard: false,
-    ...overrides,
-  };
-}
-
-function makeDefenderSide(
-  overrides: Partial<DefenderSideState> = {}
-): DefenderSideState {
-  return {
-    reflect: false,
-    lightScreen: false,
-    auroraVeil: false,
-    tailwind: false,
-    helpingHand: false,
-    friendGuard: false,
+    protect: false,
     stealthRock: false,
     spikes: 0,
     saltCure: false,
@@ -78,9 +61,9 @@ function makeDefenderSide(
 interface RenderProps {
   gameType?: "Doubles" | "Singles";
   setGameType?: jest.Mock;
-  attackerSide?: AttackerSideState;
+  attackerSide?: BaseSideState;
   setAttackerSide?: jest.Mock;
-  defenderSide?: DefenderSideState;
+  defenderSide?: BaseSideState;
   setDefenderSide?: jest.Mock;
   weather?: string;
   setWeather?: jest.Mock;
@@ -88,6 +71,8 @@ interface RenderProps {
   setTerrain?: jest.Mock;
   gravity?: boolean;
   setGravity?: jest.Mock;
+  fairyAura?: boolean;
+  setFairyAura?: jest.Mock;
   foesAlive?: 1 | 2;
   allyAlive?: boolean;
   setFoesAlive?: jest.Mock;
@@ -108,6 +93,7 @@ function renderBlock(props: RenderProps = {}) {
   const setWeather = props.setWeather ?? jest.fn();
   const setTerrain = props.setTerrain ?? jest.fn();
   const setGravity = props.setGravity ?? jest.fn();
+  const setFairyAura = props.setFairyAura ?? jest.fn();
   const setFoesAlive = props.setFoesAlive ?? jest.fn();
   const setAllyAlive = props.setAllyAlive ?? jest.fn();
   const setFaintedYours = props.setFaintedYours ?? jest.fn();
@@ -117,9 +103,9 @@ function renderBlock(props: RenderProps = {}) {
     <CalcFieldBlock
       gameType={props.gameType ?? "Doubles"}
       setGameType={setGameType}
-      attackerSide={props.attackerSide ?? makeAttackerSide()}
+      attackerSide={props.attackerSide ?? makeSideState()}
       setAttackerSide={setAttackerSide}
-      defenderSide={props.defenderSide ?? makeDefenderSide()}
+      defenderSide={props.defenderSide ?? makeSideState()}
       setDefenderSide={setDefenderSide}
       weather={props.weather ?? ""}
       setWeather={setWeather}
@@ -127,6 +113,8 @@ function renderBlock(props: RenderProps = {}) {
       setTerrain={setTerrain}
       gravity={props.gravity ?? false}
       setGravity={setGravity}
+      fairyAura={props.fairyAura ?? false}
+      setFairyAura={setFairyAura}
       foesAlive={props.foesAlive ?? 2}
       allyAlive={props.allyAlive ?? true}
       setFoesAlive={setFoesAlive}
@@ -149,6 +137,7 @@ function renderBlock(props: RenderProps = {}) {
     setWeather,
     setTerrain,
     setGravity,
+    setFairyAura,
     setFoesAlive,
     setAllyAlive,
     setFaintedYours,
@@ -211,24 +200,24 @@ describe("CalcFieldBlock — game type toggle", () => {
     expect(setGameType).toHaveBeenCalledWith("Doubles");
   });
 
-  it("shows FOES stepper in Doubles mode", () => {
+  it("shows Foes stepper in Doubles mode", () => {
     renderBlock({ gameType: "Doubles" });
-    expect(screen.getByText("FOES")).toBeInTheDocument();
+    expect(screen.getByText("Foes")).toBeInTheDocument();
   });
 
-  it("hides FOES stepper in Singles mode", () => {
+  it("hides Foes stepper in Singles mode", () => {
     renderBlock({ gameType: "Singles" });
-    expect(screen.queryByText("FOES")).not.toBeInTheDocument();
+    expect(screen.queryByText("Foes")).not.toBeInTheDocument();
   });
 
-  it("shows ALLY toggle in Doubles mode", () => {
+  it("shows Ally toggle in Doubles mode", () => {
     renderBlock({ gameType: "Doubles", allyAlive: true });
-    expect(screen.getByText("ALLY")).toBeInTheDocument();
+    expect(screen.getByText("Ally")).toBeInTheDocument();
   });
 
-  it("hides ALLY toggle in Singles mode", () => {
+  it("hides Ally toggle in Singles mode", () => {
     renderBlock({ gameType: "Singles" });
-    expect(screen.queryByText("ALLY")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ally")).not.toBeInTheDocument();
   });
 });
 
@@ -322,100 +311,176 @@ describe("CalcFieldBlock — terrain chips", () => {
 // =============================================================================
 
 describe("CalcFieldBlock — gravity toggle", () => {
-  it("renders the Gravity toggle button", () => {
+  it("renders the Gravity toggle button with full label", () => {
     renderBlock();
-    expect(screen.getByRole("button", { name: /Grav/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^gravity$/i })).toBeInTheDocument();
   });
 
   it("gravity button is NOT pressed by default", () => {
     renderBlock({ gravity: false });
-    const btn = screen.getByRole("button", { name: /Grav/i });
+    const btn = screen.getByRole("button", { name: /^gravity$/i });
     expect(btn).toHaveAttribute("aria-pressed", "false");
   });
 
   it("gravity button is pressed when gravity=true", () => {
     renderBlock({ gravity: true });
-    const btn = screen.getByRole("button", { name: /Grav/i });
+    const btn = screen.getByRole("button", { name: /^gravity$/i });
     expect(btn).toHaveAttribute("aria-pressed", "true");
   });
 
   it("calls setGravity(!gravity) when Gravity button is clicked", () => {
     const { setGravity } = renderBlock({ gravity: false });
-    fireEvent.click(screen.getByRole("button", { name: /Grav/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^gravity$/i }));
     expect(setGravity).toHaveBeenCalledWith(true);
   });
 });
 
 // =============================================================================
-// Tests — side card toggles
+// Tests — fairy aura toggle
+// =============================================================================
+
+describe("CalcFieldBlock — fairy aura toggle", () => {
+  it("renders Fairy Aura toggle inactive by default", () => {
+    renderBlock();
+    expect(screen.getByRole("button", { name: /fairy aura/i })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+  });
+
+  it("renders Fairy Aura toggle active when fairyAura=true", () => {
+    renderBlock({ fairyAura: true });
+    expect(screen.getByRole("button", { name: /fairy aura/i })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+  });
+
+  it("calls setFairyAura(true) when Fairy Aura clicked while inactive", () => {
+    const setFairyAura = jest.fn();
+    renderBlock({ fairyAura: false, setFairyAura });
+    fireEvent.click(screen.getByRole("button", { name: /fairy aura/i }));
+    expect(setFairyAura).toHaveBeenCalledWith(true);
+  });
+
+  it("calls setFairyAura(false) when Fairy Aura clicked while active", () => {
+    const setFairyAura = jest.fn();
+    renderBlock({ fairyAura: true, setFairyAura });
+    fireEvent.click(screen.getByRole("button", { name: /fairy aura/i }));
+    expect(setFairyAura).toHaveBeenCalledWith(false);
+  });
+});
+
+// =============================================================================
+// Tests — side card toggles (symmetric — both sides have all fields)
 // =============================================================================
 
 describe("CalcFieldBlock — Yours side toggles", () => {
-  it("TW button calls setAttackerSide with tailwind toggled", () => {
-    const { setAttackerSide } = renderBlock({
-      attackerSide: makeAttackerSide({ tailwind: false }),
+  it("calls setAttackerSide with tailwind patch when Tailwind clicked on Yours side", () => {
+    const setAttackerSide = jest.fn();
+    renderBlock({
+      attackerSide: makeSideState({ tailwind: false }),
+      setAttackerSide,
     });
-    // "TW" appears in both side cards; click the first (Yours)
-    const twBtns = screen.getAllByRole("button", { name: "TW" });
-    fireEvent.click(twBtns[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^tailwind$/i })[0]);
     expect(setAttackerSide).toHaveBeenCalledWith({ tailwind: true });
   });
 
-  it("Refl button calls setAttackerSide with reflect toggled", () => {
-    const { setAttackerSide } = renderBlock({
-      attackerSide: makeAttackerSide({ reflect: false }),
+  it("calls setAttackerSide with reflect patch when Reflect clicked on Yours side", () => {
+    const setAttackerSide = jest.fn();
+    renderBlock({
+      attackerSide: makeSideState({ reflect: false }),
+      setAttackerSide,
     });
-    const reflBtns = screen.getAllByRole("button", { name: "Refl" });
-    fireEvent.click(reflBtns[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^reflect$/i })[0]);
     expect(setAttackerSide).toHaveBeenCalledWith({ reflect: true });
   });
 
-  it("L.Scr button calls setAttackerSide with lightScreen toggled", () => {
-    const { setAttackerSide } = renderBlock({
-      attackerSide: makeAttackerSide({ lightScreen: false }),
+  it("calls setAttackerSide with lightScreen patch when Light Screen clicked on Yours side", () => {
+    const setAttackerSide = jest.fn();
+    renderBlock({
+      attackerSide: makeSideState({ lightScreen: false }),
+      setAttackerSide,
     });
-    const lscrBtns = screen.getAllByRole("button", { name: "L.Scr" });
-    fireEvent.click(lscrBtns[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^light screen$/i })[0]);
     expect(setAttackerSide).toHaveBeenCalledWith({ lightScreen: true });
   });
 
-  it("H.Hand button calls setAttackerSide with helpingHand toggled", () => {
-    const { setAttackerSide } = renderBlock({
-      attackerSide: makeAttackerSide({ helpingHand: false }),
+  it("calls setAttackerSide with helpingHand patch when Helping Hand clicked on Yours side", () => {
+    const setAttackerSide = jest.fn();
+    renderBlock({
+      attackerSide: makeSideState({ helpingHand: false }),
+      setAttackerSide,
     });
-    fireEvent.click(screen.getByRole("button", { name: "H.Hand" }));
+    fireEvent.click(screen.getAllByRole("button", { name: /^helping hand$/i })[0]);
     expect(setAttackerSide).toHaveBeenCalledWith({ helpingHand: true });
-  });
-
-  it("H.Hand button is only visible in Yours side (not in Theirs)", () => {
-    renderBlock();
-    // H.Hand appears only once (Yours side only)
-    expect(screen.getAllByRole("button", { name: "H.Hand" })).toHaveLength(1);
   });
 });
 
 describe("CalcFieldBlock — Theirs side toggles", () => {
-  it("⛰ Rocks button calls setDefenderSide with stealthRock toggled", () => {
-    const { setDefenderSide } = renderBlock({
-      defenderSide: makeDefenderSide({ stealthRock: false }),
+  it("calls setDefenderSide with tailwind patch when Tailwind clicked on Theirs side", () => {
+    const setDefenderSide = jest.fn();
+    renderBlock({
+      defenderSide: makeSideState({ tailwind: false }),
+      setDefenderSide,
     });
-    fireEvent.click(screen.getByRole("button", { name: /Rocks/i }));
+    // "Tailwind" appears in both side cards; second button is Theirs
+    fireEvent.click(screen.getAllByRole("button", { name: /^tailwind$/i })[1]);
+    expect(setDefenderSide).toHaveBeenCalledWith({ tailwind: true });
+  });
+
+  it("calls setDefenderSide with stealthRock patch when Stealth Rock clicked on Theirs side", () => {
+    const setDefenderSide = jest.fn();
+    renderBlock({
+      defenderSide: makeSideState({ stealthRock: false }),
+      setDefenderSide,
+    });
+    // "Stealth Rock" appears in both side cards; second button is Theirs
+    fireEvent.click(screen.getAllByRole("button", { name: /^stealth rock$/i })[1]);
     expect(setDefenderSide).toHaveBeenCalledWith({ stealthRock: true });
   });
+});
 
-  it("Rocks button is only visible in Theirs side (not in Yours)", () => {
+// =============================================================================
+// Tests — symmetric side card fields (both sides have same buttons)
+// =============================================================================
+
+describe("CalcFieldBlock — symmetric side card fields", () => {
+  it("renders Tailwind on both sides", () => {
     renderBlock();
-    expect(screen.getAllByRole("button", { name: /Rocks/i })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^tailwind$/i })).toHaveLength(2);
   });
 
-  it("TW button for Theirs calls setDefenderSide with tailwind toggled", () => {
-    const { setDefenderSide } = renderBlock({
-      defenderSide: makeDefenderSide({ tailwind: false }),
-    });
-    // "TW" is in both sides; second button is Theirs
-    const twBtns = screen.getAllByRole("button", { name: "TW" });
-    fireEvent.click(twBtns[1]);
-    expect(setDefenderSide).toHaveBeenCalledWith({ tailwind: true });
+  it("renders Reflect on both sides", () => {
+    renderBlock();
+    expect(screen.getAllByRole("button", { name: /^reflect$/i })).toHaveLength(2);
+  });
+
+  it("renders Light Screen on both sides", () => {
+    renderBlock();
+    expect(screen.getAllByRole("button", { name: /^light screen$/i })).toHaveLength(2);
+  });
+
+  it("renders Aurora Veil on both sides", () => {
+    renderBlock({ attackerSide: makeSideState({ auroraVeil: true }) });
+    const buttons = screen.getAllByRole("button", { name: /aurora veil/i });
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]).toHaveAttribute("aria-pressed", "true"); // Yours active
+    expect(buttons[1]).toHaveAttribute("aria-pressed", "false"); // Theirs inactive
+  });
+
+  it("renders Stealth Rock on both sides (was previously Theirs only)", () => {
+    renderBlock({ attackerSide: makeSideState({ stealthRock: true }) });
+    const srButtons = screen.getAllByRole("button", { name: /^stealth rock$/i });
+    expect(srButtons).toHaveLength(2);
+    expect(srButtons[0]).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("renders Helping Hand on both sides (was previously Yours only)", () => {
+    renderBlock({ defenderSide: makeSideState({ helpingHand: true }) });
+    const hhButtons = screen.getAllByRole("button", { name: /^helping hand$/i });
+    expect(hhButtons).toHaveLength(2);
+    expect(hhButtons[1]).toHaveAttribute("aria-pressed", "true");
   });
 });
 
@@ -435,7 +500,7 @@ describe("CalcFieldBlock — foes alive stepper", () => {
     const foesOneBtns = allButtons.filter(
       (btn) => btn.textContent === "1" && btn.className.includes("font-mono")
     );
-    // Click the first "1" button near the FOES label
+    // Click the first "1" button near the Foes label
     if (foesOneBtns.length > 0) {
       fireEvent.click(foesOneBtns[0]);
       expect(setFoesAlive).toHaveBeenCalledWith(1);
@@ -453,21 +518,21 @@ describe("CalcFieldBlock — foes alive stepper", () => {
 // =============================================================================
 
 describe("CalcFieldBlock — ally alive toggle", () => {
-  it("ally toggle shows 'alive' text when allyAlive=true", () => {
+  it("ally toggle shows 'Alive' text when allyAlive=true", () => {
     renderBlock({ gameType: "Doubles", allyAlive: true });
-    const allyBtn = screen.getByRole("button", { name: "alive" });
+    const allyBtn = screen.getByRole("button", { name: "Alive" });
     expect(allyBtn).toBeInTheDocument();
   });
 
-  it("ally toggle shows 'fainted' text when allyAlive=false", () => {
+  it("ally toggle shows 'Fainted' text when allyAlive=false", () => {
     renderBlock({ gameType: "Doubles", allyAlive: false });
-    const allyBtn = screen.getByRole("button", { name: "fainted" });
+    const allyBtn = screen.getByRole("button", { name: "Fainted" });
     expect(allyBtn).toBeInTheDocument();
   });
 
-  it("clicking ally alive/fainted toggle calls setAllyAlive", () => {
+  it("clicking ally Alive toggle calls setAllyAlive(false)", () => {
     const { setAllyAlive } = renderBlock({ gameType: "Doubles", allyAlive: true });
-    fireEvent.click(screen.getByRole("button", { name: "alive" }));
+    fireEvent.click(screen.getByRole("button", { name: "Alive" }));
     expect(setAllyAlive).toHaveBeenCalledWith(false);
   });
 });
@@ -477,22 +542,22 @@ describe("CalcFieldBlock — ally alive toggle", () => {
 // =============================================================================
 
 describe("CalcFieldBlock — fainted stepper", () => {
-  it("renders FAINTED label in side cards", () => {
+  it("renders Fainted label in side cards", () => {
     renderBlock();
-    const faintedLabels = screen.getAllByText("FAINTED");
-    // One per side card
-    expect(faintedLabels.length).toBe(2);
+    const faintedLabels = screen.getAllByText("Fainted");
+    // One per side card (plus possibly ally toggle if allyAlive=false)
+    expect(faintedLabels.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("clicking fainted '3' in Yours calls setFaintedYours(3)", () => {
+  it("clicking fainted '5' in Yours calls setFaintedYours(5)", () => {
     const { setFaintedYours } = renderBlock({ faintedYours: 0 });
-    // Fainted stepper options: 0,1,2,3,4,5 — buttons with text "3"
-    const threes = screen.getAllByRole("button").filter(
-      (btn) => btn.textContent === "3"
+    // Fainted stepper options: 0,1,2,3,4,5. "5" only appears in Fainted
+    // steppers (Spikes only goes 0-3), so the first "5" is Yours fainted.
+    const fives = screen.getAllByRole("button").filter(
+      (btn) => btn.textContent === "5"
     );
-    // First "3" button is in Yours side fainted stepper
-    fireEvent.click(threes[0]);
-    expect(setFaintedYours).toHaveBeenCalledWith(3);
+    fireEvent.click(fives[0]);
+    expect(setFaintedYours).toHaveBeenCalledWith(5);
   });
 });
 
@@ -505,10 +570,10 @@ describe("CalcFieldBlock — active state aria-pressed", () => {
     [false, "false"],
     [true, "true"],
   ] as const)(
-    "tailwind=%s → TW button aria-pressed=%s",
+    "tailwind=%s → Tailwind button aria-pressed=%s on Yours side",
     (tailwind, expected) => {
-      renderBlock({ attackerSide: makeAttackerSide({ tailwind }) });
-      const twBtns = screen.getAllByRole("button", { name: "TW" });
+      renderBlock({ attackerSide: makeSideState({ tailwind }) });
+      const twBtns = screen.getAllByRole("button", { name: /^tailwind$/i });
       expect(twBtns[0]).toHaveAttribute("aria-pressed", expected);
     }
   );
@@ -517,12 +582,11 @@ describe("CalcFieldBlock — active state aria-pressed", () => {
     [false, "false"],
     [true, "true"],
   ] as const)(
-    "stealthRock=%s → Rocks button aria-pressed=%s",
+    "stealthRock=%s → Stealth Rock button aria-pressed=%s on Theirs side",
     (stealthRock, expected) => {
-      renderBlock({ defenderSide: makeDefenderSide({ stealthRock }) });
-      expect(
-        screen.getByRole("button", { name: /Rocks/i })
-      ).toHaveAttribute("aria-pressed", expected);
+      renderBlock({ defenderSide: makeSideState({ stealthRock }) });
+      const srBtns = screen.getAllByRole("button", { name: /^stealth rock$/i });
+      expect(srBtns[1]).toHaveAttribute("aria-pressed", expected);
     }
   );
 });
