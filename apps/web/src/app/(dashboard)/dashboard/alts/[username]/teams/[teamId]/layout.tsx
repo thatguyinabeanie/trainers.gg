@@ -68,5 +68,5 @@ export default async function TeamWorkspaceLayout({
     notFound();
   }
 
-  return <div className="flex h-full min-h-dvh flex-col">{children}</div>;
+  return <div className="flex h-full flex-col">{children}</div>;
 }
