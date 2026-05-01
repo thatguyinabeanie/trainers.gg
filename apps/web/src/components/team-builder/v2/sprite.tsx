@@ -46,7 +46,7 @@ const TYPE_TINT: Partial<Record<PokemonType, string>> = {
  * matching the builder_v2 design's identity lane aesthetic.
  *
  * Default size is 128px (per the PokeRow redesign spec).
- * Tint mix is 40% for a softer background — was 25% before.
+ * Tint mix is 40% for a softer background.
  */
 export function Sprite({ species, size = 128, types }: SpriteProps) {
   const sprite = getPokemonSprite(species, { shiny: false });

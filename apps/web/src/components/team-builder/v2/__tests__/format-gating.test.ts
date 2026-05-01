@@ -3,9 +3,7 @@ import { getFormatById, type GameFormat } from "@trainers/pokemon";
 import {
   formatSupportsDynamax,
   formatSupportsIvs,
-  formatSupportsMega,
   formatSupportsTera,
-  formatSupportsZMoves,
 } from "../format-gating";
 
 // =============================================================================
@@ -119,62 +117,3 @@ describe("formatSupportsDynamax", () => {
   });
 });
 
-// =============================================================================
-// formatSupportsMega
-// =============================================================================
-
-describe("formatSupportsMega", () => {
-  it("returns true for gen 6 (X & Y — Mega introduced)", () => {
-    expect(formatSupportsMega(gen6Format)).toBe(true);
-  });
-
-  it("returns true for gen 7 (Sun & Moon — Mega still legal)", () => {
-    expect(formatSupportsMega(gen7Format)).toBe(true);
-  });
-
-  it("returns false for gen 8 (Mega removed in Sword & Shield)", () => {
-    expect(formatSupportsMega(gen8Format)).toBe(false);
-  });
-
-  it("returns false for gen 9", () => {
-    expect(formatSupportsMega(gen9Format)).toBe(false);
-  });
-
-  it("returns false for gen 5 (pre-Mega)", () => {
-    expect(formatSupportsMega(makeFormat(5))).toBe(false);
-  });
-
-  it("returns false for undefined", () => {
-    expect(formatSupportsMega(undefined)).toBe(false);
-  });
-});
-
-// =============================================================================
-// formatSupportsZMoves
-// =============================================================================
-
-describe("formatSupportsZMoves", () => {
-  it("returns true for gen 7 (Sun & Moon — Z-Moves introduced)", () => {
-    expect(formatSupportsZMoves(gen7Format)).toBe(true);
-  });
-
-  it("returns false for gen 6 (no Z-Moves in XY era)", () => {
-    expect(formatSupportsZMoves(gen6Format)).toBe(false);
-  });
-
-  it("returns false for gen 8 (Z-Moves removed in SwSh)", () => {
-    expect(formatSupportsZMoves(gen8Format)).toBe(false);
-  });
-
-  it("returns false for gen 9", () => {
-    expect(formatSupportsZMoves(gen9Format)).toBe(false);
-  });
-
-  it("returns false for gen 5 (pre-Z-Moves)", () => {
-    expect(formatSupportsZMoves(makeFormat(5))).toBe(false);
-  });
-
-  it("returns false for undefined", () => {
-    expect(formatSupportsZMoves(undefined)).toBe(false);
-  });
-});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
 
@@ -12,6 +12,8 @@ import {
 } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
+
+import { PickerShell } from "./picker-shell";
 
 // =============================================================================
 // Types
@@ -46,12 +48,7 @@ export function ItemPicker({
   onClose,
 }: ItemPickerProps) {
   const [search, setSearch] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   const legal = format ? getLegalItems(format.id) : undefined;
   const formatItems = legal
@@ -72,32 +69,16 @@ export function ItemPicker({
   });
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-[620px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b px-3 py-2">
-        <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
-          Item
-        </span>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="text-muted-foreground hover:text-foreground flex size-4 items-center justify-center rounded text-sm"
-        >
-          ×
-        </button>
-      </div>
-
-      {/* Search */}
-      <input
-        ref={inputRef}
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search items…"
-        className="bg-muted/40 border-b px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus:bg-card"
-      />
-
+    <PickerShell
+      title="Item"
+      onClose={onClose}
+      width="620px"
+      search={{
+        value: search,
+        onChange: setSearch,
+        placeholder: "Search items…",
+      }}
+    >
       {/* Item list — virtualized */}
       <div ref={scrollRef} className="max-h-72 overflow-y-auto p-1">
         {filteredItems.length === 0 ? (
@@ -164,6 +145,6 @@ export function ItemPicker({
           </div>
         )}
       </div>
-    </div>
+    </PickerShell>
   );
 }

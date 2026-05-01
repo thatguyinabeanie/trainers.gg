@@ -342,7 +342,7 @@ function SpeciesRowsHeader({ sort, onSort }: SpeciesRowsHeaderProps) {
 // =============================================================================
 
 /**
- * Dense-table combobox-style species picker, ported from v1.
+ * Dense-table combobox-style species picker.
  *
  * Each row shows sprite, name + abilities, type icons, the six base stats,
  * and BST. Clicking a row calls onPick with the species name.

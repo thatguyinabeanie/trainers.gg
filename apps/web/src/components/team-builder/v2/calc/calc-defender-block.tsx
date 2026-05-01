@@ -306,7 +306,7 @@ export function CalcDefenderBlock({
       <div className="cd-defrow">
         <label className="cd-defrow-l">Def</label>
         <div className="cd-stages">
-          {([-2, -1, 0, 1, 2] as const).map((s) => (
+          {([-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6] as const).map((s) => (
             <button
               key={s}
               type="button"
@@ -324,7 +324,7 @@ export function CalcDefenderBlock({
       <div className="cd-defrow">
         <label className="cd-defrow-l">SpD</label>
         <div className="cd-stages">
-          {([-2, -1, 0, 1, 2] as const).map((s) => (
+          {([-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6] as const).map((s) => (
             <button
               key={s}
               type="button"

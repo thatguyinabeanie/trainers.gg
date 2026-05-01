@@ -1,6 +1,17 @@
 import { getMoveType, getTypeEffectiveness, type PokemonType } from "@trainers/pokemon";
 
 // =============================================================================
+// Warn-once for unknown moves
+// =============================================================================
+
+const warnedMoves = new Set<string>();
+function warnUnknownMove(move: string): void {
+  if (warnedMoves.has(move)) return;
+  warnedMoves.add(move);
+  console.warn(`[effectiveMoveType] Unknown move: "${move}"`);
+}
+
+// =============================================================================
 // Sound moves (for Liquid Voice)
 // =============================================================================
 
@@ -92,7 +103,12 @@ export function effectiveMoveType(
   attackerAbility: string | null | undefined
 ): PokemonType {
   const baseType = getMoveType(move) as PokemonType | null;
-  if (!baseType) return "Normal";
+  if (!baseType) {
+    if (typeof move === "string" && move.length > 0) {
+      warnUnknownMove(move);
+    }
+    return "Normal";
+  }
 
   if (!attackerAbility) return baseType;
 

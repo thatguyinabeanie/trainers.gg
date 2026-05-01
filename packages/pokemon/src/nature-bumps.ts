@@ -10,6 +10,7 @@
  * positions where (statWithNature − statNeutral) increases.
  */
 
+import { type StatKey } from "./stat-keys";
 import {
   calculateHP,
   calculateStat,
@@ -18,13 +19,7 @@ import {
 } from "./stats-calculator";
 
 export interface FindStatBreakpointsArgs {
-  statKey:
-    | "hp"
-    | "attack"
-    | "defense"
-    | "specialAttack"
-    | "specialDefense"
-    | "speed";
+  statKey: StatKey;
   base: number;
   /** Ignored in Champions (Champions formula has IVs baked in). VGC default 31. */
   iv: number;

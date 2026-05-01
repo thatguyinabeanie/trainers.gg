@@ -186,16 +186,6 @@ export function validatePokemon(
             message: `Move "${moveId}" does not exist`,
             severity: "error",
           });
-        } else {
-          // Check if Pokemon can learn this move
-          // TODO: Learnset validation requires async operations
-          // const learnset = await currentGen.learnsets.get(species.id);
-          // if (learnset && !learnset.can(move.id)) {
-          //   errors.push({
-          //     field: `move${index + 1}`,
-          //     message: `${pokemonSet.species} cannot learn "${moveId}"`,
-          //   });
-          // }
         }
       }
     }
@@ -362,11 +352,8 @@ export function getLearnableMoves(speciesName: string): string[] {
     const species = currentGen.species.get(speciesName);
     if (!species?.exists) return [];
 
-    // TODO: Learnset validation requires async operations
-    // const learnset = await currentGen.learnsets.get(species.id);
-    // if (!learnset) return [];
-
-    // For now, return all moves (no filtering)
+    // See getLegalMoves for format-aware learnset queries.
+    // Returns all moves (no learnset filtering — async learnset API not used here)
     const moves: string[] = [];
     for (const move of currentGen.moves) {
       moves.push(move.name);

@@ -12,12 +12,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+import { STAT_LABELS } from "../../stat-types";
 import { type ValidationError } from "../../validation-hooks";
 import { Sprite } from "../sprite";
 import { TypePill } from "../type-pill";
 import { TypeDot } from "../type-dot";
 import {
-  formatSupportsDynamax,
   formatSupportsLevel,
   formatSupportsTera,
 } from "../format-gating";
@@ -42,6 +42,8 @@ interface IdentityLaneProps {
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   /** Validation errors scoped to identity + loadout fields. */
   fieldErrors?: ValidationError[];
+  /** Sibling pokemon on the same team — used for species-picker synergy hints. */
+  teamSiblings?: ReadonlyArray<{ species: string | null }>;
 }
 
 type GenderValue = "Male" | "Female" | null;
@@ -70,15 +72,6 @@ function errorsForFields(errors: ValidationError[], fields: string[]): Validatio
   return errors.filter((e) => fields.includes(e.field));
 }
 
-// Short stat label for nature effect display
-const STAT_SHORT: Record<string, string> = {
-  attack: "Atk",
-  defense: "Def",
-  specialAttack: "SpA",
-  specialDefense: "SpD",
-  speed: "Spe",
-  hp: "HP",
-};
 
 // =============================================================================
 // IdentityLane
@@ -95,7 +88,7 @@ const STAT_SHORT: Record<string, string> = {
  * Form column:
  *   Banner (2 rows, separated from form rows by a thin border):
  *     Row 1 — nickname input (full-width, dashed-border-on-hover)
- *     Row 2 — type pills + gender chip + shiny chip + dynamax chip (gen-gated)
+ *     Row 2 — type pills + gender chip + shiny chip
  *
  *   Labeled form rows for loadout:
  *     Item | Ability | Nature | Level (gen-gated) | Tera (gen-gated)
@@ -106,12 +99,12 @@ export function IdentityLane({
   teamItems,
   onUpdate,
   fieldErrors = [],
+  teamSiblings,
 }: IdentityLaneProps) {
   const types = getSpeciesTypes(pokemon.species ?? "");
   const nicknameRef = useRef<HTMLInputElement>(null);
   const [nickDraft, setNickDraft] = useState(pokemon.nickname ?? "");
   const [levelOpen, setLevelOpen] = useState(false);
-  const [dmaxOpen, setDmaxOpen] = useState(false);
   const [speciesOpen, setSpeciesOpen] = useState(false);
   const [itemOpen, setItemOpen] = useState(false);
   const [abilityOpen, setAbilityOpen] = useState(false);
@@ -121,7 +114,6 @@ export function IdentityLane({
   const level = pokemon.level ?? 50;
   const gender = pokemon.gender as GenderValue;
   const isShiny = pokemon.is_shiny ?? false;
-  const showDynamax = formatSupportsDynamax(format);
   const showLevel = formatSupportsLevel(format);
   const showTera = formatSupportsTera(format);
 
@@ -162,13 +154,13 @@ export function IdentityLane({
     onUpdate({ is_shiny: !isShiny });
   }
 
-  // TODO: pass team siblings for synergy hints
-  const currentTeam: Array<{ species: string }> = [];
+  const currentTeam = (teamSiblings ?? [])
+    .filter((p): p is { species: string } => typeof p.species === "string" && p.species.length > 0);
 
   return (
-    <Popover open={speciesOpen} onOpenChange={setSpeciesOpen}>
     <div className="flex min-w-0 gap-3 p-3">
-      {/* ── Sprite column ─────────────────────────────────────────── */}
+      {/* ── Sprite column + species picker (self-contained Popover) ── */}
+      <Popover open={speciesOpen} onOpenChange={setSpeciesOpen}>
         <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
           {/* Species pill — typeable control above the sprite */}
           <PopoverTrigger
@@ -259,8 +251,9 @@ export function IdentityLane({
             onClose={() => setSpeciesOpen(false)}
           />
         </PopoverContent>
+      </Popover>
 
-      {/* ── Form column ───────────────────────────────────────────── */}
+      {/* ── Form column (sibling of species Popover) ─────────────── */}
       <div className="flex min-w-0 w-64 shrink-0 flex-col justify-center gap-0.5">
 
         {/* BANNER — nickname + chips rows */}
@@ -293,7 +286,7 @@ export function IdentityLane({
             ))}
           </div>
 
-          {/* Row 2: Type pills + gender + shiny + dynamax */}
+          {/* Row 2: Type pills + gender + shiny */}
           <div className="flex flex-wrap items-center gap-1">
             {/* Type pills */}
             {types.map((t) => (
@@ -334,38 +327,6 @@ export function IdentityLane({
               ✦
             </button>
 
-            {/* Dynamax chip — only when format supports it */}
-            {showDynamax && (
-              <Popover open={dmaxOpen} onOpenChange={setDmaxOpen}>
-                <PopoverTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 font-mono text-[10px] font-medium"
-                    />
-                  }
-                >
-                  DMax{" "}
-                  {((pokemon as Record<string, unknown>)["dynamax_level"] as number) ?? 10}
-                </PopoverTrigger>
-                <PopoverContent side="bottom" align="start" className="w-auto p-0">
-                  <NumberPicker
-                    title="Dynamax Level"
-                    value={
-                      ((pokemon as Record<string, unknown>)["dynamax_level"] as number) ?? 10
-                    }
-                    min={0}
-                    max={10}
-                    onChange={(v) =>
-                      onUpdate({
-                        ["dynamax_level" as keyof TablesUpdate<"pokemon">]: v as never,
-                      })
-                    }
-                    onClose={() => setDmaxOpen(false)}
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
           </div>
         </div>
 
@@ -476,11 +437,11 @@ export function IdentityLane({
                 {natUp && natDown && (
                   <span className="font-mono text-[9px] whitespace-nowrap">
                     <span className="text-emerald-600 dark:text-emerald-400">
-                      +{STAT_SHORT[natUp] ?? natUp}
+                      +{STAT_LABELS[natUp] ?? natUp}
                     </span>
                     <span className="text-muted-foreground">/</span>
                     <span className="text-rose-600 dark:text-rose-400">
-                      −{STAT_SHORT[natDown] ?? natDown}
+                      −{STAT_LABELS[natDown] ?? natDown}
                     </span>
                   </span>
                 )}
@@ -559,6 +520,5 @@ export function IdentityLane({
         ))}
       </div>
     </div>
-    </Popover>
   );
 }

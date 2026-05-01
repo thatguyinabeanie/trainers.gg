@@ -1,18 +1,10 @@
 "use client";
 
+import { ALL_TYPES } from "@trainers/pokemon";
+
 import { cn } from "@/lib/utils";
 
 import { TYPE_BG_COLORS } from "../../type-colors";
-
-// =============================================================================
-// Constants
-// =============================================================================
-
-const ALL_TYPES = [
-  "Normal", "Fire", "Water", "Electric", "Grass", "Ice",
-  "Fighting", "Poison", "Ground", "Flying", "Psychic", "Bug",
-  "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy",
-] as const;
 
 // =============================================================================
 // Types

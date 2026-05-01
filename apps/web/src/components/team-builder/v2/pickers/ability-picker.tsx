@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import {
   getAbilityShortDesc,
@@ -10,6 +10,8 @@ import {
 } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
+
+import { PickerShell } from "./picker-shell";
 
 // =============================================================================
 // Types
@@ -39,11 +41,6 @@ export function AbilityPicker({
   onClose,
 }: AbilityPickerProps) {
   const [search, setSearch] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   // Format-legal abilities with graceful fallback to species abilities
   const abilities = format
@@ -57,32 +54,16 @@ export function AbilityPicker({
   );
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-[480px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b px-3 py-2">
-        <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
-          Ability
-        </span>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="text-muted-foreground hover:text-foreground flex size-4 items-center justify-center rounded text-sm"
-        >
-          ×
-        </button>
-      </div>
-
-      {/* Search */}
-      <input
-        ref={inputRef}
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search abilities…"
-        className="bg-muted/40 border-b px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus:bg-card"
-      />
-
+    <PickerShell
+      title="Ability"
+      onClose={onClose}
+      width="480px"
+      search={{
+        value: search,
+        onChange: setSearch,
+        placeholder: "Search abilities…",
+      }}
+    >
       {/* Ability list */}
       <div className="max-h-48 overflow-y-auto p-1">
         {filtered.map((ability) => {
@@ -126,6 +107,6 @@ export function AbilityPicker({
           </p>
         )}
       </div>
-    </div>
+    </PickerShell>
   );
 }

@@ -208,7 +208,7 @@ function SideCard({
 // =============================================================================
 
 /**
- * Field condition block — sectioned layout for the Phase 5 bottom-panel Field column.
+ * Field condition block — sectioned layout for the bottom-panel Field column.
  * Also used in CalcDrawer for the right-rail (mobile + desktop).
  */
 export function CalcFieldBlock({

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { type ValidationError } from "../../validation-hooks";
 
 // =============================================================================
-// Field label mapping — mirrors the v1 validation-panel.tsx mapping
+// Field label mapping.
 // =============================================================================
 
 const FIELD_LABELS: Record<string, string> = {

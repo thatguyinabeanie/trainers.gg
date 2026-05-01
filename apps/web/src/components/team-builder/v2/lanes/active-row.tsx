@@ -125,13 +125,15 @@ export function ActiveRow({
         </button>
       </div>
 
-      {/* IDENTITY + LOADOUT lane */}
       <IdentityLane
         pokemon={pokemon}
         format={format}
         teamItems={teamItems}
         onUpdate={onUpdate}
         fieldErrors={identityErrors}
+        teamSiblings={teamPokemon
+          .filter((tp) => tp.pokemon && tp.pokemon.id !== pokemon.id)
+          .map((tp) => ({ species: tp.pokemon!.species }))}
       />
 
       {/* STATS lane */}

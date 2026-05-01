@@ -34,6 +34,16 @@ import {
   updatePokemonAction,
 } from "@/actions/teams";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ExportMenu } from "../export-menu";
 import { ImportDialog } from "../import-dialog";
 import { useTeamValidation } from "../validation-hooks";
@@ -72,11 +82,6 @@ interface TeamWorkspaceV2Props {
  * `slots[i]` is the pokemon at team_position `i + 1`, or null if no row exists
  * for that position. The UI's slot index → DB position mapping is 1:1, so
  * handleAdd's `position = idx + 1` always targets the slot the user clicked.
- *
- * NB: previously this sorted entries and packed them into [0..n], which meant
- * a team with positions [3, 4] rendered into UI slots 01/02 — clicking the
- * visually-empty "03" then hit a duplicate-key violation when the action
- * inserted at position 3.
  */
 function buildSlots(
   teamPokemon: TeamWithPokemon["team_pokemon"]
@@ -136,8 +141,8 @@ function DockbarConnected({
 /**
  * Top-level client component for the v2 team builder workspace.
  * Owns layout orchestration: Topbar, PokeRow list, calc drawer slot.
- * Phase 2: adds optimistic write path via useOptimistic + updatePokemonAction.
- * Phase 7: wires useTeamValidation → per-slot error badges + lane field errors.
+ * Uses optimistic write path via useOptimistic + updatePokemonAction.
+ * Wires useTeamValidation → per-slot error badges + lane field errors.
  */
 export function TeamWorkspaceV2({
   team,
@@ -150,12 +155,15 @@ export function TeamWorkspaceV2({
   /** Controls the import sheet. */
   const [importOpen, setImportOpen] = useState(false);
 
+  /** Slot index awaiting remove confirmation. null = dialog closed. */
+  const [removeSlotIdx, setRemoveSlotIdx] = useState<number | null>(null);
+
   /** Ref to the worklane element — used by the panel resizer to compute the
    *  pointer's offset within the lane during drag. */
   const worklaneRef = useRef<HTMLDivElement | null>(null);
 
   // ---------------------------------------------------------------------------
-  // Optimistic team-pokemon state — Phase 2 write path
+  // Optimistic team-pokemon state
   //
   // applyOptimisticPatch updates the UI on the next paint; the server save runs
   // in the background via startTransition. On failure: toast + revert.
@@ -180,8 +188,7 @@ export function TeamWorkspaceV2({
   const [, startTransition] = useTransition();
 
   // ---------------------------------------------------------------------------
-  // Validation — Phase 7
-  // Debounced reactive validation on every optimistic state change.
+  // Validation — debounced reactive validation on every optimistic state change.
   // pokemonErrors: Map<pokemonId, ValidationError[]> for per-slot lookup.
   // ---------------------------------------------------------------------------
 
@@ -232,8 +239,18 @@ export function TeamWorkspaceV2({
     });
   }
 
-  function handleRemove(pokemonId: number) {
-    if (!window.confirm("Remove this Pokémon from the team?")) return;
+  /** Opens the remove confirmation dialog for the given slot index. */
+  function handleRequestRemove(idx: number) {
+    setRemoveSlotIdx(idx);
+  }
+
+  /** Called when the user confirms removal in the AlertDialog. */
+  function handleConfirmRemove() {
+    if (removeSlotIdx === null) return;
+    const p = slots[removeSlotIdx];
+    setRemoveSlotIdx(null);
+    if (!p) return;
+    const pokemonId = p.id;
 
     startTransition(async () => {
       const result = await removePokemonFromTeamAction(team.id, pokemonId);
@@ -249,7 +266,7 @@ export function TeamWorkspaceV2({
   const isMobile = useIsMobile();
 
   // ---------------------------------------------------------------------------
-  // DnD sensors — Phase 8
+  // DnD sensors
   // PointerSensor with activationConstraint.distance=8 so click events on the
   // rib's × button still fire before dragging starts.
   // KeyboardSensor for accessibility.
@@ -261,7 +278,7 @@ export function TeamWorkspaceV2({
   );
 
   // ---------------------------------------------------------------------------
-  // Reorder override — Phase 8
+  // Reorder override
   //
   // After a drag, we store an ordered list of pokemon IDs so the UI reflects
   // the new order optimistically while the server action runs. `null` means
@@ -327,11 +344,9 @@ export function TeamWorkspaceV2({
   const defensiveSummary = getTeamDefensiveSummary(optimisticTeamPokemon);
   const fastestSpeed = format ? getTeamFastestSpeed(optimisticTeamPokemon, format) : 0;
 
-  // onRemove for PokeRow — accepts slot idx, resolves to pokemonId
+  // onRemove for PokeRow — accepts slot idx, opens confirmation dialog
   function handleRemoveByIdx(idx: number) {
-    const p = slots[idx];
-    if (!p) return;
-    handleRemove(p.id);
+    handleRequestRemove(idx);
   }
 
   /**
@@ -362,7 +377,6 @@ export function TeamWorkspaceV2({
           format={format}
           username={username}
           onOpenImport={() => setImportOpen(true)}
-          onSave={() => console.warn("[Phase 1 stub] save")}
           validationErrors={validationErrors}
           onJumpToPokemon={handleJumpToPokemon}
           onValidate={validate}
@@ -473,9 +487,11 @@ export function TeamWorkspaceV2({
                       target.releasePointerCapture(e.pointerId);
                       target.removeEventListener("pointermove", onMove);
                       target.removeEventListener("pointerup", onUp);
+                      target.removeEventListener("pointercancel", onUp);
                     };
                     target.addEventListener("pointermove", onMove);
                     target.addEventListener("pointerup", onUp);
+                    target.addEventListener("pointercancel", onUp);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "ArrowUp") {
@@ -550,8 +566,6 @@ export function TeamWorkspaceV2({
                   {/* Calc panel — desktop only; mobile falls back to CalcDrawer Sheet */}
                   {state.drawer === "calc" && !isMobile && (
                     <CalcBottomPanel
-                      selectedPokemon={slots[state.activeIdx] ?? null}
-                      team={team}
                       teamSlots={slots}
                       format={format}
                       onClose={() => state.setDrawer(null)}
@@ -603,6 +617,32 @@ export function TeamWorkspaceV2({
         onImportComplete={() => router.refresh()}
         formatId={format?.id}
       />
+
+      {/* Remove confirmation dialog */}
+      <AlertDialog
+        open={removeSlotIdx !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemoveSlotIdx(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Pokémon?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the Pokémon from this slot.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmRemove}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </CalcStateProvider>
   );

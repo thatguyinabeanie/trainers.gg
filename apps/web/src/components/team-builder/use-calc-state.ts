@@ -754,35 +754,16 @@ export function useCalcState({
       return runCalc(gen, sharedAttacker, sharedDefender, moveName, isCrit, sharedOffenseField, faintedYours);
     }
 
-    // "defense": defender attacks us with the move
-    const defenderAsAttacker = buildDefenderPokemon(
-      gen,
-      defenderSpecies,
-      defenderAbility,
-      defenderItem,
-      defenderNature,
-      defenderTera,
-      defenderEvs,
-      defenderIvs,
-      defenderBoosts,
-      defenderStatus,
-      100
-    );
-    const ourPokemon = buildAttackerFromDb(
-      gen,
-      selectedPokemon,
-      EMPTY_BOOSTS,
-      "Healthy"
-    );
-    if (!defenderAsAttacker || !ourPokemon) return null;
-    // Defense direction: defender fires at us — their fainted count applies for Last Respects.
+    // Defense direction: defender fires at us — reuse the shared swap-side builders
+    // and the defense-side field. faintedTheirs applies to the defender's Last Respects BP.
+    if (!sharedDefenderAsAttacker || !sharedOurPokemonAsDefender) return null;
     return runCalc(
       gen,
-      defenderAsAttacker,
-      ourPokemon,
+      sharedDefenderAsAttacker,
+      sharedOurPokemonAsDefender,
       moveName,
       isCrit,
-      sharedOffenseField,
+      sharedDefenseField,
       faintedTheirs
     );
   }

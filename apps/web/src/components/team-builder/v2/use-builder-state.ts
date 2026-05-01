@@ -9,7 +9,6 @@ import { useState } from "react";
 type Weather = "sun" | "rain" | "sand" | "snow" | null;
 type Terrain = "grassy" | "electric" | "psychic" | "misty" | null;
 type DefStatus = "healthy" | "paralyzed";
-type StatKey = "hp" | "atk" | "def" | "spa" | "spd" | "spe";
 
 export interface FieldState {
   doubles: boolean;
@@ -19,22 +18,11 @@ export interface FieldState {
   helpingHand: boolean;
   tailwind: boolean;
   stealthRock: boolean;
-  defStage: number;
-  atkStage: number;
+  defStage: StatStage;
+  atkStage: StatStage;
   defStatus: DefStatus;
-  atkTera: boolean;
   foesAlive: 1 | 2;
   allyAlive: boolean;
-}
-
-interface DefenderOverrides {
-  nature?: string;
-  item?: string;
-  ability?: string;
-  evs?: Partial<Record<StatKey, number>>;
-  ivs?: Partial<Record<StatKey, number>>;
-  hpPct?: number;
-  status?: string;
 }
 
 export type DrawerKey = "matchups" | "speed" | "calc" | null;
@@ -47,9 +35,7 @@ interface BuilderState {
   panelHeightPct: number;
   setPanelHeightPct: (n: number) => void;
   field: FieldState;
-  setField: (field: FieldState) => void;
-  defenderOverrides: DefenderOverrides;
-  setDefenderOverrides: (overrides: DefenderOverrides) => void;
+  setField: (patch: Partial<FieldState>) => void;
   // Calc-specific workspace state
   attackerSlot: number | null;
   setAttackerSlot: (idx: number | null) => void;
@@ -57,6 +43,37 @@ interface BuilderState {
   setFaintedYours: (n: number) => void;
   faintedTheirs: number;
   setFaintedTheirs: (n: number) => void;
+}
+
+// =============================================================================
+// localStorage helpers
+// =============================================================================
+
+function readPersisted<T>(
+  key: string,
+  parse: (raw: string) => T | null
+): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return null;
+    return parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function writePersisted(key: string, value: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (value === null) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, value);
+    }
+  } catch {
+    // Storage write failure is non-fatal — quota / private mode.
+  }
 }
 
 // =============================================================================
@@ -83,6 +100,17 @@ function clampFainted(n: number): number {
   return Math.min(5, Math.max(0, Math.round(n)));
 }
 
+function clampSlot(n: number): number {
+  return Math.max(0, Math.min(5, Math.round(n)));
+}
+
+export type StatStage = -6 | -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export function clampStatStage(n: number): StatStage {
+  const clamped = Math.max(-6, Math.min(6, Math.round(n)));
+  return clamped as StatStage;
+}
+
 const DEFAULT_FIELD: FieldState = {
   doubles: true,
   weather: null,
@@ -94,7 +122,6 @@ const DEFAULT_FIELD: FieldState = {
   defStage: 0,
   atkStage: 0,
   defStatus: "healthy",
-  atkTera: false,
   foesAlive: 2,
   allyAlive: true,
 };
@@ -110,101 +137,70 @@ const DEFAULT_FIELD: FieldState = {
 export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
   const [drawer, setDrawer] = useState<DrawerKey>(null);
-  const [panelHeightPct, setPanelHeightPctState] = useState<number>(() => {
-    if (typeof window === "undefined") return DEFAULT_PANEL_HEIGHT_PCT;
-    try {
-      const stored = localStorage.getItem(PANEL_HEIGHT_STORAGE_KEY);
-      if (stored !== null) {
-        return clampPanelHeight(Number(stored));
-      }
-    } catch {
-      // localStorage unavailable — use default
-    }
-    return DEFAULT_PANEL_HEIGHT_PCT;
-  });
-  const [field, setField] = useState<FieldState>(DEFAULT_FIELD);
-  const [defenderOverrides, setDefenderOverrides] = useState<DefenderOverrides>(
-    {}
+  const [panelHeightPct, setPanelHeightPctState] = useState<number>(
+    () =>
+      readPersisted(PANEL_HEIGHT_STORAGE_KEY, (raw) => {
+        const n = clampPanelHeight(Number(raw));
+        return Number.isNaN(Number(raw)) ? null : n;
+      }) ?? DEFAULT_PANEL_HEIGHT_PCT
   );
+  const [field, setFieldState] = useState<FieldState>(DEFAULT_FIELD);
+
+  function setField(patch: Partial<FieldState>): void {
+    setFieldState((prev) => ({ ...prev, ...patch }));
+  }
 
   // --- Calc workspace tweaks — persisted to localStorage ---
-  const [attackerSlot, setAttackerSlotState] = useState<number | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const stored = localStorage.getItem(ATTACKER_SLOT_STORAGE_KEY);
-      if (stored !== null) {
-        const parsed = Number(stored);
-        return Number.isNaN(parsed) ? null : parsed;
-      }
-    } catch {
-      // localStorage unavailable — use default
-    }
-    return null;
-  });
+  const [attackerSlot, setAttackerSlotState] = useState<number | null>(() =>
+    readPersisted(ATTACKER_SLOT_STORAGE_KEY, (raw) => {
+      const parsed = Number(raw);
+      return Number.isNaN(parsed) ? null : clampSlot(parsed);
+    })
+  );
 
-  const [faintedYours, setFaintedYoursState] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    try {
-      const stored = localStorage.getItem(FAINTED_YOURS_STORAGE_KEY);
-      if (stored !== null) return clampFainted(Number(stored));
-    } catch {
-      // localStorage unavailable — use default
-    }
-    return 0;
-  });
+  const [faintedYours, setFaintedYoursState] = useState<number>(
+    () =>
+      readPersisted(FAINTED_YOURS_STORAGE_KEY, (raw) => {
+        const n = Number(raw);
+        return Number.isNaN(n) ? null : clampFainted(n);
+      }) ?? 0
+  );
 
-  const [faintedTheirs, setFaintedTheirsState] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    try {
-      const stored = localStorage.getItem(FAINTED_THEIRS_STORAGE_KEY);
-      if (stored !== null) return clampFainted(Number(stored));
-    } catch {
-      // localStorage unavailable — use default
-    }
-    return 0;
-  });
+  const [faintedTheirs, setFaintedTheirsState] = useState<number>(
+    () =>
+      readPersisted(FAINTED_THEIRS_STORAGE_KEY, (raw) => {
+        const n = Number(raw);
+        return Number.isNaN(n) ? null : clampFainted(n);
+      }) ?? 0
+  );
 
   function setPanelHeightPct(n: number) {
     const clamped = clampPanelHeight(n);
     setPanelHeightPctState(clamped);
-    try {
-      localStorage.setItem(PANEL_HEIGHT_STORAGE_KEY, String(clamped));
-    } catch {
-      // Storage write failure is non-fatal — height just won't persist
-    }
+    writePersisted(PANEL_HEIGHT_STORAGE_KEY, String(clamped));
   }
 
   function setAttackerSlot(idx: number | null) {
-    setAttackerSlotState(idx);
-    try {
-      if (idx === null) {
-        localStorage.removeItem(ATTACKER_SLOT_STORAGE_KEY);
-      } else {
-        localStorage.setItem(ATTACKER_SLOT_STORAGE_KEY, String(idx));
-      }
-    } catch {
-      // Storage write failure is non-fatal
+    if (idx === null) {
+      setAttackerSlotState(null);
+      writePersisted(ATTACKER_SLOT_STORAGE_KEY, null);
+      return;
     }
+    const clamped = clampSlot(idx);
+    setAttackerSlotState(clamped);
+    writePersisted(ATTACKER_SLOT_STORAGE_KEY, String(clamped));
   }
 
   function setFaintedYours(n: number) {
     const clamped = clampFainted(n);
     setFaintedYoursState(clamped);
-    try {
-      localStorage.setItem(FAINTED_YOURS_STORAGE_KEY, String(clamped));
-    } catch {
-      // Storage write failure is non-fatal
-    }
+    writePersisted(FAINTED_YOURS_STORAGE_KEY, String(clamped));
   }
 
   function setFaintedTheirs(n: number) {
     const clamped = clampFainted(n);
     setFaintedTheirsState(clamped);
-    try {
-      localStorage.setItem(FAINTED_THEIRS_STORAGE_KEY, String(clamped));
-    } catch {
-      // Storage write failure is non-fatal
-    }
+    writePersisted(FAINTED_THEIRS_STORAGE_KEY, String(clamped));
   }
 
   return {
@@ -216,8 +212,6 @@ export function useBuilderState(): BuilderState {
     setPanelHeightPct,
     field,
     setField,
-    defenderOverrides,
-    setDefenderOverrides,
     attackerSlot,
     setAttackerSlot,
     faintedYours,

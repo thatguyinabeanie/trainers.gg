@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { getValidNatures, NATURE_EFFECTS } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 
 import { type StatKey, STAT_LABELS } from "../../stat-types";
+import { PickerShell } from "./picker-shell";
 
 // =============================================================================
 // Types
@@ -91,11 +92,6 @@ function buildGroups(natures: string[]): NatureGroup[] {
  */
 export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
   const [search, setSearch] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   const allNatures = getValidNatures();
   const filtered = allNatures.filter((n) =>
@@ -109,32 +105,16 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
   }
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-[420px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b px-3 py-2">
-        <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
-          Nature
-        </span>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="text-muted-foreground hover:text-foreground flex size-4 items-center justify-center rounded text-sm"
-        >
-          ×
-        </button>
-      </div>
-
-      {/* Search */}
-      <input
-        ref={inputRef}
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search natures…"
-        className="bg-muted/40 border-b px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/60 focus:bg-card"
-      />
-
+    <PickerShell
+      title="Nature"
+      onClose={onClose}
+      width="420px"
+      search={{
+        value: search,
+        onChange: setSearch,
+        placeholder: "Search natures…",
+      }}
+    >
       {/* Grouped list */}
       <div className="max-h-[520px] overflow-y-auto p-1">
         {groups.map((group) => (
@@ -191,6 +171,6 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
           </p>
         )}
       </div>
-    </div>
+    </PickerShell>
   );
 }

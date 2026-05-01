@@ -198,6 +198,7 @@ export function SpeciesFilters({
 
   function setMinStat(stat: (typeof STAT_KEYS)[number], value: string) {
     const parsed = value === "" ? undefined : parseInt(value, 10);
+    if (parsed !== undefined && Number.isNaN(parsed)) return;
     onFiltersChange({
       ...filters,
       minBaseStat: { ...filters.minBaseStat, [stat]: parsed },
@@ -206,6 +207,7 @@ export function SpeciesFilters({
 
   function setMaxStat(stat: (typeof STAT_KEYS)[number], value: string) {
     const parsed = value === "" ? undefined : parseInt(value, 10);
+    if (parsed !== undefined && Number.isNaN(parsed)) return;
     onFiltersChange({
       ...filters,
       maxBaseStat: { ...filters.maxBaseStat, [stat]: parsed },

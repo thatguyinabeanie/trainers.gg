@@ -87,3 +87,65 @@
     background: oklch(0.95 0.08 25);
   }
 }
+
+@layer components {
+  .dmv-pill {
+    background-color: oklch(0.95 0.01 250);
+    color: oklch(0.25 0.04 250);
+    border: 1px solid oklch(0.88 0.02 250);
+  }
+
+  .dark .dmv-pill {
+    background-color: oklch(0.22 0.02 250);
+    color: oklch(0.85 0.02 250);
+    border-color: oklch(0.32 0.02 250);
+  }
+
+  .dmv-pill--ohko {
+    background-color: oklch(0.94 0.06 25);
+    color: oklch(0.35 0.15 25);
+    border-color: oklch(0.85 0.1 25);
+  }
+
+  .dmv-pill--2hko {
+    background-color: oklch(0.94 0.06 60);
+    color: oklch(0.35 0.12 60);
+    border-color: oklch(0.85 0.1 60);
+  }
+
+  .dmv-pill--3hko {
+    background-color: oklch(0.94 0.05 90);
+    color: oklch(0.4 0.08 90);
+    border-color: oklch(0.85 0.07 90);
+  }
+
+  .dmv-pill--4hko {
+    background-color: oklch(0.95 0.01 250);
+    color: oklch(0.45 0.02 250);
+    border-color: oklch(0.88 0.02 250);
+  }
+
+  .dark .dmv-pill--ohko {
+    background-color: oklch(0.3 0.1 25);
+    color: oklch(0.85 0.12 25);
+    border-color: oklch(0.4 0.12 25);
+  }
+
+  .dark .dmv-pill--2hko {
+    background-color: oklch(0.3 0.08 60);
+    color: oklch(0.85 0.1 60);
+    border-color: oklch(0.4 0.1 60);
+  }
+
+  .dark .dmv-pill--3hko {
+    background-color: oklch(0.3 0.06 90);
+    color: oklch(0.85 0.08 90);
+    border-color: oklch(0.4 0.08 90);
+  }
+
+  .dark .dmv-pill--4hko {
+    background-color: oklch(0.25 0.02 250);
+    color: oklch(0.7 0.02 250);
+    border-color: oklch(0.35 0.02 250);
+  }
+}

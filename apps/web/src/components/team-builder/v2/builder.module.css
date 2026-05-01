@@ -91,7 +91,7 @@
 }
 
 /* ============================================================
-   Compact density — Phase 6 active row tightening
+   Compact density — active row tightening
    ============================================================ */
 
 /* Tighten the inter-lane gap in the active row */
@@ -217,7 +217,7 @@
 }
 
 /* ============================================================
-   Calc drawer — Phase 3
+   Calc drawer
    ============================================================ */
 
 :global(.cd-drawer) {
@@ -763,7 +763,7 @@
 }
 
 /* ============================================================
-   Active row — Phase 2 lane layout
+   Active row — lane layout
    ============================================================ */
 
 /* Row container — wraps lanes onto a second line when the worklane is too
@@ -961,7 +961,7 @@
 }
 
 /* ============================================================
-   Phase 4 — calc-aware move tile (mvline) additions
+   Calc-aware move tile (mvline)
    ============================================================ */
 
 /* KO tier ring/text emphasis */
@@ -1289,7 +1289,7 @@
 }
 
 /* ============================================================
-   Phase 4 — CalcDetailCard popover
+   CalcDetailCard popover
    ============================================================ */
 
 :global(.mvdetail-card) {

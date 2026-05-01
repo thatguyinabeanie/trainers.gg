@@ -16,9 +16,9 @@ import { type FieldState } from "../use-builder-state";
 // =============================================================================
 
 interface CalcStateContextValue extends UseCalcStateReturn {
-  /** Builder-level field state (foesAlive, allyAlive, atkTera). */
+  /** Builder-level field state (foesAlive, allyAlive). */
   field: FieldState;
-  setField: (field: FieldState) => void;
+  setField: (patch: Partial<FieldState>) => void;
   /**
    * Whether calc-derived info should be surfaced in consumers like MovesLane.
    * The engine still runs (so toggling the drawer back on doesn't pay a re-mount
@@ -38,7 +38,7 @@ interface CalcStateProviderProps {
   selectedPokemon: Tables<"pokemon"> | null;
   format: GameFormat | undefined;
   field: FieldState;
-  setField: (field: FieldState) => void;
+  setField: (patch: Partial<FieldState>) => void;
   /** Whether calc results should be computed and surfaced (always true in the bottom-panel layout). */
   calcEnabled: boolean;
   children: React.ReactNode;
@@ -61,8 +61,6 @@ interface CalcStateProviderProps {
  * The provider does NOT key on selectedPokemon.id — defender state persists
  * intentionally when the active row switches (the user has configured a
  * target and shouldn't need to re-configure it on every row change).
- * CalcDrawer previously keyed on selectedPokemon.id via CalcDrawerInner;
- * that key has been removed and now lives here implicitly (no reset on switch).
  */
 export function CalcStateProvider({
   selectedPokemon,

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { PickerShell } from "./picker-shell";
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -14,6 +16,8 @@ interface NumberPickerProps {
   step?: number;
   suffix?: string;
   hint?: string;
+  /** Optional preset chip values. Only chips within [min, max] are shown. */
+  presets?: readonly number[];
   onChange: (val: number) => void;
   onClose: () => void;
 }
@@ -35,6 +39,7 @@ export function NumberPicker({
   max,
   step = 1,
   hint,
+  presets: presetsProp,
   onChange,
   onClose,
 }: NumberPickerProps) {
@@ -47,25 +52,10 @@ export function NumberPicker({
     onChange(clamped);
   }
 
-  const presets = [0, 4, 84, 132, 252].filter((p) => p >= min && p <= max);
+  const presets = (presetsProp ?? []).filter((p) => p >= min && p <= max);
 
   return (
-    <div className="bg-popover text-popover-foreground flex w-[320px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border shadow-md">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b px-3 py-2">
-        <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
-          {title}
-        </span>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="text-muted-foreground hover:text-foreground flex size-4 items-center justify-center rounded text-sm"
-        >
-          ×
-        </button>
-      </div>
-
+    <PickerShell title={title} onClose={onClose} width="320px">
       {/* Value readout */}
       <div className="flex items-baseline justify-center gap-1 px-3 pt-4 pb-2">
         <span className="font-mono text-2xl font-semibold tabular-nums">
@@ -110,6 +100,6 @@ export function NumberPicker({
           ))}
         </div>
       )}
-    </div>
+    </PickerShell>
   );
 }

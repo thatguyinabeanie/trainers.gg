@@ -280,6 +280,14 @@ function MoveTile({
               </span>
             ) : calc.calcEnabled && moveName && !hasDefender && !isStatus ? (
               <span className="mvline-no-target">— pick a target —</span>
+            ) : calc.calcEnabled && moveName && hasDefender && !isStatus && output === null ? (
+              <span
+                className="mvline-no-target"
+                role="status"
+                title="Damage calc unavailable for this combination"
+              >
+                — calc unavailable —
+              </span>
             ) : (
               <span aria-hidden />
             )}
@@ -300,6 +308,7 @@ function MoveTile({
               format={format}
               foesAlive={foesAlive}
               allyAlive={allyAlive}
+              weather={calc.weather || calc.inferredWeather}
               onClose={() => setPanel(null)}
               onChangeMove={() => setPanel("picker")}
             />
@@ -334,7 +343,7 @@ function MoveTile({
  *
  * Left-click: opens CalcDetailCard when calc data is available, else picker.
  * Right-click: always opens move picker.
- * Phase 7: renders inline FieldError chips for move-scoped validation issues.
+ * Renders inline FieldError chips for move-scoped validation issues.
  */
 export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: MovesLaneProps) {
   function handlePick(slotKey: MoveSlot, name: string) {

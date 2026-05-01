@@ -2,9 +2,7 @@
 // calc-target-options.ts
 //
 // Static list of common meta targets for the defender select.
-// Intentionally local to v2 so that v1 can be retired independently.
-// Sources the same species that v1 surfaces via getMetaSpeedTiers() but
-// hardcodes the default EV spreads and abilities used in competitive play.
+// Hardcodes the default EV spreads and abilities used in competitive play.
 // =============================================================================
 
 export interface CalcTarget {

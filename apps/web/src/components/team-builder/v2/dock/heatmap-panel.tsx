@@ -61,7 +61,7 @@ function getDefenderTypes(
   pokemon: Tables<"pokemon">,
   showTera: boolean
 ): PokemonType[] {
-  if (showTera && pokemon.tera_type) {
+  if (showTera && pokemon.tera_type && (ALL_TYPES as readonly string[]).includes(pokemon.tera_type)) {
     return [pokemon.tera_type as PokemonType];
   }
   return getSpeciesTypes(pokemon.species ?? "") as PokemonType[];
@@ -474,9 +474,8 @@ export function HeatmapPanel({ team, format }: HeatmapPanelProps) {
             <span className="text-muted-foreground text-[9px] font-semibold uppercase tracking-wide">
               TOTAL
             </span>
-            {pokemons.map((mon) => {
+            {pokemons.map((mon, monIdx) => {
               // Per-mon totals (count across all type rows)
-              const monIdx = pokemons.findIndex((p) => p.id === mon.id);
               let wk = 0;
               let rs = 0;
               let im = 0;

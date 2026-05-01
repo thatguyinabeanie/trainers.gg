@@ -44,7 +44,6 @@ interface PokeRowProps {
    *  for an empty slot. */
   onAdd?: (idx: number, species: string) => void;
   onRemove?: (idx: number) => void;
-  /** Required for Phase 2 active row editor. */
   teamPokemon?: TeamWithPokemon["team_pokemon"];
   format?: GameFormat;
   onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
@@ -209,7 +208,6 @@ function CollapsedRow({
         )}
       </span>
 
-      {/* Sprite + species */}
       <button
         type="button"
         onClick={() => onActivate(idx)}
@@ -242,7 +240,6 @@ function CollapsedRow({
         </div>
       </button>
 
-      {/* 4 move names */}
       <div className="hidden w-52 shrink-0 grid-cols-2 gap-x-3 gap-y-0.5 md:grid">
         {moves.map((move, i) => (
           <span
@@ -257,7 +254,6 @@ function CollapsedRow({
         ))}
       </div>
 
-      {/* Chevron */}
       <button
         type="button"
         onClick={() => onActivate(idx)}
@@ -267,7 +263,6 @@ function CollapsedRow({
         <ChevronDown className="size-4" />
       </button>
 
-      {/* Remove */}
       <button
         type="button"
         onClick={(e) => {
@@ -336,10 +331,9 @@ function ActiveRowShell({
 
 /**
  * A single horizontal slot row in the v2 team builder.
- * Phase 1: empty state and collapsed state.
- * Phase 2: active/expanded state with full lane editor.
- * Phase 7: shows error/warning dot on slot rib; passes field errors to active row.
- * Phase 8: drag-and-drop reordering via dnd-kit. Empty slots are non-draggable.
+ * Handles empty, collapsed, and active/expanded states.
+ * Shows error/warning dot on slot rib and passes field errors to active row.
+ * Supports drag-and-drop reordering via dnd-kit. Empty slots are non-draggable.
  */
 export function PokeRow({
   idx,

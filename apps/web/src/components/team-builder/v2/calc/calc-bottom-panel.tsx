@@ -7,7 +7,7 @@ import {
   isChampionsFormat,
   type GameFormat,
 } from "@trainers/pokemon";
-import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
+import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 
@@ -23,8 +23,6 @@ import { useDefenderMoves } from "./use-defender-moves";
 // =============================================================================
 
 interface CalcBottomPanelProps {
-  selectedPokemon: Tables<"pokemon"> | null;
-  team: TeamWithPokemon;
   /** Pre-built 6-slot array (team_position aligned), passed from the workspace. */
   teamSlots: (Tables<"pokemon"> | null)[];
   format: GameFormat | undefined;
@@ -71,8 +69,6 @@ function computeAttackerHP(pokemon: Tables<"pokemon"> | null, format: GameFormat
  * defender is independently configured in this panel.
  */
 export function CalcBottomPanel({
-  selectedPokemon: _selectedPokemon,
-  team: _team,
   teamSlots,
   format,
   onClose,
@@ -123,7 +119,7 @@ export function CalcBottomPanel({
         </button>
       </header>
 
-      {/* 3-column grid — Phase 5 fills field; Phase 4 fills defender moves */}
+      {/* 3-column grid */}
       <div className="grid min-h-0 flex-1 grid-cols-[1fr_1fr_2fr] gap-3 overflow-y-auto p-3">
         <CalcAttackerBlock
           teamSlots={teamSlots}
@@ -148,8 +144,8 @@ export function CalcBottomPanel({
             setGravity={calc.setGravity}
             foesAlive={calc.field.foesAlive}
             allyAlive={calc.field.allyAlive}
-            setFoesAlive={(v) => calc.setField({ ...calc.field, foesAlive: v })}
-            setAllyAlive={(v) => calc.setField({ ...calc.field, allyAlive: v })}
+            setFoesAlive={(v) => calc.setField({ foesAlive: v })}
+            setAllyAlive={(v) => calc.setField({ allyAlive: v })}
             inferredWeather={calc.inferredWeather}
             inferredTerrain={calc.inferredTerrain}
             attackerAbility={attacker?.ability ?? null}
@@ -172,7 +168,7 @@ export function CalcBottomPanel({
             </span>
           </div>
 
-          {/* Split: stats sub-col | moves sub-col (Phase 4) */}
+          {/* Split: stats sub-col | moves sub-col */}
           <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_240px] gap-3.5 overflow-y-auto p-3">
             <CalcDefenderStats
               defenderSpecies={calc.defenderSpecies}
@@ -195,7 +191,7 @@ export function CalcBottomPanel({
               setDefenderHpPercent={calc.setDefenderHpPercent}
             />
 
-            {/* Phase 4: Their moves → your atk reverse-calc column */}
+            {/* Their moves → your atk reverse-calc column */}
             <div className="border-l border-dashed pl-3.5">
               <CalcDefenderMoves
                 effectiveMoves={effectiveMoves}

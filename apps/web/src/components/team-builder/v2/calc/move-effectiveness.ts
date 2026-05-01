@@ -14,6 +14,17 @@ import {
 } from "@trainers/pokemon";
 
 // =============================================================================
+// Warn-once for unknown moves
+// =============================================================================
+
+const warnedMoves = new Set<string>();
+function warnUnknownMove(move: string): void {
+  if (warnedMoves.has(move)) return;
+  warnedMoves.add(move);
+  console.warn(`[getMoveEffectiveness] Unknown move data for: "${move}"`);
+}
+
+// =============================================================================
 // Weather Ball type override
 // =============================================================================
 
@@ -64,7 +75,10 @@ export function getMoveEffectiveness(
   if (!moveName || !defenderSpecies) return 1;
 
   const moveData = getMoveData(moveName);
-  if (!moveData) return 1;
+  if (!moveData) {
+    warnUnknownMove(moveName);
+    return 1;
+  }
 
   // Status moves don't have type effectiveness
   if (moveData.category === "Status") return 1;

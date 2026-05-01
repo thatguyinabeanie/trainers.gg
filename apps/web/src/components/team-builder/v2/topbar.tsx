@@ -26,7 +26,6 @@ interface TopbarProps {
   format: GameFormat | undefined;
   username: string;
   onOpenImport: () => void;
-  onSave: () => void;
   validationErrors: ValidationError[];
   onJumpToPokemon: (pokemonId: number) => void;
   onValidate: () => void;
@@ -57,7 +56,6 @@ export function Topbar({
   format,
   username,
   onOpenImport,
-  onSave,
   validationErrors,
   onJumpToPokemon,
   onValidate,
@@ -159,13 +157,6 @@ export function Topbar({
           </PopoverContent>
         </Popover>
 
-        <Button
-          size="sm"
-          onClick={onSave}
-          className="h-7 px-2.5 text-xs sm:h-8 sm:px-3 sm:text-sm"
-        >
-          Save
-        </Button>
       </div>
     </PageHeader>
   );

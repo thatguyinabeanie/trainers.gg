@@ -1,11 +1,7 @@
-/** Stat key names matching the Pokemon object field naming convention. */
-export type StatKey =
-  | "hp"
-  | "attack"
-  | "defense"
-  | "specialAttack"
-  | "specialDefense"
-  | "speed";
+import { type StatKey } from "@trainers/pokemon";
+
+// Re-export canonical stat keys, ordered array, and labels from @trainers/pokemon.
+export { type StatKey, STAT_KEYS, STAT_LABELS } from "@trainers/pokemon";
 
 /** A set of six numeric stat values (EVs, IVs, or base stats). */
 export interface StatValues {
@@ -16,26 +12,6 @@ export interface StatValues {
   specialDefense: number;
   speed: number;
 }
-
-/** Ordered stat keys for iteration. */
-export const STAT_KEYS: readonly StatKey[] = [
-  "hp",
-  "attack",
-  "defense",
-  "specialAttack",
-  "specialDefense",
-  "speed",
-];
-
-/** Display labels for each stat. */
-export const STAT_LABELS: Record<StatKey, string> = {
-  hp: "HP",
-  attack: "Atk",
-  defense: "Def",
-  specialAttack: "SpA",
-  specialDefense: "SpD",
-  speed: "Spe",
-};
 
 /**
  * Tailwind text-color classes for each stat — HP=red, Atk=orange, Def=amber,

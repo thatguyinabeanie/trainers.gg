@@ -22,7 +22,12 @@ import {
   STAT_LABELS,
   STAT_COLOR_CLASS,
 } from "../../stat-types";
-import { computeStat } from "../../calc-stat-helpers";
+import {
+  buildInputDisplay,
+  computeInvestBudget,
+  computeStat,
+  computeVizBarWidths,
+} from "../../calc-stat-helpers";
 import { formatSupportsIvs } from "../format-gating";
 import { FieldError } from "../validation/field-error";
 import s from "../builder.module.css";
@@ -276,21 +281,6 @@ function computeNatureForSuffix(opts: {
   return null;
 }
 
-/**
- * Build the display string for the number input from ev + nature affinity.
- * 0+neutral → ""  |  0++nat → "+"  |  0+−nat → "−"
- * N+neutral → "N"  |  N++nat → "N+"  |  N+−nat → "N−"
- */
-function buildInputDisplay(
-  ev: number,
-  isNatureBoosted: boolean,
-  isNatureReduced: boolean
-): string {
-  const suffix = isNatureBoosted ? "+" : isNatureReduced ? "−" : "";
-  if (ev === 0) return suffix;
-  return `${ev}${suffix}`;
-}
-
 // =============================================================================
 // StatRow — one horizontal stat row (6-column grid)
 // =============================================================================
@@ -336,17 +326,11 @@ function StatRow({
   const statColorClass = STAT_COLOR_CLASS[statKey];
 
   // --- Viz bar layer widths (0→250 final stat space) ---
-  const baseLayerWidth = Math.min(100, (noEvFinalStat / 250) * 100);
-  const investLayerLeft = baseLayerWidth;
-  const investLayerWidth = Math.max(
-    0,
-    Math.min(100, (finalStat / 250) * 100) - baseLayerWidth
-  );
+  const { baseLayerWidth, investLayerLeft, investLayerWidth } =
+    computeVizBarWidths(finalStat, noEvFinalStat);
 
   // --- Slider budget ---
-  const otherStatsInvestment = totalEv - ev;
-  const remainingForThisStat = Math.max(0, budget.total - otherStatsInvestment);
-  const investBudget = Math.min(budget.perStat, remainingForThisStat);
+  const investBudget = computeInvestBudget(totalEv, ev, budget.total, budget.perStat);
 
   // --- EV draft + debounced commit ---
   // Slider/keyboard updates the local draft synchronously for snappy UI;

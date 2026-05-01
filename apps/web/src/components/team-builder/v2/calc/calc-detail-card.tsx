@@ -43,6 +43,8 @@ interface CalcDetailCardProps {
   foesAlive: 1 | 2;
   /** allyAlive from the workspace field state. */
   allyAlive: boolean;
+  /** Active or weather-ability-inferred weather, used to resolve Weather Ball type. */
+  weather: string | null;
   onClose: () => void;
   /** Opens the move picker for this slot — keyboard / affordance shortcut. */
   onChangeMove: () => void;
@@ -102,11 +104,11 @@ export function CalcDetailCard({
   format,
   foesAlive,
   allyAlive,
+  weather,
   onClose,
   onChangeMove,
 }: CalcDetailCardProps) {
   const [crit, setCrit] = useState(false);
-  const [tera, setTera] = useState(false);
   const [screen, setScreen] = useState(false);
   const showTera = formatSupportsTera(format);
   const [localFoesAlive, setLocalFoesAlive] = useState<1 | 2>(foesAlive);
@@ -134,13 +136,13 @@ export function CalcDetailCard({
   // Tera type display for attacker header
   const attackerSpeciesTypes = getSpeciesTypes(attacker.species ?? "");
   const attackerType =
-    tera && attacker.tera_type
+    showTera && attacker.tera_type
       ? attacker.tera_type
       : (attackerSpeciesTypes[0] ?? "Normal");
 
   const verdict = getVerdict(minPct, maxPct);
 
-  const eff = getMoveEffectiveness(moveName, defender.species);
+  const eff = getMoveEffectiveness(moveName, defender.species, weather);
 
   // Raw damage range from rolls
   const rolls = baseOutput.rolls;
@@ -188,7 +190,7 @@ export function CalcDetailCard({
         <span className="mvdetail-mon">
           <TypeDot t={attackerType} size={9} />
           <b>{attacker.nickname ?? attacker.species ?? "—"}</b>
-          {tera && attacker.tera_type && (
+          {showTera && attacker.tera_type && (
             <span className="mvdetail-tera-tag">◇ Tera</span>
           )}
         </span>
@@ -256,17 +258,6 @@ export function CalcDetailCard({
           />
           Crit
         </label>
-        {showTera && (
-          <label className="mvdetail-tog">
-            <input
-              type="checkbox"
-              checked={tera}
-              onChange={(e) => setTera(e.target.checked)}
-              className="mvdetail-tog-checkbox"
-            />
-            Terastallized
-          </label>
-        )}
         <label className="mvdetail-tog">
           <input
             type="checkbox"

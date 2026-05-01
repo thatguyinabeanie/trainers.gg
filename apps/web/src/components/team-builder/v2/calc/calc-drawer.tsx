@@ -109,15 +109,15 @@ function CalcDrawerContent({
 
   function handleGameTypeChange(v: "Doubles" | "Singles") {
     calc.setGameType(v);
-    setField({ ...field, doubles: v === "Doubles" });
+    setField({ doubles: v === "Doubles" });
   }
 
   function handleSetFoesAlive(v: 1 | 2) {
-    setField({ ...field, foesAlive: v });
+    setField({ foesAlive: v });
   }
 
   function handleSetAllyAlive(v: boolean) {
-    setField({ ...field, allyAlive: v });
+    setField({ allyAlive: v });
   }
 
   return (

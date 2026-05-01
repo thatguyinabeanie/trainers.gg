@@ -22,7 +22,12 @@ import {
   type DefenderIvs,
 } from "../../use-calc-state";
 import { type StatValues, STAT_COLOR_CLASS } from "../../stat-types";
-import { computeStat } from "../../calc-stat-helpers";
+import {
+  buildInputDisplay,
+  computeInvestBudget,
+  computeStat,
+  computeVizBarWidths,
+} from "../../calc-stat-helpers";
 import { formatSupportsTera } from "../format-gating";
 import { Sprite } from "../sprite";
 import { TypePill } from "../type-pill";
@@ -171,17 +176,11 @@ function DefenderStatRow({
   const finalStat = boostKey ? applyStage(rawFinal, boost) : rawFinal;
 
   // --- Viz bar ---
-  const baseLayerWidth = Math.min(100, (rawFinalNoEv / 250) * 100);
-  const investLayerLeft = baseLayerWidth;
-  const investLayerWidth = Math.max(
-    0,
-    Math.min(100, (rawFinal / 250) * 100) - baseLayerWidth
-  );
+  const { baseLayerWidth, investLayerLeft, investLayerWidth } =
+    computeVizBarWidths(rawFinal, rawFinalNoEv);
 
   // --- EV slider budget ---
-  const otherEvs = totalEv - ev;
-  const remainingForThis = Math.max(0, EV_TOTAL_MAX - otherEvs);
-  const investBudget = Math.min(EV_PER_STAT_MAX, remainingForThis);
+  const investBudget = computeInvestBudget(totalEv, ev, EV_TOTAL_MAX, EV_PER_STAT_MAX);
 
   // --- Breakpoint ticks (only for +nature stat) ---
   const breakpoints = isNatureBoosted
@@ -207,10 +206,7 @@ function DefenderStatRow({
   // --- Input buffer for text EV entry ---
   const [inputBuffer, setInputBuffer] = useState<string | null>(null);
 
-  const inputDisplay =
-    ev === 0 && !isNatureBoosted && !isNatureReduced
-      ? ""
-      : `${ev}${isNatureBoosted ? "+" : isNatureReduced ? "−" : ""}`;
+  const inputDisplay = buildInputDisplay(ev, isNatureBoosted, isNatureReduced);
   const displayValue = inputBuffer ?? inputDisplay;
 
   function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
