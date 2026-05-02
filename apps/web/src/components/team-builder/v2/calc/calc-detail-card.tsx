@@ -222,6 +222,12 @@ export function CalcDetailCard({
         {verdict && (
           <div className={cn("mvdetail-ko", koClass)}>
             {verdict}
+            {baseOutput.recoverySuffix && (
+              <span className="mvdetail-recovery-tag">
+                {" "}
+                · {baseOutput.recoverySuffix}
+              </span>
+            )}
             {spreadApplied && (
               <span className="mvdetail-spread-tag"> · spread −25%</span>
             )}

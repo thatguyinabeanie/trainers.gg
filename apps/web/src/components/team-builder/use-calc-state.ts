@@ -10,8 +10,15 @@ import {
   Side,
 } from "@smogon/calc";
 
-import { type GameFormat, isChampionsFormat } from "@trainers/pokemon";
+import {
+  type GameFormat,
+  type PokemonType,
+  getSpeciesTypes,
+  isChampionsFormat,
+} from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
+
+import { getRecoveryAwareVerdict } from "./calc/recovery";
 
 // =============================================================================
 // Types
@@ -66,6 +73,12 @@ export interface CalcOutput {
   desc: string;
   rolls: readonly number[];
   defenderMaxHP: number;
+  /**
+   * Item-recovery-aware suffix that the UI can append to the verdict, e.g.
+   * "after Sitrus Berry recovery". Empty string when no recovery item is
+   * held or when recovery wouldn't actually change the KO tier.
+   */
+  recoverySuffix: string;
 }
 
 // Attacker's max HP — used in the "X–Y / HP" detail line for reverse calcs.
@@ -411,10 +424,29 @@ function runCalc(
         : (damage as number[])
       : [];
 
+    // Recovery-aware verdict suffix (Sitrus Berry, Leftovers, Black Sludge).
+    // The engine's roll array isn't always sorted; sort defensively so the
+    // recovery sim sees a true min→max range.
+    const sortedRolls = [...rolls].sort((a, b) => a - b);
+    const defenderItemName =
+      typeof defender.item === "string" ? defender.item : "";
+    const defenderSpeciesName =
+      typeof defender.species?.name === "string" ? defender.species.name : "";
+    const defenderTypes = getSpeciesTypes(defenderSpeciesName) as readonly PokemonType[];
+    const { suffix: recoverySuffix } = isImmune
+      ? { suffix: "" }
+      : getRecoveryAwareVerdict({
+          rolls: sortedRolls,
+          maxHP: defHP,
+          item: defenderItemName,
+          defenderTypes,
+        });
+
     return {
       minPercent,
       maxPercent,
       desc: isImmune ? `${moveName}: 0 - 0 (0 - 0%) -- immune` : result.desc(),
+      recoverySuffix,
       rolls,
       defenderMaxHP: defHP,
     };
