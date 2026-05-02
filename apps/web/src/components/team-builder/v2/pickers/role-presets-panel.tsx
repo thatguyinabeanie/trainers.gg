@@ -33,7 +33,7 @@ interface RolePresetsPanelProps {
   /** Called with the next selected array when a role is toggled. */
   onChange: (next: readonly RoleId[]) => void;
   /** Returns the bucket count for each role, shown right-aligned. */
-  bucketCount: (roleId: string) => number;
+  bucketCount: (roleId: RoleId) => number;
   className?: string;
 }
 

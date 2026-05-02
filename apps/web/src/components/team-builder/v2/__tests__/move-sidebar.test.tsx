@@ -6,12 +6,6 @@ jest.mock("@trainers/pokemon", () => ({
   ALL_TYPES: ["Fire", "Water", "Grass", "Electric"],
 }));
 
-jest.mock("@trainers/pokemon/sprites", () => ({
-  getShowdownTypeIconUrl: jest.fn(
-    (type: string) => `https://example.com/sprites/${type}.png`
-  ),
-}));
-
 import { MoveSidebar } from "../pickers/move-sidebar";
 import { DEFAULT_MOVE_FILTERS } from "../pickers/move-filter-state";
 
@@ -28,7 +22,7 @@ function renderSidebar(
 }
 
 describe("MoveSidebar", () => {
-  it("renders type chips for every ALL_TYPES entry (Showdown icon buttons)", () => {
+  it("renders type chips for every ALL_TYPES entry (TypeSymbolIcon buttons)", () => {
     renderSidebar();
     expect(screen.getByRole("button", { name: "Fire" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Water" })).toBeInTheDocument();

@@ -598,8 +598,14 @@ export function getAllLegalAbilities(formatId: string): string[] {
  * given format can legally learn.
  *
  * Uses `getLegalMoves(species, formatId)` for format-aware filtering.
- * Falls back to `getLearnableMoves(species)` when legality is not registered
- * (matches the pattern used in `role-registry.ts`).
+ *
+ * Two fallback cases, kept distinct on purpose:
+ *   - `undefined` (format not registered): expand to `getLearnableMoves(species)`
+ *     since there's no legality data to enforce.
+ *   - `LEGALITY_UNAVAILABLE` (validator threw): warn once per format and still
+ *     expand permissively for that species, so a transient validator hiccup
+ *     can't drop the whole format's enumerator. Without the per-format warn,
+ *     a stuck validator silently inflates this list to the full gen move pool.
  *
  * Results are cached per formatId — subsequent calls with the same formatId
  * return the same array reference.
@@ -610,10 +616,22 @@ export function getAllLegalMoves(formatId: string): string[] {
   const index = buildSpeciesSearchIndex(formatId);
   const set = new Set<string>();
   for (const entry of index) {
-    const legalSet = legalSetOrPermissive(
-      getLegalMoves(entry.species, formatId)
-    );
-    const moves = legalSet ?? new Set(getLearnableMoves(entry.species));
+    const result = getLegalMoves(entry.species, formatId);
+    if (result === LEGALITY_UNAVAILABLE) {
+      // Validator threw for this species — keep building permissively so one
+      // bad species can't drop the whole format's enumerator, but warn once
+      // per format so a stuck validator doesn't silently inflate the cached
+      // result to the full gen move pool.
+      if (!warnedLegalMovesUnavailable.has(formatId)) {
+        warnedLegalMovesUnavailable.add(formatId);
+        console.warn(
+          `[species-search] Legal moves unavailable for format "${formatId}" — getAllLegalMoves falling back to full learnable-move pool for affected species.`
+        );
+      }
+      for (const m of getLearnableMoves(entry.species)) set.add(m);
+      continue;
+    }
+    const moves = result ?? new Set(getLearnableMoves(entry.species));
     for (const m of moves) set.add(m);
   }
   const sorted = Array.from(set).sort((a, b) => a.localeCompare(b));

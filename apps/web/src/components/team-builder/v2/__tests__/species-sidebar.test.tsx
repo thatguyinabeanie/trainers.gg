@@ -13,12 +13,6 @@ jest.mock("@trainers/pokemon", () => ({
   calculateTeamSynergy: jest.fn(() => null),
 }));
 
-jest.mock("@trainers/pokemon/sprites", () => ({
-  getShowdownTypeIconUrl: jest.fn(
-    (type: string) => `https://example.com/sprites/${type}.png`
-  ),
-}));
-
 import { SpeciesSidebar } from "../pickers/species-sidebar";
 import { DEFAULT_SPECIES_FILTERS } from "../pickers/species-filter-state";
 
@@ -37,7 +31,7 @@ function renderSidebar(overrides = {}) {
 }
 
 describe("SpeciesSidebar", () => {
-  it("renders type chips (Showdown icon buttons labelled by type)", () => {
+  it("renders type chips (TypeSymbolIcon buttons labelled by type)", () => {
     renderSidebar();
     expect(screen.getByRole("button", { name: "Fire" })).toBeInTheDocument();
   });
