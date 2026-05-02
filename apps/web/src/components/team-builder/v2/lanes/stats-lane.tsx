@@ -633,7 +633,7 @@ export function StatsLane({
     return (
       <div
         className="border-border/60 flex min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2"
-        style={{ width: 340 }}
+        style={{ width: 400 }}
       >
         {/* Column headers — same structure as real but dimmed */}
         <div className={cn("mb-0.5 py-0", s.spreadRow)}>
@@ -700,7 +700,7 @@ export function StatsLane({
   return (
     <div
       className="border-border/60 flex min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2"
-      style={{ width: 340 }}
+      style={{ width: 400 }}
     >
       {/* Column headers */}
       <div className={cn(

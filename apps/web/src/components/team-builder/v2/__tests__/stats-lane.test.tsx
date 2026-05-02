@@ -562,11 +562,11 @@ describe("ghost mode (pokemon: null)", () => {
   // ---------------------------------------------------------------------------
   // 2. Root container has correct style and className
   // ---------------------------------------------------------------------------
-  it("root container has style={{ width: 340 }} and expected className", () => {
+  it("root container has style={{ width: 400 }} and expected className", () => {
     const { container } = render(<StatsLane pokemon={null} />);
     const root = container.firstElementChild as HTMLElement;
     expect(root).toBeTruthy();
-    expect(root.style.width).toBe("340px");
+    expect(root.style.width).toBe("400px");
     expect(root.className).toContain("border-dashed");
     expect(root.className).toContain("flex-col");
   });

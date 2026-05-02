@@ -862,6 +862,20 @@
   flex-shrink: 0;
 }
 
+/* Decorations shown in the rib middle (type pills, gender, shiny, level).
+   Hidden on mobile because the rib flips to a horizontal bar at ≤767px
+   and these controls would crowd it.
+   TODO: re-expose gender/shiny/level in identity-lane for mobile viewports. */
+.ribDecorations {
+  display: flex;
+}
+
+@media (max-width: 767px) {
+  .ribDecorations {
+    display: none;
+  }
+}
+
 /* Drag handle — the slot number label on the RIB.
    Only applied on filled, desktop-rendered slots. */
 .dragHandle {

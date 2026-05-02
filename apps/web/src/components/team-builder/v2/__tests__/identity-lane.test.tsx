@@ -222,7 +222,6 @@ jest.mock("../format-gating", () => ({
 import { IdentityLane } from "../lanes/identity-lane";
 import { type ValidationError } from "../../validation-hooks";
 import * as FormatGating from "../format-gating";
-import * as TrainersPokemon from "@trainers/pokemon";
 
 // =============================================================================
 // Fixtures
@@ -350,32 +349,21 @@ describe("IdentityLane — basic render", () => {
   });
 });
 
-describe("IdentityLane — type pills", () => {
-  it("renders type pills for the species types", () => {
+describe("IdentityLane — type pills (moved to RibDecorations)", () => {
+  it("does NOT render type pills inside identity-lane (they live in the rib now)", () => {
     // mock returns ["Dragon", "Ground"]
     renderLane();
-    expect(screen.getByTestId("type-pill-Dragon")).toBeInTheDocument();
-    expect(screen.getByTestId("type-pill-Ground")).toBeInTheDocument();
+    expect(screen.queryByTestId("type-pill-Dragon")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("type-pill-Ground")).not.toBeInTheDocument();
   });
-
-  it.each([
-    [["Fire", "Flying"], "Fire", "Flying"],
-    [["Water"], "Water", null],
-    [["Psychic", "Fairy"], "Psychic", "Fairy"],
-  ] as const)(
-    "renders correct type pills for %j",
-    (types, first, second) => {
-      (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce(types);
-      renderLane();
-      expect(screen.getByTestId(`type-pill-${first}`)).toBeInTheDocument();
-      if (second) {
-        expect(screen.getByTestId(`type-pill-${second}`)).toBeInTheDocument();
-      }
-    }
-  );
 });
 
 describe("IdentityLane — gender toggle", () => {
+  it("renders a gender toggle inside identity-lane", () => {
+    renderLane({ gender: null });
+    expect(screen.getByTitle("Toggle gender")).toBeInTheDocument();
+  });
+
   it("shows '—' when gender is null", () => {
     renderLane({ gender: null });
     expect(screen.getByTitle("Toggle gender")).toHaveTextContent("—");
@@ -414,6 +402,11 @@ describe("IdentityLane — gender toggle", () => {
 });
 
 describe("IdentityLane — shiny toggle", () => {
+  it("renders a shiny toggle inside identity-lane", () => {
+    renderLane({ is_shiny: false });
+    expect(screen.getByTitle("Not shiny (click to set)")).toBeInTheDocument();
+  });
+
   it("renders shiny button with aria-pressed=false when not shiny", () => {
     renderLane({ is_shiny: false });
     expect(screen.getByTitle("Not shiny (click to set)")).toHaveAttribute(
@@ -600,33 +593,15 @@ describe("IdentityLane — nature picker", () => {
   });
 });
 
-describe("IdentityLane — level field (format-gated)", () => {
+describe("IdentityLane — level field (moved to RibDecorations)", () => {
   beforeEach(() => {
     (FormatGating.formatSupportsLevel as jest.Mock).mockReturnValue(true);
     (FormatGating.formatSupportsTera as jest.Mock).mockReturnValue(false);
   });
 
-  it("renders level field when format supports it", () => {
+  it("does NOT render the level field inside identity-lane", () => {
     renderLane({ level: 50 });
-    expect(screen.getByText("Lv")).toBeInTheDocument();
-    expect(screen.getByText("50")).toBeInTheDocument();
-  });
-
-  it("passes level=50 as default when pokemon.level is null", () => {
-    renderLane({ level: null });
-    expect(screen.getByText("50")).toBeInTheDocument();
-  });
-
-  it("calls onUpdate with level: 42 when NumberPicker fires", async () => {
-    const user = userEvent.setup();
-    const { onUpdate } = renderLane({ level: 50 });
-    await user.click(screen.getByText("pick-number"));
-    expect(onUpdate).toHaveBeenCalledWith({ level: 42 });
-  });
-
-  it("hides level field when format does not support it", () => {
-    (FormatGating.formatSupportsLevel as jest.Mock).mockReturnValue(false);
-    renderLane({}, CHAMPIONS_FORMAT);
+    // Level label "Lv" moved to RibDecorations — should not be in identity-lane
     expect(screen.queryByText("Lv")).not.toBeInTheDocument();
   });
 });

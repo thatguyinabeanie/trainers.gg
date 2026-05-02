@@ -79,7 +79,7 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         )}
       >
         {/* RIB — slot number + × placeholder */}
-        <div className="flex w-8 shrink-0 flex-col items-center justify-between border-r border-dashed border-border/60 bg-muted/20 py-2">
+        <div className="flex w-10 shrink-0 flex-col items-center justify-between border-r border-dashed border-border/60 bg-muted/20 py-2">
           <span className="font-mono text-[10px] font-medium tracking-wide text-muted-foreground">
             {String(idx + 1).padStart(2, "0")}
           </span>

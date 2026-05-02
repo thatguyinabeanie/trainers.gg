@@ -13,6 +13,7 @@ import s from "../builder.module.css";
 import { CalcColumn } from "./calc-column";
 import { IdentityLane } from "./identity-lane";
 import { MovesLane } from "./moves-lane";
+import { RibDecorations } from "./rib-decorations";
 import { StatsLane } from "./stats-lane";
 
 // =============================================================================
@@ -101,11 +102,11 @@ export function ActiveRow({
         isDragging && s.rowDragging
       )}
     >
-      {/* RIB — slot number (drag handle) + remove button */}
+      {/* RIB — slot number (drag handle) + decorations + remove button */}
       <div
         className={cn(
           s.rib,
-          "flex w-8 shrink-0 flex-col items-center justify-between border-r border-dashed border-border/60 bg-muted/20 py-2"
+          "flex w-10 shrink-0 flex-col items-center justify-between border-r border-dashed border-border/60 bg-muted/20 py-2"
         )}
       >
         <span
@@ -119,6 +120,10 @@ export function ActiveRow({
         >
           {String(idx + 1).padStart(2, "0")}
         </span>
+
+        {/* Type pills (rotated), gender, shiny, level controls */}
+        <RibDecorations pokemon={pokemon} format={format} onUpdate={onUpdate} />
+
         <button
           type="button"
           onClick={onRemove}

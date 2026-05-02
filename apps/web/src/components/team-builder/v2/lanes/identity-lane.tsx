@@ -15,16 +15,13 @@ import {
 import { STAT_LABELS } from "../../stat-types";
 import { type ValidationError } from "../../validation-hooks";
 import { Sprite } from "../sprite";
-import { TypePill } from "../type-pill";
 import { TypeDot } from "../type-dot";
 import {
-  formatSupportsLevel,
   formatSupportsTera,
 } from "../format-gating";
 import { AbilityPicker } from "../pickers/ability-picker";
 import { ItemPicker } from "../pickers/item-picker";
 import { NaturePicker } from "../pickers/nature-picker";
-import { NumberPicker } from "../pickers/number-picker";
 import { SpeciesPicker } from "../pickers/species-picker";
 import { TypePicker } from "../pickers/type-picker";
 import { FieldError } from "../validation/field-error";
@@ -105,7 +102,7 @@ function IdentityLaneGhost() {
       </div>
 
       {/* Form column */}
-      <div className="flex w-64 min-w-0 shrink-0 flex-col justify-center gap-0.5">
+      <div className="flex w-56 min-w-0 shrink-0 flex-col justify-center gap-0.5">
         {/* Banner ghost — same className as real banner */}
         <div className={s.idBanner}>
           <div className="flex h-[22px] items-center">
@@ -146,17 +143,14 @@ function IdentityLaneReal({
   const types = getSpeciesTypes(pokemon.species ?? "");
   const nicknameRef = useRef<HTMLInputElement>(null);
   const [nickDraft, setNickDraft] = useState(pokemon.nickname ?? "");
-  const [levelOpen, setLevelOpen] = useState(false);
   const [speciesOpen, setSpeciesOpen] = useState(false);
   const [itemOpen, setItemOpen] = useState(false);
   const [abilityOpen, setAbilityOpen] = useState(false);
   const [natureOpen, setNatureOpen] = useState(false);
   const [teraOpen, setTeraOpen] = useState(false);
 
-  const level = pokemon.level ?? 50;
   const gender = pokemon.gender as GenderValue;
   const isShiny = pokemon.is_shiny ?? false;
-  const showLevel = formatSupportsLevel(format);
   const showTera = formatSupportsTera(format);
 
   // Nature effect labels for the mini suffix
@@ -296,7 +290,7 @@ function IdentityLaneReal({
       </Popover>
 
       {/* ── Form column (sibling of species Popover) ─────────────── */}
-      <div className="flex min-w-0 w-64 shrink-0 flex-col justify-center gap-0.5">
+      <div className="flex min-w-0 w-56 shrink-0 flex-col justify-center gap-0.5">
 
         {/* BANNER — nickname + chips rows */}
         <div className={s.idBanner}>
@@ -328,15 +322,9 @@ function IdentityLaneReal({
             ))}
           </div>
 
-          {/* Row 2: Type pills (left) + gender + shiny (right) */}
-          <div className="flex items-center gap-1">
-            {/* Type pills */}
-            {types.map((t) => (
-              <TypePill key={t} t={t} />
-            ))}
-
-            {/* Gender 3-way toggle: ♂ / ♀ / — */}
-            <div className="ml-auto flex items-center gap-1">
+          {/* Row 2: gender + shiny (right-aligned since types are no longer here) */}
+          <div className="flex items-center justify-end gap-1">
+            {/* Gender 3-way toggle */}
             <div className="flex flex-col">
               <button
                 type="button"
@@ -369,8 +357,6 @@ function IdentityLaneReal({
             >
               ✦
             </button>
-
-            </div>{/* end ml-auto group */}
           </div>
         </div>
 
@@ -504,30 +490,6 @@ function IdentityLaneReal({
           ))}
         </div>
 
-        {/* Level — gen-gated (hidden for Champions formats) */}
-        {showLevel && (
-          <Popover open={levelOpen} onOpenChange={setLevelOpen}>
-            <PopoverTrigger
-              render={
-                <button type="button" className={s.formRow} />
-              }
-            >
-              <span className={s.formLabel}>Lv</span>
-              <span className={s.formValue}>{level}</span>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" align="start" className="w-auto p-0">
-              <NumberPicker
-                title="Level"
-                value={level}
-                min={1}
-                max={100}
-                onChange={(v) => onUpdate({ level: v })}
-                onClose={() => setLevelOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
-        )}
-
         {/* Tera — gen-gated (only when format supports Terastallization) */}
         {showTera && (
           <Popover open={teraOpen} onOpenChange={setTeraOpen}>
@@ -583,13 +545,16 @@ function IdentityLaneReal({
  *   - 128×128 sprite with type-tinted background (click → species picker)
  *   - Species pill below (click → species picker, responsive width)
  *
- * Form column:
- *   Banner (2 rows, separated from form rows by a thin border):
- *     Row 1 — nickname input (full-width, dashed-border-on-hover)
- *     Row 2 — type pills + gender chip + shiny chip
+ * Form column (w-56):
+ *   Banner (2 rows):
+ *     Row 1 — nickname input
+ *     Row 2 — gender + shiny chips
  *
  *   Labeled form rows for loadout:
- *     Item | Ability | Nature | Level (gen-gated) | Tera (gen-gated)
+ *     Item | Ability | Nature | Tera (gen-gated)
+ *
+ * Note: Type pills and level have moved to RibDecorations inside the
+ * active-row rib. Gender and shiny remain here.
  */
 export function IdentityLane({
   pokemon,
