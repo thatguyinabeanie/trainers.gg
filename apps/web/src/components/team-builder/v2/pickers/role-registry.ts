@@ -46,7 +46,7 @@ export type RoleId =
   | "flinching"
   | "disruption";
 
-export interface RolePreset {
+export type RolePreset = {
   id: RoleId;
   label: string;
   group: RoleGroup;
@@ -54,7 +54,7 @@ export interface RolePreset {
   moves?: string[];
   /** Abilities that IMPLY this role (used only for species fit). */
   abilities?: string[];
-}
+};
 
 // =============================================================================
 // Registry — 26 roles across 7 groups
@@ -725,14 +725,14 @@ export const ROLE_GROUP_ORDER: RoleGroup[] = [
 // Group color palette — Tailwind class strings, single source of truth
 // =============================================================================
 
-export interface GroupColors {
+export type GroupColors = {
   /** Combined classes for the chip pill (background + border + text) */
   chip: string;
   /** Background-only class for active state of sidebar role buttons */
   active: string;
   /** Text-only class for the role's label color */
   text: string;
-}
+};
 
 export const GROUP_COLORS: Record<RoleGroup, GroupColors> = {
   "damage-type": {
@@ -780,8 +780,14 @@ export function getRoleById(id: string): RolePreset | undefined {
   return ROLE_PRESETS.find((r) => r.id === id);
 }
 
-let _rolesByMove: Map<string, string[]> | null = null;
-function getRolesByMoveIndex(): Map<string, string[]> {
+/**
+ * Frozen empty array — returned in lieu of allocating a fresh `[]` per call,
+ * and frozen so the caller cannot accidentally mutate the cache.
+ */
+const EMPTY_ROLES: readonly string[] = Object.freeze([]);
+
+let _rolesByMove: Map<string, readonly string[]> | null = null;
+function getRolesByMoveIndex(): Map<string, readonly string[]> {
   if (_rolesByMove) return _rolesByMove;
   const m = new Map<string, string[]>();
   for (const role of ROLE_PRESETS) {
@@ -792,13 +798,16 @@ function getRolesByMoveIndex(): Map<string, string[]> {
       m.set(move, list);
     }
   }
-  _rolesByMove = m;
-  return m;
+  // Freeze every list so consumers cannot push/splice into the shared cache.
+  const frozen = new Map<string, readonly string[]>();
+  for (const [k, v] of m) frozen.set(k, Object.freeze(v));
+  _rolesByMove = frozen;
+  return frozen;
 }
 
 /** O(1) — returns role IDs for a move name; empty if move is in no role. */
-export function getRolesForMove(moveName: string): string[] {
-  return getRolesByMoveIndex().get(moveName) ?? [];
+export function getRolesForMove(moveName: string): readonly string[] {
+  return getRolesByMoveIndex().get(moveName) ?? EMPTY_ROLES;
 }
 
 /**
@@ -810,7 +819,8 @@ export function getRolesForMove(moveName: string): string[] {
  * moves don't count toward role fit. Falls back to getLearnableMoves
  * (all-format learnable) when the format has no registered legality.
  *
- * Called once per species during buildSpeciesSearchIndex.
+ * Called once per species when the species search index is built (see
+ * `buildSpeciesSearchIndex` in `@trainers/pokemon`).
  */
 export function getRolesForSpecies(
   abilities: {

@@ -34,18 +34,32 @@ export function AbilityCell({ name, slot, onFilter }: AbilityCellProps) {
   const desc = getAbilityShortDesc(name);
   const isHidden = slot === "hidden";
 
-  const trigger = (
-    <span
-      className={cn(
-        "inline-block max-w-full overflow-hidden text-[11px] leading-snug text-ellipsis whitespace-nowrap",
-        "border-muted-foreground/40 border-b border-dotted",
-        onFilter && "hover:border-primary/60 hover:text-primary cursor-pointer",
-        isHidden && "text-muted-foreground italic"
-      )}
-      onClick={onFilter ? () => onFilter(name) : undefined}
+  // When `onFilter` is provided the cell is interactive — render a real
+  // <button> so keyboard / screen-reader users can apply the ability filter.
+  // Otherwise render a plain <span> so the cell is non-focusable.
+  const triggerClass = cn(
+    "inline-block max-w-full overflow-hidden text-[11px] leading-snug text-ellipsis whitespace-nowrap text-left",
+    "border-muted-foreground/40 border-b border-dotted",
+    onFilter &&
+      "hover:border-primary/60 hover:text-primary focus-visible:text-primary cursor-pointer outline-none focus-visible:border-primary/80",
+    isHidden && "text-muted-foreground italic"
+  );
+
+  const trigger = onFilter ? (
+    <button
+      type="button"
+      aria-label={`Filter by ${name}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onFilter(name);
+      }}
+      onKeyDown={(e) => e.stopPropagation()}
+      className={triggerClass}
     >
       {name}
-    </span>
+    </button>
+  ) : (
+    <span className={triggerClass}>{name}</span>
   );
 
   if (!desc) return trigger;

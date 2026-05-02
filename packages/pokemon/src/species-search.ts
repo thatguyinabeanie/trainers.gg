@@ -196,10 +196,37 @@ function makeEntry(
  * @param getRoles - Optional resolver to populate role IDs per species
  * @returns Array of SpeciesSearchEntry objects for every species in the generation
  */
+// Module-level cache of fully-built species indexes. The build is expensive
+// (iterates every species, runs validation + role inference per entry) and
+// pickers commonly mount/unmount inside dialogs, so caching across mounts
+// avoids redoing the work every time the picker opens.
+//
+// Keyed by formatId. The cache is keyed only by formatId because
+// `getRoles` (when provided) is the stable, module-level `getRolesForSpecies`
+// resolver — a different role function would warrant a different cache key,
+// but in practice we only call this with that one resolver. If a caller ever
+// needs a different resolver, pass `getRoles: undefined` to bypass the cache
+// path that includes role data, or evict via `clearSpeciesSearchIndexCache()`.
+const speciesIndexCache = new Map<string, SpeciesSearchEntry[]>();
+const speciesIndexCacheNoRoles = new Map<string, SpeciesSearchEntry[]>();
+
+/**
+ * Evict the species-search index cache. Useful in tests and when an upstream
+ * dataset (e.g. `getRolesForSpecies`'s registry) has been mutated.
+ */
+export function clearSpeciesSearchIndexCache(): void {
+  speciesIndexCache.clear();
+  speciesIndexCacheNoRoles.clear();
+}
+
 export function buildSpeciesSearchIndex(
   formatId: string,
   getRoles?: GetRolesFn
 ): SpeciesSearchEntry[] {
+  const cache = getRoles ? speciesIndexCache : speciesIndexCacheNoRoles;
+  const cached = cache.get(formatId);
+  if (cached) return cached;
+
   // Determine generation from format registry; default to 9 if unknown
   const format = getFormatById(formatId);
   const generation = format?.generation ?? 9;
@@ -259,6 +286,7 @@ export function buildSpeciesSearchIndex(
     }
   }
 
+  cache.set(formatId, index);
   return index;
 }
 

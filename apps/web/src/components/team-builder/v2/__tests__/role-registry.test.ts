@@ -44,7 +44,8 @@ describe("role-registry", () => {
   });
 
   it("ROLE_GROUP_LABELS has an entry per group", () => {
-    for (const g of ROLE_GROUP_ORDER) expect(ROLE_GROUP_LABELS[g]).toBeDefined();
+    for (const g of ROLE_GROUP_ORDER)
+      expect(ROLE_GROUP_LABELS[g]).toBeDefined();
   });
 
   // -----------------------------------------------------------------------
@@ -71,7 +72,7 @@ describe("role-registry", () => {
 
   it("getRolesForMove returns role ids for a known move", () => {
     expect(getRolesForMove("Heat Wave")).toEqual(
-      expect.arrayContaining(["spread", "burn"]),
+      expect.arrayContaining(["spread", "burn"])
     );
   });
 
@@ -105,17 +106,17 @@ describe("getRolesForSpecies", () => {
     const result = getRolesForSpecies(
       { slot1: "Blaze", slot2: null, hidden: "Intimidate" },
       "Incineroar",
-      "gen9vgc2026regg"
+      "gen9vgc2026regi"
     );
     expect(result).toContain("drop-atk");
   });
 
   it("returns matching roles when species can learn a move in role.moves", () => {
-    // Charizard learns Heat Wave (spread + burn roles) in gen9vgc2026regg
+    // Charizard learns Heat Wave (spread + burn roles) in gen9vgc2026regi
     const result = getRolesForSpecies(
       { slot1: "Blaze", slot2: null, hidden: "Solar Power" },
       "Charizard",
-      "gen9vgc2026regg"
+      "gen9vgc2026regi"
     );
     expect(result).toContain("spread"); // Heat Wave is a spread move
     expect(result).toContain("burn"); // Heat Wave is also a burn move
@@ -126,7 +127,7 @@ describe("getRolesForSpecies", () => {
     const result = getRolesForSpecies(
       { slot1: "Blaze", slot2: null, hidden: "Intimidate" },
       "Incineroar",
-      "gen9vgc2026regg"
+      "gen9vgc2026regi"
     );
     expect(result).toContain("drop-atk"); // via Intimidate ability
     expect(result).toContain("pivot"); // via U-turn or Parting Shot
@@ -152,7 +153,7 @@ describe("getRolesForSpecies", () => {
     const result = getRolesForSpecies(
       { slot1: "Pressure", slot2: null, hidden: null },
       "BogusNonexistentSpecies",
-      "gen9vgc2026regg"
+      "gen9vgc2026regi"
     );
     expect(result).toEqual([]);
   });

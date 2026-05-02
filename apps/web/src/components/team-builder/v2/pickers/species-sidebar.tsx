@@ -212,6 +212,7 @@ export function SpeciesSidebar({
         <div className="border-border border-t px-3 py-2">
           <button
             type="button"
+            aria-pressed={filters.megaOnly}
             onClick={() =>
               onFiltersChange({ ...filters, megaOnly: !filters.megaOnly })
             }

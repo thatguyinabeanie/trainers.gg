@@ -185,7 +185,10 @@ export {
 } from "./stat-keys";
 
 // Stat breakpoint calculator
-export { findStatBreakpoints, type FindStatBreakpointsArgs } from "./nature-bumps";
+export {
+  findStatBreakpoints,
+  type FindStatBreakpointsArgs,
+} from "./nature-bumps";
 
 // Speed tier benchmarks and comparison
 export {
@@ -199,6 +202,7 @@ export {
   type SpeciesSearchEntry,
   type GetRolesFn,
   buildSpeciesSearchIndex,
+  clearSpeciesSearchIndexCache,
   searchSpecies,
   getAllLegalAbilities,
   getAllLegalMoves,

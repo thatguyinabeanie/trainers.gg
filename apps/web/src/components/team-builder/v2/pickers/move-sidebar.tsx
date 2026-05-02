@@ -123,6 +123,7 @@ export function MoveSidebar({ filters, onFiltersChange }: MoveSidebarProps) {
               <button
                 key={cat}
                 type="button"
+                aria-pressed={isActive}
                 onClick={() => toggleCategory(cat)}
                 className={cn(
                   "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-semibold transition-colors",

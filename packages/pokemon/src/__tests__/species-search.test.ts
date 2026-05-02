@@ -1,11 +1,19 @@
 import {
   buildSpeciesSearchIndex,
+  clearSpeciesSearchIndexCache,
   searchSpecies,
   getAllLegalAbilities,
   getAllLegalMoves,
   type SpeciesSearchEntry,
 } from "../species-search";
 import { getLegalSpecies } from "../format-legality";
+
+// The species-search index is cached at module level keyed by formatId. Tests
+// that pass a custom `getRoles` resolver need a fresh build, so clear the
+// cache between tests to avoid one test's resolver bleeding into another's.
+afterEach(() => {
+  clearSpeciesSearchIndexCache();
+});
 
 // Build a gen9 index once for all tests — this is the most common format
 const GEN9_FORMAT = "gen9vgc2026regi";

@@ -77,6 +77,7 @@ export function RolePresetsPanel({
                   <button
                     key={preset.id}
                     type="button"
+                    aria-pressed={isActive}
                     onClick={() => toggle(preset.id)}
                     className={cn(
                       "flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[11px] transition-colors",

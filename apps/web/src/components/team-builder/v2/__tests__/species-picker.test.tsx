@@ -409,10 +409,11 @@ describe("SpeciesPicker", () => {
         onClose={jest.fn()}
       />
     );
-    // The invisible overlay button carries aria-label="Select Bulbasaur"
-    const btn = screen.getAllByRole("button", { name: /select bulbasaur/i })[0];
-    expect(btn).toBeTruthy();
-    await user.click(btn!);
+    // Each species row is `<div role="row" aria-label="Select <species>">`.
+    // The overlay click target is aria-hidden (keyboard goes through the row's
+    // own keydown handler), so we query the row directly.
+    const row = screen.getByRole("row", { name: /select bulbasaur/i });
+    await user.click(row);
     expect(onPick).toHaveBeenCalledWith("Bulbasaur");
   });
 
@@ -427,9 +428,8 @@ describe("SpeciesPicker", () => {
         onClose={jest.fn()}
       />
     );
-    const btn = screen.getAllByRole("button", { name: /select garchomp/i })[0];
-    expect(btn).toBeTruthy();
-    await user.click(btn!);
+    const row = screen.getByRole("row", { name: /select garchomp/i });
+    await user.click(row);
     expect(onPick).toHaveBeenCalledWith("Garchomp");
   });
 

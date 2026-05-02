@@ -230,29 +230,35 @@ function SpeciesRow({
 }: SpeciesRowProps) {
   const sprite = getPokemonSprite(entry.species);
 
+  function handleRowKey(e: React.KeyboardEvent<HTMLDivElement>) {
+    // Only respond when focus is on the row itself (not on a nested
+    // interactive child like AbilityCell or a future filter button).
+    if (e.currentTarget !== e.target) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onSelect();
+    }
+  }
+
   return (
-    // Using div[role="row"] instead of <button> because this row contains
-    // nested interactive elements (ability cells, role chips). Nested buttons
-    // are invalid HTML. The full-row click target is handled by an invisible
-    // overlay button behind the row content.
+    // Using `<div role="row" tabIndex={0}>` instead of a wrapping `<button>`
+    // because the row contains nested interactive elements (AbilityCell
+    // `<button>`s) and nested buttons are invalid HTML. The row is itself
+    // keyboard-accessible (tabIndex + onKeyDown handles Enter/Space) and
+    // mouse-accessible (onClick fires onSelect). Nested AbilityCell buttons
+    // stopPropagation so cell clicks don't also select the row.
     <div
       role="row"
       aria-label={`Select ${entry.species}`}
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={handleRowKey}
       className={cn(
-        "hover:bg-muted/60 relative grid w-full cursor-pointer items-center gap-2 border-b px-4 py-2 text-left transition-colors",
+        "hover:bg-muted/60 focus-visible:bg-muted/80 focus-visible:outline-primary relative grid w-full cursor-pointer items-center gap-2 border-b px-4 py-2 text-left transition-colors outline-none focus-visible:outline-2",
         ROW_GRID,
         isCurrent && "bg-primary/5"
       )}
     >
-      {/* Full-row invisible click target — sits behind interactive cells */}
-      <button
-        type="button"
-        aria-label={`Select ${entry.species}`}
-        onClick={onSelect}
-        className="absolute inset-0 z-0"
-        tabIndex={-1}
-      />
-
       {/* Sprite — 64px circle, image rendered at 56px */}
       <div className="bg-primary/10 relative z-10 flex size-16 shrink-0 items-center justify-center rounded-full">
         <Image
