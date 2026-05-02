@@ -455,7 +455,13 @@ export function MovePicker({
           {activeFilterCount > 0 && (
             <button
               type="button"
-              onClick={() => setFilters(DEFAULT_MOVE_FILTERS)}
+              // Preserve `search` so the chip's behavior matches its label —
+              // activeFilterCount counts types/categories/roles only, so
+              // resetting the entire filter object would also wipe a typed
+              // query the user did not ask to clear.
+              onClick={() =>
+                setFilters((f) => ({ ...DEFAULT_MOVE_FILTERS, search: f.search }))
+              }
               aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
               className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
             >

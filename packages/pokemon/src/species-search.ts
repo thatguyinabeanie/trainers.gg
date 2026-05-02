@@ -381,7 +381,7 @@ export function searchSpecies(
     ability?: string | null;
     /** Filter: include only species that have at least one Mega form */
     megaOnly?: boolean;
-    /** Filter: species must have at least one of these role IDs */
+    /** Filter: species must carry ALL of these role IDs (AND logic). */
     roles?: readonly string[];
   }
 ): SpeciesSearchEntry[] {

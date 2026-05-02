@@ -1,9 +1,13 @@
 /**
  * Filter state for the move picker.
  *
- * Multi-select OR semantics: a move passes the filter if it matches AT LEAST ONE
- * value in each non-empty array (and search matches if non-empty). Consumed by
- * `move-sidebar.tsx` (left panel) and `move-picker.tsx` (the orchestrator).
+ * Per-field semantics — see each property's JSDoc for the rule:
+ *   - `types`, `categories`: OR multi-select (any match)
+ *   - `roles`: AND multi-select (must carry all)
+ *   - `search`: substring match across name/effect/type/category
+ *
+ * Consumed by `move-sidebar.tsx` (left panel) and `move-picker.tsx`
+ * (the orchestrator).
  */
 
 import { type RoleId } from "./role-registry";
@@ -17,7 +21,11 @@ export type MoveFilterState = {
   types: readonly string[];
   /** OR multi-select. */
   categories: readonly MoveCategory[];
-  /** OR multi-select role IDs (see `role-registry.ROLE_PRESETS`). */
+  /**
+   * AND multi-select role IDs (see `role-registry.ROLE_PRESETS`).
+   * A move is kept only when it carries every selected role — picking
+   * "Hazard Setter" + "Pivot" surfaces moves that are both, not either.
+   */
   roles: readonly RoleId[];
 };
 
