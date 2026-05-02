@@ -37,6 +37,7 @@ import { SpeciesPicker } from "../pickers/species-picker";
 import { TypePicker } from "../pickers/type-picker";
 import { FieldErrors } from "../validation/field-error";
 import { DescriptionTooltip } from "./description-tooltip";
+import { FormChip } from "./form-chip";
 import s from "../builder.module.css";
 
 // =============================================================================
@@ -90,6 +91,109 @@ function errorsForFields(errors: ValidationError[], fields: string[]): Validatio
   return errors.filter((e) => fields.includes(e.field));
 }
 
+// =============================================================================
+// IdentityAbilityRow — ability popover with tooltip + mega secondary line
+//
+// Extracted from the 75-line IIFE in IdentityLaneReal. Keeps the custom
+// Tooltip → TooltipTrigger → PopoverTrigger nesting that FormChip cannot
+// model (FormChip is a plain Popover with no outer Tooltip).
+// =============================================================================
+
+interface IdentityAbilityRowProps {
+  pokemon: Tables<"pokemon">;
+  format: GameFormat | undefined;
+  abilityOpen: boolean;
+  setAbilityOpen: (open: boolean) => void;
+  onUpdate: (patch: TablesUpdate<"pokemon">) => void;
+  abilityErrors: ValidationError[];
+}
+
+function IdentityAbilityRow({
+  pokemon,
+  format,
+  abilityOpen,
+  setAbilityOpen,
+  onUpdate,
+  abilityErrors,
+}: IdentityAbilityRowProps) {
+  const megaAbility = pokemon.species
+    ? getMegaAbilityForSpecies(pokemon.species)
+    : null;
+  const pickerSpecies = pokemon.species
+    ? getCanonicalBaseSpecies(pokemon.species)
+    : "";
+  const displayAbility = megaAbility ?? pokemon.ability;
+  const showTooltip = !abilityOpen;
+  const displayDesc = displayAbility ? getAbilityShortDesc(displayAbility) : null;
+  const baseDesc = pokemon.ability ? getAbilityShortDesc(pokemon.ability) : null;
+  return (
+    <div className="flex flex-col">
+      <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
+        <DescriptionTooltip
+          title={displayAbility}
+          description={displayDesc}
+          showContent={showTooltip}
+        >
+          <TooltipTrigger
+            render={
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className={cn(
+                      s.formRow,
+                      abilityErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
+                    )}
+                  />
+                }
+              />
+            }
+          >
+            <span className={s.formLabel}>Abil</span>
+            <span
+              className={cn(
+                s.formValue,
+                !displayAbility && "text-muted-foreground/50 italic"
+              )}
+            >
+              {displayAbility || "—"}
+            </span>
+          </TooltipTrigger>
+        </DescriptionTooltip>
+        {megaAbility && (
+          <DescriptionTooltip
+            title={pokemon.ability}
+            description={baseDesc}
+            showContent={showTooltip}
+          >
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label={`Change base ability (${pokemon.ability || "none"})`}
+                  onClick={() => setAbilityOpen(true)}
+                  className="self-start rounded px-1 pt-0.5 font-mono text-[9px] text-muted-foreground/70 hover:bg-muted hover:text-foreground"
+                />
+              }
+            >
+              base: {pokemon.ability || "—"}
+            </TooltipTrigger>
+          </DescriptionTooltip>
+        )}
+        <PopoverContent side="bottom" align="start" className="w-auto p-0">
+          <AbilityPicker
+            value={pokemon.ability}
+            species={pickerSpecies}
+            format={format}
+            onPick={(ability) => onUpdate({ ability })}
+            onClose={() => setAbilityOpen(false)}
+          />
+        </PopoverContent>
+      </Popover>
+      <FieldErrors errors={abilityErrors} className="px-1" />
+    </div>
+  );
+}
 
 // =============================================================================
 // IdentityLaneGhost — static visual placeholder (no interactive elements)
@@ -471,38 +575,23 @@ function IdentityLaneReal({
 
         {/* Item */}
         <div className="flex flex-col">
-          <Popover open={itemOpen} onOpenChange={setItemOpen}>
-            <PopoverTrigger
-              render={
-                <button
-                  type="button"
-                  className={cn(
-                    s.formRow,
-                    itemErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
-                  )}
-                />
-              }
-            >
-              <span className={s.formLabel}>Item</span>
-              <span
-                className={cn(
-                  s.formValue,
-                  !pokemon.held_item && "text-muted-foreground/50 italic"
-                )}
-              >
-                {pokemon.held_item ?? "—"}
-              </span>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" align="start" className="w-auto p-0">
-              <ItemPicker
-                value={pokemon.held_item}
-                format={format}
-                teamItems={teamItems}
-                onPick={(item) => onUpdate({ held_item: item })}
-                onClose={() => setItemOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
+          <FormChip
+            label="Item"
+            value={pokemon.held_item ?? ""}
+            triggerClassName={
+              itemErrors.length > 0 ? "ring-1 ring-destructive/40 rounded" : undefined
+            }
+            open={itemOpen}
+            onOpenChange={setItemOpen}
+          >
+            <ItemPicker
+              value={pokemon.held_item}
+              format={format}
+              teamItems={teamItems}
+              onPick={(item) => onUpdate({ held_item: item })}
+              onClose={() => setItemOpen(false)}
+            />
+          </FormChip>
           <FieldErrors errors={itemErrors} className="px-1" />
         </div>
 
@@ -510,121 +599,33 @@ function IdentityLaneReal({
             as the primary display and the stored base ability as a secondary
             line. The picker is scoped to the BASE form's abilities so the
             user keeps editing what'll get submitted on the team sheet. */}
-        <div className="flex flex-col">
-          {(() => {
-            const megaAbility = pokemon.species
-              ? getMegaAbilityForSpecies(pokemon.species)
-              : null;
-            const pickerSpecies = pokemon.species
-              ? getCanonicalBaseSpecies(pokemon.species)
-              : "";
-            const displayAbility = megaAbility ?? pokemon.ability;
-            const showTooltip = !abilityOpen;
-            const displayDesc = displayAbility ? getAbilityShortDesc(displayAbility) : null;
-            const baseDesc = pokemon.ability ? getAbilityShortDesc(pokemon.ability) : null;
-            return (
-              <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
-                <DescriptionTooltip
-                  title={displayAbility}
-                  description={displayDesc}
-                  showContent={showTooltip}
-                >
-                  <TooltipTrigger
-                    render={
-                      <PopoverTrigger
-                        render={
-                          <button
-                            type="button"
-                            className={cn(
-                              s.formRow,
-                              abilityErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
-                            )}
-                          />
-                        }
-                      />
-                    }
-                  >
-                    <span className={s.formLabel}>Abil</span>
-                    <span
-                      className={cn(
-                        s.formValue,
-                        !displayAbility && "text-muted-foreground/50 italic"
-                      )}
-                    >
-                      {displayAbility || "—"}
-                    </span>
-                  </TooltipTrigger>
-                </DescriptionTooltip>
-                {megaAbility && (
-                  <DescriptionTooltip
-                    title={pokemon.ability}
-                    description={baseDesc}
-                    showContent={showTooltip}
-                  >
-                    <TooltipTrigger
-                      render={
-                        <button
-                          type="button"
-                          aria-label={`Change base ability (${pokemon.ability || "none"})`}
-                          onClick={() => setAbilityOpen(true)}
-                          className="self-start rounded px-1 pt-0.5 font-mono text-[9px] text-muted-foreground/70 hover:bg-muted hover:text-foreground"
-                        />
-                      }
-                    >
-                      base: {pokemon.ability || "—"}
-                    </TooltipTrigger>
-                  </DescriptionTooltip>
-                )}
-                <PopoverContent side="bottom" align="start" className="w-auto p-0">
-                  <AbilityPicker
-                    value={pokemon.ability}
-                    species={pickerSpecies}
-                    format={format}
-                    onPick={(ability) => onUpdate({ ability })}
-                    onClose={() => setAbilityOpen(false)}
-                  />
-                </PopoverContent>
-              </Popover>
-            );
-          })()}
-          <FieldErrors errors={abilityErrors} className="px-1" />
-        </div>
+        <IdentityAbilityRow
+          pokemon={pokemon}
+          format={format}
+          abilityOpen={abilityOpen}
+          setAbilityOpen={setAbilityOpen}
+          onUpdate={onUpdate}
+          abilityErrors={abilityErrors}
+        />
 
         {/* Nature */}
         <div className="flex flex-col">
-          <Popover open={natureOpen} onOpenChange={setNatureOpen}>
-            <PopoverTrigger
-              render={
-                <button
-                  type="button"
-                  className={cn(
-                    s.formRow,
-                    natureErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
-                  )}
-                />
-              }
-            >
-              <span className={s.formLabel}>Nat</span>
-              <span className="flex min-w-0 items-baseline gap-1.5">
-                <span
-                  className={cn(
-                    "text-foreground text-[11.5px]",
-                    !pokemon.nature && "text-muted-foreground/50 italic"
-                  )}
-                >
-                  {pokemon.nature || "—"}
-                </span>
-                <NatureChevrons boost={natUp} reduce={natDown} />
-              </span>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" align="start" className="w-auto p-0">
-              <NaturePicker
-                value={pokemon.nature ?? ""}
-                onPick={(nature) => onUpdate({ nature })}
-                onClose={() => setNatureOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
+          <FormChip
+            label="Nat"
+            value={pokemon.nature ?? ""}
+            trailing={<NatureChevrons boost={natUp} reduce={natDown} />}
+            triggerClassName={
+              natureErrors.length > 0 ? "ring-1 ring-destructive/40 rounded" : undefined
+            }
+            open={natureOpen}
+            onOpenChange={setNatureOpen}
+          >
+            <NaturePicker
+              value={pokemon.nature ?? ""}
+              onPick={(nature) => onUpdate({ nature })}
+              onClose={() => setNatureOpen(false)}
+            />
+          </FormChip>
           <FieldErrors errors={natureErrors} className="px-1" />
         </div>
 

@@ -37,10 +37,22 @@ jest.mock("@/components/ui/popover", () => ({
   PopoverTrigger: ({
     children,
     className,
+    render: renderProp,
   }: {
     children: React.ReactNode;
     className?: string;
-  }) => <div data-testid="popover-trigger" className={className}>{children}</div>,
+    render?: React.ReactElement;
+  }) => {
+    if (renderProp) {
+      return (
+        <div data-testid="popover-trigger">
+          {renderProp}
+          {children}
+        </div>
+      );
+    }
+    return <div data-testid="popover-trigger" className={className}>{children}</div>;
+  },
   PopoverContent: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popover-content">{children}</div>
   ),

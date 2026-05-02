@@ -25,8 +25,8 @@ import { NaturePicker } from "../pickers/nature-picker";
 import { SpeciesPicker } from "../pickers/species-picker";
 import { TypePicker } from "../pickers/type-picker";
 import { formatSupportsTera } from "../format-gating";
+import { FormChip } from "../lanes/form-chip";
 import { MegaToggle } from "./mega-toggle";
-import s from "../builder.module.css";
 
 // =============================================================================
 // Types
@@ -47,64 +47,6 @@ export interface DefenderMonHeaderProps {
   /** Per-calc toggle: simulate defender as mega vs base form. */
   defenderMegaActive: boolean;
   setDefenderMegaActive: (v: boolean) => void;
-}
-
-// =============================================================================
-// DefenderFormChip — internal helper for the Item / Ability / Nature / Tera
-// rows. Keeps the Popover + s.formRow + label/value structure in one place so
-// the four chips always render identically (and the test surface is one
-// component, not four near-duplicate inline blocks).
-// =============================================================================
-
-interface DefenderFormChipProps {
-  /** Two-letter-ish label shown in the prefix slot (Item, Abil, Nat, Tera). */
-  label: string;
-  /** Display string. Empty string renders the muted-italic em-dash placeholder. */
-  value: string;
-  /** Optional trailing element rendered after the value (e.g. nature ±chevrons). */
-  trailing?: React.ReactNode;
-  /** Picker popover body. */
-  children: React.ReactNode;
-}
-
-function DefenderFormChip({
-  label,
-  value,
-  trailing,
-  children,
-}: DefenderFormChipProps) {
-  return (
-    <Popover>
-      <PopoverTrigger className={s.formRow}>
-        <span className={s.formLabel}>{label}</span>
-        {trailing ? (
-          <span className="flex min-w-0 items-baseline gap-1.5 overflow-hidden">
-            <span
-              className={cn(
-                s.formValue,
-                !value && "italic text-muted-foreground/50"
-              )}
-            >
-              {value || "—"}
-            </span>
-            {trailing}
-          </span>
-        ) : (
-          <span
-            className={cn(
-              s.formValue,
-              !value && "italic text-muted-foreground/50"
-            )}
-          >
-            {value || "—"}
-          </span>
-        )}
-      </PopoverTrigger>
-      <PopoverContent align="start" side="bottom" className="w-auto p-0">
-        {children}
-      </PopoverContent>
-    </Popover>
-  );
 }
 
 // =============================================================================
@@ -233,7 +175,7 @@ export function DefenderMonHeader({
       )}
 
       {/* Item */}
-      <DefenderFormChip label="Item" value={defenderItem}>
+      <FormChip label="Item" value={defenderItem}>
         <ItemPicker
           value={defenderItem}
           format={format}
@@ -241,13 +183,13 @@ export function DefenderMonHeader({
           onPick={(item) => setDefenderItem(item)}
           onClose={() => undefined}
         />
-      </DefenderFormChip>
+      </FormChip>
 
       {/* Ability — when species is a mega and the toggle is on, the picker
           edits the BASE ability (stored) but the row's primary value shows
           the post-evolution ability for clarity. The base ability is shown
           as a small secondary line for tournament transparency. */}
-      <DefenderFormChip
+      <FormChip
         label="Abil"
         value={displayAbility}
         trailing={
@@ -265,10 +207,10 @@ export function DefenderMonHeader({
           onPick={(ability) => setDefenderAbility(ability)}
           onClose={() => undefined}
         />
-      </DefenderFormChip>
+      </FormChip>
 
       {/* Nature — passes nature ±chevrons as the trailing element */}
-      <DefenderFormChip
+      <FormChip
         label="Nat"
         value={defenderNature}
         trailing={
@@ -280,17 +222,17 @@ export function DefenderMonHeader({
           onPick={(nat) => setDefenderNature(nat)}
           onClose={() => undefined}
         />
-      </DefenderFormChip>
+      </FormChip>
 
       {/* Tera */}
       {showTera && (
-        <DefenderFormChip label="Tera" value={defenderTera}>
+        <FormChip label="Tera" value={defenderTera}>
           <TypePicker
             value={defenderTera}
             onPick={(type) => setDefenderTera(type)}
             onClose={() => undefined}
           />
-        </DefenderFormChip>
+        </FormChip>
       )}
 
       {!hasLegalAbility && (
