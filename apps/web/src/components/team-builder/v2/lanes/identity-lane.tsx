@@ -156,29 +156,41 @@ function FormChips({ currentSpecies, currentItem, onPick }: FormChipsProps) {
   const forms = getFormsForSpecies(currentSpecies);
   if (forms.length <= 1) return null;
   const base = getCanonicalBaseSpecies(currentSpecies);
+  // Drop the base form — chips act as toggles. The "off" state is the base
+  // form; clicking an active chip returns to base.
+  const altForms = forms.filter((f) => f !== base);
   return (
     <div className="flex flex-wrap gap-1 px-1 pt-0.5">
-      {forms.map((form) => {
+      {altForms.map((form) => {
         const active = form === currentSpecies;
         const stone = getMegaStoneForSpecies(form);
-        // Strip the base species + dash for the chip label so "Charizard-Mega-Y"
-        // renders as "Mega Y" inline and the base form renders as "Regular".
-        const label =
-          form === base ? "Regular" : form.slice(base.length + 1).replace(/-/g, " ");
+        // Common case: alt form is "<base>-<suffix>" (Charizard-Mega-Y,
+        // Aegislash-Blade). Strip the base + dash and render the rest.
+        // Edge case (Floette): canonical base is "Floette-Eternal" but the
+        // alt is "Floette-Mega" — they share a root, not a prefix. Fall
+        // back to the substring after the last hyphen so we still render
+        // a meaningful chip ("Mega").
+        const label = form.startsWith(base + "-")
+          ? form.slice(base.length + 1).replace(/-/g, " ")
+          : form.slice(form.lastIndexOf("-") + 1);
         // Indicate when the chip would auto-attach a mega stone, but only
         // when the current item isn't already that stone.
-        const willChangeItem =
-          stone !== null && stone !== currentItem;
+        const willChangeItem = stone !== null && stone !== currentItem;
+        // Click an inactive chip → switch to that form. Click the active
+        // chip → toggle back to the base form.
+        const target = active ? base : form;
         return (
           <button
             key={form}
             type="button"
-            onClick={() => onPick(form)}
+            onClick={() => onPick(target)}
             aria-pressed={active}
             title={
-              stone
-                ? `${form}${willChangeItem ? ` — sets item to ${stone}` : ""}`
-                : form
+              active
+                ? `Toggle off — return to ${base}`
+                : stone
+                  ? `${form}${willChangeItem ? ` — sets item to ${stone}` : ""}`
+                  : form
             }
             className={cn(
               "rounded-md border px-2 py-0.5 text-[10.5px] font-semibold transition-colors",
