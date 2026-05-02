@@ -12,7 +12,7 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   ALL_TYPES,
@@ -74,6 +74,22 @@ export function SpeciesSidebar({
   const [moveFocused, setMoveFocused] = useState(false);
   const [abilityInput, setAbilityInput] = useState("");
   const [abilityFocused, setAbilityFocused] = useState(false);
+
+  const moveBlurTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
+  const abilityBlurTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
+
+  // Clear blur timers on unmount to avoid state updates on unmounted components.
+  useEffect(
+    () => () => {
+      clearTimeout(moveBlurTimerRef.current);
+      clearTimeout(abilityBlurTimerRef.current);
+    },
+    []
+  );
 
   // ---------------------------------------------------------------------------
   // Derived values
@@ -143,14 +159,12 @@ export function SpeciesSidebar({
   function handleMoveKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
-      // Commit the top suggestion if there is one; otherwise commit the
-      // raw input (so users can type a move that isn't in the format's
-      // legal-move enumeration).
-      const pick = moveSuggestions[0] ?? moveInput.trim();
-      if (pick) {
-        addMove(pick);
-        setMoveInput("");
-      }
+      // Only commit when there's an actual suggestion match — typing
+      // arbitrary text shouldn't apply a move filter that doesn't exist.
+      const pick = moveSuggestions[0];
+      if (!pick) return;
+      addMove(pick);
+      setMoveInput("");
     } else if (e.key === "Escape") {
       setMoveInput("");
     }
@@ -261,7 +275,11 @@ export function SpeciesSidebar({
               onBlur={() => {
                 // Defer so a click on a suggestion can fire before the
                 // dropdown disappears.
-                setTimeout(() => setAbilityFocused(false), 120);
+                clearTimeout(abilityBlurTimerRef.current);
+                abilityBlurTimerRef.current = setTimeout(
+                  () => setAbilityFocused(false),
+                  120
+                );
               }}
               className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
             />
@@ -371,7 +389,11 @@ export function SpeciesSidebar({
             onBlur={() => {
               // Defer so a click on a suggestion fires before the dropdown
               // hides on blur.
-              setTimeout(() => setMoveFocused(false), 120);
+              clearTimeout(moveBlurTimerRef.current);
+              moveBlurTimerRef.current = setTimeout(
+                () => setMoveFocused(false),
+                120
+              );
             }}
             className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
           />

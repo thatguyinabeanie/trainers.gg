@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { AbilityCell } from "./ability-cell";
 import { RolePresetsPanel } from "./role-presets-panel";
-import { getRolesForSpecies } from "./role-registry";
+import { getRolesForSpecies, type RoleId } from "./role-registry";
 import {
   DEFAULT_SPECIES_FILTERS,
   type SpeciesFilterState,
@@ -73,10 +73,10 @@ const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
 type SortCol = "name" | "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "bst";
 type SortDir = "asc" | "desc";
 
-interface SortState {
+type SortState = {
   col: SortCol;
   dir: SortDir;
-}
+};
 
 function sortSpecies(
   rows: SpeciesSearchEntry[],
@@ -110,6 +110,9 @@ function sortSpecies(
       case "bst":
         cmp = a.bst - b.bst;
         break;
+      default:
+        sort.col satisfies never;
+        return 0;
     }
     if (cmp === 0) cmp = a.species.localeCompare(b.species);
     return sort.dir === "asc" ? cmp : -cmp;
@@ -203,7 +206,7 @@ function SortHeaderButton({
   );
 }
 
-/** Editor stat palette — kept in sync with `STAT_COLOR_CLASS`. */
+/** Header stat colors — picker uses short stat-key names (atk/def/spa/spd/spe) and adds bst. Hues mirror STAT_COLOR_CLASS in stat-types.ts. */
 const STAT_HEADER_COLORS: Record<
   "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "bst",
   string
@@ -285,8 +288,6 @@ function SpeciesRow({
         {entry.species}
       </span>
 
-      {/* Types — wordless round icons side-by-side; em-dash for monotype.
-          Wordless icons translate cleanly without text changes. */}
       <div className="relative z-10 flex min-w-0 items-center gap-1.5">
         {entry.types[0] ? (
           <TypeSymbolIcon
@@ -463,6 +464,7 @@ export function SpeciesPicker({
   // Pre-filter by format legality so the picker only ever surfaces species
   // legal in this format. The denominator shown to the user reflects the
   // format roster, not all of gen 9.
+  // Legality filter iterates the simulator's species set per call — memoize to keep the filtered index stable across renders.
   const speciesIndex = useMemo(
     () =>
       format?.id
@@ -695,7 +697,10 @@ export function SpeciesPicker({
             <RolePresetsPanel
               selected={filters.roles}
               onChange={(next) =>
-                setFilters((prev) => ({ ...prev, roles: next }))
+                setFilters((prev) => ({
+                  ...prev,
+                  roles: next as readonly RoleId[],
+                }))
               }
               bucketCount={bucketCount}
               className="h-full"

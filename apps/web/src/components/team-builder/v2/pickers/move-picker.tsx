@@ -11,9 +11,10 @@
  * triggering move selection.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
+import Image from "next/image";
 
 import {
   getLearnableMoves,
@@ -34,7 +35,7 @@ import {
 import { MoveSidebar } from "./move-sidebar";
 import { RoleChip } from "./role-chip";
 import { RolePresetsPanel } from "./role-presets-panel";
-import { getRolesForMove } from "./role-registry";
+import { getRolesForMove, type RoleId } from "./role-registry";
 
 // =============================================================================
 // Types
@@ -217,11 +218,12 @@ function MoveRowItem({
           onKeyDown={(e) => e.stopPropagation()}
           className="focus-visible:ring-primary flex cursor-pointer items-center justify-center rounded outline-none focus-visible:ring-2"
         >
-          <img
-            src={CATEGORY_ICON_URLS[data.category]}
+          <Image
+            src={CATEGORY_ICON_URLS[data.category]!}
             alt={data.category}
             width={32}
             height={14}
+            unoptimized
             className="h-6 w-auto [image-rendering:pixelated]"
           />
         </button>
@@ -350,19 +352,14 @@ export function MovePicker({
 
   // -------------------------------------------------------------------------
   // Bucket counts for the RolePresetsPanel
-  // Manual useMemo justified here: stabilizes the (id: string) => number
-  // function reference so RolePresetsPanel doesn't re-render on every keystroke
-  // via React Compiler identity checks on the callback argument.
   // -------------------------------------------------------------------------
-  const bucketCount = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const r of rows) {
-      for (const id of getRolesForMove(r.name)) {
-        counts.set(id, (counts.get(id) ?? 0) + 1);
-      }
+  const roleCounts = new Map<string, number>();
+  for (const r of rows) {
+    for (const id of getRolesForMove(r.name)) {
+      roleCounts.set(id, (roleCounts.get(id) ?? 0) + 1);
     }
-    return (id: string) => counts.get(id) ?? 0;
-  }, [rows]);
+  }
+  const bucketCount = (id: string) => roleCounts.get(id) ?? 0;
 
   // -------------------------------------------------------------------------
   // Virtualizer
@@ -404,10 +401,11 @@ export function MovePicker({
   }
 
   function handleRoleFilter(roleId: string) {
+    const id = roleId as RoleId;
     setFilters((f) =>
-      f.roles.includes(roleId)
-        ? { ...f, roles: f.roles.filter((r) => r !== roleId) }
-        : { ...f, roles: [...f.roles, roleId] }
+      f.roles.includes(id)
+        ? { ...f, roles: f.roles.filter((r) => r !== id) }
+        : { ...f, roles: [...f.roles, id] }
     );
   }
 
@@ -420,6 +418,13 @@ export function MovePicker({
       sort.col === col ? "text-foreground" : "text-muted-foreground"
     );
   }
+
+  // -------------------------------------------------------------------------
+  // Derived values
+  // -------------------------------------------------------------------------
+
+  const activeFilterCount =
+    filters.types.length + filters.categories.length + filters.roles.length;
 
   // -------------------------------------------------------------------------
   // Render
@@ -447,26 +452,20 @@ export function MovePicker({
         {/* Fixed-width slot reserves space so the search input width is stable
             whether or not filters are active (no layout shift on toggle). */}
         <div className="flex w-[88px] shrink-0 items-center justify-end">
-          {(() => {
-            const count =
-              filters.types.length +
-              filters.categories.length +
-              filters.roles.length;
-            if (count === 0) return null;
-            return (
-              <button
-                type="button"
-                onClick={() => setFilters(DEFAULT_MOVE_FILTERS)}
-                aria-label={`Clear ${count} active ${count === 1 ? "filter" : "filters"}`}
-                className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
-              >
-                {count} {count === 1 ? "filter" : "filters"}
-                <span aria-hidden="true" className="text-[10px] opacity-70">
-                  ×
-                </span>
-              </button>
-            );
-          })()}
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilters(DEFAULT_MOVE_FILTERS)}
+              aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
+              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
+            >
+              {activeFilterCount}{" "}
+              {activeFilterCount === 1 ? "filter" : "filters"}
+              <span aria-hidden="true" className="text-[10px] opacity-70">
+                ×
+              </span>
+            </button>
+          )}
         </div>
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
           {sorted.length} of {legalMoves.length}
@@ -492,7 +491,9 @@ export function MovePicker({
           <div className="border-border min-h-0 flex-1 overflow-hidden border-t">
             <RolePresetsPanel
               selected={filters.roles}
-              onChange={(roles) => setFilters((f) => ({ ...f, roles }))}
+              onChange={(roles) =>
+                setFilters((f) => ({ ...f, roles: roles as readonly RoleId[] }))
+              }
               bucketCount={bucketCount}
               className="h-full"
             />

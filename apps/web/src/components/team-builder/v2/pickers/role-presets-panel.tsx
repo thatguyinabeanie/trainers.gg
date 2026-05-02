@@ -23,9 +23,9 @@ import {
 
 interface RolePresetsPanelProps {
   /** Active role ids (multi-select). */
-  selected: string[];
+  selected: readonly string[];
   /** Called with the next selected array when a role is toggled. */
-  onChange: (next: string[]) => void;
+  onChange: (next: readonly string[]) => void;
   /** Returns the bucket count for each role, shown right-aligned. */
   bucketCount: (roleId: string) => number;
   className?: string;

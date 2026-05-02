@@ -9,13 +9,15 @@
  * clear any subset of filters without losing the shape.
  */
 
-export interface SpeciesFilterState {
-  types: string[];
+import { type RoleId } from "./role-registry";
+
+export type SpeciesFilterState = {
+  types: readonly string[];
   ability: string | null;
-  moves: string[];
-  roles: string[];
+  moves: readonly string[];
+  roles: readonly RoleId[];
   megaOnly: boolean;
-}
+};
 
 export const DEFAULT_SPECIES_FILTERS: SpeciesFilterState = {
   types: [],

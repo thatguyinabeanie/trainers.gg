@@ -18,6 +18,12 @@ import {
 } from "./format-legality";
 import { getLearnableMoves } from "./validation";
 
+// Library tsconfig uses ES2022 without DOM/Node lib — declare console ambiently
+// so silent-fallback warnings compile without pulling in @types/node.
+declare const console: {
+  warn(...data: unknown[]): void;
+};
+
 // Local Generations instance — supports any generation, not just gen9
 const gens = new Generations(Dex);
 
@@ -68,6 +74,12 @@ function getLowercaseLegalMoves(
   const legal = getLegalMoves(species, formatId);
   // Treat the LEGALITY_UNAVAILABLE sentinel like undefined here — read-path
   // search shouldn't break the autocomplete UI on a transient sim hiccup.
+  if (legal === LEGALITY_UNAVAILABLE && !warnedLegalMovesUnavailable.has(formatId)) {
+    warnedLegalMovesUnavailable.add(formatId);
+    console.warn(
+      `[species-search] Legal moves unavailable for format "${formatId}" — falling back to permissive move search.`
+    );
+  }
   const lowered =
     legal && legal !== LEGALITY_UNAVAILABLE
       ? Array.from(legal, (m) => m.toLowerCase())
@@ -80,7 +92,7 @@ function getLowercaseLegalMoves(
 // Types
 // =============================================================================
 
-export interface SpeciesSearchEntry {
+export type SpeciesSearchEntry = {
   species: string;
   types: string[];
   abilities: string[]; // kept for back-compat
@@ -89,17 +101,17 @@ export interface SpeciesSearchEntry {
   hiddenAbility: string | null;
   /** Role IDs this species fits — populated by buildSpeciesSearchIndex when
    *  a getRoles resolver is supplied. Empty otherwise. */
-  roles: string[];
-  baseStats: {
+  readonly roles: readonly string[];
+  readonly baseStats: Readonly<{
     hp: number;
     atk: number;
     def: number;
     spa: number;
     spd: number;
     spe: number;
-  };
-  bst: number;
-}
+  }>;
+  readonly bst: number;
+};
 
 /**
  * Resolver function type for mapping a species to a list of role IDs.
@@ -207,8 +219,19 @@ function makeEntry(
 // but in practice we only call this with that one resolver. If a caller ever
 // needs a different resolver, pass `getRoles: undefined` to bypass the cache
 // path that includes role data, or evict via `clearSpeciesSearchIndexCache()`.
+//
+// Two maps rather than a compound key: a no-roles build for the same formatId
+// must not overwrite or be served to a roles-aware caller (callers like
+// `getAllLegalAbilities` pass `getRoles: undefined` and would otherwise poison
+// the role-aware cache for that format).
 const speciesIndexCache = new Map<string, SpeciesSearchEntry[]>();
 const speciesIndexCacheNoRoles = new Map<string, SpeciesSearchEntry[]>();
+
+// Dedupe per-formatId silent-fallback warnings so a permissive build for one
+// format only logs once instead of on every searchSpecies call.
+const warnedLegalMovesUnavailable = new Set<string>();
+const warnedLegalSpeciesUnavailable = new Set<string>();
+const warnedMissingFromDex = new Set<string>();
 
 /**
  * Evict the species-search index cache. Useful in tests and when an upstream
@@ -239,6 +262,15 @@ export function buildSpeciesSearchIndex(
   // list; LEGALITY_UNAVAILABLE = validator threw, treat like undefined for
   // search to avoid breaking autocomplete on a transient sim hiccup).
   const staticLegalRaw = getLegalSpecies(formatId);
+  if (
+    staticLegalRaw === LEGALITY_UNAVAILABLE &&
+    !warnedLegalSpeciesUnavailable.has(formatId)
+  ) {
+    warnedLegalSpeciesUnavailable.add(formatId);
+    console.warn(
+      `[species-search] Legal species unavailable for format "${formatId}" — falling back to all dex species.`
+    );
+  }
   const staticLegal =
     staticLegalRaw && staticLegalRaw !== LEGALITY_UNAVAILABLE
       ? staticLegalRaw
@@ -279,7 +311,16 @@ export function buildSpeciesSearchIndex(
       // not present in either @pkmn/dex gen and will be skipped here.
       // They will not appear in the search index in v1 — a follow-up can add
       // synthetic entries using the CHAMPIONS_EXCLUSIVE_MEGA_STATS table.
-      if (!rawSpecies?.exists) continue;
+      if (!rawSpecies?.exists) {
+        const dedupeKey = `${formatId}::${speciesName}`;
+        if (!warnedMissingFromDex.has(dedupeKey)) {
+          warnedMissingFromDex.add(dedupeKey);
+          console.warn(
+            `[species-search] Species "${speciesName}" listed in legal set but missing from raw dex (format "${formatId}").`
+          );
+        }
+        continue;
+      }
 
       index.push(makeEntry(rawSpecies, getRoles, formatId));
       addedNames.add(rawSpecies.name);
@@ -316,11 +357,11 @@ export function searchSpecies(
   query: string,
   options?: {
     /** Filter: species must have at least one of these types */
-    types?: string[];
+    types?: readonly string[];
     /** Filter: species must have at least one of these abilities */
-    abilities?: string[];
+    abilities?: readonly string[];
     /** Filter: species must be able to learn ALL of these moves */
-    moves?: string[];
+    moves?: readonly string[];
     /** Filter: species base stats must be >= these values */
     minBaseStat?: Partial<
       Record<keyof SpeciesSearchEntry["baseStats"], number>
@@ -341,7 +382,7 @@ export function searchSpecies(
     /** Filter: include only species that have at least one Mega form */
     megaOnly?: boolean;
     /** Filter: species must have at least one of these role IDs */
-    roles?: string[];
+    roles?: readonly string[];
   }
 ): SpeciesSearchEntry[] {
   const normalizedQuery = query.trim().toLowerCase();

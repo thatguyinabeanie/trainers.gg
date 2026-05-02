@@ -61,7 +61,6 @@ export type RolePreset = {
 // =============================================================================
 
 export const ROLE_PRESETS: RolePreset[] = [
-  // Damage Type
   {
     id: "spread",
     label: "Spread",
@@ -177,7 +176,6 @@ export const ROLE_PRESETS: RolePreset[] = [
     ],
   },
 
-  // Speed Control
   {
     id: "trick-room",
     label: "Trick Room",
@@ -260,7 +258,6 @@ export const ROLE_PRESETS: RolePreset[] = [
     ],
   },
 
-  // Status
   {
     id: "sleep",
     label: "Sleep",
@@ -361,7 +358,6 @@ export const ROLE_PRESETS: RolePreset[] = [
     ],
   },
 
-  // Stat Changes
   {
     id: "boost-self",
     label: "Boost Self",
@@ -491,7 +487,6 @@ export const ROLE_PRESETS: RolePreset[] = [
     ],
   },
 
-  // Defensive
   {
     id: "screens",
     label: "Screens",
@@ -564,7 +559,6 @@ export const ROLE_PRESETS: RolePreset[] = [
     ],
   },
 
-  // Field
   {
     id: "weather",
     label: "Weather",
@@ -609,7 +603,6 @@ export const ROLE_PRESETS: RolePreset[] = [
     ],
   },
 
-  // Utility
   {
     id: "redirection",
     label: "Redirection",
