@@ -62,6 +62,7 @@ import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
 import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
 import { useBuilderState } from "./use-builder-state";
+import { useTeamLayout } from "./use-team-layout";
 import s from "./builder.module.css";
 
 // =============================================================================
@@ -386,6 +387,7 @@ export function TeamWorkspaceV2({
   }
 
   const isMobile = useIsMobile();
+  const { mode: layoutMode } = useTeamLayout();
 
   // ---------------------------------------------------------------------------
   // DnD sensors
@@ -543,6 +545,7 @@ export function TeamWorkspaceV2({
                 data-calc-open={
                   state.drawer === "calc" && !isMobile ? "true" : "false"
                 }
+                data-layout={layoutMode}
               >
                 {isMobile ? (
                   // Mobile: no drag-and-drop, render rows directly.

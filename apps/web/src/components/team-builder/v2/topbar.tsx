@@ -18,6 +18,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { cn } from "@/lib/utils";
 
 import { type ValidationError } from "../validation-hooks";
+import { TeamLayoutToggle } from "./team-layout-toggle";
 import { ValidationPopover } from "./validation/validation-popover";
 
 const ACTIVE_FORMATS = getActiveFormats();
@@ -189,6 +190,7 @@ export function Topbar({
       </div>
 
       <div className="ml-auto flex items-center gap-1">
+        <TeamLayoutToggle />
         <Button
           variant="outline"
           size="sm"
