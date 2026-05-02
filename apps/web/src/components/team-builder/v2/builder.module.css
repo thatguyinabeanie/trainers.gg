@@ -45,8 +45,15 @@
 }
 
 /* Editor region — rows scroll vertically. overflow-x: visible lets builderRows
-   expand wider than the container when calc opens without clipping the extra width. */
+   expand wider than the container when calc opens without clipping the extra width.
+   `display: flex` + `flex-direction: column` lets `.builderRows` use
+   `margin-block: auto` to center its content vertically when the rows don't
+   fill the viewport. When rows DO overflow, the auto margin collapses and
+   scrolling works normally (no top-clipping that `justify-content: center`
+   would cause on a scroll container). */
 .editorRegion {
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -87,6 +94,10 @@
   padding: 12px;
   max-width: 1600px;
   margin-inline: auto;
+  /* Vertical auto-margin centers the rows when they don't fill the editor
+     region. Collapses to 0 once content overflows so scrolling still
+     anchors to the top. */
+  margin-block: auto;
   width: 100%;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
