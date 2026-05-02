@@ -109,3 +109,56 @@ describe("getMoveEffectiveness — Weather Ball", () => {
     expect(getMoveEffectiveness("Flamethrower", "Bulbasaur", "Rain")).toBe(2);
   });
 });
+
+// =============================================================================
+// getMoveEffectiveness — Weather Ball vs Garchomp (Dragon/Ground) matrix
+// =============================================================================
+// Dragon/Ground type chart:
+//   Fire  vs Dragon = 0.5, vs Ground = 1 → 0.5
+//   Water vs Dragon = 0.5, vs Ground = 2 → 1
+//   Rock  vs Dragon = 1,   vs Ground = 0.5 → 0.5
+//   Ice   vs Dragon = 2,   vs Ground = 2 → 4
+//   Normal vs Dragon = 1,  vs Ground = 1 → 1
+
+describe("getMoveEffectiveness — Weather Ball vs Garchomp (Dragon/Ground) matrix", () => {
+  it.each<[string | null | undefined, number]>([
+    ["Sun", 0.5],
+    ["Harsh Sunshine", 0.5],
+    ["Rain", 1],
+    ["Heavy Rain", 1],
+    ["Sand", 0.5],
+    ["Snow", 4],
+    ["Hail", 4],
+    ["", 1],
+    [null, 1],
+    [undefined, 1],
+  ])(
+    "Weather Ball under weather=%p vs Garchomp → %d×",
+    (weather, expected) => {
+      expect(
+        getMoveEffectiveness("Weather Ball", "Garchomp", weather)
+      ).toBeCloseTo(expected, 5);
+    }
+  );
+});
+
+// =============================================================================
+// getMoveEffectiveness — additional edge cases
+// =============================================================================
+
+describe("getMoveEffectiveness — additional edge cases", () => {
+  it("Status move returns 1× regardless of weather (Toxic under Sun)", () => {
+    expect(getMoveEffectiveness("Toxic", "Garchomp", "Sun")).toBe(1);
+  });
+
+  it("unknown move logs a warning exactly once even when called twice", () => {
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      getMoveEffectiveness("Completely Fake Move XYZ", "Garchomp");
+      getMoveEffectiveness("Completely Fake Move XYZ", "Garchomp");
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+});

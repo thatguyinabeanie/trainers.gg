@@ -56,6 +56,55 @@ describe("effectiveMoveType — ability transforms", () => {
     expect(effectiveMoveType("flamethrower", "Liquid Voice")).toBe("Fire");
   });
 
+  // Parameterized matrix — every SOUND_MOVES entry should become Water under Liquid Voice.
+  // The source stores names lowercase; passing mixed case works because the source
+  // lowercases the input internally.
+  // Parameterized matrix: every sound move recognised by the Pokemon data returns
+  // Water under Liquid Voice.  Moves that don't exist in the dex are excluded —
+  // effectiveMoveType returns the base type (Normal / null-fallback) when getMoveType
+  // returns null, so the Liquid Voice transformer never runs for unknown moves.
+  it.each([
+    "Boomburst",
+    "Bug Buzz",
+    "Echoed Voice",
+    "Growl",
+    "Hyper Voice",
+    "Metal Sound",
+    "Noble Roar",
+    "Perish Song",
+    "Relic Song",
+    "Roar",
+    "Round",
+    "Screech",
+    "Sing",
+    "Snore",
+    "Supersonic",
+    "Uproar",
+    "Clanging Scales",
+    "Clangorous Soul",
+    "Disarming Voice",
+    "Overdrive",
+    "Sparkling Aria",
+    "Torch Song",
+  ])(
+    "Liquid Voice converts %s (sound move) to Water",
+    (soundMove) => {
+      expect(effectiveMoveType(soundMove, "Liquid Voice")).toBe("Water");
+    }
+  );
+
+  it("Liquid Voice — non-sound move Tackle stays Normal (no ability transform)", () => {
+    expect(effectiveMoveType("Tackle", "Liquid Voice")).toBe("Normal");
+  });
+
+  it("Liquid Voice — Boomburst with null ability returns base type Normal", () => {
+    expect(effectiveMoveType("Boomburst", null)).toBe("Normal");
+  });
+
+  it("Liquid Voice — Boomburst with unknown ability Sturdy returns base type Normal", () => {
+    expect(effectiveMoveType("Boomburst", "Sturdy")).toBe("Normal");
+  });
+
   it("returns base type when ability is null", () => {
     expect(effectiveMoveType("tackle", null)).toBe("Normal");
   });
@@ -272,5 +321,55 @@ describe("effectiveOffensiveMult — Thousand Arrows", () => {
         defenderTypes: ["Grass"],
       })
     ).toBe(0.5);
+  });
+
+  it("Thousand Arrows vs Flying/Steel = 2× (Flying stripped → Ground vs Steel = 2×)", () => {
+    // Steel is normally Flying+Ground; Flying immunity is overridden.
+    // nonFlyingTypes = [Steel]; Ground vs Steel = 2×
+    expect(
+      effectiveOffensiveMult({
+        move: "thousand arrows",
+        defenderTypes: ["Flying", "Steel"],
+      })
+    ).toBe(2);
+  });
+
+  it("Thousand Arrows vs Flying/Grass = 0.5× (Flying stripped → Ground vs Grass = 0.5×)", () => {
+    // nonFlyingTypes = [Grass]; Ground vs Grass = 0.5×
+    expect(
+      effectiveOffensiveMult({
+        move: "thousand arrows",
+        defenderTypes: ["Flying", "Grass"],
+      })
+    ).toBe(0.5);
+  });
+});
+
+// =============================================================================
+// effectiveOffensiveMult — Flying Press additional cases
+// =============================================================================
+
+describe("effectiveOffensiveMult — Flying Press additional cases", () => {
+  it("Flying Press vs Fighting = 2× (Fighting vs Fighting = 1 × Flying vs Fighting = 2)", () => {
+    // Fighting vs Fighting is neutral (1×, not listed in chart); Flying is super-effective vs
+    // Fighting (2×) → 1 × 2 = 2
+    expect(
+      effectiveOffensiveMult({
+        move: "flying press",
+        defenderTypes: ["Fighting"],
+      })
+    ).toBe(2);
+  });
+
+  it("Flying Press vs Bug/Grass = 2× (Fighting×0.5×1 × Flying×2×2 = 0.5 × 4 = 2)", () => {
+    // Fighting vs Bug = 0.5, Fighting vs Grass = 1 → Fighting total = 0.5
+    // Flying vs Bug = 2, Flying vs Grass = 2 → Flying total = 4
+    // Final: 0.5 × 4 = 2
+    expect(
+      effectiveOffensiveMult({
+        move: "flying press",
+        defenderTypes: ["Bug", "Grass"],
+      })
+    ).toBe(2);
   });
 });
