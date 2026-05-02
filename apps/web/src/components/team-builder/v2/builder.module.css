@@ -941,8 +941,8 @@
   grid-template-columns:
     max-content       /* type + category grouped */
     minmax(0, 1fr)    /* name — fills remaining space */
-    44px              /* BP */
-    60px;             /* Acc */
+    56px              /* BP */
+    72px;             /* Acc */
   align-items: center;
   justify-content: start;
   gap: 6px;
@@ -1166,11 +1166,11 @@
 }
 
 :global(.mvline-stat-value--bp) {
-  width: 1.5rem; /* fits "140" */
+  width: 1.75rem; /* fits "140" */
 }
 
 :global(.mvline-stat-value--acc) {
-  width: 2.25rem; /* fits "100%" */
+  width: 2.75rem; /* fits "100%" */
 }
 
 /* Legacy alias — keep .mvline-bp working for any consumer that still uses it */
