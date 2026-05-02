@@ -56,8 +56,9 @@ export function AbilityCell({ name, slot, onFilter }: AbilityCellProps) {
         {trigger}
       </TooltipTrigger>
       <TooltipContent
-        side="top"
-        align="start"
+        side="right"
+        align="center"
+        sideOffset={8}
         className="w-[28rem] max-w-[calc(100vw-2rem)] rounded-lg bg-slate-800 px-4 py-2.5 shadow-xl"
       >
         <p className="text-sm font-semibold text-slate-100">

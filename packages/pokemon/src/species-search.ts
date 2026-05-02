@@ -10,7 +10,6 @@ import { Generations } from "@pkmn/data";
 
 import { getFormatById } from "./formats";
 import {
-  getFormsForSpecies,
   getLegalMoves,
   getLegalSpecies,
   getMegaStoneForSpecies,
@@ -387,17 +386,13 @@ export function searchSpecies(
       if (!match) return false;
     }
 
-    // -- megaOnly filter (species must have at least one Mega form) --
+    // -- megaOnly filter — show ONLY Mega-form species --
+    // Champions M-A picker context: the user wants to see Charizard-Mega-X,
+    // Venusaur-Mega, etc., not the base species that have Megas. We surface
+    // entries whose form name is a recognized Mega (its own mega stone is
+    // non-null).
     if (options?.megaOnly) {
-      // Exclude entries that are themselves Mega forms
-      if (entry.species.includes("-Mega")) return false;
-      // Exclude base species whose forms list has no mega stone
-      const forms = getFormsForSpecies(entry.species);
-      const hasMegaForm = forms.some(
-        (form) =>
-          form !== entry.species && getMegaStoneForSpecies(form) !== null
-      );
-      if (!hasMegaForm) return false;
+      if (getMegaStoneForSpecies(entry.species) === null) return false;
     }
 
     // -- Roles filter (AND: species must carry ALL specified roles) --

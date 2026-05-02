@@ -298,10 +298,9 @@ function SpeciesRow({
         )}
       </div>
 
-      {/* Regular abilities — slot 1 stacked above slot 2. If the species has
-          only one regular ability (slot 2 is null), render just slot 1
-          (centered) so the row reads cleanly without an empty placeholder. */}
-      <div className="relative z-10 flex min-w-0 flex-col justify-center gap-0.5 overflow-hidden">
+      {/* Regular abilities — slot 1 stacked above slot 2, both centered.
+          If the species has only one regular ability, render just that one. */}
+      <div className="relative z-10 flex min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden text-center">
         {entry.abilitySlot1 ? (
           <AbilityCell
             name={entry.abilitySlot1}
@@ -318,8 +317,8 @@ function SpeciesRow({
         ) : null}
       </div>
 
-      {/* Hidden ability — italic + muted, in its own column */}
-      <div className="relative z-10 flex min-w-0 items-center overflow-hidden">
+      {/* Hidden ability — italic + muted, centered in its own column */}
+      <div className="relative z-10 flex min-w-0 items-center justify-center overflow-hidden text-center">
         <AbilityCell
           name={entry.hiddenAbility ?? null}
           slot="hidden"
@@ -732,13 +731,13 @@ export function SpeciesPicker({
                   sort={sort}
                   onSort={handleSort}
                 />
-                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
+                <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
                   Types
                 </span>
-                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
+                <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
                   Abilities
                 </span>
-                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
+                <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
                   Hidden
                 </span>
                 <SortHeaderButton

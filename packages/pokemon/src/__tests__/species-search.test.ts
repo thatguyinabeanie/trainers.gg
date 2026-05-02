@@ -531,16 +531,23 @@ describe("searchSpecies — new filters", () => {
     ).toBe(true);
   });
 
-  it("megaOnly excludes -Mega entries themselves", () => {
+  it("megaOnly returns only Mega-form species (e.g. Charizard-Mega-X, Venusaur-Mega)", () => {
     const championsIndex = buildSpeciesSearchIndex("championsvgc2026regma");
     const results = searchSpecies(championsIndex, "", { megaOnly: true });
-    expect(results.every((e) => !e.species.includes("-Mega"))).toBe(true);
+    // Every result should be a Mega form, not a base species
+    expect(results.every((e) => e.species.includes("-Mega"))).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
   });
 
-  it("megaOnly includes Charizard (has Mega forms)", () => {
+  it("megaOnly excludes base species (Charizard appears only as Mega forms)", () => {
     const championsIndex = buildSpeciesSearchIndex("championsvgc2026regma");
     const results = searchSpecies(championsIndex, "", { megaOnly: true });
-    expect(results.some((e) => e.species === "Charizard")).toBe(true);
+    const names = results.map((e) => e.species);
+    // Base "Charizard" should NOT appear; the Mega forms should
+    expect(names).not.toContain("Charizard");
+    expect(
+      names.some((n) => n === "Charizard-Mega-X" || n === "Charizard-Mega-Y")
+    ).toBe(true);
   });
 
   it("roles filter matches species carrying every selected role (AND)", () => {
