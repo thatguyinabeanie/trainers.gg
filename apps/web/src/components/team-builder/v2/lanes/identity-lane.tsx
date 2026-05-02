@@ -573,7 +573,6 @@ function IdentityLaneReal({
 
         {/* LOADOUT FORM ROWS */}
 
-        {/* Item */}
         <div className="flex flex-col">
           <FormChip
             label="Item"
@@ -608,7 +607,6 @@ function IdentityLaneReal({
           abilityErrors={abilityErrors}
         />
 
-        {/* Nature */}
         <div className="flex flex-col">
           <FormChip
             label="Nat"

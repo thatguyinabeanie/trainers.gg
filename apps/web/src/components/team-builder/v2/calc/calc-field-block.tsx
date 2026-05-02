@@ -210,7 +210,6 @@ function SideCard({ title, color, side, onUpdate, fainted, setFainted }: SideCar
         </ToggleBtn>
       </div>
 
-      {/* Hazards */}
       <div className="mb-1.5 flex flex-wrap items-center gap-1 border-t border-dashed pt-1.5">
         <ToggleBtn active={side.stealthRock} onClick={() => onUpdate({ stealthRock: !side.stealthRock })}>
           Stealth Rock
@@ -228,7 +227,6 @@ function SideCard({ title, color, side, onUpdate, fainted, setFainted }: SideCar
         </ToggleBtn>
       </div>
 
-      {/* Fainted */}
       <div className="flex items-center gap-1 border-t border-dashed pt-1.5 font-mono text-[9.5px] text-muted-foreground">
         <span>Fainted</span>
         <Stepper<(typeof FAINTED_OPTIONS)[number]>
@@ -365,7 +363,6 @@ export function CalcFieldBlock({
         </div>
       </div>
 
-      {/* Sides */}
       <div>
         <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
           Sides

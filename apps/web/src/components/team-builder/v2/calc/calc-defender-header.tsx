@@ -167,7 +167,6 @@ export function DefenderMonHeader({
         />
       </div>
 
-      {/* Type pills */}
       {types.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {types.map((t) => (
@@ -176,7 +175,6 @@ export function DefenderMonHeader({
         </div>
       )}
 
-      {/* Item */}
       <FormChip label="Item" value={defenderItem}>
         <ItemPicker
           value={defenderItem}
@@ -226,7 +224,6 @@ export function DefenderMonHeader({
         />
       </FormChip>
 
-      {/* Tera */}
       {showTera && (
         <FormChip label="Tera" value={defenderTera}>
           <TypePicker

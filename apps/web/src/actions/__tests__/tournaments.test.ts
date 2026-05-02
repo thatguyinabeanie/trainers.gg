@@ -158,6 +158,10 @@ jest.mock("@/lib/supabase/server", () => ({
 
 jest.mock("@trainers/utils", () => ({
   getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
+  // Production code routes catch-block reporting through `logError`; the
+  // tests just need it to not throw. We don't assert on its calls.
+  logError: jest.fn(),
+  setErrorSink: jest.fn(() => () => undefined),
 }));
 
 // Discord enqueue helper mocks — all helpers are fire-and-forget, so failures

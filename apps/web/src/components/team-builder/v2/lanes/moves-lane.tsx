@@ -316,7 +316,6 @@ function MovesLaneReal({
 
   return (
     <div className="border-border/60 flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3">
-      {/* Header */}
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
           Moves

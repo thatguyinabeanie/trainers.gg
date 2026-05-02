@@ -165,7 +165,6 @@ export function CalcDetailCard({
 
   return (
     <div className="mvdetail-card">
-      {/* Header */}
       <div className="mvdetail-head">
         <span className="mvdetail-eyebrow">DAMAGE CALC</span>
         <div className="mvdetail-head-r">

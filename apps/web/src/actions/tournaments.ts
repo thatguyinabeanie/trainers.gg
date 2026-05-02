@@ -57,8 +57,9 @@ import {
   dropCategorySchema,
   dropNotesSchema,
   updateTournamentSchema,
+  z,
 } from "@trainers/validators";
-import { getErrorMessage } from "@trainers/utils";
+import { getErrorMessage, logError } from "@trainers/utils";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -112,9 +113,8 @@ function fireAndForgetDiscord(
       if (!tournament) return;
       await callback(tournament);
     } catch (discordErr) {
-      console.error(`[${source}] Discord enqueue failed`, {
+      logError(`tournaments.fireAndForgetDiscord.${source}`, discordErr, {
         tournamentId,
-        error: String(discordErr),
       });
     }
   })();
@@ -345,9 +345,8 @@ export async function completeTournament(
             .eq("rank", 1);
 
           if (winnerErr) {
-            console.error("[completeTournament] Failed to fetch winner rows", {
+            logError("completeTournament.fetchWinnerRows", winnerErr, {
               tournamentId,
-              error: String(winnerErr),
             });
           }
 
@@ -508,6 +507,27 @@ export async function deleteTournament(
 // =============================================================================
 
 /**
+ * Validation schema for `registerForTournament` input.
+ *
+ * Server Actions are callable directly — any client can POST arbitrary
+ * payloads. We don't trust the form layer to enforce these limits and
+ * we don't want a malformed `inGameName` reaching the SQL RPC. The
+ * schema mirrors what the UI offers today; widen it deliberately if
+ * the form gains new fields.
+ */
+const registerForTournamentInputSchema = z
+  .object({
+    altId: z.number().int().positive().optional(),
+    teamName: z.string().max(80).optional(),
+    inGameName: z.string().min(1).max(24).optional(),
+    displayNameOption: z
+      .enum(["username", "in_game_name"])
+      .optional(),
+    showCountryFlag: z.boolean().optional(),
+  })
+  .strict();
+
+/**
  * Register for a tournament
  * Revalidates: tournaments list (registration count changes), individual tournament
  */
@@ -522,11 +542,27 @@ export async function registerForTournament(
   }
 ): Promise<ActionResult<{ registrationId: number; status: string }>> {
   try {
+    if (!Number.isInteger(tournamentId) || tournamentId <= 0) {
+      return { success: false, error: "Invalid tournament ID." };
+    }
+    let validatedData: z.infer<typeof registerForTournamentInputSchema> | undefined;
+    if (data !== undefined) {
+      const parsed = registerForTournamentInputSchema.safeParse(data);
+      if (!parsed.success) {
+        return {
+          success: false,
+          error: "Invalid registration data.",
+          validationErrors: parsed.error.issues.map((i) => i.message),
+        };
+      }
+      validatedData = parsed.data;
+    }
+
     const supabase = await createClient();
     const result = await registerForTournamentMutation(
       supabase,
       tournamentId,
-      data
+      validatedData
     );
 
     invalidateTournamentListCaches(tournamentId);
@@ -609,10 +645,10 @@ function maybeDemoteMemberRole(
         );
       }
     } catch (discordErr) {
-      console.error(
-        "[maybeDemoteMemberRole] Discord member role remove sync failed",
-        { tournamentId, sourceEvent, error: String(discordErr) }
-      );
+      logError("maybeDemoteMemberRole", discordErr, {
+        tournamentId,
+        sourceEvent,
+      });
     }
   })();
 }
@@ -1025,10 +1061,7 @@ export async function generatePairings(
           .eq("is_bye", false);
 
         if (matchesErr) {
-          console.error("[generatePairings] Failed to fetch matches", {
-            roundId,
-            error: String(matchesErr),
-          });
+          logError("generatePairings.fetchMatches", matchesErr, { roundId });
           return;
         }
         if (!matches || matches.length === 0) return;
@@ -1545,10 +1578,7 @@ export async function reportMatchResult(
           .single();
 
         if (matchErr) {
-          console.error("[reportMatchResult] Failed to fetch match", {
-            matchId,
-            error: String(matchErr),
-          });
+          logError("reportMatchResult.fetchMatch", matchErr, { matchId });
           return;
         }
         if (!match) return;
