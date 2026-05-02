@@ -803,10 +803,18 @@ describe("SpeciesPicker", () => {
     // Filter to only species rows (not the header row).
     const rows = screen.getAllByRole("row", { name: /select/i });
     const names = rows.map((r) => r.getAttribute("aria-label") ?? "");
-    // Garchomp spe=102, Pikachu spe=90, Bulbasaur spe=45 → DESC order
-    expect(names[0]).toMatch(/Garchomp/i);
-    expect(names[1]).toMatch(/Pikachu/i);
-    expect(names[2]).toMatch(/Bulbasaur/i);
+    // Garchomp spe=102, Pikachu spe=90, Bulbasaur spe=45 → DESC order.
+    // Use indexOf-relative assertions so the test survives if faster species
+    // are added to the fixture later.
+    expect(names).toContain("Select Garchomp");
+    expect(names).toContain("Select Pikachu");
+    expect(names).toContain("Select Bulbasaur");
+    expect(names.indexOf("Select Garchomp")).toBeLessThan(
+      names.indexOf("Select Pikachu")
+    );
+    expect(names.indexOf("Select Pikachu")).toBeLessThan(
+      names.indexOf("Select Bulbasaur")
+    );
   });
 
   // ---------------------------------------------------------------------------

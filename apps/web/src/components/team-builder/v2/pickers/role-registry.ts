@@ -777,12 +777,12 @@ export function getRoleById(id: string): RolePreset | undefined {
  * Frozen empty array — returned in lieu of allocating a fresh `[]` per call,
  * and frozen so the caller cannot accidentally mutate the cache.
  */
-const EMPTY_ROLES: readonly string[] = Object.freeze([]);
+const EMPTY_ROLES: readonly RoleId[] = Object.freeze([]);
 
-let _rolesByMove: Map<string, readonly string[]> | null = null;
-function getRolesByMoveIndex(): Map<string, readonly string[]> {
+let _rolesByMove: Map<string, readonly RoleId[]> | null = null;
+function getRolesByMoveIndex(): Map<string, readonly RoleId[]> {
   if (_rolesByMove) return _rolesByMove;
-  const m = new Map<string, string[]>();
+  const m = new Map<string, RoleId[]>();
   for (const role of ROLE_PRESETS) {
     if (!role.moves) continue;
     for (const move of role.moves) {
@@ -792,14 +792,14 @@ function getRolesByMoveIndex(): Map<string, readonly string[]> {
     }
   }
   // Freeze every list so consumers cannot push/splice into the shared cache.
-  const frozen = new Map<string, readonly string[]>();
+  const frozen = new Map<string, readonly RoleId[]>();
   for (const [k, v] of m) frozen.set(k, Object.freeze(v));
   _rolesByMove = frozen;
   return frozen;
 }
 
 /** O(1) — returns role IDs for a move name; empty if move is in no role. */
-export function getRolesForMove(moveName: string): readonly string[] {
+export function getRolesForMove(moveName: string): readonly RoleId[] {
   return getRolesByMoveIndex().get(moveName) ?? EMPTY_ROLES;
 }
 
@@ -823,7 +823,7 @@ export function getRolesForSpecies(
   },
   speciesName: string,
   formatId: string
-): string[] {
+): readonly RoleId[] {
   const legalSet = legalSetOrPermissive(getLegalMoves(speciesName, formatId));
   // If format has no registered legality (legalSet === undefined), fall back
   // to all moves in the current gen — permissive default. Note: getLearnableMoves
@@ -831,7 +831,7 @@ export function getRolesForSpecies(
   // unknown formats effectively matches every species for all move-driven roles.
   const learnableSet: ReadonlySet<string> =
     legalSet ?? new Set(getLearnableMoves(speciesName));
-  const out: string[] = [];
+  const out: RoleId[] = [];
 
   for (const role of ROLE_PRESETS) {
     let matches = false;

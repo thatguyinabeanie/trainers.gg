@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { AbilityCell } from "./ability-cell";
 import { RolePresetsPanel } from "./role-presets-panel";
-import { getRolesForSpecies, type RoleId } from "./role-registry";
+import { getRolesForSpecies } from "./role-registry";
 import {
   DEFAULT_SPECIES_FILTERS,
   type SpeciesFilterState,
@@ -464,7 +464,7 @@ export function SpeciesPicker({
   // Pre-filter by format legality so the picker only ever surfaces species
   // legal in this format. The denominator shown to the user reflects the
   // format roster, not all of gen 9.
-  // Legality filter iterates the simulator's species set per call — memoize to keep the filtered index stable across renders.
+  // Memoize the legality-filtered list — the array reference must stay stable across renders so downstream search/sort memos don't recompute on every render.
   const speciesIndex = useMemo(
     () =>
       format?.id
@@ -699,7 +699,7 @@ export function SpeciesPicker({
               onChange={(next) =>
                 setFilters((prev) => ({
                   ...prev,
-                  roles: next as readonly RoleId[],
+                  roles: next,
                 }))
               }
               bucketCount={bucketCount}

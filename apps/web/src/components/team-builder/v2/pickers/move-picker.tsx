@@ -139,7 +139,7 @@ interface MoveRowProps {
   onSelect: () => void;
   onTypeFilter: (type: string) => void;
   onCategoryFilter: (cat: MoveCategory) => void;
-  onRoleFilter: (roleId: string) => void;
+  onRoleFilter: (roleId: RoleId) => void;
 }
 
 function MoveRowItem({
@@ -400,12 +400,11 @@ export function MovePicker({
     );
   }
 
-  function handleRoleFilter(roleId: string) {
-    const id = roleId as RoleId;
+  function handleRoleFilter(roleId: RoleId) {
     setFilters((f) =>
-      f.roles.includes(id)
-        ? { ...f, roles: f.roles.filter((r) => r !== id) }
-        : { ...f, roles: [...f.roles, id] }
+      f.roles.includes(roleId)
+        ? { ...f, roles: f.roles.filter((r) => r !== roleId) }
+        : { ...f, roles: [...f.roles, roleId] }
     );
   }
 
@@ -498,7 +497,7 @@ export function MovePicker({
             <RolePresetsPanel
               selected={filters.roles}
               onChange={(roles) =>
-                setFilters((f) => ({ ...f, roles: roles as readonly RoleId[] }))
+                setFilters((f) => ({ ...f, roles }))
               }
               bucketCount={bucketCount}
               className="h-full"

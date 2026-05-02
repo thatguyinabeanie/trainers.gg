@@ -81,12 +81,12 @@ function getLowercaseLegalMoves(
 // =============================================================================
 
 export type SpeciesSearchEntry = {
-  species: string;
-  types: string[];
-  abilities: string[]; // kept for back-compat
-  abilitySlot1: string | null;
-  abilitySlot2: string | null;
-  hiddenAbility: string | null;
+  readonly species: string;
+  readonly types: readonly string[];
+  readonly abilities: readonly string[]; // kept for back-compat
+  readonly abilitySlot1: string | null;
+  readonly abilitySlot2: string | null;
+  readonly hiddenAbility: string | null;
   /** Role IDs this species fits — populated by buildSpeciesSearchIndex when
    *  a getRoles resolver is supplied. Empty otherwise. */
   readonly roles: readonly string[];
@@ -113,7 +113,7 @@ export type GetRolesFn = (
   },
   speciesName: string,
   formatId: string
-) => string[];
+) => readonly string[];
 
 // =============================================================================
 // Public API
@@ -162,7 +162,7 @@ function makeEntry(
       : [];
   return {
     species: species.name,
-    types: species.types as string[],
+    types: species.types,
     abilities,
     abilitySlot1,
     abilitySlot2,
@@ -369,10 +369,10 @@ export function buildSpeciesSearchIndex(
  * @returns Filtered array of SpeciesSearchEntry objects
  */
 export function searchSpecies(
-  index: SpeciesSearchEntry[],
+  index: readonly SpeciesSearchEntry[],
   query: string,
   options?: {
-    /** Filter: species must have at least one of these types */
+    /** Filter: species must have ALL of these types (AND logic). */
     types?: readonly string[];
     /** Filter: species must have at least one of these abilities */
     abilities?: readonly string[];

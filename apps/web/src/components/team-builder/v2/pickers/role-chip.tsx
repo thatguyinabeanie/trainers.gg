@@ -8,11 +8,11 @@
 
 import { cn } from "@/lib/utils";
 
-import { GROUP_COLORS, getRoleById } from "./role-registry";
+import { GROUP_COLORS, getRoleById, type RoleId } from "./role-registry";
 
 interface RoleChipProps {
-  roleId: string;
-  onClick?: (roleId: string) => void;
+  roleId: RoleId;
+  onClick?: (roleId: RoleId) => void;
   className?: string;
 }
 

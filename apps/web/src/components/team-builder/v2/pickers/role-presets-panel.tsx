@@ -15,6 +15,7 @@ import {
   ROLE_GROUP_LABELS,
   ROLE_GROUP_ORDER,
   ROLE_PRESETS,
+  type RoleId,
 } from "./role-registry";
 
 // =============================================================================
@@ -23,9 +24,9 @@ import {
 
 interface RolePresetsPanelProps {
   /** Active role ids (multi-select). */
-  selected: readonly string[];
+  selected: readonly RoleId[];
   /** Called with the next selected array when a role is toggled. */
-  onChange: (next: readonly string[]) => void;
+  onChange: (next: readonly RoleId[]) => void;
   /** Returns the bucket count for each role, shown right-aligned. */
   bucketCount: (roleId: string) => number;
   className?: string;
@@ -42,7 +43,7 @@ export function RolePresetsPanel({
   bucketCount,
   className,
 }: RolePresetsPanelProps) {
-  function toggle(roleId: string) {
+  function toggle(roleId: RoleId) {
     if (selected.includes(roleId)) {
       onChange(selected.filter((r) => r !== roleId));
     } else {
