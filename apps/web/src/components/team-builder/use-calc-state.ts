@@ -13,6 +13,8 @@ import {
 import {
   type GameFormat,
   type PokemonType,
+  getCanonicalBaseSpecies,
+  getMegaAbilityForSpecies,
   getSpeciesTypes,
   isChampionsFormat,
 } from "@trainers/pokemon";
@@ -239,15 +241,29 @@ function buildAttackerFromDb(
   gen: ReturnType<typeof Generations.get>,
   db: Tables<"pokemon">,
   boosts: AttackerBoosts,
-  status: string
+  status: string,
+  megaActive: boolean
 ): Pokemon | null {
   if (!db.species) return null;
   try {
     const { ivs, evs } = buildEngineStats(gen, db);
-    return new Pokemon(gen, db.species, {
+    // Per-calc mega toggle: when ON and species is a mega form, use the
+    // mega's species + post-evolution ability. When OFF, simulate as the
+    // base form (pre-mega turn 1, or two-megas scenario where THIS Pokemon
+    // doesn't mega this match).
+    const isMegaForm = getMegaAbilityForSpecies(db.species) !== null;
+    const effectiveSpecies =
+      isMegaForm && !megaActive
+        ? getCanonicalBaseSpecies(db.species)
+        : db.species;
+    const calcAbility =
+      isMegaForm && megaActive
+        ? (getMegaAbilityForSpecies(db.species) ?? db.ability ?? null)
+        : db.ability ?? null;
+    return new Pokemon(gen, effectiveSpecies, {
       level: db.level ?? 50,
       nature: asSmogon(db.nature ?? "Hardy"),
-      ability: asSmogon(db.ability),
+      ability: asSmogon(calcAbility),
       item: asSmogon(db.held_item),
       teraType: asSmogon(db.tera_type),
       ivs,
@@ -275,15 +291,24 @@ function buildDefenderPokemon(
   ivs: DefenderIvs,
   boosts: DefenderBoosts,
   status: string,
-  hpPercent: number
+  hpPercent: number,
+  megaActive: boolean
 ): Pokemon | null {
   if (!species) return null;
   try {
+    // Per-calc mega toggle (see buildAttackerFromDb).
+    const isMegaForm = getMegaAbilityForSpecies(species) !== null;
+    const effectiveSpecies =
+      isMegaForm && !megaActive ? getCanonicalBaseSpecies(species) : species;
+    const calcAbility =
+      isMegaForm && megaActive
+        ? (getMegaAbilityForSpecies(species) ?? ability)
+        : ability;
     // Build without curHP first so we can call maxHP() to compute the real value.
-    const mon = new Pokemon(gen, species, {
+    const mon = new Pokemon(gen, effectiveSpecies, {
       level: 50,
       nature: asSmogon(nature),
-      ability: asSmogon(ability || null),
+      ability: asSmogon(calcAbility || null),
       item: asSmogon(item || null),
       teraType: asSmogon(teraType || null),
       ivs,
@@ -294,10 +319,10 @@ function buildDefenderPokemon(
     // Clamp hpPercent to [0, 100] before computing current HP.
     const clampedPct = Math.min(100, Math.max(0, hpPercent));
     const hpValue = Math.max(1, Math.round((clampedPct / 100) * mon.maxHP()));
-    return new Pokemon(gen, species, {
+    return new Pokemon(gen, effectiveSpecies, {
       level: 50,
       nature: asSmogon(nature),
-      ability: asSmogon(ability || null),
+      ability: asSmogon(calcAbility || null),
       item: asSmogon(item || null),
       teraType: asSmogon(teraType || null),
       ivs,
@@ -543,6 +568,12 @@ export interface UseCalcStateReturn {
   setDefenderBoost: (stat: keyof DefenderBoosts, v: number) => void;
   setDefenderStatus: (v: string) => void;
   setDefenderHpPercent: (v: number) => void;
+  /** Per-calc toggle: simulate the attacker as its mega form vs base form. */
+  attackerMegaActive: boolean;
+  setAttackerMegaActive: (v: boolean) => void;
+  /** Per-calc toggle: simulate the defender as its mega form vs base form. */
+  defenderMegaActive: boolean;
+  setDefenderMegaActive: (v: boolean) => void;
   setDefenderMove: (slotIdx: number, name: string) => void;
   /**
    * Resets defender stats (EVs, IVs, boosts, status, HP) and reasonable defaults
@@ -722,6 +753,15 @@ export function useCalcState({
     [string, string, string, string]
   >(DEFAULT_DEFENDER_MOVES);
 
+  // --- Per-calc mega toggle ---
+  // When the active species is a mega form, the calc engine uses the mega's
+  // post-evolution stats and ability by default. Players sometimes want to
+  // model the OTHER scenario (pre-mega turn 1, or two-megas-on-team where
+  // THIS Pokemon doesn't mega this match) — flipping these to false makes
+  // the calc engine treat the species as its base form.
+  const [attackerMegaActive, setAttackerMegaActive] = useState(true);
+  const [defenderMegaActive, setDefenderMegaActive] = useState(true);
+
   // --- Field ---
   const [gameType, setGameType] = useState<"Doubles" | "Singles">("Doubles");
   const [weather, setWeather] = useState("");
@@ -883,7 +923,13 @@ export function useCalcState({
 
   // Shared attacker (from the active DB row)
   const sharedAttacker = selectedPokemon
-    ? buildAttackerFromDb(gen, selectedPokemon, attackerBoosts, attackerStatus)
+    ? buildAttackerFromDb(
+        gen,
+        selectedPokemon,
+        attackerBoosts,
+        attackerStatus,
+        attackerMegaActive
+      )
     : null;
 
   // Shared defender (with current HP percent for receiving hits)
@@ -898,7 +944,8 @@ export function useCalcState({
     defenderIvs,
     defenderBoosts,
     defenderStatus,
-    defenderHpPercent
+    defenderHpPercent,
+    defenderMegaActive
   );
 
   // Defender as attacker (built at full HP so offensive stats are correct)
@@ -913,12 +960,19 @@ export function useCalcState({
     defenderIvs,
     defenderBoosts,
     defenderStatus,
-    100
+    100,
+    defenderMegaActive
   );
 
   // Our pokemon as defender (no boosts — they don't apply when receiving)
   const sharedOurPokemonAsDefender = selectedPokemon
-    ? buildAttackerFromDb(gen, selectedPokemon, EMPTY_BOOSTS, "Healthy")
+    ? buildAttackerFromDb(
+        gen,
+        selectedPokemon,
+        EMPTY_BOOSTS,
+        "Healthy",
+        attackerMegaActive
+      )
     : null;
 
   // Defense field: defender fires at our pokemon
@@ -1018,6 +1072,10 @@ export function useCalcState({
     setDefenderBoost,
     setDefenderStatus,
     setDefenderHpPercent,
+    attackerMegaActive,
+    setAttackerMegaActive,
+    defenderMegaActive,
+    setDefenderMegaActive,
     setDefenderMove,
     resetDefenderForSpecies,
     gameType,

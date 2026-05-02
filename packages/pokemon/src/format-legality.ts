@@ -1198,6 +1198,131 @@ export function getMegaStoneForSpecies(species: string): string | null {
   return MEGA_SPECIES_TO_STONE.get(species) ?? null;
 }
 
+/**
+ * Map of mega species → the ability that activates after mega evolution.
+ *
+ * The team sheet stores the base form's ability (what's submitted at
+ * registration); this map lets the damage calculator override that with
+ * the post-evolution ability when computing damage. Keep in sync with the
+ * @smogon/calc species data (calc/src/data/species.ts) — each mega's
+ * `abilities[0]` field is the source of truth.
+ */
+const MEGA_SPECIES_TO_ABILITY: ReadonlyMap<string, string> = new Map([
+  // Standard Gen 6/7 megas
+  ["Abomasnow-Mega", "Snow Warning"],
+  ["Absol-Mega", "Magic Bounce"],
+  ["Aerodactyl-Mega", "Tough Claws"],
+  ["Aggron-Mega", "Filter"],
+  ["Alakazam-Mega", "Trace"],
+  ["Altaria-Mega", "Pixilate"],
+  ["Ampharos-Mega", "Mold Breaker"],
+  ["Audino-Mega", "Healer"],
+  ["Banette-Mega", "Prankster"],
+  ["Beedrill-Mega", "Adaptability"],
+  ["Blastoise-Mega", "Mega Launcher"],
+  ["Blaziken-Mega", "Speed Boost"],
+  ["Camerupt-Mega", "Sheer Force"],
+  ["Charizard-Mega-X", "Tough Claws"],
+  ["Charizard-Mega-Y", "Drought"],
+  ["Diancie-Mega", "Magic Bounce"],
+  ["Gallade-Mega", "Inner Focus"],
+  ["Garchomp-Mega", "Sand Force"],
+  ["Gardevoir-Mega", "Pixilate"],
+  ["Gengar-Mega", "Shadow Tag"],
+  ["Glalie-Mega", "Refrigerate"],
+  ["Gyarados-Mega", "Mold Breaker"],
+  ["Heracross-Mega", "Skill Link"],
+  ["Houndoom-Mega", "Solar Power"],
+  ["Kangaskhan-Mega", "Parental Bond"],
+  ["Latias-Mega", "Levitate"],
+  ["Latios-Mega", "Levitate"],
+  ["Lopunny-Mega", "Scrappy"],
+  ["Lucario-Mega", "Adaptability"],
+  ["Manectric-Mega", "Intimidate"],
+  ["Mawile-Mega", "Huge Power"],
+  ["Medicham-Mega", "Pure Power"],
+  ["Metagross-Mega", "Tough Claws"],
+  ["Mewtwo-Mega-X", "Steadfast"],
+  ["Mewtwo-Mega-Y", "Insomnia"],
+  ["Pidgeot-Mega", "No Guard"],
+  ["Pinsir-Mega", "Aerilate"],
+  ["Rayquaza-Mega", "Delta Stream"],
+  ["Sableye-Mega", "Magic Bounce"],
+  ["Salamence-Mega", "Aerilate"],
+  ["Sceptile-Mega", "Lightning Rod"],
+  ["Scizor-Mega", "Technician"],
+  ["Sharpedo-Mega", "Strong Jaw"],
+  ["Slowbro-Mega", "Shell Armor"],
+  ["Steelix-Mega", "Sand Force"],
+  ["Swampert-Mega", "Swift Swim"],
+  ["Tyranitar-Mega", "Sand Stream"],
+  ["Venusaur-Mega", "Thick Fat"],
+  // Champions-exclusive megas
+  ["Barbaracle-Mega", "Tough Claws"],
+  ["Baxcalibur-Mega", "Thermal Exchange"],
+  ["Chandelure-Mega", "Infiltrator"],
+  ["Chesnaught-Mega", "Bulletproof"],
+  ["Chimecho-Mega", "Levitate"],
+  ["Clefable-Mega", "Magic Bounce"],
+  ["Crabominable-Mega", "Iron Fist"],
+  ["Darkrai-Mega", "Bad Dreams"],
+  ["Delphox-Mega", "Levitate"],
+  ["Dragalge-Mega", "Poison Point"],
+  ["Dragonite-Mega", "Multiscale"],
+  ["Drampa-Mega", "Berserk"],
+  ["Eelektross-Mega", "Levitate"],
+  ["Emboar-Mega", "Mold Breaker"],
+  ["Excadrill-Mega", "Piercing Drill"],
+  ["Falinks-Mega", "Battle Armor"],
+  ["Feraligatr-Mega", "Dragonize"],
+  ["Floette-Mega", "Fairy Aura"],
+  ["Froslass-Mega", "Snow Warning"],
+  ["Glimmora-Mega", "Adaptability"],
+  ["Golisopod-Mega", "Emergency Exit"],
+  ["Golurk-Mega", "Unseen Fist"],
+  ["Greninja-Mega", "Protean"],
+  ["Hawlucha-Mega", "Limber"],
+  ["Heatran-Mega", "Flash Fire"],
+  ["Magearna-Mega", "Soul-Heart"],
+  ["Magearna-Original-Mega", "Soul-Heart"],
+  ["Malamar-Mega", "Contrary"],
+  ["Meganium-Mega", "Mega Sol"],
+  ["Meowstic-F-Mega", "Trace"],
+  ["Meowstic-M-Mega", "Trace"],
+  ["Pyroar-Mega", "Rivalry"],
+  ["Raichu-Mega-X", "Surge Surfer"],
+  ["Raichu-Mega-Y", "Surge Surfer"],
+  ["Scolipede-Mega", "Poison Point"],
+  ["Scovillain-Mega", "Spicy Spray"],
+  ["Scrafty-Mega", "Shed Skin"],
+  ["Skarmory-Mega", "Keen Eye"],
+  ["Staraptor-Mega", "Intimidate"],
+  ["Starmie-Mega", "Huge Power"],
+  ["Tatsugiri-Curly-Mega", "Commander"],
+  ["Tatsugiri-Droopy-Mega", "Commander"],
+  ["Tatsugiri-Stretchy-Mega", "Commander"],
+  ["Victreebel-Mega", "Innards Out"],
+  ["Zeraora-Mega", "Volt Absorb"],
+  ["Zygarde-Mega", "Aura Break"],
+  // Misc / past-format
+  ["Crucibelle-Mega", "Magic Guard"],
+]);
+
+/**
+ * Returns the post-evolution ability for a mega species, or null if the
+ * species is not a mega form.
+ *
+ * The base form's ability is what gets submitted on a tournament team
+ * sheet (legality requirement). After mega evolution, the species's
+ * intrinsic ability takes over — Drought for Mega Charizard Y, Tough
+ * Claws for Mega Aerodactyl, etc. The damage calculator should compute
+ * with the post-evolution ability while leaving the stored base ability
+ * untouched.
+ */
+export function getMegaAbilityForSpecies(species: string): string | null {
+  return MEGA_SPECIES_TO_ABILITY.get(species) ?? null;
+}
+
 // =============================================================================
 // Form switching
 // =============================================================================

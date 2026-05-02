@@ -1,6 +1,9 @@
 "use client";
 
-import { getSpeciesTypes } from "@trainers/pokemon";
+import {
+  getMegaAbilityForSpecies,
+  getSpeciesTypes,
+} from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -9,6 +12,7 @@ import { type AttackerBoosts } from "../../use-calc-state";
 import { Sprite } from "../sprite";
 import { TypePill } from "../type-pill";
 import { AttackerChipStrip } from "./attacker-chip-strip";
+import { MegaToggle } from "./mega-toggle";
 
 // =============================================================================
 // Types
@@ -23,6 +27,9 @@ interface CalcAttackerBlockProps {
   onPickAttacker: (idx: number) => void;
   attackerBoosts: AttackerBoosts;
   setAttackerBoost: (stat: keyof AttackerBoosts, v: number) => void;
+  /** Per-calc toggle: simulate attacker as mega vs base form. */
+  attackerMegaActive: boolean;
+  setAttackerMegaActive: (v: boolean) => void;
 }
 
 // =============================================================================
@@ -58,11 +65,16 @@ export function CalcAttackerBlock({
   onPickAttacker,
   attackerBoosts,
   setAttackerBoost,
+  attackerMegaActive,
+  setAttackerMegaActive,
 }: CalcAttackerBlockProps) {
   const attacker = teamSlots[attackerIdx] ?? null;
   const attackerTypes = attacker?.species
     ? getSpeciesTypes(attacker.species)
     : [];
+  const attackerIsMega =
+    attacker?.species != null &&
+    getMegaAbilityForSpecies(attacker.species) !== null;
 
   return (
     <div className="flex h-full flex-col rounded-lg border bg-card p-3 shadow-sm">
@@ -94,7 +106,15 @@ export function CalcAttackerBlock({
             />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[12.5px] font-bold">{attacker.species}</div>
+            <div className="flex items-center gap-2">
+              <div className="text-[12.5px] font-bold">{attacker.species}</div>
+              {attackerIsMega && (
+                <MegaToggle
+                  active={attackerMegaActive}
+                  onToggle={() => setAttackerMegaActive(!attackerMegaActive)}
+                />
+              )}
+            </div>
             <div className="mb-1 mt-0.5 flex gap-1">
               {attackerTypes.map((t) => (
                 <TypePill key={t} t={t} />

@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  getCanonicalBaseSpecies,
+  getMegaAbilityForSpecies,
   getSpeciesTypes,
   getLegalAbilities,
   getValidAbilities,
@@ -23,6 +25,7 @@ import { NaturePicker } from "../pickers/nature-picker";
 import { SpeciesPicker } from "../pickers/species-picker";
 import { TypePicker } from "../pickers/type-picker";
 import { formatSupportsTera } from "../format-gating";
+import { MegaToggle } from "./mega-toggle";
 import s from "../builder.module.css";
 
 // =============================================================================
@@ -53,6 +56,9 @@ export interface DefenderMonHeaderProps {
   setDefenderItem: (v: string) => void;
   setDefenderNature: (v: string) => void;
   setDefenderTera: (v: string) => void;
+  /** Per-calc toggle: simulate defender as mega vs base form. */
+  defenderMegaActive: boolean;
+  setDefenderMegaActive: (v: boolean) => void;
 }
 
 // =============================================================================
@@ -138,16 +144,34 @@ export function DefenderMonHeader({
   setDefenderItem,
   setDefenderNature,
   setDefenderTera,
+  defenderMegaActive,
+  setDefenderMegaActive,
 }: DefenderMonHeaderProps) {
   const showTera = formatSupportsTera(format);
   const types = defenderSpecies ? getSpeciesTypes(defenderSpecies) : [];
 
+  // Mega-aware ability display. The team-sheet column stores the BASE
+  // ability (legality requirement); the calc engine uses the mega's
+  // post-evolution ability for damage. Show both when species is a mega.
+  const megaAbility = defenderSpecies
+    ? getMegaAbilityForSpecies(defenderSpecies)
+    : null;
+  const isMegaForm = megaAbility !== null;
+  const baseSpecies = defenderSpecies
+    ? getCanonicalBaseSpecies(defenderSpecies)
+    : "";
+  // Picker is scoped to the BASE form so the user keeps editing the
+  // tournament-relevant ability — not the mega's intrinsic ability.
+  const pickerSpecies = isMegaForm ? baseSpecies : defenderSpecies;
+  const displayAbility =
+    isMegaForm && defenderMegaActive ? megaAbility : defenderAbility;
+
   const legalAbilities = format
     ? Array.from(
-        getLegalAbilities(defenderSpecies, format.id) ??
-          getValidAbilities(defenderSpecies)
+        getLegalAbilities(pickerSpecies, format.id) ??
+          getValidAbilities(pickerSpecies)
       )
-    : getValidAbilities(defenderSpecies);
+    : getValidAbilities(pickerSpecies);
 
   const natureEffect = defenderNature ? NATURE_EFFECTS[defenderNature] : null;
   const natUp = natureEffect?.boost ?? null;
@@ -155,46 +179,54 @@ export function DefenderMonHeader({
 
   return (
     <div className="flex w-60 shrink-0 flex-col gap-1.5 border-r p-2">
-      {/* Species pill + Sprite (both open species picker) */}
-      <Popover>
-        <PopoverTrigger
-          className={cn(
-            "border-border bg-background hover:border-primary focus-visible:border-primary",
-            "flex w-full items-center gap-1 rounded-md border px-2 py-1 text-left text-[11.5px]",
-            "outline-none transition-colors"
-          )}
-        >
-          <span
+      {/* Species pill + mega toggle (when applicable) */}
+      <div className="flex items-center gap-1.5">
+        <Popover>
+          <PopoverTrigger
             className={cn(
-              "min-w-0 flex-1 truncate",
-              defenderSpecies
-                ? "text-foreground font-medium"
-                : "text-muted-foreground"
+              "border-border bg-background hover:border-primary focus-visible:border-primary",
+              "flex min-w-0 flex-1 items-center gap-1 rounded-md border px-2 py-1 text-left text-[11.5px]",
+              "outline-none transition-colors"
             )}
-            title={defenderSpecies || undefined}
           >
-            {defenderSpecies || "Choose species…"}
-          </span>
-          <span aria-hidden className="text-[9px] text-muted-foreground">
-            ▾
-          </span>
-        </PopoverTrigger>
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate",
+                defenderSpecies
+                  ? "text-foreground font-medium"
+                  : "text-muted-foreground"
+              )}
+              title={defenderSpecies || undefined}
+            >
+              {defenderSpecies || "Choose species…"}
+            </span>
+            <span aria-hidden className="text-[9px] text-muted-foreground">
+              ▾
+            </span>
+          </PopoverTrigger>
 
-        <PopoverContent
-          align="start"
-          side="bottom"
-          sideOffset={6}
-          className="w-[920px] max-w-[calc(100vw-2rem)] p-0"
-          style={{ maxHeight: "min(70vh, 640px)" }}
-        >
-          <SpeciesPicker
-            value={defenderSpecies}
-            format={format}
-            onPick={(species) => setDefenderSpecies(species)}
-            onClose={() => undefined}
+          <PopoverContent
+            align="start"
+            side="bottom"
+            sideOffset={6}
+            className="w-[920px] max-w-[calc(100vw-2rem)] p-0"
+            style={{ maxHeight: "min(70vh, 640px)" }}
+          >
+            <SpeciesPicker
+              value={defenderSpecies}
+              format={format}
+              onPick={(species) => setDefenderSpecies(species)}
+              onClose={() => undefined}
+            />
+          </PopoverContent>
+        </Popover>
+        {isMegaForm && (
+          <MegaToggle
+            active={defenderMegaActive}
+            onToggle={() => setDefenderMegaActive(!defenderMegaActive)}
           />
-        </PopoverContent>
-      </Popover>
+        )}
+      </div>
 
       {/* Sprite — centered in the lane */}
       <div className="mx-auto size-24 shrink-0 overflow-hidden rounded-md">
@@ -225,11 +257,24 @@ export function DefenderMonHeader({
         />
       </DefenderFormChip>
 
-      {/* Ability */}
-      <DefenderFormChip label="Abil" value={defenderAbility}>
+      {/* Ability — when species is a mega and the toggle is on, the picker
+          edits the BASE ability (stored) but the row's primary value shows
+          the post-evolution ability for clarity. The base ability is shown
+          as a small secondary line for tournament transparency. */}
+      <DefenderFormChip
+        label="Abil"
+        value={displayAbility}
+        trailing={
+          isMegaForm && defenderMegaActive ? (
+            <span className="shrink-0 whitespace-nowrap font-mono text-[9px] text-muted-foreground/70">
+              base: {defenderAbility || "—"}
+            </span>
+          ) : null
+        }
+      >
         <AbilityPicker
           value={defenderAbility}
-          species={defenderSpecies}
+          species={pickerSpecies}
           format={format}
           onPick={(ability) => setDefenderAbility(ability)}
           onClose={() => undefined}

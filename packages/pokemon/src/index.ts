@@ -127,6 +127,7 @@ export {
   getLegalMoves,
   getLegalSpecies,
   getLegalTeraTypes,
+  getMegaAbilityForSpecies,
   getMegaStoneForSpecies,
   isLegalAbility,
   isLegalItem,

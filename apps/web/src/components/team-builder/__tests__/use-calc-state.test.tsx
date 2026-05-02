@@ -721,3 +721,45 @@ describe("computeReverseOutput — short-circuits", () => {
     expect(result.current.moveCalcOutputsReverse[3]).toBeNull();
   });
 });
+
+// =============================================================================
+// Per-calc mega toggle (attackerMegaActive / defenderMegaActive)
+// =============================================================================
+
+describe("attackerMegaActive / defenderMegaActive", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("attackerMegaActive defaults to true", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    expect(result.current.attackerMegaActive).toBe(true);
+  });
+
+  it("defenderMegaActive defaults to true", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    expect(result.current.defenderMegaActive).toBe(true);
+  });
+
+  it("setAttackerMegaActive updates the flag without affecting defender flag", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    act(() => result.current.setAttackerMegaActive(false));
+    expect(result.current.attackerMegaActive).toBe(false);
+    expect(result.current.defenderMegaActive).toBe(true);
+  });
+
+  it("setDefenderMegaActive updates the flag without affecting attacker flag", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    act(() => result.current.setDefenderMegaActive(false));
+    expect(result.current.defenderMegaActive).toBe(false);
+    expect(result.current.attackerMegaActive).toBe(true);
+  });
+});

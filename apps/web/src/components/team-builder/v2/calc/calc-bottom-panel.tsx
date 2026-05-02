@@ -126,6 +126,8 @@ export function CalcBottomPanel({
           onPickAttacker={onPickAttacker}
           attackerBoosts={calc.attackerBoosts}
           setAttackerBoost={calc.setAttackerBoost}
+          attackerMegaActive={calc.attackerMegaActive}
+          setAttackerMegaActive={calc.setAttackerMegaActive}
         />
         <div className="min-h-0 overflow-y-auto rounded-lg border bg-card p-3 shadow-sm">
           <CalcFieldBlock
@@ -184,6 +186,8 @@ export function CalcBottomPanel({
               setDefenderItem={calc.setDefenderItem}
               setDefenderNature={calc.setDefenderNature}
               setDefenderTera={calc.setDefenderTera}
+              defenderMegaActive={calc.defenderMegaActive}
+              setDefenderMegaActive={calc.setDefenderMegaActive}
             />
             <div className="min-w-0 flex-1 overflow-hidden p-2">
               <CalcDefenderStats

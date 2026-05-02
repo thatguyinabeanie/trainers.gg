@@ -177,6 +177,9 @@ jest.mock("@trainers/pokemon", () => ({
   getValidAbilities: (...args: unknown[]) => mockGetValidAbilities(...args),
   NATURE_EFFECTS: NATURE_EFFECTS_FIXTURE,
   formatHasTera: (...args: unknown[]) => mockFormatHasTera(...args),
+  // Mega-aware helpers — defaults assume non-mega species (no override).
+  getMegaAbilityForSpecies: jest.fn().mockReturnValue(null),
+  getCanonicalBaseSpecies: jest.fn((s: string) => s),
 }));
 
 // =============================================================================
@@ -234,6 +237,8 @@ function makeProps(overrides: Partial<DefenderMonHeaderProps> = {}): DefenderMon
     setDefenderItem: jest.fn(),
     setDefenderNature: jest.fn(),
     setDefenderTera: jest.fn(),
+    defenderMegaActive: true,
+    setDefenderMegaActive: jest.fn(),
     ...overrides,
   };
 }
