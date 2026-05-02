@@ -31,7 +31,8 @@
   flex: 1;
   display: flex;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: hidden;
+  overflow-x: visible;
 }
 
 .builderWorklane {
@@ -39,16 +40,17 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow: hidden;
+  overflow-y: hidden;
+  overflow-x: visible;
 }
 
 /* Editor region — flex grows to fill remaining height; rows scroll inside.
-   No longer wraps the inline panel — the panel lives in its own flex sibling. */
+   overflow-x: auto so active rows wider than the viewport scroll horizontally. */
 .editorRegion {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 /* Resizer handle between editor and panel regions. */
@@ -1013,12 +1015,12 @@
 
 /* Calc column — fixed-width sibling to the moves lane */
 :global(.calc-col) {
-  min-width: 120px;
+  min-width: 180px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   flex-shrink: 0;
-  width: 160px;
+  width: 220px;
   background: color-mix(in oklch, var(--muted) 40%, transparent);
   border-left: 1px solid var(--border);
   padding: 8px 0;
