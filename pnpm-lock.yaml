@@ -781,6 +781,9 @@ importers:
       '@pkmn/sim':
         specifier: catalog:pkmn
         version: 0.10.7
+      '@trainers/utils':
+        specifier: workspace:*
+        version: link:../utils
     devDependencies:
       '@trainers/eslint-config':
         specifier: workspace:*
@@ -866,6 +869,9 @@ importers:
       '@supabase/supabase-js':
         specifier: catalog:supabase
         version: 2.100.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      '@trainers/pokemon':
+        specifier: workspace:*
+        version: link:../pokemon
       '@trainers/utils':
         specifier: workspace:*
         version: link:../utils
@@ -884,6 +890,9 @@ importers:
       react-native-url-polyfill:
         specifier: catalog:expo
         version: 2.0.0(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.84.1(@babel/core@7.29.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10))(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.5)(utf-8-validate@5.0.10))
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@faker-js/faker':
         specifier: 'catalog:'
@@ -19048,8 +19057,8 @@ snapshots:
       '@babel/parser': 7.29.2
       eslint: 9.39.2(jiti@2.6.1)
       hermes-parser: 0.25.1
-      zod: 3.25.76
-      zod-validation-error: 4.0.2(zod@3.25.76)
+      zod: 4.3.6
+      zod-validation-error: 4.0.2(zod@4.3.6)
     transitivePeerDependencies:
       - supports-color
 
@@ -24627,9 +24636,9 @@ snapshots:
     dependencies:
       zod: 3.25.76
 
-  zod-validation-error@4.0.2(zod@3.25.76):
+  zod-validation-error@4.0.2(zod@4.3.6):
     dependencies:
-      zod: 3.25.76
+      zod: 4.3.6
 
   zod@3.25.76: {}
 

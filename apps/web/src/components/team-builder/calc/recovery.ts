@@ -190,7 +190,15 @@ export function getRecoveryConfig(cfg: RecoveryConfig): RecoveryComputed {
   return empty;
 }
 
-export type KoTier = "OHKO" | "2HKO" | "3HKO" | "4HKO+" | null;
+/**
+ * Canonical user-facing KO-tier label. The 4HKO+ label distinguishes
+ * "many turns to KO" from "no damage" (null). Source of truth for the
+ * recovery simulation; reused as the type of `CalcOutput.recoveryTier`
+ * and the return of `resolveKoTierLabel`.
+ */
+export type KoTierLabel = "OHKO" | "2HKO" | "3HKO" | "4HKO+" | null;
+/** @deprecated Use `KoTierLabel`. Kept temporarily to avoid breaking imports. */
+export type KoTier = KoTierLabel;
 
 interface SimulationInput {
   /** Per-hit damage (use a specific roll — typically max for "guaranteed" or
@@ -208,7 +216,7 @@ interface SimulationInput {
  * or stalls indefinitely). The returned tier names match the engine's
  * vocabulary so consumers can use them in verdict strings.
  */
-export function simulateKoTier(input: SimulationInput): KoTier {
+export function simulateKoTier(input: SimulationInput): KoTierLabel {
   const { damagePerHit, maxHP, recovery } = input;
   const maxTurns = input.maxTurns ?? 12;
 
@@ -272,7 +280,7 @@ interface VerdictInput {
 
 interface VerdictOutput {
   /** KO tier under the worst-case roll (max damage). null = doesn't KO. */
-  tier: KoTier;
+  tier: KoTierLabel;
   /** Suffix to append when recovery genuinely changed the verdict. */
   suffix: string;
 }
@@ -298,7 +306,6 @@ export function getRecoveryAwareVerdict(input: VerdictInput): VerdictOutput {
   const maxRoll = input.rolls.length
     ? (input.rolls[input.rolls.length - 1] ?? 0)
     : 0;
-  const minRoll = input.rolls[0] ?? 0;
 
   const tierWithRecovery = simulateKoTier({
     damagePerHit: maxRoll,
@@ -324,11 +331,6 @@ export function getRecoveryAwareVerdict(input: VerdictInput): VerdictOutput {
       suffix: "",
     },
   });
-
-  // Edge: if min roll wouldn't KO without recovery either, the matchup is
-  // already a non-KO at the engine level — the suffix is still useful for
-  // documentation but doesn't change the verdict.
-  void minRoll;
 
   return {
     tier: tierWithRecovery,

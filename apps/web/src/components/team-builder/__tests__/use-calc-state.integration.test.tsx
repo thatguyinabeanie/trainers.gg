@@ -768,6 +768,102 @@ describe("HP clamp", () => {
 });
 
 // =============================================================================
+// Mega toggle wiring
+// Locks the wrapper-level mega swap. The MegaToggle UI only sets a boolean,
+// but useCalcState turns that boolean into different `species` and `ability`
+// arguments to @smogon/calc. We assert the swap moves the damage numbers in
+// the expected direction so a wiring regression cannot ship silently.
+// =============================================================================
+
+describe("mega toggle (real engine)", () => {
+  function makeMegaCharizardY(): Tables<"pokemon"> {
+    // Default attacker spread tuned for a Champions-legal Mega Charizard Y;
+    // Modest, no item, 32 SpA matches the NCP reference set already in this
+    // file so the same Charizard is exercised here.
+    return makePokemon({
+      species: "Charizard-Mega-Y",
+      ability: "Drought",
+      nature: "Modest",
+      held_item: null,
+      ev_hp: 0,
+      ev_attack: 0,
+      ev_defense: 0,
+      ev_special_attack: 32,
+      ev_special_defense: 0,
+      ev_speed: 0,
+      move1: "Flamethrower",
+    });
+  }
+
+  it("Mega ON → uses mega stats + post-evolution ability (Drought, +SpA)", () => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makeMegaCharizardY(),
+        format: CHAMPIONS_FORMAT,
+      })
+    );
+    // Mega defaults to active; assert the engine actually returned a calc.
+    const megaOn = result.current.selectedMoveOutput;
+    expect(megaOn).not.toBeNull();
+    // Drought infers Sun on the field, so the inferred-weather contract holds:
+    expect(result.current.inferredWeather).toBe("Sun");
+    // The species reaching the engine is the mega form — final stat reflects
+    // Mega Y's higher SpA.
+    const megaMid = mid(megaOn!.minPercent, megaOn!.maxPercent);
+    expect(megaMid).toBeGreaterThan(0);
+  });
+
+  it("Mega OFF → calc uses base form, damage drops materially", () => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makeMegaCharizardY(),
+        format: CHAMPIONS_FORMAT,
+      })
+    );
+    const megaOnMid = mid(
+      result.current.selectedMoveOutput!.minPercent,
+      result.current.selectedMoveOutput!.maxPercent
+    );
+
+    act(() => result.current.setAttackerMegaActive(false));
+
+    const megaOffOutput = result.current.selectedMoveOutput;
+    expect(megaOffOutput).not.toBeNull();
+    const megaOffMid = mid(megaOffOutput!.minPercent, megaOffOutput!.maxPercent);
+
+    // Base Charizard has lower SpA AND no Drought (which would Sun-boost
+    // Flamethrower) — combined effect is a noticeably smaller hit.
+    // Asserting "strictly less" is the meaningful regression check.
+    expect(megaOffMid).toBeLessThan(megaOnMid);
+  });
+
+  it("toggle does not cross-contaminate sides (defender mega flag is independent)", () => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makeMegaCharizardY(),
+        format: CHAMPIONS_FORMAT,
+      })
+    );
+
+    act(() => result.current.setAttackerMegaActive(false));
+    const onlyAttackerOff = mid(
+      result.current.selectedMoveOutput!.minPercent,
+      result.current.selectedMoveOutput!.maxPercent
+    );
+
+    act(() => result.current.setDefenderMegaActive(false));
+    const bothOff = mid(
+      result.current.selectedMoveOutput!.minPercent,
+      result.current.selectedMoveOutput!.maxPercent
+    );
+
+    // Defender is the default Incineroar (not a mega), so toggling the
+    // defender flag must not change damage.
+    expect(bothOff).toBeCloseTo(onlyAttackerOff, 1);
+  });
+});
+
+// =============================================================================
 // Champions dispatch
 // =============================================================================
 

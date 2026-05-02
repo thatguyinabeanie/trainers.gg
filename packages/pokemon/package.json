@@ -18,7 +18,8 @@
     "@pkmn/data": "catalog:pkmn",
     "@pkmn/dex": "catalog:pkmn",
     "@pkmn/img": "catalog:pkmn",
-    "@pkmn/sim": "catalog:pkmn"
+    "@pkmn/sim": "catalog:pkmn",
+    "@trainers/utils": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "catalog:testing",

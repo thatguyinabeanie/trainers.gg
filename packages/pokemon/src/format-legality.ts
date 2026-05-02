@@ -3,15 +3,14 @@
  *
  * - Champions: VGC 2026 Reg M-A uses a static port of NCP VGC Damage
  *   Calculator's POKEDEX_CHAMPIONS list (pokedex.js lines 18378–18409,
- *   captured 2026-04-14), because @pkmn/sim doesn't know gen 10.
+ *   captured 2026-04-14), because Champions' synthetic-mega + Stat Points
+ *   ruleset isn't expressible via @pkmn/sim's gen-9 format definitions.
  * - Other formats will be resolved via @pkmn/sim in Task 2.
  * - Unknown / unresolvable formats return `undefined` and callers treat
  *   that as "permissive — all legal."
  */
 
-// Library tsconfig uses ES2022 without DOM — ambient console declaration
-// so warn calls compile without adding @types/node or DOM lib.
-declare const console: { warn(...data: unknown[]): void };
+import { logError } from "@trainers/utils";
 
 // =============================================================================
 // Champions: VGC 2026 Reg M-A
@@ -433,10 +432,7 @@ function computeLegalSpeciesFromSim(
       }
     }
   } catch (error) {
-    console.warn(
-      `[format-legality] Failed to compute species for ${formatId}:`,
-      error
-    );
+    logError("format-legality.computeSpecies", error, { formatId });
     return undefined; // permissive fallback — don't cache error result
   }
 
@@ -580,8 +576,13 @@ const CHAMPIONS_MA_LEGAL_ITEMS: ReadonlySet<string> = new Set([
   "Yache Berry",
 ]);
 
-/** Maps mega species names to their required mega stone (Champions M-A). */
-const MEGA_SPECIES_TO_STONE: ReadonlyMap<string, string> = new Map([
+/**
+ * Source-of-truth tuple-array for mega species → mega stone. Declared
+ * `as const` so we can derive the literal-union of mega-species names
+ * (`MegaSpeciesWithStone`) from the data — adding a row here widens the
+ * type automatically.
+ */
+const MEGA_STONE_ENTRIES = [
   // Champions-exclusive megas
   ["Chandelure-Mega", "Chandelurite"],
   ["Chesnaught-Mega", "Chesnaughtite"],
@@ -643,7 +644,29 @@ const MEGA_SPECIES_TO_STONE: ReadonlyMap<string, string> = new Map([
   ["Steelix-Mega", "Steelixite"],
   ["Tyranitar-Mega", "Tyranitarite"],
   ["Venusaur-Mega", "Venusaurite"],
-]);
+] as const;
+
+/** All mega species that appear in `MEGA_SPECIES_TO_STONE`. */
+export type MegaSpeciesWithStone = (typeof MEGA_STONE_ENTRIES)[number][0];
+
+/** Maps mega species names to their required mega stone (Champions M-A). */
+const MEGA_SPECIES_TO_STONE: ReadonlyMap<string, string> = new Map(
+  MEGA_STONE_ENTRIES
+);
+
+const MEGA_STONE_SPECIES_SET: ReadonlySet<string> = new Set(
+  MEGA_STONE_ENTRIES.map(([k]) => k)
+);
+
+/**
+ * Runtime guard: is `species` one of the known mega forms with a mega
+ * stone? Drives picker UI and the team-builder mega toggle.
+ */
+export function isMegaSpeciesWithStone(
+  species: string | null | undefined
+): species is MegaSpeciesWithStone {
+  return species != null && MEGA_STONE_SPECIES_SET.has(species);
+}
 
 // Module-level cache — computed once per process (worker) lifetime, mirroring
 // `simSetCache` for species. First call per format probes ~250 gen-9 items
@@ -707,10 +730,7 @@ function computeLegalItemsFromSim(
       if (issue === null || issue === "") legal.add(item.name);
     }
   } catch (error) {
-    console.warn(
-      `[format-legality] Failed to compute items for ${formatId}:`,
-      error
-    );
+    logError("format-legality.computeItems", error, { formatId });
     return undefined; // permissive fallback — don't cache error result
   }
 
@@ -728,7 +748,6 @@ function computeLegalItemsFromSim(
 // pool per species but has no additional format-level bans on top). Empty
 // set means Champions goes through the sim-backed learnset path with gen-9
 // data; species in Champions are all gen-9 entries so learnsets resolve.
-//   5. serebii.net/vgc/ — no Champions info on overview page
 const CHAMPIONS_MA_MOVE_BANLIST: ReadonlySet<string> = new Set();
 
 /**
@@ -792,10 +811,7 @@ function computeLegalMovesFromSim(
       if (issues === null) legal.add(move.name);
     }
   } catch (error) {
-    console.warn(
-      `[format-legality] Failed to compute moves for ${species} in ${formatId}:`,
-      error
-    );
+    logError("format-legality.computeMoves", error, { species, formatId });
     return undefined; // permissive fallback — don't cache error result
   }
 
@@ -862,10 +878,7 @@ function computeLegalMovesForChampions(
       }
     }
   } catch (error) {
-    console.warn(
-      `[format-legality] Failed to compute Champions moves for ${species}:`,
-      error
-    );
+    logError("format-legality.computeChampionsMoves", error, { species });
     return undefined; // permissive fallback — don't cache error result
   }
 
@@ -950,10 +963,7 @@ function computeLegalAbilitiesFromSim(
       if (issue === null || issue === "") legal.add(ability.name);
     }
   } catch (error) {
-    console.warn(
-      `[format-legality] Failed to compute abilities for ${species} in ${formatId}:`,
-      error
-    );
+    logError("format-legality.computeAbilities", error, { species, formatId });
     return undefined; // permissive fallback — don't cache error result
   }
 
@@ -1216,7 +1226,7 @@ export function getMegaStoneForSpecies(species: string): string | null {
  * @smogon/calc species data (calc/src/data/species.ts) — each mega's
  * `abilities[0]` field is the source of truth.
  */
-const MEGA_SPECIES_TO_ABILITY: ReadonlyMap<string, string> = new Map([
+const MEGA_ABILITY_ENTRIES = [
   // Standard Gen 6/7 megas
   ["Abomasnow-Mega", "Snow Warning"],
   ["Absol-Mega", "Magic Bounce"],
@@ -1315,7 +1325,29 @@ const MEGA_SPECIES_TO_ABILITY: ReadonlyMap<string, string> = new Map([
   ["Zygarde-Mega", "Aura Break"],
   // Misc / past-format
   ["Crucibelle-Mega", "Magic Guard"],
-]);
+] as const;
+
+/**
+ * All mega species the calculator knows a post-evolution ability for.
+ * Strictly broader than `MegaSpeciesWithStone` (e.g. Rayquaza-Mega gates
+ * on Dragon Ascent rather than a stone item, so it appears here only).
+ */
+export type MegaSpeciesWithAbility = (typeof MEGA_ABILITY_ENTRIES)[number][0];
+
+const MEGA_SPECIES_TO_ABILITY: ReadonlyMap<string, string> = new Map(
+  MEGA_ABILITY_ENTRIES
+);
+
+const MEGA_ABILITY_SPECIES_SET: ReadonlySet<string> = new Set(
+  MEGA_ABILITY_ENTRIES.map(([k]) => k)
+);
+
+/** Runtime guard: does the calculator know a mega ability for `species`? */
+export function isMegaSpeciesWithAbility(
+  species: string | null | undefined
+): species is MegaSpeciesWithAbility {
+  return species != null && MEGA_ABILITY_SPECIES_SET.has(species);
+}
 
 /**
  * Returns the post-evolution ability for a mega species, or null if the

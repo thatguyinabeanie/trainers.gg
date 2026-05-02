@@ -1,4 +1,5 @@
 import {
+  type ParsedPokemon,
   parseShowdownText,
   validateTeamStructure,
   validateTeamFormat,
@@ -209,35 +210,36 @@ Level: 50
 });
 
 describe("validateTeamStructure — Champions (championsvgc2026regma)", () => {
-  const makeChampionsMon = (overrides: Partial<ReturnType<typeof parseShowdownText>[number]> = {}) =>
-    ({
-      species: "Incineroar",
-      nickname: null,
-      level: 50,
-      ability: "Intimidate",
-      nature: "Careful",
-      held_item: null,
-      move1: "Fake Out",
-      move2: null,
-      move3: null,
-      move4: null,
-      ev_hp: 20,
-      ev_attack: 10,
-      ev_defense: 10,
-      ev_special_attack: 10,
-      ev_special_defense: 10,
-      ev_speed: 6,
-      iv_hp: 31,
-      iv_attack: 31,
-      iv_defense: 31,
-      iv_special_attack: 31,
-      iv_special_defense: 31,
-      iv_speed: 31,
-      tera_type: null,
-      gender: null,
-      is_shiny: false,
-      ...overrides,
-    });
+  const makeChampionsMon = (
+    overrides: Partial<ParsedPokemon> = {}
+  ): ParsedPokemon => ({
+    species: "Incineroar",
+    nickname: null,
+    level: 50,
+    ability: "Intimidate",
+    nature: "Careful",
+    held_item: null,
+    move1: "Fake Out",
+    move2: null,
+    move3: null,
+    move4: null,
+    ev_hp: 20,
+    ev_attack: 10,
+    ev_defense: 10,
+    ev_special_attack: 10,
+    ev_special_defense: 10,
+    ev_speed: 6,
+    iv_hp: 31,
+    iv_attack: 31,
+    iv_defense: 31,
+    iv_special_attack: 31,
+    iv_special_defense: 31,
+    iv_speed: 31,
+    tera_type: null,
+    gender: null,
+    is_shiny: false,
+    ...overrides,
+  });
 
   it("accepts a valid Champions team (66 total, ≤32 per stat)", () => {
     const errors = validateTeamStructure([makeChampionsMon()], "championsvgc2026regma");
@@ -266,36 +268,35 @@ describe("validateTeamStructure — Champions (championsvgc2026regma)", () => {
 
 describe("validateTeamStructure — Champions Showdown ID", () => {
   const makeChampionsMon = (
-    overrides: Partial<ReturnType<typeof parseShowdownText>[number]> = {}
-  ) =>
-    ({
-      species: "Incineroar",
-      nickname: null,
-      level: 50,
-      ability: "Intimidate",
-      nature: "Careful",
-      held_item: null,
-      move1: "Fake Out",
-      move2: null,
-      move3: null,
-      move4: null,
-      ev_hp: 20,
-      ev_attack: 10,
-      ev_defense: 10,
-      ev_special_attack: 10,
-      ev_special_defense: 10,
-      ev_speed: 6,
-      iv_hp: 31,
-      iv_attack: 31,
-      iv_defense: 31,
-      iv_special_attack: 31,
-      iv_special_defense: 31,
-      iv_speed: 31,
-      tera_type: null,
-      gender: null,
-      is_shiny: false,
-      ...overrides,
-    });
+    overrides: Partial<ParsedPokemon> = {}
+  ): ParsedPokemon => ({
+    species: "Incineroar",
+    nickname: null,
+    level: 50,
+    ability: "Intimidate",
+    nature: "Careful",
+    held_item: null,
+    move1: "Fake Out",
+    move2: null,
+    move3: null,
+    move4: null,
+    ev_hp: 20,
+    ev_attack: 10,
+    ev_defense: 10,
+    ev_special_attack: 10,
+    ev_special_defense: 10,
+    ev_speed: 6,
+    iv_hp: 31,
+    iv_attack: 31,
+    iv_defense: 31,
+    iv_special_attack: 31,
+    iv_special_defense: 31,
+    iv_speed: 31,
+    tera_type: null,
+    gender: null,
+    is_shiny: false,
+    ...overrides,
+  });
 
   it(
     "applies Champions stat-point check for championsvgc2026regma",
@@ -333,36 +334,35 @@ describe("validateTeamStructure — Champions Showdown ID", () => {
 
 describe("validateChampionsLegality", () => {
   const makeChampionsMon = (
-    overrides: Partial<ReturnType<typeof parseShowdownText>[number]> = {}
-  ) =>
-    ({
-      species: "Incineroar",
-      nickname: null,
-      level: 50,
-      ability: "Intimidate",
-      nature: "Careful",
-      held_item: null,
-      move1: "Fake Out",
-      move2: null,
-      move3: null,
-      move4: null,
-      ev_hp: 20,
-      ev_attack: 10,
-      ev_defense: 10,
-      ev_special_attack: 10,
-      ev_special_defense: 10,
-      ev_speed: 6,
-      iv_hp: 31,
-      iv_attack: 31,
-      iv_defense: 31,
-      iv_special_attack: 31,
-      iv_special_defense: 31,
-      iv_speed: 31,
-      tera_type: null,
-      gender: null,
-      is_shiny: false,
-      ...overrides,
-    });
+    overrides: Partial<ParsedPokemon> = {}
+  ): ParsedPokemon => ({
+    species: "Incineroar",
+    nickname: null,
+    level: 50,
+    ability: "Intimidate",
+    nature: "Careful",
+    held_item: null,
+    move1: "Fake Out",
+    move2: null,
+    move3: null,
+    move4: null,
+    ev_hp: 20,
+    ev_attack: 10,
+    ev_defense: 10,
+    ev_special_attack: 10,
+    ev_special_defense: 10,
+    ev_speed: 6,
+    iv_hp: 31,
+    iv_attack: 31,
+    iv_defense: 31,
+    iv_special_attack: 31,
+    iv_special_defense: 31,
+    iv_speed: 31,
+    tera_type: null,
+    gender: null,
+    is_shiny: false,
+    ...overrides,
+  });
 
   it("rejects a Pokemon with a Tera type set", () => {
     const mon = makeChampionsMon({ tera_type: "Fire" });
@@ -635,5 +635,25 @@ describe("parseAndValidateTeam", () => {
     const result = parseAndValidateTeam(duplicateText, "reg-i");
     expect(result.valid).toBe(false);
     expect(result.team.length).toBeGreaterThan(0);
+  });
+
+  it("rejects raw text exceeding the 10,000-character cap before parsing", () => {
+    const oversized = "x".repeat(10_001);
+    const result = parseAndValidateTeam(oversized, "reg-i");
+    expect(result.valid).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]!.source).toBe("structure");
+    expect(result.errors[0]!.message).toContain("maximum length");
+    // No parsing was attempted
+    expect(result.team).toHaveLength(0);
+  });
+
+  it("accepts raw text at exactly the 10,000-character cap (parser then runs)", () => {
+    // Build a payload that's exactly 10,000 chars but won't parse to a team
+    const padded = "x".repeat(10_000);
+    expect(padded.length).toBe(10_000);
+    const result = parseAndValidateTeam(padded, "reg-i");
+    // Cap doesn't trigger; parser runs and reports its own error
+    expect(result.errors[0]!.source).not.toBe("structure");
   });
 });

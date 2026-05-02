@@ -8,7 +8,12 @@ import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-import { type CalcOutput, getVerdict, type UseCalcStateReturn } from "../../use-calc-state";
+import {
+  type CalcOutput,
+  getVerdict,
+  type KoTierLabel,
+  type UseCalcStateReturn,
+} from "../../use-calc-state";
 import { MovePicker } from "../pickers/move-picker";
 
 // =============================================================================
@@ -39,7 +44,7 @@ export interface CalcDefenderMovesProps {
 // =============================================================================
 
 /** KO tier → Tailwind text-color class for the damage % display. */
-const KO_TIER_COLOR: Record<string, string> = {
+const KO_TIER_COLOR: Record<NonNullable<KoTierLabel>, string> = {
   OHKO: "text-destructive",
   "2HKO": "text-yellow-400 dark:text-yellow-300",
   "3HKO": "text-orange-400",
@@ -72,13 +77,14 @@ const PIVOT_MOVES = new Set([
 // =============================================================================
 
 /**
- * Resolve the KO tier string from a CalcOutput.
- * Returns "OHKO" | "2HKO" | "3HKO" | "4HKO+" | null.
+ * Resolve the KO tier label for a damage range. Distinguishes "doesn't KO
+ * within 4 hits" (`"4HKO+"`) from "no damage at all" (`null`) — see
+ * `KoTierLabel` in `calc/recovery.ts` for the canonical type.
  */
 function resolveKoTierLabel(
   minPercent: number,
   maxPercent: number
-): string | null {
+): KoTierLabel {
   const verdict = getVerdict(minPercent, maxPercent);
   if (verdict === "OHKO") return "OHKO";
   if (verdict === "2HKO") return "2HKO";

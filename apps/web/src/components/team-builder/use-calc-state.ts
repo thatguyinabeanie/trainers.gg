@@ -19,9 +19,15 @@ import {
   isChampionsFormat,
 } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
+import { logError } from "@trainers/utils";
 
 import { getMoveEffectiveness } from "./v2/calc/move-effectiveness";
-import { getRecoveryAwareVerdict } from "./calc/recovery";
+import {
+  getRecoveryAwareVerdict,
+  type KoTierLabel,
+} from "./calc/recovery";
+
+export type { KoTierLabel };
 
 // =============================================================================
 // Types
@@ -55,6 +61,13 @@ export interface StatBoosts {
 export type AttackerBoosts = StatBoosts;
 export type DefenderBoosts = StatBoosts;
 
+/**
+ * Spikes count — 0 = none, 1-3 = stack height. The Pokemon engine supports
+ * exactly 0-3 layers; rejecting other values at the type level lets the
+ * stepper UI drop its `as 0 | 1 | 2 | 3` cast.
+ */
+export type SpikesCount = 0 | 1 | 2 | 3;
+
 export interface BaseSideState {
   reflect: boolean;
   lightScreen: boolean;
@@ -64,11 +77,10 @@ export interface BaseSideState {
   friendGuard: boolean;
   protect: boolean;
   stealthRock: boolean;
-  spikes: number;
+  spikes: SpikesCount;
   saltCure: boolean;
 }
 export type AttackerSideState = BaseSideState;
-// DefenderSideState removed — both sides now use BaseSideState directly.
 
 export interface CalcOutput {
   minPercent: number;
@@ -88,7 +100,7 @@ export interface CalcOutput {
    * Consumers should prefer this over the percent-derived verdict when
    * non-null, since the simulation accounts for mid-battle healing.
    */
-  recoveryTier: string | null;
+  recoveryTier: KoTierLabel;
 }
 
 // Attacker's max HP — used in the "X–Y / HP" detail line for reverse calcs.
@@ -131,7 +143,7 @@ function getGen(format: GameFormat | undefined) {
 }
 
 /** Status display label → Smogon status code mapping. */
-export const STATUS_MAP: Record<string, string> = {
+export const STATUS_MAP = {
   Healthy: "",
   Burned: "brn",
   Poisoned: "psn",
@@ -139,10 +151,26 @@ export const STATUS_MAP: Record<string, string> = {
   Paralyzed: "par",
   Asleep: "slp",
   Frozen: "frz",
-};
+} as const satisfies Record<
+  string,
+  "" | "brn" | "psn" | "tox" | "par" | "slp" | "frz"
+>;
+
+/** Display labels accepted by the calc status pickers. */
+export type StatusLabel = keyof typeof STATUS_MAP;
+
+/**
+ * Engine-level weather names accepted by `@smogon/calc`. The UI string
+ * representation also includes `""` (auto-infer from ability) and `"None"`
+ * (explicit suppression) — see `parseWeatherString` for the conversion.
+ */
+export type EngineWeather = "Sun" | "Rain" | "Sand" | "Snow";
+
+/** Engine-level terrain names accepted by `@smogon/calc`. */
+export type EngineTerrain = "Grassy" | "Electric" | "Psychic" | "Misty";
 
 /** Ability → inferred weather when no explicit weather is set. */
-const ABILITY_WEATHER_MAP: Record<string, string> = {
+const ABILITY_WEATHER_MAP: Record<string, EngineWeather> = {
   Drought: "Sun",
   Drizzle: "Rain",
   "Sand Stream": "Sand",
@@ -151,9 +179,99 @@ const ABILITY_WEATHER_MAP: Record<string, string> = {
 };
 
 /** Ability → inferred terrain when no explicit terrain is set. */
-const ABILITY_TERRAIN_MAP: Record<string, string> = {
+const ABILITY_TERRAIN_MAP: Record<string, EngineTerrain> = {
   "Hadron Engine": "Electric",
 };
+
+const ENGINE_WEATHER_SET: ReadonlySet<string> = new Set<EngineWeather>([
+  "Sun",
+  "Rain",
+  "Sand",
+  "Snow",
+]);
+
+const ENGINE_TERRAIN_SET: ReadonlySet<string> = new Set<EngineTerrain>([
+  "Grassy",
+  "Electric",
+  "Psychic",
+  "Misty",
+]);
+
+/**
+ * Internal tri-state for weather/terrain. The UI passes a single `string`
+ * around (empty / "None" / engine value) for legacy reasons; this union is
+ * what the resolver actually branches on.
+ *   - `auto` — infer from the attacker's ability (was `""`)
+ *   - `none` — explicit suppression of inference (was `"None"`)
+ *   - `set`  — user picked a specific weather/terrain
+ */
+type WeatherInput =
+  | { kind: "auto" }
+  | { kind: "none" }
+  | { kind: "set"; value: EngineWeather };
+
+type TerrainInput =
+  | { kind: "auto" }
+  | { kind: "none" }
+  | { kind: "set"; value: EngineTerrain };
+
+function parseWeatherString(s: string): WeatherInput {
+  if (s === "" || s === "auto") return { kind: "auto" };
+  if (s === "None") return { kind: "none" };
+  if (ENGINE_WEATHER_SET.has(s)) return { kind: "set", value: s as EngineWeather };
+  return { kind: "auto" };
+}
+
+function parseTerrainString(s: string): TerrainInput {
+  if (s === "" || s === "auto") return { kind: "auto" };
+  if (s === "None") return { kind: "none" };
+  if (ENGINE_TERRAIN_SET.has(s)) return { kind: "set", value: s as EngineTerrain };
+  return { kind: "auto" };
+}
+
+interface ResolvedWeather {
+  /** Engine-level value to feed `@smogon/calc`. `null` = no weather active. */
+  effective: EngineWeather | null;
+  /** Ability-derived hint for the UI; `null` if not auto or not inferrable. */
+  inferred: EngineWeather | null;
+}
+
+interface ResolvedTerrain {
+  effective: EngineTerrain | null;
+  inferred: EngineTerrain | null;
+}
+
+function resolveWeather(
+  input: WeatherInput,
+  ability: string | null
+): ResolvedWeather {
+  switch (input.kind) {
+    case "set":
+      return { effective: input.value, inferred: null };
+    case "none":
+      return { effective: null, inferred: null };
+    case "auto": {
+      const inferred = ability ? (ABILITY_WEATHER_MAP[ability] ?? null) : null;
+      return { effective: inferred, inferred };
+    }
+  }
+}
+
+function resolveTerrain(
+  input: TerrainInput,
+  ability: string | null
+): ResolvedTerrain {
+  switch (input.kind) {
+    case "set":
+      return { effective: input.value, inferred: null };
+    case "none":
+      return { effective: null, inferred: null };
+    case "auto": {
+      const inferred = ability ? (ABILITY_TERRAIN_MAP[ability] ?? null) : null;
+      return { effective: inferred, inferred };
+    }
+  }
+}
 
 const EMPTY_BOOSTS: StatBoosts = {
   atk: 0,
@@ -175,7 +293,18 @@ const FORMAT_UNINITIALIZED = Symbol("format-uninitialized");
 // Helpers
 // =============================================================================
 
-/** Cast a string to the branded smogon type for Pokemon constructor options. */
+/**
+ * Brand-cast a UI string into one of `@smogon/calc`'s branded name types
+ * (`AbilityName`, `ItemName`, etc.). The runtime values are plain strings;
+ * this helper exists solely so the call site type-checks against the
+ * engine's nominal types.
+ *
+ * UNSAFE: there is no runtime validation that the input is a name the
+ * engine recognises. Where possible, narrow at the source (we already do
+ * this for `StatusLabel`, `EngineWeather`, `EngineTerrain`, `Nature`, and
+ * `PokemonType`). For ability/item/species/move strings — which are open
+ * sets across the entire Pokemon dex — the cast remains the boundary.
+ */
 function asSmogon<T>(v: string | null | undefined): T {
   return (v ?? undefined) as unknown as T;
 }
@@ -262,7 +391,7 @@ function buildAttackerFromDb(
   gen: ReturnType<typeof Generations.get>,
   db: Tables<"pokemon">,
   boosts: AttackerBoosts,
-  status: string,
+  status: StatusLabel,
   megaActive: boolean
 ): Pokemon | null {
   if (!db.species) return null;
@@ -296,7 +425,11 @@ function buildAttackerFromDb(
       ) as unknown as string[],
     });
   } catch (error) {
-    console.warn("[useCalcState] Failed to build attacker:", error);
+    logError("calc.buildAttacker", error, {
+      species: db.species,
+      ability: db.ability,
+      megaActive,
+    });
     return null;
   }
 }
@@ -311,7 +444,7 @@ function buildDefenderPokemon(
   evs: DefenderEvs,
   ivs: DefenderIvs,
   boosts: DefenderBoosts,
-  status: string,
+  status: StatusLabel,
   hpPercent: number,
   megaActive: boolean
 ): Pokemon | null {
@@ -353,7 +486,11 @@ function buildDefenderPokemon(
       curHP: hpValue,
     });
   } catch (error) {
-    console.warn("[useCalcState] Failed to build defender:", error);
+    logError("calc.buildDefender", error, {
+      species,
+      ability,
+      megaActive,
+    });
     return null;
   }
 }
@@ -520,7 +657,7 @@ function runCalc(
       defenderMaxHP: defHP,
     };
   } catch (error) {
-    console.warn("[useCalcState] Failed to run damage calc:", error);
+    logError("calc.runCalc", error, { moveName });
     return null;
   }
 }
@@ -569,8 +706,8 @@ export interface UseCalcStateReturn {
   critMoves: readonly boolean[];
   toggleCrit: (idx: number) => void;
   // Attacker
-  attackerStatus: string;
-  setAttackerStatus: (v: string) => void;
+  attackerStatus: StatusLabel;
+  setAttackerStatus: (v: StatusLabel) => void;
   attackerBoosts: AttackerBoosts;
   setAttackerBoost: (stat: keyof AttackerBoosts, v: number) => void;
   // Defender
@@ -582,7 +719,7 @@ export interface UseCalcStateReturn {
   defenderEvs: DefenderEvs;
   defenderIvs: DefenderIvs;
   defenderBoosts: DefenderBoosts;
-  defenderStatus: string;
+  defenderStatus: StatusLabel;
   defenderHpPercent: number;
   /** Defender's 4 move slots — used for defense-direction calcs. */
   defenderMoves: readonly [string, string, string, string];
@@ -594,7 +731,7 @@ export interface UseCalcStateReturn {
   setDefenderEv: (stat: keyof DefenderEvs, v: number) => void;
   setDefenderIv: (stat: keyof DefenderIvs, v: number) => void;
   setDefenderBoost: (stat: keyof DefenderBoosts, v: number) => void;
-  setDefenderStatus: (v: string) => void;
+  setDefenderStatus: (v: StatusLabel) => void;
   setDefenderHpPercent: (v: number) => void;
   /** Per-calc toggle: simulate the attacker as its mega form vs base form. */
   attackerMegaActive: boolean;
@@ -736,7 +873,8 @@ export function useCalcState({
   ]);
 
   // --- Attacker modifiers (calc-only) ---
-  const [attackerStatus, setAttackerStatus] = useState("Healthy");
+  const [attackerStatus, setAttackerStatus] =
+    useState<StatusLabel>("Healthy");
   const [attackerBoosts, setAttackerBoosts] =
     useState<AttackerBoosts>(EMPTY_BOOSTS);
 
@@ -786,7 +924,8 @@ export function useCalcState({
   }
   const [defenderBoosts, setDefenderBoosts] =
     useState<DefenderBoosts>(EMPTY_BOOSTS);
-  const [defenderStatus, setDefenderStatus] = useState("Healthy");
+  const [defenderStatus, setDefenderStatus] =
+    useState<StatusLabel>("Healthy");
   const [defenderHpPercent, setDefenderHpPercent] = useState(100);
   const [defenderMoves, setDefenderMovesState] = useState<
     [string, string, string, string]
@@ -916,22 +1055,21 @@ export function useCalcState({
   }
 
   // --- Inferred weather / terrain from attacker ability ---
-  // Only applies when the user has NOT explicitly set weather/terrain.
-  // The literal "None" sentinel means "explicitly no weather" — used to
-  // override the ability-based inference when the user wants to model a
-  // matchup as if no weather is active (e.g. testing a Weather Ball
-  // calculation without Drought firing).
+  // The UI string is parsed into a discriminated union and resolved against
+  // the attacker's ability — `auto` infers, `none` suppresses inference,
+  // `set` uses the picked value verbatim. See `parseWeatherString` /
+  // `resolveWeather` above for the contract.
   const attackerAbility = selectedPokemon?.ability ?? null;
-  const weatherIsExplicitNone = weather === "None";
-  const terrainIsExplicitNone = terrain === "None";
-  const inferredWeather: string | null =
-    !weather && !weatherIsExplicitNone && attackerAbility
-      ? (ABILITY_WEATHER_MAP[attackerAbility] ?? null)
-      : null;
-  const inferredTerrain: string | null =
-    !terrain && !terrainIsExplicitNone && attackerAbility
-      ? (ABILITY_TERRAIN_MAP[attackerAbility] ?? null)
-      : null;
+  const resolvedWeather = resolveWeather(
+    parseWeatherString(weather),
+    attackerAbility
+  );
+  const resolvedTerrain = resolveTerrain(
+    parseTerrainString(terrain),
+    attackerAbility
+  );
+  const inferredWeather = resolvedWeather.inferred;
+  const inferredTerrain = resolvedTerrain.inferred;
 
   // --- Derived values — computed during render so result stays in sync ---
   const moves: readonly (string | null)[] = [
@@ -942,14 +1080,11 @@ export function useCalcState({
   ];
 
   // --- Shared calc objects — built once per render, reused across all move outputs ---
-  // The "None" sentinel collapses to empty for the engine while still
-  // suppressing inference (handled above).
-  const effectiveWeather = weatherIsExplicitNone
-    ? ""
-    : weather || (inferredWeather ?? "");
-  const effectiveTerrain = terrainIsExplicitNone
-    ? ""
-    : terrain || (inferredTerrain ?? "");
+  // `effective*` are the engine-ready values (typed `EngineWeather|null` etc).
+  // We pass the empty string when the field is absent so the engine treats
+  // it as "no weather/terrain active".
+  const effectiveWeather = resolvedWeather.effective ?? "";
+  const effectiveTerrain = resolvedTerrain.effective ?? "";
 
   // Offense field: attacker fires at defender
   const sharedOffenseField = buildField(

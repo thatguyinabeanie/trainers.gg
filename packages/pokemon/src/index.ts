@@ -44,7 +44,10 @@ export {
 export {
   type BaseStats,
   type NatureEffect,
+  type Nature,
   NATURE_EFFECTS,
+  ALL_NATURES,
+  isNature,
   POKEMON_BASE_STATS,
   getBaseStats,
   calculateHP,
@@ -62,6 +65,7 @@ export {
 export {
   type PokemonType,
   ALL_TYPES,
+  isPokemonType,
   POKEMON_TYPES,
   getSpeciesTypes,
   getTypeEffectiveness,

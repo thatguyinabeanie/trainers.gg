@@ -23,7 +23,6 @@ interface CalcColumnProps {
 // =============================================================================
 
 const MOVE_SLOTS = ["move1", "move2", "move3", "move4"] as const;
-type MoveSlot = (typeof MOVE_SLOTS)[number];
 
 // =============================================================================
 // CalcRow — one result row aligned to a MoveTile
@@ -156,7 +155,7 @@ export function CalcColumn({ pokemon }: CalcColumnProps) {
       {MOVE_SLOTS.map((slot, i) => (
         <CalcRow
           key={slot}
-          moveName={pokemon ? pokemon[slot as MoveSlot] || null : null}
+          moveName={pokemon ? pokemon[slot] || null : null}
           output={outputs[i] ?? null}
           hasPokemon={hasPokemon}
         />

@@ -330,8 +330,11 @@ async function runSeedSql(projectRef) {
         `   Failed query (truncated): ${error.query.substring(0, 200)}...`
       );
     }
-    // Don't fail the build for seed errors
-    return false;
+    // Re-throw so the migration runner fails the build. Per CLAUDE.md
+    // "Error Visibility": failures must be visible. Silent fallback to
+    // `return false` previously let preview builds ship with a broken
+    // seed state and no signal — wasted hours debugging downstream.
+    throw error;
   } finally {
     await sql.end();
   }
@@ -467,10 +470,17 @@ async function runMigrations() {
     await deployEdgeFunctionsWithRetry(projectRef, cliEnv);
   }
 
-  // Run seed data for preview environments
+  // Run seed data for preview environments. `runSeedSql` throws on failure
+  // — we deliberately do NOT swallow that here; a broken seed should fail
+  // the preview build so the issue is fixed before merging.
   if (env.shouldSeed) {
     console.log("\n🌱 Running seed data...");
-    await runSeedSql(projectRef);
+    const seedSucceeded = await runSeedSql(projectRef);
+    if (!seedSucceeded) {
+      throw new Error(
+        "Seed data did not run (no seed files or no DB connection)."
+      );
+    }
   }
 
   console.log("\n" + "=".repeat(50));

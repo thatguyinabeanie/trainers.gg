@@ -85,6 +85,49 @@ export interface NatureEffect {
   reduce?: keyof Omit<BaseStats, "hp">;
 }
 
+/**
+ * Canonical 25-nature roster. Source of truth for the `Nature` type and the
+ * `isNature` runtime guard. Order matches `NATURE_EFFECTS` and the picker's
+ * preferred display order.
+ */
+export const ALL_NATURES = [
+  "Hardy",
+  "Lonely",
+  "Brave",
+  "Adamant",
+  "Naughty",
+  "Bold",
+  "Docile",
+  "Relaxed",
+  "Impish",
+  "Lax",
+  "Timid",
+  "Hasty",
+  "Serious",
+  "Jolly",
+  "Naive",
+  "Modest",
+  "Mild",
+  "Quiet",
+  "Bashful",
+  "Rash",
+  "Calm",
+  "Gentle",
+  "Sassy",
+  "Careful",
+  "Quirky",
+] as const;
+
+/** 25-nature literal union. Derived from `ALL_NATURES`. */
+export type Nature = (typeof ALL_NATURES)[number];
+
+const ALL_NATURES_SET: ReadonlySet<string> = new Set(ALL_NATURES);
+
+/** Runtime guard. Use at parse-time / DB-read boundaries. */
+export function isNature(s: string | null | undefined): s is Nature {
+  return s != null && ALL_NATURES_SET.has(s);
+}
+
 export const NATURE_EFFECTS: Record<string, NatureEffect> = {
   Hardy: {},
   Lonely: { boost: "attack", reduce: "defense" },

@@ -271,7 +271,7 @@ export function ImportDialog({
     if (legalTera !== undefined) {
       const illegalTera = candidates
         .map((p) => p.tera_type)
-        .filter((t): t is string => {
+        .filter((t): t is NonNullable<typeof t> => {
           if (!t) return false;
           return !legalTera.has(t);
         });
@@ -432,13 +432,17 @@ export function ImportDialog({
       }
 
       if (failures.length > 0) {
-        // Partial failure
+        // Partial failure — surface the first distinct reason so the user
+        // can act, instead of just naming the species. The full per-row
+        // detail is lost otherwise.
         const failedSpecies = toImport
           .filter((_, i) => !addResults[i]?.success)
           .map((p) => p.species)
           .join(", ");
+        const firstReason =
+          addResults.find((r) => !r.success)?.error ?? "Unknown error";
         toast.warning(
-          `Imported ${successes.length}, but ${failedSpecies} failed to add.`
+          `Imported ${successes.length}; ${failedSpecies} failed: ${firstReason}`
         );
       } else {
         toast.success(`Imported ${toImport.length} Pokémon.`);

@@ -219,7 +219,7 @@ function SideCard({ title, color, side, onUpdate, fainted, setFainted }: SideCar
           <span>Spikes</span>
           <Stepper<0 | 1 | 2 | 3>
             options={[0, 1, 2, 3] as const}
-            value={side.spikes as 0 | 1 | 2 | 3}
+            value={side.spikes}
             onChange={(v) => onUpdate({ spikes: v })}
           />
         </div>

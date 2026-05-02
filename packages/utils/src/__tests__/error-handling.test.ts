@@ -1,4 +1,13 @@
-import { getErrorMessage } from "../error-handling";
+import { getErrorMessage, logError, setErrorSink } from "../error-handling";
+
+// Library tsconfig uses ES2022 only — declare `console` ambiently so the
+// fallback-sink tests below typecheck without depending on @types/node.
+declare const console: {
+  error: ((...data: unknown[]) => void) & {
+    mock?: { calls: unknown[][] };
+    mockRestore?: () => void;
+  };
+};
 
 const FALLBACK = "Something went wrong";
 
@@ -57,5 +66,84 @@ describe("getErrorMessage", () => {
       const error = new Error("secret internal detail");
       expect(getErrorMessage(error, FALLBACK)).toBe("secret internal detail");
     });
+  });
+});
+
+describe("logError + setErrorSink", () => {
+  // setErrorSink mutates module-level state — make sure each test cleans up.
+  let restore: (() => void) | null = null;
+
+  afterEach(() => {
+    if (restore) {
+      restore();
+      restore = null;
+    }
+  });
+
+  it("calls the configured sink with scope, error, and context", () => {
+    const sink = jest.fn();
+    restore = setErrorSink(sink);
+
+    const err = new Error("boom");
+    logError("scope.tag", err, { teamId: 7 });
+
+    expect(sink).toHaveBeenCalledTimes(1);
+    expect(sink).toHaveBeenCalledWith("scope.tag", err, { teamId: 7 });
+  });
+
+  it("falls back to a bare console.error when the sink itself throws", () => {
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const sink = jest.fn(() => {
+      throw new Error("sink broke");
+    });
+    restore = setErrorSink(sink);
+
+    const original = new Error("primary");
+    expect(() => logError("scope.tag", original)).not.toThrow();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[error-sink:fallback] scope.tag",
+      original
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it("setErrorSink(null) restores the default console-based sink", () => {
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const customSink = jest.fn();
+    setErrorSink(customSink);
+    restore = setErrorSink(null);
+
+    logError("scope.tag", new Error("x"));
+
+    expect(customSink).not.toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalled();
+    expect(
+      (consoleSpy.mock.calls[0]?.[0] as string).startsWith("[error-sink] ")
+    ).toBe(true);
+    consoleSpy.mockRestore();
+  });
+
+  it("returned restore() puts the previous sink back", () => {
+    const sinkA = jest.fn();
+    const sinkB = jest.fn();
+
+    const restoreToA = setErrorSink(sinkA);
+    const restoreToB = setErrorSink(sinkB);
+
+    logError("now-B", new Error("e1"));
+    expect(sinkB).toHaveBeenCalledTimes(1);
+    expect(sinkA).not.toHaveBeenCalled();
+
+    restoreToB();
+    logError("back-to-A", new Error("e2"));
+    expect(sinkA).toHaveBeenCalledTimes(1);
+
+    // Final cleanup
+    restore = restoreToA;
   });
 });

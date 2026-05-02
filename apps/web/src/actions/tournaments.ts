@@ -1346,6 +1346,25 @@ export async function bulkForceCheckIn(
 
     const tournamentId = tournamentIds[0]!;
 
+    // Verify the caller has permission to manage this tournament
+    const { data: tournament } = await supabase
+      .from("tournaments")
+      .select("community_id")
+      .eq("id", tournamentId)
+      .single();
+    if (!tournament) throw new Error("Tournament not found");
+
+    const { data: hasPermission } = await supabase.rpc(
+      "has_community_permission",
+      {
+        p_community_id: tournament.community_id,
+        permission_key: "tournament.manage",
+      }
+    );
+    if (!hasPermission) {
+      throw new Error("You don't have permission to manage this tournament");
+    }
+
     // Perform single bulk update
     const { data, error } = await supabase
       .from("tournament_registrations")

@@ -7,6 +7,10 @@ import {
   getLegalSpecies,
   getLegalItems,
   getLegalMoves,
+  isPokemonType,
+  isNature,
+  type Nature,
+  type PokemonType,
 } from "@trainers/pokemon";
 import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
@@ -17,8 +21,11 @@ import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 /**
  * Maps trainers.gg `game_format` values to the corresponding
  * Showdown format IDs used by `@pkmn/sim`.
+ *
+ * `null` = format is recognised by trainers.gg but has no `@pkmn/sim`
+ * mapping (e.g. Champions, which uses its own validator).
  */
-export const FORMAT_MAP: Record<string, string | null> = {
+export const FORMAT_MAP = {
   "reg-i": "gen9vgc2025regi",
   // Champions Reg MA: no @pkmn/sim format ID yet (no Tera, Stat Points instead of EVs/IVs).
   // Champions legality is checked by `validateChampionsLegality()` instead.
@@ -34,14 +41,32 @@ export const FORMAT_MAP: Record<string, string | null> = {
   lc: "gen9lc",
   "doubles-ou": "gen9doublesou",
   monotype: "gen9monotype",
-};
+} as const satisfies Record<string, string | null>;
+
+/**
+ * The set of `game_format` values trainers.gg recognises today. Derived
+ * from `FORMAT_MAP` so adding/removing an entry there automatically
+ * widens or narrows this type. Useful when a caller has already
+ * validated a format string and wants to discriminate it from arbitrary
+ * user input downstream.
+ */
+export type KnownGameFormat = keyof typeof FORMAT_MAP;
+
+const KNOWN_GAME_FORMAT_SET: ReadonlySet<string> = new Set(
+  Object.keys(FORMAT_MAP)
+);
+
+/** Runtime guard. Use at boundaries where a `string` may or may not be a recognised game format. */
+export function isKnownGameFormat(s: string | null | undefined): s is KnownGameFormat {
+  return s != null && KNOWN_GAME_FORMAT_SET.has(s);
+}
 
 /**
  * Returns the `@pkmn/sim` format string for a given trainers.gg
  * `game_format`, or `null` if the format is not mapped.
  */
 export function getPkmnFormat(gameFormat: string): string | null {
-  return FORMAT_MAP[gameFormat] ?? null;
+  return (FORMAT_MAP as Record<string, string | null>)[gameFormat] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -54,7 +79,7 @@ export interface ParsedPokemon {
   nickname: string | null;
   level: number;
   ability: string;
-  nature: string;
+  nature: Nature;
   held_item: string | null;
   move1: string | null;
   move2: string | null;
@@ -72,8 +97,8 @@ export interface ParsedPokemon {
   iv_special_attack: number;
   iv_special_defense: number;
   iv_speed: number;
-  tera_type: string | null;
-  gender: string | null;
+  tera_type: PokemonType | null;
+  gender: ParsedPokemonGender;
   is_shiny: boolean;
 }
 
@@ -128,10 +153,17 @@ export function getPokepaseRawUrl(pasteId: string): string {
 // ---------------------------------------------------------------------------
 
 /**
+ * Pokemon gender as stored in the DB. Mirrors the `pokemon_gender`
+ * enum in `packages/supabase/src/types.ts` (no genderless / unknown
+ * column on the table, hence `null` for everything else).
+ */
+export type ParsedPokemonGender = "Male" | "Female" | null;
+
+/**
  * Maps a gender code from Showdown ("M" / "F" / "N" / "") to
  * the human-readable string stored in the database.
  */
-function mapGender(gender: string | undefined): string | null {
+function mapGender(gender: string | undefined): ParsedPokemonGender {
   if (gender === "M") return "Male";
   if (gender === "F") return "Female";
   return null;
@@ -149,7 +181,9 @@ function setToParsedPokemon(set: Partial<PokemonSet<string>>): ParsedPokemon {
     nickname: set.name && set.name !== species ? set.name : null,
     level: set.level ?? 50,
     ability: set.ability ?? "",
-    nature: (set.nature as string) ?? "Hardy",
+    // Coerce unknown natures to "Hardy" (the canonical neutral nature) so a
+    // typo or future nature in the set doesn't bleed into the typed column.
+    nature: isNature(set.nature) ? set.nature : "Hardy",
     held_item: set.item || null,
     move1: set.moves?.[0] ?? null,
     move2: set.moves?.[1] ?? null,
@@ -167,8 +201,12 @@ function setToParsedPokemon(set: Partial<PokemonSet<string>>): ParsedPokemon {
     iv_special_attack: set.ivs?.spa ?? 31,
     iv_special_defense: set.ivs?.spd ?? 31,
     iv_speed: set.ivs?.spe ?? 31,
-    tera_type:
-      ((set as Record<string, unknown>).teraType as string | null) ?? null,
+    tera_type: (() => {
+      const raw = (set as Record<string, unknown>).teraType;
+      // Drop unknown values — keeps the column to the 18-type union and
+      // protects downstream consumers from typo'd Tera strings.
+      return typeof raw === "string" && isPokemonType(raw) ? raw : null;
+    })(),
     gender: mapGender(set.gender),
     is_shiny: set.shiny ?? false,
   };
@@ -239,7 +277,7 @@ function validateChampionsStatPoints(
  * - Every Pokemon has at least one move
  * - Every Pokemon has an ability
  * - Pokemon nicknames do not contain profanity
- * - Champions format (reg-m-a): Stat Point limits (max 32 per stat, 66 total)
+ * - Champions format (championsvgc2026regma): Stat Point limits (max 32 per stat, 66 total)
  */
 export function validateTeamStructure(
   team: ParsedTeam,
@@ -486,12 +524,26 @@ export function validateTeamFormat(
  * @param gameFormat - The trainers.gg `game_format` (e.g. "reg-i").
  * @returns A `ValidationResult` with the parsed team and any errors.
  */
+/** Hard cap for raw team text. Mirrors `teamSubmissionSchema.rawText.max`
+ *  so the parser doesn't process arbitrarily large payloads even if a
+ *  caller bypasses the schema. */
+const RAW_TEAM_TEXT_MAX = 10_000;
+
 export function parseAndValidateTeam(
   rawText: string,
   gameFormat: string
 ): ValidationResult {
-  // 0. Check raw text for profanity before parsing
+  // 0a. Reject oversized payloads before any parser work.
   const errors: ValidationError[] = [];
+  if (rawText.length > RAW_TEAM_TEXT_MAX) {
+    errors.push({
+      source: "structure",
+      message: `Team text exceeds maximum length (${RAW_TEAM_TEXT_MAX} characters).`,
+    });
+    return { valid: false, team: [], errors };
+  }
+
+  // 0b. Check raw text for profanity before parsing
   if (containsProfanity(rawText)) {
     errors.push({
       source: "structure",

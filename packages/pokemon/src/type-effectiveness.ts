@@ -48,6 +48,16 @@ export const ALL_TYPES: PokemonType[] = [
   "Fairy",
 ];
 
+const ALL_TYPES_SET: ReadonlySet<string> = new Set(ALL_TYPES);
+
+/**
+ * Runtime guard for the 18-type union. Use at parse-time / DB-read
+ * boundaries to coerce a raw `string` into the typed `PokemonType` union.
+ */
+export function isPokemonType(s: string | null | undefined): s is PokemonType {
+  return s != null && ALL_TYPES_SET.has(s);
+}
+
 // Type effectiveness chart (attacking type -> defending type -> multiplier)
 const TYPE_CHART: Record<PokemonType, Partial<Record<PokemonType, number>>> = {
   Normal: { Rock: 0.5, Ghost: 0, Steel: 0.5 },

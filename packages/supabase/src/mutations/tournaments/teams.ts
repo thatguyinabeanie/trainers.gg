@@ -1,4 +1,12 @@
-import type { Database } from "../../types";
+import {
+  isLegalAbility,
+  isLegalItem,
+  isLegalMove,
+  isLegalSpecies,
+  isLegalTeraType,
+} from "@trainers/pokemon";
+import { logError } from "@trainers/utils";
+
 import { type TypedClient, getCurrentAlt } from "./helpers";
 
 export type SubmitTeamResult =
@@ -70,24 +78,61 @@ export async function submitTeam(
     };
   }
 
-  // 4. If replacing an existing team, delete old data
+  // 4. If replacing an existing team, delete old data. Each step is checked
+  //    individually — a silent ignored failure here leaves orphan team_pokemon
+  //    or pokemon rows pointing at a now-replaced team. We surface the error
+  //    via `logError` so ops can see it, but continue with the new-team
+  //    insert so the user-facing flow doesn't deadlock; recovery is by
+  //    cleanup migration rather than by client retry.
   if (registration.team_id) {
-    const { data: oldTeamPokemon } = await supabase
+    const oldTeamId = registration.team_id;
+
+    const { data: oldTeamPokemon, error: selectErr } = await supabase
       .from("team_pokemon")
       .select("pokemon_id")
-      .eq("team_id", registration.team_id);
+      .eq("team_id", oldTeamId);
+    if (selectErr) {
+      logError("submitTeam.fetchOldTeamPokemon", selectErr, {
+        oldTeamId,
+        altId: alt.id,
+      });
+    }
 
-    await supabase
+    const { error: tpDeleteErr } = await supabase
       .from("team_pokemon")
       .delete()
-      .eq("team_id", registration.team_id);
+      .eq("team_id", oldTeamId);
+    if (tpDeleteErr) {
+      logError("submitTeam.deleteOldTeamPokemon", tpDeleteErr, {
+        oldTeamId,
+        altId: alt.id,
+      });
+    }
 
     if (oldTeamPokemon?.length) {
       const pokemonIds = oldTeamPokemon.map((tp) => tp.pokemon_id);
-      await supabase.from("pokemon").delete().in("id", pokemonIds);
+      const { error: pkmnDeleteErr } = await supabase
+        .from("pokemon")
+        .delete()
+        .in("id", pokemonIds);
+      if (pkmnDeleteErr) {
+        logError("submitTeam.deleteOldPokemon", pkmnDeleteErr, {
+          oldTeamId,
+          pokemonCount: pokemonIds.length,
+        });
+      }
     }
 
-    await supabase.from("teams").delete().eq("id", registration.team_id);
+    const { error: teamDeleteErr } = await supabase
+      .from("teams")
+      .delete()
+      .eq("id", oldTeamId);
+    if (teamDeleteErr) {
+      logError("submitTeam.deleteOldTeam", teamDeleteErr, {
+        oldTeamId,
+        altId: alt.id,
+      });
+    }
   }
 
   // 5. Create new team
@@ -103,9 +148,10 @@ export async function submitTeam(
 
   if (teamError || !newTeam) throw new Error("Failed to create team.");
 
-  // 6. Insert pokemon records
-  // Note: move1 is required in the schema, so we fall back to empty string
-  // gender must match the pokemon_gender enum ("Male" | "Female" | null)
+  // 6. Insert pokemon records.
+  // move1 is required in the schema → fall back to empty string.
+  // `mon.gender` is `ParsedPokemonGender = "Male" | "Female" | null`,
+  // structurally identical to the `pokemon_gender` enum, so no cast needed.
   const pokemonInserts = result.team.map((mon) => ({
     species: mon.species,
     nickname: mon.nickname,
@@ -130,7 +176,7 @@ export async function submitTeam(
     iv_special_defense: mon.iv_special_defense,
     iv_speed: mon.iv_speed,
     tera_type: mon.tera_type,
-    gender: mon.gender as Database["public"]["Enums"]["pokemon_gender"] | null,
+    gender: mon.gender,
     is_shiny: mon.is_shiny,
   }));
 
@@ -212,10 +258,12 @@ export async function selectTeamForTournament(
     );
   }
 
-  // 1. Find registration (must exist, must not be locked)
+  // 1. Find registration (must exist, must not be locked) and the
+  //    tournament's game_format so we can validate the selected team
+  //    against the format the player is registering for.
   const { data: registration } = await supabase
     .from("tournament_registrations")
-    .select("id, team_id, team_locked")
+    .select("id, team_id, team_locked, tournaments!inner(game_format)")
     .eq("tournament_id", tournamentId)
     .eq("alt_id", alt.id)
     .single();
@@ -230,10 +278,10 @@ export async function selectTeamForTournament(
     throw new Error("Teams are locked — the tournament has already started.");
   }
 
-  // 2. Verify the team belongs to this alt and fetch its Pokemon
-  // Note: Tournament existence already validated via registration FK constraint.
-  // Future enhancement: validate team against tournament.game_format by implementing
-  // pokemonToShowdown utility to convert stored Pokemon back to Showdown format.
+  const gameFormat = registration.tournaments?.game_format ?? null;
+
+  // 2. Verify the team belongs to this alt and fetch its Pokemon with
+  //    the fields needed to gate against `gameFormat`.
   const { data: team } = await supabase
     .from("teams")
     .select(
@@ -244,7 +292,14 @@ export async function selectTeamForTournament(
       team_pokemon!inner (
         team_position,
         pokemon!inner (
-          species
+          species,
+          ability,
+          held_item,
+          tera_type,
+          move1,
+          move2,
+          move3,
+          move4
         )
       )
     `
@@ -272,7 +327,59 @@ export async function selectTeamForTournament(
     };
   }
 
-  // 3. Update registration: set team_id, team_submitted_at
+  // 3. Format legality — checks each species/item/ability/move/tera against
+  //    the tournament's `game_format`. Unknown formats are permissive (each
+  //    `isLegal*` helper returns `true`), so existing tournaments without a
+  //    legality registry behave as before.
+  if (gameFormat) {
+    const legalityErrors: string[] = [];
+    for (const mon of teamPokemon) {
+      const species = mon.species ?? "";
+      const label = species || "Pokemon";
+      if (species && !isLegalSpecies(species, gameFormat)) {
+        legalityErrors.push(
+          `${label} is not legal in this tournament's format.`
+        );
+      }
+      if (mon.held_item && !isLegalItem(mon.held_item, gameFormat)) {
+        legalityErrors.push(
+          `${label}'s held item "${mon.held_item}" is not legal in this format.`
+        );
+      }
+      if (
+        mon.ability &&
+        !isLegalAbility(mon.ability, species, gameFormat)
+      ) {
+        legalityErrors.push(
+          `${label}'s ability "${mon.ability}" is not legal in this format.`
+        );
+      }
+      if (
+        mon.tera_type &&
+        !isLegalTeraType(mon.tera_type, gameFormat)
+      ) {
+        legalityErrors.push(
+          `${label}'s Tera type "${mon.tera_type}" is not allowed in this format.`
+        );
+      }
+      const moves = [mon.move1, mon.move2, mon.move3, mon.move4].filter(
+        (m): m is string => Boolean(m)
+      );
+      for (const move of moves) {
+        if (!isLegalMove(move, species, gameFormat)) {
+          legalityErrors.push(
+            `${label} cannot legally use "${move}" in this format.`
+          );
+        }
+      }
+    }
+
+    if (legalityErrors.length > 0) {
+      return { success: false, errors: legalityErrors };
+    }
+  }
+
+  // 4. Update registration: set team_id, team_submitted_at
   const { error: regError } = await supabase
     .from("tournament_registrations")
     .update({

@@ -106,7 +106,7 @@ export async function submitNewTeam(
       if (legalTera !== undefined) {
         const illegalTera = parsed
           .map((p) => p.tera_type)
-          .filter((t): t is string => {
+          .filter((t): t is NonNullable<typeof t> => {
             if (!t) return false;
             return !legalTera.has(t);
           });

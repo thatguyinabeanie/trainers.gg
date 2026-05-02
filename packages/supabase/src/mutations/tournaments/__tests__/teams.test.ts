@@ -1313,5 +1313,130 @@ Timid Nature
         species: ["Gengar", "Alakazam", "Machamp", "Golem"],
       });
     });
+
+    describe("format legality", () => {
+      it("rejects a Champions team containing an illegal species", async () => {
+        const fromSpy = jest.spyOn(mockClient, "from");
+
+        // Registration query — supplies tournaments.game_format
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: 500,
+              team_id: null,
+              team_locked: false,
+              tournaments: { game_format: "championsvgc2026regma" },
+            },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
+
+        // Team — Mew is Mythical and not in the Champions M-A roster
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: teamId,
+              name: "Illegal Team",
+              created_by: mockAlt.id,
+              team_pokemon: [
+                {
+                  team_position: 1,
+                  pokemon: {
+                    species: "Mew",
+                    ability: "Synchronize",
+                    held_item: null,
+                    tera_type: null,
+                    move1: "Psychic",
+                    move2: null,
+                    move3: null,
+                    move4: null,
+                  },
+                },
+              ],
+            },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
+
+        const result = await selectTeamForTournament(
+          mockClient,
+          tournamentId,
+          teamId
+        );
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(
+            result.errors.some((e) => e.includes("Mew") && e.includes("not legal"))
+          ).toBe(true);
+        }
+      });
+
+      it("permits any team when the format is unknown / permissive", async () => {
+        const fromSpy = jest.spyOn(mockClient, "from");
+
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: 500,
+              team_id: null,
+              team_locked: false,
+              tournaments: { game_format: "some-unmapped-future-format" },
+            },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
+
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: teamId,
+              name: "Anything Goes",
+              created_by: mockAlt.id,
+              team_pokemon: [
+                {
+                  team_position: 1,
+                  pokemon: {
+                    species: "Mew",
+                    ability: "Synchronize",
+                    held_item: null,
+                    tera_type: null,
+                    move1: "Psychic",
+                    move2: null,
+                    move3: null,
+                    move4: null,
+                  },
+                },
+              ],
+            },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
+
+        fromSpy.mockReturnValueOnce({
+          update: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        } as unknown as MockQueryBuilder);
+
+        const result = await selectTeamForTournament(
+          mockClient,
+          tournamentId,
+          teamId
+        );
+
+        // Permissive default for unmapped format — selection succeeds
+        expect(result.success).toBe(true);
+      });
+    });
   });
 });

@@ -16,6 +16,12 @@ jest.mock("../helpers", () => ({
   getCurrentUser: jest.fn(),
   getCurrentAlt: jest.fn(),
   checkCommunityPermission: jest.fn(),
+  // throwForMissingSingle preserves the same "throws on missing row"
+  // contract the tests assert on. With no error object (the typical
+  // "not found" case), throw the canonical message verbatim.
+  throwForMissingSingle: jest.fn((_error, ctx: { notFoundMessage: string }) => {
+    throw new Error(ctx.notFoundMessage);
+  }),
 }));
 
 jest.mock("../../../utils/registration", () => ({
@@ -263,6 +269,45 @@ describe("Tournament Registration Mutations", () => {
       );
 
       expect(result).toEqual({ success: true, registrationId: 600 });
+    });
+
+    // Regression net for the cross-tournament safety filter. Cross-user
+    // ownership is gated by RLS (the "Users can update own registration"
+    // policy on tournament_registrations) — this test only asserts that
+    // the in-app filters that scope the UPDATE to a single (id, tournament)
+    // pair are still issued, so a refactor that drops either filter will
+    // be caught at unit-test time rather than at incident time.
+    it("scopes the UPDATE by both registrationId and tournamentId", async () => {
+      const eqSpy = jest.fn().mockReturnThis();
+
+      (mockClient.from as jest.Mock).mockReturnValue({
+        update: jest.fn().mockReturnThis(),
+        eq: eqSpy,
+        select: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { id: registrationId },
+          error: null,
+        }),
+      });
+
+      await updateRegistrationPreferences(
+        mockClient,
+        registrationId,
+        tournamentId,
+        { inGameName: "Foo" }
+      );
+
+      const eqCalls = eqSpy.mock.calls.map(
+        (call: unknown[]) => [call[0], call[1]] as const
+      );
+      expect(eqCalls).toEqual(
+        expect.arrayContaining([
+          ["id", registrationId],
+          ["tournament_id", tournamentId],
+        ])
+      );
+      // And it must NOT silently widen by skipping either filter
+      expect(eqCalls).toHaveLength(2);
     });
   });
 

@@ -42,8 +42,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "catalog:supabase",
+    "@trainers/pokemon": "workspace:*",
     "@trainers/utils": "workspace:*",
-    "@trainers/validators": "workspace:*"
+    "@trainers/validators": "workspace:*",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@supabase/ssr": "catalog:supabase",

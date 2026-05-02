@@ -8,15 +8,26 @@
 // =============================================================================
 
 import { getMoveTargetInfo } from "../calc/move-target-info";
-import { type CalcOutput, getVerdict } from "../../use-calc-state";
+import {
+  type CalcOutput,
+  type KoTierLabel,
+  getVerdict,
+} from "../../use-calc-state";
 
-export type KoTier = "1" | "2" | "3" | "4" | null;
+/**
+ * Numeric coloring tag for KO-tier rows: "1" = OHKO, "2" = 2HKO, "3" = 3HKO,
+ * "4" = 4HKO+, null = no damage. Distinct from `KoTierLabel` (the user-facing
+ * "OHKO"/"2HKO"/... string) — this is purely for CSS class lookup.
+ */
+export type KoTierNumeric = "1" | "2" | "3" | "4" | null;
+/** @deprecated Renamed to `KoTierNumeric` for clarity vs `KoTierLabel`. */
+export type KoTier = KoTierNumeric;
 
 /**
  * Map a min/max damage range to a KO tier label used for row colouring.
  * "1" = OHKO, "2" = 2HKO, "3" = 3HKO, "4" = 4HKO+, null = no damage.
  */
-export function getKoTier(minPct: number, maxPct: number): KoTier {
+export function getKoTier(minPct: number, maxPct: number): KoTierNumeric {
   const verdict = getVerdict(minPct, maxPct);
   if (verdict === "OHKO") return "1";
   if (verdict === "2HKO") return "2";
@@ -43,11 +54,15 @@ interface DisplayRangeResult {
   /** Max damage percent after applying spread reduction. */
   displayMax: number;
   /** KO tier driven by the displayed (post-spread) range, or null if no calc. */
-  koTier: KoTier;
+  koTier: KoTierNumeric;
 }
 
-/** Map a recovery simulation KoTier string to the display KoTier numeric string. */
-function recoveryTierToKoTier(tier: string): KoTier {
+/**
+ * Map a recovery-simulation KO tier label to the row-coloring numeric tag.
+ * Exhaustive over `KoTierLabel`; the `null` branch covers both
+ * "no recovery applied" and "no damage" states.
+ */
+function recoveryTierToKoTier(tier: KoTierLabel): KoTierNumeric {
   if (tier === "OHKO") return "1";
   if (tier === "2HKO") return "2";
   if (tier === "3HKO") return "3";

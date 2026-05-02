@@ -152,7 +152,7 @@ export function CreateTournamentClient({
       description: "",
       communityId: undefined,
       game: "champions",
-      gameFormat: "reg-m-a",
+      gameFormat: "championsvgc2026regma",
       platform: "cartridge",
       battleFormat: "doubles",
       tournamentFormat: "swiss_with_cut",
