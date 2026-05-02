@@ -52,13 +52,14 @@ export function RibDecorations({
   const showLevel = formatSupportsLevel(format);
 
   return (
-    <div className={cn(s.ribDecorations, "flex flex-col items-center gap-1.5")}>
-      {/* Type pills — rotated -90° so text reads bottom→top.
-          Wrapper uses grid (not flex) so the image keeps its intrinsic
-          h-6 size. After rotation the image's visual footprint is
-          ~24px wide × ~55px tall, fitting the 6×14 (24×56) wrapper.
-          The image overflows horizontally pre-rotation; that overflow
-          is benign (the row card's overflow:hidden contains it). */}
+    <div className={cn(s.ribDecorations, "flex flex-col items-center gap-2")}>
+      {/* Type pills — rotated +90° (clockwise) so text reads bottom→top.
+          rotate(90deg) puts what was on the LEFT of the original at the
+          BOTTOM and what was on the RIGHT at the TOP, giving spine-style
+          bottom-to-top reading. Wrapper uses grid (not flex) so the image
+          keeps its intrinsic h-6 size — flex-shrink would otherwise
+          compress it. The image overflows horizontally pre-rotation;
+          that overflow is benign. */}
       {types.map((t) => (
         <div
           key={t}
@@ -68,7 +69,7 @@ export function RibDecorations({
             src={getShowdownTypeIconUrl(t)}
             alt={t}
             title={t}
-            className="-rotate-90 h-6 w-auto max-w-none [image-rendering:pixelated]"
+            className="rotate-90 h-6 w-auto max-w-none [image-rendering:pixelated]"
           />
         </div>
       ))}

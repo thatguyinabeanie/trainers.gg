@@ -967,6 +967,7 @@
     minmax(0, 1fr)     /* name — fills space, shrinks to 0 (no overflow) */
     56px               /* BP */
     72px;              /* Acc */
+
   align-items: center;
   gap: 6px;
   padding: 5px 8px;
@@ -1048,10 +1049,10 @@
   background: color-mix(in oklch, var(--muted) 40%, transparent);
   border-left: 1px solid var(--border);
   padding: 8px 0;
-  animation: calcColEnter 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: calc-col-enter 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-@keyframes calcColEnter {
+@keyframes calc-col-enter {
   from { opacity: 0; transform: translateX(16px); }
   to   { opacity: 1; transform: translateX(0); }
 }
@@ -1864,6 +1865,7 @@
     40px          /* EV input */
     minmax(60px, 1.6fr)  /* slider */
     36px;         /* final stat: 3-digit values like 203 */
+
   gap: 6px;
   align-items: center;
   padding: 2px 4px;
@@ -1885,6 +1887,7 @@
     minmax(60px, 1.6fr)  /* slider */
     40px          /* IV input */
     36px;         /* final stat */
+
   gap: 6px;
   align-items: center;
   padding: 2px 4px;
@@ -1906,6 +1909,7 @@
     minmax(60px, 1.6fr)  /* slider */
     32px          /* stage dropdown */
     36px;         /* final stat */
+
   gap: 6px;
   align-items: center;
   padding: 2px 4px;

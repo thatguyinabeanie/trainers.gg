@@ -56,6 +56,64 @@ export interface DefenderMonHeaderProps {
 }
 
 // =============================================================================
+// DefenderFormChip — internal helper for the Item / Ability / Nature / Tera
+// rows. Keeps the Popover + s.formRow + label/value structure in one place so
+// the four chips always render identically (and the test surface is one
+// component, not four near-duplicate inline blocks).
+// =============================================================================
+
+interface DefenderFormChipProps {
+  /** Two-letter-ish label shown in the prefix slot (Item, Abil, Nat, Tera). */
+  label: string;
+  /** Display string. Empty string renders the muted-italic em-dash placeholder. */
+  value: string;
+  /** Optional trailing element rendered after the value (e.g. nature ±chevrons). */
+  trailing?: React.ReactNode;
+  /** Picker popover body. */
+  children: React.ReactNode;
+}
+
+function DefenderFormChip({
+  label,
+  value,
+  trailing,
+  children,
+}: DefenderFormChipProps) {
+  return (
+    <Popover>
+      <PopoverTrigger className={s.formRow}>
+        <span className={s.formLabel}>{label}</span>
+        {trailing ? (
+          <span className="flex min-w-0 items-baseline gap-1.5 overflow-hidden">
+            <span
+              className={cn(
+                s.formValue,
+                !value && "italic text-muted-foreground/50"
+              )}
+            >
+              {value || "—"}
+            </span>
+            {trailing}
+          </span>
+        ) : (
+          <span
+            className={cn(
+              s.formValue,
+              !value && "italic text-muted-foreground/50"
+            )}
+          >
+            {value || "—"}
+          </span>
+        )}
+      </PopoverTrigger>
+      <PopoverContent align="start" side="bottom" className="w-auto p-0">
+        {children}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// =============================================================================
 // DefenderMonHeader
 // =============================================================================
 
@@ -157,110 +215,61 @@ export function DefenderMonHeader({
       )}
 
       {/* Item */}
-      <Popover>
-        <PopoverTrigger className={s.formRow}>
-          <span className={s.formLabel}>Item</span>
-          <span
-            className={cn(
-              s.formValue,
-              !defenderItem && "italic text-muted-foreground/50"
-            )}
-          >
-            {defenderItem || "—"}
-          </span>
-        </PopoverTrigger>
-        <PopoverContent align="start" side="bottom" className="w-auto p-0">
-          <ItemPicker
-            value={defenderItem}
-            format={format}
-            teamItems={[]}
-            onPick={(item) => setDefenderItem(item)}
-            onClose={() => undefined}
-          />
-        </PopoverContent>
-      </Popover>
+      <DefenderFormChip label="Item" value={defenderItem}>
+        <ItemPicker
+          value={defenderItem}
+          format={format}
+          teamItems={[]}
+          onPick={(item) => setDefenderItem(item)}
+          onClose={() => undefined}
+        />
+      </DefenderFormChip>
 
       {/* Ability */}
-      <Popover>
-        <PopoverTrigger className={s.formRow}>
-          <span className={s.formLabel}>Abil</span>
-          <span
-            className={cn(
-              s.formValue,
-              !defenderAbility && "italic text-muted-foreground/50"
-            )}
-          >
-            {defenderAbility || "—"}
-          </span>
-        </PopoverTrigger>
-        <PopoverContent align="start" side="bottom" className="w-auto p-0">
-          <AbilityPicker
-            value={defenderAbility}
-            species={defenderSpecies}
-            format={format}
-            onPick={(ability) => setDefenderAbility(ability)}
-            onClose={() => undefined}
-          />
-        </PopoverContent>
-      </Popover>
+      <DefenderFormChip label="Abil" value={defenderAbility}>
+        <AbilityPicker
+          value={defenderAbility}
+          species={defenderSpecies}
+          format={format}
+          onPick={(ability) => setDefenderAbility(ability)}
+          onClose={() => undefined}
+        />
+      </DefenderFormChip>
 
-      {/* Nature */}
-      <Popover>
-        <PopoverTrigger className={s.formRow}>
-          <span className={s.formLabel}>Nat</span>
-          <span className="flex min-w-0 items-baseline gap-1.5 overflow-hidden">
-            <span
-              className={cn(
-                s.formValue,
-                !defenderNature && "italic text-muted-foreground/50"
-              )}
-            >
-              {defenderNature || "—"}
-            </span>
-            {natUp && natDown && (
-              <span className="shrink-0 whitespace-nowrap font-mono text-[9px]">
-                <span className="text-emerald-600 dark:text-emerald-400">
-                  +{STAT_ABBR[natUp] ?? natUp}
-                </span>
-                <span className="text-muted-foreground">/</span>
-                <span className="text-rose-600 dark:text-rose-400">
-                  −{STAT_ABBR[natDown] ?? natDown}
-                </span>
+      {/* Nature — passes nature ±chevrons as the trailing element */}
+      <DefenderFormChip
+        label="Nat"
+        value={defenderNature}
+        trailing={
+          natUp && natDown ? (
+            <span className="shrink-0 whitespace-nowrap font-mono text-[9px]">
+              <span className="text-emerald-600 dark:text-emerald-400">
+                +{STAT_ABBR[natUp] ?? natUp}
               </span>
-            )}
-          </span>
-        </PopoverTrigger>
-        <PopoverContent align="start" side="bottom" className="w-auto p-0">
-          <NaturePicker
-            value={defenderNature}
-            onPick={(nat) => setDefenderNature(nat)}
-            onClose={() => undefined}
-          />
-        </PopoverContent>
-      </Popover>
+              <span className="text-muted-foreground">/</span>
+              <span className="text-rose-600 dark:text-rose-400">
+                −{STAT_ABBR[natDown] ?? natDown}
+              </span>
+            </span>
+          ) : null
+        }
+      >
+        <NaturePicker
+          value={defenderNature}
+          onPick={(nat) => setDefenderNature(nat)}
+          onClose={() => undefined}
+        />
+      </DefenderFormChip>
 
       {/* Tera */}
       {showTera && (
-        <Popover>
-          <PopoverTrigger className={s.formRow}>
-            <span className={s.formLabel}>Tera</span>
-            <span
-              className={cn(
-                s.formValue,
-                !defenderTera && "italic text-muted-foreground/50"
-              )}
-            >
-              {defenderTera || "—"}
-            </span>
-          </PopoverTrigger>
-          <PopoverContent align="start" side="bottom" className="w-auto p-0">
-            <TypePicker
-              value={defenderTera}
-              onPick={(type) => setDefenderTera(type)}
-              onClose={() => undefined}
-            />
-          </PopoverContent>
-        </Popover>
+        <DefenderFormChip label="Tera" value={defenderTera}>
+          <TypePicker
+            value={defenderTera}
+            onPick={(type) => setDefenderTera(type)}
+            onClose={() => undefined}
+          />
+        </DefenderFormChip>
       )}
 
       {defenderSpecies && legalAbilities.length === 0 && (
