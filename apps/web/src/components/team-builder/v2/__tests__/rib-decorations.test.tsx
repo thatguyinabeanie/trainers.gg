@@ -208,13 +208,13 @@ describe("RibDecorations — type pills", () => {
     expect(img).toBeInTheDocument();
   });
 
-  it("type pill images have rotate-90 class — text reads bottom→top spine-style", () => {
+  it("type pill images have -rotate-90 class — text reads bottom→top spine-style", () => {
     (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce(["Steel"]);
     renderDecorations();
     const img = screen.getByRole("img");
-    // rotate(90deg) puts what was the LEFT of the original at the bottom and
-    // what was the RIGHT at the top — bottom-to-top reading.
-    expect(img.className).toMatch(/(?<!-)rotate-90/);
+    // rotate(-90deg) puts the original-RIGHT character at the top and
+    // original-LEFT at the bottom — bottom-to-top reading.
+    expect(img.className).toContain("-rotate-90");
   });
 });
 

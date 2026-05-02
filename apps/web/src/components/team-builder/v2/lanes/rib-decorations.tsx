@@ -53,23 +53,20 @@ export function RibDecorations({
 
   return (
     <div className={cn(s.ribDecorations, "flex flex-col items-center gap-2")}>
-      {/* Type pills — rotated +90° (clockwise) so text reads bottom→top.
-          rotate(90deg) puts what was on the LEFT of the original at the
-          BOTTOM and what was on the RIGHT at the TOP, giving spine-style
-          bottom-to-top reading. Wrapper uses grid (not flex) so the image
-          keeps its intrinsic h-6 size — flex-shrink would otherwise
-          compress it. The image overflows horizontally pre-rotation;
-          that overflow is benign. */}
+      {/* Type pills — rotated -90° (counter-clockwise) so text reads bottom→top.
+          The image is absolutely positioned + transformed so its centre stays
+          locked to the wrapper's centre regardless of the natural-width overflow
+          (Showdown type icons are ~55px wide at h-6, wider than the 24px wrapper). */}
       {types.map((t) => (
         <div
           key={t}
-          className="grid h-14 w-6 place-items-center overflow-visible"
+          className="relative h-14 w-6 overflow-visible"
         >
           <img
             src={getShowdownTypeIconUrl(t)}
             alt={t}
             title={t}
-            className="rotate-90 h-6 w-auto max-w-none [image-rendering:pixelated]"
+            className="absolute left-1/2 top-1/2 h-6 w-auto max-w-none origin-center -translate-x-1/2 -translate-y-1/2 -rotate-90 [image-rendering:pixelated]"
           />
         </div>
       ))}
