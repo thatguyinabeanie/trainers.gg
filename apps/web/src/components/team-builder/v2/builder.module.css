@@ -95,6 +95,7 @@
    identity + stats + moves keep their X width and calc is added as +Y. */
 .builderRows[data-calc-open="true"] {
   width: calc(100% + 220px);
+  max-width: calc(1600px + 220px); /* 1820px — allows the 220px expansion on wide screens */
 }
 
 [data-density="compact"] .builderRows {
