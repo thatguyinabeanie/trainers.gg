@@ -31,6 +31,7 @@ import {
   type StatBudget,
 } from "../../calc-stat-helpers";
 import { formatSupportsIvs } from "../format-gating";
+import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { FieldErrors } from "../validation/field-error";
 import s from "../builder.module.css";
 
@@ -496,21 +497,11 @@ function StatRow({
 
       {/* Col 3: Read-only viz bar (solid base + striped invest).
        * `bg-current` so both layers inherit the stat-key color from the row. */}
-      <div className={s.spreadVbar}>
-        <span
-          className={cn(s.spreadVbarBase, "bg-current")}
-          style={{ width: `${baseLayerWidth}%` }}
-        />
-        {investLayerWidth > 0 && (
-          <span
-            className={cn(s.spreadVbarInvest, "bg-current")}
-            style={{
-              left: `${investLayerLeft}%`,
-              width: `${investLayerWidth}%`,
-            }}
-          />
-        )}
-      </div>
+      <StatVizBar
+        baseLayerWidth={baseLayerWidth}
+        investLayerLeft={investLayerLeft}
+        investLayerWidth={investLayerWidth}
+      />
 
       {/* Col 4: Text input. Shows "{ev}{+/−}" reflecting the +/−nature on this
        * stat. Typing "12+" or "12−" sets EV and swaps the nature accordingly. */}
@@ -559,21 +550,14 @@ function StatRow({
             click-targets that jump the slider to that bump. The bumps overlay
             disables pointer-events; individual ticks re-enable it. */}
         {isNatureBoosted && breakpoints.length > 0 && (
-          <div className={s.spreadBumps} data-testid={`bumps-${statKey}`}>
-            {breakpoints.map((bpEv) => (
-              <button
-                key={bpEv}
-                type="button"
-                onClick={() => handleBumpClick(bpEv)}
-                aria-label={`Set ${label} to ${bpEv}`}
-                className={cn(
-                  s.spreadBumpTick,
-                  bpEv === nextBpEv && s.spreadBumpTickNext
-                )}
-                style={{ left: `${(bpEv / budget.perStat) * 100}%` }}
-              />
-            ))}
-          </div>
+          <StatBumpsOverlay
+            breakpoints={breakpoints}
+            nextBpEv={nextBpEv}
+            perStatMax={budget.perStat}
+            label={label}
+            onBumpClick={handleBumpClick}
+            testId={`bumps-${statKey}`}
+          />
         )}
       </div>
 

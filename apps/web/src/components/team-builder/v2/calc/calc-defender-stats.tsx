@@ -27,6 +27,7 @@ import {
   computeVizBarWidths,
   getStatBudget,
 } from "../../calc-stat-helpers";
+import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { StageDropdown } from "./stage-dropdown";
 import s from "../builder.module.css";
 
@@ -240,21 +241,11 @@ function DefenderStatRow({
       <span className={s.spreadBase}>{base}</span>
 
       {/* Col 3: Viz bar */}
-      <div className={s.spreadVbar}>
-        <span
-          className={cn(s.spreadVbarBase, "bg-current")}
-          style={{ width: `${baseLayerWidth}%` }}
-        />
-        {investLayerWidth > 0 && (
-          <span
-            className={cn(s.spreadVbarInvest, "bg-current")}
-            style={{
-              left: `${investLayerLeft}%`,
-              width: `${investLayerWidth}%`,
-            }}
-          />
-        )}
-      </div>
+      <StatVizBar
+        baseLayerWidth={baseLayerWidth}
+        investLayerLeft={investLayerLeft}
+        investLayerWidth={investLayerWidth}
+      />
 
       {/* Col 4: EV text input */}
       <input
@@ -291,18 +282,12 @@ function DefenderStatRow({
           className={s.spreadSlider}
         />
         {isNatureBoosted && breakpoints.length > 0 && (
-          <div className={s.spreadBumps}>
-            {breakpoints.map((bpEv) => (
-              <span
-                key={bpEv}
-                className={cn(
-                  s.spreadBumpTick,
-                  bpEv === nextBpEv && s.spreadBumpTickNext
-                )}
-                style={{ left: `${(bpEv / budget.perStat) * 100}%` }}
-              />
-            ))}
-          </div>
+          <StatBumpsOverlay
+            breakpoints={breakpoints}
+            nextBpEv={nextBpEv}
+            perStatMax={budget.perStat}
+            label={label}
+          />
         )}
       </div>
 
