@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import { getMoveData, type GameFormat } from "@trainers/pokemon";
-import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
 import {
@@ -19,6 +18,7 @@ import {
   type KoTierLabel,
   type UseCalcStateReturn,
 } from "../../use-calc-state";
+import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { MovePicker } from "../pickers/move-picker";
 
 // =============================================================================
@@ -197,13 +197,12 @@ function DefenderMoveTile({
         {/* Row 1: type badge + move name + BP + accuracy + chevron */}
         <div className="flex items-center gap-1.5">
           {moveType ? (
-            <img
-              src={getShowdownTypeIconUrl(moveType)}
-              alt={moveType}
-              className="h-4 w-auto [image-rendering:pixelated]"
+            <TypeSymbolIcon
+              type={moveType as Parameters<typeof TypeSymbolIcon>[0]["type"]}
+              size={16}
             />
           ) : (
-            <span className="inline-block h-4 w-8" aria-hidden />
+            <span className="inline-block size-4" aria-hidden />
           )}
           <span
             className={cn(

@@ -20,9 +20,10 @@ import {
   isChampionsFormat,
   type GameFormat,
 } from "@trainers/pokemon";
-import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
+
+import { TypeSymbolIcon } from "../../type-symbol-icon";
 import {
   DEFAULT_SPECIES_FILTERS,
   type SpeciesFilterState,
@@ -168,10 +169,9 @@ export function SpeciesSidebar({
                     ✦
                   </span>
                 )}
-                <img
-                  src={getShowdownTypeIconUrl(type)}
-                  alt={type}
-                  className="h-6 w-auto [image-rendering:pixelated]"
+                <TypeSymbolIcon
+                  type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
+                  size={28}
                 />
               </button>
             );

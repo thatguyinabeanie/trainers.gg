@@ -22,11 +22,10 @@ import {
   legalSetOrPermissive,
   type GameFormat,
 } from "@trainers/pokemon";
-import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
-
 import { cn } from "@/lib/utils";
 
 import { CATEGORY_ICON_URLS } from "../../move-category-ui";
+import { TypeSymbolIcon } from "../../type-symbol-icon";
 import {
   DEFAULT_MOVE_FILTERS,
   type MoveCategory,
@@ -189,12 +188,9 @@ function MoveRowItem({
         className={cn("flex justify-center", data?.type && "cursor-pointer")}
       >
         {data?.type ? (
-          <img
-            src={getShowdownTypeIconUrl(data.type)}
-            alt={data.type}
-            width={32}
-            height={14}
-            className="h-6 w-auto [image-rendering:pixelated]"
+          <TypeSymbolIcon
+            type={data.type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
+            size={24}
           />
         ) : (
           <span className="text-muted-foreground text-xs">—</span>

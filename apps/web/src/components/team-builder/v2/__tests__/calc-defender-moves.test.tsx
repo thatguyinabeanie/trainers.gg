@@ -299,17 +299,17 @@ describe("CalcDefenderMoves — tile rendering", () => {
 });
 
 describe("CalcDefenderMoves — type icon", () => {
-  it("renders a type icon img for a move with type data", () => {
+  it("renders a wordless type icon for a move with type data", () => {
     mockGetMoveData.mockReturnValue(makeMoveData({ type: "Fire" }));
     renderMoves({ effectiveMoves: ["Flare Blitz", "", "", ""] });
-    const img = screen.getByAltText("Fire");
-    expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute("src", "/types/Fire.png");
+    const icon = screen.getByRole("img", { name: "Fire" });
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveAttribute("data-type", "Fire");
   });
 
   it("does not render a type icon for empty slots (no move name)", () => {
     renderMoves({ effectiveMoves: ["", "", "", ""] });
-    expect(screen.queryByAltText("Fire")).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "Fire" })).not.toBeInTheDocument();
   });
 });
 

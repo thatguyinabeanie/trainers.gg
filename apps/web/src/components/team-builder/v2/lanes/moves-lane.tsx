@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import { getMoveData, type GameFormat } from "@trainers/pokemon";
-import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -17,6 +16,7 @@ import { TooltipTrigger } from "@/components/ui/tooltip";
 
 import { type ValidationError } from "../../validation-hooks";
 import { CATEGORY_ICON_URLS } from "../../move-category-ui";
+import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { MovePicker } from "../pickers/move-picker";
 import { useCalcStateContext } from "../calc/calc-state-context";
 import { CalcDetailCard } from "../calc/calc-detail-card";
@@ -162,10 +162,13 @@ function MoveTile({
           <span className="mvline-type-cat">
             <span className="mvline-type">
               {moveName && moveData?.type ? (
-                <img
-                  src={getShowdownTypeIconUrl(moveData.type)}
-                  alt={moveData.type}
-                  className="h-6 w-auto [image-rendering:pixelated]"
+                <TypeSymbolIcon
+                  type={
+                    moveData.type as Parameters<
+                      typeof TypeSymbolIcon
+                    >[0]["type"]
+                  }
+                  size={20}
                 />
               ) : null}
             </span>

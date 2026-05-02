@@ -12,10 +12,10 @@
 "use client";
 
 import { ALL_TYPES } from "@trainers/pokemon";
-import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
 
+import { TypeSymbolIcon } from "../../type-symbol-icon";
 import {
   DEFAULT_MOVE_FILTERS,
   type MoveCategory,
@@ -99,10 +99,9 @@ export function MoveSidebar({ filters, onFiltersChange }: MoveSidebarProps) {
                     : "bg-muted/40 opacity-70 hover:opacity-100"
                 )}
               >
-                <img
-                  src={getShowdownTypeIconUrl(type)}
-                  alt={type}
-                  className="h-6 w-auto [image-rendering:pixelated]"
+                <TypeSymbolIcon
+                  type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
+                  size={28}
                 />
               </button>
             );

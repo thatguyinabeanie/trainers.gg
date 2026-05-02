@@ -425,11 +425,11 @@ describe("MovesLane — basic render", () => {
 });
 
 describe("MovesLane — move tile display", () => {
-  it("shows the type icon img for a set move", () => {
+  it("shows the type icon for a set move (wordless TypeSymbolIcon)", () => {
     renderLane({ move1: "Moonblast" });
-    // getMoveData returns type: "Dragon" → img alt "Dragon"
-    const imgs = screen.getAllByAltText("Dragon");
-    expect(imgs.length).toBeGreaterThan(0);
+    // getMoveData returns type: "Dragon" → role=img with aria-label="Dragon"
+    const icons = screen.getAllByRole("img", { name: "Dragon" });
+    expect(icons.length).toBeGreaterThan(0);
   });
 
   it("shows the category icon img for a set move", () => {
@@ -479,7 +479,7 @@ describe("MovesLane — move tile display", () => {
     expect(screen.queryByTestId("tooltip-content")).toBeNull();
   });
 
-  it("does NOT render a tooltip body when getMoveData has no shortDesc", () => {
+  it("does NOT render a description tooltip when getMoveData has no shortDesc", () => {
     (getMoveData as jest.Mock).mockReturnValueOnce({
       type: "Normal",
       category: "Physical",
@@ -488,7 +488,16 @@ describe("MovesLane — move tile display", () => {
       shortDesc: undefined,
     });
     renderLane({ move1: "Tackle", move2: null, move3: null, move4: null });
-    expect(screen.queryByTestId("tooltip-content")).toBeNull();
+    // The type icon (wordless TypeSymbolIcon) renders its own tooltip with
+    // the type name ("Normal") — that's expected. We only need to confirm
+    // the *description* tooltip with the (missing) shortDesc text is gone.
+    const tooltipBodies = screen
+      .queryAllByTestId("tooltip-content")
+      .map((el) => el.textContent);
+    expect(tooltipBodies).not.toContain(undefined);
+    expect(tooltipBodies).not.toContain("");
+    // Only the type-icon tooltip should remain.
+    expect(tooltipBodies).toEqual(["Normal"]);
   });
 });
 

@@ -15,13 +15,11 @@ import {
   type GameFormat,
   type SpeciesSearchEntry,
 } from "@trainers/pokemon";
-import {
-  getPokemonSprite,
-  getShowdownTypeIconUrl,
-} from "@trainers/pokemon/sprites";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
 
+import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { AbilityCell } from "./ability-cell";
 import { RolePresetsPanel } from "./role-presets-panel";
 import { getRolesForSpecies } from "./role-registry";
@@ -43,24 +41,21 @@ const HIGH_STAT_THRESHOLD = 110;
  * Shared Tailwind grid template for each data row.
  *
  *   64px              — sprite circle (size-16, sprite rendered at size-14)
- *   minmax(110px,1.2fr) — name column (truncates if needed)
- *   56px              — Type 1 (Showdown icon)
- *   56px              — Type 2 (icon, or em-dash for monotype)
- *   minmax(110px,1fr)×3 — slot1 / slot2 / hidden abilities. 110px min so
- *                       common ~12-char ability names ("Magic Bounce",
- *                       "Stance Change", "Snow Warning") don't truncate;
- *                       the columns still grow when extra room is available.
- *   repeat(6,36px)    — HP/Atk/Def/SpA/SpD/Spe stat cells. 36px so the
- *                       3-letter header labels (SPA/SPD/SPE) plus the active
- *                       sort arrow render without overlapping.
+ *   minmax(180px,2fr) — name column. 180px floor fits "Kangaskhan-Mega",
+ *                       "Aegislash-Blade", "Charizard-Mega-X", etc. without
+ *                       truncation.
+ *   72px              — Types (two wordless icons side-by-side; em-dash
+ *                       for monotypes)
+ *   minmax(160px,2fr) — Regular abilities — slot 1 stacked above slot 2.
+ *                       If the species has only one regular ability, only
+ *                       that ability renders (no empty placeholder line).
+ *   minmax(140px,1.5fr) — Hidden ability (italic + muted).
+ *   repeat(6,36px)    — HP/Atk/Def/SpA/SpD/Spe stat cells (3-letter
+ *                       header labels + active sort arrow fit comfortably)
  *   40px              — BST rollup
- *
- * Total floor: 40 + 110 + 56 + 56 + 110×3 + 36×6 + 40 = 754px; with 12 × 8px
- * grid gaps that's 850px. Comfortably fits the right column at any dialog
- * width >= ~900px.
  */
 const ROW_GRID =
-  "grid-cols-[64px_minmax(110px,1.2fr)_56px_56px_minmax(110px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)_repeat(6,36px)_40px]";
+  "grid-cols-[64px_minmax(180px,2fr)_72px_minmax(160px,2fr)_minmax(140px,1.5fr)_repeat(6,36px)_40px]";
 
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
@@ -278,52 +273,53 @@ function SpeciesRow({
         {entry.species}
       </span>
 
-      {/* Type 1 — Showdown rectangular type icon (h-6 matches the editor) */}
-      <div className="relative z-10 flex min-w-0 items-center">
+      {/* Types — wordless round icons side-by-side; em-dash for monotype.
+          Wordless icons translate cleanly without text changes. */}
+      <div className="relative z-10 flex min-w-0 items-center gap-1.5">
         {entry.types[0] ? (
-          <img
-            src={getShowdownTypeIconUrl(entry.types[0])}
-            alt={entry.types[0]}
-            className="h-6 w-auto [image-rendering:pixelated]"
+          <TypeSymbolIcon
+            type={
+              entry.types[0] as Parameters<typeof TypeSymbolIcon>[0]["type"]
+            }
+            size={28}
           />
         ) : (
           <span className="text-muted-foreground text-xs">—</span>
         )}
-      </div>
-
-      {/* Type 2 — em-dash for monotypes */}
-      <div className="relative z-10 flex min-w-0 items-center">
         {entry.types[1] ? (
-          <img
-            src={getShowdownTypeIconUrl(entry.types[1])}
-            alt={entry.types[1]}
-            className="h-6 w-auto [image-rendering:pixelated]"
+          <TypeSymbolIcon
+            type={
+              entry.types[1] as Parameters<typeof TypeSymbolIcon>[0]["type"]
+            }
+            size={28}
           />
         ) : (
           <span className="text-muted-foreground text-xs">—</span>
         )}
       </div>
 
-      {/* Slot 1 ability */}
-      <div className="relative z-10 min-w-0 overflow-hidden">
-        <AbilityCell
-          name={entry.abilitySlot1 ?? null}
-          slot="slot1"
-          onFilter={onFilterAbility}
-        />
+      {/* Regular abilities — slot 1 stacked above slot 2. If the species has
+          only one regular ability (slot 2 is null), render just slot 1
+          (centered) so the row reads cleanly without an empty placeholder. */}
+      <div className="relative z-10 flex min-w-0 flex-col justify-center gap-0.5 overflow-hidden">
+        {entry.abilitySlot1 ? (
+          <AbilityCell
+            name={entry.abilitySlot1}
+            slot="slot1"
+            onFilter={onFilterAbility}
+          />
+        ) : null}
+        {entry.abilitySlot2 ? (
+          <AbilityCell
+            name={entry.abilitySlot2}
+            slot="slot2"
+            onFilter={onFilterAbility}
+          />
+        ) : null}
       </div>
 
-      {/* Slot 2 ability */}
-      <div className="relative z-10 min-w-0 overflow-hidden">
-        <AbilityCell
-          name={entry.abilitySlot2 ?? null}
-          slot="slot2"
-          onFilter={onFilterAbility}
-        />
-      </div>
-
-      {/* Hidden ability */}
-      <div className="relative z-10 min-w-0 overflow-hidden">
+      {/* Hidden ability — italic + muted, in its own column */}
+      <div className="relative z-10 flex min-w-0 items-center overflow-hidden">
         <AbilityCell
           name={entry.hiddenAbility ?? null}
           slot="hidden"
@@ -737,16 +733,10 @@ export function SpeciesPicker({
                   onSort={handleSort}
                 />
                 <span className="text-muted-foreground text-[9px] whitespace-nowrap">
-                  Type 1
+                  Types
                 </span>
                 <span className="text-muted-foreground text-[9px] whitespace-nowrap">
-                  Type 2
-                </span>
-                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
-                  Ability 1
-                </span>
-                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
-                  Ability 2
+                  Abilities
                 </span>
                 <span className="text-muted-foreground text-[9px] whitespace-nowrap">
                   Hidden

@@ -1,25 +1,25 @@
 "use client";
 
-import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
+/**
+ * TypePill — wordless round type symbol used wherever the editor surfaces
+ * a Pokémon type. Backed by `<TypeSymbolIcon>` (lucide glyph on a
+ * type-colored background) so the chip is text-free and translates without
+ * needing localized assets.
+ */
 
-// =============================================================================
-// TypePill
-// =============================================================================
+import { TypeSymbolIcon } from "../type-symbol-icon";
 
 interface TypePillProps {
   t: string;
+  /** Diameter of the round icon in pixels. Defaults to 24 (h-6 equivalent). */
+  size?: number;
 }
 
-/**
- * Shows a Pokemon type using the same Showdown retro sprite used in move rows.
- */
-export function TypePill({ t }: TypePillProps) {
+export function TypePill({ t, size = 24 }: TypePillProps) {
   return (
-    <img
-      src={getShowdownTypeIconUrl(t)}
-      alt={t}
-      title={t}
-      className="h-6 w-auto [image-rendering:pixelated]"
+    <TypeSymbolIcon
+      type={t as Parameters<typeof TypeSymbolIcon>[0]["type"]}
+      size={size}
     />
   );
 }
