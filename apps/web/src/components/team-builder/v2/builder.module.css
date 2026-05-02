@@ -786,15 +786,16 @@
    Mobile active row — single-column stacked layout (< md / 768px)
    ============================================================ */
 
-@media (max-width: 767px) {
-  /* Remove the 900px min-width so the row fits the phone viewport */
+/* Layout 3 — full vertical stack
+   Triggers when the slot's container is < 700px (phone viewport, OR 3×2
+   stacked grid at desktop, OR a 2×3 cell on a very small laptop). */
+@container slot (max-width: 699px) {
   .rowActive {
     min-width: 0;
     flex-direction: column;
     align-items: stretch;
   }
 
-  /* Rib becomes a slim horizontal bar at the top */
   .rib {
     flex-direction: row;
     justify-content: space-between;
@@ -803,7 +804,6 @@
     border-right: none;
     border-bottom: 1px dashed var(--border);
   }
-
 }
 
 /* Left slot rib */
@@ -822,7 +822,7 @@
   display: flex;
 }
 
-@media (max-width: 767px) {
+@container slot (max-width: 699px) {
   .ribDecorations > :not(.levelPicker) {
     display: none;
   }
