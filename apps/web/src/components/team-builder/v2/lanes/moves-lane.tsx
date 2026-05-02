@@ -27,21 +27,13 @@ import { DescriptionTooltip } from "./description-tooltip";
 // Types
 // =============================================================================
 
-type MovesLaneProps =
-  | {
-      pokemon: null;
-      format?: GameFormat;
-      onUpdate?: never;
-      /** Validation errors scoped to move fields (move1–move4). */
-      fieldErrors?: ValidationError[];
-    }
-  | {
-      pokemon: Tables<"pokemon">;
-      format?: GameFormat;
-      onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
-      /** Validation errors scoped to move fields (move1–move4). */
-      fieldErrors?: ValidationError[];
-    };
+interface MovesLaneProps {
+  pokemon: Tables<"pokemon"> | null;
+  format?: GameFormat;
+  onUpdate?: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  /** Validation errors scoped to move fields (move1–move4). */
+  fieldErrors?: ValidationError[];
+}
 
 type MoveSlot = "move1" | "move2" | "move3" | "move4";
 
@@ -353,12 +345,12 @@ function MovesLaneReal({ pokemon, format, onUpdate, fieldErrors }: MovesLaneReal
  * - Renders inline FieldError chips for move-scoped validation issues.
  */
 export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: MovesLaneProps) {
-  if (!pokemon) return <MovesLaneGhost />;
+  if (pokemon === null) return <MovesLaneGhost />;
   return (
     <MovesLaneReal
       pokemon={pokemon}
       format={format}
-      onUpdate={onUpdate}
+      onUpdate={onUpdate ?? (() => {})}
       fieldErrors={fieldErrors}
     />
   );
