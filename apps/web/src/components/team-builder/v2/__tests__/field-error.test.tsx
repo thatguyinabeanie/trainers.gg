@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Behavioural tests for the FieldError component.
  *

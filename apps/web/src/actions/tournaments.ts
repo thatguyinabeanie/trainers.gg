@@ -762,6 +762,7 @@ export async function updateRegistrationAction(
     const result = await updateRegistrationPreferencesMutation(
       supabase,
       registrationId,
+      tournamentId,
       data
     );
     invalidateTournamentCaches(tournamentId);

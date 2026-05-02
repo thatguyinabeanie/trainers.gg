@@ -231,6 +231,7 @@ describe("Tournament Registration Mutations", () => {
 
   describe("updateRegistrationPreferences", () => {
     const mockAlt = { id: 10, username: "test-player", user_id: "user-123" };
+    const registrationId = 600;
     const tournamentId = 100;
 
     beforeEach(() => {
@@ -249,13 +250,14 @@ describe("Tournament Registration Mutations", () => {
         eq: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: 600 },
+          data: { id: registrationId },
           error: null,
         }),
       });
 
       const result = await updateRegistrationPreferences(
         mockClient,
+        registrationId,
         tournamentId,
         updateData
       );

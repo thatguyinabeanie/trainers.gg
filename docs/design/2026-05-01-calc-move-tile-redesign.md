@@ -86,7 +86,7 @@ Replace everything between `{/* Row 1 */}` and the closing tag of the PopoverTri
       BP {basePower}
     </span>
   )}
-  {accuracy !== null && (
+  {accuracy !== null && accuracy < 100 && (
     <span className="font-mono text-[9px] text-muted-foreground">
       · {accuracy}% acc
     </span>

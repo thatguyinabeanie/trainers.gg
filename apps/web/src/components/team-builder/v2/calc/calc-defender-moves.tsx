@@ -132,9 +132,12 @@ function DefenderMoveTile({
   const moveType = moveData?.type ?? null;
 
   // KO tier + damage %
+  // Prefer the recovery-aware tier (from the hit-by-hit simulation) when it
+  // differs from the raw percent verdict — e.g. Sitrus Berry converting a
+  // 2HKO into a 3HKO should show "3HKO" not "2HKO".
   const koTierLabel =
     output && !isEmpty
-      ? resolveKoTierLabel(output.minPercent, output.maxPercent)
+      ? (output.recoveryTier ?? resolveKoTierLabel(output.minPercent, output.maxPercent))
       : null;
 
   // Raw damage range — rolls are sorted ascending by @smogon/calc
@@ -214,20 +217,24 @@ function DefenderMoveTile({
         </div>
 
         {/* Row 2: damage % · KO tier · HP range · contextual notes */}
-        {output && koTierLabel && (
+        {output && (
           <div className="mt-1 flex items-center gap-1.5">
             <span
               className={cn(
                 "font-mono text-[12px] font-bold",
-                KO_TIER_COLOR[koTierLabel] ?? "text-muted-foreground"
+                koTierLabel ? KO_TIER_COLOR[koTierLabel] ?? "text-muted-foreground" : "text-muted-foreground"
               )}
             >
               {output.minPercent.toFixed(1)}–{output.maxPercent.toFixed(1)}%
             </span>
-            <span className="h-[10px] w-px flex-shrink-0 bg-border" aria-hidden />
-            <span className="font-mono text-[9px] text-muted-foreground">
-              {koTierLabel}
-            </span>
+            {koTierLabel && (
+              <>
+                <span className="h-[10px] w-px flex-shrink-0 bg-border" aria-hidden />
+                <span className="font-mono text-[9px] text-muted-foreground">
+                  {koTierLabel}
+                </span>
+              </>
+            )}
             {dmgMin !== null && dmgMax !== null && (
               <>
                 <span className="h-[10px] w-px flex-shrink-0 bg-border" aria-hidden />

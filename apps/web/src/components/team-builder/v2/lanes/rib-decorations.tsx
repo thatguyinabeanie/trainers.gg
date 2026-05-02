@@ -71,8 +71,11 @@ export function RibDecorations({
         </div>
       ))}
 
-      {/* Level picker — format-gated */}
+      {/* Level picker — format-gated.
+          The .levelPicker wrapper keeps this visible on mobile (≤767px) even
+          when the surrounding .ribDecorations hides type pills. */}
       {showLevel && (
+        <div className={s.levelPicker}>
         <Popover open={levelOpen} onOpenChange={setLevelOpen}>
           <PopoverTrigger
             render={
@@ -96,6 +99,7 @@ export function RibDecorations({
             />
           </PopoverContent>
         </Popover>
+        </div>
       )}
     </div>
   );

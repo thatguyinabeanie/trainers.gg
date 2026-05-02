@@ -294,7 +294,7 @@ All click targets in row inner cells use `e.stopPropagation()` so the row's own 
 
 ## 11. Testing
 
-- Unit tests for `move-roles.ts`: registry length (26 roles), unique IDs, all groups appear in `MOVE_ROLE_GROUP_ORDER`, `getRolesForMove("Heat Wave")` returns `["spread", "burn"]`, etc.
+- Unit tests for `role-registry.ts`: registry length (26 roles), unique IDs, all groups appear in `MOVE_ROLE_GROUP_ORDER`, `getRolesForMove("Heat Wave")` returns `["spread", "burn"]`, etc.
 - Unit tests for `MoveSidebar`: type/category/role click handlers fire `onFiltersChange` with expected payloads; clear all resets to defaults.
 - Unit tests for `MoveRoleChips`: renders one chip per role; clicking calls `onRoleFilter(roleId)` with stop-propagation.
 - Update `move-picker.test.tsx`: integration tests for click-to-filter (clicking a Fire type icon adds Fire to filter chips), role-filter logic (selecting "Spread" role shows only Spread moves), and the new column shape (Roles column present, role chips render).
@@ -306,6 +306,6 @@ All click targets in row inner cells use `e.stopPropagation()` so the row's own 
 **Markdown → TypeScript pipeline for the registry.** Two options:
 
 1. **One-time hand conversion** — implementer parses the markdown manually into the `MOVE_ROLE_PRESETS` array. Simplest for v1.
-2. **Build-time codegen** — a script reads the markdown and generates `move-roles.generated.ts`. More robust if the taxonomy evolves.
+2. **Build-time codegen** — a script reads the markdown and generates `role-registry.generated.ts`. More robust if the taxonomy evolves.
 
 Pick during implementation; either is consistent with the spec.

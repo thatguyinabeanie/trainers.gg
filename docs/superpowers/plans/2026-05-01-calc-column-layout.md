@@ -402,12 +402,7 @@ export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: Moves
 
   return (
     <div
-      className={cn(
-        "flex flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3",
-        calcEnabled
-          ? "w-[440px] shrink-0"
-          : "w-[440px] shrink-0"
-      )}
+      className="flex flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3 w-[440px] shrink-0"
     >
       {/* Header */}
       <div className="mb-1 flex items-baseline justify-between">

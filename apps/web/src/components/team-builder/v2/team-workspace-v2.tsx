@@ -524,7 +524,9 @@ export function TeamWorkspaceV2({
             <div className={s.editorRegion}>
               <section
                 className={s.builderRows}
-                data-calc-open={state.drawer === "calc" ? "true" : "false"}
+                data-calc-open={
+                  state.drawer === "calc" && !isMobile ? "true" : "false"
+                }
               >
                 {isMobile ? (
                   // Mobile: no drag-and-drop, render rows directly.

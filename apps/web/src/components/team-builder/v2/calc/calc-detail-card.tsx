@@ -133,7 +133,14 @@ export function CalcDetailCard({
       ? attacker.tera_type
       : (attackerSpeciesTypes[0] ?? "Normal");
 
-  const verdict = getVerdict(minPct, maxPct);
+  // Prefer the recovery-aware tier when no local overrides are active (crit /
+  // screen / spread). When overrides modify the damage, the recovery simulation
+  // is no longer valid since it was computed from raw rolls.
+  const baseVerdict = getVerdict(minPct, maxPct);
+  const verdict: string | null =
+    factor === 1 && baseOutput.recoveryTier
+      ? baseOutput.recoveryTier
+      : baseVerdict;
 
   const eff = getMoveEffectiveness(moveName, defender.species, weather);
 

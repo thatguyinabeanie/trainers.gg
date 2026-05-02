@@ -143,6 +143,34 @@ describe("getRecoveryConfig", () => {
     expect(cfg.suffix).toBe("");
   });
 
+  it.each([
+    ["Sitrus Berry", { isSuperEffective: false }],
+    ["Berry Juice", { isSuperEffective: false }],
+    ["Aguav Berry", { isSuperEffective: false }],
+    ["Leftovers", { isSuperEffective: false }],
+    // Black Sludge on a Poison holder (would normally heal)
+    ["Black Sludge", { isSuperEffective: false, defenderTypes: ["Poison"] as const }],
+    // Black Sludge on a non-Poison holder (would normally damage)
+    ["Black Sludge (non-Poison)", { isSuperEffective: false, item: "Black Sludge", defenderTypes: ["Fire"] as const }],
+  ] as const)(
+    "Klutz blocks all item recovery/damage for %s",
+    (label, overrides) => {
+      const item = label === "Black Sludge (non-Poison)" ? "Black Sludge" : label;
+      const defenderTypes = overrides.defenderTypes ?? (["Normal"] as const);
+      const cfg = getRecoveryConfig({
+        maxHP: 200,
+        item,
+        defenderTypes,
+        ability: "Klutz",
+        isSuperEffective: overrides.isSuperEffective,
+      });
+      expect(cfg.oneShot).toBe(0);
+      expect(cfg.perTurnHeal).toBe(0);
+      expect(cfg.perTurnSelfDamage).toBe(0);
+      expect(cfg.suffix).toBe("");
+    }
+  );
+
   it("Unrecognised items return zero recovery", () => {
     const cfg = getRecoveryConfig({ maxHP: 200, item: "Choice Band", defenderTypes: ["Fire"] });
     expect(cfg.oneShot).toBe(0);
@@ -423,5 +451,19 @@ describe("getRecoveryAwareVerdict", () => {
     });
     expect(triggered.tier).toBe("4HKO+");
     expect(triggered.suffix).toBe("after Aguav Berry recovery");
+  });
+
+  it("Klutz holder produces no suffix — Sitrus Berry verdict reverts to raw percent tier", () => {
+    // 100 HP, max roll 50. Without Klutz + Sitrus: would be 3HKO.
+    // With Klutz: item disabled, straight 2HKO. Suffix must be empty.
+    const verdict = getRecoveryAwareVerdict({
+      rolls: Array(16).fill(50),
+      maxHP: 100,
+      item: "Sitrus Berry",
+      defenderTypes: ["Fire"],
+      ability: "Klutz",
+    });
+    expect(verdict.tier).toBe("2HKO");
+    expect(verdict.suffix).toBe("");
   });
 });

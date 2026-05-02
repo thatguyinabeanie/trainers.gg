@@ -44,13 +44,13 @@
   overflow-x: visible;
 }
 
-/* Editor region — rows scroll vertically. overflow-x: clip prevents a scrollbar
-   while allowing the builderRows to expand wider than the container when calc opens. */
+/* Editor region — rows scroll vertically. overflow-x: visible lets builderRows
+   expand wider than the container when calc opens without clipping the extra width. */
 .editorRegion {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: clip;
+  overflow-x: visible;
 }
 
 /* Resizer handle between editor and panel regions. */
@@ -862,16 +862,15 @@
   flex-shrink: 0;
 }
 
-/* Decorations shown in the rib middle (type pills, gender, shiny, level).
-   Hidden on mobile because the rib flips to a horizontal bar at ≤767px
-   and these controls would crowd it.
-   TODO: re-expose gender/shiny/level in identity-lane for mobile viewports. */
+/* Decorations shown in the rib middle (type pills, level).
+   On mobile (≤767px) hide the type pills but keep .levelPicker visible so
+   Champions / Reg-MA format users can still edit level on narrow viewports. */
 .ribDecorations {
   display: flex;
 }
 
 @media (max-width: 767px) {
-  .ribDecorations {
+  .ribDecorations > :not(.levelPicker) {
     display: none;
   }
 }

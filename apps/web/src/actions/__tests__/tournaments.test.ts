@@ -1085,6 +1085,7 @@ describe("updateRegistrationAction", () => {
     expect(mockUpdateRegistrationPreferences).toHaveBeenCalledWith(
       mockSupabase,
       42,
+      5,
       { inGameName: "Trainer Red", showCountryFlag: true }
     );
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:5");

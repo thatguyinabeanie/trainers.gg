@@ -84,7 +84,7 @@ Rendered only when `isChampionsFormat(format)` is true.
 
 ### Clear all
 
-Button at the bottom of the sidebar. Resets all filter state to `DEFAULT_FILTERS`.
+Button at the bottom of the sidebar. Resets all filter state to `DEFAULT_SPECIES_FILTERS`.
 
 ---
 

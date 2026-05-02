@@ -99,6 +99,9 @@ export function getRecoveryConfig(cfg: RecoveryConfig): RecoveryComputed {
     suffix: "",
   };
   if (!item || maxHP <= 0) return empty;
+  // Klutz disables held items entirely — no item effect fires regardless of
+  // which item is held. Return early before any per-item branch can trigger.
+  if (ability === "Klutz") return empty;
 
   if (item === SITRUS_BERRY) {
     return {

@@ -498,7 +498,6 @@
 - Chilly Reception
 - Flip Turn
 - Parting Shot
-- Revival Blessing
 - Shed Tail
 - Teleport
 - U-turn
@@ -568,11 +567,11 @@
 
 ## Cross-reference: Moves NOT classified
 
-Moves in the Gen 9 dex (with the same filters Champions M-A uses) that didn't fall into any of the 25 strategic roles. These are mostly:
+Moves in the Gen 9 dex (with the same filters Champions M-A uses) that didn't fall into any of the 26 strategic roles. These are mostly:
 
 - Generic single-target damaging attacks with no special effect (Tackle, Pound, Vine Whip, Slash, Mega Punch, etc.) — they hit one target and that's it.
 - Damaging moves with secondary effects that aren't in our taxonomy (recoil-only moves like Double-Edge, Brave Bird; OHKO moves like Fissure, Sheer Cold; charge-up moves like Solar Beam without secondary boosts; fixed-damage moves like Seismic Toss; counter-class moves like Counter, Mirror Coat; type-changing moves like Conversion; field/scripted moves like Sleep Talk, Snore, Round, Echoed Voice; weather-conditional power moves like Weather Ball; type-set moves; etc.).
-- Status moves whose effect doesn't map to our 25 roles (e.g. Substitute, Curse [non-Ghost variant], Belly Drum, Final Gambit, Memento, Healing Wish — though these are partially covered by Boost Self / Healing where applicable).
+- Status moves whose effect doesn't map to our 26 roles (e.g. Substitute, Curse [non-Ghost variant], Belly Drum, Final Gambit, Memento, Healing Wish — though these are partially covered by Boost Self / Healing where applicable).
 
 Full unclassified list (alphabetical):
 

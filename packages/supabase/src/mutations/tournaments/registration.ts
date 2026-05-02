@@ -59,10 +59,14 @@ export async function registerForTournament(
 /**
  * Update registration preferences (in-game name, display options)
  * Used by the "Edit Registration" flow.
+ *
+ * Filters by both `id` and `tournament_id` so a stale/mismatched registration
+ * ID cannot accidentally mutate a registration belonging to a different tournament.
  */
 export async function updateRegistrationPreferences(
   supabase: TypedClient,
   registrationId: number,
+  tournamentId: number,
   data: {
     inGameName?: string;
     displayNameOption?: string;
@@ -77,6 +81,7 @@ export async function updateRegistrationPreferences(
       show_country_flag: data.showCountryFlag,
     })
     .eq("id", registrationId)
+    .eq("tournament_id", tournamentId)
     .select("id")
     .single();
 

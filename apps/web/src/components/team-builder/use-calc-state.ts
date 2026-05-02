@@ -82,6 +82,13 @@ export interface CalcOutput {
    * held or when recovery wouldn't actually change the KO tier.
    */
   recoverySuffix: string;
+  /**
+   * Recovery-aware KO tier (e.g. "3HKO" when Sitrus Berry converts a 2HKO).
+   * Only set when recovery actually changed the verdict — null otherwise.
+   * Consumers should prefer this over the percent-derived verdict when
+   * non-null, since the simulation accounts for mid-battle healing.
+   */
+  recoveryTier: string | null;
 }
 
 // Attacker's max HP — used in the "X–Y / HP" detail line for reverse calcs.
@@ -409,7 +416,8 @@ function runCalc(
   moveName: string,
   isCrit: boolean,
   field: Field,
-  faintedForMove?: number
+  faintedForMove?: number,
+  weather?: string
 ): CalcOutput | null {
   try {
     const basePowerOverride =
@@ -463,17 +471,14 @@ function runCalc(
       typeof defender.ability === "string" ? defender.ability : "";
     // Move type effectiveness gates Enigma Berry (heals only on
     // super-effective hits). getMoveEffectiveness handles weather-dependent
-    // moves like Weather Ball — passing undefined for weather here gives
-    // the wrapper's default (Normal type for Weather Ball when no weather
-    // is active), which is the correct fallback for the recovery suffix
-    // even though it slightly understates Enigma Berry triggers when
-    // weather is active. Edge case; documented and acceptable.
+    // moves like Weather Ball — pass the active effective weather so moves
+    // like Weather Ball resolve to the correct type (e.g. Fire under Sun).
     const moveEffectiveness = isImmune
       ? 0
-      : getMoveEffectiveness(moveName, defenderSpeciesName, undefined);
+      : getMoveEffectiveness(moveName, defenderSpeciesName, weather);
     const isSuperEffective = moveEffectiveness > 1;
-    const { suffix: recoverySuffix } = isImmune
-      ? { suffix: "" }
+    const recoveryVerdict = isImmune
+      ? { tier: null, suffix: "" }
       : getRecoveryAwareVerdict({
           rolls: sortedRolls,
           maxHP: defHP,
@@ -482,12 +487,18 @@ function runCalc(
           ability: defenderAbilityName,
           isSuperEffective,
         });
+    const recoverySuffix = recoveryVerdict.suffix;
+    // Only expose recoveryTier when recovery actually changed the verdict
+    // (suffix is non-empty). Consumers can fall back to the percent-based
+    // tier when recoveryTier is null.
+    const recoveryTier = recoverySuffix ? recoveryVerdict.tier : null;
 
     return {
       minPercent,
       maxPercent,
       desc: isImmune ? `${moveName}: 0 - 0 (0 - 0%) -- immune` : result.desc(),
       recoverySuffix,
+      recoveryTier,
       rolls,
       defenderMaxHP: defHP,
     };
@@ -997,7 +1008,7 @@ export function useCalcState({
     if (direction === "offense") {
       if (!sharedAttacker || !sharedDefender) return null;
       // Forward direction: attacker is on YOUR team — use faintedYours for Last Respects BP.
-      return runCalc(gen, sharedAttacker, sharedDefender, moveName, isCrit, sharedOffenseField, faintedYours);
+      return runCalc(gen, sharedAttacker, sharedDefender, moveName, isCrit, sharedOffenseField, faintedYours, effectiveWeather);
     }
 
     // Defense direction: defender fires at us — reuse the shared swap-side builders
@@ -1010,7 +1021,8 @@ export function useCalcState({
       moveName,
       isCrit,
       sharedDefenseField,
-      faintedTheirs
+      faintedTheirs,
+      effectiveWeather
     );
   }
 
@@ -1029,7 +1041,7 @@ export function useCalcState({
     if (!moveName) return null;
     if (!sharedDefenderAsAttacker || !sharedOurPokemonAsDefender) return null;
     // Reverse direction: the defender is attacking — their fainted count applies for Last Respects.
-    return runCalc(gen, sharedDefenderAsAttacker, sharedOurPokemonAsDefender, moveName, false, sharedDefenseField, faintedTheirs);
+    return runCalc(gen, sharedDefenderAsAttacker, sharedOurPokemonAsDefender, moveName, false, sharedDefenseField, faintedTheirs, effectiveWeather);
   }
 
   // Pre-compute outputs for the raw user-set defenderMoves slots (for context

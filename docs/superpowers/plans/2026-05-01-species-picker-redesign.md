@@ -1297,22 +1297,16 @@ Key implementation points:
        ? { ...f, roles: f.roles.filter((r) => r !== roleId) }
        : { ...f, roles: [...f.roles, roleId] });
    }
-   function handleRolePresetSelect(id: string) {
-     const preset = getRoleById(id);
-     if (filters.roles.includes(id)) {
-       setFilters((f) => ({ ...f, role: null, moves: null, abilities: null, roles: f.roles.filter((r) => r !== id) }));
-     } else {
-       setFilters((f) => ({
-         ...f,
-         roles: [...f.roles, id],
-         moves: preset?.moves ?? null,
-         abilities: preset?.abilities ?? null,
-       }));
-     }
+   function handleRolePresetSelect(next: string[]) {
+     setFilters((f) => ({
+       ...f,
+       roles: next,
+       moves: [],
+     }));
    }
    ```
 
-   Use `handleRolePresetSelect` as the `onChange` handler for `<RolePresetsPanel>` so that selecting a preset also populates `filters.moves` and `filters.abilities` from the preset definition. Deselecting clears those fields.
+   Use `handleRolePresetSelect` as the `onChange` handler for `<RolePresetsPanel>` — it receives the full updated `roles` array and resets `moves` to `[]` to clear any stale move filter when the role selection changes.
 
 7. **`buildFilterChips()`**:
 
@@ -1452,7 +1446,7 @@ describe("SpeciesPicker — click-to-filter and keyboard shortcuts", () => {
 });
 ```
 
-(The existing test mocks for `useVirtualizer` and `Image` continue working. Extend the `@trainers/pokemon` mock factory to expose `getAllLegalAbilities`, `getAllLegalMoves`, `calculateTeamSynergy`, `isChampionsFormat`, `getMegaStoneForSpecies`, and `buildSpeciesSearchIndex` to accept the resolver. Extend the `./role-registry` mock factory with `getRolesForMove` — this function is imported from `./role-registry`, not from `@trainers/pokemon`.)
+(The existing test mocks for `useVirtualizer` and `Image` continue working. Extend the `@trainers/pokemon` mock factory to expose `getAllLegalAbilities`, `getAllLegalMoves`, `calculateTeamSynergy`, `isChampionsFormat`, `getMegaStoneForSpecies`, and `buildSpeciesSearchIndex` to accept the resolver. Extend the `./role-registry` mock factory with `getRolesForSpecies` and `getRoleById` — these functions are imported from `./role-registry`, not from `@trainers/pokemon`.)
 
 - [ ] **Run + commit**
 

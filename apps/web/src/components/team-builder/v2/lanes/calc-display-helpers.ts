@@ -27,7 +27,7 @@ export function getKoTier(minPct: number, maxPct: number): KoTier {
 
 interface DisplayRangeInput {
   moveName: string | null;
-  output: Pick<CalcOutput, "minPercent" | "maxPercent"> | null;
+  output: Pick<CalcOutput, "minPercent" | "maxPercent" | "recoveryTier"> | null;
   hasCalc: boolean;
   /** Number of opposing slots still alive (0–2). */
   foesAlive: number;
@@ -44,6 +44,15 @@ interface DisplayRangeResult {
   displayMax: number;
   /** KO tier driven by the displayed (post-spread) range, or null if no calc. */
   koTier: KoTier;
+}
+
+/** Map a recovery simulation KoTier string to the display KoTier numeric string. */
+function recoveryTierToKoTier(tier: string): KoTier {
+  if (tier === "OHKO") return "1";
+  if (tier === "2HKO") return "2";
+  if (tier === "3HKO") return "3";
+  if (tier === "4HKO+") return "4";
+  return null;
 }
 
 /**
@@ -68,13 +77,21 @@ export function getDisplayRangeAndKoTier({
     isSpread &&
     (targetInfo?.kind === "all-foes"
       ? foesAlive >= 2
-      : foesAlive >= 2 || allyAlive);
+      : foesAlive + (allyAlive ? 1 : 0) >= 2);
 
   const rawMin = output?.minPercent ?? 0;
   const rawMax = output?.maxPercent ?? 0;
   const displayMin = spreadApplied ? rawMin * 0.75 : rawMin;
   const displayMax = spreadApplied ? rawMax * 0.75 : rawMax;
-  const koTier = hasCalc ? getKoTier(displayMin, displayMax) : null;
+  // Prefer the recovery-aware simulation tier when recovery changed the
+  // verdict and no spread modifier is active (spread + recovery don't
+  // compose cleanly since the simulation uses raw-roll damage, not
+  // spread-adjusted damage).
+  const recoveryKoTier =
+    !spreadApplied && output?.recoveryTier
+      ? recoveryTierToKoTier(output.recoveryTier)
+      : null;
+  const koTier = hasCalc ? (recoveryKoTier ?? getKoTier(displayMin, displayMax)) : null;
 
   return { spreadApplied, displayMin, displayMax, koTier };
 }
