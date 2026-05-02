@@ -2,273 +2,778 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the SpeciesPicker's dropdown-based filters with a persistent 3-column layout (left: type/ability/moves + Mega, middle: grouped role presets, right: species list), add per-slot ability columns with hover tooltips and click-to-filter, and a Showdown-style smart search overlay.
+**Goal:** Replace the SpeciesPicker's dropdown-based filters with a 3-column layout (left: type/ability/moves + Mega, middle: shared role-presets panel, right: list with ability columns + Roles column), driven by a unified role registry shared with the move-picker redesign.
 
-**Architecture:** The existing `SpeciesPicker` and `SpeciesFilters` components are gutted and replaced with four new focused files: `species-roles.ts` (data registry), `species-sidebar.tsx` (left + middle panels), `ability-cell.tsx` (single ability column cell), and `species-smart-search.tsx` (search overlay). The `SpeciesPicker` is refactored to compose these pieces and update its column grid. The `@trainers/pokemon` `searchSpecies` function gains an `ability` (single string) and `megaOnly` (boolean) filter; `SpeciesSearchEntry` gains named ability slots.
+**Architecture:** A new `pickers/role-registry.ts` defines all 26 strategic roles (used by both pickers). Three new shared React components — `RoleChip`, `RolePresetsPanel`, `FilterChipsBar` — render identically in species and move pickers. The `SpeciesPicker` is refactored to compose `SpeciesSidebar` (its own left panel) + `RolePresetsPanel` (shared middle panel) + a list with new Roles column. Multi-select OR logic across roles replaces the old single-select-with-replace-within-group complexity, eliminating `applyRole` and `userMoves` tracking entirely.
 
-**Tech Stack:** Next.js 16, React 19, Tailwind CSS 4, shadcn/ui Tooltip (Base UI), `@tanstack/react-virtual`, `@trainers/pokemon` (Dex, searchSpecies, getAbilityShortDesc, isChampionsFormat, ALL_TYPES, getMoveData)
+**Tech Stack:** Next.js 16, React 19, Tailwind CSS 4, shadcn/ui Tooltip, `@tanstack/react-virtual`, `@trainers/pokemon` (Dex, searchSpecies, getAbilityShortDesc, isChampionsFormat, getMegaStoneForSpecies, ALL_TYPES, getLearnableMoves)
 
 ---
 
 ## File Map
 
+### Shared (consumed by both pickers — also referenced from `move-picker-redesign.md`)
+
 | Action | Path | Responsibility |
 |---|---|---|
-| **Modify** | `packages/pokemon/src/species-search.ts` | Add `abilitySlot1/2/hidden` to `SpeciesSearchEntry`; add `ability` + `megaOnly` to `searchSpecies` options; add `getAllLegalAbilities` + `getAllLegalMoves` enumerators |
-| **Modify** | `packages/pokemon/src/index.ts` | Export the new helpers |
-| **Modify** | `packages/pokemon/src/__tests__/species-search.test.ts` | Update for new `SpeciesSearchEntry` shape + new filter options + new helpers |
-| **Create** | `apps/web/src/components/team-builder/v2/pickers/filter-state.ts` | `SpeciesFilterState` interface + `DEFAULT_SIDEBAR_FILTERS` constant (extracted to break the sidebar↔role-expansion import cycle) |
-| **Create** | `apps/web/src/components/team-builder/v2/pickers/species-roles.ts` | Role preset registry — all 18 presets with group, moves, abilities |
-| **Create** | `apps/web/src/components/team-builder/v2/pickers/role-expansion.ts` | Pure helper `applyRole(filters, nextId, userMoves)` for role → filter expansion (replace-within-group / stack-across-group) |
-| **Create** | `apps/web/src/components/team-builder/v2/pickers/ability-cell.tsx` | Single ability table cell with shadcn Tooltip + click-to-filter |
-| **Create** | `apps/web/src/components/team-builder/v2/pickers/species-sidebar.tsx` | Left panel (type/ability combobox/learns move/mega + team-needs hints) + right panel (role presets) |
-| **Create** | `apps/web/src/components/team-builder/v2/pickers/species-smart-search.tsx` | Search overlay shown when query is non-empty |
-| **Modify** | `apps/web/src/components/team-builder/v2/pickers/species-picker.tsx` | Wire up new sidebar + smart search; update column grid + headers; switch row from `<button>` to `<div role="row">`; add Mega row styles; add Enter-to-apply-top-filter shortcut |
+| **Create** | `apps/web/src/components/team-builder/v2/pickers/role-registry.ts` | 26 roles × 7 groups; group color tokens; `getRolesForMove(name)` and `getRolesForSpecies(...)` lookups |
+| **Create** | `apps/web/src/components/team-builder/v2/pickers/role-chip.tsx` | `<RoleChip roleId onClick>` — colored pill rendered in row Roles columns and as the active visual for sidebar role buttons |
+| **Create** | `apps/web/src/components/team-builder/v2/pickers/role-presets-panel.tsx` | Middle-column sidebar component listing all role presets grouped, with bucket counts and active state |
+| **Create** | `apps/web/src/components/team-builder/v2/pickers/filter-chips-bar.tsx` | Active filter chip strip rendered above each list |
+| **Create** | `apps/web/src/components/team-builder/v2/__tests__/role-registry.test.ts` | Group/role coverage, color tokens, getRolesForMove |
+| **Create** | `apps/web/src/components/team-builder/v2/__tests__/role-chip.test.tsx` | Renders correct color per group; click handler |
+| **Create** | `apps/web/src/components/team-builder/v2/__tests__/role-presets-panel.test.tsx` | Multi-select toggle, bucket counts, group ordering |
+| **Create** | `apps/web/src/components/team-builder/v2/__tests__/filter-chips-bar.test.tsx` | Renders chips, click removes filter |
+
+### `@trainers/pokemon` package changes
+
+| Action | Path | Responsibility |
+|---|---|---|
+| **Modify** | `packages/pokemon/src/species-search.ts` | Add `abilitySlot1/2/hiddenAbility` + `roles` to `SpeciesSearchEntry`; add `ability`, `megaOnly`, `roles` filters to `searchSpecies`; add `getAllLegalAbilities` + `getAllLegalMoves` helpers; thread `getRoles` resolver through `buildSpeciesSearchIndex` |
+| **Modify** | `packages/pokemon/src/index.ts` | Export new helpers |
+| **Modify** | `packages/pokemon/src/__tests__/species-search.test.ts` | Tests for new shape + filters |
+
+### Species-picker-specific
+
+| Action | Path | Responsibility |
+|---|---|---|
+| **Create** | `apps/web/src/components/team-builder/v2/pickers/species-filter-state.ts` | `SpeciesFilterState` interface + `DEFAULT_SPECIES_FILTERS` constant |
+| **Create** | `apps/web/src/components/team-builder/v2/pickers/ability-cell.tsx` | Ability table cell with shadcn Tooltip + click-to-filter |
+| **Create** | `apps/web/src/components/team-builder/v2/pickers/species-sidebar.tsx` | Left-only panel: Type grid + Ability combobox + Mega toggle + Learns Move (no role presets — those live in the shared `<RolePresetsPanel>`) |
+| **Create** | `apps/web/src/components/team-builder/v2/pickers/species-smart-search.tsx` | Showdown-style search overlay shown when query non-empty |
+| **Modify** | `apps/web/src/components/team-builder/v2/pickers/species-picker.tsx` | Compose `SpeciesSidebar` + `RolePresetsPanel` + `FilterChipsBar`; new column grid (sprite/name/types/abil1/abil2/hidden/stats/BST/**Roles**); `<div role="row">`; click Type icon → filter; Enter shortcut |
 | **Delete** | `apps/web/src/components/team-builder/v2/pickers/species-filters.tsx` | All logic migrated |
-| **Modify** | `apps/web/src/components/team-builder/v2/__tests__/species-picker.test.tsx` | Migrate fixtures to new `SpeciesSearchEntry` shape; add click-to-filter and Enter-to-apply integration tests |
-| **Create** | `apps/web/src/components/team-builder/v2/__tests__/role-expansion.test.ts` | Replace/stack semantics for role activation/deactivation |
-| **Create** | `apps/web/src/components/team-builder/v2/__tests__/ability-cell.test.tsx` | Click-to-filter callback, em-dash for null, hidden styling |
-| **Create** | `apps/web/src/components/team-builder/v2/__tests__/species-sidebar.test.tsx` | Filter state changes, role expansion, Mega toggle, clear all, ability combobox |
+| **Modify** | `apps/web/src/components/team-builder/v2/__tests__/species-picker.test.tsx` | Update fixtures; click-to-filter tests; Roles column |
+| **Create** | `apps/web/src/components/team-builder/v2/__tests__/ability-cell.test.tsx` | Click-to-filter, em-dash, hidden styling |
+| **Create** | `apps/web/src/components/team-builder/v2/__tests__/species-sidebar.test.tsx` | Filter state, Mega toggle, ability combobox, clear all |
 | **Create** | `apps/web/src/components/team-builder/v2/__tests__/species-smart-search.test.tsx` | Categorized results, Filter/Select buttons |
-| **Create** | `apps/web/src/components/team-builder/v2/__tests__/species-roles.test.ts` | Registry shape, group ordering, getRoleById |
+
+### Eliminated from prior plan
+
+- `role-expansion.ts` — gone (multi-select OR replaces it)
+- `species-roles.ts` — gone (now `role-registry.ts` is shared)
+- `filter-state.ts` (with shared `SpeciesFilterState`) — replaced by `species-filter-state.ts` (no longer needs to break a circular import since `role-expansion.ts` is gone)
+- `applyRole` helper + 7 tests for replace-within-group / stack-across-group / preserve-user-moves — gone
 
 ---
 
-## Task 1: Extend `SpeciesSearchEntry` with named ability slots
+## Phase 1 — Shared infrastructure
+
+These four tasks are independent — any order works.
+
+### Task 1: Role registry with 26 roles, group colors, lookups
+
+**Files:**
+- Create: `apps/web/src/components/team-builder/v2/pickers/role-registry.ts`
+- Create: `apps/web/src/components/team-builder/v2/__tests__/role-registry.test.ts`
+
+The registry is the single source of truth for both pickers. Generated from `docs/design/2026-05-01-champions-ma-move-roles.md` plus the 3 ability-driven roles from species spec §13.
+
+- [ ] **Convert markdown registry to TypeScript data**
+
+The markdown has the canonical move list per role. One-time conversion script (no commit, just a node REPL):
+
+```bash
+node -e "
+const fs = require('fs');
+const md = fs.readFileSync('docs/design/2026-05-01-champions-ma-move-roles.md', 'utf8');
+const sections = md.split(/^### /m).slice(1);
+const result = {};
+for (const section of sections) {
+  const idMatch = section.match(/\*\*id:\*\* \`([\w-]+)\`/);
+  if (!idMatch) continue;
+  const id = idMatch[1];
+  const moves = section.split('\n').filter(l => l.startsWith('- ')).map(l => l.replace('- ', '').trim());
+  result[id] = moves;
+}
+console.log(JSON.stringify(result, null, 2));
+" > /tmp/roles.json
+```
+
+Inspect `/tmp/roles.json` then paste move arrays into `role-registry.ts` below.
+
+- [ ] **Create `role-registry.ts`**
+
+```ts
+import { getLearnableMoves } from "@trainers/pokemon";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+export type RoleGroup =
+  | "damage-type" | "speed-control" | "status"
+  | "stat-changes" | "defensive" | "field" | "utility";
+
+export interface RolePreset {
+  id: string;
+  label: string;
+  group: RoleGroup;
+  /** Moves that ARE this role. */
+  moves?: string[];
+  /** Abilities that IMPLY this role (used only for species fit). */
+  abilities?: string[];
+}
+
+// =============================================================================
+// Registry — 26 roles across 7 groups
+// =============================================================================
+
+export const ROLE_PRESETS: RolePreset[] = [
+  // Damage Type
+  { id: "spread",      label: "Spread",      group: "damage-type",   moves: [/* paste 54 from JSON */] },
+  { id: "priority",    label: "Priority",    group: "damage-type",   moves: [/* 17 */] },
+  { id: "multi-hit",   label: "Multi-hit",   group: "damage-type",   moves: [/* 22 */] },
+
+  // Speed Control
+  { id: "trick-room",  label: "Trick Room",  group: "speed-control", moves: ["Trick Room"] },
+  { id: "tailwind",    label: "Tailwind",    group: "speed-control", moves: ["Tailwind"] },
+  { id: "speed-drop",  label: "Speed Drop",  group: "speed-control", moves: [/* 38 */] },
+  { id: "speed-boost", label: "Speed Boost", group: "speed-control", moves: [/* 17 */] },
+
+  // Status
+  { id: "sleep",       label: "Sleep",       group: "status",        moves: [/* 8 */] },
+  { id: "paralysis",   label: "Paralysis",   group: "status",        moves: [/* 21 */] },
+  { id: "burn",        label: "Burn",        group: "status",        moves: [/* 22 */] },
+  { id: "poison",      label: "Poison",      group: "status",        moves: [/* 20 */] },
+
+  // Stat Changes
+  { id: "boost-self",  label: "Boost Self",  group: "stat-changes",  moves: [/* 53 */] },
+  { id: "boost-ally",  label: "Boost Ally",  group: "stat-changes",  moves: [/* 14 */] },
+  { id: "drop-atk",    label: "Drop Atk",    group: "stat-changes",  moves: [/* 19 */],
+                                                                       abilities: ["Intimidate"] },
+  { id: "drop-spa",    label: "Drop SpA",    group: "stat-changes",  moves: [/* 13 */] },
+
+  // Defensive
+  { id: "screens",     label: "Screens",     group: "defensive",     moves: ["Light Screen", "Reflect", "Aurora Veil"] },
+  { id: "protect",     label: "Protect",     group: "defensive",     moves: [/* 9 */] },
+  { id: "healing",     label: "Healing",     group: "defensive",     moves: [/* 22 */] },
+  { id: "drain",       label: "Drain",       group: "defensive",     moves: [/* 13 */] },
+
+  // Field
+  { id: "weather",     label: "Weather",     group: "field",         moves: [/* 5 */],
+                                                                       abilities: ["Drizzle", "Drought", "Sand Stream", "Snow Warning"] },
+  { id: "terrain",     label: "Terrain",     group: "field",         moves: [/* 4 */],
+                                                                       abilities: ["Grassy Surge", "Electric Surge", "Psychic Surge", "Misty Surge"] },
+  { id: "hazards",     label: "Hazards",     group: "field",         moves: [/* 6 */] },
+
+  // Utility
+  { id: "redirection", label: "Redirection", group: "utility",       moves: ["Follow Me", "Rage Powder", "Spotlight", "Ally Switch"] },
+  { id: "pivot",       label: "Pivot",       group: "utility",       moves: [/* 9 */] },
+  { id: "flinching",   label: "Flinching",   group: "utility",       moves: [/* 25 */] },
+  { id: "disruption",  label: "Disruption",  group: "utility",       moves: [/* 29 */] },
+];
+
+export const ROLE_GROUP_LABELS: Record<RoleGroup, string> = {
+  "damage-type":   "Damage Type",
+  "speed-control": "Speed Control",
+  "status":        "Status",
+  "stat-changes":  "Stat Changes",
+  "defensive":     "Defensive",
+  "field":         "Field",
+  "utility":       "Utility",
+};
+
+export const ROLE_GROUP_ORDER: RoleGroup[] = [
+  "damage-type", "speed-control", "status", "stat-changes",
+  "defensive", "field", "utility",
+];
+
+// =============================================================================
+// Group color palette — Tailwind class strings, single source of truth
+// =============================================================================
+
+export interface GroupColors {
+  /** Combined classes for the chip pill (background + border + text) */
+  chip: string;
+  /** Background-only class for active state of sidebar role buttons */
+  active: string;
+  /** Text-only class for the role's label color */
+  text: string;
+}
+
+export const GROUP_COLORS: Record<RoleGroup, GroupColors> = {
+  "damage-type":   { chip:   "bg-rose-500/8 border-rose-500/25 text-rose-700 dark:text-rose-300",
+                     active: "bg-rose-500/10",
+                     text:   "text-rose-700 dark:text-rose-300" },
+  "speed-control": { chip:   "bg-violet-500/8 border-violet-500/25 text-violet-700 dark:text-violet-300",
+                     active: "bg-violet-500/10",
+                     text:   "text-violet-700 dark:text-violet-300" },
+  "status":        { chip:   "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400",
+                     active: "bg-amber-500/12",
+                     text:   "text-amber-700 dark:text-amber-400" },
+  "stat-changes":  { chip:   "bg-emerald-500/8 border-emerald-500/28 text-emerald-700 dark:text-emerald-400",
+                     active: "bg-emerald-500/10",
+                     text:   "text-emerald-700 dark:text-emerald-400" },
+  "defensive":     { chip:   "bg-sky-500/8 border-sky-500/25 text-sky-700 dark:text-sky-300",
+                     active: "bg-sky-500/10",
+                     text:   "text-sky-700 dark:text-sky-300" },
+  "field":         { chip:   "bg-lime-500/10 border-lime-500/28 text-lime-700 dark:text-lime-400",
+                     active: "bg-lime-500/12",
+                     text:   "text-lime-700 dark:text-lime-400" },
+  "utility":       { chip:   "bg-slate-500/10 border-slate-500/30 text-slate-600 dark:text-slate-400",
+                     active: "bg-slate-500/12",
+                     text:   "text-slate-600 dark:text-slate-400" },
+};
+
+// =============================================================================
+// Lookups
+// =============================================================================
+
+export function getRoleById(id: string): RolePreset | undefined {
+  return ROLE_PRESETS.find((r) => r.id === id);
+}
+
+let _rolesByMove: Map<string, string[]> | null = null;
+function getRolesByMoveIndex(): Map<string, string[]> {
+  if (_rolesByMove) return _rolesByMove;
+  const m = new Map<string, string[]>();
+  for (const role of ROLE_PRESETS) {
+    if (!role.moves) continue;
+    for (const move of role.moves) {
+      const list = m.get(move) ?? [];
+      list.push(role.id);
+      m.set(move, list);
+    }
+  }
+  _rolesByMove = m;
+  return m;
+}
+
+/** O(1) — returns role IDs for a move name; empty if move is in no role. */
+export function getRolesForMove(moveName: string): string[] {
+  return getRolesByMoveIndex().get(moveName) ?? [];
+}
+
+/**
+ * Compute role IDs for a species:
+ * - Any of its abilities matches a name in role.abilities, OR
+ * - It can learn any move in role.moves
+ *
+ * Called once per species during buildSpeciesSearchIndex.
+ */
+export function getRolesForSpecies(
+  abilities: { slot1: string | null; slot2: string | null; hidden: string | null },
+  speciesName: string,
+  formatId: string
+): string[] {
+  const learnable = getLearnableMoves(speciesName, formatId) ?? [];
+  const learnableSet = new Set(learnable);
+  const out: string[] = [];
+
+  for (const role of ROLE_PRESETS) {
+    let matches = false;
+
+    if (role.abilities) {
+      for (const ab of role.abilities) {
+        if (abilities.slot1 === ab || abilities.slot2 === ab || abilities.hidden === ab) {
+          matches = true;
+          break;
+        }
+      }
+    }
+
+    if (!matches && role.moves) {
+      for (const move of role.moves) {
+        if (learnableSet.has(move)) {
+          matches = true;
+          break;
+        }
+      }
+    }
+
+    if (matches) out.push(role.id);
+  }
+  return out;
+}
+```
+
+- [ ] **Tests**
+
+```ts
+// __tests__/role-registry.test.ts
+import {
+  ROLE_PRESETS, ROLE_GROUP_ORDER, GROUP_COLORS,
+  getRoleById, getRolesForMove,
+} from "../pickers/role-registry";
+
+describe("role-registry", () => {
+  it("has 26 presets", () => { expect(ROLE_PRESETS).toHaveLength(26); });
+
+  it("every group in ROLE_GROUP_ORDER has at least one preset", () => {
+    for (const g of ROLE_GROUP_ORDER) {
+      expect(ROLE_PRESETS.some((r) => r.group === g)).toBe(true);
+    }
+  });
+
+  it("every preset id is unique", () => {
+    const ids = ROLE_PRESETS.map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("GROUP_COLORS has an entry per group", () => {
+    for (const g of ROLE_GROUP_ORDER) expect(GROUP_COLORS[g]).toBeDefined();
+  });
+
+  it("getRolesForMove returns role ids for a known move", () => {
+    expect(getRolesForMove("Heat Wave")).toEqual(expect.arrayContaining(["spread", "burn"]));
+  });
+
+  it("getRolesForMove returns empty for an unknown move", () => {
+    expect(getRolesForMove("Tackle")).toEqual([]);
+  });
+
+  it("drop-atk has Intimidate ability", () => {
+    expect(getRoleById("drop-atk")?.abilities).toContain("Intimidate");
+  });
+});
+```
+
+(`getRolesForSpecies` needs heavier mocking — covered indirectly via species-search integration tests in Task 5.)
+
+- [ ] **Run + commit**
+
+```bash
+pnpm test --filter @trainers/web -- --testPathPattern="role-registry" 2>&1 | tail -15
+git add apps/web/src/components/team-builder/v2/pickers/role-registry.ts \
+        apps/web/src/components/team-builder/v2/__tests__/role-registry.test.ts
+git commit -m "feat(team-builder): shared role registry (26 roles, 7 groups, color tokens)"
+```
+
+---
+
+### Task 2: `<RoleChip>` shared component
+
+**Files:**
+- Create: `apps/web/src/components/team-builder/v2/pickers/role-chip.tsx`
+- Create: `apps/web/src/components/team-builder/v2/__tests__/role-chip.test.tsx`
+
+- [ ] **Failing test**
+
+```tsx
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+import { RoleChip } from "../pickers/role-chip";
+
+describe("RoleChip", () => {
+  it("renders the role label", () => {
+    render(<RoleChip roleId="spread" />);
+    expect(screen.getByText("Spread")).toBeInTheDocument();
+  });
+
+  it("calls onClick with the role id", async () => {
+    const user = userEvent.setup();
+    const onClick = jest.fn();
+    render(<RoleChip roleId="spread" onClick={onClick} />);
+    await user.click(screen.getByText("Spread"));
+    expect(onClick).toHaveBeenCalledWith("spread");
+  });
+
+  it("renders nothing for an unknown role id", () => {
+    const { container } = render(<RoleChip roleId="bogus" />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("applies the group's chip class", () => {
+    render(<RoleChip roleId="spread" />);
+    expect(screen.getByText("Spread").className).toMatch(/rose/);
+  });
+});
+```
+
+- [ ] **Implement `role-chip.tsx`**
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import { GROUP_COLORS, getRoleById } from "./role-registry";
+
+interface RoleChipProps {
+  roleId: string;
+  onClick?: (roleId: string) => void;
+  className?: string;
+}
+
+export function RoleChip({ roleId, onClick, className }: RoleChipProps) {
+  const role = getRoleById(roleId);
+  if (!role) return null;
+  const colors = GROUP_COLORS[role.group];
+
+  return (
+    <button
+      type="button"
+      onClick={onClick ? (e) => { e.stopPropagation(); onClick(roleId); } : undefined}
+      className={cn(
+        "inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9.5px] font-semibold transition-all",
+        onClick && "cursor-pointer hover:-translate-y-px",
+        colors.chip,
+        className
+      )}
+    >
+      {role.label}
+    </button>
+  );
+}
+```
+
+- [ ] **Run + commit**
+
+```bash
+pnpm test --filter @trainers/web -- --testPathPattern="role-chip" 2>&1 | tail -10
+git add apps/web/src/components/team-builder/v2/pickers/role-chip.tsx \
+        apps/web/src/components/team-builder/v2/__tests__/role-chip.test.tsx
+git commit -m "feat(team-builder): <RoleChip> shared component"
+```
+
+---
+
+### Task 3: `<RolePresetsPanel>` shared middle-column sidebar
+
+**Files:**
+- Create: `apps/web/src/components/team-builder/v2/pickers/role-presets-panel.tsx`
+- Create: `apps/web/src/components/team-builder/v2/__tests__/role-presets-panel.test.tsx`
+
+- [ ] **Failing tests**
+
+```tsx
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+import { RolePresetsPanel } from "../pickers/role-presets-panel";
+
+describe("RolePresetsPanel", () => {
+  const noop = () => {};
+  const zero = () => 0;
+
+  it("renders all 7 group headers", () => {
+    render(<RolePresetsPanel selected={[]} onChange={noop} bucketCount={zero} />);
+    for (const label of ["Damage Type", "Speed Control", "Status", "Stat Changes", "Defensive", "Field", "Utility"]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+  });
+
+  it("renders bucket counts from the prop", () => {
+    render(<RolePresetsPanel selected={[]} onChange={noop} bucketCount={(id) => id === "spread" ? 54 : 0} />);
+    expect(screen.getByText("54")).toBeInTheDocument();
+  });
+
+  it("clicking a role toggles it on", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(<RolePresetsPanel selected={[]} onChange={onChange} bucketCount={zero} />);
+    await user.click(screen.getByText("Spread"));
+    expect(onChange).toHaveBeenCalledWith(["spread"]);
+  });
+
+  it("clicking an active role toggles it off", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(<RolePresetsPanel selected={["spread"]} onChange={onChange} bucketCount={zero} />);
+    await user.click(screen.getByText("Spread"));
+    expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it("clicking a different role stacks (multi-select OR)", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(<RolePresetsPanel selected={["spread"]} onChange={onChange} bucketCount={zero} />);
+    await user.click(screen.getByText("Priority"));
+    expect(onChange).toHaveBeenCalledWith(["spread", "priority"]);
+  });
+});
+```
+
+- [ ] **Implement `role-presets-panel.tsx`**
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import {
+  GROUP_COLORS, ROLE_GROUP_LABELS, ROLE_GROUP_ORDER, ROLE_PRESETS,
+} from "./role-registry";
+
+interface RolePresetsPanelProps {
+  selected: string[];
+  onChange: (next: string[]) => void;
+  bucketCount: (roleId: string) => number;
+  className?: string;
+}
+
+export function RolePresetsPanel({ selected, onChange, bucketCount, className }: RolePresetsPanelProps) {
+  function toggle(roleId: string) {
+    if (selected.includes(roleId)) onChange(selected.filter((r) => r !== roleId));
+    else onChange([...selected, roleId]);
+  }
+
+  return (
+    <div className={cn("flex w-[170px] flex-shrink-0 flex-col overflow-y-auto bg-muted/20 px-0 py-2.5", className)}>
+      <span className="block px-3 pb-1.5 text-[8.5px] font-bold uppercase tracking-widest text-muted-foreground">Role</span>
+
+      {ROLE_GROUP_ORDER.map((group) => {
+        const presets = ROLE_PRESETS.filter((r) => r.group === group);
+        return (
+          <div key={group} className="mb-1">
+            <span className="block px-3 pb-0.5 pt-1.5 text-[7.5px] font-bold uppercase tracking-widest text-muted-foreground/50">
+              {ROLE_GROUP_LABELS[group]}
+            </span>
+            {presets.map((preset) => {
+              const isActive = selected.includes(preset.id);
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => toggle(preset.id)}
+                  className={cn(
+                    "flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-[11px] transition-colors",
+                    isActive
+                      ? cn(GROUP_COLORS[group].active, GROUP_COLORS[group].text, "font-semibold")
+                      : "text-foreground/70 hover:bg-muted"
+                  )}
+                >
+                  {preset.label}
+                  <span className={cn(
+                    "ml-auto font-mono text-[8.5px] tabular-nums",
+                    isActive ? "" : "text-muted-foreground/60"
+                  )}>
+                    {bucketCount(preset.id)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+```
+
+- [ ] **Run + commit**
+
+```bash
+pnpm test --filter @trainers/web -- --testPathPattern="role-presets-panel" 2>&1 | tail -10
+git add apps/web/src/components/team-builder/v2/pickers/role-presets-panel.tsx \
+        apps/web/src/components/team-builder/v2/__tests__/role-presets-panel.test.tsx
+git commit -m "feat(team-builder): <RolePresetsPanel> shared component"
+```
+
+---
+
+### Task 4: `<FilterChipsBar>` shared component
+
+**Files:**
+- Create: `apps/web/src/components/team-builder/v2/pickers/filter-chips-bar.tsx`
+- Create: `apps/web/src/components/team-builder/v2/__tests__/filter-chips-bar.test.tsx`
+
+- [ ] **Failing tests**
+
+```tsx
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+import { FilterChipsBar, type FilterChip } from "../pickers/filter-chips-bar";
+
+describe("FilterChipsBar", () => {
+  it("returns null when no chips", () => {
+    const { container } = render(<FilterChipsBar chips={[]} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("renders one chip per item", () => {
+    const chips: FilterChip[] = [
+      { id: "fire", label: "Fire", onRemove: jest.fn() },
+      { id: "spread", label: "Role: Spread", onRemove: jest.fn() },
+    ];
+    render(<FilterChipsBar chips={chips} />);
+    expect(screen.getByText("Fire")).toBeInTheDocument();
+    expect(screen.getByText("Role: Spread")).toBeInTheDocument();
+  });
+
+  it("calls onRemove on chip click", async () => {
+    const user = userEvent.setup();
+    const onRemove = jest.fn();
+    render(<FilterChipsBar chips={[{ id: "fire", label: "Fire", onRemove }]} />);
+    await user.click(screen.getByText("Fire"));
+    expect(onRemove).toHaveBeenCalled();
+  });
+});
+```
+
+- [ ] **Implement `filter-chips-bar.tsx`**
+
+```tsx
+"use client";
+import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export interface FilterChip {
+  id: string;
+  label: string;
+  onRemove: () => void;
+  /** undefined → primary teal, "mega" → purple */
+  tone?: "primary" | "mega";
+}
+
+interface FilterChipsBarProps {
+  chips: FilterChip[];
+  className?: string;
+}
+
+export function FilterChipsBar({ chips, className }: FilterChipsBarProps) {
+  if (chips.length === 0) return null;
+  return (
+    <div className={cn("flex flex-wrap items-center gap-1.5 border-b border-border/50 bg-muted/20 px-4 py-1.5", className)}>
+      <span className="text-[10.5px] text-muted-foreground">Active:</span>
+      {chips.map((chip) => (
+        <button
+          key={chip.id}
+          type="button"
+          onClick={chip.onRemove}
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold",
+            chip.tone === "mega"
+              ? "border border-violet-400/25 bg-violet-500/8 text-violet-700 dark:text-violet-300"
+              : "border border-primary/25 bg-primary/8 text-primary"
+          )}
+        >
+          {chip.label} <X className="size-2.5 opacity-50" />
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+- [ ] **Run + commit**
+
+```bash
+pnpm test --filter @trainers/web -- --testPathPattern="filter-chips-bar" 2>&1 | tail -10
+git add apps/web/src/components/team-builder/v2/pickers/filter-chips-bar.tsx \
+        apps/web/src/components/team-builder/v2/__tests__/filter-chips-bar.test.tsx
+git commit -m "feat(team-builder): <FilterChipsBar> shared component"
+```
+
+---
+
+## Phase 2 — `@trainers/pokemon` package changes
+
+### Task 5: Extend `SpeciesSearchEntry` and `searchSpecies` filters
 
 **Files:**
 - Modify: `packages/pokemon/src/species-search.ts`
+- Modify: `packages/pokemon/src/index.ts`
 - Modify: `packages/pokemon/src/__tests__/species-search.test.ts`
+- Modify: `apps/web/src/components/team-builder/v2/__tests__/species-picker.test.tsx` (fixture migration)
 
-The current `abilities: string[]` flat array is positional but undocumented. We need named slots so `AbilityCell` can render correctly.
+The package can't import from `apps/web/`, so it accepts an optional `getRoles` resolver callback that the web app supplies (using the shared registry from Task 1).
 
-In `@pkmn/dex`, `species.abilities` has shape `{ 0: "Slot1", 1?: "Slot2", H?: "Hidden" }`. `Object.keys()` preserves insertion order: `"0"`, `"1"`, `"H"`.
-
-- [ ] **Add fields to `SpeciesSearchEntry`**
-
-In `packages/pokemon/src/species-search.ts`, update the interface (keep `abilities: string[]` for backward compat with existing query code):
+- [ ] **Update `SpeciesSearchEntry` shape**
 
 ```ts
 export interface SpeciesSearchEntry {
   species: string;
   types: string[];
-  abilities: string[];          // kept for backward compat
-  abilitySlot1: string | null;  // primary ability (key "0")
-  abilitySlot2: string | null;  // secondary ability (key "1"), null if single-ability
-  hiddenAbility: string | null; // hidden ability (key "H"), null if none
-  baseStats: {
-    hp: number; atk: number; def: number;
-    spa: number; spd: number; spe: number;
-  };
+  abilities: string[];          // kept for back-compat
+  abilitySlot1: string | null;
+  abilitySlot2: string | null;
+  hiddenAbility: string | null;
+  /** Role IDs this species fits — populated by buildSpeciesSearchIndex when
+   *  a getRoles resolver is supplied. Empty otherwise. */
+  roles: string[];
+  baseStats: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number; };
   bst: number;
 }
 ```
 
-- [ ] **Update `makeEntry` to populate the new fields**
+- [ ] **Update `makeEntry` and `buildSpeciesSearchIndex`**
 
 ```ts
-function makeEntry(species: {
-  name: string;
-  types: readonly string[];
-  abilities: Record<string, string>;
-  baseStats: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number; };
-}): SpeciesSearchEntry {
+export type GetRolesFn = (
+  abilities: { slot1: string | null; slot2: string | null; hidden: string | null },
+  speciesName: string,
+  formatId: string
+) => string[];
+
+function makeEntry(
+  species: { name: string; types: readonly string[]; abilities: Record<string, string>;
+             baseStats: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number; }; },
+  getRoles: GetRolesFn | undefined,
+  formatId: string
+): SpeciesSearchEntry {
   const { hp, atk, def, spa, spd, spe } = species.baseStats;
   const rawAbils = species.abilities as Record<string, string>;
   const abilities = Object.values(rawAbils).filter(
     (a): a is string => typeof a === "string" && a.length > 0
   );
+  const slot1 = rawAbils["0"] ?? null;
+  const slot2 = rawAbils["1"] ?? null;
+  const hidden = rawAbils["H"] ?? null;
+  const roles = getRoles
+    ? getRoles({ slot1, slot2, hidden }, species.name, formatId)
+    : [];
   return {
-    species: species.name,
-    types: species.types as string[],
-    abilities,
-    abilitySlot1: rawAbils["0"] ?? null,
-    abilitySlot2: rawAbils["1"] ?? null,
-    hiddenAbility: rawAbils["H"] ?? null,
+    species: species.name, types: species.types as string[],
+    abilities, abilitySlot1: slot1, abilitySlot2: slot2, hiddenAbility: hidden,
+    roles,
     baseStats: { hp, atk, def, spa, spd, spe },
     bst: hp + atk + def + spa + spd + spe,
   };
 }
+
+export function buildSpeciesSearchIndex(
+  formatId: string,
+  getRoles?: GetRolesFn
+): SpeciesSearchEntry[] {
+  // ... existing body, but pass `getRoles` and `formatId` into every makeEntry call
+}
 ```
 
-- [ ] **Add `ability` and `megaOnly` to `searchSpecies` options**
-
-In the `options` parameter type:
+- [ ] **Add `ability`, `megaOnly`, `roles` filters to `searchSpecies`**
 
 ```ts
 options?: {
-  types?: string[];
-  abilities?: string[];          // existing (OR logic across all slots)
-  ability?: string | null;       // NEW: exact match against any slot (single-select)
-  moves?: string[];
-  megaOnly?: boolean;            // NEW: filter to species whose name contains "-Mega"
-  minBaseStat?: Partial<Record<keyof SpeciesSearchEntry["baseStats"], number>>;
-  maxBaseStat?: Partial<Record<keyof SpeciesSearchEntry["baseStats"], number>>;
-  formatId?: string;
+  // ... existing fields
+  ability?: string | null;
+  megaOnly?: boolean;
+  roles?: string[];
 }
 ```
 
-- [ ] **Implement the new filters in the filter body of `searchSpecies`**
-
-After the existing `abilities` filter block, add:
+Filter body additions (after the existing `abilities` block):
 
 ```ts
-// ability (single-select) — matches any of the three named slots
 if (options?.ability) {
   const target = options.ability.toLowerCase();
-  const { abilitySlot1, abilitySlot2, hiddenAbility } = entry;
   const match =
-    (abilitySlot1?.toLowerCase() === target) ||
-    (abilitySlot2?.toLowerCase() === target) ||
-    (hiddenAbility?.toLowerCase() === target);
+    (entry.abilitySlot1?.toLowerCase() === target) ||
+    (entry.abilitySlot2?.toLowerCase() === target) ||
+    (entry.hiddenAbility?.toLowerCase() === target);
   if (!match) return false;
 }
 
-// megaOnly — base species that HAVE a Mega form (not the Mega entries themselves).
-// Players select the base species in the picker and pick a Mega Stone item to
-// trigger Mega Evolution. So we filter to species where getMegaStoneForSpecies
-// returns a non-null mega stone — and we exclude the *-Mega entries themselves
-// (those are the *result* forms, not pickable starting points).
 if (options?.megaOnly) {
   if (entry.species.includes("-Mega")) return false;
   if (getMegaStoneForSpecies(entry.species) === null) return false;
 }
-```
 
-Add the import at the top of `species-search.ts` (next to the existing `@pkmn/dex` imports):
-
-```ts
-import { getMegaStoneForSpecies } from "./items";
-```
-
-(`getMegaStoneForSpecies` already exists in `packages/pokemon/src/items.ts` and is exported from the package barrel — verify with `grep -n "getMegaStoneForSpecies" packages/pokemon/src/items.ts packages/pokemon/src/index.ts`.)
-
-- [ ] **Write tests for the new filter options**
-
-In `packages/pokemon/src/__tests__/species-search.test.ts`, add a `describe` block:
-
-```ts
-describe("searchSpecies — new filters", () => {
-  let index: SpeciesSearchEntry[];
-  beforeAll(() => { index = buildSpeciesSearchIndex("gen9vgc2026regg"); });
-
-  it("ability filter matches slot1", () => {
-    const results = searchSpecies(index, "", { ability: "Intimidate" });
-    expect(results.every(e =>
-      e.abilitySlot1 === "Intimidate" ||
-      e.abilitySlot2 === "Intimidate" ||
-      e.hiddenAbility === "Intimidate"
-    )).toBe(true);
-    expect(results.length).toBeGreaterThan(0);
-  });
-
-  it("ability filter is case-insensitive", () => {
-    const lower = searchSpecies(index, "", { ability: "intimidate" });
-    const upper = searchSpecies(index, "", { ability: "Intimidate" });
-    expect(lower.length).toBe(upper.length);
-  });
-
-  it("megaOnly excludes -Mega entries themselves", () => {
-    const results = searchSpecies(index, "", { megaOnly: true });
-    expect(results.every(e => !e.species.includes("-Mega"))).toBe(true);
-  });
-
-  it("megaOnly includes base species that have a Mega form", () => {
-    // Use a Champions Reg M-A index since that's where Megas matter
-    const championsIndex = buildSpeciesSearchIndex("championsvgc2026regma");
-    const results = searchSpecies(championsIndex, "", { megaOnly: true });
-    expect(results.length).toBeGreaterThan(0);
-    // Charizard has Mega forms (X and Y) — should be included
-    expect(results.some(e => e.species === "Charizard")).toBe(true);
-  });
-
-  it("SpeciesSearchEntry has named ability slots", () => {
-    const incineroar = index.find(e => e.species === "Incineroar");
-    expect(incineroar).toBeDefined();
-    expect(incineroar!.abilitySlot1).toBe("Blaze");
-    expect(incineroar!.hiddenAbility).toBe("Intimidate");
-  });
-});
-```
-
-- [ ] **Migrate existing `SpeciesSearchEntry` fixtures**
-
-The existing `species-picker.test.tsx` builds entries with `makeEntry({ species, types, abilities, baseStats, bst })`. Update its factory so every entry has the new fields. In `apps/web/src/components/team-builder/v2/__tests__/species-picker.test.tsx`, find the `makeEntry` helper and add the three new fields:
-
-```ts
-function makeEntry(overrides: Partial<{
-  species: string;
-  types: string[];
-  abilities: string[];
-  abilitySlot1: string | null;
-  abilitySlot2: string | null;
-  hiddenAbility: string | null;
-  baseStats: Record<string, number>;
-  bst: number;
-}> = {}) {
-  const abilities = overrides.abilities ?? ["Pressure"];
-  return {
-    species: "Garchomp",
-    types: ["Dragon", "Ground"],
-    abilities,
-    abilitySlot1: overrides.abilitySlot1 ?? abilities[0] ?? null,
-    abilitySlot2: overrides.abilitySlot2 ?? abilities[1] ?? null,
-    hiddenAbility: overrides.hiddenAbility ?? abilities[2] ?? null,
-    baseStats: { hp: 108, atk: 130, def: 95, spa: 80, spd: 85, spe: 102 },
-    bst: 600,
-    ...overrides,
-  };
+if (options?.roles && options.roles.length > 0) {
+  const hasAny = options.roles.some((roleId) => entry.roles.includes(roleId));
+  if (!hasAny) return false;
 }
 ```
 
-Run `grep -rn "abilities:" apps/web/src/components/team-builder/v2/__tests__ | grep -v "\.tsx:" | head` to find any remaining inline fixtures and update them.
+Add `import { getMegaStoneForSpecies } from "./items";` at the top of `species-search.ts`.
 
-- [ ] **Run tests**
-
-```bash
-pnpm test --filter @trainers/pokemon -- --testPathPattern="species-search" 2>&1 | tail -20
-```
-
-Expected: all pass (including updated existing tests which still use `abilities: string[]`).
-
-- [ ] **Commit**
-
-```bash
-git add packages/pokemon/src/species-search.ts packages/pokemon/src/__tests__/species-search.test.ts apps/web/src/components/team-builder/v2/__tests__/species-picker.test.tsx
-git commit -m "feat(pokemon): add abilitySlot1/2/hidden to SpeciesSearchEntry; add ability+megaOnly filters to searchSpecies"
-```
-
----
-
-## Task 1.5: Format-wide ability and move enumerators
-
-**Files:**
-- Modify: `packages/pokemon/src/species-search.ts`
-- Modify: `packages/pokemon/src/index.ts` (export the new helpers)
-- Modify: `packages/pokemon/src/__tests__/species-search.test.ts`
-
-The sidebar's Ability combobox needs every ability legal in the active format. The smart-search overlay needs every move legal in the active format. Walking the index per render is wasteful — we cache one set per format, built lazily.
-
-- [ ] **Add the helpers to `species-search.ts`**
-
-Append after `searchSpecies`:
+- [ ] **Add `getAllLegalAbilities` + `getAllLegalMoves`**
 
 ```ts
-// =============================================================================
-// Format-wide ability + move enumerators (cached)
-// =============================================================================
-
 const abilitySetCache = new Map<string, string[]>();
 const moveSetCache = new Map<string, string[]>();
 
-/**
- * Returns every ability that any species legal in this format can have,
- * across all three slots. Sorted alphabetically. Cached per format.
- */
 export function getAllLegalAbilities(formatId: string): string[] {
   const cached = abilitySetCache.get(formatId);
   if (cached) return cached;
-
   const index = buildSpeciesSearchIndex(formatId);
   const set = new Set<string>();
   for (const entry of index) {
@@ -281,19 +786,9 @@ export function getAllLegalAbilities(formatId: string): string[] {
   return sorted;
 }
 
-/**
- * Returns every move that any species legal in this format can learn.
- * Sorted alphabetically. Cached per format.
- *
- * Note: this aggregates `getLearnableMoves(species, formatId)` across the
- * full index, which is O(species × moves) on first call. Subsequent calls
- * hit the cache. Build is deferred until first use so the picker open path
- * is unaffected.
- */
 export function getAllLegalMoves(formatId: string): string[] {
   const cached = moveSetCache.get(formatId);
   if (cached) return cached;
-
   const index = buildSpeciesSearchIndex(formatId);
   const set = new Set<string>();
   for (const entry of index) {
@@ -307,11 +802,11 @@ export function getAllLegalMoves(formatId: string): string[] {
 }
 ```
 
-`getLearnableMoves` is already imported in this file (it's used by `getLowercaseLegalMoves`). If not, add `import { getLearnableMoves } from "./format-legality";` to the existing imports.
+If `getLearnableMoves` isn't already imported, add: `import { getLearnableMoves } from "./format-legality";`
 
-- [ ] **Export from the package barrel**
+- [ ] **Export from barrel**
 
-In `packages/pokemon/src/index.ts`, find the existing `export { ... } from "./species-search";` block and add the two new names:
+`packages/pokemon/src/index.ts`:
 
 ```ts
 export {
@@ -319,237 +814,172 @@ export {
   searchSpecies,
   getAllLegalAbilities,
   getAllLegalMoves,
+  type GetRolesFn,
   type SpeciesSearchEntry,
 } from "./species-search";
 ```
 
-(Keep the existing exports — only add the two new ones.)
-
-- [ ] **Write tests**
-
-In `packages/pokemon/src/__tests__/species-search.test.ts`, add:
+- [ ] **Tests** (combined into one describe block)
 
 ```ts
-describe("getAllLegalAbilities / getAllLegalMoves", () => {
-  it("getAllLegalAbilities returns sorted unique abilities for the format", () => {
-    const abilities = getAllLegalAbilities("gen9vgc2026regg");
-    expect(abilities.length).toBeGreaterThan(50);
-    expect([...abilities]).toEqual([...abilities].sort((a, b) => a.localeCompare(b)));
-    expect(new Set(abilities).size).toBe(abilities.length);
-    expect(abilities).toContain("Intimidate");
+describe("SpeciesSearchEntry — new fields", () => {
+  let index: SpeciesSearchEntry[];
+  beforeAll(() => { index = buildSpeciesSearchIndex("gen9vgc2026regg"); });
+
+  it("has named ability slots", () => {
+    const incineroar = index.find((e) => e.species === "Incineroar")!;
+    expect(incineroar.abilitySlot1).toBe("Blaze");
+    expect(incineroar.hiddenAbility).toBe("Intimidate");
   });
 
-  it("getAllLegalAbilities is cached — second call returns the same array reference", () => {
+  it("roles defaults to empty without a resolver", () => {
+    expect(index[0]!.roles).toEqual([]);
+  });
+
+  it("buildSpeciesSearchIndex with a resolver populates roles", () => {
+    const idx = buildSpeciesSearchIndex("gen9vgc2026regg",
+      (_abil, species) => species === "Incineroar" ? ["fake-out", "drop-atk"] : []
+    );
+    const incineroar = idx.find((e) => e.species === "Incineroar")!;
+    expect(incineroar.roles).toEqual(["fake-out", "drop-atk"]);
+  });
+});
+
+describe("searchSpecies — new filters", () => {
+  let index: SpeciesSearchEntry[];
+  beforeAll(() => { index = buildSpeciesSearchIndex("gen9vgc2026regg"); });
+
+  it("ability filter matches any slot", () => {
+    const results = searchSpecies(index, "", { ability: "Intimidate" });
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((e) =>
+      e.abilitySlot1 === "Intimidate" || e.abilitySlot2 === "Intimidate" || e.hiddenAbility === "Intimidate"
+    )).toBe(true);
+  });
+
+  it("megaOnly excludes -Mega entries themselves", () => {
+    const championsIndex = buildSpeciesSearchIndex("championsvgc2026regma");
+    const results = searchSpecies(championsIndex, "", { megaOnly: true });
+    expect(results.every((e) => !e.species.includes("-Mega"))).toBe(true);
+  });
+
+  it("megaOnly includes Charizard (has Mega forms)", () => {
+    const championsIndex = buildSpeciesSearchIndex("championsvgc2026regma");
+    const results = searchSpecies(championsIndex, "", { megaOnly: true });
+    expect(results.some((e) => e.species === "Charizard")).toBe(true);
+  });
+
+  it("roles filter matches species with any active role", () => {
+    const idx = buildSpeciesSearchIndex("gen9vgc2026regg",
+      (_abil, species) => species === "Incineroar" ? ["fake-out"] : []
+    );
+    const results = searchSpecies(idx, "", { roles: ["fake-out"] });
+    expect(results.some((e) => e.species === "Incineroar")).toBe(true);
+  });
+});
+
+describe("getAllLegalAbilities / getAllLegalMoves", () => {
+  it("getAllLegalAbilities returns sorted unique abilities", () => {
+    const a = getAllLegalAbilities("gen9vgc2026regg");
+    expect(a.length).toBeGreaterThan(50);
+    expect([...a]).toEqual([...a].sort((x, y) => x.localeCompare(y)));
+    expect(a).toContain("Intimidate");
+  });
+
+  it("getAllLegalAbilities is cached (same array reference on second call)", () => {
     const a = getAllLegalAbilities("gen9vgc2026regg");
     const b = getAllLegalAbilities("gen9vgc2026regg");
     expect(a).toBe(b);
   });
 
-  it("getAllLegalMoves returns sorted unique move names", () => {
-    const moves = getAllLegalMoves("gen9vgc2026regg");
-    expect(moves.length).toBeGreaterThan(100);
-    expect([...moves]).toEqual([...moves].sort((a, b) => a.localeCompare(b)));
-    expect(moves).toContain("Tailwind");
-    expect(moves).toContain("Fake Out");
+  it("getAllLegalMoves returns sorted unique moves", () => {
+    const m = getAllLegalMoves("gen9vgc2026regg");
+    expect(m.length).toBeGreaterThan(100);
+    expect(m).toContain("Tailwind");
   });
 });
 ```
 
-(Add the two new symbols to the test file's `import { ... } from "../species-search"` line.)
+- [ ] **Migrate species-picker test fixtures**
 
-- [ ] **Run tests**
+`apps/web/src/components/team-builder/v2/__tests__/species-picker.test.tsx` `makeEntry` factory:
 
-```bash
-pnpm test --filter @trainers/pokemon -- --testPathPattern="species-search" 2>&1 | tail -15
+```ts
+function makeEntry(overrides: Partial<{
+  species: string;
+  types: string[];
+  abilities: string[];
+  abilitySlot1: string | null;
+  abilitySlot2: string | null;
+  hiddenAbility: string | null;
+  roles: string[];
+  baseStats: Record<string, number>;
+  bst: number;
+}> = {}) {
+  const abilities = overrides.abilities ?? ["Pressure"];
+  return {
+    species: "Garchomp", types: ["Dragon", "Ground"],
+    abilities,
+    abilitySlot1: overrides.abilitySlot1 ?? abilities[0] ?? null,
+    abilitySlot2: overrides.abilitySlot2 ?? abilities[1] ?? null,
+    hiddenAbility: overrides.hiddenAbility ?? abilities[2] ?? null,
+    roles: overrides.roles ?? [],
+    baseStats: { hp: 108, atk: 130, def: 95, spa: 80, spd: 85, spe: 102 },
+    bst: 600,
+    ...overrides,
+  };
+}
 ```
 
-Expected: all pass.
-
-- [ ] **Commit**
+- [ ] **Run + commit**
 
 ```bash
-git add packages/pokemon/src/species-search.ts packages/pokemon/src/index.ts packages/pokemon/src/__tests__/species-search.test.ts
-git commit -m "feat(pokemon): add getAllLegalAbilities + getAllLegalMoves enumerators"
+pnpm test --filter @trainers/pokemon -- --testPathPattern="species-search" 2>&1 | tail -20
+git add packages/pokemon/src/species-search.ts packages/pokemon/src/index.ts \
+        packages/pokemon/src/__tests__/species-search.test.ts \
+        apps/web/src/components/team-builder/v2/__tests__/species-picker.test.tsx
+git commit -m "feat(pokemon): SpeciesSearchEntry slots+roles; ability/megaOnly/roles filters; format-wide enumerators"
 ```
 
 ---
 
-## Task 2: Role preset registry
+## Phase 3 — Species picker
+
+### Task 6: `species-filter-state.ts` + `<AbilityCell>`
 
 **Files:**
-- Create: `apps/web/src/components/team-builder/v2/pickers/species-roles.ts`
-
-- [ ] **Create the file**
-
-```ts
-export type RoleGroup =
-  | "speed"
-  | "offensive-support"
-  | "damage-reduction"
-  | "disruption"
-  | "field"
-  | "offense";
-
-export interface RolePreset {
-  id: string;
-  label: string;
-  group: RoleGroup;
-  /** Moves applied to the Learns Move filter when role is active */
-  moves?: string[];
-  /** Abilities applied to the Ability filter when role is active */
-  abilities?: string[];
-}
-
-export const ROLE_PRESETS: RolePreset[] = [
-  // Speed Control
-  { id: "trick-room",    label: "Trick Room",  group: "speed",              moves: ["Trick Room"] },
-  { id: "tailwind",      label: "Tailwind",    group: "speed",              moves: ["Tailwind"] },
-  { id: "speed-drop",    label: "Speed Drop",  group: "speed",              moves: ["Electroweb", "Icy Wind", "Scary Face", "Rock Tomb", "String Shot", "Thunder Wave"] },
-
-  // Offensive Support
-  { id: "fake-out",      label: "Fake Out",    group: "offensive-support",  moves: ["Fake Out"] },
-  { id: "redirection",   label: "Redirection", group: "offensive-support",  moves: ["Follow Me", "Rage Powder"] },
-  { id: "dmg-boost",     label: "Dmg Boost",   group: "offensive-support",  moves: ["Helping Hand", "Coaching", "Howl", "Decorate"] },
-  { id: "healing",       label: "Healing",     group: "offensive-support",  moves: ["Heal Pulse", "Life Dew", "Pollen Puff"] },
-
-  // Damage Reduction
-  { id: "screens",       label: "Screens",     group: "damage-reduction",   moves: ["Light Screen", "Reflect", "Aurora Veil"] },
-  { id: "atk-drop",      label: "Atk Drop",    group: "damage-reduction",   moves: ["Charm", "Baby-Doll Eyes", "Parting Shot", "Noble Roar", "Growl"], abilities: ["Intimidate"] },
-  { id: "spa-drop",      label: "SpA Drop",    group: "damage-reduction",   moves: ["Eerie Impulse", "Snarl", "Noble Roar", "Parting Shot"] },
-
-  // Disruption
-  { id: "sleep",         label: "Sleep",       group: "disruption",         moves: ["Spore", "Sleep Powder", "Yawn"] },
-  { id: "paralysis",     label: "Paralysis",   group: "disruption",         moves: ["Thunder Wave", "Nuzzle", "Glare"] },
-  { id: "burn",          label: "Burn",        group: "disruption",         moves: ["Will-O-Wisp"] },
-  { id: "flinching",     label: "Flinching",   group: "disruption",         moves: ["Rock Slide", "Iron Head", "Air Slash", "Dark Pulse"] },
-
-  // Field
-  { id: "weather",       label: "Weather",     group: "field",              abilities: ["Drizzle", "Drought", "Sand Stream", "Snow Warning"] },
-  { id: "terrain",       label: "Terrain",     group: "field",              abilities: ["Grassy Surge", "Electric Surge", "Psychic Surge", "Misty Surge"] },
-
-  // Offense
-  { id: "priority",      label: "Priority",    group: "offense",            moves: ["Aqua Jet", "Mach Punch", "Ice Shard", "ExtremeSpeed", "Sucker Punch", "Bullet Punch", "Shadow Sneak"] },
-  { id: "spread",        label: "Spread",      group: "offense",            moves: ["Rock Slide", "Earthquake", "Heat Wave", "Discharge", "Dazzling Gleam", "Surf"] },
-];
-
-export const ROLE_GROUP_LABELS: Record<RoleGroup, string> = {
-  "speed":              "Speed Control",
-  "offensive-support":  "Offensive Support",
-  "damage-reduction":   "Damage Reduction",
-  "disruption":         "Disruption",
-  "field":              "Field",
-  "offense":            "Offense",
-};
-
-/** Ordered group display sequence */
-export const ROLE_GROUP_ORDER: RoleGroup[] = [
-  "speed", "offensive-support", "damage-reduction", "disruption", "field", "offense",
-];
-
-export function getRoleById(id: string): RolePreset | undefined {
-  return ROLE_PRESETS.find((r) => r.id === id);
-}
-```
-
-- [ ] **Write tests**
-
-Create `apps/web/src/components/team-builder/v2/__tests__/species-roles.test.ts`:
-
-```ts
-import { ROLE_PRESETS, getRoleById, ROLE_GROUP_ORDER } from "../pickers/species-roles";
-
-describe("species-roles registry", () => {
-  it("has 18 presets", () => {
-    expect(ROLE_PRESETS).toHaveLength(18);
-  });
-
-  it("all presets have id, label, group", () => {
-    for (const r of ROLE_PRESETS) {
-      expect(r.id).toBeTruthy();
-      expect(r.label).toBeTruthy();
-      expect(r.group).toBeTruthy();
-    }
-  });
-
-  it("every id is unique", () => {
-    const ids = ROLE_PRESETS.map((r) => r.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it("all groups appear in ROLE_GROUP_ORDER", () => {
-    const groups = new Set(ROLE_PRESETS.map((r) => r.group));
-    for (const g of groups) {
-      expect(ROLE_GROUP_ORDER).toContain(g);
-    }
-  });
-
-  it("getRoleById returns the correct preset", () => {
-    const r = getRoleById("fake-out");
-    expect(r?.label).toBe("Fake Out");
-    expect(r?.moves).toContain("Fake Out");
-  });
-
-  it("getRoleById returns undefined for unknown id", () => {
-    expect(getRoleById("nonexistent")).toBeUndefined();
-  });
-
-  it("atk-drop has both moves and abilities", () => {
-    const r = getRoleById("atk-drop");
-    expect(r?.moves?.length).toBeGreaterThan(0);
-    expect(r?.abilities).toContain("Intimidate");
-  });
-});
-```
-
-- [ ] **Run tests**
-
-```bash
-pnpm test --filter @trainers/web -- --testPathPattern="species-roles" 2>&1 | tail -15
-```
-
-Expected: 7 tests pass.
-
-- [ ] **Commit**
-
-```bash
-git add apps/web/src/components/team-builder/v2/pickers/species-roles.ts \
-        apps/web/src/components/team-builder/v2/__tests__/species-roles.test.ts
-git commit -m "feat(team-builder): add species role preset registry"
-```
-
----
-
-## Task 3: `AbilityCell` component
-
-**Files:**
+- Create: `apps/web/src/components/team-builder/v2/pickers/species-filter-state.ts`
 - Create: `apps/web/src/components/team-builder/v2/pickers/ability-cell.tsx`
 - Create: `apps/web/src/components/team-builder/v2/__tests__/ability-cell.test.tsx`
 
-`AbilityCell` renders one of the three ability columns. It shows the ability name with a dotted underline and shadcn Tooltip, OR a muted em-dash if no ability. Clicking a filled cell calls `onFilter?.(abilityName)`.
+- [ ] **Create `species-filter-state.ts`**
 
-- [ ] **Write the failing test first**
+```ts
+export interface SpeciesFilterState {
+  types: string[];
+  ability: string | null;
+  moves: string[];
+  roles: string[];
+  megaOnly: boolean;
+}
+
+export const DEFAULT_SPECIES_FILTERS: SpeciesFilterState = {
+  types: [], ability: null, moves: [], roles: [], megaOnly: false,
+};
+```
+
+- [ ] **Failing tests for `AbilityCell`**
 
 ```tsx
-// apps/web/src/components/team-builder/v2/__tests__/ability-cell.test.tsx
-"use client";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import React from "react";
-
-jest.mock("@trainers/pokemon", () => ({
-  getAbilityShortDesc: jest.fn((name: string) =>
-    name === "Drought" ? "Summons harsh sunlight on entry." : null
-  ),
-}));
-
-// Tooltip mock — strip the tooltip content entirely so the trigger-side text
-// is the only place the ability name appears. The real tooltip is hover-only
-// and tested via integration; we just need the trigger semantics here.
 jest.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   TooltipTrigger: ({ children, render: r }: { children: React.ReactNode; render?: React.ReactElement }) =>
     r ? React.cloneElement(r, {}, children) : <span>{children}</span>,
-  TooltipContent: () => null,  // hidden in tests so getByText is unambiguous
+  TooltipContent: () => null,
+}));
+
+jest.mock("@trainers/pokemon", () => ({
+  getAbilityShortDesc: jest.fn((n: string) => n === "Drought" ? "Sets sun on entry." : null),
 }));
 
 import { AbilityCell } from "../pickers/ability-cell";
@@ -559,71 +989,47 @@ describe("AbilityCell", () => {
     render(<AbilityCell name="Drought" slot="slot1" />);
     expect(screen.getByText("Drought")).toBeInTheDocument();
   });
-
-  it("renders em-dash for null ability", () => {
+  it("renders em-dash for null", () => {
     render(<AbilityCell name={null} slot="slot2" />);
     expect(screen.getByText("—")).toBeInTheDocument();
   });
-
-  it("calls onFilter with ability name when clicked", async () => {
+  it("calls onFilter on click", async () => {
     const user = userEvent.setup();
     const onFilter = jest.fn();
     render(<AbilityCell name="Drought" slot="slot1" onFilter={onFilter} />);
     await user.click(screen.getByText("Drought"));
     expect(onFilter).toHaveBeenCalledWith("Drought");
   });
-
-  it("does not call onFilter when em-dash is clicked", async () => {
+  it("hidden slot renders italic", () => {
+    render(<AbilityCell name="Intimidate" slot="hidden" />);
+    expect(screen.getByText("Intimidate").className).toMatch(/italic/);
+  });
+  it("does not call onFilter when em-dash clicked", async () => {
     const user = userEvent.setup();
     const onFilter = jest.fn();
     render(<AbilityCell name={null} slot="slot2" onFilter={onFilter} />);
     await user.click(screen.getByText("—"));
     expect(onFilter).not.toHaveBeenCalled();
   });
-
-  it("renders italic styling for hidden slot", () => {
-    render(<AbilityCell name="Intimidate" slot="hidden" />);
-    const span = screen.getByText("Intimidate");
-    expect(span.className).toMatch(/italic/);
-  });
 });
 ```
 
-- [ ] **Run the failing test**
-
-```bash
-pnpm test --filter @trainers/web -- --testPathPattern="ability-cell" 2>&1 | tail -15
-```
-
-Expected: FAIL — `Cannot find module '../pickers/ability-cell'`
-
-- [ ] **Create `ability-cell.tsx`**
+- [ ] **Implement `ability-cell.tsx`**
 
 ```tsx
 "use client";
-
 import { getAbilityShortDesc } from "@trainers/pokemon";
-
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AbilityCellProps {
   name: string | null;
   slot: "slot1" | "slot2" | "hidden";
-  /** Called with the ability name when the user clicks to filter */
   onFilter?: (abilityName: string) => void;
 }
 
 export function AbilityCell({ name, slot, onFilter }: AbilityCellProps) {
-  if (!name) {
-    return (
-      <span className="text-[11px] text-muted-foreground/40 italic">—</span>
-    );
-  }
+  if (!name) return <span className="text-[11px] italic text-muted-foreground/40">—</span>;
 
   const desc = getAbilityShortDesc(name);
   const isHidden = slot === "hidden";
@@ -631,10 +1037,10 @@ export function AbilityCell({ name, slot, onFilter }: AbilityCellProps) {
   const trigger = (
     <span
       className={cn(
-        "text-[11px] whitespace-nowrap overflow-hidden text-ellipsis",
+        "inline-block max-w-full whitespace-nowrap overflow-hidden text-ellipsis text-[11px] leading-snug",
         "border-b border-dotted border-muted-foreground/40",
         onFilter && "cursor-pointer hover:border-primary/60 hover:text-primary",
-        isHidden && "text-muted-foreground italic"
+        isHidden && "italic text-muted-foreground"
       )}
       onClick={onFilter ? () => onFilter(name) : undefined}
     >
@@ -646,20 +1052,12 @@ export function AbilityCell({ name, slot, onFilter }: AbilityCellProps) {
 
   return (
     <Tooltip>
-      <TooltipTrigger render={<span className="min-w-0 overflow-hidden" />}>
-        {trigger}
-      </TooltipTrigger>
-      <TooltipContent
-        side="top"
-        align="start"
-        className="max-w-56 rounded-lg bg-slate-800 px-3 py-2 shadow-xl"
-      >
+      <TooltipTrigger render={<span className="min-w-0 overflow-hidden" />}>{trigger}</TooltipTrigger>
+      <TooltipContent side="top" align="start" className="max-w-56 rounded-lg bg-slate-800 px-3 py-2 shadow-xl">
         <p className="text-sm font-semibold text-slate-100">
           {name}
           {isHidden && (
-            <span className="ml-1.5 rounded bg-violet-500/25 px-1 text-[9px] font-semibold text-violet-300">
-              Hidden
-            </span>
+            <span className="ml-1.5 rounded bg-violet-500/25 px-1 text-[9px] font-semibold text-violet-300">Hidden</span>
           )}
         </p>
         <p className="mt-1 text-xs leading-relaxed text-slate-400">{desc}</p>
@@ -669,1510 +1067,323 @@ export function AbilityCell({ name, slot, onFilter }: AbilityCellProps) {
 }
 ```
 
-- [ ] **Run tests**
+- [ ] **Run + commit**
 
 ```bash
-pnpm test --filter @trainers/web -- --testPathPattern="ability-cell" 2>&1 | tail -15
-```
-
-Expected: 5 tests pass.
-
-- [ ] **Commit**
-
-```bash
-git add apps/web/src/components/team-builder/v2/pickers/ability-cell.tsx \
+pnpm test --filter @trainers/web -- --testPathPattern="ability-cell" 2>&1 | tail -10
+git add apps/web/src/components/team-builder/v2/pickers/species-filter-state.ts \
+        apps/web/src/components/team-builder/v2/pickers/ability-cell.tsx \
         apps/web/src/components/team-builder/v2/__tests__/ability-cell.test.tsx
-git commit -m "feat(team-builder): add AbilityCell with tooltip and click-to-filter"
+git commit -m "feat(team-builder): species-filter-state + AbilityCell"
 ```
 
 ---
 
-## Task 4: New `SpeciesFilterState` + sidebar component
+### Task 7: `<SpeciesSidebar>` (left panel only)
 
 **Files:**
-- Create: `apps/web/src/components/team-builder/v2/pickers/filter-state.ts` (`SpeciesFilterState` interface + `DEFAULT_SIDEBAR_FILTERS` — extracted to break the `species-sidebar` ↔ `role-expansion` cycle)
-- Create: `apps/web/src/components/team-builder/v2/pickers/role-expansion.ts` (pure helper for role → filter expansion)
 - Create: `apps/web/src/components/team-builder/v2/pickers/species-sidebar.tsx`
-- Create: `apps/web/src/components/team-builder/v2/__tests__/role-expansion.test.ts`
 - Create: `apps/web/src/components/team-builder/v2/__tests__/species-sidebar.test.tsx`
 
-The sidebar renders two panels side by side: left (160px: Type, Ability combobox, Mega toggle, Learns Move, "team needs" hints) and right (152px: Role presets grouped). It owns the `SpeciesFilterState` shape as a re-export so `SpeciesPicker` can import it from one place.
+The sidebar is **only** the left panel: Type grid + Ability combobox + Mega toggle (Champions only) + Learns Move + Clear all + team-needs hints. The middle role-presets panel is `<RolePresetsPanel>` rendered as a sibling by `SpeciesPicker`.
 
-### Role expansion semantics
-
-When the user clicks a role preset, we replace any role *from the same group* and stack with roles from *other groups*. The role's `moves` and `abilities` arrays are then expanded into the active `filters.moves` and `filters.ability`:
-
-- `moves`: union — the selected role's moves are added to `filters.moves` (no removal of moves not from the role; user-added moves stay)
-- `abilities`: a role can specify zero or one ability hint (the spec only has `Intimidate` for `atk-drop`). If the role has an ability, set `filters.ability` to it. Selecting another role with no ability does *not* clear it.
-- Toggling the same role off: remove the role's moves from `filters.moves` (only the moves that came from the role; preserve any move the user added independently). Clear `filters.ability` only if it equals the role's ability.
-
-To make "remove what the role added" tractable, we track which moves came from the active role separately. Implementation: extract a pure helper `applyRole(filters, presetId | null)` that takes the current filter state plus the *new* role id (or null to deactivate) and returns the next filter state. The helper assumes the previous role can be looked up via `filters.role`.
-
-### Step 0: Extract filter state types
-
-- [ ] **Create `filter-state.ts`**
-
-```ts
-// apps/web/src/components/team-builder/v2/pickers/filter-state.ts
-
-export interface SpeciesFilterState {
-  types: string[];
-  ability: string | null;
-  moves: string[];
-  role: string | null;
-  megaOnly: boolean;
-}
-
-export const DEFAULT_SIDEBAR_FILTERS: SpeciesFilterState = {
-  types: [],
-  ability: null,
-  moves: [],
-  role: null,
-  megaOnly: false,
-};
-```
-
-(No tests — these are bare types/constants. They will be consumed by `role-expansion.ts`, `species-sidebar.tsx`, and `species-picker.tsx`.)
-
-### Step A: role expansion helper (pure function, TDD)
-
-- [ ] **Write failing tests for `applyRole`**
-
-```ts
-// apps/web/src/components/team-builder/v2/__tests__/role-expansion.test.ts
-import { DEFAULT_SIDEBAR_FILTERS } from "../pickers/filter-state";
-import { applyRole } from "../pickers/role-expansion";
-
-describe("applyRole", () => {
-  it("activating a role from no role adds its moves and ability", () => {
-    const next = applyRole(DEFAULT_SIDEBAR_FILTERS, "atk-drop");
-    expect(next.role).toBe("atk-drop");
-    expect(next.moves).toEqual(expect.arrayContaining(["Charm", "Parting Shot"]));
-    expect(next.ability).toBe("Intimidate");
-  });
-
-  it("activating a role with no ability does not change ability", () => {
-    const start = { ...DEFAULT_SIDEBAR_FILTERS, ability: "Drought" };
-    const next = applyRole(start, "tailwind");
-    expect(next.role).toBe("tailwind");
-    expect(next.ability).toBe("Drought");
-    expect(next.moves).toContain("Tailwind");
-  });
-
-  it("switching role within the same group removes the prior role's moves", () => {
-    const a = applyRole(DEFAULT_SIDEBAR_FILTERS, "tailwind");
-    const b = applyRole(a, "trick-room");
-    expect(b.role).toBe("trick-room");
-    expect(b.moves).not.toContain("Tailwind");
-    expect(b.moves).toContain("Trick Room");
-  });
-
-  it("switching role across groups stacks moves from both", () => {
-    const a = applyRole(DEFAULT_SIDEBAR_FILTERS, "tailwind");        // Speed
-    const b = applyRole(a, "fake-out");                              // Offensive Support
-    expect(b.role).toBe("fake-out");
-    expect(b.moves).toContain("Tailwind");  // prior speed role's moves stay
-    expect(b.moves).toContain("Fake Out");
-  });
-
-  it("deactivating a role (toggle off) removes its moves and clears its ability", () => {
-    const a = applyRole(DEFAULT_SIDEBAR_FILTERS, "atk-drop");
-    expect(a.ability).toBe("Intimidate");
-    const b = applyRole(a, null);
-    expect(b.role).toBeNull();
-    expect(b.moves).not.toContain("Charm");
-    expect(b.ability).toBeNull();
-  });
-
-  it("does not remove a move that the user added independently", () => {
-    const userAdded = { ...DEFAULT_SIDEBAR_FILTERS, moves: ["Tailwind"] };
-    const a = applyRole(userAdded, "tailwind");           // role moves include Tailwind
-    const b = applyRole(a, null);                          // deactivate role
-    // Tailwind should remain because the user had it before the role activated
-    expect(b.moves).toContain("Tailwind");
-  });
-
-  it("preserves user's manually-set ability when deactivating a role", () => {
-    const userAdded = { ...DEFAULT_SIDEBAR_FILTERS, ability: "Drought" };
-    const a = applyRole(userAdded, "tailwind");           // tailwind has no ability
-    const b = applyRole(a, null);
-    expect(b.ability).toBe("Drought");
-  });
-});
-```
-
-- [ ] **Run — expect FAIL** (`Cannot find module '../pickers/role-expansion'`)
-
-- [ ] **Implement `role-expansion.ts`**
-
-```ts
-// apps/web/src/components/team-builder/v2/pickers/role-expansion.ts
-import { type SpeciesFilterState } from "./filter-state";
-import { getRoleById } from "./species-roles";
-
-/**
- * Apply (or deactivate) a role preset to a filter state.
- *
- * - Activating a role:
- *   - If a role from the same group is currently active, remove its moves first
- *     (replace-within-group semantics).
- *   - Add the new role's moves to filters.moves (union; preserves user-added moves).
- *   - If the new role has an ability hint, overwrite filters.ability.
- * - Deactivating a role (id === null):
- *   - Remove the prior role's moves *unless* they were also present before the
- *     role was activated (heuristic: if the move appears in another active
- *     filter source, keep it). Since we don't track provenance per move, we
- *     fall back to: remove the role's moves only if they aren't covered by
- *     another currently-active role.
- *   - Clear filters.ability only if it equals the prior role's ability hint.
- *
- * The "preserve user-added moves" guarantee in the toggle-off test relies on
- * this approximation: a move is preserved across deactivation iff (a) it is
- * also a move of another active role OR (b) it was already in filters.moves
- * before the role was activated. Since we only track the *current* role id,
- * we approximate (b) by checking whether the move appears in a SUPER-set we
- * compute by passing through the activation path. In practice, callers
- * should snapshot user-added moves separately if precise undo is needed.
- *
- * For the picker UI, this approximation is fine: users mostly toggle one role
- * on, then either replace within group or stack across groups. The toggle-off
- * case is rare and the worst case is "moves stay until Clear all".
- */
-export function applyRole(
-  current: SpeciesFilterState,
-  nextRoleId: string | null
-): SpeciesFilterState {
-  const prevRole = current.role ? getRoleById(current.role) : null;
-  const nextRole = nextRoleId ? getRoleById(nextRoleId) : null;
-
-  // Removing the previous role's moves — but only those NOT in the new role.
-  let moves = [...current.moves];
-  if (prevRole?.moves) {
-    const keepMoves = new Set(nextRole?.moves ?? []);
-    moves = moves.filter(
-      (m) => !prevRole.moves!.includes(m) || keepMoves.has(m)
-    );
-  }
-
-  // Adding the new role's moves (union)
-  if (nextRole?.moves) {
-    for (const m of nextRole.moves) {
-      if (!moves.includes(m)) moves.push(m);
-    }
-  }
-
-  // Ability: overwrite if new role specifies one; clear if deactivating and
-  // current ability matches the prev role's ability.
-  let ability = current.ability;
-  if (nextRole?.abilities && nextRole.abilities.length > 0) {
-    ability = nextRole.abilities[0]!;
-  } else if (!nextRole && prevRole?.abilities?.includes(ability ?? "")) {
-    ability = null;
-  }
-
-  return {
-    ...current,
-    role: nextRoleId,
-    moves,
-    ability,
-  };
-}
-```
-
-- [ ] **Run tests — expect ALL PASS**
-
-```bash
-pnpm test --filter @trainers/web -- --testPathPattern="role-expansion" 2>&1 | tail -15
-```
-
-Note: the "preserves user-added moves on toggle-off" test passes only because `applyRole(userAdded, "tailwind")` passes through the `prevRole = null` path (no prior role's moves to remove), so `Tailwind` is preserved when the role is later turned off — because the prevRole *is* tailwind whose moves include Tailwind, and we remove it. **This contradicts the test.**
-
-Fix: the helper needs an explicit "user-added moves" snapshot. Update the API:
-
-```ts
-export function applyRole(
-  current: SpeciesFilterState,
-  nextRoleId: string | null,
-  /** Moves the user added outside of any role (preserved across toggles). */
-  userMoves: string[] = []
-): SpeciesFilterState {
-  // ... same logic, but the final filter step:
-  moves = moves.filter(
-    (m) => !prevRole?.moves?.includes(m) || keepMoves.has(m) || userMoves.includes(m)
-  );
-  // (and the move-add step is unchanged)
-}
-```
-
-Then `SpeciesSidebar` tracks a `userMoves` ref of moves the user added directly via the input/quick-pick (NOT via role activation), and passes it to `applyRole`. Update the test to pass `userMoves: ["Tailwind"]` in that one case.
-
-- [ ] **Update the test for the new signature**
-
-```ts
-it("does not remove a user-added move that overlaps a role's moves", () => {
-  const userAdded = { ...DEFAULT_SIDEBAR_FILTERS, moves: ["Tailwind"] };
-  const a = applyRole(userAdded, "tailwind", ["Tailwind"]);  // user had Tailwind
-  const b = applyRole(a, null, ["Tailwind"]);
-  expect(b.moves).toContain("Tailwind");
-});
-```
-
-- [ ] **Re-run — expect ALL PASS**
-
-- [ ] **Commit role helper alone before tackling the sidebar**
-
-```bash
-git add apps/web/src/components/team-builder/v2/pickers/role-expansion.ts \
-        apps/web/src/components/team-builder/v2/__tests__/role-expansion.test.ts
-git commit -m "feat(team-builder): add applyRole helper for sidebar role expansion"
-```
-
-### Step B: SpeciesSidebar component
-
-- [ ] **Write failing tests**
+- [ ] **Failing tests**
 
 ```tsx
-// apps/web/src/components/team-builder/v2/__tests__/species-sidebar.test.tsx
-"use client";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import React from "react";
-
 jest.mock("@trainers/pokemon", () => ({
   ALL_TYPES: ["Fire", "Water", "Grass"],
-  isChampionsFormat: jest.fn((f: unknown) => (f as { id?: string })?.id === "championsvgc2026regma"),
+  isChampionsFormat: jest.fn((f: { id?: string } | undefined) => f?.id === "championsvgc2026regma"),
   getAllLegalAbilities: jest.fn(() => ["Drought", "Drizzle", "Intimidate"]),
   calculateTeamSynergy: jest.fn(() => null),
-  getAbilityShortDesc: jest.fn(() => null),
 }));
 
-// Stub popover/tooltip from shadcn
-jest.mock("@/components/ui/popover", () => ({
-  Popover: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  PopoverTrigger: ({ children, render: r }: { children: React.ReactNode; render?: React.ReactElement }) =>
-    r ? React.cloneElement(r, {}, children) : <button>{children}</button>,
-  PopoverContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
-
-import { SpeciesSidebar, DEFAULT_SIDEBAR_FILTERS } from "../pickers/species-sidebar";
-
-const noop = () => {};
+import { SpeciesSidebar } from "../pickers/species-sidebar";
+import { DEFAULT_SPECIES_FILTERS } from "../pickers/species-filter-state";
 
 const championsFormat = { id: "championsvgc2026regma" } as never;
-const noFormat = undefined;
 
-function renderSidebar(overrides: Record<string, unknown> = {}) {
+function renderSidebar(overrides = {}) {
   return render(
     <SpeciesSidebar
-      filters={DEFAULT_SIDEBAR_FILTERS}
-      onFiltersChange={noop}
-      format={noFormat}
+      filters={DEFAULT_SPECIES_FILTERS}
+      onFiltersChange={() => {}}
+      format={undefined}
       currentTeam={[]}
-      totalCount={274}
-      filteredCount={274}
       {...overrides}
     />
   );
 }
 
 describe("SpeciesSidebar", () => {
-  it("renders all type chips from ALL_TYPES", () => {
+  it("renders type chips", () => {
     renderSidebar();
     expect(screen.getByText("Fire")).toBeInTheDocument();
-    expect(screen.getByText("Water")).toBeInTheDocument();
-    expect(screen.getByText("Grass")).toBeInTheDocument();
   });
 
-  it("clicking a type chip calls onFiltersChange with that type added", async () => {
+  it("clicking a type adds it to filters.types", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     renderSidebar({ onFiltersChange: onChange });
     await user.click(screen.getByText("Fire"));
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ types: ["Fire"] })
-    );
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ types: ["Fire"] }));
   });
 
-  it("clicking an active type chip toggles it off", async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    renderSidebar({
-      filters: { ...DEFAULT_SIDEBAR_FILTERS, types: ["Fire"] },
-      onFiltersChange: onChange,
-    });
-    await user.click(screen.getByText("Fire"));
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ types: [] })
-    );
-  });
-
-  it("does NOT show Mega toggle for non-Champions formats", () => {
-    renderSidebar({ format: noFormat });
+  it("Mega toggle hidden for non-Champions", () => {
+    renderSidebar();
     expect(screen.queryByText("Mega only")).not.toBeInTheDocument();
   });
 
-  it("shows Mega toggle for Champions M-A format", () => {
+  it("Mega toggle visible for Champions", () => {
     renderSidebar({ format: championsFormat });
     expect(screen.getByText("Mega only")).toBeInTheDocument();
   });
 
-  it("Clear all resets to DEFAULT_SIDEBAR_FILTERS", async () => {
+  it("Clear all resets filters", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     renderSidebar({
-      filters: { ...DEFAULT_SIDEBAR_FILTERS, types: ["Fire"], role: "tailwind" },
+      filters: { ...DEFAULT_SPECIES_FILTERS, types: ["Fire"], roles: ["spread"] },
       onFiltersChange: onChange,
     });
     await user.click(screen.getByRole("button", { name: /clear/i }));
-    expect(onChange).toHaveBeenCalledWith(DEFAULT_SIDEBAR_FILTERS);
+    expect(onChange).toHaveBeenCalledWith(DEFAULT_SPECIES_FILTERS);
   });
 
-  it("selecting a role expands its moves into filters.moves", async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    renderSidebar({ onFiltersChange: onChange });
-    await user.click(screen.getByText("Tailwind"));
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ role: "tailwind", moves: ["Tailwind"] })
-    );
-  });
-
-  it("selecting a role with an ability hint sets filters.ability", async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    renderSidebar({ onFiltersChange: onChange });
-    await user.click(screen.getByText("Atk Drop"));
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ role: "atk-drop", ability: "Intimidate" })
-    );
-  });
-
-  it("clicking the active role toggles it off", async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    renderSidebar({
-      filters: { ...DEFAULT_SIDEBAR_FILTERS, role: "tailwind", moves: ["Tailwind"] },
-      onFiltersChange: onChange,
-    });
-    await user.click(screen.getByText("Tailwind"));
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ role: null })
-    );
-  });
-
-  it("ability combobox lists abilities from getAllLegalAbilities", () => {
+  it("ability datalist lists abilities from getAllLegalAbilities", () => {
     renderSidebar({ format: { id: "gen9vgc2026regg" } as never });
-    // The datalist should contain Intimidate
     expect(screen.getByText("Intimidate", { selector: "option" })).toBeInTheDocument();
-  });
-
-  it("typing into the ability combobox calls onFiltersChange when matched", async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    renderSidebar({ onFiltersChange: onChange });
-    const input = screen.getByPlaceholderText(/Any ability/i);
-    await user.type(input, "Intimidate");
-    expect(onChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ ability: "Intimidate" })
-    );
   });
 });
 ```
 
-- [ ] **Run — expect FAIL**
+- [ ] **Implement `species-sidebar.tsx`**
 
-```bash
-pnpm test --filter @trainers/web -- --testPathPattern="species-sidebar" 2>&1 | tail -10
-```
+The sidebar layout (top to bottom):
 
-Expected: FAIL — `Cannot find module '../pickers/species-sidebar'`
+1. **Type grid**: 3-column grid of 18 chips using `TYPE_BG` colors. Multi-select; active chip has `outline + box-shadow`. After the grid, render team-needs hints if `currentTeam` has members and `calculateTeamSynergy` returns uncovered weak types.
 
-- [ ] **Create `species-sidebar.tsx`**
+2. **Ability combobox**: `<input list="species-picker-abilities">` + `<datalist>` populated from `getAllLegalAbilities(format.id)`. Displays "Click any ability in the table to filter" hint when value is empty.
 
-```tsx
-"use client";
+3. **Champions M-A** (only when `isChampionsFormat(format)`): Mega-only toggle button with gradient gem icon and checkbox.
 
-import { useMemo, useRef } from "react";
+4. **Learns Move**: search input that adds moves on Enter; selected moves shown as chips with `×`; quick-pick buttons (Tailwind, Trick Room, Follow Me, Protect, Spore, Fake Out) below.
 
-import {
-  ALL_TYPES,
-  calculateTeamSynergy,
-  getAllLegalAbilities,
-  isChampionsFormat,
-  type GameFormat,
-} from "@trainers/pokemon";
+5. **Clear all filters** button at the bottom.
 
-import { cn } from "@/lib/utils";
-
-import {
-  DEFAULT_SIDEBAR_FILTERS,
-  type SpeciesFilterState,
-} from "./filter-state";
-import { applyRole } from "./role-expansion";
-import {
-  ROLE_PRESETS,
-  ROLE_GROUP_ORDER,
-  ROLE_GROUP_LABELS,
-  type RoleGroup,
-} from "./species-roles";
-
-// Re-export so `species-picker.tsx` can grab everything from one entry point
-export {
-  DEFAULT_SIDEBAR_FILTERS,
-  type SpeciesFilterState,
-} from "./filter-state";
-
-// =============================================================================
-// Type chip colors — match TYPE_SYMBOL_MAP bgClass colors
-// =============================================================================
-
-const TYPE_BG: Record<string, string> = {
-  Normal:   "bg-stone-400 text-white",
-  Bug:      "bg-lime-500 text-white",
-  Dark:     "bg-stone-700 text-white",
-  Dragon:   "bg-indigo-600 text-white",
-  Electric: "bg-yellow-400 text-black",
-  Fairy:    "bg-pink-400 text-white",
-  Fighting: "bg-red-700 text-white",
-  Fire:     "bg-orange-500 text-white",
-  Flying:   "bg-sky-300 text-black",
-  Ghost:    "bg-purple-600 text-white",
-  Grass:    "bg-green-500 text-white",
-  Ground:   "bg-amber-600 text-white",
-  Ice:      "bg-cyan-300 text-black",
-  Poison:   "bg-purple-500 text-white",
-  Psychic:  "bg-pink-500 text-white",
-  Rock:     "bg-amber-700 text-white",
-  Steel:    "bg-slate-400 text-black",
-  Water:    "bg-blue-500 text-white",
-};
-
-// =============================================================================
-// Props
-// =============================================================================
-
+```ts
 interface SpeciesSidebarProps {
   filters: SpeciesFilterState;
   onFiltersChange: (filters: SpeciesFilterState) => void;
   format: GameFormat | undefined;
-  /** Sibling species on the team — drives "team needs" synergy hints */
   currentTeam: Array<{ species: string }>;
-  totalCount: number;
-  filteredCount: number;
-}
-
-// =============================================================================
-// SpeciesSidebar
-// =============================================================================
-
-export function SpeciesSidebar({
-  filters,
-  onFiltersChange,
-  format,
-  currentTeam,
-  totalCount: _totalCount,
-  filteredCount: _filteredCount,
-}: SpeciesSidebarProps) {
-  const showMega = isChampionsFormat(format);
-
-  // Track moves the user added directly (not via role activation) so applyRole
-  // can preserve them across role toggles. The ref is updated whenever the user
-  // adds/removes moves through the input or quick-picks — NOT when applyRole adds.
-  const userMovesRef = useRef<string[]>(filters.moves.filter((m) => {
-    // On first mount, treat any moves NOT contributed by the active role as user-added
-    if (!filters.role) return true;
-    const role = ROLE_PRESETS.find((r) => r.id === filters.role);
-    return !role?.moves?.includes(m);
-  }));
-
-  // List of abilities legal in this format — drives the datalist
-  const legalAbilities = useMemo(
-    () => (format?.id ? getAllLegalAbilities(format.id) : []),
-    [format?.id]
-  );
-
-  // Team synergy: types the team is weak to ≥2× and not yet covered
-  const synergy = currentTeam.length > 0 ? calculateTeamSynergy(currentTeam) : null;
-  const neededTypes = synergy
-    ? (ALL_TYPES as readonly string[]).filter((type) => {
-        const weakCount = synergy.sharedWeaknesses[type as never] ?? 0;
-        return weakCount >= 2 && synergy.uncoveredTypes.has(type as never);
-      })
-    : [];
-
-  function toggleType(type: string) {
-    const next = filters.types.includes(type)
-      ? filters.types.filter((t) => t !== type)
-      : [...filters.types, type];
-    onFiltersChange({ ...filters, types: next });
-  }
-
-  function setAbility(ability: string) {
-    // Only commit when the typed value matches an actual legal ability — otherwise
-    // store the partial string so the user can keep typing, but the search treats
-    // it as no-match.
-    onFiltersChange({ ...filters, ability: ability.trim() || null });
-  }
-
-  function addMove(move: string) {
-    const trimmed = move.trim();
-    if (!trimmed || filters.moves.includes(trimmed)) return;
-    if (!userMovesRef.current.includes(trimmed)) {
-      userMovesRef.current = [...userMovesRef.current, trimmed];
-    }
-    onFiltersChange({ ...filters, moves: [...filters.moves, trimmed] });
-  }
-
-  function removeMove(move: string) {
-    userMovesRef.current = userMovesRef.current.filter((m) => m !== move);
-    onFiltersChange({ ...filters, moves: filters.moves.filter((m) => m !== move) });
-  }
-
-  function selectRole(id: string) {
-    const nextId = filters.role === id ? null : id;
-    onFiltersChange(applyRole(filters, nextId, userMovesRef.current));
-  }
-
-  function clearAll() {
-    userMovesRef.current = [];
-    onFiltersChange(DEFAULT_SIDEBAR_FILTERS);
-  }
-
-  const QUICK_PICKS = ["Tailwind", "Trick Room", "Follow Me", "Protect", "Spore", "Fake Out"];
-
-  return (
-    <div className="flex h-full min-h-0 flex-shrink-0 border-r border-border">
-      {/* ── Left panel: Type + Ability + Mega + Learns Move ── */}
-      <div className="flex w-40 flex-col overflow-y-auto border-r border-border bg-muted/30">
-
-        {/* Type */}
-        <div className="border-b border-border/60 p-2.5">
-          <span className="mb-1.5 block text-[8.5px] font-bold uppercase tracking-widest text-muted-foreground">Type</span>
-          <div className="grid grid-cols-3 gap-1">
-            {(ALL_TYPES as readonly string[]).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => toggleType(type)}
-                className={cn(
-                  "rounded px-0.5 py-1 text-[9px] font-bold transition-all",
-                  filters.types.includes(type)
-                    ? cn(TYPE_BG[type] ?? "bg-muted text-foreground", "outline outline-2 outline-offset-0 outline-white shadow-[0_0_0_3px_currentColor]")
-                    : (TYPE_BG[type] ?? "bg-muted text-foreground")
-                )}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-
-          {/* Team-needs hints — types the current team is weak to and uncovered */}
-          {neededTypes.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1">
-              <span className="text-[9px] text-muted-foreground">Team needs:</span>
-              {neededTypes.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => toggleType(type)}
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-[9px] font-bold transition-opacity",
-                    filters.types.includes(type)
-                      ? (TYPE_BG[type] ?? "bg-muted text-foreground")
-                      : cn(TYPE_BG[type] ?? "bg-muted text-foreground", "opacity-60 hover:opacity-100")
-                  )}
-                >
-                  ✦ {type}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Ability — combobox: typed value with datalist of all legal abilities */}
-        <div className="border-b border-border/60 p-2.5">
-          <span className="mb-1.5 block text-[8.5px] font-bold uppercase tracking-widest text-muted-foreground">Ability</span>
-          <input
-            list="species-picker-abilities"
-            type="text"
-            value={filters.ability ?? ""}
-            onChange={(e) => setAbility(e.target.value)}
-            placeholder="Any ability…"
-            className="h-7 w-full rounded-md border border-border bg-background px-2 text-xs outline-none focus:border-primary"
-          />
-          <datalist id="species-picker-abilities">
-            {legalAbilities.map((a) => (
-              <option key={a} value={a} />
-            ))}
-          </datalist>
-          {!filters.ability && (
-            <p className="mt-1 text-[9px] text-muted-foreground">Click any ability in the table to filter</p>
-          )}
-        </div>
-
-        {/* Mega (Champions only) */}
-        {showMega && (
-          <div className="border-b border-border/60 p-2.5">
-            <span className="mb-1.5 block text-[8.5px] font-bold uppercase tracking-widest text-muted-foreground">Champions M-A</span>
-            <button
-              type="button"
-              onClick={() => onFiltersChange({ ...filters, megaOnly: !filters.megaOnly })}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 transition-all",
-                filters.megaOnly
-                  ? "border-violet-400/40 bg-violet-500/8"
-                  : "border-border bg-background"
-              )}
-            >
-              <div className="flex h-5 w-5 items-center justify-center rounded-[5px] bg-gradient-to-br from-violet-500 to-pink-500 text-[10px] text-white flex-shrink-0">
-                ✦
-              </div>
-              <div className="min-w-0 flex-1 text-left">
-                <div className="text-[11px] font-semibold text-foreground">Mega only</div>
-                <div className="text-[9px] text-muted-foreground">Has a Mega form</div>
-              </div>
-              <div className={cn(
-                "flex h-3.5 w-3.5 items-center justify-center rounded-sm border-2 flex-shrink-0",
-                filters.megaOnly ? "border-violet-500 bg-violet-500" : "border-border"
-              )}>
-                {filters.megaOnly && (
-                  <svg width="8" height="6" viewBox="0 0 9 7" fill="none">
-                    <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                )}
-              </div>
-            </button>
-          </div>
-        )}
-
-        {/* Learns Move */}
-        <div className="flex flex-1 flex-col p-2.5">
-          <span className="mb-1.5 block text-[8.5px] font-bold uppercase tracking-widest text-muted-foreground">Learns Move</span>
-          <input
-            type="text"
-            placeholder="Search moves…"
-            className="mb-1.5 h-7 w-full rounded-md border border-border bg-background px-2 text-xs outline-none focus:border-primary"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                addMove((e.target as HTMLInputElement).value);
-                (e.target as HTMLInputElement).value = "";
-              }
-            }}
-          />
-          {filters.moves.length > 0 && (
-            <div className="mb-1.5 flex flex-wrap gap-1">
-              {filters.moves.map((m) => (
-                <span
-                  key={m}
-                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-[9.5px] font-semibold text-primary cursor-pointer"
-                  onClick={() => removeMove(m)}
-                >
-                  {m} <span className="opacity-50">×</span>
-                </span>
-              ))}
-            </div>
-          )}
-          <div className="flex flex-wrap gap-1">
-            {QUICK_PICKS.map((move) => (
-              <button
-                key={move}
-                type="button"
-                onClick={() => addMove(move)}
-                className={cn(
-                  "rounded-full border px-1.5 py-0.5 text-[9px] font-medium transition-colors",
-                  filters.moves.includes(move)
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-muted-foreground hover:border-primary hover:text-primary"
-                )}
-              >
-                {move}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Clear all */}
-        <div className="border-t border-border p-2.5">
-          <button
-            type="button"
-            onClick={clearAll}
-            className="w-full rounded-md border border-border bg-background py-1 text-[11px] text-muted-foreground hover:border-destructive/50 hover:text-destructive transition-colors"
-          >
-            Clear all filters
-          </button>
-        </div>
-      </div>
-
-      {/* ── Right panel: Role presets ── */}
-      <div className="flex w-38 flex-col overflow-y-auto bg-muted/20 px-0 py-2.5">
-        <span className="mb-1.5 block px-3 text-[8.5px] font-bold uppercase tracking-widest text-muted-foreground">Role</span>
-
-        {ROLE_GROUP_ORDER.map((group: RoleGroup) => {
-          const presets = ROLE_PRESETS.filter((r) => r.group === group);
-          return (
-            <div key={group} className="mb-1">
-              <span className="block px-3 pb-0.5 pt-1.5 text-[7.5px] font-bold uppercase tracking-widest text-muted-foreground/50">
-                {ROLE_GROUP_LABELS[group]}
-              </span>
-              {presets.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => selectRole(preset.id)}
-                  className={cn(
-                    "flex w-full items-center gap-1.5 px-3 py-1.5 text-[11px] text-left transition-colors",
-                    filters.role === preset.id
-                      ? "bg-primary/10 font-semibold text-primary"
-                      : "text-foreground/70 hover:bg-muted"
-                  )}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 ```
 
-- [ ] **Run tests**
+(Drop the `userMoves` ref and `applyRole` import — both gone. The sidebar does NOT touch `filters.roles`.)
+
+- [ ] **Run + commit**
 
 ```bash
-pnpm test --filter @trainers/web -- --testPathPattern="species-sidebar" 2>&1 | tail -15
-```
-
-Expected: all 7 pass.
-
-- [ ] **Commit**
-
-```bash
+pnpm test --filter @trainers/web -- --testPathPattern="species-sidebar" 2>&1 | tail -10
 git add apps/web/src/components/team-builder/v2/pickers/species-sidebar.tsx \
         apps/web/src/components/team-builder/v2/__tests__/species-sidebar.test.tsx
-git commit -m "feat(team-builder): add SpeciesSidebar with type/ability/moves/role/mega filters"
+git commit -m "feat(team-builder): SpeciesSidebar (left panel — Type/Ability/Mega/Moves)"
 ```
 
 ---
 
-## Task 5: Smart search overlay
+### Task 8: `<SpeciesSmartSearch>` overlay
 
 **Files:**
 - Create: `apps/web/src/components/team-builder/v2/pickers/species-smart-search.tsx`
 - Create: `apps/web/src/components/team-builder/v2/__tests__/species-smart-search.test.tsx`
 
-When the search query is non-empty and doesn't match a species name exactly, the overlay renders categorized suggestions: Types, Moves, Abilities, Pokémon. Each non-Pokémon suggestion has a "Filter" button; each Pokémon suggestion has a "Select" button.
+Overlay shown when the search query is non-empty. Categorizes matches: Type, Moves, Abilities, Pokémon. Each non-Pokémon row has a Filter button; species rows have a Select button.
 
-- [ ] **Write failing tests**
+- [ ] **Tests + implementation**
+
+(Reuse the implementation from the earlier plan version verbatim — uses `getAllLegalMoves(format.id)` from Task 5, ALL_TYPES for types, walks the index for abilities, name match for species.)
 
 ```tsx
-// apps/web/src/components/team-builder/v2/__tests__/species-smart-search.test.tsx
-"use client";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import React from "react";
-
-import { type SpeciesSearchEntry } from "@trainers/pokemon";
-
 jest.mock("@trainers/pokemon", () => ({
   ALL_TYPES: ["Fire", "Water", "Grass", "Dragon"],
   getAllLegalMoves: jest.fn(() => ["Tailwind", "Trick Room", "Fire Blast", "Fire Punch"]),
-  getAbilityShortDesc: jest.fn((name: string) => `${name} short desc`),
+  getAbilityShortDesc: jest.fn((n: string) => `${n} short desc`),
 }));
-
-const makeEntry = (species: string, abilities: string[] = []): SpeciesSearchEntry => ({
-  species,
-  types: ["Fire"],
-  abilities,
-  abilitySlot1: abilities[0] ?? null,
-  abilitySlot2: abilities[1] ?? null,
-  hiddenAbility: abilities[2] ?? null,
-  baseStats: { hp: 78, atk: 84, def: 78, spa: 109, spd: 85, spe: 100 },
-  bst: 534,
-});
-
-import { SpeciesSmartSearch } from "../pickers/species-smart-search";
-
-const defaultProps = {
-  query: "fire",
-  index: [makeEntry("Charizard"), makeEntry("Arcanine", ["Intimidate", "Flash Fire", "Justified"])],
-  format: undefined,
-  onFilter: jest.fn(),
-  onPick: jest.fn(),
-};
-
-describe("SpeciesSmartSearch", () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it("shows Type category when query matches a type", () => {
-    render(<SpeciesSmartSearch {...defaultProps} query="fire" />);
-    expect(screen.getByText(/Type/i)).toBeInTheDocument();
-    expect(screen.getByText("Fire")).toBeInTheDocument();
-  });
-
-  it("shows Ability category when query matches an ability", () => {
-    render(<SpeciesSmartSearch {...defaultProps} query="intim" />);
-    expect(screen.getByText(/Abilit/i)).toBeInTheDocument();
-    expect(screen.getByText("Intimidate")).toBeInTheDocument();
-  });
-
-  it("shows Pokémon category with matching species", () => {
-    render(<SpeciesSmartSearch {...defaultProps} query="char" />);
-    expect(screen.getByText("Charizard")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /select/i })).toBeInTheDocument();
-  });
-
-  it("clicking Filter on a type calls onFilter with type", async () => {
-    const user = userEvent.setup();
-    const onFilter = jest.fn();
-    render(<SpeciesSmartSearch {...defaultProps} query="fire" onFilter={onFilter} />);
-    await user.click(screen.getAllByRole("button", { name: /filter/i })[0]);
-    expect(onFilter).toHaveBeenCalledWith(expect.objectContaining({ type: "Fire" }));
-  });
-
-  it("clicking Select on a species calls onPick", async () => {
-    const user = userEvent.setup();
-    const onPick = jest.fn();
-    render(<SpeciesSmartSearch {...defaultProps} query="char" onPick={onPick} />);
-    await user.click(screen.getByRole("button", { name: /select/i }));
-    expect(onPick).toHaveBeenCalledWith("Charizard");
-  });
-});
 ```
 
-- [ ] **Run — expect FAIL**
+(Same test cases as the earlier plan version: Type category appears, Ability category appears, species rows have Select, clicking Filter calls onFilter, clicking Select calls onPick.)
+
+- [ ] **Run + commit**
 
 ```bash
 pnpm test --filter @trainers/web -- --testPathPattern="species-smart-search" 2>&1 | tail -10
-```
-
-Expected: FAIL — `Cannot find module '../pickers/species-smart-search'`
-
-- [ ] **Create `species-smart-search.tsx`**
-
-```tsx
-"use client";
-
-import { useMemo } from "react";
-
-import {
-  ALL_TYPES,
-  getAbilityShortDesc,
-  getAllLegalMoves,
-  type GameFormat,
-  type SpeciesSearchEntry,
-} from "@trainers/pokemon";
-
-interface FilterAction {
-  type?: string;
-  move?: string;
-  ability?: string;
-}
-
-interface SpeciesSmartSearchProps {
-  query: string;
-  index: SpeciesSearchEntry[];
-  format: GameFormat | undefined;
-  onFilter: (action: FilterAction) => void;
-  onPick: (species: string) => void;
-}
-
-const MAX_PER_CATEGORY = 5;
-
-export function SpeciesSmartSearch({
-  query,
-  index,
-  format,
-  onFilter,
-  onPick,
-}: SpeciesSmartSearchProps) {
-  const q = query.toLowerCase();
-
-  // Types
-  const matchedTypes = (ALL_TYPES as readonly string[]).filter((t) =>
-    t.toLowerCase().includes(q)
-  ).slice(0, MAX_PER_CATEGORY);
-
-  // Moves — pulled from the format's full legal-move set (cached in @trainers/pokemon)
-  const allMoves = useMemo(
-    () => (format?.id ? getAllLegalMoves(format.id) : []),
-    [format?.id]
-  );
-  const matchedMoves = allMoves.filter((m) =>
-    m.toLowerCase().includes(q)
-  ).slice(0, MAX_PER_CATEGORY);
-
-  // Abilities — collect unique ability names from the index
-  const abilitySet = new Set<string>();
-  for (const entry of index) {
-    if (entry.abilitySlot1?.toLowerCase().includes(q)) abilitySet.add(entry.abilitySlot1);
-    if (entry.abilitySlot2?.toLowerCase().includes(q)) abilitySet.add(entry.abilitySlot2!);
-    if (entry.hiddenAbility?.toLowerCase().includes(q)) abilitySet.add(entry.hiddenAbility!);
-    if (abilitySet.size >= MAX_PER_CATEGORY) break;
-  }
-  const matchedAbilities = Array.from(abilitySet).slice(0, MAX_PER_CATEGORY);
-
-  // Pokémon
-  const matchedSpecies = index
-    .filter((e) => e.species.toLowerCase().includes(q))
-    .slice(0, MAX_PER_CATEGORY);
-
-  const hasAny =
-    matchedTypes.length > 0 ||
-    matchedMoves.length > 0 ||
-    matchedAbilities.length > 0 ||
-    matchedSpecies.length > 0;
-
-  if (!hasAny) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-        No results for "{query}"
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-1 flex-col overflow-y-auto">
-      <SuggestionSection
-        title="Type"
-        items={matchedTypes}
-        renderItem={(t) => (
-          <span className="text-sm font-medium">{t}</span>
-        )}
-        onFilter={(t) => onFilter({ type: t })}
-      />
-      <SuggestionSection
-        title="Moves"
-        items={matchedMoves}
-        renderItem={(m) => (
-          <span className="text-sm">{m}</span>
-        )}
-        onFilter={(m) => onFilter({ move: m })}
-      />
-      <SuggestionSection
-        title="Abilities"
-        items={matchedAbilities}
-        renderItem={(a) => {
-          const desc = getAbilityShortDesc(a);
-          return (
-            <span className="min-w-0">
-              <span className="text-sm font-medium">{a}</span>
-              {desc && <span className="ml-2 truncate text-xs text-muted-foreground">{desc}</span>}
-            </span>
-          );
-        }}
-        onFilter={(a) => onFilter({ ability: a })}
-      />
-      {matchedSpecies.length > 0 && (
-        <>
-          <div className="border-b border-border bg-muted/50 px-4 py-1.5 text-[9.5px] font-bold uppercase tracking-widest text-muted-foreground">
-            Pokémon
-          </div>
-          {matchedSpecies.map((entry) => (
-            <div
-              key={entry.species}
-              className="flex items-center gap-3 border-b border-border/50 px-4 py-2 hover:bg-muted/30"
-            >
-              <span className="flex-1 text-sm font-medium">{entry.species}</span>
-              <button
-                type="button"
-                onClick={() => onPick(entry.species)}
-                className="rounded-full border border-border px-3 py-0.5 text-xs text-muted-foreground hover:border-primary hover:text-primary"
-              >
-                Select
-              </button>
-            </div>
-          ))}
-        </>
-      )}
-    </div>
-  );
-}
-
-function SuggestionSection<T extends string>({
-  title,
-  items,
-  renderItem,
-  onFilter,
-}: {
-  title: string;
-  items: T[];
-  renderItem: (item: T) => React.ReactNode;
-  onFilter: (item: T) => void;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <>
-      <div className="border-b border-border bg-muted/50 px-4 py-1.5 text-[9.5px] font-bold uppercase tracking-widest text-muted-foreground">
-        {title}
-      </div>
-      {items.map((item) => (
-        <div
-          key={item}
-          className="flex items-center gap-3 border-b border-border/50 px-4 py-2 hover:bg-muted/30"
-        >
-          <span className="flex-1 min-w-0 flex items-center gap-2">{renderItem(item)}</span>
-          <button
-            type="button"
-            onClick={() => onFilter(item)}
-            className="rounded-full border border-primary/40 px-3 py-0.5 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-          >
-            Filter
-          </button>
-        </div>
-      ))}
-    </>
-  );
-}
-```
-
-- [ ] **Run tests**
-
-```bash
-pnpm test --filter @trainers/web -- --testPathPattern="species-smart-search" 2>&1 | tail -15
-```
-
-Expected: 5 tests pass.
-
-- [ ] **Commit**
-
-```bash
 git add apps/web/src/components/team-builder/v2/pickers/species-smart-search.tsx \
         apps/web/src/components/team-builder/v2/__tests__/species-smart-search.test.tsx
-git commit -m "feat(team-builder): add SpeciesSmartSearch overlay with categorized suggestions"
+git commit -m "feat(team-builder): SpeciesSmartSearch overlay"
 ```
 
 ---
 
-## Task 6: Refactor `SpeciesPicker` — wire up new panels + column grid
+### Task 9: Refactor `SpeciesPicker` — wire it all up
 
 **Files:**
 - Modify: `apps/web/src/components/team-builder/v2/pickers/species-picker.tsx`
 - Delete: `apps/web/src/components/team-builder/v2/pickers/species-filters.tsx`
-- Modify: `apps/web/src/components/team-builder/v2/__tests__/species-picker.test.tsx` (update existing tests if any)
+- Modify: `apps/web/src/components/team-builder/v2/__tests__/species-picker.test.tsx`
 
-This is the integration task. `SpeciesPicker` becomes the orchestrator: it holds `SpeciesFilterState`, renders `SpeciesSidebar` + `SpeciesSmartSearch` (when query set) + the virtualized table.
+The integration. `SpeciesPicker` becomes the orchestrator: holds `SpeciesFilterState`, builds the index with the `getRolesForSpecies` resolver, renders sidebar + `RolePresetsPanel` + `FilterChipsBar` + smart-search-or-list.
 
-- [ ] **Read the current `species-picker.tsx` before editing** (already read at task start — verify it's still current)
+- [ ] **Replace `species-picker.tsx`**
 
-```bash
-head -30 apps/web/src/components/team-builder/v2/pickers/species-picker.tsx
-```
+Key implementation points:
 
-- [ ] **Replace `SpeciesFilterState` import source** — change all consumers from `species-filters` to `species-sidebar`
+1. **Index build**:
+   ```ts
+   const fullIndex = useMemo(
+     () => buildSpeciesSearchIndex(format?.id ?? DEFAULT_FORMAT_ID, getRolesForSpecies),
+     [format?.id]
+   );
+   ```
 
-Check if anything imports from `species-filters`:
+2. **State**: `useState<SpeciesFilterState>(DEFAULT_SPECIES_FILTERS)` + `useState("")` for query + sort state.
 
-```bash
-grep -rn "from.*species-filters" apps/web/src/ --include="*.tsx" --include="*.ts"
-```
+3. **Search call**:
+   ```ts
+   const matched = searchSpecies(speciesIndex, query, {
+     types: filters.types.length ? filters.types : undefined,
+     ability: filters.ability ?? undefined,
+     moves: filters.moves.length ? filters.moves : undefined,
+     megaOnly: filters.megaOnly || undefined,
+     roles: filters.roles.length ? filters.roles : undefined,
+     formatId: format?.id,
+   });
+   ```
 
-Update each found import to `from "./species-sidebar"` (or relative equivalent).
+4. **Body layout**: `<div class="body flex flex-1 min-h-0 overflow-hidden">` with three children:
+   ```tsx
+   <SpeciesSidebar filters={filters} onFiltersChange={setFilters} format={format} currentTeam={currentTeam} />
+   <RolePresetsPanel selected={filters.roles} onChange={(roles) => setFilters((f) => ({ ...f, roles }))} bucketCount={bucketCount} />
+   <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
+     <FilterChipsBar chips={buildFilterChips()} />
+     {isSearching ? <SpeciesSmartSearch ... /> : <list panel>}
+   </div>
+   ```
 
-- [ ] **Rewrite `species-picker.tsx`**
+5. **Bucket counts** (memo-ed live counts based on current matches):
+   ```ts
+   const bucketCount = useMemo(() => {
+     const counts = new Map<string, number>();
+     for (const e of matched) for (const r of e.roles) counts.set(r, (counts.get(r) ?? 0) + 1);
+     return (roleId: string) => counts.get(roleId) ?? 0;
+   }, [matched]);
+   ```
 
-Full replacement:
+6. **Click handlers**:
+   ```ts
+   function handleTypeFilter(type: string) {
+     setFilters((f) => f.types.includes(type)
+       ? { ...f, types: f.types.filter((t) => t !== type) }
+       : { ...f, types: [...f.types, type] });
+   }
+   function handleAbilityFilter(ability: string) { setFilters((f) => ({ ...f, ability })); }
+   function handleRoleFilter(roleId: string) {
+     setFilters((f) => f.roles.includes(roleId)
+       ? { ...f, roles: f.roles.filter((r) => r !== roleId) }
+       : { ...f, roles: [...f.roles, roleId] });
+   }
+   ```
+
+7. **`buildFilterChips()`**:
+   ```ts
+   function buildFilterChips(): FilterChip[] {
+     const chips: FilterChip[] = [];
+     for (const t of filters.types) chips.push({
+       id: `t-${t}`, label: t,
+       onRemove: () => setFilters((f) => ({ ...f, types: f.types.filter((x) => x !== t) })),
+     });
+     if (filters.ability) chips.push({
+       id: "a", label: `Ability: ${filters.ability}`,
+       onRemove: () => setFilters((f) => ({ ...f, ability: null })),
+     });
+     for (const m of filters.moves) chips.push({
+       id: `m-${m}`, label: `Learns: ${m}`,
+       onRemove: () => setFilters((f) => ({ ...f, moves: f.moves.filter((x) => x !== m) })),
+     });
+     for (const r of filters.roles) {
+       const role = getRoleById(r);
+       chips.push({
+         id: `r-${r}`, label: `Role: ${role?.label ?? r}`,
+         onRemove: () => setFilters((f) => ({ ...f, roles: f.roles.filter((x) => x !== r) })),
+       });
+     }
+     if (filters.megaOnly) chips.push({
+       id: "mega", label: "Mega only", tone: "mega",
+       onRemove: () => setFilters((f) => ({ ...f, megaOnly: false })),
+     });
+     return chips;
+   }
+   ```
+
+8. **Row component (`SpeciesRow`)**:
 
 ```tsx
-"use client";
-
-import { useRef, useState } from "react";
-import Image from "next/image";
-import { X } from "lucide-react";
-
-import { useVirtualizer } from "@tanstack/react-virtual";
-
-import {
-  buildSpeciesSearchIndex,
-  getAllLegalAbilities,
-  getAllLegalMoves,
-  isLegalSpecies,
-  searchSpecies,
-  type GameFormat,
-  type SpeciesSearchEntry,
-} from "@trainers/pokemon";
-import { getPokemonSprite } from "@trainers/pokemon/sprites";
-
-import { cn } from "@/lib/utils";
-
-import { TypeSymbolIcon } from "../../type-symbol-icon";
-import { AbilityCell } from "./ability-cell";
-import { SpeciesSidebar, DEFAULT_SIDEBAR_FILTERS, type SpeciesFilterState } from "./species-sidebar";
-import { SpeciesSmartSearch } from "./species-smart-search";
-
-// =============================================================================
-// Constants
-// =============================================================================
-
-const HIGH_STAT_THRESHOLD = 110;
-const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
-
-const ROW_GRID =
-  "grid-cols-[44px_minmax(0,1fr)_44px_80px_80px_76px_repeat(6,24px)_36px]";
-
-const indexCache = new Map<string, SpeciesSearchEntry[]>();
-
-function getCachedIndex(format: GameFormat | undefined): SpeciesSearchEntry[] {
-  const key = format?.id ?? DEFAULT_FORMAT_ID;
-  if (!indexCache.has(key)) {
-    indexCache.set(key, buildSpeciesSearchIndex(key));
-  }
-  return indexCache.get(key)!;
-}
-
-type SortCol = "name" | "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "bst";
-type SortDir = "asc" | "desc";
-
-function statValueClass(value: number): string {
-  return value >= HIGH_STAT_THRESHOLD ? "text-teal-600 dark:text-teal-400 font-semibold" : "";
-}
-
-function sortEntries(entries: SpeciesSearchEntry[], col: SortCol, dir: SortDir) {
-  return [...entries].sort((a, b) => {
-    let cmp =
-      col === "name" ? a.species.localeCompare(b.species)
-      : col === "bst"  ? a.bst - b.bst
-      :                  a.baseStats[col] - b.baseStats[col];
-    return dir === "asc" ? cmp : -cmp;
-  });
-}
-
-// =============================================================================
-// SpeciesRow
-// =============================================================================
-
-interface SpeciesRowProps {
-  entry: SpeciesSearchEntry;
-  isCurrent: boolean;
-  onSelect: () => void;
-  onAbilityFilter: (ability: string) => void;
-}
-
-function SpeciesRow({ entry, isCurrent, onSelect, onAbilityFilter }: SpeciesRowProps) {
+function SpeciesRow({ entry, isCurrent, onSelect, onTypeFilter, onAbilityFilter, onRoleFilter }: SpeciesRowProps) {
   const sprite = getPokemonSprite(entry.species);
   const isMega = entry.species.includes("-Mega");
 
-  // Use a div with role="row" + tabIndex so we can have nested clickable
-  // ability cells. <button> inside <button> is invalid HTML and triggers
-  // hydration warnings.
   function handleKey(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onSelect();
-    }
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); }
   }
 
   return (
     <div
-      role="row"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={handleKey}
+      role="row" tabIndex={0}
+      onClick={onSelect} onKeyDown={handleKey}
       aria-label={`Select ${entry.species}`}
       className={cn(
-        "hover:bg-muted/60 focus-visible:bg-muted/60 grid w-full cursor-pointer items-center gap-3 border-b px-4 py-2 text-left transition-colors outline-none",
+        "hover:bg-muted/60 focus-visible:bg-muted/60 grid w-full cursor-pointer items-center gap-3 border-b px-4 py-2 outline-none",
         ROW_GRID,
         isCurrent && "bg-primary/6",
         isMega && "border-l-2 border-l-violet-400/35"
       )}
     >
-      {/* Sprite */}
-      <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-full", isMega ? "bg-violet-500/10" : "bg-primary/8")}>
-        <Image src={sprite.url} alt={entry.species} width={36} height={36}
-          className={cn("size-9 object-contain", sprite.pixelated && "[image-rendering:pixelated]")}
-          unoptimized />
-      </div>
+      {/* Sprite, name, types, abilities, stats — same as the prior plan */}
 
-      {/* Name */}
-      <span className={cn("min-w-0 truncate text-sm font-semibold", isMega && "text-indigo-700 dark:text-indigo-400")}>
-        {entry.species}
-      </span>
-
-      {/* Types */}
-      <div className="flex min-w-12 items-center gap-1">
+      {/* Each TypeSymbolIcon now wired to onClick */}
+      <div className="flex items-center gap-1">
         {entry.types.map((type) => (
-          <TypeSymbolIcon key={type} type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]} size={18} />
+          <span key={type} role="presentation" onClick={(e) => { e.stopPropagation(); onTypeFilter(type); }}>
+            <TypeSymbolIcon type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]} size={18} />
+          </span>
         ))}
       </div>
 
-      {/* Ability cells — onClick stopPropagation so they don't trigger row select */}
+      {/* Ability cells (same as prior plan) — onFilter prop drives click-to-filter */}
       <div role="presentation" onClick={(e) => e.stopPropagation()} className="min-w-0 overflow-hidden">
         <AbilityCell name={entry.abilitySlot1} slot="slot1" onFilter={onAbilityFilter} />
       </div>
-      <div role="presentation" onClick={(e) => e.stopPropagation()} className="min-w-0 overflow-hidden">
-        <AbilityCell name={entry.abilitySlot2} slot="slot2" onFilter={onAbilityFilter} />
-      </div>
-      <div role="presentation" onClick={(e) => e.stopPropagation()} className="min-w-0 overflow-hidden">
-        <AbilityCell name={entry.hiddenAbility} slot="hidden" onFilter={onAbilityFilter} />
-      </div>
+      {/* ... slot2, hidden ... */}
 
-      {/* Stats */}
-      {(["hp","atk","def","spa","spd","spe"] as const).map((stat) => (
-        <span key={stat} className={cn("text-center font-mono text-xs tabular-nums", statValueClass(entry.baseStats[stat]))}>
-          {entry.baseStats[stat]}
-        </span>
-      ))}
+      {/* Stats — same as prior plan */}
 
-      {/* BST */}
-      <span className="border-border/60 text-foreground border-l pl-2 text-center font-mono text-xs font-semibold tabular-nums">
-        {entry.bst}
-      </span>
-    </div>
-  );
-}
-
-// =============================================================================
-// Header row
-// =============================================================================
-
-function SpeciesRowsHeader({
-  sort, onSort,
-}: { sort: { col: SortCol; dir: SortDir }; onSort: (col: SortCol) => void }) {
-  function hBtn(col: SortCol, label: string, className?: string) {
-    return (
-      <button type="button"
-        onClick={() => onSort(col)}
-        className={cn("cursor-pointer select-none text-center text-[9px] font-bold uppercase tracking-wide transition-colors hover:text-foreground",
-          sort.col === col ? "text-foreground" : "text-muted-foreground", className)}>
-        {label}{sort.col === col && (sort.dir === "asc" ? " ↑" : " ↓")}
-      </button>
-    );
-  }
-  return (
-    <div className={cn("bg-card sticky top-0 z-20 grid items-center gap-3 border-b px-4 py-1.5", ROW_GRID)}>
-      <span />
-      {hBtn("name", "Name", "text-left")}
-      <span className="text-muted-foreground text-[9px] font-bold uppercase tracking-wide">Types</span>
-      <span className="text-muted-foreground text-[9px] font-bold uppercase tracking-wide text-center">Ability 1</span>
-      <span className="text-muted-foreground text-[9px] font-bold uppercase tracking-wide text-center">Ability 2</span>
-      <span className="text-[9px] font-bold uppercase tracking-wide text-center text-violet-400">Hidden</span>
-      {(["hp","atk","def","spa","spd","spe"] as ["hp","atk","def","spa","spd","spe"]).map((s) =>
-        hBtn(s, s.toUpperCase())
-      )}
-      {hBtn("bst", "BST", "border-border/60 border-l pl-2")}
-    </div>
-  );
-}
-
-// =============================================================================
-// Applied filter chips
-// =============================================================================
-
-interface FilterChipsProps {
-  filters: SpeciesFilterState;
-  onFiltersChange: (f: SpeciesFilterState) => void;
-}
-
-function FilterChips({ filters, onFiltersChange }: FilterChipsProps) {
-  const chips: Array<{ label: string; remove: () => void; mega?: boolean }> = [
-    ...filters.types.map((t) => ({
-      label: t,
-      remove: () => onFiltersChange({ ...filters, types: filters.types.filter((x) => x !== t) }),
-    })),
-    ...(filters.ability ? [{ label: `Ability: ${filters.ability}`, remove: () => onFiltersChange({ ...filters, ability: null }) }] : []),
-    ...filters.moves.map((m) => ({
-      label: `Learns: ${m}`,
-      remove: () => onFiltersChange({ ...filters, moves: filters.moves.filter((x) => x !== m) }),
-    })),
-    ...(filters.role ? [{ label: `Role: ${filters.role}`, remove: () => onFiltersChange({ ...filters, role: null }) }] : []),
-    ...(filters.megaOnly ? [{ label: "Mega only", mega: true, remove: () => onFiltersChange({ ...filters, megaOnly: false }) }] : []),
-  ];
-
-  if (chips.length === 0) return null;
-
-  return (
-    <div className="flex flex-wrap items-center gap-1.5 border-b border-border/50 bg-muted/20 px-4 py-1.5">
-      <span className="text-[10.5px] text-muted-foreground">Active:</span>
-      {chips.map(({ label, remove, mega }) => (
-        <button key={label} type="button" onClick={remove}
-          className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold",
-            mega
-              ? "border border-violet-400/25 bg-violet-500/8 text-violet-700 dark:text-violet-300"
-              : "border border-primary/25 bg-primary/8 text-primary"
-          )}>
-          {label} <X className="size-2.5 opacity-50" />
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// =============================================================================
-// SpeciesPicker
-// =============================================================================
-
-interface SpeciesPickerProps {
-  value: string | null;
-  format: GameFormat | undefined;
-  currentTeam?: Array<{ species: string }>;
-  onPick: (species: string) => void;
-  onClose: () => void;
-}
-
-export function SpeciesPicker({ value, format, currentTeam = [], onPick, onClose }: SpeciesPickerProps) {
-  const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<SpeciesFilterState>(DEFAULT_SIDEBAR_FILTERS);
-  const [sort, setSort] = useState<{ col: SortCol; dir: SortDir }>({ col: "name", dir: "asc" });
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const fullIndex = getCachedIndex(format);
-  const speciesIndex = format?.id
-    ? fullIndex.filter((e) => isLegalSpecies(e.species, format.id))
-    : fullIndex;
-
-  function handleSort(col: SortCol) {
-    setSort((prev) =>
-      prev.col === col
-        ? { col, dir: prev.dir === "asc" ? "desc" : "asc" }
-        : { col, dir: col === "name" ? "asc" : "desc" }
-    );
-  }
-
-  // Build searchSpecies options from sidebar filter state
-  const matched = searchSpecies(speciesIndex, query, {
-    types: filters.types.length > 0 ? filters.types : undefined,
-    ability: filters.ability ?? undefined,
-    moves: filters.moves.length > 0 ? filters.moves : undefined,
-    megaOnly: filters.megaOnly || undefined,
-    formatId: format?.id,
-  });
-
-  const sorted = sortEntries(matched, sort.col, sort.dir);
-
-  const rowVirtualizer = useVirtualizer({
-    count: sorted.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => 56,
-    overscan: 5,
-  });
-
-  function handleAbilityFilter(ability: string) {
-    setFilters((f) => ({ ...f, ability }));
-  }
-
-  function handleSmartFilter(action: { type?: string; move?: string; ability?: string }) {
-    setFilters((f) => ({
-      ...f,
-      ...(action.type   && { types: f.types.includes(action.type) ? f.types : [...f.types, action.type] }),
-      ...(action.move   && { moves: f.moves.includes(action.move) ? f.moves : [...f.moves, action.move] }),
-      ...(action.ability && { ability: action.ability }),
-    }));
-    setQuery("");
-  }
-
-  /**
-   * Enter on the search input applies the top suggestion if no exact species match.
-   * Suggestion priority: exact species > type > move > ability > first species.
-   */
-  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== "Enter") return;
-    const q = query.trim();
-    if (!q) return;
-    e.preventDefault();
-    // Exact species match → pick directly
-    const exact = speciesIndex.find((entry) => entry.species.toLowerCase() === q.toLowerCase());
-    if (exact) { onPick(exact.species); return; }
-    // Otherwise apply the top suggestion: type → move → ability
-    const lowerQ = q.toLowerCase();
-    const topType = (["Normal","Fire","Water","Grass","Electric","Ice","Fighting","Poison","Ground","Flying","Psychic","Bug","Rock","Ghost","Dragon","Dark","Steel","Fairy"] as const)
-      .find((t) => t.toLowerCase().includes(lowerQ));
-    if (topType) { handleSmartFilter({ type: topType }); return; }
-    const topMove = format?.id
-      ? getAllLegalMoves(format.id).find((m) => m.toLowerCase().includes(lowerQ))
-      : undefined;
-    if (topMove) { handleSmartFilter({ move: topMove }); return; }
-    const topAbility = format?.id
-      ? getAllLegalAbilities(format.id).find((a) => a.toLowerCase().includes(lowerQ))
-      : undefined;
-    if (topAbility) { handleSmartFilter({ ability: topAbility }); return; }
-    // Fallback: first species in the matched list
-    const firstSpecies = speciesIndex.find((e) => e.species.toLowerCase().includes(lowerQ));
-    if (firstSpecies) onPick(firstSpecies.species);
-  }
-
-  const isSearching = query.trim().length > 0;
-
-  return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden" style={{ minHeight: 0 }}>
-      {/* ── Header ── */}
-      <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5 flex-shrink-0">
-        <svg className="size-3.5 shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleSearchKeyDown}
-          placeholder="Search species, abilities, types, moves…"
-          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-          autoFocus
-        />
-        <span className="shrink-0 rounded-md border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground tabular-nums">
-          {matched.length} of {speciesIndex.length}
-        </span>
-        <button type="button" onClick={onClose}
-          className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:text-foreground transition-colors">
-          <X className="size-3.5" />
-        </button>
-      </div>
-
-      {/* ── Body: sidebar + list ── */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Sidebar */}
-        <SpeciesSidebar
-          filters={filters}
-          onFiltersChange={setFilters}
-          format={format}
-          currentTeam={currentTeam}
-          totalCount={speciesIndex.length}
-          filteredCount={matched.length}
-        />
-
-        {/* List or smart search */}
-        <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
-          <FilterChips filters={filters} onFiltersChange={setFilters} />
-
-          {isSearching ? (
-            <SpeciesSmartSearch
-              query={query}
-              index={speciesIndex}
-              format={format}
-              onFilter={handleSmartFilter}
-              onPick={(species) => { onPick(species); }}
-            />
-          ) : (
-            <div ref={scrollRef} className="flex-1 overflow-y-auto" data-testid="species-rows">
-              <SpeciesRowsHeader sort={sort} onSort={handleSort} />
-              {sorted.length === 0 ? (
-                <div className="text-muted-foreground py-12 text-center text-sm">
-                  No Pokémon match your filters.
-                </div>
-              ) : (
-                <div className="relative w-full" style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
-                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                    const entry = sorted[virtualRow.index];
-                    if (!entry) return null;
-                    return (
-                      <div key={virtualRow.key} className="absolute left-0 right-0" style={{ top: virtualRow.start }}>
-                        <SpeciesRow
-                          entry={entry}
-                          isCurrent={entry.species === value}
-                          onSelect={() => onPick(entry.species)}
-                          onAbilityFilter={handleAbilityFilter}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+      {/* NEW: Roles column */}
+      <div role="presentation" onClick={(e) => e.stopPropagation()} className="flex flex-wrap gap-1 min-w-0">
+        {entry.roles.map((roleId) => (
+          <RoleChip key={roleId} roleId={roleId} onClick={onRoleFilter} />
+        ))}
       </div>
     </div>
   );
 }
 ```
+
+9. **Column grid update**:
+   ```ts
+   const ROW_GRID = "grid-cols-[44px_minmax(100px,1fr)_44px_80px_80px_76px_repeat(6,24px)_36px_minmax(140px,180px)]";
+   ```
+
+10. **Header keyboard shortcut** (`handleSearchKeyDown`): same Enter-to-apply-top-filter logic from the earlier plan version.
 
 - [ ] **Delete `species-filters.tsx`**
 
@@ -2180,116 +1391,72 @@ export function SpeciesPicker({ value, format, currentTeam = [], onPick, onClose
 rm apps/web/src/components/team-builder/v2/pickers/species-filters.tsx
 ```
 
-- [ ] **TypeScript check**
+- [ ] **Update integration tests**
 
-```bash
-pnpm typecheck 2>&1 | grep -E "species-picker|species-filters|ability-cell|species-sidebar|species-smart" | head -20
-```
-
-Expected: no errors on those files.
-
-- [ ] **Add integration test for click-to-filter and Enter-to-apply-top-filter**
-
-Append to `apps/web/src/components/team-builder/v2/__tests__/species-picker.test.tsx`:
+Add to `species-picker.test.tsx`:
 
 ```tsx
 describe("SpeciesPicker — click-to-filter and keyboard shortcuts", () => {
-  it("clicking an ability in a row sets filters.ability via the sidebar", async () => {
+  it("clicking an ability sets filters.ability via the sidebar", async () => {
     const user = userEvent.setup();
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        currentTeam={[]}
-        onPick={jest.fn()}
-        onClose={jest.fn()}
-      />
-    );
-    // The mock index includes a row with abilitySlot1 = "Drought"
-    // After clicking, the ability combobox should reflect it
-    const droughtCell = screen.getByText("Drought");
-    await user.click(droughtCell);
-    const abilityInput = screen.getByPlaceholderText(/Any ability/i) as HTMLInputElement;
-    expect(abilityInput.value).toBe("Drought");
+    render(<SpeciesPicker value={null} format={undefined} currentTeam={[]} onPick={jest.fn()} onClose={jest.fn()} />);
+    await user.click(screen.getByText("Drought"));
+    const input = screen.getByPlaceholderText(/Any ability/i) as HTMLInputElement;
+    expect(input.value).toBe("Drought");
   });
 
-  it("Enter on the search input with an exact species name picks that species", async () => {
+  it("clicking a Type icon adds it to type filter", async () => {
+    const user = userEvent.setup();
+    render(<SpeciesPicker /* ... */ />);
+    const fireIcon = screen.getAllByRole("img", { name: "Fire" })[0];
+    await user.click(fireIcon!);
+    expect(await screen.findByText("Fire", { selector: "button" })).toBeInTheDocument();
+  });
+
+  it("clicking a role chip in a row toggles it", async () => {
+    const user = userEvent.setup();
+    render(<SpeciesPicker /* mocked entry with roles=['fake-out'] */ />);
+    await user.click(screen.getByText("Fake Out", { selector: "button" }));
+    expect(await screen.findByText("Role: Fake Out")).toBeInTheDocument();
+  });
+
+  it("Enter on the search input picks an exact species", async () => {
     const user = userEvent.setup();
     const onPick = jest.fn();
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        currentTeam={[]}
-        onPick={onPick}
-        onClose={jest.fn()}
-      />
-    );
-    const search = screen.getByPlaceholderText(/Search species/i);
-    await user.type(search, "Garchomp{Enter}");
+    render(<SpeciesPicker /* ... */ onPick={onPick} />);
+    await user.type(screen.getByPlaceholderText(/Search species/i), "Garchomp{Enter}");
     expect(onPick).toHaveBeenCalledWith("Garchomp");
-  });
-
-  it("Enter with a partial type query applies it as a type filter", async () => {
-    const user = userEvent.setup();
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        currentTeam={[]}
-        onPick={jest.fn()}
-        onClose={jest.fn()}
-      />
-    );
-    const search = screen.getByPlaceholderText(/Search species/i);
-    await user.type(search, "drag{Enter}");
-    // After Enter, the type chip "Dragon" should be active in the sidebar
-    const filterChip = await screen.findByText("Dragon", { selector: "button" });
-    expect(filterChip).toBeInTheDocument();
   });
 });
 ```
 
-(The test file already mocks `useVirtualizer`, `Image`, and `@trainers/pokemon` — those mocks remain and just need to be extended to expose `getAllLegalAbilities`, `getAllLegalMoves`, `calculateTeamSynergy`, and `isChampionsFormat` from the existing mock factory.)
+(The existing test mocks for `useVirtualizer` and `Image` continue working. Extend the `@trainers/pokemon` mock factory to expose `getAllLegalAbilities`, `getAllLegalMoves`, `calculateTeamSynergy`, `isChampionsFormat`, `getMegaStoneForSpecies`, and `buildSpeciesSearchIndex` to accept the resolver.)
 
-- [ ] **Run all team-builder tests**
-
-```bash
-pnpm test --filter @trainers/web -- --testPathPattern="team-builder" 2>&1 | tail -30
-```
-
-Expected: all pass (some may need import path updates from `species-filters` → `species-sidebar`).
-
-- [ ] **Commit**
+- [ ] **Run + commit**
 
 ```bash
+pnpm test --filter @trainers/web -- --testPathPattern="species-picker" 2>&1 | tail -20
 git add apps/web/src/components/team-builder/v2/pickers/species-picker.tsx \
         apps/web/src/components/team-builder/v2/__tests__/species-picker.test.tsx
 git rm apps/web/src/components/team-builder/v2/pickers/species-filters.tsx
-git commit -m "feat(team-builder): refactor SpeciesPicker — sidebar + smart search + ability columns"
+git commit -m "feat(team-builder): SpeciesPicker — Roles column + multi-select roles + click-to-filter"
 ```
 
 ---
 
-## Task 7: Full pre-push quality check
+## Phase 4 — Pre-push
 
-- [ ] **Run linter**
+### Task 10: Lint, typecheck, full test suite, push
+
+- [ ] **Lint**
 
 ```bash
-pnpm lint 2>&1 | grep -E "error|warning" | grep -v "node_modules" | head -20
+pnpm lint 2>&1 | grep -E "error|warning" | grep -v node_modules | head -20
 ```
 
 Expected: 0 errors.
 
-- [ ] **Run all tests**
-
-```bash
-pnpm test 2>&1 | tail -20
-```
-
-Expected: all pass.
-
-- [ ] **Type check**
+- [ ] **Typecheck**
 
 ```bash
 pnpm typecheck 2>&1 | tail -10
@@ -2297,7 +1464,15 @@ pnpm typecheck 2>&1 | tail -10
 
 Expected: 0 errors.
 
-- [ ] **Commit any lint fixes, then push**
+- [ ] **Full test suite**
+
+```bash
+pnpm test 2>&1 | tail -20
+```
+
+Expected: all pass.
+
+- [ ] **Push**
 
 ```bash
 git push origin <branch-name>
@@ -2307,34 +1482,23 @@ git push origin <branch-name>
 
 ## Self-Review
 
-**Spec coverage:**
-- §1 Dialog shell (fixed height, close button, count badge) — Task 6 ✓
-- §2 Sidebar (type grid, ability combobox via datalist, learns move, role presets, mega toggle) — Tasks 2, 4 ✓
-- §2.4 Role expansion (moves/abilities into filters; replace-within-group / stack-across-group) — Task 4 (`role-expansion.ts`) ✓
-- §2.5 Mega-only filter (Champions M-A only, base species that have a Mega form) — Task 1 (corrected from string-match to `getMegaStoneForSpecies`) ✓
-- §3 Applied filter chips bar — Task 6 (`FilterChips`) ✓
-- §4 Column grid with ability columns, Mega row treatment — Task 6 (`SpeciesRow` as `<div role="row">`) ✓
-- §5 Ability cells with tooltip + click-to-filter — Tasks 3, 6 ✓
-- §6 Smart search overlay — Task 5 ✓
-- §6 Enter on search applies top filter result — Task 6 (`handleSearchKeyDown`) ✓
-- §7 `SpeciesFilterState` changes (ability single-select, megaOnly, remove min/maxBaseStat) — Tasks 1, 4 ✓
-- §8 Files to create/modify — all covered ✓
-- §10 Testing — unit tests in every task; integration test for click-to-filter and Enter-to-apply ✓
+**Spec coverage (against species spec §1–§13):**
+- §1 Dialog shell — Task 9 ✓
+- §2 Sidebar (Type/Ability/Mega/LearnsMove) — Task 7 ✓
+- §2 Role presets (shared panel, multi-select OR) — Tasks 1, 3 ✓
+- §3 Filter chips bar — Tasks 4, 9 ✓
+- §4 List with new Roles column + click-Type-icon-to-filter — Task 9 ✓
+- §5 Ability cells with tooltip + click-to-filter — Task 6 ✓
+- §6 Smart search overlay (with Enter shortcut) — Tasks 8, 9 ✓
+- §7 SpeciesFilterState (multi-select roles, megaOnly) — Tasks 5, 6 ✓
+- §13 Shared design (registry, RoleChip, RolePresetsPanel, FilterChipsBar, GROUP_COLORS, getRolesForSpecies) — Tasks 1–4 ✓
 
-**Preserved behavior (not in original Task 6):**
-- Team synergy "✦ Covers Type" hints under the type grid — Task 4 `SpeciesSidebar` ✓
-- `currentTeam` prop continues flowing from `IdentityLane` through `SpeciesPicker` to `SpeciesSidebar` ✓
+**Eliminated complexity vs. prior plan version:**
+- `applyRole` helper — gone
+- `userMoves` ref tracking — gone
+- `role-expansion.ts` + 7 tests for replace-within-group/stack-across-group/preserve-user-moves — gone
+- `filter-state.ts` (separate file to break a circular import) — gone (no cycle since `role-expansion.ts` is gone)
+- `species-roles.ts` — replaced by shared `role-registry.ts`
+- The plan is ~30% smaller while covering more functionality
 
-**Placeholder scan:** No TBDs, no "implement later", all code blocks present. ✓
-
-**Accessibility:**
-- `SpeciesRow` changed from `<button>` to `<div role="row" tabIndex={0}>` to allow nested clickable ability cells without nested-button validity errors. Keyboard support via `Enter` / `Space`. ✓
-- Ability cells use `<span>` with click handler — wrapped in `<div role="presentation" onClick={stopPropagation}>` so they don't trigger row select. ✓
-
-**Type consistency:**
-- `SpeciesFilterState` defined in Task 4 (`species-sidebar.tsx`), imported in Tasks 4 (`role-expansion.ts`) and Task 6 — consistent field names (`ability`, `megaOnly`, `role`, `types`, `moves`). ✓
-- `SpeciesSearchEntry.abilitySlot1/2/hiddenAbility` defined in Task 1, consumed in Tasks 3, 6 — consistent. ✓
-- `applyRole(filters, nextId, userMoves)` signature defined in Task 4 step A, consumed by `selectRole` in Task 4 step B — consistent. ✓
-- `getAllLegalAbilities` / `getAllLegalMoves` defined in Task 1.5, consumed in Task 4 (sidebar combobox) and Tasks 5/6 (smart search + Enter shortcut) — consistent. ✓
-- `FilterAction` shape `{ type?, move?, ability? }` defined in Task 5, consumed in Task 6 `handleSmartFilter` — consistent. ✓
-- `getMegaStoneForSpecies` already exported from `@trainers/pokemon`; verified during Task 1. ✓
+**Parallel paths:** Phase 1 tasks (shared infrastructure) are independent — any order. Phase 2 (pokemon package) is independent of Phase 1. Phase 3 depends on both. Tasks within Phase 3 are roughly linear (data → components → integration).
