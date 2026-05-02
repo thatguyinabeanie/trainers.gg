@@ -612,10 +612,10 @@ describe("CalcDefenderStats — HP slider", () => {
 // =============================================================================
 
 describe("CalcDefenderStats — total EV counter", () => {
-  it("shows 0/510 when no EVs are invested", () => {
+  it("shows 0/508 when no EVs are invested", () => {
     renderComponent({ defenderEvs: makeDefaultEvs() });
-    // "/510" is rendered in a nested span; just verify it exists
-    expect(screen.getByText("/510")).toBeInTheDocument();
+    // "/508" is rendered in a nested span; just verify it exists
+    expect(screen.getByText("/508")).toBeInTheDocument();
   });
 
   it("shows correct total when EVs are partially invested", () => {
@@ -625,7 +625,7 @@ describe("CalcDefenderStats — total EV counter", () => {
     expect(screen.getByText("504")).toBeInTheDocument();
   });
 
-  it("shows 510/510 when fully invested", () => {
+  it("shows total over the 508 design cap when 510 EVs are invested", () => {
     renderComponent({
       defenderEvs: makeDefaultEvs({ hp: 252, atk: 252, def: 6 }),
     });

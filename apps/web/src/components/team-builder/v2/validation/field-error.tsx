@@ -2,6 +2,8 @@
 
 import { cn } from "@/lib/utils";
 
+import { type ValidationError } from "../../validation-hooks";
+
 // =============================================================================
 // FieldError — inline field-level error chip for active row lanes
 // =============================================================================
@@ -29,5 +31,21 @@ export function FieldError({ message, severity = "error", className }: FieldErro
     >
       {message}
     </span>
+  );
+}
+
+interface FieldErrorsProps {
+  errors: readonly ValidationError[];
+  className?: string;
+}
+
+/** Render every validation error as a stacked inline chip. */
+export function FieldErrors({ errors, className }: FieldErrorsProps) {
+  return (
+    <>
+      {errors.map((err, i) => (
+        <FieldError key={i} message={err.message} severity={err.severity} className={className} />
+      ))}
+    </>
   );
 }

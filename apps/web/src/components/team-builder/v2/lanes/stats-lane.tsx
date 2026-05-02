@@ -27,9 +27,11 @@ import {
   computeInvestBudget,
   computeStat,
   computeVizBarWidths,
+  getStatBudget,
+  type StatBudget,
 } from "../../calc-stat-helpers";
 import { formatSupportsIvs } from "../format-gating";
-import { FieldError } from "../validation/field-error";
+import { FieldErrors } from "../validation/field-error";
 import s from "../builder.module.css";
 
 // =============================================================================
@@ -66,42 +68,6 @@ const IV_FIELD: Record<StatKey, keyof Tables<"pokemon">> = {
   specialDefense: "iv_special_defense",
   speed: "iv_speed",
 };
-
-/** Design-source total EV display cap — intentionally 508 to match the design bundle. */
-const EV_DISPLAY_MAX = 508;
-const EV_PER_STAT_MAX = 252;
-const EV_STEP = 4;
-
-/** Pokemon Champions Reg M-A: max 66 stat points across all stats, max 32 per stat, step of 1. */
-const SP_TOTAL_MAX = 66;
-const SP_PER_STAT_MAX = 32;
-const SP_STEP = 1;
-
-/** Per-format stat-investment caps. Champions uses SP, everything else uses EV. */
-interface StatBudget {
-  total: number;
-  perStat: number;
-  step: number;
-  /** Short label used in pickers + total chip ("EV" or "SP"). */
-  label: string;
-}
-
-function getStatBudget(isChampions: boolean): StatBudget {
-  if (isChampions) {
-    return {
-      total: SP_TOTAL_MAX,
-      perStat: SP_PER_STAT_MAX,
-      step: SP_STEP,
-      label: "SP",
-    };
-  }
-  return {
-    total: EV_DISPLAY_MAX,
-    perStat: EV_PER_STAT_MAX,
-    step: EV_STEP,
-    label: "EV",
-  };
-}
 
 const DRAFT_DEBOUNCE_MS = 400;
 const UNINITIALIZED = Symbol();
@@ -142,18 +108,6 @@ function getIvs(pokemon: Tables<"pokemon">): StatValues {
     specialDefense: pokemon.iv_special_defense ?? 31,
     speed: pokemon.iv_speed ?? 31,
   };
-}
-
-// Reserved: total-EVs helper kept for future header chip work.
-function _totalEvs(evs: StatValues): number {
-  return (
-    evs.hp +
-    evs.attack +
-    evs.defense +
-    evs.specialAttack +
-    evs.specialDefense +
-    evs.speed
-  );
 }
 
 /** Canonical neutral nature — the rest (Hardy/Docile/Bashful/Quirky) are duplicates. */
@@ -424,11 +378,6 @@ function StatRow({
     return () => clearTimeout(timer);
   }, [draftEv, evFieldKey, onUpdate]);
 
-  // Bubble the live displayEv up so the lane-level total tracks the drag.
-  useEffect(() => {
-    onLiveEv?.(statKey, displayEv);
-  }, [displayEv, statKey, onLiveEv]);
-
   function flushEvDraft() {
     if (draftEv === null) return;
     onUpdate({ [evFieldKey]: draftEv });
@@ -440,6 +389,10 @@ function StatRow({
     const clamped = Math.min(raw, investBudget);
     const snapped = Math.round(clamped / budget.step) * budget.step;
     setDraftEv(snapped);
+    // Bubble the live value to the parent in the same render pass as the
+    // setDraftEv call, so the lane-level total tracks the drag without
+    // waiting for an after-commit effect.
+    onLiveEv?.(statKey, snapped);
   }
 
   // --- Handle breakpoint tick click — jump straight to that bump value
@@ -448,6 +401,7 @@ function StatRow({
   function handleBumpClick(bpEv: number) {
     const clamped = Math.min(bpEv, investBudget);
     setDraftEv(clamped);
+    onLiveEv?.(statKey, clamped);
     onUpdate({ [evFieldKey]: clamped });
   }
 
@@ -476,6 +430,7 @@ function StatRow({
 
     const update: Partial<TablesUpdate<"pokemon">> = { [evFieldKey]: snapped };
     if (newNature !== null) update.nature = newNature;
+    onLiveEv?.(statKey, snapped);
     onUpdate(update);
     setInputBuffer(null);
   }
@@ -874,9 +829,7 @@ export function StatsLane({
       </div>
 
       {/* EV total errors */}
-      {evErrors.map((err, i) => (
-        <FieldError key={i} message={err.message} severity={err.severity} />
-      ))}
+      <FieldErrors errors={evErrors} />
     </div>
   );
 }

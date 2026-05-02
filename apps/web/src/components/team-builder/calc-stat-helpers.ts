@@ -3,10 +3,46 @@ import {
   calculateStat,
   calculateChampionsHP,
   calculateChampionsStat,
+  EV_PER_STAT_MAX,
+  EV_STEP,
   getNatureMultiplier,
+  SP_PER_STAT_MAX,
+  SP_STEP,
+  SP_TOTAL_MAX,
 } from "@trainers/pokemon";
 
 import { type StatValues } from "./stat-types";
+
+// =============================================================================
+// Stat-investment budget
+// =============================================================================
+
+/**
+ * Display cap for total EVs. Intentionally 508 (the *useful* max — 252+252+4),
+ * not the 510 legal cap, so the UI signals "you've reached the practical max"
+ * before the validator does. Validators in @trainers/pokemon use 510.
+ */
+export const EV_TOTAL_DISPLAY_MAX = 508;
+
+export interface StatBudget {
+  total: number;
+  perStat: number;
+  step: number;
+  /** Short label used in pickers + total chip ("EV" or "SP"). */
+  label: "EV" | "SP";
+}
+
+/** Per-format stat-investment budget. Champions uses SP, every other format uses EV. */
+export function getStatBudget(isChampions: boolean): StatBudget {
+  return isChampions
+    ? { total: SP_TOTAL_MAX, perStat: SP_PER_STAT_MAX, step: SP_STEP, label: "SP" }
+    : {
+        total: EV_TOTAL_DISPLAY_MAX,
+        perStat: EV_PER_STAT_MAX,
+        step: EV_STEP,
+        label: "EV",
+      };
+}
 
 // =============================================================================
 // computeStat

@@ -180,6 +180,15 @@ jest.mock("@trainers/pokemon", () => ({
   // Mega-aware helpers — defaults assume non-mega species (no override).
   getMegaAbilityForSpecies: jest.fn().mockReturnValue(null),
   getCanonicalBaseSpecies: jest.fn((s: string) => s),
+  // Used by NatureChevrons, which calc-defender-header renders for the Nat chip.
+  STAT_LABELS: {
+    hp: "HP",
+    attack: "Atk",
+    defense: "Def",
+    specialAttack: "SpA",
+    specialDefense: "SpD",
+    speed: "Spe",
+  },
 }));
 
 // =============================================================================
@@ -211,7 +220,7 @@ const VGC_FORMAT: GameFormat = {
 
 /** A format that does NOT support Tera (mocked via formatHasTera returning false). */
 const CHAMPIONS_FORMAT: GameFormat = {
-  id: "reg-m-a",
+  id: "championsvgc2026regma",
   game: "Pokemon Champions",
   gameShort: "CH",
   generation: 10,
@@ -219,7 +228,7 @@ const CHAMPIONS_FORMAT: GameFormat = {
   year: 2026,
   regulation: "A",
   label: "CH: Reg A",
-  showdownName: "reg-m-a",
+  showdownName: "[Champions] VGC 2026 Reg M-A",
   doubles: true,
   active: true,
 };

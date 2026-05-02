@@ -24,6 +24,7 @@ import {
   computeInvestBudget,
   computeStat,
   computeVizBarWidths,
+  getStatBudget,
 } from "../../calc-stat-helpers";
 import { StageDropdown } from "./stage-dropdown";
 import s from "../builder.module.css";
@@ -74,27 +75,6 @@ const DEFENDER_STAT_ROWS: {
   { evKey: "spd", ivKey: "spd", boostKey: "spd", statKey: "specialDefense", label: "SpD" },
   { evKey: "spe", ivKey: "spe", boostKey: "spe", statKey: "speed", label: "Spe" },
 ];
-
-const EV_PER_STAT_MAX = 252;
-const EV_TOTAL_MAX = 510;
-const EV_STEP = 4;
-
-const SP_PER_STAT_MAX = 32;
-const SP_TOTAL_MAX = 66;
-const SP_STEP = 1;
-
-interface StatBudget {
-  perStat: number;
-  total: number;
-  step: number;
-  label: string;
-}
-
-function getDefenderBudget(isChampions: boolean): StatBudget {
-  return isChampions
-    ? { perStat: SP_PER_STAT_MAX, total: SP_TOTAL_MAX, step: SP_STEP, label: "SP" }
-    : { perStat: EV_PER_STAT_MAX, total: EV_TOTAL_MAX, step: EV_STEP, label: "EV" };
-}
 
 // =============================================================================
 // Helpers
@@ -171,7 +151,7 @@ function DefenderStatRow({
   const { baseLayerWidth, investLayerLeft, investLayerWidth } =
     computeVizBarWidths(rawFinal, rawFinalNoEv);
 
-  const budget = getDefenderBudget(isChampions);
+  const budget = getStatBudget(isChampions);
 
   // --- EV slider budget ---
   const investBudget = computeInvestBudget(totalEv, ev, budget.total, budget.perStat);
@@ -421,7 +401,7 @@ export function CalcDefenderStats({
   });
   const currentHP = Math.max(1, Math.round((defenderHpPercent / 100) * maxHP));
 
-  const budget = getDefenderBudget(isChampions);
+  const budget = getStatBudget(isChampions);
 
   return (
     <div className="flex min-w-0 flex-col gap-2">

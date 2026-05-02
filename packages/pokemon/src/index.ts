@@ -160,9 +160,18 @@ export {
 // Featured Pokemon for avatar picker
 export { FEATURED_POKEMON } from "./featured-pokemon";
 
-// Canonical stat keys, ordered array, and display labels
+// Canonical stat keys, ordered array, display labels, and stat-investment caps
 export type { StatKey } from "./stat-keys";
-export { STAT_KEYS, STAT_LABELS } from "./stat-keys";
+export {
+  STAT_KEYS,
+  STAT_LABELS,
+  EV_PER_STAT_MAX,
+  EV_TOTAL_MAX,
+  EV_STEP,
+  SP_PER_STAT_MAX,
+  SP_TOTAL_MAX,
+  SP_STEP,
+} from "./stat-keys";
 
 // Stat breakpoint calculator
 export { findStatBreakpoints, type FindStatBreakpointsArgs } from "./nature-bumps";

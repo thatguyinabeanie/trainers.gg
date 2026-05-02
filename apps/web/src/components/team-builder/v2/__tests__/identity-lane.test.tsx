@@ -170,7 +170,7 @@ jest.mock("../type-dot", () => ({
   TypeDot: ({ t }: { t: string }) => <span data-testid={`type-dot-${t}`} />,
 }));
 
-// FieldError — render as a simple alert span
+// FieldError + FieldErrors — render as simple alert spans
 jest.mock("../validation/field-error", () => ({
   FieldError: ({
     message,
@@ -182,6 +182,19 @@ jest.mock("../validation/field-error", () => ({
     <span role="alert" data-severity={severity ?? "error"}>
       {message}
     </span>
+  ),
+  FieldErrors: ({
+    errors,
+  }: {
+    errors: ReadonlyArray<{ message: string; severity?: string }>;
+  }) => (
+    <>
+      {errors.map((err, i) => (
+        <span key={i} role="alert" data-severity={err.severity ?? "error"}>
+          {err.message}
+        </span>
+      ))}
+    </>
   ),
 }));
 

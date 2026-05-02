@@ -21,14 +21,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipTrigger } from "@/components/ui/tooltip";
 
-import { STAT_LABELS } from "../../stat-types";
 import { type ValidationError } from "../../validation-hooks";
+import { NatureChevrons } from "../nature-chevrons";
 import { Sprite } from "../sprite";
 import { TypeDot } from "../type-dot";
 import {
@@ -39,7 +35,8 @@ import { ItemPicker } from "../pickers/item-picker";
 import { NaturePicker } from "../pickers/nature-picker";
 import { SpeciesPicker } from "../pickers/species-picker";
 import { TypePicker } from "../pickers/type-picker";
-import { FieldError } from "../validation/field-error";
+import { FieldErrors } from "../validation/field-error";
+import { DescriptionTooltip } from "./description-tooltip";
 import s from "../builder.module.css";
 
 // =============================================================================
@@ -395,7 +392,6 @@ function IdentityLaneReal({
 
         {/* BANNER — nickname + chips rows */}
         <div className={s.idBanner}>
-          {/* Row 1: Nickname input (left) + gender + shiny (right) */}
           <div className="flex items-center gap-2">
             <div className="flex min-w-0 flex-1 flex-col">
               <input
@@ -419,9 +415,7 @@ function IdentityLaneReal({
                     "border-destructive focus:border-destructive"
                 )}
               />
-              {nicknameErrors.map((err, i) => (
-                <FieldError key={i} message={err.message} severity={err.severity} />
-              ))}
+              <FieldErrors errors={nicknameErrors} />
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
@@ -438,9 +432,7 @@ function IdentityLaneReal({
                 >
                   {genderSymbol(gender)}
                 </button>
-                {genderErrors.map((err, i) => (
-                  <FieldError key={i} message={err.message} severity={err.severity} />
-                ))}
+                <FieldErrors errors={genderErrors} />
               </div>
 
               {/* Shiny toggle */}
@@ -511,9 +503,7 @@ function IdentityLaneReal({
               />
             </PopoverContent>
           </Popover>
-          {itemErrors.map((err, i) => (
-            <FieldError key={i} message={err.message} severity={err.severity} className="px-1" />
-          ))}
+          <FieldErrors errors={itemErrors} className="px-1" />
         </div>
 
         {/* Ability — when species is a mega, show the post-evolution ability
@@ -529,15 +519,16 @@ function IdentityLaneReal({
               ? getCanonicalBaseSpecies(pokemon.species)
               : "";
             const displayAbility = megaAbility ?? pokemon.ability;
-            const displayDesc = displayAbility
-              ? getAbilityShortDesc(displayAbility)
-              : null;
-            const baseDesc = pokemon.ability
-              ? getAbilityShortDesc(pokemon.ability)
-              : null;
+            const showTooltip = !abilityOpen;
+            const displayDesc = displayAbility ? getAbilityShortDesc(displayAbility) : null;
+            const baseDesc = pokemon.ability ? getAbilityShortDesc(pokemon.ability) : null;
             return (
               <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
-                <Tooltip key={`${abilityOpen ? "open" : "closed"}-${displayAbility ?? "empty"}`}>
+                <DescriptionTooltip
+                  title={displayAbility}
+                  description={displayDesc}
+                  showContent={showTooltip}
+                >
                   <TooltipTrigger
                     render={
                       <PopoverTrigger
@@ -563,15 +554,13 @@ function IdentityLaneReal({
                       {displayAbility || "—"}
                     </span>
                   </TooltipTrigger>
-                  {displayAbility && displayDesc && (
-                    <TooltipContent side="bottom" className="max-w-64 text-xs">
-                      <span className="font-semibold">{displayAbility}</span>
-                      <span className="block">{displayDesc}</span>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
+                </DescriptionTooltip>
                 {megaAbility && (
-                  <Tooltip key={`base-${abilityOpen ? "open" : "closed"}-${pokemon.ability ?? "empty"}`}>
+                  <DescriptionTooltip
+                    title={pokemon.ability}
+                    description={baseDesc}
+                    showContent={showTooltip}
+                  >
                     <TooltipTrigger
                       render={
                         <button
@@ -584,13 +573,7 @@ function IdentityLaneReal({
                     >
                       base: {pokemon.ability || "—"}
                     </TooltipTrigger>
-                    {pokemon.ability && baseDesc && (
-                      <TooltipContent side="bottom" className="max-w-64 text-xs">
-                        <span className="font-semibold">{pokemon.ability}</span>
-                        <span className="block">{baseDesc}</span>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
+                  </DescriptionTooltip>
                 )}
                 <PopoverContent side="bottom" align="start" className="w-auto p-0">
                   <AbilityPicker
@@ -604,9 +587,7 @@ function IdentityLaneReal({
               </Popover>
             );
           })()}
-          {abilityErrors.map((err, i) => (
-            <FieldError key={i} message={err.message} severity={err.severity} className="px-1" />
-          ))}
+          <FieldErrors errors={abilityErrors} className="px-1" />
         </div>
 
         {/* Nature */}
@@ -633,17 +614,7 @@ function IdentityLaneReal({
                 >
                   {pokemon.nature || "—"}
                 </span>
-                {natUp && natDown && (
-                  <span className="font-mono text-[9px] whitespace-nowrap">
-                    <span className="text-emerald-600 dark:text-emerald-400">
-                      +{STAT_LABELS[natUp] ?? natUp}
-                    </span>
-                    <span className="text-muted-foreground">/</span>
-                    <span className="text-rose-600 dark:text-rose-400">
-                      −{STAT_LABELS[natDown] ?? natDown}
-                    </span>
-                  </span>
-                )}
+                <NatureChevrons boost={natUp} reduce={natDown} />
               </span>
             </PopoverTrigger>
             <PopoverContent side="bottom" align="start" className="w-auto p-0">
@@ -654,9 +625,7 @@ function IdentityLaneReal({
               />
             </PopoverContent>
           </Popover>
-          {natureErrors.map((err, i) => (
-            <FieldError key={i} message={err.message} severity={err.severity} className="px-1" />
-          ))}
+          <FieldErrors errors={natureErrors} className="px-1" />
         </div>
 
         {/* Tera — gen-gated (only when format supports Terastallization) */}
@@ -690,9 +659,7 @@ function IdentityLaneReal({
         )}
 
         {/* Species validation errors */}
-        {speciesErrors.map((err, i) => (
-          <FieldError key={i} message={err.message} severity={err.severity} />
-        ))}
+        <FieldErrors errors={speciesErrors} />
       </div>
     </div>
   );

@@ -12,11 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipTrigger } from "@/components/ui/tooltip";
 
 import { type ValidationError } from "../../validation-hooks";
 import { CATEGORY_ICON_URLS } from "../../move-category-ui";
@@ -24,7 +20,8 @@ import { MovePicker } from "../pickers/move-picker";
 import { useCalcStateContext } from "../calc/calc-state-context";
 import { CalcDetailCard } from "../calc/calc-detail-card";
 import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
-import { FieldError } from "../validation/field-error";
+import { FieldErrors } from "../validation/field-error";
+import { DescriptionTooltip } from "./description-tooltip";
 
 // =============================================================================
 // Types
@@ -183,23 +180,18 @@ function MoveTile({
             </span>
           </span>
 
-          {/* Col 2: Move name. Tooltip key includes panel state + moveName so
-              the Tooltip remounts whenever the popover opens/closes or the
-              picked move changes — clears Base UI's stuck hover/focus state
-              that otherwise leaves the tooltip showing right after picking. */}
-          <Tooltip key={`${panel ?? "closed"}-${moveName ?? "empty"}`}>
+          {/* Col 2: Move name */}
+          <DescriptionTooltip
+            description={moveName ? moveData?.shortDesc : null}
+            showContent={panel === null}
+          >
             <TooltipTrigger
               render={<span />}
               className={cn("mvline-name", !moveName && "text-muted-foreground/50")}
             >
               {moveName ?? "+ Add move"}
             </TooltipTrigger>
-            {moveName && moveData?.shortDesc && (
-              <TooltipContent side="bottom" className="max-w-64 text-xs">
-                {moveData.shortDesc}
-              </TooltipContent>
-            )}
-          </Tooltip>
+          </DescriptionTooltip>
 
           {/* Col 4: BP */}
           <span className="mvline-stat">
@@ -261,9 +253,7 @@ function MoveTile({
       </Popover>
 
       {/* Inline error chips per move slot */}
-      {slotErrors.map((err, i) => (
-        <FieldError key={i} message={err.message} severity={err.severity} />
-      ))}
+      <FieldErrors errors={slotErrors} />
     </div>
   );
 }

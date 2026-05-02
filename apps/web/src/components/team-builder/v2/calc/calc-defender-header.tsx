@@ -19,6 +19,7 @@ import {
 
 import { Sprite } from "../sprite";
 import { TypePill } from "../type-pill";
+import { NatureChevrons } from "../nature-chevrons";
 import { AbilityPicker } from "../pickers/ability-picker";
 import { ItemPicker } from "../pickers/item-picker";
 import { NaturePicker } from "../pickers/nature-picker";
@@ -27,18 +28,6 @@ import { TypePicker } from "../pickers/type-picker";
 import { formatSupportsTera } from "../format-gating";
 import { MegaToggle } from "./mega-toggle";
 import s from "../builder.module.css";
-
-// =============================================================================
-// Constants
-// =============================================================================
-
-const STAT_ABBR: Partial<Record<string, string>> = {
-  attack: "Atk",
-  defense: "Def",
-  specialAttack: "SpA",
-  specialDefense: "SpD",
-  speed: "Spe",
-};
 
 // =============================================================================
 // Types
@@ -286,17 +275,7 @@ export function DefenderMonHeader({
         label="Nat"
         value={defenderNature}
         trailing={
-          natUp && natDown ? (
-            <span className="shrink-0 whitespace-nowrap font-mono text-[9px]">
-              <span className="text-emerald-600 dark:text-emerald-400">
-                +{STAT_ABBR[natUp] ?? natUp}
-              </span>
-              <span className="text-muted-foreground">/</span>
-              <span className="text-rose-600 dark:text-rose-400">
-                −{STAT_ABBR[natDown] ?? natDown}
-              </span>
-            </span>
-          ) : null
+          <NatureChevrons boost={natUp} reduce={natDown} className="shrink-0" />
         }
       >
         <NaturePicker
