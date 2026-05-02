@@ -182,9 +182,6 @@ jest.mock("../validation/field-error", () => ({
 import { MovesLane } from "../lanes/moves-lane";
 import { type ValidationError } from "../../validation-hooks";
 import { useCalcStateContext } from "../calc/calc-state-context";
-import { getMoveEffectiveness } from "../calc/move-effectiveness";
-import { getMoveTargetInfo } from "../calc/move-target-info";
-import { getVerdict } from "../../use-calc-state";
 import { getMoveData } from "@trainers/pokemon";
 
 // =============================================================================
@@ -290,6 +287,13 @@ describe("MovesLane — basic render", () => {
     renderLane({ move1: "Moonblast", move2: null, move3: null, move4: null });
     // 3 empty slots
     expect(screen.getAllByText("+ Add move").length).toBe(3);
+  });
+
+  it("renders '+ Add move' when a slot is an empty string (regression: move1 was rendering blank)", () => {
+    // Dirty data: move1 stored as "" instead of null. ?? wouldn't catch this,
+    // so the placeholder text was missing. Boundary normalization fixes it.
+    renderLane({ move1: "", move2: null, move3: null, move4: null });
+    expect(screen.getAllByText("+ Add move").length).toBe(4);
   });
 
   it.each([

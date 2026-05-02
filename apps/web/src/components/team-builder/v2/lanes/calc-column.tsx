@@ -149,7 +149,7 @@ export function CalcColumn({ pokemon, format: _format }: CalcColumnProps) {
         <CalcRow
           key={slot}
           slotIndex={i}
-          moveName={pokemon ? pokemon[slot as MoveSlot] ?? null : null}
+          moveName={pokemon ? pokemon[slot as MoveSlot] || null : null}
         />
       ))}
     </div>

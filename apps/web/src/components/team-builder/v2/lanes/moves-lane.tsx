@@ -338,7 +338,7 @@ function MovesLaneReal({ pokemon, format, onUpdate, fieldErrors }: MovesLaneReal
             <MoveTile
               key={slotKey}
               slotKey={slotKey}
-              moveName={pokemon[slotKey]}
+              moveName={pokemon[slotKey] || null}
               species={pokemon.species ?? ""}
               format={format}
               attacker={pokemon}
