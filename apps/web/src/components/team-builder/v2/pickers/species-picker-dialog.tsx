@@ -2,11 +2,7 @@
 
 import { type GameFormat } from "@trainers/pokemon";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 import { SpeciesPicker } from "./species-picker";
 
