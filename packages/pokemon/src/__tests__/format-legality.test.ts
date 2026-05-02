@@ -253,6 +253,29 @@ describe("format-legality — abilities", () => {
   it("isLegalAbility returns true for empty string (no ability selected)", () => {
     expect(isLegalAbility("", "Pikachu", "gen9vgc2026regi")).toBe(true);
   });
+
+  describe("mega forms — base ability legality", () => {
+    it.each([
+      ["Charizard-Mega-Y", "Solar Power"],
+      ["Charizard-Mega-Y", "Blaze"],
+      ["Charizard-Mega-X", "Blaze"],
+      ["Garchomp-Mega", "Rough Skin"],
+      ["Garchomp-Mega", "Sand Veil"],
+    ])(
+      "%s with stored base ability %s is legal (tournament submission shape)",
+      (megaSpecies, baseAbility) => {
+        expect(
+          isLegalAbility(baseAbility, megaSpecies, "championsvgc2026regma")
+        ).toBe(true);
+      }
+    );
+
+    it("Charizard-Mega-Y rejects an ability not in Charizard's pool", () => {
+      expect(
+        isLegalAbility("Intimidate", "Charizard-Mega-Y", "championsvgc2026regma")
+      ).toBe(false);
+    });
+  });
 });
 
 describe("form switching", () => {

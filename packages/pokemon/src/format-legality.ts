@@ -1144,6 +1144,12 @@ export function getLegalAbilities(
  * True when `ability` is legal for `species` in `formatId`. Returns true
  * for the empty string (no ability is always legal) and for any format
  * without computable legality (permissive default).
+ *
+ * Mega forms are normalized to their base species before the lookup —
+ * tournament submissions store the pre-mega base ability (e.g. Charizard
+ * with Solar Power that becomes Drought on mega-evolve), so the stored
+ * value must be validated against the base form's ability pool, not the
+ * mega's intrinsic ability.
  */
 export function isLegalAbility(
   ability: string,
@@ -1151,7 +1157,10 @@ export function isLegalAbility(
   formatId: string
 ): boolean {
   if (!ability) return true;
-  const legal = getLegalAbilities(species, formatId);
+  const lookupSpecies = MEGA_SPECIES_TO_STONE.has(species)
+    ? getCanonicalBaseSpecies(species)
+    : species;
+  const legal = getLegalAbilities(lookupSpecies, formatId);
   return legal === undefined || legal.has(ability);
 }
 
