@@ -4,6 +4,8 @@ import React from "react";
 
 import type * as TrainersPokemon from "@trainers/pokemon";
 
+import type { FilterAction } from "../pickers/species-smart-search";
+
 // =============================================================================
 // Mock next/image — JSDOM cannot render Next.js Image; render a plain <img>.
 // =============================================================================
@@ -182,6 +184,14 @@ jest.mock("../pickers/role-chip", () => ({
   ),
 }));
 
+// Pin the mock's emitted action shape to the real FilterAction via `satisfies`.
+// If the real onFilter ever changes shape, these literals stop type-checking
+// and the test forces an update — guarding against the "test asserts against
+// the mock instead of behavior" failure mode.
+const SMART_FILTER_TYPE = { type: "Fire" } satisfies FilterAction;
+const SMART_FILTER_MOVE = { move: "Tailwind" } satisfies FilterAction;
+const SMART_FILTER_ABILITY = { ability: "Drought" } satisfies FilterAction;
+
 jest.mock("../pickers/species-smart-search", () => ({
   SpeciesSmartSearch: ({
     query,
@@ -190,28 +200,24 @@ jest.mock("../pickers/species-smart-search", () => ({
     query: string;
     index: unknown[];
     format: unknown;
-    onFilter: (action: {
-      type?: string;
-      move?: string;
-      ability?: string;
-    }) => void;
+    onFilter: (action: FilterAction) => void;
   }) => (
     <div data-testid="species-smart-search" data-query={query}>
       <button
         data-testid="smart-filter-type"
-        onClick={() => onFilter({ type: "Fire" })}
+        onClick={() => onFilter(SMART_FILTER_TYPE)}
       >
         Filter Fire
       </button>
       <button
         data-testid="smart-filter-move"
-        onClick={() => onFilter({ move: "Tailwind" })}
+        onClick={() => onFilter(SMART_FILTER_MOVE)}
       >
         Filter Tailwind
       </button>
       <button
         data-testid="smart-filter-ability"
-        onClick={() => onFilter({ ability: "Drought" })}
+        onClick={() => onFilter(SMART_FILTER_ABILITY)}
       >
         Filter Drought
       </button>
@@ -848,6 +854,34 @@ describe("SpeciesPicker", () => {
     expect(
       screen.getByRole("button", { name: /Clear 1 active filter/i })
     ).toBeInTheDocument();
+  });
+
+  it("smart-filter-move is idempotent — clicking the same move twice does not duplicate it", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    const input = screen.getByTestId("species-search");
+
+    await user.type(input, "tail");
+    await user.click(screen.getByTestId("smart-filter-move"));
+
+    // Re-trigger: re-type and click again. The handler at species-picker.tsx
+    // guards `!prev.moves.includes(move)` — without it, Tailwind would land
+    // in filters.moves twice.
+    await user.type(input, "tail");
+    await user.click(screen.getByTestId("smart-filter-move"));
+
+    const sidebarEl = screen.getByTestId("species-sidebar");
+    const filters = JSON.parse(
+      (sidebarEl as HTMLElement).dataset.filters ?? "{}"
+    ) as { moves?: string[] };
+    expect(filters.moves).toEqual(["Tailwind"]);
   });
 
   it("smart-filter with kind=ability sets filters.ability and clears query", async () => {

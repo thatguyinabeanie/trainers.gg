@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 // Types
 // =============================================================================
 
-interface FilterAction {
+export interface FilterAction {
   type?: string;
   move?: string;
   ability?: string;

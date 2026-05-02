@@ -133,6 +133,22 @@ describe("SpeciesSidebar", () => {
     );
   });
 
+  it("move typeahead excludes already-applied moves; Enter is a no-op", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    renderSidebar({
+      format: { id: "gen9vgc2026regg" } as never,
+      filters: { ...DEFAULT_SPECIES_FILTERS, moves: ["Tailwind"] },
+      onFiltersChange: onChange,
+    });
+    const input = screen.getByPlaceholderText(/type a move/i);
+    // "Tail" would match "Tailwind", but Tailwind is already in filters.moves —
+    // the suggestion list filters it out, so Enter has no first suggestion to commit.
+    await user.type(input, "Tail");
+    await user.keyboard("{Enter}");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   // ---------------------------------------------------------------------------
   // Ability typeahead — Enter only commits on suggestion match
   // ---------------------------------------------------------------------------

@@ -6,7 +6,14 @@ import {
   getAllLegalMoves,
   type SpeciesSearchEntry,
 } from "../species-search";
-import { getLegalSpecies } from "../format-legality";
+import * as formatLegality from "../format-legality";
+import { getLegalSpecies, LEGALITY_UNAVAILABLE } from "../format-legality";
+
+// Library tsconfig has no DOM/Node lib — declare console ambiently so tests
+// can spy on it without pulling @types/node.
+declare const console: {
+  warn(...data: unknown[]): void;
+};
 
 // The species-search index is cached at module level keyed by formatId. Tests
 // that pass a custom `getRoles` resolver need a fresh build, so clear the
@@ -636,5 +643,42 @@ describe("getAllLegalAbilities / getAllLegalMoves", () => {
     expect(afterAbilities).toEqual(beforeAbilities);
     expect(afterMoves).not.toBe(beforeMoves);
     expect(afterMoves).toEqual(beforeMoves);
+  });
+
+  // Regression: clearSpeciesSearchIndexCache must also reset the silent-fallback
+  // warning dedup sets. Otherwise a `console.warn` that fired during the prior
+  // cache lifetime stays suppressed forever, hiding warnings tests intentionally
+  // trigger after a refresh.
+  it("clearSpeciesSearchIndexCache resets the silent-fallback warning dedup", () => {
+    // Force the LEGALITY_UNAVAILABLE path for getLegalSpecies so
+    // buildSpeciesSearchIndex hits the warned-set guarded warn.
+    const legalitySpy = jest
+      .spyOn(formatLegality, "getLegalSpecies")
+      .mockReturnValue(LEGALITY_UNAVAILABLE);
+    const warnSpy = jest
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+    try {
+      // Use a format that the real index would otherwise build cleanly so the
+      // only difference between runs is the mocked legality sentinel.
+      const fmt = "gen9vgc2026regg";
+      clearSpeciesSearchIndexCache();
+
+      buildSpeciesSearchIndex(fmt);
+      const firstCallCount = warnSpy.mock.calls.length;
+      expect(firstCallCount).toBeGreaterThan(0);
+
+      // Same format again without clearing — dedup should suppress the warning.
+      buildSpeciesSearchIndex(fmt);
+      expect(warnSpy.mock.calls.length).toBe(firstCallCount);
+
+      // Clear the cache — warned* sets must reset so the warning fires again.
+      clearSpeciesSearchIndexCache();
+      buildSpeciesSearchIndex(fmt);
+      expect(warnSpy.mock.calls.length).toBeGreaterThan(firstCallCount);
+    } finally {
+      warnSpy.mockRestore();
+      legalitySpy.mockRestore();
+    }
   });
 });
