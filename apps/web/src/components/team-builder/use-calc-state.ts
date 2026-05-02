@@ -10,7 +10,7 @@ import {
   Side,
 } from "@smogon/calc";
 
-import { type GameFormat } from "@trainers/pokemon";
+import { type GameFormat, isChampionsFormat } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
 // =============================================================================
@@ -549,6 +549,40 @@ export function useCalcState({
     useState<DefenderEvs>(DEFAULT_DEFENDER_EVS);
   const [defenderIvs, setDefenderIvs] =
     useState<DefenderIvs>(DEFAULT_DEFENDER_IVS);
+
+  // Clamp defenderEvs to the active format's caps when format changes.
+  // Champions M-A uses 32 per stat / 66 total Stat Points (vs VGC 252/510).
+  // Without this, defaults like { hp: 252 } persist across format changes
+  // and exceed the Champions caps. Render-time adjustment (Symbol sentinel)
+  // per react-patterns.md — set-state-in-effect is forbidden.
+  const FORMAT_UNINITIALIZED = Symbol();
+  const isChampions = isChampionsFormat(format);
+  const [prevIsChampions, setPrevIsChampions] = useState<boolean | symbol>(
+    FORMAT_UNINITIALIZED
+  );
+  if (prevIsChampions !== isChampions) {
+    setPrevIsChampions(isChampions);
+    const perStatCap = isChampions ? 32 : 252;
+    const totalCap = isChampions ? 66 : 510;
+    setDefenderEvs((prev) => {
+      let runningTotal = 0;
+      const next: DefenderEvs = { ...prev };
+      for (const key of [
+        "hp",
+        "atk",
+        "def",
+        "spa",
+        "spd",
+        "spe",
+      ] as const satisfies readonly (keyof DefenderEvs)[]) {
+        const perStat = Math.min(prev[key], perStatCap);
+        const allowed = Math.max(0, Math.min(perStat, totalCap - runningTotal));
+        next[key] = allowed;
+        runningTotal += allowed;
+      }
+      return next;
+    });
+  }
   const [defenderBoosts, setDefenderBoosts] =
     useState<DefenderBoosts>(EMPTY_BOOSTS);
   const [defenderStatus, setDefenderStatus] = useState("Healthy");
