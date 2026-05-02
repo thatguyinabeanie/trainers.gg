@@ -1942,3 +1942,265 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================
+   Identity panel — compact vs hero modes
+   Compact layout (≥1100px): sprite-left + form-right (current design)
+   Hero layout (<1100px): full-width centered panel
+   Both are rendered to DOM; container queries toggle display.
+   ============================================================ */
+
+/* Default: compact visible, hero hidden */
+.identCompact {
+  display: flex;
+}
+
+.identHero {
+  display: none;
+}
+
+/* At slot width ≤1099px, flip to hero */
+@container slot (max-width: 1099px) {
+  .identCompact {
+    display: none;
+  }
+
+  .identHero {
+    display: flex;
+  }
+}
+
+/* ── Hero panel ─────────────────────────────────────────── */
+
+/* Outer flex wrapper — fills the slot width */
+.heroPanel {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Top meta row: [gender] [✦] [Lv N] [nickname input] */
+.heroMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Gender badge — small pill */
+.heroGender {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+
+.heroGender:hover {
+  background: color-mix(in oklch, var(--muted) 80%, var(--foreground));
+}
+
+/* Shiny badge */
+.heroShiny {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  cursor: pointer;
+  transition: colors 0.1s;
+}
+
+/* Level badge — non-interactive display */
+.heroLv {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+/* Nickname input — fills remaining space */
+.heroNicknameInput {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+  outline: none;
+  padding: 1px 0;
+  color: var(--foreground);
+  transition: border-color 0.1s;
+}
+
+.heroNicknameInput::placeholder {
+  color: var(--muted-foreground);
+  font-weight: 400;
+  opacity: 0.5;
+}
+
+.heroNicknameInput:hover {
+  border-bottom-color: var(--border);
+  border-bottom-style: dashed;
+}
+
+.heroNicknameInput:focus {
+  border-bottom-color: var(--primary);
+  border-bottom-style: solid;
+}
+
+/* Sprite button — centered, click to open species picker */
+.heroSpriteBtn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  align-self: center;
+  transition: opacity 0.15s;
+}
+
+.heroSpriteBtn:hover {
+  opacity: 0.8;
+}
+
+/* Species pill below sprite */
+.heroSpeciesPill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  align-self: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 0;
+  max-width: 200px;
+  transition: border-color 0.1s;
+}
+
+.heroSpeciesPill:hover,
+.heroSpeciesPill:focus-visible {
+  border-color: var(--primary);
+}
+
+/* Type pills row */
+.heroTypes {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Divider between sprite section and form grid */
+.heroDivider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+
+/* Form grid — 2-column by default */
+.heroForm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+/* At slot width ≤699px, collapse to single column */
+@container slot (max-width: 699px) {
+  .heroForm {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Single cell in the form grid */
+.heroFormCell {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+  min-width: 0;
+  transition: background 0.1s;
+}
+
+.heroFormCell:hover {
+  background: var(--muted);
+}
+
+/* Span both columns */
+.heroFormCellSpan2 {
+  grid-column: 1 / -1;
+}
+
+/* Non-interactive read-only display cell (no hover) */
+.heroFormCellReadonly {
+  cursor: default;
+}
+
+.heroFormCellReadonly:hover {
+  background: transparent;
+}
+
+/* Label inside form cell */
+.heroFormLbl {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Value inside form cell */
+.heroFormVal {
+  font-size: 12px;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* MEGA chip — shown next to item value when item is a mega stone */
+.heroMegaChip {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in oklch, var(--primary) 50%, transparent);
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
+  color: var(--primary);
+  white-space: nowrap;
+}

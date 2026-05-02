@@ -17,12 +17,6 @@ import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -33,11 +27,12 @@ import { type ValidationError } from "../../validation-hooks";
 import { NatureChevrons } from "../nature-chevrons";
 import { Sprite } from "../sprite";
 import { TypeDot } from "../type-dot";
+import { TypePill } from "../type-pill";
 import { formatSupportsTera } from "../format-gating";
 import { AbilityPicker } from "../pickers/ability-picker";
 import { ItemPicker } from "../pickers/item-picker";
 import { NaturePicker } from "../pickers/nature-picker";
-import { SpeciesPicker } from "../pickers/species-picker";
+import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
 import { TypePicker } from "../pickers/type-picker";
 import { FieldErrors } from "../validation/field-error";
 import { DescriptionTooltip } from "./description-tooltip";
@@ -415,102 +410,106 @@ function IdentityLaneReal({
       typeof p.species === "string" && p.species.length > 0
   );
 
+  // Used by hero mode: determines mega ability display and base-ability cell
+  const megaAbility = getMegaAbilityForSpecies(pokemon.species ?? "");
+  // True when the held item is the mega stone that matches the current species
+  const isMegaStone =
+    getMegaStoneForSpecies(pokemon.species ?? "") === pokemon.held_item;
+
+  // Shared species picker — rendered once, opened from both compact and hero
+  const speciesPicker = (
+    <SpeciesPickerDialog
+      open={speciesOpen}
+      onOpenChange={setSpeciesOpen}
+      value={pokemon.species ?? null}
+      format={format}
+      currentTeam={currentTeam}
+      onPick={(species) => {
+        if (species === pokemon.species) return;
+        setNickDraft("");
+        onUpdate({
+          species,
+          nickname: null,
+          held_item: null,
+          ability: "",
+          nature: "Serious",
+          tera_type: null,
+          gender: null,
+          is_shiny: false,
+          move1: "",
+          move2: null,
+          move3: null,
+          move4: null,
+          ev_hp: 0,
+          ev_attack: 0,
+          ev_defense: 0,
+          ev_special_attack: 0,
+          ev_special_defense: 0,
+          ev_speed: 0,
+          iv_hp: 31,
+          iv_attack: 31,
+          iv_defense: 31,
+          iv_special_attack: 31,
+          iv_special_defense: 31,
+          iv_speed: 31,
+        });
+      }}
+    />
+  );
+
   return (
-    <div className="flex min-w-0 gap-3 p-3">
-      {/* ── Sprite column + species picker (centered Dialog modal) ── */}
-      <Dialog open={speciesOpen} onOpenChange={setSpeciesOpen}>
-        <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
-          {/* Species pill — typeable control above the sprite */}
-          <DialogTrigger
-            render={
-              <button
-                type="button"
-                aria-label={`Change species (${pokemon.species ?? "none"})`}
-                className={cn(
-                  "border-border bg-background hover:border-primary focus-visible:border-primary",
-                  "flex w-36 items-center gap-1 rounded-md border px-2 py-1.5 text-left text-xs",
-                  "transition-colors outline-none sm:w-40 md:w-44"
-                )}
-              />
-            }
-          >
-            <span
+    <>
+      {speciesPicker}
+
+      {/* ── COMPACT layout (≥1100px) — sprite-left + form-right ────── */}
+      <div className={s.identCompact}>
+        <div className="flex min-w-0 gap-3 p-3">
+          {/* Sprite column */}
+          <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
+            {/* Species pill — typeable control above the sprite */}
+            <button
+              type="button"
+              onClick={() => setSpeciesOpen(true)}
+              aria-label={`Change species (${pokemon.species ?? "none"})`}
               className={cn(
-                "min-w-0 flex-1 truncate",
-                pokemon.species
-                  ? "text-foreground font-medium"
-                  : "text-muted-foreground"
+                "border-border bg-background hover:border-primary focus-visible:border-primary",
+                "flex w-36 items-center gap-1 rounded-md border px-2 py-1.5 text-left text-xs",
+                "transition-colors outline-none sm:w-40 md:w-44"
               )}
-              title={pokemon.species ?? undefined}
             >
-              {pokemon.species ?? "Choose species…"}
-            </span>
-            <span aria-hidden className="text-muted-foreground text-[9px]">
-              ▾
-            </span>
-          </DialogTrigger>
+              <span
+                className={cn(
+                  "min-w-0 flex-1 truncate",
+                  pokemon.species
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground"
+                )}
+                title={pokemon.species ?? undefined}
+              >
+                {pokemon.species ?? "Choose species…"}
+              </span>
+              <span aria-hidden className="text-muted-foreground text-[9px]">
+                ▾
+              </span>
+            </button>
 
-          {/* Sprite — 144×144, click to open species picker */}
-          <DialogTrigger
-            render={
-              <button
-                type="button"
-                aria-label={`Change species (${pokemon.species ?? "none"})`}
-                className="shrink-0 transition-opacity hover:opacity-80"
+            {/* Sprite — 144×144, click to open species picker */}
+            <button
+              type="button"
+              onClick={() => setSpeciesOpen(true)}
+              aria-label={`Change species (${pokemon.species ?? "none"})`}
+              className="shrink-0 transition-opacity hover:opacity-80"
+            >
+              <Sprite
+                species={pokemon.species ?? ""}
+                types={types}
+                size={144}
               />
-            }
-          >
-            <Sprite species={pokemon.species ?? ""} types={types} size={144} />
-          </DialogTrigger>
-        </div>
+            </button>
+          </div>
 
-        <DialogContent
-          showCloseButton={false}
-          className="flex h-[calc(100vh-2rem)] max-h-[1080px] w-[calc(100vw-2rem)] max-w-[1600px] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[1600px]"
-        >
-          <DialogTitle className="sr-only">Choose species</DialogTitle>
-          <SpeciesPicker
-            value={pokemon.species ?? null}
-            format={format}
-            currentTeam={currentTeam}
-            onPick={(species) => {
-              setSpeciesOpen(false);
-              if (species === pokemon.species) return;
-              setNickDraft("");
-              onUpdate({
-                species,
-                nickname: null,
-                held_item: null,
-                ability: "",
-                nature: "Serious",
-                tera_type: null,
-                gender: null,
-                is_shiny: false,
-                move1: "",
-                move2: null,
-                move3: null,
-                move4: null,
-                ev_hp: 0,
-                ev_attack: 0,
-                ev_defense: 0,
-                ev_special_attack: 0,
-                ev_special_defense: 0,
-                ev_speed: 0,
-                iv_hp: 31,
-                iv_attack: 31,
-                iv_defense: 31,
-                iv_special_attack: 31,
-                iv_special_defense: 31,
-                iv_speed: 31,
-              });
-            }}
-            onClose={() => setSpeciesOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Form column (sibling of species Dialog) ─────────────── */}
-      <div className="flex w-56 min-w-0 shrink-0 flex-col justify-center gap-0.5">
+          {/* Form column */}
+          <div className="flex w-56 min-w-0 shrink-0 flex-col justify-center gap-0.5">
         {/* BANNER — nickname + chips rows */}
         <div className={s.idBanner}>
           <div className="flex items-center gap-2">
@@ -687,10 +686,326 @@ function IdentityLaneReal({
           </Popover>
         )}
 
-        {/* Species validation errors */}
-        <FieldErrors errors={speciesErrors} />
+          {/* Species validation errors */}
+          <FieldErrors errors={speciesErrors} />
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* ── HERO layout (<1100px) — full-width centered panel ────────── */}
+      <div className={s.identHero}>
+        <div className={s.heroPanel}>
+          {/* Meta row: gender | shiny | Lv | nickname */}
+          <div className={s.heroMetaRow}>
+            <button
+              type="button"
+              onClick={handleGenderToggle}
+              title="Toggle gender"
+              className={cn(
+                s.heroGender,
+                genderErrors.length > 0 && "border-destructive"
+              )}
+            >
+              {genderSymbol(gender)}
+            </button>
+            <button
+              type="button"
+              onClick={handleShinyToggle}
+              aria-pressed={isShiny}
+              title={
+                isShiny
+                  ? "Shiny (click to clear)"
+                  : "Not shiny (click to set)"
+              }
+              className={cn(
+                s.heroShiny,
+                isShiny
+                  ? "border-yellow-400/40 bg-yellow-400/20 text-yellow-600 dark:text-yellow-400"
+                  : "text-muted-foreground"
+              )}
+            >
+              ✦
+            </button>
+            <span className={s.heroLv}>Lv {pokemon.level ?? 50}</span>
+            {/* Duplicate nickname input — shares nickDraft state with compact mode */}
+            <input
+              type="text"
+              value={nickDraft}
+              onChange={(e) => setNickDraft(e.target.value)}
+              onBlur={handleNickBlur}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
+              placeholder="Nickname"
+              maxLength={24}
+              aria-label="Nickname"
+              className={cn(
+                s.heroNicknameInput,
+                nicknameErrors.length > 0 &&
+                  "border-b-destructive focus:border-b-destructive"
+              )}
+            />
+          </div>
+
+          {/* Sprite — centered, click to open species picker */}
+          <button
+            type="button"
+            aria-label={`Change species (${pokemon.species ?? "none"})`}
+            className={s.heroSpriteBtn}
+            onClick={() => setSpeciesOpen(true)}
+          >
+            <Sprite species={pokemon.species ?? ""} types={types} size={120} />
+          </button>
+
+          {/* Species pill below sprite */}
+          <button
+            type="button"
+            aria-label={`Change species (${pokemon.species ?? "none"})`}
+            className={s.heroSpeciesPill}
+            onClick={() => setSpeciesOpen(true)}
+          >
+            <span
+              className={cn(
+                "min-w-0 truncate",
+                pokemon.species ? "font-semibold" : "text-muted-foreground"
+              )}
+              title={pokemon.species ?? undefined}
+            >
+              {pokemon.species ?? "Choose species…"}
+            </span>
+            <span aria-hidden className="text-muted-foreground text-[9px]">
+              ▾
+            </span>
+          </button>
+
+          {/* Type pills */}
+          {types.length > 0 && (
+            <div className={s.heroTypes}>
+              {types.map((t) => (
+                <TypePill key={t} t={t} size={22} />
+              ))}
+            </div>
+          )}
+
+          {/* Form chips (mega / alt-form switcher) */}
+          {pokemon.species && speciesHasForms(pokemon.species) && (
+            <div className="flex justify-center">
+              <FormChips
+                currentSpecies={pokemon.species}
+                currentItem={pokemon.held_item}
+                onPick={(nextSpecies) => {
+                  if (nextSpecies === pokemon.species) return;
+                  onUpdate({ species: nextSpecies });
+                }}
+              />
+            </div>
+          )}
+
+          <hr className={s.heroDivider} />
+
+          {/* Form grid */}
+          <div className={s.heroForm}>
+            {/* Item — full-width span */}
+            <Popover open={itemOpen} onOpenChange={setItemOpen}>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className={cn(
+                      s.heroFormCell,
+                      s.heroFormCellSpan2,
+                      itemErrors.length > 0 &&
+                        "ring-destructive/40 rounded ring-1"
+                    )}
+                  />
+                }
+              >
+                <span className={s.heroFormLbl}>Item</span>
+                <span className={s.heroFormVal}>
+                  <span
+                    className={cn(
+                      "min-w-0 flex-1 truncate",
+                      !pokemon.held_item && "text-muted-foreground/50 italic"
+                    )}
+                  >
+                    {pokemon.held_item || "—"}
+                  </span>
+                  {isMegaStone && (
+                    <span className={s.heroMegaChip}>MEGA</span>
+                  )}
+                </span>
+              </PopoverTrigger>
+              <PopoverContent
+                side="bottom"
+                align="start"
+                className="w-auto p-0"
+              >
+                <ItemPicker
+                  value={pokemon.held_item}
+                  format={format}
+                  teamItems={teamItems}
+                  onPick={(item) => onUpdate({ held_item: item })}
+                  onClose={() => setItemOpen(false)}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Ability */}
+            <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className={cn(
+                      s.heroFormCell,
+                      abilityErrors.length > 0 &&
+                        "ring-destructive/40 rounded ring-1"
+                    )}
+                  />
+                }
+              >
+                <span className={s.heroFormLbl}>Ability</span>
+                <span
+                  className={cn(
+                    s.heroFormVal,
+                    !(megaAbility ?? pokemon.ability) &&
+                      "text-muted-foreground/50 italic"
+                  )}
+                >
+                  {(megaAbility ?? pokemon.ability) || "—"}
+                </span>
+              </PopoverTrigger>
+              <PopoverContent
+                side="bottom"
+                align="start"
+                className="w-auto p-0"
+              >
+                <AbilityPicker
+                  value={pokemon.ability}
+                  species={
+                    pokemon.species
+                      ? getCanonicalBaseSpecies(pokemon.species)
+                      : ""
+                  }
+                  format={format}
+                  onPick={(ability) => onUpdate({ ability })}
+                  onClose={() => setAbilityOpen(false)}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Base ability — only shown for Mega forms where ability is forced */}
+            {megaAbility !== null && (
+              <div className={cn(s.heroFormCell, s.heroFormCellReadonly)}>
+                <span className={s.heroFormLbl}>Base</span>
+                <span
+                  className={cn(
+                    s.heroFormVal,
+                    !pokemon.ability && "text-muted-foreground/50 italic"
+                  )}
+                >
+                  {pokemon.ability || "—"}
+                </span>
+              </div>
+            )}
+
+            {/* Nature */}
+            <Popover open={natureOpen} onOpenChange={setNatureOpen}>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className={cn(
+                      s.heroFormCell,
+                      natureErrors.length > 0 &&
+                        "ring-destructive/40 rounded ring-1"
+                    )}
+                  />
+                }
+              >
+                <span className={s.heroFormLbl}>Nature</span>
+                <span
+                  className={cn(
+                    s.heroFormVal,
+                    !pokemon.nature && "text-muted-foreground/50 italic"
+                  )}
+                >
+                  {pokemon.nature || "—"}
+                  {pokemon.nature && (
+                    <NatureChevrons boost={natUp} reduce={natDown} />
+                  )}
+                </span>
+              </PopoverTrigger>
+              <PopoverContent
+                side="bottom"
+                align="start"
+                className="w-auto p-0"
+              >
+                <NaturePicker
+                  value={pokemon.nature ?? ""}
+                  onPick={(nature) => onUpdate({ nature })}
+                  onClose={() => setNatureOpen(false)}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Tera — format-gated, full-width span */}
+            {showTera && (
+              <Popover open={teraOpen} onOpenChange={setTeraOpen}>
+                <PopoverTrigger
+                  render={
+                    <button
+                      type="button"
+                      className={cn(s.heroFormCell, s.heroFormCellSpan2)}
+                    />
+                  }
+                >
+                  <span className={s.heroFormLbl}>Tera</span>
+                  <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
+                    {pokemon.tera_type ? (
+                      <>
+                        <TypeDot t={pokemon.tera_type} size={10} />
+                        <span className={s.heroFormVal}>
+                          {pokemon.tera_type}
+                        </span>
+                      </>
+                    ) : (
+                      <span
+                        className={cn(
+                          s.heroFormVal,
+                          "text-muted-foreground/50 italic"
+                        )}
+                      >
+                        —
+                      </span>
+                    )}
+                  </span>
+                </PopoverTrigger>
+                <PopoverContent
+                  side="bottom"
+                  align="start"
+                  className="w-auto p-0"
+                >
+                  <TypePicker
+                    value={pokemon.tera_type}
+                    onPick={(type) => onUpdate({ tera_type: type })}
+                    onClose={() => setTeraOpen(false)}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+
+          {/* Validation errors */}
+          <FieldErrors errors={speciesErrors} />
+          <FieldErrors errors={nicknameErrors} />
+          <FieldErrors errors={genderErrors} />
+          <FieldErrors errors={itemErrors} />
+          <FieldErrors errors={abilityErrors} />
+          <FieldErrors errors={natureErrors} />
+        </div>
+      </div>
+    </>
   );
 }
 
