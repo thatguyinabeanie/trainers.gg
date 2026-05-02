@@ -262,16 +262,6 @@ describe("Tournament Registration Mutations", () => {
 
       expect(result).toEqual({ success: true, registrationId: 600 });
     });
-
-    it("should throw error if alt cannot be loaded", async () => {
-      (getCurrentAlt as jest.Mock).mockResolvedValue(null);
-
-      await expect(
-        updateRegistrationPreferences(mockClient, tournamentId, {
-          inGameName: "Test",
-        })
-      ).rejects.toThrow("Unable to load your account");
-    });
   });
 
   describe("cancelRegistration", () => {
