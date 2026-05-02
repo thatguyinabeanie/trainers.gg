@@ -191,8 +191,11 @@ function MoveTile({
             </span>
           </span>
 
-          {/* Col 2: Move name */}
-          <Tooltip>
+          {/* Col 2: Move name. Tooltip key includes panel state + moveName so
+              the Tooltip remounts whenever the popover opens/closes or the
+              picked move changes — clears Base UI's stuck hover/focus state
+              that otherwise leaves the tooltip showing right after picking. */}
+          <Tooltip key={`${panel ?? "closed"}-${moveName ?? "empty"}`}>
             <TooltipTrigger
               render={<span />}
               className={cn("mvline-name", !moveName && "text-muted-foreground/50")}
