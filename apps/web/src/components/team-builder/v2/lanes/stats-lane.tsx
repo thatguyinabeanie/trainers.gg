@@ -380,6 +380,7 @@ function StatRow({
 
   function flushEvDraft() {
     if (draftEv === null) return;
+    onLiveEv?.(statKey, draftEv);
     onUpdate({ [evFieldKey]: draftEv });
   }
 
