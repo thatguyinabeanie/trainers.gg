@@ -21,9 +21,9 @@ import {
   isChampionsFormat,
   type GameFormat,
 } from "@trainers/pokemon";
+import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
-import { TYPE_PILL_COLORS } from "../../type-colors";
 import {
   DEFAULT_SPECIES_FILTERS,
   type SpeciesFilterState,
@@ -146,20 +146,23 @@ export function SpeciesSidebar({
               <button
                 key={type}
                 type="button"
+                aria-label={type}
+                aria-pressed={isActive}
                 onClick={() => toggleType(type)}
                 className={cn(
-                  "rounded px-1 py-0.5 text-[10px] font-medium transition-all",
+                  "flex items-center justify-center rounded px-1 py-1 transition-all",
                   isActive
-                    ? cn(
-                        TYPE_PILL_COLORS[
-                          type as keyof typeof TYPE_PILL_COLORS
-                        ] ?? "bg-muted",
-                        "shadow-[0_0_0_3px_currentColor] outline outline-2 outline-offset-0 outline-white"
-                      )
-                    : "bg-muted text-muted-foreground opacity-70 hover:opacity-100"
+                    ? "ring-primary bg-background ring-2 ring-offset-1"
+                    : "bg-muted/40 opacity-70 hover:opacity-100"
                 )}
               >
-                {type}
+                <img
+                  src={getShowdownTypeIconUrl(type)}
+                  alt={type}
+                  width={32}
+                  height={14}
+                  className="h-[14px] w-auto [image-rendering:pixelated]"
+                />
               </button>
             );
           })}
@@ -172,17 +175,25 @@ export function SpeciesSidebar({
               <button
                 key={type}
                 type="button"
+                aria-label={`Add ${type} (team-needs hint)`}
                 onClick={() => toggleType(type)}
                 className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                  "flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors",
                   filters.types.includes(type)
-                    ? (TYPE_PILL_COLORS[
-                        type as keyof typeof TYPE_PILL_COLORS
-                      ] ?? "bg-muted")
-                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    ? "bg-primary/10 ring-primary/40 ring-1"
+                    : "bg-muted hover:bg-accent"
                 )}
               >
-                ✦ {type}
+                <span aria-hidden="true" className="text-[10px]">
+                  ✦
+                </span>
+                <img
+                  src={getShowdownTypeIconUrl(type)}
+                  alt={type}
+                  width={32}
+                  height={14}
+                  className="h-[14px] w-auto [image-rendering:pixelated]"
+                />
               </button>
             ))}
           </div>

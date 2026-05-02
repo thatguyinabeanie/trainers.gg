@@ -15,14 +15,15 @@ import {
   type GameFormat,
   type SpeciesSearchEntry,
 } from "@trainers/pokemon";
-import { getPokemonSprite } from "@trainers/pokemon/sprites";
+import {
+  getPokemonSprite,
+  getShowdownTypeIconUrl,
+} from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
 
-import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { AbilityCell } from "./ability-cell";
 import { FilterChipsBar, type FilterChip } from "./filter-chips-bar";
-import { RoleChip } from "./role-chip";
 import { RolePresetsPanel } from "./role-presets-panel";
 import { getRolesForSpecies } from "./role-registry";
 import {
@@ -48,15 +49,65 @@ const HIGH_STAT_THRESHOLD = 110;
  *   80px            — slot1 ability
  *   80px            — slot2 ability
  *   76px            — hidden ability
- *   repeat(6,24px)  — HP/Atk/Def/SpA/SpD/Spe stat cells
- *   36px            — BST rollup
- *   minmax(140px,180px) — roles chips
+ *   repeat(6,28px)  — HP/Atk/Def/SpA/SpD/Spe stat cells
+ *   40px            — BST rollup
  */
 const ROW_GRID =
-  "grid-cols-[44px_minmax(100px,1fr)_44px_80px_80px_76px_repeat(6,24px)_36px_minmax(140px,180px)]";
+  "grid-cols-[44px_minmax(120px,1fr)_56px_96px_96px_88px_repeat(6,28px)_40px]";
 
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
+
+// =============================================================================
+// Sort
+// =============================================================================
+
+type SortCol = "name" | "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "bst";
+type SortDir = "asc" | "desc";
+
+interface SortState {
+  col: SortCol;
+  dir: SortDir;
+}
+
+function sortSpecies(
+  rows: SpeciesSearchEntry[],
+  sort: SortState
+): SpeciesSearchEntry[] {
+  const out = [...rows];
+  out.sort((a, b) => {
+    let cmp = 0;
+    switch (sort.col) {
+      case "name":
+        cmp = a.species.localeCompare(b.species);
+        break;
+      case "hp":
+        cmp = a.baseStats.hp - b.baseStats.hp;
+        break;
+      case "atk":
+        cmp = a.baseStats.atk - b.baseStats.atk;
+        break;
+      case "def":
+        cmp = a.baseStats.def - b.baseStats.def;
+        break;
+      case "spa":
+        cmp = a.baseStats.spa - b.baseStats.spa;
+        break;
+      case "spd":
+        cmp = a.baseStats.spd - b.baseStats.spd;
+        break;
+      case "spe":
+        cmp = a.baseStats.spe - b.baseStats.spe;
+        break;
+      case "bst":
+        cmp = a.bst - b.bst;
+        break;
+    }
+    if (cmp === 0) cmp = a.species.localeCompare(b.species);
+    return sort.dir === "asc" ? cmp : -cmp;
+  });
+  return out;
+}
 
 // =============================================================================
 // Types
@@ -88,6 +139,50 @@ function statValueClass(value: number): string {
 }
 
 // =============================================================================
+// SortHeaderButton — sticky-header sortable column label
+// =============================================================================
+
+interface SortHeaderButtonProps {
+  col: SortCol;
+  label: string;
+  align: "left" | "center" | "right";
+  sort: SortState;
+  onSort: (col: SortCol) => void;
+}
+
+function SortHeaderButton({
+  col,
+  label,
+  align,
+  sort,
+  onSort,
+}: SortHeaderButtonProps) {
+  const isActive = sort.col === col;
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(col)}
+      aria-label={`Sort by ${label}`}
+      aria-pressed={isActive}
+      className={cn(
+        "hover:text-foreground flex items-center gap-0.5 transition-colors select-none",
+        align === "left" && "justify-start",
+        align === "center" && "justify-center",
+        align === "right" && "justify-end",
+        isActive ? "text-foreground" : "text-muted-foreground"
+      )}
+    >
+      {label}
+      {isActive && (
+        <span aria-hidden="true" className="text-[8px] leading-none">
+          {sort.dir === "asc" ? "↑" : "↓"}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// =============================================================================
 // SpeciesRow — one rich row in the picker
 // =============================================================================
 
@@ -96,7 +191,6 @@ interface SpeciesRowProps {
   isCurrent: boolean;
   onSelect: () => void;
   onFilterAbility: (ability: string) => void;
-  onFilterRole: (roleId: string) => void;
 }
 
 function SpeciesRow({
@@ -104,10 +198,8 @@ function SpeciesRow({
   isCurrent,
   onSelect,
   onFilterAbility,
-  onFilterRole,
 }: SpeciesRowProps) {
   const sprite = getPokemonSprite(entry.species);
-  const roles: string[] = entry.roles ?? [];
 
   return (
     // Using div[role="row"] instead of <button> because this row contains
@@ -152,13 +244,16 @@ function SpeciesRow({
         {entry.species}
       </span>
 
-      {/* Types */}
-      <div className="relative z-10 flex min-w-11 items-center gap-0.5">
+      {/* Types — Showdown rectangular type icons (matches the editor) */}
+      <div className="relative z-10 flex min-w-0 flex-col items-start gap-0.5">
         {entry.types.map((type) => (
-          <TypeSymbolIcon
+          <img
             key={type}
-            type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
-            size={18}
+            src={getShowdownTypeIconUrl(type)}
+            alt={type}
+            width={32}
+            height={14}
+            className="h-[14px] w-auto [image-rendering:pixelated]"
           />
         ))}
       </div>
@@ -249,13 +344,6 @@ function SpeciesRow({
       <span className="border-border/60 text-foreground relative z-10 border-l pl-1.5 text-center font-mono text-xs font-semibold tabular-nums">
         {entry.bst}
       </span>
-
-      {/* Roles */}
-      <div className="relative z-10 flex flex-wrap gap-0.5">
-        {roles.map((roleId) => (
-          <RoleChip key={roleId} roleId={roleId} onClick={onFilterRole} />
-        ))}
-      </div>
     </div>
   );
 }
@@ -288,9 +376,18 @@ export function SpeciesPicker({
   const [filters, setFilters] = useState<SpeciesFilterState>(
     DEFAULT_SPECIES_FILTERS
   );
+  const [sort, setSort] = useState<SortState>({ col: "name", dir: "asc" });
 
   // Scroll container ref for the virtualizer
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  function handleSort(col: SortCol) {
+    setSort((prev) =>
+      prev.col === col
+        ? { col, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { col, dir: col === "name" ? "asc" : "desc" }
+    );
+  }
 
   // Build the species index — expensive, memoize by format id.
   // getRolesForSpecies is stable (module-level fn) so this only rebuilds when
@@ -319,7 +416,7 @@ export function SpeciesPicker({
   );
 
   // Derived list — search + filter (legality already applied to index)
-  const matched = searchSpecies(speciesIndex, query, {
+  const filtered = searchSpecies(speciesIndex, query, {
     types: filters.types,
     ability: filters.ability ?? undefined,
     moves: filters.moves,
@@ -327,6 +424,7 @@ export function SpeciesPicker({
     megaOnly: filters.megaOnly,
     formatId: format?.id,
   });
+  const matched = sortSpecies(filtered, sort);
 
   // Bucket counts — for each role, how many matched species carry it
   const bucketCount = useMemo(() => {
@@ -378,13 +476,6 @@ export function SpeciesPicker({
 
   function handleAbilityFilter(ability: string) {
     setFilters((prev) => ({ ...prev, ability }));
-  }
-
-  function handleRoleFilter(roleId: string) {
-    setFilters((prev) => {
-      if (prev.roles.includes(roleId)) return prev;
-      return { ...prev, roles: [...prev.roles, roleId] };
-    });
   }
 
   // ---------------------------------------------------------------------------
@@ -538,7 +629,7 @@ export function SpeciesPicker({
 
   return (
     <div
-      className="flex min-h-0 flex-col overflow-hidden"
+      className="bg-popover text-popover-foreground flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl"
       data-testid="species-picker"
     >
       {/* -------------------------------------------------------------------- */}
@@ -608,6 +699,81 @@ export function SpeciesPicker({
               className="flex-1 overflow-y-auto"
               data-testid="species-rows"
             >
+              {/* Sticky sortable header */}
+              <div
+                className={cn(
+                  "bg-card sticky top-0 z-20 grid items-center gap-2 border-b px-4 py-2 text-[10px] font-semibold tracking-wider uppercase",
+                  ROW_GRID
+                )}
+                role="row"
+              >
+                <span aria-hidden="true" />
+                <SortHeaderButton
+                  col="name"
+                  label="Name"
+                  align="left"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <span aria-hidden="true" />
+                <span className="text-muted-foreground text-[9px]">
+                  Ability 1
+                </span>
+                <span className="text-muted-foreground text-[9px]">
+                  Ability 2
+                </span>
+                <span className="text-muted-foreground text-[9px]">Hidden</span>
+                <SortHeaderButton
+                  col="hp"
+                  label="HP"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <SortHeaderButton
+                  col="atk"
+                  label="Atk"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <SortHeaderButton
+                  col="def"
+                  label="Def"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <SortHeaderButton
+                  col="spa"
+                  label="SpA"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <SortHeaderButton
+                  col="spd"
+                  label="SpD"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <SortHeaderButton
+                  col="spe"
+                  label="Spe"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <SortHeaderButton
+                  col="bst"
+                  label="BST"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+              </div>
+
               {matched.length === 0 ? (
                 <div className="text-muted-foreground py-12 text-center text-sm">
                   No Pokémon match your filters. Try broadening your search.
@@ -631,7 +797,6 @@ export function SpeciesPicker({
                           isCurrent={entry.species === value}
                           onSelect={() => onPick(entry.species)}
                           onFilterAbility={handleAbilityFilter}
-                          onFilterRole={handleRoleFilter}
                         />
                       </div>
                     );

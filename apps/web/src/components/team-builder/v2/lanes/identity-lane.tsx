@@ -17,6 +17,12 @@ import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -27,9 +33,7 @@ import { type ValidationError } from "../../validation-hooks";
 import { NatureChevrons } from "../nature-chevrons";
 import { Sprite } from "../sprite";
 import { TypeDot } from "../type-dot";
-import {
-  formatSupportsTera,
-} from "../format-gating";
+import { formatSupportsTera } from "../format-gating";
 import { AbilityPicker } from "../pickers/ability-picker";
 import { ItemPicker } from "../pickers/item-picker";
 import { NaturePicker } from "../pickers/nature-picker";
@@ -83,11 +87,17 @@ function nextGender(current: GenderValue): GenderValue {
   return null;
 }
 
-function errorsForField(errors: ValidationError[], field: string): ValidationError[] {
+function errorsForField(
+  errors: ValidationError[],
+  field: string
+): ValidationError[] {
   return errors.filter((e) => e.field === field);
 }
 
-function errorsForFields(errors: ValidationError[], fields: string[]): ValidationError[] {
+function errorsForFields(
+  errors: ValidationError[],
+  fields: string[]
+): ValidationError[] {
   return errors.filter((e) => fields.includes(e.field));
 }
 
@@ -124,8 +134,12 @@ function IdentityAbilityRow({
     : "";
   const displayAbility = megaAbility ?? pokemon.ability;
   const showTooltip = !abilityOpen;
-  const displayDesc = displayAbility ? getAbilityShortDesc(displayAbility) : null;
-  const baseDesc = pokemon.ability ? getAbilityShortDesc(pokemon.ability) : null;
+  const displayDesc = displayAbility
+    ? getAbilityShortDesc(displayAbility)
+    : null;
+  const baseDesc = pokemon.ability
+    ? getAbilityShortDesc(pokemon.ability)
+    : null;
   return (
     <div className="flex flex-col">
       <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
@@ -142,7 +156,8 @@ function IdentityAbilityRow({
                     type="button"
                     className={cn(
                       s.formRow,
-                      abilityErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
+                      abilityErrors.length > 0 &&
+                        "ring-destructive/40 rounded ring-1"
                     )}
                   />
                 }
@@ -172,7 +187,7 @@ function IdentityAbilityRow({
                   type="button"
                   aria-label={`Change base ability (${pokemon.ability || "none"})`}
                   onClick={() => setAbilityOpen(true)}
-                  className="self-start rounded px-1 pt-0.5 font-mono text-[9px] text-muted-foreground/70 hover:bg-muted hover:text-foreground"
+                  className="text-muted-foreground/70 hover:bg-muted hover:text-foreground self-start rounded px-1 pt-0.5 font-mono text-[9px]"
                 />
               }
             >
@@ -206,15 +221,15 @@ function IdentityLaneGhost() {
       <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
         {/* Species pill ghost — static div, NOT a button */}
         <div className="border-border bg-background flex w-36 items-center gap-1 rounded-md border border-dashed px-2 py-1.5 text-left text-xs sm:w-40 md:w-44">
-          <span className="min-w-0 flex-1 truncate text-muted-foreground/50">
+          <span className="text-muted-foreground/50 min-w-0 flex-1 truncate">
             + Add Pokémon
           </span>
-          <span aria-hidden className="text-[9px] text-muted-foreground/30">
+          <span aria-hidden className="text-muted-foreground/30 text-[9px]">
             ▾
           </span>
         </div>
         {/* Sprite ghost — static div, NOT a button */}
-        <div className="size-[144px] rounded-xl bg-muted/40" />
+        <div className="bg-muted/40 size-[144px] rounded-xl" />
       </div>
 
       {/* Form column */}
@@ -222,19 +237,21 @@ function IdentityLaneGhost() {
         {/* Banner ghost — same className as real banner */}
         <div className={s.idBanner}>
           <div className="flex h-[22px] items-center">
-            <span className="text-sm font-normal text-muted-foreground/20 italic">
+            <span className="text-muted-foreground/20 text-sm font-normal italic">
               Nickname
             </span>
           </div>
           <div className="flex h-[18px] items-center gap-1">
-            <div className="h-3.5 w-10 rounded bg-muted/30" />
+            <div className="bg-muted/30 h-3.5 w-10 rounded" />
           </div>
         </div>
         {/* Loadout rows ghost — Item / Abil / Nat with em-dashes, static divs */}
         {(["Item", "Abil", "Nat"] as const).map((label) => (
           <div key={label} className={s.formRow}>
             <span className={s.formLabel}>{label}</span>
-            <span className={cn(s.formValue, "text-muted-foreground/25 italic")}>
+            <span
+              className={cn(s.formValue, "text-muted-foreground/25 italic")}
+            >
               —
             </span>
           </div>
@@ -316,7 +333,7 @@ function FormChips({ currentSpecies, currentItem, onPick }: FormChipsProps) {
             className={cn(
               "rounded border px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap transition-colors",
               !enabled
-                ? "border-dashed border-border/50 text-muted-foreground/40 cursor-not-allowed"
+                ? "border-border/50 text-muted-foreground/40 cursor-not-allowed border-dashed"
                 : active
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground"
@@ -356,7 +373,9 @@ function IdentityLaneReal({
   const showTera = formatSupportsTera(format);
 
   // Nature effect labels for the mini suffix
-  const natureEffect = pokemon.nature ? NATURE_EFFECTS[pokemon.nature] : undefined;
+  const natureEffect = pokemon.nature
+    ? NATURE_EFFECTS[pokemon.nature]
+    : undefined;
   const natUp = natureEffect?.boost;
   const natDown = natureEffect?.reduce;
 
@@ -372,8 +391,7 @@ function IdentityLaneReal({
     const trimmed = nickDraft.trim();
     // Treat "empty" OR "matches species" as "no nickname" so the displayed
     // name falls back to the species without storing a redundant override.
-    const next =
-      trimmed === "" || trimmed === pokemon.species ? null : trimmed;
+    const next = trimmed === "" || trimmed === pokemon.species ? null : trimmed;
     if (next !== pokemon.nickname) {
       onUpdate({ nickname: next });
       // Reflect the canonical state — if the user typed the species name, snap
@@ -392,16 +410,18 @@ function IdentityLaneReal({
     onUpdate({ is_shiny: !isShiny });
   }
 
-  const currentTeam = (teamSiblings ?? [])
-    .filter((p): p is { species: string } => typeof p.species === "string" && p.species.length > 0);
+  const currentTeam = (teamSiblings ?? []).filter(
+    (p): p is { species: string } =>
+      typeof p.species === "string" && p.species.length > 0
+  );
 
   return (
     <div className="flex min-w-0 gap-3 p-3">
-      {/* ── Sprite column + species picker (self-contained Popover) ── */}
-      <Popover open={speciesOpen} onOpenChange={setSpeciesOpen}>
+      {/* ── Sprite column + species picker (centered Dialog modal) ── */}
+      <Dialog open={speciesOpen} onOpenChange={setSpeciesOpen}>
         <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
           {/* Species pill — typeable control above the sprite */}
-          <PopoverTrigger
+          <DialogTrigger
             render={
               <button
                 type="button"
@@ -409,7 +429,7 @@ function IdentityLaneReal({
                 className={cn(
                   "border-border bg-background hover:border-primary focus-visible:border-primary",
                   "flex w-36 items-center gap-1 rounded-md border px-2 py-1.5 text-left text-xs",
-                  "outline-none transition-colors sm:w-40 md:w-44"
+                  "transition-colors outline-none sm:w-40 md:w-44"
                 )}
               />
             }
@@ -428,10 +448,10 @@ function IdentityLaneReal({
             <span aria-hidden className="text-muted-foreground text-[9px]">
               ▾
             </span>
-          </PopoverTrigger>
+          </DialogTrigger>
 
           {/* Sprite — 144×144, click to open species picker */}
-          <PopoverTrigger
+          <DialogTrigger
             render={
               <button
                 type="button"
@@ -441,16 +461,14 @@ function IdentityLaneReal({
             }
           >
             <Sprite species={pokemon.species ?? ""} types={types} size={144} />
-          </PopoverTrigger>
+          </DialogTrigger>
         </div>
 
-        <PopoverContent
-          side="bottom"
-          align="start"
-          sideOffset={6}
-          className="w-[920px] max-w-[calc(100vw-2rem)] p-0"
-          style={{ maxHeight: "min(70vh, 640px)" }}
+        <DialogContent
+          showCloseButton={false}
+          className="flex h-[calc(100vh-2rem)] max-h-[1080px] w-[calc(100vw-2rem)] max-w-[1440px] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[1440px]"
         >
+          <DialogTitle className="sr-only">Choose species</DialogTitle>
           <SpeciesPicker
             value={pokemon.species ?? null}
             format={format}
@@ -488,12 +506,11 @@ function IdentityLaneReal({
             }}
             onClose={() => setSpeciesOpen(false)}
           />
-        </PopoverContent>
-      </Popover>
+        </DialogContent>
+      </Dialog>
 
-      {/* ── Form column (sibling of species Popover) ─────────────── */}
-      <div className="flex min-w-0 w-56 shrink-0 flex-col justify-center gap-0.5">
-
+      {/* ── Form column (sibling of species Dialog) ─────────────── */}
+      <div className="flex w-56 min-w-0 shrink-0 flex-col justify-center gap-0.5">
         {/* BANNER — nickname + chips rows */}
         <div className={s.idBanner}>
           <div className="flex items-center gap-2">
@@ -511,10 +528,10 @@ function IdentityLaneReal({
                 maxLength={24}
                 aria-label="Nickname"
                 className={cn(
-                  "bg-transparent w-full min-w-0 truncate text-sm font-bold outline-none",
-                  "border-b border-transparent placeholder:text-muted-foreground/50 placeholder:font-normal",
-                  "hover:border-dashed hover:border-border focus:border-solid focus:border-primary",
-                  "leading-snug py-0.5",
+                  "w-full min-w-0 truncate bg-transparent text-sm font-bold outline-none",
+                  "placeholder:text-muted-foreground/50 border-b border-transparent placeholder:font-normal",
+                  "hover:border-border focus:border-primary hover:border-dashed focus:border-solid",
+                  "py-0.5 leading-snug",
                   nicknameErrors.length > 0 &&
                     "border-destructive focus:border-destructive"
                 )}
@@ -544,11 +561,15 @@ function IdentityLaneReal({
                 type="button"
                 onClick={handleShinyToggle}
                 aria-pressed={isShiny}
-                title={isShiny ? "Shiny (click to clear)" : "Not shiny (click to set)"}
+                title={
+                  isShiny
+                    ? "Shiny (click to clear)"
+                    : "Not shiny (click to set)"
+                }
                 className={cn(
                   "border-border rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
                   isShiny
-                    ? "bg-yellow-400/20 text-yellow-600 border-yellow-400/40 dark:text-yellow-400"
+                    ? "border-yellow-400/40 bg-yellow-400/20 text-yellow-600 dark:text-yellow-400"
                     : "bg-muted/60 hover:bg-muted text-muted-foreground"
                 )}
               >
@@ -578,7 +599,9 @@ function IdentityLaneReal({
             label="Item"
             value={pokemon.held_item ?? ""}
             triggerClassName={
-              itemErrors.length > 0 ? "ring-1 ring-destructive/40 rounded" : undefined
+              itemErrors.length > 0
+                ? "ring-1 ring-destructive/40 rounded"
+                : undefined
             }
             open={itemOpen}
             onOpenChange={setItemOpen}
@@ -613,7 +636,9 @@ function IdentityLaneReal({
             value={pokemon.nature ?? ""}
             trailing={<NatureChevrons boost={natUp} reduce={natDown} />}
             triggerClassName={
-              natureErrors.length > 0 ? "ring-1 ring-destructive/40 rounded" : undefined
+              natureErrors.length > 0
+                ? "ring-1 ring-destructive/40 rounded"
+                : undefined
             }
             open={natureOpen}
             onOpenChange={setNatureOpen}
@@ -631,9 +656,7 @@ function IdentityLaneReal({
         {showTera && (
           <Popover open={teraOpen} onOpenChange={setTeraOpen}>
             <PopoverTrigger
-              render={
-                <button type="button" className={s.formRow} />
-              }
+              render={<button type="button" className={s.formRow} />}
             >
               <span className={s.formLabel}>Tera</span>
               <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
@@ -643,7 +666,14 @@ function IdentityLaneReal({
                     <span className={s.formValue}>{pokemon.tera_type}</span>
                   </>
                 ) : (
-                  <span className={cn(s.formValue, "text-muted-foreground/50 italic")}>—</span>
+                  <span
+                    className={cn(
+                      s.formValue,
+                      "text-muted-foreground/50 italic"
+                    )}
+                  >
+                    —
+                  </span>
                 )}
               </span>
             </PopoverTrigger>

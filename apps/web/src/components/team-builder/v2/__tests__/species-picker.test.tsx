@@ -59,6 +59,9 @@ jest.mock("@trainers/pokemon/sprites", () => ({
     url: "/sprites/test.png",
     pixelated: false,
   })),
+  getShowdownTypeIconUrl: jest.fn(
+    (type: string) => `https://example.com/sprites/${type}.png`
+  ),
 }));
 
 // =============================================================================
@@ -675,25 +678,8 @@ describe("SpeciesPicker", () => {
     expect(screen.getByTestId("chip-ability:Overgrow")).toBeInTheDocument();
   });
 
-  it("clicking a role chip in a row adds a role filter", async () => {
-    const user = userEvent.setup();
-    // GARCHOMP with a "spread" role
-    const garChompWithRole = { ...GARCHOMP, roles: ["spread"] };
-    mockBuildSpeciesSearchIndex.mockReturnValue([garChompWithRole]);
-    mockSearchSpecies.mockImplementation((index: typeof MOCK_INDEX) => index);
-
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        onPick={jest.fn()}
-        onClose={jest.fn()}
-      />
-    );
-
-    await user.click(screen.getByTestId("role-chip-spread"));
-    expect(screen.getByTestId("chip-role:spread")).toBeInTheDocument();
-  });
+  // Row-level role chips were removed from the species table — role filtering
+  // is now driven exclusively by the RolePresetsPanel in the middle column.
 
   // ---------------------------------------------------------------------------
   // Enter key — exact species match → pick + close
