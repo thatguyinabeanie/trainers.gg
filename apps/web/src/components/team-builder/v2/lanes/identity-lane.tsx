@@ -172,7 +172,7 @@ function FormChips({ currentSpecies, currentItem, onPick }: FormChipsProps) {
   const base = getCanonicalBaseSpecies(currentSpecies);
   const altForms = forms.filter((f) => f !== base);
   return (
-    <div className="flex flex-wrap gap-1 px-1 pt-0.5">
+    <div className="flex flex-wrap items-center gap-1">
       {altForms.map((form) => {
         const active = form === currentSpecies;
         const requiredStone = getMegaStoneForSpecies(form);
@@ -417,57 +417,61 @@ function IdentityLaneReal({
             ))}
           </div>
 
-          {/* Row 2: gender + shiny (right-aligned since types are no longer here) */}
-          <div className="flex items-center justify-end gap-1">
-            {/* Gender 3-way toggle */}
-            <div className="flex flex-col">
-              <button
-                type="button"
-                onClick={handleGenderToggle}
-                title="Toggle gender"
-                className={cn(
-                  "bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 text-[10px] font-medium",
-                  genderErrors.length > 0 && "border-destructive"
-                )}
-              >
-                {genderSymbol(gender)}
-              </button>
-              {genderErrors.map((err, i) => (
-                <FieldError key={i} message={err.message} severity={err.severity} />
-              ))}
+          {/* Row 2: form chips (left) + gender + shiny (right).
+              Form chips no longer auto-attach the mega stone — each chip is
+              disabled until the matching stone is held. Click → swap species
+              only. */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              {pokemon.species && speciesHasForms(pokemon.species) && (
+                <FormChips
+                  currentSpecies={pokemon.species}
+                  currentItem={pokemon.held_item}
+                  onPick={(nextSpecies) => {
+                    if (nextSpecies === pokemon.species) return;
+                    onUpdate({ species: nextSpecies });
+                  }}
+                />
+              )}
             </div>
 
-            {/* Shiny toggle */}
-            <button
-              type="button"
-              onClick={handleShinyToggle}
-              aria-pressed={isShiny}
-              title={isShiny ? "Shiny (click to clear)" : "Not shiny (click to set)"}
-              className={cn(
-                "border-border rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
-                isShiny
-                  ? "bg-yellow-400/20 text-yellow-600 border-yellow-400/40 dark:text-yellow-400"
-                  : "bg-muted/60 hover:bg-muted text-muted-foreground"
-              )}
-            >
-              ✦
-            </button>
+            <div className="flex shrink-0 items-center gap-1">
+              {/* Gender 3-way toggle */}
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  onClick={handleGenderToggle}
+                  title="Toggle gender"
+                  className={cn(
+                    "bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                    genderErrors.length > 0 && "border-destructive"
+                  )}
+                >
+                  {genderSymbol(gender)}
+                </button>
+                {genderErrors.map((err, i) => (
+                  <FieldError key={i} message={err.message} severity={err.severity} />
+                ))}
+              </div>
+
+              {/* Shiny toggle */}
+              <button
+                type="button"
+                onClick={handleShinyToggle}
+                aria-pressed={isShiny}
+                title={isShiny ? "Shiny (click to clear)" : "Not shiny (click to set)"}
+                className={cn(
+                  "border-border rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                  isShiny
+                    ? "bg-yellow-400/20 text-yellow-600 border-yellow-400/40 dark:text-yellow-400"
+                    : "bg-muted/60 hover:bg-muted text-muted-foreground"
+                )}
+              >
+                ✦
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* FORM CHIPS — only when species has alternate forms.
-            Chips no longer auto-attach the mega stone (chip is disabled
-            until the matching stone is held). Click → swap species only. */}
-        {pokemon.species && speciesHasForms(pokemon.species) && (
-          <FormChips
-            currentSpecies={pokemon.species}
-            currentItem={pokemon.held_item}
-            onPick={(nextSpecies) => {
-              if (nextSpecies === pokemon.species) return;
-              onUpdate({ species: nextSpecies });
-            }}
-          />
-        )}
 
         {/* LOADOUT FORM ROWS */}
 
