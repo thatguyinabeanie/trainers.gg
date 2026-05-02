@@ -495,16 +495,18 @@ function StatRow({
 
   return (
     <div className={cn(showIv ? s.spreadRowWithIv : s.spreadRow, statColorClass)}>
-      {/* Col 1: Stat label, color-coded, with nature chevron */}
+      {/* Col 1: Stat label, color-coded, with nature chevron.
+          Matches the +/− nature label colours in IdentityLane:
+          boost = emerald, reduce = rose. */}
       <span className={cn(s.spreadLabel, labelTextClass)}>
         {label}
         {isNatureBoosted && (
-          <span className="text-[9px] font-black tracking-tighter text-red-600 dark:text-red-400">
+          <span className="text-[9px] font-black tracking-tighter text-emerald-600 dark:text-emerald-400">
             ▲
           </span>
         )}
         {isNatureReduced && (
-          <span className="text-[9px] font-black tracking-tighter text-sky-600 dark:text-sky-400">
+          <span className="text-[9px] font-black tracking-tighter text-rose-600 dark:text-rose-400">
             ▽
           </span>
         )}
@@ -544,8 +546,8 @@ function StatRow({
         aria-label={`${label} investment`}
         className={cn(
           "focus:ring-primary h-[18px] w-9 rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
-          isNatureBoosted && "border-red-400/70 text-red-600 dark:text-red-400",
-          isNatureReduced && "border-sky-400/70 text-sky-600 dark:text-sky-400",
+          isNatureBoosted && "border-emerald-400/70 text-emerald-600 dark:text-emerald-400",
+          isNatureReduced && "border-rose-400/70 text-rose-600 dark:text-rose-400",
           !isNatureBoosted &&
             !isNatureReduced &&
             "border-border text-foreground"
