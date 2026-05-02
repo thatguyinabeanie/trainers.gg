@@ -144,7 +144,8 @@ function getIvs(pokemon: Tables<"pokemon">): StatValues {
   };
 }
 
-function totalEvs(evs: StatValues): number {
+// Reserved: total-EVs helper kept for future header chip work.
+function _totalEvs(evs: StatValues): number {
   return (
     evs.hp +
     evs.attack +
@@ -316,6 +317,10 @@ interface StatRowProps {
   /** When true, renders an inline IV input before the final stat (col 6). */
   showIv: boolean;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  /** Bubbles the row's live displayEv up to the parent so the SP/EV total
+   *  in the lane header tracks the slider drag without waiting for the
+   *  400ms onUpdate debounce. */
+  onLiveEv?: (statKey: StatKey, displayEv: number) => void;
 }
 
 function StatRow({
@@ -334,6 +339,7 @@ function StatRow({
   budget,
   showIv,
   onUpdate,
+  onLiveEv,
 }: StatRowProps) {
   const label = STAT_LABELS[statKey];
   const statColorClass = STAT_COLOR_CLASS[statKey];
@@ -393,6 +399,9 @@ function StatRow({
 
   // The first breakpoint strictly above the current EV is the "next" target
   const nextBpEv = breakpoints.find((bp) => bp > displayEv);
+  // True when the slider sits exactly on a breakpoint — used to render the
+  // thumb as an outline circle (visual continuity with the bump tick).
+  const isAtBump = isNatureBoosted && breakpoints.includes(displayEv) && displayEv > 0;
 
   // --- Label color: always the stat-key color; nature is shown only via the
   //                  ▲/▽ chevron next to the label, not by recoloring it. ---
@@ -415,6 +424,11 @@ function StatRow({
     return () => clearTimeout(timer);
   }, [draftEv, evFieldKey, onUpdate]);
 
+  // Bubble the live displayEv up so the lane-level total tracks the drag.
+  useEffect(() => {
+    onLiveEv?.(statKey, displayEv);
+  }, [displayEv, statKey, onLiveEv]);
+
   function flushEvDraft() {
     if (draftEv === null) return;
     onUpdate({ [evFieldKey]: draftEv });
@@ -426,6 +440,15 @@ function StatRow({
     const clamped = Math.min(raw, investBudget);
     const snapped = Math.round(clamped / budget.step) * budget.step;
     setDraftEv(snapped);
+  }
+
+  // --- Handle breakpoint tick click — jump straight to that bump value
+  //     and commit immediately (a click is a discrete action, no point
+  //     debouncing it). ---
+  function handleBumpClick(bpEv: number) {
+    const clamped = Math.min(bpEv, investBudget);
+    setDraftEv(clamped);
+    onUpdate({ [evFieldKey]: clamped });
   }
 
   // --- Handle text input change (just buffer the typed string) ---
@@ -572,15 +595,21 @@ function StatRow({
           aria-valuemin={0}
           aria-valuemax={budget.perStat}
           aria-valuenow={displayEv}
+          data-at-bump={isAtBump || undefined}
           className={s.spreadSlider}
         />
 
-        {/* Breakpoint ticks overlay — only on +nature stat */}
+        {/* Breakpoint ticks overlay — only on +nature stat. Buttons so they're
+            click-targets that jump the slider to that bump. The bumps overlay
+            disables pointer-events; individual ticks re-enable it. */}
         {isNatureBoosted && breakpoints.length > 0 && (
           <div className={s.spreadBumps} data-testid={`bumps-${statKey}`}>
             {breakpoints.map((bpEv) => (
-              <span
+              <button
                 key={bpEv}
+                type="button"
+                onClick={() => handleBumpClick(bpEv)}
+                aria-label={`Set ${label} to ${bpEv}`}
                 className={cn(
                   s.spreadBumpTick,
                   bpEv === nextBpEv && s.spreadBumpTickNext
@@ -651,13 +680,20 @@ export function StatsLane({
   onUpdate,
   fieldErrors = [],
 }: StatsLaneProps) {
+  // Hooks must be called unconditionally — declare state before the
+  // pokemon-null early return so the call order stays stable across both
+  // ghost and filled renders. Live EVs from each row's slider draft are
+  // bubbled up so the SP/EV total refreshes during drag (ahead of the
+  // 400ms debounce). Empty in the ghost path; the real path overrides it.
+  const [liveEvByStat, setLiveEvByStat] = useState<Partial<Record<StatKey, number>>>({});
+
   // Match the active format so empty slots line up with filled ones — same
   // grid (with-IV vs without), same investment header (SP vs EVs), same total
   // budget (66 vs 510). Without this, switching formats leaves the ghost lane
   // visually mismatched against neighbouring filled rows.
-  const ghostIsChampions = isChampionsFormat(format);
-  const ghostShowIv = formatSupportsIvs(format);
-  const ghostBudget = getStatBudget(ghostIsChampions);
+  const isChampions = isChampionsFormat(format);
+  const showIv = formatSupportsIvs(format);
+  const budget = getStatBudget(isChampions);
 
   if (!pokemon) {
     return (
@@ -669,7 +705,7 @@ export function StatsLane({
         <div
           className={cn(
             "mb-0.5 py-0",
-            ghostShowIv ? s.spreadRowWithIv : s.spreadRow
+            showIv ? s.spreadRowWithIv : s.spreadRow
           )}
         >
           <span />
@@ -678,12 +714,12 @@ export function StatsLane({
           </span>
           <span />
           <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
-            {ghostIsChampions ? "SP" : "EVs"}
+            {isChampions ? "SP" : "EVs"}
           </span>
           <span className="text-right font-mono text-[8.5px] text-muted-foreground/30">
-            0/{ghostBudget.total}
+            0/{budget.total}
           </span>
-          {ghostShowIv && (
+          {showIv && (
             <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
               IVs
             </span>
@@ -694,7 +730,7 @@ export function StatsLane({
           <div
             key={key}
             className={cn(
-              ghostShowIv ? s.spreadRowWithIv : s.spreadRow,
+              showIv ? s.spreadRowWithIv : s.spreadRow,
               colorClass
             )}
           >
@@ -705,7 +741,7 @@ export function StatsLane({
             <div className={s.spreadSliderWrap}>
               <div className={cn(s.spreadSliderTrack, "opacity-25")} />
             </div>
-            {ghostShowIv && (
+            {showIv && (
               <div className="h-[18px] w-10 rounded border border-dashed border-border/30" />
             )}
             <span className={cn(s.spreadFinal, "opacity-25")}>—</span>
@@ -722,10 +758,15 @@ export function StatsLane({
   const ivs = getIvs(pokemon);
   const level = pokemon.level ?? 50;
   const nature = pokemon.nature ?? "Hardy";
-  const isChampions = isChampionsFormat(format);
-  const showIv = formatSupportsIvs(format);
-  const totalEv = totalEvs(evs);
-  const budget = getStatBudget(isChampions);
+  function handleLiveEv(statKey: StatKey, value: number) {
+    setLiveEvByStat((prev) => (prev[statKey] === value ? prev : { ...prev, [statKey]: value }));
+  }
+  const liveTotal = STAT_KEYS.reduce(
+    (sum, k) => sum + (liveEvByStat[k] ?? evs[k]),
+    0
+  );
+  // Keep the existing prop name for the row (it consumes it as totalEv).
+  const totalEv = liveTotal;
 
   const rawBase = getBaseStats(pokemon.species ?? "");
   const base: StatValues = rawBase ?? {
@@ -826,6 +867,7 @@ export function StatsLane({
               budget={budget}
               showIv={showIv}
               onUpdate={handleUpdate}
+              onLiveEv={handleLiveEv}
             />
           );
         })}

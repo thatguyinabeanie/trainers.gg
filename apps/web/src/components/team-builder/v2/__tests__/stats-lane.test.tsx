@@ -543,6 +543,43 @@ describe("StatsLane", () => {
       expect(screen.queryByTestId(`bumps-${stat}`)).not.toBeInTheDocument();
     }
   });
+
+  // ---------------------------------------------------------------------------
+  // 13. Bump tick is a button — clicking it sets the EV to that bump value
+  // ---------------------------------------------------------------------------
+  it("clicking a breakpoint tick commits the bump's EV value via onUpdate", () => {
+    (mockFindStatBreakpoints as jest.Mock).mockReturnValue([4, 8, 12]);
+    const { onUpdate } = renderLane({ nature: "Adamant", ev_attack: 0 });
+
+    const bumps = screen.getByTestId("bumps-attack");
+    const ticks = bumps.querySelectorAll("button");
+    expect(ticks).toHaveLength(3);
+
+    // Click the middle bump (8 EVs)
+    fireEvent.click(ticks[1]!);
+
+    // Click commits immediately (no debounce) since it's a discrete action
+    expect(onUpdate).toHaveBeenCalledWith({ ev_attack: 8 });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 14. Slider thumb gets data-at-bump when displayEv lands on a breakpoint
+  // ---------------------------------------------------------------------------
+  it("slider has data-at-bump attribute when current EV equals a breakpoint", () => {
+    (mockFindStatBreakpoints as jest.Mock).mockReturnValue([4, 8, 12]);
+    renderLane({ nature: "Adamant", ev_attack: 8 });
+
+    const slider = screen.getByLabelText("Atk slider");
+    expect(slider).toHaveAttribute("data-at-bump");
+  });
+
+  it("slider does NOT have data-at-bump attribute when current EV is between breakpoints", () => {
+    (mockFindStatBreakpoints as jest.Mock).mockReturnValue([4, 8, 12]);
+    renderLane({ nature: "Adamant", ev_attack: 6 });
+
+    const slider = screen.getByLabelText("Atk slider");
+    expect(slider).not.toHaveAttribute("data-at-bump");
+  });
 });
 
 // =============================================================================
