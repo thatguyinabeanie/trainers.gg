@@ -31,7 +31,8 @@ jest.mock("../builder.module.css", () =>
   new Proxy({}, { get: (_t, k) => String(k) })
 );
 
-// Popover — render children directly so we don't need a real DOM-portal
+// Popover — render children directly so we don't need a real DOM-portal.
+// Used by Item / Ability / Nature / Tera FormChips below.
 jest.mock("@/components/ui/popover", () => ({
   Popover: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   PopoverTrigger: ({
@@ -55,6 +56,28 @@ jest.mock("@/components/ui/popover", () => ({
   },
   PopoverContent: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popover-content">{children}</div>
+  ),
+}));
+
+// Dialog — render content inline so the species picker is always queryable.
+// In production the picker now mounts inside a DialogContent portal.
+jest.mock("@/components/ui/dialog", () => ({
+  Dialog: ({
+    children,
+    open,
+  }: {
+    children: React.ReactNode;
+    open?: boolean;
+  }) => (
+    <div data-testid="dialog" data-open={String(!!open)}>
+      {children}
+    </div>
+  ),
+  DialogContent: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="dialog-content">{children}</div>
+  ),
+  DialogTitle: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
   ),
 }));
 
@@ -349,7 +372,7 @@ describe("DefenderMonHeader — Item row", () => {
   it("shows the em-dash placeholder when defenderItem is empty", () => {
     render(<DefenderMonHeader {...makeProps({ defenderItem: "" })} />);
     // The placeholder "—" appears in the Item chip
-    const trigger = screen.getAllByTestId("popover-trigger")[1]; // Item is 2nd trigger
+    const trigger = screen.getAllByTestId("popover-trigger")[0]; // Item is 1st popover (species uses Dialog)
     expect(trigger.textContent).toContain("—");
   });
 
@@ -379,7 +402,7 @@ describe("DefenderMonHeader — Ability row", () => {
 
   it("shows the em-dash placeholder when defenderAbility is empty", () => {
     render(<DefenderMonHeader {...makeProps({ defenderAbility: "" })} />);
-    const trigger = screen.getAllByTestId("popover-trigger")[2]; // Abil is 3rd trigger
+    const trigger = screen.getAllByTestId("popover-trigger")[1]; // Abil is 2nd popover
     expect(trigger.textContent).toContain("—");
   });
 
@@ -479,7 +502,7 @@ describe("DefenderMonHeader — Nature row", () => {
 
   it("shows the em-dash placeholder when defenderNature is empty", () => {
     render(<DefenderMonHeader {...makeProps({ defenderNature: "" })} />);
-    const trigger = screen.getAllByTestId("popover-trigger")[3]; // Nat is 4th trigger
+    const trigger = screen.getAllByTestId("popover-trigger")[2]; // Nat is 3rd popover
     expect(trigger.textContent).toContain("—");
   });
 

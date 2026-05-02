@@ -5,9 +5,9 @@
  *
  * Covers:
  *   - "DEFENDER" eyebrow label renders
- *   - Target select renders preset options and fires resetDefenderForSpecies
- *   - Selecting a preset species triggers resetDefenderForSpecies with the preset spread
- *   - Selecting a teammate triggers resetDefenderForSpecies with just the species
+ *   - Target picker trigger button renders with aria-label
+ *   - Picking a preset species triggers resetDefenderForSpecies with the preset spread
+ *   - Picking a non-preset species triggers resetDefenderForSpecies with just the species
  *   - Mon identity row: sprite, species name, type pills, ability/item/nature meta
  *   - No identity row when defenderSpecies is empty
  *   - EV number inputs for HP, DEF, SPD render with current values
@@ -18,8 +18,6 @@
  *   - Item select calls setDefenderItem
  *   - HP% slider renders, shows current percent, calls setDefenderHpPercent
  *   - Def and SpD stage buttons render, click calls setDefenderBoost
- *   - Legal teammates shown in "Your team" optgroup; illegal ones filtered out
- *   - Meta optgroup shown when getMetaSpeedTiers returns entries
  */
 
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -50,13 +48,54 @@ jest.mock("../type-pill", () => ({
   ),
 }));
 
+// Dialog — render content inline so the species picker is always queryable.
+jest.mock("@/components/ui/dialog", () => ({
+  Dialog: ({
+    children,
+    open,
+  }: {
+    children: React.ReactNode;
+    open?: boolean;
+  }) => (
+    <div data-testid="dialog" data-open={String(!!open)}>
+      {children}
+    </div>
+  ),
+  DialogContent: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="dialog-content">{children}</div>
+  ),
+  DialogTitle: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
+  ),
+}));
+
+// SpeciesPicker stub — exposes preset and non-preset pick buttons so we can
+// drive resetDefenderForSpecies from the test without rendering the full
+// virtualized table. "Incineroar" is in CALC_TARGETS (preset), "Gardevoir"
+// isn't — that lets us cover both branches of handleTargetChange.
+jest.mock("../pickers/species-picker", () => ({
+  SpeciesPicker: ({
+    value,
+    onPick,
+    onClose,
+  }: {
+    value: string | null;
+    onPick: (s: string) => void;
+    onClose: () => void;
+  }) => (
+    <div data-testid="species-picker" data-value={value ?? ""}>
+      <button onClick={() => onPick("Incineroar")}>pick-incineroar</button>
+      <button onClick={() => onPick("Gardevoir")}>pick-gardevoir</button>
+      <button onClick={onClose}>close-species</button>
+    </div>
+  ),
+}));
+
 // @trainers/pokemon — mock the functions used by CalcDefenderBlock
 const mockGetSpeciesTypes = jest.fn();
 const mockGetValidAbilities = jest.fn();
 const mockGetValidNatures = jest.fn();
 const mockGetLegalAbilities = jest.fn();
-const mockGetMetaSpeedTiers = jest.fn();
-const mockIsLegalSpecies = jest.fn();
 
 jest.mock("@trainers/pokemon", () => {
   const actual = jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon");
@@ -66,8 +105,6 @@ jest.mock("@trainers/pokemon", () => {
     getValidAbilities: (...args: unknown[]) => mockGetValidAbilities(...args),
     getValidNatures: (...args: unknown[]) => mockGetValidNatures(...args),
     getLegalAbilities: (...args: unknown[]) => mockGetLegalAbilities(...args),
-    getMetaSpeedTiers: (...args: unknown[]) => mockGetMetaSpeedTiers(...args),
-    isLegalSpecies: (...args: unknown[]) => mockIsLegalSpecies(...args),
   };
 });
 
@@ -219,9 +256,6 @@ beforeEach(() => {
   mockGetValidAbilities.mockReturnValue(["Intimidate", "Blaze", "Flash Fire"]);
   mockGetValidNatures.mockReturnValue(["Hardy", "Adamant", "Jolly", "Timid", "Careful", "Modest"]);
   mockGetLegalAbilities.mockReturnValue(null); // falls through to getValidAbilities
-  mockGetMetaSpeedTiers.mockReturnValue([]);
-  // Default: all species are legal
-  mockIsLegalSpecies.mockReturnValue(true);
 });
 
 // =============================================================================
@@ -234,25 +268,37 @@ describe("CalcDefenderBlock — header", () => {
     expect(screen.getByText("DEFENDER")).toBeInTheDocument();
   });
 
-  it("renders the target select with aria-label", () => {
+  it("renders the target picker trigger button with aria-label", () => {
     renderBlock();
-    expect(screen.getByRole("combobox", { name: "Defender target" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Defender target" })).toBeInTheDocument();
+  });
+
+  it("shows the placeholder when no species is set", () => {
+    renderBlock({ defenderSpecies: "" });
+    const trigger = screen.getByRole("button", { name: "Defender target" });
+    expect(trigger.textContent).toContain("Choose species…");
+  });
+
+  it("shows the species name in the trigger when defenderSpecies is set", () => {
+    renderBlock({ defenderSpecies: "Incineroar" });
+    const trigger = screen.getByRole("button", { name: "Defender target" });
+    expect(trigger.textContent).toContain("Incineroar");
   });
 });
 
-describe("CalcDefenderBlock — target select", () => {
-  it("shows preset species as select options", () => {
-    renderBlock();
-    const select = screen.getByRole("combobox", { name: "Defender target" });
-    // Incineroar is in CALC_TARGETS
-    expect(select).toContainHTML("Incineroar");
+describe("CalcDefenderBlock — target picker", () => {
+  it("forwards the current defenderSpecies to the SpeciesPicker as `value`", () => {
+    renderBlock({ defenderSpecies: "Incineroar" });
+    expect(screen.getByTestId("species-picker")).toHaveAttribute(
+      "data-value",
+      "Incineroar"
+    );
   });
 
-  it("selecting a preset species calls resetDefenderForSpecies with preset spread", () => {
+  it("picking a preset species calls resetDefenderForSpecies with the preset spread", () => {
     const resetDefenderForSpecies = jest.fn();
     renderBlock({ resetDefenderForSpecies, defenderSpecies: "" });
-    const select = screen.getByRole("combobox", { name: "Defender target" });
-    fireEvent.change(select, { target: { value: "Incineroar" } });
+    fireEvent.click(screen.getByText("pick-incineroar"));
     expect(resetDefenderForSpecies).toHaveBeenCalledWith(
       "Incineroar",
       expect.objectContaining({
@@ -263,63 +309,12 @@ describe("CalcDefenderBlock — target select", () => {
     );
   });
 
-  it("selecting a species not in presets (teammate) calls resetDefenderForSpecies with just species", () => {
+  it("picking a non-preset species calls resetDefenderForSpecies with just the species", () => {
     const resetDefenderForSpecies = jest.fn();
-    const teammate = makePokemon({ id: 99, species: "Gardevoir" });
-    // Make the preset filter exclude Gardevoir — isLegalSpecies returns true for all
-    // but Gardevoir is not in CALC_TARGETS, so it's a teammate-only option
-    renderBlock({
-      resetDefenderForSpecies,
-      teammates: [teammate],
-      defenderSpecies: "Incineroar",
-    });
-    const select = screen.getByRole("combobox", { name: "Defender target" });
-    fireEvent.change(select, { target: { value: "Gardevoir" } });
+    renderBlock({ resetDefenderForSpecies, defenderSpecies: "Incineroar" });
+    fireEvent.click(screen.getByText("pick-gardevoir"));
     expect(resetDefenderForSpecies).toHaveBeenCalledWith("Gardevoir");
-    // No spread object as second arg
     expect(resetDefenderForSpecies.mock.calls[0].length).toBe(1);
-  });
-
-  it("shows 'Your team' optgroup when legal teammates exist", () => {
-    const teammate = makePokemon({ id: 2, species: "Gardevoir" });
-    renderBlock({ teammates: [teammate] });
-    // optgroup is rendered in the DOM
-    const optgroup = document.querySelector("optgroup[label='Your team']");
-    expect(optgroup).toBeInTheDocument();
-  });
-
-  it("does NOT show 'Your team' optgroup when no teammates", () => {
-    renderBlock({ teammates: [] });
-    const optgroup = document.querySelector("optgroup[label='Your team']");
-    expect(optgroup).not.toBeInTheDocument();
-  });
-
-  it("filters out illegal teammates from the 'Your team' optgroup", () => {
-    const legalTeammate = makePokemon({ id: 2, species: "Garchomp" });
-    const illegalTeammate = makePokemon({ id: 3, species: "Calyrex-Shadow" });
-    // Make Calyrex-Shadow illegal for the format
-    mockIsLegalSpecies.mockImplementation((species: string) => species !== "Calyrex-Shadow");
-    renderBlock({ teammates: [legalTeammate, illegalTeammate] });
-    const optgroup = document.querySelector("optgroup[label='Your team']");
-    expect(optgroup).toBeInTheDocument();
-    expect(optgroup?.innerHTML).toContain("Garchomp");
-    expect(optgroup?.innerHTML).not.toContain("Calyrex-Shadow");
-  });
-
-  it("shows Meta optgroup when getMetaSpeedTiers returns entries", () => {
-    mockGetMetaSpeedTiers.mockReturnValue([
-      { species: "Garchomp", displayName: "Garchomp (Meta)" },
-    ]);
-    renderBlock();
-    const optgroup = document.querySelector("optgroup[label='Meta']");
-    expect(optgroup).toBeInTheDocument();
-  });
-
-  it("does NOT show Meta optgroup when getMetaSpeedTiers returns empty array", () => {
-    mockGetMetaSpeedTiers.mockReturnValue([]);
-    renderBlock();
-    const optgroup = document.querySelector("optgroup[label='Meta']");
-    expect(optgroup).not.toBeInTheDocument();
   });
 });
 

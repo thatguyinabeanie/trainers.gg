@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import {
   getCanonicalBaseSpecies,
   getMegaAbilityForSpecies,
@@ -11,11 +13,6 @@ import {
 } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 import { Sprite } from "../sprite";
 import { TypePill } from "../type-pill";
@@ -23,7 +20,7 @@ import { NatureChevrons } from "../nature-chevrons";
 import { AbilityPicker } from "../pickers/ability-picker";
 import { ItemPicker } from "../pickers/item-picker";
 import { NaturePicker } from "../pickers/nature-picker";
-import { SpeciesPicker } from "../pickers/species-picker";
+import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
 import { TypePicker } from "../pickers/type-picker";
 import { formatSupportsTera } from "../format-gating";
 import { FormChip } from "../lanes/form-chip";
@@ -107,49 +104,45 @@ export function DefenderMonHeader({
   const natUp = natureEffect?.boost ?? null;
   const natDown = natureEffect?.reduce ?? null;
 
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   return (
     <div className="flex w-60 shrink-0 flex-col gap-1.5 border-r p-2">
       {/* Species pill + mega toggle (when applicable) */}
       <div className="flex items-center gap-1.5">
-        <Popover>
-          <PopoverTrigger
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className={cn(
+            "border-border bg-background hover:border-primary focus-visible:border-primary",
+            "flex min-w-0 flex-1 items-center gap-1 rounded-md border px-2 py-1 text-left text-[11.5px]",
+            "outline-none transition-colors"
+          )}
+        >
+          <span
             className={cn(
-              "border-border bg-background hover:border-primary focus-visible:border-primary",
-              "flex min-w-0 flex-1 items-center gap-1 rounded-md border px-2 py-1 text-left text-[11.5px]",
-              "outline-none transition-colors"
+              "min-w-0 flex-1 truncate",
+              defenderSpecies
+                ? "text-foreground font-medium"
+                : "text-muted-foreground"
             )}
+            title={defenderSpecies || undefined}
           >
-            <span
-              className={cn(
-                "min-w-0 flex-1 truncate",
-                defenderSpecies
-                  ? "text-foreground font-medium"
-                  : "text-muted-foreground"
-              )}
-              title={defenderSpecies || undefined}
-            >
-              {defenderSpecies || "Choose species…"}
-            </span>
-            <span aria-hidden className="text-[9px] text-muted-foreground">
-              ▾
-            </span>
-          </PopoverTrigger>
+            {defenderSpecies || "Choose species…"}
+          </span>
+          <span aria-hidden className="text-[9px] text-muted-foreground">
+            ▾
+          </span>
+        </button>
 
-          <PopoverContent
-            align="start"
-            side="bottom"
-            sideOffset={6}
-            className="w-[920px] max-w-[calc(100vw-2rem)] p-0"
-            style={{ maxHeight: "min(70vh, 640px)" }}
-          >
-            <SpeciesPicker
-              value={defenderSpecies}
-              format={format}
-              onPick={(species) => setDefenderSpecies(species)}
-              onClose={() => undefined}
-            />
-          </PopoverContent>
-        </Popover>
+        <SpeciesPickerDialog
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          value={defenderSpecies}
+          format={format}
+          onPick={(species) => setDefenderSpecies(species)}
+        />
+
         {isMegaForm && (
           <MegaToggle
             active={defenderMegaActive}
