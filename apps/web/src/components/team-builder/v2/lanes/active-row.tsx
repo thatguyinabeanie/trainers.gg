@@ -25,7 +25,10 @@ interface ActiveRowProps {
   pokemon: Tables<"pokemon">;
   teamPokemon: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
-  /** True when this row is the workspace's active row. Forwarded to CalcColumn. */
+  /** True when this row is the workspace's active row. Used by PokeRow to gate
+   *  expand/collapse — ActiveRow itself doesn't read it (CalcColumn now computes
+   *  per-row outputs against the shared defender, so every row's CALC populates
+   *  regardless of which row is workspace-active). */
   isActive: boolean;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   onRemove: () => void;
@@ -67,7 +70,7 @@ export function ActiveRow({
   pokemon,
   teamPokemon,
   format,
-  isActive,
+  isActive: _isActive,
   onUpdate,
   onRemove,
   fieldErrors = [],
@@ -165,7 +168,7 @@ export function ActiveRow({
       />
 
       {/* Calc column — fixed 160px, aligns row-for-row with move tiles */}
-      {calcEnabled && <CalcColumn pokemon={pokemon} isActive={isActive} />}
+      {calcEnabled && <CalcColumn pokemon={pokemon} />}
     </div>
   );
 }

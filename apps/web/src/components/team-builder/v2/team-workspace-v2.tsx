@@ -417,6 +417,17 @@ export function TeamWorkspaceV2({
       )
     : baseSlots;
 
+  // Calc-panel "focused attacker" row — independent of workspace activeIdx so
+  // the chip strip in the calc bottom panel can target a different mon than
+  // the one being edited. Falls back to activeIdx when attackerSlot is stale
+  // (e.g. localStorage points at a slot that's empty on the loaded team).
+  // The calc engine uses this row's pokemon for boosts/status/mega/crit
+  // tweaks; every other row in the team computes against neutral baseline.
+  const calcAttackerIdx =
+    state.attackerSlot !== null && slots[state.attackerSlot] != null
+      ? state.attackerSlot
+      : state.activeIdx;
+
   // Stable IDs for dnd-kit: pokemon.id (as string) for filled, placeholder for empty.
   const itemIds = slots.map((p, i) =>
     p !== null ? String(p.id) : `__empty__${i}`
@@ -489,7 +500,7 @@ export function TeamWorkspaceV2({
 
   return (
     <CalcStateProvider
-      selectedPokemon={slots[state.activeIdx] ?? null}
+      selectedPokemon={slots[calcAttackerIdx] ?? null}
       format={format}
       field={state.field}
       setField={state.setField}
@@ -709,7 +720,7 @@ export function TeamWorkspaceV2({
                       teamSlots={slots}
                       format={format}
                       onClose={() => state.setDrawer(null)}
-                      attackerIdx={state.attackerSlot ?? state.activeIdx}
+                      attackerIdx={calcAttackerIdx}
                       onPickAttacker={(idx) =>
                         state.setAttackerSlot(
                           idx === state.activeIdx ? null : idx
@@ -740,7 +751,7 @@ export function TeamWorkspaceV2({
           {state.drawer === "calc" && isMobile && (
             <CalcDrawer
               open
-              selectedPokemon={slots[state.activeIdx] ?? null}
+              selectedPokemon={slots[calcAttackerIdx] ?? null}
               team={team}
               format={format}
               faintedYours={state.faintedYours}

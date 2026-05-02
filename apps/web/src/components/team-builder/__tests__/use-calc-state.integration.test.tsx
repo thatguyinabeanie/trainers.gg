@@ -1573,3 +1573,166 @@ describe("NCP-VGC Champions reference cases", () => {
     }
   );
 });
+
+// =============================================================================
+// computeForwardOutputsForRow — per-row simultaneous calcs
+//
+// Cements the "every row shows its own calcs" behaviour. The CALC column on
+// each PokeRow calls computeForwardOutputsForRow(rowPokemon) so all 6 rows
+// can render their own outputs at the same time. The chip-strip "focused"
+// row (id matches selectedPokemon.id in the hook) inherits panel-level tweaks
+// (boosts, status, mega toggle, crit). All other rows use neutral attacker
+// settings — boosts on Charizard's row don't bleed into Floette's calcs.
+// =============================================================================
+
+describe("computeForwardOutputsForRow — per-row outputs", () => {
+  function makeFloette(): Tables<"pokemon"> {
+    return makePokemon({
+      id: 10,
+      species: "Floette-Eternal",
+      ability: "Fairy Aura",
+      nature: "Modest",
+      held_item: null,
+      move1: "Moonblast",
+      move2: "Light of Ruin",
+      move3: null,
+      move4: null,
+    });
+  }
+
+  function makeCharizard(): Tables<"pokemon"> {
+    return makePokemon({
+      id: 11,
+      species: "Charizard-Mega-Y",
+      ability: "Drought",
+      nature: "Modest",
+      held_item: "Charizardite Y",
+      move1: "Heat Wave",
+      move2: "Solar Beam",
+      move3: null,
+      move4: null,
+    });
+  }
+
+  it("returns 4 nulls when rowPokemon is null", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makeFloette(), format: VGC_FORMAT })
+    );
+    const outputs = result.current.computeForwardOutputsForRow(null);
+    expect(outputs).toHaveLength(4);
+    expect(outputs.every((o) => o === null)).toBe(true);
+  });
+
+  it("nulls out empty move slots, keeps populated ones", () => {
+    const floette = makeFloette();
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: floette, format: VGC_FORMAT })
+    );
+    const outputs = result.current.computeForwardOutputsForRow(floette);
+    expect(outputs[0]).not.toBeNull(); // Moonblast
+    expect(outputs[1]).not.toBeNull(); // Light of Ruin
+    expect(outputs[2]).toBeNull();
+    expect(outputs[3]).toBeNull();
+  });
+
+  it("computes a different row's outputs from its own moves, not selectedPokemon's", () => {
+    // selectedPokemon = Floette (focused), rowPokemon = Charizard (non-focused).
+    // Charizard's outputs must reflect Heat Wave + Solar Beam, NOT Moonblast.
+    const floette = makeFloette();
+    const charizard = makeCharizard();
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: floette, format: VGC_FORMAT })
+    );
+    const charOutputs = result.current.computeForwardOutputsForRow(charizard);
+    expect(charOutputs[0]?.desc).toMatch(/Heat Wave/);
+    expect(charOutputs[1]?.desc).toMatch(/Solar Beam/);
+    // Sanity: Charizard's outputs differ from Floette's (different moves +
+    // different attacking stats produce different damage ranges).
+    const floetteOutputs = result.current.computeForwardOutputsForRow(floette);
+    expect(charOutputs[0]?.minPercent).not.toBe(floetteOutputs[0]?.minPercent);
+  });
+
+  it("non-focused rows ignore the panel's attackerBoosts (no bleed-through)", () => {
+    // Floette is the chip-pick focus. Bumping its SpA +6 must change Floette's
+    // outputs but NOT Charizard's (a separate row).
+    const floette = makeFloette();
+    const charizard = makeCharizard();
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: floette, format: VGC_FORMAT })
+    );
+
+    const floetteBefore = result.current.computeForwardOutputsForRow(floette);
+    const charBefore = result.current.computeForwardOutputsForRow(charizard);
+
+    act(() => {
+      result.current.setAttackerBoost("spa", 6);
+    });
+
+    const floetteAfter = result.current.computeForwardOutputsForRow(floette);
+    const charAfter = result.current.computeForwardOutputsForRow(charizard);
+
+    // Focused row (Floette) reflects the +6 SpA boost — Moonblast hits much harder.
+    expect(floetteAfter[0]?.minPercent ?? 0).toBeGreaterThan(
+      floetteBefore[0]?.minPercent ?? 0
+    );
+    // Non-focused row (Charizard) is identical before/after — boost did not bleed.
+    expect(charAfter[0]?.minPercent).toBe(charBefore[0]?.minPercent);
+    expect(charAfter[0]?.maxPercent).toBe(charBefore[0]?.maxPercent);
+  });
+
+  it("non-focused rows ignore the panel's attackerStatus (Burn doesn't halve other rows)", () => {
+    // Garchomp = chip focus, physical attacker. Burning him halves his
+    // physical damage. Charizard (special, separate row) must be unaffected.
+    const garchomp = makePhysicalAttacker({ id: 20 });
+    const charizard = makeCharizard();
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: garchomp, format: VGC_FORMAT })
+    );
+
+    const garchompBefore = result.current.computeForwardOutputsForRow(garchomp);
+    const charBefore = result.current.computeForwardOutputsForRow(charizard);
+
+    act(() => {
+      result.current.setAttackerStatus("Burned");
+    });
+
+    const garchompAfter = result.current.computeForwardOutputsForRow(garchomp);
+    const charAfter = result.current.computeForwardOutputsForRow(charizard);
+
+    // Garchomp (focused) is roughly halved by Burn.
+    const garchompRatio =
+      mid(garchompAfter[0]!.minPercent, garchompAfter[0]!.maxPercent) /
+      mid(garchompBefore[0]!.minPercent, garchompBefore[0]!.maxPercent);
+    expect(garchompRatio).toBeGreaterThan(0.45);
+    expect(garchompRatio).toBeLessThan(0.55);
+    // Charizard (non-focused) is identical before/after.
+    expect(charAfter[0]?.minPercent).toBe(charBefore[0]?.minPercent);
+    expect(charAfter[0]?.maxPercent).toBe(charBefore[0]?.maxPercent);
+  });
+
+  it("non-focused mega-form rows still calculate as their mega form (Charizard-Mega-Y on a non-focus row uses Drought + 159 SpA)", () => {
+    // Floette is focus; Charizard's row computes with mega-active=true regardless
+    // of the panel's attackerMegaActive toggle. Drought sun should boost Heat Wave.
+    const floette = makeFloette();
+    const charizard = makeCharizard();
+    const baseCharizard: Tables<"pokemon"> = {
+      ...charizard,
+      species: "Charizard",
+      ability: "Solar Power",
+      held_item: null,
+    };
+
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: floette, format: VGC_FORMAT })
+    );
+
+    const megaOutputs = result.current.computeForwardOutputsForRow(charizard);
+    const baseOutputs = result.current.computeForwardOutputsForRow(baseCharizard);
+
+    // Mega-Y has 159 base SpA + Drought-boosted Heat Wave; base Charizard has
+    // 109 SpA and no auto-sun. The mega's Heat Wave roll must be strictly higher.
+    expect(megaOutputs[0]?.minPercent).toBeGreaterThan(
+      baseOutputs[0]?.minPercent ?? 0
+    );
+  });
+});

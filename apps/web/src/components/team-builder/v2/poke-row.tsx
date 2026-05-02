@@ -92,7 +92,7 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         <IdentityLane pokemon={null} format={_format} />
         <StatsLane pokemon={null} format={_format} />
         <MovesLane pokemon={null} format={_format} />
-        {calcEnabled && <CalcColumn pokemon={null} isActive={false} />}
+        {calcEnabled && <CalcColumn pokemon={null} />}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

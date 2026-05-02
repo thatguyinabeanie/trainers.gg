@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 import { useCalcStateContext } from "../calc/calc-state-context";
 import { getMoveEffectiveness } from "../calc/move-effectiveness";
+import { type CalcOutput } from "../../use-calc-state";
 import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
 
 // =============================================================================
@@ -15,8 +16,6 @@ import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
 
 interface CalcColumnProps {
   pokemon: Tables<"pokemon"> | null;
-  /** True when this column belongs to the workspace's active row. */
-  isActive: boolean;
 }
 
 // =============================================================================
@@ -31,30 +30,29 @@ type MoveSlot = (typeof MOVE_SLOTS)[number];
 // =============================================================================
 
 interface CalcRowProps {
-  slotIndex: number;
   moveName: string | null;
   /**
-   * Whether the parent ActiveRow is the workspace's active row.
-   * `calc.moveCalcOutputs` is keyed to the active pokemon, so non-active
-   * expanded rows must NOT render calc results OR calc-specific placeholders
-   * ("— pick target —" / "— unavailable —") — those messages describe the
-   * active row's state. Non-active rows always show the neutral em-dash.
+   * Pre-computed forward output for this row + slot, from
+   * `calc.computeForwardOutputsForRow(rowPokemon)`. Null when the slot has no
+   * move, the row has no pokemon, or the calc engine couldn't build an
+   * attacker/defender (e.g. defender not configured yet).
    */
-  isActive: boolean;
+  output: CalcOutput | null;
+  /**
+   * Whether this row's pokemon is non-null. An empty slot still renders a
+   * placeholder column (for width parity with active rows) but its CalcRow
+   * must not show calc-specific placeholder text — those messages describe
+   * a configured pokemon's state, not an empty slot.
+   */
+  hasPokemon: boolean;
 }
 
-function CalcRow({ slotIndex, moveName, isActive }: CalcRowProps) {
+function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
   const calc = useCalcStateContext();
-  const output = calc.moveCalcOutputs[slotIndex] ?? null;
 
   const moveData = moveName ? getMoveData(moveName) : null;
   const isStatus = moveData?.category === "Status";
-  // Only show calc-specific UI on the active row. `moveCalcOutputs` is keyed
-  // to the active pokemon's slot index, so non-active expanded rows must not
-  // render results OR calc-specific placeholders ("— pick target —" /
-  // "— unavailable —") — those messages still describe the active row's
-  // state. Non-active rows fall through to the neutral em-dash placeholder.
-  const canShowCalcState = calc.calcEnabled && isActive;
+  const canShowCalcState = calc.calcEnabled && hasPokemon;
   const hasDefender = Boolean(calc.defenderSpecies);
   const hasCalc =
     canShowCalcState && moveName !== null && output !== null && !isStatus;
@@ -133,19 +131,24 @@ function CalcRow({ slotIndex, moveName, isActive }: CalcRowProps) {
 
 /**
  * Fixed 160px column showing damage calc results for all 4 move slots.
- * Rendered beside MovesLane when calc.calcEnabled is true.
- * Each row aligns with the corresponding MoveTile row.
+ * Rendered beside MovesLane when calc.calcEnabled is true. Each row aligns
+ * with the corresponding MoveTile row. Every row in the team (not just the
+ * workspace active row) computes its own per-row outputs against the shared
+ * defender via `calc.computeForwardOutputsForRow(pokemon)`.
  */
-export function CalcColumn({ pokemon, isActive }: CalcColumnProps) {
+export function CalcColumn({ pokemon }: CalcColumnProps) {
+  const calc = useCalcStateContext();
+  const outputs = calc.computeForwardOutputsForRow(pokemon);
+  const hasPokemon = pokemon !== null;
   return (
     <div className="calc-col">
       <div className="calc-col-header">CALC</div>
       {MOVE_SLOTS.map((slot, i) => (
         <CalcRow
           key={slot}
-          slotIndex={i}
           moveName={pokemon ? pokemon[slot as MoveSlot] || null : null}
-          isActive={isActive}
+          output={outputs[i] ?? null}
+          hasPokemon={hasPokemon}
         />
       ))}
     </div>

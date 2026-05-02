@@ -131,7 +131,21 @@ jest.mock("../calc/calc-detail-card", () => ({
 }));
 
 // calc-state-context — controlled mock
-const mockCalcContext = {
+type RowOutputs = readonly (null | { minPercent: number; maxPercent: number })[];
+const mockCalcContext: {
+  calcEnabled: boolean;
+  defenderSpecies: string;
+  defenderAbility: string;
+  defenderItem: string;
+  defenderNature: string;
+  weather: string;
+  inferredWeather: string;
+  // Per-row outputs that computeForwardOutputsForRow returns. Tests can mutate
+  // mockCalcContext.rowOutputs directly to drive specific KO tier scenarios.
+  rowOutputs: RowOutputs;
+  computeForwardOutputsForRow: (rowPokemon: unknown) => RowOutputs;
+  field: { foesAlive: number; allyAlive: boolean };
+} = {
   calcEnabled: false,
   defenderSpecies: "",
   defenderAbility: "",
@@ -139,10 +153,9 @@ const mockCalcContext = {
   defenderNature: "",
   weather: "",
   inferredWeather: "",
-  moveCalcOutputs: [null, null, null, null] as (null | {
-    minPercent: number;
-    maxPercent: number;
-  })[],
+  rowOutputs: [null, null, null, null],
+  computeForwardOutputsForRow: (rowPokemon) =>
+    rowPokemon === null ? [null, null, null, null] : mockCalcContext.rowOutputs,
   field: { foesAlive: 2, allyAlive: true },
 };
 

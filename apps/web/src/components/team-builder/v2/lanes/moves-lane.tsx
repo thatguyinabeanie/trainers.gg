@@ -82,7 +82,11 @@ function MoveTile({
 
   const calc = useCalcStateContext();
   const moveIdx = SLOT_IDX[slotKey];
-  const output = calc.moveCalcOutputs[moveIdx] ?? null;
+  // Per-row output (this attacker vs the configured defender). The MoveTile
+  // border colour reflects each row's own KO tier, not just the calc panel's
+  // focused attacker — matches the per-row CALC column.
+  const rowOutputs = calc.computeForwardOutputsForRow(attacker);
+  const output = rowOutputs[moveIdx] ?? null;
 
   const moveData = moveName ? getMoveData(moveName) : null;
   const isStatus = moveData?.category === "Status";

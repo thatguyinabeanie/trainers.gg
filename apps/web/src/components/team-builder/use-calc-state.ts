@@ -619,6 +619,17 @@ export interface UseCalcStateReturn {
   // Derived results — computed during render
   moves: readonly (string | null)[];
   moveCalcOutputs: readonly (CalcOutput | null)[];
+  /**
+   * Per-row forward calc — returns the 4 move outputs for any team row's
+   * pokemon vs the configured defender. The CALC column on every row calls
+   * this to populate, so all rows show calcs simultaneously when the calc
+   * panel is open. The chip-pick "focused" row (id matches selectedPokemon.id)
+   * inherits the panel's boosts/status/mega/crit tweaks; other rows compute
+   * with neutral attacker settings.
+   */
+  computeForwardOutputsForRow: (
+    rowPokemon: Tables<"pokemon"> | null
+  ) => readonly (CalcOutput | null)[];
   selectedMoveName: string | null;
   selectedMoveOutput: CalcOutput | null;
   /**
@@ -1030,6 +1041,49 @@ export function useCalcState({
     getCalcOutputForMove(idx)
   );
 
+  // Per-row forward calc — every Pokemon row in the team builder calls this
+  // with its own pokemon to populate its CALC column. The chip-pick "focused"
+  // attacker (rowPokemon.id === selectedPokemon?.id) inherits the panel's
+  // boosts/status/mega/crit tweaks; non-focused rows compute against neutral
+  // baseline so each row reflects the species' raw matchup vs the defender.
+  const NULL_OUTPUTS: readonly (CalcOutput | null)[] = [null, null, null, null];
+  function computeForwardOutputsForRow(
+    rowPokemon: Tables<"pokemon"> | null
+  ): readonly (CalcOutput | null)[] {
+    if (!rowPokemon) return NULL_OUTPUTS;
+    if (!sharedDefender) return NULL_OUTPUTS;
+
+    const isFocused = selectedPokemon?.id === rowPokemon.id;
+    // Focused row reuses the already-built sharedAttacker (saves a Pokemon
+    // construction). Non-focused rows build a fresh attacker with neutral
+    // settings — boosts only apply to the chip-picked row.
+    const attacker = isFocused
+      ? sharedAttacker
+      : buildAttackerFromDb(gen, rowPokemon, EMPTY_BOOSTS, "Healthy", true);
+    if (!attacker) return NULL_OUTPUTS;
+
+    const rowMoves = [
+      rowPokemon.move1,
+      rowPokemon.move2,
+      rowPokemon.move3,
+      rowPokemon.move4,
+    ] as const;
+    return rowMoves.map((moveName, idx) => {
+      if (!moveName) return null;
+      const isCrit = isFocused ? (critMoves[idx] ?? false) : false;
+      return runCalc(
+        gen,
+        attacker,
+        sharedDefender,
+        moveName,
+        isCrit,
+        sharedOffenseField,
+        faintedYours,
+        effectiveWeather
+      );
+    });
+  }
+
   const selectedMoveName = moves[selectedMoveIdx] ?? null;
   const selectedMoveOutput = moveCalcOutputs[selectedMoveIdx] ?? null;
 
@@ -1106,6 +1160,7 @@ export function useCalcState({
     setDefenderSide,
     moves,
     moveCalcOutputs,
+    computeForwardOutputsForRow,
     moveCalcOutputsReverse,
     computeReverseOutput,
     selectedMoveName,
