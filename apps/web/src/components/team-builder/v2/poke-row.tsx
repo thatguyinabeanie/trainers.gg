@@ -23,7 +23,7 @@ import { CalcColumn } from "./lanes/calc-column";
 import { IdentityLane } from "./lanes/identity-lane";
 import { StatsLane } from "./lanes/stats-lane";
 import { MovesLane } from "./lanes/moves-lane";
-import { useCalcStateContext } from "./calc/calc-state-context";
+import { useCalcEnabled } from "./calc/calc-state-context";
 import { SpeciesPicker } from "./pickers/species-picker";
 import s from "./builder.module.css";
 
@@ -65,7 +65,7 @@ interface EmptyRowProps {
 
 function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
   const [open, setOpen] = useState(false);
-  const { calcEnabled } = useCalcStateContext();
+  const calcEnabled = useCalcEnabled();
 
   return (
     <>

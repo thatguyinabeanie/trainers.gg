@@ -8,7 +8,7 @@ import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/
 import { cn } from "@/lib/utils";
 
 import { type ValidationError } from "../../validation-hooks";
-import { useCalcStateContext } from "../calc/calc-state-context";
+import { useCalcEnabled } from "../calc/calc-state-context";
 import s from "../builder.module.css";
 import { CalcColumn } from "./calc-column";
 import { IdentityLane } from "./identity-lane";
@@ -75,7 +75,7 @@ export function ActiveRow({
   dragListeners,
   isDragging = false,
 }: ActiveRowProps) {
-  const { calcEnabled } = useCalcStateContext();
+  const calcEnabled = useCalcEnabled();
 
   // Collect held items from sibling pokemon for the item picker duplicate warning
   const teamItems = teamPokemon

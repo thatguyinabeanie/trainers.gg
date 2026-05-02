@@ -116,6 +116,9 @@ jest.mock("../lanes/calc-column", () => ({
 const mockUseCalcStateContext = jest.fn(() => ({ calcEnabled: false }));
 jest.mock("../calc/calc-state-context", () => ({
   useCalcStateContext: () => mockUseCalcStateContext(),
+  // Derives from the same mock so existing tests that toggle calcEnabled
+  // via mockUseCalcStateContext.mockReturnValue still drive both consumers.
+  useCalcEnabled: () => mockUseCalcStateContext().calcEnabled,
 }));
 
 jest.mock("../pickers/species-picker", () => ({

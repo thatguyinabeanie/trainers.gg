@@ -24,6 +24,7 @@ jest.mock("../builder.module.css", () =>
 
 jest.mock("../calc/calc-state-context", () => ({
   useCalcStateContext: () => ({ calcEnabled: false }),
+  useCalcEnabled: () => false,
 }));
 
 jest.mock("../lanes/calc-column", () => ({
