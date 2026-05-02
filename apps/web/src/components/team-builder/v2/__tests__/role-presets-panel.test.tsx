@@ -35,7 +35,7 @@ describe("RolePresetsPanel", () => {
     expect(onChange).toHaveBeenCalledWith([]);
   });
 
-  it("clicking a different role stacks (multi-select OR)", async () => {
+  it("clicking a different role stacks (multi-select)", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     render(<RolePresetsPanel selected={["spread"]} onChange={onChange} bucketCount={zero} />);

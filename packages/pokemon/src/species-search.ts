@@ -14,7 +14,6 @@ import {
   getLegalSpecies,
   getMegaStoneForSpecies,
   LEGALITY_UNAVAILABLE,
-  legalSetOrPermissive,
 } from "./format-legality";
 import { getLearnableMoves } from "./validation";
 
