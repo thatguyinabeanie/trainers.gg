@@ -1,14 +1,18 @@
 import {
+  getCanonicalBaseSpecies,
+  getFormsForSpecies,
   getLegalAbilities,
   getLegalItems,
   getLegalMoves,
   getLegalSpecies,
   getLegalTeraTypes,
+  getMegaStoneForSpecies,
   isLegalAbility,
   isLegalItem,
   isLegalMove,
   isLegalSpecies,
   isLegalTeraType,
+  speciesHasForms,
 } from "../format-legality";
 
 describe("format-legality — Champions M-A", () => {
@@ -248,5 +252,103 @@ describe("format-legality — abilities", () => {
 
   it("isLegalAbility returns true for empty string (no ability selected)", () => {
     expect(isLegalAbility("", "Pikachu", "gen9vgc2026regi")).toBe(true);
+  });
+});
+
+describe("form switching", () => {
+  describe("getCanonicalBaseSpecies", () => {
+    it.each([
+      ["Charizard", "Charizard"],
+      ["Charizard-Mega-X", "Charizard"],
+      ["Charizard-Mega-Y", "Charizard"],
+      ["Garchomp-Mega", "Garchomp"],
+      ["Aegislash", "Aegislash"],
+      ["Aegislash-Blade", "Aegislash"],
+      ["Wishiwashi-School", "Wishiwashi"],
+      ["Greninja-Ash", "Greninja"],
+      ["Mimikyu-Busted", "Mimikyu"],
+      ["Eternatus-Eternamax", "Eternatus"],
+      // Champions Floette-Mega's canonical base is Floette-Eternal, not Floette.
+      ["Floette-Mega", "Floette-Eternal"],
+      ["Floette-Eternal", "Floette-Eternal"],
+    ])("%s → %s", (input, expected) => {
+      expect(getCanonicalBaseSpecies(input)).toBe(expected);
+    });
+
+    it("returns empty string for empty input", () => {
+      expect(getCanonicalBaseSpecies("")).toBe("");
+    });
+
+    it("returns species unchanged when no transform applies", () => {
+      expect(getCanonicalBaseSpecies("Pikachu")).toBe("Pikachu");
+      expect(getCanonicalBaseSpecies("Iron Hands")).toBe("Iron Hands");
+    });
+  });
+
+  describe("getFormsForSpecies", () => {
+    it("returns single-element array for species without alternate forms", () => {
+      expect(getFormsForSpecies("Pikachu")).toEqual(["Pikachu"]);
+      expect(getFormsForSpecies("Garchomp").length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("returns base + every mega for Charizard", () => {
+      const forms = getFormsForSpecies("Charizard");
+      expect(forms[0]).toBe("Charizard");
+      expect(forms).toContain("Charizard-Mega-X");
+      expect(forms).toContain("Charizard-Mega-Y");
+    });
+
+    it("resolves variant input to the same form list as base input", () => {
+      const fromBase = getFormsForSpecies("Charizard");
+      const fromMega = getFormsForSpecies("Charizard-Mega-Y");
+      expect(fromMega).toEqual(fromBase);
+    });
+
+    it("includes Aegislash-Blade for Aegislash", () => {
+      expect(getFormsForSpecies("Aegislash")).toEqual([
+        "Aegislash",
+        "Aegislash-Blade",
+      ]);
+    });
+
+    it("Floette-Eternal lists Floette-Mega as the alternate form", () => {
+      const forms = getFormsForSpecies("Floette-Eternal");
+      expect(forms[0]).toBe("Floette-Eternal");
+      expect(forms).toContain("Floette-Mega");
+    });
+
+    it("returns empty array for empty input", () => {
+      expect(getFormsForSpecies("")).toEqual([]);
+    });
+  });
+
+  describe("speciesHasForms", () => {
+    it.each([
+      ["Charizard", true],
+      ["Garchomp", true],
+      ["Aegislash", true],
+      ["Floette-Eternal", true],
+      ["Floette-Mega", true], // input variant resolves to base, still has forms
+      ["Pikachu", false],
+      ["Iron Hands", false],
+      ["", false],
+    ])("%s → %s", (input, expected) => {
+      expect(speciesHasForms(input)).toBe(expected);
+    });
+  });
+
+  describe("getMegaStoneForSpecies", () => {
+    it.each([
+      ["Charizard-Mega-X", "Charizardite X"],
+      ["Charizard-Mega-Y", "Charizardite Y"],
+      ["Floette-Mega", "Floettite"],
+      ["Garchomp-Mega", "Garchompite"],
+      ["Charizard", null],
+      ["Aegislash-Blade", null], // not a mega — no stone
+      ["Pikachu", null],
+      ["", null],
+    ])("%s → %s", (input, expected) => {
+      expect(getMegaStoneForSpecies(input)).toBe(expected);
+    });
   });
 });

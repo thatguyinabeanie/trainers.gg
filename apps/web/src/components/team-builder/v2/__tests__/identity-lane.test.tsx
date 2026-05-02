@@ -206,6 +206,12 @@ jest.mock("@trainers/pokemon", () => ({
   STAT_KEYS: ["hp", "attack", "defense", "specialAttack", "specialDefense", "speed"],
   formatHasTera: jest.fn().mockReturnValue(true),
   isChampionsFormat: jest.fn().mockReturnValue(false),
+  // Form switching — defaults that single-form Pokemon hide chips. Override
+  // per test for species with alternate forms.
+  speciesHasForms: jest.fn().mockReturnValue(false),
+  getFormsForSpecies: jest.fn().mockReturnValue([]),
+  getCanonicalBaseSpecies: jest.fn((s: string) => s),
+  getMegaStoneForSpecies: jest.fn().mockReturnValue(null),
 }));
 
 // format-gating — real implementation delegates to @trainers/pokemon mocks above
@@ -222,6 +228,7 @@ jest.mock("../format-gating", () => ({
 import { IdentityLane } from "../lanes/identity-lane";
 import { type ValidationError } from "../../validation-hooks";
 import * as FormatGating from "../format-gating";
+import * as TrainersPokemon from "@trainers/pokemon";
 
 // =============================================================================
 // Fixtures
@@ -744,5 +751,174 @@ describe("IdentityLane — ghost mode (pokemon: null)", () => {
     expect(screen.queryAllByRole("button").length).toBe(0);
     expect(screen.queryAllByRole("textbox").length).toBe(0);
     expect(screen.queryAllByRole("combobox").length).toBe(0);
+  });
+});
+
+// =============================================================================
+// FormChips (form switching)
+// =============================================================================
+
+describe("IdentityLane — form chips", () => {
+  beforeEach(() => {
+    (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(false);
+    (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([]);
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockImplementation((s: string) => s);
+    (TrainersPokemon.getMegaStoneForSpecies as jest.Mock).mockReturnValue(null);
+  });
+
+  it("renders no form chips for a species without alternate forms", () => {
+    render(
+      <IdentityLane
+        pokemon={{ ...makePokemon(), species: "Pikachu" }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={jest.fn()}
+      />
+    );
+    expect(screen.queryByText("Mega X")).toBeNull();
+    expect(screen.queryByText("Regular")).toBeNull();
+  });
+
+  it("renders one chip per form when species has alternate forms", () => {
+    (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(true);
+    (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([
+      "Charizard",
+      "Charizard-Mega-X",
+      "Charizard-Mega-Y",
+    ]);
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockReturnValue("Charizard");
+
+    render(
+      <IdentityLane
+        pokemon={{ ...makePokemon(), species: "Charizard" }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={jest.fn()}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Regular" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mega X" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mega Y" })).toBeInTheDocument();
+  });
+
+  it("marks the active form chip with aria-pressed=true", () => {
+    (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(true);
+    (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([
+      "Charizard",
+      "Charizard-Mega-Y",
+    ]);
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockReturnValue("Charizard");
+
+    render(
+      <IdentityLane
+        pokemon={{ ...makePokemon(), species: "Charizard-Mega-Y" }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={jest.fn()}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Regular" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+    expect(screen.getByRole("button", { name: "Mega Y" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+  });
+
+  it("clicking a mega chip calls onUpdate with the form species + mega stone", async () => {
+    (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(true);
+    (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([
+      "Charizard",
+      "Charizard-Mega-Y",
+    ]);
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockReturnValue("Charizard");
+    (TrainersPokemon.getMegaStoneForSpecies as jest.Mock).mockImplementation(
+      (s: string) =>
+        s === "Charizard-Mega-Y" ? "Charizardite Y" : null
+    );
+
+    const onUpdate = jest.fn();
+    render(
+      <IdentityLane
+        pokemon={{ ...makePokemon(), species: "Charizard", held_item: null }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={onUpdate}
+      />
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Mega Y" }));
+    expect(onUpdate).toHaveBeenCalledWith({
+      species: "Charizard-Mega-Y",
+      held_item: "Charizardite Y",
+    });
+  });
+
+  it("clicking back to Regular clears the auto-set mega stone", async () => {
+    (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(true);
+    (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([
+      "Charizard",
+      "Charizard-Mega-Y",
+    ]);
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockReturnValue("Charizard");
+    (TrainersPokemon.getMegaStoneForSpecies as jest.Mock).mockImplementation(
+      (s: string) =>
+        s === "Charizard-Mega-Y" ? "Charizardite Y" : null
+    );
+
+    const onUpdate = jest.fn();
+    render(
+      <IdentityLane
+        pokemon={{
+          ...makePokemon(),
+          species: "Charizard-Mega-Y",
+          held_item: "Charizardite Y",
+        }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={onUpdate}
+      />
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Regular" }));
+    expect(onUpdate).toHaveBeenCalledWith({
+      species: "Charizard",
+      held_item: null,
+    });
+  });
+
+  it("does NOT clear a non-mega-stone item when leaving a mega form", async () => {
+    // If user holds Choice Band on a non-mega form, keep it on mega.
+    // Reverse: leaving a mega form whose stone WASN'T the held item shouldn't
+    // touch the item — guards against deleting a user's intentional choice.
+    (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(true);
+    (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([
+      "Charizard",
+      "Charizard-Mega-Y",
+    ]);
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockReturnValue("Charizard");
+    (TrainersPokemon.getMegaStoneForSpecies as jest.Mock).mockImplementation(
+      (s: string) =>
+        s === "Charizard-Mega-Y" ? "Charizardite Y" : null
+    );
+
+    const onUpdate = jest.fn();
+    render(
+      <IdentityLane
+        pokemon={{
+          ...makePokemon(),
+          species: "Charizard-Mega-Y",
+          held_item: "Choice Specs",
+        }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={onUpdate}
+      />
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Regular" }));
+    expect(onUpdate).toHaveBeenCalledWith({ species: "Charizard" });
   });
 });

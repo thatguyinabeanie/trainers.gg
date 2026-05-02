@@ -1197,3 +1197,94 @@ export function isLegalTeraType(type: string, formatId: string): boolean {
 export function getMegaStoneForSpecies(species: string): string | null {
   return MEGA_SPECIES_TO_STONE.get(species) ?? null;
 }
+
+// =============================================================================
+// Form switching
+// =============================================================================
+
+/**
+ * Map of base-species name → list of every form in display order. Each entry
+ * starts with the canonical base form so UI defaults to "regular" when
+ * resolving from a mega/alt form back to the picker.
+ *
+ * Includes: regular, all megas (gen 6/7 + Champions-exclusive), Eternal/AZ
+ * Floette, Aegislash-Blade, Wishiwashi-School, Greninja-Ash, Mimikyu-Busted,
+ * Eternatus-Eternamax (where applicable). Regional forms (Vulpix-Alola,
+ * etc.) are intentionally excluded — they're separate species, not mode
+ * toggles for the same Pokemon.
+ */
+const FORMS_BY_BASE: ReadonlyMap<string, readonly string[]> = (() => {
+  const map = new Map<string, string[]>();
+  // Seed every mega species's base into the map. Each base's first entry is
+  // the base itself; megas are appended in MEGA_SPECIES_TO_STONE order.
+  for (const megaName of MEGA_SPECIES_TO_STONE.keys()) {
+    // "Charizard-Mega-X" → "Charizard"; "Floette-Mega" → "Floette" (then
+    // re-mapped to Floette-Eternal below for Champions).
+    const base = megaName.replace(/-Mega(?:-[XYZ])?$/, "");
+    if (!map.has(base)) map.set(base, [base]);
+    map.get(base)!.push(megaName);
+  }
+  // Floette-Mega's canonical base in Champions is Floette-Eternal, not
+  // Floette. Re-anchor manually.
+  if (map.has("Floette")) {
+    const formes = map.get("Floette")!;
+    const megas = formes.filter((f) => f !== "Floette");
+    map.delete("Floette");
+    map.set("Floette-Eternal", ["Floette-Eternal", ...megas]);
+  }
+  // Battle-mode alt forms not in MEGA_SPECIES_TO_STONE.
+  map.set("Aegislash", ["Aegislash", "Aegislash-Blade"]);
+  map.set("Wishiwashi", ["Wishiwashi", "Wishiwashi-School"]);
+  map.set("Greninja", [
+    ...(map.get("Greninja") ?? ["Greninja"]),
+    "Greninja-Ash",
+  ]);
+  map.set("Mimikyu", ["Mimikyu", "Mimikyu-Busted"]);
+  map.set("Eternatus", ["Eternatus", "Eternatus-Eternamax"]);
+  return map;
+})();
+
+/**
+ * Resolve any species variant (form, mega, alt) to its canonical base used
+ * by `FORMS_BY_BASE`. Returns the input untouched when no transformation
+ * applies — that lets callers safely pass either base or variant names.
+ */
+export function getCanonicalBaseSpecies(species: string): string {
+  if (!species) return species;
+  // Mega forms strip suffix.
+  if (MEGA_SPECIES_TO_STONE.has(species)) {
+    if (species === "Floette-Mega") return "Floette-Eternal";
+    return species.replace(/-Mega(?:-[XYZ])?$/, "");
+  }
+  // Battle-mode alt forms.
+  if (species === "Aegislash-Blade") return "Aegislash";
+  if (species === "Wishiwashi-School") return "Wishiwashi";
+  if (species === "Greninja-Ash") return "Greninja";
+  if (species === "Mimikyu-Busted") return "Mimikyu";
+  if (species === "Eternatus-Eternamax") return "Eternatus";
+  return species;
+}
+
+/**
+ * Return the list of selectable forms for a species, in display order.
+ * Returns `[species]` when the species has no alternate forms.
+ *
+ * The first element is always the canonical base form; consumers can
+ * highlight that as the "default" in a UI picker.
+ *
+ * Pass either a base species ("Charizard") or any variant
+ * ("Charizard-Mega-Y") — both resolve to the same form list.
+ */
+export function getFormsForSpecies(species: string): readonly string[] {
+  if (!species) return [];
+  const base = getCanonicalBaseSpecies(species);
+  return FORMS_BY_BASE.get(base) ?? [base];
+}
+
+/**
+ * True when the species has at least one alternate form (mega, blade,
+ * school, ash, busted, eternamax, etc.).
+ */
+export function speciesHasForms(species: string): boolean {
+  return getFormsForSpecies(species).length > 1;
+}

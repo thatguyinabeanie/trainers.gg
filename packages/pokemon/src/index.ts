@@ -120,6 +120,8 @@ export {
 
 // Format legality
 export {
+  getCanonicalBaseSpecies,
+  getFormsForSpecies,
   getLegalAbilities,
   getLegalItems,
   getLegalMoves,
@@ -131,6 +133,7 @@ export {
   isLegalMove,
   isLegalSpecies,
   isLegalTeraType,
+  speciesHasForms,
 } from "./format-legality";
 
 // Competitive format registry (Showdown format IDs + display metadata)

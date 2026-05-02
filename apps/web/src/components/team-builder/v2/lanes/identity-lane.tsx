@@ -2,7 +2,15 @@
 
 import { useRef, useState } from "react";
 
-import { NATURE_EFFECTS, getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
+import {
+  NATURE_EFFECTS,
+  getCanonicalBaseSpecies,
+  getFormsForSpecies,
+  getMegaStoneForSpecies,
+  getSpeciesTypes,
+  speciesHasForms,
+  type GameFormat,
+} from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -124,6 +132,65 @@ function IdentityLaneGhost() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// FormChips — species form switcher (regular ↔ mega ↔ alt)
+// =============================================================================
+
+interface FormChipsProps {
+  currentSpecies: string;
+  currentItem: string | null;
+  onPick: (species: string) => void;
+}
+
+/**
+ * Render a row of one-tap chips for selecting between a Pokemon's available
+ * forms (regular, megas, battle-mode forms like Aegislash-Blade). Hidden
+ * when the species has only one form. Picking a mega form auto-sets the
+ * required mega stone via the parent's onPick handler.
+ */
+function FormChips({ currentSpecies, currentItem, onPick }: FormChipsProps) {
+  const forms = getFormsForSpecies(currentSpecies);
+  if (forms.length <= 1) return null;
+  const base = getCanonicalBaseSpecies(currentSpecies);
+  return (
+    <div className="flex flex-wrap gap-1 px-1 pt-0.5">
+      {forms.map((form) => {
+        const active = form === currentSpecies;
+        const stone = getMegaStoneForSpecies(form);
+        // Strip the base species + dash for the chip label so "Charizard-Mega-Y"
+        // renders as "Mega Y" inline and the base form renders as "Regular".
+        const label =
+          form === base ? "Regular" : form.slice(base.length + 1).replace(/-/g, " ");
+        // Indicate when the chip would auto-attach a mega stone, but only
+        // when the current item isn't already that stone.
+        const willChangeItem =
+          stone !== null && stone !== currentItem;
+        return (
+          <button
+            key={form}
+            type="button"
+            onClick={() => onPick(form)}
+            aria-pressed={active}
+            title={
+              stone
+                ? `${form}${willChangeItem ? ` — sets item to ${stone}` : ""}`
+                : form
+            }
+            className={cn(
+              "rounded-md border px-2 py-0.5 text-[10.5px] font-semibold transition-colors",
+              active
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground"
+            )}
+          >
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -359,6 +426,34 @@ function IdentityLaneReal({
             </button>
           </div>
         </div>
+
+        {/* FORM CHIPS — only when species has alternate forms */}
+        {pokemon.species && speciesHasForms(pokemon.species) && (
+          <FormChips
+            currentSpecies={pokemon.species}
+            currentItem={pokemon.held_item}
+            onPick={(nextSpecies) => {
+              if (nextSpecies === pokemon.species) return;
+              const fields: Partial<TablesUpdate<"pokemon">> = {
+                species: nextSpecies,
+              };
+              // Auto-set the mega stone when switching to a mega form. If
+              // switching away from a mega, clear the stone (only when the
+              // current item IS a mega stone — leaves user-set non-mega
+              // items alone).
+              const nextStone = getMegaStoneForSpecies(nextSpecies);
+              const currentStone = pokemon.species
+                ? getMegaStoneForSpecies(pokemon.species)
+                : null;
+              if (nextStone) {
+                fields.held_item = nextStone;
+              } else if (currentStone && pokemon.held_item === currentStone) {
+                fields.held_item = null;
+              }
+              onUpdate(fields);
+            }}
+          />
+        )}
 
         {/* LOADOUT FORM ROWS */}
 
