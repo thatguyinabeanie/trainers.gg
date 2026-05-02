@@ -69,16 +69,16 @@ type MoveRow = {
 /**
  * Shared grid template for header and data rows.
  *
- *   60px           — type icon (h-6 Showdown badge)
- *   60px           — category icon (h-6 Showdown badge)
- *   180px          — name (fits longest competitive move names)
- *   minmax(280px,1fr) — effect (short description, expands)
- *   44px           — BP
- *   52px           — Accuracy
- *   minmax(160px,200px) — roles chips
+ *   56px              — type icon (h-6 Showdown badge)
+ *   56px              — category icon (h-6 Showdown badge)
+ *   minmax(140px,1.4fr) — name (fits longest competitive move names)
+ *   minmax(0,2fr)     — effect (short description, truncates if cramped)
+ *   40px              — BP
+ *   48px              — Accuracy
+ *   minmax(140px,1fr) — roles chips
  */
 const ROW_GRID =
-  "grid-cols-[60px_60px_180px_minmax(280px,1fr)_44px_52px_minmax(160px,200px)]";
+  "grid-cols-[56px_56px_minmax(140px,1.4fr)_minmax(0,2fr)_40px_48px_minmax(140px,1fr)]";
 
 // =============================================================================
 // Helpers
@@ -444,26 +444,30 @@ export function MovePicker({
           placeholder="Search by name, effect, type, category…"
           className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
         />
-        {(() => {
-          const count =
-            filters.types.length +
-            filters.categories.length +
-            filters.roles.length;
-          if (count === 0) return null;
-          return (
-            <button
-              type="button"
-              onClick={() => setFilters(DEFAULT_MOVE_FILTERS)}
-              aria-label={`Clear ${count} active ${count === 1 ? "filter" : "filters"}`}
-              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
-            >
-              {count} {count === 1 ? "filter" : "filters"}
-              <span aria-hidden="true" className="text-[10px] opacity-70">
-                ×
-              </span>
-            </button>
-          );
-        })()}
+        {/* Fixed-width slot reserves space so the search input width is stable
+            whether or not filters are active (no layout shift on toggle). */}
+        <div className="flex w-[88px] shrink-0 items-center justify-end">
+          {(() => {
+            const count =
+              filters.types.length +
+              filters.categories.length +
+              filters.roles.length;
+            if (count === 0) return null;
+            return (
+              <button
+                type="button"
+                onClick={() => setFilters(DEFAULT_MOVE_FILTERS)}
+                aria-label={`Clear ${count} active ${count === 1 ? "filter" : "filters"}`}
+                className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
+              >
+                {count} {count === 1 ? "filter" : "filters"}
+                <span aria-hidden="true" className="text-[10px] opacity-70">
+                  ×
+                </span>
+              </button>
+            );
+          })()}
+        </div>
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
           {sorted.length} of {legalMoves.length}
         </span>
@@ -562,7 +566,10 @@ export function MovePicker({
           </div>
 
           {/* Virtualized rows */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto">
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-x-hidden overflow-y-auto"
+          >
             {sorted.length === 0 ? (
               <p className="text-muted-foreground py-4 text-center text-sm">
                 No moves found

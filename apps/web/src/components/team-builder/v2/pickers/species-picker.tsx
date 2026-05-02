@@ -42,16 +42,21 @@ const HIGH_STAT_THRESHOLD = 110;
 /**
  * Shared Tailwind grid template for each data row.
  *
- *   44px              — sprite circle
- *   minmax(140px,1fr) — name column
- *   60px              — Type 1 (Showdown icon)
- *   60px              — Type 2 (icon, or em-dash for monotype)
- *   140px / 140px / 130px — slot1 / slot2 / hidden abilities
- *   repeat(6,32px)    — HP/Atk/Def/SpA/SpD/Spe stat cells (3-digit safe)
- *   44px              — BST rollup
+ *   40px              — sprite circle
+ *   minmax(120px,1fr) — name column (truncates if needed)
+ *   56px              — Type 1 (Showdown icon)
+ *   56px              — Type 2 (icon, or em-dash for monotype)
+ *   minmax(0,1fr)×3   — slot1 / slot2 / hidden abilities (truncate-safe,
+ *                       share remaining horizontal space proportionally)
+ *   repeat(6,30px)    — HP/Atk/Def/SpA/SpD/Spe stat cells (3-digit safe)
+ *   40px              — BST rollup
+ *
+ * Total fixed: 40 + 56 + 56 + (6×30) + 40 = 372px; flex columns share the rest
+ * with `gap-2` (12 gaps × 8px = 96px). Comfortably fits inside the right
+ * column at any dialog width >= ~900px.
  */
 const ROW_GRID =
-  "grid-cols-[44px_minmax(140px,1fr)_60px_60px_140px_140px_130px_repeat(6,32px)_44px]";
+  "grid-cols-[40px_minmax(120px,1.4fr)_56px_56px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_repeat(6,30px)_40px]";
 
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
@@ -607,19 +612,24 @@ export function SpeciesPicker({
           data-testid="species-search"
           className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
         />
-        {activeFilterCount > 0 && (
-          <button
-            type="button"
-            onClick={clearAllFilters}
-            className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
-            aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
-          >
-            {activeFilterCount} {activeFilterCount === 1 ? "filter" : "filters"}
-            <span aria-hidden="true" className="text-[10px] opacity-70">
-              ×
-            </span>
-          </button>
-        )}
+        {/* Fixed-width slot reserves space for the filter badge so the search
+            input does not shrink when filters become active (no layout shift). */}
+        <div className="flex w-[88px] shrink-0 items-center justify-end">
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
+              aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
+            >
+              {activeFilterCount}{" "}
+              {activeFilterCount === 1 ? "filter" : "filters"}
+              <span aria-hidden="true" className="text-[10px] opacity-70">
+                ×
+              </span>
+            </button>
+          )}
+        </div>
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
           {matched.length} of {speciesIndex.length}
         </span>
@@ -676,7 +686,7 @@ export function SpeciesPicker({
           ) : (
             <div
               ref={scrollRef}
-              className="flex-1 overflow-y-auto"
+              className="flex-1 overflow-x-hidden overflow-y-auto"
               data-testid="species-rows"
             >
               {/* Sticky sortable header */}
