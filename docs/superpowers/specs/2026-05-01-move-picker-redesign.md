@@ -157,36 +157,23 @@ Selected row (the move currently picked into the slot, if any): `bg-primary/6`.
 
 ---
 
-## 5. Role chips inside rows
+## 5. Role chips inside rows — uses shared `<RoleChip>` component
+
+Move row chips use the **same `<RoleChip>` component** as species rows. Component lives in `pickers/role-chip.tsx`. See the species spec §13 *Shared Design* for the canonical group color palette and chip component contract.
 
 ```tsx
-<button
-  type="button"
-  onClick={(e) => { e.stopPropagation(); onRoleFilter(role.id); }}
-  className={cn(
-    "rounded-full border px-1.5 py-0.5 text-[9.5px] font-semibold transition-all hover:translate-y-[-1px]",
-    GROUP_CHIP_CLASS[role.group]
-  )}
->
-  {role.label}
-</button>
+<div onClick={(e) => e.stopPropagation()} className="flex flex-wrap gap-1">
+  {getRolesForMove(move.name).map((roleId) => (
+    <RoleChip
+      key={roleId}
+      roleId={roleId}
+      onClick={() => onRoleFilter(roleId)}
+    />
+  ))}
+</div>
 ```
 
-Group-based color theming so users learn the groupings:
-
-| Group | Background | Border | Text |
-|---|---|---|---|
-| Damage Type | `rgba(244,63,94,0.07)` (rose-500/7) | `rgba(244,63,94,0.25)` | `pink-700` |
-| Speed Control | `rgba(139,92,246,0.08)` (violet-500/8) | `rgba(139,92,246,0.25)` | `violet-600` |
-| Status | `rgba(234,179,8,0.10)` (yellow-500/10) | `rgba(234,179,8,0.30)` | `yellow-700` |
-| Stat Changes | `rgba(34,197,94,0.08)` (green-500/8) | `rgba(34,197,94,0.28)` | `green-700` |
-| Defensive | `rgba(59,130,246,0.08)` (blue-500/8) | `rgba(59,130,246,0.25)` | `blue-700` |
-| Field | `rgba(16,185,129,0.08)` (emerald-500/8) | `rgba(16,185,129,0.28)` | `emerald-700` |
-| Utility | `rgba(100,116,139,0.10)` (slate-500/10) | `rgba(100,116,139,0.30)` | `slate-600` |
-
-Hover: subtle translate + slightly more saturated background. No "active" state per chip (a chip in a row is purely a click-to-filter affordance — the active state lives in the sidebar).
-
-Wrap behavior: chips wrap with `flex-wrap`, `gap: 3px`. If a move has many roles (Parting Shot has 4: Drop Atk, Drop SpA, Pivot, Disruption), all show — there's no overflow `+N` indicator since the row grows to fit. This keeps the strategic profile fully visible.
+Wrap behavior: `flex-wrap`, `gap: 3px`. If a move has many roles (Parting Shot has 4: Drop Atk, Drop SpA, Pivot, Disruption), all show — there's no overflow `+N` indicator since the row grows to fit. This keeps the strategic profile fully visible.
 
 ---
 
@@ -278,25 +265,32 @@ The `value` prop (currently-selected move) and the species-legal-moves prefilter
 
 ## 8. Component breakdown
 
-### Files to create
+### Shared files (consumed by both pickers — see species spec §13)
 
 | File | Purpose |
 |---|---|
-| `apps/web/src/components/team-builder/v2/pickers/move-roles.ts` | `MOVE_ROLE_PRESETS` registry + group labels/order + `getRolesForMove(moveName)` lookup helper |
+| `apps/web/src/components/team-builder/v2/pickers/role-registry.ts` | Single 26-role taxonomy + group color palette + `getRolesForMove(name)` and `getRolesForSpecies(entry, formatId)` lookups |
+| `apps/web/src/components/team-builder/v2/pickers/role-chip.tsx` | `<RoleChip>` — colored pill rendered in row Roles columns and active-state of sidebar role buttons |
+| `apps/web/src/components/team-builder/v2/pickers/role-presets-panel.tsx` | Middle-column sidebar component listing all role presets, grouped, with bucket counts and active state |
+| `apps/web/src/components/team-builder/v2/pickers/filter-chips-bar.tsx` | Active filter chip strip rendered above each list |
+
+### Move-picker-specific files to create
+
+| File | Purpose |
+|---|---|
 | `apps/web/src/components/team-builder/v2/pickers/move-filter-state.ts` | `MoveFilterState` interface + `DEFAULT_MOVE_FILTERS` constant |
-| `apps/web/src/components/team-builder/v2/pickers/move-sidebar.tsx` | Left panel (Type + Category + Clear) + Middle panel (Role presets) — composed, like `SpeciesSidebar` |
-| `apps/web/src/components/team-builder/v2/pickers/move-role-chips.tsx` | Renders a flex-wrap of clickable role chips for a single move row |
+| `apps/web/src/components/team-builder/v2/pickers/move-sidebar.tsx` | Move-picker's left panel (Type grid + Category chips + Clear) — does NOT include role presets (that's `<RolePresetsPanel>` rendered separately) |
 
 ### Files to modify
 
 | File | Change |
 |---|---|
-| `apps/web/src/components/team-builder/v2/pickers/move-picker.tsx` | Wire up new sidebars; replace column-header filter popovers with plain sortable headers; add Roles column with `<MoveRoleChips>`; switch row from `<button>` to `<div role="row">`; add active-filter chip bar |
-| `apps/web/src/components/team-builder/v2/__tests__/move-picker.test.tsx` | Update for new column shape; add tests for click-to-filter on type/category/role chips and role-filter logic |
+| `apps/web/src/components/team-builder/v2/pickers/move-picker.tsx` | Wire up `<MoveSidebar>` + `<RolePresetsPanel>` + `<FilterChipsBar>`; replace column-header filter popovers with plain sortable headers; add Roles column with `<RoleChip>`s; switch row from `<button>` to `<div role="row">` |
+| `apps/web/src/components/team-builder/v2/__tests__/move-picker.test.tsx` | Update for new column shape; add tests for click-to-filter on type/category/role chips |
 
 ### Move-role markdown → TypeScript conversion
 
-The implementation plan will include a step that parses the registry markdown into a TypeScript export. For v1 this is a small Node script run once. The script is committed alongside the registry .ts so the conversion is reproducible.
+The registry at `docs/design/2026-05-01-champions-ma-move-roles.md` is converted to TS during implementation. For v1 this is a small Node script run once; the script is committed alongside the registry .ts so the conversion is reproducible.
 
 ---
 

@@ -55,44 +55,19 @@ Fixed 196px width, scrollable, `background: muted/50`, separated from list by a 
 - Quick-pick presets below the input: **Tailwind · Trick Room · Follow Me · Protect · Spore · Fake Out**
 - Multiple moves: AND logic — only mons that learn ALL selected moves
 
-### Section 4 — Role (grouped presets)
+### Section 4 — Role (grouped presets) — uses shared `<RolePresetsPanel>` component
 
-Preset buttons with section group labels. Selecting a role applies its moves/abilities to the Learns Move / Ability filters. Selecting a second role in the same group replaces the first. Selecting one from a different group stacks.
+Renders the **same** `RolePresetsPanel` component as the move picker. Reads from the **shared role registry** (`role-registry.ts`) — a single 26-role taxonomy across 7 groups (Damage Type / Speed Control / Status / Stat Changes / Defensive / Field / Utility). See §13 *Shared Design* below for the canonical group/role list and chip color palette.
 
-```
-SPEED CONTROL
-  ⚡  Trick Room          Trick Room
-  💨  Tailwind            Tailwind
-  📉  Speed Drop          Electroweb, Icy Wind, Scary Face, Rock Tomb…
+**Multi-select OR logic** (changed from prior "single-select with replace-within-group / stack-across-group" rule):
+- `filters.roles: string[]` — array of active role IDs
+- Click toggles a role in/out of the array
+- Multiple roles can be active across **and within** any group
+- A species matches the role filter iff it satisfies **any** active role: `entry.roles.some(roleId => filters.roles.includes(roleId))`
 
-OFFENSIVE SUPPORT
-  👋  Fake Out            Fake Out
-  🎯  Redirection         Follow Me, Rage Powder
-  🚀  Damage Boosting     Helping Hand, Coaching, Howl, Decorate
-  💊  Healing             Heal Pulse, Life Dew, Pollen Puff
+A species "fits" role X iff (a) any of its ability slots matches a name in `role.abilities`, OR (b) it can learn any move in `role.moves`. The role membership is computed once per species during `buildSpeciesSearchIndex` and stored on `SpeciesSearchEntry.roles: string[]` for O(1) per-row checks.
 
-DAMAGE REDUCTION
-  🛡  Screens             Light Screen, Reflect, Aurora Veil
-  ↓A  Atk Drop           Charm, Baby-Doll Eyes, Parting Shot, Noble Roar
-                          [+ Intimidate ability]
-  ↓S  SpA Drop           Eerie Impulse, Snarl, Noble Roar, Parting Shot
-
-DISRUPTION
-  💤  Sleep               Spore, Sleep Powder, Yawn
-  ⚡  Paralysis           Thunder Wave, Nuzzle, Glare
-  🔥  Burn                Will-O-Wisp
-  😵  Flinching           Rock Slide, Iron Head, Air Slash, Dark Pulse
-
-FIELD
-  🌧  Weather             Drizzle, Drought, Sand Stream, Snow Warning
-  🌿  Terrain             Grassy Surge, Electric Surge, Psychic Surge, Misty Surge
-
-OFFENSE
-  ➡  Priority            Aqua Jet, Mach Punch, Ice Shard, ExtremeSpeed, Sucker Punch
-  💥  Spread              Rock Slide, Earthquake, Heat Wave, Discharge, Dazzling Gleam
-```
-
-Active role button: `background: primary/10; color: primary; font-weight: 600`
+Active role button styling pulls from the **shared group color palette** (§13) — each role inherits its group's color tint when active.
 
 ### Section 5 — Format-gated: Mega Only (Champions M-A)
 
@@ -135,19 +110,20 @@ Sticky header row + virtualized body (existing `useVirtualizer` stays).
 ### Column grid
 
 ```
-grid-template-columns: 44px minmax(100px,1fr) 44px 80px 80px 76px repeat(6,24px) 36px
+grid-template-columns: 44px minmax(100px,1fr) 44px 80px 80px 76px repeat(6,24px) 36px minmax(140px,180px)
 ```
 
 | Col | Width | Content |
 |---|---|---|
 | Sprite | 44px | Round circle, `primary/8` bg, 36×36 sprite image (pixelated) |
 | Name | `1fr` | Bold species name; Mega rows: `color: indigo-700` |
-| Types | 44px | 1–2 `TypeSymbolIcon` at size 18 |
-| Ability 1 | 80px | See §5 |
+| Types | 44px | 1–2 `TypeSymbolIcon` at size 18. **Click → adds that type to `filters.types`** (`stopPropagation` so row-select doesn't fire) |
+| Ability 1 | 80px | See §5 — click → adds ability to `filters.ability` |
 | Ability 2 | 80px | See §5 |
 | Hidden | 76px | See §5 — italic, muted, labeled "Hidden" in header with `color: violet-400` |
 | HP–Spe | 24px × 6 | Mono tabular-nums; values ≥110 in `teal-600 font-semibold` |
 | BST | 36px | Mono bold; `border-left: 1px solid border` |
+| **Roles** | `minmax(140px,180px)` | **NEW**: flex-wrap of `<RoleChip>`s for the species' role memberships. Click any chip → toggles that role in `filters.roles`. Empty when species fits no role. Same component as the move picker (§13). |
 
 ### Mega row treatment
 
@@ -229,36 +205,44 @@ Categories rendered in order (skip empty categories):
 
 ```ts
 export interface SpeciesFilterState {
-  types: string[];
-  ability: string | null;        // was: abilities: string[] → now single-select
-  moves: string[];
-  role: string | null;
-  megaOnly: boolean;             // new
-  // minBaseStat / maxBaseStat removed — replaced by sidebar role presets
+  types: string[];                  // OR — multi-select
+  ability: string | null;           // single-select (replaces old `abilities: string[]`)
+  moves: string[];                  // AND — multi-select
+  roles: string[];                  // OR — multi-select, was `role: string | null` (CHANGED)
+  megaOnly: boolean;                // new
+  // minBaseStat / maxBaseStat removed
 }
 ```
 
-### Role preset registry
+### Role registry — shared with move picker
 
-New file: `species-roles.ts` alongside `species-filters.tsx`
+The role registry is a **single shared file** (`role-registry.ts`) consumed by both pickers. See §13 *Shared Design* for the full taxonomy. The previous "species-roles.ts" file with the 18 species-specific role presets is **deleted** — all role data is unified.
+
+### `SpeciesSearchEntry` additions
 
 ```ts
-export interface RolePreset {
-  id: string;
-  label: string;
-  group: 'speed' | 'offensive-support' | 'damage-reduction' | 'disruption' | 'field' | 'offense';
-  moves?: string[];
-  abilities?: string[];
+export interface SpeciesSearchEntry {
+  // ... existing fields
+  /** Role IDs this species fits (from the shared role registry). Computed during
+   *  buildSpeciesSearchIndex by checking ability slots against role.abilities and
+   *  learnable moves against role.moves. */
+  roles: string[];
 }
 ```
 
-All 17 role presets defined here. Sidebar reads from this registry.
-
-### `searchSpecies` / filter changes
+### `searchSpecies` filter changes
 
 - `ability` filter: single string match against any of the three ability slots
-- `megaOnly`: filter by species name containing "-Mega" (or a `hasMegaForm` flag in the search index if available)
+- `megaOnly`: uses `getMegaStoneForSpecies(entry.species) !== null` (excludes `*-Mega` entries themselves; matches base species that *have* Mega forms)
+- `roles` filter (NEW, replaces `role`):
+  ```ts
+  if (options?.roles && options.roles.length > 0) {
+    const matches = options.roles.some((roleId) => entry.roles.includes(roleId));
+    if (!matches) return false;
+  }
+  ```
 - Stats min/max filter removed from the search call (no longer in the UI)
+- **`applyRole` helper and `role-expansion.ts` are deleted entirely** — multi-select OR replaces all replace-within-group / stack-across-group / userMoves logic
 
 ---
 
@@ -292,7 +276,93 @@ All 17 role presets defined here. Sidebar reads from this registry.
 
 ## 10. Testing
 
-- Unit tests for `species-roles.ts` preset registry (correct moves/abilities for each role)
-- Update `species-picker` tests: new `SpeciesFilterState` shape, Mega filter, ability single-select
+- Unit tests for `role-registry.ts` (shared) — correct group/role mapping, `getRolesForMove`, `getRolesForSpecies`, color tokens
+- Update `species-picker` tests: new `SpeciesFilterState` shape (multi-select roles), Mega filter, ability single-select, click-to-filter on type icon, click-to-filter on role chip
 - Tooltip visibility test (ability cell hover) — use `userEvent.hover`
 - Smart search overlay: typing shows categories, "Filter" click applies filter and clears input
+- Roles column rendering: a species with role memberships renders one `<RoleChip>` per role with the correct group color
+
+---
+
+## 13. Shared Design (DRY between species-picker and move-picker)
+
+To prevent drift between the two pickers, the following are **single shared files** consumed by both:
+
+### Shared files
+
+| File | Purpose |
+|---|---|
+| `apps/web/src/components/team-builder/v2/pickers/role-registry.ts` | Single role taxonomy: 26 roles across 7 groups; group color tokens; `getRolesForMove(name)` and `getRolesForSpecies(entry, formatId)` lookups |
+| `apps/web/src/components/team-builder/v2/pickers/role-chip.tsx` | `<RoleChip role onClick>` — renders one role pill with its group's color tint; used in row Roles columns and as the active-state visual for sidebar role buttons |
+| `apps/web/src/components/team-builder/v2/pickers/role-presets-panel.tsx` | The middle-column sidebar of grouped role buttons with bucket counts; used by **both** pickers (`<RolePresetsPanel selected={filters.roles} onChange={...} />`) |
+| `apps/web/src/components/team-builder/v2/pickers/filter-chips-bar.tsx` | The active-filter chip strip rendered above each list (`<FilterChipsBar chips={...} />`); used by both pickers |
+
+### Role taxonomy (canonical)
+
+```ts
+export type RoleGroup =
+  | "damage-type" | "speed-control" | "status"
+  | "stat-changes" | "defensive" | "field" | "utility";
+
+export interface RolePreset {
+  id: string;
+  label: string;
+  group: RoleGroup;
+  /** Moves that ARE this role (for move filtering and species-fit derivation). */
+  moves?: string[];
+  /** Abilities that IMPLY this role (used only for species fit). */
+  abilities?: string[];
+}
+```
+
+26 presets total — see registry markdown at `docs/design/2026-05-01-champions-ma-move-roles.md` for the move data. The **abilities** field augments the registry for the 3 ability-driven roles:
+
+| Role | Abilities |
+|---|---|
+| Atk Drop | Intimidate |
+| Weather | Drizzle, Drought, Sand Stream, Snow Warning |
+| Terrain | Grassy Surge, Electric Surge, Psychic Surge, Misty Surge |
+
+### Group color palette (canonical)
+
+Both pickers' role chips and active-state role buttons use this palette. The color is keyed on `RoleGroup`:
+
+| Group | Token | Background tint | Border | Text |
+|---|---|---|---|---|
+| Damage Type | `rose` | `bg-rose-500/8` | `border-rose-500/25` | `text-rose-700 dark:text-rose-300` |
+| Speed Control | `violet` | `bg-violet-500/8` | `border-violet-500/25` | `text-violet-700 dark:text-violet-300` |
+| Status | `amber` | `bg-amber-500/10` | `border-amber-500/30` | `text-amber-700 dark:text-amber-400` |
+| Stat Changes | `emerald` | `bg-emerald-500/8` | `border-emerald-500/28` | `text-emerald-700 dark:text-emerald-400` |
+| Defensive | `sky` | `bg-sky-500/8` | `border-sky-500/25` | `text-sky-700 dark:text-sky-300` |
+| Field | `lime` | `bg-lime-500/10` | `border-lime-500/28` | `text-lime-700 dark:text-lime-400` |
+| Utility | `slate` | `bg-slate-500/10` | `border-slate-500/30` | `text-slate-600 dark:text-slate-400` |
+
+Note on Mega purple overlap: the Mega-only sidebar toggle uses violet in the species sidebar. Speed Control role chips also use violet. These appear in distinct visual contexts (sidebar gem icon + label vs. inline pill in a row), and the Mega toggle is format-gated to Champions M-A only — confusion is unlikely. Documented here so it's not "fixed" later by accident.
+
+### Lookup helpers
+
+```ts
+/** O(1) via memoized reverse-index. Returns role IDs for a move name. */
+export function getRolesForMove(moveName: string): string[];
+
+/** Computes role IDs for a species — checks ability slots against role.abilities,
+ *  then checks species' learnable moves against role.moves. Caches per (species, formatId). */
+export function getRolesForSpecies(
+  entry: SpeciesSearchEntry,
+  formatId: string
+): string[];
+```
+
+`getRolesForSpecies` is called once per species during `buildSpeciesSearchIndex` and the result is stored on `SpeciesSearchEntry.roles`. The species picker reads `entry.roles` directly — no per-row computation.
+
+### Click-to-filter consistency (both pickers)
+
+| Click target | Action |
+|---|---|
+| Type icon in row | Adds the type to `filters.types` (toggle if already there) |
+| Ability cell in row (species only) | Sets `filters.ability` to that ability |
+| Role chip in row (Roles column) | Toggles the role ID in `filters.roles` |
+| Role button in sidebar (`<RolePresetsPanel>`) | Toggles the role ID in `filters.roles` |
+| Active filter chip in `<FilterChipsBar>` | Removes that filter |
+
+All in-row click handlers use `e.stopPropagation()` to prevent the row's `onClick` (select species/move) from firing.
