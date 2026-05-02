@@ -52,7 +52,9 @@ function CalcRow({ slotIndex, moveName }: CalcRowProps) {
 
   const moveData = moveName ? getMoveData(moveName) : null;
   const isStatus = moveData?.category === "Status";
-  const hasCalc = calc.calcEnabled && output !== null && !isStatus;
+  // moveName must be set: calc.moveCalcOutputs is keyed by the active pokemon's
+  // slot index, so an empty row would otherwise leak the active row's results.
+  const hasCalc = calc.calcEnabled && moveName !== null && output !== null && !isStatus;
   const hasDefender = calc.calcEnabled && Boolean(calc.defenderSpecies);
 
   const targetInfo = moveName ? getMoveTargetInfo(moveName) : null;
