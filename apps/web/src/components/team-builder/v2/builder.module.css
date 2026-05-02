@@ -937,17 +937,10 @@
    Grid columns mirror the move-picker's column layout:
    type pill | cat icon | name | description | BP | Acc | calc info */
 :global(.mvline) {
-  display: grid;
-  grid-template-columns:
-    max-content       /* type + category grouped */
-    minmax(0, auto)   /* name — content width, shrinks if tight */
-    minmax(0, 1fr)    /* spacer — pushes BP/ACC right */
-    56px              /* BP */
-    72px;             /* Acc */
+  display: flex;
   align-items: center;
-  justify-content: start;
   gap: 6px;
-  padding: 5px 14px 5px 8px;
+  padding: 5px 8px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -1097,6 +1090,7 @@
 
 /* Move name inside a tile */
 :global(.mvline-name) {
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1127,6 +1121,13 @@
   align-items: center;
   gap: 3px;
   min-width: 113px;
+  flex: 0 0 auto;
+}
+
+/* Spacer — grows to fill free space, shrinks to 0 when container is tight */
+:global(.mvline-spacer) {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* Type pill slot */

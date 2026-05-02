@@ -207,7 +207,7 @@ function MoveTile({
           </Tooltip>
 
           {/* Spacer — pushes BP/ACC to the right */}
-          <span aria-hidden />
+          <span className="mvline-spacer" aria-hidden />
 
           {/* Col 4: BP */}
           <span className="mvline-stat">
@@ -299,7 +299,7 @@ export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: Moves
       className={cn(
         "flex flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3",
         calcEnabled
-          ? "w-[240px] shrink-0"
+          ? "w-[300px] shrink-0"
           : "min-w-[240px] flex-1"
       )}
     >
