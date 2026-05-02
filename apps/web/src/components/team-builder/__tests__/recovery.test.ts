@@ -108,6 +108,41 @@ describe("getRecoveryConfig", () => {
     expect(cfg.suffix).toBe("after Black Sludge recovery");
   });
 
+  it("Enigma Berry heals 1/4 maxHP on a super-effective hit", () => {
+    const cfg = getRecoveryConfig({
+      maxHP: 200,
+      item: "Enigma Berry",
+      defenderTypes: ["Grass"],
+      isSuperEffective: true,
+    });
+    expect(cfg.oneShot).toBe(50);
+    expect(cfg.oneShotThreshold).toBe(200); // always-fire on first hit
+    expect(cfg.suffix).toBe("after Enigma Berry recovery");
+  });
+
+  it("Enigma Berry does NOT trigger on neutral or resisted hits", () => {
+    const cfg = getRecoveryConfig({
+      maxHP: 200,
+      item: "Enigma Berry",
+      defenderTypes: ["Grass"],
+      isSuperEffective: false,
+    });
+    expect(cfg.oneShot).toBe(0);
+    expect(cfg.suffix).toBe("");
+  });
+
+  it("Klutz disables Enigma Berry even on super-effective hits", () => {
+    const cfg = getRecoveryConfig({
+      maxHP: 200,
+      item: "Enigma Berry",
+      defenderTypes: ["Grass"],
+      ability: "Klutz",
+      isSuperEffective: true,
+    });
+    expect(cfg.oneShot).toBe(0);
+    expect(cfg.suffix).toBe("");
+  });
+
   it("Unrecognised items return zero recovery", () => {
     const cfg = getRecoveryConfig({ maxHP: 200, item: "Choice Band", defenderTypes: ["Fire"] });
     expect(cfg.oneShot).toBe(0);
@@ -322,6 +357,33 @@ describe("getRecoveryAwareVerdict", () => {
     });
     expect(verdict.tier).toBe("3HKO");
     expect(verdict.suffix).toBe("after Black Sludge recovery");
+  });
+
+  it("Enigma Berry shifts a 2HKO into a 3HKO on a super-effective hit", () => {
+    // 100 HP defender, max roll 60. Without recovery: 2HKO (60+60=120>100).
+    // With Enigma Berry on SE hit: hit 1 → 40 (Enigma always-fire +25 → 65).
+    // Hit 2 → 5. Hit 3 → -55 → 3HKO.
+    const verdict = getRecoveryAwareVerdict({
+      rolls: Array(16).fill(60),
+      maxHP: 100,
+      item: "Enigma Berry",
+      defenderTypes: ["Grass"],
+      isSuperEffective: true,
+    });
+    expect(verdict.tier).toBe("3HKO");
+    expect(verdict.suffix).toBe("after Enigma Berry recovery");
+  });
+
+  it("Enigma Berry produces no suffix on a neutral hit", () => {
+    const verdict = getRecoveryAwareVerdict({
+      rolls: Array(16).fill(60),
+      maxHP: 100,
+      item: "Enigma Berry",
+      defenderTypes: ["Grass"],
+      isSuperEffective: false,
+    });
+    expect(verdict.tier).toBe("2HKO");
+    expect(verdict.suffix).toBe("");
   });
 
   it("Berry Juice can shift a 2HKO to 3HKO with its flat 20 HP", () => {

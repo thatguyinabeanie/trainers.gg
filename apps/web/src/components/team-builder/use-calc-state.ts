@@ -18,6 +18,7 @@ import {
 } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
+import { getMoveEffectiveness } from "./v2/calc/move-effectiveness";
 import { getRecoveryAwareVerdict } from "./calc/recovery";
 
 // =============================================================================
@@ -435,6 +436,17 @@ function runCalc(
     const defenderTypes = getSpeciesTypes(defenderSpeciesName) as readonly PokemonType[];
     const defenderAbilityName =
       typeof defender.ability === "string" ? defender.ability : "";
+    // Move type effectiveness gates Enigma Berry (heals only on
+    // super-effective hits). getMoveEffectiveness handles weather-dependent
+    // moves like Weather Ball — passing undefined for weather here gives
+    // the wrapper's default (Normal type for Weather Ball when no weather
+    // is active), which is the correct fallback for the recovery suffix
+    // even though it slightly understates Enigma Berry triggers when
+    // weather is active. Edge case; documented and acceptable.
+    const moveEffectiveness = isImmune
+      ? 0
+      : getMoveEffectiveness(moveName, defenderSpeciesName, undefined);
+    const isSuperEffective = moveEffectiveness > 1;
     const { suffix: recoverySuffix } = isImmune
       ? { suffix: "" }
       : getRecoveryAwareVerdict({
@@ -443,6 +455,7 @@ function runCalc(
           item: defenderItemName,
           defenderTypes,
           ability: defenderAbilityName,
+          isSuperEffective,
         });
 
     return {

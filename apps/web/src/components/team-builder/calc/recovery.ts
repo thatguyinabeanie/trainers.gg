@@ -24,6 +24,7 @@ const SITRUS_BERRY = "Sitrus Berry";
 const LEFTOVERS = "Leftovers";
 const BLACK_SLUDGE = "Black Sludge";
 const BERRY_JUICE = "Berry Juice";
+const ENIGMA_BERRY = "Enigma Berry";
 
 /**
  * "Flavor" berries — Aguav / Figy / Iapapa / Mago / Wiki. Each heals the
@@ -54,6 +55,11 @@ interface RecoveryConfig {
    * effect doesn't fire.
    */
   ability?: string | null;
+  /**
+   * Whether the incoming move is super-effective (>1× type multiplier
+   * before STAB). Enigma Berry only heals on super-effective hits.
+   */
+  isSuperEffective?: boolean;
 }
 
 /** Abilities that negate Black Sludge self-damage on non-Poison holders. */
@@ -84,7 +90,7 @@ interface RecoveryComputed {
  * Public for tests; production callers go through `simulateKoTier`.
  */
 export function getRecoveryConfig(cfg: RecoveryConfig): RecoveryComputed {
-  const { maxHP, item, defenderTypes, ability } = cfg;
+  const { maxHP, item, defenderTypes, ability, isSuperEffective } = cfg;
   const empty: RecoveryComputed = {
     oneShot: 0,
     oneShotThreshold: 0,
@@ -126,6 +132,25 @@ export function getRecoveryConfig(cfg: RecoveryConfig): RecoveryComputed {
       oneShot: Math.floor(maxHP / 3),
       oneShotThreshold: Math.floor(maxHP / 4),
       suffix: `after ${item} recovery`,
+    };
+  }
+
+  if (item === ENIGMA_BERRY) {
+    // Heals 25% of maxHP after taking a super-effective hit. Klutz
+    // disables held items entirely — the berry never triggers. With no
+    // super-effective context (e.g. neutral hit or status move), no
+    // recovery applies.
+    if (!isSuperEffective || ability === "Klutz") {
+      return empty;
+    }
+    return {
+      ...empty,
+      oneShot: Math.floor(maxHP / 4),
+      // Triggers on the hit itself, not at any HP threshold — set the
+      // threshold to maxHP so it always fires after the first super-
+      // effective hit lands (which it must have, given the gating above).
+      oneShotThreshold: maxHP,
+      suffix: "after Enigma Berry recovery",
     };
   }
 
@@ -238,6 +263,8 @@ interface VerdictInput {
   defenderTypes: readonly PokemonType[];
   /** Defender's ability — Magic Guard / Klutz negate Black Sludge damage. */
   ability?: string | null;
+  /** True if the incoming move is super-effective (drives Enigma Berry). */
+  isSuperEffective?: boolean;
 }
 
 interface VerdictOutput {
@@ -259,6 +286,7 @@ export function getRecoveryAwareVerdict(input: VerdictInput): VerdictOutput {
     item: input.item,
     defenderTypes: input.defenderTypes,
     ability: input.ability,
+    isSuperEffective: input.isSuperEffective,
   });
 
   // Use the max roll for the deterministic-KO question Showdown answers
