@@ -237,32 +237,12 @@ export function CalcFieldBlock({
           Field
         </span>
         <div className="flex gap-1">
-          <button
-            type="button"
-            aria-pressed={gameType === "Singles"}
-            onClick={() => setGameType("Singles")}
-            className={cn(
-              "rounded px-2 py-0.5 font-mono text-[10px] transition-colors",
-              gameType === "Singles"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/70"
-            )}
-          >
+          <ToggleBtn active={gameType === "Singles"} onClick={() => setGameType("Singles")}>
             Singles
-          </button>
-          <button
-            type="button"
-            aria-pressed={gameType === "Doubles"}
-            onClick={() => setGameType("Doubles")}
-            className={cn(
-              "rounded px-2 py-0.5 font-mono text-[10px] transition-colors",
-              gameType === "Doubles"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/70"
-            )}
-          >
+          </ToggleBtn>
+          <ToggleBtn active={gameType === "Doubles"} onClick={() => setGameType("Doubles")}>
             Doubles
-          </button>
+          </ToggleBtn>
         </div>
       </div>
 
