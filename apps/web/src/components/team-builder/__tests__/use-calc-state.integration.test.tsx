@@ -1337,7 +1337,7 @@ const NCP_CASES: NcpReferenceCase[] = [
   {
     name: "Champions: 32 SpA Fairy Aura Mega Floette Light of Ruin vs 32/2 Archaludon",
     attacker: {
-      species: "Floette-Eternal",
+      species: "Floette-Mega",
       ability: "Fairy Aura",
       nature: "Hardy",
       held_item: null,
@@ -1364,7 +1364,7 @@ const NCP_CASES: NcpReferenceCase[] = [
   {
     name: "Champions: Fairy Aura Mega Floette Helping Hand Light of Ruin vs 32/2 Archaludon",
     attacker: {
-      species: "Floette-Eternal",
+      species: "Floette-Mega",
       ability: "Fairy Aura",
       nature: "Hardy",
       held_item: null,
@@ -1392,7 +1392,7 @@ const NCP_CASES: NcpReferenceCase[] = [
   {
     name: "Champions: Fairy Aura Mega Floette Helping Hand Light of Ruin vs 32/2 Archaludon through Aurora Veil",
     attacker: {
-      species: "Floette-Eternal",
+      species: "Floette-Mega",
       ability: "Fairy Aura",
       nature: "Hardy",
       held_item: null,
@@ -1421,9 +1421,9 @@ const NCP_CASES: NcpReferenceCase[] = [
   {
     name: "Champions: 32 SpA Mega Floette HH Light of Ruin vs 32/2 Archaludon through Aurora Veil + Friend Guard",
     attacker: {
-      species: "Floette-Eternal",
-      // No Fairy Aura on this case — tests that the absence of Fairy Aura
-      // drops the damage from cases 7-9's Aura×1.33 multiplier.
+      species: "Floette-Mega",
+      // Mega Floette's natural ability is Fairy Aura — overriding to Symbiosis
+      // explicitly mirrors NCP's "no Fairy Aura prefix" output for this case.
       ability: "Symbiosis",
       nature: "Hardy",
       held_item: null,
@@ -1452,7 +1452,7 @@ const NCP_CASES: NcpReferenceCase[] = [
   {
     name: "Champions: +1 32 SpA Mega Floette HH Light of Ruin vs 32/2 Archaludon through Aurora Veil + Friend Guard",
     attacker: {
-      species: "Floette-Eternal",
+      species: "Floette-Mega",
       ability: "Symbiosis",
       nature: "Hardy",
       held_item: null,
@@ -1547,21 +1547,14 @@ describe("NCP-VGC Champions reference cases", () => {
       const out = result.current.selectedMoveOutput;
       expect(out).not.toBeNull();
 
-      // Cases involving Fairy Aura on Floette-Eternal currently diverge from
-      // NCP — the ability appears to be silently ignored by the engine's
-      // species data for that species. Track via structural invariants only;
-      // the rolls and percents are off by ~the Fairy Aura 1.33× multiplier.
-      // Case 2 (no-weather Weather Ball) likewise diverges because our wrapper
-      // auto-infers Sun from Drought, while NCP does not — by design.
-      const isKnownDivergent =
-        c.name.includes("Fairy Aura") ||
-        c.name === "Champions: Mega Floette HH Light of Ruin vs 32/2 Archaludon through Aurora Veil + Friend Guard" ||
-        c.name === "Champions: 32 SpA Mega Floette HH Light of Ruin vs 32/2 Archaludon through Aurora Veil + Friend Guard" ||
-        c.name === "Champions: +1 32 SpA Mega Floette HH Light of Ruin vs 32/2 Archaludon through Aurora Veil + Friend Guard" ||
-        c.name.includes("Mega Charizard Y Weather Ball (Normal, no weather)");
+      // The no-weather Weather Ball case diverges intentionally because our
+      // wrapper auto-infers Sun from Drought, while NCP requires explicit
+      // weather selection. Document via structural-only assertions.
+      const isKnownDivergent = c.name.includes(
+        "Mega Charizard Y Weather Ball (Normal, no weather)"
+      );
 
       if (isKnownDivergent) {
-        // Structural-only assertions for cases with documented divergence.
         expect(out!.minPercent).toBeGreaterThanOrEqual(0);
         expect(out!.maxPercent).toBeGreaterThanOrEqual(out!.minPercent);
         expect(out!.maxPercent).toBeLessThanOrEqual(300);
@@ -1569,9 +1562,9 @@ describe("NCP-VGC Champions reference cases", () => {
         return;
       }
 
-      // Strict equality — engine output must match NCP exactly for these
-      // canonical matchups. Any drift here indicates either a wrapper
-      // regression or a genuine engine update we should investigate.
+      // Strict equality — engine output must match NCP exactly. Any drift
+      // here indicates either a wrapper regression or a genuine engine
+      // update we should investigate.
       expect(out!.rolls).toEqual(c.rolls);
       expect(out!.minPercent).toBe(c.expected.minPct);
       expect(out!.maxPercent).toBe(c.expected.maxPct);
