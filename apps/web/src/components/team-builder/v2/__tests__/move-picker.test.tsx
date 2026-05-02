@@ -1,11 +1,14 @@
-"use client";
-
 /**
- * Behavioral tests for MovePicker.
+ * Behavioral tests for the redesigned MovePicker.
  *
- * Covers: search filtering, type filter dropdown, category filter dropdown,
- * column sort headers, legal vs learnable move sets, click-to-select behavior,
- * close button, and empty-result state.
+ * Covers: render, search filtering, sidebar type/category filter wiring,
+ * role-presets panel wiring, sort headers, selection+close, click-to-filter
+ * row affordances (type icon, category icon, role chip), filter chips bar,
+ * result count display, and format-aware legal move sets.
+ *
+ * Sub-components (MoveSidebar, RolePresetsPanel, FilterChipsBar, RoleChip)
+ * are mocked to isolate MovePicker logic, following the same pattern as
+ * species-picker.test.tsx.
  */
 
 import { render, screen } from "@testing-library/react";
@@ -15,41 +18,22 @@ import React from "react";
 import type * as TrainersPokemon from "@trainers/pokemon";
 
 // =============================================================================
-// Mock @trainers/pokemon — move-picker imports ALL_TYPES, getLearnableMoves,
-// getLegalMoves, and getMoveData.
+// Mock @trainers/pokemon — move-picker imports getLearnableMoves, getLegalMoves,
+// getMoveData, and legalSetOrPermissive.
 // =============================================================================
 
 const mockGetLearnableMoves = jest.fn();
 const mockGetLegalMoves = jest.fn();
 const mockGetMoveData = jest.fn();
-
-const MOCK_ALL_TYPES = [
-  "Normal",
-  "Fire",
-  "Water",
-  "Electric",
-  "Grass",
-  "Ice",
-  "Fighting",
-  "Poison",
-  "Ground",
-  "Flying",
-  "Psychic",
-  "Bug",
-  "Rock",
-  "Ghost",
-  "Dragon",
-  "Dark",
-  "Steel",
-  "Fairy",
-];
+const mockLegalSetOrPermissive = jest.fn();
 
 jest.mock("@trainers/pokemon", () => ({
   ...jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon"),
-  ALL_TYPES: MOCK_ALL_TYPES,
   getLearnableMoves: (...args: unknown[]) => mockGetLearnableMoves(...args),
   getLegalMoves: (...args: unknown[]) => mockGetLegalMoves(...args),
   getMoveData: (...args: unknown[]) => mockGetMoveData(...args),
+  legalSetOrPermissive: (...args: unknown[]) =>
+    mockLegalSetOrPermissive(...args),
 }));
 
 // =============================================================================
@@ -62,8 +46,8 @@ jest.mock("@trainers/pokemon/sprites", () => ({
 }));
 
 // =============================================================================
-// Mock @tanstack/react-virtual — JSDOM has no layout/scroll APIs, so the
-// virtualizer reports zero visible items. This mock renders every row.
+// Mock @tanstack/react-virtual — JSDOM has no layout/scroll APIs; the
+// virtualizer would report zero visible items. This mock renders every row.
 // =============================================================================
 
 jest.mock("@tanstack/react-virtual", () => ({
@@ -80,34 +64,189 @@ jest.mock("@tanstack/react-virtual", () => ({
 }));
 
 // =============================================================================
-// Mock @/components/ui/popover — render children directly so PopoverContent
-// is queryable in JSDOM without a real portal/positioning layer.
-// The Base UI PopoverTrigger accepts a `render` prop for composition; we
-// forward its children so the trigger label text is still in the DOM.
+// Mock role-registry — ROLE_PRESETS, GROUP_COLORS, and helpers are tested
+// separately; here we just need deterministic stubs.
 // =============================================================================
 
-jest.mock("@/components/ui/popover", () => ({
-  Popover: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="popover">{children}</div>
+jest.mock("../pickers/role-registry", () => ({
+  getRoleById: jest.fn((id: string) =>
+    id === "burn" ? { id: "burn", label: "Burn", group: "status" } : null
   ),
-  PopoverTrigger: ({
-    children,
-    render: renderProp,
-  }: {
-    children?: React.ReactNode;
-    render?: React.ReactElement;
-    className?: string;
-    "aria-label"?: string;
-  }) => {
-    // When render prop is provided (Base UI pattern), clone it and inject
-    // the trigger children as its own children so the label text is visible.
-    if (renderProp) {
-      return React.cloneElement(renderProp, {}, children);
-    }
-    return <button data-testid="popover-trigger">{children}</button>;
+  getRolesForMove: jest.fn((name: string) => {
+    const map: Record<string, string[]> = {
+      Flamethrower: ["burn"],
+      "Fire Punch": ["burn"],
+      "Will-O-Wisp": ["burn"],
+      Surf: ["spread"],
+      Earthquake: ["spread"],
+    };
+    return map[name] ?? [];
+  }),
+  ROLE_PRESETS: [
+    { id: "burn", label: "Burn", group: "status" },
+    { id: "spread", label: "Spread", group: "damage-type" },
+  ],
+  ROLE_GROUP_LABELS: {
+    status: "Status",
+    "damage-type": "Damage Type",
   },
-  PopoverContent: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="popover-content">{children}</div>
+  ROLE_GROUP_ORDER: ["damage-type", "status"],
+  GROUP_COLORS: {
+    status: {
+      chip: "bg-amber-500/10 border-amber-500/30 text-amber-700",
+      active: "bg-amber-500/12",
+      text: "text-amber-700",
+    },
+    "damage-type": {
+      chip: "bg-rose-500/8 border-rose-500/25 text-rose-700",
+      active: "bg-rose-500/10",
+      text: "text-rose-700",
+    },
+  },
+}));
+
+// =============================================================================
+// Mock sub-components to isolate MovePicker logic
+// =============================================================================
+
+jest.mock("../pickers/move-sidebar", () => ({
+  MoveSidebar: ({
+    filters,
+    onFiltersChange,
+  }: {
+    filters: {
+      search: string;
+      types: string[];
+      categories: string[];
+      roles: string[];
+    };
+    onFiltersChange: (f: typeof filters) => void;
+  }) => (
+    <div data-testid="move-sidebar" data-filters={JSON.stringify(filters)}>
+      <button
+        data-testid="sidebar-type-fire"
+        onClick={() =>
+          onFiltersChange({ ...filters, types: [...filters.types, "Fire"] })
+        }
+      >
+        Fire
+      </button>
+      <button
+        data-testid="sidebar-type-water"
+        onClick={() =>
+          onFiltersChange({ ...filters, types: [...filters.types, "Water"] })
+        }
+      >
+        Water
+      </button>
+      <button
+        data-testid="sidebar-category-physical"
+        onClick={() =>
+          onFiltersChange({
+            ...filters,
+            categories: [...filters.categories, "Physical"],
+          })
+        }
+      >
+        Physical
+      </button>
+      <button
+        data-testid="sidebar-category-special"
+        onClick={() =>
+          onFiltersChange({
+            ...filters,
+            categories: [...filters.categories, "Special"],
+          })
+        }
+      >
+        Special
+      </button>
+      <button
+        data-testid="sidebar-category-status"
+        onClick={() =>
+          onFiltersChange({
+            ...filters,
+            categories: [...filters.categories, "Status"],
+          })
+        }
+      >
+        Status
+      </button>
+      <button
+        data-testid="sidebar-clear-all"
+        onClick={() =>
+          onFiltersChange({ search: "", types: [], categories: [], roles: [] })
+        }
+      >
+        Clear all filters
+      </button>
+    </div>
+  ),
+}));
+
+jest.mock("../pickers/role-presets-panel", () => ({
+  RolePresetsPanel: ({
+    selected,
+    onChange,
+  }: {
+    selected: string[];
+    onChange: (next: string[]) => void;
+  }) => (
+    <div data-testid="role-presets-panel">
+      <button
+        data-testid="role-btn-burn"
+        onClick={() => onChange([...selected, "burn"])}
+      >
+        Burn
+      </button>
+      <button
+        data-testid="role-btn-spread"
+        onClick={() => onChange([...selected, "spread"])}
+      >
+        Spread
+      </button>
+    </div>
+  ),
+}));
+
+jest.mock("../pickers/filter-chips-bar", () => ({
+  FilterChipsBar: ({
+    chips,
+  }: {
+    chips: Array<{ id: string; label: string; onRemove: () => void }>;
+  }) =>
+    chips.length > 0 ? (
+      <div data-testid="filter-chips-bar">
+        {chips.map((c) => (
+          <button key={c.id} data-testid={`chip-${c.id}`} onClick={c.onRemove}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+    ) : null,
+}));
+
+jest.mock("../pickers/role-chip", () => ({
+  RoleChip: ({
+    roleId,
+    onClick,
+  }: {
+    roleId: string;
+    onClick?: (id: string) => void;
+  }) => (
+    <button
+      data-testid={`role-chip-${roleId}`}
+      onClick={
+        onClick
+          ? (e) => {
+              e.stopPropagation();
+              onClick(roleId);
+            }
+          : undefined
+      }
+    >
+      {roleId}
+    </button>
   ),
 }));
 
@@ -115,18 +254,28 @@ jest.mock("@/components/ui/popover", () => ({
 // Import component after mocks
 // =============================================================================
 
-import { MovePicker } from "../pickers/move-picker";
 import { type GameFormat } from "@trainers/pokemon";
+
+import { MovePicker } from "../pickers/move-picker";
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
 /**
- * Minimal move data shapes used across tests. Each entry covers a distinct
- * type/category/BP/accuracy combination so sort and filter branches are hit.
+ * Minimal move data covering distinct type/category/BP/accuracy combos
+ * so filter, sort, and display branches can all be exercised.
  */
-const MOCK_MOVE_DATA: Record<string, ReturnType<typeof mockGetMoveData>> = {
+const MOCK_MOVE_DATA: Record<
+  string,
+  {
+    type: string;
+    category: string;
+    basePower: number;
+    accuracy: number | boolean;
+    shortDesc: string;
+  }
+> = {
   Flamethrower: {
     type: "Fire",
     category: "Special",
@@ -173,7 +322,7 @@ const MOCK_MOVE_DATA: Record<string, ReturnType<typeof mockGetMoveData>> = {
     type: "Normal",
     category: "Special",
     basePower: 60,
-    accuracy: true as unknown as number, // "always hits" sentinel
+    accuracy: true,
     shortDesc: "This move never misses.",
   },
 };
@@ -211,9 +360,9 @@ function defaultProps(
 describe("MovePicker", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Default: no format — use learnable moves, all mock moves available
     mockGetLearnableMoves.mockReturnValue(ALL_MOCK_MOVES);
     mockGetLegalMoves.mockReturnValue(null);
+    mockLegalSetOrPermissive.mockReturnValue(null);
     mockGetMoveData.mockImplementation(
       (name: string) => MOCK_MOVE_DATA[name] ?? null
     );
@@ -223,457 +372,624 @@ describe("MovePicker", () => {
   // Basic render
   // ---------------------------------------------------------------------------
 
-  it("renders the 'Move' header label", () => {
-    render(<MovePicker {...defaultProps()} />);
-    expect(screen.getByText("Move")).toBeInTheDocument();
-  });
+  describe("basic render", () => {
+    it("renders the search input with correct placeholder", () => {
+      render(<MovePicker {...defaultProps()} />);
+      expect(
+        screen.getByPlaceholderText("Search by name, effect, type, category…")
+      ).toBeInTheDocument();
+    });
 
-  it("renders the search input with the correct placeholder", () => {
-    render(<MovePicker {...defaultProps()} />);
-    expect(
-      screen.getByPlaceholderText(
-        "Search by name, effect, type, or category…"
-      )
-    ).toBeInTheDocument();
-  });
+    it("renders the close button", () => {
+      render(<MovePicker {...defaultProps()} />);
+      expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
+    });
 
-  it("renders the close button", () => {
-    render(<MovePicker {...defaultProps()} />);
-    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
-  });
+    it("renders MoveSidebar sub-component", () => {
+      render(<MovePicker {...defaultProps()} />);
+      expect(screen.getByTestId("move-sidebar")).toBeInTheDocument();
+    });
 
-  it("clicking the close button calls onClose without calling onPick", async () => {
-    const user = userEvent.setup();
-    const onPick = jest.fn();
-    const onClose = jest.fn();
-    render(<MovePicker {...defaultProps({ onPick, onClose })} />);
-    await user.click(screen.getByRole("button", { name: "Close" }));
-    expect(onClose).toHaveBeenCalledTimes(1);
-    expect(onPick).not.toHaveBeenCalled();
-  });
+    it("renders RolePresetsPanel sub-component", () => {
+      render(<MovePicker {...defaultProps()} />);
+      expect(screen.getByTestId("role-presets-panel")).toBeInTheDocument();
+    });
 
-  it("renders all learnable moves when no format is provided", () => {
-    render(<MovePicker {...defaultProps()} />);
-    expect(screen.getByText("Flamethrower")).toBeInTheDocument();
-    expect(screen.getByText("Surf")).toBeInTheDocument();
-    expect(screen.getByText("Earthquake")).toBeInTheDocument();
+    it("renders all learnable moves as rows when no format is provided", () => {
+      render(<MovePicker {...defaultProps()} />);
+      expect(
+        screen.getByRole("row", { name: /Select Flamethrower/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("row", { name: /Select Surf/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("row", { name: /Select Earthquake/ })
+      ).toBeInTheDocument();
+    });
+
+    it("displays result count: sorted of total", () => {
+      render(<MovePicker {...defaultProps()} />);
+      const count = ALL_MOCK_MOVES.length;
+      expect(screen.getByText(`${count} of ${count}`)).toBeInTheDocument();
+    });
+
+    it("renders sortable column headers for Name, BP, and Acc", () => {
+      render(<MovePicker {...defaultProps()} />);
+      expect(
+        screen.getByRole("button", { name: "Sort by name" })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Sort by base power" })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Sort by accuracy" })
+      ).toBeInTheDocument();
+    });
   });
 
   // ---------------------------------------------------------------------------
-  // Column headers
+  // Close button
   // ---------------------------------------------------------------------------
 
-  it.each([
-    ["Sort by name", "name"],
-    ["Sort by base power", "bp"],
-    ["Sort by accuracy", "acc"],
-  ])("renders column header button '%s'", (_label, _ariaLabel) => {
-    render(<MovePicker {...defaultProps()} />);
-    expect(
-      screen.getByRole("button", { name: _label })
-    ).toBeInTheDocument();
-  });
-
-  it("renders the Type header trigger with 'Filter by type' label", () => {
-    render(<MovePicker {...defaultProps()} />);
-    expect(
-      screen.getByRole("button", { name: "Filter by type" })
-    ).toBeInTheDocument();
-  });
-
-  it("renders the Category header trigger with 'Filter by category' label", () => {
-    render(<MovePicker {...defaultProps()} />);
-    expect(
-      screen.getByRole("button", { name: "Filter by category" })
-    ).toBeInTheDocument();
+  describe("close button", () => {
+    it("clicking Close calls onClose without calling onPick", async () => {
+      const user = userEvent.setup();
+      const onPick = jest.fn();
+      const onClose = jest.fn();
+      render(<MovePicker {...defaultProps({ onPick, onClose })} />);
+      await user.click(screen.getByRole("button", { name: "Close" }));
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(onPick).not.toHaveBeenCalled();
+    });
   });
 
   // ---------------------------------------------------------------------------
   // Search filtering
   // ---------------------------------------------------------------------------
 
-  it("filters moves by name as user types", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    const input = screen.getByPlaceholderText(
-      "Search by name, effect, type, or category…"
-    );
-    await user.type(input, "surf");
-    expect(screen.getByText("Surf")).toBeInTheDocument();
-    expect(screen.queryByText("Flamethrower")).not.toBeInTheDocument();
-  });
+  describe("search filtering", () => {
+    it("filters moves by name as user types", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      const input = screen.getByPlaceholderText(
+        "Search by name, effect, type, category…"
+      );
+      await user.type(input, "surf");
+      expect(
+        screen.getByRole("row", { name: /Select Surf/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("row", { name: /Select Flamethrower/ })
+      ).not.toBeInTheDocument();
+    });
 
-  it("search is case-insensitive", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    const input = screen.getByPlaceholderText(
-      "Search by name, effect, type, or category…"
-    );
-    await user.type(input, "FLAME");
-    expect(screen.getByText("Flamethrower")).toBeInTheDocument();
-  });
+    it("search is case-insensitive", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.type(
+        screen.getByPlaceholderText("Search by name, effect, type, category…"),
+        "FLAME"
+      );
+      expect(
+        screen.getByRole("row", { name: /Select Flamethrower/ })
+      ).toBeInTheDocument();
+    });
 
-  it("filters moves by shortDesc content", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    const input = screen.getByPlaceholderText(
-      "Search by name, effect, type, or category…"
-    );
-    // "adjacent" appears in Surf and Earthquake shortDescs
-    await user.type(input, "adjacent");
-    expect(screen.getByText("Surf")).toBeInTheDocument();
-    expect(screen.getByText("Earthquake")).toBeInTheDocument();
-    expect(screen.queryByText("Flamethrower")).not.toBeInTheDocument();
-  });
+    it("filters moves by shortDesc content", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.type(
+        screen.getByPlaceholderText("Search by name, effect, type, category…"),
+        "adjacent"
+      );
+      // Surf and Earthquake share "Hits all adjacent Pokemon."
+      expect(
+        screen.getByRole("row", { name: /Select Surf/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("row", { name: /Select Earthquake/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("row", { name: /Select Flamethrower/ })
+      ).not.toBeInTheDocument();
+    });
 
-  it("filters moves by type name", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    const input = screen.getByPlaceholderText(
-      "Search by name, effect, type, or category…"
-    );
-    await user.type(input, "ground");
-    expect(screen.getByText("Earthquake")).toBeInTheDocument();
-    // Fire moves should not appear (their type is "Fire", not "ground")
-    expect(screen.queryByText("Surf")).not.toBeInTheDocument();
-  });
+    it("filters moves by type name", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.type(
+        screen.getByPlaceholderText("Search by name, effect, type, category…"),
+        "ground"
+      );
+      expect(
+        screen.getByRole("row", { name: /Select Earthquake/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("row", { name: /Select Surf/ })
+      ).not.toBeInTheDocument();
+    });
 
-  it("filters moves by category name", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    const input = screen.getByPlaceholderText(
-      "Search by name, effect, type, or category…"
-    );
-    await user.type(input, "status");
-    expect(screen.getByText("Will-O-Wisp")).toBeInTheDocument();
-    // Physical/Special moves should not appear
-    expect(screen.queryByText("Flamethrower")).not.toBeInTheDocument();
-  });
+    it("filters moves by category name", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.type(
+        screen.getByPlaceholderText("Search by name, effect, type, category…"),
+        "status"
+      );
+      expect(
+        screen.getByRole("row", { name: /Select Will-O-Wisp/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("row", { name: /Select Flamethrower/ })
+      ).not.toBeInTheDocument();
+    });
 
-  it("shows 'No moves found' when search matches nothing", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    const input = screen.getByPlaceholderText(
-      "Search by name, effect, type, or category…"
-    );
-    await user.type(input, "zzznomatch");
-    expect(screen.getByText("No moves found")).toBeInTheDocument();
-  });
+    it("shows 'No moves found' when search matches nothing", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.type(
+        screen.getByPlaceholderText("Search by name, effect, type, category…"),
+        "zzznomatch"
+      );
+      expect(screen.getByText("No moves found")).toBeInTheDocument();
+    });
 
-  // ---------------------------------------------------------------------------
-  // Type filter (dropdown inside popover content)
-  // ---------------------------------------------------------------------------
-
-  it("renders 'All types' filter option in the type popover content", () => {
-    render(<MovePicker {...defaultProps()} />);
-    expect(screen.getByText("All types")).toBeInTheDocument();
-  });
-
-  it("renders type filter buttons for each type in ALL_TYPES", () => {
-    render(<MovePicker {...defaultProps()} />);
-    // Each type renders as an img with alt=typeName inside the filter popover
-    for (const type of MOCK_ALL_TYPES) {
-      // The type icon is inside a button with aria-label=type
-      const buttons = screen.getAllByRole("button", { name: type });
-      expect(buttons.length).toBeGreaterThanOrEqual(1);
-    }
-  });
-
-  it("clicking a type filter button filters the move list to that type", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    // Click the Water type filter button
-    const waterButton = screen.getByRole("button", { name: "Water" });
-    await user.click(waterButton);
-    expect(screen.getByText("Surf")).toBeInTheDocument();
-    expect(screen.queryByText("Flamethrower")).not.toBeInTheDocument();
-    expect(screen.queryByText("Earthquake")).not.toBeInTheDocument();
-  });
-
-  it("clicking 'All types' resets the type filter", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    // Apply Water filter, then clear it
-    await user.click(screen.getByRole("button", { name: "Water" }));
-    expect(screen.queryByText("Flamethrower")).not.toBeInTheDocument();
-    await user.click(screen.getByText("All types"));
-    expect(screen.getByText("Flamethrower")).toBeInTheDocument();
-    expect(screen.getByText("Surf")).toBeInTheDocument();
-  });
-
-  it("combining type filter with search further narrows results", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    // Filter to Fire type
-    await user.click(screen.getByRole("button", { name: "Fire" }));
-    // All Fire moves: Flamethrower, Fire Punch, Will-O-Wisp should show
-    expect(screen.getByText("Flamethrower")).toBeInTheDocument();
-    expect(screen.getByText("Will-O-Wisp")).toBeInTheDocument();
-    // Then also search by name — should further narrow
-    const input = screen.getByPlaceholderText(
-      "Search by name, effect, type, or category…"
-    );
-    await user.type(input, "punch");
-    expect(screen.getByText("Fire Punch")).toBeInTheDocument();
-    expect(screen.queryByText("Flamethrower")).not.toBeInTheDocument();
+    it("result count updates as search narrows results", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.type(
+        screen.getByPlaceholderText("Search by name, effect, type, category…"),
+        "surf"
+      );
+      // 1 match of ALL_MOCK_MOVES.length total
+      expect(
+        screen.getByText(`1 of ${ALL_MOCK_MOVES.length}`)
+      ).toBeInTheDocument();
+    });
   });
 
   // ---------------------------------------------------------------------------
-  // Category filter (dropdown inside popover content)
+  // Sidebar filter wiring
   // ---------------------------------------------------------------------------
 
-  it("renders category filter options in the category popover content", () => {
-    render(<MovePicker {...defaultProps()} />);
-    expect(screen.getByText("All categories")).toBeInTheDocument();
-    expect(screen.getByText("Physical")).toBeInTheDocument();
-    expect(screen.getByText("Special")).toBeInTheDocument();
-    expect(screen.getByText("Status")).toBeInTheDocument();
-  });
+  describe("sidebar filter wiring", () => {
+    it("clicking a type button in the sidebar filters moves to that type", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(screen.getByTestId("sidebar-type-water"));
+      expect(
+        screen.getByRole("row", { name: /Select Surf/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("row", { name: /Select Flamethrower/ })
+      ).not.toBeInTheDocument();
+    });
 
-  it("clicking the Physical category filter shows only Physical moves", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    await user.click(screen.getByText("Physical"));
-    // Physical moves: Fire Punch, Earthquake, "No additional effect move"
-    expect(screen.getByText("Fire Punch")).toBeInTheDocument();
-    expect(screen.getByText("Earthquake")).toBeInTheDocument();
-    // Special moves should not appear
-    expect(screen.queryByText("Flamethrower")).not.toBeInTheDocument();
-    expect(screen.queryByText("Surf")).not.toBeInTheDocument();
-  });
+    it("clicking a category chip in the sidebar filters to that category", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(screen.getByTestId("sidebar-category-status"));
+      expect(
+        screen.getByRole("row", { name: /Select Will-O-Wisp/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("row", { name: /Select Flamethrower/ })
+      ).not.toBeInTheDocument();
+    });
 
-  it("clicking the Special category filter shows only Special moves", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    await user.click(screen.getByText("Special"));
-    expect(screen.getByText("Flamethrower")).toBeInTheDocument();
-    expect(screen.getByText("Surf")).toBeInTheDocument();
-    expect(screen.queryByText("Earthquake")).not.toBeInTheDocument();
-    expect(screen.queryByText("Will-O-Wisp")).not.toBeInTheDocument();
-  });
-
-  it("clicking the Status category filter shows only Status moves", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    await user.click(screen.getByText("Status"));
-    expect(screen.getByText("Will-O-Wisp")).toBeInTheDocument();
-    expect(screen.queryByText("Flamethrower")).not.toBeInTheDocument();
-    expect(screen.queryByText("Fire Punch")).not.toBeInTheDocument();
-  });
-
-  it("clicking 'All categories' resets the category filter", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    await user.click(screen.getByText("Physical"));
-    expect(screen.queryByText("Flamethrower")).not.toBeInTheDocument();
-    await user.click(screen.getByText("All categories"));
-    expect(screen.getByText("Flamethrower")).toBeInTheDocument();
-    expect(screen.getByText("Will-O-Wisp")).toBeInTheDocument();
+    it("sidebar Clear all filters resets all active filters", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      // Apply fire type filter, verify narrowed, then clear
+      await user.click(screen.getByTestId("sidebar-type-fire"));
+      expect(
+        screen.queryByRole("row", { name: /Select Surf/ })
+      ).not.toBeInTheDocument();
+      await user.click(screen.getByTestId("sidebar-clear-all"));
+      expect(
+        screen.getByRole("row", { name: /Select Surf/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("row", { name: /Select Flamethrower/ })
+      ).toBeInTheDocument();
+    });
   });
 
   // ---------------------------------------------------------------------------
-  // Sorting
+  // Role presets panel wiring
   // ---------------------------------------------------------------------------
 
-  it("clicking 'Sort by name' twice toggles to descending sort", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    // Default sort is name asc — click once to go desc
-    await user.click(screen.getByRole("button", { name: "Sort by name" }));
-    // Sort arrow should now show descending indicator
-    expect(screen.getByText("↓")).toBeInTheDocument();
-  });
+  describe("role presets panel wiring", () => {
+    it("clicking a role in the panel filters moves to those with that role", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(screen.getByTestId("role-btn-burn"));
+      // burn role maps to Flamethrower and Fire Punch
+      expect(
+        screen.getByRole("row", { name: /Select Flamethrower/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("row", { name: /Select Fire Punch/ })
+      ).toBeInTheDocument();
+      // Will-O-Wisp is tagged burn too
+      expect(
+        screen.getByRole("row", { name: /Select Will-O-Wisp/ })
+      ).toBeInTheDocument();
+      // Surf and Earthquake (spread) should not appear
+      expect(
+        screen.queryByRole("row", { name: /Select Surf/ })
+      ).not.toBeInTheDocument();
+    });
 
-  it("clicking 'Sort by name' starts ascending (asc is the default for name)", () => {
-    render(<MovePicker {...defaultProps()} />);
-    // Already on name/asc by default — arrow should show ↑
-    expect(screen.getByText("↑")).toBeInTheDocument();
-  });
-
-  it("clicking 'Sort by base power' applies BP sort in descending order by default", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    await user.click(screen.getByRole("button", { name: "Sort by base power" }));
-    // Sort arrow should be descending
-    expect(screen.getByText("↓")).toBeInTheDocument();
-  });
-
-  it("clicking 'Sort by accuracy' applies accuracy sort in descending order by default", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    await user.click(screen.getByRole("button", { name: "Sort by accuracy" }));
-    expect(screen.getByText("↓")).toBeInTheDocument();
-  });
-
-  it("clicking the same sort column twice toggles direction", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    // Click BP once — should be desc
-    await user.click(screen.getByRole("button", { name: "Sort by base power" }));
-    expect(screen.getByText("↓")).toBeInTheDocument();
-    // Click BP again — should toggle to asc
-    await user.click(screen.getByRole("button", { name: "Sort by base power" }));
-    expect(screen.getByText("↑")).toBeInTheDocument();
-  });
-
-  it("clicking 'Sort by type' in the type popover applies type sort", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    await user.click(screen.getByRole("button", { name: /sort by type/i }));
-    // Sort arrow (asc by default for type) should appear
-    expect(screen.getByText("↑")).toBeInTheDocument();
-  });
-
-  it("clicking 'Sort by category' in the category popover applies category sort descending", async () => {
-    const user = userEvent.setup();
-    render(<MovePicker {...defaultProps()} />);
-    await user.click(screen.getByRole("button", { name: /sort by category/i }));
-    // category is not name/type, so default direction is desc
-    expect(screen.getByText("↓")).toBeInTheDocument();
+    it("clicking a role updates the filter-count badge in the search header", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(screen.getByTestId("role-btn-burn"));
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toBeInTheDocument();
+    });
   });
 
   // ---------------------------------------------------------------------------
-  // Selection behavior
+  // Sort headers
   // ---------------------------------------------------------------------------
 
-  it("clicking a move row calls onPick with the move name and then onClose", async () => {
-    const user = userEvent.setup();
-    const onPick = jest.fn();
-    const onClose = jest.fn();
-    render(<MovePicker {...defaultProps({ onPick, onClose })} />);
-    // Search to isolate a single row
-    const input = screen.getByPlaceholderText(
-      "Search by name, effect, type, or category…"
-    );
-    await user.type(input, "surf");
-    const moveButton = screen.getByText("Surf").closest("button")!;
-    await user.click(moveButton);
-    expect(onPick).toHaveBeenCalledWith("Surf");
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
+  describe("sort headers", () => {
+    it("default sort is name ascending — shows ↑ arrow", () => {
+      render(<MovePicker {...defaultProps()} />);
+      expect(screen.getByText("↑")).toBeInTheDocument();
+    });
 
-  it("the currently selected move row has the selected style class", () => {
-    render(<MovePicker {...defaultProps({ value: "Flamethrower" })} />);
-    // Find the row button for Flamethrower
-    const nameSpan = screen.getByTitle("Flamethrower");
-    const rowButton = nameSpan.closest("button")!;
-    expect(rowButton.className).toContain("bg-accent");
-  });
+    it("clicking 'Sort by name' again toggles to descending", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(screen.getByRole("button", { name: "Sort by name" }));
+      expect(screen.getByText("↓")).toBeInTheDocument();
+    });
 
-  it("a non-selected move row does not have the unconditional bg-accent class (only the hover variant)", () => {
-    render(<MovePicker {...defaultProps({ value: "Flamethrower" })} />);
-    const nameSpan = screen.getByTitle("Surf");
-    const rowButton = nameSpan.closest("button")!;
-    // hover:bg-accent is always present; only the selected row gets bare bg-accent
-    // Check the className does not contain a standalone "bg-accent" token
-    const classes = rowButton.className.split(" ");
-    expect(classes).not.toContain("bg-accent");
-  });
+    it("clicking 'Sort by base power' applies BP sort descending by default", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(
+        screen.getByRole("button", { name: "Sort by base power" })
+      );
+      expect(screen.getByText("↓")).toBeInTheDocument();
+    });
 
-  // ---------------------------------------------------------------------------
-  // Move row data display
-  // ---------------------------------------------------------------------------
+    it("clicking 'Sort by accuracy' applies accuracy sort descending by default", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(
+        screen.getByRole("button", { name: "Sort by accuracy" })
+      );
+      expect(screen.getByText("↓")).toBeInTheDocument();
+    });
 
-  it("displays base power for moves with BP > 0", () => {
-    render(<MovePicker {...defaultProps()} />);
-    // Flamethrower has BP 90
-    expect(screen.getAllByText("90").length).toBeGreaterThan(0);
-  });
-
-  it("displays '—' for moves with BP = 0 (Status moves)", () => {
-    render(<MovePicker {...defaultProps()} />);
-    // Will-O-Wisp has basePower 0 — should display em-dash in BP column
-    // (multiple em-dashes may exist for acc and bp of 0-BP moves)
-    const dashes = screen.getAllByText("—");
-    expect(dashes.length).toBeGreaterThan(0);
-  });
-
-  it("displays accuracy as percentage string for moves with numeric accuracy", () => {
-    render(<MovePicker {...defaultProps()} />);
-    // Will-O-Wisp has accuracy 85
-    expect(screen.getByText("85%")).toBeInTheDocument();
-  });
-
-  it("displays '—' for accuracy when move always hits (accuracy === true)", () => {
-    render(<MovePicker {...defaultProps()} />);
-    // "Never-Miss Move" has accuracy: true — should show '—' in acc column
-    // We filter to isolate that move's row
-    const nameSpan = screen.getByTitle("Never-Miss Move");
-    const rowButton = nameSpan.closest("button")!;
-    // The last cell in the row should be '—'
-    const cells = rowButton.querySelectorAll("span");
-    const accCell = cells[cells.length - 1];
-    expect(accCell?.textContent).toBe("—");
-  });
-
-  it("does not display shortDesc when it is 'No additional effect.'", () => {
-    render(<MovePicker {...defaultProps()} />);
-    expect(
-      screen.queryByText("No additional effect.")
-    ).not.toBeInTheDocument();
-  });
-
-  it("displays non-trivial shortDesc text in the description column", () => {
-    // Use a move with a unique shortDesc to avoid multiple-match errors
-    mockGetLearnableMoves.mockReturnValue(["Will-O-Wisp"]);
-    render(<MovePicker {...defaultProps()} />);
-    expect(screen.getByText("Burns the target.")).toBeInTheDocument();
+    it("clicking same sort column twice toggles direction", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      // Click BP once → desc
+      await user.click(
+        screen.getByRole("button", { name: "Sort by base power" })
+      );
+      expect(screen.getByText("↓")).toBeInTheDocument();
+      // Click BP again → asc
+      await user.click(
+        screen.getByRole("button", { name: "Sort by base power" })
+      );
+      expect(screen.getByText("↑")).toBeInTheDocument();
+    });
   });
 
   // ---------------------------------------------------------------------------
-  // Legal vs. learnable move sets
+  // Selection and close
   // ---------------------------------------------------------------------------
 
-  it("uses getLegalMoves when format is provided and it returns a set", () => {
-    const format = makeMockFormat();
-    mockGetLegalMoves.mockReturnValue(new Set(["Flamethrower", "Surf"]));
-    render(<MovePicker {...defaultProps({ format })} />);
-    expect(mockGetLegalMoves).toHaveBeenCalledWith(
-      "Charizard",
-      format.id
-    );
+  describe("selection", () => {
+    it("clicking a move row calls onPick with the move name and then onClose", async () => {
+      const user = userEvent.setup();
+      const onPick = jest.fn();
+      const onClose = jest.fn();
+      mockGetLearnableMoves.mockReturnValue(["Surf"]);
+      render(<MovePicker {...defaultProps({ onPick, onClose })} />);
+      const row = screen.getByRole("row", { name: /Select Surf/ });
+      await user.click(row);
+      expect(onPick).toHaveBeenCalledWith("Surf");
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it("pressing Enter on a move row calls onPick and onClose", async () => {
+      const user = userEvent.setup();
+      const onPick = jest.fn();
+      const onClose = jest.fn();
+      mockGetLearnableMoves.mockReturnValue(["Surf"]);
+      render(<MovePicker {...defaultProps({ onPick, onClose })} />);
+      const row = screen.getByRole("row", { name: /Select Surf/ });
+      row.focus();
+      await user.keyboard("{Enter}");
+      expect(onPick).toHaveBeenCalledWith("Surf");
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it("pressing Space on a move row calls onPick and onClose", async () => {
+      const user = userEvent.setup();
+      const onPick = jest.fn();
+      const onClose = jest.fn();
+      mockGetLearnableMoves.mockReturnValue(["Surf"]);
+      render(<MovePicker {...defaultProps({ onPick, onClose })} />);
+      const row = screen.getByRole("row", { name: /Select Surf/ });
+      row.focus();
+      await user.keyboard(" ");
+      expect(onPick).toHaveBeenCalledWith("Surf");
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it("the currently selected move row has bg-accent class", () => {
+      render(<MovePicker {...defaultProps({ value: "Flamethrower" })} />);
+      const row = screen.getByRole("row", { name: /Select Flamethrower/ });
+      expect(row.className).toContain("bg-accent");
+    });
+
+    it("a non-selected row does not have a bare bg-accent class", () => {
+      render(<MovePicker {...defaultProps({ value: "Flamethrower" })} />);
+      const row = screen.getByRole("row", { name: /Select Surf/ });
+      const classes = row.className.split(" ");
+      expect(classes).not.toContain("bg-accent");
+    });
   });
 
-  it("restricts move list to legal set when format is provided", () => {
-    const format = makeMockFormat();
-    mockGetLegalMoves.mockReturnValue(new Set(["Surf"]));
-    render(<MovePicker {...defaultProps({ format })} />);
-    expect(screen.getByText("Surf")).toBeInTheDocument();
-    expect(screen.queryByText("Flamethrower")).not.toBeInTheDocument();
+  // ---------------------------------------------------------------------------
+  // Click-to-filter row affordances
+  // ---------------------------------------------------------------------------
+
+  describe("click-to-filter row affordances", () => {
+    beforeEach(() => {
+      // Use single move so row is unambiguous
+      mockGetLearnableMoves.mockReturnValue(["Flamethrower"]);
+    });
+
+    it("clicking the type icon adds a type filter and does not call onPick", async () => {
+      const user = userEvent.setup();
+      const onPick = jest.fn();
+      render(<MovePicker {...defaultProps({ onPick })} />);
+      const typeSpan = screen.getByTitle("Filter by Fire");
+      await user.click(typeSpan);
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toBeInTheDocument();
+      expect(onPick).not.toHaveBeenCalled();
+    });
+
+    it("clicking the category icon adds a category filter and does not call onPick", async () => {
+      const user = userEvent.setup();
+      const onPick = jest.fn();
+      render(<MovePicker {...defaultProps({ onPick })} />);
+      const catSpan = screen.getByTitle("Filter by Special");
+      await user.click(catSpan);
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toBeInTheDocument();
+      expect(onPick).not.toHaveBeenCalled();
+    });
+
+    it("clicking a role chip in a row adds a role filter and does not call onPick", async () => {
+      const user = userEvent.setup();
+      const onPick = jest.fn();
+      render(<MovePicker {...defaultProps({ onPick })} />);
+      const chip = screen.getByTestId("role-chip-burn");
+      await user.click(chip);
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toBeInTheDocument();
+      expect(onPick).not.toHaveBeenCalled();
+    });
+
+    it("clicking type icon toggles off an already-active type filter", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      const typeSpan = screen.getByTitle("Filter by Fire");
+      // First click adds filter
+      await user.click(typeSpan);
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toBeInTheDocument();
+      // Second click removes it
+      await user.click(typeSpan);
+      expect(
+        screen.queryByRole("button", { name: /Clear 1 active filter/i })
+      ).not.toBeInTheDocument();
+    });
   });
 
-  it("falls back to getLearnableMoves when getLegalMoves returns null", () => {
-    const format = makeMockFormat();
-    mockGetLegalMoves.mockReturnValue(null);
-    mockGetLearnableMoves.mockReturnValue(["Earthquake"]);
-    render(<MovePicker {...defaultProps({ format })} />);
-    expect(screen.getByText("Earthquake")).toBeInTheDocument();
+  // ---------------------------------------------------------------------------
+  // Filter-count badge in search header
+  // ---------------------------------------------------------------------------
+
+  describe("filter-count badge", () => {
+    it("badge is hidden when no filters are active", () => {
+      render(<MovePicker {...defaultProps()} />);
+      expect(
+        screen.queryByRole("button", { name: /Clear .* active filter/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it("badge appears with '1 filter' when a single filter is active", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(screen.getByTestId("sidebar-type-fire"));
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toHaveTextContent(/1 filter/i);
+    });
+
+    it("badge pluralizes when multiple filters are active", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(screen.getByTestId("sidebar-type-fire"));
+      await user.click(screen.getByTestId("sidebar-category-physical"));
+      expect(
+        screen.getByRole("button", { name: /Clear 2 active filters/i })
+      ).toHaveTextContent(/2 filters/i);
+    });
+
+    it("clicking the badge clears every active filter", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(screen.getByTestId("sidebar-type-fire"));
+      await user.click(screen.getByTestId("sidebar-category-physical"));
+      const clear = screen.getByRole("button", {
+        name: /Clear 2 active filters/i,
+      });
+      await user.click(clear);
+      expect(
+        screen.queryByRole("button", { name: /Clear .* active filter/i })
+      ).not.toBeInTheDocument();
+    });
+
+    // The badge counts types/categories/roles only, so clicking it must NOT
+    // wipe a typed search query (the user did not ask to clear that).
+    it("clicking the badge preserves the active search query", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      const searchInput = screen.getByPlaceholderText(
+        "Search by name, effect, type, category…"
+      );
+      await user.type(searchInput, "fire");
+      await user.click(screen.getByTestId("sidebar-type-fire"));
+      const clear = screen.getByRole("button", {
+        name: /Clear 1 active filter/i,
+      });
+      await user.click(clear);
+      expect(searchInput).toHaveValue("fire");
+    });
   });
 
-  it("uses getLearnableMoves directly when no format is provided", () => {
-    mockGetLearnableMoves.mockReturnValue(["Flamethrower"]);
-    render(<MovePicker {...defaultProps({ format: undefined })} />);
-    expect(mockGetLegalMoves).not.toHaveBeenCalled();
-    expect(screen.getByText("Flamethrower")).toBeInTheDocument();
+  // ---------------------------------------------------------------------------
+  // Move data display
+  // ---------------------------------------------------------------------------
+
+  describe("move data display", () => {
+    it("displays base power for moves with BP > 0", () => {
+      mockGetLearnableMoves.mockReturnValue(["Flamethrower"]);
+      render(<MovePicker {...defaultProps()} />);
+      // Flamethrower has BP 90
+      expect(screen.getByText("90")).toBeInTheDocument();
+    });
+
+    it("displays '—' for moves with BP = 0 (Status moves)", () => {
+      mockGetLearnableMoves.mockReturnValue(["Will-O-Wisp"]);
+      render(<MovePicker {...defaultProps()} />);
+      // basePower 0 → displays "—"
+      const dashes = screen.getAllByText("—");
+      expect(dashes.length).toBeGreaterThan(0);
+    });
+
+    it("displays accuracy as percentage for numeric accuracy", () => {
+      mockGetLearnableMoves.mockReturnValue(["Will-O-Wisp"]);
+      render(<MovePicker {...defaultProps()} />);
+      // Will-O-Wisp accuracy 85 → "85%"
+      expect(screen.getByText("85%")).toBeInTheDocument();
+    });
+
+    it("displays '—' for accuracy when move always hits (accuracy === true)", () => {
+      mockGetLearnableMoves.mockReturnValue(["Never-Miss Move"]);
+      render(<MovePicker {...defaultProps()} />);
+      const dashes = screen.getAllByText("—");
+      expect(dashes.length).toBeGreaterThan(0);
+    });
+
+    it("does not display 'No additional effect.' as shortDesc text", () => {
+      render(<MovePicker {...defaultProps()} />);
+      expect(
+        screen.queryByText("No additional effect.")
+      ).not.toBeInTheDocument();
+    });
+
+    it("displays non-trivial shortDesc in the description column", () => {
+      mockGetLearnableMoves.mockReturnValue(["Will-O-Wisp"]);
+      render(<MovePicker {...defaultProps()} />);
+      expect(screen.getByText("Burns the target.")).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Format-aware move sets (legal vs learnable)
+  // ---------------------------------------------------------------------------
+
+  describe("format-aware move sets", () => {
+    it("uses getLearnableMoves when no format is provided", () => {
+      mockGetLearnableMoves.mockReturnValue(["Flamethrower"]);
+      render(<MovePicker {...defaultProps({ format: undefined })} />);
+      expect(mockGetLegalMoves).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole("row", { name: /Select Flamethrower/ })
+      ).toBeInTheDocument();
+    });
+
+    it("calls getLegalMoves with species and format.id when format is provided", () => {
+      const format = makeMockFormat();
+      const legalSet = new Set(["Surf"]);
+      mockGetLegalMoves.mockReturnValue(legalSet);
+      mockLegalSetOrPermissive.mockReturnValue(legalSet);
+      render(<MovePicker {...defaultProps({ format })} />);
+      expect(mockGetLegalMoves).toHaveBeenCalledWith("Charizard", format.id);
+    });
+
+    it("restricts move list to legal set when format provides one", () => {
+      const format = makeMockFormat();
+      const legalSet = new Set(["Surf"]);
+      mockGetLegalMoves.mockReturnValue(legalSet);
+      mockLegalSetOrPermissive.mockReturnValue(legalSet);
+      render(<MovePicker {...defaultProps({ format })} />);
+      expect(
+        screen.getByRole("row", { name: /Select Surf/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("row", { name: /Select Flamethrower/ })
+      ).not.toBeInTheDocument();
+    });
+
+    it("falls back to getLearnableMoves when legalSetOrPermissive returns null", () => {
+      const format = makeMockFormat();
+      mockGetLegalMoves.mockReturnValue(null);
+      mockLegalSetOrPermissive.mockReturnValue(null);
+      mockGetLearnableMoves.mockReturnValue(["Earthquake"]);
+      render(<MovePicker {...defaultProps({ format })} />);
+      expect(
+        screen.getByRole("row", { name: /Select Earthquake/ })
+      ).toBeInTheDocument();
+    });
   });
 
   // ---------------------------------------------------------------------------
   // Empty state
   // ---------------------------------------------------------------------------
 
-  it("shows 'No moves found' when all moves are filtered out by type + category", async () => {
-    const user = userEvent.setup();
-    // Only Water moves in learnable set
-    mockGetLearnableMoves.mockReturnValue(["Surf"]);
-    render(<MovePicker {...defaultProps()} />);
-    // Filter to Physical — Surf is Special, so nothing matches
-    await user.click(screen.getByText("Physical"));
-    expect(screen.getByText("No moves found")).toBeInTheDocument();
-  });
+  describe("empty state", () => {
+    it("shows 'No moves found' when move set is empty", () => {
+      mockGetLearnableMoves.mockReturnValue([]);
+      render(<MovePicker {...defaultProps()} />);
+      expect(screen.getByText("No moves found")).toBeInTheDocument();
+    });
 
-  it("shows 'No moves found' when the move set is empty", () => {
-    mockGetLearnableMoves.mockReturnValue([]);
-    render(<MovePicker {...defaultProps()} />);
-    expect(screen.getByText("No moves found")).toBeInTheDocument();
+    it("shows 'No moves found' when all moves are filtered out by type", async () => {
+      const user = userEvent.setup();
+      // Only Surf in set (Water type), apply Fire filter → no results
+      mockGetLearnableMoves.mockReturnValue(["Surf"]);
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(screen.getByTestId("sidebar-type-fire"));
+      expect(screen.getByText("No moves found")).toBeInTheDocument();
+    });
+
+    it("shows 'No moves found' when all moves are filtered out by category", async () => {
+      const user = userEvent.setup();
+      // Only Special moves, apply Physical filter → no results
+      mockGetLearnableMoves.mockReturnValue(["Surf"]);
+      render(<MovePicker {...defaultProps()} />);
+      await user.click(screen.getByTestId("sidebar-category-physical"));
+      expect(screen.getByText("No moves found")).toBeInTheDocument();
+    });
   });
 });

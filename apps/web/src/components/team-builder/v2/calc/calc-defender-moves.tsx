@@ -3,10 +3,14 @@
 import { useState } from "react";
 
 import { getMoveData, type GameFormat } from "@trainers/pokemon";
-import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 import {
   type CalcOutput,
@@ -14,6 +18,7 @@ import {
   type KoTierLabel,
   type UseCalcStateReturn,
 } from "../../use-calc-state";
+import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { MovePicker } from "../pickers/move-picker";
 
 // =============================================================================
@@ -143,12 +148,15 @@ function DefenderMoveTile({
   // 2HKO into a 3HKO should show "3HKO" not "2HKO".
   const koTierLabel =
     output && !isEmpty
-      ? (output.recoveryTier ?? resolveKoTierLabel(output.minPercent, output.maxPercent))
+      ? (output.recoveryTier ??
+        resolveKoTierLabel(output.minPercent, output.maxPercent))
       : null;
 
   // Raw damage range — rolls are sorted ascending by @smogon/calc
   const dmgMin = output?.rolls.length ? output.rolls[0] : null;
-  const dmgMax = output?.rolls.length ? output.rolls[output.rolls.length - 1] : null;
+  const dmgMax = output?.rolls.length
+    ? output.rolls[output.rolls.length - 1]
+    : null;
 
   // Accuracy note
   const accuracy =
@@ -165,22 +173,20 @@ function DefenderMoveTile({
   const isOhko = koTierLabel === "OHKO";
 
   return (
-    <Popover
+    <Dialog
       open={pickerOpen}
       onOpenChange={(open) => {
         setPickerOpen(open);
       }}
     >
-      <PopoverTrigger
+      <DialogTrigger
         render={
           <button
             type="button"
             className={cn(
-              "w-full rounded-md border bg-card p-2 text-left",
-              "transition-colors hover:border-border",
-              isEmpty
-                ? "border-dashed border-border/50"
-                : "border-border/60",
+              "bg-card w-full rounded-md border p-2 text-left",
+              "hover:border-border transition-colors",
+              isEmpty ? "border-border/50 border-dashed" : "border-border/60",
               isOhko && "dmv-tile--ohko"
             )}
             onClick={() => setPickerOpen(true)}
@@ -191,13 +197,12 @@ function DefenderMoveTile({
         {/* Row 1: type badge + move name + BP + accuracy + chevron */}
         <div className="flex items-center gap-1.5">
           {moveType ? (
-            <img
-              src={getShowdownTypeIconUrl(moveType)}
-              alt={moveType}
-              className="h-4 w-auto [image-rendering:pixelated]"
+            <TypeSymbolIcon
+              type={moveType as Parameters<typeof TypeSymbolIcon>[0]["type"]}
+              size={16}
             />
           ) : (
-            <span className="inline-block h-4 w-8" aria-hidden />
+            <span className="inline-block size-4" aria-hidden />
           )}
           <span
             className={cn(
@@ -208,16 +213,16 @@ function DefenderMoveTile({
             {moveName || "+ Add move"}
           </span>
           {basePower > 0 && (
-            <span className="font-mono text-[9px] text-muted-foreground">
+            <span className="text-muted-foreground font-mono text-[9px]">
               BP {basePower}
             </span>
           )}
           {accuracy !== null && accuracy < 100 && (
-            <span className="font-mono text-[9px] text-muted-foreground">
+            <span className="text-muted-foreground font-mono text-[9px]">
               · {accuracy}% acc
             </span>
           )}
-          <span className="text-[10px] text-muted-foreground" aria-hidden>
+          <span className="text-muted-foreground text-[10px]" aria-hidden>
             ▾
           </span>
         </div>
@@ -228,23 +233,31 @@ function DefenderMoveTile({
             <span
               className={cn(
                 "font-mono text-[12px] font-bold",
-                koTierLabel ? KO_TIER_COLOR[koTierLabel] ?? "text-muted-foreground" : "text-muted-foreground"
+                koTierLabel
+                  ? (KO_TIER_COLOR[koTierLabel] ?? "text-muted-foreground")
+                  : "text-muted-foreground"
               )}
             >
               {output.minPercent.toFixed(1)}–{output.maxPercent.toFixed(1)}%
             </span>
             {koTierLabel && (
               <>
-                <span className="h-[10px] w-px flex-shrink-0 bg-border" aria-hidden />
-                <span className="font-mono text-[9px] text-muted-foreground">
+                <span
+                  className="bg-border h-[10px] w-px flex-shrink-0"
+                  aria-hidden
+                />
+                <span className="text-muted-foreground font-mono text-[9px]">
                   {koTierLabel}
                 </span>
               </>
             )}
             {dmgMin !== null && dmgMax !== null && (
               <>
-                <span className="h-[10px] w-px flex-shrink-0 bg-border" aria-hidden />
-                <span className="font-mono text-[9px] text-muted-foreground">
+                <span
+                  className="bg-border h-[10px] w-px flex-shrink-0"
+                  aria-hidden
+                />
+                <span className="text-muted-foreground font-mono text-[9px]">
                   {dmgMin}–{dmgMax}
                   {attackerHP !== null ? ` / ${attackerHP} HP` : ""}
                 </span>
@@ -257,9 +270,13 @@ function DefenderMoveTile({
             )}
           </div>
         )}
-      </PopoverTrigger>
+      </DialogTrigger>
 
-      <PopoverContent side="bottom" align="start" className="w-auto p-0">
+      <DialogContent
+        showCloseButton={false}
+        className="flex h-[calc(100vh-2rem)] max-h-[1080px] w-[calc(100vw-2rem)] max-w-[1600px] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[1600px]"
+      >
+        <DialogTitle className="sr-only">Choose move</DialogTitle>
         <MovePicker
           value={moveName || null}
           species={defenderSpecies}
@@ -270,8 +287,8 @@ function DefenderMoveTile({
           }}
           onClose={() => setPickerOpen(false)}
         />
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -297,7 +314,7 @@ export function CalcDefenderMoves({
   return (
     <div className="flex flex-col gap-1.5">
       {/* Sub-column header */}
-      <div className="mb-0.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.08em] text-destructive">
+      <div className="text-destructive mb-0.5 font-mono text-[9.5px] font-semibold tracking-[0.08em] uppercase">
         Their moves → your atk
       </div>
 

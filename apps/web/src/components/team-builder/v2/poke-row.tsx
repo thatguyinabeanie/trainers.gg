@@ -81,7 +81,7 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         onClick={() => setOpen(true)}
         aria-label={`Add Pokémon to slot ${String(idx + 1).padStart(2, "0")}`}
         className={cn(
-          "border-border bg-card flex w-fit min-w-0 flex-wrap items-stretch self-start overflow-hidden rounded-lg border border-dashed",
+          "border-border bg-card flex w-fit min-w-0 flex-wrap items-stretch self-center overflow-hidden rounded-lg border border-dashed",
           "hover:border-primary/40 hover:bg-muted/10 text-left transition-colors",
           "focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
         )}
@@ -368,7 +368,7 @@ export function PokeRow({
     // Empty slot — sortable ref still attached so it can act as a drop target,
     // but drag is disabled so it won't be picked up.
     return (
-      <div ref={setNodeRef} style={style}>
+      <div ref={setNodeRef} style={style} className="mx-auto w-fit">
         <EmptyRow idx={idx} density={density} format={format} onAdd={onAdd} />
       </div>
     );
@@ -378,7 +378,7 @@ export function PokeRow({
 
   if (showExpanded) {
     return (
-      <div ref={setNodeRef} style={style}>
+      <div ref={setNodeRef} style={style} className="mx-auto w-fit">
         <ActiveRowShell
           idx={idx}
           pokemon={pokemon}
@@ -397,7 +397,7 @@ export function PokeRow({
   }
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} className="mx-auto w-fit">
       <CollapsedRow
         idx={idx}
         pokemon={pokemon}

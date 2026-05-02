@@ -16,14 +16,20 @@ import { type GameFormat } from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
+jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 
 // Popover: render content inline so it's always queryable
 jest.mock("@/components/ui/popover", () => ({
-  Popover: ({ children, open }: { children: React.ReactNode; open?: boolean }) => (
-    <div data-testid="popover" data-open={String(!!open)}>{children}</div>
+  Popover: ({
+    children,
+    open,
+  }: {
+    children: React.ReactNode;
+    open?: boolean;
+  }) => (
+    <div data-testid="popover" data-open={String(!!open)}>
+      {children}
+    </div>
   ),
   PopoverTrigger: ({
     children,
@@ -123,7 +129,9 @@ const CHAMPIONS_FORMAT: GameFormat = {
   active: true,
 };
 
-function makePokemon(overrides: Partial<Tables<"pokemon">> = {}): Tables<"pokemon"> {
+function makePokemon(
+  overrides: Partial<Tables<"pokemon">> = {}
+): Tables<"pokemon"> {
   return {
     id: 1,
     species: "Garchomp",
@@ -182,39 +190,38 @@ describe("RibDecorations — type pills", () => {
     renderDecorations();
     const pills = screen.getAllByRole("img");
     expect(pills).toHaveLength(2);
-    expect(pills[0]).toHaveAttribute("alt", "Dragon");
-    expect(pills[1]).toHaveAttribute("alt", "Ground");
+    expect(pills[0]).toHaveAttribute("aria-label", "Dragon");
+    expect(pills[1]).toHaveAttribute("aria-label", "Ground");
   });
 
   it("renders one type pill for a mono-type pokemon", () => {
-    (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce(["Fire"]);
+    (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce([
+      "Fire",
+    ]);
     renderDecorations();
     const pills = screen.getAllByRole("img");
     expect(pills).toHaveLength(1);
-    expect(pills[0]).toHaveAttribute("alt", "Fire");
+    expect(pills[0]).toHaveAttribute("aria-label", "Fire");
   });
 
-  it("type pill images use the showdown sprite URL", () => {
-    (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce(["Water"]);
+  it("type pills are wordless icons (no localized text needed)", () => {
+    (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce([
+      "Water",
+    ]);
     renderDecorations();
-    const img = screen.getByRole("img", { name: "Water" });
-    expect(img).toHaveAttribute("src", "https://sprites.test/Water.png");
+    const pill = screen.getByRole("img", { name: "Water" });
+    // The wordless TypeSymbolIcon renders a <span role="img"> — the type
+    // name is exposed via aria-label rather than image text content.
+    expect(pill.tagName.toLowerCase()).toBe("span");
+    expect(pill).toHaveAttribute("data-type", "Water");
   });
 
-  it("type pill images have title attribute equal to the type name", () => {
-    (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce(["Psychic"]);
+  it("type pill is reachable by accessible name (Psychic)", () => {
+    (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce([
+      "Psychic",
+    ]);
     renderDecorations();
-    const img = screen.getByTitle("Psychic");
-    expect(img).toBeInTheDocument();
-  });
-
-  it("type pill images have -rotate-90 class — text reads bottom→top spine-style", () => {
-    (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce(["Steel"]);
-    renderDecorations();
-    const img = screen.getByRole("img");
-    // rotate(-90deg) puts the original-RIGHT character at the top and
-    // original-LEFT at the bottom — bottom-to-top reading.
-    expect(img.className).toContain("-rotate-90");
+    expect(screen.getByRole("img", { name: "Psychic" })).toBeInTheDocument();
   });
 });
 
@@ -255,13 +262,18 @@ describe("RibDecorations — level picker (format-gated)", () => {
   it("renders the NumberPicker in the popover content", () => {
     renderDecorations({ level: 50 }, VGC_FORMAT);
     expect(screen.getByTestId("number-picker")).toBeInTheDocument();
-    expect(screen.getByTestId("number-picker")).toHaveAttribute("data-title", "Level");
+    expect(screen.getByTestId("number-picker")).toHaveAttribute(
+      "data-title",
+      "Level"
+    );
   });
 });
 
 describe("RibDecorations — combined render", () => {
   it("renders without crashing for a mono-type pokemon", () => {
-    (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce(["Normal"]);
+    (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce([
+      "Normal",
+    ]);
     expect(() => renderDecorations()).not.toThrow();
   });
 
@@ -299,7 +311,11 @@ describe("RibDecorations — combined render", () => {
 
   it("does NOT render shiny toggle in the rib", () => {
     renderDecorations({ is_shiny: false });
-    expect(screen.queryByTitle("Not shiny (click to set)")).not.toBeInTheDocument();
-    expect(screen.queryByTitle("Shiny (click to clear)")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle("Not shiny (click to set)")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle("Shiny (click to clear)")
+    ).not.toBeInTheDocument();
   });
 });

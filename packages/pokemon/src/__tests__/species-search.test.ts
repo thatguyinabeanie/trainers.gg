@@ -1,9 +1,26 @@
 import {
   buildSpeciesSearchIndex,
+  clearSpeciesSearchIndexCache,
   searchSpecies,
+  getAllLegalAbilities,
+  getAllLegalMoves,
   type SpeciesSearchEntry,
 } from "../species-search";
-import { getLegalSpecies } from "../format-legality";
+import * as formatLegality from "../format-legality";
+import { getLegalSpecies, LEGALITY_UNAVAILABLE } from "../format-legality";
+
+// Library tsconfig has no DOM/Node lib — declare console ambiently so tests
+// can spy on it without pulling @types/node.
+declare const console: {
+  warn(...data: unknown[]): void;
+};
+
+// The species-search index is cached at module level keyed by formatId. Tests
+// that pass a custom `getRoles` resolver need a fresh build, so clear the
+// cache between tests to avoid one test's resolver bleeding into another's.
+afterEach(() => {
+  clearSpeciesSearchIndexCache();
+});
 
 // Build a gen9 index once for all tests — this is the most common format
 const GEN9_FORMAT = "gen9vgc2026regi";
@@ -266,7 +283,7 @@ describe("searchSpecies", () => {
     expect(results).toHaveLength(0);
   });
 
-  it("filters by types option — returns only species with at least one matching type (OR)", () => {
+  it("filters by types option — returns only species with the matching type", () => {
     const results = searchSpecies(index, "", { types: ["Electric"] });
     for (const entry of results) {
       expect(entry.types.map((t) => t.toLowerCase())).toContain("electric");
@@ -274,22 +291,21 @@ describe("searchSpecies", () => {
     expect(results.map((e) => e.species)).toContain("Pikachu");
   });
 
-  it("filters by multiple types — OR logic: species need only one matching type", () => {
-    // Fire OR Dark — should include Charizard (Fire) and Incineroar (Fire/Dark)
+  it("filters by multiple types — AND logic: species must carry every selected type", () => {
+    // Fire AND Dark — only species like Incineroar (Fire/Dark) qualify;
+    // pure-Fire species like Charizard must be excluded.
     const results = searchSpecies(index, "", { types: ["Fire", "Dark"] });
     const names = results.map((e) => e.species);
-    expect(names).toContain("Charizard");
     expect(names).toContain("Incineroar");
-    // All results must have at least one of Fire or Dark
+    expect(names).not.toContain("Charizard");
     for (const entry of results) {
-      const hasType = entry.types.some(
-        (t) => t.toLowerCase() === "fire" || t.toLowerCase() === "dark"
-      );
-      expect(hasType).toBe(true);
+      const lower = entry.types.map((t) => t.toLowerCase());
+      expect(lower).toContain("fire");
+      expect(lower).toContain("dark");
     }
   });
 
-  it("types filter excludes species without any matching type", () => {
+  it("types filter excludes species without the matching type", () => {
     const results = searchSpecies(index, "", { types: ["Electric"] });
     // Incineroar is Fire/Dark — must NOT appear in Electric-only results
     expect(results.map((e) => e.species)).not.toContain("Incineroar");
@@ -375,37 +391,50 @@ describe("searchSpecies", () => {
   });
 
   // ==========================================================================
-  // moves filter
-  // Note: getLearnableMoves() currently returns ALL moves for any valid species
-  // and [] for unknown species — so moves filter tests are designed accordingly.
+  // moves filter — format-aware via getLegalMoves(species, formatId)
+  // The picker always passes formatId in production; without it the filter
+  // is intentionally skipped (the deprecated permissive fallback would
+  // silently match every species).
   // ==========================================================================
 
   describe("moves filter", () => {
-    it("returns species that can learn a specified move", () => {
-      // Fake Out is a real move — all valid species in the gen return all moves
-      // from getLearnableMoves(), so any valid species will pass a single-move filter
-      const results = searchSpecies(index, "", { moves: ["Fake Out"] });
+    it("returns species that legally learn a specified move", () => {
+      const results = searchSpecies(index, "", {
+        moves: ["Fake Out"],
+        formatId: GEN9_FORMAT,
+      });
       expect(results.length).toBeGreaterThan(0);
       // Incineroar is a well-known Fake Out user — must appear
       expect(results.map((e) => e.species)).toContain("Incineroar");
     });
 
-    it("returns results for multiple moves using AND logic — species must learn ALL specified moves", () => {
-      // Both Fake Out and Protect are real moves; a valid species learns all moves
+    it("excludes species that do NOT legally learn the move", () => {
+      const results = searchSpecies(index, "", {
+        moves: ["Fake Out"],
+        formatId: GEN9_FORMAT,
+      });
+      const names = results.map((e) => e.species);
+      // Charizard, Dragapult, Garchomp, Volcarona — none legally learn Fake
+      // Out in gen9 reg I. Pre-fix the deprecated permissive fallback would
+      // have falsely included all of them.
+      expect(names).not.toContain("Charizard");
+      expect(names).not.toContain("Dragapult");
+      expect(names).not.toContain("Garchomp");
+    });
+
+    it("returns results for multiple moves using AND logic — species must legally learn ALL specified moves", () => {
       const results = searchSpecies(index, "", {
         moves: ["Fake Out", "Protect"],
+        formatId: GEN9_FORMAT,
       });
       expect(results.length).toBeGreaterThan(0);
       expect(results.map((e) => e.species)).toContain("Incineroar");
     });
 
     it("returns empty results when filtering by a move no species can learn", () => {
-      // "NotARealMove999" is not a real move; getLearnableMoves returns [] for it
-      // but the filter checks species moves, not the filter move itself.
-      // Since moves are AND-filtered against learnable moves, an impossible move
-      // name will not appear in any species' learnable set.
       const results = searchSpecies(index, "", {
         moves: ["NotARealMove999"],
+        formatId: GEN9_FORMAT,
       });
       expect(results).toHaveLength(0);
     });
@@ -420,6 +449,7 @@ describe("searchSpecies", () => {
       const results = searchSpecies(index, "", {
         moves: ["Fake Out"],
         types: ["Fire"],
+        formatId: GEN9_FORMAT,
       });
       const names = results.map((e) => e.species);
       expect(names).toContain("Incineroar");
@@ -429,12 +459,15 @@ describe("searchSpecies", () => {
       }
     });
 
-    it("moves filter excludes species that cannot learn any of the specified moves", () => {
-      // Filter by a non-existent move — no species should pass
-      const results = searchSpecies(index, "", {
-        moves: ["FakeMoveXYZ123"],
-      });
-      expect(results).toHaveLength(0);
+    it("skips the moves filter permissively when no formatId is provided", () => {
+      // Without formatId the filter cannot be honestly applied — every entry
+      // should pass through rather than silently match everything via the
+      // deprecated getLearnableMoves fallback. Document this behavior so a
+      // future regression that re-introduces the permissive fallback is
+      // caught.
+      const all = searchSpecies(index, "", {});
+      const noFormat = searchSpecies(index, "", { moves: ["Fake Out"] });
+      expect(noFormat).toHaveLength(all.length);
     });
   });
 
@@ -483,5 +516,202 @@ describe("searchSpecies", () => {
       const results = searchSpecies(index, "pika", { formatId: FORMAT });
       expect(results.map((e) => e.species)).toContain("Pikachu");
     });
+  });
+});
+
+describe("SpeciesSearchEntry — new fields", () => {
+  let index: SpeciesSearchEntry[];
+  beforeAll(() => {
+    index = buildSpeciesSearchIndex("gen9vgc2026regg");
+  });
+
+  it("has named ability slots", () => {
+    const incineroar = index.find((e) => e.species === "Incineroar")!;
+    expect(incineroar.abilitySlot1).toBe("Blaze");
+    expect(incineroar.hiddenAbility).toBe("Intimidate");
+  });
+
+  it("roles defaults to empty without a resolver", () => {
+    expect(index[0]!.roles).toEqual([]);
+  });
+
+  it("buildSpeciesSearchIndex with a resolver populates roles", () => {
+    const idx = buildSpeciesSearchIndex("gen9vgc2026regg", (_abil, species) =>
+      species === "Incineroar" ? ["fake-out", "drop-atk"] : []
+    );
+    const incineroar = idx.find((e) => e.species === "Incineroar")!;
+    expect(incineroar.roles).toEqual(["fake-out", "drop-atk"]);
+  });
+});
+
+describe("searchSpecies — new filters", () => {
+  let index: SpeciesSearchEntry[];
+  beforeAll(() => {
+    index = buildSpeciesSearchIndex("gen9vgc2026regg");
+  });
+
+  it("ability filter matches any slot", () => {
+    const results = searchSpecies(index, "", { ability: "Intimidate" });
+    expect(results.length).toBeGreaterThan(0);
+    expect(
+      results.every(
+        (e) =>
+          e.abilitySlot1 === "Intimidate" ||
+          e.abilitySlot2 === "Intimidate" ||
+          e.hiddenAbility === "Intimidate"
+      )
+    ).toBe(true);
+  });
+
+  it("megaOnly returns only Mega-form species (e.g. Charizard-Mega-X, Venusaur-Mega)", () => {
+    const championsIndex = buildSpeciesSearchIndex("championsvgc2026regma");
+    const results = searchSpecies(championsIndex, "", { megaOnly: true });
+    // Every result should be a Mega form, not a base species
+    expect(results.every((e) => e.species.includes("-Mega"))).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+  });
+
+  it("megaOnly excludes base species (Charizard appears only as Mega forms)", () => {
+    const championsIndex = buildSpeciesSearchIndex("championsvgc2026regma");
+    const results = searchSpecies(championsIndex, "", { megaOnly: true });
+    const names = results.map((e) => e.species);
+    // Base "Charizard" should NOT appear; the Mega forms should
+    expect(names).not.toContain("Charizard");
+    expect(
+      names.some((n) => n === "Charizard-Mega-X" || n === "Charizard-Mega-Y")
+    ).toBe(true);
+  });
+
+  it("buildSpeciesSearchIndex caches by getRoles identity (different resolvers don't poison each other)", () => {
+    // Regression for the WeakMap<GetRolesFn, Map<formatId, entries>> cache
+    // refactor: two resolvers building the same format must not share results.
+    // Previously the cache was keyed only by formatId, so the second call
+    // would silently return the first resolver's roles.
+    const resolverA = (
+      _abil: { slot1: string | null; slot2: string | null; hidden: string | null },
+      species: string
+    ): readonly string[] => (species === "Incineroar" ? ["fake-out"] : []);
+    const resolverB = (
+      _abil: { slot1: string | null; slot2: string | null; hidden: string | null },
+      species: string
+    ): readonly string[] => (species === "Incineroar" ? ["drop-atk"] : []);
+
+    const idxA = buildSpeciesSearchIndex(GEN9_FORMAT, resolverA);
+    const idxB = buildSpeciesSearchIndex(GEN9_FORMAT, resolverB);
+
+    // Different array instances — each resolver got its own build
+    expect(idxA).not.toBe(idxB);
+
+    const incA = idxA.find((e) => e.species === "Incineroar");
+    const incB = idxB.find((e) => e.species === "Incineroar");
+    expect(incA?.roles).toEqual(["fake-out"]);
+    expect(incB?.roles).toEqual(["drop-atk"]);
+
+    // Calling resolverA again returns the same cached result for resolverA,
+    // not resolverB's
+    const idxA2 = buildSpeciesSearchIndex(GEN9_FORMAT, resolverA);
+    expect(idxA2).toBe(idxA);
+  });
+
+  it("roles filter matches species carrying every selected role (AND)", () => {
+    const idx = buildSpeciesSearchIndex("gen9vgc2026regg", (_abil, species) =>
+      species === "Incineroar"
+        ? ["fake-out", "drop-atk"]
+        : species === "Charizard"
+          ? ["fake-out"]
+          : []
+    );
+
+    // Single role — Incineroar and Charizard both qualify
+    const single = searchSpecies(idx, "", { roles: ["fake-out"] });
+    expect(single.some((e) => e.species === "Incineroar")).toBe(true);
+    expect(single.some((e) => e.species === "Charizard")).toBe(true);
+
+    // Two roles AND'd — only Incineroar carries both
+    const both = searchSpecies(idx, "", {
+      roles: ["fake-out", "drop-atk"],
+    });
+    expect(both.some((e) => e.species === "Incineroar")).toBe(true);
+    expect(both.some((e) => e.species === "Charizard")).toBe(false);
+  });
+});
+
+describe("getAllLegalAbilities / getAllLegalMoves", () => {
+  it("getAllLegalAbilities returns sorted unique abilities", () => {
+    const a = getAllLegalAbilities("gen9vgc2026regg");
+    expect(a.length).toBeGreaterThan(50);
+    expect([...a]).toEqual([...a].sort((x, y) => x.localeCompare(y)));
+    expect(a).toContain("Intimidate");
+  });
+
+  it("getAllLegalAbilities is cached (same array reference on second call)", () => {
+    const a = getAllLegalAbilities("gen9vgc2026regg");
+    const b = getAllLegalAbilities("gen9vgc2026regg");
+    expect(a).toBe(b);
+  });
+
+  it("getAllLegalMoves returns sorted unique moves", () => {
+    const m = getAllLegalMoves("gen9vgc2026regg");
+    expect(m.length).toBeGreaterThan(100);
+    expect(m).toContain("Tailwind");
+    expect([...new Set(m)]).toHaveLength(m.length);
+    expect([...m]).toEqual([...m].sort((a, b) => a.localeCompare(b)));
+  });
+
+  // Regression: clearSpeciesSearchIndexCache must reset the enumerator caches
+  // too, otherwise consumers calling clear() to refresh after a dataset change
+  // would silently keep getting the stale ability/move arrays.
+  it("clearSpeciesSearchIndexCache evicts the ability/move enumerator caches", () => {
+    const beforeAbilities = getAllLegalAbilities("gen9vgc2026regg");
+    const beforeMoves = getAllLegalMoves("gen9vgc2026regg");
+
+    clearSpeciesSearchIndexCache();
+
+    const afterAbilities = getAllLegalAbilities("gen9vgc2026regg");
+    const afterMoves = getAllLegalMoves("gen9vgc2026regg");
+
+    // Same content (no real upstream change), but a fresh array reference
+    // proves the cache was rebuilt rather than served from the prior cache.
+    expect(afterAbilities).not.toBe(beforeAbilities);
+    expect(afterAbilities).toEqual(beforeAbilities);
+    expect(afterMoves).not.toBe(beforeMoves);
+    expect(afterMoves).toEqual(beforeMoves);
+  });
+
+  // Regression: clearSpeciesSearchIndexCache must also reset the silent-fallback
+  // warning dedup sets. Otherwise a `console.warn` that fired during the prior
+  // cache lifetime stays suppressed forever, hiding warnings tests intentionally
+  // trigger after a refresh.
+  it("clearSpeciesSearchIndexCache resets the silent-fallback warning dedup", () => {
+    // Force the LEGALITY_UNAVAILABLE path for getLegalSpecies so
+    // buildSpeciesSearchIndex hits the warned-set guarded warn.
+    const legalitySpy = jest
+      .spyOn(formatLegality, "getLegalSpecies")
+      .mockReturnValue(LEGALITY_UNAVAILABLE);
+    const warnSpy = jest
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+    try {
+      // Use a format that the real index would otherwise build cleanly so the
+      // only difference between runs is the mocked legality sentinel.
+      const fmt = "gen9vgc2026regg";
+      clearSpeciesSearchIndexCache();
+
+      buildSpeciesSearchIndex(fmt);
+      const firstCallCount = warnSpy.mock.calls.length;
+      expect(firstCallCount).toBeGreaterThan(0);
+
+      // Same format again without clearing — dedup should suppress the warning.
+      buildSpeciesSearchIndex(fmt);
+      expect(warnSpy.mock.calls.length).toBe(firstCallCount);
+
+      // Clear the cache — warned* sets must reset so the warning fires again.
+      clearSpeciesSearchIndexCache();
+      buildSpeciesSearchIndex(fmt);
+      expect(warnSpy.mock.calls.length).toBeGreaterThan(firstCallCount);
+    } finally {
+      warnSpy.mockRestore();
+      legalitySpy.mockRestore();
+    }
   });
 });
