@@ -17,7 +17,6 @@ import { useState } from "react";
 import {
   ALL_TYPES,
   calculateTeamSynergy,
-  getAllLegalAbilities,
   isChampionsFormat,
   type GameFormat,
 } from "@trainers/pokemon";
@@ -72,7 +71,6 @@ export function SpeciesSidebar({
   // ---------------------------------------------------------------------------
 
   const allTypes = ALL_TYPES as unknown as string[];
-  const abilities: string[] = format ? getAllLegalAbilities(format.id) : [];
   const showMegaToggle = isChampionsFormat(format);
 
   // Team-needs hints: types the team is weak to 2+ times AND uncovered
@@ -130,7 +128,7 @@ export function SpeciesSidebar({
   // ---------------------------------------------------------------------------
 
   return (
-    <aside className="border-border bg-muted/50 flex w-[196px] flex-shrink-0 flex-col overflow-y-auto border-r">
+    <aside className="bg-muted/50 flex h-full flex-col">
       {/* ------------------------------------------------------------------ */}
       {/* 1. Type grid                                                        */}
       {/* ------------------------------------------------------------------ */}
@@ -159,9 +157,7 @@ export function SpeciesSidebar({
                 <img
                   src={getShowdownTypeIconUrl(type)}
                   alt={type}
-                  width={32}
-                  height={14}
-                  className="h-[14px] w-auto [image-rendering:pixelated]"
+                  className="h-6 w-auto [image-rendering:pixelated]"
                 />
               </button>
             );
@@ -190,9 +186,7 @@ export function SpeciesSidebar({
                 <img
                   src={getShowdownTypeIconUrl(type)}
                   alt={type}
-                  width={32}
-                  height={14}
-                  className="h-[14px] w-auto [image-rendering:pixelated]"
+                  className="h-6 w-auto [image-rendering:pixelated]"
                 />
               </button>
             ))}
@@ -207,25 +201,23 @@ export function SpeciesSidebar({
         <span className="text-muted-foreground mb-1.5 block text-[9px] font-bold tracking-widest uppercase">
           Ability
         </span>
-        <input
-          list="species-picker-abilities"
-          placeholder={
-            filters.ability
-              ? undefined
-              : "Click any ability in the table to filter"
-          }
-          value={filters.ability ?? ""}
-          onChange={(e) => {
-            const val = e.target.value.trim();
-            onFiltersChange({ ...filters, ability: val || null });
-          }}
-          className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
-        />
-        <datalist id="species-picker-abilities">
-          {abilities.map((ab) => (
-            <option key={ab}>{ab}</option>
-          ))}
-        </datalist>
+        {filters.ability ? (
+          <button
+            type="button"
+            onClick={() => onFiltersChange({ ...filters, ability: null })}
+            aria-label={`Clear ${filters.ability} filter`}
+            className="bg-primary/10 text-primary border-primary/30 hover:bg-primary/15 inline-flex w-full items-center justify-between gap-2 rounded border px-2 py-1 text-[11px] font-medium transition-colors"
+          >
+            <span className="truncate">{filters.ability}</span>
+            <span aria-hidden="true" className="text-[10px] opacity-70">
+              ×
+            </span>
+          </button>
+        ) : (
+          <p className="text-muted-foreground/70 px-1 text-[10px] leading-snug">
+            Click any ability in the table to filter.
+          </p>
+        )}
       </div>
 
       {/* ------------------------------------------------------------------ */}

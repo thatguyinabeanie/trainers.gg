@@ -31,9 +31,7 @@ import type * as TrainersPokemon from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
+jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 
 // Popover — render children inline
 jest.mock("@/components/ui/popover", () => ({
@@ -46,7 +44,11 @@ jest.mock("@/components/ui/popover", () => ({
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
   }) => (
-    <div data-testid="popover" data-open={String(!!open)} onClick={() => onOpenChange?.(!open)}>
+    <div
+      data-testid="popover"
+      data-open={String(!!open)}
+      onClick={() => onOpenChange?.(!open)}
+    >
       {children}
     </div>
   ),
@@ -64,6 +66,45 @@ jest.mock("@/components/ui/popover", () => ({
   ),
   PopoverContent: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popover-content">{children}</div>
+  ),
+}));
+
+// Dialog — render children inline so MovePicker is always queryable
+jest.mock("@/components/ui/dialog", () => ({
+  Dialog: ({
+    children,
+    open,
+    onOpenChange,
+  }: {
+    children: React.ReactNode;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+  }) => (
+    <div
+      data-testid="dialog"
+      data-open={String(!!open)}
+      onClick={() => onOpenChange?.(!open)}
+    >
+      {children}
+    </div>
+  ),
+  DialogTrigger: ({
+    children,
+    render: renderProp,
+  }: {
+    children?: React.ReactNode;
+    render?: React.ReactElement;
+  }) => (
+    <div data-testid="dialog-trigger">
+      {renderProp}
+      {children}
+    </div>
+  ),
+  DialogContent: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="dialog-content">{children}</div>
+  ),
+  DialogTitle: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
   ),
 }));
 
@@ -89,7 +130,8 @@ jest.mock("../pickers/move-picker", () => ({
 const mockGetMoveData = jest.fn();
 
 jest.mock("@trainers/pokemon", () => {
-  const actual = jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon");
+  const actual =
+    jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon");
   return {
     ...actual,
     getMoveData: (...args: unknown[]) => mockGetMoveData(...args),
@@ -112,7 +154,10 @@ jest.mock("../../use-calc-state", () => ({
 // Import after mocks
 // =============================================================================
 
-import { CalcDefenderMoves, type CalcDefenderMovesProps } from "../calc/calc-defender-moves";
+import {
+  CalcDefenderMoves,
+  type CalcDefenderMovesProps,
+} from "../calc/calc-defender-moves";
 import { type CalcOutput } from "../../use-calc-state";
 
 // =============================================================================
@@ -138,19 +183,23 @@ function makeOutput(overrides: Partial<CalcOutput> = {}): CalcOutput {
     minPercent: 45.2,
     maxPercent: 53.1,
     desc: "Test damage",
-    rolls: [80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104, 106, 108, 110],
+    rolls: [
+      80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104, 106, 108, 110,
+    ],
     defenderMaxHP: 300,
     ...overrides,
   };
 }
 
-function makeMoveData(overrides: Partial<{
-  type: string;
-  category: string;
-  basePower: number;
-  accuracy: number | boolean;
-  shortDesc: string;
-}> = {}) {
+function makeMoveData(
+  overrides: Partial<{
+    type: string;
+    category: string;
+    basePower: number;
+    accuracy: number | boolean;
+    shortDesc: string;
+  }> = {}
+) {
   return {
     type: "Fire",
     category: "Special",
@@ -173,13 +222,16 @@ interface RenderProps {
 }
 
 function renderMoves(props: RenderProps = {}) {
-  const computeReverseOutput = props.computeReverseOutput ?? jest.fn().mockReturnValue(null);
+  const computeReverseOutput =
+    props.computeReverseOutput ?? jest.fn().mockReturnValue(null);
   const onPick = props.onPick ?? jest.fn();
 
   const result = render(
     <CalcDefenderMoves
       effectiveMoves={props.effectiveMoves ?? ["", "", "", ""]}
-      computeReverseOutput={computeReverseOutput as CalcDefenderMovesProps["computeReverseOutput"]}
+      computeReverseOutput={
+        computeReverseOutput as CalcDefenderMovesProps["computeReverseOutput"]
+      }
       attackerHP={props.attackerHP ?? null}
       defenderSpecies={props.defenderSpecies ?? "Incineroar"}
       format={props.format ?? VGC_FORMAT}
@@ -212,9 +264,9 @@ describe("CalcDefenderMoves — header", () => {
 });
 
 describe("CalcDefenderMoves — tile rendering", () => {
-  it("renders 4 popover triggers (one per slot)", () => {
+  it("renders 4 picker dialog triggers (one per slot)", () => {
     renderMoves();
-    expect(screen.getAllByTestId("popover-trigger").length).toBe(4);
+    expect(screen.getAllByTestId("dialog-trigger").length).toBe(4);
   });
 
   it("shows '+ Add move' for empty slots", () => {
@@ -233,15 +285,12 @@ describe("CalcDefenderMoves — tile rendering", () => {
     [1, "Moonblast"],
     [2, "Earthquake"],
     [3, "Protect"],
-  ] as const)(
-    "slot %i renders move name '%s'",
-    (slotIdx, moveName) => {
-      const moves: EffectiveMoves = ["", "", "", ""];
-      moves[slotIdx] = moveName;
-      renderMoves({ effectiveMoves: moves });
-      expect(screen.getByText(moveName)).toBeInTheDocument();
-    }
-  );
+  ] as const)("slot %i renders move name '%s'", (slotIdx, moveName) => {
+    const moves: EffectiveMoves = ["", "", "", ""];
+    moves[slotIdx] = moveName;
+    renderMoves({ effectiveMoves: moves });
+    expect(screen.getByText(moveName)).toBeInTheDocument();
+  });
 
   it("renders 4 move pickers in popover content", () => {
     renderMoves({ effectiveMoves: ["", "", "", ""] });
@@ -363,9 +412,9 @@ describe("CalcDefenderMoves — row 2 (damage / KO tier / HP range)", () => {
     "renders KO tier label '%s' on row 2",
     (verdict, minPercent, maxPercent) => {
       mockGetVerdict.mockReturnValue(verdict);
-      const computeReverseOutput = jest.fn().mockReturnValue(
-        makeOutput({ minPercent, maxPercent })
-      );
+      const computeReverseOutput = jest
+        .fn()
+        .mockReturnValue(makeOutput({ minPercent, maxPercent }));
       renderMoves({
         effectiveMoves: ["Flare Blitz", "", "", ""],
         computeReverseOutput,
@@ -435,7 +484,10 @@ describe("CalcDefenderMoves — row 2 (damage / KO tier / HP range)", () => {
   it("renders raw damage roll range when rolls are present", () => {
     mockGetVerdict.mockReturnValue("2HKO");
     const output = makeOutput({
-      rolls: [80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155],
+      rolls: [
+        80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150,
+        155,
+      ],
       minPercent: 45,
       maxPercent: 55,
     });

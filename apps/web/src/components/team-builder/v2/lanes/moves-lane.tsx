@@ -7,6 +7,7 @@ import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -126,14 +127,17 @@ function MoveTile({
     }
   }
 
-  const isOpen = panel !== null;
+  // The "detail" panel anchors near the move row (Popover); the "picker" panel
+  // is a centered Dialog modal so it has room for the 3-column layout.
+  const detailOpen = panel === "detail";
+  const pickerOpen = panel === "picker";
 
   return (
     <div className="flex flex-col">
       <Popover
-        open={isOpen}
+        open={detailOpen}
         onOpenChange={(open) => {
-          if (!open) setPanel(null);
+          if (!open && panel === "detail") setPanel(null);
         }}
       >
         <PopoverTrigger
@@ -220,7 +224,7 @@ function MoveTile({
         </PopoverTrigger>
 
         <PopoverContent side="bottom" align="start" className="w-auto p-0">
-          {panel === "detail" && moveName && output ? (
+          {detailOpen && moveName && output ? (
             <CalcDetailCard
               attacker={attacker}
               moveName={moveName}
@@ -238,20 +242,34 @@ function MoveTile({
               onClose={() => setPanel(null)}
               onChangeMove={() => setPanel("picker")}
             />
-          ) : (
-            <MovePicker
-              value={moveName}
-              species={species}
-              format={format}
-              onPick={(name) => {
-                onPick(slotKey, name);
-                setPanel(null);
-              }}
-              onClose={() => setPanel(null)}
-            />
-          )}
+          ) : null}
         </PopoverContent>
       </Popover>
+
+      {/* Move picker — centered Dialog modal (matches species picker sizing) */}
+      <Dialog
+        open={pickerOpen}
+        onOpenChange={(open) => {
+          if (!open && panel === "picker") setPanel(null);
+        }}
+      >
+        <DialogContent
+          showCloseButton={false}
+          className="flex h-[calc(100vh-2rem)] max-h-[1080px] w-[calc(100vw-2rem)] max-w-[1440px] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[1440px]"
+        >
+          <DialogTitle className="sr-only">Choose move</DialogTitle>
+          <MovePicker
+            value={moveName}
+            species={species}
+            format={format}
+            onPick={(name) => {
+              onPick(slotKey, name);
+              setPanel(null);
+            }}
+            onClose={() => setPanel(null)}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Inline error chips per move slot */}
       <FieldErrors errors={slotErrors} />

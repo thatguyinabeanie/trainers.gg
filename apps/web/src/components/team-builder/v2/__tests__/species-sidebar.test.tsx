@@ -76,10 +76,23 @@ describe("SpeciesSidebar", () => {
     expect(onChange).toHaveBeenCalledWith(DEFAULT_SPECIES_FILTERS);
   });
 
-  it("ability datalist lists abilities from getAllLegalAbilities", () => {
+  it("ability section shows the click-instruction hint when no ability is set", () => {
     renderSidebar({ format: { id: "gen9vgc2026regg" } as never });
-    expect(
-      screen.getByText("Intimidate", { selector: "option" })
-    ).toBeInTheDocument();
+    expect(screen.getByText(/click any ability/i)).toBeInTheDocument();
+  });
+
+  it("ability section renders the active ability as a removable chip", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    renderSidebar({
+      filters: { ...DEFAULT_SPECIES_FILTERS, ability: "Drought" },
+      onFiltersChange: onChange,
+    });
+    const chip = screen.getByRole("button", { name: /clear drought/i });
+    expect(chip).toHaveTextContent("Drought");
+    await user.click(chip);
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ ability: null })
+    );
   });
 });

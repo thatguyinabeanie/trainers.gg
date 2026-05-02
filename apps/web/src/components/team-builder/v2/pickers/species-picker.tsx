@@ -23,7 +23,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { AbilityCell } from "./ability-cell";
-import { FilterChipsBar, type FilterChip } from "./filter-chips-bar";
 import { RolePresetsPanel } from "./role-presets-panel";
 import { getRolesForSpecies } from "./role-registry";
 import {
@@ -43,17 +42,16 @@ const HIGH_STAT_THRESHOLD = 110;
 /**
  * Shared Tailwind grid template for each data row.
  *
- *   44px            — sprite circle
- *   minmax(100px,1fr) — name column
- *   44px            — type icons (fits 2 × 20px + gap)
- *   80px            — slot1 ability
- *   80px            — slot2 ability
- *   76px            — hidden ability
- *   repeat(6,28px)  — HP/Atk/Def/SpA/SpD/Spe stat cells
- *   40px            — BST rollup
+ *   44px              — sprite circle
+ *   minmax(140px,1fr) — name column
+ *   60px              — Type 1 (Showdown icon)
+ *   60px              — Type 2 (icon, or em-dash for monotype)
+ *   140px / 140px / 130px — slot1 / slot2 / hidden abilities
+ *   repeat(6,32px)    — HP/Atk/Def/SpA/SpD/Spe stat cells (3-digit safe)
+ *   44px              — BST rollup
  */
 const ROW_GRID =
-  "grid-cols-[44px_minmax(120px,1fr)_56px_96px_96px_88px_repeat(6,28px)_40px]";
+  "grid-cols-[44px_minmax(140px,1fr)_60px_60px_140px_140px_130px_repeat(6,32px)_44px]";
 
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
@@ -244,18 +242,30 @@ function SpeciesRow({
         {entry.species}
       </span>
 
-      {/* Types — Showdown rectangular type icons (matches the editor) */}
-      <div className="relative z-10 flex min-w-0 flex-col items-start gap-0.5">
-        {entry.types.map((type) => (
+      {/* Type 1 — Showdown rectangular type icon (h-6 matches the editor) */}
+      <div className="relative z-10 flex min-w-0 items-center">
+        {entry.types[0] ? (
           <img
-            key={type}
-            src={getShowdownTypeIconUrl(type)}
-            alt={type}
-            width={32}
-            height={14}
-            className="h-[14px] w-auto [image-rendering:pixelated]"
+            src={getShowdownTypeIconUrl(entry.types[0])}
+            alt={entry.types[0]}
+            className="h-6 w-auto [image-rendering:pixelated]"
           />
-        ))}
+        ) : (
+          <span className="text-muted-foreground text-xs">—</span>
+        )}
+      </div>
+
+      {/* Type 2 — em-dash for monotypes */}
+      <div className="relative z-10 flex min-w-0 items-center">
+        {entry.types[1] ? (
+          <img
+            src={getShowdownTypeIconUrl(entry.types[1])}
+            alt={entry.types[1]}
+            className="h-6 w-auto [image-rendering:pixelated]"
+          />
+        ) : (
+          <span className="text-muted-foreground text-xs">—</span>
+        )}
       </div>
 
       {/* Slot 1 ability */}
@@ -479,68 +489,15 @@ export function SpeciesPicker({
   }
 
   // ---------------------------------------------------------------------------
-  // Filter chips
+  // Active filter count — drives the badge in the search header
   // ---------------------------------------------------------------------------
 
-  function buildFilterChips(): FilterChip[] {
-    const chips: FilterChip[] = [];
-
-    filters.types.forEach((type) => {
-      chips.push({
-        id: `type:${type}`,
-        label: type,
-        onRemove: () =>
-          setFilters((prev) => ({
-            ...prev,
-            types: prev.types.filter((t) => t !== type),
-          })),
-      });
-    });
-
-    if (filters.ability) {
-      const ability = filters.ability;
-      chips.push({
-        id: `ability:${ability}`,
-        label: ability,
-        onRemove: () => setFilters((prev) => ({ ...prev, ability: null })),
-      });
-    }
-
-    filters.moves.forEach((move) => {
-      chips.push({
-        id: `move:${move}`,
-        label: move,
-        onRemove: () =>
-          setFilters((prev) => ({
-            ...prev,
-            moves: prev.moves.filter((m) => m !== move),
-          })),
-      });
-    });
-
-    filters.roles.forEach((roleId) => {
-      chips.push({
-        id: `role:${roleId}`,
-        label: roleId,
-        onRemove: () =>
-          setFilters((prev) => ({
-            ...prev,
-            roles: prev.roles.filter((r) => r !== roleId),
-          })),
-      });
-    });
-
-    if (filters.megaOnly) {
-      chips.push({
-        id: "mega",
-        label: "Mega only",
-        tone: "mega",
-        onRemove: () => setFilters((prev) => ({ ...prev, megaOnly: false })),
-      });
-    }
-
-    return chips;
-  }
+  const activeFilterCount =
+    filters.types.length +
+    filters.moves.length +
+    filters.roles.length +
+    (filters.ability ? 1 : 0) +
+    (filters.megaOnly ? 1 : 0);
 
   // ---------------------------------------------------------------------------
   // Enter key handler on search input
@@ -620,8 +577,11 @@ export function SpeciesPicker({
     overscan: 5,
   });
 
-  const filterChips = buildFilterChips();
   const showSmartSearch = query.trim().length > 0;
+
+  function clearAllFilters() {
+    setFilters(DEFAULT_SPECIES_FILTERS);
+  }
 
   // ---------------------------------------------------------------------------
   // Render
@@ -647,6 +607,19 @@ export function SpeciesPicker({
           data-testid="species-search"
           className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
         />
+        {activeFilterCount > 0 && (
+          <button
+            type="button"
+            onClick={clearAllFilters}
+            className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
+            aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
+          >
+            {activeFilterCount} {activeFilterCount === 1 ? "filter" : "filters"}
+            <span aria-hidden="true" className="text-[10px] opacity-70">
+              ×
+            </span>
+          </button>
+        )}
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
           {matched.length} of {speciesIndex.length}
         </span>
@@ -656,26 +629,33 @@ export function SpeciesPicker({
       {/* 3-column body                                                          */}
       {/* -------------------------------------------------------------------- */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Left — SpeciesSidebar */}
-        <SpeciesSidebar
-          filters={filters}
-          onFiltersChange={setFilters}
-          format={format}
-          currentTeam={currentTeam}
-        />
+        {/* Left rail — sidebar (top) + role presets (bottom). Single column,
+            stacked vertically. Both halves scroll independently. */}
+        <div className="border-border flex w-[380px] flex-shrink-0 flex-col border-r">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <SpeciesSidebar
+              filters={filters}
+              onFiltersChange={setFilters}
+              format={format}
+              currentTeam={currentTeam}
+            />
+          </div>
+          <div className="border-border min-h-0 flex-1 overflow-hidden border-t">
+            <RolePresetsPanel
+              selected={filters.roles}
+              onChange={(next) =>
+                setFilters((prev) => ({ ...prev, roles: next }))
+              }
+              bucketCount={bucketCount}
+              className="h-full"
+            />
+          </div>
+        </div>
 
-        {/* Middle — RolePresetsPanel */}
-        <RolePresetsPanel
-          selected={filters.roles}
-          onChange={(next) => setFilters((prev) => ({ ...prev, roles: next }))}
-          bucketCount={bucketCount}
-        />
-
-        {/* Right — filter chips + list/smart-search */}
+        {/* Right — list/smart-search. Active filters are surfaced via the
+            filter-count badge in the search header (no chips strip below
+            the search bar — that produced layout shift the user objected to). */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          {/* Active filter chips */}
-          <FilterChipsBar chips={filterChips} />
-
           {/* Smart-search overlay or virtualized table */}
           {showSmartSearch ? (
             <div
@@ -715,7 +695,8 @@ export function SpeciesPicker({
                   sort={sort}
                   onSort={handleSort}
                 />
-                <span aria-hidden="true" />
+                <span className="text-muted-foreground text-[9px]">Type 1</span>
+                <span className="text-muted-foreground text-[9px]">Type 2</span>
                 <span className="text-muted-foreground text-[9px]">
                   Ability 1
                 </span>

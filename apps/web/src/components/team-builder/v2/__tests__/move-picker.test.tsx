@@ -622,12 +622,13 @@ describe("MovePicker", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("clicking a role adds a filter chip with 'Role:' prefix", async () => {
+    it("clicking a role updates the filter-count badge in the search header", async () => {
       const user = userEvent.setup();
       render(<MovePicker {...defaultProps()} />);
       await user.click(screen.getByTestId("role-btn-burn"));
-      expect(screen.getByTestId("chip-r-burn")).toBeInTheDocument();
-      expect(screen.getByTestId("chip-r-burn")).toHaveTextContent("Role: Burn");
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toBeInTheDocument();
     });
   });
 
@@ -753,11 +754,11 @@ describe("MovePicker", () => {
       const user = userEvent.setup();
       const onPick = jest.fn();
       render(<MovePicker {...defaultProps({ onPick })} />);
-      // The type icon span has title "Filter by Fire"
       const typeSpan = screen.getByTitle("Filter by Fire");
       await user.click(typeSpan);
-      // Type chip should appear
-      expect(screen.getByTestId("chip-t-Fire")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toBeInTheDocument();
       expect(onPick).not.toHaveBeenCalled();
     });
 
@@ -767,7 +768,9 @@ describe("MovePicker", () => {
       render(<MovePicker {...defaultProps({ onPick })} />);
       const catSpan = screen.getByTitle("Filter by Special");
       await user.click(catSpan);
-      expect(screen.getByTestId("chip-c-Special")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toBeInTheDocument();
       expect(onPick).not.toHaveBeenCalled();
     });
 
@@ -775,10 +778,11 @@ describe("MovePicker", () => {
       const user = userEvent.setup();
       const onPick = jest.fn();
       render(<MovePicker {...defaultProps({ onPick })} />);
-      // Flamethrower has burn role (from role-registry mock)
       const chip = screen.getByTestId("role-chip-burn");
       await user.click(chip);
-      expect(screen.getByTestId("chip-r-burn")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toBeInTheDocument();
       expect(onPick).not.toHaveBeenCalled();
     });
 
@@ -788,60 +792,60 @@ describe("MovePicker", () => {
       const typeSpan = screen.getByTitle("Filter by Fire");
       // First click adds filter
       await user.click(typeSpan);
-      expect(screen.getByTestId("chip-t-Fire")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toBeInTheDocument();
       // Second click removes it
       await user.click(typeSpan);
-      expect(screen.queryByTestId("chip-t-Fire")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Clear 1 active filter/i })
+      ).not.toBeInTheDocument();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Filter chips bar
+  // Filter-count badge in search header
   // ---------------------------------------------------------------------------
 
-  describe("filter chips bar", () => {
-    it("no filter chips bar rendered when no filters are active", () => {
+  describe("filter-count badge", () => {
+    it("badge is hidden when no filters are active", () => {
       render(<MovePicker {...defaultProps()} />);
-      expect(screen.queryByTestId("filter-chips-bar")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Clear .* active filter/i })
+      ).not.toBeInTheDocument();
     });
 
-    it("filter chips bar appears when a type filter is active", async () => {
+    it("badge appears with '1 filter' when a single filter is active", async () => {
       const user = userEvent.setup();
       render(<MovePicker {...defaultProps()} />);
       await user.click(screen.getByTestId("sidebar-type-fire"));
-      expect(screen.getByTestId("filter-chips-bar")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Clear 1 active filter/i })
+      ).toHaveTextContent(/1 filter/i);
     });
 
-    it("type filter chip label matches the type name", async () => {
+    it("badge pluralizes when multiple filters are active", async () => {
       const user = userEvent.setup();
       render(<MovePicker {...defaultProps()} />);
       await user.click(screen.getByTestId("sidebar-type-fire"));
-      const chip = screen.getByTestId("chip-t-Fire");
-      expect(chip).toHaveTextContent("Fire");
-    });
-
-    it("category filter chip label matches the category name", async () => {
-      const user = userEvent.setup();
-      render(<MovePicker {...defaultProps()} />);
       await user.click(screen.getByTestId("sidebar-category-physical"));
-      expect(screen.getByTestId("chip-c-Physical")).toHaveTextContent(
-        "Physical"
-      );
+      expect(
+        screen.getByRole("button", { name: /Clear 2 active filters/i })
+      ).toHaveTextContent(/2 filters/i);
     });
 
-    it("role filter chip label reads 'Role: <label>'", async () => {
-      const user = userEvent.setup();
-      render(<MovePicker {...defaultProps()} />);
-      await user.click(screen.getByTestId("role-btn-burn"));
-      expect(screen.getByTestId("chip-r-burn")).toHaveTextContent("Role: Burn");
-    });
-
-    it("clicking a filter chip removes that filter", async () => {
+    it("clicking the badge clears every active filter", async () => {
       const user = userEvent.setup();
       render(<MovePicker {...defaultProps()} />);
       await user.click(screen.getByTestId("sidebar-type-fire"));
-      await user.click(screen.getByTestId("chip-t-Fire"));
-      expect(screen.queryByTestId("chip-t-Fire")).not.toBeInTheDocument();
+      await user.click(screen.getByTestId("sidebar-category-physical"));
+      const clear = screen.getByRole("button", {
+        name: /Clear 2 active filters/i,
+      });
+      await user.click(clear);
+      expect(
+        screen.queryByRole("button", { name: /Clear .* active filter/i })
+      ).not.toBeInTheDocument();
     });
   });
 

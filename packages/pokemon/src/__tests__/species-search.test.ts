@@ -268,7 +268,7 @@ describe("searchSpecies", () => {
     expect(results).toHaveLength(0);
   });
 
-  it("filters by types option — returns only species with at least one matching type (OR)", () => {
+  it("filters by types option — returns only species with the matching type", () => {
     const results = searchSpecies(index, "", { types: ["Electric"] });
     for (const entry of results) {
       expect(entry.types.map((t) => t.toLowerCase())).toContain("electric");
@@ -276,22 +276,21 @@ describe("searchSpecies", () => {
     expect(results.map((e) => e.species)).toContain("Pikachu");
   });
 
-  it("filters by multiple types — OR logic: species need only one matching type", () => {
-    // Fire OR Dark — should include Charizard (Fire) and Incineroar (Fire/Dark)
+  it("filters by multiple types — AND logic: species must carry every selected type", () => {
+    // Fire AND Dark — only species like Incineroar (Fire/Dark) qualify;
+    // pure-Fire species like Charizard must be excluded.
     const results = searchSpecies(index, "", { types: ["Fire", "Dark"] });
     const names = results.map((e) => e.species);
-    expect(names).toContain("Charizard");
     expect(names).toContain("Incineroar");
-    // All results must have at least one of Fire or Dark
+    expect(names).not.toContain("Charizard");
     for (const entry of results) {
-      const hasType = entry.types.some(
-        (t) => t.toLowerCase() === "fire" || t.toLowerCase() === "dark"
-      );
-      expect(hasType).toBe(true);
+      const lower = entry.types.map((t) => t.toLowerCase());
+      expect(lower).toContain("fire");
+      expect(lower).toContain("dark");
     }
   });
 
-  it("types filter excludes species without any matching type", () => {
+  it("types filter excludes species without the matching type", () => {
     const results = searchSpecies(index, "", { types: ["Electric"] });
     // Incineroar is Fire/Dark — must NOT appear in Electric-only results
     expect(results.map((e) => e.species)).not.toContain("Incineroar");
@@ -505,9 +504,8 @@ describe("SpeciesSearchEntry — new fields", () => {
   });
 
   it("buildSpeciesSearchIndex with a resolver populates roles", () => {
-    const idx = buildSpeciesSearchIndex(
-      "gen9vgc2026regg",
-      (_abil, species) => (species === "Incineroar" ? ["fake-out", "drop-atk"] : [])
+    const idx = buildSpeciesSearchIndex("gen9vgc2026regg", (_abil, species) =>
+      species === "Incineroar" ? ["fake-out", "drop-atk"] : []
     );
     const incineroar = idx.find((e) => e.species === "Incineroar")!;
     expect(incineroar.roles).toEqual(["fake-out", "drop-atk"]);
@@ -545,13 +543,26 @@ describe("searchSpecies — new filters", () => {
     expect(results.some((e) => e.species === "Charizard")).toBe(true);
   });
 
-  it("roles filter matches species with any active role", () => {
-    const idx = buildSpeciesSearchIndex(
-      "gen9vgc2026regg",
-      (_abil, species) => (species === "Incineroar" ? ["fake-out"] : [])
+  it("roles filter matches species carrying every selected role (AND)", () => {
+    const idx = buildSpeciesSearchIndex("gen9vgc2026regg", (_abil, species) =>
+      species === "Incineroar"
+        ? ["fake-out", "drop-atk"]
+        : species === "Charizard"
+          ? ["fake-out"]
+          : []
     );
-    const results = searchSpecies(idx, "", { roles: ["fake-out"] });
-    expect(results.some((e) => e.species === "Incineroar")).toBe(true);
+
+    // Single role — Incineroar and Charizard both qualify
+    const single = searchSpecies(idx, "", { roles: ["fake-out"] });
+    expect(single.some((e) => e.species === "Incineroar")).toBe(true);
+    expect(single.some((e) => e.species === "Charizard")).toBe(true);
+
+    // Two roles AND'd — only Incineroar carries both
+    const both = searchSpecies(idx, "", {
+      roles: ["fake-out", "drop-atk"],
+    });
+    expect(both.some((e) => e.species === "Incineroar")).toBe(true);
+    expect(both.some((e) => e.species === "Charizard")).toBe(false);
   });
 });
 

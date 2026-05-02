@@ -58,6 +58,50 @@ jest.mock("@/components/ui/popover", () => ({
   ),
 }));
 
+// Dialog — render content inline so picker contents are always queryable
+jest.mock("@/components/ui/dialog", () => ({
+  Dialog: ({
+    children,
+    open,
+    onOpenChange,
+  }: {
+    children: React.ReactNode;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+  }) => (
+    <div
+      data-testid="dialog"
+      data-open={String(!!open)}
+      onClick={() => onOpenChange?.(!open)}
+    >
+      {children}
+    </div>
+  ),
+  DialogTrigger: ({
+    children,
+    render: renderProp,
+  }: {
+    children?: React.ReactNode;
+    render?: React.ReactElement;
+  }) => {
+    if (renderProp) {
+      return (
+        <div data-testid="dialog-trigger">
+          {renderProp}
+          {children}
+        </div>
+      );
+    }
+    return <div data-testid="dialog-trigger">{children}</div>;
+  },
+  DialogContent: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="dialog-content">{children}</div>
+  ),
+  DialogTitle: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
+  ),
+}));
+
 // Tooltip — render content inline (Base UI portals on hover with delay; in
 // jsdom that's flaky to drive). Inline mount lets us assert the shortDesc
 // is wired to the trigger.

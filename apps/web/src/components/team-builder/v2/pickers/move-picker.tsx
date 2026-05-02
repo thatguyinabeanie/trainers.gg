@@ -27,7 +27,6 @@ import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 import { cn } from "@/lib/utils";
 
 import { CATEGORY_ICON_URLS } from "../../move-category-ui";
-import { FilterChipsBar, type FilterChip } from "./filter-chips-bar";
 import {
   DEFAULT_MOVE_FILTERS,
   type MoveCategory,
@@ -36,7 +35,7 @@ import {
 import { MoveSidebar } from "./move-sidebar";
 import { RoleChip } from "./role-chip";
 import { RolePresetsPanel } from "./role-presets-panel";
-import { getRoleById, getRolesForMove } from "./role-registry";
+import { getRolesForMove } from "./role-registry";
 
 // =============================================================================
 // Types
@@ -70,16 +69,16 @@ type MoveRow = {
 /**
  * Shared grid template for header and data rows.
  *
- *   26px           — type icon
- *   26px           — category icon
- *   140px          — name (fits longest competitive move names)
- *   240px          — effect (short description)
- *   38px           — BP
- *   46px           — Accuracy
- *   minmax(140px,1fr) — roles chips
+ *   60px           — type icon (h-6 Showdown badge)
+ *   60px           — category icon (h-6 Showdown badge)
+ *   180px          — name (fits longest competitive move names)
+ *   minmax(280px,1fr) — effect (short description, expands)
+ *   44px           — BP
+ *   52px           — Accuracy
+ *   minmax(160px,200px) — roles chips
  */
 const ROW_GRID =
-  "grid-cols-[26px_26px_140px_240px_38px_46px_minmax(140px,1fr)]";
+  "grid-cols-[60px_60px_180px_minmax(280px,1fr)_44px_52px_minmax(160px,200px)]";
 
 // =============================================================================
 // Helpers
@@ -328,10 +327,10 @@ export function MovePicker({
     )
       continue;
 
-    // roles: multi-select OR — keep if any role overlaps
+    // roles: multi-select AND — keep only if move carries every selected role
     if (filters.roles.length > 0) {
       const moveRoles = getRolesForMove(name);
-      if (!filters.roles.some((r) => moveRoles.includes(r))) continue;
+      if (!filters.roles.every((r) => moveRoles.includes(r))) continue;
     }
 
     // search — matches name, shortDesc, type, or category
@@ -413,47 +412,7 @@ export function MovePicker({
   }
 
   // -------------------------------------------------------------------------
-  // Filter chips
   // -------------------------------------------------------------------------
-
-  function buildFilterChips(): FilterChip[] {
-    const chips: FilterChip[] = [];
-
-    for (const t of filters.types) {
-      chips.push({
-        id: `t-${t}`,
-        label: t,
-        onRemove: () =>
-          setFilters((f) => ({ ...f, types: f.types.filter((x) => x !== t) })),
-      });
-    }
-
-    for (const c of filters.categories) {
-      chips.push({
-        id: `c-${c}`,
-        label: c,
-        onRemove: () =>
-          setFilters((f) => ({
-            ...f,
-            categories: f.categories.filter((x) => x !== c),
-          })),
-      });
-    }
-
-    for (const r of filters.roles) {
-      chips.push({
-        id: `r-${r}`,
-        label: `Role: ${getRoleById(r)?.label ?? r}`,
-        onRemove: () =>
-          setFilters((f) => ({
-            ...f,
-            roles: f.roles.filter((x) => x !== r),
-          })),
-      });
-    }
-
-    return chips;
-  }
 
   function headerBtnClass(col: SortCol) {
     return cn(
@@ -469,11 +428,11 @@ export function MovePicker({
   return (
     <div
       className={cn(
-        "bg-popover text-popover-foreground flex h-[min(70vh,640px)] w-[1100px] max-w-[calc(100vw-2rem)]",
-        "flex-col overflow-hidden rounded-lg border shadow-md"
+        "bg-popover text-popover-foreground flex h-full min-h-0 w-full flex-1",
+        "flex-col overflow-hidden rounded-xl"
       )}
     >
-      {/* Header — search input + result count + close button */}
+      {/* Header — search input + filter count + result count + close button */}
       <div className="flex shrink-0 items-center gap-2 border-b px-3 py-2">
         <input
           autoFocus
@@ -485,6 +444,26 @@ export function MovePicker({
           placeholder="Search by name, effect, type, category…"
           className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
         />
+        {(() => {
+          const count =
+            filters.types.length +
+            filters.categories.length +
+            filters.roles.length;
+          if (count === 0) return null;
+          return (
+            <button
+              type="button"
+              onClick={() => setFilters(DEFAULT_MOVE_FILTERS)}
+              aria-label={`Clear ${count} active ${count === 1 ? "filter" : "filters"}`}
+              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
+            >
+              {count} {count === 1 ? "filter" : "filters"}
+              <span aria-hidden="true" className="text-[10px] opacity-70">
+                ×
+              </span>
+            </button>
+          );
+        })()}
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
           {sorted.length} of {legalMoves.length}
         </span>
@@ -498,23 +477,28 @@ export function MovePicker({
         </button>
       </div>
 
-      {/* 3-column body */}
+      {/* 2-column body — left rail stacks sidebar (top) + role presets
+          (bottom); right column hosts the filter chips + virtualized table. */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Left — MoveSidebar (Type grid + Category chips + Clear all) */}
-        <MoveSidebar filters={filters} onFiltersChange={setFilters} />
+        {/* Left rail — sidebar on top, role presets below */}
+        <div className="border-border flex w-[380px] flex-shrink-0 flex-col border-r">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <MoveSidebar filters={filters} onFiltersChange={setFilters} />
+          </div>
+          <div className="border-border min-h-0 flex-1 overflow-hidden border-t">
+            <RolePresetsPanel
+              selected={filters.roles}
+              onChange={(roles) => setFilters((f) => ({ ...f, roles }))}
+              bucketCount={bucketCount}
+              className="h-full"
+            />
+          </div>
+        </div>
 
-        {/* Middle — RolePresetsPanel */}
-        <RolePresetsPanel
-          selected={filters.roles}
-          onChange={(roles) => setFilters((f) => ({ ...f, roles }))}
-          bucketCount={bucketCount}
-        />
-
-        {/* Right — filter chips + sticky header + virtualized list */}
+        {/* Right — sticky header + virtualized list. Active filter count is
+            shown in the search header (not via a separate strip below — that
+            produced layout shift the user objected to). */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          {/* Active filter chips */}
-          <FilterChipsBar chips={buildFilterChips()} />
-
           {/* Sticky table header */}
           <div
             className={cn(

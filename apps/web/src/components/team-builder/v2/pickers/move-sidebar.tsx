@@ -12,6 +12,7 @@
 "use client";
 
 import { ALL_TYPES } from "@trainers/pokemon";
+import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
 
@@ -24,28 +25,6 @@ import {
 // =============================================================================
 // Constants
 // =============================================================================
-
-/** Tailwind background + text classes for each of the 18 Pokémon types. */
-const TYPE_BG: Record<string, string> = {
-  Normal: "bg-stone-400 text-white",
-  Bug: "bg-lime-500 text-white",
-  Dark: "bg-stone-700 text-white",
-  Dragon: "bg-indigo-600 text-white",
-  Electric: "bg-yellow-400 text-black",
-  Fairy: "bg-pink-400 text-white",
-  Fighting: "bg-red-700 text-white",
-  Fire: "bg-orange-500 text-white",
-  Flying: "bg-sky-300 text-black",
-  Ghost: "bg-purple-600 text-white",
-  Grass: "bg-green-500 text-white",
-  Ground: "bg-amber-600 text-white",
-  Ice: "bg-cyan-300 text-black",
-  Poison: "bg-purple-500 text-white",
-  Psychic: "bg-pink-500 text-white",
-  Rock: "bg-amber-700 text-white",
-  Steel: "bg-slate-400 text-black",
-  Water: "bg-blue-500 text-white",
-};
 
 /** Dot color classes for each move category. */
 const CATEGORY_DOT: Record<MoveCategory, string> = {
@@ -95,7 +74,7 @@ export function MoveSidebar({ filters, onFiltersChange }: MoveSidebarProps) {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="bg-muted/30 border-border flex w-40 flex-shrink-0 flex-col overflow-y-auto border-r">
+    <div className="bg-muted/30 flex h-full w-full flex-col">
       {/* ------------------------------------------------------------------ */}
       {/* 1. Type grid                                                        */}
       {/* ------------------------------------------------------------------ */}
@@ -104,24 +83,30 @@ export function MoveSidebar({ filters, onFiltersChange }: MoveSidebarProps) {
           Type
         </span>
         <div className="grid grid-cols-3 gap-1">
-          {(ALL_TYPES as readonly string[]).map((type) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => toggleType(type)}
-              className={cn(
-                "rounded px-0.5 py-1 text-[9px] font-bold transition-all",
-                filters.types.includes(type)
-                  ? cn(
-                      TYPE_BG[type] ?? "bg-muted text-foreground",
-                      "shadow-[0_0_0_3px_currentColor] outline outline-2 outline-offset-0 outline-white"
-                    )
-                  : (TYPE_BG[type] ?? "bg-muted text-foreground")
-              )}
-            >
-              {type}
-            </button>
-          ))}
+          {(ALL_TYPES as readonly string[]).map((type) => {
+            const isActive = filters.types.includes(type);
+            return (
+              <button
+                key={type}
+                type="button"
+                aria-label={type}
+                aria-pressed={isActive}
+                onClick={() => toggleType(type)}
+                className={cn(
+                  "flex items-center justify-center rounded px-1 py-1 transition-all",
+                  isActive
+                    ? "ring-primary bg-background ring-2 ring-offset-1"
+                    : "bg-muted/40 opacity-70 hover:opacity-100"
+                )}
+              >
+                <img
+                  src={getShowdownTypeIconUrl(type)}
+                  alt={type}
+                  className="h-6 w-auto [image-rendering:pixelated]"
+                />
+              </button>
+            );
+          })}
         </div>
       </div>
 
