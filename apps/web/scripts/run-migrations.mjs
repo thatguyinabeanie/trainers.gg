@@ -338,6 +338,35 @@ async function runSeedSql(projectRef) {
 }
 
 /**
+ * Deploy edge functions with automatic retry on transient Supabase API
+ * errors. The deploy API occasionally returns "Function deploy failed due
+ * to an internal error" 500s mid-batch; the API is idempotent for already-
+ * deployed functions, so re-running picks up where it left off.
+ *
+ * Retries up to 3 times with linear backoff (10s, 20s) before giving up.
+ */
+async function deployEdgeFunctionsWithRetry(projectRef, cliEnv) {
+  const cmd = `npx supabase functions deploy --project-ref ${projectRef} --use-api`;
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const isLast = attempt === maxAttempts;
+    const succeeded = exec(cmd, {
+      env: cliEnv,
+      ignoreError: !isLast,
+    });
+    if (succeeded) return;
+    if (!isLast) {
+      const delaySec = attempt * 10;
+      console.log(
+        `\n⚠️  Edge function deploy failed (attempt ${attempt}/${maxAttempts}). Retrying in ${delaySec}s...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delaySec * 1000));
+    }
+  }
+  throw new Error(`Edge function deploy failed after ${maxAttempts} attempts.`);
+}
+
+/**
  * Main migration runner
  */
 async function runMigrations() {
@@ -435,10 +464,7 @@ async function runMigrations() {
     });
 
     console.log("\n🚀 Deploying edge functions...");
-    exec(
-      `npx supabase functions deploy --project-ref ${projectRef} --use-api`,
-      { env: cliEnv }
-    );
+    await deployEdgeFunctionsWithRetry(projectRef, cliEnv);
   }
 
   // Run seed data for preview environments
