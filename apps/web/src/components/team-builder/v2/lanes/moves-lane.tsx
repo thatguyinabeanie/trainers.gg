@@ -91,14 +91,17 @@ function MoveTile({
   const isStatus = moveData?.category === "Status";
   const hasCalc = calc.calcEnabled && output !== null && !isStatus;
 
+  const foesAlive = calc.field.foesAlive;
+  const allyAlive = calc.field.allyAlive;
+
   // KO tier (used for tile border colour) and spread-adjusted range come
   // from the shared helper so calc-column and moves-lane never drift apart.
   const { koTier } = getDisplayRangeAndKoTier({
     moveName,
     output,
     hasCalc,
-    foesAlive: calc.field.foesAlive,
-    allyAlive: calc.field.allyAlive,
+    foesAlive,
+    allyAlive,
   });
 
   const hasError = slotErrors.some((e) => e.severity === "error");
