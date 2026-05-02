@@ -381,8 +381,13 @@ function StatRow({
 
   function flushEvDraft() {
     if (draftEv === null) return;
-    onLiveEv?.(statKey, draftEv);
-    onUpdate({ [evFieldKey]: draftEv });
+    // Clear draft before committing — see IV onBlur for the same pattern.
+    // Without this, the still-armed debounce timer fires a duplicate
+    // onUpdate 400ms later.
+    const nextEv = draftEv;
+    setDraftEv(null);
+    onLiveEv?.(statKey, nextEv);
+    onUpdate({ [evFieldKey]: nextEv });
   }
 
   // --- Handle slider change ---
@@ -402,7 +407,9 @@ function StatRow({
   //     debouncing it). ---
   function handleBumpClick(bpEv: number) {
     const clamped = Math.min(bpEv, investBudget);
-    setDraftEv(clamped);
+    // Click commits immediately — cancel any in-flight slider draft so the
+    // debounce timer doesn't fire a duplicate onUpdate 400ms later.
+    setDraftEv(null);
     onLiveEv?.(statKey, clamped);
     onUpdate({ [evFieldKey]: clamped });
   }
@@ -432,6 +439,9 @@ function StatRow({
 
     const update: Partial<TablesUpdate<"pokemon">> = { [evFieldKey]: snapped };
     if (newNature !== null) update.nature = newNature;
+    // Cancel any in-flight slider draft so the still-armed debounce timer
+    // doesn't fire a duplicate onUpdate after the text commit.
+    setDraftEv(null);
     onLiveEv?.(statKey, snapped);
     onUpdate(update);
     setInputBuffer(null);
