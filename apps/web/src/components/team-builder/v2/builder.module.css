@@ -114,6 +114,16 @@
   padding: 8px;
 }
 
+/* Container-query host — every slot wrapper opts into inline-size containment
+   so the layout rules in @container blocks below select the correct shape
+   based on the slot's own width (works for both viewport changes AND the
+   future grid toggle). */
+.slotHost {
+  container-type: inline-size;
+  container-name: slot;
+  width: 100%;
+}
+
 /* ============================================================
    Compact density — active row tightening
    ============================================================ */
