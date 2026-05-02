@@ -522,7 +522,10 @@ export function TeamWorkspaceV2({
           <div className={s.builderWorklane} ref={worklaneRef}>
             {/* Editor region — rows scroll inside this region only */}
             <div className={s.editorRegion}>
-              <section className={s.builderRows}>
+              <section
+                className={s.builderRows}
+                data-calc-open={state.drawer === "calc" ? "true" : "false"}
+              >
                 {isMobile ? (
                   // Mobile: no drag-and-drop, render rows directly.
                   slots.map((p, i) => {

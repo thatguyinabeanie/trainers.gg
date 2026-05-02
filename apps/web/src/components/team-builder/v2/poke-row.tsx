@@ -13,6 +13,7 @@ import { getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -52,37 +53,6 @@ interface PokeRowProps {
 }
 
 // =============================================================================
-// Slot rib — "01", "02", … left-edge label + error dot
-// =============================================================================
-
-interface SlotRibProps {
-  idx: number;
-  hasError?: boolean;
-  hasWarning?: boolean;
-}
-
-function SlotRib({ idx, hasError, hasWarning }: SlotRibProps) {
-  return (
-    <span className="relative w-7 shrink-0 font-mono text-xs font-medium text-muted-foreground">
-      {String(idx + 1).padStart(2, "0")}
-      {/* Error/warning dot — shown when this slot has validation issues */}
-      {hasError && (
-        <span
-          className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-destructive"
-          aria-label="Has validation errors"
-        />
-      )}
-      {!hasError && hasWarning && (
-        <span
-          className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-amber-500"
-          aria-label="Has validation warnings"
-        />
-      )}
-    </span>
-  );
-}
-
-// =============================================================================
 // EmptyRow
 // =============================================================================
 
@@ -93,47 +63,148 @@ interface EmptyRowProps {
   onAdd?: (idx: number, species: string) => void;
 }
 
-function EmptyRow({ idx, density, format, onAdd }: EmptyRowProps) {
+const GHOST_STATS = [
+  { key: "hp", label: "HP", colorClass: "text-rose-500 dark:text-rose-400" },
+  { key: "attack", label: "ATK", colorClass: "text-orange-500 dark:text-orange-400" },
+  { key: "defense", label: "DEF", colorClass: "text-amber-500 dark:text-amber-400" },
+  { key: "specialAttack", label: "SPA", colorClass: "text-sky-500 dark:text-sky-400" },
+  { key: "specialDefense", label: "SPD", colorClass: "text-emerald-500 dark:text-emerald-400" },
+  { key: "speed", label: "SPE", colorClass: "text-fuchsia-500 dark:text-fuchsia-400" },
+] as const;
+
+function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
   const [open, setOpen] = useState(false);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className={cn(
-              "flex w-full items-center gap-3 rounded-lg border border-dashed border-border px-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/30",
-              density === "comfy" ? "py-3" : "py-2"
-            )}
-          />
-        }
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={cn(
+          "flex w-full min-w-0 flex-wrap items-stretch overflow-hidden rounded-lg border border-dashed border-border bg-card",
+          "text-left transition-colors hover:border-primary/40 hover:bg-muted/10",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        )}
       >
-        <SlotRib idx={idx} />
-        <span className="text-sm text-muted-foreground">+ Add Pokémon</span>
-        <span className="text-xs text-muted-foreground/60">
-          or paste a Showdown set
-        </span>
-      </PopoverTrigger>
+        {/* RIB — slot number on left edge */}
+        <div className="flex w-8 shrink-0 flex-col items-center justify-between border-r border-dashed border-border/60 bg-muted/20 py-2">
+          <span className="font-mono text-[10px] font-medium tracking-wide text-muted-foreground">
+            {String(idx + 1).padStart(2, "0")}
+          </span>
+          <span className="flex size-5 items-center justify-center rounded text-muted-foreground/20">
+            ×
+          </span>
+        </div>
 
-      <PopoverContent
-        side="bottom"
-        align="start"
-        sideOffset={6}
-        className="w-[920px] max-w-[calc(100vw-2rem)] p-0"
-        style={{ maxHeight: "min(70vh, 640px)" }}
-      >
-        <SpeciesPicker
-          value={null}
-          format={format}
-          onPick={(species) => {
-            onAdd?.(idx, species);
-            setOpen(false);
-          }}
-          onClose={() => setOpen(false)}
-        />
-      </PopoverContent>
-    </Popover>
+        {/* Identity ghost — sprite + form fields */}
+        <div className="flex min-w-0 gap-3 p-3">
+          <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
+            {/* Species pill ghost */}
+            <div className="border-border bg-background flex w-36 items-center gap-1 rounded-md border border-dashed px-2 py-1.5 text-left text-xs sm:w-40 md:w-44">
+              <span className="min-w-0 flex-1 truncate text-muted-foreground/50">
+                + Add Pokémon
+              </span>
+              <span aria-hidden className="text-[9px] text-muted-foreground/30">▾</span>
+            </div>
+            {/* Sprite ghost */}
+            <div className="size-[144px] rounded-xl bg-muted/40" />
+          </div>
+
+          {/* Form column ghost */}
+          <div className="flex w-64 min-w-0 shrink-0 flex-col justify-center gap-0.5">
+            {/* Banner ghost */}
+            <div className={s.idBanner}>
+              <div className="h-[22px] flex items-center">
+                <span className="text-sm font-normal text-muted-foreground/20 italic">Nickname (optional)</span>
+              </div>
+              <div className="flex h-[18px] items-center gap-1">
+                <div className="h-3.5 w-10 rounded bg-muted/30" />
+              </div>
+            </div>
+            {/* Loadout rows ghost */}
+            {(["Item", "Abil", "Nat"] as const).map((label) => (
+              <div key={label} className={s.formRow}>
+                <span className={s.formLabel}>{label}</span>
+                <span className={cn(s.formValue, "text-muted-foreground/25 italic")}>—</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Stats ghost */}
+        <div
+          className="flex min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed border-border/60 px-3 py-2"
+          style={{ width: 400, maxWidth: 800 }}
+        >
+          {/* Column headers ghost */}
+          <div className={cn("mb-0.5 py-0", s.spreadRow)}>
+            <span />
+            <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">Base</span>
+            <span />
+            <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">EVs</span>
+            <span className="text-right font-mono text-[8.5px] text-muted-foreground/30">0/508</span>
+            <span />
+          </div>
+          {/* Six stat rows ghost */}
+          {GHOST_STATS.map(({ key, label, colorClass }) => (
+            <div key={key} className={cn(s.spreadRow, colorClass)}>
+              <span className={cn(s.spreadLabel, "opacity-30")}>{label}</span>
+              <span className={cn(s.spreadBase, "opacity-25")}>—</span>
+              <div className={s.spreadVbar} />
+              <div className="h-[18px] w-9 rounded border border-dashed border-border/30" />
+              <div className={s.spreadSliderWrap}>
+                <div className={cn(s.spreadSliderTrack, "opacity-25")} />
+              </div>
+              <span className={cn(s.spreadFinal, "opacity-25")}>—</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Moves ghost */}
+        <div className="flex min-w-[240px] flex-1 flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3">
+          <div className="mb-1 flex items-baseline">
+            <span className="font-mono text-[9.5px] font-medium uppercase tracking-widest text-muted-foreground/30">
+              Moves
+            </span>
+          </div>
+          <div className="flex flex-col gap-1">
+            {([0, 1, 2, 3] as const).map((i) => (
+              <div key={i} className="mvline mvline--empty">
+                <span className="mvline-type-cat" />
+                <span className="mvline-name text-muted-foreground/30">+ Add move</span>
+                <span aria-hidden />
+                <span className="mvline-stat">
+                  <span className="mvline-stat-label">BP</span>
+                  <span className="mvline-stat-value mvline-stat-value--bp" />
+                </span>
+                <span className="mvline-stat">
+                  <span className="mvline-stat-label">ACC</span>
+                  <span className="mvline-stat-value mvline-stat-value--acc" />
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-[calc(100vw-2rem)] overflow-hidden p-0 sm:max-w-[920px]"
+          style={{ height: "min(70vh, 640px)" }}
+        >
+          <SpeciesPicker
+            value={null}
+            format={_format}
+            onPick={(species) => {
+              onAdd?.(idx, species);
+              setOpen(false);
+            }}
+            onClose={() => setOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -308,7 +379,7 @@ function ActiveRowShell({
   isDragging = false,
 }: ActiveRowShellProps) {
   return (
-    <div className="overflow-x-hidden rounded-lg">
+    <div className="rounded-lg">
       <ActiveRow
         idx={idx}
         pokemon={pokemon}

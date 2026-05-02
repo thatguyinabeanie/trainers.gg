@@ -44,13 +44,13 @@
   overflow-x: visible;
 }
 
-/* Editor region — flex grows to fill remaining height; rows scroll inside.
-   overflow-x: auto so active rows wider than the viewport scroll horizontally. */
+/* Editor region — rows scroll vertically. overflow-x: clip prevents a scrollbar
+   while allowing the builderRows to expand wider than the container when calc opens. */
 .editorRegion {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: clip;
 }
 
 /* Resizer handle between editor and panel regions. */
@@ -88,6 +88,13 @@
   max-width: 1600px;
   margin-inline: auto;
   width: 100%;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When the calc column is open, the row list expands by the calc column width so
+   identity + stats + moves keep their X width and calc is added as +Y. */
+.builderRows[data-calc-open="true"] {
+  width: calc(100% + 220px);
 }
 
 [data-density="compact"] .builderRows {
@@ -1024,6 +1031,12 @@
   background: color-mix(in oklch, var(--muted) 40%, transparent);
   border-left: 1px solid var(--border);
   padding: 8px 0;
+  animation: calcColEnter 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes calcColEnter {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 :global(.calc-col-header) {
