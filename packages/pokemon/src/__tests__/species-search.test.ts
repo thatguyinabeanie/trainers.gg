@@ -600,4 +600,24 @@ describe("getAllLegalAbilities / getAllLegalMoves", () => {
     expect(m.length).toBeGreaterThan(100);
     expect(m).toContain("Tailwind");
   });
+
+  // Regression: clearSpeciesSearchIndexCache must reset the enumerator caches
+  // too, otherwise consumers calling clear() to refresh after a dataset change
+  // would silently keep getting the stale ability/move arrays.
+  it("clearSpeciesSearchIndexCache evicts the ability/move enumerator caches", () => {
+    const beforeAbilities = getAllLegalAbilities("gen9vgc2026regg");
+    const beforeMoves = getAllLegalMoves("gen9vgc2026regg");
+
+    clearSpeciesSearchIndexCache();
+
+    const afterAbilities = getAllLegalAbilities("gen9vgc2026regg");
+    const afterMoves = getAllLegalMoves("gen9vgc2026regg");
+
+    // Same content (no real upstream change), but a fresh array reference
+    // proves the cache was rebuilt rather than served from the prior cache.
+    expect(afterAbilities).not.toBe(beforeAbilities);
+    expect(afterAbilities).toEqual(beforeAbilities);
+    expect(afterMoves).not.toBe(beforeMoves);
+    expect(afterMoves).toEqual(beforeMoves);
+  });
 });

@@ -227,6 +227,13 @@ function makeEntry(
 const speciesIndexCache = new Map<string, SpeciesSearchEntry[]>();
 const speciesIndexCacheNoRoles = new Map<string, SpeciesSearchEntry[]>();
 
+// Format-wide enumerator caches — populated lazily by getAllLegalAbilities /
+// getAllLegalMoves further below. Declared here (rather than next to those
+// functions) so `clearSpeciesSearchIndexCache` can reset every species-derived
+// cache in one place without forward-reference gymnastics.
+const abilitySetCache = new Map<string, string[]>();
+const moveSetCache = new Map<string, string[]>();
+
 // Dedupe per-formatId silent-fallback warnings so a permissive build for one
 // format only logs once instead of on every searchSpecies call.
 const warnedLegalMovesUnavailable = new Set<string>();
@@ -234,12 +241,27 @@ const warnedLegalSpeciesUnavailable = new Set<string>();
 const warnedMissingFromDex = new Set<string>();
 
 /**
- * Evict the species-search index cache. Useful in tests and when an upstream
- * dataset (e.g. `getRolesForSpecies`'s registry) has been mutated.
+ * Evict the species-search index cache and every cache derived from it.
+ *
+ * Clears:
+ *   - The two index caches (`speciesIndexCache`, `speciesIndexCacheNoRoles`)
+ *   - The format-wide enumerator caches (`abilitySetCache`, `moveSetCache`)
+ *     declared further down — those derive their arrays from the index, so
+ *     leaving them in place would silently serve stale data after a refresh.
+ *   - The fallback-warning dedupe sets so warnings can re-fire after a reset
+ *     (important when tests intentionally trigger the same fallback path).
+ *
+ * Useful in tests and when an upstream dataset (e.g. `getRolesForSpecies`'s
+ * registry) has been mutated and callers need a clean read.
  */
 export function clearSpeciesSearchIndexCache(): void {
   speciesIndexCache.clear();
   speciesIndexCacheNoRoles.clear();
+  abilitySetCache.clear();
+  moveSetCache.clear();
+  warnedLegalMovesUnavailable.clear();
+  warnedLegalSpeciesUnavailable.clear();
+  warnedMissingFromDex.clear();
 }
 
 export function buildSpeciesSearchIndex(
@@ -509,8 +531,9 @@ export function searchSpecies(
 // Format-wide enumerators
 // =============================================================================
 
-const abilitySetCache = new Map<string, string[]>();
-const moveSetCache = new Map<string, string[]>();
+// Note: `abilitySetCache` / `moveSetCache` are declared near the other module
+// caches (above) so `clearSpeciesSearchIndexCache` can evict them. Keep the
+// declarations there.
 
 /**
  * Return a sorted, deduplicated list of all abilities that appear on any

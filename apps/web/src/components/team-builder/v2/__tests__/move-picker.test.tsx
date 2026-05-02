@@ -847,6 +847,23 @@ describe("MovePicker", () => {
         screen.queryByRole("button", { name: /Clear .* active filter/i })
       ).not.toBeInTheDocument();
     });
+
+    // The badge counts types/categories/roles only, so clicking it must NOT
+    // wipe a typed search query (the user did not ask to clear that).
+    it("clicking the badge preserves the active search query", async () => {
+      const user = userEvent.setup();
+      render(<MovePicker {...defaultProps()} />);
+      const searchInput = screen.getByPlaceholderText(
+        "Search by name, effect, type, category…"
+      );
+      await user.type(searchInput, "fire");
+      await user.click(screen.getByTestId("sidebar-type-fire"));
+      const clear = screen.getByRole("button", {
+        name: /Clear 1 active filter/i,
+      });
+      await user.click(clear);
+      expect(searchInput).toHaveValue("fire");
+    });
   });
 
   // ---------------------------------------------------------------------------
