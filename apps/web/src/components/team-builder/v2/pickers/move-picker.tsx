@@ -153,6 +153,12 @@ function MoveRowItem({
   const roles = getRolesForMove(name);
 
   function handleKey(e: React.KeyboardEvent<HTMLDivElement>) {
+    // Only handle Enter/Space when the row itself is focused. Nested
+    // interactive elements (RoleChip <button>, the Type/Category buttons)
+    // bubble keyboard events up to this handler, so without this guard
+    // pressing Enter on a chip would both toggle the chip AND select the
+    // row (closing the picker).
+    if (e.currentTarget !== e.target) return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onSelect();
@@ -173,48 +179,44 @@ function MoveRowItem({
         ROW_GRID
       )}
     >
-      {/* Type icon — click-to-filter, stopPropagation so row select is not triggered */}
-      <span
-        role="presentation"
-        onClick={
-          data?.type
-            ? (e) => {
-                e.stopPropagation();
-                onTypeFilter(data.type!);
-              }
-            : undefined
-        }
-        title={data?.type ? `Filter by ${data.type}` : undefined}
-        className={cn("flex justify-center", data?.type && "cursor-pointer")}
-      >
-        {data?.type ? (
+      {/* Type icon — clickable filter affordance. Real <button> for keyboard
+          accessibility; stopPropagation prevents the row select from firing. */}
+      {data?.type ? (
+        <button
+          type="button"
+          aria-label={`Filter by ${data.type}`}
+          title={`Filter by ${data.type}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onTypeFilter(data.type!);
+          }}
+          onKeyDown={(e) => e.stopPropagation()}
+          className="focus-visible:ring-primary flex cursor-pointer items-center justify-center rounded outline-none focus-visible:ring-2"
+        >
           <TypeSymbolIcon
             type={data.type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
             size={24}
           />
-        ) : (
-          <span className="text-muted-foreground text-xs">—</span>
-        )}
-      </span>
+        </button>
+      ) : (
+        <span className="text-muted-foreground flex justify-center text-xs">
+          —
+        </span>
+      )}
 
-      {/* Category icon — click-to-filter */}
-      <span
-        role="presentation"
-        onClick={
-          data?.category
-            ? (e) => {
-                e.stopPropagation();
-                onCategoryFilter(data.category as MoveCategory);
-              }
-            : undefined
-        }
-        title={data?.category ? `Filter by ${data.category}` : undefined}
-        className={cn(
-          "flex justify-center",
-          data?.category && "cursor-pointer"
-        )}
-      >
-        {data?.category && CATEGORY_ICON_URLS[data.category] ? (
+      {/* Category icon — clickable filter affordance (real <button>). */}
+      {data?.category && CATEGORY_ICON_URLS[data.category] ? (
+        <button
+          type="button"
+          aria-label={`Filter by ${data.category}`}
+          title={`Filter by ${data.category}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onCategoryFilter(data.category as MoveCategory);
+          }}
+          onKeyDown={(e) => e.stopPropagation()}
+          className="focus-visible:ring-primary flex cursor-pointer items-center justify-center rounded outline-none focus-visible:ring-2"
+        >
           <img
             src={CATEGORY_ICON_URLS[data.category]}
             alt={data.category}
@@ -222,10 +224,12 @@ function MoveRowItem({
             height={14}
             className="h-6 w-auto [image-rendering:pixelated]"
           />
-        ) : (
-          <span className="text-muted-foreground font-mono text-xs">—</span>
-        )}
-      </span>
+        </button>
+      ) : (
+        <span className="text-muted-foreground flex justify-center font-mono text-xs">
+          —
+        </span>
+      )}
 
       {/* Name */}
       <span className="min-w-0 truncate text-sm font-medium" title={name}>
