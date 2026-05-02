@@ -411,6 +411,79 @@ describe("setDefenderIv — clamping", () => {
 });
 
 // =============================================================================
+// setDefenderEv — Champions caps enforced after format flip
+// =============================================================================
+
+describe("setDefenderEv — Champions caps enforced after format flip", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("clamps a single per-stat assignment to 32", () => {
+    const championsFormat = getFormatById("championsvgc2026regma");
+
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon(), format: championsFormat })
+    );
+
+    // Default EVs after Champions format clamp: hp=32, spd=4 (total=36)
+    // Setting hp to a value > 32 must be clamped to 32
+    act(() => result.current.setDefenderEv("hp", 100));
+    expect(result.current.defenderEvs.hp).toBe(32);
+  });
+
+  it("clamps to remaining headroom under the 66 total cap", () => {
+    const championsFormat = getFormatById("championsvgc2026regma");
+
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon(), format: championsFormat })
+    );
+
+    // Default Champions clamp leaves spd=4 from the VGC defaults — clear it
+    // so the headroom math below is unambiguous.
+    act(() => result.current.setDefenderEv("spd", 0));
+
+    // Now bring hp and atk to 32 each (total = 64).
+    act(() => result.current.setDefenderEv("hp", 32));
+    act(() => result.current.setDefenderEv("atk", 32));
+
+    // Total headroom remaining: 66 - 64 = 2. Requesting 32 for def must clamp to 2.
+    act(() => result.current.setDefenderEv("def", 32));
+    expect(result.current.defenderEvs.def).toBe(2);
+
+    const total = Object.values(result.current.defenderEvs).reduce(
+      (s, n) => s + n,
+      0
+    );
+    expect(total).toBeLessThanOrEqual(66);
+  });
+
+  it("classic VGC format still clamps to 252 per stat and 510 total", () => {
+    const vgcFormat = getFormatById("gen9vgc2026regi");
+
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon(), format: vgcFormat })
+    );
+
+    // 300 > 252 per-stat cap for VGC
+    act(() => result.current.setDefenderEv("atk", 300));
+    expect(result.current.defenderEvs.atk).toBe(252);
+
+    // Default EVs: hp=252, spd=4 → total=256 after initial clamp.
+    // With atk now 252, total = 252+252+4 = 508.
+    // Setting def to 252 must be clamped by headroom (510 - 508 = 2).
+    act(() => result.current.setDefenderEv("def", 252));
+    expect(result.current.defenderEvs.def).toBe(2);
+
+    const total = Object.values(result.current.defenderEvs).reduce(
+      (s, n) => s + n,
+      0
+    );
+    expect(total).toBeLessThanOrEqual(510);
+  });
+});
+
+// =============================================================================
 // HP percent — raw state storage, no clamping at the setter
 // =============================================================================
 

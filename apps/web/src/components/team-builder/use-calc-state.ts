@@ -81,19 +81,30 @@ export type CalcDirection = "offense" | "defense";
 // re-construct them on every render. Defaults to Gen 9 when format is absent.
 const generationsCache = new Map<number, ReturnType<typeof Generations.get>>();
 
-function getGen(generationNumber: number) {
-  // @smogon/calc + @pkmn/data only ship damage mechanics for gens 1–9.
-  // Newer formats (e.g. Champions = gen 10) fall back to gen 9 mechanics
-  // so the calc engine doesn't crash trying to look up an undefined gen.
-  const safeGen = Math.min(Math.max(generationNumber, 1), 9);
-  let gen = generationsCache.get(safeGen);
+function getCachedGen(num: number) {
+  let gen = generationsCache.get(num);
   if (!gen) {
-    gen = Generations.get(
-      safeGen as Parameters<typeof Generations.get>[0]
-    );
-    generationsCache.set(safeGen, gen);
+    gen = Generations.get(num as Parameters<typeof Generations.get>[0]);
+    generationsCache.set(num, gen);
   }
   return gen;
+}
+
+/**
+ * Resolve the calc generation for a given format.
+ *
+ * Champions dispatches to gen.num === 0 — our forked @smogon/calc has
+ * dedicated mechanics there that read SP from the `evs` field directly,
+ * force IV=31, and lock level=50. That matches the deployed Showdown
+ * Champions calculator. Every other format clamps to gen 1–9 (the engine
+ * doesn't ship past gen 9 yet).
+ */
+function getGen(format: GameFormat | undefined) {
+  if (isChampionsFormat(format)) {
+    return getCachedGen(0);
+  }
+  const safeGen = Math.min(Math.max(format?.generation ?? 9, 1), 9);
+  return getCachedGen(safeGen);
 }
 
 /** Status display label → Smogon status code mapping. */
@@ -146,6 +157,70 @@ function asSmogon<T>(v: string | null | undefined): T {
   return (v ?? undefined) as unknown as T;
 }
 
+/**
+ * Convert a DB row's stat-investment fields to the EV/IV shape the engine
+ * expects, applying format-aware clamping.
+ *
+ * For Champions (gen.num === 0), the engine treats `evs[stat]` as Stat Points
+ * (0–32 / 66 total) and forces IV=31 internally. Champions UI write-paths
+ * already clamp at edit time, but stale or imported DB rows may carry classic
+ * 252-EV spreads — without defensive clamping here those blow through the
+ * Champions mechanics and produce nonsense damage. We clamp per-stat to 32 and
+ * running-total to 66, leading-stat-first.
+ *
+ * For every other generation we pass the DB values through unchanged.
+ */
+function buildEngineStats(
+  gen: ReturnType<typeof Generations.get>,
+  db: Tables<"pokemon">
+): {
+  ivs: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
+  evs: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
+} {
+  if (gen.num === 0) {
+    // Champions: clamp ev_* fields to 32/stat, 66 total. IVs are forced 31 by
+    // the engine; we still pass 31 for clarity.
+    const raw = {
+      hp: db.ev_hp ?? 0,
+      atk: db.ev_attack ?? 0,
+      def: db.ev_defense ?? 0,
+      spa: db.ev_special_attack ?? 0,
+      spd: db.ev_special_defense ?? 0,
+      spe: db.ev_speed ?? 0,
+    };
+    let runningTotal = 0;
+    const clamped = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+    for (const k of ["hp", "atk", "def", "spa", "spd", "spe"] as const) {
+      const perStat = Math.max(0, Math.min(raw[k], 32));
+      const allowed = Math.max(0, Math.min(perStat, 66 - runningTotal));
+      clamped[k] = allowed;
+      runningTotal += allowed;
+    }
+    return {
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+      evs: clamped,
+    };
+  }
+  return {
+    ivs: {
+      hp: db.iv_hp ?? 31,
+      atk: db.iv_attack ?? 31,
+      def: db.iv_defense ?? 31,
+      spa: db.iv_special_attack ?? 31,
+      spd: db.iv_special_defense ?? 31,
+      spe: db.iv_speed ?? 31,
+    },
+    evs: {
+      hp: db.ev_hp ?? 0,
+      atk: db.ev_attack ?? 0,
+      def: db.ev_defense ?? 0,
+      spa: db.ev_special_attack ?? 0,
+      spd: db.ev_special_defense ?? 0,
+      spe: db.ev_speed ?? 0,
+    },
+  };
+}
+
 function buildAttackerFromDb(
   gen: ReturnType<typeof Generations.get>,
   db: Tables<"pokemon">,
@@ -154,28 +229,15 @@ function buildAttackerFromDb(
 ): Pokemon | null {
   if (!db.species) return null;
   try {
+    const { ivs, evs } = buildEngineStats(gen, db);
     return new Pokemon(gen, db.species, {
       level: db.level ?? 50,
       nature: asSmogon(db.nature ?? "Hardy"),
       ability: asSmogon(db.ability),
       item: asSmogon(db.held_item),
       teraType: asSmogon(db.tera_type),
-      ivs: {
-        hp: db.iv_hp ?? 31,
-        atk: db.iv_attack ?? 31,
-        def: db.iv_defense ?? 31,
-        spa: db.iv_special_attack ?? 31,
-        spd: db.iv_special_defense ?? 31,
-        spe: db.iv_speed ?? 31,
-      },
-      evs: {
-        hp: db.ev_hp ?? 0,
-        atk: db.ev_attack ?? 0,
-        def: db.ev_defense ?? 0,
-        spa: db.ev_special_attack ?? 0,
-        spd: db.ev_special_defense ?? 0,
-        spe: db.ev_speed ?? 0,
-      },
+      ivs,
+      evs,
       boosts,
       status: asSmogon(STATUS_MAP[status] ?? ""),
       moves: [db.move1, db.move2, db.move3, db.move4].filter((m): m is string =>
@@ -539,7 +601,7 @@ export function useCalcState({
   // Resolve the generation from the active format so calcs use the correct
   // damage mechanics. Falls back to Gen 9 when format is absent or when
   // @smogon/calc doesn't yet support the format's generation.
-  const gen = getGen(format?.generation ?? 9);
+  const gen = getGen(format);
 
   // --- Direction ---
   const [direction, setDirection] = useState<CalcDirection>("offense");
@@ -671,15 +733,17 @@ export function useCalcState({
 
   function setDefenderEv(stat: keyof DefenderEvs, v: number) {
     setDefenderEvs((prev) => {
-      // Classic EV mode: total capped at 510, each stat at 252.
-      // SP mode (Champions) is enforced by the caller — they should pass a
-      // value already clamped to 0-32, since this hook does not know about
-      // the format.
-      const MAX_TOTAL = 510;
+      // Cap depends on format: Champions (Reg M-A) uses 32 SP per stat / 66
+      // total. Classic VGC uses 252 EV per stat / 510 total. Whether the
+      // user calls this from a Champions-aware UI or not, the hook is the
+      // source of truth — callers don't have to pre-clamp.
+      const perStatCap = isChampions ? 32 : 252;
+      const totalCap = isChampions ? 66 : 510;
       const otherTotal = Object.entries(prev)
         .filter(([k]) => k !== stat)
         .reduce((sum, [, val]) => sum + val, 0);
-      const capped = Math.min(v, MAX_TOTAL - otherTotal, 252);
+      const headroom = Math.max(0, totalCap - otherTotal);
+      const capped = Math.min(v, perStatCap, headroom);
       return { ...prev, [stat]: Math.max(0, capped) };
     });
   }

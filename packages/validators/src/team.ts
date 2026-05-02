@@ -2,6 +2,12 @@ import { z } from "zod";
 import { Teams } from "@pkmn/sets";
 import { type PokemonSet } from "@pkmn/sets";
 import { TeamValidator } from "@pkmn/sim";
+import {
+  isChampionsFormatId,
+  getLegalSpecies,
+  getLegalItems,
+  getLegalMoves,
+} from "@trainers/pokemon";
 import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
 // ---------------------------------------------------------------------------
@@ -15,8 +21,10 @@ import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 export const FORMAT_MAP: Record<string, string | null> = {
   "reg-i": "gen9vgc2025regi",
   // Champions Reg MA: no @pkmn/sim format ID yet (no Tera, Stat Points instead of EVs/IVs).
-  // Replace null with the real Showdown ID once @pkmn/sim adds Champions support.
+  // Both the legacy `reg-m-a` key and the modern Showdown ID resolve to no @pkmn/sim
+  // format — Champions legality is checked by `validateChampionsLegality()` instead.
   "reg-m-a": null,
+  championsvgc2026regma: null,
   "reg-h": "gen9vgc2024regh",
   "reg-g": "gen9vgc2024regg",
   "reg-f": "gen9vgc2024regf",
@@ -310,7 +318,7 @@ export function validateTeamStructure(
     }
   }
 
-  if (gameFormat === "reg-m-a") {
+  if (gameFormat !== undefined && isChampionsFormatId(gameFormat)) {
     validateChampionsStatPoints(team, errors);
   }
 
@@ -320,6 +328,73 @@ export function validateTeamStructure(
 // ---------------------------------------------------------------------------
 // Format validation (uses @pkmn/sim)
 // ---------------------------------------------------------------------------
+
+/**
+ * Champions-specific legality check.
+ *
+ * `@pkmn/sim` does not yet support Pokemon Champions formats. Until it does,
+ * we run a focused legality pass for Champions teams using the species/item/move
+ * banlists exposed by `@trainers/pokemon`.
+ *
+ * Checks:
+ *  - No Tera type set on any Pokemon (Champions removes Terastallization)
+ *  - Every species is on the legal list for the format
+ *  - Every held item is on the legal list for the format
+ *  - Every move slot uses a legal move for the format
+ *
+ * Stat-point validation lives in `validateChampionsStatPoints` (structural pass).
+ */
+export function validateChampionsLegality(
+  team: ParsedTeam,
+  formatId: string
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  const legalSpecies = getLegalSpecies(formatId);
+  const legalItems = getLegalItems(formatId);
+
+  for (const mon of team) {
+    if (mon.tera_type) {
+      errors.push({
+        source: "format",
+        message: `${mon.species} has a Tera type, but Pokemon Champions does not allow Terastallization.`,
+      });
+    }
+
+    if (legalSpecies !== undefined && !legalSpecies.has(mon.species)) {
+      errors.push({
+        source: "format",
+        message: `${mon.species} is not legal in this Champions format.`,
+      });
+    }
+
+    if (
+      legalItems !== undefined &&
+      mon.held_item !== null &&
+      mon.held_item !== "" &&
+      !legalItems.has(mon.held_item)
+    ) {
+      errors.push({
+        source: "format",
+        message: `${mon.species}'s item "${mon.held_item}" is not legal in this Champions format.`,
+      });
+    }
+
+    const legalMoves = getLegalMoves(mon.species, formatId);
+    if (legalMoves !== undefined) {
+      for (const move of [mon.move1, mon.move2, mon.move3, mon.move4]) {
+        if (move !== null && move !== "" && !legalMoves.has(move)) {
+          errors.push({
+            source: "format",
+            message: `${mon.species}'s move "${move}" is not legal in this Champions format.`,
+          });
+        }
+      }
+    }
+  }
+
+  return errors;
+}
 
 /**
  * Converts a `ParsedPokemon` back to a `@pkmn/sim` `PokemonSet`
@@ -444,7 +519,9 @@ export function parseAndValidateTeam(
 
   // 3. Format-specific validation (only if structural checks pass)
   if (structuralErrors.length === 0) {
-    const formatErrors = validateTeamFormat(team, gameFormat);
+    const formatErrors = isChampionsFormatId(gameFormat)
+      ? validateChampionsLegality(team, gameFormat)
+      : validateTeamFormat(team, gameFormat);
     errors.push(...formatErrors);
   }
 

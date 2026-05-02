@@ -741,6 +741,10 @@ export function TeamWorkspaceV2({
               selectedPokemon={slots[state.activeIdx] ?? null}
               team={team}
               format={format}
+              faintedYours={state.faintedYours}
+              setFaintedYours={state.setFaintedYours}
+              faintedTheirs={state.faintedTheirs}
+              setFaintedTheirs={state.setFaintedTheirs}
               onClose={() => state.setDrawer(null)}
             />
           )}

@@ -15,6 +15,8 @@ import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
 
 interface CalcColumnProps {
   pokemon: Tables<"pokemon"> | null;
+  /** True when this column belongs to the workspace's active row. */
+  isActive: boolean;
 }
 
 // =============================================================================
@@ -31,18 +33,27 @@ type MoveSlot = (typeof MOVE_SLOTS)[number];
 interface CalcRowProps {
   slotIndex: number;
   moveName: string | null;
+  /**
+   * Whether the parent ActiveRow is the workspace's active row.
+   * `calc.moveCalcOutputs` is keyed to the active pokemon, so non-active
+   * expanded rows must NOT render calc results — otherwise every row would
+   * display the active row's damage numbers.
+   */
+  isActive: boolean;
 }
 
-function CalcRow({ slotIndex, moveName }: CalcRowProps) {
+function CalcRow({ slotIndex, moveName, isActive }: CalcRowProps) {
   const calc = useCalcStateContext();
   const output = calc.moveCalcOutputs[slotIndex] ?? null;
 
   const moveData = moveName ? getMoveData(moveName) : null;
   const isStatus = moveData?.category === "Status";
-  // moveName must be set: calc.moveCalcOutputs is keyed by the active pokemon's
-  // slot index, so an empty row would otherwise leak the active row's results.
-  const hasCalc = calc.calcEnabled && moveName !== null && output !== null && !isStatus;
-  const hasDefender = calc.calcEnabled && Boolean(calc.defenderSpecies);
+  // moveName + isActive must both be set: calc.moveCalcOutputs is keyed to
+  // the active pokemon's slot index, so any non-active expanded row that
+  // renders results would leak the active row's damage numbers.
+  const hasCalc =
+    calc.calcEnabled && isActive && moveName !== null && output !== null && !isStatus;
+  const hasDefender = calc.calcEnabled && isActive && Boolean(calc.defenderSpecies);
 
   const { spreadApplied, displayMin, displayMax, koTier } =
     getDisplayRangeAndKoTier({
@@ -121,7 +132,7 @@ function CalcRow({ slotIndex, moveName }: CalcRowProps) {
  * Rendered beside MovesLane when calc.calcEnabled is true.
  * Each row aligns with the corresponding MoveTile row.
  */
-export function CalcColumn({ pokemon }: CalcColumnProps) {
+export function CalcColumn({ pokemon, isActive }: CalcColumnProps) {
   return (
     <div className="calc-col">
       <div className="calc-col-header">CALC</div>
@@ -130,6 +141,7 @@ export function CalcColumn({ pokemon }: CalcColumnProps) {
           key={slot}
           slotIndex={i}
           moveName={pokemon ? pokemon[slot as MoveSlot] || null : null}
+          isActive={isActive}
         />
       ))}
     </div>

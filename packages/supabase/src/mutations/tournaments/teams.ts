@@ -140,9 +140,13 @@ export async function submitTeam(
     .select("id");
 
   if (pokemonError || !newPokemon) {
-    throw new Error(
-      `Failed to create pokemon records: ${pokemonError?.message ?? "no data returned"}`
+    // Log the postgres detail for ops/triage; throw a user-safe generic so
+    // RLS policy text and table names never reach the public tournament page.
+    console.error(
+      "submitTeam: failed to create pokemon records",
+      pokemonError ?? "no data returned"
     );
+    throw new Error("Failed to create pokemon records.");
   }
 
   // 7. Link pokemon to team with positions

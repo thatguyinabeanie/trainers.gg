@@ -680,6 +680,32 @@ export function formatHasTera(format: GameFormat | undefined | null): boolean {
 }
 
 /**
+ * Legacy `game_format` keys (pre-Showdown-ID migration) that resolve to
+ * Champions formats. Kept as a separate set so a future cleanup can drop
+ * them without touching `isChampionsFormat`.
+ */
+const CHAMPIONS_LEGACY_FORMAT_KEYS: ReadonlySet<string> = new Set(["reg-m-a"]);
+
+/**
+ * Returns true when the given Showdown/legacy format ID identifies a
+ * Pokemon Champions format.
+ *
+ * Accepts both:
+ *   - Modern Showdown IDs (e.g. `championsvgc2026regma`)
+ *   - Legacy `game_format` keys still stored in DB rows (e.g. `reg-m-a`)
+ *
+ * Use this in code paths that receive a raw string ID (validators,
+ * team-builder import dialog, etc.) where you don't have a `GameFormat`
+ * object handy. When you have the object, prefer `isChampionsFormat()`.
+ */
+export function isChampionsFormatId(id: string | null | undefined): boolean {
+  if (!id) return false;
+  if (CHAMPIONS_LEGACY_FORMAT_KEYS.has(id)) return true;
+  const format = FORMAT_BY_ID.get(id);
+  return isChampionsFormat(format);
+}
+
+/**
  * Returns true when the given format is a Pokemon Champions format.
  *
  * Champions has its own SP-based stat system, no IVs, synthetic Mega

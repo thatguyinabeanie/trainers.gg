@@ -25,6 +25,8 @@ interface ActiveRowProps {
   pokemon: Tables<"pokemon">;
   teamPokemon: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
+  /** True when this row is the workspace's active row. Forwarded to CalcColumn. */
+  isActive: boolean;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   onRemove: () => void;
   /** All validation errors for this Pokemon — filtered per lane by field. */
@@ -65,6 +67,7 @@ export function ActiveRow({
   pokemon,
   teamPokemon,
   format,
+  isActive,
   onUpdate,
   onRemove,
   fieldErrors = [],
@@ -162,7 +165,7 @@ export function ActiveRow({
       />
 
       {/* Calc column — fixed 160px, aligns row-for-row with move tiles */}
-      {calcEnabled && <CalcColumn pokemon={pokemon} />}
+      {calcEnabled && <CalcColumn pokemon={pokemon} isActive={isActive} />}
     </div>
   );
 }

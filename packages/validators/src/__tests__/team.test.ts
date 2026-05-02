@@ -2,6 +2,7 @@ import {
   parseShowdownText,
   validateTeamStructure,
   validateTeamFormat,
+  validateChampionsLegality,
   parseAndValidateTeam,
   parsePokepaseUrl,
   getPokepaseRawUrl,
@@ -260,6 +261,157 @@ describe("validateTeamStructure — Champions (reg-m-a)", () => {
     const mon = makeChampionsMon({ ev_hp: 252, ev_speed: 252, ev_attack: 0, ev_defense: 0, ev_special_attack: 0, ev_special_defense: 0 });
     const errors = validateTeamStructure([mon], "reg-i");
     expect(errors.filter((e) => e.message.includes("Stat Points"))).toHaveLength(0);
+  });
+});
+
+describe("validateTeamStructure — Champions (championsvgc2026regma)", () => {
+  const makeChampionsMon = (
+    overrides: Partial<ReturnType<typeof parseShowdownText>[number]> = {}
+  ) =>
+    ({
+      species: "Incineroar",
+      nickname: null,
+      level: 50,
+      ability: "Intimidate",
+      nature: "Careful",
+      held_item: null,
+      move1: "Fake Out",
+      move2: null,
+      move3: null,
+      move4: null,
+      ev_hp: 20,
+      ev_attack: 10,
+      ev_defense: 10,
+      ev_special_attack: 10,
+      ev_special_defense: 10,
+      ev_speed: 6,
+      iv_hp: 31,
+      iv_attack: 31,
+      iv_defense: 31,
+      iv_special_attack: 31,
+      iv_special_defense: 31,
+      iv_speed: 31,
+      tera_type: null,
+      gender: null,
+      is_shiny: false,
+      ...overrides,
+    });
+
+  it.each(["reg-m-a", "championsvgc2026regma"] as const)(
+    "applies Champions stat-point check for format ID %s",
+    (formatId) => {
+      // Over-limit Stat Points — should produce errors from the SP validator
+      const mon = makeChampionsMon({
+        ev_hp: 33,
+        ev_attack: 0,
+        ev_defense: 0,
+        ev_special_attack: 0,
+        ev_special_defense: 0,
+        ev_speed: 0,
+      });
+      const errors = validateTeamStructure([mon], formatId);
+      expect(errors.some((e) => e.message.includes("Stat Points"))).toBe(true);
+    }
+  );
+
+  it.each(["reg-m-a", "championsvgc2026regma"] as const)(
+    "accepts a valid Champions team for format ID %s",
+    (formatId) => {
+      const errors = validateTeamStructure([makeChampionsMon()], formatId);
+      expect(errors).toHaveLength(0);
+    }
+  );
+});
+
+describe("validateChampionsLegality", () => {
+  const makeChampionsMon = (
+    overrides: Partial<ReturnType<typeof parseShowdownText>[number]> = {}
+  ) =>
+    ({
+      species: "Incineroar",
+      nickname: null,
+      level: 50,
+      ability: "Intimidate",
+      nature: "Careful",
+      held_item: null,
+      move1: "Fake Out",
+      move2: null,
+      move3: null,
+      move4: null,
+      ev_hp: 20,
+      ev_attack: 10,
+      ev_defense: 10,
+      ev_special_attack: 10,
+      ev_special_defense: 10,
+      ev_speed: 6,
+      iv_hp: 31,
+      iv_attack: 31,
+      iv_defense: 31,
+      iv_special_attack: 31,
+      iv_special_defense: 31,
+      iv_speed: 31,
+      tera_type: null,
+      gender: null,
+      is_shiny: false,
+      ...overrides,
+    });
+
+  it("rejects a Pokemon with a Tera type set", () => {
+    const mon = makeChampionsMon({ tera_type: "Fire" });
+    const errors = validateChampionsLegality(
+      [mon],
+      "championsvgc2026regma"
+    );
+    expect(
+      errors.some((e) =>
+        e.message.includes("does not allow Terastallization")
+      )
+    ).toBe(true);
+    expect(errors[0]!.source).toBe("format");
+  });
+
+  it("returns no errors when team has no Tera and getLegalSpecies returns undefined (permissive)", () => {
+    // "reg-i" is not a Champions format — getLegalSpecies returns a computed
+    // set or undefined for unknown formats, and we're calling with a made-up
+    // format that won't match any Champions rules.
+    // Use an unmapped format so all three getLegal* calls return undefined.
+    const mon = makeChampionsMon();
+    const errors = validateChampionsLegality([mon], "unknown-format-xyz");
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects Tera type even when legality lists are undefined (permissive)", () => {
+    const mon = makeChampionsMon({ tera_type: "Water" });
+    // Even against an unmapped format, Tera is always rejected
+    const errors = validateChampionsLegality([mon], "unknown-format-xyz");
+    expect(errors.some((e) => e.source === "format")).toBe(true);
+    expect(
+      errors.some((e) => e.message.includes("Terastallization"))
+    ).toBe(true);
+  });
+});
+
+describe("parseAndValidateTeam — Champions (championsvgc2026regma)", () => {
+  const CHAMPIONS_MON_WITH_TERA = `Incineroar @ Assault Vest
+Ability: Intimidate
+Level: 50
+Tera Type: Fire
+- Fake Out
+- Knock Off
+- Flare Blitz
+- U-turn`;
+
+  it("routes championsvgc2026regma to validateChampionsLegality and flags Tera type", () => {
+    const result = parseAndValidateTeam(
+      CHAMPIONS_MON_WITH_TERA,
+      "championsvgc2026regma"
+    );
+    expect(result.valid).toBe(false);
+    const formatErrors = result.errors.filter((e) => e.source === "format");
+    expect(formatErrors.length).toBeGreaterThan(0);
+    expect(
+      formatErrors.some((e) => e.message.includes("Terastallization"))
+    ).toBe(true);
   });
 });
 

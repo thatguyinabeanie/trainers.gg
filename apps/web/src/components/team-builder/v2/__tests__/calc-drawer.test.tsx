@@ -237,14 +237,22 @@ interface RenderProps {
   selectedPokemon?: Tables<"pokemon"> | null;
   team?: TeamWithPokemon;
   format?: GameFormat | undefined;
+  faintedYours?: number;
+  setFaintedYours?: jest.Mock;
+  faintedTheirs?: number;
+  setFaintedTheirs?: jest.Mock;
   onClose?: jest.Mock;
 }
 
 function renderDrawer(props: RenderProps = {}) {
   const onClose = props.onClose ?? jest.fn();
+  const setFaintedYours = props.setFaintedYours ?? jest.fn();
+  const setFaintedTheirs = props.setFaintedTheirs ?? jest.fn();
   const poke = makePokemon({ id: 1, species: "Gardevoir" });
   return {
     onClose,
+    setFaintedYours,
+    setFaintedTheirs,
     ...render(
       <CalcDrawer
         open={props.open ?? true}
@@ -253,6 +261,10 @@ function renderDrawer(props: RenderProps = {}) {
         }
         team={props.team ?? makeTeam([poke])}
         format={props.format ?? VGC_FORMAT}
+        faintedYours={props.faintedYours ?? 0}
+        setFaintedYours={setFaintedYours}
+        faintedTheirs={props.faintedTheirs ?? 0}
+        setFaintedTheirs={setFaintedTheirs}
         onClose={onClose}
       />
     ),
@@ -411,6 +423,36 @@ describe("CalcDrawer — foesAlive / allyAlive handlers", () => {
     ) => void;
     handler(false);
     expect(mockSetField).toHaveBeenCalledWith({ allyAlive: false });
+  });
+});
+
+// =============================================================================
+// Tests — fainted counters are plumbed through to CalcFieldBlock
+// =============================================================================
+
+describe("CalcDrawer — fainted counters", () => {
+  it("passes faintedYours prop to CalcFieldBlock", () => {
+    renderDrawer({ selectedPokemon: makePokemon(), faintedYours: 3 });
+    expect(capturedFieldBlockProps.faintedYours).toBe(3);
+  });
+
+  it("passes faintedTheirs prop to CalcFieldBlock", () => {
+    renderDrawer({ selectedPokemon: makePokemon(), faintedTheirs: 2 });
+    expect(capturedFieldBlockProps.faintedTheirs).toBe(2);
+  });
+
+  it("calls setFaintedYours when the captured prop is invoked with 1", () => {
+    const { setFaintedYours } = renderDrawer({ selectedPokemon: makePokemon() });
+    const handler = capturedFieldBlockProps.setFaintedYours as (n: number) => void;
+    handler(1);
+    expect(setFaintedYours).toHaveBeenCalledWith(1);
+  });
+
+  it("calls setFaintedTheirs when the captured prop is invoked with 2", () => {
+    const { setFaintedTheirs } = renderDrawer({ selectedPokemon: makePokemon() });
+    const handler = capturedFieldBlockProps.setFaintedTheirs as (n: number) => void;
+    handler(2);
+    expect(setFaintedTheirs).toHaveBeenCalledWith(2);
   });
 });
 

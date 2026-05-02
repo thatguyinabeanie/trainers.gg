@@ -150,6 +150,7 @@ export {
   getAvailableGames,
   formatHasTera,
   isChampionsFormat,
+  isChampionsFormatId,
 } from "./formats";
 
 // Featured Pokemon for avatar picker

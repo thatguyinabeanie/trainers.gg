@@ -8,6 +8,7 @@ import {
   getLegalAbilities,
   getMetaSpeedTiers,
   isLegalSpecies,
+  isChampionsFormat,
 } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
@@ -216,19 +217,27 @@ export function CalcDefenderBlock({
         {DEF_STAT_LABELS.map(({ key, label }) => (
           <div key={key} className="cd-defstat">
             <span className="cd-defstat-l">{label}</span>
-            <input
-              type="number"
-              min={0}
-              max={252}
-              step={4}
-              value={defenderEvs[key]}
-              onChange={(e) => {
-                const v = parseInt(e.target.value, 10);
-                if (!Number.isNaN(v)) setDefenderEv(key, Math.max(0, Math.min(252, v)));
-              }}
-              aria-label={`${label} EVs`}
-              className="cd-num"
-            />
+            {(() => {
+              const isChampions = isChampionsFormat(format);
+              const perStatMax = isChampions ? 32 : 252;
+              const step = isChampions ? 1 : 4;
+              return (
+                <input
+                  type="number"
+                  min={0}
+                  max={perStatMax}
+                  step={step}
+                  value={defenderEvs[key]}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(v))
+                      setDefenderEv(key, Math.max(0, Math.min(perStatMax, v)));
+                  }}
+                  aria-label={`${label} EVs`}
+                  className="cd-num"
+                />
+              );
+            })()}
           </div>
         ))}
       </div>

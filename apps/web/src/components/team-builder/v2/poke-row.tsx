@@ -92,7 +92,7 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         <IdentityLane pokemon={null} format={_format} />
         <StatsLane pokemon={null} format={_format} />
         <MovesLane pokemon={null} format={_format} />
-        {calcEnabled && <CalcColumn pokemon={null} />}
+        {calcEnabled && <CalcColumn pokemon={null} isActive={false} />}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -269,6 +269,8 @@ interface ActiveRowShellProps {
   format: GameFormat | undefined;
   onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
   slotErrors: ValidationError[];
+  /** Forwarded to <ActiveRow> so CalcColumn can suppress non-active outputs. */
+  isActive: boolean;
   dragAttributes?: DraggableAttributes;
   dragListeners?: DraggableSyntheticListeners;
   isDragging?: boolean;
@@ -282,6 +284,7 @@ function ActiveRowShell({
   format,
   onPokemonUpdate,
   slotErrors,
+  isActive,
   dragAttributes,
   dragListeners,
   isDragging = false,
@@ -293,6 +296,7 @@ function ActiveRowShell({
         pokemon={pokemon}
         teamPokemon={teamPokemon}
         format={format}
+        isActive={isActive}
         onUpdate={(fields) => onPokemonUpdate?.(pokemon.id, fields)}
         onRemove={() => onRemove?.(idx)}
         fieldErrors={slotErrors}
@@ -371,6 +375,7 @@ export function PokeRow({
           format={format}
           onPokemonUpdate={onPokemonUpdate}
           slotErrors={slotErrors}
+          isActive={isActive}
           dragAttributes={attributes}
           dragListeners={listeners}
           isDragging={isDragging}

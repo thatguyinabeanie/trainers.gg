@@ -19,6 +19,10 @@ interface CalcDrawerProps {
   selectedPokemon: Tables<"pokemon"> | null;
   team: TeamWithPokemon;
   format: GameFormat | undefined;
+  faintedYours: number;
+  setFaintedYours: (n: number) => void;
+  faintedTheirs: number;
+  setFaintedTheirs: (n: number) => void;
   onClose: () => void;
 }
 
@@ -34,6 +38,10 @@ export function CalcDrawer({
   selectedPokemon,
   team,
   format,
+  faintedYours,
+  setFaintedYours,
+  faintedTheirs,
+  setFaintedTheirs,
   onClose,
 }: CalcDrawerProps) {
   if (!open) return null;
@@ -79,6 +87,10 @@ export function CalcDrawer({
             selectedPokemon={selectedPokemon}
             team={team}
             format={format}
+            faintedYours={faintedYours}
+            setFaintedYours={setFaintedYours}
+            faintedTheirs={faintedTheirs}
+            setFaintedTheirs={setFaintedTheirs}
           />
         )}
       </SheetContent>
@@ -90,12 +102,20 @@ interface CalcDrawerContentProps {
   selectedPokemon: Tables<"pokemon">;
   team: TeamWithPokemon;
   format: GameFormat | undefined;
+  faintedYours: number;
+  setFaintedYours: (n: number) => void;
+  faintedTheirs: number;
+  setFaintedTheirs: (n: number) => void;
 }
 
 function CalcDrawerContent({
   selectedPokemon: _selectedPokemon,
   team,
   format,
+  faintedYours,
+  setFaintedYours,
+  faintedTheirs,
+  setFaintedTheirs,
 }: CalcDrawerContentProps) {
   const calc = useCalcStateContext();
   const { field, setField } = calc;
@@ -161,10 +181,10 @@ function CalcDrawerContent({
         allyAlive={field.allyAlive}
         setFoesAlive={handleSetFoesAlive}
         setAllyAlive={handleSetAllyAlive}
-        faintedYours={0}
-        setFaintedYours={() => {}}
-        faintedTheirs={0}
-        setFaintedTheirs={() => {}}
+        faintedYours={faintedYours}
+        setFaintedYours={setFaintedYours}
+        faintedTheirs={faintedTheirs}
+        setFaintedTheirs={setFaintedTheirs}
       />
     </div>
   );

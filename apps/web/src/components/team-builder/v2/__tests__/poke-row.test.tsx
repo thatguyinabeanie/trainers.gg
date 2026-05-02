@@ -102,8 +102,12 @@ jest.mock("../lanes/moves-lane", () => ({
 }));
 
 jest.mock("../lanes/calc-column", () => ({
-  CalcColumn: ({ pokemon }: { pokemon: null | object }) => (
-    <div data-testid="calc-column" data-ghost={pokemon === null ? "true" : "false"}>
+  CalcColumn: ({ pokemon, isActive }: { pokemon: null | object; isActive: boolean }) => (
+    <div
+      data-testid="calc-column"
+      data-ghost={pokemon === null ? "true" : "false"}
+      data-is-active={isActive ? "true" : "false"}
+    >
       CALC
     </div>
   ),
