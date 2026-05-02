@@ -5,7 +5,6 @@ import {
   getMegaAbilityForSpecies,
   getSpeciesTypes,
   getLegalAbilities,
-  getValidAbilities,
   NATURE_EFFECTS,
   type GameFormat,
 } from "@trainers/pokemon";
@@ -155,12 +154,10 @@ export function DefenderMonHeader({
   const displayAbility =
     isMegaForm && defenderMegaActive ? megaAbility : defenderAbility;
 
-  const legalAbilities = format
-    ? Array.from(
-        getLegalAbilities(pickerSpecies, format.id) ??
-          getValidAbilities(pickerSpecies)
-      )
-    : getValidAbilities(pickerSpecies);
+  const hasLegalAbility =
+    !defenderSpecies ||
+    !format ||
+    (getLegalAbilities(pickerSpecies, format.id)?.size ?? 1) > 0;
 
   const natureEffect = defenderNature ? NATURE_EFFECTS[defenderNature] : null;
   const natUp = natureEffect?.boost ?? null;
@@ -296,7 +293,7 @@ export function DefenderMonHeader({
         </DefenderFormChip>
       )}
 
-      {defenderSpecies && legalAbilities.length === 0 && (
+      {!hasLegalAbility && (
         <p className="px-1 font-mono text-[9px] text-muted-foreground/60">
           No abilities found for format
         </p>

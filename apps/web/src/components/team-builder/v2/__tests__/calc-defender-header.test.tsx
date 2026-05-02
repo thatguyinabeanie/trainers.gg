@@ -156,7 +156,6 @@ jest.mock("../pickers/type-picker", () => ({
 // @trainers/pokemon — mocks for type lookup, abilities, nature effects, formatHasTera
 const mockGetSpeciesTypes = jest.fn();
 const mockGetLegalAbilities = jest.fn();
-const mockGetValidAbilities = jest.fn();
 const mockFormatHasTera = jest.fn();
 
 // NATURE_EFFECTS is used directly as NATURE_EFFECTS[nature] so provide a realistic value
@@ -174,7 +173,6 @@ const NATURE_EFFECTS_FIXTURE: Record<
 jest.mock("@trainers/pokemon", () => ({
   getSpeciesTypes: (...args: unknown[]) => mockGetSpeciesTypes(...args),
   getLegalAbilities: (...args: unknown[]) => mockGetLegalAbilities(...args),
-  getValidAbilities: (...args: unknown[]) => mockGetValidAbilities(...args),
   NATURE_EFFECTS: NATURE_EFFECTS_FIXTURE,
   formatHasTera: (...args: unknown[]) => mockFormatHasTera(...args),
   // Mega-aware helpers — defaults assume non-mega species (no override).
@@ -260,7 +258,6 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockGetSpeciesTypes.mockReturnValue([]);
   mockGetLegalAbilities.mockReturnValue(new Set(["Intimidate", "Moxie"]));
-  mockGetValidAbilities.mockReturnValue(["Intimidate", "Moxie"]);
   mockFormatHasTera.mockReturnValue(true);
 });
 
@@ -384,32 +381,31 @@ describe("DefenderMonHeader — Ability row", () => {
     expect(mockGetLegalAbilities).toHaveBeenCalledWith("Incineroar", VGC_FORMAT.id);
   });
 
-  it("falls back to getValidAbilities when getLegalAbilities returns null (undefined)", () => {
+  it("treats getLegalAbilities returning undefined as permissive (no warning)", () => {
+    // When getLegalAbilities returns undefined (unknown format), we default
+    // hasLegalAbility to true — no "No abilities found" warning should appear.
     mockGetLegalAbilities.mockReturnValue(undefined);
-    mockGetValidAbilities.mockReturnValue(["Intimidate"]);
     render(<DefenderMonHeader {...makeProps({
       defenderSpecies: "Incineroar",
       format: VGC_FORMAT,
     })} />);
-    expect(mockGetValidAbilities).toHaveBeenCalledWith("Incineroar");
+    expect(screen.queryByText(/No abilities found for format/)).not.toBeInTheDocument();
   });
 
-  it("falls back to getValidAbilities when getLegalAbilities returns null", () => {
-    mockGetLegalAbilities.mockReturnValue(null);
-    render(<DefenderMonHeader {...makeProps({
-      defenderSpecies: "Incineroar",
-      format: VGC_FORMAT,
-    })} />);
-    expect(mockGetValidAbilities).toHaveBeenCalled();
-  });
-
-  it("uses getValidAbilities directly when format is undefined", () => {
+  it("does not call getLegalAbilities when format is undefined", () => {
     render(<DefenderMonHeader {...makeProps({
       defenderSpecies: "Incineroar",
       format: undefined,
     })} />);
-    expect(mockGetValidAbilities).toHaveBeenCalledWith("Incineroar");
     expect(mockGetLegalAbilities).not.toHaveBeenCalled();
+  });
+
+  it("does not show warning when format is undefined (no format restriction)", () => {
+    render(<DefenderMonHeader {...makeProps({
+      defenderSpecies: "Incineroar",
+      format: undefined,
+    })} />);
+    expect(screen.queryByText(/No abilities found for format/)).not.toBeInTheDocument();
   });
 });
 
