@@ -197,8 +197,11 @@ export {
 // Species search index and filtering
 export {
   type SpeciesSearchEntry,
+  type GetRolesFn,
   buildSpeciesSearchIndex,
   searchSpecies,
+  getAllLegalAbilities,
+  getAllLegalMoves,
 } from "./species-search";
 
 // Move data utilities

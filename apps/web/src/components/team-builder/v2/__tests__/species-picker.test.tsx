@@ -134,14 +134,23 @@ function makeEntry(
     species: string;
     types: string[];
     abilities: string[];
+    abilitySlot1: string | null;
+    abilitySlot2: string | null;
+    hiddenAbility: string | null;
+    roles: string[];
     baseStats: Record<string, number>;
     bst: number;
   }> = {}
 ) {
+  const abilities = overrides.abilities ?? ["Static", "Lightning Rod"];
   return {
     species: "Pikachu",
     types: ["Electric"],
-    abilities: ["Static", "Lightning Rod"],
+    abilities,
+    abilitySlot1: overrides.abilitySlot1 ?? abilities[0] ?? null,
+    abilitySlot2: overrides.abilitySlot2 ?? abilities[1] ?? null,
+    hiddenAbility: overrides.hiddenAbility ?? abilities[2] ?? null,
+    roles: overrides.roles ?? [],
     baseStats: { hp: 35, atk: 55, def: 40, spa: 50, spd: 50, spe: 90 },
     bst: 320,
     ...overrides,

@@ -1,6 +1,8 @@
 import {
   buildSpeciesSearchIndex,
   searchSpecies,
+  getAllLegalAbilities,
+  getAllLegalMoves,
   type SpeciesSearchEntry,
 } from "../species-search";
 import { getLegalSpecies } from "../format-legality";
@@ -483,5 +485,93 @@ describe("searchSpecies", () => {
       const results = searchSpecies(index, "pika", { formatId: FORMAT });
       expect(results.map((e) => e.species)).toContain("Pikachu");
     });
+  });
+});
+
+describe("SpeciesSearchEntry — new fields", () => {
+  let index: SpeciesSearchEntry[];
+  beforeAll(() => {
+    index = buildSpeciesSearchIndex("gen9vgc2026regg");
+  });
+
+  it("has named ability slots", () => {
+    const incineroar = index.find((e) => e.species === "Incineroar")!;
+    expect(incineroar.abilitySlot1).toBe("Blaze");
+    expect(incineroar.hiddenAbility).toBe("Intimidate");
+  });
+
+  it("roles defaults to empty without a resolver", () => {
+    expect(index[0]!.roles).toEqual([]);
+  });
+
+  it("buildSpeciesSearchIndex with a resolver populates roles", () => {
+    const idx = buildSpeciesSearchIndex(
+      "gen9vgc2026regg",
+      (_abil, species) => (species === "Incineroar" ? ["fake-out", "drop-atk"] : [])
+    );
+    const incineroar = idx.find((e) => e.species === "Incineroar")!;
+    expect(incineroar.roles).toEqual(["fake-out", "drop-atk"]);
+  });
+});
+
+describe("searchSpecies — new filters", () => {
+  let index: SpeciesSearchEntry[];
+  beforeAll(() => {
+    index = buildSpeciesSearchIndex("gen9vgc2026regg");
+  });
+
+  it("ability filter matches any slot", () => {
+    const results = searchSpecies(index, "", { ability: "Intimidate" });
+    expect(results.length).toBeGreaterThan(0);
+    expect(
+      results.every(
+        (e) =>
+          e.abilitySlot1 === "Intimidate" ||
+          e.abilitySlot2 === "Intimidate" ||
+          e.hiddenAbility === "Intimidate"
+      )
+    ).toBe(true);
+  });
+
+  it("megaOnly excludes -Mega entries themselves", () => {
+    const championsIndex = buildSpeciesSearchIndex("championsvgc2026regma");
+    const results = searchSpecies(championsIndex, "", { megaOnly: true });
+    expect(results.every((e) => !e.species.includes("-Mega"))).toBe(true);
+  });
+
+  it("megaOnly includes Charizard (has Mega forms)", () => {
+    const championsIndex = buildSpeciesSearchIndex("championsvgc2026regma");
+    const results = searchSpecies(championsIndex, "", { megaOnly: true });
+    expect(results.some((e) => e.species === "Charizard")).toBe(true);
+  });
+
+  it("roles filter matches species with any active role", () => {
+    const idx = buildSpeciesSearchIndex(
+      "gen9vgc2026regg",
+      (_abil, species) => (species === "Incineroar" ? ["fake-out"] : [])
+    );
+    const results = searchSpecies(idx, "", { roles: ["fake-out"] });
+    expect(results.some((e) => e.species === "Incineroar")).toBe(true);
+  });
+});
+
+describe("getAllLegalAbilities / getAllLegalMoves", () => {
+  it("getAllLegalAbilities returns sorted unique abilities", () => {
+    const a = getAllLegalAbilities("gen9vgc2026regg");
+    expect(a.length).toBeGreaterThan(50);
+    expect([...a]).toEqual([...a].sort((x, y) => x.localeCompare(y)));
+    expect(a).toContain("Intimidate");
+  });
+
+  it("getAllLegalAbilities is cached (same array reference on second call)", () => {
+    const a = getAllLegalAbilities("gen9vgc2026regg");
+    const b = getAllLegalAbilities("gen9vgc2026regg");
+    expect(a).toBe(b);
+  });
+
+  it("getAllLegalMoves returns sorted unique moves", () => {
+    const m = getAllLegalMoves("gen9vgc2026regg");
+    expect(m.length).toBeGreaterThan(100);
+    expect(m).toContain("Tailwind");
   });
 });

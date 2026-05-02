@@ -10,9 +10,12 @@ import { Generations } from "@pkmn/data";
 
 import { getFormatById } from "./formats";
 import {
+  getFormsForSpecies,
   getLegalMoves,
   getLegalSpecies,
+  getMegaStoneForSpecies,
   LEGALITY_UNAVAILABLE,
+  legalSetOrPermissive,
 } from "./format-legality";
 import { getLearnableMoves } from "./validation";
 
@@ -81,7 +84,13 @@ function getLowercaseLegalMoves(
 export interface SpeciesSearchEntry {
   species: string;
   types: string[];
-  abilities: string[];
+  abilities: string[];          // kept for back-compat
+  abilitySlot1: string | null;
+  abilitySlot2: string | null;
+  hiddenAbility: string | null;
+  /** Role IDs this species fits — populated by buildSpeciesSearchIndex when
+   *  a getRoles resolver is supplied. Empty otherwise. */
+  roles: string[];
   baseStats: {
     hp: number;
     atk: number;
@@ -93,6 +102,16 @@ export interface SpeciesSearchEntry {
   bst: number;
 }
 
+/**
+ * Resolver function type for mapping a species to a list of role IDs.
+ * Supplied optionally to `buildSpeciesSearchIndex`.
+ */
+export type GetRolesFn = (
+  abilities: { slot1: string | null; slot2: string | null; hidden: string | null },
+  speciesName: string,
+  formatId: string
+) => string[];
+
 // =============================================================================
 // Public API
 // =============================================================================
@@ -101,27 +120,44 @@ export interface SpeciesSearchEntry {
  * Build a SpeciesSearchEntry from a raw @pkmn/dex species object.
  * Shared by the Generations-wrapper path and the raw-dex path below.
  */
-function makeEntry(species: {
-  name: string;
-  types: readonly string[];
-  abilities: object;
-  baseStats: {
-    hp: number;
-    atk: number;
-    def: number;
-    spa: number;
-    spd: number;
-    spe: number;
-  };
-}): SpeciesSearchEntry {
-  const abilities = Object.values(species.abilities).filter(
+function makeEntry(
+  species: {
+    name: string;
+    types: readonly string[];
+    abilities: object;
+    baseStats: {
+      hp: number;
+      atk: number;
+      def: number;
+      spa: number;
+      spd: number;
+      spe: number;
+    };
+  },
+  getRoles?: GetRolesFn,
+  formatId?: string
+): SpeciesSearchEntry {
+  // Cast abilities to an indexable record for per-slot access
+  const abilitiesRecord = species.abilities as Record<string, string | undefined>;
+  const abilities = Object.values(abilitiesRecord).filter(
     (a): a is string => typeof a === "string" && a.length > 0
   );
+  const abilitySlot1 = abilitiesRecord["0"] ?? null;
+  const abilitySlot2 = abilitiesRecord["1"] ?? null;
+  const hiddenAbility = abilitiesRecord["H"] ?? null;
   const { hp, atk, def, spa, spd, spe } = species.baseStats;
+  const roles =
+    getRoles && formatId
+      ? getRoles({ slot1: abilitySlot1, slot2: abilitySlot2, hidden: hiddenAbility }, species.name, formatId)
+      : [];
   return {
     species: species.name,
     types: species.types as string[],
     abilities,
+    abilitySlot1,
+    abilitySlot2,
+    hiddenAbility,
+    roles,
     baseStats: { hp, atk, def, spa, spd, spe },
     bst: hp + atk + def + spa + spd + spe,
   };
@@ -147,10 +183,12 @@ function makeEntry(species: {
  * `isLegalSpecies` returns `true` for them.
  *
  * @param formatId - Showdown format ID (e.g., "gen9vgc2026regi")
+ * @param getRoles - Optional resolver to populate role IDs per species
  * @returns Array of SpeciesSearchEntry objects for every species in the generation
  */
 export function buildSpeciesSearchIndex(
-  formatId: string
+  formatId: string,
+  getRoles?: GetRolesFn
 ): SpeciesSearchEntry[] {
   // Determine generation from format registry; default to 9 if unknown
   const format = getFormatById(formatId);
@@ -179,7 +217,7 @@ export function buildSpeciesSearchIndex(
     // Only include species that are real and not non-standard (e.g., Pokestar)
     if (!species.exists || species.isNonstandard) continue;
 
-    index.push(makeEntry(species));
+    index.push(makeEntry(species, getRoles, formatId));
     addedNames.add(species.name);
   }
 
@@ -206,7 +244,7 @@ export function buildSpeciesSearchIndex(
       // synthetic entries using the CHAMPIONS_EXCLUSIVE_MEGA_STATS table.
       if (!rawSpecies?.exists) continue;
 
-      index.push(makeEntry(rawSpecies));
+      index.push(makeEntry(rawSpecies, getRoles, formatId));
       addedNames.add(rawSpecies.name);
     }
   }
@@ -258,6 +296,12 @@ export function searchSpecies(
      * computable (the function falls back to name/type/ability matching).
      */
     formatId?: string;
+    /** Filter: species must have this exact ability in any slot */
+    ability?: string | null;
+    /** Filter: include only species that have at least one Mega form */
+    megaOnly?: boolean;
+    /** Filter: species must have at least one of these role IDs */
+    roles?: string[];
   }
 ): SpeciesSearchEntry[] {
   const normalizedQuery = query.trim().toLowerCase();
@@ -319,6 +363,34 @@ export function searchSpecies(
       if (!hasMatchingAbility) return false;
     }
 
+    // -- Ability filter (exact match against any ability slot) --
+    if (options?.ability) {
+      const target = options.ability.toLowerCase();
+      const match =
+        (entry.abilitySlot1?.toLowerCase() === target) ||
+        (entry.abilitySlot2?.toLowerCase() === target) ||
+        (entry.hiddenAbility?.toLowerCase() === target);
+      if (!match) return false;
+    }
+
+    // -- megaOnly filter (species must have at least one Mega form) --
+    if (options?.megaOnly) {
+      // Exclude entries that are themselves Mega forms
+      if (entry.species.includes("-Mega")) return false;
+      // Exclude base species whose forms list has no mega stone
+      const forms = getFormsForSpecies(entry.species);
+      const hasMegaForm = forms.some(
+        (form) => form !== entry.species && getMegaStoneForSpecies(form) !== null
+      );
+      if (!hasMegaForm) return false;
+    }
+
+    // -- Roles filter (OR: species must have at least one of the specified roles) --
+    if (options?.roles && options.roles.length > 0) {
+      const hasAny = options.roles.some((roleId) => entry.roles.includes(roleId));
+      if (!hasAny) return false;
+    }
+
     // -- Moves filter (AND: species must learn ALL specified moves) --
     if (normalizedMoves) {
       const learnableMoves = getCachedLearnableMoves(entry.species).map((m) =>
@@ -350,4 +422,59 @@ export function searchSpecies(
 
     return true;
   });
+}
+
+// =============================================================================
+// Format-wide enumerators
+// =============================================================================
+
+const abilitySetCache = new Map<string, string[]>();
+const moveSetCache = new Map<string, string[]>();
+
+/**
+ * Return a sorted, deduplicated list of all abilities that appear on any
+ * species in the given format's legal index.
+ *
+ * Results are cached per formatId — subsequent calls with the same formatId
+ * return the same array reference.
+ */
+export function getAllLegalAbilities(formatId: string): string[] {
+  const cached = abilitySetCache.get(formatId);
+  if (cached) return cached;
+  const index = buildSpeciesSearchIndex(formatId);
+  const set = new Set<string>();
+  for (const entry of index) {
+    if (entry.abilitySlot1) set.add(entry.abilitySlot1);
+    if (entry.abilitySlot2) set.add(entry.abilitySlot2);
+    if (entry.hiddenAbility) set.add(entry.hiddenAbility);
+  }
+  const sorted = Array.from(set).sort((a, b) => a.localeCompare(b));
+  abilitySetCache.set(formatId, sorted);
+  return sorted;
+}
+
+/**
+ * Return a sorted, deduplicated list of all moves that any species in the
+ * given format can legally learn.
+ *
+ * Uses `getLegalMoves(species, formatId)` for format-aware filtering.
+ * Falls back to `getLearnableMoves(species)` when legality is not registered
+ * (matches the pattern used in `role-registry.ts`).
+ *
+ * Results are cached per formatId — subsequent calls with the same formatId
+ * return the same array reference.
+ */
+export function getAllLegalMoves(formatId: string): string[] {
+  const cached = moveSetCache.get(formatId);
+  if (cached) return cached;
+  const index = buildSpeciesSearchIndex(formatId);
+  const set = new Set<string>();
+  for (const entry of index) {
+    const legalSet = legalSetOrPermissive(getLegalMoves(entry.species, formatId));
+    const moves = legalSet ?? new Set(getLearnableMoves(entry.species));
+    for (const m of moves) set.add(m);
+  }
+  const sorted = Array.from(set).sort((a, b) => a.localeCompare(b));
+  moveSetCache.set(formatId, sorted);
+  return sorted;
 }
