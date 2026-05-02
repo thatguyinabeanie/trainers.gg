@@ -365,8 +365,12 @@ async function runSeedAgainst(connection, existingSeeds) {
   console.log(`   Connecting to database...`);
 
   // postgres.js options:
-  //   ssl: true — widely-supported across postgres.js versions; Supabase
-  //   direct/pooled connections require TLS.
+  //   ssl — Supabase's pooled (Supavisor) endpoint presents a cert that
+  //   Node's default CA bundle doesn't trust ("self-signed in chain"),
+  //   so strict `ssl: true` fails on the IPv4 fallback path. We use
+  //   `rejectUnauthorized: false`: the connection is still TLS-encrypted,
+  //   we just skip CA-chain verification. Acceptable for a build-time
+  //   seed script targeting a host we control via the integration env.
   //   password — only supply when the URL came from the fallback branch
   //   (the only branch that intentionally omits credentials). Supplying it
   //   on pooled/non-pooling URLs would either override the embedded password
@@ -374,7 +378,7 @@ async function runSeedAgainst(connection, existingSeeds) {
   //   of which break auth.
   //   connect_timeout / idle_timeout / max_lifetime — increased for seeding.
   const sql = postgres(connection.url, {
-    ssl: true,
+    ssl: { rejectUnauthorized: false },
     ...(connection.needsExplicitPassword
       ? { password: process.env.POSTGRES_PASSWORD }
       : {}),
