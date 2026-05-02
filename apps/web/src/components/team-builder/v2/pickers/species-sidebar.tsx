@@ -140,20 +140,34 @@ export function SpeciesSidebar({
         <div className="grid grid-cols-3 gap-1">
           {allTypes.map((type) => {
             const isActive = filters.types.includes(type);
+            const isNeeded = neededTypes.includes(type);
             return (
               <button
                 key={type}
                 type="button"
-                aria-label={type}
+                aria-label={isNeeded ? `${type} (team needs coverage)` : type}
                 aria-pressed={isActive}
+                title={
+                  isNeeded
+                    ? `${type} — team is weak to this without coverage`
+                    : undefined
+                }
                 onClick={() => toggleType(type)}
                 className={cn(
-                  "flex items-center justify-center rounded px-1 py-1 transition-all",
+                  "relative flex items-center justify-center rounded px-1 py-1 transition-all",
                   isActive
                     ? "ring-primary bg-background ring-2 ring-offset-1"
                     : "bg-muted/40 opacity-70 hover:opacity-100"
                 )}
               >
+                {isNeeded && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-1 -right-1 text-[9px] leading-none text-amber-500 drop-shadow"
+                  >
+                    ✦
+                  </span>
+                )}
                 <img
                   src={getShowdownTypeIconUrl(type)}
                   alt={type}
@@ -163,35 +177,6 @@ export function SpeciesSidebar({
             );
           })}
         </div>
-
-        {/* Team-needs hints */}
-        {neededTypes.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {neededTypes.map((type) => (
-              <button
-                key={type}
-                type="button"
-                aria-label={`Add ${type} (team-needs hint)`}
-                onClick={() => toggleType(type)}
-                className={cn(
-                  "flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors",
-                  filters.types.includes(type)
-                    ? "bg-primary/10 ring-primary/40 ring-1"
-                    : "bg-muted hover:bg-accent"
-                )}
-              >
-                <span aria-hidden="true" className="text-[10px]">
-                  ✦
-                </span>
-                <img
-                  src={getShowdownTypeIconUrl(type)}
-                  alt={type}
-                  className="h-6 w-auto [image-rendering:pixelated]"
-                />
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ------------------------------------------------------------------ */}

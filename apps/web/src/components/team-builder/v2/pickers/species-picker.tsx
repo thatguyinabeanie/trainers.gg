@@ -42,21 +42,25 @@ const HIGH_STAT_THRESHOLD = 110;
 /**
  * Shared Tailwind grid template for each data row.
  *
- *   40px              — sprite circle
- *   minmax(120px,1fr) — name column (truncates if needed)
+ *   64px              — sprite circle (size-16, sprite rendered at size-14)
+ *   minmax(110px,1.2fr) — name column (truncates if needed)
  *   56px              — Type 1 (Showdown icon)
  *   56px              — Type 2 (icon, or em-dash for monotype)
- *   minmax(0,1fr)×3   — slot1 / slot2 / hidden abilities (truncate-safe,
- *                       share remaining horizontal space proportionally)
- *   repeat(6,30px)    — HP/Atk/Def/SpA/SpD/Spe stat cells (3-digit safe)
+ *   minmax(110px,1fr)×3 — slot1 / slot2 / hidden abilities. 110px min so
+ *                       common ~12-char ability names ("Magic Bounce",
+ *                       "Stance Change", "Snow Warning") don't truncate;
+ *                       the columns still grow when extra room is available.
+ *   repeat(6,36px)    — HP/Atk/Def/SpA/SpD/Spe stat cells. 36px so the
+ *                       3-letter header labels (SPA/SPD/SPE) plus the active
+ *                       sort arrow render without overlapping.
  *   40px              — BST rollup
  *
- * Total fixed: 40 + 56 + 56 + (6×30) + 40 = 372px; flex columns share the rest
- * with `gap-2` (12 gaps × 8px = 96px). Comfortably fits inside the right
- * column at any dialog width >= ~900px.
+ * Total floor: 40 + 110 + 56 + 56 + 110×3 + 36×6 + 40 = 754px; with 12 × 8px
+ * grid gaps that's 850px. Comfortably fits the right column at any dialog
+ * width >= ~900px.
  */
 const ROW_GRID =
-  "grid-cols-[40px_minmax(120px,1.4fr)_56px_56px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_repeat(6,30px)_40px]";
+  "grid-cols-[64px_minmax(110px,1.2fr)_56px_56px_minmax(110px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)_repeat(6,36px)_40px]";
 
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
@@ -151,6 +155,12 @@ interface SortHeaderButtonProps {
   align: "left" | "center" | "right";
   sort: SortState;
   onSort: (col: SortCol) => void;
+  /**
+   * Optional Tailwind color class. When set, the label is rendered in this
+   * color (e.g. the rose/orange/amber stat palette from the editor) and
+   * stays colored whether or not the column is the active sort.
+   */
+  colorClass?: string;
 }
 
 function SortHeaderButton({
@@ -159,6 +169,7 @@ function SortHeaderButton({
   align,
   sort,
   onSort,
+  colorClass,
 }: SortHeaderButtonProps) {
   const isActive = sort.col === col;
   return (
@@ -168,11 +179,17 @@ function SortHeaderButton({
       aria-label={`Sort by ${label}`}
       aria-pressed={isActive}
       className={cn(
-        "hover:text-foreground flex items-center gap-0.5 transition-colors select-none",
+        "flex items-center gap-0.5 whitespace-nowrap transition-colors select-none",
         align === "left" && "justify-start",
         align === "center" && "justify-center",
         align === "right" && "justify-end",
-        isActive ? "text-foreground" : "text-muted-foreground"
+        // When a color is provided (stat columns), use it always; otherwise
+        // toggle muted/foreground based on active sort state.
+        colorClass
+          ? cn(colorClass, "hover:opacity-80")
+          : isActive
+            ? "text-foreground hover:text-foreground"
+            : "text-muted-foreground hover:text-foreground"
       )}
     >
       {label}
@@ -184,6 +201,20 @@ function SortHeaderButton({
     </button>
   );
 }
+
+/** Editor stat palette — kept in sync with `STAT_COLOR_CLASS`. */
+const STAT_HEADER_COLORS: Record<
+  "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "bst",
+  string
+> = {
+  hp: "text-rose-500 dark:text-rose-400",
+  atk: "text-orange-500 dark:text-orange-400",
+  def: "text-amber-500 dark:text-amber-400",
+  spa: "text-sky-500 dark:text-sky-400",
+  spd: "text-emerald-500 dark:text-emerald-400",
+  spe: "text-fuchsia-500 dark:text-fuchsia-400",
+  bst: "text-foreground",
+};
 
 // =============================================================================
 // SpeciesRow — one rich row in the picker
@@ -227,15 +258,15 @@ function SpeciesRow({
         tabIndex={-1}
       />
 
-      {/* Sprite — 44px circle */}
-      <div className="bg-primary/10 relative z-10 flex size-11 shrink-0 items-center justify-center rounded-full">
+      {/* Sprite — 64px circle, image rendered at 56px */}
+      <div className="bg-primary/10 relative z-10 flex size-16 shrink-0 items-center justify-center rounded-full">
         <Image
           src={sprite.url}
           alt={entry.species}
-          width={36}
-          height={36}
+          width={56}
+          height={56}
           className={cn(
-            "size-9 object-contain",
+            "size-14 object-contain",
             sprite.pixelated && "[image-rendering:pixelated]"
           )}
           unoptimized
@@ -577,8 +608,8 @@ export function SpeciesPicker({
   const rowVirtualizer = useVirtualizer({
     count: matched.length,
     getScrollElement: () => scrollRef.current,
-    // Dense row height: 44px sprite (size-11) + py-2 top + py-2 bottom ≈ 60px
-    estimateSize: () => 60,
+    // Row height: 64px sprite (size-16) + py-2 top + py-2 bottom ≈ 80px
+    estimateSize: () => 80,
     overscan: 5,
   });
 
@@ -705,56 +736,68 @@ export function SpeciesPicker({
                   sort={sort}
                   onSort={handleSort}
                 />
-                <span className="text-muted-foreground text-[9px]">Type 1</span>
-                <span className="text-muted-foreground text-[9px]">Type 2</span>
-                <span className="text-muted-foreground text-[9px]">
+                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
+                  Type 1
+                </span>
+                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
+                  Type 2
+                </span>
+                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
                   Ability 1
                 </span>
-                <span className="text-muted-foreground text-[9px]">
+                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
                   Ability 2
                 </span>
-                <span className="text-muted-foreground text-[9px]">Hidden</span>
+                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
+                  Hidden
+                </span>
                 <SortHeaderButton
                   col="hp"
                   label="HP"
                   align="center"
                   sort={sort}
                   onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.hp}
                 />
                 <SortHeaderButton
                   col="atk"
-                  label="Atk"
+                  label="ATK"
                   align="center"
                   sort={sort}
                   onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.atk}
                 />
                 <SortHeaderButton
                   col="def"
-                  label="Def"
+                  label="DEF"
                   align="center"
                   sort={sort}
                   onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.def}
                 />
                 <SortHeaderButton
                   col="spa"
-                  label="SpA"
+                  label="SPA"
                   align="center"
                   sort={sort}
                   onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spa}
                 />
                 <SortHeaderButton
                   col="spd"
-                  label="SpD"
+                  label="SPD"
                   align="center"
                   sort={sort}
                   onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spd}
                 />
                 <SortHeaderButton
                   col="spe"
-                  label="Spe"
+                  label="SPE"
                   align="center"
                   sort={sort}
                   onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spe}
                 />
                 <SortHeaderButton
                   col="bst"
