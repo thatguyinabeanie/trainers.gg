@@ -277,6 +277,42 @@ describe("effectiveDefensiveMult — Iron Ball disables Levitate", () => {
   });
 });
 
+describe("effectiveDefensiveMult — Fluffy on typed defenders", () => {
+  it("Fluffy Fire 2× on a Fire-type defender (overrides the natural 0.5× resist)", () => {
+    // Fire vs Fire is normally 0.5× but Fluffy forces Fire to exactly 2×
+    // regardless of the base type matchup.
+    expect(
+      effectiveDefensiveMult({
+        attackingType: "Fire",
+        defenderTypes: ["Fire"],
+        ability: "Fluffy",
+      })
+    ).toBe(2);
+  });
+
+  it("Fluffy Fire 2× on Water/Fire defender (overrides both the natural 0.25× resist)", () => {
+    // Fire vs Water/Fire would be 0.5×0.5=0.25 but Fluffy forces exactly 2×
+    expect(
+      effectiveDefensiveMult({
+        attackingType: "Fire",
+        defenderTypes: ["Water", "Fire"],
+        ability: "Fluffy",
+      })
+    ).toBe(2);
+  });
+
+  it("Fluffy does not affect non-Fire types", () => {
+    // Water vs Normal with Fluffy: Fluffy only overrides Fire — Water stays neutral
+    expect(
+      effectiveDefensiveMult({
+        attackingType: "Water",
+        defenderTypes: ["Normal"],
+        ability: "Fluffy",
+      })
+    ).toBe(1);
+  });
+});
+
 describe("effectiveDefensiveMult — ability key normalization", () => {
   it("handles ability names with spaces (display format)", () => {
     expect(

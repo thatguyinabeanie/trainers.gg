@@ -49,22 +49,20 @@ Data source: `calc.moveCalcOutputs[index]` from `useCalcStateContext()` — alre
 
 ### Move Lane Width
 
-- **Always `flex: 0 0 280px; flex-shrink: 0`** — never changes
-- When calc is closed: remaining card space appears after moves (or moves lane expands — see impl note)
-
-**Impl note on calc-closed state:** When calc is closed, the moves lane could either stay at 280px (leaving gap) or go back to `flex: 1` (fills space). The user wants the move row to be a "constant fixed width" so both options are valid. Recommendation: keep `flex: 1` when calc is closed so the card looks full, and switch to `flex: 0 0 280px` when calc is open. The *button inside* (`width: 100%`) fills the lane, so the button width changes between states — but since calc is closed when the button is wider, users never see both widths side by side.
+- **Always `flex: 0 0 440px; flex-shrink: 0`** — fixed at 440px regardless of calc state
+- When calc is closed: remaining card space appears after moves
 
 ## Components to Change
 
 ### `apps/web/src/components/team-builder/v2/lanes/moves-lane.tsx`
 - Remove all calc content from `MoveTile` (revert to pure move display)
-- `MovesLane`: when `calcEnabled`, use `flex: 0 0 280px`; otherwise `flex: 1 min-w-[240px]`
+- `MovesLane`: always `w-[440px] shrink-0` — fixed width regardless of calc state
 
 ### `apps/web/src/components/team-builder/v2/lanes/stats-lane.tsx`
 - No changes — stats stays at 320px always
 
 ### `apps/web/src/components/team-builder/v2/builder.module.css`
-- `.mvline` grid: `max-content | minmax(0,1fr) | 44px | 60px` (adjusted for 280px lane)
+- `.mvline` grid: `max-content | minmax(0,1fr) | 56px | 72px` (adjusted for 440px lane)
 - Remove `mvline-calc-row` styles (no longer needed)
 - Keep `mvline-calc-section` styles for the `CalcColumn` rows
 

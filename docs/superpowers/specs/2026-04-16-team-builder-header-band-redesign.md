@@ -46,8 +46,9 @@ Height: 68px. Three zones separated by 1px rgba dividers (`rgba(255,255,255,0.07
 - Clicking the primary name line replaces it with a controlled `<input>` (`type="text"`, `maxLength={18}`)
 - Same font size and weight as the name text; transparent background, thin border
 - Placeholder: species name (dim/muted)
-- `onBlur` or `Enter`: commits the value and exits edit mode
-- `Escape`: cancels and reverts to previous value
+- `onBlur` or `Enter`: commits the value and exits edit mode; if the input is empty or whitespace-only, the nickname is cleared and the species name becomes the primary line again (no blank state)
+- `Escape`: cancels and reverts to previous value without committing; focus returns to the primary name element
+- After a successful commit, focus returns to the primary name element so the user can continue editing or navigate away
 - Species secondary line remains visible during editing
 
 **Removed:** the separate species picker pill button (was a truncated input-like element between the name and gender controls).
@@ -102,17 +103,21 @@ Height: 68px. Three zones separated by 1px rgba dividers (`rgba(255,255,255,0.07
 ## States: No Nickname vs Nickname Set
 
 **No nickname:**
-```
+
+```text
 🌨️  Abomasnow
     🌿 🧊
 ```
+
 *(Species name is the primary line; types only on secondary. Clicking primary enters add-nickname mode.)*
 
 **Nickname set ("Blizzard King"):**
-```
+
+```text
 🌨️  Blizzard King
     Abomasnow · 🌿 🧊
 ```
+
 *(Primary = nickname, secondary = species + types)*
 
 ---
@@ -130,4 +135,5 @@ Height: 68px. Three zones separated by 1px rgba dividers (`rgba(255,255,255,0.07
 9. Confirm Ability / Item / Tera / Nature fields have equal widths and individual hover states
 10. Confirm ⋯ popover is in Zone 3 and still opens Showdown import/export
 11. Toggle format with/without Tera — Tera column appears/disappears, remaining fields expand
-12. Run `pnpm typecheck` and `pnpm test` — no failures
+12. Verify responsive layout at 393px (mobile), 768px (tablet), and 1280px (desktop) viewports — zones should stack or truncate gracefully without overflow
+13. Run `pnpm typecheck` and `pnpm test` — no failures

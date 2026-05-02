@@ -44,7 +44,7 @@ Fixed 196px width, scrollable, `background: muted/50`, separated from list by a 
 ### Section 2 — Ability (single-select)
 
 - Native `<select>` styled to match the design system
-- Options populated from `getAbilities()` (all abilities in the format)
+- Options populated from `getAllLegalAbilities(format.id)` (all abilities in the format)
 - Placeholder: "Any ability…"
 - When set, filters to only mons that have this ability in slot 1, 2, or hidden
 
