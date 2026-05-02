@@ -27,7 +27,7 @@ interface AbilityCellProps {
 export function AbilityCell({ name, slot, onFilter }: AbilityCellProps) {
   if (!name) {
     return (
-      <span className="text-[11px] italic text-muted-foreground/40">—</span>
+      <span className="text-muted-foreground/40 text-[11px] italic">—</span>
     );
   }
 
@@ -37,10 +37,10 @@ export function AbilityCell({ name, slot, onFilter }: AbilityCellProps) {
   const trigger = (
     <span
       className={cn(
-        "inline-block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[11px] leading-snug",
-        "border-b border-dotted border-muted-foreground/40",
-        onFilter && "cursor-pointer hover:border-primary/60 hover:text-primary",
-        isHidden && "italic text-muted-foreground"
+        "inline-block max-w-full overflow-hidden text-[11px] leading-snug text-ellipsis whitespace-nowrap",
+        "border-muted-foreground/40 border-b border-dotted",
+        onFilter && "hover:border-primary/60 hover:text-primary cursor-pointer",
+        isHidden && "text-muted-foreground italic"
       )}
       onClick={onFilter ? () => onFilter(name) : undefined}
     >

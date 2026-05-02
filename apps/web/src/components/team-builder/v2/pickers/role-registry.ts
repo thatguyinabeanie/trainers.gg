@@ -819,7 +819,7 @@ export function getRolesForSpecies(
     hidden: string | null;
   },
   speciesName: string,
-  formatId: string,
+  formatId: string
 ): string[] {
   const legalSet = legalSetOrPermissive(getLegalMoves(speciesName, formatId));
   // If format has no registered legality (legalSet === undefined), fall back

@@ -27,11 +27,11 @@ export function FilterChipsBar({ chips, className }: FilterChipsBarProps) {
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-1.5 border-b border-border/50 bg-muted/20 px-4 py-1.5",
+        "border-border/50 bg-muted/20 flex flex-wrap items-center gap-1.5 border-b px-4 py-1.5",
         className
       )}
     >
-      <span className="text-[10.5px] text-muted-foreground">Active:</span>
+      <span className="text-muted-foreground text-[10.5px]">Active:</span>
       {chips.map((chip) => (
         <button
           key={chip.id}
@@ -41,7 +41,7 @@ export function FilterChipsBar({ chips, className }: FilterChipsBarProps) {
             "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold",
             chip.tone === "mega"
               ? "border border-violet-400/25 bg-violet-500/8 text-violet-700 dark:text-violet-300"
-              : "border border-primary/25 bg-primary/8 text-primary"
+              : "border-primary/25 bg-primary/8 text-primary border"
           )}
         >
           {chip.label} <X className="size-2.5 opacity-50" />

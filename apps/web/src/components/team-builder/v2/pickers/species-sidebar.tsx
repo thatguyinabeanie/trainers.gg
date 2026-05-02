@@ -80,8 +80,11 @@ export function SpeciesSidebar({
     currentTeam.length > 0 ? calculateTeamSynergy(currentTeam) : null;
   const neededTypes: string[] = synergy
     ? allTypes.filter((type) => {
-        const weakCount = (synergy.sharedWeaknesses as Record<string, number>)[type] ?? 0;
-        return weakCount >= 2 && (synergy.uncoveredTypes as Set<string>).has(type);
+        const weakCount =
+          (synergy.sharedWeaknesses as Record<string, number>)[type] ?? 0;
+        return (
+          weakCount >= 2 && (synergy.uncoveredTypes as Set<string>).has(type)
+        );
       })
     : [];
 
@@ -127,12 +130,12 @@ export function SpeciesSidebar({
   // ---------------------------------------------------------------------------
 
   return (
-    <aside className="flex w-[196px] flex-shrink-0 flex-col overflow-y-auto border-r border-border bg-muted/50">
+    <aside className="border-border bg-muted/50 flex w-[196px] flex-shrink-0 flex-col overflow-y-auto border-r">
       {/* ------------------------------------------------------------------ */}
       {/* 1. Type grid                                                        */}
       {/* ------------------------------------------------------------------ */}
       <div className="px-3 pt-3 pb-2">
-        <span className="mb-2 block text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+        <span className="text-muted-foreground mb-2 block text-[9px] font-bold tracking-widest uppercase">
           Type
         </span>
 
@@ -148,9 +151,10 @@ export function SpeciesSidebar({
                   "rounded px-1 py-0.5 text-[10px] font-medium transition-all",
                   isActive
                     ? cn(
-                        TYPE_PILL_COLORS[type as keyof typeof TYPE_PILL_COLORS] ??
-                          "bg-muted",
-                        "outline outline-2 outline-offset-0 outline-white shadow-[0_0_0_3px_currentColor]"
+                        TYPE_PILL_COLORS[
+                          type as keyof typeof TYPE_PILL_COLORS
+                        ] ?? "bg-muted",
+                        "shadow-[0_0_0_3px_currentColor] outline outline-2 outline-offset-0 outline-white"
                       )
                     : "bg-muted text-muted-foreground opacity-70 hover:opacity-100"
                 )}
@@ -188,21 +192,23 @@ export function SpeciesSidebar({
       {/* ------------------------------------------------------------------ */}
       {/* 2. Ability combobox                                                 */}
       {/* ------------------------------------------------------------------ */}
-      <div className="border-t border-border px-3 py-2">
-        <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+      <div className="border-border border-t px-3 py-2">
+        <span className="text-muted-foreground mb-1.5 block text-[9px] font-bold tracking-widest uppercase">
           Ability
         </span>
         <input
           list="species-picker-abilities"
           placeholder={
-            filters.ability ? undefined : "Click any ability in the table to filter"
+            filters.ability
+              ? undefined
+              : "Click any ability in the table to filter"
           }
           value={filters.ability ?? ""}
           onChange={(e) => {
             const val = e.target.value.trim();
             onFiltersChange({ ...filters, ability: val || null });
           }}
-          className="w-full rounded border border-input bg-background px-2 py-1 text-[11px] placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
+          className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
         />
         <datalist id="species-picker-abilities">
           {abilities.map((ab) => (
@@ -215,7 +221,7 @@ export function SpeciesSidebar({
       {/* 3. Champions M-A Mega toggle (format-gated)                         */}
       {/* ------------------------------------------------------------------ */}
       {showMegaToggle && (
-        <div className="border-t border-border px-3 py-2">
+        <div className="border-border border-t px-3 py-2">
           <button
             type="button"
             onClick={() =>
@@ -224,8 +230,8 @@ export function SpeciesSidebar({
             className={cn(
               "flex w-full items-center gap-2 rounded-md border px-2.5 py-1.5 transition-colors",
               filters.megaOnly
-                ? "border-violet-400/40 bg-violet-500/8 text-foreground"
-                : "border-border bg-transparent text-muted-foreground hover:bg-muted"
+                ? "text-foreground border-violet-400/40 bg-violet-500/8"
+                : "border-border text-muted-foreground hover:bg-muted bg-transparent"
             )}
           >
             {/* Gradient gem icon */}
@@ -267,8 +273,8 @@ export function SpeciesSidebar({
       {/* ------------------------------------------------------------------ */}
       {/* 4. Learns Move                                                      */}
       {/* ------------------------------------------------------------------ */}
-      <div className="border-t border-border px-3 py-2">
-        <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+      <div className="border-border border-t px-3 py-2">
+        <span className="text-muted-foreground mb-1.5 block text-[9px] font-bold tracking-widest uppercase">
           Learns Move
         </span>
 
@@ -279,7 +285,7 @@ export function SpeciesSidebar({
           value={moveInput}
           onChange={(e) => setMoveInput(e.target.value)}
           onKeyDown={handleMoveKeyDown}
-          className="w-full rounded border border-input bg-background px-2 py-1 text-[11px] placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
+          className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
         />
 
         {/* Selected moves as chips */}
@@ -290,7 +296,7 @@ export function SpeciesSidebar({
                 key={move}
                 type="button"
                 onClick={() => removeMove(move)}
-                className="flex items-center gap-0.5 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/25"
+                className="bg-primary/15 text-primary hover:bg-primary/25 flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors"
               >
                 {move}
                 <span aria-hidden="true" className="ml-0.5 text-[9px]">
@@ -331,11 +337,11 @@ export function SpeciesSidebar({
       {/* ------------------------------------------------------------------ */}
       {/* 5. Clear all filters                                                */}
       {/* ------------------------------------------------------------------ */}
-      <div className="border-t border-border px-3 py-2">
+      <div className="border-border border-t px-3 py-2">
         <button
           type="button"
           onClick={clearAll}
-          className="w-full rounded bg-muted px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full rounded px-2 py-1.5 text-[11px] font-medium transition-colors"
         >
           Clear all filters
         </button>

@@ -53,11 +53,11 @@ export function RolePresetsPanel({
   return (
     <div
       className={cn(
-        "flex w-[170px] flex-shrink-0 flex-col overflow-y-auto bg-muted/20 px-0 py-2.5",
+        "bg-muted/20 flex w-[170px] flex-shrink-0 flex-col overflow-y-auto px-0 py-2.5",
         className
       )}
     >
-      <span className="block px-3 pb-1.5 text-[8.5px] font-bold uppercase tracking-widest text-muted-foreground">
+      <span className="text-muted-foreground block px-3 pb-1.5 text-[8.5px] font-bold tracking-widest uppercase">
         Role
       </span>
 
@@ -65,7 +65,7 @@ export function RolePresetsPanel({
         const presets = ROLE_PRESETS.filter((r) => r.group === group);
         return (
           <div key={group} className="mb-1">
-            <span className="block px-3 pb-0.5 pt-1.5 text-[7.5px] font-bold uppercase tracking-widest text-muted-foreground/50">
+            <span className="text-muted-foreground/50 block px-3 pt-1.5 pb-0.5 text-[7.5px] font-bold tracking-widest uppercase">
               {ROLE_GROUP_LABELS[group]}
             </span>
             {presets.map((preset) => {

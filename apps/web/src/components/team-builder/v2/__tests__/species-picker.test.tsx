@@ -83,7 +83,13 @@ jest.mock("../pickers/species-sidebar", () => ({
     filters,
     onFiltersChange,
   }: {
-    filters: { types: string[]; ability: string | null; moves: string[]; roles: string[]; megaOnly: boolean };
+    filters: {
+      types: string[];
+      ability: string | null;
+      moves: string[];
+      roles: string[];
+      megaOnly: boolean;
+    };
     onFiltersChange: (f: typeof filters) => void;
   }) => (
     <div data-testid="species-sidebar" data-filters={JSON.stringify(filters)}>
@@ -182,7 +188,11 @@ jest.mock("../pickers/species-smart-search", () => ({
     query: string;
     index: unknown[];
     format: unknown;
-    onFilter: (action: { type?: string; move?: string; ability?: string }) => void;
+    onFilter: (action: {
+      type?: string;
+      move?: string;
+      ability?: string;
+    }) => void;
     onPick: (species: string) => void;
   }) => (
     <div data-testid="species-smart-search" data-query={query}>
@@ -192,7 +202,10 @@ jest.mock("../pickers/species-smart-search", () => ({
       >
         Filter Fire
       </button>
-      <button data-testid="smart-pick-pikachu" onClick={() => onPick("Pikachu")}>
+      <button
+        data-testid="smart-pick-pikachu"
+        onClick={() => onPick("Pikachu")}
+      >
         Pick Pikachu
       </button>
     </div>
@@ -221,9 +234,7 @@ jest.mock("@tanstack/react-virtual", () => ({
 // Mock CSS module
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
+jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 
 import { SpeciesPicker } from "../pickers/species-picker";
 import { type GameFormat } from "@trainers/pokemon";
@@ -375,7 +386,9 @@ describe("SpeciesPicker", () => {
       />
     );
     // 3 of 3 shown
-    expect(screen.getByText(`${MOCK_INDEX.length} of ${MOCK_INDEX.length}`)).toBeInTheDocument();
+    expect(
+      screen.getByText(`${MOCK_INDEX.length} of ${MOCK_INDEX.length}`)
+    ).toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------
@@ -488,7 +501,7 @@ describe("SpeciesPicker", () => {
     // searchSpecies is called — only Garchomp passes legality
     const [indexArg] = mockSearchSpecies.mock.calls[0] as [
       typeof MOCK_INDEX,
-      ...unknown[]
+      ...unknown[],
     ];
     expect(indexArg).toHaveLength(1);
     expect(indexArg[0]?.species).toBe("Garchomp");
@@ -604,7 +617,9 @@ describe("SpeciesPicker", () => {
     const input = screen.getByTestId("species-search");
     await user.type(input, "fire");
     await user.clear(input);
-    expect(screen.queryByTestId("species-smart-search")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("species-smart-search")
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("species-rows")).toBeInTheDocument();
   });
 

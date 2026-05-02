@@ -66,17 +66,20 @@ export function SpeciesSmartSearch({
     .slice(0, MAX_PER_CATEGORY);
 
   // Moves (cap 5) — only when format is known
-  const matchedMoves =
-    format?.id
-      ? getAllLegalMoves(format.id)
-          .filter((m) => m.toLowerCase().includes(q))
-          .slice(0, MAX_PER_CATEGORY)
-      : [];
+  const matchedMoves = format?.id
+    ? getAllLegalMoves(format.id)
+        .filter((m) => m.toLowerCase().includes(q))
+        .slice(0, MAX_PER_CATEGORY)
+    : [];
 
   // Abilities (cap 5) — walk index collecting unique matches
   const abilitySet = new Set<string>();
   for (const entry of index) {
-    for (const a of [entry.abilitySlot1, entry.abilitySlot2, entry.hiddenAbility]) {
+    for (const a of [
+      entry.abilitySlot1,
+      entry.abilitySlot2,
+      entry.hiddenAbility,
+    ]) {
       if (a && a.toLowerCase().includes(q)) abilitySet.add(a);
     }
   }
@@ -95,7 +98,7 @@ export function SpeciesSmartSearch({
 
   if (total === 0) {
     return (
-      <div className="p-6 text-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground p-6 text-center text-sm">
         No results for &ldquo;{query}&rdquo;
       </div>
     );
@@ -164,10 +167,16 @@ export function SpeciesSmartSearch({
 // =============================================================================
 
 /** Labeled group with a bottom border divider (removed on last child). */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="border-b border-border/40 last:border-b-0">
-      <h3 className="px-4 py-1.5 text-[9.5px] font-bold uppercase tracking-widest text-muted-foreground">
+    <div className="border-border/40 border-b last:border-b-0">
+      <h3 className="text-muted-foreground px-4 py-1.5 text-[9.5px] font-bold tracking-widest uppercase">
         {title}
       </h3>
       {children}
@@ -186,21 +195,18 @@ interface RowProps {
 function Row({ label, sub, actionLabel, onAction }: RowProps) {
   return (
     <div
-      className={cn(
-        "flex items-center gap-3 px-4 py-1.5",
-        "hover:bg-muted/50"
-      )}
+      className={cn("flex items-center gap-3 px-4 py-1.5", "hover:bg-muted/50")}
     >
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm">{label}</div>
         {sub && (
-          <div className="truncate text-xs text-muted-foreground">{sub}</div>
+          <div className="text-muted-foreground truncate text-xs">{sub}</div>
         )}
       </div>
       <button
         type="button"
         onClick={onAction}
-        className="rounded-full border border-primary/30 bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary hover:bg-primary/20"
+        className="border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 rounded-full border px-3 py-0.5 text-xs font-semibold"
       >
         {actionLabel}
       </button>

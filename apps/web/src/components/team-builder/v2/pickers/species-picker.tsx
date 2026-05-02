@@ -133,7 +133,7 @@ function SpeciesRow({
       />
 
       {/* Sprite — 44px circle */}
-      <div className="relative z-10 bg-primary/10 flex size-11 shrink-0 items-center justify-center rounded-full">
+      <div className="bg-primary/10 relative z-10 flex size-11 shrink-0 items-center justify-center rounded-full">
         <Image
           src={sprite.url}
           alt={entry.species}
@@ -148,7 +148,7 @@ function SpeciesRow({
       </div>
 
       {/* Name */}
-      <span className="relative z-10 min-w-0 truncate text-sm font-semibold text-foreground">
+      <span className="text-foreground relative z-10 min-w-0 truncate text-sm font-semibold">
         {entry.species}
       </span>
 
@@ -246,7 +246,7 @@ function SpeciesRow({
       </span>
 
       {/* BST */}
-      <span className="relative z-10 border-l border-border/60 pl-1.5 text-center font-mono text-xs font-semibold tabular-nums text-foreground">
+      <span className="border-border/60 text-foreground relative z-10 border-l pl-1.5 text-center font-mono text-xs font-semibold tabular-nums">
         {entry.bst}
       </span>
 
@@ -285,7 +285,9 @@ export function SpeciesPicker({
   onClose,
 }: SpeciesPickerProps) {
   const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<SpeciesFilterState>(DEFAULT_SPECIES_FILTERS);
+  const [filters, setFilters] = useState<SpeciesFilterState>(
+    DEFAULT_SPECIES_FILTERS
+  );
 
   // Scroll container ref for the virtualizer
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -302,7 +304,6 @@ export function SpeciesPicker({
         (abilities, speciesName, formatId) =>
           getRolesForSpecies(abilities, speciesName, formatId)
       ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [format?.id]
   );
 
@@ -314,7 +315,6 @@ export function SpeciesPicker({
       format?.id
         ? fullIndex.filter((e) => isLegalSpecies(e.species, format.id))
         : fullIndex,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [fullIndex, format?.id]
   );
 
@@ -537,12 +537,15 @@ export function SpeciesPicker({
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden" data-testid="species-picker">
+    <div
+      className="flex min-h-0 flex-col overflow-hidden"
+      data-testid="species-picker"
+    >
       {/* -------------------------------------------------------------------- */}
       {/* Header — search input + count                                         */}
       {/* -------------------------------------------------------------------- */}
       <div className="flex shrink-0 items-center gap-2 border-b px-3 py-2">
-        <Search className="size-4 shrink-0 text-muted-foreground" />
+        <Search className="text-muted-foreground size-4 shrink-0" />
         <input
           type="text"
           placeholder="Search Pokémon, type, ability, or move…"
@@ -551,9 +554,9 @@ export function SpeciesPicker({
           onKeyDown={handleSearchKeyDown}
           aria-label="Search species"
           data-testid="species-search"
-          className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-muted-foreground/60 focus:outline-none"
+          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
         />
-        <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
           {matched.length} of {speciesIndex.length}
         </span>
       </div>
@@ -584,7 +587,10 @@ export function SpeciesPicker({
 
           {/* Smart-search overlay or virtualized table */}
           {showSmartSearch ? (
-            <div className="flex-1 overflow-y-auto" data-testid="smart-search-container">
+            <div
+              className="flex-1 overflow-y-auto"
+              data-testid="smart-search-container"
+            >
               <SpeciesSmartSearch
                 query={query}
                 index={speciesIndex}
@@ -603,7 +609,7 @@ export function SpeciesPicker({
               data-testid="species-rows"
             >
               {matched.length === 0 ? (
-                <div className="py-12 text-center text-sm text-muted-foreground">
+                <div className="text-muted-foreground py-12 text-center text-sm">
                   No Pokémon match your filters. Try broadening your search.
                 </div>
               ) : (
@@ -617,7 +623,7 @@ export function SpeciesPicker({
                     return (
                       <div
                         key={virtualRow.key}
-                        className="absolute left-0 right-0"
+                        className="absolute right-0 left-0"
                         style={{ top: virtualRow.start }}
                       >
                         <SpeciesRow
