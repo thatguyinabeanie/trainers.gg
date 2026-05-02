@@ -819,13 +819,19 @@ export function useCalcState({
 
   // --- Inferred weather / terrain from attacker ability ---
   // Only applies when the user has NOT explicitly set weather/terrain.
+  // The literal "None" sentinel means "explicitly no weather" — used to
+  // override the ability-based inference when the user wants to model a
+  // matchup as if no weather is active (e.g. testing a Weather Ball
+  // calculation without Drought firing).
   const attackerAbility = selectedPokemon?.ability ?? null;
+  const weatherIsExplicitNone = weather === "None";
+  const terrainIsExplicitNone = terrain === "None";
   const inferredWeather: string | null =
-    !weather && attackerAbility
+    !weather && !weatherIsExplicitNone && attackerAbility
       ? (ABILITY_WEATHER_MAP[attackerAbility] ?? null)
       : null;
   const inferredTerrain: string | null =
-    !terrain && attackerAbility
+    !terrain && !terrainIsExplicitNone && attackerAbility
       ? (ABILITY_TERRAIN_MAP[attackerAbility] ?? null)
       : null;
 
@@ -838,8 +844,14 @@ export function useCalcState({
   ];
 
   // --- Shared calc objects — built once per render, reused across all move outputs ---
-  const effectiveWeather = weather || (inferredWeather ?? "");
-  const effectiveTerrain = terrain || (inferredTerrain ?? "");
+  // The "None" sentinel collapses to empty for the engine while still
+  // suppressing inference (handled above).
+  const effectiveWeather = weatherIsExplicitNone
+    ? ""
+    : weather || (inferredWeather ?? "");
+  const effectiveTerrain = terrainIsExplicitNone
+    ? ""
+    : terrain || (inferredTerrain ?? "");
 
   // Offense field: attacker fires at defender
   const sharedOffenseField = buildField(

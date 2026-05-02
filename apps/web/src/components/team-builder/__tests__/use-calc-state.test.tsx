@@ -576,6 +576,26 @@ describe("inferredWeather / inferredTerrain", () => {
     expect(result.current.inferredWeather).toBeNull();
     expect(result.current.inferredTerrain).toBeNull();
   });
+
+  it("setWeather('None') sentinel suppresses ability-based inference", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon({ ability: "Drought" }) })
+    );
+    expect(result.current.inferredWeather).toBe("Sun");
+    act(() => result.current.setWeather("None"));
+    expect(result.current.inferredWeather).toBeNull();
+  });
+
+  it("setTerrain('None') sentinel suppresses Hadron Engine inference", () => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ ability: "Hadron Engine" }),
+      })
+    );
+    expect(result.current.inferredTerrain).toBe("Electric");
+    act(() => result.current.setTerrain("None"));
+    expect(result.current.inferredTerrain).toBeNull();
+  });
 });
 
 // =============================================================================

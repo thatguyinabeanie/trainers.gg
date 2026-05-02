@@ -1214,11 +1214,11 @@ const NCP_CASES: NcpReferenceCase[] = [
       nature: "Hardy",
       evs: { hp: 32, atk: 0, def: 0, spa: 0, spd: 20, spe: 0 },
     },
-    // NCP omits weather here — assumes vanilla Weather Ball = Normal type.
-    // Our wrapper auto-infers Sun from Drought (separate case below covers
-    // that path). Force "" via setWeather(""); inference still kicks in
-    // unless we also re-pick the attacker — for diagnostic use we accept
-    // the auto-inferred Sun path produces case-3 numbers, not case-2.
+    // NCP assumes vanilla Weather Ball (Normal type) when no weather is
+    // active. Our wrapper would auto-infer Sun from Drought, so we set
+    // weather to the "None" sentinel to suppress inference and force the
+    // no-weather branch — matching NCP exactly.
+    weather: "None",
     expected: { minPct: 16.8, maxPct: 20.2 },
     rolls: [34, 35, 35, 36, 36, 36, 37, 37, 38, 38, 38, 39, 39, 40, 40, 41],
   },
@@ -1546,21 +1546,6 @@ describe("NCP-VGC Champions reference cases", () => {
 
       const out = result.current.selectedMoveOutput;
       expect(out).not.toBeNull();
-
-      // The no-weather Weather Ball case diverges intentionally because our
-      // wrapper auto-infers Sun from Drought, while NCP requires explicit
-      // weather selection. Document via structural-only assertions.
-      const isKnownDivergent = c.name.includes(
-        "Mega Charizard Y Weather Ball (Normal, no weather)"
-      );
-
-      if (isKnownDivergent) {
-        expect(out!.minPercent).toBeGreaterThanOrEqual(0);
-        expect(out!.maxPercent).toBeGreaterThanOrEqual(out!.minPercent);
-        expect(out!.maxPercent).toBeLessThanOrEqual(300);
-        expect(Array.isArray(out!.rolls)).toBe(true);
-        return;
-      }
 
       // Strict equality — engine output must match NCP exactly. Any drift
       // here indicates either a wrapper regression or a genuine engine
