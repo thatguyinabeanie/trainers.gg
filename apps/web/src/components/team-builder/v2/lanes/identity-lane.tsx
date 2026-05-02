@@ -35,15 +35,24 @@ import s from "../builder.module.css";
 // =============================================================================
 
 interface IdentityLaneProps {
-  pokemon: Tables<"pokemon">;
-  format: GameFormat | undefined;
+  pokemon: Tables<"pokemon"> | null;
+  format?: GameFormat;
   /** Held items from sibling pokemon — passed to ItemPicker for dup warning. */
-  teamItems: string[];
-  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  teamItems?: string[];
+  onUpdate?: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   /** Validation errors scoped to identity + loadout fields. */
   fieldErrors?: ValidationError[];
   /** Sibling pokemon on the same team — used for species-picker synergy hints. */
-  teamSiblings?: ReadonlyArray<{ species: string | null }>;
+  teamSiblings?: { species: string }[];
+}
+
+interface IdentityLaneRealProps {
+  pokemon: Tables<"pokemon">;
+  format: GameFormat | undefined;
+  teamItems: string[];
+  teamSiblings: { species: string }[];
+  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  fieldErrors: ValidationError[];
 }
 
 type GenderValue = "Male" | "Female" | null;
@@ -74,33 +83,66 @@ function errorsForFields(errors: ValidationError[], fields: string[]): Validatio
 
 
 // =============================================================================
-// IdentityLane
+// IdentityLaneGhost — static visual placeholder (no interactive elements)
 // =============================================================================
 
-/**
- * Combined IDENTITY + LOADOUT lane — sprite column on the left, form sheet on
- * the right.
- *
- * Sprite column:
- *   - 128×128 sprite with type-tinted background (click → species picker)
- *   - Species pill below (click → species picker, responsive width)
- *
- * Form column:
- *   Banner (2 rows, separated from form rows by a thin border):
- *     Row 1 — nickname input (full-width, dashed-border-on-hover)
- *     Row 2 — type pills + gender chip + shiny chip
- *
- *   Labeled form rows for loadout:
- *     Item | Ability | Nature | Level (gen-gated) | Tera (gen-gated)
- */
-export function IdentityLane({
+function IdentityLaneGhost() {
+  return (
+    <div className="flex min-w-0 gap-3 p-3">
+      {/* Sprite column */}
+      <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
+        {/* Species pill ghost — static div, NOT a button */}
+        <div className="border-border bg-background flex w-36 items-center gap-1 rounded-md border border-dashed px-2 py-1.5 text-left text-xs sm:w-40 md:w-44">
+          <span className="min-w-0 flex-1 truncate text-muted-foreground/50">
+            + Add Pokémon
+          </span>
+          <span aria-hidden className="text-[9px] text-muted-foreground/30">
+            ▾
+          </span>
+        </div>
+        {/* Sprite ghost — static div, NOT a button */}
+        <div className="size-[144px] rounded-xl bg-muted/40" />
+      </div>
+
+      {/* Form column */}
+      <div className="flex w-64 min-w-0 shrink-0 flex-col justify-center gap-0.5">
+        {/* Banner ghost — same className as real banner */}
+        <div className={s.idBanner}>
+          <div className="flex h-[22px] items-center">
+            <span className="text-sm font-normal text-muted-foreground/20 italic">
+              Nickname (optional)
+            </span>
+          </div>
+          <div className="flex h-[18px] items-center gap-1">
+            <div className="h-3.5 w-10 rounded bg-muted/30" />
+          </div>
+        </div>
+        {/* Loadout rows ghost — Item / Abil / Nat with em-dashes, static divs */}
+        {(["Item", "Abil", "Nat"] as const).map((label) => (
+          <div key={label} className={s.formRow}>
+            <span className={s.formLabel}>{label}</span>
+            <span className={cn(s.formValue, "text-muted-foreground/25 italic")}>
+              —
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// IdentityLaneReal — full interactive lane (existing logic, unchanged)
+// =============================================================================
+
+function IdentityLaneReal({
   pokemon,
   format,
   teamItems,
-  onUpdate,
-  fieldErrors = [],
   teamSiblings,
-}: IdentityLaneProps) {
+  onUpdate,
+  fieldErrors,
+}: IdentityLaneRealProps) {
   const types = getSpeciesTypes(pokemon.species ?? "");
   const nicknameRef = useRef<HTMLInputElement>(null);
   const [nickDraft, setNickDraft] = useState(pokemon.nickname ?? "");
@@ -522,5 +564,50 @@ export function IdentityLane({
         ))}
       </div>
     </div>
+  );
+}
+
+// =============================================================================
+// IdentityLane — public dispatcher
+// =============================================================================
+
+/**
+ * Combined IDENTITY + LOADOUT lane — sprite column on the left, form sheet on
+ * the right.
+ *
+ * When `pokemon` is null, renders a purely static ghost placeholder (no
+ * buttons, inputs, or popovers) so an outer `<button>` wrapper (EmptyRow) can
+ * safely contain it without nested-button violations.
+ *
+ * Sprite column:
+ *   - 128×128 sprite with type-tinted background (click → species picker)
+ *   - Species pill below (click → species picker, responsive width)
+ *
+ * Form column:
+ *   Banner (2 rows, separated from form rows by a thin border):
+ *     Row 1 — nickname input (full-width, dashed-border-on-hover)
+ *     Row 2 — type pills + gender chip + shiny chip
+ *
+ *   Labeled form rows for loadout:
+ *     Item | Ability | Nature | Level (gen-gated) | Tera (gen-gated)
+ */
+export function IdentityLane({
+  pokemon,
+  format,
+  teamItems,
+  teamSiblings,
+  onUpdate,
+  fieldErrors = [],
+}: IdentityLaneProps) {
+  if (!pokemon) return <IdentityLaneGhost />;
+  return (
+    <IdentityLaneReal
+      pokemon={pokemon}
+      format={format}
+      teamItems={teamItems ?? []}
+      teamSiblings={teamSiblings ?? []}
+      onUpdate={onUpdate ?? (() => {})}
+      fieldErrors={fieldErrors}
+    />
   );
 }

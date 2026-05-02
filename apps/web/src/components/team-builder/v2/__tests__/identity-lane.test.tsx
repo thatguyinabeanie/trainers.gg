@@ -732,3 +732,41 @@ describe("IdentityLane — validation errors", () => {
     expect(alerts.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+// =============================================================================
+// Ghost mode (pokemon: null)
+// =============================================================================
+
+describe("IdentityLane — ghost mode (pokemon: null)", () => {
+  function renderGhost() {
+    return render(<IdentityLane pokemon={null} />);
+  }
+
+  it("renders without crashing when pokemon is null", () => {
+    expect(() => renderGhost()).not.toThrow();
+  });
+
+  it("shows '+ Add Pokémon' placeholder text", () => {
+    renderGhost();
+    expect(screen.getByText("+ Add Pokémon")).toBeInTheDocument();
+  });
+
+  it("shows 'Nickname (optional)' italic placeholder text", () => {
+    renderGhost();
+    expect(screen.getByText("Nickname (optional)")).toBeInTheDocument();
+  });
+
+  it("shows three loadout rows with labels Item, Abil, Nat", () => {
+    renderGhost();
+    expect(screen.getByText("Item")).toBeInTheDocument();
+    expect(screen.getByText("Abil")).toBeInTheDocument();
+    expect(screen.getByText("Nat")).toBeInTheDocument();
+  });
+
+  it("renders zero interactive elements — no buttons, inputs, or comboboxes", () => {
+    renderGhost();
+    expect(screen.queryAllByRole("button").length).toBe(0);
+    expect(screen.queryAllByRole("textbox").length).toBe(0);
+    expect(screen.queryAllByRole("combobox").length).toBe(0);
+  });
+});

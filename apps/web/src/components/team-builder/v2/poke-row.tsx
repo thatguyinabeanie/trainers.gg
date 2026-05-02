@@ -14,16 +14,14 @@ import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 import { type ValidationError } from "../validation-hooks";
 import { Sprite } from "./sprite";
 import { TypePill } from "./type-pill";
 import { ActiveRow } from "./lanes/active-row";
+import { IdentityLane } from "./lanes/identity-lane";
+import { StatsLane } from "./lanes/stats-lane";
+import { MovesLane } from "./lanes/moves-lane";
 import { SpeciesPicker } from "./pickers/species-picker";
 import s from "./builder.module.css";
 
@@ -63,15 +61,6 @@ interface EmptyRowProps {
   onAdd?: (idx: number, species: string) => void;
 }
 
-const GHOST_STATS = [
-  { key: "hp", label: "HP", colorClass: "text-rose-500 dark:text-rose-400" },
-  { key: "attack", label: "ATK", colorClass: "text-orange-500 dark:text-orange-400" },
-  { key: "defense", label: "DEF", colorClass: "text-amber-500 dark:text-amber-400" },
-  { key: "specialAttack", label: "SPA", colorClass: "text-sky-500 dark:text-sky-400" },
-  { key: "specialDefense", label: "SPD", colorClass: "text-emerald-500 dark:text-emerald-400" },
-  { key: "speed", label: "SPE", colorClass: "text-fuchsia-500 dark:text-fuchsia-400" },
-] as const;
-
 function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
   const [open, setOpen] = useState(false);
 
@@ -81,12 +70,12 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "flex w-full min-w-0 flex-wrap items-stretch overflow-hidden rounded-lg border border-dashed border-border bg-card",
+          "flex w-fit self-start min-w-0 flex-wrap items-stretch overflow-hidden rounded-lg border border-dashed border-border bg-card",
           "text-left transition-colors hover:border-primary/40 hover:bg-muted/10",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         )}
       >
-        {/* RIB — slot number on left edge */}
+        {/* RIB — slot number + × placeholder */}
         <div className="flex w-8 shrink-0 flex-col items-center justify-between border-r border-dashed border-border/60 bg-muted/20 py-2">
           <span className="font-mono text-[10px] font-medium tracking-wide text-muted-foreground">
             {String(idx + 1).padStart(2, "0")}
@@ -96,94 +85,9 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
           </span>
         </div>
 
-        {/* Identity ghost — sprite + form fields */}
-        <div className="flex min-w-0 gap-3 p-3">
-          <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
-            {/* Species pill ghost */}
-            <div className="border-border bg-background flex w-36 items-center gap-1 rounded-md border border-dashed px-2 py-1.5 text-left text-xs sm:w-40 md:w-44">
-              <span className="min-w-0 flex-1 truncate text-muted-foreground/50">
-                + Add Pokémon
-              </span>
-              <span aria-hidden className="text-[9px] text-muted-foreground/30">▾</span>
-            </div>
-            {/* Sprite ghost */}
-            <div className="size-[144px] rounded-xl bg-muted/40" />
-          </div>
-
-          {/* Form column ghost */}
-          <div className="flex w-64 min-w-0 shrink-0 flex-col justify-center gap-0.5">
-            {/* Banner ghost */}
-            <div className={s.idBanner}>
-              <div className="h-[22px] flex items-center">
-                <span className="text-sm font-normal text-muted-foreground/20 italic">Nickname (optional)</span>
-              </div>
-              <div className="flex h-[18px] items-center gap-1">
-                <div className="h-3.5 w-10 rounded bg-muted/30" />
-              </div>
-            </div>
-            {/* Loadout rows ghost */}
-            {(["Item", "Abil", "Nat"] as const).map((label) => (
-              <div key={label} className={s.formRow}>
-                <span className={s.formLabel}>{label}</span>
-                <span className={cn(s.formValue, "text-muted-foreground/25 italic")}>—</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Stats ghost */}
-        <div
-          className="flex flex-1 flex-col justify-center gap-0.5 border-r border-dashed border-border/60 px-3 py-2"
-          style={{ minWidth: 340 }}
-        >
-          {/* Column headers ghost */}
-          <div className={cn("mb-0.5 py-0", s.spreadRow)}>
-            <span />
-            <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">Base</span>
-            <span />
-            <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">EVs</span>
-            <span className="text-right font-mono text-[8.5px] text-muted-foreground/30">0/508</span>
-            <span />
-          </div>
-          {/* Six stat rows ghost */}
-          {GHOST_STATS.map(({ key, label, colorClass }) => (
-            <div key={key} className={cn(s.spreadRow, colorClass)}>
-              <span className={cn(s.spreadLabel, "opacity-30")}>{label}</span>
-              <span className={cn(s.spreadBase, "opacity-25")}>—</span>
-              <div className={s.spreadVbar} />
-              <div className="h-[18px] w-9 rounded border border-dashed border-border/30" />
-              <div className={s.spreadSliderWrap}>
-                <div className={cn(s.spreadSliderTrack, "opacity-25")} />
-              </div>
-              <span className={cn(s.spreadFinal, "opacity-25")}>—</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Moves ghost */}
-        <div className="flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3">
-          <div className="mb-1 flex items-baseline">
-            <span className="font-mono text-[9.5px] font-medium uppercase tracking-widest text-muted-foreground/30">
-              Moves
-            </span>
-          </div>
-          <div className="flex flex-col gap-1">
-            {([0, 1, 2, 3] as const).map((i) => (
-              <div key={i} className="mvline mvline--empty">
-                <span className="mvline-type-cat" />
-                <span className="mvline-name text-muted-foreground/30">+ Add move</span>
-                <span className="mvline-stat">
-                  <span className="mvline-stat-label">BP</span>
-                  <span className="mvline-stat-value mvline-stat-value--bp" />
-                </span>
-                <span className="mvline-stat">
-                  <span className="mvline-stat-label">ACC</span>
-                  <span className="mvline-stat-value mvline-stat-value--acc" />
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <IdentityLane pokemon={null} format={_format} />
+        <StatsLane pokemon={null} format={_format} />
+        <MovesLane pokemon={null} format={_format} />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

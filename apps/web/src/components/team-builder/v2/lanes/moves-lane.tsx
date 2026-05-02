@@ -32,9 +32,9 @@ import { FieldError } from "../validation/field-error";
 // =============================================================================
 
 interface MovesLaneProps {
-  pokemon: Tables<"pokemon">;
-  format: GameFormat | undefined;
-  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  pokemon: Tables<"pokemon"> | null;
+  format?: GameFormat;
+  onUpdate?: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   /** Validation errors scoped to move fields (move1–move4). */
   fieldErrors?: ValidationError[];
 }
@@ -274,17 +274,49 @@ function MoveTile({
 }
 
 // =============================================================================
-// MovesLane
+// MovesLaneGhost — purely visual placeholder, no hooks
 // =============================================================================
 
-/**
- * Vertical stack of 4 calc-aware move tiles.
- *
- * Left-click: opens CalcDetailCard when calc data is available, else picker.
- * Right-click: always opens move picker.
- * Renders inline FieldError chips for move-scoped validation issues.
- */
-export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: MovesLaneProps) {
+function MovesLaneGhost() {
+  return (
+    <div className="flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3">
+      <div className="mb-1 flex items-baseline">
+        <span className="font-mono text-[9.5px] font-medium uppercase tracking-widest text-muted-foreground/30">
+          Moves
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        {([0, 1, 2, 3] as const).map((i) => (
+          <div key={i} className="mvline mvline--empty">
+            <span className="mvline-type-cat" />
+            <span className="mvline-name text-muted-foreground/30">+ Add move</span>
+            <span className="mvline-stat">
+              <span className="mvline-stat-label">BP</span>
+              <span className="mvline-stat-value mvline-stat-value--bp" />
+            </span>
+            <span className="mvline-stat">
+              <span className="mvline-stat-label">ACC</span>
+              <span className="mvline-stat-value mvline-stat-value--acc" />
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// MovesLaneReal — calc-aware move tiles (requires pokemon)
+// =============================================================================
+
+interface MovesLaneRealProps {
+  pokemon: Tables<"pokemon">;
+  format: GameFormat | undefined;
+  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  fieldErrors: ValidationError[];
+}
+
+function MovesLaneReal({ pokemon, format, onUpdate, fieldErrors }: MovesLaneRealProps) {
   const { calcEnabled } = useCalcStateContext();
 
   function handlePick(slotKey: MoveSlot, name: string) {
@@ -326,5 +358,33 @@ export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: Moves
         })}
       </div>
     </div>
+  );
+}
+
+// =============================================================================
+// MovesLane — public export, dispatches to ghost or real branch
+// =============================================================================
+
+/**
+ * Vertical stack of 4 calc-aware move tiles.
+ *
+ * When `pokemon` is null, renders purely visual ghost content (4 static
+ * placeholder tiles) with no interactive elements and no hook calls.
+ *
+ * When `pokemon` is set:
+ * - Left-click: opens CalcDetailCard when calc data is available, else picker.
+ * - Right-click: always opens move picker.
+ * - Renders inline FieldError chips for move-scoped validation issues.
+ */
+export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: MovesLaneProps) {
+  if (!pokemon) return <MovesLaneGhost />;
+  const handleUpdate = onUpdate ?? (() => {});
+  return (
+    <MovesLaneReal
+      pokemon={pokemon}
+      format={format}
+      onUpdate={handleUpdate}
+      fieldErrors={fieldErrors}
+    />
   );
 }

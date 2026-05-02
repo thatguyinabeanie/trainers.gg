@@ -544,3 +544,59 @@ describe("StatsLane", () => {
     }
   });
 });
+
+// =============================================================================
+// Ghost mode (pokemon: null)
+// =============================================================================
+
+describe("ghost mode (pokemon: null)", () => {
+  // ---------------------------------------------------------------------------
+  // 1. Renders without crashing
+  // ---------------------------------------------------------------------------
+  it("renders without crashing when pokemon={null}", () => {
+    expect(() => {
+      render(<StatsLane pokemon={null} />);
+    }).not.toThrow();
+  });
+
+  // ---------------------------------------------------------------------------
+  // 2. Root container has correct style and className
+  // ---------------------------------------------------------------------------
+  it("root container has style={{ width: 340 }} and expected className", () => {
+    const { container } = render(<StatsLane pokemon={null} />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root).toBeTruthy();
+    expect(root.style.width).toBe("340px");
+    expect(root.className).toContain("border-dashed");
+    expect(root.className).toContain("flex-col");
+  });
+
+  // ---------------------------------------------------------------------------
+  // 3. Renders 6 stat rows with stat labels
+  // ---------------------------------------------------------------------------
+  it("renders 6 stat rows, each with its label (HP, ATK, DEF, SPA, SPD, SPE)", () => {
+    render(<StatsLane pokemon={null} />);
+    for (const label of ["HP", "ATK", "DEF", "SPA", "SPD", "SPE"]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // 4. Column headers render (Base, EVs)
+  // ---------------------------------------------------------------------------
+  it("renders column headers Base and EVs", () => {
+    render(<StatsLane pokemon={null} />);
+    expect(screen.getByText("Base")).toBeInTheDocument();
+    expect(screen.getByText("EVs")).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // 5. No interactive elements (no spinbuttons, no sliders, no textboxes)
+  // ---------------------------------------------------------------------------
+  it("renders no interactive inputs or sliders in ghost mode", () => {
+    render(<StatsLane pokemon={null} />);
+    expect(screen.queryAllByRole("spinbutton")).toHaveLength(0);
+    expect(screen.queryAllByRole("slider")).toHaveLength(0);
+    expect(screen.queryAllByRole("textbox")).toHaveLength(0);
+  });
+});

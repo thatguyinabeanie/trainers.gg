@@ -479,3 +479,34 @@ describe("MovesLane — validation errors", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 });
+
+describe("MovesLane — ghost mode (pokemon: null)", () => {
+  it("renders without crashing when pokemon is null (no CalcStateContext needed)", () => {
+    // The ghost branch must NOT call useCalcStateContext — renders standalone
+    expect(() => render(<MovesLane pokemon={null} />)).not.toThrow();
+  });
+
+  it("shows the 'Moves' header text", () => {
+    render(<MovesLane pokemon={null} />);
+    expect(screen.getByText("Moves")).toBeInTheDocument();
+  });
+
+  it("renders 4 placeholder rows with '+ Add move' text", () => {
+    render(<MovesLane pokemon={null} />);
+    expect(screen.getAllByText("+ Add move").length).toBe(4);
+  });
+
+  it("contains no interactive elements (zero buttons)", () => {
+    render(<MovesLane pokemon={null} />);
+    expect(screen.queryAllByRole("button").length).toBe(0);
+  });
+
+  it("renders '+ Add move' as span elements, not buttons", () => {
+    const { container } = render(<MovesLane pokemon={null} />);
+    const spans = container.querySelectorAll("span.mvline-name");
+    expect(spans.length).toBe(4);
+    spans.forEach((span) => {
+      expect(span.tagName.toLowerCase()).toBe("span");
+    });
+  });
+});

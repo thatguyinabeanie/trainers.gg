@@ -6,7 +6,7 @@
  * slot rib number, onActivate, onRemove, error/warning dots.
  */
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -54,6 +54,51 @@ jest.mock("../lanes/active-row", () => ({
       </button>
     </div>
   ),
+}));
+
+// Lane component ghost mocks — return static content matching the real ghost output
+jest.mock("../lanes/identity-lane", () => ({
+  IdentityLane: ({ pokemon }: { pokemon: null | { species?: string } }) => {
+    if (!pokemon) {
+      return (
+        <div data-testid="identity-lane-ghost">
+          <span>+ Add Pokémon</span>
+        </div>
+      );
+    }
+    return <div data-testid="identity-lane-real" />;
+  },
+}));
+
+jest.mock("../lanes/stats-lane", () => ({
+  StatsLane: ({ pokemon }: { pokemon: null | object }) => {
+    if (!pokemon) {
+      return (
+        <div data-testid="stats-lane-ghost">
+          <span>HP</span>
+        </div>
+      );
+    }
+    return <div data-testid="stats-lane-real" />;
+  },
+  // Keep the GHOST_STATS export in case any other import still references it
+  GHOST_STATS: [],
+}));
+
+jest.mock("../lanes/moves-lane", () => ({
+  MovesLane: ({ pokemon }: { pokemon: null | object }) => {
+    if (!pokemon) {
+      return (
+        <div data-testid="moves-lane-ghost">
+          <span>+ Add move</span>
+          <span>+ Add move</span>
+          <span>+ Add move</span>
+          <span>+ Add move</span>
+        </div>
+      );
+    }
+    return <div data-testid="moves-lane-real" />;
+  },
 }));
 
 jest.mock("../pickers/species-picker", () => ({
@@ -251,6 +296,62 @@ describe("PokeRow — empty slot", () => {
     await user.click(addBtn!);
     await user.click(screen.getByTestId("pick-species-btn"));
     expect(onAdd).toHaveBeenCalledWith(2, "Togekiss");
+  });
+
+  it("composes identity, stats, and moves ghost lanes", () => {
+    render(
+      <PokeRow
+        idx={0}
+        sortableId="__empty__0"
+        pokemon={null}
+        isActive={false}
+        density="comfy"
+        expandMode="active"
+        onActivate={jest.fn()}
+      />
+    );
+    // Identity ghost: '+ Add Pokémon' text
+    expect(screen.getByTestId("identity-lane-ghost")).toBeInTheDocument();
+    // Stats ghost: 'HP' label
+    expect(screen.getByTestId("stats-lane-ghost")).toBeInTheDocument();
+    expect(screen.getByText("HP")).toBeInTheDocument();
+    // Moves ghost: '+ Add move' appears 4 times
+    expect(screen.getAllByText(/\+ Add move/i)).toHaveLength(4);
+  });
+
+  it("outer button has w-fit and self-start classes", () => {
+    render(
+      <PokeRow
+        idx={0}
+        sortableId="__empty__0"
+        pokemon={null}
+        isActive={false}
+        density="comfy"
+        expandMode="active"
+        onActivate={jest.fn()}
+      />
+    );
+    const button = screen.getByText(/\+ Add Pokémon/i).closest("button")!;
+    expect(button.className).toContain("w-fit");
+    expect(button.className).toContain("self-start");
+  });
+
+  it("ghost lane components do not introduce nested buttons inside the wrapper", () => {
+    render(
+      <PokeRow
+        idx={0}
+        sortableId="__empty__0"
+        pokemon={null}
+        isActive={false}
+        density="comfy"
+        expandMode="active"
+        onActivate={jest.fn()}
+      />
+    );
+    const button = screen.getByText(/\+ Add Pokémon/i).closest("button")!;
+    // within(button) scopes to inside the button element; queryAllByRole("button")
+    // should return nothing because there are no nested buttons in ghost mode.
+    expect(within(button).queryAllByRole("button")).toHaveLength(0);
   });
 });
 

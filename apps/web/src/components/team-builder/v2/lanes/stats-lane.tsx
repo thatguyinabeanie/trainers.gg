@@ -33,6 +33,19 @@ import { FieldError } from "../validation/field-error";
 import s from "../builder.module.css";
 
 // =============================================================================
+// Constants (ghost-mode placeholder rows)
+// =============================================================================
+
+export const GHOST_STATS = [
+  { key: "hp", label: "HP", colorClass: "text-rose-500 dark:text-rose-400" },
+  { key: "attack", label: "ATK", colorClass: "text-orange-500 dark:text-orange-400" },
+  { key: "defense", label: "DEF", colorClass: "text-amber-500 dark:text-amber-400" },
+  { key: "specialAttack", label: "SPA", colorClass: "text-sky-500 dark:text-sky-400" },
+  { key: "specialDefense", label: "SPD", colorClass: "text-emerald-500 dark:text-emerald-400" },
+  { key: "speed", label: "SPE", colorClass: "text-fuchsia-500 dark:text-fuchsia-400" },
+] as const;
+
+// =============================================================================
 // Constants
 // =============================================================================
 
@@ -98,9 +111,9 @@ const UNINITIALIZED = Symbol();
 // =============================================================================
 
 interface StatsLaneProps {
-  pokemon: Tables<"pokemon">;
-  format: GameFormat | undefined;
-  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  pokemon: Tables<"pokemon"> | null;
+  format?: GameFormat;
+  onUpdate?: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   /** Validation errors scoped to stat/EV fields. */
   fieldErrors?: ValidationError[];
 }
@@ -616,6 +629,46 @@ export function StatsLane({
   onUpdate,
   fieldErrors = [],
 }: StatsLaneProps) {
+  if (!pokemon) {
+    return (
+      <div
+        className="border-border/60 flex min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2"
+        style={{ width: 340 }}
+      >
+        {/* Column headers — same structure as real but dimmed */}
+        <div className={cn("mb-0.5 py-0", s.spreadRow)}>
+          <span />
+          <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
+            Base
+          </span>
+          <span />
+          <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
+            EVs
+          </span>
+          <span className="text-right font-mono text-[8.5px] text-muted-foreground/30">
+            0/508
+          </span>
+          <span />
+        </div>
+        {GHOST_STATS.map(({ key, label, colorClass }) => (
+          <div key={key} className={cn(s.spreadRow, colorClass)}>
+            <span className={cn(s.spreadLabel, "opacity-30")}>{label}</span>
+            <span className={cn(s.spreadBase, "opacity-25")}>—</span>
+            <div className={s.spreadVbar} />
+            <div className="h-[18px] w-9 rounded border border-dashed border-border/30" />
+            <div className={s.spreadSliderWrap}>
+              <div className={cn(s.spreadSliderTrack, "opacity-25")} />
+            </div>
+            <span className={cn(s.spreadFinal, "opacity-25")}>—</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // TS narrows pokemon to non-null after the early return above.
+  const handleUpdate = onUpdate ?? (() => {});
+
   const evs = getEvs(pokemon);
   const ivs = getIvs(pokemon);
   const level = pokemon.level ?? 50;
@@ -646,8 +699,8 @@ export function StatsLane({
 
   return (
     <div
-      className="border-border/60 flex flex-1 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2"
-      style={{ minWidth: 340 }}
+      className="border-border/60 flex min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2"
+      style={{ width: 340 }}
     >
       {/* Column headers */}
       <div className={cn(
@@ -732,7 +785,7 @@ export function StatsLane({
               totalEv={totalEv}
               budget={budget}
               showIv={showIv}
-              onUpdate={onUpdate}
+              onUpdate={handleUpdate}
             />
           );
         })}
