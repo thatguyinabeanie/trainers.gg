@@ -213,6 +213,7 @@ jest.mock("@trainers/pokemon", () => ({
   getCanonicalBaseSpecies: jest.fn((s: string) => s),
   getMegaStoneForSpecies: jest.fn().mockReturnValue(null),
   getMegaAbilityForSpecies: jest.fn().mockReturnValue(null),
+  getAbilityShortDesc: jest.fn().mockReturnValue(null),
 }));
 
 // format-gating — real implementation delegates to @trainers/pokemon mocks above

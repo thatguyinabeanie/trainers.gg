@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 
 import {
   NATURE_EFFECTS,
+  getAbilityShortDesc,
   getCanonicalBaseSpecies,
   getFormsForSpecies,
   getMegaAbilityForSpecies,
@@ -20,6 +21,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { STAT_LABELS } from "../../stat-types";
 import { type ValidationError } from "../../validation-hooks";
@@ -172,7 +178,7 @@ function FormChips({ currentSpecies, currentItem, onPick }: FormChipsProps) {
   const base = getCanonicalBaseSpecies(currentSpecies);
   const altForms = forms.filter((f) => f !== base);
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="flex items-center gap-1">
       {altForms.map((form) => {
         const active = form === currentSpecies;
         const requiredStone = getMegaStoneForSpecies(form);
@@ -207,7 +213,7 @@ function FormChips({ currentSpecies, currentItem, onPick }: FormChipsProps) {
             aria-disabled={!enabled}
             title={tooltip}
             className={cn(
-              "rounded-md border px-2 py-0.5 text-[10.5px] font-semibold transition-colors",
+              "rounded border px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap transition-colors",
               !enabled
                 ? "border-dashed border-border/50 text-muted-foreground/40 cursor-not-allowed"
                 : active
@@ -527,30 +533,48 @@ function IdentityLaneReal({
               ? getCanonicalBaseSpecies(pokemon.species)
               : "";
             const displayAbility = megaAbility ?? pokemon.ability;
+            const displayDesc = displayAbility
+              ? getAbilityShortDesc(displayAbility)
+              : null;
+            const baseDesc = pokemon.ability
+              ? getAbilityShortDesc(pokemon.ability)
+              : null;
             return (
               <>
                 <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
-                  <PopoverTrigger
-                    render={
-                      <button
-                        type="button"
-                        className={cn(
-                          s.formRow,
-                          abilityErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
-                        )}
-                      />
-                    }
-                  >
-                    <span className={s.formLabel}>Abil</span>
-                    <span
-                      className={cn(
-                        s.formValue,
-                        !displayAbility && "text-muted-foreground/50 italic"
-                      )}
+                  <Tooltip key={`${abilityOpen ? "open" : "closed"}-${displayAbility ?? "empty"}`}>
+                    <TooltipTrigger
+                      render={
+                        <PopoverTrigger
+                          render={
+                            <button
+                              type="button"
+                              className={cn(
+                                s.formRow,
+                                abilityErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
+                              )}
+                            />
+                          }
+                        />
+                      }
                     >
-                      {displayAbility || "—"}
-                    </span>
-                  </PopoverTrigger>
+                      <span className={s.formLabel}>Abil</span>
+                      <span
+                        className={cn(
+                          s.formValue,
+                          !displayAbility && "text-muted-foreground/50 italic"
+                        )}
+                      >
+                        {displayAbility || "—"}
+                      </span>
+                    </TooltipTrigger>
+                    {displayAbility && displayDesc && (
+                      <TooltipContent side="bottom" className="max-w-64 text-xs">
+                        <span className="font-semibold">{displayAbility}</span>
+                        <span className="block">{displayDesc}</span>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
                   <PopoverContent side="bottom" align="start" className="w-auto p-0">
                     <AbilityPicker
                       value={pokemon.ability}
@@ -562,9 +586,21 @@ function IdentityLaneReal({
                   </PopoverContent>
                 </Popover>
                 {megaAbility && (
-                  <span className="px-1 pt-0.5 font-mono text-[9px] text-muted-foreground/70">
-                    base: {pokemon.ability || "—"}
-                  </span>
+                  <Tooltip key={`base-${pokemon.ability ?? "empty"}`}>
+                    <TooltipTrigger
+                      render={
+                        <span className="px-1 pt-0.5 font-mono text-[9px] text-muted-foreground/70 cursor-help" />
+                      }
+                    >
+                      base: {pokemon.ability || "—"}
+                    </TooltipTrigger>
+                    {pokemon.ability && baseDesc && (
+                      <TooltipContent side="bottom" className="max-w-64 text-xs">
+                        <span className="font-semibold">{pokemon.ability}</span>
+                        <span className="block">{baseDesc}</span>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
                 )}
               </>
             );
