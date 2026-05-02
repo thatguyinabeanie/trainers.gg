@@ -194,6 +194,7 @@ function MoveTile({
           {/* Col 2: Move name */}
           <Tooltip>
             <TooltipTrigger
+              render={<span />}
               className={cn("mvline-name", !moveName && "text-muted-foreground/50")}
             >
               {moveName ?? "+ Add move"}
