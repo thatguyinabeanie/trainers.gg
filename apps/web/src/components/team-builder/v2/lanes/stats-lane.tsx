@@ -472,8 +472,14 @@ function StatRow({
 
   useEffect(() => {
     if (!showIv || draftIv === null) return;
+    // Capture the draft for the debounce closure and clear it before firing,
+    // so a blur that commits immediately doesn't get a duplicate write from
+    // the (still-armed) timer. Cleanup also cancels the timer when draftIv
+    // mutates (each keystroke restarts the debounce).
+    const nextIv = draftIv;
     const timer = setTimeout(() => {
-      onUpdate({ [IV_FIELD[statKey]]: draftIv });
+      setDraftIv(null);
+      onUpdate({ [IV_FIELD[statKey]]: nextIv });
     }, DRAFT_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [draftIv, showIv, statKey, onUpdate]);
@@ -589,7 +595,12 @@ function StatRow({
           }}
           onBlur={() => {
             if (draftIv === null) return;
-            onUpdate({ [IV_FIELD[statKey]]: draftIv });
+            // Clear draft before committing so the still-armed debounce
+            // (next render's effect cleanup hasn't run yet) sees null and
+            // bails. Without this, blur + timer fire produces duplicate writes.
+            const nextIv = draftIv;
+            setDraftIv(null);
+            onUpdate({ [IV_FIELD[statKey]]: nextIv });
           }}
           className={cn(
             "focus:ring-primary h-[18px] w-10 rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
@@ -629,6 +640,14 @@ export function StatsLane({
   onUpdate,
   fieldErrors = [],
 }: StatsLaneProps) {
+  // Match the active format so empty slots line up with filled ones — same
+  // grid (with-IV vs without), same investment header (SP vs EVs), same total
+  // budget (66 vs 510). Without this, switching formats leaves the ghost lane
+  // visually mismatched against neighbouring filled rows.
+  const ghostIsChampions = isChampionsFormat(format);
+  const ghostShowIv = formatSupportsIvs(format);
+  const ghostBudget = getStatBudget(ghostIsChampions);
+
   if (!pokemon) {
     return (
       <div
@@ -636,22 +655,38 @@ export function StatsLane({
         style={{ width: 400 }}
       >
         {/* Column headers — same structure as real but dimmed */}
-        <div className={cn("mb-0.5 py-0", s.spreadRow)}>
+        <div
+          className={cn(
+            "mb-0.5 py-0",
+            ghostShowIv ? s.spreadRowWithIv : s.spreadRow
+          )}
+        >
           <span />
           <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
             Base
           </span>
           <span />
           <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
-            EVs
+            {ghostIsChampions ? "SP" : "EVs"}
           </span>
           <span className="text-right font-mono text-[8.5px] text-muted-foreground/30">
-            0/508
+            0/{ghostBudget.total}
           </span>
+          {ghostShowIv && (
+            <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
+              IVs
+            </span>
+          )}
           <span />
         </div>
         {GHOST_STATS.map(({ key, label, colorClass }) => (
-          <div key={key} className={cn(s.spreadRow, colorClass)}>
+          <div
+            key={key}
+            className={cn(
+              ghostShowIv ? s.spreadRowWithIv : s.spreadRow,
+              colorClass
+            )}
+          >
             <span className={cn(s.spreadLabel, "opacity-30")}>{label}</span>
             <span className={cn(s.spreadBase, "opacity-25")}>—</span>
             <div className={s.spreadVbar} />
@@ -659,6 +694,9 @@ export function StatsLane({
             <div className={s.spreadSliderWrap}>
               <div className={cn(s.spreadSliderTrack, "opacity-25")} />
             </div>
+            {ghostShowIv && (
+              <div className="h-[18px] w-10 rounded border border-dashed border-border/30" />
+            )}
             <span className={cn(s.spreadFinal, "opacity-25")}>—</span>
           </div>
         ))}

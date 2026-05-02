@@ -421,30 +421,27 @@ export function CalcDefenderStats({
   });
   const currentHP = Math.max(1, Math.round((defenderHpPercent / 100) * maxHP));
 
+  const budget = getDefenderBudget(isChampions);
+
   return (
     <div className="flex min-w-0 flex-col gap-2">
       {/* ── Stats lane header ─────────────────────────────────────── */}
-      {(() => {
-        const budget = getDefenderBudget(isChampions);
-        return (
-          <div className="flex items-baseline justify-between">
-            <span className="font-mono text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {isChampions ? "Stat points" : "Spread"}
-            </span>
-            <span
-              className={cn(
-                "font-mono text-[10px]",
-                totalEv > budget.total
-                  ? "text-destructive font-semibold"
-                  : "text-muted-foreground"
-              )}
-            >
-              {totalEv}
-              <span className="text-muted-foreground/60">/{budget.total}</span>
-            </span>
-          </div>
-        );
-      })()}
+      <div className="flex items-baseline justify-between">
+        <span className="font-mono text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+          {isChampions ? "Stat points" : "Spread"}
+        </span>
+        <span
+          className={cn(
+            "font-mono text-[10px]",
+            totalEv > budget.total
+              ? "text-destructive font-semibold"
+              : "text-muted-foreground"
+          )}
+        >
+          {totalEv}
+          <span className="text-muted-foreground/60">/{budget.total}</span>
+        </span>
+      </div>
 
       {/* ── Stat rows ─────────────────────────────────────────────── */}
       <div className="flex flex-col">

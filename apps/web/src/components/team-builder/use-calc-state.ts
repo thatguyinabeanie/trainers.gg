@@ -129,6 +129,14 @@ const EMPTY_BOOSTS: StatBoosts = {
   spe: 0,
 };
 
+/**
+ * Symbol sentinel for `prevIsChampions` so the format-clamp branch fires on
+ * the first render even when `isChampions` is `false`. Module-level so a new
+ * Symbol isn't allocated on every render. See react-patterns.md
+ * (set-state-in-effect → Symbol sentinel) for the pattern rationale.
+ */
+const FORMAT_UNINITIALIZED = Symbol("format-uninitialized");
+
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -555,7 +563,7 @@ export function useCalcState({
   // Without this, defaults like { hp: 252 } persist across format changes
   // and exceed the Champions caps. Render-time adjustment (Symbol sentinel)
   // per react-patterns.md — set-state-in-effect is forbidden.
-  const FORMAT_UNINITIALIZED = Symbol();
+  // FORMAT_UNINITIALIZED is module-level so it's stable across renders.
   const isChampions = isChampionsFormat(format);
   const [prevIsChampions, setPrevIsChampions] = useState<boolean | symbol>(
     FORMAT_UNINITIALIZED

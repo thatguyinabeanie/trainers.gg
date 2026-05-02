@@ -197,7 +197,11 @@ export function ImportDialog({
   const [isPendingImport, startImportTransition] = useTransition();
 
   const availableSlots = 6 - team.team_pokemon.length;
-  const structuralErrors = parsed !== null ? validateTeamStructure(parsed) : [];
+  // Pass formatId so Champions stat-point limits (32/66) are enforced when
+  // the active format is Reg MA. Without this, the format-aware branch in
+  // validateChampionsStatPoints is skipped and over-budget teams import silently.
+  const structuralErrors =
+    parsed !== null ? validateTeamStructure(parsed, formatId) : [];
   const hasStructuralErrors = structuralErrors.length > 0;
 
   // ---------------------------------------------------------------------------
