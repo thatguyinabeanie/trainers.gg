@@ -2,6 +2,10 @@ import { Dex } from "@pkmn/dex";
 import { Generations } from "@pkmn/data";
 import type { PokemonSet, PokemonSetFlat } from "./types";
 import { fromFlat } from "./types";
+import {
+  getCanonicalBaseSpecies,
+  getMegaAbilityForSpecies,
+} from "./format-legality";
 import { isChampionsFormat, type GameFormat } from "./formats";
 
 // Initialize Pokemon data for the current generation (9 = Scarlet/Violet)
@@ -93,6 +97,11 @@ export function validatePokemon(
     // Validate ability — skip when unset (empty string is "no ability chosen yet",
     // not an error). Use Dex for existence (gen-agnostic) so abilities that exist
     // in older gens but not gen 9 still resolve.
+    //
+    // Mega forms store the pre-mega base ability (Charizard with Solar Power that
+    // becomes Drought on mega-evolve), so the ability pool we validate against is
+    // the canonical base form's. The mega's intrinsic ability is also accepted
+    // for legacy rows that haven't been migrated to the base-ability shape.
     if (pokemonSet.ability) {
       const ability =
         Dex.abilities.get(pokemonSet.ability) ??
@@ -104,11 +113,18 @@ export function validatePokemon(
           severity: "error",
         });
       } else {
-        // Check if Pokemon can have this ability
-        const validAbilities = Object.values(species.abilities || {}).filter(
+        const baseSpeciesName = getCanonicalBaseSpecies(pokemonSet.species);
+        const baseSpecies =
+          currentGen.species.get(baseSpeciesName) ??
+          Dex.species.get(baseSpeciesName) ??
+          species;
+        const validAbilities = Object.values(baseSpecies.abilities || {}).filter(
           Boolean
         );
-        if (!validAbilities.includes(pokemonSet.ability)) {
+        const megaAbility = getMegaAbilityForSpecies(pokemonSet.species);
+        const accepted = new Set<string>(validAbilities);
+        if (megaAbility) accepted.add(megaAbility);
+        if (!accepted.has(pokemonSet.ability)) {
           errors.push({
             field: "ability",
             message: `${pokemonSet.species} cannot have ability "${pokemonSet.ability}"`,
