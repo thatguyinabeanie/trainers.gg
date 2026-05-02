@@ -64,8 +64,15 @@ function getLowercaseLegalMoves(
   // search shouldn't break the autocomplete UI on a transient sim hiccup.
   if (legal === LEGALITY_UNAVAILABLE && !warnedLegalMovesUnavailable.has(formatId)) {
     warnedLegalMovesUnavailable.add(formatId);
+    // Two distinct fallbacks, both surfaced in the warning:
+    //  - free-text move-name matching (line ~445) is *skipped* — typing a
+    //    move name yields zero hits because we can't validate learnsets
+    //  - the structured `moves` filter (line ~510) is *skipped per-entry*
+    //    so every species passes the filter (permissive)
+    // Calling either of those "permissive move search" alone is misleading
+    // when debugging, so describe both behaviors explicitly.
     console.warn(
-      `[species-search] Legal moves unavailable for format "${formatId}" — falling back to permissive move search.`
+      `[species-search] Legal moves unavailable for format "${formatId}" — skipping move-name search and structured move filtering.`
     );
   }
   const lowered =
@@ -201,18 +208,20 @@ function makeEntry(
 // pickers commonly mount/unmount inside dialogs, so caching across mounts
 // avoids redoing the work every time the picker opens.
 //
-// Keyed by formatId. The cache is keyed only by formatId because
-// `getRoles` (when provided) is the stable, module-level `getRolesForSpecies`
-// resolver — a different role function would warrant a different cache key,
-// but in practice we only call this with that one resolver. If a caller ever
-// needs a different resolver, pass `getRoles: undefined` to bypass the cache
-// path that includes role data, or evict via `clearSpeciesSearchIndexCache()`.
+// The role-aware cache is keyed by the `getRoles` function identity FIRST and
+// `formatId` second. This guarantees that two callers passing different
+// resolvers for the same format can never serve each other's role data —
+// every resolver gets its own per-format submap. WeakMap so resolvers held
+// only here don't leak; reassigned (not mutated) on clear because WeakMap
+// has no `.clear()`.
 //
-// Two maps rather than a compound key: a no-roles build for the same formatId
-// must not overwrite or be served to a roles-aware caller (callers like
-// `getAllLegalAbilities` pass `getRoles: undefined` and would otherwise poison
-// the role-aware cache for that format).
-const speciesIndexCache = new Map<string, SpeciesSearchEntry[]>();
+// `speciesIndexCacheNoRoles` is a separate Map for the resolver-less build
+// (callers like `getAllLegalAbilities` that pass `getRoles: undefined`),
+// kept distinct so a no-roles build can't be served to a roles-aware caller.
+let speciesIndexByResolver = new WeakMap<
+  GetRolesFn,
+  Map<string, SpeciesSearchEntry[]>
+>();
 const speciesIndexCacheNoRoles = new Map<string, SpeciesSearchEntry[]>();
 
 // Format-wide enumerator caches — populated lazily by getAllLegalAbilities /
@@ -232,7 +241,9 @@ const warnedMissingFromDex = new Set<string>();
  * Evict the species-search index cache and every cache derived from it.
  *
  * Clears:
- *   - The two index caches (`speciesIndexCache`, `speciesIndexCacheNoRoles`)
+ *   - The role-aware index cache (`speciesIndexByResolver` — reassigned, not
+ *     mutated, since WeakMap has no `.clear()`) and the no-roles index cache
+ *     (`speciesIndexCacheNoRoles`)
  *   - The format-wide enumerator caches (`abilitySetCache`, `moveSetCache`)
  *     declared further down — those derive their arrays from the index, so
  *     leaving them in place would silently serve stale data after a refresh.
@@ -245,7 +256,7 @@ const warnedMissingFromDex = new Set<string>();
  * registry) has been mutated and callers need a clean read.
  */
 export function clearSpeciesSearchIndexCache(): void {
-  speciesIndexCache.clear();
+  speciesIndexByResolver = new WeakMap();
   speciesIndexCacheNoRoles.clear();
   abilitySetCache.clear();
   moveSetCache.clear();
@@ -259,7 +270,20 @@ export function buildSpeciesSearchIndex(
   formatId: string,
   getRoles?: GetRolesFn
 ): SpeciesSearchEntry[] {
-  const cache = getRoles ? speciesIndexCache : speciesIndexCacheNoRoles;
+  // Look up the per-format submap for this resolver (or the no-roles map),
+  // creating the resolver entry on miss. Read happens before the build so a
+  // cache hit returns immediately without any work.
+  let cache: Map<string, SpeciesSearchEntry[]>;
+  if (getRoles) {
+    let perFormat = speciesIndexByResolver.get(getRoles);
+    if (!perFormat) {
+      perFormat = new Map();
+      speciesIndexByResolver.set(getRoles, perFormat);
+    }
+    cache = perFormat;
+  } else {
+    cache = speciesIndexCacheNoRoles;
+  }
   const cached = cache.get(formatId);
   if (cached) return cached;
 

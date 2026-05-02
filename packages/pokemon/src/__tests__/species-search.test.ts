@@ -582,6 +582,37 @@ describe("searchSpecies — new filters", () => {
     ).toBe(true);
   });
 
+  it("buildSpeciesSearchIndex caches by getRoles identity (different resolvers don't poison each other)", () => {
+    // Regression for the WeakMap<GetRolesFn, Map<formatId, entries>> cache
+    // refactor: two resolvers building the same format must not share results.
+    // Previously the cache was keyed only by formatId, so the second call
+    // would silently return the first resolver's roles.
+    const resolverA = (
+      _abil: { slot1: string | null; slot2: string | null; hidden: string | null },
+      species: string
+    ): readonly string[] => (species === "Incineroar" ? ["fake-out"] : []);
+    const resolverB = (
+      _abil: { slot1: string | null; slot2: string | null; hidden: string | null },
+      species: string
+    ): readonly string[] => (species === "Incineroar" ? ["drop-atk"] : []);
+
+    const idxA = buildSpeciesSearchIndex(GEN9_FORMAT, resolverA);
+    const idxB = buildSpeciesSearchIndex(GEN9_FORMAT, resolverB);
+
+    // Different array instances — each resolver got its own build
+    expect(idxA).not.toBe(idxB);
+
+    const incA = idxA.find((e) => e.species === "Incineroar");
+    const incB = idxB.find((e) => e.species === "Incineroar");
+    expect(incA?.roles).toEqual(["fake-out"]);
+    expect(incB?.roles).toEqual(["drop-atk"]);
+
+    // Calling resolverA again returns the same cached result for resolverA,
+    // not resolverB's
+    const idxA2 = buildSpeciesSearchIndex(GEN9_FORMAT, resolverA);
+    expect(idxA2).toBe(idxA);
+  });
+
   it("roles filter matches species carrying every selected role (AND)", () => {
     const idx = buildSpeciesSearchIndex("gen9vgc2026regg", (_abil, species) =>
       species === "Incineroar"

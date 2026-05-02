@@ -2,7 +2,12 @@
  * RolePresetsPanel — middle-column sidebar listing all 26 role presets
  * grouped by category. Multi-select toggle: clicking a role adds/removes it
  * from the active selection. Bucket counts (species or moves matching that
- * role) are displayed right-aligned next to each label.
+ * role on its own) are displayed right-aligned next to each label.
+ *
+ * Filter semantics are AND — when multiple roles are selected, the picker
+ * only surfaces species/moves that carry every selected role. Per-row
+ * bucket counts are unconditional (single-role) so the count next to each
+ * label can stay stable as the user adds more selections.
  *
  * Used by both the species picker and the move picker.
  */
