@@ -1015,6 +1015,7 @@
 
 /* Calc column — fixed-width sibling to the moves lane */
 :global(.calc-col) {
+  min-width: 120px;
   display: flex;
   flex-direction: column;
   justify-content: center;
