@@ -317,21 +317,12 @@ interface MovesLaneRealProps {
 }
 
 function MovesLaneReal({ pokemon, format, onUpdate, fieldErrors }: MovesLaneRealProps) {
-  const { calcEnabled } = useCalcStateContext();
-
   function handlePick(slotKey: MoveSlot, name: string) {
     onUpdate({ [slotKey]: name });
   }
 
   return (
-    <div
-      className={cn(
-        "flex flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3",
-        calcEnabled
-          ? "min-w-[350px] flex-1"
-          : "w-[440px] shrink-0"
-      )}
-    >
+    <div className="flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3">
       {/* Header */}
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
