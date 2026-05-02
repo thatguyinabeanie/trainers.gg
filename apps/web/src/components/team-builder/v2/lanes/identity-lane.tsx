@@ -122,7 +122,7 @@ function IdentityLaneGhost() {
         <div className={s.idBanner}>
           <div className="flex h-[22px] items-center">
             <span className="text-sm font-normal text-muted-foreground/20 italic">
-              Nickname (optional)
+              Nickname
             </span>
           </div>
           <div className="flex h-[18px] items-center gap-1">
@@ -395,50 +395,33 @@ function IdentityLaneReal({
 
         {/* BANNER — nickname + chips rows */}
         <div className={s.idBanner}>
-          {/* Row 1: Nickname input */}
-          <div className="flex flex-col">
-            <input
-              ref={nicknameRef}
-              type="text"
-              value={nickDraft}
-              onChange={(e) => setNickDraft(e.target.value)}
-              onBlur={handleNickBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") nicknameRef.current?.blur();
-              }}
-              placeholder="Nickname (optional)"
-              maxLength={24}
-              aria-label="Nickname"
-              className={cn(
-                "bg-transparent w-full min-w-0 truncate text-sm font-bold outline-none",
-                "border-b border-transparent placeholder:text-muted-foreground/50 placeholder:font-normal",
-                "hover:border-dashed hover:border-border focus:border-solid focus:border-primary",
-                "leading-snug py-0.5",
-                nicknameErrors.length > 0 &&
-                  "border-destructive focus:border-destructive"
-              )}
-            />
-            {nicknameErrors.map((err, i) => (
-              <FieldError key={i} message={err.message} severity={err.severity} />
-            ))}
-          </div>
-
-          {/* Row 2: form chips (left) + gender + shiny (right).
-              Form chips no longer auto-attach the mega stone — each chip is
-              disabled until the matching stone is held. Click → swap species
-              only. */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              {pokemon.species && speciesHasForms(pokemon.species) && (
-                <FormChips
-                  currentSpecies={pokemon.species}
-                  currentItem={pokemon.held_item}
-                  onPick={(nextSpecies) => {
-                    if (nextSpecies === pokemon.species) return;
-                    onUpdate({ species: nextSpecies });
-                  }}
-                />
-              )}
+          {/* Row 1: Nickname input (left) + gender + shiny (right) */}
+          <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <input
+                ref={nicknameRef}
+                type="text"
+                value={nickDraft}
+                onChange={(e) => setNickDraft(e.target.value)}
+                onBlur={handleNickBlur}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") nicknameRef.current?.blur();
+                }}
+                placeholder="Nickname"
+                maxLength={24}
+                aria-label="Nickname"
+                className={cn(
+                  "bg-transparent w-full min-w-0 truncate text-sm font-bold outline-none",
+                  "border-b border-transparent placeholder:text-muted-foreground/50 placeholder:font-normal",
+                  "hover:border-dashed hover:border-border focus:border-solid focus:border-primary",
+                  "leading-snug py-0.5",
+                  nicknameErrors.length > 0 &&
+                    "border-destructive focus:border-destructive"
+                )}
+              />
+              {nicknameErrors.map((err, i) => (
+                <FieldError key={i} message={err.message} severity={err.severity} />
+              ))}
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
@@ -477,6 +460,19 @@ function IdentityLaneReal({
               </button>
             </div>
           </div>
+
+          {/* Row 2: form chips. Disabled until the matching mega stone is held;
+              click → swap species only (no auto-item-attach). */}
+          {pokemon.species && speciesHasForms(pokemon.species) && (
+            <FormChips
+              currentSpecies={pokemon.species}
+              currentItem={pokemon.held_item}
+              onPick={(nextSpecies) => {
+                if (nextSpecies === pokemon.species) return;
+                onUpdate({ species: nextSpecies });
+              }}
+            />
+          )}
         </div>
 
         {/* LOADOUT FORM ROWS */}
@@ -540,56 +536,53 @@ function IdentityLaneReal({
               ? getAbilityShortDesc(pokemon.ability)
               : null;
             return (
-              <>
-                <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
-                  <Tooltip key={`${abilityOpen ? "open" : "closed"}-${displayAbility ?? "empty"}`}>
+              <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
+                <Tooltip key={`${abilityOpen ? "open" : "closed"}-${displayAbility ?? "empty"}`}>
+                  <TooltipTrigger
+                    render={
+                      <PopoverTrigger
+                        render={
+                          <button
+                            type="button"
+                            className={cn(
+                              s.formRow,
+                              abilityErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
+                            )}
+                          />
+                        }
+                      />
+                    }
+                  >
+                    <span className={s.formLabel}>Abil</span>
+                    <span
+                      className={cn(
+                        s.formValue,
+                        !displayAbility && "text-muted-foreground/50 italic"
+                      )}
+                    >
+                      {displayAbility || "—"}
+                    </span>
+                  </TooltipTrigger>
+                  {displayAbility && displayDesc && (
+                    <TooltipContent side="bottom" className="max-w-64 text-xs">
+                      <span className="font-semibold">{displayAbility}</span>
+                      <span className="block">{displayDesc}</span>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+                {megaAbility && (
+                  <Tooltip key={`base-${abilityOpen ? "open" : "closed"}-${pokemon.ability ?? "empty"}`}>
                     <TooltipTrigger
                       render={
                         <PopoverTrigger
                           render={
                             <button
                               type="button"
-                              className={cn(
-                                s.formRow,
-                                abilityErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
-                              )}
+                              aria-label={`Change base ability (${pokemon.ability || "none"})`}
+                              className="self-start rounded px-1 pt-0.5 font-mono text-[9px] text-muted-foreground/70 hover:bg-muted hover:text-foreground"
                             />
                           }
                         />
-                      }
-                    >
-                      <span className={s.formLabel}>Abil</span>
-                      <span
-                        className={cn(
-                          s.formValue,
-                          !displayAbility && "text-muted-foreground/50 italic"
-                        )}
-                      >
-                        {displayAbility || "—"}
-                      </span>
-                    </TooltipTrigger>
-                    {displayAbility && displayDesc && (
-                      <TooltipContent side="bottom" className="max-w-64 text-xs">
-                        <span className="font-semibold">{displayAbility}</span>
-                        <span className="block">{displayDesc}</span>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                  <PopoverContent side="bottom" align="start" className="w-auto p-0">
-                    <AbilityPicker
-                      value={pokemon.ability}
-                      species={pickerSpecies}
-                      format={format}
-                      onPick={(ability) => onUpdate({ ability })}
-                      onClose={() => setAbilityOpen(false)}
-                    />
-                  </PopoverContent>
-                </Popover>
-                {megaAbility && (
-                  <Tooltip key={`base-${pokemon.ability ?? "empty"}`}>
-                    <TooltipTrigger
-                      render={
-                        <span className="px-1 pt-0.5 font-mono text-[9px] text-muted-foreground/70 cursor-help" />
                       }
                     >
                       base: {pokemon.ability || "—"}
@@ -602,7 +595,16 @@ function IdentityLaneReal({
                     )}
                   </Tooltip>
                 )}
-              </>
+                <PopoverContent side="bottom" align="start" className="w-auto p-0">
+                  <AbilityPicker
+                    value={pokemon.ability}
+                    species={pickerSpecies}
+                    format={format}
+                    onPick={(ability) => onUpdate({ ability })}
+                    onClose={() => setAbilityOpen(false)}
+                  />
+                </PopoverContent>
+              </Popover>
             );
           })()}
           {abilityErrors.map((err, i) => (

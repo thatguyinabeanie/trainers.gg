@@ -348,7 +348,7 @@ describe("IdentityLane — basic render", () => {
 
   it("renders the nickname input with placeholder when no nickname", () => {
     renderLane({ nickname: null });
-    const input = screen.getByPlaceholderText("Nickname (optional)");
+    const input = screen.getByPlaceholderText("Nickname");
     expect(input).toBeInTheDocument();
     expect(input).toHaveValue("");
   });
@@ -451,7 +451,7 @@ describe("IdentityLane — shiny toggle", () => {
 describe("IdentityLane — nickname input", () => {
   it("calls onUpdate with trimmed value on blur", () => {
     const { onUpdate } = renderLane({ nickname: null });
-    const input = screen.getByPlaceholderText("Nickname (optional)");
+    const input = screen.getByPlaceholderText("Nickname");
     fireEvent.change(input, { target: { value: "  Sharky  " } });
     fireEvent.blur(input);
     expect(onUpdate).toHaveBeenCalledWith({ nickname: "Sharky" });
@@ -469,7 +469,7 @@ describe("IdentityLane — nickname input", () => {
     // Typing the species name is treated as "no nickname" (null), same as current state
     // so onUpdate is NOT fired (no change).
     const { onUpdate } = renderLane({ nickname: null, species: "Garchomp" });
-    const input = screen.getByPlaceholderText("Nickname (optional)");
+    const input = screen.getByPlaceholderText("Nickname");
     fireEvent.change(input, { target: { value: "Garchomp" } });
     fireEvent.blur(input);
     expect(onUpdate).not.toHaveBeenCalled();
@@ -493,7 +493,7 @@ describe("IdentityLane — nickname input", () => {
 
   it("blurs input when Enter is pressed", () => {
     renderLane({ nickname: null });
-    const input = screen.getByPlaceholderText("Nickname (optional)");
+    const input = screen.getByPlaceholderText("Nickname");
     const blurSpy = jest.spyOn(input, "blur");
     fireEvent.keyDown(input, { key: "Enter" });
     expect(blurSpy).toHaveBeenCalled();
@@ -736,9 +736,9 @@ describe("IdentityLane — ghost mode (pokemon: null)", () => {
     expect(screen.getByText("+ Add Pokémon")).toBeInTheDocument();
   });
 
-  it("shows 'Nickname (optional)' italic placeholder text", () => {
+  it("shows 'Nickname' italic placeholder text", () => {
     renderGhost();
-    expect(screen.getByText("Nickname (optional)")).toBeInTheDocument();
+    expect(screen.getByText("Nickname")).toBeInTheDocument();
   });
 
   it("shows three loadout rows with labels Item, Abil, Nat", () => {
