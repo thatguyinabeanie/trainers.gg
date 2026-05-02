@@ -297,7 +297,7 @@ export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: Moves
         "flex flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3",
         calcEnabled
           ? "min-w-[350px] flex-1"
-          : "min-w-[240px] flex-1"
+          : "min-w-[240px] max-w-[640px] flex-1"
       )}
     >
       {/* Header */}
