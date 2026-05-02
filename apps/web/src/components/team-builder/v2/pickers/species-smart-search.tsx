@@ -166,7 +166,11 @@ export function SpeciesSmartSearch({
 // Sub-components
 // =============================================================================
 
-/** Labeled group with a bottom border divider (removed on last child). */
+/**
+ * Labeled group separated from siblings by a stronger top border + tinted
+ * sticky header. The first section drops its top divider so it sits flush
+ * with the picker chrome.
+ */
 function Section({
   title,
   children,
@@ -175,11 +179,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border-border/40 border-b last:border-b-0">
-      <h3 className="text-muted-foreground px-4 py-1.5 text-[9.5px] font-bold tracking-widest uppercase">
+    <div className="border-border/80 border-t first:border-t-0">
+      <h3 className="bg-muted/40 text-muted-foreground border-border/60 sticky top-0 z-10 border-b px-4 py-2 text-[10px] font-bold tracking-widest uppercase">
         {title}
       </h3>
-      {children}
+      <div className="py-1">{children}</div>
     </div>
   );
 }
@@ -191,11 +195,20 @@ interface RowProps {
   onAction: () => void;
 }
 
-/** Single result row with an optional subtitle and an action pill button. */
+/**
+ * Single result row. The full row is the click target — clicking anywhere
+ * triggers `onAction`. The `actionLabel` pill renders as a visual cue inside
+ * the same button (it is presentational only, not a nested button).
+ */
 function Row({ label, sub, actionLabel, onAction }: RowProps) {
   return (
-    <div
-      className={cn("flex items-center gap-3 px-4 py-1.5", "hover:bg-muted/50")}
+    <button
+      type="button"
+      onClick={onAction}
+      className={cn(
+        "hover:bg-muted/50 flex w-full items-center gap-3 px-4 py-1.5 text-left transition-colors",
+        "focus-visible:bg-muted/60 focus-visible:outline-none"
+      )}
     >
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm">{label}</div>
@@ -203,13 +216,9 @@ function Row({ label, sub, actionLabel, onAction }: RowProps) {
           <div className="text-muted-foreground truncate text-xs">{sub}</div>
         )}
       </div>
-      <button
-        type="button"
-        onClick={onAction}
-        className="border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 rounded-full border px-3 py-0.5 text-xs font-semibold"
-      >
+      <span className="border-primary/30 bg-primary/10 text-primary rounded-full border px-3 py-0.5 text-xs font-semibold">
         {actionLabel}
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }

@@ -10,7 +10,6 @@ import { Generations } from "@pkmn/data";
 
 import { getFormatById } from "./formats";
 import {
-  getFormsForSpecies,
   getLegalMoves,
   getLegalSpecies,
   getMegaStoneForSpecies,
@@ -84,7 +83,7 @@ function getLowercaseLegalMoves(
 export interface SpeciesSearchEntry {
   species: string;
   types: string[];
-  abilities: string[];          // kept for back-compat
+  abilities: string[]; // kept for back-compat
   abilitySlot1: string | null;
   abilitySlot2: string | null;
   hiddenAbility: string | null;
@@ -107,7 +106,11 @@ export interface SpeciesSearchEntry {
  * Supplied optionally to `buildSpeciesSearchIndex`.
  */
 export type GetRolesFn = (
-  abilities: { slot1: string | null; slot2: string | null; hidden: string | null },
+  abilities: {
+    slot1: string | null;
+    slot2: string | null;
+    hidden: string | null;
+  },
   speciesName: string,
   formatId: string
 ) => string[];
@@ -138,7 +141,10 @@ function makeEntry(
   formatId?: string
 ): SpeciesSearchEntry {
   // Cast abilities to an indexable record for per-slot access
-  const abilitiesRecord = species.abilities as Record<string, string | undefined>;
+  const abilitiesRecord = species.abilities as Record<
+    string,
+    string | undefined
+  >;
   const abilities = Object.values(abilitiesRecord).filter(
     (a): a is string => typeof a === "string" && a.length > 0
   );
@@ -148,7 +154,11 @@ function makeEntry(
   const { hp, atk, def, spa, spd, spe } = species.baseStats;
   const roles =
     getRoles && formatId
-      ? getRoles({ slot1: abilitySlot1, slot2: abilitySlot2, hidden: hiddenAbility }, species.name, formatId)
+      ? getRoles(
+          { slot1: abilitySlot1, slot2: abilitySlot2, hidden: hiddenAbility },
+          species.name,
+          formatId
+        )
       : [];
   return {
     species: species.name,
@@ -259,8 +269,10 @@ export function buildSpeciesSearchIndex(
  * - `query`: case-insensitive substring match against species name, ability
  *    names, type names, and — when `options.formatId` is supplied —
  *    learnable-move names for that format
- * - `types`: species must have at least one of the specified types (OR logic)
+ * - `types`: species must have ALL specified types (AND logic — useful for
+ *    finding dual-type species like Fire/Grass)
  * - `abilities`: species must have at least one of the specified abilities (OR logic)
+ * - `roles`: species must carry ALL specified roles (AND logic)
  * - `moves`: species must be able to learn ALL specified moves (AND logic) — uses `getLearnableMoves()`
  * - `minBaseStat` / `maxBaseStat`: inclusive range filter per individual stat
  *
@@ -347,12 +359,13 @@ export function searchSpecies(
       if (!inName && !inAbilities && !inTypes && !inMoves) return false;
     }
 
-    // -- Types filter (OR: species must have at least one matching type) --
+    // -- Types filter (AND: species must have ALL selected types) --
     if (normalizedTypes) {
-      const hasMatchingType = entry.types.some((t) =>
-        normalizedTypes.includes(t.toLowerCase())
+      const entryTypesLower = entry.types.map((t) => t.toLowerCase());
+      const matchesAll = normalizedTypes.every((t) =>
+        entryTypesLower.includes(t)
       );
-      if (!hasMatchingType) return false;
+      if (!matchesAll) return false;
     }
 
     // -- Abilities filter (OR: species must have at least one matching ability) --
@@ -367,28 +380,27 @@ export function searchSpecies(
     if (options?.ability) {
       const target = options.ability.toLowerCase();
       const match =
-        (entry.abilitySlot1?.toLowerCase() === target) ||
-        (entry.abilitySlot2?.toLowerCase() === target) ||
-        (entry.hiddenAbility?.toLowerCase() === target);
+        entry.abilitySlot1?.toLowerCase() === target ||
+        entry.abilitySlot2?.toLowerCase() === target ||
+        entry.hiddenAbility?.toLowerCase() === target;
       if (!match) return false;
     }
 
-    // -- megaOnly filter (species must have at least one Mega form) --
+    // -- megaOnly filter — show ONLY Mega-form species --
+    // Champions M-A picker context: the user wants to see Charizard-Mega-X,
+    // Venusaur-Mega, etc., not the base species that have Megas. We surface
+    // entries whose form name is a recognized Mega (its own mega stone is
+    // non-null).
     if (options?.megaOnly) {
-      // Exclude entries that are themselves Mega forms
-      if (entry.species.includes("-Mega")) return false;
-      // Exclude base species whose forms list has no mega stone
-      const forms = getFormsForSpecies(entry.species);
-      const hasMegaForm = forms.some(
-        (form) => form !== entry.species && getMegaStoneForSpecies(form) !== null
-      );
-      if (!hasMegaForm) return false;
+      if (getMegaStoneForSpecies(entry.species) === null) return false;
     }
 
-    // -- Roles filter (OR: species must have at least one of the specified roles) --
+    // -- Roles filter (AND: species must carry ALL specified roles) --
     if (options?.roles && options.roles.length > 0) {
-      const hasAny = options.roles.some((roleId) => entry.roles.includes(roleId));
-      if (!hasAny) return false;
+      const hasAll = options.roles.every((roleId) =>
+        entry.roles.includes(roleId)
+      );
+      if (!hasAll) return false;
     }
 
     // -- Moves filter (AND: species must learn ALL specified moves) --
@@ -470,7 +482,9 @@ export function getAllLegalMoves(formatId: string): string[] {
   const index = buildSpeciesSearchIndex(formatId);
   const set = new Set<string>();
   for (const entry of index) {
-    const legalSet = legalSetOrPermissive(getLegalMoves(entry.species, formatId));
+    const legalSet = legalSetOrPermissive(
+      getLegalMoves(entry.species, formatId)
+    );
     const moves = legalSet ?? new Set(getLearnableMoves(entry.species));
     for (const m of moves) set.add(m);
   }

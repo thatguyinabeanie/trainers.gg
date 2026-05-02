@@ -59,6 +59,9 @@ jest.mock("@trainers/pokemon/sprites", () => ({
     url: "/sprites/test.png",
     pixelated: false,
   })),
+  getShowdownTypeIconUrl: jest.fn(
+    (type: string) => `https://example.com/sprites/${type}.png`
+  ),
 }));
 
 // =============================================================================
@@ -638,11 +641,13 @@ describe("SpeciesPicker", () => {
       />
     );
     await user.click(screen.getByTestId("sidebar-type-fire"));
-    // FilterChipsBar stub renders chip buttons with data-testid="chip-type:Fire"
-    expect(screen.getByTestId("chip-type:Fire")).toBeInTheDocument();
+    // Active filters surface as a filter-count badge in the search header
+    expect(
+      screen.getByRole("button", { name: /Clear 1 active filter/i })
+    ).toBeInTheDocument();
   });
 
-  it("clicking role button in role panel adds a role filter chip", async () => {
+  it("clicking role button in role panel adds a role filter", async () => {
     const user = userEvent.setup();
     render(
       <SpeciesPicker
@@ -653,7 +658,9 @@ describe("SpeciesPicker", () => {
       />
     );
     await user.click(screen.getByTestId("role-btn-spread"));
-    expect(screen.getByTestId("chip-role:spread")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Clear 1 active filter/i })
+    ).toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------
@@ -672,28 +679,13 @@ describe("SpeciesPicker", () => {
     );
     // AbilityCell stub renders data-testid="ability-{name}"
     await user.click(screen.getByTestId("ability-Overgrow"));
-    expect(screen.getByTestId("chip-ability:Overgrow")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Clear 1 active filter/i })
+    ).toBeInTheDocument();
   });
 
-  it("clicking a role chip in a row adds a role filter", async () => {
-    const user = userEvent.setup();
-    // GARCHOMP with a "spread" role
-    const garChompWithRole = { ...GARCHOMP, roles: ["spread"] };
-    mockBuildSpeciesSearchIndex.mockReturnValue([garChompWithRole]);
-    mockSearchSpecies.mockImplementation((index: typeof MOCK_INDEX) => index);
-
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        onPick={jest.fn()}
-        onClose={jest.fn()}
-      />
-    );
-
-    await user.click(screen.getByTestId("role-chip-spread"));
-    expect(screen.getByTestId("chip-role:spread")).toBeInTheDocument();
-  });
+  // Row-level role chips were removed from the species table — role filtering
+  // is now driven exclusively by the RolePresetsPanel in the middle column.
 
   // ---------------------------------------------------------------------------
   // Enter key — exact species match → pick + close
@@ -736,8 +728,10 @@ describe("SpeciesPicker", () => {
     // "Fire" is in the mocked ALL_TYPES; type "fir" to trigger prefix match
     await user.type(input, "fir");
     await user.keyboard("{Enter}");
-    // Type chip should appear and query should be cleared
-    expect(screen.getByTestId("chip-type:Fire")).toBeInTheDocument();
+    // Filter-count badge appears and query is cleared
+    expect(
+      screen.getByRole("button", { name: /Clear 1 active filter/i })
+    ).toBeInTheDocument();
     expect(input).toHaveValue("");
   });
 
@@ -759,9 +753,11 @@ describe("SpeciesPicker", () => {
     await user.type(input, "fi");
     // Smart search is shown
     await user.click(screen.getByTestId("smart-filter-type"));
-    // Query is cleared and type chip appears
+    // Query is cleared and filter-count badge appears
     expect(input).toHaveValue("");
-    expect(screen.getByTestId("chip-type:Fire")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Clear 1 active filter/i })
+    ).toBeInTheDocument();
   });
 
   it("clicking Pick Pikachu in smart search calls onPick and onClose", async () => {

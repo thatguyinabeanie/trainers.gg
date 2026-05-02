@@ -5,9 +5,17 @@ import React from "react";
 
 jest.mock("@trainers/pokemon", () => ({
   ALL_TYPES: ["Fire", "Water", "Grass"],
-  isChampionsFormat: jest.fn((f: { id?: string } | undefined) => f?.id === "championsvgc2026regma"),
+  isChampionsFormat: jest.fn(
+    (f: { id?: string } | undefined) => f?.id === "championsvgc2026regma"
+  ),
   getAllLegalAbilities: jest.fn(() => ["Drought", "Drizzle", "Intimidate"]),
   calculateTeamSynergy: jest.fn(() => null),
+}));
+
+jest.mock("@trainers/pokemon/sprites", () => ({
+  getShowdownTypeIconUrl: jest.fn(
+    (type: string) => `https://example.com/sprites/${type}.png`
+  ),
 }));
 
 import { SpeciesSidebar } from "../pickers/species-sidebar";
@@ -28,17 +36,19 @@ function renderSidebar(overrides = {}) {
 }
 
 describe("SpeciesSidebar", () => {
-  it("renders type chips", () => {
+  it("renders type chips (Showdown icon buttons labelled by type)", () => {
     renderSidebar();
-    expect(screen.getByText("Fire")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Fire" })).toBeInTheDocument();
   });
 
   it("clicking a type adds it to filters.types", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     renderSidebar({ onFiltersChange: onChange });
-    await user.click(screen.getByText("Fire"));
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ types: ["Fire"] }));
+    await user.click(screen.getByRole("button", { name: "Fire" }));
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ types: ["Fire"] })
+    );
   });
 
   it("Mega toggle hidden for non-Champions", () => {
@@ -55,15 +65,34 @@ describe("SpeciesSidebar", () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     renderSidebar({
-      filters: { ...DEFAULT_SPECIES_FILTERS, types: ["Fire"], roles: ["spread"] },
+      filters: {
+        ...DEFAULT_SPECIES_FILTERS,
+        types: ["Fire"],
+        roles: ["spread"],
+      },
       onFiltersChange: onChange,
     });
     await user.click(screen.getByRole("button", { name: /clear/i }));
     expect(onChange).toHaveBeenCalledWith(DEFAULT_SPECIES_FILTERS);
   });
 
-  it("ability datalist lists abilities from getAllLegalAbilities", () => {
+  it("ability section shows the click-instruction hint when no ability is set", () => {
     renderSidebar({ format: { id: "gen9vgc2026regg" } as never });
-    expect(screen.getByText("Intimidate", { selector: "option" })).toBeInTheDocument();
+    expect(screen.getByText(/click any ability/i)).toBeInTheDocument();
+  });
+
+  it("ability section renders the active ability as a removable chip", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    renderSidebar({
+      filters: { ...DEFAULT_SPECIES_FILTERS, ability: "Drought" },
+      onFiltersChange: onChange,
+    });
+    const chip = screen.getByRole("button", { name: /clear drought/i });
+    expect(chip).toHaveTextContent("Drought");
+    await user.click(chip);
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ ability: null })
+    );
   });
 });

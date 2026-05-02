@@ -17,13 +17,13 @@ import { useState } from "react";
 import {
   ALL_TYPES,
   calculateTeamSynergy,
-  getAllLegalAbilities,
   isChampionsFormat,
   type GameFormat,
 } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
-import { TYPE_PILL_COLORS } from "../../type-colors";
+
+import { TypeSymbolIcon } from "../../type-symbol-icon";
 import {
   DEFAULT_SPECIES_FILTERS,
   type SpeciesFilterState,
@@ -72,7 +72,6 @@ export function SpeciesSidebar({
   // ---------------------------------------------------------------------------
 
   const allTypes = ALL_TYPES as unknown as string[];
-  const abilities: string[] = format ? getAllLegalAbilities(format.id) : [];
   const showMegaToggle = isChampionsFormat(format);
 
   // Team-needs hints: types the team is weak to 2+ times AND uncovered
@@ -130,7 +129,7 @@ export function SpeciesSidebar({
   // ---------------------------------------------------------------------------
 
   return (
-    <aside className="border-border bg-muted/50 flex w-[196px] flex-shrink-0 flex-col overflow-y-auto border-r">
+    <aside className="bg-muted/50 flex h-full flex-col">
       {/* ------------------------------------------------------------------ */}
       {/* 1. Type grid                                                        */}
       {/* ------------------------------------------------------------------ */}
@@ -142,51 +141,42 @@ export function SpeciesSidebar({
         <div className="grid grid-cols-3 gap-1">
           {allTypes.map((type) => {
             const isActive = filters.types.includes(type);
+            const isNeeded = neededTypes.includes(type);
             return (
               <button
                 key={type}
                 type="button"
+                aria-label={isNeeded ? `${type} (team needs coverage)` : type}
+                aria-pressed={isActive}
+                title={
+                  isNeeded
+                    ? `${type} — team is weak to this without coverage`
+                    : undefined
+                }
                 onClick={() => toggleType(type)}
                 className={cn(
-                  "rounded px-1 py-0.5 text-[10px] font-medium transition-all",
+                  "relative flex items-center justify-center rounded px-1 py-1 transition-all",
                   isActive
-                    ? cn(
-                        TYPE_PILL_COLORS[
-                          type as keyof typeof TYPE_PILL_COLORS
-                        ] ?? "bg-muted",
-                        "shadow-[0_0_0_3px_currentColor] outline outline-2 outline-offset-0 outline-white"
-                      )
-                    : "bg-muted text-muted-foreground opacity-70 hover:opacity-100"
+                    ? "ring-primary bg-background ring-2 ring-offset-1"
+                    : "bg-muted/40 opacity-70 hover:opacity-100"
                 )}
               >
-                {type}
+                {isNeeded && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-1 -right-1 text-[9px] leading-none text-amber-500 drop-shadow"
+                  >
+                    ✦
+                  </span>
+                )}
+                <TypeSymbolIcon
+                  type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
+                  size={28}
+                />
               </button>
             );
           })}
         </div>
-
-        {/* Team-needs hints */}
-        {neededTypes.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {neededTypes.map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => toggleType(type)}
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
-                  filters.types.includes(type)
-                    ? (TYPE_PILL_COLORS[
-                        type as keyof typeof TYPE_PILL_COLORS
-                      ] ?? "bg-muted")
-                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                ✦ {type}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ------------------------------------------------------------------ */}
@@ -196,25 +186,23 @@ export function SpeciesSidebar({
         <span className="text-muted-foreground mb-1.5 block text-[9px] font-bold tracking-widest uppercase">
           Ability
         </span>
-        <input
-          list="species-picker-abilities"
-          placeholder={
-            filters.ability
-              ? undefined
-              : "Click any ability in the table to filter"
-          }
-          value={filters.ability ?? ""}
-          onChange={(e) => {
-            const val = e.target.value.trim();
-            onFiltersChange({ ...filters, ability: val || null });
-          }}
-          className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
-        />
-        <datalist id="species-picker-abilities">
-          {abilities.map((ab) => (
-            <option key={ab}>{ab}</option>
-          ))}
-        </datalist>
+        {filters.ability ? (
+          <button
+            type="button"
+            onClick={() => onFiltersChange({ ...filters, ability: null })}
+            aria-label={`Clear ${filters.ability} filter`}
+            className="bg-primary/10 text-primary border-primary/30 hover:bg-primary/15 inline-flex w-full items-center justify-between gap-2 rounded border px-2 py-1 text-[11px] font-medium transition-colors"
+          >
+            <span className="truncate">{filters.ability}</span>
+            <span aria-hidden="true" className="text-[10px] opacity-70">
+              ×
+            </span>
+          </button>
+        ) : (
+          <p className="text-muted-foreground/70 px-1 text-[10px] leading-snug">
+            Click any ability in the table to filter.
+          </p>
+        )}
       </div>
 
       {/* ------------------------------------------------------------------ */}

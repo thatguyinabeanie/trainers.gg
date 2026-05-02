@@ -4,7 +4,10 @@ import React from "react";
 import { TypePill } from "../type-pill";
 
 // =============================================================================
-// TypePill — now renders a Showdown retro sprite <img>
+// TypePill — now renders a wordless TypeSymbolIcon (lucide glyph on a
+// type-colored span). The accessible role is still `img` (via the inner
+// <span role="img" aria-label={type}>) so existing role-based queries
+// continue to work.
 // =============================================================================
 
 describe("TypePill", () => {
@@ -27,26 +30,16 @@ describe("TypePill", () => {
     "Rock",
     "Steel",
     "Water",
-  ])("renders an img with alt text for %s", (type) => {
+  ])("renders an accessible image labelled by type for %s", (type) => {
     render(<TypePill t={type} />);
     expect(screen.getByRole("img", { name: type })).toBeInTheDocument();
   });
 
-  it("renders as an img element", () => {
+  it("uses an aria-labelled span (not a translated <img> tag)", () => {
+    // Wordless icons translate cleanly without needing localized assets.
     render(<TypePill t="Fire" />);
     const pill = screen.getByRole("img", { name: "Fire" });
-    expect(pill.tagName.toLowerCase()).toBe("img");
-  });
-
-  it("sets title to the type name", () => {
-    render(<TypePill t="Water" />);
-    const pill = screen.getByRole("img", { name: "Water" });
-    expect(pill).toHaveAttribute("title", "Water");
-  });
-
-  it("src points to the Showdown type sprite URL", () => {
-    render(<TypePill t="Fire" />);
-    const pill = screen.getByRole("img", { name: "Fire" });
-    expect(pill).toHaveAttribute("src", expect.stringContaining("Fire"));
+    expect(pill.tagName.toLowerCase()).toBe("span");
+    expect(pill).toHaveAttribute("aria-label", "Fire");
   });
 });

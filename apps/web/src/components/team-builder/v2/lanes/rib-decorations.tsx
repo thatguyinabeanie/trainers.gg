@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import { getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
-import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -15,6 +14,7 @@ import {
 
 import { formatSupportsLevel } from "../format-gating";
 import { NumberPicker } from "../pickers/number-picker";
+import { TypeSymbolIcon } from "../../type-symbol-icon";
 import s from "../builder.module.css";
 
 // =============================================================================
@@ -53,22 +53,13 @@ export function RibDecorations({
 
   return (
     <div className={cn(s.ribDecorations, "flex flex-col items-center gap-2")}>
-      {/* Type pills — rotated -90° (counter-clockwise) so text reads bottom→top.
-          The image is absolutely positioned + transformed so its centre stays
-          locked to the wrapper's centre regardless of the natural-width overflow
-          (Showdown type icons are ~55px wide at h-6, wider than the 24px wrapper). */}
+      {/* Wordless round type symbols — translation-friendly (no English text). */}
       {types.map((t) => (
-        <div
+        <TypeSymbolIcon
           key={t}
-          className="relative h-14 w-6 overflow-visible"
-        >
-          <img
-            src={getShowdownTypeIconUrl(t)}
-            alt={t}
-            title={t}
-            className="absolute left-1/2 top-1/2 h-6 w-auto max-w-none origin-center -translate-x-1/2 -translate-y-1/2 -rotate-90 [image-rendering:pixelated]"
-          />
-        </div>
+          type={t as Parameters<typeof TypeSymbolIcon>[0]["type"]}
+          size={24}
+        />
       ))}
 
       {/* Level picker — format-gated.
@@ -76,29 +67,29 @@ export function RibDecorations({
           when the surrounding .ribDecorations hides type pills. */}
       {showLevel && (
         <div className={s.levelPicker}>
-        <Popover open={levelOpen} onOpenChange={setLevelOpen}>
-          <PopoverTrigger
-            render={
-              <button
-                type="button"
-                title={`Level ${level}`}
-                className="bg-muted/60 hover:bg-muted border-border rounded border px-1 py-0.5 font-mono font-medium text-[9px] text-muted-foreground"
+          <Popover open={levelOpen} onOpenChange={setLevelOpen}>
+            <PopoverTrigger
+              render={
+                <button
+                  type="button"
+                  title={`Level ${level}`}
+                  className="bg-muted/60 hover:bg-muted border-border text-muted-foreground rounded border px-1 py-0.5 font-mono text-[9px] font-medium"
+                />
+              }
+            >
+              <span>L{level}</span>
+            </PopoverTrigger>
+            <PopoverContent side="right" align="center" className="w-auto p-0">
+              <NumberPicker
+                title="Level"
+                value={level}
+                min={1}
+                max={100}
+                onChange={(v) => onUpdate({ level: v })}
+                onClose={() => setLevelOpen(false)}
               />
-            }
-          >
-            <span>L{level}</span>
-          </PopoverTrigger>
-          <PopoverContent side="right" align="center" className="w-auto p-0">
-            <NumberPicker
-              title="Level"
-              value={level}
-              min={1}
-              max={100}
-              onChange={(v) => onUpdate({ level: v })}
-              onClose={() => setLevelOpen(false)}
-            />
-          </PopoverContent>
-        </Popover>
+            </PopoverContent>
+          </Popover>
         </div>
       )}
     </div>

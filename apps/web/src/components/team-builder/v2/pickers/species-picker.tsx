@@ -21,8 +21,6 @@ import { cn } from "@/lib/utils";
 
 import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { AbilityCell } from "./ability-cell";
-import { FilterChipsBar, type FilterChip } from "./filter-chips-bar";
-import { RoleChip } from "./role-chip";
 import { RolePresetsPanel } from "./role-presets-panel";
 import { getRolesForSpecies } from "./role-registry";
 import {
@@ -42,21 +40,76 @@ const HIGH_STAT_THRESHOLD = 110;
 /**
  * Shared Tailwind grid template for each data row.
  *
- *   44px            — sprite circle
- *   minmax(100px,1fr) — name column
- *   44px            — type icons (fits 2 × 20px + gap)
- *   80px            — slot1 ability
- *   80px            — slot2 ability
- *   76px            — hidden ability
- *   repeat(6,24px)  — HP/Atk/Def/SpA/SpD/Spe stat cells
- *   36px            — BST rollup
- *   minmax(140px,180px) — roles chips
+ *   64px              — sprite circle (size-16, sprite rendered at size-14)
+ *   minmax(180px,2fr) — name column. 180px floor fits "Kangaskhan-Mega",
+ *                       "Aegislash-Blade", "Charizard-Mega-X", etc. without
+ *                       truncation.
+ *   72px              — Types (two wordless icons side-by-side; em-dash
+ *                       for monotypes)
+ *   minmax(160px,2fr) — Regular abilities — slot 1 stacked above slot 2.
+ *                       If the species has only one regular ability, only
+ *                       that ability renders (no empty placeholder line).
+ *   minmax(140px,1.5fr) — Hidden ability (italic + muted).
+ *   repeat(6,36px)    — HP/Atk/Def/SpA/SpD/Spe stat cells (3-letter
+ *                       header labels + active sort arrow fit comfortably)
+ *   40px              — BST rollup
  */
 const ROW_GRID =
-  "grid-cols-[44px_minmax(100px,1fr)_44px_80px_80px_76px_repeat(6,24px)_36px_minmax(140px,180px)]";
+  "grid-cols-[64px_minmax(180px,2fr)_72px_minmax(160px,2fr)_minmax(140px,1.5fr)_repeat(6,36px)_40px]";
 
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
+
+// =============================================================================
+// Sort
+// =============================================================================
+
+type SortCol = "name" | "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "bst";
+type SortDir = "asc" | "desc";
+
+interface SortState {
+  col: SortCol;
+  dir: SortDir;
+}
+
+function sortSpecies(
+  rows: SpeciesSearchEntry[],
+  sort: SortState
+): SpeciesSearchEntry[] {
+  const out = [...rows];
+  out.sort((a, b) => {
+    let cmp = 0;
+    switch (sort.col) {
+      case "name":
+        cmp = a.species.localeCompare(b.species);
+        break;
+      case "hp":
+        cmp = a.baseStats.hp - b.baseStats.hp;
+        break;
+      case "atk":
+        cmp = a.baseStats.atk - b.baseStats.atk;
+        break;
+      case "def":
+        cmp = a.baseStats.def - b.baseStats.def;
+        break;
+      case "spa":
+        cmp = a.baseStats.spa - b.baseStats.spa;
+        break;
+      case "spd":
+        cmp = a.baseStats.spd - b.baseStats.spd;
+        break;
+      case "spe":
+        cmp = a.baseStats.spe - b.baseStats.spe;
+        break;
+      case "bst":
+        cmp = a.bst - b.bst;
+        break;
+    }
+    if (cmp === 0) cmp = a.species.localeCompare(b.species);
+    return sort.dir === "asc" ? cmp : -cmp;
+  });
+  return out;
+}
 
 // =============================================================================
 // Types
@@ -88,6 +141,77 @@ function statValueClass(value: number): string {
 }
 
 // =============================================================================
+// SortHeaderButton — sticky-header sortable column label
+// =============================================================================
+
+interface SortHeaderButtonProps {
+  col: SortCol;
+  label: string;
+  align: "left" | "center" | "right";
+  sort: SortState;
+  onSort: (col: SortCol) => void;
+  /**
+   * Optional Tailwind color class. When set, the label is rendered in this
+   * color (e.g. the rose/orange/amber stat palette from the editor) and
+   * stays colored whether or not the column is the active sort.
+   */
+  colorClass?: string;
+}
+
+function SortHeaderButton({
+  col,
+  label,
+  align,
+  sort,
+  onSort,
+  colorClass,
+}: SortHeaderButtonProps) {
+  const isActive = sort.col === col;
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(col)}
+      aria-label={`Sort by ${label}`}
+      aria-pressed={isActive}
+      className={cn(
+        "flex items-center gap-0.5 whitespace-nowrap transition-colors select-none",
+        align === "left" && "justify-start",
+        align === "center" && "justify-center",
+        align === "right" && "justify-end",
+        // When a color is provided (stat columns), use it always; otherwise
+        // toggle muted/foreground based on active sort state.
+        colorClass
+          ? cn(colorClass, "hover:opacity-80")
+          : isActive
+            ? "text-foreground hover:text-foreground"
+            : "text-muted-foreground hover:text-foreground"
+      )}
+    >
+      {label}
+      {isActive && (
+        <span aria-hidden="true" className="text-[8px] leading-none">
+          {sort.dir === "asc" ? "↑" : "↓"}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/** Editor stat palette — kept in sync with `STAT_COLOR_CLASS`. */
+const STAT_HEADER_COLORS: Record<
+  "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "bst",
+  string
+> = {
+  hp: "text-rose-500 dark:text-rose-400",
+  atk: "text-orange-500 dark:text-orange-400",
+  def: "text-amber-500 dark:text-amber-400",
+  spa: "text-sky-500 dark:text-sky-400",
+  spd: "text-emerald-500 dark:text-emerald-400",
+  spe: "text-fuchsia-500 dark:text-fuchsia-400",
+  bst: "text-foreground",
+};
+
+// =============================================================================
 // SpeciesRow — one rich row in the picker
 // =============================================================================
 
@@ -96,7 +220,6 @@ interface SpeciesRowProps {
   isCurrent: boolean;
   onSelect: () => void;
   onFilterAbility: (ability: string) => void;
-  onFilterRole: (roleId: string) => void;
 }
 
 function SpeciesRow({
@@ -104,10 +227,8 @@ function SpeciesRow({
   isCurrent,
   onSelect,
   onFilterAbility,
-  onFilterRole,
 }: SpeciesRowProps) {
   const sprite = getPokemonSprite(entry.species);
-  const roles: string[] = entry.roles ?? [];
 
   return (
     // Using div[role="row"] instead of <button> because this row contains
@@ -132,15 +253,15 @@ function SpeciesRow({
         tabIndex={-1}
       />
 
-      {/* Sprite — 44px circle */}
-      <div className="bg-primary/10 relative z-10 flex size-11 shrink-0 items-center justify-center rounded-full">
+      {/* Sprite — 64px circle, image rendered at 56px */}
+      <div className="bg-primary/10 relative z-10 flex size-16 shrink-0 items-center justify-center rounded-full">
         <Image
           src={sprite.url}
           alt={entry.species}
-          width={36}
-          height={36}
+          width={56}
+          height={56}
           className={cn(
-            "size-9 object-contain",
+            "size-14 object-contain",
             sprite.pixelated && "[image-rendering:pixelated]"
           )}
           unoptimized
@@ -152,37 +273,52 @@ function SpeciesRow({
         {entry.species}
       </span>
 
-      {/* Types */}
-      <div className="relative z-10 flex min-w-11 items-center gap-0.5">
-        {entry.types.map((type) => (
+      {/* Types — wordless round icons side-by-side; em-dash for monotype.
+          Wordless icons translate cleanly without text changes. */}
+      <div className="relative z-10 flex min-w-0 items-center gap-1.5">
+        {entry.types[0] ? (
           <TypeSymbolIcon
-            key={type}
-            type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
-            size={18}
+            type={
+              entry.types[0] as Parameters<typeof TypeSymbolIcon>[0]["type"]
+            }
+            size={28}
           />
-        ))}
+        ) : (
+          <span className="text-muted-foreground text-xs">—</span>
+        )}
+        {entry.types[1] ? (
+          <TypeSymbolIcon
+            type={
+              entry.types[1] as Parameters<typeof TypeSymbolIcon>[0]["type"]
+            }
+            size={28}
+          />
+        ) : (
+          <span className="text-muted-foreground text-xs">—</span>
+        )}
       </div>
 
-      {/* Slot 1 ability */}
-      <div className="relative z-10 min-w-0 overflow-hidden">
-        <AbilityCell
-          name={entry.abilitySlot1 ?? null}
-          slot="slot1"
-          onFilter={onFilterAbility}
-        />
+      {/* Regular abilities — slot 1 stacked above slot 2, both centered.
+          If the species has only one regular ability, render just that one. */}
+      <div className="relative z-10 flex min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden text-center">
+        {entry.abilitySlot1 ? (
+          <AbilityCell
+            name={entry.abilitySlot1}
+            slot="slot1"
+            onFilter={onFilterAbility}
+          />
+        ) : null}
+        {entry.abilitySlot2 ? (
+          <AbilityCell
+            name={entry.abilitySlot2}
+            slot="slot2"
+            onFilter={onFilterAbility}
+          />
+        ) : null}
       </div>
 
-      {/* Slot 2 ability */}
-      <div className="relative z-10 min-w-0 overflow-hidden">
-        <AbilityCell
-          name={entry.abilitySlot2 ?? null}
-          slot="slot2"
-          onFilter={onFilterAbility}
-        />
-      </div>
-
-      {/* Hidden ability */}
-      <div className="relative z-10 min-w-0 overflow-hidden">
+      {/* Hidden ability — italic + muted, centered in its own column */}
+      <div className="relative z-10 flex min-w-0 items-center justify-center overflow-hidden text-center">
         <AbilityCell
           name={entry.hiddenAbility ?? null}
           slot="hidden"
@@ -249,13 +385,6 @@ function SpeciesRow({
       <span className="border-border/60 text-foreground relative z-10 border-l pl-1.5 text-center font-mono text-xs font-semibold tabular-nums">
         {entry.bst}
       </span>
-
-      {/* Roles */}
-      <div className="relative z-10 flex flex-wrap gap-0.5">
-        {roles.map((roleId) => (
-          <RoleChip key={roleId} roleId={roleId} onClick={onFilterRole} />
-        ))}
-      </div>
     </div>
   );
 }
@@ -288,9 +417,18 @@ export function SpeciesPicker({
   const [filters, setFilters] = useState<SpeciesFilterState>(
     DEFAULT_SPECIES_FILTERS
   );
+  const [sort, setSort] = useState<SortState>({ col: "name", dir: "asc" });
 
   // Scroll container ref for the virtualizer
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  function handleSort(col: SortCol) {
+    setSort((prev) =>
+      prev.col === col
+        ? { col, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { col, dir: col === "name" ? "asc" : "desc" }
+    );
+  }
 
   // Build the species index — expensive, memoize by format id.
   // getRolesForSpecies is stable (module-level fn) so this only rebuilds when
@@ -319,7 +457,7 @@ export function SpeciesPicker({
   );
 
   // Derived list — search + filter (legality already applied to index)
-  const matched = searchSpecies(speciesIndex, query, {
+  const filtered = searchSpecies(speciesIndex, query, {
     types: filters.types,
     ability: filters.ability ?? undefined,
     moves: filters.moves,
@@ -327,6 +465,7 @@ export function SpeciesPicker({
     megaOnly: filters.megaOnly,
     formatId: format?.id,
   });
+  const matched = sortSpecies(filtered, sort);
 
   // Bucket counts — for each role, how many matched species carry it
   const bucketCount = useMemo(() => {
@@ -380,76 +519,16 @@ export function SpeciesPicker({
     setFilters((prev) => ({ ...prev, ability }));
   }
 
-  function handleRoleFilter(roleId: string) {
-    setFilters((prev) => {
-      if (prev.roles.includes(roleId)) return prev;
-      return { ...prev, roles: [...prev.roles, roleId] };
-    });
-  }
-
   // ---------------------------------------------------------------------------
-  // Filter chips
+  // Active filter count — drives the badge in the search header
   // ---------------------------------------------------------------------------
 
-  function buildFilterChips(): FilterChip[] {
-    const chips: FilterChip[] = [];
-
-    filters.types.forEach((type) => {
-      chips.push({
-        id: `type:${type}`,
-        label: type,
-        onRemove: () =>
-          setFilters((prev) => ({
-            ...prev,
-            types: prev.types.filter((t) => t !== type),
-          })),
-      });
-    });
-
-    if (filters.ability) {
-      const ability = filters.ability;
-      chips.push({
-        id: `ability:${ability}`,
-        label: ability,
-        onRemove: () => setFilters((prev) => ({ ...prev, ability: null })),
-      });
-    }
-
-    filters.moves.forEach((move) => {
-      chips.push({
-        id: `move:${move}`,
-        label: move,
-        onRemove: () =>
-          setFilters((prev) => ({
-            ...prev,
-            moves: prev.moves.filter((m) => m !== move),
-          })),
-      });
-    });
-
-    filters.roles.forEach((roleId) => {
-      chips.push({
-        id: `role:${roleId}`,
-        label: roleId,
-        onRemove: () =>
-          setFilters((prev) => ({
-            ...prev,
-            roles: prev.roles.filter((r) => r !== roleId),
-          })),
-      });
-    });
-
-    if (filters.megaOnly) {
-      chips.push({
-        id: "mega",
-        label: "Mega only",
-        tone: "mega",
-        onRemove: () => setFilters((prev) => ({ ...prev, megaOnly: false })),
-      });
-    }
-
-    return chips;
-  }
+  const activeFilterCount =
+    filters.types.length +
+    filters.moves.length +
+    filters.roles.length +
+    (filters.ability ? 1 : 0) +
+    (filters.megaOnly ? 1 : 0);
 
   // ---------------------------------------------------------------------------
   // Enter key handler on search input
@@ -524,13 +603,16 @@ export function SpeciesPicker({
   const rowVirtualizer = useVirtualizer({
     count: matched.length,
     getScrollElement: () => scrollRef.current,
-    // Dense row height: 44px sprite (size-11) + py-2 top + py-2 bottom ≈ 60px
-    estimateSize: () => 60,
+    // Row height: 64px sprite (size-16) + py-2 top + py-2 bottom ≈ 80px
+    estimateSize: () => 80,
     overscan: 5,
   });
 
-  const filterChips = buildFilterChips();
   const showSmartSearch = query.trim().length > 0;
+
+  function clearAllFilters() {
+    setFilters(DEFAULT_SPECIES_FILTERS);
+  }
 
   // ---------------------------------------------------------------------------
   // Render
@@ -538,7 +620,7 @@ export function SpeciesPicker({
 
   return (
     <div
-      className="flex min-h-0 flex-col overflow-hidden"
+      className="bg-popover text-popover-foreground flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl"
       data-testid="species-picker"
     >
       {/* -------------------------------------------------------------------- */}
@@ -556,6 +638,24 @@ export function SpeciesPicker({
           data-testid="species-search"
           className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
         />
+        {/* Fixed-width slot reserves space for the filter badge so the search
+            input does not shrink when filters become active (no layout shift). */}
+        <div className="flex w-[88px] shrink-0 items-center justify-end">
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
+              aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
+            >
+              {activeFilterCount}{" "}
+              {activeFilterCount === 1 ? "filter" : "filters"}
+              <span aria-hidden="true" className="text-[10px] opacity-70">
+                ×
+              </span>
+            </button>
+          )}
+        </div>
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
           {matched.length} of {speciesIndex.length}
         </span>
@@ -565,26 +665,33 @@ export function SpeciesPicker({
       {/* 3-column body                                                          */}
       {/* -------------------------------------------------------------------- */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Left — SpeciesSidebar */}
-        <SpeciesSidebar
-          filters={filters}
-          onFiltersChange={setFilters}
-          format={format}
-          currentTeam={currentTeam}
-        />
+        {/* Left rail — sidebar (top) + role presets (bottom). Single column,
+            stacked vertically. Both halves scroll independently. */}
+        <div className="border-border flex w-[380px] flex-shrink-0 flex-col border-r">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <SpeciesSidebar
+              filters={filters}
+              onFiltersChange={setFilters}
+              format={format}
+              currentTeam={currentTeam}
+            />
+          </div>
+          <div className="border-border min-h-0 flex-1 overflow-hidden border-t">
+            <RolePresetsPanel
+              selected={filters.roles}
+              onChange={(next) =>
+                setFilters((prev) => ({ ...prev, roles: next }))
+              }
+              bucketCount={bucketCount}
+              className="h-full"
+            />
+          </div>
+        </div>
 
-        {/* Middle — RolePresetsPanel */}
-        <RolePresetsPanel
-          selected={filters.roles}
-          onChange={(next) => setFilters((prev) => ({ ...prev, roles: next }))}
-          bucketCount={bucketCount}
-        />
-
-        {/* Right — filter chips + list/smart-search */}
+        {/* Right — list/smart-search. Active filters are surfaced via the
+            filter-count badge in the search header (no chips strip below
+            the search bar — that produced layout shift the user objected to). */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          {/* Active filter chips */}
-          <FilterChipsBar chips={filterChips} />
-
           {/* Smart-search overlay or virtualized table */}
           {showSmartSearch ? (
             <div
@@ -605,9 +712,91 @@ export function SpeciesPicker({
           ) : (
             <div
               ref={scrollRef}
-              className="flex-1 overflow-y-auto"
+              className="flex-1 overflow-x-hidden overflow-y-auto"
               data-testid="species-rows"
             >
+              {/* Sticky sortable header */}
+              <div
+                className={cn(
+                  "bg-card sticky top-0 z-20 grid items-center gap-2 border-b px-4 py-2 text-[10px] font-semibold tracking-wider uppercase",
+                  ROW_GRID
+                )}
+                role="row"
+              >
+                <span aria-hidden="true" />
+                <SortHeaderButton
+                  col="name"
+                  label="Name"
+                  align="left"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+                <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
+                  Types
+                </span>
+                <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
+                  Abilities
+                </span>
+                <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
+                  Hidden
+                </span>
+                <SortHeaderButton
+                  col="hp"
+                  label="HP"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.hp}
+                />
+                <SortHeaderButton
+                  col="atk"
+                  label="ATK"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.atk}
+                />
+                <SortHeaderButton
+                  col="def"
+                  label="DEF"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.def}
+                />
+                <SortHeaderButton
+                  col="spa"
+                  label="SPA"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spa}
+                />
+                <SortHeaderButton
+                  col="spd"
+                  label="SPD"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spd}
+                />
+                <SortHeaderButton
+                  col="spe"
+                  label="SPE"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spe}
+                />
+                <SortHeaderButton
+                  col="bst"
+                  label="BST"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+              </div>
+
               {matched.length === 0 ? (
                 <div className="text-muted-foreground py-12 text-center text-sm">
                   No Pokémon match your filters. Try broadening your search.
@@ -631,7 +820,6 @@ export function SpeciesPicker({
                           isCurrent={entry.species === value}
                           onSelect={() => onPick(entry.species)}
                           onFilterAbility={handleAbilityFilter}
-                          onFilterRole={handleRoleFilter}
                         />
                       </div>
                     );

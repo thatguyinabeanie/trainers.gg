@@ -16,14 +16,20 @@ import { type GameFormat } from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
+jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 
 // Popover: render content inline so it's always queryable
 jest.mock("@/components/ui/popover", () => ({
-  Popover: ({ children, open }: { children: React.ReactNode; open?: boolean }) => (
-    <div data-testid="popover" data-open={String(!!open)}>{children}</div>
+  Popover: ({
+    children,
+    open,
+  }: {
+    children: React.ReactNode;
+    open?: boolean;
+  }) => (
+    <div data-testid="popover" data-open={String(!!open)}>
+      {children}
+    </div>
   ),
   PopoverTrigger: ({
     children,
@@ -44,6 +50,45 @@ jest.mock("@/components/ui/popover", () => ({
   },
   PopoverContent: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popover-content">{children}</div>
+  ),
+}));
+
+// Dialog: render content inline so it's always queryable (the species picker
+// now mounts inside a DialogContent, which uses a portal in production)
+jest.mock("@/components/ui/dialog", () => ({
+  Dialog: ({
+    children,
+    open,
+  }: {
+    children: React.ReactNode;
+    open?: boolean;
+  }) => (
+    <div data-testid="dialog" data-open={String(!!open)}>
+      {children}
+    </div>
+  ),
+  DialogTrigger: ({
+    children,
+    render: renderProp,
+  }: {
+    children?: React.ReactNode;
+    render?: React.ReactElement;
+  }) => {
+    if (renderProp) {
+      return (
+        <div data-testid="dialog-trigger">
+          {renderProp}
+          {children}
+        </div>
+      );
+    }
+    return <div data-testid="dialog-trigger">{children}</div>;
+  },
+  DialogContent: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="dialog-content">{children}</div>
+  ),
+  DialogTitle: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
   ),
 }));
 
@@ -163,7 +208,9 @@ jest.mock("../sprite", () => ({
 
 // TypePill + TypeDot — minimal stubs
 jest.mock("../type-pill", () => ({
-  TypePill: ({ t }: { t: string }) => <span data-testid={`type-pill-${t}`}>{t}</span>,
+  TypePill: ({ t }: { t: string }) => (
+    <span data-testid={`type-pill-${t}`}>{t}</span>
+  ),
 }));
 
 jest.mock("../type-dot", () => ({
@@ -216,7 +263,14 @@ jest.mock("@trainers/pokemon", () => ({
     specialDefense: "SpD",
     speed: "Spe",
   },
-  STAT_KEYS: ["hp", "attack", "defense", "specialAttack", "specialDefense", "speed"],
+  STAT_KEYS: [
+    "hp",
+    "attack",
+    "defense",
+    "specialAttack",
+    "specialDefense",
+    "speed",
+  ],
   formatHasTera: jest.fn().mockReturnValue(true),
   isChampionsFormat: jest.fn().mockReturnValue(false),
   // Form switching — defaults that single-form Pokemon hide chips. Override
@@ -278,7 +332,9 @@ const _CHAMPIONS_FORMAT: GameFormat = {
   active: true,
 };
 
-function makePokemon(overrides: Partial<Tables<"pokemon">> = {}): Tables<"pokemon"> {
+function makePokemon(
+  overrides: Partial<Tables<"pokemon">> = {}
+): Tables<"pokemon"> {
   return {
     id: 1,
     species: "Garchomp",
@@ -490,7 +546,10 @@ describe("IdentityLane — nickname input", () => {
 
   it("calls onUpdate with null when a non-null nickname is changed to match species name", () => {
     // Start with a real nickname; user overwrites with species name → null
-    const { onUpdate } = renderLane({ nickname: "Sharky", species: "Garchomp" });
+    const { onUpdate } = renderLane({
+      nickname: "Sharky",
+      species: "Garchomp",
+    });
     const input = screen.getByDisplayValue("Sharky");
     fireEvent.change(input, { target: { value: "Garchomp" } });
     fireEvent.blur(input);
@@ -777,7 +836,9 @@ describe("IdentityLane — form chips", () => {
   beforeEach(() => {
     (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(false);
     (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([]);
-    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockImplementation((s: string) => s);
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockImplementation(
+      (s: string) => s
+    );
     (TrainersPokemon.getMegaStoneForSpecies as jest.Mock).mockReturnValue(null);
   });
 
@@ -789,7 +850,9 @@ describe("IdentityLane — form chips", () => {
       "Charizard-Mega-X",
       "Charizard-Mega-Y",
     ]);
-    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockReturnValue("Charizard");
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockReturnValue(
+      "Charizard"
+    );
     (TrainersPokemon.getMegaStoneForSpecies as jest.Mock).mockImplementation(
       (s: string) =>
         s === "Charizard-Mega-X"
