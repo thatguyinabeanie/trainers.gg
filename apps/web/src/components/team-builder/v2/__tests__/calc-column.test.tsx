@@ -29,7 +29,10 @@ import { type Tables } from "@trainers/supabase";
 // Mocks
 // =============================================================================
 
-type RowOutputs = readonly (null | { minPercent: number; maxPercent: number })[];
+type RowOutputs = readonly (null | {
+  minPercent: number;
+  maxPercent: number;
+})[];
 
 const mockCalcContext: {
   calcEnabled: boolean;
@@ -55,12 +58,7 @@ const mockCalcContext: {
   defenderNature: "",
   weather: "",
   inferredWeather: "",
-  rowOutputs: [
-    { minPercent: 24.7, maxPercent: 29.8 },
-    null,
-    null,
-    null,
-  ],
+  rowOutputs: [{ minPercent: 24.7, maxPercent: 29.8 }, null, null, null],
   computeForwardOutputsForRow: (rowPokemon) =>
     rowPokemon === null ? [null, null, null, null] : mockCalcContext.rowOutputs,
   field: { foesAlive: 2, allyAlive: true },
@@ -74,7 +72,9 @@ const mockGetDisplayRangeAndKoTier = jest.fn(() => ({
 }));
 
 const mockGetMoveEffectiveness = jest.fn().mockReturnValue(1);
-const mockGetMoveTargetInfo = jest.fn().mockReturnValue({ isSpread: false, kind: "single-foe" });
+const mockGetMoveTargetInfo = jest
+  .fn()
+  .mockReturnValue({ isSpread: false, kind: "single-foe" });
 const mockGetMoveData = jest.fn().mockReturnValue({
   type: "Fairy",
   category: "Special",
@@ -87,7 +87,8 @@ jest.mock("../calc/calc-state-context", () => ({
 }));
 
 jest.mock("../calc/move-effectiveness", () => ({
-  getMoveEffectiveness: (...args: unknown[]) => mockGetMoveEffectiveness(...args),
+  getMoveEffectiveness: (...args: unknown[]) =>
+    mockGetMoveEffectiveness(...args),
 }));
 
 jest.mock("../calc/move-target-info", () => ({
@@ -95,7 +96,8 @@ jest.mock("../calc/move-target-info", () => ({
 }));
 
 jest.mock("../lanes/calc-display-helpers", () => ({
-  getDisplayRangeAndKoTier: (args: unknown) => mockGetDisplayRangeAndKoTier(args),
+  getDisplayRangeAndKoTier: (args: unknown) =>
+    mockGetDisplayRangeAndKoTier(args),
 }));
 
 jest.mock("@trainers/pokemon", () => ({
@@ -112,7 +114,9 @@ import { CalcColumn } from "../lanes/calc-column";
 // Fixtures
 // =============================================================================
 
-function makePokemon(overrides: Partial<Tables<"pokemon">> = {}): Tables<"pokemon"> {
+function makePokemon(
+  overrides: Partial<Tables<"pokemon">> = {}
+): Tables<"pokemon"> {
   return {
     id: 1,
     species: "Floette-Eternal",
@@ -157,8 +161,16 @@ beforeEach(() => {
     koTier: "4",
   });
   mockGetMoveEffectiveness.mockReturnValue(1);
-  mockGetMoveTargetInfo.mockReturnValue({ isSpread: false, kind: "single-foe" });
-  mockGetMoveData.mockReturnValue({ type: "Fairy", category: "Special", basePower: 80, accuracy: 100 });
+  mockGetMoveTargetInfo.mockReturnValue({
+    isSpread: false,
+    kind: "single-foe",
+  });
+  mockGetMoveData.mockReturnValue({
+    type: "Fairy",
+    category: "Special",
+    basePower: 80,
+    accuracy: 100,
+  });
   mockCalcContext.calcEnabled = true;
   mockCalcContext.defenderSpecies = "Garchomp";
   mockCalcContext.weather = "";
@@ -287,7 +299,7 @@ describe("CalcColumn — KO tier labels", () => {
           move3: "Protect",
           move4: "Hyper Voice",
         })}
-             />
+      />
     );
     expect(container.querySelectorAll(".calc-col-row")).toHaveLength(4);
   });
@@ -359,7 +371,10 @@ describe("CalcColumn — spread −25% reduction", () => {
   });
 
   it("does NOT show 'spread' badge for non-spread move", () => {
-    mockGetMoveTargetInfo.mockReturnValue({ isSpread: false, kind: "single-foe" });
+    mockGetMoveTargetInfo.mockReturnValue({
+      isSpread: false,
+      kind: "single-foe",
+    });
     mockCalcContext.rowOutputs = [
       { minPercent: 80, maxPercent: 100 },
       null,
@@ -390,31 +405,28 @@ describe("CalcColumn — spread reduction for all-foes and all-others parameteri
     ["all-others, 2 foes alive → spread", "all-others", 2, false, true],
     ["all-others, 1 foe + ally alive → spread", "all-others", 1, true, true],
     ["all-others, 1 foe, no ally → no spread", "all-others", 1, false, false],
-  ] as const)(
-    "%s",
-    (_label, kind, foesAlive, allyAlive, expectedSpread) => {
-      mockGetMoveTargetInfo.mockReturnValue({ isSpread: true, kind });
-      mockCalcContext.rowOutputs = [
-        { minPercent: 80, maxPercent: 100 },
-        null,
-        null,
-        null,
-      ];
-      mockCalcContext.field = { foesAlive, allyAlive };
-      mockGetDisplayRangeAndKoTier.mockReturnValue({
-        spreadApplied: expectedSpread,
-        displayMin: expectedSpread ? 60.0 : 80.0,
-        displayMax: expectedSpread ? 75.0 : 100.0,
-        koTier: "2",
-      });
-      render(<CalcColumn pokemon={makePokemon({ move1: "Earthquake" })} />);
-      if (expectedSpread) {
-        expect(screen.getByTitle("Spread −25%")).toBeInTheDocument();
-      } else {
-        expect(screen.queryByTitle("Spread −25%")).not.toBeInTheDocument();
-      }
+  ] as const)("%s", (_label, kind, foesAlive, allyAlive, expectedSpread) => {
+    mockGetMoveTargetInfo.mockReturnValue({ isSpread: true, kind });
+    mockCalcContext.rowOutputs = [
+      { minPercent: 80, maxPercent: 100 },
+      null,
+      null,
+      null,
+    ];
+    mockCalcContext.field = { foesAlive, allyAlive };
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: expectedSpread,
+      displayMin: expectedSpread ? 60.0 : 80.0,
+      displayMax: expectedSpread ? 75.0 : 100.0,
+      koTier: "2",
+    });
+    render(<CalcColumn pokemon={makePokemon({ move1: "Earthquake" })} />);
+    if (expectedSpread) {
+      expect(screen.getByTitle("Spread −25%")).toBeInTheDocument();
+    } else {
+      expect(screen.queryByTitle("Spread −25%")).not.toBeInTheDocument();
     }
-  );
+  });
 });
 
 // =============================================================================

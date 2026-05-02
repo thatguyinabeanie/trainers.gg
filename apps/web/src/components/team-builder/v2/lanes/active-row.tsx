@@ -1,9 +1,16 @@
 "use client";
 
-import { type DraggableAttributes, type DraggableSyntheticListeners } from "@dnd-kit/core";
+import {
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
+} from "@dnd-kit/core";
 
 import { type GameFormat } from "@trainers/pokemon";
-import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/supabase";
+import {
+  type Tables,
+  type TablesUpdate,
+  type TeamWithPokemon,
+} from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 
@@ -88,22 +95,39 @@ export function ActiveRow({
 
   // Identity lane receives both identity and loadout errors
   const identityErrors = errorsForFields(fieldErrors, [
-    "species", "nickname", "gender", "level",
-    "item", "heldItem", "ability", "nature", "tera_type",
+    "species",
+    "nickname",
+    "gender",
+    "level",
+    "item",
+    "heldItem",
+    "ability",
+    "nature",
+    "tera_type",
   ]);
   const movesErrors = errorsForFields(fieldErrors, [
-    "move1", "move2", "move3", "move4", "moves",
+    "move1",
+    "move2",
+    "move3",
+    "move4",
+    "moves",
   ]);
   const statsErrors = errorsForFields(fieldErrors, [
-    "evs", "evTotal", "ev_hp", "ev_attack", "ev_defense",
-    "ev_special_attack", "ev_special_defense", "ev_speed",
+    "evs",
+    "evTotal",
+    "ev_hp",
+    "ev_attack",
+    "ev_defense",
+    "ev_special_attack",
+    "ev_special_defense",
+    "ev_speed",
   ]);
 
   return (
     <div
       className={cn(
         s.rowActive,
-        "flex min-w-0 w-fit self-start flex-wrap items-stretch overflow-hidden rounded-lg border bg-card",
+        "bg-card flex w-fit min-w-0 flex-wrap items-stretch self-start overflow-hidden rounded-lg border",
         "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]",
         isDragging && s.rowDragging
       )}
@@ -112,14 +136,14 @@ export function ActiveRow({
       <div
         className={cn(
           s.rib,
-          "flex w-10 shrink-0 flex-col items-center justify-between border-r border-dashed border-border/60 bg-muted/20 py-2"
+          "border-border/60 bg-muted/20 flex w-10 shrink-0 flex-col items-center justify-between border-r border-dashed py-2"
         )}
       >
         <span
           {...dragAttributes}
           {...dragListeners}
           className={cn(
-            "font-mono text-[10px] font-medium tracking-wide text-muted-foreground",
+            "text-muted-foreground font-mono text-[10px] font-medium tracking-wide",
             dragListeners && s.dragHandle
           )}
           aria-label={`Drag to reorder slot ${idx + 1}`}
@@ -134,7 +158,7 @@ export function ActiveRow({
           type="button"
           onClick={onRemove}
           aria-label={`Remove ${pokemon.species ?? "Pokémon"} from slot ${idx + 1}`}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+          className="text-muted-foreground hover:bg-destructive/15 hover:text-destructive flex size-5 items-center justify-center rounded transition-colors"
         >
           ×
         </button>

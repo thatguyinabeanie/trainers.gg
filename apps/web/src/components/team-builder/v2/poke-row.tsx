@@ -10,7 +10,11 @@ import {
 } from "@dnd-kit/core";
 
 import { getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
-import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/supabase";
+import {
+  type Tables,
+  type TablesUpdate,
+  type TeamWithPokemon,
+} from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -47,7 +51,10 @@ interface PokeRowProps {
   onRemove?: (idx: number) => void;
   teamPokemon?: TeamWithPokemon["team_pokemon"];
   format?: GameFormat;
-  onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
+  onPokemonUpdate?: (
+    pokemonId: number,
+    fields: Partial<TablesUpdate<"pokemon">>
+  ) => void;
   /** Validation errors for this slot's pokemon. */
   slotErrors?: ValidationError[];
 }
@@ -74,17 +81,17 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         onClick={() => setOpen(true)}
         aria-label={`Add Pokémon to slot ${String(idx + 1).padStart(2, "0")}`}
         className={cn(
-          "flex w-fit self-start min-w-0 flex-wrap items-stretch overflow-hidden rounded-lg border border-dashed border-border bg-card",
-          "text-left transition-colors hover:border-primary/40 hover:bg-muted/10",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          "border-border bg-card flex w-fit min-w-0 flex-wrap items-stretch self-start overflow-hidden rounded-lg border border-dashed",
+          "hover:border-primary/40 hover:bg-muted/10 text-left transition-colors",
+          "focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
         )}
       >
         {/* RIB — slot number + × placeholder */}
-        <div className="flex w-10 shrink-0 flex-col items-center justify-between border-r border-dashed border-border/60 bg-muted/20 py-2">
-          <span className="font-mono text-[10px] font-medium tracking-wide text-muted-foreground">
+        <div className="border-border/60 bg-muted/20 flex w-10 shrink-0 flex-col items-center justify-between border-r border-dashed py-2">
+          <span className="text-muted-foreground font-mono text-[10px] font-medium tracking-wide">
             {String(idx + 1).padStart(2, "0")}
           </span>
-          <span className="flex size-5 items-center justify-center rounded text-muted-foreground/20">
+          <span className="text-muted-foreground/20 flex size-5 items-center justify-center rounded">
             ×
           </span>
         </div>
@@ -157,7 +164,7 @@ function CollapsedRow({
   return (
     <div
       className={cn(
-        "group flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3 transition-colors hover:bg-muted/30",
+        "group border-border bg-card hover:bg-muted/30 flex w-full items-center gap-3 rounded-lg border px-3 transition-colors",
         density === "comfy" ? "py-2" : "py-1.5",
         isDragging && s.rowDragging
       )}
@@ -167,21 +174,23 @@ function CollapsedRow({
         {...dragAttributes}
         {...dragListeners}
         className={cn(
-          "relative w-7 shrink-0 font-mono text-xs font-medium text-muted-foreground",
+          "text-muted-foreground relative w-7 shrink-0 font-mono text-xs font-medium",
           dragListeners && s.dragHandle
         )}
-        aria-label={dragListeners ? `Drag to reorder slot ${idx + 1}` : undefined}
+        aria-label={
+          dragListeners ? `Drag to reorder slot ${idx + 1}` : undefined
+        }
       >
         {String(idx + 1).padStart(2, "0")}
         {hasError && (
           <span
-            className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-destructive"
+            className="bg-destructive absolute -top-0.5 -right-0.5 size-1.5 rounded-full"
             aria-label="Has validation errors"
           />
         )}
         {!hasError && hasWarning && (
           <span
-            className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-amber-500"
+            className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-amber-500"
             aria-label="Has validation warnings"
           />
         )}
@@ -236,7 +245,7 @@ function CollapsedRow({
       <button
         type="button"
         onClick={() => onActivate(idx)}
-        className="ml-auto flex size-6 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground ml-auto flex size-6 shrink-0 items-center justify-center transition-colors"
         aria-label="Expand"
       >
         <ChevronDown className="size-4" />
@@ -248,7 +257,7 @@ function CollapsedRow({
           e.stopPropagation();
           onRemove?.(idx);
         }}
-        className="flex size-6 shrink-0 items-center justify-center text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
+        className="text-muted-foreground hover:text-destructive flex size-6 shrink-0 items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
         aria-label={`Remove ${pokemon.species ?? "Pokémon"} from slot ${idx + 1}`}
       >
         <X className="size-3.5" />
@@ -267,7 +276,10 @@ interface ActiveRowShellProps {
   onRemove?: (idx: number) => void;
   teamPokemon: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
-  onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
+  onPokemonUpdate?: (
+    pokemonId: number,
+    fields: Partial<TablesUpdate<"pokemon">>
+  ) => void;
   slotErrors: ValidationError[];
   /** Forwarded to <ActiveRow> so CalcColumn can suppress non-active outputs. */
   isActive: boolean;

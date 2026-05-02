@@ -87,7 +87,10 @@ interface TeamWorkspaceV2Props {
 function buildSlots(
   teamPokemon: TeamWithPokemon["team_pokemon"]
 ): (Tables<"pokemon"> | null)[] {
-  const slots: (Tables<"pokemon"> | null)[] = Array.from({ length: 6 }, () => null);
+  const slots: (Tables<"pokemon"> | null)[] = Array.from(
+    { length: 6 },
+    () => null
+  );
   for (const entry of teamPokemon) {
     const idx = entry.team_position - 1;
     if (idx >= 0 && idx < 6) {
@@ -456,9 +459,7 @@ export function TeamWorkspaceV2({
     setReorderIds(nextSlots.map((p) => p?.id ?? null));
 
     const positions = nextSlots
-      .map((p, i) =>
-        p !== null ? { pokemonId: p.id, position: i + 1 } : null
-      )
+      .map((p, i) => (p !== null ? { pokemonId: p.id, position: i + 1 } : null))
       .filter((x): x is { pokemonId: number; position: number } => x !== null);
 
     if (positions.length === 0) return;
@@ -480,7 +481,9 @@ export function TeamWorkspaceV2({
   // Pre-compute dock-pill summaries once here so DockbarConnected never runs
   // getTeamDefensiveSummary / getTeamFastestSpeed on every EV slider tick.
   const defensiveSummary = getTeamDefensiveSummary(optimisticTeamPokemon);
-  const fastestSpeed = format ? getTeamFastestSpeed(optimisticTeamPokemon, format) : 0;
+  const fastestSpeed = format
+    ? getTeamFastestSpeed(optimisticTeamPokemon, format)
+    : 0;
 
   // onRemove for PokeRow — accepts slot idx, opens confirmation dialog
   function handleRemoveByIdx(idx: number) {
@@ -519,7 +522,9 @@ export function TeamWorkspaceV2({
           onJumpToPokemon={handleJumpToPokemon}
           onValidate={validate}
           onFormatChange={async (formatId) => {
-            const result = await updateTeamAction(team.id, { format: formatId });
+            const result = await updateTeamAction(team.id, {
+              format: formatId,
+            });
             if (!result.success) {
               toast.error(result.error ?? "Failed to update format.");
               return;
@@ -798,7 +803,6 @@ export function TeamWorkspaceV2({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </CalcStateProvider>
   );
 }

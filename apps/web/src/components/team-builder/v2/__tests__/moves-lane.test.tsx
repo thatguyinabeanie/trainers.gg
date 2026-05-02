@@ -131,7 +131,10 @@ jest.mock("../calc/calc-detail-card", () => ({
 }));
 
 // calc-state-context — controlled mock
-type RowOutputs = readonly (null | { minPercent: number; maxPercent: number })[];
+type RowOutputs = readonly (null | {
+  minPercent: number;
+  maxPercent: number;
+})[];
 const mockCalcContext: {
   calcEnabled: boolean;
   defenderSpecies: string;
@@ -263,7 +266,9 @@ const VGC_FORMAT: GameFormat = {
   active: true,
 };
 
-function makePokemon(overrides: Partial<Tables<"pokemon">> = {}): Tables<"pokemon"> {
+function makePokemon(
+  overrides: Partial<Tables<"pokemon">> = {}
+): Tables<"pokemon"> {
   return {
     id: 1,
     species: "Gardevoir",
@@ -335,11 +340,18 @@ describe("MovesLane — basic render", () => {
 
   it("renders 4 move tiles (popover triggers)", () => {
     renderLane();
-    expect(screen.getAllByTestId("popover-trigger").length).toBeGreaterThanOrEqual(4);
+    expect(
+      screen.getAllByTestId("popover-trigger").length
+    ).toBeGreaterThanOrEqual(4);
   });
 
   it("renders set moves by name", () => {
-    renderLane({ move1: "Moonblast", move2: "Psychic", move3: null, move4: null });
+    renderLane({
+      move1: "Moonblast",
+      move2: "Psychic",
+      move3: null,
+      move4: null,
+    });
     expect(screen.getByText("Moonblast")).toBeInTheDocument();
     expect(screen.getByText("Psychic")).toBeInTheDocument();
   });
@@ -362,13 +374,10 @@ describe("MovesLane — basic render", () => {
     ["move2", "Psychic"],
     ["move3", "Thunderbolt"],
     ["move4", "Protect"],
-  ] as const)(
-    "renders %s move name '%s' in the lane",
-    (slot, moveName) => {
-      renderLane({ [slot]: moveName });
-      expect(screen.getByText(moveName)).toBeInTheDocument();
-    }
-  );
+  ] as const)("renders %s move name '%s' in the lane", (slot, moveName) => {
+    renderLane({ [slot]: moveName });
+    expect(screen.getByText(moveName)).toBeInTheDocument();
+  });
 });
 
 describe("MovesLane — move tile display", () => {
@@ -522,23 +531,17 @@ describe("MovesLane — click behaviour (no calc)", () => {
 
 describe("MovesLane — validation errors", () => {
   it("renders a FieldError for a move1 error", () => {
-    renderLane(
-      { move1: "" },
-      VGC_FORMAT,
-      [makeError("move1", "error", "Move 1 required")]
-    );
+    renderLane({ move1: "" }, VGC_FORMAT, [
+      makeError("move1", "error", "Move 1 required"),
+    ]);
     expect(screen.getByRole("alert")).toHaveTextContent("Move 1 required");
   });
 
   it("renders FieldErrors for multiple move slots", () => {
-    renderLane(
-      { move1: "", move2: null },
-      VGC_FORMAT,
-      [
-        makeError("move1", "error", "Move 1 required"),
-        makeError("move2", "warning", "Move 2 advisory"),
-      ]
-    );
+    renderLane({ move1: "", move2: null }, VGC_FORMAT, [
+      makeError("move1", "error", "Move 1 required"),
+      makeError("move2", "warning", "Move 2 advisory"),
+    ]);
     const alerts = screen.getAllByRole("alert");
     expect(alerts.length).toBeGreaterThanOrEqual(2);
     const messages = alerts.map((a) => a.textContent);
@@ -551,21 +554,16 @@ describe("MovesLane — validation errors", () => {
     ["move2", "Move 2 error"],
     ["move3", "Move 3 error"],
     ["move4", "Move 4 error"],
-  ] as const)(
-    "renders FieldError for %s",
-    (field, message) => {
-      renderLane({}, VGC_FORMAT, [makeError(field, "error", message)]);
-      const alert = screen.getByRole("alert");
-      expect(alert).toHaveTextContent(message);
-    }
-  );
+  ] as const)("renders FieldError for %s", (field, message) => {
+    renderLane({}, VGC_FORMAT, [makeError(field, "error", message)]);
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent(message);
+  });
 
   it("applies ring-destructive class when a slot has an error", () => {
-    renderLane(
-      { move1: "Moonblast" },
-      VGC_FORMAT,
-      [makeError("move1", "error", "Move illegal")]
-    );
+    renderLane({ move1: "Moonblast" }, VGC_FORMAT, [
+      makeError("move1", "error", "Move illegal"),
+    ]);
     // The tile button gets ring-destructive styling — check alert is present
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });

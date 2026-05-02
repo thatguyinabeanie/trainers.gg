@@ -65,7 +65,9 @@ const CHAMPIONS_FORMAT: GameFormat = {
  * Default: specs Flutter Mane (Timid, Choice Specs, Protosynthesis, 252 SpA / 252 Spe / 4 HP)
  * with Moonblast as move1. Competitively relevant so damage lands in plausible ranges.
  */
-function makePokemon(overrides: Partial<Tables<"pokemon">> = {}): Tables<"pokemon"> {
+function makePokemon(
+  overrides: Partial<Tables<"pokemon">> = {}
+): Tables<"pokemon"> {
   return {
     id: 1,
     species: "Flutter Mane",
@@ -104,7 +106,9 @@ function makePokemon(overrides: Partial<Tables<"pokemon">> = {}): Tables<"pokemo
 // Single-target, normal-crit-rate physical move so screen / boost / -atk
 // boost ratios reflect the engine's actual modifier stack — Wicked Blow,
 // Surging Strikes, etc all crit unconditionally and bypass those modifiers.
-function makePhysicalAttacker(overrides: Partial<Tables<"pokemon">> = {}): Tables<"pokemon"> {
+function makePhysicalAttacker(
+  overrides: Partial<Tables<"pokemon">> = {}
+): Tables<"pokemon"> {
   return makePokemon({
     species: "Garchomp",
     ability: "Rough Skin",
@@ -186,21 +190,24 @@ function getDamageRatio(setupA: HookSetup, setupB: HookSetup): number {
 // =============================================================================
 
 describe("status effects", () => {
-  it.each([
-    ["Burned", "burn halves physical damage", [0.45, 0.55]],
-  ])("%s: %s (ratio in %s)", (_status, _desc, [lo, hi]) => {
-    const healthy = getMidPercent({
-      pokemon: makePhysicalAttacker(),
-      configure: (_c) => {/* default healthy */},
-    });
-    const affected = getMidPercent({
-      pokemon: makePhysicalAttacker(),
-      configure: (c) => c.setAttackerStatus("Burned"),
-    });
-    const ratio = affected / healthy;
-    expect(ratio).toBeGreaterThanOrEqual(lo);
-    expect(ratio).toBeLessThanOrEqual(hi);
-  });
+  it.each([["Burned", "burn halves physical damage", [0.45, 0.55]]])(
+    "%s: %s (ratio in %s)",
+    (_status, _desc, [lo, hi]) => {
+      const healthy = getMidPercent({
+        pokemon: makePhysicalAttacker(),
+        configure: (_c) => {
+          /* default healthy */
+        },
+      });
+      const affected = getMidPercent({
+        pokemon: makePhysicalAttacker(),
+        configure: (c) => c.setAttackerStatus("Burned"),
+      });
+      const ratio = affected / healthy;
+      expect(ratio).toBeGreaterThanOrEqual(lo);
+      expect(ratio).toBeLessThanOrEqual(hi);
+    }
+  );
 
   it("Paralyzed does not halve damage (status penalty only on speed)", () => {
     const healthy = getMidPercent({ pokemon: makePhysicalAttacker() });
@@ -381,16 +388,19 @@ describe("boosts", () => {
     [2, 1.9, 2.1],
     [1, 1.45, 1.55],
     [-1, 0.62, 0.72],
-  ])("attacker Atk boost %i → ratio ≈ [%d, %d] vs +0 (physical)", (boost, lo, hi) => {
-    const boostedMid = getMidPercent({
-      pokemon: makePhysicalAttacker(),
-      configure: (c) => c.setAttackerBoost("atk", boost),
-    });
-    const neutralMid = getMidPercent({ pokemon: makePhysicalAttacker() });
-    const ratio = boostedMid / neutralMid;
-    expect(ratio).toBeGreaterThanOrEqual(lo);
-    expect(ratio).toBeLessThanOrEqual(hi);
-  });
+  ])(
+    "attacker Atk boost %i → ratio ≈ [%d, %d] vs +0 (physical)",
+    (boost, lo, hi) => {
+      const boostedMid = getMidPercent({
+        pokemon: makePhysicalAttacker(),
+        configure: (c) => c.setAttackerBoost("atk", boost),
+      });
+      const neutralMid = getMidPercent({ pokemon: makePhysicalAttacker() });
+      const ratio = boostedMid / neutralMid;
+      expect(ratio).toBeGreaterThanOrEqual(lo);
+      expect(ratio).toBeLessThanOrEqual(hi);
+    }
+  );
 
   it("defender +2 Def reduces physical damage", () => {
     const ratio = getDamageRatio(
@@ -803,7 +813,10 @@ describe("Champions dispatch (gen.num === 0)", () => {
     // Default defender EVs are { hp: 252, spd: 4 } — Champions cap is 32/66 total
     // hp gets clamped to min(252, 32) = 32, spd gets clamped to min(4, 34) = 4
     expect(result.current.defenderEvs.hp).toBeLessThanOrEqual(32);
-    const total = Object.values(result.current.defenderEvs).reduce((s, n) => s + n, 0);
+    const total = Object.values(result.current.defenderEvs).reduce(
+      (s, n) => s + n,
+      0
+    );
     expect(total).toBeLessThanOrEqual(66);
   });
 
@@ -1067,7 +1080,10 @@ describe("null and empty guards", () => {
 describe("inferredWeather and inferredTerrain exposure", () => {
   it("inferredWeather is null when no ability maps to weather", () => {
     const { result } = renderHook(() =>
-      useCalcState({ selectedPokemon: makePokemon({ ability: "Protosynthesis" }), format: VGC_FORMAT })
+      useCalcState({
+        selectedPokemon: makePokemon({ ability: "Protosynthesis" }),
+        format: VGC_FORMAT,
+      })
     );
     expect(result.current.inferredWeather).toBeNull();
   });
@@ -1090,7 +1106,10 @@ describe("inferredWeather and inferredTerrain exposure", () => {
 
   it("inferredWeather is null when explicit weather is set", () => {
     const { result } = renderHook(() =>
-      useCalcState({ selectedPokemon: makePokemon({ ability: "Drought" }), format: VGC_FORMAT })
+      useCalcState({
+        selectedPokemon: makePokemon({ ability: "Drought" }),
+        format: VGC_FORMAT,
+      })
     );
     act(() => result.current.setWeather("Rain"));
     expect(result.current.inferredWeather).toBeNull();
@@ -1098,14 +1117,20 @@ describe("inferredWeather and inferredTerrain exposure", () => {
 
   it("Hadron Engine → inferredTerrain is Electric", () => {
     const { result } = renderHook(() =>
-      useCalcState({ selectedPokemon: makePokemon({ ability: "Hadron Engine" }), format: VGC_FORMAT })
+      useCalcState({
+        selectedPokemon: makePokemon({ ability: "Hadron Engine" }),
+        format: VGC_FORMAT,
+      })
     );
     expect(result.current.inferredTerrain).toBe("Electric");
   });
 
   it("inferredTerrain is null when explicit terrain is set", () => {
     const { result } = renderHook(() =>
-      useCalcState({ selectedPokemon: makePokemon({ ability: "Hadron Engine" }), format: VGC_FORMAT })
+      useCalcState({
+        selectedPokemon: makePokemon({ ability: "Hadron Engine" }),
+        format: VGC_FORMAT,
+      })
     );
     act(() => result.current.setTerrain("Grassy"));
     expect(result.current.inferredTerrain).toBeNull();
@@ -1135,7 +1160,10 @@ describe("inferredWeather and inferredTerrain exposure", () => {
 interface NcpReferenceCase {
   name: string;
   attacker: Partial<Tables<"pokemon">>;
-  attackerBoost?: { stat: "atk" | "def" | "spa" | "spd" | "spe"; value: number };
+  attackerBoost?: {
+    stat: "atk" | "def" | "spa" | "spd" | "spe";
+    value: number;
+  };
   /** Toggles on the attacker's side of the field (Helping Hand, etc). */
   attackerSide?: {
     helpingHand?: boolean;
@@ -1147,7 +1175,14 @@ interface NcpReferenceCase {
     ability: string;
     item: string;
     nature: string;
-    evs: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
+    evs: {
+      hp: number;
+      atk: number;
+      def: number;
+      spa: number;
+      spd: number;
+      spe: number;
+    };
   };
   /** Toggles on the defender's side of the field (Aurora Veil, Friend Guard, etc). */
   defenderSide?: {
@@ -1273,7 +1308,8 @@ const NCP_CASES: NcpReferenceCase[] = [
     weather: "Rain",
     expected: { minPct: 100.9, maxPct: 118.8 },
     rolls: [
-      204, 206, 208, 210, 212, 216, 218, 220, 222, 224, 228, 230, 232, 234, 236, 240,
+      204, 206, 208, 210, 212, 216, 218, 220, 222, 224, 228, 230, 232, 234, 236,
+      240,
     ],
   },
   {
@@ -1301,7 +1337,8 @@ const NCP_CASES: NcpReferenceCase[] = [
     weather: "Sand",
     expected: { minPct: 67.3, maxPct: 79.2 },
     rolls: [
-      136, 136, 138, 140, 142, 144, 144, 146, 148, 150, 152, 152, 154, 156, 158, 160,
+      136, 136, 138, 140, 142, 144, 144, 146, 148, 150, 152, 152, 154, 156, 158,
+      160,
     ],
   },
   {
@@ -1358,7 +1395,8 @@ const NCP_CASES: NcpReferenceCase[] = [
     },
     expected: { minPct: 126.3, maxPct: 149.2 },
     rolls: [
-      249, 252, 255, 258, 261, 264, 267, 270, 273, 276, 279, 282, 285, 288, 291, 294,
+      249, 252, 255, 258, 261, 264, 267, 270, 273, 276, 279, 282, 285, 288, 291,
+      294,
     ],
   },
   {
@@ -1386,7 +1424,8 @@ const NCP_CASES: NcpReferenceCase[] = [
     },
     expected: { minPct: 189.3, maxPct: 223.8 },
     rolls: [
-      373, 378, 382, 387, 391, 396, 400, 405, 409, 414, 418, 423, 427, 432, 436, 441,
+      373, 378, 382, 387, 391, 396, 400, 405, 409, 414, 418, 423, 427, 432, 436,
+      441,
     ],
   },
   {
@@ -1415,7 +1454,8 @@ const NCP_CASES: NcpReferenceCase[] = [
     defenderSide: { auroraVeil: true },
     expected: { minPct: 126.3, maxPct: 149.2 },
     rolls: [
-      249, 252, 255, 258, 261, 264, 267, 270, 273, 276, 279, 282, 285, 288, 291, 294,
+      249, 252, 255, 258, 261, 264, 267, 270, 273, 276, 279, 282, 285, 288, 291,
+      294,
     ],
   },
   {
@@ -1446,7 +1486,8 @@ const NCP_CASES: NcpReferenceCase[] = [
     defenderSide: { auroraVeil: true, friendGuard: true },
     expected: { minPct: 71.0, maxPct: 84.2 },
     rolls: [
-      140, 143, 144, 146, 147, 149, 151, 152, 154, 155, 157, 159, 161, 162, 164, 166,
+      140, 143, 144, 146, 147, 149, 151, 152, 154, 155, 157, 159, 161, 162, 164,
+      166,
     ],
   },
   {
@@ -1476,7 +1517,8 @@ const NCP_CASES: NcpReferenceCase[] = [
     defenderSide: { auroraVeil: true, friendGuard: true },
     expected: { minPct: 107.1, maxPct: 125.8 },
     rolls: [
-      211, 213, 215, 218, 221, 223, 226, 228, 230, 233, 236, 238, 241, 243, 245, 248,
+      211, 213, 215, 218, 221, 223, 226, 228, 230, 233, 236, 238, 241, 243, 245,
+      248,
     ],
   },
   {
@@ -1503,75 +1545,76 @@ const NCP_CASES: NcpReferenceCase[] = [
     },
     expected: { minPct: 60.9, maxPct: 72.0 },
     rolls: [
-      120, 121, 123, 124, 126, 127, 129, 130, 132, 133, 135, 136, 138, 139, 141, 142,
+      120, 121, 123, 124, 126, 127, 129, 130, 132, 133, 135, 136, 138, 139, 141,
+      142,
     ],
   },
 ];
 
 describe("NCP-VGC Champions reference cases", () => {
-  it.each(NCP_CASES.map((c) => [c.name, c] as const))(
-    "%s",
-    (_name, c) => {
-      const { result } = renderHook(() =>
-        useCalcState({
-          selectedPokemon: makePokemon({
-            move2: null,
-            move3: null,
-            move4: null,
-            ...c.attacker,
-          }),
-          format: CHAMPIONS_FORMAT,
-        })
-      );
-      act(() => {
-        result.current.resetDefenderForSpecies(c.defender.species, {
-          ability: c.defender.ability,
-          item: c.defender.item,
-          nature: c.defender.nature,
-          evs: c.defender.evs,
-        });
-        if (c.weather !== undefined) {
-          result.current.setWeather(c.weather);
-        }
-        if (c.attackerBoost) {
-          result.current.setAttackerBoost(c.attackerBoost.stat, c.attackerBoost.value);
-        }
-        if (c.attackerSide) {
-          result.current.setAttackerSide(c.attackerSide);
-        }
-        if (c.defenderSide) {
-          result.current.setDefenderSide(c.defenderSide);
-        }
+  it.each(NCP_CASES.map((c) => [c.name, c] as const))("%s", (_name, c) => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({
+          move2: null,
+          move3: null,
+          move4: null,
+          ...c.attacker,
+        }),
+        format: CHAMPIONS_FORMAT,
+      })
+    );
+    act(() => {
+      result.current.resetDefenderForSpecies(c.defender.species, {
+        ability: c.defender.ability,
+        item: c.defender.item,
+        nature: c.defender.nature,
+        evs: c.defender.evs,
       });
-
-      const out = result.current.selectedMoveOutput;
-      expect(out).not.toBeNull();
-
-      // Two NCP cases assume "Mega Floette without Fairy Aura" — a synthetic
-      // state because mega abilities are intrinsic in canon, but NCP allows
-      // overriding the ability dropdown to anything. Our wrapper enforces
-      // the mega ability when species is a mega (correct game behaviour),
-      // so these rolls diverge from NCP by exactly the Fairy Aura ×1.33
-      // multiplier. Structural-only assertions for those two cases.
-      const isKnownDivergent =
-        c.name.includes("Mega Floette HH Light of Ruin") &&
-        c.name.includes("Friend Guard");
-
-      if (isKnownDivergent) {
-        expect(out!.minPercent).toBeGreaterThan(0);
-        expect(out!.maxPercent).toBeGreaterThanOrEqual(out!.minPercent);
-        expect(out!.maxPercent).toBeLessThanOrEqual(300);
-        return;
+      if (c.weather !== undefined) {
+        result.current.setWeather(c.weather);
       }
+      if (c.attackerBoost) {
+        result.current.setAttackerBoost(
+          c.attackerBoost.stat,
+          c.attackerBoost.value
+        );
+      }
+      if (c.attackerSide) {
+        result.current.setAttackerSide(c.attackerSide);
+      }
+      if (c.defenderSide) {
+        result.current.setDefenderSide(c.defenderSide);
+      }
+    });
 
-      // Strict equality — engine output must match NCP exactly. Any drift
-      // here indicates either a wrapper regression or a genuine engine
-      // update we should investigate.
-      expect(out!.rolls).toEqual(c.rolls);
-      expect(out!.minPercent).toBe(c.expected.minPct);
-      expect(out!.maxPercent).toBe(c.expected.maxPct);
+    const out = result.current.selectedMoveOutput;
+    expect(out).not.toBeNull();
+
+    // Two NCP cases assume "Mega Floette without Fairy Aura" — a synthetic
+    // state because mega abilities are intrinsic in canon, but NCP allows
+    // overriding the ability dropdown to anything. Our wrapper enforces
+    // the mega ability when species is a mega (correct game behaviour),
+    // so these rolls diverge from NCP by exactly the Fairy Aura ×1.33
+    // multiplier. Structural-only assertions for those two cases.
+    const isKnownDivergent =
+      c.name.includes("Mega Floette HH Light of Ruin") &&
+      c.name.includes("Friend Guard");
+
+    if (isKnownDivergent) {
+      expect(out!.minPercent).toBeGreaterThan(0);
+      expect(out!.maxPercent).toBeGreaterThanOrEqual(out!.minPercent);
+      expect(out!.maxPercent).toBeLessThanOrEqual(300);
+      return;
     }
-  );
+
+    // Strict equality — engine output must match NCP exactly. Any drift
+    // here indicates either a wrapper regression or a genuine engine
+    // update we should investigate.
+    expect(out!.rolls).toEqual(c.rolls);
+    expect(out!.minPercent).toBe(c.expected.minPct);
+    expect(out!.maxPercent).toBe(c.expected.maxPct);
+  });
 });
 
 // =============================================================================
@@ -1727,7 +1770,8 @@ describe("computeForwardOutputsForRow — per-row outputs", () => {
     );
 
     const megaOutputs = result.current.computeForwardOutputsForRow(charizard);
-    const baseOutputs = result.current.computeForwardOutputsForRow(baseCharizard);
+    const baseOutputs =
+      result.current.computeForwardOutputsForRow(baseCharizard);
 
     // Mega-Y has 159 base SpA + Drought-boosted Heat Wave; base Charizard has
     // 109 SpA and no auto-sun. The mega's Heat Wave roll must be strictly higher.

@@ -76,10 +76,16 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
     <div className={cn("calc-col-row", koTier && `calc-col-row--ko${koTier}`)}>
       {hasCalc && koTier ? (
         <>
-          <span className="font-mono text-[8.5px] font-black tracking-[0.07em] uppercase flex-shrink-0">
-            {koTier === "1" ? "OHKO" : koTier === "2" ? "2HKO" : koTier === "3" ? "3HKO" : "4HKO+"}
+          <span className="flex-shrink-0 font-mono text-[8.5px] font-black tracking-[0.07em] uppercase">
+            {koTier === "1"
+              ? "OHKO"
+              : koTier === "2"
+                ? "2HKO"
+                : koTier === "3"
+                  ? "3HKO"
+                  : "4HKO+"}
           </span>
-          <span className="tabular-nums flex-shrink-0">
+          <span className="flex-shrink-0 tabular-nums">
             {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%
           </span>
           {((eff !== null && eff !== 1) || spreadApplied) && (
@@ -87,7 +93,7 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
               {eff !== null && eff !== 1 && (
                 <span
                   className={cn(
-                    "text-[8.5px] font-bold px-1 py-px rounded",
+                    "rounded px-1 py-px text-[8.5px] font-bold",
                     eff > 1
                       ? "bg-green-500/15 text-green-700 dark:text-green-400"
                       : eff === 0
@@ -101,7 +107,7 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
               )}
               {spreadApplied && (
                 <span
-                  className="text-[8.5px] font-bold text-muted-foreground"
+                  className="text-muted-foreground text-[8.5px] font-bold"
                   title="Spread −25%"
                 >
                   spread
@@ -110,12 +116,16 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
             </span>
           )}
         </>
-      ) : canShowCalcState && moveName && !isStatus && hasDefender && output === null ? (
-        <span className="text-[9.5px] italic text-muted-foreground/70 font-normal">
+      ) : canShowCalcState &&
+        moveName &&
+        !isStatus &&
+        hasDefender &&
+        output === null ? (
+        <span className="text-muted-foreground/70 text-[9.5px] font-normal italic">
           — unavailable —
         </span>
       ) : canShowCalcState && moveName && !isStatus && !hasDefender ? (
-        <span className="text-[9.5px] italic text-muted-foreground/50 font-normal">
+        <span className="text-muted-foreground/50 text-[9.5px] font-normal italic">
           — pick target —
         </span>
       ) : (

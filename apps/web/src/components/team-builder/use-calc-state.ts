@@ -197,8 +197,22 @@ function buildEngineStats(
   gen: ReturnType<typeof Generations.get>,
   db: Tables<"pokemon">
 ): {
-  ivs: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
-  evs: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
+  ivs: {
+    hp: number;
+    atk: number;
+    def: number;
+    spa: number;
+    spd: number;
+    spe: number;
+  };
+  evs: {
+    hp: number;
+    atk: number;
+    def: number;
+    spa: number;
+    spd: number;
+    spe: number;
+  };
 } {
   if (gen.num === 0) {
     // Champions: clamp ev_* fields to 32/stat, 66 total. IVs are forced 31 by
@@ -266,7 +280,7 @@ function buildAttackerFromDb(
     const calcAbility =
       isMegaForm && megaActive
         ? (getMegaAbilityForSpecies(db.species) ?? db.ability ?? null)
-        : db.ability ?? null;
+        : (db.ability ?? null);
     return new Pokemon(gen, effectiveSpecies, {
       level: db.level ?? 50,
       nature: asSmogon(db.nature ?? "Hardy"),
@@ -424,9 +438,10 @@ function runCalc(
       LAST_RESPECTS_MOVES.has(moveName) && faintedForMove !== undefined
         ? lastRespectsBP(faintedForMove)
         : undefined;
-    const moveOpts = basePowerOverride !== undefined
-      ? { isCrit, basePower: basePowerOverride }
-      : { isCrit };
+    const moveOpts =
+      basePowerOverride !== undefined
+        ? { isCrit, basePower: basePowerOverride }
+        : { isCrit };
     const move = new Move(gen, moveName, moveOpts);
     const result = calculate(gen, attacker, defender, move, field);
     const damage = result.damage;
@@ -466,7 +481,9 @@ function runCalc(
       typeof defender.item === "string" ? defender.item : "";
     const defenderSpeciesName =
       typeof defender.species?.name === "string" ? defender.species.name : "";
-    const defenderTypes = getSpeciesTypes(defenderSpeciesName) as readonly PokemonType[];
+    const defenderTypes = getSpeciesTypes(
+      defenderSpeciesName
+    ) as readonly PokemonType[];
     const defenderAbilityName =
       typeof defender.ability === "string" ? defender.ability : "";
     // Move type effectiveness gates Enigma Berry (heals only on
@@ -829,7 +846,10 @@ export function useCalcState({
   }
 
   function setDefenderIv(stat: keyof DefenderIvs, v: number) {
-    setDefenderIvs((prev) => ({ ...prev, [stat]: Math.min(31, Math.max(0, Math.round(v))) }));
+    setDefenderIvs((prev) => ({
+      ...prev,
+      [stat]: Math.min(31, Math.max(0, Math.round(v))),
+    }));
   }
 
   function setDefenderMove(slotIdx: number, name: string) {
@@ -1019,7 +1039,16 @@ export function useCalcState({
     if (direction === "offense") {
       if (!sharedAttacker || !sharedDefender) return null;
       // Forward direction: attacker is on YOUR team — use faintedYours for Last Respects BP.
-      return runCalc(gen, sharedAttacker, sharedDefender, moveName, isCrit, sharedOffenseField, faintedYours, effectiveWeather);
+      return runCalc(
+        gen,
+        sharedAttacker,
+        sharedDefender,
+        moveName,
+        isCrit,
+        sharedOffenseField,
+        faintedYours,
+        effectiveWeather
+      );
     }
 
     // Defense direction: defender fires at us — reuse the shared swap-side builders
@@ -1095,16 +1124,28 @@ export function useCalcState({
     if (!moveName) return null;
     if (!sharedDefenderAsAttacker || !sharedOurPokemonAsDefender) return null;
     // Reverse direction: the defender is attacking — their fainted count applies for Last Respects.
-    return runCalc(gen, sharedDefenderAsAttacker, sharedOurPokemonAsDefender, moveName, false, sharedDefenseField, faintedTheirs, effectiveWeather);
+    return runCalc(
+      gen,
+      sharedDefenderAsAttacker,
+      sharedOurPokemonAsDefender,
+      moveName,
+      false,
+      sharedDefenseField,
+      faintedTheirs,
+      effectiveWeather
+    );
   }
 
   // Pre-compute outputs for the raw user-set defenderMoves slots (for context
   // consumers that don't have effective move defaults resolved yet).
   // Short-circuit when no defender moves are populated to avoid building objects for nothing.
   const hasAnyDefenderMove = defenderMoves.some(Boolean);
-  const moveCalcOutputsReverse: readonly (CalcOutput | null)[] = hasAnyDefenderMove
-    ? [0, 1, 2, 3].map((idx) => computeReverseOutput(defenderMoves[idx] ?? ""))
-    : [null, null, null, null];
+  const moveCalcOutputsReverse: readonly (CalcOutput | null)[] =
+    hasAnyDefenderMove
+      ? [0, 1, 2, 3].map((idx) =>
+          computeReverseOutput(defenderMoves[idx] ?? "")
+        )
+      : [null, null, null, null];
 
   return {
     direction,

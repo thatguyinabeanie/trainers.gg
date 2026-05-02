@@ -149,7 +149,7 @@ function MoveTile({
                 koTier === "2" && "mvline--ko2",
                 koTier === "3" && "mvline--ko3",
                 koTier === "4" && "mvline--ko4",
-                hasError && "ring-1 ring-destructive/50"
+                hasError && "ring-destructive/50 ring-1"
               )}
             />
           }
@@ -166,7 +166,9 @@ function MoveTile({
               ) : null}
             </span>
             <span className="mvline-cat">
-              {moveName && moveData?.category && CATEGORY_ICON_URLS[moveData.category] ? (
+              {moveName &&
+              moveData?.category &&
+              CATEGORY_ICON_URLS[moveData.category] ? (
                 <img
                   src={CATEGORY_ICON_URLS[moveData.category]}
                   alt={moveData.category}
@@ -183,7 +185,10 @@ function MoveTile({
           >
             <TooltipTrigger
               render={<span />}
-              className={cn("mvline-name", !moveName && "text-muted-foreground/50")}
+              className={cn(
+                "mvline-name",
+                !moveName && "text-muted-foreground/50"
+              )}
             >
               {moveName ?? "+ Add move"}
             </TooltipTrigger>
@@ -260,9 +265,9 @@ function MoveTile({
 
 function MovesLaneGhost() {
   return (
-    <div className="flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3">
+    <div className="border-border/60 flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3">
       <div className="mb-1 flex items-baseline">
-        <span className="font-mono text-[9.5px] font-medium uppercase tracking-widest text-muted-foreground/30">
+        <span className="text-muted-foreground/30 font-mono text-[9.5px] font-medium tracking-widest uppercase">
           Moves
         </span>
       </div>
@@ -270,7 +275,9 @@ function MovesLaneGhost() {
         {([0, 1, 2, 3] as const).map((i) => (
           <div key={i} className="mvline mvline--empty">
             <span className="mvline-type-cat" />
-            <span className="mvline-name text-muted-foreground/30">+ Add move</span>
+            <span className="mvline-name text-muted-foreground/30">
+              + Add move
+            </span>
             <span className="mvline-stat">
               <span className="mvline-stat-label">BP</span>
               <span className="mvline-stat-value mvline-stat-value--bp" />
@@ -297,13 +304,18 @@ interface MovesLaneRealProps {
   fieldErrors: ValidationError[];
 }
 
-function MovesLaneReal({ pokemon, format, onUpdate, fieldErrors }: MovesLaneRealProps) {
+function MovesLaneReal({
+  pokemon,
+  format,
+  onUpdate,
+  fieldErrors,
+}: MovesLaneRealProps) {
   function handlePick(slotKey: MoveSlot, name: string) {
     onUpdate({ [slotKey]: name });
   }
 
   return (
-    <div className="flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3">
+    <div className="border-border/60 flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3">
       {/* Header */}
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
@@ -348,7 +360,12 @@ function MovesLaneReal({ pokemon, format, onUpdate, fieldErrors }: MovesLaneReal
  * - Right-click: always opens move picker.
  * - Renders inline FieldError chips for move-scoped validation issues.
  */
-export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: MovesLaneProps) {
+export function MovesLane({
+  pokemon,
+  format,
+  onUpdate,
+  fieldErrors = [],
+}: MovesLaneProps) {
   if (pokemon === null) return <MovesLaneGhost />;
   return (
     <MovesLaneReal
