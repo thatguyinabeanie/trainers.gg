@@ -47,7 +47,20 @@ interface RecoveryConfig {
   item: string | null | undefined;
   /** Defender's types — drives Black Sludge heal vs damage. */
   defenderTypes: readonly PokemonType[];
+  /**
+   * Defender's ability. Magic Guard and Klutz negate item-based passive
+   * damage (Black Sludge on a non-Poison holder) — Magic Guard blocks all
+   * indirect damage, Klutz disables the held item entirely so the damage
+   * effect doesn't fire.
+   */
+  ability?: string | null;
 }
+
+/** Abilities that negate Black Sludge self-damage on non-Poison holders. */
+const SELF_DAMAGE_NEGATING_ABILITIES = new Set([
+  "Magic Guard",
+  "Klutz",
+]);
 
 interface RecoveryComputed {
   /** One-time HP restore (item-specific amount). 0 when no eligible item. */
@@ -71,7 +84,7 @@ interface RecoveryComputed {
  * Public for tests; production callers go through `simulateKoTier`.
  */
 export function getRecoveryConfig(cfg: RecoveryConfig): RecoveryComputed {
-  const { maxHP, item, defenderTypes } = cfg;
+  const { maxHP, item, defenderTypes, ability } = cfg;
   const empty: RecoveryComputed = {
     oneShot: 0,
     oneShotThreshold: 0,
@@ -126,13 +139,23 @@ export function getRecoveryConfig(cfg: RecoveryConfig): RecoveryComputed {
 
   if (item === BLACK_SLUDGE) {
     const isPoison = defenderTypes.includes("Poison");
+    if (isPoison) {
+      return {
+        ...empty,
+        perTurnHeal: Math.floor(maxHP / 16),
+        suffix: "after Black Sludge recovery",
+      };
+    }
+    // Non-Poison holder takes 1/8 maxHP per turn UNLESS Magic Guard blocks
+    // indirect damage or Klutz disables the held item entirely. Either way,
+    // no damage and no suffix.
+    if (ability && SELF_DAMAGE_NEGATING_ABILITIES.has(ability)) {
+      return empty;
+    }
     return {
       ...empty,
-      perTurnHeal: isPoison ? Math.floor(maxHP / 16) : 0,
-      perTurnSelfDamage: isPoison ? 0 : Math.floor(maxHP / 8),
-      suffix: isPoison
-        ? "after Black Sludge recovery"
-        : "after Black Sludge damage",
+      perTurnSelfDamage: Math.floor(maxHP / 8),
+      suffix: "after Black Sludge damage",
     };
   }
 
@@ -213,6 +236,8 @@ interface VerdictInput {
   /** Defender's held item display name. */
   item: string | null | undefined;
   defenderTypes: readonly PokemonType[];
+  /** Defender's ability — Magic Guard / Klutz negate Black Sludge damage. */
+  ability?: string | null;
 }
 
 interface VerdictOutput {
@@ -233,6 +258,7 @@ export function getRecoveryAwareVerdict(input: VerdictInput): VerdictOutput {
     maxHP: input.maxHP,
     item: input.item,
     defenderTypes: input.defenderTypes,
+    ability: input.ability,
   });
 
   // Use the max roll for the deterministic-KO question Showdown answers

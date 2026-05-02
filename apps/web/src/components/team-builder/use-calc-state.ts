@@ -433,6 +433,8 @@ function runCalc(
     const defenderSpeciesName =
       typeof defender.species?.name === "string" ? defender.species.name : "";
     const defenderTypes = getSpeciesTypes(defenderSpeciesName) as readonly PokemonType[];
+    const defenderAbilityName =
+      typeof defender.ability === "string" ? defender.ability : "";
     const { suffix: recoverySuffix } = isImmune
       ? { suffix: "" }
       : getRecoveryAwareVerdict({
@@ -440,6 +442,7 @@ function runCalc(
           maxHP: defHP,
           item: defenderItemName,
           defenderTypes,
+          ability: defenderAbilityName,
         });
 
     return {

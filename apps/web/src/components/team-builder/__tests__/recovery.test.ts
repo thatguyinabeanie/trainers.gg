@@ -79,6 +79,35 @@ describe("getRecoveryConfig", () => {
     expect(cfg.suffix).toBe("after Black Sludge damage");
   });
 
+  it.each([["Magic Guard"], ["Klutz"]] as const)(
+    "%s ability negates Black Sludge damage on non-Poison holder",
+    (ability) => {
+      const cfg = getRecoveryConfig({
+        maxHP: 200,
+        item: "Black Sludge",
+        defenderTypes: ["Fire", "Flying"],
+        ability,
+      });
+      expect(cfg.perTurnHeal).toBe(0);
+      expect(cfg.perTurnSelfDamage).toBe(0);
+      expect(cfg.suffix).toBe("");
+    }
+  );
+
+  it("Magic Guard does NOT block Black Sludge healing on Poison holder", () => {
+    // Magic Guard prevents indirect damage but doesn't suppress healing —
+    // Poison-type Black Sludge holders still heal normally.
+    const cfg = getRecoveryConfig({
+      maxHP: 192,
+      item: "Black Sludge",
+      defenderTypes: ["Poison"],
+      ability: "Magic Guard",
+    });
+    expect(cfg.perTurnHeal).toBe(12);
+    expect(cfg.perTurnSelfDamage).toBe(0);
+    expect(cfg.suffix).toBe("after Black Sludge recovery");
+  });
+
   it("Unrecognised items return zero recovery", () => {
     const cfg = getRecoveryConfig({ maxHP: 200, item: "Choice Band", defenderTypes: ["Fire"] });
     expect(cfg.oneShot).toBe(0);
