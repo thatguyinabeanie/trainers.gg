@@ -203,7 +203,7 @@ function DefenderMoveTile({
               BP {basePower}
             </span>
           )}
-          {accuracy !== null && (
+          {accuracy !== null && accuracy < 100 && (
             <span className="font-mono text-[9px] text-muted-foreground">
               · {accuracy}% acc
             </span>

@@ -23,8 +23,7 @@ import { CATEGORY_ICON_URLS } from "../../move-category-ui";
 import { MovePicker } from "../pickers/move-picker";
 import { useCalcStateContext } from "../calc/calc-state-context";
 import { CalcDetailCard } from "../calc/calc-detail-card";
-import { getMoveTargetInfo } from "../calc/move-target-info";
-import { getVerdict } from "../../use-calc-state";
+import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
 import { FieldError } from "../validation/field-error";
 
 // =============================================================================
@@ -57,17 +56,6 @@ const SLOT_IDX: Record<MoveSlot, number> = {
   move3: 2,
   move4: 3,
 };
-
-type KoTier = "1" | "2" | "3" | "4" | null;
-
-function getKoTier(minPct: number, maxPct: number): KoTier {
-  const verdict = getVerdict(minPct, maxPct);
-  if (verdict === "OHKO") return "1";
-  if (verdict === "2HKO") return "2";
-  if (verdict === "3HKO") return "3";
-  if (maxPct > 0) return "4";
-  return null;
-}
 
 // =============================================================================
 // MoveTile — one calc-aware move row
@@ -103,22 +91,15 @@ function MoveTile({
   const isStatus = moveData?.category === "Status";
   const hasCalc = calc.calcEnabled && output !== null && !isStatus;
 
-  const foesAlive = calc.field.foesAlive;
-  const allyAlive = calc.field.allyAlive;
-
-  // KO tier for button border coloring only
-  const targetInfo = moveName ? getMoveTargetInfo(moveName) : null;
-  const isSpread = targetInfo?.isSpread ?? false;
-  const spreadApplied =
-    isSpread &&
-    (targetInfo?.kind === "all-foes"
-      ? foesAlive >= 2
-      : foesAlive >= 2 || allyAlive);
-  const rawMin = output?.minPercent ?? 0;
-  const rawMax = output?.maxPercent ?? 0;
-  const displayMin = spreadApplied ? rawMin * 0.75 : rawMin;
-  const displayMax = spreadApplied ? rawMax * 0.75 : rawMax;
-  const koTier = hasCalc ? getKoTier(displayMin, displayMax) : null;
+  // KO tier (used for tile border colour) and spread-adjusted range come
+  // from the shared helper so calc-column and moves-lane never drift apart.
+  const { koTier } = getDisplayRangeAndKoTier({
+    moveName,
+    output,
+    hasCalc,
+    foesAlive: calc.field.foesAlive,
+    allyAlive: calc.field.allyAlive,
+  });
 
   const hasError = slotErrors.some((e) => e.severity === "error");
 

@@ -510,7 +510,7 @@ export function TeamWorkspaceV2({
           onFormatChange={async (formatId) => {
             const result = await updateTeamAction(team.id, { format: formatId });
             if (!result.success) {
-              toast.error(result.error);
+              toast.error(result.error ?? "Failed to update format.");
               return;
             }
             router.refresh();

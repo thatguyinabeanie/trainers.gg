@@ -162,9 +162,7 @@ export function ActiveRow({
       />
 
       {/* Calc column — fixed 160px, aligns row-for-row with move tiles */}
-      {calcEnabled && (
-        <CalcColumn pokemon={pokemon} format={format} />
-      )}
+      {calcEnabled && <CalcColumn pokemon={pokemon} />}
     </div>
   );
 }

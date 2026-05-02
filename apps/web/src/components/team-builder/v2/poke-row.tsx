@@ -72,6 +72,7 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
+        aria-label={`Add Pokémon to slot ${String(idx + 1).padStart(2, "0")}`}
         className={cn(
           "flex w-fit self-start min-w-0 flex-wrap items-stretch overflow-hidden rounded-lg border border-dashed border-border bg-card",
           "text-left transition-colors hover:border-primary/40 hover:bg-muted/10",
@@ -91,7 +92,7 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         <IdentityLane pokemon={null} format={_format} />
         <StatsLane pokemon={null} format={_format} />
         <MovesLane pokemon={null} format={_format} />
-        {calcEnabled && <CalcColumn pokemon={null} format={_format} />}
+        {calcEnabled && <CalcColumn pokemon={null} />}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

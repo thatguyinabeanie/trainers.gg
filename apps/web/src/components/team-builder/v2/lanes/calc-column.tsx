@@ -1,14 +1,13 @@
 "use client";
 
-import { getMoveData, type GameFormat } from "@trainers/pokemon";
+import { getMoveData } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 
 import { useCalcStateContext } from "../calc/calc-state-context";
 import { getMoveEffectiveness } from "../calc/move-effectiveness";
-import { getMoveTargetInfo } from "../calc/move-target-info";
-import { getVerdict } from "../../use-calc-state";
+import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
 
 // =============================================================================
 // Types
@@ -16,10 +15,7 @@ import { getVerdict } from "../../use-calc-state";
 
 interface CalcColumnProps {
   pokemon: Tables<"pokemon"> | null;
-  format: GameFormat | undefined;
 }
-
-type KoTier = "1" | "2" | "3" | "4" | null;
 
 // =============================================================================
 // Helpers
@@ -27,15 +23,6 @@ type KoTier = "1" | "2" | "3" | "4" | null;
 
 const MOVE_SLOTS = ["move1", "move2", "move3", "move4"] as const;
 type MoveSlot = (typeof MOVE_SLOTS)[number];
-
-function getKoTier(minPct: number, maxPct: number): KoTier {
-  const verdict = getVerdict(minPct, maxPct);
-  if (verdict === "OHKO") return "1";
-  if (verdict === "2HKO") return "2";
-  if (verdict === "3HKO") return "3";
-  if (maxPct > 0) return "4";
-  return null;
-}
 
 // =============================================================================
 // CalcRow — one result row aligned to a MoveTile
@@ -57,22 +44,15 @@ function CalcRow({ slotIndex, moveName }: CalcRowProps) {
   const hasCalc = calc.calcEnabled && moveName !== null && output !== null && !isStatus;
   const hasDefender = calc.calcEnabled && Boolean(calc.defenderSpecies);
 
-  const targetInfo = moveName ? getMoveTargetInfo(moveName) : null;
-  const isSpread = targetInfo?.isSpread ?? false;
-  const foesAlive = calc.field.foesAlive;
-  const allyAlive = calc.field.allyAlive;
-  const spreadApplied =
-    isSpread &&
-    (targetInfo?.kind === "all-foes"
-      ? foesAlive >= 2
-      : foesAlive >= 2 || allyAlive);
+  const { spreadApplied, displayMin, displayMax, koTier } =
+    getDisplayRangeAndKoTier({
+      moveName,
+      output,
+      hasCalc,
+      foesAlive: calc.field.foesAlive,
+      allyAlive: calc.field.allyAlive,
+    });
 
-  const rawMin = output?.minPercent ?? 0;
-  const rawMax = output?.maxPercent ?? 0;
-  const displayMin = spreadApplied ? rawMin * 0.75 : rawMin;
-  const displayMax = spreadApplied ? rawMax * 0.75 : rawMax;
-
-  const koTier = hasCalc ? getKoTier(displayMin, displayMax) : null;
   const effectiveWeather = calc.weather || calc.inferredWeather;
   const eff =
     moveName && hasDefender && !isStatus
@@ -141,7 +121,7 @@ function CalcRow({ slotIndex, moveName }: CalcRowProps) {
  * Rendered beside MovesLane when calc.calcEnabled is true.
  * Each row aligns with the corresponding MoveTile row.
  */
-export function CalcColumn({ pokemon, format: _format }: CalcColumnProps) {
+export function CalcColumn({ pokemon }: CalcColumnProps) {
   return (
     <div className="calc-col">
       <div className="calc-col-header">CALC</div>
