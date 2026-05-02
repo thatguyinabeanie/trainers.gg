@@ -98,4 +98,72 @@ describe("SpeciesSidebar", () => {
       expect.objectContaining({ ability: null })
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // Move typeahead — Enter only commits on suggestion match
+  // ---------------------------------------------------------------------------
+
+  it("move Enter with no matching suggestion is a no-op", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    renderSidebar({
+      format: { id: "gen9vgc2026regg" } as never,
+      onFiltersChange: onChange,
+    });
+    const input = screen.getByPlaceholderText(/type a move/i);
+    await user.type(input, "xyzzz");
+    await user.keyboard("{Enter}");
+    // No suggestion matched "xyzzz" → handler early-returns without calling onChange
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("move Enter with a matching suggestion commits the matched value", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    renderSidebar({
+      format: { id: "gen9vgc2026regg" } as never,
+      onFiltersChange: onChange,
+    });
+    const input = screen.getByPlaceholderText(/type a move/i);
+    // "Tail" matches "Tailwind" (first in the mock list)
+    await user.type(input, "Tail");
+    await user.keyboard("{Enter}");
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ moves: ["Tailwind"] })
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Ability typeahead — Enter only commits on suggestion match
+  // ---------------------------------------------------------------------------
+
+  it("ability Enter with no matching suggestion is a no-op", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    renderSidebar({
+      format: { id: "gen9vgc2026regg" } as never,
+      onFiltersChange: onChange,
+    });
+    const input = screen.getByPlaceholderText(/type or click an ability/i);
+    await user.type(input, "xyzzz");
+    await user.keyboard("{Enter}");
+    // No suggestion matched "xyzzz" → handler early-returns without calling onChange
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("ability Enter with a matching suggestion commits the matched value", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    renderSidebar({
+      format: { id: "gen9vgc2026regg" } as never,
+      onFiltersChange: onChange,
+    });
+    const input = screen.getByPlaceholderText(/type or click an ability/i);
+    // "Dro" matches "Drought" (first in the mock list after filter)
+    await user.type(input, "Dro");
+    await user.keyboard("{Enter}");
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ ability: "Drought" })
+    );
+  });
 });

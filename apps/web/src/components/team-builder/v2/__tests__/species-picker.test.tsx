@@ -203,6 +203,18 @@ jest.mock("../pickers/species-smart-search", () => ({
       >
         Filter Fire
       </button>
+      <button
+        data-testid="smart-filter-move"
+        onClick={() => onFilter({ move: "Tailwind" })}
+      >
+        Filter Tailwind
+      </button>
+      <button
+        data-testid="smart-filter-ability"
+        onClick={() => onFilter({ ability: "Drought" })}
+      >
+        Filter Drought
+      </button>
     </div>
   ),
 }));
@@ -758,4 +770,103 @@ describe("SpeciesPicker", () => {
   // Pokémon results are no longer surfaced inside SpeciesSmartSearch — they
   // live in the main species table (filtered by the same query). The
   // smart-search panel only offers Type / Moves / Abilities suggestions.
+
+  // ---------------------------------------------------------------------------
+  // Default sort: Speed DESC
+  // ---------------------------------------------------------------------------
+
+  it("default sort is Speed descending — SPE column shows ↓ indicator", () => {
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    // The SPE sort button should be active and show the descending arrow
+    const speButton = screen.getByRole("button", { name: "Sort by SPE" });
+    expect(speButton).toHaveAttribute("aria-pressed", "true");
+    expect(speButton).toHaveTextContent("↓");
+  });
+
+  it("default sort renders rows in Speed DESC order (Garchomp > Pikachu > Bulbasaur)", () => {
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    // Rows are role="row" with aria-label "Select <species>".
+    // Filter to only species rows (not the header row).
+    const rows = screen.getAllByRole("row", { name: /select/i });
+    const names = rows.map((r) => r.getAttribute("aria-label") ?? "");
+    // Garchomp spe=102, Pikachu spe=90, Bulbasaur spe=45 → DESC order
+    expect(names[0]).toMatch(/Garchomp/i);
+    expect(names[1]).toMatch(/Pikachu/i);
+    expect(names[2]).toMatch(/Bulbasaur/i);
+  });
+
+  // ---------------------------------------------------------------------------
+  // handleSmartFilter — move and ability branches
+  // ---------------------------------------------------------------------------
+
+  it("smart-filter with kind=move adds the move to filters and clears query", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    const input = screen.getByTestId("species-search");
+    await user.type(input, "tail");
+    // Smart-search panel is now visible
+    await user.click(screen.getByTestId("smart-filter-move"));
+    // Query must be cleared
+    expect(input).toHaveValue("");
+    // The sidebar mock serialises filters into data-filters; Tailwind move
+    // should now be in filters.moves
+    const sidebarEl = screen.getByTestId("species-sidebar");
+    const filters = JSON.parse(
+      (sidebarEl as HTMLElement).dataset.filters ?? "{}"
+    ) as { moves?: string[] };
+    expect(filters.moves).toContain("Tailwind");
+    // Filter count badge reflects 1 active filter
+    expect(
+      screen.getByRole("button", { name: /Clear 1 active filter/i })
+    ).toBeInTheDocument();
+  });
+
+  it("smart-filter with kind=ability sets filters.ability and clears query", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    const input = screen.getByTestId("species-search");
+    await user.type(input, "dro");
+    // Smart-search panel is now visible
+    await user.click(screen.getByTestId("smart-filter-ability"));
+    // Query must be cleared
+    expect(input).toHaveValue("");
+    // filters.ability should be set to "Drought"
+    const sidebarEl = screen.getByTestId("species-sidebar");
+    const filters = JSON.parse(
+      (sidebarEl as HTMLElement).dataset.filters ?? "{}"
+    ) as { ability?: string | null };
+    expect(filters.ability).toBe("Drought");
+    // Filter count badge reflects 1 active filter
+    expect(
+      screen.getByRole("button", { name: /Clear 1 active filter/i })
+    ).toBeInTheDocument();
+  });
 });
