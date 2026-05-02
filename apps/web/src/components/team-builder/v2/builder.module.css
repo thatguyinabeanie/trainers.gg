@@ -1023,12 +1023,14 @@
 
 /* Calc column — fixed-width sibling to the moves lane */
 :global(.calc-col) {
-  min-width: 180px;
+  min-width: 220px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   flex-shrink: 0;
   width: 220px;
+  max-width: 220px;
+  overflow: hidden;
   background: color-mix(in oklch, var(--muted) 40%, transparent);
   border-left: 1px solid var(--border);
   padding: 8px 0;
