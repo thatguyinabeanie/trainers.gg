@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -447,31 +447,22 @@ export function SpeciesPicker({
   }
 
   // Build the species index — expensive, memoize by format id.
-  // getRolesForSpecies is stable (module-level fn) so this only rebuilds when
-  // format changes. Manual useMemo is justified here because buildSpeciesSearchIndex
-  // can process 1200+ species and the React Compiler cannot hoist module-level
-  // function calls across renders.
-  const fullIndex = useMemo(
-    () =>
-      buildSpeciesSearchIndex(
-        format?.id ?? DEFAULT_FORMAT_ID,
-        (abilities, speciesName, formatId) =>
-          getRolesForSpecies(abilities, speciesName, formatId)
-      ),
-    [format?.id]
+  // buildSpeciesSearchIndex caches by (resolver, formatId) at the module level
+  // via a WeakMap keyed on the getRoles function identity. Pass
+  // getRolesForSpecies directly — wrapping it in an inline lambda would change
+  // identity per render and defeat the cache. React Compiler tracks downstream
+  // stability — no manual memo needed.
+  const fullIndex = buildSpeciesSearchIndex(
+    format?.id ?? DEFAULT_FORMAT_ID,
+    getRolesForSpecies
   );
 
   // Pre-filter by format legality so the picker only ever surfaces species
   // legal in this format. The denominator shown to the user reflects the
   // format roster, not all of gen 9.
-  // Memoize the legality-filtered list — the array reference must stay stable across renders so downstream search/sort memos don't recompute on every render.
-  const speciesIndex = useMemo(
-    () =>
-      format?.id
-        ? fullIndex.filter((e) => isLegalSpecies(e.species, format.id))
-        : fullIndex,
-    [fullIndex, format?.id]
-  );
+  const speciesIndex = format?.id
+    ? fullIndex.filter((e) => isLegalSpecies(e.species, format.id))
+    : fullIndex;
 
   // Derived list — search + filter (legality already applied to index)
   const filtered = searchSpecies(speciesIndex, query, {
@@ -484,16 +475,15 @@ export function SpeciesPicker({
   });
   const matched = sortSpecies(filtered, sort);
 
-  // Bucket counts — for each role, how many matched species carry it
-  const bucketCount = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const entry of matched) {
-      for (const roleId of entry.roles ?? []) {
-        counts.set(roleId, (counts.get(roleId) ?? 0) + 1);
-      }
+  // Bucket counts — for each role, how many matched species carry it.
+  // React Compiler memoizes this lookup based on the matched array identity.
+  const roleCounts = new Map<string, number>();
+  for (const entry of matched) {
+    for (const roleId of entry.roles ?? []) {
+      roleCounts.set(roleId, (roleCounts.get(roleId) ?? 0) + 1);
     }
-    return (roleId: string) => counts.get(roleId) ?? 0;
-  }, [matched]);
+  }
+  const bucketCount = (roleId: string) => roleCounts.get(roleId) ?? 0;
 
   // ---------------------------------------------------------------------------
   // Handlers

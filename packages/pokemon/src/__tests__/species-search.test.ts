@@ -654,6 +654,8 @@ describe("getAllLegalAbilities / getAllLegalMoves", () => {
     const m = getAllLegalMoves("gen9vgc2026regg");
     expect(m.length).toBeGreaterThan(100);
     expect(m).toContain("Tailwind");
+    expect([...new Set(m)]).toHaveLength(m.length);
+    expect([...m]).toEqual([...m].sort((a, b) => a.localeCompare(b)));
   });
 
   // Regression: clearSpeciesSearchIndexCache must reset the enumerator caches

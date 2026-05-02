@@ -98,6 +98,15 @@ export function SpeciesSidebar({
   const allTypes = ALL_TYPES as unknown as string[];
   const showMegaToggle = isChampionsFormat(format);
 
+  // Defensive: if the format switches away from Champions while megaOnly is
+  // active, the toggle disappears but the filter would silently keep applying.
+  // Clear it when the control hides so users don't get stuck staring at an
+  // empty list with no UI to recover.
+  useEffect(() => {
+    if (showMegaToggle || !filters.megaOnly) return;
+    onFiltersChange({ ...filters, megaOnly: false });
+  }, [showMegaToggle, filters, onFiltersChange]);
+
   // Typeahead suggestion lists — cheap because the underlying enumerators
   // are cached at the package level (`getAllLegalAbilities` /
   // `getAllLegalMoves` keyed by formatId).
@@ -284,8 +293,11 @@ export function SpeciesSidebar({
               className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
             />
             {abilityFocused && abilitySuggestions.length > 0 && (
+              // Plain <ul> rather than role="listbox" — items are real <button>s
+              // with their own focus/keyboard handling, not aria-managed
+              // options. Listbox role would imply option semantics + arrow-key
+              // navigation we don't implement here.
               <ul
-                role="listbox"
                 aria-label="Matching abilities"
                 className="border-border bg-popover absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg"
               >
@@ -398,8 +410,9 @@ export function SpeciesSidebar({
             className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
           />
           {moveFocused && moveSuggestions.length > 0 && (
+            // See ability typeahead above — same rationale for dropping
+            // role="listbox" without option semantics.
             <ul
-              role="listbox"
               aria-label="Matching moves"
               className="border-border bg-popover absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg"
             >
