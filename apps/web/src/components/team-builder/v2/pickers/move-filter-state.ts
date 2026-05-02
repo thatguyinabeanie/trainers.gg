@@ -24,7 +24,8 @@ export type MoveFilterState = {
   /**
    * AND multi-select role IDs (see `role-registry.ROLE_PRESETS`).
    * A move is kept only when it carries every selected role — picking
-   * "Hazard Setter" + "Pivot" surfaces moves that are both, not either.
+   * "Hazards" + "Pivot" (the actual role labels) surfaces moves that
+   * carry both tags, not either.
    */
   roles: readonly RoleId[];
 };
