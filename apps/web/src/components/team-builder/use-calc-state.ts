@@ -321,12 +321,25 @@ function runCalc(
     const move = new Move(gen, moveName, moveOpts);
     const result = calculate(gen, attacker, defender, move, field);
     const damage = result.damage;
-    if (!damage || (Array.isArray(damage) && damage.length === 0)) return null;
+    // Distinguish "calc failed" (damage is undefined/null) from "damage is 0"
+    // (immune defender). The latter should produce a valid 0% output so the
+    // UI can render "Immune" / "0%" instead of falling back to "no calc".
+    // Empty arrays still mean the engine produced no roll data → null.
+    if (damage === undefined || damage === null) return null;
+    if (Array.isArray(damage) && damage.length === 0) return null;
 
     const defHP = defender.maxHP();
     if (defHP === 0) return null;
 
-    const [minDmg, maxDmg] = result.range();
+    // For immunities the engine returns the literal `0` and `result.range()`
+    // returns `[0, 0]`. We compute percents the same way for both paths so
+    // the 0%/0% case flows through naturally — but `result.desc()` throws
+    // inside @smogon/calc's getKOChance when damage is 0 (it tries to
+    // compute KO chance on an immune hit), so we synthesise a description
+    // for that case instead of letting the throw bubble up to the catch
+    // and collapse the whole result to null.
+    const isImmune = damage === 0;
+    const [minDmg, maxDmg] = isImmune ? [0, 0] : result.range();
     const minPercent = Math.floor((minDmg / defHP) * 1000) / 10;
     const maxPercent = Math.floor((maxDmg / defHP) * 1000) / 10;
 
@@ -339,7 +352,7 @@ function runCalc(
     return {
       minPercent,
       maxPercent,
-      desc: result.desc(),
+      desc: isImmune ? `${moveName}: 0 - 0 (0 - 0%) -- immune` : result.desc(),
       rolls,
       defenderMaxHP: defHP,
     };

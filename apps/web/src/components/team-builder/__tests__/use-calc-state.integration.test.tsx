@@ -444,11 +444,10 @@ describe("items", () => {
 // =============================================================================
 
 describe("tera", () => {
-  it("Dragon attacker into Dragon-Tera Fairy defender becomes immune (output null)", () => {
-    // The wrapper's `runCalc` collapses 0-damage matchups to null because
-    // `result.damage` is the literal 0 (falsy) when the defender is immune.
-    // Asserting null here is the test contract: Tera Fairy on a Dragon
-    // defender means a Dragon-type move can't deal damage at all.
+  it("Dragon attacker into Dragon-Tera Fairy defender produces 0% damage (immune)", () => {
+    // Tera Fairy makes the defender immune to Dragon. The wrapper now
+    // surfaces immunities as a 0%/0% output (rather than null) so the UI
+    // can render "Immune" / "0%" instead of "no calc available".
     const output = getOutput({
       pokemon: makePokemon({
         species: "Garchomp",
@@ -466,7 +465,9 @@ describe("tera", () => {
         c.setDefenderTera("Fairy");
       },
     });
-    expect(output).toBeNull();
+    expect(output).not.toBeNull();
+    expect(output!.minPercent).toBe(0);
+    expect(output!.maxPercent).toBe(0);
   });
 
   it("Tera Blast becomes the attacker's tera type and is non-null output", () => {
@@ -986,17 +987,15 @@ describe("null and empty guards", () => {
     expect(result.current.moveCalcOutputs[0]).toBeNull();
   });
 
-  it("multi-move pokemon: only filled slots return non-null outputs", () => {
-    // Default defender is Incineroar (Dark/Fire). Pick moves that aren't
-    // immune-blocked: Moonblast (Fairy → Dark = 2× super-effective) and
-    // Shadow Ball (Ghost → Dark = 1× neutral, Ghost → Fire = 1×). Psyshock
-    // would route through Psychic vs Dark = 0× immune which collapses to
-    // null in the wrapper.
+  it("multi-move pokemon: filled slots produce outputs (immunities included), empty slots are null", () => {
+    // Default defender is Incineroar (Dark/Fire). Moonblast (Fairy → Dark)
+    // is super-effective; Psyshock (Psychic → Dark) is immune and now
+    // surfaces as a valid 0%/0% output rather than null.
     const { result } = renderHook(() =>
       useCalcState({
         selectedPokemon: makePokemon({
           move1: "Moonblast",
-          move2: "Shadow Ball",
+          move2: "Psyshock",
           move3: null,
           move4: null,
         }),
@@ -1004,7 +1003,10 @@ describe("null and empty guards", () => {
       })
     );
     expect(result.current.moveCalcOutputs[0]).not.toBeNull();
+    expect(result.current.moveCalcOutputs[0]!.maxPercent).toBeGreaterThan(0);
     expect(result.current.moveCalcOutputs[1]).not.toBeNull();
+    expect(result.current.moveCalcOutputs[1]!.minPercent).toBe(0);
+    expect(result.current.moveCalcOutputs[1]!.maxPercent).toBe(0);
     expect(result.current.moveCalcOutputs[2]).toBeNull();
     expect(result.current.moveCalcOutputs[3]).toBeNull();
   });
