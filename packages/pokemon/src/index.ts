@@ -235,3 +235,6 @@ export {
   type SpeedAbility,
   getMetaSpeedTiers,
 } from "./meta-speed-tiers";
+
+// Stat stage multiplier helper (battle-time stat adjustments)
+export { applyStage } from "./stage-helpers";
