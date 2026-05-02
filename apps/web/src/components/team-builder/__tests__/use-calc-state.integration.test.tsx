@@ -758,13 +758,38 @@ describe("HP clamp", () => {
 });
 
 // =============================================================================
-// Champions gen-10 fallback
+// Champions dispatch
 // =============================================================================
 
-describe("Champions gen-10 fallback", () => {
-  it("produces non-null calc output when generation is 10 (falls back to gen 9)", () => {
+/**
+ * Helper: makePokemon defaults to a VGC spread (252 EVs) and a gen-9-only
+ * species (Flutter Mane). For Champions tests we want a Champions-legal
+ * species + a valid SP spread (≤32 per stat, ≤66 total) so the wrapper's
+ * defensive clamp doesn't zero out the attacker and the gen-0 species
+ * lookup actually resolves.
+ */
+function makeChampionsPokemon(
+  overrides: Partial<Tables<"pokemon">> = {}
+): Tables<"pokemon"> {
+  return makePokemon({
+    species: "Garchomp",
+    ability: "Rough Skin",
+    nature: "Adamant",
+    move1: "Earthquake",
+    ev_hp: 0,
+    ev_attack: 32,
+    ev_defense: 0,
+    ev_special_attack: 0,
+    ev_special_defense: 0,
+    ev_speed: 32,
+    ...overrides,
+  });
+}
+
+describe("Champions dispatch (gen.num === 0)", () => {
+  it("produces non-null calc output when format is Champions", () => {
     const output = getOutput({
-      pokemon: makePokemon(),
+      pokemon: makeChampionsPokemon(),
       format: CHAMPIONS_FORMAT,
     });
     expect(output).not.toBeNull();
@@ -784,12 +809,35 @@ describe("Champions gen-10 fallback", () => {
 
   it("damage output for Champions format is in a sensible range (5–200%)", () => {
     const output = getOutput({
-      pokemon: makePokemon(),
+      pokemon: makeChampionsPokemon(),
       format: CHAMPIONS_FORMAT,
     });
     expect(output).not.toBeNull();
     expect(output!.minPercent).toBeGreaterThan(0);
     expect(output!.maxPercent).toBeLessThan(500);
+  });
+
+  it("defensively clamps attacker EVs to Champions caps (32/stat, 66 total)", () => {
+    // Stale/imported team data may carry classic 252-EV spread. The wrapper
+    // must clamp before passing to the engine, otherwise the engine treats
+    // 252 as 252 SP and produces nonsense damage.
+    const out252 = getOutput({
+      pokemon: makeChampionsPokemon({
+        ev_attack: 252,
+      }),
+      format: CHAMPIONS_FORMAT,
+    });
+    const out32 = getOutput({
+      pokemon: makeChampionsPokemon({
+        ev_attack: 32,
+      }),
+      format: CHAMPIONS_FORMAT,
+    });
+    expect(out252).not.toBeNull();
+    expect(out32).not.toBeNull();
+    // Both should produce identical damage because 252 clamps down to 32.
+    expect(out252!.minPercent).toBe(out32!.minPercent);
+    expect(out252!.maxPercent).toBe(out32!.maxPercent);
   });
 });
 
