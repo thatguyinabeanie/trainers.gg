@@ -132,7 +132,6 @@ Replace everything between `{/* Row 1 */}` and the closing tag of the PopoverTri
 - [ ] **Step 4: Typecheck**
 
 ```bash
-cd /Users/beanie/source/trainers.gg
 pnpm typecheck 2>&1 | grep "calc-defender-moves" | head -10
 ```
 

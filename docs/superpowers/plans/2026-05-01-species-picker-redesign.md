@@ -1239,6 +1239,7 @@ The integration. `SpeciesPicker` becomes the orchestrator: holds `SpeciesFilterS
 Key implementation points:
 
 1. **Index build**:
+
    ```ts
    const fullIndex = useMemo(
      () => buildSpeciesSearchIndex(format?.id ?? DEFAULT_FORMAT_ID, getRolesForSpecies),
@@ -1249,6 +1250,7 @@ Key implementation points:
 2. **State**: `useState<SpeciesFilterState>(DEFAULT_SPECIES_FILTERS)` + `useState("")` for query + sort state.
 
 3. **Search call**:
+
    ```ts
    const matched = searchSpecies(speciesIndex, query, {
      types: filters.types.length ? filters.types : undefined,
@@ -1261,6 +1263,7 @@ Key implementation points:
    ```
 
 4. **Body layout**: `<div class="body flex flex-1 min-h-0 overflow-hidden">` with three children:
+
    ```tsx
    <SpeciesSidebar filters={filters} onFiltersChange={setFilters} format={format} currentTeam={currentTeam} />
    <RolePresetsPanel selected={filters.roles} onChange={(roles) => setFilters((f) => ({ ...f, roles }))} bucketCount={bucketCount} />
@@ -1271,6 +1274,7 @@ Key implementation points:
    ```
 
 5. **Bucket counts** (memo-ed live counts based on current matches):
+
    ```ts
    const bucketCount = useMemo(() => {
      const counts = new Map<string, number>();
@@ -1280,6 +1284,7 @@ Key implementation points:
    ```
 
 6. **Click handlers**:
+
    ```ts
    function handleTypeFilter(type: string) {
      setFilters((f) => f.types.includes(type)
@@ -1292,9 +1297,25 @@ Key implementation points:
        ? { ...f, roles: f.roles.filter((r) => r !== roleId) }
        : { ...f, roles: [...f.roles, roleId] });
    }
+   function handleRolePresetSelect(id: string) {
+     const preset = getRoleById(id);
+     if (filters.roles.includes(id)) {
+       setFilters((f) => ({ ...f, role: null, moves: null, abilities: null, roles: f.roles.filter((r) => r !== id) }));
+     } else {
+       setFilters((f) => ({
+         ...f,
+         roles: [...f.roles, id],
+         moves: preset?.moves ?? null,
+         abilities: preset?.abilities ?? null,
+       }));
+     }
+   }
    ```
 
+   Use `handleRolePresetSelect` as the `onChange` handler for `<RolePresetsPanel>` so that selecting a preset also populates `filters.moves` and `filters.abilities` from the preset definition. Deselecting clears those fields.
+
 7. **`buildFilterChips()`**:
+
    ```ts
    function buildFilterChips(): FilterChip[] {
      const chips: FilterChip[] = [];
@@ -1379,6 +1400,7 @@ function SpeciesRow({ entry, isCurrent, onSelect, onTypeFilter, onAbilityFilter,
 ```
 
 9. **Column grid update**:
+
    ```ts
    const ROW_GRID = "grid-cols-[44px_minmax(100px,1fr)_44px_80px_80px_76px_repeat(6,24px)_36px_minmax(140px,180px)]";
    ```
@@ -1430,7 +1452,7 @@ describe("SpeciesPicker — click-to-filter and keyboard shortcuts", () => {
 });
 ```
 
-(The existing test mocks for `useVirtualizer` and `Image` continue working. Extend the `@trainers/pokemon` mock factory to expose `getAllLegalAbilities`, `getAllLegalMoves`, `calculateTeamSynergy`, `isChampionsFormat`, `getMegaStoneForSpecies`, and `buildSpeciesSearchIndex` to accept the resolver.)
+(The existing test mocks for `useVirtualizer` and `Image` continue working. Extend the `@trainers/pokemon` mock factory to expose `getAllLegalAbilities`, `getAllLegalMoves`, `calculateTeamSynergy`, `isChampionsFormat`, `getMegaStoneForSpecies`, and `buildSpeciesSearchIndex` to accept the resolver. Extend the `./role-registry` mock factory with `getRolesForMove` — this function is imported from `./role-registry`, not from `@trainers/pokemon`.)
 
 - [ ] **Run + commit**
 

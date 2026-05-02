@@ -11,7 +11,7 @@ This redesign flattens everything into one 68px horizontal strip with three clea
 
 ## Layout: Single Bar
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ [Sprite] Name / Nickname  │  Ability │ Item │ Tera │ Nature  │ ♂♀— ✦ Lv ⋯  │
 │          Species · 🌿 🧊   │          │      │      │         │              │

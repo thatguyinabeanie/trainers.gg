@@ -477,7 +477,7 @@ return (
 );
 ```
 
-- [ ] **Step 4: Typecheck the field block**
+- [ ] **Step 5: Typecheck the field block**
 
 ```bash
 pnpm typecheck 2>&1 | grep "calc-field-block" | head -10
@@ -485,7 +485,7 @@ pnpm typecheck 2>&1 | grep "calc-field-block" | head -10
 
 Expected: no errors in `calc-field-block.tsx`.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/components/team-builder/v2/calc/calc-field-block.tsx

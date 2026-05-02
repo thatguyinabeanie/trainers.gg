@@ -326,6 +326,7 @@ Key implementation points:
 ```
 
 3. **State**:
+
 ```ts
 const [filters, setFilters] = useState<MoveFilterState>(DEFAULT_MOVE_FILTERS);
 const [sort, setSort] = useState<SortState>({ col: "name", dir: "asc" });

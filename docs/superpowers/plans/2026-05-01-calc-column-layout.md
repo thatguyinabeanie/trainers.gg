@@ -405,8 +405,8 @@ export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: Moves
       className={cn(
         "flex flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3",
         calcEnabled
-          ? "w-[280px] shrink-0"
-          : "min-w-[240px] flex-1"
+          ? "w-[440px] shrink-0"
+          : "w-[440px] shrink-0"
       )}
     >
       {/* Header */}
@@ -448,7 +448,7 @@ Expected: no errors.
 - [ ] **Commit:**
 ```bash
 git add apps/web/src/components/team-builder/v2/lanes/moves-lane.tsx
-git commit -m "refactor(team-builder): strip calc from MoveTile; fix MovesLane width to 280px when calc open"
+git commit -m "refactor(team-builder): strip calc from MoveTile; fix MovesLane width to 440px always"
 ```
 
 ---
