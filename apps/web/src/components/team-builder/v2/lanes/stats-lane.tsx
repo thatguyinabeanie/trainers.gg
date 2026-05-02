@@ -300,8 +300,6 @@ function computeNatureForSuffix(opts: {
 
 interface StatRowProps {
   statKey: StatKey;
-  /** Final stat with current investment (base + IV + EV + nature + level). */
-  finalStat: number;
   /** Final stat with EV=0 (for the solid base layer of the viz bar). */
   noEvFinalStat: number;
   ev: number;
@@ -322,7 +320,6 @@ interface StatRowProps {
 
 function StatRow({
   statKey,
-  finalStat,
   noEvFinalStat,
   ev,
   base,
@@ -341,10 +338,6 @@ function StatRow({
   const label = STAT_LABELS[statKey];
   const statColorClass = STAT_COLOR_CLASS[statKey];
 
-  // --- Viz bar layer widths (0→250 final stat space) ---
-  const { baseLayerWidth, investLayerLeft, investLayerWidth } =
-    computeVizBarWidths(finalStat, noEvFinalStat);
-
   // --- Slider budget ---
   const investBudget = computeInvestBudget(totalEv, ev, budget.total, budget.perStat);
 
@@ -362,6 +355,22 @@ function StatRow({
     setDraftEv(null);
   }
   const displayEv = draftEv ?? ev;
+
+  // --- Live final stat (recomputed from draftEv so the readout updates
+  //     instantly during slider drag, even though onUpdate is debounced). ---
+  const liveFinalStat = computeStat({
+    statKey,
+    base,
+    iv: ivs[statKey],
+    ev: displayEv,
+    nature,
+    level,
+    isChampions,
+  });
+
+  // --- Viz bar layer widths (0→250 final stat space) ---
+  const { baseLayerWidth, investLayerLeft, investLayerWidth } =
+    computeVizBarWidths(liveFinalStat, noEvFinalStat);
 
   // --- Breakpoint ticks (only for +nature stat) ---
   const breakpoints = isNatureBoosted
@@ -612,7 +621,7 @@ function StatRow({
       )}
 
       {/* Col 6/7: Final stat, mono bold */}
-      <span className={s.spreadFinal}>{finalStat}</span>
+      <span className={s.spreadFinal}>{liveFinalStat}</span>
     </div>
   );
 }
@@ -783,18 +792,10 @@ export function StatsLane({
           const isNatureBoosted = natUp === statKey;
           const isNatureReduced = natDown === statKey;
 
-          // Current final stat (with current EVs)
-          const finalStat = computeStat({
-            statKey,
-            base: base[statKey],
-            iv: ivs[statKey],
-            ev: evs[statKey],
-            nature,
-            level,
-            isChampions,
-          });
-
-          // Final stat with EV=0 (for the solid base layer of the viz bar)
+          // Final stat with EV=0 (the solid base layer of the viz bar).
+          // The current final stat is derived inside StatRow from displayEv
+          // so it tracks the slider draft instantly, ahead of the 400ms
+          // debounced onUpdate.
           const noEvFinalStat = computeStat({
             statKey,
             base: base[statKey],
@@ -809,7 +810,6 @@ export function StatsLane({
             <StatRow
               key={statKey}
               statKey={statKey}
-              finalStat={finalStat}
               noEvFinalStat={noEvFinalStat}
               ev={evs[statKey]}
               base={base[statKey]}
