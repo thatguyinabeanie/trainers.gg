@@ -491,7 +491,7 @@ importers:
         specifier: ^1
         version: 1.2.4(@types/react@19.2.14)(react@19.2.5)
       '@smogon/calc':
-        specifier: github:thatguyinabeanie/damage-calc#24f4bd7b47ad9536497a18f9783f76c74032e371&path:/calc
+        specifier: github:thatguyinabeanie/damage-calc#master&path:/calc
         version: https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/24f4bd7b47ad9536497a18f9783f76c74032e371#path:/calc
       '@supabase/ssr':
         specifier: catalog:supabase

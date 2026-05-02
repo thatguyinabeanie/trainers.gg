@@ -1546,24 +1546,35 @@ describe("NCP-VGC Champions reference cases", () => {
 
       const out = result.current.selectedMoveOutput;
       expect(out).not.toBeNull();
-      // Structural invariants — must always hold.
-      expect(out!.minPercent).toBeGreaterThanOrEqual(0);
-      expect(out!.maxPercent).toBeGreaterThanOrEqual(out!.minPercent);
-      // Wide upper bound — Helping Hand on a STAB Fairy-Aura move easily
-      // crosses 200% before screens. Sanity check only; the diagnostic log
-      // below is what catches real regressions against NCP.
-      expect(out!.maxPercent).toBeLessThanOrEqual(300);
-      expect(Array.isArray(out!.rolls)).toBe(true);
 
-      // Diagnostic — log ACTUAL vs NCP EXPECTED. Once the wrapper is
-      // Champions-stat aware these can flip to strict equality.
-      const inferred = result.current.inferredWeather ?? "(none)";
-      console.log(
-        `[NCP] ${c.name}\n` +
-          `  expected: ${c.expected.minPct}-${c.expected.maxPct}% rolls=${c.rolls.join(",")}\n` +
-          `  actual:   ${out!.minPercent}-${out!.maxPercent}% rolls=${out!.rolls.join(",")}\n` +
-          `  weather: explicit=${result.current.weather || "(none)"} inferred=${inferred}`
-      );
+      // Cases involving Fairy Aura on Floette-Eternal currently diverge from
+      // NCP — the ability appears to be silently ignored by the engine's
+      // species data for that species. Track via structural invariants only;
+      // the rolls and percents are off by ~the Fairy Aura 1.33× multiplier.
+      // Case 2 (no-weather Weather Ball) likewise diverges because our wrapper
+      // auto-infers Sun from Drought, while NCP does not — by design.
+      const isKnownDivergent =
+        c.name.includes("Fairy Aura") ||
+        c.name === "Champions: Mega Floette HH Light of Ruin vs 32/2 Archaludon through Aurora Veil + Friend Guard" ||
+        c.name === "Champions: 32 SpA Mega Floette HH Light of Ruin vs 32/2 Archaludon through Aurora Veil + Friend Guard" ||
+        c.name === "Champions: +1 32 SpA Mega Floette HH Light of Ruin vs 32/2 Archaludon through Aurora Veil + Friend Guard" ||
+        c.name.includes("Mega Charizard Y Weather Ball (Normal, no weather)");
+
+      if (isKnownDivergent) {
+        // Structural-only assertions for cases with documented divergence.
+        expect(out!.minPercent).toBeGreaterThanOrEqual(0);
+        expect(out!.maxPercent).toBeGreaterThanOrEqual(out!.minPercent);
+        expect(out!.maxPercent).toBeLessThanOrEqual(300);
+        expect(Array.isArray(out!.rolls)).toBe(true);
+        return;
+      }
+
+      // Strict equality — engine output must match NCP exactly for these
+      // canonical matchups. Any drift here indicates either a wrapper
+      // regression or a genuine engine update we should investigate.
+      expect(out!.rolls).toEqual(c.rolls);
+      expect(out!.minPercent).toBe(c.expected.minPct);
+      expect(out!.maxPercent).toBe(c.expected.maxPct);
     }
   );
 });
