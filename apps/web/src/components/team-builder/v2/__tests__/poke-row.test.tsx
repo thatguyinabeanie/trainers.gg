@@ -101,6 +101,19 @@ jest.mock("../lanes/moves-lane", () => ({
   },
 }));
 
+jest.mock("../lanes/calc-column", () => ({
+  CalcColumn: ({ pokemon }: { pokemon: null | object }) => (
+    <div data-testid="calc-column" data-ghost={pokemon === null ? "true" : "false"}>
+      CALC
+    </div>
+  ),
+}));
+
+const mockUseCalcStateContext = jest.fn(() => ({ calcEnabled: false }));
+jest.mock("../calc/calc-state-context", () => ({
+  useCalcStateContext: () => mockUseCalcStateContext(),
+}));
+
 jest.mock("../pickers/species-picker", () => ({
   SpeciesPicker: ({
     onPick,
@@ -352,6 +365,47 @@ describe("PokeRow — empty slot", () => {
     // within(button) scopes to inside the button element; queryAllByRole("button")
     // should return nothing because there are no nested buttons in ghost mode.
     expect(within(button).queryAllByRole("button")).toHaveLength(0);
+  });
+
+  describe("calc width parity", () => {
+    afterEach(() => {
+      mockUseCalcStateContext.mockReturnValue({ calcEnabled: false });
+    });
+
+    it("does not render the calc column when calc is disabled", () => {
+      mockUseCalcStateContext.mockReturnValue({ calcEnabled: false });
+      render(
+        <PokeRow
+          idx={0}
+          sortableId="__empty__0"
+          pokemon={null}
+          isActive={false}
+          density="comfy"
+          expandMode="active"
+          onActivate={jest.fn()}
+        />
+      );
+      expect(screen.queryByTestId("calc-column")).not.toBeInTheDocument();
+    });
+
+    it("renders a ghost calc column when calc is enabled — keeps width parity with active rows", () => {
+      mockUseCalcStateContext.mockReturnValue({ calcEnabled: true });
+      render(
+        <PokeRow
+          idx={0}
+          sortableId="__empty__0"
+          pokemon={null}
+          isActive={false}
+          density="comfy"
+          expandMode="active"
+          onActivate={jest.fn()}
+        />
+      );
+      const calcCol = screen.getByTestId("calc-column");
+      expect(calcCol).toBeInTheDocument();
+      // Ghost mode is signaled by pokemon === null
+      expect(calcCol.dataset.ghost).toBe("true");
+    });
   });
 });
 

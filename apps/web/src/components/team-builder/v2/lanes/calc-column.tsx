@@ -15,7 +15,7 @@ import { getVerdict } from "../../use-calc-state";
 // =============================================================================
 
 interface CalcColumnProps {
-  pokemon: Tables<"pokemon">;
+  pokemon: Tables<"pokemon"> | null;
   format: GameFormat | undefined;
 }
 
@@ -147,7 +147,7 @@ export function CalcColumn({ pokemon, format: _format }: CalcColumnProps) {
         <CalcRow
           key={slot}
           slotIndex={i}
-          moveName={pokemon[slot as MoveSlot] ?? null}
+          moveName={pokemon ? pokemon[slot as MoveSlot] ?? null : null}
         />
       ))}
     </div>

@@ -19,9 +19,11 @@ import { type ValidationError } from "../validation-hooks";
 import { Sprite } from "./sprite";
 import { TypePill } from "./type-pill";
 import { ActiveRow } from "./lanes/active-row";
+import { CalcColumn } from "./lanes/calc-column";
 import { IdentityLane } from "./lanes/identity-lane";
 import { StatsLane } from "./lanes/stats-lane";
 import { MovesLane } from "./lanes/moves-lane";
+import { useCalcStateContext } from "./calc/calc-state-context";
 import { SpeciesPicker } from "./pickers/species-picker";
 import s from "./builder.module.css";
 
@@ -63,6 +65,7 @@ interface EmptyRowProps {
 
 function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
   const [open, setOpen] = useState(false);
+  const { calcEnabled } = useCalcStateContext();
 
   return (
     <>
@@ -88,6 +91,7 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         <IdentityLane pokemon={null} format={_format} />
         <StatsLane pokemon={null} format={_format} />
         <MovesLane pokemon={null} format={_format} />
+        {calcEnabled && <CalcColumn pokemon={null} format={_format} />}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
