@@ -4,6 +4,7 @@ import {
   getSpeciesTypes,
   getLegalAbilities,
   getValidAbilities,
+  NATURE_EFFECTS,
   type GameFormat,
 } from "@trainers/pokemon";
 
@@ -24,6 +25,22 @@ import { TypePicker } from "../pickers/type-picker";
 import { formatSupportsTera } from "../format-gating";
 import s from "../builder.module.css";
 
+// =============================================================================
+// Constants
+// =============================================================================
+
+const STAT_ABBR: Partial<Record<string, string>> = {
+  attack: "Atk",
+  defense: "Def",
+  specialAttack: "SpA",
+  specialDefense: "SpD",
+  speed: "Spe",
+};
+
+// =============================================================================
+// Types
+// =============================================================================
+
 export interface DefenderMonHeaderProps {
   defenderSpecies: string;
   defenderAbility: string;
@@ -31,8 +48,6 @@ export interface DefenderMonHeaderProps {
   defenderNature: string;
   defenderTera: string;
   format: GameFormat | undefined;
-  attackerName: string;
-  attackerHP: number | null;
   setDefenderSpecies: (v: string) => void;
   setDefenderAbility: (v: string) => void;
   setDefenderItem: (v: string) => void;
@@ -40,33 +55,19 @@ export interface DefenderMonHeaderProps {
   setDefenderTera: (v: string) => void;
 }
 
-function LoadoutChip({
-  label,
-  value,
-  children,
-}: {
-  label: string;
-  value: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Popover>
-      <PopoverTrigger className={cn(s.chipLabeled)}>
-        <span className={s.chipPrefix}>{label}</span>
-        <span className={cn(s.chipValue, "min-w-0 truncate")}>{value || "—"}</span>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        side="bottom"
-        className="w-auto p-0"
-        style={{ maxHeight: "60vh", overflow: "hidden" }}
-      >
-        {children}
-      </PopoverContent>
-    </Popover>
-  );
-}
+// =============================================================================
+// DefenderMonHeader
+// =============================================================================
 
+/**
+ * Identity section for the damage calc defender panel.
+ *
+ * Vertical-stack layout: species pill, sprite, type pills, then Item / Ability /
+ * Nature / Tera formRows below the sprite. Sits as the left lane of the defender
+ * column with the spread stats lane to its right.
+ *
+ * The "vs Attacker · HP" badge lives in the parent panel header, not here.
+ */
 export function DefenderMonHeader({
   defenderSpecies,
   defenderAbility,
@@ -74,8 +75,6 @@ export function DefenderMonHeader({
   defenderNature,
   defenderTera,
   format,
-  attackerName,
-  attackerHP,
   setDefenderSpecies,
   setDefenderAbility,
   setDefenderItem,
@@ -92,108 +91,183 @@ export function DefenderMonHeader({
       )
     : getValidAbilities(defenderSpecies);
 
+  const natureEffect = defenderNature ? NATURE_EFFECTS[defenderNature] : null;
+  const natUp = natureEffect?.boost ?? null;
+  const natDown = natureEffect?.reduce ?? null;
+
   return (
-    <div className="border-b p-3 pb-2">
-      <div className="flex items-start gap-3">
-        {/* Sprite */}
-        <div className="size-[52px] flex-shrink-0 overflow-hidden rounded-md">
-          <Sprite species={defenderSpecies || "Incineroar"} types={types} size={52} />
-        </div>
-
-        {/* Identity + loadout */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            {/* Species picker */}
-            <Popover>
-              <PopoverTrigger className="block min-w-0 max-w-full cursor-pointer truncate rounded px-1 py-0.5 text-left text-[13px] font-bold hover:bg-muted">
-                {defenderSpecies || "—"}
-              </PopoverTrigger>
-              <PopoverContent
-                align="start"
-                side="bottom"
-                className="h-[480px] w-[640px] overflow-hidden p-0"
-              >
-                <SpeciesPicker
-                  value={defenderSpecies}
-                  format={format}
-                  onPick={(species) => setDefenderSpecies(species)}
-                  onClose={() => undefined}
-                />
-              </PopoverContent>
-            </Popover>
-            {/* "vs X · HP" badge */}
-            <span className="flex-shrink-0 font-mono text-[10px] text-muted-foreground">
-              vs {attackerName} · {attackerHP !== null ? `${attackerHP} HP` : "—"}
-            </span>
-          </div>
-
-          {/* Types */}
-          <div className="mt-0.5 flex flex-wrap gap-1">
-            {types.map((t) => (
-              <TypePill key={t} t={t} />
-            ))}
-          </div>
-
-          {/* Loadout chips */}
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {/* Item */}
-            <Popover>
-              <PopoverTrigger className={cn(s.chipLabeled)}>
-                <span className={s.chipPrefix}>item</span>
-                <span className={cn(s.chipValue, "min-w-0 truncate")}>
-                  {defenderItem || "—"}
-                </span>
-              </PopoverTrigger>
-              <PopoverContent align="start" side="bottom" className="w-auto p-0">
-                <ItemPicker
-                  value={defenderItem}
-                  format={format}
-                  teamItems={[]}
-                  onPick={(item) => setDefenderItem(item)}
-                  onClose={() => undefined}
-                />
-              </PopoverContent>
-            </Popover>
-
-            <LoadoutChip label="abil" value={defenderAbility}>
-              <AbilityPicker
-                value={defenderAbility}
-                species={defenderSpecies}
-                format={format}
-                onPick={(ability) => setDefenderAbility(ability)}
-                onClose={() => undefined}
-              />
-            </LoadoutChip>
-
-            <LoadoutChip label="nat" value={defenderNature}>
-              <NaturePicker
-                value={defenderNature}
-                onPick={(nat) => setDefenderNature(nat)}
-                onClose={() => undefined}
-              />
-            </LoadoutChip>
-
-            {showTera && (
-              <LoadoutChip
-                label="tera"
-                value={defenderTera ? `${defenderTera} tera` : "—"}
-              >
-                <TypePicker
-                  value={defenderTera}
-                  onPick={(type) => setDefenderTera(type)}
-                  onClose={() => undefined}
-                />
-              </LoadoutChip>
-            )}
-          </div>
-
-          {defenderSpecies && legalAbilities.length === 0 && (
-            <p className="mt-1 font-mono text-[9px] text-muted-foreground/60">
-              No abilities found for format
-            </p>
+    <div className="flex w-60 shrink-0 flex-col gap-1.5 border-r p-2">
+      {/* Species pill + Sprite (both open species picker) */}
+      <Popover>
+        <PopoverTrigger
+          className={cn(
+            "border-border bg-background hover:border-primary focus-visible:border-primary",
+            "flex w-full items-center gap-1 rounded-md border px-2 py-1 text-left text-[11.5px]",
+            "outline-none transition-colors"
           )}
-        </div>
+        >
+          <span
+            className={cn(
+              "min-w-0 flex-1 truncate",
+              defenderSpecies
+                ? "text-foreground font-medium"
+                : "text-muted-foreground"
+            )}
+            title={defenderSpecies || undefined}
+          >
+            {defenderSpecies || "Choose species…"}
+          </span>
+          <span aria-hidden className="text-[9px] text-muted-foreground">
+            ▾
+          </span>
+        </PopoverTrigger>
+
+        <PopoverContent
+          align="start"
+          side="bottom"
+          sideOffset={6}
+          className="w-[920px] max-w-[calc(100vw-2rem)] p-0"
+          style={{ maxHeight: "min(70vh, 640px)" }}
+        >
+          <SpeciesPicker
+            value={defenderSpecies}
+            format={format}
+            onPick={(species) => setDefenderSpecies(species)}
+            onClose={() => undefined}
+          />
+        </PopoverContent>
+      </Popover>
+
+      {/* Sprite — centered in the lane */}
+      <div className="mx-auto size-24 shrink-0 overflow-hidden rounded-md">
+        <Sprite
+          species={defenderSpecies || "Incineroar"}
+          types={types}
+          size={96}
+        />
       </div>
+
+      {/* Type pills */}
+      {types.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {types.map((t) => (
+            <TypePill key={t} t={t} />
+          ))}
+        </div>
+      )}
+
+      {/* Item */}
+      <Popover>
+        <PopoverTrigger className={s.formRow}>
+          <span className={s.formLabel}>Item</span>
+          <span
+            className={cn(
+              s.formValue,
+              !defenderItem && "italic text-muted-foreground/50"
+            )}
+          >
+            {defenderItem || "—"}
+          </span>
+        </PopoverTrigger>
+        <PopoverContent align="start" side="bottom" className="w-auto p-0">
+          <ItemPicker
+            value={defenderItem}
+            format={format}
+            teamItems={[]}
+            onPick={(item) => setDefenderItem(item)}
+            onClose={() => undefined}
+          />
+        </PopoverContent>
+      </Popover>
+
+      {/* Ability */}
+      <Popover>
+        <PopoverTrigger className={s.formRow}>
+          <span className={s.formLabel}>Abil</span>
+          <span
+            className={cn(
+              s.formValue,
+              !defenderAbility && "italic text-muted-foreground/50"
+            )}
+          >
+            {defenderAbility || "—"}
+          </span>
+        </PopoverTrigger>
+        <PopoverContent align="start" side="bottom" className="w-auto p-0">
+          <AbilityPicker
+            value={defenderAbility}
+            species={defenderSpecies}
+            format={format}
+            onPick={(ability) => setDefenderAbility(ability)}
+            onClose={() => undefined}
+          />
+        </PopoverContent>
+      </Popover>
+
+      {/* Nature */}
+      <Popover>
+        <PopoverTrigger className={s.formRow}>
+          <span className={s.formLabel}>Nat</span>
+          <span className="flex min-w-0 items-baseline gap-1.5 overflow-hidden">
+            <span
+              className={cn(
+                s.formValue,
+                !defenderNature && "italic text-muted-foreground/50"
+              )}
+            >
+              {defenderNature || "—"}
+            </span>
+            {natUp && natDown && (
+              <span className="shrink-0 whitespace-nowrap font-mono text-[9px]">
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  +{STAT_ABBR[natUp] ?? natUp}
+                </span>
+                <span className="text-muted-foreground">/</span>
+                <span className="text-rose-600 dark:text-rose-400">
+                  −{STAT_ABBR[natDown] ?? natDown}
+                </span>
+              </span>
+            )}
+          </span>
+        </PopoverTrigger>
+        <PopoverContent align="start" side="bottom" className="w-auto p-0">
+          <NaturePicker
+            value={defenderNature}
+            onPick={(nat) => setDefenderNature(nat)}
+            onClose={() => undefined}
+          />
+        </PopoverContent>
+      </Popover>
+
+      {/* Tera */}
+      {showTera && (
+        <Popover>
+          <PopoverTrigger className={s.formRow}>
+            <span className={s.formLabel}>Tera</span>
+            <span
+              className={cn(
+                s.formValue,
+                !defenderTera && "italic text-muted-foreground/50"
+              )}
+            >
+              {defenderTera || "—"}
+            </span>
+          </PopoverTrigger>
+          <PopoverContent align="start" side="bottom" className="w-auto p-0">
+            <TypePicker
+              value={defenderTera}
+              onPick={(type) => setDefenderTera(type)}
+              onClose={() => undefined}
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {defenderSpecies && legalAbilities.length === 0 && (
+        <p className="px-1 font-mono text-[9px] text-muted-foreground/60">
+          No abilities found for format
+        </p>
+      )}
     </div>
   );
 }

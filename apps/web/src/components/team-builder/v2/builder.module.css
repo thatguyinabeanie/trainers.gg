@@ -1879,6 +1879,27 @@
   background: var(--muted);
 }
 
+/* 7-column variant: adds a stage dropdown column before the final stat (defender) */
+.spreadRowWithStage {
+  display: grid;
+  grid-template-columns:
+    32px          /* label */
+    30px          /* base stat */
+    minmax(30px, 0.8fr)  /* viz bar */
+    40px          /* EV input */
+    minmax(60px, 1.6fr)  /* slider */
+    32px          /* stage dropdown */
+    36px;         /* final stat */
+  gap: 6px;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.spreadRowWithStage:hover {
+  background: var(--muted);
+}
+
 /* Stat label — col 1, left-aligned, readable */
 .spreadLabel {
   font-size: 9.5px;

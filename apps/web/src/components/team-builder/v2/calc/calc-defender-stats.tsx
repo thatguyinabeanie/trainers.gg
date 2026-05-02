@@ -245,17 +245,13 @@ function DefenderStatRow({
   return (
     <div
       className={cn(
-        // Defender stat row grid: label | base | viz bar | input | slider | [stage] | final
-        // For HP: no stage dropdown — 6 cols; for others: 7 cols
-        "grid items-center gap-[6px] rounded px-1 py-[2px] hover:bg-muted/50",
-        boostKey
-          ? "grid-cols-[28px_22px_minmax(36px,1fr)_34px_minmax(70px,2fr)_32px_26px]"
-          : "grid-cols-[28px_22px_minmax(36px,1fr)_34px_minmax(70px,2fr)_26px]",
+        // Match poke-row's .spreadRow / .spreadRowWithStage for visual parity
+        boostKey ? s.spreadRowWithStage : s.spreadRow,
         colorClass
       )}
     >
       {/* Col 1: Stat label */}
-      <span className="flex items-center gap-[1px] font-mono text-[9.5px] font-semibold uppercase tracking-[0.06em]">
+      <span className={s.spreadLabel}>
         {label}
         {isNatureBoosted && (
           <span className="text-[9px] font-black tracking-tighter text-red-600 dark:text-red-400">
@@ -270,9 +266,7 @@ function DefenderStatRow({
       </span>
 
       {/* Col 2: Base stat */}
-      <span className="text-right font-mono text-[9.5px] text-muted-foreground">
-        {base}
-      </span>
+      <span className={s.spreadBase}>{base}</span>
 
       {/* Col 3: Viz bar */}
       <div className={s.spreadVbar}>
@@ -351,9 +345,7 @@ function DefenderStatRow({
       )}
 
       {/* Col 6 (HP) / Col 7 (non-HP): Final stat with stage applied */}
-      <span className="text-right font-mono text-[11.5px] font-bold">
-        {finalStat}
-      </span>
+      <span className={s.spreadFinal}>{finalStat}</span>
     </div>
   );
 }

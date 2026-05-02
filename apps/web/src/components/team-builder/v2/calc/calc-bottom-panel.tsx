@@ -118,8 +118,8 @@ export function CalcBottomPanel({
         </button>
       </header>
 
-      {/* 3-column grid */}
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_1fr_1fr] gap-3 overflow-y-auto p-3">
+      {/* 3-column grid — equal sizes */}
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 overflow-y-auto p-3">
         <CalcAttackerBlock
           teamSlots={teamSlots}
           attackerIdx={attackerIdx}
@@ -159,58 +159,60 @@ export function CalcBottomPanel({
 
         {/* Defender column */}
         <div className="flex flex-col rounded-lg border bg-card shadow-sm">
-          {/* Col head */}
-          <div className="flex items-center border-b px-3 py-2">
+          {/* Col head — "vs Attacker · HP" badge on the right */}
+          <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] text-destructive">
               Defender
             </span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              vs {attackerName}
+              {attackerHP !== null ? ` · ${attackerHP} HP` : ""}
+            </span>
           </div>
 
-          {/* Full-width mon identity header */}
-          <DefenderMonHeader
-            defenderSpecies={calc.defenderSpecies}
-            defenderAbility={calc.defenderAbility}
-            defenderItem={calc.defenderItem}
-            defenderNature={calc.defenderNature}
-            defenderTera={calc.defenderTera}
-            format={format}
-            attackerName={attackerName}
-            attackerHP={attackerHP}
-            setDefenderSpecies={calc.setDefenderSpecies}
-            setDefenderAbility={calc.setDefenderAbility}
-            setDefenderItem={calc.setDefenderItem}
-            setDefenderNature={calc.setDefenderNature}
-            setDefenderTera={calc.setDefenderTera}
-          />
-
-          {/* Stats | Moves split */}
-          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3.5 overflow-y-auto p-3">
-            <CalcDefenderStats
+          {/* Identity (left) + Stats (right) — adjacent lanes, matching the editor pattern */}
+          <div className="flex min-w-0 border-b">
+            <DefenderMonHeader
               defenderSpecies={calc.defenderSpecies}
+              defenderAbility={calc.defenderAbility}
+              defenderItem={calc.defenderItem}
               defenderNature={calc.defenderNature}
-              defenderEvs={calc.defenderEvs}
-              defenderIvs={calc.defenderIvs}
-              defenderBoosts={calc.defenderBoosts}
-              defenderHpPercent={calc.defenderHpPercent}
+              defenderTera={calc.defenderTera}
               format={format}
-              setDefenderEv={calc.setDefenderEv}
-              setDefenderBoost={calc.setDefenderBoost}
-              setDefenderHpPercent={calc.setDefenderHpPercent}
+              setDefenderSpecies={calc.setDefenderSpecies}
+              setDefenderAbility={calc.setDefenderAbility}
+              setDefenderItem={calc.setDefenderItem}
+              setDefenderNature={calc.setDefenderNature}
+              setDefenderTera={calc.setDefenderTera}
             />
-
-            {/* Their moves → your atk reverse-calc column */}
-            <div className="border-l border-dashed pl-3.5">
-              <CalcDefenderMoves
-                effectiveMoves={effectiveMoves}
-                computeReverseOutput={calc.computeReverseOutput}
-                attackerHP={attackerHP}
+            <div className="min-w-0 flex-1 overflow-hidden p-2">
+              <CalcDefenderStats
                 defenderSpecies={calc.defenderSpecies}
+                defenderNature={calc.defenderNature}
+                defenderEvs={calc.defenderEvs}
+                defenderIvs={calc.defenderIvs}
+                defenderBoosts={calc.defenderBoosts}
+                defenderHpPercent={calc.defenderHpPercent}
                 format={format}
-                onPick={(slotIdx, moveName) =>
-                  calc.setDefenderMove(slotIdx, moveName)
-                }
+                setDefenderEv={calc.setDefenderEv}
+                setDefenderBoost={calc.setDefenderBoost}
+                setDefenderHpPercent={calc.setDefenderHpPercent}
               />
             </div>
+          </div>
+
+          {/* Their moves → your atk — full width at bottom */}
+          <div className="min-h-0 flex-1 overflow-y-auto p-3">
+            <CalcDefenderMoves
+              effectiveMoves={effectiveMoves}
+              computeReverseOutput={calc.computeReverseOutput}
+              attackerHP={attackerHP}
+              defenderSpecies={calc.defenderSpecies}
+              format={format}
+              onPick={(slotIdx, moveName) =>
+                calc.setDefenderMove(slotIdx, moveName)
+              }
+            />
           </div>
         </div>
       </div>
