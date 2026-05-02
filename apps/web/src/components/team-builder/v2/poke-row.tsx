@@ -133,8 +133,8 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
 
         {/* Stats ghost */}
         <div
-          className="flex min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed border-border/60 px-3 py-2"
-          style={{ width: 400, maxWidth: 800 }}
+          className="flex flex-1 flex-col justify-center gap-0.5 border-r border-dashed border-border/60 px-3 py-2"
+          style={{ minWidth: 340 }}
         >
           {/* Column headers ghost */}
           <div className={cn("mb-0.5 py-0", s.spreadRow)}>
@@ -161,7 +161,7 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         </div>
 
         {/* Moves ghost */}
-        <div className="flex min-w-[240px] flex-1 flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3">
+        <div className="flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed border-border/60 p-3">
           <div className="mb-1 flex items-baseline">
             <span className="font-mono text-[9.5px] font-medium uppercase tracking-widest text-muted-foreground/30">
               Moves
@@ -172,7 +172,6 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
               <div key={i} className="mvline mvline--empty">
                 <span className="mvline-type-cat" />
                 <span className="mvline-name text-muted-foreground/30">+ Add move</span>
-                <span aria-hidden />
                 <span className="mvline-stat">
                   <span className="mvline-stat-label">BP</span>
                   <span className="mvline-stat-value mvline-stat-value--bp" />

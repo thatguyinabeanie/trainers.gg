@@ -646,8 +646,8 @@ export function StatsLane({
 
   return (
     <div
-      className="border-border/60 flex min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2"
-      style={{ width: 340, maxWidth: 440 }}
+      className="border-border/60 flex flex-1 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2"
+      style={{ minWidth: 340 }}
     >
       {/* Column headers */}
       <div className={cn(
