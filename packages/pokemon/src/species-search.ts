@@ -36,18 +36,6 @@ const gen9RawDex = Dex.forGen(9);
 // exists:false in the Gen 9 dex. Mega evolution was removed in Gen 8+.
 const gen6RawDex = Dex.forGen(6);
 
-// Module-level cache for learnable moves — avoids recomputing on every search keystroke
-const learnableMovesCache = new Map<string, string[]>();
-
-function getCachedLearnableMoves(species: string): string[] {
-  let moves = learnableMovesCache.get(species);
-  if (!moves) {
-    moves = getLearnableMoves(species);
-    learnableMovesCache.set(species, moves);
-  }
-  return moves;
-}
-
 /**
  * Lowercase, format-aware learnable-move lookup used by the free-text search.
  *
@@ -248,6 +236,8 @@ const warnedMissingFromDex = new Set<string>();
  *   - The format-wide enumerator caches (`abilitySetCache`, `moveSetCache`)
  *     declared further down — those derive their arrays from the index, so
  *     leaving them in place would silently serve stale data after a refresh.
+ *   - The per-species lowercased legal-moves cache used by free-text search
+ *     and the structured `moves` filter — same staleness concern.
  *   - The fallback-warning dedupe sets so warnings can re-fire after a reset
  *     (important when tests intentionally trigger the same fallback path).
  *
@@ -259,6 +249,7 @@ export function clearSpeciesSearchIndexCache(): void {
   speciesIndexCacheNoRoles.clear();
   abilitySetCache.clear();
   moveSetCache.clear();
+  lowercaseLegalMovesCache.clear();
   warnedLegalMovesUnavailable.clear();
   warnedLegalSpeciesUnavailable.clear();
   warnedMissingFromDex.clear();
@@ -364,7 +355,10 @@ export function buildSpeciesSearchIndex(
  *    finding dual-type species like Fire/Grass)
  * - `abilities`: species must have at least one of the specified abilities (OR logic)
  * - `roles`: species must carry ALL specified roles (AND logic)
- * - `moves`: species must be able to learn ALL specified moves (AND logic) — uses `getLearnableMoves()`
+ * - `moves`: species must legally learn ALL specified moves (AND logic) — uses
+ *    `getLegalMoves(species, formatId)` for actual learnset validation. Skipped
+ *    permissively when `options.formatId` is omitted (no learnset data without
+ *    a format) or when the format's legality is unavailable.
  * - `minBaseStat` / `maxBaseStat`: inclusive range filter per individual stat
  *
  * Results are returned in the same order as the input index.
@@ -382,7 +376,12 @@ export function searchSpecies(
     types?: readonly string[];
     /** Filter: species must have at least one of these abilities */
     abilities?: readonly string[];
-    /** Filter: species must be able to learn ALL of these moves */
+    /**
+     * Filter: species must legally learn ALL of these moves (AND logic).
+     * Format-aware via `getLegalMoves(species, formatId)`. Skipped
+     * permissively when `formatId` is omitted or legality is unavailable —
+     * a deprecated permissive fallback would silently match every species.
+     */
     moves?: readonly string[];
     /** Filter: species base stats must be >= these values */
     minBaseStat?: Partial<
@@ -495,14 +494,27 @@ export function searchSpecies(
     }
 
     // -- Moves filter (AND: species must learn ALL specified moves) --
-    if (normalizedMoves) {
-      const learnableMoves = getCachedLearnableMoves(entry.species).map((m) =>
-        m.toLowerCase()
-      );
-      const learnsAllMoves = normalizedMoves.every((move) =>
-        learnableMoves.includes(move)
-      );
-      if (!learnsAllMoves) return false;
+    // Format-aware: validates against `getLegalMoves(species, formatId)` via
+    // the lowercase cache. The picker always passes `formatId` in production.
+    //
+    // Without `formatId` we cannot check actual learnsets — `getLearnableMoves`
+    // is deprecated and returns the entire gen-9 move pool for any valid
+    // species, which would silently match every species and give the user a
+    // broken filter. Skipping the filter here is the honest choice: a
+    // formatId-less caller gets every species, not a misleading "all match".
+    if (normalizedMoves && queryFormatId) {
+      const legalMoves = getLowercaseLegalMoves(entry.species, queryFormatId);
+      // legalMoves === undefined means legality is unavailable for this format
+      // (LEGALITY_UNAVAILABLE upstream) — fall back to permissive (filter
+      // skipped for this entry) so a transient sim hiccup doesn't blank the
+      // picker. The console.warn inside getLowercaseLegalMoves already
+      // surfaces the fallback once per format.
+      if (legalMoves) {
+        const learnsAllMoves = normalizedMoves.every((move) =>
+          legalMoves.includes(move)
+        );
+        if (!learnsAllMoves) return false;
+      }
     }
 
     // -- Min base stat filter --

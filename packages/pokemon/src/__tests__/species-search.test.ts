@@ -384,37 +384,50 @@ describe("searchSpecies", () => {
   });
 
   // ==========================================================================
-  // moves filter
-  // Note: getLearnableMoves() currently returns ALL moves for any valid species
-  // and [] for unknown species — so moves filter tests are designed accordingly.
+  // moves filter — format-aware via getLegalMoves(species, formatId)
+  // The picker always passes formatId in production; without it the filter
+  // is intentionally skipped (the deprecated permissive fallback would
+  // silently match every species).
   // ==========================================================================
 
   describe("moves filter", () => {
-    it("returns species that can learn a specified move", () => {
-      // Fake Out is a real move — all valid species in the gen return all moves
-      // from getLearnableMoves(), so any valid species will pass a single-move filter
-      const results = searchSpecies(index, "", { moves: ["Fake Out"] });
+    it("returns species that legally learn a specified move", () => {
+      const results = searchSpecies(index, "", {
+        moves: ["Fake Out"],
+        formatId: GEN9_FORMAT,
+      });
       expect(results.length).toBeGreaterThan(0);
       // Incineroar is a well-known Fake Out user — must appear
       expect(results.map((e) => e.species)).toContain("Incineroar");
     });
 
-    it("returns results for multiple moves using AND logic — species must learn ALL specified moves", () => {
-      // Both Fake Out and Protect are real moves; a valid species learns all moves
+    it("excludes species that do NOT legally learn the move", () => {
+      const results = searchSpecies(index, "", {
+        moves: ["Fake Out"],
+        formatId: GEN9_FORMAT,
+      });
+      const names = results.map((e) => e.species);
+      // Charizard, Dragapult, Garchomp, Volcarona — none legally learn Fake
+      // Out in gen9 reg I. Pre-fix the deprecated permissive fallback would
+      // have falsely included all of them.
+      expect(names).not.toContain("Charizard");
+      expect(names).not.toContain("Dragapult");
+      expect(names).not.toContain("Garchomp");
+    });
+
+    it("returns results for multiple moves using AND logic — species must legally learn ALL specified moves", () => {
       const results = searchSpecies(index, "", {
         moves: ["Fake Out", "Protect"],
+        formatId: GEN9_FORMAT,
       });
       expect(results.length).toBeGreaterThan(0);
       expect(results.map((e) => e.species)).toContain("Incineroar");
     });
 
     it("returns empty results when filtering by a move no species can learn", () => {
-      // "NotARealMove999" is not a real move; getLearnableMoves returns [] for it
-      // but the filter checks species moves, not the filter move itself.
-      // Since moves are AND-filtered against learnable moves, an impossible move
-      // name will not appear in any species' learnable set.
       const results = searchSpecies(index, "", {
         moves: ["NotARealMove999"],
+        formatId: GEN9_FORMAT,
       });
       expect(results).toHaveLength(0);
     });
@@ -429,6 +442,7 @@ describe("searchSpecies", () => {
       const results = searchSpecies(index, "", {
         moves: ["Fake Out"],
         types: ["Fire"],
+        formatId: GEN9_FORMAT,
       });
       const names = results.map((e) => e.species);
       expect(names).toContain("Incineroar");
@@ -438,12 +452,15 @@ describe("searchSpecies", () => {
       }
     });
 
-    it("moves filter excludes species that cannot learn any of the specified moves", () => {
-      // Filter by a non-existent move — no species should pass
-      const results = searchSpecies(index, "", {
-        moves: ["FakeMoveXYZ123"],
-      });
-      expect(results).toHaveLength(0);
+    it("skips the moves filter permissively when no formatId is provided", () => {
+      // Without formatId the filter cannot be honestly applied — every entry
+      // should pass through rather than silently match everything via the
+      // deprecated getLearnableMoves fallback. Document this behavior so a
+      // future regression that re-introduces the permissive fallback is
+      // caught.
+      const all = searchSpecies(index, "", {});
+      const noFormat = searchSpecies(index, "", { moves: ["Fake Out"] });
+      expect(noFormat).toHaveLength(all.length);
     });
   });
 
