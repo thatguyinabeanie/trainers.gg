@@ -940,7 +940,8 @@
   display: grid;
   grid-template-columns:
     max-content       /* type + category grouped */
-    minmax(0, 1fr)    /* name — fills remaining space */
+    auto              /* name — sizes to content */
+    minmax(0, 1fr)    /* spacer — pushes BP/ACC right */
     56px              /* BP */
     72px;             /* Acc */
   align-items: center;

@@ -206,7 +206,10 @@ function MoveTile({
             )}
           </Tooltip>
 
-          {/* Col 3: BP */}
+          {/* Spacer — pushes BP/ACC to the right */}
+          <span aria-hidden />
+
+          {/* Col 4: BP */}
           <span className="mvline-stat">
             <span className="mvline-stat-label">BP</span>
             <span className="mvline-stat-value mvline-stat-value--bp">
