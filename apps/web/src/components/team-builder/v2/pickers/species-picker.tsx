@@ -52,12 +52,16 @@ const HIGH_STAT_THRESHOLD = 110;
  *   minmax(180px,2fr) — Hidden ability (italic + muted). 180px floor so
  *                       names like "Magic Guard", "Heavy Metal", "Aroma
  *                       Veil", "Sheer Force" don't truncate.
- *   repeat(6,36px)    — HP/Atk/Def/SpA/SpD/Spe stat cells (3-letter
- *                       header labels + active sort arrow fit comfortably)
- *   40px              — BST rollup
+ *   repeat(6,44px)    — HP/Atk/Def/SpA/SpD/Spe stat cells. 44px so the
+ *                       active sort arrow (e.g. "SPA ↓") doesn't push the
+ *                       header label into the neighboring cell. Empty
+ *                       buffer on each side keeps adjacent labels from
+ *                       visually touching.
+ *   48px              — BST rollup (large enough for "BST ↓" when sorted
+ *                       by base-stat total)
  */
 const ROW_GRID =
-  "grid-cols-[64px_minmax(180px,2fr)_72px_minmax(160px,2fr)_minmax(180px,2fr)_repeat(6,36px)_40px]";
+  "grid-cols-[64px_minmax(180px,2fr)_72px_minmax(160px,2fr)_minmax(180px,2fr)_repeat(6,44px)_48px]";
 
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
@@ -425,7 +429,10 @@ export function SpeciesPicker({
   const [filters, setFilters] = useState<SpeciesFilterState>(
     DEFAULT_SPECIES_FILTERS
   );
-  const [sort, setSort] = useState<SortState>({ col: "name", dir: "asc" });
+  // Default sort: Speed descending — competitive teambuilding usually
+  // starts with "what outspeeds what", so sorting on Spe DESC by default
+  // surfaces the fastest legal Pokémon first.
+  const [sort, setSort] = useState<SortState>({ col: "spe", dir: "desc" });
 
   // Scroll container ref for the virtualizer
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -696,33 +703,33 @@ export function SpeciesPicker({
           </div>
         </div>
 
-        {/* Right — list/smart-search. Active filters are surfaced via the
-            filter-count badge in the search header (no chips strip below
-            the search bar — that produced layout shift the user objected to). */}
+        {/* Right — table (always rendered, filtered by query). When the
+            query is non-empty the SpeciesSmartSearch panel renders above
+            the table to offer "promote query into structured filter"
+            shortcuts (Type / Moves / Abilities). Pokémon matches stay in
+            the table below as full rich rows — they are not duplicated
+            in the smart-search panel. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          {/* Smart-search overlay or virtualized table */}
-          {showSmartSearch ? (
-            <div
-              className="flex-1 overflow-y-auto"
-              data-testid="smart-search-container"
-            >
-              <SpeciesSmartSearch
-                query={query}
-                index={speciesIndex}
-                format={format}
-                onFilter={handleSmartFilter}
-                onPick={(species) => {
-                  onPick(species);
-                  onClose();
-                }}
-              />
-            </div>
-          ) : (
-            <div
-              ref={scrollRef}
-              className="flex-1 overflow-x-hidden overflow-y-auto"
-              data-testid="species-rows"
-            >
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-x-hidden overflow-y-auto"
+            data-testid="species-rows"
+          >
+            {showSmartSearch && (
+              <div
+                className="border-border border-b"
+                data-testid="smart-search-container"
+              >
+                <SpeciesSmartSearch
+                  query={query}
+                  index={speciesIndex}
+                  format={format}
+                  onFilter={handleSmartFilter}
+                />
+              </div>
+            )}
+
+            <div>
               {/* Sticky sortable header */}
               <div
                 className={cn(
@@ -835,7 +842,7 @@ export function SpeciesPicker({
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

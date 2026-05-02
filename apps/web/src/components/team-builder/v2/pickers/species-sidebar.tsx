@@ -17,6 +17,8 @@ import { useState } from "react";
 import {
   ALL_TYPES,
   calculateTeamSynergy,
+  getAllLegalAbilities,
+  getAllLegalMoves,
   isChampionsFormat,
   type GameFormat,
 } from "@trainers/pokemon";
@@ -58,6 +60,9 @@ interface SpeciesSidebarProps {
 // SpeciesSidebar
 // =============================================================================
 
+/** Maximum number of typeahead suggestions rendered for moves / abilities. */
+const SUGGESTION_LIMIT = 8;
+
 /** Left-column filter panel for the species picker. */
 export function SpeciesSidebar({
   filters,
@@ -66,6 +71,9 @@ export function SpeciesSidebar({
   currentTeam,
 }: SpeciesSidebarProps) {
   const [moveInput, setMoveInput] = useState("");
+  const [moveFocused, setMoveFocused] = useState(false);
+  const [abilityInput, setAbilityInput] = useState("");
+  const [abilityFocused, setAbilityFocused] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Derived values
@@ -73,6 +81,28 @@ export function SpeciesSidebar({
 
   const allTypes = ALL_TYPES as unknown as string[];
   const showMegaToggle = isChampionsFormat(format);
+
+  // Typeahead suggestion lists — cheap because the underlying enumerators
+  // are cached at the package level (`getAllLegalAbilities` /
+  // `getAllLegalMoves` keyed by formatId).
+  const moveSuggestions =
+    moveInput.trim().length > 0 && format?.id
+      ? getAllLegalMoves(format.id)
+          .filter((m) =>
+            m.toLowerCase().includes(moveInput.trim().toLowerCase())
+          )
+          .filter((m) => !filters.moves.includes(m))
+          .slice(0, SUGGESTION_LIMIT)
+      : [];
+
+  const abilitySuggestions =
+    abilityInput.trim().length > 0 && format?.id
+      ? getAllLegalAbilities(format.id)
+          .filter((a) =>
+            a.toLowerCase().includes(abilityInput.trim().toLowerCase())
+          )
+          .slice(0, SUGGESTION_LIMIT)
+      : [];
 
   // Team-needs hints: types the team is weak to 2+ times AND uncovered
   const synergy =
@@ -112,11 +142,32 @@ export function SpeciesSidebar({
 
   function handleMoveKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
-      const val = moveInput.trim();
-      if (val) {
-        addMove(val);
+      e.preventDefault();
+      // Commit the top suggestion if there is one; otherwise commit the
+      // raw input (so users can type a move that isn't in the format's
+      // legal-move enumeration).
+      const pick = moveSuggestions[0] ?? moveInput.trim();
+      if (pick) {
+        addMove(pick);
         setMoveInput("");
       }
+    } else if (e.key === "Escape") {
+      setMoveInput("");
+    }
+  }
+
+  function handleAbilityKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      // Only commit when there's an actual suggestion match — typing arbitrary
+      // text shouldn't apply an ability filter that doesn't exist.
+      const pick = abilitySuggestions[0];
+      if (pick) {
+        onFiltersChange({ ...filters, ability: pick });
+        setAbilityInput("");
+      }
+    } else if (e.key === "Escape") {
+      setAbilityInput("");
     }
   }
 
@@ -199,9 +250,50 @@ export function SpeciesSidebar({
             </span>
           </button>
         ) : (
-          <p className="text-muted-foreground/70 px-1 text-[10px] leading-snug">
-            Click any ability in the table to filter.
-          </p>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Type or click an ability…"
+              value={abilityInput}
+              onChange={(e) => setAbilityInput(e.target.value)}
+              onKeyDown={handleAbilityKeyDown}
+              onFocus={() => setAbilityFocused(true)}
+              onBlur={() => {
+                // Defer so a click on a suggestion can fire before the
+                // dropdown disappears.
+                setTimeout(() => setAbilityFocused(false), 120);
+              }}
+              className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
+            />
+            {abilityFocused && abilitySuggestions.length > 0 && (
+              <ul
+                role="listbox"
+                aria-label="Matching abilities"
+                className="border-border bg-popover absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg"
+              >
+                {abilitySuggestions.map((ability) => (
+                  <li key={ability}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        // mousedown fires before blur; prevents the input from
+                        // losing focus and hiding the dropdown before our click
+                        // handler runs.
+                        e.preventDefault();
+                      }}
+                      onClick={() => {
+                        onFiltersChange({ ...filters, ability });
+                        setAbilityInput("");
+                      }}
+                      className="hover:bg-accent w-full px-2 py-1 text-left text-[11px]"
+                    >
+                      {ability}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </div>
 
@@ -267,15 +359,46 @@ export function SpeciesSidebar({
           Learns Move
         </span>
 
-        {/* Search input */}
-        <input
-          type="text"
-          placeholder="Add move, press Enter"
-          value={moveInput}
-          onChange={(e) => setMoveInput(e.target.value)}
-          onKeyDown={handleMoveKeyDown}
-          className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
-        />
+        {/* Typeahead input + suggestion dropdown */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Type a move…"
+            value={moveInput}
+            onChange={(e) => setMoveInput(e.target.value)}
+            onKeyDown={handleMoveKeyDown}
+            onFocus={() => setMoveFocused(true)}
+            onBlur={() => {
+              // Defer so a click on a suggestion fires before the dropdown
+              // hides on blur.
+              setTimeout(() => setMoveFocused(false), 120);
+            }}
+            className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
+          />
+          {moveFocused && moveSuggestions.length > 0 && (
+            <ul
+              role="listbox"
+              aria-label="Matching moves"
+              className="border-border bg-popover absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg"
+            >
+              {moveSuggestions.map((move) => (
+                <li key={move}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      addMove(move);
+                      setMoveInput("");
+                    }}
+                    className="hover:bg-accent w-full px-2 py-1 text-left text-[11px]"
+                  >
+                    {move}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         {/* Selected moves as chips */}
         {filters.moves.length > 0 && (

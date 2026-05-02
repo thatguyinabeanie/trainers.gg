@@ -274,7 +274,7 @@ function DefenderMoveTile({
 
       <DialogContent
         showCloseButton={false}
-        className="flex h-[calc(100vh-2rem)] max-h-[1080px] w-[calc(100vw-2rem)] max-w-[1440px] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[1440px]"
+        className="flex h-[calc(100vh-2rem)] max-h-[1080px] w-[calc(100vw-2rem)] max-w-[1600px] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[1600px]"
       >
         <DialogTitle className="sr-only">Choose move</DialogTitle>
         <MovePicker

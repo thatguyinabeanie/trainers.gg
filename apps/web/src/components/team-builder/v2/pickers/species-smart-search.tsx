@@ -1,7 +1,10 @@
 /**
- * SpeciesSmartSearch — search overlay rendered when the species picker has a
- * non-empty query. Categorizes matches into Type, Moves, Abilities, and Pokémon
- * sections, each with an inline action button (Filter / Select).
+ * SpeciesSmartSearch — search hint panel rendered above the species table when
+ * the picker has a non-empty query. Categorizes the query into Type / Moves /
+ * Abilities suggestions so the user can promote the search into a structured
+ * filter (e.g. typing "fire" surfaces "Filter by Type: Fire"). Pokémon results
+ * are NOT duplicated here — the main species table below is filtered by the
+ * same query and shows them as full rich rows.
  */
 "use client";
 
@@ -32,7 +35,6 @@ interface SpeciesSmartSearchProps {
   index: SpeciesSearchEntry[];
   format: GameFormat | undefined;
   onFilter: (action: FilterAction) => void;
-  onPick: (species: string) => void;
 }
 
 // =============================================================================
@@ -40,7 +42,6 @@ interface SpeciesSmartSearchProps {
 // =============================================================================
 
 const MAX_PER_CATEGORY = 5;
-const MAX_SPECIES = 8;
 
 // =============================================================================
 // Main component
@@ -55,7 +56,6 @@ export function SpeciesSmartSearch({
   index,
   format,
   onFilter,
-  onPick,
 }: SpeciesSmartSearchProps) {
   const q = query.trim().toLowerCase();
   if (!q) return null;
@@ -85,24 +85,16 @@ export function SpeciesSmartSearch({
   }
   const matchedAbilities = Array.from(abilitySet).slice(0, MAX_PER_CATEGORY);
 
-  // Species (cap 8)
-  const matchedSpecies = index
-    .filter((e) => e.species.toLowerCase().includes(q))
-    .slice(0, MAX_SPECIES);
-
+  // Species are rendered by the main table (filtered by query) below the
+  // smart-search panel — no need to duplicate them here. The smart-search
+  // panel only surfaces non-species categories (Type / Moves / Abilities)
+  // that the user might want to apply as filters.
   const total =
-    matchedTypes.length +
-    matchedMoves.length +
-    matchedAbilities.length +
-    matchedSpecies.length;
+    matchedTypes.length + matchedMoves.length + matchedAbilities.length;
 
-  if (total === 0) {
-    return (
-      <div className="text-muted-foreground p-6 text-center text-sm">
-        No results for &ldquo;{query}&rdquo;
-      </div>
-    );
-  }
+  // Empty smart-search results don't render any chrome at all — the main
+  // table (with its own "No Pokémon match" empty state) takes over.
+  if (total === 0) return null;
 
   return (
     <div className="flex flex-col">
@@ -141,19 +133,6 @@ export function SpeciesSmartSearch({
               sub={getAbilityShortDesc(a) ?? undefined}
               actionLabel="Filter"
               onAction={() => onFilter({ ability: a })}
-            />
-          ))}
-        </Section>
-      )}
-
-      {matchedSpecies.length > 0 && (
-        <Section title="Pokémon">
-          {matchedSpecies.map((s) => (
-            <Row
-              key={s.species}
-              label={s.species}
-              actionLabel="Select"
-              onAction={() => onPick(s.species)}
             />
           ))}
         </Section>

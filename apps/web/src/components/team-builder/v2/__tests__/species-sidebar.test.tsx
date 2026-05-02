@@ -9,6 +9,7 @@ jest.mock("@trainers/pokemon", () => ({
     (f: { id?: string } | undefined) => f?.id === "championsvgc2026regma"
   ),
   getAllLegalAbilities: jest.fn(() => ["Drought", "Drizzle", "Intimidate"]),
+  getAllLegalMoves: jest.fn(() => ["Tailwind", "Trick Room", "Follow Me"]),
   calculateTeamSynergy: jest.fn(() => null),
 }));
 
@@ -76,9 +77,11 @@ describe("SpeciesSidebar", () => {
     expect(onChange).toHaveBeenCalledWith(DEFAULT_SPECIES_FILTERS);
   });
 
-  it("ability section shows the click-instruction hint when no ability is set", () => {
+  it("ability section renders a typeahead input when no ability is set", () => {
     renderSidebar({ format: { id: "gen9vgc2026regg" } as never });
-    expect(screen.getByText(/click any ability/i)).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/type or click an ability/i)
+    ).toBeInTheDocument();
   });
 
   it("ability section renders the active ability as a removable chip", async () => {

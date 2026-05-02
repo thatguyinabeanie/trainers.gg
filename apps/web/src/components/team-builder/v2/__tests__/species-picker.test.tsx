@@ -186,7 +186,6 @@ jest.mock("../pickers/species-smart-search", () => ({
   SpeciesSmartSearch: ({
     query,
     onFilter,
-    onPick,
   }: {
     query: string;
     index: unknown[];
@@ -196,7 +195,6 @@ jest.mock("../pickers/species-smart-search", () => ({
       move?: string;
       ability?: string;
     }) => void;
-    onPick: (species: string) => void;
   }) => (
     <div data-testid="species-smart-search" data-query={query}>
       <button
@@ -204,12 +202,6 @@ jest.mock("../pickers/species-smart-search", () => ({
         onClick={() => onFilter({ type: "Fire" })}
       >
         Filter Fire
-      </button>
-      <button
-        data-testid="smart-pick-pikachu"
-        onClick={() => onPick("Pikachu")}
-      >
-        Pick Pikachu
       </button>
     </div>
   ),
@@ -591,7 +583,7 @@ describe("SpeciesPicker", () => {
   // Smart search — shown when query is non-empty
   // ---------------------------------------------------------------------------
 
-  it("renders smart search overlay when query is non-empty", async () => {
+  it("renders smart search panel above the table when query is non-empty", async () => {
     const user = userEvent.setup();
     render(
       <SpeciesPicker
@@ -603,11 +595,14 @@ describe("SpeciesPicker", () => {
     );
     const input = screen.getByTestId("species-search");
     await user.type(input, "fire");
+    // Smart-search panel and species table both render — Pokémon results
+    // live in the table (filtered by query), the smart-search offers
+    // Type / Moves / Abilities suggestions above.
     expect(screen.getByTestId("species-smart-search")).toBeInTheDocument();
-    expect(screen.queryByTestId("species-rows")).not.toBeInTheDocument();
+    expect(screen.getByTestId("species-rows")).toBeInTheDocument();
   });
 
-  it("hides smart search overlay when query is cleared", async () => {
+  it("hides smart search panel when query is cleared", async () => {
     const user = userEvent.setup();
     render(
       <SpeciesPicker
@@ -760,22 +755,7 @@ describe("SpeciesPicker", () => {
     ).toBeInTheDocument();
   });
 
-  it("clicking Pick Pikachu in smart search calls onPick and onClose", async () => {
-    const user = userEvent.setup();
-    const onPick = jest.fn();
-    const onClose = jest.fn();
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        onPick={onPick}
-        onClose={onClose}
-      />
-    );
-    const input = screen.getByTestId("species-search");
-    await user.type(input, "pik");
-    await user.click(screen.getByTestId("smart-pick-pikachu"));
-    expect(onPick).toHaveBeenCalledWith("Pikachu");
-    expect(onClose).toHaveBeenCalled();
-  });
+  // Pokémon results are no longer surfaced inside SpeciesSmartSearch — they
+  // live in the main species table (filtered by the same query). The
+  // smart-search panel only offers Type / Moves / Abilities suggestions.
 });
