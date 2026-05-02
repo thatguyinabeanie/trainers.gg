@@ -9,6 +9,7 @@ import {
   getMetaSpeedTiers,
   isLegalSpecies,
   isChampionsFormat,
+  legalSetOrPermissive,
 } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
@@ -105,7 +106,7 @@ export function CalcDefenderBlock({
   const formatId = format?.id;
   const abilities = formatId
     ? Array.from(
-        getLegalAbilities(defenderSpecies, formatId) ??
+        legalSetOrPermissive(getLegalAbilities(defenderSpecies, formatId)) ??
           getValidAbilities(defenderSpecies)
       )
     : getValidAbilities(defenderSpecies);

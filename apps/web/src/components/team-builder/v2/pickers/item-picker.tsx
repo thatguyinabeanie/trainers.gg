@@ -8,6 +8,7 @@ import {
   getAllItems,
   getItemShortDesc,
   getLegalItems,
+  legalSetOrPermissive,
   type GameFormat,
 } from "@trainers/pokemon";
 
@@ -50,7 +51,9 @@ export function ItemPicker({
   const [search, setSearch] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const legal = format ? getLegalItems(format.id) : undefined;
+  const legal = format
+    ? legalSetOrPermissive(getLegalItems(format.id))
+    : undefined;
   const formatItems = legal
     ? ALL_ITEMS.filter((name) => legal.has(name))
     : ALL_ITEMS;

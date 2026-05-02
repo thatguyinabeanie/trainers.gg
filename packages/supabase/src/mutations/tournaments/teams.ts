@@ -1,9 +1,12 @@
 import {
-  isLegalAbility,
-  isLegalItem,
-  isLegalMove,
-  isLegalSpecies,
-  isLegalTeraType,
+  getCanonicalBaseSpecies,
+  getLegalAbilities,
+  getLegalItems,
+  getLegalMoves,
+  getLegalSpecies,
+  getLegalTeraTypes,
+  isMegaSpeciesWithStone,
+  LEGALITY_UNAVAILABLE,
 } from "@trainers/pokemon";
 import { logError } from "@trainers/utils";
 
@@ -327,36 +330,67 @@ export async function selectTeamForTournament(
     };
   }
 
-  // 3. Format legality — checks each species/item/ability/move/tera against
-  //    the tournament's `game_format`. Unknown formats are permissive (each
-  //    `isLegal*` helper returns `true`), so existing tournaments without a
-  //    legality registry behave as before.
+  // 3. Format legality — gate path. Unknown formats are permissive
+  //    (`getLegal*` returns undefined), so existing tournaments without a
+  //    legality registry behave as before. When the underlying validator
+  //    threw mid-iteration (`LEGALITY_UNAVAILABLE` sentinel), we fail
+  //    closed: better to ask the user to retry than to silently approve a
+  //    possibly-illegal team.
   if (gameFormat) {
+    const UNAVAILABLE = "Legality check is temporarily unavailable. Please try again in a moment.";
+    const legalSpecies = getLegalSpecies(gameFormat);
+    const legalItems = getLegalItems(gameFormat);
+    const legalTera = getLegalTeraTypes(gameFormat);
+    if (
+      legalSpecies === LEGALITY_UNAVAILABLE ||
+      legalItems === LEGALITY_UNAVAILABLE ||
+      legalTera === LEGALITY_UNAVAILABLE
+    ) {
+      return { success: false, errors: [UNAVAILABLE] };
+    }
+
     const legalityErrors: string[] = [];
     for (const mon of teamPokemon) {
       const species = mon.species ?? "";
       const label = species || "Pokemon";
-      if (species && !isLegalSpecies(species, gameFormat)) {
+      if (
+        species &&
+        legalSpecies !== undefined &&
+        !legalSpecies.has(species)
+      ) {
         legalityErrors.push(
           `${label} is not legal in this tournament's format.`
         );
       }
-      if (mon.held_item && !isLegalItem(mon.held_item, gameFormat)) {
+      if (
+        mon.held_item &&
+        legalItems !== undefined &&
+        !legalItems.has(mon.held_item)
+      ) {
         legalityErrors.push(
           `${label}'s held item "${mon.held_item}" is not legal in this format.`
         );
       }
-      if (
-        mon.ability &&
-        !isLegalAbility(mon.ability, species, gameFormat)
-      ) {
-        legalityErrors.push(
-          `${label}'s ability "${mon.ability}" is not legal in this format.`
-        );
+      if (mon.ability) {
+        // Mega forms: validate against base species' ability pool, mirroring
+        // the isLegalAbility helper's normalization.
+        const lookupSpecies = isMegaSpeciesWithStone(species)
+          ? getCanonicalBaseSpecies(species)
+          : species;
+        const legalAbilities = getLegalAbilities(lookupSpecies, gameFormat);
+        if (legalAbilities === LEGALITY_UNAVAILABLE) {
+          return { success: false, errors: [UNAVAILABLE] };
+        }
+        if (legalAbilities !== undefined && !legalAbilities.has(mon.ability)) {
+          legalityErrors.push(
+            `${label}'s ability "${mon.ability}" is not legal in this format.`
+          );
+        }
       }
       if (
         mon.tera_type &&
-        !isLegalTeraType(mon.tera_type, gameFormat)
+        legalTera !== undefined &&
+        !legalTera.has(mon.tera_type)
       ) {
         legalityErrors.push(
           `${label}'s Tera type "${mon.tera_type}" is not allowed in this format.`
@@ -365,11 +399,19 @@ export async function selectTeamForTournament(
       const moves = [mon.move1, mon.move2, mon.move3, mon.move4].filter(
         (m): m is string => Boolean(m)
       );
-      for (const move of moves) {
-        if (!isLegalMove(move, species, gameFormat)) {
-          legalityErrors.push(
-            `${label} cannot legally use "${move}" in this format.`
-          );
+      if (moves.length > 0) {
+        const legalMoves = getLegalMoves(species, gameFormat);
+        if (legalMoves === LEGALITY_UNAVAILABLE) {
+          return { success: false, errors: [UNAVAILABLE] };
+        }
+        if (legalMoves !== undefined) {
+          for (const move of moves) {
+            if (!legalMoves.has(move)) {
+              legalityErrors.push(
+                `${label} cannot legally use "${move}" in this format.`
+              );
+            }
+          }
         }
       }
     }

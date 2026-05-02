@@ -10,6 +10,7 @@ import {
   getLegalSpecies,
   getLegalTeraTypes,
   isLegalAbility,
+  LEGALITY_UNAVAILABLE,
 } from "@trainers/pokemon";
 
 import {
@@ -225,8 +226,12 @@ export function ImportDialog({
   function checkLegality(candidates: ParsedPokemon[]): string | null {
     if (!formatId) return null;
 
-    // Species check
+    const UNAVAILABLE_MSG =
+      "Legality check is temporarily unavailable. Please try again in a moment.";
+
+    // Species check — fail closed if the validator threw.
     const legalSet = getLegalSpecies(formatId);
+    if (legalSet === LEGALITY_UNAVAILABLE) return UNAVAILABLE_MSG;
     if (legalSet !== undefined) {
       const illegal = candidates
         .map((p) => p.species)
@@ -238,6 +243,7 @@ export function ImportDialog({
 
     // Item check
     const legalItems = getLegalItems(formatId);
+    if (legalItems === LEGALITY_UNAVAILABLE) return UNAVAILABLE_MSG;
     if (legalItems !== undefined) {
       const illegalItems = candidates
         .map((p) => p.held_item)
@@ -254,6 +260,7 @@ export function ImportDialog({
     for (const p of candidates) {
       if (!p.species) continue;
       const legalForSpecies = getLegalMoves(p.species, formatId);
+      if (legalForSpecies === LEGALITY_UNAVAILABLE) return UNAVAILABLE_MSG;
       if (!legalForSpecies) continue;
       for (const slot of ["move1", "move2", "move3", "move4"] as const) {
         const move = p[slot];
@@ -268,6 +275,7 @@ export function ImportDialog({
 
     // Tera type check
     const legalTera = getLegalTeraTypes(formatId);
+    if (legalTera === LEGALITY_UNAVAILABLE) return UNAVAILABLE_MSG;
     if (legalTera !== undefined) {
       const illegalTera = candidates
         .map((p) => p.tera_type)

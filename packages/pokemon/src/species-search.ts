@@ -9,7 +9,11 @@ import { Dex } from "@pkmn/dex";
 import { Generations } from "@pkmn/data";
 
 import { getFormatById } from "./formats";
-import { getLegalMoves, getLegalSpecies } from "./format-legality";
+import {
+  getLegalMoves,
+  getLegalSpecies,
+  LEGALITY_UNAVAILABLE,
+} from "./format-legality";
 import { getLearnableMoves } from "./validation";
 
 // Local Generations instance — supports any generation, not just gen9
@@ -60,7 +64,12 @@ function getLowercaseLegalMoves(
     return lowercaseLegalMovesCache.get(cacheKey);
   }
   const legal = getLegalMoves(species, formatId);
-  const lowered = legal ? Array.from(legal, (m) => m.toLowerCase()) : undefined;
+  // Treat the LEGALITY_UNAVAILABLE sentinel like undefined here — read-path
+  // search shouldn't break the autocomplete UI on a transient sim hiccup.
+  const lowered =
+    legal && legal !== LEGALITY_UNAVAILABLE
+      ? Array.from(legal, (m) => m.toLowerCase())
+      : undefined;
   lowercaseLegalMovesCache.set(cacheKey, lowered);
   return lowered;
 }
@@ -151,8 +160,14 @@ export function buildSpeciesSearchIndex(
   const safeGen = Math.min(generation, 9) as Parameters<typeof gens.get>[0];
   const gen = gens.get(safeGen);
 
-  // Static legal-species whitelist for this format (undefined = no static list).
-  const staticLegal = getLegalSpecies(formatId);
+  // Static legal-species whitelist for this format (undefined = no static
+  // list; LEGALITY_UNAVAILABLE = validator threw, treat like undefined for
+  // search to avoid breaking autocomplete on a transient sim hiccup).
+  const staticLegalRaw = getLegalSpecies(formatId);
+  const staticLegal =
+    staticLegalRaw && staticLegalRaw !== LEGALITY_UNAVAILABLE
+      ? staticLegalRaw
+      : undefined;
 
   const index: SpeciesSearchEntry[] = [];
 

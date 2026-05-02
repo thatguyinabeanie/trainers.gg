@@ -138,6 +138,13 @@ export {
   isLegalMove,
   isLegalSpecies,
   isLegalTeraType,
+  isMegaSpeciesWithStone,
+  isMegaSpeciesWithAbility,
+  legalSetOrPermissive,
+  type LegalityResult,
+  LEGALITY_UNAVAILABLE,
+  type MegaSpeciesWithStone,
+  type MegaSpeciesWithAbility,
   speciesHasForms,
 } from "./format-legality";
 

@@ -21,6 +21,7 @@ import {
   getValidAbilities,
   groupBySpeed,
   isChampionsFormat,
+  legalSetOrPermissive,
 } from "@trainers/pokemon";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
@@ -432,7 +433,7 @@ export function SpeedTiersPanel({
 
   const teamSpeciesIds = new Set(pokemons.map((p) => normalizeSpecies(p.species ?? "")));
 
-  const legalSpecies = getLegalSpecies(format.id);
+  const legalSpecies = legalSetOrPermissive(getLegalSpecies(format.id));
   const metaTiers = legalSpecies
     ? buildFullMetaTiers(legalSpecies, format)
     : getMetaSpeedTiers(format.id);

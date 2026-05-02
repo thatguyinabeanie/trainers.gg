@@ -9,6 +9,7 @@ import {
   getLegalMoves,
   isPokemonType,
   isNature,
+  LEGALITY_UNAVAILABLE,
   type Nature,
   type PokemonType,
 } from "@trainers/pokemon";
@@ -389,6 +390,21 @@ export function validateChampionsLegality(
   const legalSpecies = getLegalSpecies(formatId);
   const legalItems = getLegalItems(formatId);
 
+  // Gate-path failure: when the validator threw mid-iteration we cannot
+  // confidently approve the team. Surface a single error and bail — better
+  // than silently legalizing a possibly-illegal team.
+  if (
+    legalSpecies === LEGALITY_UNAVAILABLE ||
+    legalItems === LEGALITY_UNAVAILABLE
+  ) {
+    errors.push({
+      source: "format",
+      message:
+        "Legality check is temporarily unavailable. Please try again in a moment.",
+    });
+    return errors;
+  }
+
   for (const mon of team) {
     if (mon.tera_type) {
       errors.push({
@@ -417,6 +433,13 @@ export function validateChampionsLegality(
     }
 
     const legalMoves = getLegalMoves(mon.species, formatId);
+    if (legalMoves === LEGALITY_UNAVAILABLE) {
+      errors.push({
+        source: "format",
+        message: `Move legality check unavailable for ${mon.species}. Please try again in a moment.`,
+      });
+      continue;
+    }
     if (legalMoves !== undefined) {
       for (const move of [mon.move1, mon.move2, mon.move3, mon.move4]) {
         if (move !== null && move !== "" && !legalMoves.has(move)) {

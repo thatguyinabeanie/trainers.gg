@@ -5,6 +5,7 @@ import {
   getMegaAbilityForSpecies,
   getSpeciesTypes,
   getLegalAbilities,
+  legalSetOrPermissive,
   NATURE_EFFECTS,
   type GameFormat,
 } from "@trainers/pokemon";
@@ -99,7 +100,8 @@ export function DefenderMonHeader({
   const hasLegalAbility =
     !defenderSpecies ||
     !format ||
-    (getLegalAbilities(pickerSpecies, format.id)?.size ?? 1) > 0;
+    (legalSetOrPermissive(getLegalAbilities(pickerSpecies, format.id))?.size ??
+      1) > 0;
 
   const natureEffect = defenderNature ? NATURE_EFFECTS[defenderNature] : null;
   const natUp = natureEffect?.boost ?? null;

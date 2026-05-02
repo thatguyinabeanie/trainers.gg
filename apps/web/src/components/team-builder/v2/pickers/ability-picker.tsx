@@ -6,6 +6,7 @@ import {
   getAbilityShortDesc,
   getLegalAbilities,
   getValidAbilities,
+  legalSetOrPermissive,
   type GameFormat,
 } from "@trainers/pokemon";
 
@@ -45,7 +46,8 @@ export function AbilityPicker({
   // Format-legal abilities with graceful fallback to species abilities
   const abilities = format
     ? Array.from(
-        getLegalAbilities(species, format.id) ?? getValidAbilities(species)
+        legalSetOrPermissive(getLegalAbilities(species, format.id)) ??
+          getValidAbilities(species)
       )
     : getValidAbilities(species);
 

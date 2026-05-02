@@ -9,6 +9,7 @@ import {
   getLearnableMoves,
   getLegalMoves,
   getMoveData,
+  legalSetOrPermissive,
   type GameFormat,
 } from "@trainers/pokemon";
 import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
@@ -139,7 +140,8 @@ export function MovePicker({
   // Build the candidate list (species-legal in format, alpha-sorted as base order)
   const allMoves = format
     ? Array.from(
-        getLegalMoves(species, format.id) ?? getLearnableMoves(species)
+        legalSetOrPermissive(getLegalMoves(species, format.id)) ??
+          getLearnableMoves(species)
       ).sort()
     : getLearnableMoves(species);
 

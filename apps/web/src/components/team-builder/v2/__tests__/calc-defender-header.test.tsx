@@ -182,6 +182,9 @@ const NATURE_EFFECTS_FIXTURE: Record<
   Docile: undefined,
 };
 
+// Re-create the LEGALITY_UNAVAILABLE sentinel inside the mock so production
+// code's `result === LEGALITY_UNAVAILABLE` checks work consistently.
+const MOCK_LEGALITY_UNAVAILABLE: unique symbol = Symbol("legality-unavailable");
 jest.mock("@trainers/pokemon", () => ({
   getSpeciesTypes: (...args: unknown[]) => mockGetSpeciesTypes(...args),
   getLegalAbilities: (...args: unknown[]) => mockGetLegalAbilities(...args),
@@ -199,6 +202,15 @@ jest.mock("@trainers/pokemon", () => ({
     specialDefense: "SpD",
     speed: "Spe",
   },
+  // Legality sentinel + helper added by the LEGALITY_UNAVAILABLE refactor.
+  // calc-defender-header is a read-path consumer, so it routes through
+  // legalSetOrPermissive — the test mock collapses both undefined and the
+  // sentinel into undefined.
+  LEGALITY_UNAVAILABLE: MOCK_LEGALITY_UNAVAILABLE,
+  legalSetOrPermissive: (result: unknown) =>
+    result === undefined || result === MOCK_LEGALITY_UNAVAILABLE
+      ? undefined
+      : result,
 }));
 
 // =============================================================================

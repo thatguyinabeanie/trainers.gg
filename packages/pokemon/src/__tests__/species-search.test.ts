@@ -176,7 +176,14 @@ describe("buildSpeciesSearchIndex — Champions Reg M-A", () => {
     const names = new Set(index.map((e) => e.species));
 
     const legalSet = getLegalSpecies(CHAMPIONS);
-    for (const species of legalSet ?? []) {
+    // Filter out the LEGALITY_UNAVAILABLE sentinel before iterating —
+    // it's not iterable. For this test, the Champions format's legal set
+    // is computed from a static list and won't fail; defensive only.
+    const iterable =
+      legalSet && typeof (legalSet as ReadonlySet<string>).has === "function"
+        ? (legalSet as ReadonlySet<string>)
+        : [];
+    for (const species of iterable) {
       if (CUSTOM_CHAMPIONS_MEGAS.has(species)) continue;
       expect(names.has(species)).toBe(true);
     }

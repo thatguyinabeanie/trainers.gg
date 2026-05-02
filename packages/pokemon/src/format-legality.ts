@@ -6,11 +6,58 @@
  *   captured 2026-04-14), because Champions' synthetic-mega + Stat Points
  *   ruleset isn't expressible via @pkmn/sim's gen-9 format definitions.
  * - Other formats will be resolved via @pkmn/sim in Task 2.
- * - Unknown / unresolvable formats return `undefined` and callers treat
- *   that as "permissive — all legal."
+ *
+ * Return-shape contract for `getLegal*`:
+ *   - `ReadonlySet<string>` — the legal set (caller checks `.has(value)`)
+ *   - `undefined` — format not registered; legitimately "we don't know
+ *     the rules." Read-path callers (pickers / autocomplete) and gate-path
+ *     callers (team submission / import) all treat this as permissive.
+ *   - `LEGALITY_UNAVAILABLE` (Symbol) — format IS registered but the
+ *     `@pkmn/sim` validator threw mid-iteration. Read-path callers stay
+ *     permissive (don't break the UI on transient sim hiccups). Gate-path
+ *     callers MUST fail closed — better to surface "legality check
+ *     unavailable, please retry" than silently approve a possibly-illegal
+ *     team.
  */
 
 import { logError } from "@trainers/utils";
+
+/**
+ * Sentinel returned by `getLegal*` when the underlying validator threw
+ * mid-iteration — distinct from `undefined` (format not registered) so
+ * gate-path callers can fail closed without breaking pickers.
+ *
+ * Exported as a Symbol with a stable description so tests / debuggers can
+ * recognise it and so it can never collide with a hypothetical legal-set
+ * value of "legality-unavailable".
+ */
+export const LEGALITY_UNAVAILABLE: unique symbol = Symbol("legality-unavailable");
+
+/**
+ * Return type for the family of `getLegal*` lookups. See the file header
+ * for how each branch should be handled by read- vs gate-path callers.
+ */
+export type LegalityResult =
+  | ReadonlySet<string>
+  | undefined
+  | typeof LEGALITY_UNAVAILABLE;
+
+/**
+ * Helper for read-path callers (pickers, autocomplete, format guards).
+ * Collapses both "format not registered" (`undefined`) and "validator
+ * threw" (`LEGALITY_UNAVAILABLE`) into a single permissive `undefined`,
+ * so the call site can keep the simple "use the set if we have one,
+ * otherwise allow anything" branching.
+ *
+ * Gate-path callers (team submission, import) should NOT use this — they
+ * need the distinction so they can fail closed on the sentinel.
+ */
+export function legalSetOrPermissive(
+  result: LegalityResult
+): ReadonlySet<string> | undefined {
+  if (result === undefined || result === LEGALITY_UNAVAILABLE) return undefined;
+  return result;
+}
 
 // =============================================================================
 // Champions: VGC 2026 Reg M-A
@@ -393,7 +440,7 @@ function probeSet(species: Species): PokemonSet {
  */
 function computeLegalSpeciesFromSim(
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cached = simSetCache.get(formatId);
   if (cached) return cached;
 
@@ -433,7 +480,10 @@ function computeLegalSpeciesFromSim(
     }
   } catch (error) {
     logError("format-legality.computeSpecies", error, { formatId });
-    return undefined; // permissive fallback — don't cache error result
+    // Validator threw — surface via the sentinel so gate-path callers can
+    // fail closed. Read-path callers stay permissive. Don't cache the
+    // error result so a transient sim hiccup doesn't poison the lookup.
+    return LEGALITY_UNAVAILABLE;
   }
 
   simSetCache.set(formatId, legal);
@@ -692,7 +742,7 @@ const simItemCache = new Map<string, ReadonlySet<string>>();
  */
 function computeLegalItemsFromSim(
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cached = simItemCache.get(formatId);
   if (cached) return cached;
 
@@ -731,7 +781,10 @@ function computeLegalItemsFromSim(
     }
   } catch (error) {
     logError("format-legality.computeItems", error, { formatId });
-    return undefined; // permissive fallback — don't cache error result
+    // Validator threw — surface via the sentinel so gate-path callers can
+    // fail closed. Read-path callers stay permissive. Don't cache the
+    // error result so a transient sim hiccup doesn't poison the lookup.
+    return LEGALITY_UNAVAILABLE;
   }
 
   simItemCache.set(formatId, legal);
@@ -784,7 +837,7 @@ const simMoveCache = new Map<string, ReadonlySet<string>>();
 function computeLegalMovesFromSim(
   species: string,
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cacheKey = `${species}::${formatId}`;
   const cached = simMoveCache.get(cacheKey);
   if (cached) return cached;
@@ -812,7 +865,10 @@ function computeLegalMovesFromSim(
     }
   } catch (error) {
     logError("format-legality.computeMoves", error, { species, formatId });
-    return undefined; // permissive fallback — don't cache error result
+    // Validator threw — surface via the sentinel so gate-path callers can
+    // fail closed. Read-path callers stay permissive. Don't cache the
+    // error result so a transient sim hiccup doesn't poison the lookup.
+    return LEGALITY_UNAVAILABLE;
   }
 
   simMoveCache.set(cacheKey, legal);
@@ -848,7 +904,7 @@ const CHAMPIONS_MEGA_LEARNSET_BASE: Readonly<Record<string, string>> = {
  */
 function computeLegalMovesForChampions(
   species: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cached = championsMoveCache.get(species);
   if (cached) return cached;
 
@@ -879,7 +935,10 @@ function computeLegalMovesForChampions(
     }
   } catch (error) {
     logError("format-legality.computeChampionsMoves", error, { species });
-    return undefined; // permissive fallback — don't cache error result
+    // Validator threw — surface via the sentinel so gate-path callers can
+    // fail closed. Read-path callers stay permissive. Don't cache the
+    // error result so a transient sim hiccup doesn't poison the lookup.
+    return LEGALITY_UNAVAILABLE;
   }
 
   // Append per-species overrides — moves that @pkmn/sim can't derive from
@@ -930,7 +989,7 @@ function speciesAbilityNames(speciesObj: Species): string[] {
 function computeLegalAbilitiesFromSim(
   species: string,
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cacheKey = `${species}::${formatId}`;
   const cached = simAbilityCache.get(cacheKey);
   if (cached) return cached;
@@ -964,7 +1023,10 @@ function computeLegalAbilitiesFromSim(
     }
   } catch (error) {
     logError("format-legality.computeAbilities", error, { species, formatId });
-    return undefined; // permissive fallback — don't cache error result
+    // Validator threw — surface via the sentinel so gate-path callers can
+    // fail closed. Read-path callers stay permissive. Don't cache the
+    // error result so a transient sim hiccup doesn't poison the lookup.
+    return LEGALITY_UNAVAILABLE;
   }
 
   simAbilityCache.set(cacheKey, legal);
@@ -981,7 +1043,7 @@ const championsAbilityCache = new Map<string, ReadonlySet<string>>();
  */
 function computeLegalAbilitiesForChampions(
   species: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cached = championsAbilityCache.get(species);
   if (cached) return cached;
 
@@ -1061,7 +1123,7 @@ function formatUsesTerastalClause(formatId: string): boolean {
  */
 export function getLegalSpecies(
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return CHAMPIONS_MA_LEGAL_SPECIES;
   }
@@ -1074,7 +1136,12 @@ export function getLegalSpecies(
  */
 export function isLegalSpecies(species: string, formatId: string): boolean {
   const legal = getLegalSpecies(formatId);
-  return legal === undefined || legal.has(species);
+  // Permissive on unknown format (undefined) AND on validator-threw
+  // sentinel — read-path callers don't break the UI on transient sim
+  // errors. Gate-path callers must check the sentinel themselves before
+  // calling this helper.
+  if (legal === undefined || legal === LEGALITY_UNAVAILABLE) return true;
+  return legal.has(species);
 }
 
 /**
@@ -1084,7 +1151,7 @@ export function isLegalSpecies(species: string, formatId: string): boolean {
  */
 export function getLegalItems(
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) return CHAMPIONS_MA_LEGAL_ITEMS;
   return computeLegalItemsFromSim(formatId);
 }
@@ -1097,7 +1164,8 @@ export function getLegalItems(
 export function isLegalItem(item: string, formatId: string): boolean {
   if (!item) return true;
   const legal = getLegalItems(formatId);
-  return legal === undefined || legal.has(item);
+  if (legal === undefined || legal === LEGALITY_UNAVAILABLE) return true;
+  return legal.has(item);
 }
 
 /**
@@ -1111,7 +1179,7 @@ export function isLegalItem(item: string, formatId: string): boolean {
 export function getLegalMoves(
   species: string,
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return computeLegalMovesForChampions(species);
   }
@@ -1130,7 +1198,8 @@ export function isLegalMove(
 ): boolean {
   if (!move) return true;
   const legal = getLegalMoves(species, formatId);
-  return legal === undefined || legal.has(move);
+  if (legal === undefined || legal === LEGALITY_UNAVAILABLE) return true;
+  return legal.has(move);
 }
 
 /**
@@ -1143,7 +1212,7 @@ export function isLegalMove(
 export function getLegalAbilities(
   species: string,
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return computeLegalAbilitiesForChampions(species);
   }
@@ -1171,7 +1240,8 @@ export function isLegalAbility(
     ? getCanonicalBaseSpecies(species)
     : species;
   const legal = getLegalAbilities(lookupSpecies, formatId);
-  return legal === undefined || legal.has(ability);
+  if (legal === undefined || legal === LEGALITY_UNAVAILABLE) return true;
+  return legal.has(ability);
 }
 
 /**
@@ -1185,7 +1255,7 @@ export function isLegalAbility(
  */
 export function getLegalTeraTypes(
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   // Champions M-A has no Tera — only Mega Evolutions.
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return EMPTY_TERA_SET;
@@ -1206,7 +1276,8 @@ export function getLegalTeraTypes(
 export function isLegalTeraType(type: string, formatId: string): boolean {
   if (!type) return true;
   const legal = getLegalTeraTypes(formatId);
-  return legal === undefined || legal.has(type);
+  if (legal === undefined || legal === LEGALITY_UNAVAILABLE) return true;
+  return legal.has(type);
 }
 
 /**
