@@ -47,7 +47,7 @@ function getMoveOptsFor(moveName: string): Record<string, unknown> | undefined {
   return call ? (call[2] as Record<string, unknown>) : undefined;
 }
 
-import { getFormatById, NATURE_EFFECTS } from "@trainers/pokemon";
+import { getFormatById } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
 import { getVerdict, useCalcState } from "../use-calc-state";

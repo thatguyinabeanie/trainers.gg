@@ -9,7 +9,7 @@
  * catch wrapper-level wiring regressions.
  */
 
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { describe, it, expect } from "@jest/globals";
 import { act, renderHook } from "@testing-library/react";
 
 // =============================================================================
