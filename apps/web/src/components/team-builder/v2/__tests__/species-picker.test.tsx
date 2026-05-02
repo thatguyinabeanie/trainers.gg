@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 
 import type * as TrainersPokemon from "@trainers/pokemon";
-import type * as SpeciesFiltersModule from "../pickers/species-filters";
 
 // =============================================================================
 // Mock next/image — JSDOM cannot render Next.js Image; render a plain <img>.
@@ -29,9 +28,8 @@ jest.mock("next/image", () => ({
 }));
 
 // =============================================================================
-// Mock @trainers/pokemon — search, legality, and index building.
-// buildSpeciesSearchIndex is called at module initialisation (getCachedIndex),
-// so we must mock it before importing SpeciesPicker.
+// Mock @trainers/pokemon — search, legality, index building, and helpers.
+// buildSpeciesSearchIndex is called during render, so mock before import.
 // =============================================================================
 
 const mockBuildSpeciesSearchIndex = jest.fn();
@@ -44,6 +42,12 @@ jest.mock("@trainers/pokemon", () => ({
     mockBuildSpeciesSearchIndex(...args),
   isLegalSpecies: (...args: unknown[]) => mockIsLegalSpecies(...args),
   searchSpecies: (...args: unknown[]) => mockSearchSpecies(...args),
+  isChampionsFormat: jest.fn(() => false),
+  getAllLegalAbilities: jest.fn(() => []),
+  getAllLegalMoves: jest.fn(() => []),
+  calculateTeamSynergy: jest.fn(() => null),
+  getAbilityShortDesc: jest.fn(() => null),
+  ALL_TYPES: ["Normal", "Fire", "Water", "Electric", "Grass"],
 }));
 
 // =============================================================================
@@ -58,43 +62,142 @@ jest.mock("@trainers/pokemon/sprites", () => ({
 }));
 
 // =============================================================================
-// Mock SpeciesFilters — tested separately in species-filters.test.tsx.
-// The stub renders a div that surfaces its props via data-* so we can assert
-// on them without pulling in SpeciesFilters' own dependencies.
+// Mock role-registry — tested separately
 // =============================================================================
 
-jest.mock("../pickers/species-filters", () => {
-  const speciesFiltersActual: typeof SpeciesFiltersModule = jest.requireActual(
-    "../pickers/species-filters"
-  );
-  const { DEFAULT_FILTERS } = speciesFiltersActual;
+jest.mock("../pickers/role-registry", () => ({
+  getRolesForSpecies: jest.fn(() => []),
+  getRoleById: jest.fn(() => null),
+  ROLE_PRESETS: [],
+  ROLE_GROUP_LABELS: {},
+  ROLE_GROUP_ORDER: [],
+  GROUP_COLORS: {},
+}));
 
-  return {
-    DEFAULT_FILTERS,
-    SpeciesFilters: ({
-      query,
-      onQueryChange,
-      totalCount,
-      filteredCount,
-    }: {
-      query: string;
-      onQueryChange: (q: string) => void;
-      totalCount: number;
-      filteredCount: number;
-    }) => (
-      <div data-testid="species-filters" data-query={query}>
-        <input
-          aria-label="Search species"
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          data-testid="species-search"
-        />
-        <span data-testid="total-count">{totalCount}</span>
-        <span data-testid="filtered-count">{filteredCount}</span>
+// =============================================================================
+// Mock sub-components to isolate SpeciesPicker logic
+// =============================================================================
+
+jest.mock("../pickers/species-sidebar", () => ({
+  SpeciesSidebar: ({
+    filters,
+    onFiltersChange,
+  }: {
+    filters: { types: string[]; ability: string | null; moves: string[]; roles: string[]; megaOnly: boolean };
+    onFiltersChange: (f: typeof filters) => void;
+  }) => (
+    <div data-testid="species-sidebar" data-filters={JSON.stringify(filters)}>
+      <button
+        data-testid="sidebar-type-fire"
+        onClick={() =>
+          onFiltersChange({ ...filters, types: [...filters.types, "Fire"] })
+        }
+      >
+        Fire
+      </button>
+    </div>
+  ),
+}));
+
+jest.mock("../pickers/role-presets-panel", () => ({
+  RolePresetsPanel: ({
+    selected,
+    onChange,
+  }: {
+    selected: string[];
+    onChange: (next: string[]) => void;
+  }) => (
+    <div data-testid="role-presets-panel">
+      <button
+        data-testid="role-btn-spread"
+        onClick={() => onChange([...selected, "spread"])}
+      >
+        Spread
+      </button>
+    </div>
+  ),
+}));
+
+jest.mock("../pickers/filter-chips-bar", () => ({
+  FilterChipsBar: ({
+    chips,
+  }: {
+    chips: Array<{ id: string; label: string; onRemove: () => void }>;
+  }) =>
+    chips.length > 0 ? (
+      <div data-testid="filter-chips-bar">
+        {chips.map((c) => (
+          <button key={c.id} data-testid={`chip-${c.id}`} onClick={c.onRemove}>
+            {c.label}
+          </button>
+        ))}
       </div>
+    ) : null,
+}));
+
+jest.mock("../pickers/ability-cell", () => ({
+  AbilityCell: ({
+    name,
+    onFilter,
+  }: {
+    name: string | null;
+    slot: string;
+    onFilter?: (n: string) => void;
+  }) =>
+    name ? (
+      <span
+        data-testid={`ability-${name}`}
+        onClick={onFilter ? () => onFilter(name) : undefined}
+      >
+        {name}
+      </span>
+    ) : (
+      <span>—</span>
     ),
-  };
-});
+}));
+
+jest.mock("../pickers/role-chip", () => ({
+  RoleChip: ({
+    roleId,
+    onClick,
+  }: {
+    roleId: string;
+    onClick?: (id: string) => void;
+  }) => (
+    <button
+      data-testid={`role-chip-${roleId}`}
+      onClick={onClick ? () => onClick(roleId) : undefined}
+    >
+      {roleId}
+    </button>
+  ),
+}));
+
+jest.mock("../pickers/species-smart-search", () => ({
+  SpeciesSmartSearch: ({
+    query,
+    onFilter,
+    onPick,
+  }: {
+    query: string;
+    index: unknown[];
+    format: unknown;
+    onFilter: (action: { type?: string; move?: string; ability?: string }) => void;
+    onPick: (species: string) => void;
+  }) => (
+    <div data-testid="species-smart-search" data-query={query}>
+      <button
+        data-testid="smart-filter-type"
+        onClick={() => onFilter({ type: "Fire" })}
+      >
+        Filter Fire
+      </button>
+      <button data-testid="smart-pick-pikachu" onClick={() => onPick("Pikachu")}>
+        Pick Pikachu
+      </button>
+    </div>
+  ),
+}));
 
 // =============================================================================
 // JSDOM doesn't implement layout/scroll APIs, so @tanstack/react-virtual
@@ -103,13 +206,13 @@ jest.mock("../pickers/species-filters", () => {
 
 jest.mock("@tanstack/react-virtual", () => ({
   useVirtualizer: ({ count }: { count: number }) => ({
-    getTotalSize: () => count * 64,
+    getTotalSize: () => count * 60,
     getVirtualItems: () =>
       Array.from({ length: count }, (_, index) => ({
         index,
         key: index,
-        start: index * 64,
-        size: 64,
+        start: index * 60,
+        size: 60,
       })),
   }),
 }));
@@ -133,7 +236,6 @@ function makeEntry(
   overrides: Partial<{
     species: string;
     types: string[];
-    abilities: string[];
     abilitySlot1: string | null;
     abilitySlot2: string | null;
     hiddenAbility: string | null;
@@ -142,15 +244,13 @@ function makeEntry(
     bst: number;
   }> = {}
 ) {
-  const abilities = overrides.abilities ?? ["Static", "Lightning Rod"];
   return {
     species: "Pikachu",
     types: ["Electric"],
-    abilities,
-    abilitySlot1: overrides.abilitySlot1 ?? abilities[0] ?? null,
-    abilitySlot2: overrides.abilitySlot2 ?? abilities[1] ?? null,
-    hiddenAbility: overrides.hiddenAbility ?? abilities[2] ?? null,
-    roles: overrides.roles ?? [],
+    abilitySlot1: "Static",
+    abilitySlot2: "Lightning Rod",
+    hiddenAbility: null,
+    roles: [],
     baseStats: { hp: 35, atk: 55, def: 40, spa: 50, spd: 50, spe: 90 },
     bst: 320,
     ...overrides,
@@ -160,7 +260,9 @@ function makeEntry(
 const BULBASAUR = makeEntry({
   species: "Bulbasaur",
   types: ["Grass", "Poison"],
-  abilities: ["Overgrow", "Chlorophyll"],
+  abilitySlot1: "Overgrow",
+  abilitySlot2: null,
+  hiddenAbility: "Chlorophyll",
   baseStats: { hp: 45, atk: 49, def: 49, spa: 65, spd: 65, spe: 45 },
   bst: 318,
 });
@@ -168,7 +270,9 @@ const BULBASAUR = makeEntry({
 const GARCHOMP = makeEntry({
   species: "Garchomp",
   types: ["Dragon", "Ground"],
-  abilities: ["Rough Skin", "Sand Veil", "Sand Force"],
+  abilitySlot1: "Rough Skin",
+  abilitySlot2: "Sand Veil",
+  hiddenAbility: "Sand Force",
   baseStats: { hp: 108, atk: 130, def: 95, spa: 80, spd: 85, spe: 102 },
   bst: 600,
 });
@@ -199,11 +303,7 @@ describe("SpeciesPicker", () => {
     mockBuildSpeciesSearchIndex.mockReturnValue(MOCK_INDEX);
     mockIsLegalSpecies.mockReturnValue(true);
     mockSearchSpecies.mockImplementation(
-      (
-        index: typeof MOCK_INDEX,
-        query: string,
-        _opts: unknown
-      ) => {
+      (index: typeof MOCK_INDEX, query: string, _opts: unknown) => {
         if (!query) return index;
         const q = query.toLowerCase();
         return index.filter((e) => e.species.toLowerCase().includes(q));
@@ -241,7 +341,7 @@ describe("SpeciesPicker", () => {
     expect(screen.getByText("Pikachu")).toBeInTheDocument();
   });
 
-  it("renders ability text for each species row", () => {
+  it("renders the SpeciesSidebar", () => {
     render(
       <SpeciesPicker
         value={null}
@@ -250,13 +350,10 @@ describe("SpeciesPicker", () => {
         onClose={jest.fn()}
       />
     );
-    expect(
-      screen.getByText("Rough Skin · Sand Veil · Sand Force")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Static · Lightning Rod")).toBeInTheDocument();
+    expect(screen.getByTestId("species-sidebar")).toBeInTheDocument();
   });
 
-  it("renders column header labels", () => {
+  it("renders the RolePresetsPanel", () => {
     render(
       <SpeciesPicker
         value={null}
@@ -265,10 +362,20 @@ describe("SpeciesPicker", () => {
         onClose={jest.fn()}
       />
     );
-    expect(screen.getByText("Name")).toBeInTheDocument();
-    expect(screen.getByText("Types")).toBeInTheDocument();
-    expect(screen.getByText("HP")).toBeInTheDocument();
-    expect(screen.getByText("BST")).toBeInTheDocument();
+    expect(screen.getByTestId("role-presets-panel")).toBeInTheDocument();
+  });
+
+  it("shows count display in header: matched of total", () => {
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    // 3 of 3 shown
+    expect(screen.getByText(`${MOCK_INDEX.length} of ${MOCK_INDEX.length}`)).toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------
@@ -286,9 +393,10 @@ describe("SpeciesPicker", () => {
         onClose={jest.fn()}
       />
     );
-    await user.click(
-      screen.getByRole("button", { name: /select bulbasaur/i })
-    );
+    // The invisible overlay button carries aria-label="Select Bulbasaur"
+    const btn = screen.getAllByRole("button", { name: /select bulbasaur/i })[0];
+    expect(btn).toBeTruthy();
+    await user.click(btn!);
     expect(onPick).toHaveBeenCalledWith("Bulbasaur");
   });
 
@@ -303,9 +411,9 @@ describe("SpeciesPicker", () => {
         onClose={jest.fn()}
       />
     );
-    await user.click(
-      screen.getByRole("button", { name: /select garchomp/i })
-    );
+    const btn = screen.getAllByRole("button", { name: /select garchomp/i })[0];
+    expect(btn).toBeTruthy();
+    await user.click(btn!);
     expect(onPick).toHaveBeenCalledWith("Garchomp");
   });
 
@@ -318,7 +426,8 @@ describe("SpeciesPicker", () => {
         onClose={jest.fn()}
       />
     );
-    const row = screen.getByRole("button", { name: /select garchomp/i });
+    // The row div[role="row"] for Garchomp should have bg-primary/5
+    const row = screen.getByRole("row", { name: /select garchomp/i });
     expect(row.className).toContain("bg-primary/5");
   });
 
@@ -331,7 +440,7 @@ describe("SpeciesPicker", () => {
         onClose={jest.fn()}
       />
     );
-    const row = screen.getByRole("button", { name: /select bulbasaur/i });
+    const row = screen.getByRole("row", { name: /select bulbasaur/i });
     expect(row.className).not.toContain("bg-primary/5");
   });
 
@@ -433,7 +542,6 @@ describe("SpeciesPicker", () => {
   // ---------------------------------------------------------------------------
 
   it("applies high-stat class to stats >= 110", () => {
-    // Garchomp has atk=130 — should get the highlight class
     render(
       <SpeciesPicker
         value={null}
@@ -442,18 +550,12 @@ describe("SpeciesPicker", () => {
         onClose={jest.fn()}
       />
     );
-    // Find stat cells within Garchomp's row
-    const garChompRow = screen
-      .getByRole("button", { name: /select garchomp/i })
-      .closest("div");
-    expect(garChompRow).toBeTruthy();
-    // The 130 atk value should be in the DOM
+    // Garchomp has atk=130
     const statCell = screen.getAllByText("130")[0];
     expect(statCell?.className).toContain("text-stat-good");
   });
 
   it("does NOT apply high-stat class to stats < 110", () => {
-    // Pikachu has hp=35 — should not get highlight
     render(
       <SpeciesPicker
         value={null}
@@ -463,7 +565,6 @@ describe("SpeciesPicker", () => {
       />
     );
     const lowStatCells = screen.getAllByText("35");
-    // At least one of the "35" cells belongs to Pikachu's hp — no highlight class
     const unhighlighted = lowStatCells.find(
       (el) => !el.className.includes("text-stat-good")
     );
@@ -471,105 +572,10 @@ describe("SpeciesPicker", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Sorting
+  // Smart search — shown when query is non-empty
   // ---------------------------------------------------------------------------
 
-  it("renders a 'Sort by name' button in the header", () => {
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        onPick={jest.fn()}
-        onClose={jest.fn()}
-      />
-    );
-    expect(
-      screen.getByRole("button", { name: /sort by name/i })
-    ).toBeInTheDocument();
-  });
-
-  it("renders a 'Sort by BST' button in the header", () => {
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        onPick={jest.fn()}
-        onClose={jest.fn()}
-      />
-    );
-    expect(
-      screen.getByRole("button", { name: /sort by bst/i })
-    ).toBeInTheDocument();
-  });
-
-  it("clicking a stat sort header changes active sort indicator", async () => {
-    const user = userEvent.setup();
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        onPick={jest.fn()}
-        onClose={jest.fn()}
-      />
-    );
-    const bstBtn = screen.getByRole("button", { name: /sort by bst/i });
-    await user.click(bstBtn);
-    // After clicking BST, a sort arrow should appear next to BST
-    expect(bstBtn.textContent).toMatch(/↓|↑/);
-  });
-
-  it("clicking name sort twice toggles direction", async () => {
-    const user = userEvent.setup();
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        onPick={jest.fn()}
-        onClose={jest.fn()}
-      />
-    );
-    const nameBtn = screen.getByRole("button", { name: /sort by name/i });
-    // First click — already on name/asc so it shows ↑
-    expect(nameBtn.textContent).toMatch(/↑/);
-    await user.click(nameBtn);
-    expect(nameBtn.textContent).toMatch(/↓/);
-    await user.click(nameBtn);
-    expect(nameBtn.textContent).toMatch(/↑/);
-  });
-
-  // ---------------------------------------------------------------------------
-  // SpeciesFilters integration
-  // ---------------------------------------------------------------------------
-
-  it("passes totalCount to SpeciesFilters", () => {
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        onPick={jest.fn()}
-        onClose={jest.fn()}
-      />
-    );
-    const total = screen.getByTestId("total-count");
-    expect(total.textContent).toBe(String(MOCK_INDEX.length));
-  });
-
-  it("passes filteredCount matching matched species to SpeciesFilters", () => {
-    // searchSpecies returns only 1 species
-    mockSearchSpecies.mockReturnValue([GARCHOMP]);
-    render(
-      <SpeciesPicker
-        value={null}
-        format={undefined}
-        onPick={jest.fn()}
-        onClose={jest.fn()}
-      />
-    );
-    const filtered = screen.getByTestId("filtered-count");
-    expect(filtered.textContent).toBe("1");
-  });
-
-  it("updating search in SpeciesFilters stub triggers re-render", async () => {
+  it("renders smart search overlay when query is non-empty", async () => {
     const user = userEvent.setup();
     render(
       <SpeciesPicker
@@ -580,10 +586,185 @@ describe("SpeciesPicker", () => {
       />
     );
     const input = screen.getByTestId("species-search");
-    await user.type(input, "Garc");
-    // mockSearchSpecies should now be called with the new query
-    const calls = mockSearchSpecies.mock.calls;
-    const lastCall = calls[calls.length - 1] as [unknown, string, ...unknown[]];
-    expect(lastCall[1]).toBe("Garc");
+    await user.type(input, "fire");
+    expect(screen.getByTestId("species-smart-search")).toBeInTheDocument();
+    expect(screen.queryByTestId("species-rows")).not.toBeInTheDocument();
+  });
+
+  it("hides smart search overlay when query is cleared", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    const input = screen.getByTestId("species-search");
+    await user.type(input, "fire");
+    await user.clear(input);
+    expect(screen.queryByTestId("species-smart-search")).not.toBeInTheDocument();
+    expect(screen.getByTestId("species-rows")).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Filter chip integration tests
+  // ---------------------------------------------------------------------------
+
+  it("clicking type button in sidebar adds a filter chip", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    await user.click(screen.getByTestId("sidebar-type-fire"));
+    // FilterChipsBar stub renders chip buttons with data-testid="chip-type:Fire"
+    expect(screen.getByTestId("chip-type:Fire")).toBeInTheDocument();
+  });
+
+  it("clicking role button in role panel adds a role filter chip", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    await user.click(screen.getByTestId("role-btn-spread"));
+    expect(screen.getByTestId("chip-role:spread")).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Click-to-filter: ability cell and role chip
+  // ---------------------------------------------------------------------------
+
+  it("clicking an ability in a row filters by ability", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    // AbilityCell stub renders data-testid="ability-{name}"
+    await user.click(screen.getByTestId("ability-Overgrow"));
+    expect(screen.getByTestId("chip-ability:Overgrow")).toBeInTheDocument();
+  });
+
+  it("clicking a role chip in a row adds a role filter", async () => {
+    const user = userEvent.setup();
+    // GARCHOMP with a "spread" role
+    const garChompWithRole = { ...GARCHOMP, roles: ["spread"] };
+    mockBuildSpeciesSearchIndex.mockReturnValue([garChompWithRole]);
+    mockSearchSpecies.mockImplementation((index: typeof MOCK_INDEX) => index);
+
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    await user.click(screen.getByTestId("role-chip-spread"));
+    expect(screen.getByTestId("chip-role:spread")).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Enter key — exact species match → pick + close
+  // ---------------------------------------------------------------------------
+
+  it("pressing Enter on an exact species name calls onPick and onClose", async () => {
+    const user = userEvent.setup();
+    const onPick = jest.fn();
+    const onClose = jest.fn();
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={onPick}
+        onClose={onClose}
+      />
+    );
+    const input = screen.getByTestId("species-search");
+    await user.type(input, "Bulbasaur");
+    await user.keyboard("{Enter}");
+    expect(onPick).toHaveBeenCalledWith("Bulbasaur");
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Enter key — top type filter when no exact match
+  // ---------------------------------------------------------------------------
+
+  it("pressing Enter with a type prefix adds a type filter and clears query", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    const input = screen.getByTestId("species-search");
+    // "Fire" is in the mocked ALL_TYPES; type "fir" to trigger prefix match
+    await user.type(input, "fir");
+    await user.keyboard("{Enter}");
+    // Type chip should appear and query should be cleared
+    expect(screen.getByTestId("chip-type:Fire")).toBeInTheDocument();
+    expect(input).toHaveValue("");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Smart search filter integration
+  // ---------------------------------------------------------------------------
+
+  it("clicking Filter Fire in smart search adds type chip and clears query", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+    const input = screen.getByTestId("species-search");
+    await user.type(input, "fi");
+    // Smart search is shown
+    await user.click(screen.getByTestId("smart-filter-type"));
+    // Query is cleared and type chip appears
+    expect(input).toHaveValue("");
+    expect(screen.getByTestId("chip-type:Fire")).toBeInTheDocument();
+  });
+
+  it("clicking Pick Pikachu in smart search calls onPick and onClose", async () => {
+    const user = userEvent.setup();
+    const onPick = jest.fn();
+    const onClose = jest.fn();
+    render(
+      <SpeciesPicker
+        value={null}
+        format={undefined}
+        onPick={onPick}
+        onClose={onClose}
+      />
+    );
+    const input = screen.getByTestId("species-search");
+    await user.type(input, "pik");
+    await user.click(screen.getByTestId("smart-pick-pikachu"));
+    expect(onPick).toHaveBeenCalledWith("Pikachu");
+    expect(onClose).toHaveBeenCalled();
   });
 });
