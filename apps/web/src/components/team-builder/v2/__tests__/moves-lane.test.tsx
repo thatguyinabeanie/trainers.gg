@@ -58,6 +58,41 @@ jest.mock("@/components/ui/popover", () => ({
   ),
 }));
 
+// Tooltip — render content inline (Base UI portals on hover with delay; in
+// jsdom that's flaky to drive). Inline mount lets us assert the shortDesc
+// is wired to the trigger.
+jest.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="tooltip">{children}</div>
+  ),
+  TooltipTrigger: ({
+    children,
+    render: renderProp,
+    className,
+  }: {
+    children?: React.ReactNode;
+    render?: React.ReactElement;
+    className?: string;
+  }) => {
+    if (renderProp) {
+      return (
+        <div data-testid="tooltip-trigger" className={className}>
+          {renderProp}
+          {children}
+        </div>
+      );
+    }
+    return (
+      <div data-testid="tooltip-trigger" className={className}>
+        {children}
+      </div>
+    );
+  },
+  TooltipContent: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="tooltip-content">{children}</div>
+  ),
+}));
+
 // MovePicker stub
 jest.mock("../pickers/move-picker", () => ({
   MovePicker: ({
@@ -349,7 +384,33 @@ describe("MovesLane — move tile display", () => {
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
 
-  // shortDesc is shown in a Tooltip on hover — not tested in unit tests
+  it("renders the move's short description in a Tooltip when a move is set", () => {
+    // Default mock returns shortDesc: "High critical-hit ratio." for any move.
+    // The tooltip is mocked to render content inline; verify the short
+    // description is wired to the trigger so the new hover affordance
+    // doesn't silently regress.
+    renderLane({ move1: "Stone Edge", move2: null, move3: null, move4: null });
+    expect(screen.getAllByText("High critical-hit ratio.").length).toBe(1);
+  });
+
+  it("does NOT render a tooltip body for empty move slots", () => {
+    renderLane({ move1: null, move2: null, move3: null, move4: null });
+    // No move name → moveData?.shortDesc is undefined → the conditional
+    // `{moveName && moveData?.shortDesc && <TooltipContent>...}` short-circuits.
+    expect(screen.queryByTestId("tooltip-content")).toBeNull();
+  });
+
+  it("does NOT render a tooltip body when getMoveData has no shortDesc", () => {
+    (getMoveData as jest.Mock).mockReturnValueOnce({
+      type: "Normal",
+      category: "Physical",
+      basePower: 40,
+      accuracy: 100,
+      shortDesc: undefined,
+    });
+    renderLane({ move1: "Tackle", move2: null, move3: null, move4: null });
+    expect(screen.queryByTestId("tooltip-content")).toBeNull();
+  });
 });
 
 describe("MovesLane — picking a move", () => {
