@@ -21,9 +21,7 @@ import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 export const FORMAT_MAP: Record<string, string | null> = {
   "reg-i": "gen9vgc2025regi",
   // Champions Reg MA: no @pkmn/sim format ID yet (no Tera, Stat Points instead of EVs/IVs).
-  // Both the legacy `reg-m-a` key and the modern Showdown ID resolve to no @pkmn/sim
-  // format — Champions legality is checked by `validateChampionsLegality()` instead.
-  "reg-m-a": null,
+  // Champions legality is checked by `validateChampionsLegality()` instead.
   championsvgc2026regma: null,
   "reg-h": "gen9vgc2024regh",
   "reg-g": "gen9vgc2024regg",

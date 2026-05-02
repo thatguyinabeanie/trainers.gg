@@ -233,7 +233,7 @@ export function CalcDefenderBlock({
                     if (!Number.isNaN(v))
                       setDefenderEv(key, Math.max(0, Math.min(perStatMax, v)));
                   }}
-                  aria-label={`${label} EVs`}
+                  aria-label={`${label} ${isChampions ? "Stat Points" : "EVs"}`}
                   className="cd-num"
                 />
               );

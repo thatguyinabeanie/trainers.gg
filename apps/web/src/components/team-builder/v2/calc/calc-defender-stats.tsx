@@ -294,7 +294,7 @@ function DefenderStatRow({
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
         onKeyDown={handleInputKeyDown}
-        aria-label={`${label} EVs`}
+        aria-label={`${label} ${isChampions ? "Stat Points" : "EVs"}`}
         className={cn(
           "focus:ring-primary h-[18px] w-full rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
           isNatureBoosted && "border-red-400/70 text-red-600 dark:text-red-400",
@@ -316,7 +316,7 @@ function DefenderStatRow({
           step={budget.step}
           value={ev}
           onChange={handleSliderChange}
-          aria-label={`${label} EV slider`}
+          aria-label={`${label} ${isChampions ? "Stat Point slider" : "EV slider"}`}
           className={s.spreadSlider}
         />
         {isNatureBoosted && breakpoints.length > 0 && (

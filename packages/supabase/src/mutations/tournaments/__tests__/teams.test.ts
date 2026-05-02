@@ -567,142 +567,143 @@ Timid Nature
       ).rejects.toThrow("Failed to create pokemon records");
     });
 
-    it("should throw a user-safe error (not raw postgres message) when pokemon creation fails", async () => {
-      const consoleSpy = jest
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+    describe("pokemon creation failure logging", () => {
+      let consoleSpy: ReturnType<typeof jest.spyOn>;
 
-      const fromSpy = jest.spyOn(mockClient, "from");
-      const pgError = { message: 'new row violates row-level security policy for table "pokemon"' };
+      beforeEach(() => {
+        consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      });
 
-      // Mock: Get registration
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: {
-            id: 500,
-            team_id: null,
-            team_locked: false,
-            tournament_id: tournamentId,
-          },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+      afterEach(() => {
+        consoleSpy.mockRestore();
+      });
 
-      // Mock: Get tournament format
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { game_format: "vgc2024-reg-g" },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+      it("should throw a user-safe error (not raw postgres message) when pokemon creation fails", async () => {
+        const fromSpy = jest.spyOn(mockClient, "from");
+        const pgError = { message: 'new row violates row-level security policy for table "pokemon"' };
 
-      // Mock: Create new team
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: 1000, name: "Tournament Team" },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+        // Mock: Get registration
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: 500,
+              team_id: null,
+              team_locked: false,
+              tournament_id: tournamentId,
+            },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
 
-      // Mock: Insert pokemon records (fails with RLS violation)
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockResolvedValue({
-          data: null,
-          error: pgError,
-        }),
-      } as unknown as MockQueryBuilder);
+        // Mock: Get tournament format
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: { game_format: "vgc2024-reg-g" },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
 
-      // The thrown message must be exactly the user-safe generic — no postgres detail
-      let thrownError: Error | null = null;
-      try {
-        await submitTeam(mockClient, tournamentId, rawText);
-      } catch (e) {
-        thrownError = e instanceof Error ? e : null;
-      }
-      expect(thrownError).not.toBeNull();
-      expect(thrownError?.message).toBe("Failed to create pokemon records.");
-      expect(thrownError?.message).not.toContain("row-level security");
-      expect(thrownError?.message).not.toContain('"pokemon"');
+        // Mock: Create new team
+        fromSpy.mockReturnValueOnce({
+          insert: jest.fn().mockReturnThis(),
+          select: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: { id: 1000, name: "Tournament Team" },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
 
-      // console.error must be called once with the postgres error as second argument
-      expect(consoleSpy).toHaveBeenCalledTimes(1);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "submitTeam: failed to create pokemon records",
-        pgError
-      );
+        // Mock: Insert pokemon records (fails with RLS violation)
+        fromSpy.mockReturnValueOnce({
+          insert: jest.fn().mockReturnThis(),
+          select: jest.fn().mockResolvedValue({
+            data: null,
+            error: pgError,
+          }),
+        } as unknown as MockQueryBuilder);
 
-      consoleSpy.mockRestore();
-    });
+        // The thrown message must be exactly the user-safe generic — no postgres detail
+        let thrownError: Error | null = null;
+        try {
+          await submitTeam(mockClient, tournamentId, rawText);
+        } catch (e) {
+          thrownError = e instanceof Error ? e : null;
+        }
+        expect(thrownError).not.toBeNull();
+        expect(thrownError?.message).toBe("Failed to create pokemon records.");
+        expect(thrownError?.message).not.toContain("row-level security");
+        expect(thrownError?.message).not.toContain('"pokemon"');
 
-    it("should log 'no data returned' sentinel when pokemon insert returns no data", async () => {
-      const consoleSpy = jest
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+        // console.error must be called once with the postgres error as second argument
+        expect(consoleSpy).toHaveBeenCalledTimes(1);
+        expect(consoleSpy).toHaveBeenCalledWith(
+          "submitTeam: failed to create pokemon records",
+          pgError
+        );
+      });
 
-      const fromSpy = jest.spyOn(mockClient, "from");
+      it("should log 'no data returned' sentinel when pokemon insert returns no data", async () => {
+        const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Get registration
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: {
-            id: 500,
-            team_id: null,
-            team_locked: false,
-            tournament_id: tournamentId,
-          },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+        // Mock: Get registration
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: 500,
+              team_id: null,
+              team_locked: false,
+              tournament_id: tournamentId,
+            },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
 
-      // Mock: Get tournament format
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { game_format: "vgc2024-reg-g" },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+        // Mock: Get tournament format
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: { game_format: "vgc2024-reg-g" },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
 
-      // Mock: Create new team
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: 1000, name: "Tournament Team" },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+        // Mock: Create new team
+        fromSpy.mockReturnValueOnce({
+          insert: jest.fn().mockReturnThis(),
+          select: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: { id: 1000, name: "Tournament Team" },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
 
-      // Mock: Insert pokemon records — no error but also no data
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockResolvedValue({
-          data: null,
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+        // Mock: Insert pokemon records — no error but also no data
+        fromSpy.mockReturnValueOnce({
+          insert: jest.fn().mockReturnThis(),
+          select: jest.fn().mockResolvedValue({
+            data: null,
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
 
-      await expect(
-        submitTeam(mockClient, tournamentId, rawText)
-      ).rejects.toThrow("Failed to create pokemon records.");
+        await expect(
+          submitTeam(mockClient, tournamentId, rawText)
+        ).rejects.toThrow("Failed to create pokemon records.");
 
-      // When there is no postgres error object, the sentinel string is logged
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "submitTeam: failed to create pokemon records",
-        "no data returned"
-      );
-
-      consoleSpy.mockRestore();
+        // When there is no postgres error object, the sentinel string is logged
+        expect(consoleSpy).toHaveBeenCalledTimes(1);
+        expect(consoleSpy).toHaveBeenCalledWith(
+          "submitTeam: failed to create pokemon records",
+          "no data returned"
+        );
+      });
     });
 
     it("should throw error if linking pokemon to team fails", async () => {

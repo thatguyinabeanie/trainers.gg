@@ -208,7 +208,7 @@ Level: 50
   });
 });
 
-describe("validateTeamStructure — Champions (reg-m-a)", () => {
+describe("validateTeamStructure — Champions (championsvgc2026regma)", () => {
   const makeChampionsMon = (overrides: Partial<ReturnType<typeof parseShowdownText>[number]> = {}) =>
     ({
       species: "Incineroar",
@@ -240,19 +240,19 @@ describe("validateTeamStructure — Champions (reg-m-a)", () => {
     });
 
   it("accepts a valid Champions team (66 total, ≤32 per stat)", () => {
-    const errors = validateTeamStructure([makeChampionsMon()], "reg-m-a");
+    const errors = validateTeamStructure([makeChampionsMon()], "championsvgc2026regma");
     expect(errors).toHaveLength(0);
   });
 
   it("rejects a Pokemon with more than 66 total Stat Points", () => {
     const mon = makeChampionsMon({ ev_hp: 32, ev_attack: 32, ev_defense: 10 });
-    const errors = validateTeamStructure([mon], "reg-m-a");
+    const errors = validateTeamStructure([mon], "championsvgc2026regma");
     expect(errors.some((e) => e.message.includes("total Stat Points"))).toBe(true);
   });
 
   it("rejects a Pokemon with more than 32 in a single stat", () => {
     const mon = makeChampionsMon({ ev_hp: 33, ev_attack: 0, ev_defense: 0, ev_special_attack: 0, ev_special_defense: 0, ev_speed: 0 });
-    const errors = validateTeamStructure([mon], "reg-m-a");
+    const errors = validateTeamStructure([mon], "championsvgc2026regma");
     expect(errors.some((e) => e.message.includes("Stat Points in HP"))).toBe(true);
   });
 
@@ -264,7 +264,7 @@ describe("validateTeamStructure — Champions (reg-m-a)", () => {
   });
 });
 
-describe("validateTeamStructure — Champions (championsvgc2026regma)", () => {
+describe("validateTeamStructure — Champions Showdown ID", () => {
   const makeChampionsMon = (
     overrides: Partial<ReturnType<typeof parseShowdownText>[number]> = {}
   ) =>
@@ -297,9 +297,9 @@ describe("validateTeamStructure — Champions (championsvgc2026regma)", () => {
       ...overrides,
     });
 
-  it.each(["reg-m-a", "championsvgc2026regma"] as const)(
-    "applies Champions stat-point check for format ID %s",
-    (formatId) => {
+  it(
+    "applies Champions stat-point check for championsvgc2026regma",
+    () => {
       // Over-limit Stat Points — should produce errors from the SP validator
       const mon = makeChampionsMon({
         ev_hp: 33,
@@ -309,18 +309,26 @@ describe("validateTeamStructure — Champions (championsvgc2026regma)", () => {
         ev_special_defense: 0,
         ev_speed: 0,
       });
-      const errors = validateTeamStructure([mon], formatId);
+      const errors = validateTeamStructure([mon], "championsvgc2026regma");
       expect(errors.some((e) => e.message.includes("Stat Points"))).toBe(true);
     }
   );
 
-  it.each(["reg-m-a", "championsvgc2026regma"] as const)(
-    "accepts a valid Champions team for format ID %s",
-    (formatId) => {
-      const errors = validateTeamStructure([makeChampionsMon()], formatId);
+  it(
+    "accepts a valid Champions team for championsvgc2026regma",
+    () => {
+      const errors = validateTeamStructure([makeChampionsMon()], "championsvgc2026regma");
       expect(errors).toHaveLength(0);
     }
   );
+
+  it("does not apply Champions stat limits for the legacy reg-m-a key (no longer recognized)", () => {
+    // reg-m-a is no longer in FORMAT_MAP and isChampionsFormatId("reg-m-a") is false —
+    // so a team with over-limit Stat Points passes structure validation (no Champions check).
+    const mon = makeChampionsMon({ ev_hp: 252, ev_speed: 252, ev_attack: 0, ev_defense: 0, ev_special_attack: 0, ev_special_defense: 0 });
+    const errors = validateTeamStructure([mon], "reg-m-a");
+    expect(errors.filter((e) => e.message.includes("Stat Points"))).toHaveLength(0);
+  });
 });
 
 describe("validateChampionsLegality", () => {
@@ -468,7 +476,7 @@ describe("getPkmnFormat / FORMAT_MAP", () => {
   it("has entries for all expected formats", () => {
     const expectedKeys = [
       "reg-i",
-      "reg-m-a",
+      "championsvgc2026regma",
       "reg-h",
       "reg-g",
       "reg-f",
@@ -486,8 +494,17 @@ describe("getPkmnFormat / FORMAT_MAP", () => {
     }
   });
 
-  it("returns null for reg-m-a (no @pkmn/sim format yet)", () => {
-    expect(FORMAT_MAP["reg-m-a"]).toBeNull();
+  it("does not contain the legacy reg-m-a key", () => {
+    expect(FORMAT_MAP).not.toHaveProperty("reg-m-a");
+  });
+
+  it("returns null for championsvgc2026regma (no @pkmn/sim format yet)", () => {
+    expect(FORMAT_MAP["championsvgc2026regma"]).toBeNull();
+    expect(getPkmnFormat("championsvgc2026regma")).toBeNull();
+  });
+
+  it("returns null for reg-m-a (missing key — not an explicit null)", () => {
+    // The legacy key was removed; getPkmnFormat falls back to null via ?? null.
     expect(getPkmnFormat("reg-m-a")).toBeNull();
   });
 });

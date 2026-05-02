@@ -36,8 +36,9 @@ interface CalcRowProps {
   /**
    * Whether the parent ActiveRow is the workspace's active row.
    * `calc.moveCalcOutputs` is keyed to the active pokemon, so non-active
-   * expanded rows must NOT render calc results — otherwise every row would
-   * display the active row's damage numbers.
+   * expanded rows must NOT render calc results OR calc-specific placeholders
+   * ("— pick target —" / "— unavailable —") — those messages describe the
+   * active row's state. Non-active rows always show the neutral em-dash.
    */
   isActive: boolean;
 }
@@ -48,12 +49,15 @@ function CalcRow({ slotIndex, moveName, isActive }: CalcRowProps) {
 
   const moveData = moveName ? getMoveData(moveName) : null;
   const isStatus = moveData?.category === "Status";
-  // moveName + isActive must both be set: calc.moveCalcOutputs is keyed to
-  // the active pokemon's slot index, so any non-active expanded row that
-  // renders results would leak the active row's damage numbers.
+  // Only show calc-specific UI on the active row. `moveCalcOutputs` is keyed
+  // to the active pokemon's slot index, so non-active expanded rows must not
+  // render results OR calc-specific placeholders ("— pick target —" /
+  // "— unavailable —") — those messages still describe the active row's
+  // state. Non-active rows fall through to the neutral em-dash placeholder.
+  const canShowCalcState = calc.calcEnabled && isActive;
+  const hasDefender = Boolean(calc.defenderSpecies);
   const hasCalc =
-    calc.calcEnabled && isActive && moveName !== null && output !== null && !isStatus;
-  const hasDefender = calc.calcEnabled && isActive && Boolean(calc.defenderSpecies);
+    canShowCalcState && moveName !== null && output !== null && !isStatus;
 
   const { spreadApplied, displayMin, displayMax, koTier } =
     getDisplayRangeAndKoTier({
@@ -108,11 +112,11 @@ function CalcRow({ slotIndex, moveName, isActive }: CalcRowProps) {
             </span>
           )}
         </>
-      ) : moveName && !isStatus && hasDefender && output === null ? (
+      ) : canShowCalcState && moveName && !isStatus && hasDefender && output === null ? (
         <span className="text-[9.5px] italic text-muted-foreground/70 font-normal">
           — unavailable —
         </span>
-      ) : moveName && !isStatus && !hasDefender ? (
+      ) : canShowCalcState && moveName && !isStatus && !hasDefender ? (
         <span className="text-[9.5px] italic text-muted-foreground/50 font-normal">
           — pick target —
         </span>

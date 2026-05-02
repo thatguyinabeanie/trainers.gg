@@ -8,12 +8,13 @@
  * whole workspace context — gating on moveName !== null prevents the leak.
  *
  * Additional coverage:
- *   - OHKO / 2HKO / 3HKO labels from getVerdict
+ *   - OHKO / 2HKO / 3HKO labels from getDisplayRangeAndKoTier
  *   - Spread −25% reduction when foesAlive / allyAlive conditions are met
  *   - Effectiveness badges (2×, 0.5×, 0×) from getMoveEffectiveness
  *   - "spread" badge when spreadApplied
  *   - Placeholder text variants (pick target / unavailable / —)
  *   - calcEnabled=false suppresses all calc output
+ *   - Non-active rows show only the neutral em-dash (no calc-specific placeholders)
  */
 
 import { render, screen } from "@testing-library/react";
@@ -53,7 +54,13 @@ const mockCalcContext: {
   field: { foesAlive: 2, allyAlive: true },
 };
 
-const mockGetVerdict = jest.fn().mockReturnValue("4HKO");
+const mockGetDisplayRangeAndKoTier = jest.fn(() => ({
+  spreadApplied: false,
+  displayMin: 25,
+  displayMax: 30,
+  koTier: "4" as string | null,
+}));
+
 const mockGetMoveEffectiveness = jest.fn().mockReturnValue(1);
 const mockGetMoveTargetInfo = jest.fn().mockReturnValue({ isSpread: false, kind: "single-foe" });
 const mockGetMoveData = jest.fn().mockReturnValue({
@@ -75,8 +82,8 @@ jest.mock("../calc/move-target-info", () => ({
   getMoveTargetInfo: (...args: unknown[]) => mockGetMoveTargetInfo(...args),
 }));
 
-jest.mock("../../use-calc-state", () => ({
-  getVerdict: (...args: unknown[]) => mockGetVerdict(...args),
+jest.mock("../lanes/calc-display-helpers", () => ({
+  getDisplayRangeAndKoTier: (args: unknown) => mockGetDisplayRangeAndKoTier(args),
 }));
 
 jest.mock("@trainers/pokemon", () => ({
@@ -131,7 +138,12 @@ function makePokemon(overrides: Partial<Tables<"pokemon">> = {}): Tables<"pokemo
 // Reset mocks and restore baseline context state before each test
 beforeEach(() => {
   jest.clearAllMocks();
-  mockGetVerdict.mockReturnValue("4HKO");
+  mockGetDisplayRangeAndKoTier.mockReturnValue({
+    spreadApplied: false,
+    displayMin: 25,
+    displayMax: 30,
+    koTier: "4",
+  });
   mockGetMoveEffectiveness.mockReturnValue(1);
   mockGetMoveTargetInfo.mockReturnValue({ isSpread: false, kind: "single-foe" });
   mockGetMoveData.mockReturnValue({ type: "Fairy", category: "Special", basePower: 80, accuracy: 100 });
@@ -154,6 +166,12 @@ beforeEach(() => {
 
 describe("CalcColumn — empty-row leak protection", () => {
   it("renders calc results for a real pokemon when its move + output match", () => {
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 24.7,
+      displayMax: 29.8,
+      koTier: "4",
+    });
     render(<CalcColumn pokemon={makePokemon()} isActive={true} />);
     // Slot 0: Dazzling Gleam + output → real KO data renders
     expect(screen.getByText(/24\.7.*29\.8%/)).toBeInTheDocument();
@@ -186,8 +204,13 @@ describe("CalcColumn — empty-row leak protection", () => {
 // =============================================================================
 
 describe("CalcColumn — KO tier labels", () => {
-  it("renders 'OHKO' label when getVerdict returns OHKO", () => {
-    mockGetVerdict.mockReturnValue("OHKO");
+  it("renders 'OHKO' label when koTier is '1'", () => {
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 110,
+      displayMax: 120,
+      koTier: "1",
+    });
     mockCalcContext.moveCalcOutputs = [
       { minPercent: 110, maxPercent: 120 },
       null,
@@ -198,8 +221,13 @@ describe("CalcColumn — KO tier labels", () => {
     expect(screen.getByText("OHKO")).toBeInTheDocument();
   });
 
-  it("renders '2HKO' label when getVerdict returns 2HKO", () => {
-    mockGetVerdict.mockReturnValue("2HKO");
+  it("renders '2HKO' label when koTier is '2'", () => {
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 45,
+      displayMax: 55,
+      koTier: "2",
+    });
     mockCalcContext.moveCalcOutputs = [
       { minPercent: 45, maxPercent: 55 },
       null,
@@ -210,8 +238,13 @@ describe("CalcColumn — KO tier labels", () => {
     expect(screen.getByText("2HKO")).toBeInTheDocument();
   });
 
-  it("renders '3HKO' label when getVerdict returns 3HKO", () => {
-    mockGetVerdict.mockReturnValue("3HKO");
+  it("renders '3HKO' label when koTier is '3'", () => {
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 30,
+      displayMax: 40,
+      koTier: "3",
+    });
     mockCalcContext.moveCalcOutputs = [
       { minPercent: 30, maxPercent: 40 },
       null,
@@ -222,8 +255,13 @@ describe("CalcColumn — KO tier labels", () => {
     expect(screen.getByText("3HKO")).toBeInTheDocument();
   });
 
-  it("renders '4HKO+' label when getVerdict returns null (4HKO+)", () => {
-    mockGetVerdict.mockReturnValue(null);
+  it("renders '4HKO+' label when koTier is '4'", () => {
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 25,
+      displayMax: 30,
+      koTier: "4",
+    });
     render(<CalcColumn pokemon={makePokemon()} isActive={true} />);
     expect(screen.getByText("4HKO+")).toBeInTheDocument();
   });
@@ -259,8 +297,12 @@ describe("CalcColumn — spread −25% reduction", () => {
       null,
     ];
     mockCalcContext.field = { foesAlive: 2, allyAlive: false };
-    // getVerdict called with post-spread values
-    mockGetVerdict.mockReturnValue("2HKO");
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: true,
+      displayMin: 75.0,
+      displayMax: 99.8,
+      koTier: "2",
+    });
     render(<CalcColumn pokemon={makePokemon({ move1: "Earthquake" })} isActive={true} />);
     // 100 * 0.75 = 75.0, 133 * 0.75 = 99.8
     expect(screen.getByText(/75\.0.*99\.8%/)).toBeInTheDocument();
@@ -275,7 +317,12 @@ describe("CalcColumn — spread −25% reduction", () => {
       null,
     ];
     mockCalcContext.field = { foesAlive: 1, allyAlive: false };
-    mockGetVerdict.mockReturnValue("OHKO");
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 100.0,
+      displayMax: 133.0,
+      koTier: "1",
+    });
     render(<CalcColumn pokemon={makePokemon({ move1: "Earthquake" })} isActive={true} />);
     // Raw values displayed — no reduction
     expect(screen.getByText(/100\.0.*133\.0%/)).toBeInTheDocument();
@@ -290,7 +337,12 @@ describe("CalcColumn — spread −25% reduction", () => {
       null,
     ];
     mockCalcContext.field = { foesAlive: 2, allyAlive: false };
-    mockGetVerdict.mockReturnValue("2HKO");
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: true,
+      displayMin: 60.0,
+      displayMax: 75.0,
+      koTier: "2",
+    });
     render(<CalcColumn pokemon={makePokemon({ move1: "Earthquake" })} isActive={true} />);
     expect(screen.getByTitle("Spread −25%")).toBeInTheDocument();
   });
@@ -303,7 +355,12 @@ describe("CalcColumn — spread −25% reduction", () => {
       null,
       null,
     ];
-    mockGetVerdict.mockReturnValue("2HKO");
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 80.0,
+      displayMax: 100.0,
+      koTier: "2",
+    });
     render(<CalcColumn pokemon={makePokemon({ move1: "Flamethrower" })} isActive={true} />);
     expect(screen.queryByTitle("Spread −25%")).not.toBeInTheDocument();
   });
@@ -333,7 +390,12 @@ describe("CalcColumn — spread reduction for all-foes and all-others parameteri
         null,
       ];
       mockCalcContext.field = { foesAlive, allyAlive };
-      mockGetVerdict.mockReturnValue("2HKO");
+      mockGetDisplayRangeAndKoTier.mockReturnValue({
+        spreadApplied: expectedSpread,
+        displayMin: expectedSpread ? 60.0 : 80.0,
+        displayMax: expectedSpread ? 75.0 : 100.0,
+        koTier: "2",
+      });
       render(<CalcColumn pokemon={makePokemon({ move1: "Earthquake" })} isActive={true} />);
       if (expectedSpread) {
         expect(screen.getByTitle("Spread −25%")).toBeInTheDocument();
@@ -351,7 +413,12 @@ describe("CalcColumn — spread reduction for all-foes and all-others parameteri
 describe("CalcColumn — type effectiveness badges", () => {
   it("renders '2×' badge when getMoveEffectiveness returns 2", () => {
     mockGetMoveEffectiveness.mockReturnValue(2);
-    mockGetVerdict.mockReturnValue("OHKO");
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 110,
+      displayMax: 130,
+      koTier: "1",
+    });
     mockCalcContext.moveCalcOutputs = [
       { minPercent: 110, maxPercent: 130 },
       null,
@@ -364,7 +431,12 @@ describe("CalcColumn — type effectiveness badges", () => {
 
   it("renders '0.5×' badge when getMoveEffectiveness returns 0.5", () => {
     mockGetMoveEffectiveness.mockReturnValue(0.5);
-    mockGetVerdict.mockReturnValue("3HKO");
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 30,
+      displayMax: 40,
+      koTier: "3",
+    });
     mockCalcContext.moveCalcOutputs = [
       { minPercent: 30, maxPercent: 40 },
       null,
@@ -377,8 +449,12 @@ describe("CalcColumn — type effectiveness badges", () => {
 
   it("renders '0×' immune badge when getMoveEffectiveness returns 0", () => {
     mockGetMoveEffectiveness.mockReturnValue(0);
-    // getVerdict must return a non-null tier so the KO-data branch renders
-    mockGetVerdict.mockReturnValue("2HKO");
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 45,
+      displayMax: 55,
+      koTier: "2",
+    });
     mockCalcContext.moveCalcOutputs = [
       { minPercent: 45, maxPercent: 55 },
       null,
@@ -391,7 +467,12 @@ describe("CalcColumn — type effectiveness badges", () => {
 
   it("does NOT render an effectiveness badge when eff === 1", () => {
     mockGetMoveEffectiveness.mockReturnValue(1);
-    mockGetVerdict.mockReturnValue("2HKO");
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 45,
+      displayMax: 55,
+      koTier: "2",
+    });
     mockCalcContext.moveCalcOutputs = [
       { minPercent: 45, maxPercent: 55 },
       null,
@@ -412,6 +493,12 @@ describe("CalcColumn — placeholder text", () => {
     mockCalcContext.defenderSpecies = "";
     // Ensure no output exists so hasCalc is false — then the pick-target branch fires
     mockCalcContext.moveCalcOutputs = [null, null, null, null];
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 0,
+      displayMax: 0,
+      koTier: null,
+    });
     render(<CalcColumn pokemon={makePokemon({ move1: "Flamethrower" })} isActive={true} />);
     expect(screen.getByText("— pick target —")).toBeInTheDocument();
   });
@@ -419,12 +506,24 @@ describe("CalcColumn — placeholder text", () => {
   it("shows '— unavailable —' when calc returned null but defender is picked", () => {
     mockCalcContext.defenderSpecies = "Garchomp";
     mockCalcContext.moveCalcOutputs = [null, null, null, null];
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 0,
+      displayMax: 0,
+      koTier: null,
+    });
     render(<CalcColumn pokemon={makePokemon({ move1: "Flamethrower" })} isActive={true} />);
     expect(screen.getByText("— unavailable —")).toBeInTheDocument();
   });
 
   it("shows muted '—' for an empty move slot (move1=null)", () => {
     mockCalcContext.moveCalcOutputs = [null, null, null, null];
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 0,
+      displayMax: 0,
+      koTier: null,
+    });
     render(<CalcColumn pokemon={makePokemon({ move1: null })} isActive={true} />);
     // All 4 rows should show the muted placeholder
     const dashes = screen.getAllByText("—");
@@ -433,6 +532,12 @@ describe("CalcColumn — placeholder text", () => {
 
   it("shows muted '—' for all rows when calcEnabled is false", () => {
     mockCalcContext.calcEnabled = false;
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 0,
+      displayMax: 0,
+      koTier: null,
+    });
     render(<CalcColumn pokemon={makePokemon()} isActive={true} />);
     // No KO tiers rendered when calc is disabled
     expect(screen.queryByText(/OHKO|2HKO|3HKO|4HKO\+/)).not.toBeInTheDocument();
@@ -446,6 +551,12 @@ describe("CalcColumn — placeholder text", () => {
       null,
       null,
     ];
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 0,
+      displayMax: 0,
+      koTier: null,
+    });
     render(<CalcColumn pokemon={makePokemon({ move1: "Will-O-Wisp" })} isActive={true} />);
     // Status moves never show calc results
     expect(screen.queryByText(/OHKO|2HKO|3HKO|4HKO\+/)).not.toBeInTheDocument();
@@ -459,7 +570,12 @@ describe("CalcColumn — placeholder text", () => {
 describe("CalcColumn — non-active row suppression", () => {
   it("renders calc results when isActive is true", () => {
     // Setup: defenderSpecies set, moveCalcOutputs populated, move set.
-    mockGetVerdict.mockReturnValue(null); // → "4HKO+"
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 24.7,
+      displayMax: 29.8,
+      koTier: "4",
+    });
     mockCalcContext.moveCalcOutputs = [
       { minPercent: 24.7, maxPercent: 29.8 },
       null,
@@ -474,7 +590,12 @@ describe("CalcColumn — non-active row suppression", () => {
 
   it("does NOT render calc results when isActive is false", () => {
     // Same context state as above — only isActive differs.
-    mockGetVerdict.mockReturnValue(null);
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 24.7,
+      displayMax: 29.8,
+      koTier: "4",
+    });
     mockCalcContext.moveCalcOutputs = [
       { minPercent: 24.7, maxPercent: 29.8 },
       null,
@@ -489,5 +610,87 @@ describe("CalcColumn — non-active row suppression", () => {
     // Em-dash fallback renders for all 4 rows
     const dashes = screen.getAllByText("—");
     expect(dashes.length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+// =============================================================================
+// Tests — non-active row gating (canShowCalcState)
+// =============================================================================
+
+describe("CalcColumn — non-active row gating", () => {
+  it("does NOT show '— pick target —' when isActive is false, even with a move set and no defender", () => {
+    mockCalcContext.defenderSpecies = "";
+    mockCalcContext.moveCalcOutputs = [null, null, null, null];
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 0,
+      displayMax: 0,
+      koTier: null,
+    });
+    render(<CalcColumn pokemon={makePokemon({ move1: "Flamethrower" })} isActive={false} />);
+    expect(screen.queryByText("— pick target —")).not.toBeInTheDocument();
+  });
+
+  it("does NOT show '— unavailable —' when isActive is false, even with a defender and output=null", () => {
+    mockCalcContext.defenderSpecies = "Garchomp";
+    mockCalcContext.moveCalcOutputs = [null, null, null, null];
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 0,
+      displayMax: 0,
+      koTier: null,
+    });
+    render(<CalcColumn pokemon={makePokemon({ move1: "Flamethrower" })} isActive={false} />);
+    expect(screen.queryByText("— unavailable —")).not.toBeInTheDocument();
+  });
+
+  it("shows only neutral em-dash when isActive is false, regardless of calc context state", () => {
+    mockCalcContext.defenderSpecies = "Garchomp";
+    mockCalcContext.moveCalcOutputs = [
+      { minPercent: 50, maxPercent: 60 },
+      null,
+      null,
+      null,
+    ];
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 50,
+      displayMax: 60,
+      koTier: "2",
+    });
+    render(<CalcColumn pokemon={makePokemon({ move1: "Flamethrower" })} isActive={false} />);
+    // No calc-specific content
+    expect(screen.queryByText(/OHKO|2HKO|3HKO|4HKO\+/)).not.toBeInTheDocument();
+    expect(screen.queryByText("— pick target —")).not.toBeInTheDocument();
+    expect(screen.queryByText("— unavailable —")).not.toBeInTheDocument();
+    // Neutral em-dash appears for all 4 rows
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("shows '— pick target —' when isActive is true and defenderSpecies is empty", () => {
+    mockCalcContext.defenderSpecies = "";
+    mockCalcContext.moveCalcOutputs = [null, null, null, null];
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 0,
+      displayMax: 0,
+      koTier: null,
+    });
+    render(<CalcColumn pokemon={makePokemon({ move1: "Flamethrower" })} isActive={true} />);
+    expect(screen.getByText("— pick target —")).toBeInTheDocument();
+  });
+
+  it("shows '— unavailable —' when isActive is true and moveName set but output is null", () => {
+    mockCalcContext.defenderSpecies = "Garchomp";
+    mockCalcContext.moveCalcOutputs = [null, null, null, null];
+    mockGetDisplayRangeAndKoTier.mockReturnValue({
+      spreadApplied: false,
+      displayMin: 0,
+      displayMax: 0,
+      koTier: null,
+    });
+    render(<CalcColumn pokemon={makePokemon({ move1: "Flamethrower" })} isActive={true} />);
+    expect(screen.getByText("— unavailable —")).toBeInTheDocument();
   });
 });
