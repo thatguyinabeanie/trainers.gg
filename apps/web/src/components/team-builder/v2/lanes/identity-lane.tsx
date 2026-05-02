@@ -574,14 +574,11 @@ function IdentityLaneReal({
                   <Tooltip key={`base-${abilityOpen ? "open" : "closed"}-${pokemon.ability ?? "empty"}`}>
                     <TooltipTrigger
                       render={
-                        <PopoverTrigger
-                          render={
-                            <button
-                              type="button"
-                              aria-label={`Change base ability (${pokemon.ability || "none"})`}
-                              className="self-start rounded px-1 pt-0.5 font-mono text-[9px] text-muted-foreground/70 hover:bg-muted hover:text-foreground"
-                            />
-                          }
+                        <button
+                          type="button"
+                          aria-label={`Change base ability (${pokemon.ability || "none"})`}
+                          onClick={() => setAbilityOpen(true)}
+                          className="self-start rounded px-1 pt-0.5 font-mono text-[9px] text-muted-foreground/70 hover:bg-muted hover:text-foreground"
                         />
                       }
                     >
