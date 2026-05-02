@@ -112,15 +112,6 @@
   gap: 6px;
 }
 
-/* Reduce stat-row vertical padding */
-[data-density="compact"] .laneStats {
-  padding-block: 4px;
-}
-
-/* Identity lane: compact — smaller sprite; flex direction stays */
-[data-density="compact"] .laneId {
-  min-width: 200px;
-}
 
 /* ============================================================
    Inline analytics panel — Type matchups / Speed tiers
@@ -209,27 +200,6 @@
   overflow-y: auto;
 }
 
-.heatmap {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: auto;
-}
-
-.speedTiers {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.builderCalcdrawerSlot {
-  width: 380px;
-  flex-shrink: 0;
-  border-left: 1px solid var(--border);
-  background: var(--background);
-  overflow-y: auto;
-}
 
 /* ============================================================
    Calc drawer
@@ -813,44 +783,6 @@
     border-bottom: 1px dashed var(--border);
   }
 
-  /* Identity lane: full width, horizontal (sprite + meta side-by-side) */
-  .laneId {
-    width: 100%;
-    flex-direction: row;
-    align-items: stretch;
-    padding: 10px;
-  }
-
-  /* Setup lane: full width */
-  .laneSetup {
-    width: 100%;
-    border-top: 1px solid var(--border);
-    padding: 4px 0;
-  }
-
-  /* Moves lane: full width */
-  .laneMoves {
-    width: 100%;
-    border-top: 1px solid var(--border);
-    flex: none;
-  }
-
-  /* Stats lane: full width */
-  .laneStats {
-    width: 100%;
-    border-top: 1px solid var(--border);
-    flex: none;
-  }
-
-  /* Meta lane: full width, horizontal row instead of column */
-  .laneMeta {
-    width: 100%;
-    flex-direction: row;
-    gap: 16px;
-    justify-content: flex-start;
-    border-top: 1px solid var(--border);
-    padding: 6px 12px;
-  }
 }
 
 /* Left slot rib */
@@ -891,65 +823,6 @@
   opacity: 0.5;
 }
 
-/* Identity lane — 128px sprite + meta column (flex row) */
-.laneId {
-  display: flex;
-  align-items: stretch;
-  flex-shrink: 0;
-  min-width: 240px;
-}
-
-/* Setup lane — item/abil/nat/tera stacked rows */
-.laneSetup {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* Moves lane — 4 stacked move tiles */
-.laneMoves {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 200px;
-  min-width: 0;
-}
-
-/* Stats lane — 6-col stat grid */
-.laneStats {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 340px;
-  min-width: 0;
-}
-
-/* Meta lane — BST/Spe/WR column */
-.laneMeta {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* Setup row button (item / abil / nat / tera) */
-.setupLine {
-  display: grid;
-  grid-template-columns: 30px 1fr;
-  align-items: baseline;
-  gap: 8px;
-  padding: 4px 6px;
-  border-radius: 4px;
-  background: transparent;
-  border: none;
-  text-align: left;
-  min-width: 0;
-  cursor: pointer;
-  position: relative;
-}
-
-.setupLine:hover {
-  background: var(--muted);
-}
 
 /* Move tile row — :global() because lanes/moves-lane.tsx references it as a
    plain string class via cn("mvline", ...) rather than via the CSS-module
@@ -1780,79 +1653,6 @@
   min-width: 0;
 }
 
-/* Stat cell — one per stat in the 6-col grid */
-.stcell {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
-  padding: 4px 4px 5px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 11px;
-  text-align: center;
-  min-width: 0;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
-}
-
-.stcell:hover {
-  background: var(--muted);
-  border-color: var(--border);
-}
-
-/* ============================================================
-   PokeRow overhaul — Loadout (chip-labeled), Spread (stat rows),
-   Moves (empty tile style)
-   ============================================================ */
-
-/* Chip-labeled — unified picker trigger for item / abil / nat / tera */
-.chipLabeled {
-  background: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 10px 4px 4px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  line-height: 1.3;
-  cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
-  text-align: left;
-  width: 100%;
-}
-
-.chipLabeled:hover {
-  border-color: var(--primary);
-}
-
-/* Prefix label inside a chip (e.g. "item", "abil") */
-.chipPrefix {
-  background: var(--background);
-  color: var(--muted-foreground);
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  min-width: 32px;
-  text-align: center;
-  font-family: ui-monospace, SFMono-Regular, monospace;
-  flex-shrink: 0;
-}
-
-/* Value text inside a chip */
-.chipValue {
-  font-size: 11.5px;
-  color: var(--foreground);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
 
 /* Stat row — Showdown-style 6-column grid per stat */
 .spreadRow {
