@@ -100,7 +100,7 @@ export function MoveSidebar({ filters, onFiltersChange }: MoveSidebarProps) {
       {/* 1. Type grid                                                        */}
       {/* ------------------------------------------------------------------ */}
       <div className="border-border/60 border-b p-2.5">
-        <span className="text-muted-foreground mb-1.5 block text-[8.5px] font-bold uppercase tracking-widest">
+        <span className="text-muted-foreground mb-1.5 block text-[8.5px] font-bold tracking-widest uppercase">
           Type
         </span>
         <div className="grid grid-cols-3 gap-1">
@@ -114,7 +114,7 @@ export function MoveSidebar({ filters, onFiltersChange }: MoveSidebarProps) {
                 filters.types.includes(type)
                   ? cn(
                       TYPE_BG[type] ?? "bg-muted text-foreground",
-                      "outline outline-2 outline-offset-0 outline-white shadow-[0_0_0_3px_currentColor]"
+                      "shadow-[0_0_0_3px_currentColor] outline outline-2 outline-offset-0 outline-white"
                     )
                   : (TYPE_BG[type] ?? "bg-muted text-foreground")
               )}
@@ -129,7 +129,7 @@ export function MoveSidebar({ filters, onFiltersChange }: MoveSidebarProps) {
       {/* 2. Category chips                                                   */}
       {/* ------------------------------------------------------------------ */}
       <div className="border-border/60 border-b p-2.5">
-        <span className="text-muted-foreground mb-1.5 block text-[8.5px] font-bold uppercase tracking-widest">
+        <span className="text-muted-foreground mb-1.5 block text-[8.5px] font-bold tracking-widest uppercase">
           Category
         </span>
         <div className="flex flex-wrap gap-1">

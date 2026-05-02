@@ -187,10 +187,7 @@ function MoveRowItem({
             : undefined
         }
         title={data?.type ? `Filter by ${data.type}` : undefined}
-        className={cn(
-          "flex justify-center",
-          data?.type && "cursor-pointer"
-        )}
+        className={cn("flex justify-center", data?.type && "cursor-pointer")}
       >
         {data?.type ? (
           <img
@@ -236,10 +233,7 @@ function MoveRowItem({
       </span>
 
       {/* Name */}
-      <span
-        className="min-w-0 truncate text-sm font-medium"
-        title={name}
-      >
+      <span className="min-w-0 truncate text-sm font-medium" title={name}>
         {name}
       </span>
 
@@ -260,16 +254,14 @@ function MoveRowItem({
 
       {/* Accuracy */}
       <span className="text-muted-foreground text-right font-mono text-xs tabular-nums">
-        {data?.accuracy === true || !data?.accuracy
-          ? "—"
-          : `${data.accuracy}%`}
+        {data?.accuracy === true || !data?.accuracy ? "—" : `${data.accuracy}%`}
       </span>
 
       {/* Roles — click-to-filter, stopPropagation on the container */}
       <div
         role="presentation"
         onClick={(e) => e.stopPropagation()}
-        className="flex flex-wrap gap-1 min-w-0"
+        className="flex min-w-0 flex-wrap gap-1"
       >
         {roles.map((roleId) => (
           <RoleChip key={roleId} roleId={roleId} onClick={onRoleFilter} />
@@ -371,7 +363,7 @@ export function MovePicker({
       }
     }
     return (id: string) => counts.get(id) ?? 0;
-  }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rows]);
 
   // -------------------------------------------------------------------------
   // Virtualizer
@@ -477,15 +469,13 @@ export function MovePicker({
   return (
     <div
       className={cn(
-        "bg-popover text-popover-foreground flex w-[1100px] max-w-[calc(100vw-2rem)] h-[min(70vh,640px)]",
+        "bg-popover text-popover-foreground flex h-[min(70vh,640px)] w-[1100px] max-w-[calc(100vw-2rem)]",
         "flex-col overflow-hidden rounded-lg border shadow-md"
       )}
     >
       {/* Header — search input + result count + close button */}
       <div className="flex shrink-0 items-center gap-2 border-b px-3 py-2">
         <input
-          // autoFocus is intentional here — the picker is a modal-like overlay
-          // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
           type="text"
           value={filters.search}
@@ -541,7 +531,10 @@ export function MovePicker({
             {/* Name — sortable */}
             <button
               type="button"
-              className={cn(headerBtnClass("name"), "flex items-center gap-0.5")}
+              className={cn(
+                headerBtnClass("name"),
+                "flex items-center gap-0.5"
+              )}
               onClick={() => handleSort("name")}
               aria-label="Sort by name"
             >

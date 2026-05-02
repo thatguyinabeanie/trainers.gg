@@ -266,13 +266,16 @@ import { MovePicker } from "../pickers/move-picker";
  * Minimal move data covering distinct type/category/BP/accuracy combos
  * so filter, sort, and display branches can all be exercised.
  */
-const MOCK_MOVE_DATA: Record<string, {
-  type: string;
-  category: string;
-  basePower: number;
-  accuracy: number | boolean;
-  shortDesc: string;
-}> = {
+const MOCK_MOVE_DATA: Record<
+  string,
+  {
+    type: string;
+    category: string;
+    basePower: number;
+    accuracy: number | boolean;
+    shortDesc: string;
+  }
+> = {
   Flamethrower: {
     type: "Fire",
     category: "Special",
@@ -379,9 +382,7 @@ describe("MovePicker", () => {
 
     it("renders the close button", () => {
       render(<MovePicker {...defaultProps()} />);
-      expect(
-        screen.getByRole("button", { name: "Close" })
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
     });
 
     it("renders MoveSidebar sub-component", () => {
@@ -396,9 +397,15 @@ describe("MovePicker", () => {
 
     it("renders all learnable moves as rows when no format is provided", () => {
       render(<MovePicker {...defaultProps()} />);
-      expect(screen.getByRole("row", { name: /Select Flamethrower/ })).toBeInTheDocument();
-      expect(screen.getByRole("row", { name: /Select Surf/ })).toBeInTheDocument();
-      expect(screen.getByRole("row", { name: /Select Earthquake/ })).toBeInTheDocument();
+      expect(
+        screen.getByRole("row", { name: /Select Flamethrower/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("row", { name: /Select Surf/ })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("row", { name: /Select Earthquake/ })
+      ).toBeInTheDocument();
     });
 
     it("displays result count: sorted of total", () => {
@@ -644,14 +651,18 @@ describe("MovePicker", () => {
     it("clicking 'Sort by base power' applies BP sort descending by default", async () => {
       const user = userEvent.setup();
       render(<MovePicker {...defaultProps()} />);
-      await user.click(screen.getByRole("button", { name: "Sort by base power" }));
+      await user.click(
+        screen.getByRole("button", { name: "Sort by base power" })
+      );
       expect(screen.getByText("↓")).toBeInTheDocument();
     });
 
     it("clicking 'Sort by accuracy' applies accuracy sort descending by default", async () => {
       const user = userEvent.setup();
       render(<MovePicker {...defaultProps()} />);
-      await user.click(screen.getByRole("button", { name: "Sort by accuracy" }));
+      await user.click(
+        screen.getByRole("button", { name: "Sort by accuracy" })
+      );
       expect(screen.getByText("↓")).toBeInTheDocument();
     });
 
@@ -659,10 +670,14 @@ describe("MovePicker", () => {
       const user = userEvent.setup();
       render(<MovePicker {...defaultProps()} />);
       // Click BP once → desc
-      await user.click(screen.getByRole("button", { name: "Sort by base power" }));
+      await user.click(
+        screen.getByRole("button", { name: "Sort by base power" })
+      );
       expect(screen.getByText("↓")).toBeInTheDocument();
       // Click BP again → asc
-      await user.click(screen.getByRole("button", { name: "Sort by base power" }));
+      await user.click(
+        screen.getByRole("button", { name: "Sort by base power" })
+      );
       expect(screen.getByText("↑")).toBeInTheDocument();
     });
   });
