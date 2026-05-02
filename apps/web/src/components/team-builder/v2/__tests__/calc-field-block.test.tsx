@@ -23,6 +23,15 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
 
 import { type BaseSideState } from "../../use-calc-state";
+import {
+  type FieldConditions,
+  type FieldConditionSetters,
+  type DoublesState,
+  type DoublesStateSetters,
+  type FaintedCounts,
+  type FaintedCountSetters,
+  type InferredConditions,
+} from "../calc/calc-field-block";
 
 // =============================================================================
 // Mocks
@@ -65,6 +74,7 @@ interface RenderProps {
   setAttackerSide?: jest.Mock;
   defenderSide?: BaseSideState;
   setDefenderSide?: jest.Mock;
+  // Field conditions (flat for convenience — assembled into nested `field`/`setField`)
   weather?: string;
   setWeather?: jest.Mock;
   terrain?: string;
@@ -73,13 +83,16 @@ interface RenderProps {
   setGravity?: jest.Mock;
   fairyAura?: boolean;
   setFairyAura?: jest.Mock;
+  // Doubles-specific (flat for convenience — assembled into nested `doubles`/`setDoubles`)
   foesAlive?: 1 | 2;
   allyAlive?: boolean;
   setFoesAlive?: jest.Mock;
   setAllyAlive?: jest.Mock;
+  // Inferred conditions
   inferredWeather?: string | null;
   inferredTerrain?: string | null;
   attackerAbility?: string | null;
+  // Fainted counters (flat for convenience — assembled into nested `fainted`/`setFainted`)
   faintedYours?: number;
   setFaintedYours?: jest.Mock;
   faintedTheirs?: number;
@@ -99,6 +112,50 @@ function renderBlock(props: RenderProps = {}) {
   const setFaintedYours = props.setFaintedYours ?? jest.fn();
   const setFaintedTheirs = props.setFaintedTheirs ?? jest.fn();
 
+  const field: FieldConditions = {
+    weather: props.weather ?? "",
+    terrain: props.terrain ?? "",
+    gravity: props.gravity ?? false,
+    fairyAura: props.fairyAura ?? false,
+  };
+
+  const setFieldObj: FieldConditionSetters = {
+    setWeather,
+    setTerrain,
+    setGravity,
+    setFairyAura,
+  };
+
+  const doubles: DoublesState = {
+    foesAlive: props.foesAlive ?? 2,
+    allyAlive: props.allyAlive ?? true,
+  };
+
+  const setDoubles: DoublesStateSetters = { setFoesAlive, setAllyAlive };
+
+  const fainted: FaintedCounts = {
+    yours: props.faintedYours ?? 0,
+    theirs: props.faintedTheirs ?? 0,
+  };
+
+  const setFainted: FaintedCountSetters = {
+    setYours: setFaintedYours,
+    setTheirs: setFaintedTheirs,
+  };
+
+  const hasInferred =
+    props.inferredWeather !== undefined ||
+    props.inferredTerrain !== undefined ||
+    props.attackerAbility !== undefined;
+
+  const inferred: InferredConditions | undefined = hasInferred
+    ? {
+        weather: props.inferredWeather ?? null,
+        terrain: props.inferredTerrain ?? null,
+        attackerAbility: props.attackerAbility ?? null,
+      }
+    : undefined;
+
   const result = render(
     <CalcFieldBlock
       gameType={props.gameType ?? "Doubles"}
@@ -107,25 +164,13 @@ function renderBlock(props: RenderProps = {}) {
       setAttackerSide={setAttackerSide}
       defenderSide={props.defenderSide ?? makeSideState()}
       setDefenderSide={setDefenderSide}
-      weather={props.weather ?? ""}
-      setWeather={setWeather}
-      terrain={props.terrain ?? ""}
-      setTerrain={setTerrain}
-      gravity={props.gravity ?? false}
-      setGravity={setGravity}
-      fairyAura={props.fairyAura ?? false}
-      setFairyAura={setFairyAura}
-      foesAlive={props.foesAlive ?? 2}
-      allyAlive={props.allyAlive ?? true}
-      setFoesAlive={setFoesAlive}
-      setAllyAlive={setAllyAlive}
-      inferredWeather={props.inferredWeather ?? null}
-      inferredTerrain={props.inferredTerrain ?? null}
-      attackerAbility={props.attackerAbility ?? null}
-      faintedYours={props.faintedYours ?? 0}
-      setFaintedYours={setFaintedYours}
-      faintedTheirs={props.faintedTheirs ?? 0}
-      setFaintedTheirs={setFaintedTheirs}
+      field={field}
+      setField={setFieldObj}
+      doubles={doubles}
+      setDoubles={setDoubles}
+      fainted={fainted}
+      setFainted={setFainted}
+      inferred={inferred}
     />
   );
 

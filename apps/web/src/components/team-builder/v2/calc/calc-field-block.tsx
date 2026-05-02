@@ -8,32 +8,79 @@ import { type BaseSideState } from "../../use-calc-state";
 // Types
 // =============================================================================
 
+/** Flat field-condition values (weather, terrain, and global toggles). */
+export interface FieldConditions {
+  weather: string;
+  terrain: string;
+  gravity: boolean;
+  fairyAura: boolean;
+}
+
+/** Setters for each individual field condition. */
+export interface FieldConditionSetters {
+  setWeather: (v: string) => void;
+  setTerrain: (v: string) => void;
+  setGravity: (v: boolean) => void;
+  setFairyAura: (v: boolean) => void;
+}
+
+/** Doubles-specific state (hidden in Singles mode). */
+export interface DoublesState {
+  foesAlive: 1 | 2;
+  allyAlive: boolean;
+}
+
+/** Setters for doubles-specific state. */
+export interface DoublesStateSetters {
+  setFoesAlive: (v: 1 | 2) => void;
+  setAllyAlive: (v: boolean) => void;
+}
+
+/** Fainted counters for both sides. */
+export interface FaintedCounts {
+  yours: number;
+  theirs: number;
+}
+
+/** Setters for fainted counters. */
+export interface FaintedCountSetters {
+  setYours: (n: number) => void;
+  setTheirs: (n: number) => void;
+}
+
+/** Optional values inferred from the attacker's ability. */
+export interface InferredConditions {
+  weather: string | null;
+  terrain: string | null;
+  attackerAbility: string | null;
+}
+
 interface CalcFieldBlockProps {
   gameType: "Doubles" | "Singles";
   setGameType: (v: "Doubles" | "Singles") => void;
+
   attackerSide: BaseSideState;
   setAttackerSide: (patch: Partial<BaseSideState>) => void;
   defenderSide: BaseSideState;
   setDefenderSide: (patch: Partial<BaseSideState>) => void;
-  weather: string;
-  setWeather: (v: string) => void;
-  terrain: string;
-  setTerrain: (v: string) => void;
-  gravity: boolean;
-  setGravity: (v: boolean) => void;
-  fairyAura: boolean;
-  setFairyAura: (v: boolean) => void;
-  foesAlive: 1 | 2;
-  allyAlive: boolean;
-  setFoesAlive: (v: 1 | 2) => void;
-  setAllyAlive: (v: boolean) => void;
-  inferredWeather?: string | null;
-  inferredTerrain?: string | null;
-  attackerAbility?: string | null;
-  faintedYours: number;
-  setFaintedYours: (n: number) => void;
-  faintedTheirs: number;
-  setFaintedTheirs: (n: number) => void;
+
+  /** Weather, terrain, gravity, and fairy aura values. */
+  field: FieldConditions;
+  /** Setters for each field condition. */
+  setField: FieldConditionSetters;
+
+  /** Doubles-specific state (foesAlive, allyAlive). Hidden in Singles mode. */
+  doubles: DoublesState;
+  /** Setters for doubles-specific state. */
+  setDoubles: DoublesStateSetters;
+
+  /** Fainted counters for each side. */
+  fainted: FaintedCounts;
+  /** Setters for each fainted counter. */
+  setFainted: FaintedCountSetters;
+
+  /** Values inferred from the attacker's ability (all optional). */
+  inferred?: InferredConditions;
 }
 
 // =============================================================================
@@ -209,26 +256,23 @@ export function CalcFieldBlock({
   setAttackerSide,
   defenderSide,
   setDefenderSide,
-  weather,
-  setWeather,
-  terrain,
-  setTerrain,
-  gravity,
-  setGravity,
-  fairyAura,
-  setFairyAura,
-  foesAlive,
-  allyAlive,
-  setFoesAlive,
-  setAllyAlive,
-  inferredWeather = null,
-  inferredTerrain = null,
-  attackerAbility = null,
-  faintedYours,
-  setFaintedYours,
-  faintedTheirs,
-  setFaintedTheirs,
+  field,
+  setField,
+  doubles,
+  setDoubles,
+  fainted,
+  setFainted,
+  inferred,
 }: CalcFieldBlockProps) {
+  const { weather, terrain, gravity, fairyAura } = field;
+  const { setWeather, setTerrain, setGravity, setFairyAura } = setField;
+  const { foesAlive, allyAlive } = doubles;
+  const { setFoesAlive, setAllyAlive } = setDoubles;
+  const { yours: faintedYours, theirs: faintedTheirs } = fainted;
+  const { setYours: setFaintedYours, setTheirs: setFaintedTheirs } = setFainted;
+  const inferredWeather = inferred?.weather ?? null;
+  const inferredTerrain = inferred?.terrain ?? null;
+  const attackerAbility = inferred?.attackerAbility ?? null;
   return (
     <div className="flex h-full flex-col gap-2.5 overflow-y-auto">
       {/* Header: eyebrow + Singles/Doubles toggle */}

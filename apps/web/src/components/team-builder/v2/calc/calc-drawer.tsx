@@ -169,22 +169,25 @@ function CalcDrawerContent({
         setAttackerSide={calc.setAttackerSide}
         defenderSide={calc.defenderSide}
         setDefenderSide={calc.setDefenderSide}
-        weather={calc.weather}
-        setWeather={calc.setWeather}
-        terrain={calc.terrain}
-        setTerrain={calc.setTerrain}
-        gravity={calc.gravity}
-        setGravity={calc.setGravity}
-        fairyAura={calc.fairyAura}
-        setFairyAura={calc.setFairyAura}
-        foesAlive={field.foesAlive}
-        allyAlive={field.allyAlive}
-        setFoesAlive={handleSetFoesAlive}
-        setAllyAlive={handleSetAllyAlive}
-        faintedYours={faintedYours}
-        setFaintedYours={setFaintedYours}
-        faintedTheirs={faintedTheirs}
-        setFaintedTheirs={setFaintedTheirs}
+        field={{
+          weather: calc.weather,
+          terrain: calc.terrain,
+          gravity: calc.gravity,
+          fairyAura: calc.fairyAura,
+        }}
+        setField={{
+          setWeather: calc.setWeather,
+          setTerrain: calc.setTerrain,
+          setGravity: calc.setGravity,
+          setFairyAura: calc.setFairyAura,
+        }}
+        doubles={{ foesAlive: field.foesAlive, allyAlive: field.allyAlive }}
+        setDoubles={{
+          setFoesAlive: handleSetFoesAlive,
+          setAllyAlive: handleSetAllyAlive,
+        }}
+        fainted={{ yours: faintedYours, theirs: faintedTheirs }}
+        setFainted={{ setYours: setFaintedYours, setTheirs: setFaintedTheirs }}
       />
     </div>
   );

@@ -137,25 +137,33 @@ export function CalcBottomPanel({
             setAttackerSide={calc.setAttackerSide}
             defenderSide={calc.defenderSide}
             setDefenderSide={calc.setDefenderSide}
-            weather={calc.weather}
-            setWeather={calc.setWeather}
-            terrain={calc.terrain}
-            setTerrain={calc.setTerrain}
-            gravity={calc.gravity}
-            setGravity={calc.setGravity}
-            fairyAura={calc.fairyAura}
-            setFairyAura={calc.setFairyAura}
-            foesAlive={calc.field.foesAlive}
-            allyAlive={calc.field.allyAlive}
-            setFoesAlive={(v) => calc.setField({ foesAlive: v })}
-            setAllyAlive={(v) => calc.setField({ allyAlive: v })}
-            inferredWeather={calc.inferredWeather}
-            inferredTerrain={calc.inferredTerrain}
-            attackerAbility={attacker?.ability ?? null}
-            faintedYours={faintedYours}
-            setFaintedYours={setFaintedYours}
-            faintedTheirs={faintedTheirs}
-            setFaintedTheirs={setFaintedTheirs}
+            field={{
+              weather: calc.weather,
+              terrain: calc.terrain,
+              gravity: calc.gravity,
+              fairyAura: calc.fairyAura,
+            }}
+            setField={{
+              setWeather: calc.setWeather,
+              setTerrain: calc.setTerrain,
+              setGravity: calc.setGravity,
+              setFairyAura: calc.setFairyAura,
+            }}
+            doubles={{
+              foesAlive: calc.field.foesAlive,
+              allyAlive: calc.field.allyAlive,
+            }}
+            setDoubles={{
+              setFoesAlive: (v) => calc.setField({ foesAlive: v }),
+              setAllyAlive: (v) => calc.setField({ allyAlive: v }),
+            }}
+            fainted={{ yours: faintedYours, theirs: faintedTheirs }}
+            setFainted={{ setYours: setFaintedYours, setTheirs: setFaintedTheirs }}
+            inferred={{
+              weather: calc.inferredWeather,
+              terrain: calc.inferredTerrain,
+              attackerAbility: attacker?.ability ?? null,
+            }}
           />
         </div>
 
