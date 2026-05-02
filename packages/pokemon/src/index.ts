@@ -44,7 +44,10 @@ export {
 export {
   type BaseStats,
   type NatureEffect,
+  type Nature,
   NATURE_EFFECTS,
+  ALL_NATURES,
+  isNature,
   POKEMON_BASE_STATS,
   getBaseStats,
   calculateHP,
@@ -62,6 +65,7 @@ export {
 export {
   type PokemonType,
   ALL_TYPES,
+  isPokemonType,
   POKEMON_TYPES,
   getSpeciesTypes,
   getTypeEffectiveness,
@@ -120,17 +124,28 @@ export {
 
 // Format legality
 export {
+  getCanonicalBaseSpecies,
+  getFormsForSpecies,
   getLegalAbilities,
   getLegalItems,
   getLegalMoves,
   getLegalSpecies,
   getLegalTeraTypes,
+  getMegaAbilityForSpecies,
   getMegaStoneForSpecies,
   isLegalAbility,
   isLegalItem,
   isLegalMove,
   isLegalSpecies,
   isLegalTeraType,
+  isMegaSpeciesWithStone,
+  isMegaSpeciesWithAbility,
+  legalSetOrPermissive,
+  type LegalityResult,
+  LEGALITY_UNAVAILABLE,
+  type MegaSpeciesWithStone,
+  type MegaSpeciesWithAbility,
+  speciesHasForms,
 } from "./format-legality";
 
 // Competitive format registry (Showdown format IDs + display metadata)
@@ -150,14 +165,24 @@ export {
   getAvailableGames,
   formatHasTera,
   isChampionsFormat,
+  isChampionsFormatId,
 } from "./formats";
 
 // Featured Pokemon for avatar picker
 export { FEATURED_POKEMON } from "./featured-pokemon";
 
-// Canonical stat keys, ordered array, and display labels
+// Canonical stat keys, ordered array, display labels, and stat-investment caps
 export type { StatKey } from "./stat-keys";
-export { STAT_KEYS, STAT_LABELS } from "./stat-keys";
+export {
+  STAT_KEYS,
+  STAT_LABELS,
+  EV_PER_STAT_MAX,
+  EV_TOTAL_MAX,
+  EV_STEP,
+  SP_PER_STAT_MAX,
+  SP_TOTAL_MAX,
+  SP_STEP,
+} from "./stat-keys";
 
 // Stat breakpoint calculator
 export { findStatBreakpoints, type FindStatBreakpointsArgs } from "./nature-bumps";
@@ -221,3 +246,6 @@ export {
   type SpeedAbility,
   getMetaSpeedTiers,
 } from "./meta-speed-tiers";
+
+// Stat stage multiplier helper (battle-time stat adjustments)
+export { applyStage } from "./stage-helpers";

@@ -5,7 +5,7 @@
  * needing a Supabase client or a running Server Action context.
  */
 
-import { getLegalSpecies } from "@trainers/pokemon";
+import { getLegalSpecies, LEGALITY_UNAVAILABLE } from "@trainers/pokemon";
 
 // =============================================================================
 // Types
@@ -46,7 +46,11 @@ export function checkFormatChangeLegality(
   const legalSet = getLegalSpecies(targetFormat);
 
   // No legality list registered for this format — treat as permissive.
-  if (legalSet === undefined) {
+  // LEGALITY_UNAVAILABLE (validator threw) also treated as permissive here:
+  // this guard runs in the format-switcher UX, not the team-submission gate,
+  // so failing closed would leave users unable to switch formats during a
+  // transient sim hiccup. Submission-time gates re-check and fail closed.
+  if (legalSet === undefined || legalSet === LEGALITY_UNAVAILABLE) {
     return { ok: true };
   }
 

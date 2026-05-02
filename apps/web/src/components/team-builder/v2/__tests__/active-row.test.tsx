@@ -22,6 +22,15 @@ jest.mock("../builder.module.css", () =>
   new Proxy({}, { get: (_t, k) => k })
 );
 
+jest.mock("../calc/calc-state-context", () => ({
+  useCalcStateContext: () => ({ calcEnabled: false }),
+  useCalcEnabled: () => false,
+}));
+
+jest.mock("../lanes/calc-column", () => ({
+  CalcColumn: () => <div data-testid="calc-column" />,
+}));
+
 jest.mock("../lanes/identity-lane", () => ({
   IdentityLane: ({
     pokemon,

@@ -3,15 +3,61 @@
  *
  * - Champions: VGC 2026 Reg M-A uses a static port of NCP VGC Damage
  *   Calculator's POKEDEX_CHAMPIONS list (pokedex.js lines 18378–18409,
- *   captured 2026-04-14), because @pkmn/sim doesn't know gen 10.
+ *   captured 2026-04-14), because Champions' synthetic-mega + Stat Points
+ *   ruleset isn't expressible via @pkmn/sim's gen-9 format definitions.
  * - Other formats will be resolved via @pkmn/sim in Task 2.
- * - Unknown / unresolvable formats return `undefined` and callers treat
- *   that as "permissive — all legal."
+ *
+ * Return-shape contract for `getLegal*`:
+ *   - `ReadonlySet<string>` — the legal set (caller checks `.has(value)`)
+ *   - `undefined` — format not registered; legitimately "we don't know
+ *     the rules." Read-path callers (pickers / autocomplete) and gate-path
+ *     callers (team submission / import) all treat this as permissive.
+ *   - `LEGALITY_UNAVAILABLE` (Symbol) — format IS registered but the
+ *     `@pkmn/sim` validator threw mid-iteration. Read-path callers stay
+ *     permissive (don't break the UI on transient sim hiccups). Gate-path
+ *     callers MUST fail closed — better to surface "legality check
+ *     unavailable, please retry" than silently approve a possibly-illegal
+ *     team.
  */
 
-// Library tsconfig uses ES2022 without DOM — ambient console declaration
-// so warn calls compile without adding @types/node or DOM lib.
-declare const console: { warn(...data: unknown[]): void };
+import { logError } from "@trainers/utils";
+
+/**
+ * Sentinel returned by `getLegal*` when the underlying validator threw
+ * mid-iteration — distinct from `undefined` (format not registered) so
+ * gate-path callers can fail closed without breaking pickers.
+ *
+ * Exported as a Symbol with a stable description so tests / debuggers can
+ * recognise it and so it can never collide with a hypothetical legal-set
+ * value of "legality-unavailable".
+ */
+export const LEGALITY_UNAVAILABLE: unique symbol = Symbol("legality-unavailable");
+
+/**
+ * Return type for the family of `getLegal*` lookups. See the file header
+ * for how each branch should be handled by read- vs gate-path callers.
+ */
+export type LegalityResult =
+  | ReadonlySet<string>
+  | undefined
+  | typeof LEGALITY_UNAVAILABLE;
+
+/**
+ * Helper for read-path callers (pickers, autocomplete, format guards).
+ * Collapses both "format not registered" (`undefined`) and "validator
+ * threw" (`LEGALITY_UNAVAILABLE`) into a single permissive `undefined`,
+ * so the call site can keep the simple "use the set if we have one,
+ * otherwise allow anything" branching.
+ *
+ * Gate-path callers (team submission, import) should NOT use this — they
+ * need the distinction so they can fail closed on the sentinel.
+ */
+export function legalSetOrPermissive(
+  result: LegalityResult
+): ReadonlySet<string> | undefined {
+  if (result === undefined || result === LEGALITY_UNAVAILABLE) return undefined;
+  return result;
+}
 
 // =============================================================================
 // Champions: VGC 2026 Reg M-A
@@ -360,7 +406,9 @@ function probeSet(species: Species): PokemonSet {
   return {
     name: species.name,
     species: species.name,
-    item: "",
+    // Use a required item when the form enforces one (e.g. Ogerpon-Wellspring
+    // needs Wellspring Mask). Probing with "" causes a false species-ban.
+    item: species.requiredItems?.[0] ?? species.requiredItem ?? "",
     ability: species.abilities[0] ?? species.abilities.H ?? "No Ability",
     moves: ["Protect"],
     nature: "Hardy",
@@ -392,7 +440,7 @@ function probeSet(species: Species): PokemonSet {
  */
 function computeLegalSpeciesFromSim(
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cached = simSetCache.get(formatId);
   if (cached) return cached;
 
@@ -431,11 +479,11 @@ function computeLegalSpeciesFromSim(
       }
     }
   } catch (error) {
-    console.warn(
-      `[format-legality] Failed to compute species for ${formatId}:`,
-      error
-    );
-    return undefined; // permissive fallback — don't cache error result
+    logError("format-legality.computeSpecies", error, { formatId });
+    // Validator threw — surface via the sentinel so gate-path callers can
+    // fail closed. Read-path callers stay permissive. Don't cache the
+    // error result so a transient sim hiccup doesn't poison the lookup.
+    return LEGALITY_UNAVAILABLE;
   }
 
   simSetCache.set(formatId, legal);
@@ -578,8 +626,13 @@ const CHAMPIONS_MA_LEGAL_ITEMS: ReadonlySet<string> = new Set([
   "Yache Berry",
 ]);
 
-/** Maps mega species names to their required mega stone (Champions M-A). */
-const MEGA_SPECIES_TO_STONE: ReadonlyMap<string, string> = new Map([
+/**
+ * Source-of-truth tuple-array for mega species → mega stone. Declared
+ * `as const` so we can derive the literal-union of mega-species names
+ * (`MegaSpeciesWithStone`) from the data — adding a row here widens the
+ * type automatically.
+ */
+const MEGA_STONE_ENTRIES = [
   // Champions-exclusive megas
   ["Chandelure-Mega", "Chandelurite"],
   ["Chesnaught-Mega", "Chesnaughtite"],
@@ -641,7 +694,29 @@ const MEGA_SPECIES_TO_STONE: ReadonlyMap<string, string> = new Map([
   ["Steelix-Mega", "Steelixite"],
   ["Tyranitar-Mega", "Tyranitarite"],
   ["Venusaur-Mega", "Venusaurite"],
-]);
+] as const;
+
+/** All mega species that appear in `MEGA_SPECIES_TO_STONE`. */
+export type MegaSpeciesWithStone = (typeof MEGA_STONE_ENTRIES)[number][0];
+
+/** Maps mega species names to their required mega stone (Champions M-A). */
+const MEGA_SPECIES_TO_STONE: ReadonlyMap<string, string> = new Map(
+  MEGA_STONE_ENTRIES
+);
+
+const MEGA_STONE_SPECIES_SET: ReadonlySet<string> = new Set(
+  MEGA_STONE_ENTRIES.map(([k]) => k)
+);
+
+/**
+ * Runtime guard: is `species` one of the known mega forms with a mega
+ * stone? Drives picker UI and the team-builder mega toggle.
+ */
+export function isMegaSpeciesWithStone(
+  species: string | null | undefined
+): species is MegaSpeciesWithStone {
+  return species != null && MEGA_STONE_SPECIES_SET.has(species);
+}
 
 // Module-level cache — computed once per process (worker) lifetime, mirroring
 // `simSetCache` for species. First call per format probes ~250 gen-9 items
@@ -667,7 +742,7 @@ const simItemCache = new Map<string, ReadonlySet<string>>();
  */
 function computeLegalItemsFromSim(
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cached = simItemCache.get(formatId);
   if (cached) return cached;
 
@@ -705,11 +780,11 @@ function computeLegalItemsFromSim(
       if (issue === null || issue === "") legal.add(item.name);
     }
   } catch (error) {
-    console.warn(
-      `[format-legality] Failed to compute items for ${formatId}:`,
-      error
-    );
-    return undefined; // permissive fallback — don't cache error result
+    logError("format-legality.computeItems", error, { formatId });
+    // Validator threw — surface via the sentinel so gate-path callers can
+    // fail closed. Read-path callers stay permissive. Don't cache the
+    // error result so a transient sim hiccup doesn't poison the lookup.
+    return LEGALITY_UNAVAILABLE;
   }
 
   simItemCache.set(formatId, legal);
@@ -726,7 +801,6 @@ function computeLegalItemsFromSim(
 // pool per species but has no additional format-level bans on top). Empty
 // set means Champions goes through the sim-backed learnset path with gen-9
 // data; species in Champions are all gen-9 entries so learnsets resolve.
-//   5. serebii.net/vgc/ — no Champions info on overview page
 const CHAMPIONS_MA_MOVE_BANLIST: ReadonlySet<string> = new Set();
 
 /**
@@ -763,7 +837,7 @@ const simMoveCache = new Map<string, ReadonlySet<string>>();
 function computeLegalMovesFromSim(
   species: string,
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cacheKey = `${species}::${formatId}`;
   const cached = simMoveCache.get(cacheKey);
   if (cached) return cached;
@@ -790,11 +864,11 @@ function computeLegalMovesFromSim(
       if (issues === null) legal.add(move.name);
     }
   } catch (error) {
-    console.warn(
-      `[format-legality] Failed to compute moves for ${species} in ${formatId}:`,
-      error
-    );
-    return undefined; // permissive fallback — don't cache error result
+    logError("format-legality.computeMoves", error, { species, formatId });
+    // Validator threw — surface via the sentinel so gate-path callers can
+    // fail closed. Read-path callers stay permissive. Don't cache the
+    // error result so a transient sim hiccup doesn't poison the lookup.
+    return LEGALITY_UNAVAILABLE;
   }
 
   simMoveCache.set(cacheKey, legal);
@@ -830,7 +904,7 @@ const CHAMPIONS_MEGA_LEARNSET_BASE: Readonly<Record<string, string>> = {
  */
 function computeLegalMovesForChampions(
   species: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cached = championsMoveCache.get(species);
   if (cached) return cached;
 
@@ -860,11 +934,11 @@ function computeLegalMovesForChampions(
       }
     }
   } catch (error) {
-    console.warn(
-      `[format-legality] Failed to compute Champions moves for ${species}:`,
-      error
-    );
-    return undefined; // permissive fallback — don't cache error result
+    logError("format-legality.computeChampionsMoves", error, { species });
+    // Validator threw — surface via the sentinel so gate-path callers can
+    // fail closed. Read-path callers stay permissive. Don't cache the
+    // error result so a transient sim hiccup doesn't poison the lookup.
+    return LEGALITY_UNAVAILABLE;
   }
 
   // Append per-species overrides — moves that @pkmn/sim can't derive from
@@ -915,7 +989,7 @@ function speciesAbilityNames(speciesObj: Species): string[] {
 function computeLegalAbilitiesFromSim(
   species: string,
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cacheKey = `${species}::${formatId}`;
   const cached = simAbilityCache.get(cacheKey);
   if (cached) return cached;
@@ -948,11 +1022,11 @@ function computeLegalAbilitiesFromSim(
       if (issue === null || issue === "") legal.add(ability.name);
     }
   } catch (error) {
-    console.warn(
-      `[format-legality] Failed to compute abilities for ${species} in ${formatId}:`,
-      error
-    );
-    return undefined; // permissive fallback — don't cache error result
+    logError("format-legality.computeAbilities", error, { species, formatId });
+    // Validator threw — surface via the sentinel so gate-path callers can
+    // fail closed. Read-path callers stay permissive. Don't cache the
+    // error result so a transient sim hiccup doesn't poison the lookup.
+    return LEGALITY_UNAVAILABLE;
   }
 
   simAbilityCache.set(cacheKey, legal);
@@ -969,7 +1043,7 @@ const championsAbilityCache = new Map<string, ReadonlySet<string>>();
  */
 function computeLegalAbilitiesForChampions(
   species: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   const cached = championsAbilityCache.get(species);
   if (cached) return cached;
 
@@ -1049,7 +1123,7 @@ function formatUsesTerastalClause(formatId: string): boolean {
  */
 export function getLegalSpecies(
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return CHAMPIONS_MA_LEGAL_SPECIES;
   }
@@ -1062,7 +1136,12 @@ export function getLegalSpecies(
  */
 export function isLegalSpecies(species: string, formatId: string): boolean {
   const legal = getLegalSpecies(formatId);
-  return legal === undefined || legal.has(species);
+  // Permissive on unknown format (undefined) AND on validator-threw
+  // sentinel — read-path callers don't break the UI on transient sim
+  // errors. Gate-path callers must check the sentinel themselves before
+  // calling this helper.
+  if (legal === undefined || legal === LEGALITY_UNAVAILABLE) return true;
+  return legal.has(species);
 }
 
 /**
@@ -1072,7 +1151,7 @@ export function isLegalSpecies(species: string, formatId: string): boolean {
  */
 export function getLegalItems(
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) return CHAMPIONS_MA_LEGAL_ITEMS;
   return computeLegalItemsFromSim(formatId);
 }
@@ -1085,7 +1164,8 @@ export function getLegalItems(
 export function isLegalItem(item: string, formatId: string): boolean {
   if (!item) return true;
   const legal = getLegalItems(formatId);
-  return legal === undefined || legal.has(item);
+  if (legal === undefined || legal === LEGALITY_UNAVAILABLE) return true;
+  return legal.has(item);
 }
 
 /**
@@ -1099,7 +1179,7 @@ export function isLegalItem(item: string, formatId: string): boolean {
 export function getLegalMoves(
   species: string,
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return computeLegalMovesForChampions(species);
   }
@@ -1118,7 +1198,8 @@ export function isLegalMove(
 ): boolean {
   if (!move) return true;
   const legal = getLegalMoves(species, formatId);
-  return legal === undefined || legal.has(move);
+  if (legal === undefined || legal === LEGALITY_UNAVAILABLE) return true;
+  return legal.has(move);
 }
 
 /**
@@ -1131,7 +1212,7 @@ export function isLegalMove(
 export function getLegalAbilities(
   species: string,
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return computeLegalAbilitiesForChampions(species);
   }
@@ -1142,6 +1223,12 @@ export function getLegalAbilities(
  * True when `ability` is legal for `species` in `formatId`. Returns true
  * for the empty string (no ability is always legal) and for any format
  * without computable legality (permissive default).
+ *
+ * Mega forms are normalized to their base species before the lookup —
+ * tournament submissions store the pre-mega base ability (e.g. Charizard
+ * with Solar Power that becomes Drought on mega-evolve), so the stored
+ * value must be validated against the base form's ability pool, not the
+ * mega's intrinsic ability.
  */
 export function isLegalAbility(
   ability: string,
@@ -1149,8 +1236,12 @@ export function isLegalAbility(
   formatId: string
 ): boolean {
   if (!ability) return true;
-  const legal = getLegalAbilities(species, formatId);
-  return legal === undefined || legal.has(ability);
+  const lookupSpecies = MEGA_SPECIES_TO_STONE.has(species)
+    ? getCanonicalBaseSpecies(species)
+    : species;
+  const legal = getLegalAbilities(lookupSpecies, formatId);
+  if (legal === undefined || legal === LEGALITY_UNAVAILABLE) return true;
+  return legal.has(ability);
 }
 
 /**
@@ -1164,7 +1255,7 @@ export function isLegalAbility(
  */
 export function getLegalTeraTypes(
   formatId: string
-): ReadonlySet<string> | undefined {
+): LegalityResult {
   // Champions M-A has no Tera — only Mega Evolutions.
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return EMPTY_TERA_SET;
@@ -1185,7 +1276,8 @@ export function getLegalTeraTypes(
 export function isLegalTeraType(type: string, formatId: string): boolean {
   if (!type) return true;
   const legal = getLegalTeraTypes(formatId);
-  return legal === undefined || legal.has(type);
+  if (legal === undefined || legal === LEGALITY_UNAVAILABLE) return true;
+  return legal.has(type);
 }
 
 /**
@@ -1194,4 +1286,242 @@ export function isLegalTeraType(type: string, formatId: string): boolean {
  */
 export function getMegaStoneForSpecies(species: string): string | null {
   return MEGA_SPECIES_TO_STONE.get(species) ?? null;
+}
+
+/**
+ * Map of mega species → the ability that activates after mega evolution.
+ *
+ * The team sheet stores the base form's ability (what's submitted at
+ * registration); this map lets the damage calculator override that with
+ * the post-evolution ability when computing damage. Keep in sync with the
+ * @smogon/calc species data (calc/src/data/species.ts) — each mega's
+ * `abilities[0]` field is the source of truth.
+ */
+const MEGA_ABILITY_ENTRIES = [
+  // Standard Gen 6/7 megas
+  ["Abomasnow-Mega", "Snow Warning"],
+  ["Absol-Mega", "Magic Bounce"],
+  ["Aerodactyl-Mega", "Tough Claws"],
+  ["Aggron-Mega", "Filter"],
+  ["Alakazam-Mega", "Trace"],
+  ["Altaria-Mega", "Pixilate"],
+  ["Ampharos-Mega", "Mold Breaker"],
+  ["Audino-Mega", "Healer"],
+  ["Banette-Mega", "Prankster"],
+  ["Beedrill-Mega", "Adaptability"],
+  ["Blastoise-Mega", "Mega Launcher"],
+  ["Blaziken-Mega", "Speed Boost"],
+  ["Camerupt-Mega", "Sheer Force"],
+  ["Charizard-Mega-X", "Tough Claws"],
+  ["Charizard-Mega-Y", "Drought"],
+  ["Diancie-Mega", "Magic Bounce"],
+  ["Gallade-Mega", "Inner Focus"],
+  ["Garchomp-Mega", "Sand Force"],
+  ["Gardevoir-Mega", "Pixilate"],
+  ["Gengar-Mega", "Shadow Tag"],
+  ["Glalie-Mega", "Refrigerate"],
+  ["Gyarados-Mega", "Mold Breaker"],
+  ["Heracross-Mega", "Skill Link"],
+  ["Houndoom-Mega", "Solar Power"],
+  ["Kangaskhan-Mega", "Parental Bond"],
+  ["Latias-Mega", "Levitate"],
+  ["Latios-Mega", "Levitate"],
+  ["Lopunny-Mega", "Scrappy"],
+  ["Lucario-Mega", "Adaptability"],
+  ["Manectric-Mega", "Intimidate"],
+  ["Mawile-Mega", "Huge Power"],
+  ["Medicham-Mega", "Pure Power"],
+  ["Metagross-Mega", "Tough Claws"],
+  ["Mewtwo-Mega-X", "Steadfast"],
+  ["Mewtwo-Mega-Y", "Insomnia"],
+  ["Pidgeot-Mega", "No Guard"],
+  ["Pinsir-Mega", "Aerilate"],
+  ["Rayquaza-Mega", "Delta Stream"],
+  ["Sableye-Mega", "Magic Bounce"],
+  ["Salamence-Mega", "Aerilate"],
+  ["Sceptile-Mega", "Lightning Rod"],
+  ["Scizor-Mega", "Technician"],
+  ["Sharpedo-Mega", "Strong Jaw"],
+  ["Slowbro-Mega", "Shell Armor"],
+  ["Steelix-Mega", "Sand Force"],
+  ["Swampert-Mega", "Swift Swim"],
+  ["Tyranitar-Mega", "Sand Stream"],
+  ["Venusaur-Mega", "Thick Fat"],
+  // Champions-exclusive megas
+  ["Barbaracle-Mega", "Tough Claws"],
+  ["Baxcalibur-Mega", "Thermal Exchange"],
+  ["Chandelure-Mega", "Infiltrator"],
+  ["Chesnaught-Mega", "Bulletproof"],
+  ["Chimecho-Mega", "Levitate"],
+  ["Clefable-Mega", "Magic Bounce"],
+  ["Crabominable-Mega", "Iron Fist"],
+  ["Darkrai-Mega", "Bad Dreams"],
+  ["Delphox-Mega", "Levitate"],
+  ["Dragalge-Mega", "Poison Point"],
+  ["Dragonite-Mega", "Multiscale"],
+  ["Drampa-Mega", "Berserk"],
+  ["Eelektross-Mega", "Levitate"],
+  ["Emboar-Mega", "Mold Breaker"],
+  ["Excadrill-Mega", "Piercing Drill"],
+  ["Falinks-Mega", "Battle Armor"],
+  ["Feraligatr-Mega", "Dragonize"],
+  ["Floette-Mega", "Fairy Aura"],
+  ["Froslass-Mega", "Snow Warning"],
+  ["Glimmora-Mega", "Adaptability"],
+  ["Golisopod-Mega", "Emergency Exit"],
+  ["Golurk-Mega", "Unseen Fist"],
+  ["Greninja-Mega", "Protean"],
+  ["Hawlucha-Mega", "Limber"],
+  ["Heatran-Mega", "Flash Fire"],
+  ["Magearna-Mega", "Soul-Heart"],
+  ["Magearna-Original-Mega", "Soul-Heart"],
+  ["Malamar-Mega", "Contrary"],
+  ["Meganium-Mega", "Mega Sol"],
+  ["Meowstic-F-Mega", "Trace"],
+  ["Meowstic-M-Mega", "Trace"],
+  ["Pyroar-Mega", "Rivalry"],
+  ["Raichu-Mega-X", "Surge Surfer"],
+  ["Raichu-Mega-Y", "Surge Surfer"],
+  ["Scolipede-Mega", "Poison Point"],
+  ["Scovillain-Mega", "Spicy Spray"],
+  ["Scrafty-Mega", "Shed Skin"],
+  ["Skarmory-Mega", "Keen Eye"],
+  ["Staraptor-Mega", "Intimidate"],
+  ["Starmie-Mega", "Huge Power"],
+  ["Tatsugiri-Curly-Mega", "Commander"],
+  ["Tatsugiri-Droopy-Mega", "Commander"],
+  ["Tatsugiri-Stretchy-Mega", "Commander"],
+  ["Victreebel-Mega", "Innards Out"],
+  ["Zeraora-Mega", "Volt Absorb"],
+  ["Zygarde-Mega", "Aura Break"],
+  // Misc / past-format
+  ["Crucibelle-Mega", "Magic Guard"],
+] as const;
+
+/**
+ * All mega species the calculator knows a post-evolution ability for.
+ * Strictly broader than `MegaSpeciesWithStone` (e.g. Rayquaza-Mega gates
+ * on Dragon Ascent rather than a stone item, so it appears here only).
+ */
+export type MegaSpeciesWithAbility = (typeof MEGA_ABILITY_ENTRIES)[number][0];
+
+const MEGA_SPECIES_TO_ABILITY: ReadonlyMap<string, string> = new Map(
+  MEGA_ABILITY_ENTRIES
+);
+
+const MEGA_ABILITY_SPECIES_SET: ReadonlySet<string> = new Set(
+  MEGA_ABILITY_ENTRIES.map(([k]) => k)
+);
+
+/** Runtime guard: does the calculator know a mega ability for `species`? */
+export function isMegaSpeciesWithAbility(
+  species: string | null | undefined
+): species is MegaSpeciesWithAbility {
+  return species != null && MEGA_ABILITY_SPECIES_SET.has(species);
+}
+
+/**
+ * Returns the post-evolution ability for a mega species, or null if the
+ * species is not a mega form.
+ *
+ * The base form's ability is what gets submitted on a tournament team
+ * sheet (legality requirement). After mega evolution, the species's
+ * intrinsic ability takes over — Drought for Mega Charizard Y, Tough
+ * Claws for Mega Aerodactyl, etc. The damage calculator should compute
+ * with the post-evolution ability while leaving the stored base ability
+ * untouched.
+ */
+export function getMegaAbilityForSpecies(species: string): string | null {
+  return MEGA_SPECIES_TO_ABILITY.get(species) ?? null;
+}
+
+// =============================================================================
+// Form switching
+// =============================================================================
+
+/**
+ * Map of base-species name → list of every form in display order. Each entry
+ * starts with the canonical base form so UI defaults to "regular" when
+ * resolving from a mega/alt form back to the picker.
+ *
+ * Includes: regular, all megas (gen 6/7 + Champions-exclusive), Eternal/AZ
+ * Floette, Aegislash-Blade, Wishiwashi-School, Greninja-Ash, Mimikyu-Busted,
+ * Eternatus-Eternamax (where applicable). Regional forms (Vulpix-Alola,
+ * etc.) are intentionally excluded — they're separate species, not mode
+ * toggles for the same Pokemon.
+ */
+const FORMS_BY_BASE: ReadonlyMap<string, readonly string[]> = (() => {
+  const map = new Map<string, string[]>();
+  // Seed every mega species's base into the map. Each base's first entry is
+  // the base itself; megas are appended in MEGA_SPECIES_TO_STONE order.
+  for (const megaName of MEGA_SPECIES_TO_STONE.keys()) {
+    // "Charizard-Mega-X" → "Charizard"; "Floette-Mega" → "Floette" (then
+    // re-mapped to Floette-Eternal below for Champions).
+    const base = megaName.replace(/-Mega(?:-[XYZ])?$/, "");
+    if (!map.has(base)) map.set(base, [base]);
+    map.get(base)!.push(megaName);
+  }
+  // Floette-Mega's canonical base in Champions is Floette-Eternal, not
+  // Floette. Re-anchor manually.
+  if (map.has("Floette")) {
+    const formes = map.get("Floette")!;
+    const megas = formes.filter((f) => f !== "Floette");
+    map.delete("Floette");
+    map.set("Floette-Eternal", ["Floette-Eternal", ...megas]);
+  }
+  // Battle-mode alt forms not in MEGA_SPECIES_TO_STONE.
+  map.set("Aegislash", ["Aegislash", "Aegislash-Blade"]);
+  map.set("Wishiwashi", ["Wishiwashi", "Wishiwashi-School"]);
+  map.set("Greninja", [
+    ...(map.get("Greninja") ?? ["Greninja"]),
+    "Greninja-Ash",
+  ]);
+  map.set("Mimikyu", ["Mimikyu", "Mimikyu-Busted"]);
+  map.set("Eternatus", ["Eternatus", "Eternatus-Eternamax"]);
+  return map;
+})();
+
+/**
+ * Resolve any species variant (form, mega, alt) to its canonical base used
+ * by `FORMS_BY_BASE`. Returns the input untouched when no transformation
+ * applies — that lets callers safely pass either base or variant names.
+ */
+export function getCanonicalBaseSpecies(species: string): string {
+  if (!species) return species;
+  // Mega forms strip suffix.
+  if (MEGA_SPECIES_TO_STONE.has(species)) {
+    if (species === "Floette-Mega") return "Floette-Eternal";
+    return species.replace(/-Mega(?:-[XYZ])?$/, "");
+  }
+  // Battle-mode alt forms.
+  if (species === "Aegislash-Blade") return "Aegislash";
+  if (species === "Wishiwashi-School") return "Wishiwashi";
+  if (species === "Greninja-Ash") return "Greninja";
+  if (species === "Mimikyu-Busted") return "Mimikyu";
+  if (species === "Eternatus-Eternamax") return "Eternatus";
+  return species;
+}
+
+/**
+ * Return the list of selectable forms for a species, in display order.
+ * Returns `[species]` when the species has no alternate forms.
+ *
+ * The first element is always the canonical base form; consumers can
+ * highlight that as the "default" in a UI picker.
+ *
+ * Pass either a base species ("Charizard") or any variant
+ * ("Charizard-Mega-Y") — both resolve to the same form list.
+ */
+export function getFormsForSpecies(species: string): readonly string[] {
+  if (!species) return [];
+  const base = getCanonicalBaseSpecies(species);
+  return FORMS_BY_BASE.get(base) ?? [base];
+}
+
+/**
+ * True when the species has at least one alternate form (mega, blade,
+ * school, ash, busted, eternamax, etc.).
+ */
+export function speciesHasForms(species: string): boolean {
+  return getFormsForSpecies(species).length > 1;
 }

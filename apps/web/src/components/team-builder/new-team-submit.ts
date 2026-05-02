@@ -4,6 +4,7 @@ import {
   getLegalSpecies,
   getLegalTeraTypes,
   isLegalAbility,
+  LEGALITY_UNAVAILABLE,
 } from "@trainers/pokemon";
 import { type TablesInsert } from "@trainers/supabase";
 import { parseShowdownText } from "@trainers/validators";
@@ -49,7 +50,13 @@ export async function submitNewTeam(
 
     // Reject the whole paste when any species is illegal in the target format.
     if (parsed.length > 0) {
+      const unavailable = {
+        status: "error" as const,
+        error:
+          "Legality check is temporarily unavailable. Please try again in a moment.",
+      };
       const legalSet = getLegalSpecies(input.format);
+      if (legalSet === LEGALITY_UNAVAILABLE) return unavailable;
       if (legalSet !== undefined) {
         const illegal = parsed
           .map((p) => p.species)
@@ -67,6 +74,7 @@ export async function submitNewTeam(
 
       // Reject the whole paste when any held item is illegal in the target format.
       const legalItems = getLegalItems(input.format);
+      if (legalItems === LEGALITY_UNAVAILABLE) return unavailable;
       if (legalItems !== undefined) {
         const illegalItems = parsed
           .map((p) => p.held_item)
@@ -86,6 +94,7 @@ export async function submitNewTeam(
       for (const p of parsed) {
         if (!p.species) continue;
         const legalForSpecies = getLegalMoves(p.species, input.format);
+        if (legalForSpecies === LEGALITY_UNAVAILABLE) return unavailable;
         if (!legalForSpecies) continue;
         for (const slot of ["move1", "move2", "move3", "move4"] as const) {
           const move = p[slot];
@@ -103,10 +112,11 @@ export async function submitNewTeam(
 
       // Reject the whole paste when any Tera type is illegal in the target format.
       const legalTera = getLegalTeraTypes(input.format);
+      if (legalTera === LEGALITY_UNAVAILABLE) return unavailable;
       if (legalTera !== undefined) {
         const illegalTera = parsed
           .map((p) => p.tera_type)
-          .filter((t): t is string => {
+          .filter((t): t is NonNullable<typeof t> => {
             if (!t) return false;
             return !legalTera.has(t);
           });

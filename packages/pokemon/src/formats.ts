@@ -58,7 +58,7 @@ export const POKEMON_GAMES = {
     name: "Pokemon Champions",
     shortName: "Champions",
     // Champions runs on Scarlet/Violet-era mechanics (gen 9 base) layered with
-    // its own Champions-specific extensions (Splendor Points instead of EV/IV,
+    // its own Champions-specific extensions (Stat Points instead of EV/IV,
     // synthetic Mega evolutions, no Tera). It is *not* generation 10 — gen 10
     // is reserved for Winds and Waves, which hasn't released. Champions-specific
     // behaviors are discriminated via `gameShort === "Champions"`, not the
@@ -645,7 +645,8 @@ export const ALL_FORMAT_IDS = VGC_FORMATS.map((f) => f.id);
  * Format IDs that exist in VGC_FORMATS but are NOT supported by @pkmn/sim.
  * Used to filter the VGC registry down to sim-compatible entries.
  *
- * - championsvgc2026regma: Gen 10 format — @pkmn/sim only knows gen 9.
+ * - championsvgc2026regma: Champions' synthetic-mega + Stat Points ruleset
+ *   isn't expressible to @pkmn/sim (gen-9 base mechanics with curated bans).
  */
 export const SIM_UNSUPPORTED_FORMAT_IDS: ReadonlySet<string> = new Set([
   "championsvgc2026regma",
@@ -677,6 +678,23 @@ export function formatHasTera(format: GameFormat | undefined | null): boolean {
   if (isChampionsFormat(format)) return false;
   // Only Generation 9 (Scarlet & Violet) has the Terastal mechanic.
   return format.generation === 9;
+}
+
+/**
+ * Returns true when the given Showdown format ID identifies a Pokemon
+ * Champions format. Accepts only modern Showdown IDs (e.g.
+ * `championsvgc2026regma`) — legacy `game_format` keys are no longer
+ * supported. Callers that handle raw IDs from the DB must use the
+ * Showdown convention.
+ *
+ * Use this in code paths that receive a raw string ID (validators,
+ * team-builder import dialog, etc.) where you don't have a `GameFormat`
+ * object handy. When you have the object, prefer `isChampionsFormat()`.
+ */
+export function isChampionsFormatId(id: string | null | undefined): boolean {
+  if (!id) return false;
+  const format = FORMAT_BY_ID.get(id);
+  return isChampionsFormat(format);
 }
 
 /**

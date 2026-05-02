@@ -32,6 +32,7 @@ import {
   removePokemonFromTeamAction,
   reorderTeamPokemonAction,
   updatePokemonAction,
+  updateTeamAction,
 } from "@/actions/teams";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -86,7 +87,10 @@ interface TeamWorkspaceV2Props {
 function buildSlots(
   teamPokemon: TeamWithPokemon["team_pokemon"]
 ): (Tables<"pokemon"> | null)[] {
-  const slots: (Tables<"pokemon"> | null)[] = Array.from({ length: 6 }, () => null);
+  const slots: (Tables<"pokemon"> | null)[] = Array.from(
+    { length: 6 },
+    () => null
+  );
   for (const entry of teamPokemon) {
     const idx = entry.team_position - 1;
     if (idx >= 0 && idx < 6) {
@@ -416,6 +420,17 @@ export function TeamWorkspaceV2({
       )
     : baseSlots;
 
+  // Calc-panel "focused attacker" row — independent of workspace activeIdx so
+  // the chip strip in the calc bottom panel can target a different mon than
+  // the one being edited. Falls back to activeIdx when attackerSlot is stale
+  // (e.g. localStorage points at a slot that's empty on the loaded team).
+  // The calc engine uses this row's pokemon for boosts/status/mega/crit
+  // tweaks; every other row in the team computes against neutral baseline.
+  const calcAttackerIdx =
+    state.attackerSlot !== null && slots[state.attackerSlot] != null
+      ? state.attackerSlot
+      : state.activeIdx;
+
   // Stable IDs for dnd-kit: pokemon.id (as string) for filled, placeholder for empty.
   const itemIds = slots.map((p, i) =>
     p !== null ? String(p.id) : `__empty__${i}`
@@ -444,9 +459,7 @@ export function TeamWorkspaceV2({
     setReorderIds(nextSlots.map((p) => p?.id ?? null));
 
     const positions = nextSlots
-      .map((p, i) =>
-        p !== null ? { pokemonId: p.id, position: i + 1 } : null
-      )
+      .map((p, i) => (p !== null ? { pokemonId: p.id, position: i + 1 } : null))
       .filter((x): x is { pokemonId: number; position: number } => x !== null);
 
     if (positions.length === 0) return;
@@ -468,7 +481,9 @@ export function TeamWorkspaceV2({
   // Pre-compute dock-pill summaries once here so DockbarConnected never runs
   // getTeamDefensiveSummary / getTeamFastestSpeed on every EV slider tick.
   const defensiveSummary = getTeamDefensiveSummary(optimisticTeamPokemon);
-  const fastestSpeed = format ? getTeamFastestSpeed(optimisticTeamPokemon, format) : 0;
+  const fastestSpeed = format
+    ? getTeamFastestSpeed(optimisticTeamPokemon, format)
+    : 0;
 
   // onRemove for PokeRow — accepts slot idx, opens confirmation dialog
   function handleRemoveByIdx(idx: number) {
@@ -488,11 +503,11 @@ export function TeamWorkspaceV2({
 
   return (
     <CalcStateProvider
-      selectedPokemon={slots[state.activeIdx] ?? null}
+      selectedPokemon={slots[calcAttackerIdx] ?? null}
       format={format}
       field={state.field}
       setField={state.setField}
-      calcEnabled={true}
+      calcEnabled={state.drawer === "calc"}
       faintedYours={state.faintedYours}
       faintedTheirs={state.faintedTheirs}
     >
@@ -506,6 +521,16 @@ export function TeamWorkspaceV2({
           validationErrors={validationErrors}
           onJumpToPokemon={handleJumpToPokemon}
           onValidate={validate}
+          onFormatChange={async (formatId) => {
+            const result = await updateTeamAction(team.id, {
+              format: formatId,
+            });
+            if (!result.success) {
+              toast.error(result.error ?? "Failed to update format.");
+              return;
+            }
+            router.refresh();
+          }}
           exportMenu={<ExportMenu team={team} />}
         />
 
@@ -513,7 +538,12 @@ export function TeamWorkspaceV2({
           <div className={s.builderWorklane} ref={worklaneRef}>
             {/* Editor region — rows scroll inside this region only */}
             <div className={s.editorRegion}>
-              <section className={s.builderRows}>
+              <section
+                className={s.builderRows}
+                data-calc-open={
+                  state.drawer === "calc" && !isMobile ? "true" : "false"
+                }
+              >
                 {isMobile ? (
                   // Mobile: no drag-and-drop, render rows directly.
                   slots.map((p, i) => {
@@ -695,7 +725,7 @@ export function TeamWorkspaceV2({
                       teamSlots={slots}
                       format={format}
                       onClose={() => state.setDrawer(null)}
-                      attackerIdx={state.attackerSlot ?? state.activeIdx}
+                      attackerIdx={calcAttackerIdx}
                       onPickAttacker={(idx) =>
                         state.setAttackerSlot(
                           idx === state.activeIdx ? null : idx
@@ -726,9 +756,13 @@ export function TeamWorkspaceV2({
           {state.drawer === "calc" && isMobile && (
             <CalcDrawer
               open
-              selectedPokemon={slots[state.activeIdx] ?? null}
+              selectedPokemon={slots[calcAttackerIdx] ?? null}
               team={team}
               format={format}
+              faintedYours={state.faintedYours}
+              setFaintedYours={state.setFaintedYours}
+              faintedTheirs={state.faintedTheirs}
+              setFaintedTheirs={state.setFaintedTheirs}
               onClose={() => state.setDrawer(null)}
             />
           )}
@@ -769,7 +803,6 @@ export function TeamWorkspaceV2({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </CalcStateProvider>
   );
 }

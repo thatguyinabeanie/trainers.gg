@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { checkCheckInOpen } from "../../utils/registration";
 import type { Database } from "../../types";
 import {
@@ -5,7 +7,41 @@ import {
   getCurrentUser,
   getCurrentAlt,
   checkCommunityPermission,
+  throwForMissingSingle,
 } from "./helpers";
+
+// =============================================================================
+// Atomic-RPC result schemas
+//
+// Both `register_for_tournament_atomic` and `accept_tournament_invitation_atomic`
+// return a JSON discriminated union. Parsing at the boundary catches drift
+// between the SQL function shape and the TypeScript expectation — a missing
+// `registrationId` or an unknown `status` would silently corrupt downstream
+// data otherwise.
+// =============================================================================
+
+const registerAtomicResultSchema = z.discriminatedUnion("success", [
+  z.object({
+    success: z.literal(true),
+    registrationId: z.number().int().positive(),
+    status: z.enum(["registered", "waitlist"]),
+  }),
+  z.object({
+    success: z.literal(false),
+    error: z.string(),
+  }),
+]);
+
+const acceptInvitationResultSchema = z.discriminatedUnion("success", [
+  z.object({
+    success: z.literal(true),
+    registrationId: z.number().int().positive(),
+  }),
+  z.object({
+    success: z.literal(false),
+    error: z.string(),
+  }),
+]);
 
 /**
  * Register for a tournament
@@ -36,32 +72,41 @@ export async function registerForTournament(
 
   if (rpcError) throw rpcError;
 
-  // RPC returns { success, registrationId, status } or { success: false, error }
-  const typedResult = result as
-    | { success: true; registrationId: number; status: string }
-    | { success: false; error: string }
-    | null;
-
-  if (!typedResult?.success) {
+  const parsed = registerAtomicResultSchema.safeParse(result);
+  if (!parsed.success) {
     throw new Error(
-      (typedResult as { success: false; error: string } | null)?.error ??
-        "Registration failed"
+      "register_for_tournament_atomic returned an unexpected shape — " +
+        "the RPC may have drifted from the client's expected contract."
     );
+  }
+  if (!parsed.data.success) {
+    throw new Error(parsed.data.error);
   }
 
   return {
     success: true,
-    registrationId: typedResult.registrationId,
-    status: typedResult.status as "registered" | "waitlist",
+    registrationId: parsed.data.registrationId,
+    status: parsed.data.status,
   };
 }
 
 /**
  * Update registration preferences (in-game name, display options)
  * Used by the "Edit Registration" flow.
+ *
+ * Filters by both `id` and `tournament_id` so a stale/mismatched registration
+ * ID cannot accidentally mutate a registration belonging to a different tournament.
+ *
+ * Cross-user ownership is enforced by RLS, NOT by an `.eq("alt_id", …)` filter
+ * here — the "Users can update own registration" policy on
+ * `tournament_registrations` (migration 20260201220000_fix_rls_auth_initplan)
+ * restricts UPDATE to rows whose `alt_id` belongs to one of the caller's alts.
+ * If that policy is ever changed, re-evaluate whether app-level enforcement is
+ * needed.
  */
 export async function updateRegistrationPreferences(
   supabase: TypedClient,
+  registrationId: number,
   tournamentId: number,
   data: {
     inGameName?: string;
@@ -69,11 +114,6 @@ export async function updateRegistrationPreferences(
     showCountryFlag?: boolean;
   }
 ) {
-  const alt = await getCurrentAlt(supabase);
-  if (!alt) {
-    throw new Error("Unable to load your account.");
-  }
-
   const { data: registration, error } = await supabase
     .from("tournament_registrations")
     .update({
@@ -81,8 +121,8 @@ export async function updateRegistrationPreferences(
       display_name_option: data.displayNameOption,
       show_country_flag: data.showCountryFlag,
     })
+    .eq("id", registrationId)
     .eq("tournament_id", tournamentId)
-    .eq("alt_id", alt.id)
     .select("id")
     .single();
 
@@ -105,25 +145,38 @@ export async function cancelRegistration(
   }
 
   // Verify ownership
-  const { data: registration } = await supabase
+  const { data: registration, error: regErr } = await supabase
     .from("tournament_registrations")
     .select("alt_id, tournament_id")
     .eq("id", registrationId)
     .single();
 
-  if (!registration) throw new Error("Registration not found");
+  if (!registration) {
+    throwForMissingSingle(regErr, {
+      scope: "cancelRegistration.fetchRegistration",
+      notFoundMessage: "Registration not found",
+      context: { registrationId, altId: alt.id },
+    });
+  }
   if (registration.alt_id !== alt.id) {
     throw new Error("You can only cancel your own registration");
   }
 
   // Check tournament status
-  const { data: tournament } = await supabase
+  const { data: tournament, error: tournamentErr } = await supabase
     .from("tournaments")
     .select("status")
     .eq("id", registration.tournament_id)
     .single();
 
-  if (tournament?.status === "active") {
+  if (!tournament) {
+    throwForMissingSingle(tournamentErr, {
+      scope: "cancelRegistration.fetchTournament",
+      notFoundMessage: "Tournament not found",
+      context: { tournamentId: registration.tournament_id },
+    });
+  }
+  if (tournament.status === "active") {
     throw new Error("Cannot cancel registration after tournament has started");
   }
 
@@ -152,21 +205,33 @@ export async function updateRegistrationStatus(
   if (!user) throw new Error("Not authenticated");
 
   // Get registration and tournament
-  const { data: registration } = await supabase
+  const { data: registration, error: regErr } = await supabase
     .from("tournament_registrations")
     .select("tournament_id")
     .eq("id", registrationId)
     .single();
 
-  if (!registration) throw new Error("Registration not found");
+  if (!registration) {
+    throwForMissingSingle(regErr, {
+      scope: "updateRegistrationStatus.fetchRegistration",
+      notFoundMessage: "Registration not found",
+      context: { registrationId },
+    });
+  }
 
-  const { data: tournament } = await supabase
+  const { data: tournament, error: tournamentErr } = await supabase
     .from("tournaments")
     .select("community_id")
     .eq("id", registration.tournament_id)
     .single();
 
-  if (!tournament) throw new Error("Tournament not found");
+  if (!tournament) {
+    throwForMissingSingle(tournamentErr, {
+      scope: "updateRegistrationStatus.fetchTournament",
+      notFoundMessage: "Tournament not found",
+      context: { tournamentId: registration.tournament_id },
+    });
+  }
 
   // Verify permission
   const hasPermission = await checkCommunityPermission(
@@ -215,14 +280,20 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
   }
 
   // Find the user's registration
-  const { data: registration } = await supabase
+  const { data: registration, error: regErr } = await supabase
     .from("tournament_registrations")
     .select("id, status, team_id")
     .eq("tournament_id", tournamentId)
     .eq("alt_id", profile.id)
     .single();
 
-  if (!registration) throw new Error("Registration not found");
+  if (!registration) {
+    throwForMissingSingle(regErr, {
+      scope: "checkIn.fetchRegistration",
+      notFoundMessage: "Registration not found",
+      context: { tournamentId, altId: profile.id },
+    });
+  }
 
   // Validate current status allows check-in
   if (
@@ -241,7 +312,7 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
   }
 
   // Check tournament allows check-in
-  const { data: tournament } = await supabase
+  const { data: tournament, error: tournamentErr } = await supabase
     .from("tournaments")
     .select(
       "status, allow_late_registration, current_round, late_check_in_max_round"
@@ -249,7 +320,13 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
     .eq("id", tournamentId)
     .single();
 
-  if (!tournament) throw new Error("Tournament not found");
+  if (!tournament) {
+    throwForMissingSingle(tournamentErr, {
+      scope: "checkIn.fetchTournament",
+      notFoundMessage: "Tournament not found",
+      context: { tournamentId },
+    });
+  }
   const { isOpen: checkInOpen } = checkCheckInOpen(tournament);
   if (!checkInOpen) {
     throw new Error("Tournament is not open for check-in");
@@ -281,27 +358,39 @@ export async function undoCheckIn(supabase: TypedClient, tournamentId: number) {
   }
 
   // Find the user's registration
-  const { data: registration } = await supabase
+  const { data: registration, error: regErr } = await supabase
     .from("tournament_registrations")
     .select("id, status")
     .eq("tournament_id", tournamentId)
     .eq("alt_id", profile.id)
     .single();
 
-  if (!registration) throw new Error("Registration not found");
+  if (!registration) {
+    throwForMissingSingle(regErr, {
+      scope: "undoCheckIn.fetchRegistration",
+      notFoundMessage: "Registration not found",
+      context: { tournamentId, altId: profile.id },
+    });
+  }
 
   if (registration.status !== "checked_in") {
     throw new Error("You are not currently checked in");
   }
 
   // Check tournament status - can only undo before tournament starts
-  const { data: tournament } = await supabase
+  const { data: tournament, error: tournamentErr } = await supabase
     .from("tournaments")
     .select("status")
     .eq("id", tournamentId)
     .single();
 
-  if (!tournament) throw new Error("Tournament not found");
+  if (!tournament) {
+    throwForMissingSingle(tournamentErr, {
+      scope: "undoCheckIn.fetchTournament",
+      notFoundMessage: "Tournament not found",
+      context: { tournamentId },
+    });
+  }
   if (tournament.status === "active") {
     throw new Error("Cannot undo check-in after tournament has started");
   }
@@ -330,23 +419,36 @@ export async function withdrawFromTournament(
   }
 
   // Find registration
-  const { data: registration } = await supabase
+  const { data: registration, error: regErr } = await supabase
     .from("tournament_registrations")
     .select("id, tournament_id")
     .eq("tournament_id", tournamentId)
     .eq("alt_id", profile.id)
     .single();
 
-  if (!registration) throw new Error("Registration not found");
+  if (!registration) {
+    throwForMissingSingle(regErr, {
+      scope: "withdrawFromTournament.fetchRegistration",
+      notFoundMessage: "Registration not found",
+      context: { tournamentId, altId: profile.id },
+    });
+  }
 
   // Check tournament status
-  const { data: tournament } = await supabase
+  const { data: tournament, error: tournamentErr } = await supabase
     .from("tournaments")
     .select("status")
     .eq("id", registration.tournament_id)
     .single();
 
-  if (tournament?.status === "active") {
+  if (!tournament) {
+    throwForMissingSingle(tournamentErr, {
+      scope: "withdrawFromTournament.fetchTournament",
+      notFoundMessage: "Tournament not found",
+      context: { tournamentId: registration.tournament_id },
+    });
+  }
+  if (tournament.status === "active") {
     throw new Error("Cannot withdraw after tournament has started");
   }
 
@@ -425,13 +527,19 @@ export async function respondToTournamentInvitation(
   }
 
   if (response === "decline") {
-    const { data: invitation } = await supabase
+    const { data: invitation, error: invitationErr } = await supabase
       .from("tournament_invitations")
       .select("*")
       .eq("id", invitationId)
       .single();
 
-    if (!invitation) throw new Error("Invitation not found");
+    if (!invitation) {
+      throwForMissingSingle(invitationErr, {
+        scope: "respondToTournamentInvitation.fetchInvitation",
+        notFoundMessage: "Invitation not found",
+        context: { invitationId, altId: alt.id },
+      });
+    }
     if (invitation.invited_alt_id !== alt.id) {
       throw new Error("This invitation is not for you");
     }
@@ -459,20 +567,19 @@ export async function respondToTournamentInvitation(
 
   if (error) throw error;
 
-  const result = data as {
-    success: boolean;
-    error?: string;
-    registrationId?: number;
-  } | null;
-
-  if (!result?.success) {
+  const parsed = acceptInvitationResultSchema.safeParse(data);
+  if (!parsed.success) {
     throw new Error(
-      result?.error ?? "Failed to accept invitation. Please try again."
+      "accept_tournament_invitation_atomic returned an unexpected shape — " +
+        "the RPC may have drifted from the client's expected contract."
     );
+  }
+  if (!parsed.data.success) {
+    throw new Error(parsed.data.error);
   }
 
   return {
     success: true,
-    registration: { message: `Registration ID: ${result.registrationId}` },
+    registration: { message: `Registration ID: ${parsed.data.registrationId}` },
   };
 }

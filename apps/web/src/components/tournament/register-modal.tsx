@@ -181,6 +181,7 @@ export function RegisterModal({
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [alts, setAlts] = useState<Alt[]>([]);
+  const [editRegistrationId, setEditRegistrationId] = useState<number | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState<{
     status: "registered" | "waitlist";
     waitlistPosition?: number;
@@ -241,6 +242,7 @@ export function RegisterModal({
         registrationResult.data
       ) {
         const reg = registrationResult.data;
+        setEditRegistrationId(reg.id);
         form.setValue("altId", reg.alt_id.toString());
         if (reg.in_game_name) form.setValue("inGameName", reg.in_game_name);
         if (reg.display_name_option) {
@@ -280,6 +282,7 @@ export function RegisterModal({
       setAlts([]);
       setRegistrationSuccess(null);
       setTournamentFullError(false);
+      setEditRegistrationId(null);
     }
   }, [open, form]);
 
@@ -291,8 +294,12 @@ export function RegisterModal({
     setError(null);
 
     if (isEditMode) {
+      if (!editRegistrationId) {
+        setError("Registration data not loaded. Please close and reopen.");
+        return;
+      }
       // Update existing registration preferences
-      const result = await updateRegistrationAction(tournamentId, {
+      const result = await updateRegistrationAction(editRegistrationId, tournamentId, {
         inGameName: data.inGameName || undefined,
         displayNameOption: data.displayNameOption,
         showCountryFlag: data.showCountryFlag,

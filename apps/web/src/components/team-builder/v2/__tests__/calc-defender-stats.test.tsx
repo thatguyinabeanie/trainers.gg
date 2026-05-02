@@ -4,7 +4,7 @@
  * Behavioral tests for CalcDefenderStats and its internal DefenderStatRow.
  *
  * Covers:
- *   - Static render: stat labels, base stats, species name, type pills
+ *   - Static render: stat labels, base stats
  *   - No-species fallback (default 50 base stats)
  *   - Nature chevrons (▲ boosted / ▽ reduced) on correct rows
  *   - EV text input display (nature suffix, raw number)
@@ -14,10 +14,11 @@
  *   - Stage boost display (applyStage math for positive/negative/zero)
  *   - HP percent slider and HP readout
  *   - Total EV counter display
- *   - Tera chip visible only for tera-supporting formats
- *   - Ability "No abilities found" message when legalAbilities is empty
  *   - setDefenderEv and setDefenderBoost callbacks fire correctly
  *   - setDefenderHpPercent fires on HP slider change
+ *
+ * Note: species name, type pills, sprite, tera chip, loadout chips, and
+ * "no abilities" message now live in DefenderMonHeader — tested separately.
  */
 
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -34,41 +35,6 @@ import { type GameFormat } from "@trainers/pokemon";
 jest.mock("../builder.module.css", () =>
   new Proxy({}, { get: (_t, k) => k })
 );
-
-// Mock heavy child pickers so they don't need their own dependencies.
-jest.mock("../pickers/ability-picker", () => ({
-  AbilityPicker: () => <div data-testid="ability-picker" />,
-}));
-
-jest.mock("../pickers/item-picker", () => ({
-  ItemPicker: () => <div data-testid="item-picker" />,
-}));
-
-jest.mock("../pickers/nature-picker", () => ({
-  NaturePicker: () => <div data-testid="nature-picker" />,
-}));
-
-jest.mock("../pickers/species-picker", () => ({
-  SpeciesPicker: () => <div data-testid="species-picker" />,
-}));
-
-jest.mock("../pickers/type-picker", () => ({
-  TypePicker: () => <div data-testid="type-picker" />,
-}));
-
-// Sprite — lightweight stub.
-jest.mock("../sprite", () => ({
-  Sprite: ({ species }: { species: string }) => (
-    <img data-testid="sprite" alt={species} />
-  ),
-}));
-
-// TypePill — stub that renders a visible badge.
-jest.mock("../type-pill", () => ({
-  TypePill: ({ t }: { t: string }) => (
-    <span data-testid={`type-pill-${t}`}>{t}</span>
-  ),
-}));
 
 // StageDropdown — render a simple select so we can fire change events.
 jest.mock("../calc/stage-dropdown", () => ({
@@ -96,32 +62,8 @@ jest.mock("../calc/stage-dropdown", () => ({
   ),
 }));
 
-// Popover — render children inline so popover content is always queryable.
-jest.mock("@/components/ui/popover", () => ({
-  Popover: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  PopoverTrigger: ({
-    children,
-    className,
-    ...rest
-  }: {
-    children: React.ReactNode;
-    className?: string;
-    [key: string]: unknown;
-  }) => (
-    <button type="button" className={className} {...rest}>
-      {children}
-    </button>
-  ),
-  PopoverContent: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}));
-
 // Mock @trainers/pokemon with deterministic implementations.
 const mockGetBaseStats = jest.fn();
-const mockGetSpeciesTypes = jest.fn();
-const mockGetLegalAbilities = jest.fn();
-const mockGetValidAbilities = jest.fn();
 const mockGetNatureMultiplier = jest.fn();
 const mockFindStatBreakpoints = jest.fn();
 const mockIsChampionsFormat = jest.fn();
@@ -131,9 +73,6 @@ jest.mock("@trainers/pokemon", () => {
   return {
     ...actual,
     getBaseStats: (...args: unknown[]) => mockGetBaseStats(...args),
-    getSpeciesTypes: (...args: unknown[]) => mockGetSpeciesTypes(...args),
-    getLegalAbilities: (...args: unknown[]) => mockGetLegalAbilities(...args),
-    getValidAbilities: (...args: unknown[]) => mockGetValidAbilities(...args),
     getNatureMultiplier: (...args: unknown[]) =>
       mockGetNatureMultiplier(...args),
     findStatBreakpoints: (...args: unknown[]) =>
@@ -181,21 +120,6 @@ const VGC_FORMAT: GameFormat = {
   active: true,
 };
 
-/** A format that does NOT support Tera (Gen 8). */
-const GEN8_FORMAT: GameFormat = {
-  id: "gen8vgc2022",
-  game: "Sword & Shield",
-  gameShort: "SwSh",
-  generation: 8,
-  category: "VGC",
-  year: 2022,
-  regulation: "D",
-  label: "SwSh: Reg D",
-  showdownName: "[Gen 8] VGC 2022 Series 12",
-  doubles: true,
-  active: false,
-};
-
 function makeDefaultEvs(overrides: Partial<DefenderEvs> = {}): DefenderEvs {
   return { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0, ...overrides };
 }
@@ -223,32 +147,19 @@ const UNDEFINED_FORMAT = Symbol("undefined-format");
 
 interface RenderProps {
   defenderSpecies?: string;
-  defenderAbility?: string;
-  defenderItem?: string;
   defenderNature?: string;
-  defenderTera?: string;
   defenderEvs?: DefenderEvs;
   defenderIvs?: DefenderIvs;
   defenderBoosts?: DefenderBoosts;
   defenderHpPercent?: number;
   /** Pass `undefined` to use no format; omit to default to VGC_FORMAT. */
   format?: GameFormat | typeof UNDEFINED_FORMAT;
-  setDefenderSpecies?: jest.Mock;
-  setDefenderAbility?: jest.Mock;
-  setDefenderItem?: jest.Mock;
-  setDefenderNature?: jest.Mock;
-  setDefenderTera?: jest.Mock;
   setDefenderEv?: jest.Mock;
   setDefenderBoost?: jest.Mock;
   setDefenderHpPercent?: jest.Mock;
 }
 
 function renderComponent(props: RenderProps = {}) {
-  const setDefenderSpecies = props.setDefenderSpecies ?? jest.fn();
-  const setDefenderAbility = props.setDefenderAbility ?? jest.fn();
-  const setDefenderItem = props.setDefenderItem ?? jest.fn();
-  const setDefenderNature = props.setDefenderNature ?? jest.fn();
-  const setDefenderTera = props.setDefenderTera ?? jest.fn();
   const setDefenderEv = props.setDefenderEv ?? jest.fn();
   const setDefenderBoost = props.setDefenderBoost ?? jest.fn();
   const setDefenderHpPercent = props.setDefenderHpPercent ?? jest.fn();
@@ -264,20 +175,12 @@ function renderComponent(props: RenderProps = {}) {
   const result = render(
     <CalcDefenderStats
       defenderSpecies={props.defenderSpecies ?? "Garchomp"}
-      defenderAbility={props.defenderAbility ?? "Rough Skin"}
-      defenderItem={props.defenderItem ?? ""}
       defenderNature={props.defenderNature ?? "Hardy"}
-      defenderTera={props.defenderTera ?? ""}
       defenderEvs={props.defenderEvs ?? makeDefaultEvs()}
       defenderIvs={props.defenderIvs ?? makeDefaultIvs()}
       defenderBoosts={props.defenderBoosts ?? makeDefaultBoosts()}
       defenderHpPercent={props.defenderHpPercent ?? 100}
       format={resolvedFormat}
-      setDefenderSpecies={setDefenderSpecies}
-      setDefenderAbility={setDefenderAbility}
-      setDefenderItem={setDefenderItem}
-      setDefenderNature={setDefenderNature}
-      setDefenderTera={setDefenderTera}
       setDefenderEv={setDefenderEv}
       setDefenderBoost={setDefenderBoost}
       setDefenderHpPercent={setDefenderHpPercent}
@@ -286,11 +189,6 @@ function renderComponent(props: RenderProps = {}) {
 
   return {
     ...result,
-    setDefenderSpecies,
-    setDefenderAbility,
-    setDefenderItem,
-    setDefenderNature,
-    setDefenderTera,
     setDefenderEv,
     setDefenderBoost,
     setDefenderHpPercent,
@@ -304,9 +202,6 @@ function renderComponent(props: RenderProps = {}) {
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetBaseStats.mockReturnValue(GARCHOMP_BASE);
-  mockGetSpeciesTypes.mockReturnValue(["Dragon", "Ground"]);
-  mockGetLegalAbilities.mockReturnValue(null); // falls back to valid
-  mockGetValidAbilities.mockReturnValue(["Rough Skin", "Sand Veil", "Sand Force"]);
   mockGetNatureMultiplier.mockReturnValue(1.0);
   mockFindStatBreakpoints.mockReturnValue([]);
   // Default VGC_FORMAT is not Champions.
@@ -327,38 +222,6 @@ describe("CalcDefenderStats — basic render", () => {
     expect(screen.getByText("SpA")).toBeInTheDocument();
     expect(screen.getByText("SpD")).toBeInTheDocument();
     expect(screen.getByText("Spe")).toBeInTheDocument();
-  });
-
-  it("renders the species name as the trigger label", () => {
-    renderComponent({ defenderSpecies: "Garchomp" });
-    expect(screen.getByText("Garchomp")).toBeInTheDocument();
-  });
-
-  it("shows '—' when species is empty", () => {
-    mockGetBaseStats.mockReturnValue(null);
-    mockGetSpeciesTypes.mockReturnValue([]);
-    renderComponent({ defenderSpecies: "", format: UNDEFINED_FORMAT });
-    // The species trigger renders '—' (other empty chips may also render '—')
-    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("renders the sprite", () => {
-    renderComponent();
-    expect(screen.getByTestId("sprite")).toBeInTheDocument();
-  });
-
-  it("renders type pills for each species type", () => {
-    mockGetSpeciesTypes.mockReturnValue(["Dragon", "Ground"]);
-    renderComponent();
-    expect(screen.getByTestId("type-pill-Dragon")).toBeInTheDocument();
-    expect(screen.getByTestId("type-pill-Ground")).toBeInTheDocument();
-  });
-
-  it("renders no type pills when species has no types", () => {
-    mockGetSpeciesTypes.mockReturnValue([]);
-    mockGetBaseStats.mockReturnValue(null);
-    renderComponent({ defenderSpecies: "", format: UNDEFINED_FORMAT });
-    expect(screen.queryByTestId(/^type-pill-/)).not.toBeInTheDocument();
   });
 
   it("renders the Garchomp HP base stat (108)", () => {
@@ -397,6 +260,11 @@ describe("CalcDefenderStats — no-species fallback", () => {
     // All base stats columns should show 50
     const fifties = screen.getAllByText("50");
     expect(fifties.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("renders without error when species is empty", () => {
+    mockGetBaseStats.mockReturnValue(null);
+    expect(() => renderComponent({ defenderSpecies: "", format: UNDEFINED_FORMAT })).not.toThrow();
   });
 });
 
@@ -744,10 +612,10 @@ describe("CalcDefenderStats — HP slider", () => {
 // =============================================================================
 
 describe("CalcDefenderStats — total EV counter", () => {
-  it("shows 0/510 when no EVs are invested", () => {
+  it("shows 0/508 when no EVs are invested", () => {
     renderComponent({ defenderEvs: makeDefaultEvs() });
-    // "/510" is rendered in a nested span; just verify it exists
-    expect(screen.getByText("/510")).toBeInTheDocument();
+    // "/508" is rendered in a nested span; just verify it exists
+    expect(screen.getByText("/508")).toBeInTheDocument();
   });
 
   it("shows correct total when EVs are partially invested", () => {
@@ -757,139 +625,11 @@ describe("CalcDefenderStats — total EV counter", () => {
     expect(screen.getByText("504")).toBeInTheDocument();
   });
 
-  it("shows 510/510 when fully invested", () => {
+  it("shows total over the 508 design cap when 510 EVs are invested", () => {
     renderComponent({
       defenderEvs: makeDefaultEvs({ hp: 252, atk: 252, def: 6 }),
     });
     expect(screen.getByText("510")).toBeInTheDocument();
-  });
-});
-
-// =============================================================================
-// Tera chip visibility
-// =============================================================================
-
-describe("CalcDefenderStats — Tera chip", () => {
-  it("renders the tera chip in a format that supports Tera", () => {
-    // VGC_FORMAT is gen 9 which supports Tera via @trainers/pokemon's formatHasTera
-    renderComponent({ format: VGC_FORMAT, defenderTera: "Fire" });
-    // The chip shows "Fire tera" when tera is set
-    expect(screen.getByText(/Fire tera/i)).toBeInTheDocument();
-  });
-
-  it("shows '—' for tera chip when tera is not selected", () => {
-    renderComponent({ format: VGC_FORMAT, defenderTera: "" });
-    // tera chip label = "tera", value = "—"
-    expect(screen.getByText("tera")).toBeInTheDocument();
-  });
-
-  it("does NOT render the tera chip for Gen 8 format (no Tera)", () => {
-    renderComponent({ format: GEN8_FORMAT });
-    expect(screen.queryByText("tera")).not.toBeInTheDocument();
-  });
-
-  it("does NOT render the tera chip when format is undefined", () => {
-    renderComponent({ format: UNDEFINED_FORMAT });
-    expect(screen.queryByText("tera")).not.toBeInTheDocument();
-  });
-});
-
-// =============================================================================
-// Loadout chips
-// =============================================================================
-
-describe("CalcDefenderStats — loadout chips", () => {
-  it("renders the item chip with the item name", () => {
-    renderComponent({ defenderItem: "Sitrus Berry" });
-    expect(screen.getByText("Sitrus Berry")).toBeInTheDocument();
-  });
-
-  it("renders '—' for item chip when item is empty", () => {
-    renderComponent({ defenderItem: "" });
-    // Multiple "—" may appear (item and other empty chips) — just verify at least one
-    const dashes = screen.getAllByText("—");
-    expect(dashes.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("renders the ability chip label", () => {
-    renderComponent({ defenderAbility: "Intimidate" });
-    expect(screen.getByText("Intimidate")).toBeInTheDocument();
-    expect(screen.getByText("abil")).toBeInTheDocument();
-  });
-
-  it("renders the nature chip label", () => {
-    renderComponent({ defenderNature: "Timid" });
-    expect(screen.getByText("Timid")).toBeInTheDocument();
-    expect(screen.getByText("nat")).toBeInTheDocument();
-  });
-
-  it("renders the item chip prefix label 'item'", () => {
-    renderComponent();
-    expect(screen.getByText("item")).toBeInTheDocument();
-  });
-});
-
-// =============================================================================
-// Ability "no abilities found" message
-// =============================================================================
-
-describe("CalcDefenderStats — ability not found", () => {
-  it("shows 'No abilities found for format' when legalAbilities is empty array", () => {
-    // getLegalAbilities returns an empty Set (not null) so the Array.from branch executes
-    mockGetLegalAbilities.mockReturnValue(new Set([]));
-    renderComponent({
-      format: VGC_FORMAT,
-      defenderSpecies: "Garchomp",
-    });
-    expect(
-      screen.getByText("No abilities found for format")
-    ).toBeInTheDocument();
-  });
-
-  it("does NOT show the message when abilities are found", () => {
-    mockGetLegalAbilities.mockReturnValue(
-      new Set(["Rough Skin", "Sand Veil"])
-    );
-    renderComponent({ format: VGC_FORMAT, defenderSpecies: "Garchomp" });
-    expect(
-      screen.queryByText("No abilities found for format")
-    ).not.toBeInTheDocument();
-  });
-
-  it("does NOT show the message when defenderSpecies is empty", () => {
-    mockGetBaseStats.mockReturnValue(null);
-    mockGetSpeciesTypes.mockReturnValue([]);
-    mockGetValidAbilities.mockReturnValue([]);
-    renderComponent({ defenderSpecies: "", format: UNDEFINED_FORMAT });
-    expect(
-      screen.queryByText("No abilities found for format")
-    ).not.toBeInTheDocument();
-  });
-});
-
-// =============================================================================
-// Ability list — format-aware fetch
-// =============================================================================
-
-describe("CalcDefenderStats — ability list fetch", () => {
-  it("calls getLegalAbilities with species and format.id when format is provided", () => {
-    mockGetLegalAbilities.mockReturnValue(new Set(["Rough Skin"]));
-    renderComponent({ format: VGC_FORMAT, defenderSpecies: "Garchomp" });
-    expect(mockGetLegalAbilities).toHaveBeenCalledWith(
-      "Garchomp",
-      VGC_FORMAT.id
-    );
-  });
-
-  it("falls back to getValidAbilities when getLegalAbilities returns null", () => {
-    mockGetLegalAbilities.mockReturnValue(null);
-    renderComponent({ format: VGC_FORMAT, defenderSpecies: "Garchomp" });
-    expect(mockGetValidAbilities).toHaveBeenCalledWith("Garchomp");
-  });
-
-  it("calls getValidAbilities directly when format is undefined", () => {
-    renderComponent({ format: UNDEFINED_FORMAT, defenderSpecies: "Garchomp" });
-    expect(mockGetValidAbilities).toHaveBeenCalledWith("Garchomp");
   });
 });
 

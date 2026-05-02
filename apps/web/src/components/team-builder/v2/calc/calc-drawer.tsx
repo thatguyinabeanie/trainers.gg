@@ -19,6 +19,10 @@ interface CalcDrawerProps {
   selectedPokemon: Tables<"pokemon"> | null;
   team: TeamWithPokemon;
   format: GameFormat | undefined;
+  faintedYours: number;
+  setFaintedYours: (n: number) => void;
+  faintedTheirs: number;
+  setFaintedTheirs: (n: number) => void;
   onClose: () => void;
 }
 
@@ -34,6 +38,10 @@ export function CalcDrawer({
   selectedPokemon,
   team,
   format,
+  faintedYours,
+  setFaintedYours,
+  faintedTheirs,
+  setFaintedTheirs,
   onClose,
 }: CalcDrawerProps) {
   if (!open) return null;
@@ -79,6 +87,10 @@ export function CalcDrawer({
             selectedPokemon={selectedPokemon}
             team={team}
             format={format}
+            faintedYours={faintedYours}
+            setFaintedYours={setFaintedYours}
+            faintedTheirs={faintedTheirs}
+            setFaintedTheirs={setFaintedTheirs}
           />
         )}
       </SheetContent>
@@ -90,12 +102,20 @@ interface CalcDrawerContentProps {
   selectedPokemon: Tables<"pokemon">;
   team: TeamWithPokemon;
   format: GameFormat | undefined;
+  faintedYours: number;
+  setFaintedYours: (n: number) => void;
+  faintedTheirs: number;
+  setFaintedTheirs: (n: number) => void;
 }
 
 function CalcDrawerContent({
   selectedPokemon: _selectedPokemon,
   team,
   format,
+  faintedYours,
+  setFaintedYours,
+  faintedTheirs,
+  setFaintedTheirs,
 }: CalcDrawerContentProps) {
   const calc = useCalcStateContext();
   const { field, setField } = calc;
@@ -149,20 +169,25 @@ function CalcDrawerContent({
         setAttackerSide={calc.setAttackerSide}
         defenderSide={calc.defenderSide}
         setDefenderSide={calc.setDefenderSide}
-        weather={calc.weather}
-        setWeather={calc.setWeather}
-        terrain={calc.terrain}
-        setTerrain={calc.setTerrain}
-        gravity={calc.gravity}
-        setGravity={calc.setGravity}
-        foesAlive={field.foesAlive}
-        allyAlive={field.allyAlive}
-        setFoesAlive={handleSetFoesAlive}
-        setAllyAlive={handleSetAllyAlive}
-        faintedYours={0}
-        setFaintedYours={() => {}}
-        faintedTheirs={0}
-        setFaintedTheirs={() => {}}
+        field={{
+          weather: calc.weather,
+          terrain: calc.terrain,
+          gravity: calc.gravity,
+          fairyAura: calc.fairyAura,
+        }}
+        setField={{
+          setWeather: calc.setWeather,
+          setTerrain: calc.setTerrain,
+          setGravity: calc.setGravity,
+          setFairyAura: calc.setFairyAura,
+        }}
+        doubles={{ foesAlive: field.foesAlive, allyAlive: field.allyAlive }}
+        setDoubles={{
+          setFoesAlive: handleSetFoesAlive,
+          setAllyAlive: handleSetAllyAlive,
+        }}
+        fainted={{ yours: faintedYours, theirs: faintedTheirs }}
+        setFainted={{ setYours: setFaintedYours, setTheirs: setFaintedTheirs }}
       />
     </div>
   );

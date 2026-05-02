@@ -10,19 +10,24 @@ import {
 } from "@dnd-kit/core";
 
 import { getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
-import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/supabase";
+import {
+  type Tables,
+  type TablesUpdate,
+  type TeamWithPokemon,
+} from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 import { type ValidationError } from "../validation-hooks";
 import { Sprite } from "./sprite";
 import { TypePill } from "./type-pill";
 import { ActiveRow } from "./lanes/active-row";
+import { CalcColumn } from "./lanes/calc-column";
+import { IdentityLane } from "./lanes/identity-lane";
+import { StatsLane } from "./lanes/stats-lane";
+import { MovesLane } from "./lanes/moves-lane";
+import { useCalcEnabled } from "./calc/calc-state-context";
 import { SpeciesPicker } from "./pickers/species-picker";
 import s from "./builder.module.css";
 
@@ -46,40 +51,12 @@ interface PokeRowProps {
   onRemove?: (idx: number) => void;
   teamPokemon?: TeamWithPokemon["team_pokemon"];
   format?: GameFormat;
-  onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
+  onPokemonUpdate?: (
+    pokemonId: number,
+    fields: Partial<TablesUpdate<"pokemon">>
+  ) => void;
   /** Validation errors for this slot's pokemon. */
   slotErrors?: ValidationError[];
-}
-
-// =============================================================================
-// Slot rib — "01", "02", … left-edge label + error dot
-// =============================================================================
-
-interface SlotRibProps {
-  idx: number;
-  hasError?: boolean;
-  hasWarning?: boolean;
-}
-
-function SlotRib({ idx, hasError, hasWarning }: SlotRibProps) {
-  return (
-    <span className="relative w-7 shrink-0 font-mono text-xs font-medium text-muted-foreground">
-      {String(idx + 1).padStart(2, "0")}
-      {/* Error/warning dot — shown when this slot has validation issues */}
-      {hasError && (
-        <span
-          className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-destructive"
-          aria-label="Has validation errors"
-        />
-      )}
-      {!hasError && hasWarning && (
-        <span
-          className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-amber-500"
-          aria-label="Has validation warnings"
-        />
-      )}
-    </span>
-  );
 }
 
 // =============================================================================
@@ -93,47 +70,56 @@ interface EmptyRowProps {
   onAdd?: (idx: number, species: string) => void;
 }
 
-function EmptyRow({ idx, density, format, onAdd }: EmptyRowProps) {
+function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
   const [open, setOpen] = useState(false);
+  const calcEnabled = useCalcEnabled();
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className={cn(
-              "flex w-full items-center gap-3 rounded-lg border border-dashed border-border px-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/30",
-              density === "comfy" ? "py-3" : "py-2"
-            )}
-          />
-        }
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={`Add Pokémon to slot ${String(idx + 1).padStart(2, "0")}`}
+        className={cn(
+          "border-border bg-card flex w-fit min-w-0 flex-wrap items-stretch self-start overflow-hidden rounded-lg border border-dashed",
+          "hover:border-primary/40 hover:bg-muted/10 text-left transition-colors",
+          "focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
+        )}
       >
-        <SlotRib idx={idx} />
-        <span className="text-sm text-muted-foreground">+ Add Pokémon</span>
-        <span className="text-xs text-muted-foreground/60">
-          or paste a Showdown set
-        </span>
-      </PopoverTrigger>
+        {/* RIB — slot number + × placeholder */}
+        <div className="border-border/60 bg-muted/20 flex w-10 shrink-0 flex-col items-center justify-between border-r border-dashed py-2">
+          <span className="text-muted-foreground font-mono text-[10px] font-medium tracking-wide">
+            {String(idx + 1).padStart(2, "0")}
+          </span>
+          <span className="text-muted-foreground/20 flex size-5 items-center justify-center rounded">
+            ×
+          </span>
+        </div>
 
-      <PopoverContent
-        side="bottom"
-        align="start"
-        sideOffset={6}
-        className="w-[920px] max-w-[calc(100vw-2rem)] p-0"
-        style={{ maxHeight: "min(70vh, 640px)" }}
-      >
-        <SpeciesPicker
-          value={null}
-          format={format}
-          onPick={(species) => {
-            onAdd?.(idx, species);
-            setOpen(false);
-          }}
-          onClose={() => setOpen(false)}
-        />
-      </PopoverContent>
-    </Popover>
+        <IdentityLane pokemon={null} format={_format} />
+        <StatsLane pokemon={null} format={_format} />
+        <MovesLane pokemon={null} format={_format} />
+        {calcEnabled && <CalcColumn pokemon={null} />}
+      </button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-[calc(100vw-2rem)] overflow-hidden p-0 sm:max-w-[920px]"
+          style={{ height: "min(70vh, 640px)" }}
+        >
+          <SpeciesPicker
+            value={null}
+            format={_format}
+            onPick={(species) => {
+              onAdd?.(idx, species);
+              setOpen(false);
+            }}
+            onClose={() => setOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -178,7 +164,7 @@ function CollapsedRow({
   return (
     <div
       className={cn(
-        "group flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3 transition-colors hover:bg-muted/30",
+        "group border-border bg-card hover:bg-muted/30 flex w-full items-center gap-3 rounded-lg border px-3 transition-colors",
         density === "comfy" ? "py-2" : "py-1.5",
         isDragging && s.rowDragging
       )}
@@ -188,21 +174,23 @@ function CollapsedRow({
         {...dragAttributes}
         {...dragListeners}
         className={cn(
-          "relative w-7 shrink-0 font-mono text-xs font-medium text-muted-foreground",
+          "text-muted-foreground relative w-7 shrink-0 font-mono text-xs font-medium",
           dragListeners && s.dragHandle
         )}
-        aria-label={dragListeners ? `Drag to reorder slot ${idx + 1}` : undefined}
+        aria-label={
+          dragListeners ? `Drag to reorder slot ${idx + 1}` : undefined
+        }
       >
         {String(idx + 1).padStart(2, "0")}
         {hasError && (
           <span
-            className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-destructive"
+            className="bg-destructive absolute -top-0.5 -right-0.5 size-1.5 rounded-full"
             aria-label="Has validation errors"
           />
         )}
         {!hasError && hasWarning && (
           <span
-            className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-amber-500"
+            className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-amber-500"
             aria-label="Has validation warnings"
           />
         )}
@@ -257,7 +245,7 @@ function CollapsedRow({
       <button
         type="button"
         onClick={() => onActivate(idx)}
-        className="ml-auto flex size-6 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground ml-auto flex size-6 shrink-0 items-center justify-center transition-colors"
         aria-label="Expand"
       >
         <ChevronDown className="size-4" />
@@ -269,7 +257,7 @@ function CollapsedRow({
           e.stopPropagation();
           onRemove?.(idx);
         }}
-        className="flex size-6 shrink-0 items-center justify-center text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
+        className="text-muted-foreground hover:text-destructive flex size-6 shrink-0 items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
         aria-label={`Remove ${pokemon.species ?? "Pokémon"} from slot ${idx + 1}`}
       >
         <X className="size-3.5" />
@@ -288,8 +276,13 @@ interface ActiveRowShellProps {
   onRemove?: (idx: number) => void;
   teamPokemon: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
-  onPokemonUpdate?: (pokemonId: number, fields: Partial<TablesUpdate<"pokemon">>) => void;
+  onPokemonUpdate?: (
+    pokemonId: number,
+    fields: Partial<TablesUpdate<"pokemon">>
+  ) => void;
   slotErrors: ValidationError[];
+  /** Forwarded to <ActiveRow> so CalcColumn can suppress non-active outputs. */
+  isActive: boolean;
   dragAttributes?: DraggableAttributes;
   dragListeners?: DraggableSyntheticListeners;
   isDragging?: boolean;
@@ -303,17 +296,19 @@ function ActiveRowShell({
   format,
   onPokemonUpdate,
   slotErrors,
+  isActive,
   dragAttributes,
   dragListeners,
   isDragging = false,
 }: ActiveRowShellProps) {
   return (
-    <div className="overflow-x-hidden rounded-lg">
+    <div className="rounded-lg">
       <ActiveRow
         idx={idx}
         pokemon={pokemon}
         teamPokemon={teamPokemon}
         format={format}
+        isActive={isActive}
         onUpdate={(fields) => onPokemonUpdate?.(pokemon.id, fields)}
         onRemove={() => onRemove?.(idx)}
         fieldErrors={slotErrors}
@@ -392,6 +387,7 @@ export function PokeRow({
           format={format}
           onPokemonUpdate={onPokemonUpdate}
           slotErrors={slotErrors}
+          isActive={isActive}
           dragAttributes={attributes}
           dragListeners={listeners}
           isDragging={isDragging}

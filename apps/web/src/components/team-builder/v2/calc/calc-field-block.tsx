@@ -2,44 +2,85 @@
 
 import { cn } from "@/lib/utils";
 
-import {
-  type AttackerSideState,
-  type DefenderSideState,
-} from "../../use-calc-state";
+import { type BaseSideState } from "../../use-calc-state";
 
 // =============================================================================
 // Types
 // =============================================================================
 
+/** Flat field-condition values (weather, terrain, and global toggles). */
+export interface FieldConditions {
+  weather: string;
+  terrain: string;
+  gravity: boolean;
+  fairyAura: boolean;
+}
+
+/** Setters for each individual field condition. */
+export interface FieldConditionSetters {
+  setWeather: (v: string) => void;
+  setTerrain: (v: string) => void;
+  setGravity: (v: boolean) => void;
+  setFairyAura: (v: boolean) => void;
+}
+
+/** Doubles-specific state (hidden in Singles mode). */
+export interface DoublesState {
+  foesAlive: 1 | 2;
+  allyAlive: boolean;
+}
+
+/** Setters for doubles-specific state. */
+export interface DoublesStateSetters {
+  setFoesAlive: (v: 1 | 2) => void;
+  setAllyAlive: (v: boolean) => void;
+}
+
+/** Fainted counters for both sides. */
+export interface FaintedCounts {
+  yours: number;
+  theirs: number;
+}
+
+/** Setters for fainted counters. */
+export interface FaintedCountSetters {
+  setYours: (n: number) => void;
+  setTheirs: (n: number) => void;
+}
+
+/** Optional values inferred from the attacker's ability. */
+export interface InferredConditions {
+  weather: string | null;
+  terrain: string | null;
+  attackerAbility: string | null;
+}
+
 interface CalcFieldBlockProps {
   gameType: "Doubles" | "Singles";
   setGameType: (v: "Doubles" | "Singles") => void;
-  attackerSide: AttackerSideState;
-  setAttackerSide: (patch: Partial<AttackerSideState>) => void;
-  defenderSide: DefenderSideState;
-  setDefenderSide: (patch: Partial<DefenderSideState>) => void;
-  weather: string;
-  setWeather: (v: string) => void;
-  terrain: string;
-  setTerrain: (v: string) => void;
-  gravity: boolean;
-  setGravity: (v: boolean) => void;
-  foesAlive: 1 | 2;
-  allyAlive: boolean;
-  setFoesAlive: (v: 1 | 2) => void;
-  setAllyAlive: (v: boolean) => void;
-  /** Inferred weather from attacker ability (null when user has explicit weather or ability doesn't set it). */
-  inferredWeather?: string | null;
-  /** Inferred terrain from attacker ability (null when user has explicit terrain or ability doesn't set it). */
-  inferredTerrain?: string | null;
-  /** Attacker's ability name — shown in the "inferred from X" badge. */
-  attackerAbility?: string | null;
-  /** Fainted count for YOUR team (0..5), used for Last Respects BP scaling. */
-  faintedYours: number;
-  setFaintedYours: (n: number) => void;
-  /** Fainted count for THEIR team (0..5), used for Last Respects BP scaling. */
-  faintedTheirs: number;
-  setFaintedTheirs: (n: number) => void;
+
+  attackerSide: BaseSideState;
+  setAttackerSide: (patch: Partial<BaseSideState>) => void;
+  defenderSide: BaseSideState;
+  setDefenderSide: (patch: Partial<BaseSideState>) => void;
+
+  /** Weather, terrain, gravity, and fairy aura values. */
+  field: FieldConditions;
+  /** Setters for each field condition. */
+  setField: FieldConditionSetters;
+
+  /** Doubles-specific state (foesAlive, allyAlive). Hidden in Singles mode. */
+  doubles: DoublesState;
+  /** Setters for doubles-specific state. */
+  setDoubles: DoublesStateSetters;
+
+  /** Fainted counters for each side. */
+  fainted: FaintedCounts;
+  /** Setters for each fainted counter. */
+  setFainted: FaintedCountSetters;
+
+  /** Values inferred from the attacker's ability (all optional). */
+  inferred?: InferredConditions;
 }
 
 // =============================================================================
@@ -127,36 +168,13 @@ function ToggleBtn({ active, onClick, children }: ToggleBtnProps) {
 interface SideCardProps {
   title: "Yours" | "Theirs";
   color: "primary" | "destructive";
-  tailwind: boolean;
-  onTailwind: () => void;
-  reflect: boolean;
-  onReflect: () => void;
-  lightScreen: boolean;
-  onLightScreen: () => void;
-  helpingHand?: boolean;
-  onHelpingHand?: () => void;
-  stealthRock?: boolean;
-  onStealthRock?: () => void;
+  side: BaseSideState;
+  onUpdate: (patch: Partial<BaseSideState>) => void;
   fainted: number;
   setFainted: (n: number) => void;
 }
 
-function SideCard({
-  title,
-  color,
-  tailwind,
-  onTailwind,
-  reflect,
-  onReflect,
-  lightScreen,
-  onLightScreen,
-  helpingHand,
-  onHelpingHand,
-  stealthRock,
-  onStealthRock,
-  fainted,
-  setFainted,
-}: SideCardProps) {
+function SideCard({ title, color, side, onUpdate, fainted, setFainted }: SideCardProps) {
   return (
     <div className="rounded-md border bg-card p-2">
       <div
@@ -169,30 +187,48 @@ function SideCard({
       </div>
 
       <div className="mb-1.5 flex flex-wrap gap-1">
-        <ToggleBtn active={tailwind} onClick={onTailwind}>
-          TW
+        <ToggleBtn active={side.tailwind} onClick={() => onUpdate({ tailwind: !side.tailwind })}>
+          Tailwind
         </ToggleBtn>
-        <ToggleBtn active={reflect} onClick={onReflect}>
-          Refl
+        <ToggleBtn active={side.reflect} onClick={() => onUpdate({ reflect: !side.reflect })}>
+          Reflect
         </ToggleBtn>
-        <ToggleBtn active={lightScreen} onClick={onLightScreen}>
-          L.Scr
+        <ToggleBtn active={side.lightScreen} onClick={() => onUpdate({ lightScreen: !side.lightScreen })}>
+          Light Screen
         </ToggleBtn>
-        {title === "Yours" && onHelpingHand !== undefined && (
-          <ToggleBtn active={helpingHand ?? false} onClick={onHelpingHand}>
-            H.Hand
-          </ToggleBtn>
-        )}
-        {title === "Theirs" && onStealthRock !== undefined && (
-          <ToggleBtn active={stealthRock ?? false} onClick={onStealthRock}>
-            ⛰ Rocks
-          </ToggleBtn>
-        )}
+        <ToggleBtn active={side.auroraVeil} onClick={() => onUpdate({ auroraVeil: !side.auroraVeil })}>
+          Aurora Veil
+        </ToggleBtn>
+        <ToggleBtn active={side.helpingHand} onClick={() => onUpdate({ helpingHand: !side.helpingHand })}>
+          Helping Hand
+        </ToggleBtn>
+        <ToggleBtn active={side.friendGuard} onClick={() => onUpdate({ friendGuard: !side.friendGuard })}>
+          Friend Guard
+        </ToggleBtn>
+        <ToggleBtn active={side.protect} onClick={() => onUpdate({ protect: !side.protect })}>
+          Protect
+        </ToggleBtn>
       </div>
 
-      {/* Fainted stepper */}
+      <div className="mb-1.5 flex flex-wrap items-center gap-1 border-t border-dashed pt-1.5">
+        <ToggleBtn active={side.stealthRock} onClick={() => onUpdate({ stealthRock: !side.stealthRock })}>
+          Stealth Rock
+        </ToggleBtn>
+        <div className="flex items-center gap-1 font-mono text-[9.5px] text-muted-foreground">
+          <span>Spikes</span>
+          <Stepper<0 | 1 | 2 | 3>
+            options={[0, 1, 2, 3] as const}
+            value={side.spikes}
+            onChange={(v) => onUpdate({ spikes: v })}
+          />
+        </div>
+        <ToggleBtn active={side.saltCure} onClick={() => onUpdate({ saltCure: !side.saltCure })}>
+          Salt Cure
+        </ToggleBtn>
+      </div>
+
       <div className="flex items-center gap-1 border-t border-dashed pt-1.5 font-mono text-[9.5px] text-muted-foreground">
-        <span>FAINTED</span>
+        <span>Fainted</span>
         <Stepper<(typeof FAINTED_OPTIONS)[number]>
           options={FAINTED_OPTIONS}
           value={fainted as (typeof FAINTED_OPTIONS)[number]}
@@ -218,133 +254,115 @@ export function CalcFieldBlock({
   setAttackerSide,
   defenderSide,
   setDefenderSide,
-  weather,
-  setWeather,
-  terrain,
-  setTerrain,
-  gravity,
-  setGravity,
-  foesAlive,
-  allyAlive,
-  setFoesAlive,
-  setAllyAlive,
-  inferredWeather = null,
-  inferredTerrain = null,
-  attackerAbility = null,
-  faintedYours,
-  setFaintedYours,
-  faintedTheirs,
-  setFaintedTheirs,
+  field,
+  setField,
+  doubles,
+  setDoubles,
+  fainted,
+  setFainted,
+  inferred,
 }: CalcFieldBlockProps) {
+  const { weather, terrain, gravity, fairyAura } = field;
+  const { setWeather, setTerrain, setGravity, setFairyAura } = setField;
+  const { foesAlive, allyAlive } = doubles;
+  const { setFoesAlive, setAllyAlive } = setDoubles;
+  const { yours: faintedYours, theirs: faintedTheirs } = fainted;
+  const { setYours: setFaintedYours, setTheirs: setFaintedTheirs } = setFainted;
+  const inferredWeather = inferred?.weather ?? null;
+  const inferredTerrain = inferred?.terrain ?? null;
+  const attackerAbility = inferred?.attackerAbility ?? null;
   return (
     <div className="flex h-full flex-col gap-2.5 overflow-y-auto">
-      {/* ── Col head: eyebrow + Singles/Doubles toggle ─────────────────────── */}
+      {/* Header: eyebrow + Singles/Doubles toggle */}
       <div className="flex items-center justify-between border-b pb-2">
         <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] text-amber-600 dark:text-amber-400">
           Field
         </span>
         <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => setGameType("Singles")}
-            className={cn(
-              "rounded px-2 py-0.5 font-mono text-[10px] transition-colors",
-              gameType === "Singles"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/70"
-            )}
-          >
+          <ToggleBtn active={gameType === "Singles"} onClick={() => setGameType("Singles")}>
             Singles
-          </button>
-          <button
-            type="button"
-            onClick={() => setGameType("Doubles")}
-            className={cn(
-              "rounded px-2 py-0.5 font-mono text-[10px] transition-colors",
-              gameType === "Doubles"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/70"
-            )}
-          >
+          </ToggleBtn>
+          <ToggleBtn active={gameType === "Doubles"} onClick={() => setGameType("Doubles")}>
             Doubles
-          </button>
+          </ToggleBtn>
         </div>
       </div>
 
-      {/* ── Doubles meta row ────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-muted/40 px-2 py-1.5 font-mono text-[10.5px]">
-        {gameType === "Doubles" && (
-          <>
-            <span className="text-muted-foreground">FOES</span>
-            <Stepper<1 | 2>
-              options={FOES_ALIVE_OPTIONS}
-              value={foesAlive}
-              onChange={setFoesAlive}
-            />
-            <span className="text-muted-foreground">ALLY</span>
-            <ToggleBtn
-              active={allyAlive}
-              onClick={() => setAllyAlive(!allyAlive)}
-            >
-              {allyAlive ? "alive" : "fainted"}
-            </ToggleBtn>
-          </>
-        )}
-        <ToggleBtn
-          active={gravity}
-          onClick={() => setGravity(!gravity)}
-        >
-          🌀 Grav
-        </ToggleBtn>
-      </div>
-
-      {/* ── Weather ────────────────────────────────────────────────────────── */}
+      {/* Global effects */}
       <div>
         <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
-          Weather
+          Global
         </div>
-        <div className="flex flex-wrap gap-1">
-          {WEATHER_OPTIONS.map(({ value, label }) => (
-            <ToggleBtn
-              key={value}
-              active={weather === value || (weather === "" && inferredWeather === value)}
-              onClick={() => setWeather(weather === value ? "" : value)}
-            >
-              {label}
-            </ToggleBtn>
-          ))}
+        <div className="flex flex-wrap items-center gap-1 rounded-md bg-muted/40 px-2 py-1.5">
+          {gameType === "Doubles" && (
+            <>
+              <span className="font-mono text-[10.5px] text-muted-foreground">Foes</span>
+              <Stepper<1 | 2>
+                options={FOES_ALIVE_OPTIONS}
+                value={foesAlive}
+                onChange={setFoesAlive}
+              />
+              <span className="font-mono text-[10.5px] text-muted-foreground">Ally</span>
+              <ToggleBtn active={allyAlive} onClick={() => setAllyAlive(!allyAlive)}>
+                {allyAlive ? "Alive" : "Fainted"}
+              </ToggleBtn>
+            </>
+          )}
+          <ToggleBtn active={gravity} onClick={() => setGravity(!gravity)}>
+            Gravity
+          </ToggleBtn>
+          <ToggleBtn active={fairyAura} onClick={() => setFairyAura(!fairyAura)}>
+            Fairy Aura
+          </ToggleBtn>
         </div>
-        {weather === "" && inferredWeather && (
-          <div className="mt-1 font-mono text-[9.5px] italic text-muted-foreground">
-            ↳ inferred from {attackerAbility ?? inferredWeather}
-          </div>
-        )}
       </div>
 
-      {/* ── Terrain ────────────────────────────────────────────────────────── */}
-      <div>
-        <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
-          Terrain
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {TERRAIN_OPTIONS.map(({ value, label }) => (
-            <ToggleBtn
-              key={value}
-              active={terrain === value || (terrain === "" && inferredTerrain === value)}
-              onClick={() => setTerrain(terrain === value ? "" : value)}
-            >
-              {label}
-            </ToggleBtn>
-          ))}
-        </div>
-        {terrain === "" && inferredTerrain && (
-          <div className="mt-1 font-mono text-[9.5px] italic text-muted-foreground">
-            ↳ inferred from {attackerAbility ?? inferredTerrain}
+      {/* Conditions: weather + terrain side-by-side */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
+            Weather
           </div>
-        )}
+          <div className="flex flex-wrap gap-1">
+            {WEATHER_OPTIONS.map(({ value, label }) => (
+              <ToggleBtn
+                key={value}
+                active={weather === value || (weather === "" && inferredWeather === value)}
+                onClick={() => setWeather(weather === value ? "" : value)}
+              >
+                {label}
+              </ToggleBtn>
+            ))}
+          </div>
+          {weather === "" && inferredWeather && (
+            <div className="mt-1 font-mono text-[9.5px] italic text-muted-foreground">
+              ↳ inferred from {attackerAbility ?? inferredWeather}
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
+            Terrain
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {TERRAIN_OPTIONS.map(({ value, label }) => (
+              <ToggleBtn
+                key={value}
+                active={terrain === value || (terrain === "" && inferredTerrain === value)}
+                onClick={() => setTerrain(terrain === value ? "" : value)}
+              >
+                {label}
+              </ToggleBtn>
+            ))}
+          </div>
+          {terrain === "" && inferredTerrain && (
+            <div className="mt-1 font-mono text-[9.5px] italic text-muted-foreground">
+              ↳ inferred from {attackerAbility ?? inferredTerrain}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* ── Sides ──────────────────────────────────────────────────────────── */}
       <div>
         <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
           Sides
@@ -353,44 +371,16 @@ export function CalcFieldBlock({
           <SideCard
             title="Yours"
             color="primary"
-            tailwind={attackerSide.tailwind}
-            onTailwind={() =>
-              setAttackerSide({ tailwind: !attackerSide.tailwind })
-            }
-            reflect={attackerSide.reflect}
-            onReflect={() =>
-              setAttackerSide({ reflect: !attackerSide.reflect })
-            }
-            lightScreen={attackerSide.lightScreen}
-            onLightScreen={() =>
-              setAttackerSide({ lightScreen: !attackerSide.lightScreen })
-            }
-            helpingHand={attackerSide.helpingHand}
-            onHelpingHand={() =>
-              setAttackerSide({ helpingHand: !attackerSide.helpingHand })
-            }
+            side={attackerSide}
+            onUpdate={setAttackerSide}
             fainted={faintedYours}
             setFainted={setFaintedYours}
           />
           <SideCard
             title="Theirs"
             color="destructive"
-            tailwind={defenderSide.tailwind}
-            onTailwind={() =>
-              setDefenderSide({ tailwind: !defenderSide.tailwind })
-            }
-            reflect={defenderSide.reflect}
-            onReflect={() =>
-              setDefenderSide({ reflect: !defenderSide.reflect })
-            }
-            lightScreen={defenderSide.lightScreen}
-            onLightScreen={() =>
-              setDefenderSide({ lightScreen: !defenderSide.lightScreen })
-            }
-            stealthRock={defenderSide.stealthRock}
-            onStealthRock={() =>
-              setDefenderSide({ stealthRock: !defenderSide.stealthRock })
-            }
+            side={defenderSide}
+            onUpdate={setDefenderSide}
             fainted={faintedTheirs}
             setFainted={setFaintedTheirs}
           />

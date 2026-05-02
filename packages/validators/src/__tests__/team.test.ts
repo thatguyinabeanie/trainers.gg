@@ -1,7 +1,9 @@
 import {
+  type ParsedPokemon,
   parseShowdownText,
   validateTeamStructure,
   validateTeamFormat,
+  validateChampionsLegality,
   parseAndValidateTeam,
   parsePokepaseUrl,
   getPokepaseRawUrl,
@@ -207,6 +209,220 @@ Level: 50
   });
 });
 
+describe("validateTeamStructure — Champions (championsvgc2026regma)", () => {
+  const makeChampionsMon = (
+    overrides: Partial<ParsedPokemon> = {}
+  ): ParsedPokemon => ({
+    species: "Incineroar",
+    nickname: null,
+    level: 50,
+    ability: "Intimidate",
+    nature: "Careful",
+    held_item: null,
+    move1: "Fake Out",
+    move2: null,
+    move3: null,
+    move4: null,
+    ev_hp: 20,
+    ev_attack: 10,
+    ev_defense: 10,
+    ev_special_attack: 10,
+    ev_special_defense: 10,
+    ev_speed: 6,
+    iv_hp: 31,
+    iv_attack: 31,
+    iv_defense: 31,
+    iv_special_attack: 31,
+    iv_special_defense: 31,
+    iv_speed: 31,
+    tera_type: null,
+    gender: null,
+    is_shiny: false,
+    ...overrides,
+  });
+
+  it("accepts a valid Champions team (66 total, ≤32 per stat)", () => {
+    const errors = validateTeamStructure([makeChampionsMon()], "championsvgc2026regma");
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects a Pokemon with more than 66 total Stat Points", () => {
+    const mon = makeChampionsMon({ ev_hp: 32, ev_attack: 32, ev_defense: 10 });
+    const errors = validateTeamStructure([mon], "championsvgc2026regma");
+    expect(errors.some((e) => e.message.includes("total Stat Points"))).toBe(true);
+  });
+
+  it("rejects a Pokemon with more than 32 in a single stat", () => {
+    const mon = makeChampionsMon({ ev_hp: 33, ev_attack: 0, ev_defense: 0, ev_special_attack: 0, ev_special_defense: 0, ev_speed: 0 });
+    const errors = validateTeamStructure([mon], "championsvgc2026regma");
+    expect(errors.some((e) => e.message.includes("Stat Points in HP"))).toBe(true);
+  });
+
+  it("does not apply Champions stat limits for other formats", () => {
+    // 252 EVs is valid for reg-i
+    const mon = makeChampionsMon({ ev_hp: 252, ev_speed: 252, ev_attack: 0, ev_defense: 0, ev_special_attack: 0, ev_special_defense: 0 });
+    const errors = validateTeamStructure([mon], "reg-i");
+    expect(errors.filter((e) => e.message.includes("Stat Points"))).toHaveLength(0);
+  });
+});
+
+describe("validateTeamStructure — Champions Showdown ID", () => {
+  const makeChampionsMon = (
+    overrides: Partial<ParsedPokemon> = {}
+  ): ParsedPokemon => ({
+    species: "Incineroar",
+    nickname: null,
+    level: 50,
+    ability: "Intimidate",
+    nature: "Careful",
+    held_item: null,
+    move1: "Fake Out",
+    move2: null,
+    move3: null,
+    move4: null,
+    ev_hp: 20,
+    ev_attack: 10,
+    ev_defense: 10,
+    ev_special_attack: 10,
+    ev_special_defense: 10,
+    ev_speed: 6,
+    iv_hp: 31,
+    iv_attack: 31,
+    iv_defense: 31,
+    iv_special_attack: 31,
+    iv_special_defense: 31,
+    iv_speed: 31,
+    tera_type: null,
+    gender: null,
+    is_shiny: false,
+    ...overrides,
+  });
+
+  it(
+    "applies Champions stat-point check for championsvgc2026regma",
+    () => {
+      // Over-limit Stat Points — should produce errors from the SP validator
+      const mon = makeChampionsMon({
+        ev_hp: 33,
+        ev_attack: 0,
+        ev_defense: 0,
+        ev_special_attack: 0,
+        ev_special_defense: 0,
+        ev_speed: 0,
+      });
+      const errors = validateTeamStructure([mon], "championsvgc2026regma");
+      expect(errors.some((e) => e.message.includes("Stat Points"))).toBe(true);
+    }
+  );
+
+  it(
+    "accepts a valid Champions team for championsvgc2026regma",
+    () => {
+      const errors = validateTeamStructure([makeChampionsMon()], "championsvgc2026regma");
+      expect(errors).toHaveLength(0);
+    }
+  );
+
+  it("does not apply Champions stat limits for the legacy reg-m-a key (no longer recognized)", () => {
+    // reg-m-a is no longer in FORMAT_MAP and isChampionsFormatId("reg-m-a") is false —
+    // so a team with over-limit Stat Points passes structure validation (no Champions check).
+    const mon = makeChampionsMon({ ev_hp: 252, ev_speed: 252, ev_attack: 0, ev_defense: 0, ev_special_attack: 0, ev_special_defense: 0 });
+    const errors = validateTeamStructure([mon], "reg-m-a");
+    expect(errors.filter((e) => e.message.includes("Stat Points"))).toHaveLength(0);
+  });
+});
+
+describe("validateChampionsLegality", () => {
+  const makeChampionsMon = (
+    overrides: Partial<ParsedPokemon> = {}
+  ): ParsedPokemon => ({
+    species: "Incineroar",
+    nickname: null,
+    level: 50,
+    ability: "Intimidate",
+    nature: "Careful",
+    held_item: null,
+    move1: "Fake Out",
+    move2: null,
+    move3: null,
+    move4: null,
+    ev_hp: 20,
+    ev_attack: 10,
+    ev_defense: 10,
+    ev_special_attack: 10,
+    ev_special_defense: 10,
+    ev_speed: 6,
+    iv_hp: 31,
+    iv_attack: 31,
+    iv_defense: 31,
+    iv_special_attack: 31,
+    iv_special_defense: 31,
+    iv_speed: 31,
+    tera_type: null,
+    gender: null,
+    is_shiny: false,
+    ...overrides,
+  });
+
+  it("rejects a Pokemon with a Tera type set", () => {
+    const mon = makeChampionsMon({ tera_type: "Fire" });
+    const errors = validateChampionsLegality(
+      [mon],
+      "championsvgc2026regma"
+    );
+    expect(
+      errors.some((e) =>
+        e.message.includes("does not allow Terastallization")
+      )
+    ).toBe(true);
+    expect(errors[0]!.source).toBe("format");
+  });
+
+  it("returns no errors when team has no Tera and getLegalSpecies returns undefined (permissive)", () => {
+    // "reg-i" is not a Champions format — getLegalSpecies returns a computed
+    // set or undefined for unknown formats, and we're calling with a made-up
+    // format that won't match any Champions rules.
+    // Use an unmapped format so all three getLegal* calls return undefined.
+    const mon = makeChampionsMon();
+    const errors = validateChampionsLegality([mon], "unknown-format-xyz");
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects Tera type even when legality lists are undefined (permissive)", () => {
+    const mon = makeChampionsMon({ tera_type: "Water" });
+    // Even against an unmapped format, Tera is always rejected
+    const errors = validateChampionsLegality([mon], "unknown-format-xyz");
+    expect(errors.some((e) => e.source === "format")).toBe(true);
+    expect(
+      errors.some((e) => e.message.includes("Terastallization"))
+    ).toBe(true);
+  });
+});
+
+describe("parseAndValidateTeam — Champions (championsvgc2026regma)", () => {
+  const CHAMPIONS_MON_WITH_TERA = `Incineroar @ Assault Vest
+Ability: Intimidate
+Level: 50
+Tera Type: Fire
+- Fake Out
+- Knock Off
+- Flare Blitz
+- U-turn`;
+
+  it("routes championsvgc2026regma to validateChampionsLegality and flags Tera type", () => {
+    const result = parseAndValidateTeam(
+      CHAMPIONS_MON_WITH_TERA,
+      "championsvgc2026regma"
+    );
+    expect(result.valid).toBe(false);
+    const formatErrors = result.errors.filter((e) => e.source === "format");
+    expect(formatErrors.length).toBeGreaterThan(0);
+    expect(
+      formatErrors.some((e) => e.message.includes("Terastallization"))
+    ).toBe(true);
+  });
+});
+
 describe("parsePokepaseUrl", () => {
   it("parses a valid Pokepaste URL", () => {
     const result = parsePokepaseUrl("https://pokepast.es/abcdef0123456789");
@@ -260,12 +476,12 @@ describe("getPkmnFormat / FORMAT_MAP", () => {
   it("has entries for all expected formats", () => {
     const expectedKeys = [
       "reg-i",
+      "championsvgc2026regma",
       "reg-h",
       "reg-g",
       "reg-f",
       "reg-e",
       "reg-d",
-      "reg-m-a",
       "ou",
       "uu",
       "ubers",
@@ -274,12 +490,22 @@ describe("getPkmnFormat / FORMAT_MAP", () => {
       "monotype",
     ];
     for (const key of expectedKeys) {
-      expect(FORMAT_MAP[key]).toBeDefined();
+      expect(key in FORMAT_MAP).toBe(true);
     }
   });
 
-  it("maps reg-m-a to gen9vgc2025regma", () => {
-    expect(getPkmnFormat("reg-m-a")).toBe("gen9vgc2025regma");
+  it("does not contain the legacy reg-m-a key", () => {
+    expect(FORMAT_MAP).not.toHaveProperty("reg-m-a");
+  });
+
+  it("returns null for championsvgc2026regma (no @pkmn/sim format yet)", () => {
+    expect(FORMAT_MAP["championsvgc2026regma"]).toBeNull();
+    expect(getPkmnFormat("championsvgc2026regma")).toBeNull();
+  });
+
+  it("returns null for reg-m-a (missing key — not an explicit null)", () => {
+    // The legacy key was removed; getPkmnFormat falls back to null via ?? null.
+    expect(getPkmnFormat("reg-m-a")).toBeNull();
   });
 });
 
@@ -409,5 +635,25 @@ describe("parseAndValidateTeam", () => {
     const result = parseAndValidateTeam(duplicateText, "reg-i");
     expect(result.valid).toBe(false);
     expect(result.team.length).toBeGreaterThan(0);
+  });
+
+  it("rejects raw text exceeding the 10,000-character cap before parsing", () => {
+    const oversized = "x".repeat(10_001);
+    const result = parseAndValidateTeam(oversized, "reg-i");
+    expect(result.valid).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]!.source).toBe("structure");
+    expect(result.errors[0]!.message).toContain("maximum length");
+    // No parsing was attempted
+    expect(result.team).toHaveLength(0);
+  });
+
+  it("accepts raw text at exactly the 10,000-character cap (parser then runs)", () => {
+    // Build a payload that's exactly 10,000 chars but won't parse to a team
+    const padded = "x".repeat(10_000);
+    expect(padded.length).toBe(10_000);
+    const result = parseAndValidateTeam(padded, "reg-i");
+    // Cap doesn't trigger; parser runs and reports its own error
+    expect(result.errors[0]!.source).not.toBe("structure");
   });
 });

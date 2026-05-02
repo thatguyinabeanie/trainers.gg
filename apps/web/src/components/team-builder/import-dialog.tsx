@@ -10,6 +10,7 @@ import {
   getLegalSpecies,
   getLegalTeraTypes,
   isLegalAbility,
+  LEGALITY_UNAVAILABLE,
 } from "@trainers/pokemon";
 
 import {
@@ -197,7 +198,11 @@ export function ImportDialog({
   const [isPendingImport, startImportTransition] = useTransition();
 
   const availableSlots = 6 - team.team_pokemon.length;
-  const structuralErrors = parsed !== null ? validateTeamStructure(parsed) : [];
+  // Pass formatId so Champions stat-point limits (32/66) are enforced when
+  // the active format is Reg MA. Without this, the format-aware branch in
+  // validateChampionsStatPoints is skipped and over-budget teams import silently.
+  const structuralErrors =
+    parsed !== null ? validateTeamStructure(parsed, formatId) : [];
   const hasStructuralErrors = structuralErrors.length > 0;
 
   // ---------------------------------------------------------------------------
@@ -221,8 +226,12 @@ export function ImportDialog({
   function checkLegality(candidates: ParsedPokemon[]): string | null {
     if (!formatId) return null;
 
-    // Species check
+    const UNAVAILABLE_MSG =
+      "Legality check is temporarily unavailable. Please try again in a moment.";
+
+    // Species check — fail closed if the validator threw.
     const legalSet = getLegalSpecies(formatId);
+    if (legalSet === LEGALITY_UNAVAILABLE) return UNAVAILABLE_MSG;
     if (legalSet !== undefined) {
       const illegal = candidates
         .map((p) => p.species)
@@ -234,6 +243,7 @@ export function ImportDialog({
 
     // Item check
     const legalItems = getLegalItems(formatId);
+    if (legalItems === LEGALITY_UNAVAILABLE) return UNAVAILABLE_MSG;
     if (legalItems !== undefined) {
       const illegalItems = candidates
         .map((p) => p.held_item)
@@ -250,6 +260,7 @@ export function ImportDialog({
     for (const p of candidates) {
       if (!p.species) continue;
       const legalForSpecies = getLegalMoves(p.species, formatId);
+      if (legalForSpecies === LEGALITY_UNAVAILABLE) return UNAVAILABLE_MSG;
       if (!legalForSpecies) continue;
       for (const slot of ["move1", "move2", "move3", "move4"] as const) {
         const move = p[slot];
@@ -264,10 +275,11 @@ export function ImportDialog({
 
     // Tera type check
     const legalTera = getLegalTeraTypes(formatId);
+    if (legalTera === LEGALITY_UNAVAILABLE) return UNAVAILABLE_MSG;
     if (legalTera !== undefined) {
       const illegalTera = candidates
         .map((p) => p.tera_type)
-        .filter((t): t is string => {
+        .filter((t): t is NonNullable<typeof t> => {
           if (!t) return false;
           return !legalTera.has(t);
         });
@@ -428,13 +440,17 @@ export function ImportDialog({
       }
 
       if (failures.length > 0) {
-        // Partial failure
+        // Partial failure — surface the first distinct reason so the user
+        // can act, instead of just naming the species. The full per-row
+        // detail is lost otherwise.
         const failedSpecies = toImport
           .filter((_, i) => !addResults[i]?.success)
           .map((p) => p.species)
           .join(", ");
+        const firstReason =
+          addResults.find((r) => !r.success)?.error ?? "Unknown error";
         toast.warning(
-          `Imported ${successes.length}, but ${failedSpecies} failed to add.`
+          `Imported ${successes.length}; ${failedSpecies} failed: ${firstReason}`
         );
       } else {
         toast.success(`Imported ${toImport.length} Pokémon.`);

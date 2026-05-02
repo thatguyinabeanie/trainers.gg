@@ -12,25 +12,25 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { TooltipTrigger } from "@/components/ui/tooltip";
 
 import { type ValidationError } from "../../validation-hooks";
 import { CATEGORY_ICON_URLS } from "../../move-category-ui";
 import { MovePicker } from "../pickers/move-picker";
 import { useCalcStateContext } from "../calc/calc-state-context";
 import { CalcDetailCard } from "../calc/calc-detail-card";
-import { getMoveEffectiveness } from "../calc/move-effectiveness";
-import { getMoveTargetInfo } from "../calc/move-target-info";
-import { getVerdict } from "../../use-calc-state";
-import { FieldError } from "../validation/field-error";
+import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
+import { FieldErrors } from "../validation/field-error";
+import { DescriptionTooltip } from "./description-tooltip";
 
 // =============================================================================
 // Types
 // =============================================================================
 
 interface MovesLaneProps {
-  pokemon: Tables<"pokemon">;
-  format: GameFormat | undefined;
-  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  pokemon: Tables<"pokemon"> | null;
+  format?: GameFormat;
+  onUpdate?: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   /** Validation errors scoped to move fields (move1–move4). */
   fieldErrors?: ValidationError[];
 }
@@ -53,17 +53,6 @@ const SLOT_IDX: Record<MoveSlot, number> = {
   move3: 2,
   move4: 3,
 };
-
-type KoTier = "1" | "2" | "3" | "4" | null;
-
-function getKoTier(minPct: number, maxPct: number): KoTier {
-  const verdict = getVerdict(minPct, maxPct);
-  if (verdict === "OHKO") return "1";
-  if (verdict === "2HKO") return "2";
-  if (verdict === "3HKO") return "3";
-  if (maxPct > 0) return "4";
-  return null;
-}
 
 // =============================================================================
 // MoveTile — one calc-aware move row
@@ -93,42 +82,28 @@ function MoveTile({
 
   const calc = useCalcStateContext();
   const moveIdx = SLOT_IDX[slotKey];
-  const output = calc.moveCalcOutputs[moveIdx] ?? null;
+  // Per-row output (this attacker vs the configured defender). The MoveTile
+  // border colour reflects each row's own KO tier, not just the calc panel's
+  // focused attacker — matches the per-row CALC column.
+  const rowOutputs = calc.computeForwardOutputsForRow(attacker);
+  const output = rowOutputs[moveIdx] ?? null;
 
   const moveData = moveName ? getMoveData(moveName) : null;
   const isStatus = moveData?.category === "Status";
-  // Only surface calc-derived info (damage range, KO tier, eff pip, spread
-  // badge, "pick a target" hint) when the calc panel is enabled. The engine
-  // still runs in the background so re-enabling the panel is instant.
   const hasCalc = calc.calcEnabled && output !== null && !isStatus;
 
-  const hasDefender = calc.calcEnabled && Boolean(calc.defenderSpecies);
-
-  const targetInfo = moveName ? getMoveTargetInfo(moveName) : null;
-  const isSpread = targetInfo?.isSpread ?? false;
   const foesAlive = calc.field.foesAlive;
   const allyAlive = calc.field.allyAlive;
-  const spreadApplied =
-    isSpread &&
-    (targetInfo?.kind === "all-foes"
-      ? foesAlive >= 2
-      : foesAlive >= 2 || allyAlive);
 
-  // Display percentages with spread reduction applied
-  const rawMin = output?.minPercent ?? 0;
-  const rawMax = output?.maxPercent ?? 0;
-  const displayMin = spreadApplied ? rawMin * 0.75 : rawMin;
-  const displayMax = spreadApplied ? rawMax * 0.75 : rawMax;
-
-  const koTier = hasCalc ? getKoTier(displayMin, displayMax) : null;
-
-  // Resolve the effective weather: user-set overrides ability-inferred.
-  const effectiveWeather = calc.weather || calc.inferredWeather;
-
-  const eff =
-    moveName && hasDefender && !isStatus
-      ? getMoveEffectiveness(moveName, calc.defenderSpecies, effectiveWeather)
-      : null;
+  // KO tier (used for tile border colour) and spread-adjusted range come
+  // from the shared helper so calc-column and moves-lane never drift apart.
+  const { koTier } = getDisplayRangeAndKoTier({
+    moveName,
+    output,
+    hasCalc,
+    foesAlive,
+    allyAlive,
+  });
 
   const hasError = slotErrors.some((e) => e.severity === "error");
 
@@ -174,12 +149,13 @@ function MoveTile({
                 koTier === "2" && "mvline--ko2",
                 koTier === "3" && "mvline--ko3",
                 koTier === "4" && "mvline--ko4",
-                hasError && "ring-1 ring-destructive/50"
+                hasError && "ring-destructive/50 ring-1"
               )}
             />
           }
         >
-            {/* Col 1: Type pill — Showdown retro sprite */}
+          {/* Col 1: Type + category grouped */}
+          <span className="mvline-type-cat">
             <span className="mvline-type">
               {moveName && moveData?.type ? (
                 <img
@@ -189,10 +165,10 @@ function MoveTile({
                 />
               ) : null}
             </span>
-
-            {/* Col 2: Category icon */}
             <span className="mvline-cat">
-              {moveName && moveData?.category && CATEGORY_ICON_URLS[moveData.category] ? (
+              {moveName &&
+              moveData?.category &&
+              CATEGORY_ICON_URLS[moveData.category] ? (
                 <img
                   src={CATEGORY_ICON_URLS[moveData.category]}
                   alt={moveData.category}
@@ -200,97 +176,47 @@ function MoveTile({
                 />
               ) : null}
             </span>
+          </span>
 
-            {/* Col 3: Move name */}
-            <span
+          {/* Col 2: Move name */}
+          <DescriptionTooltip
+            description={moveName ? moveData?.shortDesc : null}
+            showContent={panel === null}
+          >
+            <TooltipTrigger
+              render={<span />}
               className={cn(
                 "mvline-name",
                 !moveName && "text-muted-foreground/50"
               )}
             >
               {moveName ?? "+ Add move"}
-            </span>
+            </TooltipTrigger>
+          </DescriptionTooltip>
 
-            {/* Col 4: BP */}
-            <span className="mvline-stat">
-              <span className="mvline-stat-label">BP</span>
-              <span className="mvline-stat-value mvline-stat-value--bp">
-                {moveName && moveData?.basePower && moveData.basePower > 0
-                  ? moveData.basePower
-                  : moveName ? "—" : ""}
-              </span>
-            </span>
-
-            {/* Col 5: Acc */}
-            <span className="mvline-stat">
-              <span className="mvline-stat-label">Acc</span>
-              <span className="mvline-stat-value mvline-stat-value--acc">
-                {moveName
-                  ? moveData?.accuracy === true || !moveData?.accuracy
-                    ? "—"
-                    : `${moveData.accuracy}%`
+          {/* Col 4: BP */}
+          <span className="mvline-stat">
+            <span className="mvline-stat-label">BP</span>
+            <span className="mvline-stat-value mvline-stat-value--bp">
+              {moveName && moveData?.basePower && moveData.basePower > 0
+                ? moveData.basePower
+                : moveName
+                  ? "—"
                   : ""}
-              </span>
             </span>
+          </span>
 
-            {/* Col 6: Description (always rendered when present) */}
-            <span
-              className="mvline-desc"
-              title={moveData?.shortDesc ?? undefined}
-            >
-              {moveName && moveData?.shortDesc && moveData.shortDesc !== "No additional effect."
-                ? moveData.shortDesc
+          {/* Col 4: Acc */}
+          <span className="mvline-stat">
+            <span className="mvline-stat-label">Acc</span>
+            <span className="mvline-stat-value mvline-stat-value--acc">
+              {moveName
+                ? moveData?.accuracy === true || !moveData?.accuracy
+                  ? "—"
+                  : `${moveData.accuracy}%`
                 : ""}
             </span>
-
-            {/* Col 7: Calc pill (damage moves w/ calc on + defender) OR
-                "pick a target" hint (calc on, no defender). Empty otherwise. */}
-            {hasCalc && koTier ? (
-              <span className={cn("mvline-pill", `mvline-pill--ko${koTier}`)}>
-                <span className={cn("mvline-pill-tier", `mvline-pill-tier--ko${koTier}`)}>
-                  {koTier === "1" ? "OHKO" : koTier === "2" ? "2HKO" : koTier === "3" ? "3HKO" : "4HKO+"}
-                </span>
-                <span className="mvline-pill-range">
-                  {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%
-                </span>
-                {((eff !== null && eff !== 1) || spreadApplied) && (
-                  <span className="mvline-pill-mods">
-                    {eff !== null && eff !== 1 && (
-                      <span
-                        className={cn(
-                          "mvline-pill-mod",
-                          eff > 1
-                            ? "mvline-pill-mod--se"
-                            : eff === 0
-                              ? "mvline-pill-mod--imm"
-                              : "mvline-pill-mod--ne"
-                        )}
-                        title={eff === 0 ? "Immune" : `${eff}× effectiveness`}
-                      >
-                        {eff}×
-                      </span>
-                    )}
-                    {spreadApplied && (
-                      <span className="mvline-pill-mod mvline-pill-mod--spread" title="Spread −25%">
-                        spread
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
-            ) : calc.calcEnabled && moveName && !hasDefender && !isStatus ? (
-              <span className="mvline-no-target">— pick a target —</span>
-            ) : calc.calcEnabled && moveName && hasDefender && !isStatus && output === null ? (
-              <span
-                className="mvline-no-target"
-                role="status"
-                title="Damage calc unavailable for this combination"
-              >
-                — calc unavailable —
-              </span>
-            ) : (
-              <span aria-hidden />
-            )}
+          </span>
         </PopoverTrigger>
 
         <PopoverContent side="bottom" align="start" className="w-auto p-0">
@@ -326,33 +252,70 @@ function MoveTile({
           )}
         </PopoverContent>
       </Popover>
+
       {/* Inline error chips per move slot */}
-      {slotErrors.map((err, i) => (
-        <FieldError key={i} message={err.message} severity={err.severity} />
-      ))}
+      <FieldErrors errors={slotErrors} />
     </div>
   );
 }
 
 // =============================================================================
-// MovesLane
+// MovesLaneGhost — purely visual placeholder, no hooks
 // =============================================================================
 
-/**
- * Vertical stack of 4 calc-aware move tiles.
- *
- * Left-click: opens CalcDetailCard when calc data is available, else picker.
- * Right-click: always opens move picker.
- * Renders inline FieldError chips for move-scoped validation issues.
- */
-export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: MovesLaneProps) {
+function MovesLaneGhost() {
+  return (
+    <div className="border-border/60 flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3">
+      <div className="mb-1 flex items-baseline">
+        <span className="text-muted-foreground/30 font-mono text-[9.5px] font-medium tracking-widest uppercase">
+          Moves
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        {([0, 1, 2, 3] as const).map((i) => (
+          <div key={i} className="mvline mvline--empty">
+            <span className="mvline-type-cat" />
+            <span className="mvline-name text-muted-foreground/30">
+              + Add move
+            </span>
+            <span className="mvline-stat">
+              <span className="mvline-stat-label">BP</span>
+              <span className="mvline-stat-value mvline-stat-value--bp" />
+            </span>
+            <span className="mvline-stat">
+              <span className="mvline-stat-label">ACC</span>
+              <span className="mvline-stat-value mvline-stat-value--acc" />
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// MovesLaneReal — calc-aware move tiles (requires pokemon)
+// =============================================================================
+
+interface MovesLaneRealProps {
+  pokemon: Tables<"pokemon">;
+  format: GameFormat | undefined;
+  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  fieldErrors: ValidationError[];
+}
+
+function MovesLaneReal({
+  pokemon,
+  format,
+  onUpdate,
+  fieldErrors,
+}: MovesLaneRealProps) {
   function handlePick(slotKey: MoveSlot, name: string) {
     onUpdate({ [slotKey]: name });
   }
 
   return (
-    <div className="flex min-w-[240px] flex-1 flex-col gap-1 border-r border-dashed border-border/60 p-3">
-      {/* Header */}
+    <div className="border-border/60 flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3">
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
           Moves
@@ -367,7 +330,7 @@ export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: Moves
             <MoveTile
               key={slotKey}
               slotKey={slotKey}
-              moveName={pokemon[slotKey]}
+              moveName={pokemon[slotKey] || null}
               species={pokemon.species ?? ""}
               format={format}
               attacker={pokemon}
@@ -378,5 +341,37 @@ export function MovesLane({ pokemon, format, onUpdate, fieldErrors = [] }: Moves
         })}
       </div>
     </div>
+  );
+}
+
+// =============================================================================
+// MovesLane — public export, dispatches to ghost or real branch
+// =============================================================================
+
+/**
+ * Vertical stack of 4 calc-aware move tiles.
+ *
+ * When `pokemon` is null, renders purely visual ghost content (4 static
+ * placeholder tiles) with no interactive elements and no hook calls.
+ *
+ * When `pokemon` is set:
+ * - Left-click: opens CalcDetailCard when calc data is available, else picker.
+ * - Right-click: always opens move picker.
+ * - Renders inline FieldError chips for move-scoped validation issues.
+ */
+export function MovesLane({
+  pokemon,
+  format,
+  onUpdate,
+  fieldErrors = [],
+}: MovesLaneProps) {
+  if (pokemon === null) return <MovesLaneGhost />;
+  return (
+    <MovesLaneReal
+      pokemon={pokemon}
+      format={format}
+      onUpdate={onUpdate ?? (() => {})}
+      fieldErrors={fieldErrors}
+    />
   );
 }

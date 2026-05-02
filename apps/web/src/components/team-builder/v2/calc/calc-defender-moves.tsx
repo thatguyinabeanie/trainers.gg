@@ -8,7 +8,12 @@ import { getShowdownTypeIconUrl } from "@trainers/pokemon/sprites";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-import { type CalcOutput, getVerdict, type UseCalcStateReturn } from "../../use-calc-state";
+import {
+  type CalcOutput,
+  getVerdict,
+  type KoTierLabel,
+  type UseCalcStateReturn,
+} from "../../use-calc-state";
 import { MovePicker } from "../pickers/move-picker";
 
 // =============================================================================
@@ -38,12 +43,12 @@ export interface CalcDefenderMovesProps {
 // Constants
 // =============================================================================
 
-/** KO tier → pill CSS class suffix. */
-const KO_TIER_CLASS: Record<string, string> = {
-  OHKO: "dmv-pill--ohko",
-  "2HKO": "dmv-pill--2hko",
-  "3HKO": "dmv-pill--3hko",
-  "4HKO+": "dmv-pill--4hko",
+/** KO tier → Tailwind text-color class for the damage % display. */
+const KO_TIER_COLOR: Record<NonNullable<KoTierLabel>, string> = {
+  OHKO: "text-destructive",
+  "2HKO": "text-yellow-400 dark:text-yellow-300",
+  "3HKO": "text-orange-400",
+  "4HKO+": "text-muted-foreground",
 };
 
 /** Moves that cause an SpA self-drop after use. */
@@ -72,13 +77,14 @@ const PIVOT_MOVES = new Set([
 // =============================================================================
 
 /**
- * Resolve the KO tier string from a CalcOutput.
- * Returns "OHKO" | "2HKO" | "3HKO" | "4HKO+" | null.
+ * Resolve the KO tier label for a damage range. Distinguishes "doesn't KO
+ * within 4 hits" (`"4HKO+"`) from "no damage at all" (`null`) — see
+ * `KoTierLabel` in `calc/recovery.ts` for the canonical type.
  */
 function resolveKoTierLabel(
   minPercent: number,
   maxPercent: number
-): string | null {
+): KoTierLabel {
   const verdict = getVerdict(minPercent, maxPercent);
   if (verdict === "OHKO") return "OHKO";
   if (verdict === "2HKO") return "2HKO";
@@ -132,9 +138,12 @@ function DefenderMoveTile({
   const moveType = moveData?.type ?? null;
 
   // KO tier + damage %
+  // Prefer the recovery-aware tier (from the hit-by-hit simulation) when it
+  // differs from the raw percent verdict — e.g. Sitrus Berry converting a
+  // 2HKO into a 3HKO should show "3HKO" not "2HKO".
   const koTierLabel =
     output && !isEmpty
-      ? resolveKoTierLabel(output.minPercent, output.maxPercent)
+      ? (output.recoveryTier ?? resolveKoTierLabel(output.minPercent, output.maxPercent))
       : null;
 
   // Raw damage range — rolls are sorted ascending by @smogon/calc
@@ -146,6 +155,9 @@ function DefenderMoveTile({
     moveData?.accuracy === true || !moveData?.accuracy
       ? null
       : (moveData.accuracy as number);
+
+  // Base power — omit for status moves (basePower === 0)
+  const basePower = moveData?.basePower ?? 0;
 
   // Extra note (debuff / pivot)
   const extraNote = moveName ? getMoveExtraNote(moveName) : null;
@@ -176,7 +188,7 @@ function DefenderMoveTile({
           />
         }
       >
-        {/* Row 1: type icon + name + chevron */}
+        {/* Row 1: type badge + move name + BP + accuracy + chevron */}
         <div className="flex items-center gap-1.5">
           {moveType ? (
             <img
@@ -195,37 +207,54 @@ function DefenderMoveTile({
           >
             {moveName || "+ Add move"}
           </span>
+          {basePower > 0 && (
+            <span className="font-mono text-[9px] text-muted-foreground">
+              BP {basePower}
+            </span>
+          )}
+          {accuracy !== null && accuracy < 100 && (
+            <span className="font-mono text-[9px] text-muted-foreground">
+              · {accuracy}% acc
+            </span>
+          )}
           <span className="text-[10px] text-muted-foreground" aria-hidden>
             ▾
           </span>
         </div>
 
-        {/* Row 2: KO pill */}
-        {output && koTierLabel ? (
-          <div
-            className={cn(
-              "dmv-pill mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold",
-              KO_TIER_CLASS[koTierLabel] ?? "dmv-pill--4hko"
-            )}
-          >
-            <span>{koTierLabel}</span>
-            <span className="opacity-80">
+        {/* Row 2: damage % · KO tier · HP range · contextual notes */}
+        {output && (
+          <div className="mt-1 flex items-center gap-1.5">
+            <span
+              className={cn(
+                "font-mono text-[12px] font-bold",
+                koTierLabel ? KO_TIER_COLOR[koTierLabel] ?? "text-muted-foreground" : "text-muted-foreground"
+              )}
+            >
               {output.minPercent.toFixed(1)}–{output.maxPercent.toFixed(1)}%
             </span>
-          </div>
-        ) : null}
-
-        {/* Row 3: detail line */}
-        {output && !isEmpty && (
-          <div className="mt-0.5 font-mono text-[9.5px] text-muted-foreground">
-            {dmgMin !== null && dmgMax !== null ? (
+            {koTierLabel && (
               <>
-                {dmgMin}–{dmgMax}
-                {attackerHP !== null ? ` / ${attackerHP} HP` : ""}
+                <span className="h-[10px] w-px flex-shrink-0 bg-border" aria-hidden />
+                <span className="font-mono text-[9px] text-muted-foreground">
+                  {koTierLabel}
+                </span>
               </>
-            ) : null}
-            {accuracy !== null ? ` · ${accuracy}% acc` : ""}
-            {extraNote ? ` · ${extraNote}` : ""}
+            )}
+            {dmgMin !== null && dmgMax !== null && (
+              <>
+                <span className="h-[10px] w-px flex-shrink-0 bg-border" aria-hidden />
+                <span className="font-mono text-[9px] text-muted-foreground">
+                  {dmgMin}–{dmgMax}
+                  {attackerHP !== null ? ` / ${attackerHP} HP` : ""}
+                </span>
+              </>
+            )}
+            {extraNote && (
+              <span className="font-mono text-[9px] text-teal-500 dark:text-teal-400">
+                · {extraNote}
+              </span>
+            )}
           </div>
         )}
       </PopoverTrigger>

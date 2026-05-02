@@ -165,6 +165,32 @@ describe("validatePokemon", () => {
       const result = validatePokemon(pokemon);
       expect(result.errors.some((e) => e.field === "ability")).toBe(false);
     });
+
+    describe("mega forms accept the base form's ability pool", () => {
+      it("Charizard-Mega-Y accepts Solar Power (base ability stored for tournament submission)", () => {
+        const pokemon = makeValidPikachu();
+        pokemon.species = "Charizard-Mega-Y";
+        pokemon.ability = "Solar Power";
+        const result = validatePokemon(pokemon);
+        expect(result.errors.some((e) => e.field === "ability")).toBe(false);
+      });
+
+      it("Charizard-Mega-Y accepts Drought (legacy mega-intrinsic ability storage)", () => {
+        const pokemon = makeValidPikachu();
+        pokemon.species = "Charizard-Mega-Y";
+        pokemon.ability = "Drought";
+        const result = validatePokemon(pokemon);
+        expect(result.errors.some((e) => e.field === "ability")).toBe(false);
+      });
+
+      it("Charizard-Mega-Y rejects an ability the base form cannot have", () => {
+        const pokemon = makeValidPikachu();
+        pokemon.species = "Charizard-Mega-Y";
+        pokemon.ability = "Intimidate";
+        const result = validatePokemon(pokemon);
+        expect(result.errors.some((e) => e.field === "ability")).toBe(true);
+      });
+    });
   });
 
   describe("held item validation", () => {

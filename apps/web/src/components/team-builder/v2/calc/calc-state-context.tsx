@@ -12,7 +12,17 @@ import {
 import { type FieldState } from "../use-builder-state";
 
 // =============================================================================
-// Context
+// Contexts
+//
+// Two contexts on purpose:
+// - CalcEnabledContext is a boolean-only read used by gating consumers
+//   (poke-row's EmptyRow, ActiveRow) that don't need the rest of calc state.
+//   Putting them on the fat context made them re-render on every weather /
+//   defender / boost edit. Splitting this one bool out cuts ~7 unrelated
+//   re-renders per edit (6 poke-rows + 1 ActiveRow per workspace).
+// - CalcStateContext keeps the full state for MovesLane, CalcColumn, the
+//   drawer, and the dock — which legitimately depend on outputs / field /
+//   defender state to render their previews.
 // =============================================================================
 
 interface CalcStateContextValue extends UseCalcStateReturn {
@@ -29,6 +39,7 @@ interface CalcStateContextValue extends UseCalcStateReturn {
 }
 
 const CalcStateContext = createContext<CalcStateContextValue | null>(null);
+const CalcEnabledContext = createContext<boolean>(false);
 
 // =============================================================================
 // Provider
@@ -82,14 +93,16 @@ export function CalcStateProvider({
   };
 
   return (
-    <CalcStateContext value={value}>
-      {children}
-    </CalcStateContext>
+    <CalcEnabledContext value={calcEnabled}>
+      <CalcStateContext value={value}>
+        {children}
+      </CalcStateContext>
+    </CalcEnabledContext>
   );
 }
 
 // =============================================================================
-// Consumer hook
+// Consumer hooks
 // =============================================================================
 
 /**
@@ -104,4 +117,14 @@ export function useCalcStateContext(): CalcStateContextValue {
     );
   }
   return ctx;
+}
+
+/**
+ * Subscribe only to the `calcEnabled` boolean. Consumers that read only this
+ * (poke-row's EmptyRow, ActiveRow) avoid re-rendering on every calc state
+ * change. Reading from CalcStateContext also works but pays the full re-render
+ * cost — prefer this hook when only the boolean is needed.
+ */
+export function useCalcEnabled(): boolean {
+  return use(CalcEnabledContext);
 }

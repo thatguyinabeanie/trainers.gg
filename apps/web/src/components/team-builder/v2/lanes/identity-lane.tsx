@@ -2,7 +2,17 @@
 
 import { useRef, useState } from "react";
 
-import { NATURE_EFFECTS, getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
+import {
+  NATURE_EFFECTS,
+  getAbilityShortDesc,
+  getCanonicalBaseSpecies,
+  getFormsForSpecies,
+  getMegaAbilityForSpecies,
+  getMegaStoneForSpecies,
+  getSpeciesTypes,
+  speciesHasForms,
+  type GameFormat,
+} from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -11,23 +21,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { TooltipTrigger } from "@/components/ui/tooltip";
 
-import { STAT_LABELS } from "../../stat-types";
 import { type ValidationError } from "../../validation-hooks";
+import { NatureChevrons } from "../nature-chevrons";
 import { Sprite } from "../sprite";
-import { TypePill } from "../type-pill";
 import { TypeDot } from "../type-dot";
 import {
-  formatSupportsLevel,
   formatSupportsTera,
 } from "../format-gating";
 import { AbilityPicker } from "../pickers/ability-picker";
 import { ItemPicker } from "../pickers/item-picker";
 import { NaturePicker } from "../pickers/nature-picker";
-import { NumberPicker } from "../pickers/number-picker";
 import { SpeciesPicker } from "../pickers/species-picker";
 import { TypePicker } from "../pickers/type-picker";
-import { FieldError } from "../validation/field-error";
+import { FieldErrors } from "../validation/field-error";
+import { DescriptionTooltip } from "./description-tooltip";
+import { FormChip } from "./form-chip";
 import s from "../builder.module.css";
 
 // =============================================================================
@@ -35,15 +45,24 @@ import s from "../builder.module.css";
 // =============================================================================
 
 interface IdentityLaneProps {
-  pokemon: Tables<"pokemon">;
-  format: GameFormat | undefined;
+  pokemon: Tables<"pokemon"> | null;
+  format?: GameFormat;
   /** Held items from sibling pokemon — passed to ItemPicker for dup warning. */
-  teamItems: string[];
-  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  teamItems?: string[];
+  onUpdate?: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   /** Validation errors scoped to identity + loadout fields. */
   fieldErrors?: ValidationError[];
   /** Sibling pokemon on the same team — used for species-picker synergy hints. */
-  teamSiblings?: ReadonlyArray<{ species: string | null }>;
+  teamSiblings?: { species: string }[];
+}
+
+interface IdentityLaneRealProps {
+  pokemon: Tables<"pokemon">;
+  format: GameFormat | undefined;
+  teamItems: string[];
+  teamSiblings: { species: string }[];
+  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  fieldErrors: ValidationError[];
 }
 
 type GenderValue = "Male" | "Female" | null;
@@ -72,49 +91,268 @@ function errorsForFields(errors: ValidationError[], fields: string[]): Validatio
   return errors.filter((e) => fields.includes(e.field));
 }
 
+// =============================================================================
+// IdentityAbilityRow — ability popover with tooltip + mega secondary line
+//
+// Extracted from the 75-line IIFE in IdentityLaneReal. Keeps the custom
+// Tooltip → TooltipTrigger → PopoverTrigger nesting that FormChip cannot
+// model (FormChip is a plain Popover with no outer Tooltip).
+// =============================================================================
+
+interface IdentityAbilityRowProps {
+  pokemon: Tables<"pokemon">;
+  format: GameFormat | undefined;
+  abilityOpen: boolean;
+  setAbilityOpen: (open: boolean) => void;
+  onUpdate: (patch: TablesUpdate<"pokemon">) => void;
+  abilityErrors: ValidationError[];
+}
+
+function IdentityAbilityRow({
+  pokemon,
+  format,
+  abilityOpen,
+  setAbilityOpen,
+  onUpdate,
+  abilityErrors,
+}: IdentityAbilityRowProps) {
+  const megaAbility = pokemon.species
+    ? getMegaAbilityForSpecies(pokemon.species)
+    : null;
+  const pickerSpecies = pokemon.species
+    ? getCanonicalBaseSpecies(pokemon.species)
+    : "";
+  const displayAbility = megaAbility ?? pokemon.ability;
+  const showTooltip = !abilityOpen;
+  const displayDesc = displayAbility ? getAbilityShortDesc(displayAbility) : null;
+  const baseDesc = pokemon.ability ? getAbilityShortDesc(pokemon.ability) : null;
+  return (
+    <div className="flex flex-col">
+      <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
+        <DescriptionTooltip
+          title={displayAbility}
+          description={displayDesc}
+          showContent={showTooltip}
+        >
+          <TooltipTrigger
+            render={
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className={cn(
+                      s.formRow,
+                      abilityErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
+                    )}
+                  />
+                }
+              />
+            }
+          >
+            <span className={s.formLabel}>Abil</span>
+            <span
+              className={cn(
+                s.formValue,
+                !displayAbility && "text-muted-foreground/50 italic"
+              )}
+            >
+              {displayAbility || "—"}
+            </span>
+          </TooltipTrigger>
+        </DescriptionTooltip>
+        {megaAbility && (
+          <DescriptionTooltip
+            title={pokemon.ability}
+            description={baseDesc}
+            showContent={showTooltip}
+          >
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label={`Change base ability (${pokemon.ability || "none"})`}
+                  onClick={() => setAbilityOpen(true)}
+                  className="self-start rounded px-1 pt-0.5 font-mono text-[9px] text-muted-foreground/70 hover:bg-muted hover:text-foreground"
+                />
+              }
+            >
+              base: {pokemon.ability || "—"}
+            </TooltipTrigger>
+          </DescriptionTooltip>
+        )}
+        <PopoverContent side="bottom" align="start" className="w-auto p-0">
+          <AbilityPicker
+            value={pokemon.ability}
+            species={pickerSpecies}
+            format={format}
+            onPick={(ability) => onUpdate({ ability })}
+            onClose={() => setAbilityOpen(false)}
+          />
+        </PopoverContent>
+      </Popover>
+      <FieldErrors errors={abilityErrors} className="px-1" />
+    </div>
+  );
+}
 
 // =============================================================================
-// IdentityLane
+// IdentityLaneGhost — static visual placeholder (no interactive elements)
 // =============================================================================
+
+function IdentityLaneGhost() {
+  return (
+    <div className="flex min-w-0 gap-3 p-3">
+      {/* Sprite column */}
+      <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
+        {/* Species pill ghost — static div, NOT a button */}
+        <div className="border-border bg-background flex w-36 items-center gap-1 rounded-md border border-dashed px-2 py-1.5 text-left text-xs sm:w-40 md:w-44">
+          <span className="min-w-0 flex-1 truncate text-muted-foreground/50">
+            + Add Pokémon
+          </span>
+          <span aria-hidden className="text-[9px] text-muted-foreground/30">
+            ▾
+          </span>
+        </div>
+        {/* Sprite ghost — static div, NOT a button */}
+        <div className="size-[144px] rounded-xl bg-muted/40" />
+      </div>
+
+      {/* Form column */}
+      <div className="flex w-56 min-w-0 shrink-0 flex-col justify-center gap-0.5">
+        {/* Banner ghost — same className as real banner */}
+        <div className={s.idBanner}>
+          <div className="flex h-[22px] items-center">
+            <span className="text-sm font-normal text-muted-foreground/20 italic">
+              Nickname
+            </span>
+          </div>
+          <div className="flex h-[18px] items-center gap-1">
+            <div className="h-3.5 w-10 rounded bg-muted/30" />
+          </div>
+        </div>
+        {/* Loadout rows ghost — Item / Abil / Nat with em-dashes, static divs */}
+        {(["Item", "Abil", "Nat"] as const).map((label) => (
+          <div key={label} className={s.formRow}>
+            <span className={s.formLabel}>{label}</span>
+            <span className={cn(s.formValue, "text-muted-foreground/25 italic")}>
+              —
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// FormChips — species form switcher (regular ↔ mega ↔ alt)
+// =============================================================================
+
+interface FormChipsProps {
+  currentSpecies: string;
+  currentItem: string | null;
+  onPick: (species: string) => void;
+}
 
 /**
- * Combined IDENTITY + LOADOUT lane — sprite column on the left, form sheet on
- * the right.
+ * Render a row of one-tap chips for switching between a Pokemon's alternate
+ * forms (megas + battle-mode forms like Aegislash-Blade). Hidden when the
+ * species has only one form.
  *
- * Sprite column:
- *   - 128×128 sprite with type-tinted background (click → species picker)
- *   - Species pill below (click → species picker, responsive width)
+ * Mega chips are **disabled** unless the held item is the matching mega
+ * stone — they need the stone to fire in canon. Disabled chips show a
+ * tooltip explaining the requirement; clicking is a no-op.
  *
- * Form column:
- *   Banner (2 rows, separated from form rows by a thin border):
- *     Row 1 — nickname input (full-width, dashed-border-on-hover)
- *     Row 2 — type pills + gender chip + shiny chip
+ * Battle-mode alt forms (Aegislash-Blade, Wishiwashi-School, Greninja-Ash,
+ * Mimikyu-Busted) have no item requirement — those chips are always
+ * enabled.
  *
- *   Labeled form rows for loadout:
- *     Item | Ability | Nature | Level (gen-gated) | Tera (gen-gated)
+ * Toggle-off behavior: clicking the active chip returns to the base form
+ * but **does not clear the held item** — leaves the mega stone attached so
+ * the user can re-toggle quickly. Holding a mega stone with the base form
+ * is not illegal; it simply doesn't do anything until the user toggles
+ * back to the mega form.
  */
-export function IdentityLane({
+function FormChips({ currentSpecies, currentItem, onPick }: FormChipsProps) {
+  const forms = getFormsForSpecies(currentSpecies);
+  if (forms.length <= 1) return null;
+  const base = getCanonicalBaseSpecies(currentSpecies);
+  const altForms = forms.filter((f) => f !== base);
+  return (
+    <div className="flex items-center gap-1">
+      {altForms.map((form) => {
+        const active = form === currentSpecies;
+        const requiredStone = getMegaStoneForSpecies(form);
+        // Mega chips need their stone held. Non-mega alt forms (Aegislash-
+        // Blade etc) have no item requirement.
+        const enabled =
+          requiredStone === null ? true : currentItem === requiredStone;
+        // Common case: alt form is "<base>-<suffix>" (Charizard-Mega-Y,
+        // Aegislash-Blade). Strip the base + dash and render the rest.
+        // Edge case (Floette): canonical base is "Floette-Eternal" but the
+        // alt is "Floette-Mega" — they share a root, not a prefix. Fall
+        // back to the substring after the last hyphen so we still render
+        // a meaningful chip ("Mega").
+        const label = form.startsWith(base + "-")
+          ? form.slice(base.length + 1).replace(/-/g, " ")
+          : form.slice(form.lastIndexOf("-") + 1);
+        const tooltip = !enabled
+          ? `Hold ${requiredStone} to use this form`
+          : active
+            ? `Toggle off — return to ${base}`
+            : form;
+        // Click an inactive chip → switch to that form (no item change).
+        // Click the active chip → toggle back to the base form (item kept).
+        const target = active ? base : form;
+        return (
+          <button
+            key={form}
+            type="button"
+            onClick={enabled ? () => onPick(target) : undefined}
+            disabled={!enabled}
+            aria-pressed={active}
+            aria-disabled={!enabled}
+            title={tooltip}
+            className={cn(
+              "rounded border px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap transition-colors",
+              !enabled
+                ? "border-dashed border-border/50 text-muted-foreground/40 cursor-not-allowed"
+                : active
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground"
+            )}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// =============================================================================
+// IdentityLaneReal — full interactive lane (existing logic, unchanged)
+// =============================================================================
+
+function IdentityLaneReal({
   pokemon,
   format,
   teamItems,
-  onUpdate,
-  fieldErrors = [],
   teamSiblings,
-}: IdentityLaneProps) {
+  onUpdate,
+  fieldErrors,
+}: IdentityLaneRealProps) {
   const types = getSpeciesTypes(pokemon.species ?? "");
   const nicknameRef = useRef<HTMLInputElement>(null);
   const [nickDraft, setNickDraft] = useState(pokemon.nickname ?? "");
-  const [levelOpen, setLevelOpen] = useState(false);
   const [speciesOpen, setSpeciesOpen] = useState(false);
   const [itemOpen, setItemOpen] = useState(false);
   const [abilityOpen, setAbilityOpen] = useState(false);
   const [natureOpen, setNatureOpen] = useState(false);
   const [teraOpen, setTeraOpen] = useState(false);
 
-  const level = pokemon.level ?? 50;
   const gender = pokemon.gender as GenderValue;
   const isShiny = pokemon.is_shiny ?? false;
-  const showLevel = formatSupportsLevel(format);
   const showTera = formatSupportsTera(format);
 
   // Nature effect labels for the mini suffix
@@ -254,235 +492,140 @@ export function IdentityLane({
       </Popover>
 
       {/* ── Form column (sibling of species Popover) ─────────────── */}
-      <div className="flex min-w-0 w-64 shrink-0 flex-col justify-center gap-0.5">
+      <div className="flex min-w-0 w-56 shrink-0 flex-col justify-center gap-0.5">
 
         {/* BANNER — nickname + chips rows */}
         <div className={s.idBanner}>
-          {/* Row 1: Nickname input */}
-          <div className="flex flex-col">
-            <input
-              ref={nicknameRef}
-              type="text"
-              value={nickDraft}
-              onChange={(e) => setNickDraft(e.target.value)}
-              onBlur={handleNickBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") nicknameRef.current?.blur();
-              }}
-              placeholder="Nickname (optional)"
-              maxLength={24}
-              aria-label="Nickname"
-              className={cn(
-                "bg-transparent w-full min-w-0 truncate text-sm font-bold outline-none",
-                "border-b border-transparent placeholder:text-muted-foreground/50 placeholder:font-normal",
-                "hover:border-dashed hover:border-border focus:border-solid focus:border-primary",
-                "leading-snug py-0.5",
-                nicknameErrors.length > 0 &&
-                  "border-destructive focus:border-destructive"
-              )}
-            />
-            {nicknameErrors.map((err, i) => (
-              <FieldError key={i} message={err.message} severity={err.severity} />
-            ))}
-          </div>
-
-          {/* Row 2: Type pills + gender + shiny */}
-          <div className="flex flex-wrap items-center gap-1">
-            {/* Type pills */}
-            {types.map((t) => (
-              <TypePill key={t} t={t} />
-            ))}
-
-            {/* Gender 3-way toggle: ♂ / ♀ / — */}
-            <div className="flex flex-col">
-              <button
-                type="button"
-                onClick={handleGenderToggle}
-                title="Toggle gender"
+          <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <input
+                ref={nicknameRef}
+                type="text"
+                value={nickDraft}
+                onChange={(e) => setNickDraft(e.target.value)}
+                onBlur={handleNickBlur}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") nicknameRef.current?.blur();
+                }}
+                placeholder="Nickname"
+                maxLength={24}
+                aria-label="Nickname"
                 className={cn(
-                  "bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 text-[10px] font-medium",
-                  genderErrors.length > 0 && "border-destructive"
+                  "bg-transparent w-full min-w-0 truncate text-sm font-bold outline-none",
+                  "border-b border-transparent placeholder:text-muted-foreground/50 placeholder:font-normal",
+                  "hover:border-dashed hover:border-border focus:border-solid focus:border-primary",
+                  "leading-snug py-0.5",
+                  nicknameErrors.length > 0 &&
+                    "border-destructive focus:border-destructive"
                 )}
-              >
-                {genderSymbol(gender)}
-              </button>
-              {genderErrors.map((err, i) => (
-                <FieldError key={i} message={err.message} severity={err.severity} />
-              ))}
+              />
+              <FieldErrors errors={nicknameErrors} />
             </div>
 
-            {/* Shiny toggle */}
-            <button
-              type="button"
-              onClick={handleShinyToggle}
-              aria-pressed={isShiny}
-              title={isShiny ? "Shiny (click to clear)" : "Not shiny (click to set)"}
-              className={cn(
-                "border-border rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
-                isShiny
-                  ? "bg-yellow-400/20 text-yellow-600 border-yellow-400/40 dark:text-yellow-400"
-                  : "bg-muted/60 hover:bg-muted text-muted-foreground"
-              )}
-            >
-              ✦
-            </button>
+            <div className="flex shrink-0 items-center gap-1">
+              {/* Gender 3-way toggle */}
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  onClick={handleGenderToggle}
+                  title="Toggle gender"
+                  className={cn(
+                    "bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                    genderErrors.length > 0 && "border-destructive"
+                  )}
+                >
+                  {genderSymbol(gender)}
+                </button>
+                <FieldErrors errors={genderErrors} />
+              </div>
 
+              {/* Shiny toggle */}
+              <button
+                type="button"
+                onClick={handleShinyToggle}
+                aria-pressed={isShiny}
+                title={isShiny ? "Shiny (click to clear)" : "Not shiny (click to set)"}
+                className={cn(
+                  "border-border rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                  isShiny
+                    ? "bg-yellow-400/20 text-yellow-600 border-yellow-400/40 dark:text-yellow-400"
+                    : "bg-muted/60 hover:bg-muted text-muted-foreground"
+                )}
+              >
+                ✦
+              </button>
+            </div>
           </div>
+
+          {/* Row 2: form chips. Disabled until the matching mega stone is held;
+              click → swap species only (no auto-item-attach). */}
+          {pokemon.species && speciesHasForms(pokemon.species) && (
+            <FormChips
+              currentSpecies={pokemon.species}
+              currentItem={pokemon.held_item}
+              onPick={(nextSpecies) => {
+                if (nextSpecies === pokemon.species) return;
+                onUpdate({ species: nextSpecies });
+              }}
+            />
+          )}
         </div>
 
         {/* LOADOUT FORM ROWS */}
 
-        {/* Item */}
         <div className="flex flex-col">
-          <Popover open={itemOpen} onOpenChange={setItemOpen}>
-            <PopoverTrigger
-              render={
-                <button
-                  type="button"
-                  className={cn(
-                    s.formRow,
-                    itemErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
-                  )}
-                />
-              }
-            >
-              <span className={s.formLabel}>Item</span>
-              <span
-                className={cn(
-                  s.formValue,
-                  !pokemon.held_item && "text-muted-foreground/50 italic"
-                )}
-              >
-                {pokemon.held_item ?? "—"}
-              </span>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" align="start" className="w-auto p-0">
-              <ItemPicker
-                value={pokemon.held_item}
-                format={format}
-                teamItems={teamItems}
-                onPick={(item) => onUpdate({ held_item: item })}
-                onClose={() => setItemOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
-          {itemErrors.map((err, i) => (
-            <FieldError key={i} message={err.message} severity={err.severity} className="px-1" />
-          ))}
+          <FormChip
+            label="Item"
+            value={pokemon.held_item ?? ""}
+            triggerClassName={
+              itemErrors.length > 0 ? "ring-1 ring-destructive/40 rounded" : undefined
+            }
+            open={itemOpen}
+            onOpenChange={setItemOpen}
+          >
+            <ItemPicker
+              value={pokemon.held_item}
+              format={format}
+              teamItems={teamItems}
+              onPick={(item) => onUpdate({ held_item: item })}
+              onClose={() => setItemOpen(false)}
+            />
+          </FormChip>
+          <FieldErrors errors={itemErrors} className="px-1" />
         </div>
 
-        {/* Ability */}
-        <div className="flex flex-col">
-          <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
-            <PopoverTrigger
-              render={
-                <button
-                  type="button"
-                  className={cn(
-                    s.formRow,
-                    abilityErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
-                  )}
-                />
-              }
-            >
-              <span className={s.formLabel}>Abil</span>
-              <span
-                className={cn(
-                  s.formValue,
-                  !pokemon.ability && "text-muted-foreground/50 italic"
-                )}
-              >
-                {pokemon.ability || "—"}
-              </span>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" align="start" className="w-auto p-0">
-              <AbilityPicker
-                value={pokemon.ability}
-                species={pokemon.species ?? ""}
-                format={format}
-                onPick={(ability) => onUpdate({ ability })}
-                onClose={() => setAbilityOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
-          {abilityErrors.map((err, i) => (
-            <FieldError key={i} message={err.message} severity={err.severity} className="px-1" />
-          ))}
-        </div>
+        {/* Ability — when species is a mega, show the post-evolution ability
+            as the primary display and the stored base ability as a secondary
+            line. The picker is scoped to the BASE form's abilities so the
+            user keeps editing what'll get submitted on the team sheet. */}
+        <IdentityAbilityRow
+          pokemon={pokemon}
+          format={format}
+          abilityOpen={abilityOpen}
+          setAbilityOpen={setAbilityOpen}
+          onUpdate={onUpdate}
+          abilityErrors={abilityErrors}
+        />
 
-        {/* Nature */}
         <div className="flex flex-col">
-          <Popover open={natureOpen} onOpenChange={setNatureOpen}>
-            <PopoverTrigger
-              render={
-                <button
-                  type="button"
-                  className={cn(
-                    s.formRow,
-                    natureErrors.length > 0 && "ring-1 ring-destructive/40 rounded"
-                  )}
-                />
-              }
-            >
-              <span className={s.formLabel}>Nat</span>
-              <span className="flex min-w-0 items-baseline gap-1.5">
-                <span
-                  className={cn(
-                    "text-foreground text-[11.5px]",
-                    !pokemon.nature && "text-muted-foreground/50 italic"
-                  )}
-                >
-                  {pokemon.nature || "—"}
-                </span>
-                {natUp && natDown && (
-                  <span className="font-mono text-[9px] whitespace-nowrap">
-                    <span className="text-emerald-600 dark:text-emerald-400">
-                      +{STAT_LABELS[natUp] ?? natUp}
-                    </span>
-                    <span className="text-muted-foreground">/</span>
-                    <span className="text-rose-600 dark:text-rose-400">
-                      −{STAT_LABELS[natDown] ?? natDown}
-                    </span>
-                  </span>
-                )}
-              </span>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" align="start" className="w-auto p-0">
-              <NaturePicker
-                value={pokemon.nature ?? ""}
-                onPick={(nature) => onUpdate({ nature })}
-                onClose={() => setNatureOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
-          {natureErrors.map((err, i) => (
-            <FieldError key={i} message={err.message} severity={err.severity} className="px-1" />
-          ))}
+          <FormChip
+            label="Nat"
+            value={pokemon.nature ?? ""}
+            trailing={<NatureChevrons boost={natUp} reduce={natDown} />}
+            triggerClassName={
+              natureErrors.length > 0 ? "ring-1 ring-destructive/40 rounded" : undefined
+            }
+            open={natureOpen}
+            onOpenChange={setNatureOpen}
+          >
+            <NaturePicker
+              value={pokemon.nature ?? ""}
+              onPick={(nature) => onUpdate({ nature })}
+              onClose={() => setNatureOpen(false)}
+            />
+          </FormChip>
+          <FieldErrors errors={natureErrors} className="px-1" />
         </div>
-
-        {/* Level — gen-gated (hidden for Champions formats) */}
-        {showLevel && (
-          <Popover open={levelOpen} onOpenChange={setLevelOpen}>
-            <PopoverTrigger
-              render={
-                <button type="button" className={s.formRow} />
-              }
-            >
-              <span className={s.formLabel}>Lv</span>
-              <span className={s.formValue}>{level}</span>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" align="start" className="w-auto p-0">
-              <NumberPicker
-                title="Level"
-                value={level}
-                min={1}
-                max={100}
-                onChange={(v) => onUpdate({ level: v })}
-                onClose={() => setLevelOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
-        )}
 
         {/* Tera — gen-gated (only when format supports Terastallization) */}
         {showTera && (
@@ -515,10 +658,56 @@ export function IdentityLane({
         )}
 
         {/* Species validation errors */}
-        {speciesErrors.map((err, i) => (
-          <FieldError key={i} message={err.message} severity={err.severity} />
-        ))}
+        <FieldErrors errors={speciesErrors} />
       </div>
     </div>
+  );
+}
+
+// =============================================================================
+// IdentityLane — public dispatcher
+// =============================================================================
+
+/**
+ * Combined IDENTITY + LOADOUT lane — sprite column on the left, form sheet on
+ * the right.
+ *
+ * When `pokemon` is null, renders a purely static ghost placeholder (no
+ * buttons, inputs, or popovers) so an outer `<button>` wrapper (EmptyRow) can
+ * safely contain it without nested-button violations.
+ *
+ * Sprite column:
+ *   - 128×128 sprite with type-tinted background (click → species picker)
+ *   - Species pill below (click → species picker, responsive width)
+ *
+ * Form column (w-56):
+ *   Banner (2 rows):
+ *     Row 1 — nickname input
+ *     Row 2 — gender + shiny chips
+ *
+ *   Labeled form rows for loadout:
+ *     Item | Ability | Nature | Tera (gen-gated)
+ *
+ * Note: Type pills and level have moved to RibDecorations inside the
+ * active-row rib. Gender and shiny remain here.
+ */
+export function IdentityLane({
+  pokemon,
+  format,
+  teamItems,
+  teamSiblings,
+  onUpdate,
+  fieldErrors = [],
+}: IdentityLaneProps) {
+  if (!pokemon) return <IdentityLaneGhost />;
+  return (
+    <IdentityLaneReal
+      pokemon={pokemon}
+      format={format}
+      teamItems={teamItems ?? []}
+      teamSiblings={teamSiblings ?? []}
+      onUpdate={onUpdate ?? (() => {})}
+      fieldErrors={fieldErrors}
+    />
   );
 }

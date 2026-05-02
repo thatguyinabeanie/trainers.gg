@@ -3,7 +3,7 @@
 import { type ReactNode, useState } from "react";
 import Link from "next/link";
 
-import { type GameFormat } from "@trainers/pokemon";
+import { getActiveFormats, type GameFormat } from "@trainers/pokemon";
 import { type TeamWithPokemon } from "@trainers/supabase";
 
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { type ValidationError } from "../validation-hooks";
 import { ValidationPopover } from "./validation/validation-popover";
 
+const ACTIVE_FORMATS = getActiveFormats();
+
 interface TopbarProps {
   team: TeamWithPokemon;
   filledCount: number;
@@ -29,6 +31,7 @@ interface TopbarProps {
   validationErrors: ValidationError[];
   onJumpToPokemon: (pokemonId: number) => void;
   onValidate: () => void;
+  onFormatChange?: (formatId: string) => Promise<void>;
   exportMenu?: ReactNode;
 }
 
@@ -59,10 +62,13 @@ export function Topbar({
   validationErrors,
   onJumpToPokemon,
   onValidate,
+  onFormatChange,
   exportMenu,
 }: TopbarProps) {
   const teamsUrl = `/dashboard/alts/${username}/teams`;
   const [validateOpen, setValidateOpen] = useState(false);
+  const [formatOpen, setFormatOpen] = useState(false);
+  const [formatPending, setFormatPending] = useState(false);
 
   const hasErrors = validationErrors.some((e) => e.severity === "error");
   const hasWarnings = validationErrors.some((e) => e.severity === "warning");
@@ -77,6 +83,86 @@ export function Topbar({
     onJumpToPokemon(pokemonId);
     setValidateOpen(false);
   }
+
+  async function handleFormatPick(formatId: string) {
+    if (!onFormatChange || formatId === format?.id) {
+      setFormatOpen(false);
+      return;
+    }
+    setFormatPending(true);
+    try {
+      await onFormatChange(formatId);
+    } finally {
+      setFormatPending(false);
+      setFormatOpen(false);
+    }
+  }
+
+  // All formats to show: active formats + current format if it's no longer active
+  const displayFormats =
+    format && !ACTIVE_FORMATS.find((f) => f.id === format.id)
+      ? [format, ...ACTIVE_FORMATS]
+      : ACTIVE_FORMATS;
+
+  const formatBadge = onFormatChange ? (
+    <Popover open={formatOpen} onOpenChange={setFormatOpen}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            disabled={formatPending}
+            className="ml-2 shrink-0"
+            aria-label="Change format"
+          />
+        }
+      >
+        <Badge
+          variant="secondary"
+          className={cn(
+            "cursor-pointer transition-colors hover:bg-accent",
+            formatPending && "opacity-60"
+          )}
+        >
+          {format ? (
+            <>
+              <span className="mr-1 inline-block size-1.5 rounded-full bg-primary" />
+              {format.label}
+            </>
+          ) : (
+            <span className="text-muted-foreground">Set format…</span>
+          )}
+        </Badge>
+      </PopoverTrigger>
+      <PopoverContent side="bottom" align="start" className="w-auto p-3">
+        <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          Format
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {displayFormats.map((fmt) => (
+            <button
+              key={fmt.id}
+              type="button"
+              disabled={formatPending}
+              onClick={() => handleFormatPick(fmt.id)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                fmt.id === format?.id
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background hover:bg-accent"
+              )}
+            >
+              {fmt.label}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  ) : format ? (
+    <Badge variant="secondary" className="ml-2 shrink-0">
+      <span className="mr-1 inline-block size-1.5 rounded-full bg-primary" />
+      {format.label}
+    </Badge>
+  ) : null;
 
   return (
     <PageHeader>
@@ -94,12 +180,7 @@ export function Topbar({
         aria-label="Team name"
       />
 
-      {format && (
-        <Badge variant="secondary" className="ml-2 shrink-0">
-          <span className="mr-1 inline-block size-1.5 rounded-full bg-primary" />
-          {format.label}
-        </Badge>
-      )}
+      {formatBadge}
 
       <div className="hidden items-center gap-3 lg:flex">
         <StatBlock label="Slots" value={`${filledCount}/6`} />
@@ -156,7 +237,6 @@ export function Topbar({
             />
           </PopoverContent>
         </Popover>
-
       </div>
     </PageHeader>
   );

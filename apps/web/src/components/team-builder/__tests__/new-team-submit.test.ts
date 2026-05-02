@@ -25,12 +25,17 @@ const mockGetLegalMoves = jest.fn();
 const mockGetLegalTeraTypes = jest.fn();
 const mockIsLegalAbility = jest.fn();
 
+// Re-create the LEGALITY_UNAVAILABLE sentinel inside the mock so
+// production-code `result === LEGALITY_UNAVAILABLE` checks line up with
+// whatever the mock returns.
+const MOCK_LEGALITY_UNAVAILABLE: unique symbol = Symbol("legality-unavailable");
 jest.mock("@trainers/pokemon", () => ({
   getLegalSpecies: (...args: unknown[]) => mockGetLegalSpecies(...args),
   getLegalItems: (...args: unknown[]) => mockGetLegalItems(...args),
   getLegalMoves: (...args: unknown[]) => mockGetLegalMoves(...args),
   getLegalTeraTypes: (...args: unknown[]) => mockGetLegalTeraTypes(...args),
   isLegalAbility: (...args: unknown[]) => mockIsLegalAbility(...args),
+  LEGALITY_UNAVAILABLE: MOCK_LEGALITY_UNAVAILABLE,
 }));
 
 // =============================================================================

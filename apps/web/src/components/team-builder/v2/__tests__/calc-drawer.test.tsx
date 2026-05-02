@@ -87,10 +87,12 @@ const mockCalcCtx = {
   weather: "",
   terrain: "",
   gravity: false,
+  fairyAura: false,
   setGameType: mockSetGameType,
   setWeather: mockSetWeather,
   setTerrain: mockSetTerrain,
   setGravity: mockSetGravity,
+  setFairyAura: jest.fn(),
   attackerSide: {
     reflect: false,
     lightScreen: false,
@@ -235,14 +237,22 @@ interface RenderProps {
   selectedPokemon?: Tables<"pokemon"> | null;
   team?: TeamWithPokemon;
   format?: GameFormat | undefined;
+  faintedYours?: number;
+  setFaintedYours?: jest.Mock;
+  faintedTheirs?: number;
+  setFaintedTheirs?: jest.Mock;
   onClose?: jest.Mock;
 }
 
 function renderDrawer(props: RenderProps = {}) {
   const onClose = props.onClose ?? jest.fn();
+  const setFaintedYours = props.setFaintedYours ?? jest.fn();
+  const setFaintedTheirs = props.setFaintedTheirs ?? jest.fn();
   const poke = makePokemon({ id: 1, species: "Gardevoir" });
   return {
     onClose,
+    setFaintedYours,
+    setFaintedTheirs,
     ...render(
       <CalcDrawer
         open={props.open ?? true}
@@ -251,6 +261,10 @@ function renderDrawer(props: RenderProps = {}) {
         }
         team={props.team ?? makeTeam([poke])}
         format={props.format ?? VGC_FORMAT}
+        faintedYours={props.faintedYours ?? 0}
+        setFaintedYours={setFaintedYours}
+        faintedTheirs={props.faintedTheirs ?? 0}
+        setFaintedTheirs={setFaintedTheirs}
         onClose={onClose}
       />
     ),
@@ -397,18 +411,60 @@ describe("CalcDrawer — handleGameTypeChange", () => {
 describe("CalcDrawer — foesAlive / allyAlive handlers", () => {
   it("setFoesAlive calls setField with foesAlive value", () => {
     renderDrawer({ selectedPokemon: makePokemon() });
-    const handler = capturedFieldBlockProps.setFoesAlive as (v: 1 | 2) => void;
-    handler(1);
+    const setDoubles = capturedFieldBlockProps.setDoubles as {
+      setFoesAlive: (v: 1 | 2) => void;
+      setAllyAlive: (v: boolean) => void;
+    };
+    setDoubles.setFoesAlive(1);
     expect(mockSetField).toHaveBeenCalledWith({ foesAlive: 1 });
   });
 
   it("setAllyAlive calls setField with allyAlive value", () => {
     renderDrawer({ selectedPokemon: makePokemon() });
-    const handler = capturedFieldBlockProps.setAllyAlive as (
-      v: boolean
-    ) => void;
-    handler(false);
+    const setDoubles = capturedFieldBlockProps.setDoubles as {
+      setFoesAlive: (v: 1 | 2) => void;
+      setAllyAlive: (v: boolean) => void;
+    };
+    setDoubles.setAllyAlive(false);
     expect(mockSetField).toHaveBeenCalledWith({ allyAlive: false });
+  });
+});
+
+// =============================================================================
+// Tests — fainted counters are plumbed through to CalcFieldBlock
+// =============================================================================
+
+describe("CalcDrawer — fainted counters", () => {
+  it("passes faintedYours prop to CalcFieldBlock via fainted.yours", () => {
+    renderDrawer({ selectedPokemon: makePokemon(), faintedYours: 3 });
+    const fainted = capturedFieldBlockProps.fainted as { yours: number; theirs: number };
+    expect(fainted.yours).toBe(3);
+  });
+
+  it("passes faintedTheirs prop to CalcFieldBlock via fainted.theirs", () => {
+    renderDrawer({ selectedPokemon: makePokemon(), faintedTheirs: 2 });
+    const fainted = capturedFieldBlockProps.fainted as { yours: number; theirs: number };
+    expect(fainted.theirs).toBe(2);
+  });
+
+  it("calls setFaintedYours when setFainted.setYours is invoked with 1", () => {
+    const { setFaintedYours } = renderDrawer({ selectedPokemon: makePokemon() });
+    const setFainted = capturedFieldBlockProps.setFainted as {
+      setYours: (n: number) => void;
+      setTheirs: (n: number) => void;
+    };
+    setFainted.setYours(1);
+    expect(setFaintedYours).toHaveBeenCalledWith(1);
+  });
+
+  it("calls setFaintedTheirs when setFainted.setTheirs is invoked with 2", () => {
+    const { setFaintedTheirs } = renderDrawer({ selectedPokemon: makePokemon() });
+    const setFainted = capturedFieldBlockProps.setFainted as {
+      setYours: (n: number) => void;
+      setTheirs: (n: number) => void;
+    };
+    setFainted.setTheirs(2);
+    expect(setFaintedTheirs).toHaveBeenCalledWith(2);
   });
 });
 

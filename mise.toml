@@ -14,10 +14,10 @@ opencode = "latest"
 java = "zulu-21"
 ruby = "3.3"
 lefthook = "latest"
-neovim = "0.11"
 supabase = "latest"
 python = "3.12"
 uv = "latest"
+neovim = "latest"
 # Android SDK is NOT included here — most devs already have it via Android Studio.
 # If you don't, create a mise.local.toml with:
 #   [tools]

@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@trainers/pokemon": "workspace:*",
     "@pkmn/data": "catalog:pkmn",
     "@pkmn/dex": "catalog:pkmn",
     "@pkmn/sets": "catalog:pkmn",

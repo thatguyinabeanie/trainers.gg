@@ -347,9 +347,8 @@ describe("StatsLane", () => {
       },
       CHAMPIONS_FORMAT
     );
-    // Total = 25, budget.total = 66
-    expect(screen.getByText("25")).toBeInTheDocument();
-    expect(screen.getByText("/66")).toBeInTheDocument();
+    // Total chip renders as single "25/66" span
+    expect(screen.getByText("25/66")).toBeInTheDocument();
   });
 
   it("shows 252/508 total chip in VGC with 252 EVs invested", () => {
@@ -364,8 +363,8 @@ describe("StatsLane", () => {
       },
       VGC_FORMAT
     );
-    expect(screen.getByText("252")).toBeInTheDocument();
-    expect(screen.getByText("/508")).toBeInTheDocument();
+    // Total chip renders as single "252/508" span
+    expect(screen.getByText("252/508")).toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------
@@ -543,5 +542,98 @@ describe("StatsLane", () => {
     ]) {
       expect(screen.queryByTestId(`bumps-${stat}`)).not.toBeInTheDocument();
     }
+  });
+
+  // ---------------------------------------------------------------------------
+  // 13. Bump tick is a button — clicking it sets the EV to that bump value
+  // ---------------------------------------------------------------------------
+  it("clicking a breakpoint tick commits the bump's EV value via onUpdate", () => {
+    (mockFindStatBreakpoints as jest.Mock).mockReturnValue([4, 8, 12]);
+    const { onUpdate } = renderLane({ nature: "Adamant", ev_attack: 0 });
+
+    const bumps = screen.getByTestId("bumps-attack");
+    const ticks = bumps.querySelectorAll("button");
+    expect(ticks).toHaveLength(3);
+
+    // Click the middle bump (8 EVs)
+    fireEvent.click(ticks[1]!);
+
+    // Click commits immediately (no debounce) since it's a discrete action
+    expect(onUpdate).toHaveBeenCalledWith({ ev_attack: 8 });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 14. Slider thumb gets data-at-bump when displayEv lands on a breakpoint
+  // ---------------------------------------------------------------------------
+  it("slider has data-at-bump attribute when current EV equals a breakpoint", () => {
+    (mockFindStatBreakpoints as jest.Mock).mockReturnValue([4, 8, 12]);
+    renderLane({ nature: "Adamant", ev_attack: 8 });
+
+    const slider = screen.getByLabelText("Atk slider");
+    expect(slider).toHaveAttribute("data-at-bump");
+  });
+
+  it("slider does NOT have data-at-bump attribute when current EV is between breakpoints", () => {
+    (mockFindStatBreakpoints as jest.Mock).mockReturnValue([4, 8, 12]);
+    renderLane({ nature: "Adamant", ev_attack: 6 });
+
+    const slider = screen.getByLabelText("Atk slider");
+    expect(slider).not.toHaveAttribute("data-at-bump");
+  });
+});
+
+// =============================================================================
+// Ghost mode (pokemon: null)
+// =============================================================================
+
+describe("ghost mode (pokemon: null)", () => {
+  // ---------------------------------------------------------------------------
+  // 1. Renders without crashing
+  // ---------------------------------------------------------------------------
+  it("renders without crashing when pokemon={null}", () => {
+    expect(() => {
+      render(<StatsLane pokemon={null} />);
+    }).not.toThrow();
+  });
+
+  // ---------------------------------------------------------------------------
+  // 2. Root container has correct style and className
+  // ---------------------------------------------------------------------------
+  it("root container has style={{ width: 400 }} and expected className", () => {
+    const { container } = render(<StatsLane pokemon={null} />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root).toBeTruthy();
+    expect(root.style.width).toBe("400px");
+    expect(root.className).toContain("border-dashed");
+    expect(root.className).toContain("flex-col");
+  });
+
+  // ---------------------------------------------------------------------------
+  // 3. Renders 6 stat rows with stat labels
+  // ---------------------------------------------------------------------------
+  it("renders 6 stat rows, each with its label (HP, ATK, DEF, SPA, SPD, SPE)", () => {
+    render(<StatsLane pokemon={null} />);
+    for (const label of ["HP", "ATK", "DEF", "SPA", "SPD", "SPE"]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // 4. Column headers render (Base, EVs)
+  // ---------------------------------------------------------------------------
+  it("renders column headers Base and EVs", () => {
+    render(<StatsLane pokemon={null} />);
+    expect(screen.getByText("Base")).toBeInTheDocument();
+    expect(screen.getByText("EVs")).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // 5. No interactive elements (no spinbuttons, no sliders, no textboxes)
+  // ---------------------------------------------------------------------------
+  it("renders no interactive inputs or sliders in ghost mode", () => {
+    render(<StatsLane pokemon={null} />);
+    expect(screen.queryAllByRole("spinbutton")).toHaveLength(0);
+    expect(screen.queryAllByRole("slider")).toHaveLength(0);
+    expect(screen.queryAllByRole("textbox")).toHaveLength(0);
   });
 });

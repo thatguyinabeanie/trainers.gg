@@ -54,8 +54,8 @@ export {
   getLabel,
 } from "./labels";
 
-// error-handling.ts — error message extraction
-export { getErrorMessage } from "./error-handling";
+// error-handling.ts — error message extraction + central error sink
+export { getErrorMessage, logError, setErrorSink } from "./error-handling";
 
 // notifications.ts — notification type checking
 export { isMatchNotification } from "./notifications";

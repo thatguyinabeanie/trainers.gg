@@ -68,5 +68,7 @@ export default async function TeamWorkspaceLayout({
     notFound();
   }
 
-  return <div className="flex h-full flex-col">{children}</div>;
+  // absolute inset-0: pins to SidebarInset (position: relative) without contributing
+  // to its height — breaks the circular h-full chain that causes min-h-svh to grow.
+  return <div className="absolute inset-0 flex flex-col">{children}</div>;
 }

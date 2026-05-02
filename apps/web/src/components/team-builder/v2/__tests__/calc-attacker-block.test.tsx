@@ -10,9 +10,12 @@
  *   - "No attacker selected" fallback when slot is null
  *   - Inherits-from-row note shows correct 1-based slot number
  *   - Stat-boost grid: all 5 stat keys render labels
- *   - Stat-boost grid: stage buttons -6..+6 render with correct aria-pressed
- *   - Clicking a stage button calls setAttackerBoost with correct args
- *   - Active stage button is aria-pressed=true; others are aria-pressed=false
+ *   - Stat-boost stepper: decrease/increase buttons per stat
+ *   - Clicking stepper + calls setAttackerBoost with incremented value
+ *   - Clicking stepper − calls setAttackerBoost with decremented value
+ *   - Stepper clamps at +6 max / −6 min
+ *   - Quick-pick chips render for each stat and fire setAttackerBoost
+ *   - Stat boosts section appears before inherits note
  *   - onPickAttacker is called through the chip strip
  */
 
@@ -141,7 +144,7 @@ interface RenderProps {
   setAttackerBoost?: jest.Mock;
 }
 
-function renderBlock(props: RenderProps = {}) {
+function renderAttacker(props: RenderProps = {}) {
   const teamSlots = props.teamSlots ?? [makePokemon(), null, null, null, null, null];
   const onPickAttacker = props.onPickAttacker ?? jest.fn();
   const setAttackerBoost = props.setAttackerBoost ?? jest.fn();
@@ -174,17 +177,17 @@ beforeEach(() => {
 
 describe("CalcAttackerBlock — header labels", () => {
   it("renders the 'Attacker' column eyebrow label", () => {
-    renderBlock();
+    renderAttacker();
     expect(screen.getByText("Attacker")).toBeInTheDocument();
   });
 
   it("renders the 'your team' sub-label", () => {
-    renderBlock();
+    renderAttacker();
     expect(screen.getByText("your team")).toBeInTheDocument();
   });
 
   it("renders the 'Stat boosts' section header", () => {
-    renderBlock();
+    renderAttacker();
     expect(screen.getByText("Stat boosts")).toBeInTheDocument();
   });
 });
@@ -192,14 +195,14 @@ describe("CalcAttackerBlock — header labels", () => {
 describe("CalcAttackerBlock — chip strip", () => {
   it("renders AttackerChipStrip with the teamSlots array", () => {
     const teamSlots = [makePokemon(), makePokemon({ id: 2, species: "Dragonite" }), null, null, null, null];
-    renderBlock({ teamSlots });
+    renderAttacker({ teamSlots });
     expect(screen.getByTestId("chip-strip")).toBeInTheDocument();
     expect(screen.getByTestId("chip-0")).toHaveTextContent("Garchomp");
     expect(screen.getByTestId("chip-1")).toHaveTextContent("Dragonite");
   });
 
   it("passes activeIdx to chip strip", () => {
-    renderBlock({ attackerIdx: 2 });
+    renderAttacker({ attackerIdx: 2 });
     expect(screen.getByTestId("chip-strip")).toHaveAttribute("data-active", "2");
   });
 
@@ -210,7 +213,7 @@ describe("CalcAttackerBlock — chip strip", () => {
       null, null, null, null,
     ];
     const onPickAttacker = jest.fn();
-    renderBlock({ teamSlots, onPickAttacker });
+    renderAttacker({ teamSlots, onPickAttacker });
     fireEvent.click(screen.getByTestId("chip-1"));
     expect(onPickAttacker).toHaveBeenCalledWith(1);
   });
@@ -218,25 +221,25 @@ describe("CalcAttackerBlock — chip strip", () => {
 
 describe("CalcAttackerBlock — attacker display", () => {
   it("renders the attacker species name in the mon head", () => {
-    renderBlock({ teamSlots: [makePokemon({ species: "Garchomp" }), null, null, null, null, null] });
+    renderAttacker({ teamSlots: [makePokemon({ species: "Garchomp" }), null, null, null, null, null] });
     // The name appears in both the chip stub and the mon head — at least one must be present
     expect(screen.getAllByText("Garchomp").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders the attacker sprite", () => {
-    renderBlock();
+    renderAttacker();
     expect(screen.getByTestId("attacker-sprite")).toBeInTheDocument();
   });
 
   it("renders type pills for the attacker's types", () => {
     mockGetSpeciesTypes.mockReturnValue(["Dragon", "Ground"]);
-    renderBlock();
+    renderAttacker();
     expect(screen.getByTestId("type-pill-Dragon")).toBeInTheDocument();
     expect(screen.getByTestId("type-pill-Ground")).toBeInTheDocument();
   });
 
   it("renders nature and level on the meta line", () => {
-    renderBlock({
+    renderAttacker({
       teamSlots: [makePokemon({ nature: "Timid", level: 50 }), null, null, null, null, null],
     });
     expect(screen.getByText(/Timid/)).toBeInTheDocument();
@@ -244,35 +247,35 @@ describe("CalcAttackerBlock — attacker display", () => {
   });
 
   it("renders held item on the meta line", () => {
-    renderBlock({
+    renderAttacker({
       teamSlots: [makePokemon({ held_item: "Life Orb" }), null, null, null, null, null],
     });
     expect(screen.getByText(/Life Orb/)).toBeInTheDocument();
   });
 
   it("renders ability on the meta line", () => {
-    renderBlock({
+    renderAttacker({
       teamSlots: [makePokemon({ ability: "Intimidate" }), null, null, null, null, null],
     });
     expect(screen.getByText(/Intimidate/)).toBeInTheDocument();
   });
 
   it("shows '—' for nature when nature is null", () => {
-    renderBlock({
+    renderAttacker({
       teamSlots: [makePokemon({ nature: null }), null, null, null, null, null],
     });
     expect(screen.getByText(/—/)).toBeInTheDocument();
   });
 
   it("shows '—' for item when held_item is null", () => {
-    renderBlock({
+    renderAttacker({
       teamSlots: [makePokemon({ held_item: null }), null, null, null, null, null],
     });
     expect(screen.getAllByText(/—/).length).toBeGreaterThan(0);
   });
 
   it("shows 'No attacker selected.' when attacker slot is null", () => {
-    renderBlock({
+    renderAttacker({
       teamSlots: [null, null, null, null, null, null],
       attackerIdx: 0,
     });
@@ -280,7 +283,7 @@ describe("CalcAttackerBlock — attacker display", () => {
   });
 
   it("does NOT render sprite when attacker slot is null", () => {
-    renderBlock({
+    renderAttacker({
       teamSlots: [null, null, null, null, null, null],
       attackerIdx: 0,
     });
@@ -299,14 +302,14 @@ describe("CalcAttackerBlock — inherits-from note", () => {
       const teamSlots = Array(6).fill(null).map((_, i) =>
         i === attackerIdx ? makePokemon() : null
       ) as (Tables<"pokemon"> | null)[];
-      renderBlock({ teamSlots, attackerIdx });
+      renderAttacker({ teamSlots, attackerIdx });
       const note = screen.getByText(new RegExp(`row\\s+${paddedSlot}`));
       expect(note).toBeInTheDocument();
     }
   );
 });
 
-describe("CalcAttackerBlock — stat boost grid", () => {
+describe("CalcAttackerBlock — stat boost grid labels", () => {
   it.each([
     ["ATK", "atk"],
     ["DEF", "def"],
@@ -316,110 +319,161 @@ describe("CalcAttackerBlock — stat boost grid", () => {
   ] as const)(
     "renders the %s stat label",
     (label) => {
-      renderBlock();
+      renderAttacker();
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   );
+});
 
-  it("renders 13 stage buttons per stat row (5 stats × 13 = 65 total)", () => {
-    renderBlock();
-    const buttons = screen.getAllByRole("button").filter(
-      (btn) => btn.getAttribute("aria-pressed") !== null &&
-        !btn.hasAttribute("data-testid")
-    );
-    // 5 stats × 13 stages = 65 stage buttons
-    expect(buttons.length).toBe(65);
+describe("CalcAttackerBlock — stat boost stepper", () => {
+  it("renders stat boost stepper with decrease and increase buttons for each stat", () => {
+    renderAttacker({ attackerBoosts: makeBoosts() });
+    expect(screen.getByRole("button", { name: /decrease atk boost/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /increase atk boost/i })).toBeInTheDocument();
   });
 
-  it("the +0 stage button for ATK is NOT aria-pressed when boost is 0", () => {
-    renderBlock({ attackerBoosts: makeBoosts({ atk: 0 }) });
-    // +0 button shows "0" text — find all with text "0" in buttons
-    // We verify at least one stage button has aria-pressed=false (non-active)
-    const stageButtons = screen.getAllByRole("button").filter(
-      (btn) => btn.getAttribute("aria-pressed") !== null &&
-        !btn.hasAttribute("data-testid")
-    );
-    const notPressed = stageButtons.filter(
-      (btn) => btn.getAttribute("aria-pressed") === "false"
-    );
-    expect(notPressed.length).toBeGreaterThan(0);
+  it("renders stepper decrease/increase buttons for all 5 stats", () => {
+    renderAttacker({ attackerBoosts: makeBoosts() });
+    const statKeys = ["atk", "def", "spa", "spd", "spe"] as const;
+    for (const stat of statKeys) {
+      expect(
+        screen.getByRole("button", { name: new RegExp(`decrease ${stat} boost`, "i") })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: new RegExp(`increase ${stat} boost`, "i") })
+      ).toBeInTheDocument();
+    }
   });
 
-  it("the active stage button has aria-pressed=true", () => {
-    renderBlock({ attackerBoosts: makeBoosts({ atk: 2, def: 0, spa: 0, spd: 0, spe: 0 }) });
-    const pressedButtons = screen.getAllByRole("button").filter(
-      (btn) => btn.getAttribute("aria-pressed") === "true" &&
-        !btn.hasAttribute("data-testid")
-    );
-    // 5 stats — atk is +2, others are 0. Each stat has exactly one active stage.
-    expect(pressedButtons.length).toBe(5);
-  });
-
-  it("calls setAttackerBoost('atk', 2) when the +2 ATK button is clicked", () => {
+  it("clicking + calls setAttackerBoost with incremented value", () => {
     const setAttackerBoost = jest.fn();
-    renderBlock({ setAttackerBoost });
-    // Find buttons with text "+2" — the first one is ATK (first stat row)
-    const plus2Buttons = screen.getAllByRole("button").filter(
-      (btn) => btn.textContent === "+2" && btn.getAttribute("aria-pressed") !== null
-    );
-    fireEvent.click(plus2Buttons[0]);
+    renderAttacker({
+      attackerBoosts: makeBoosts({ atk: 1 }),
+      setAttackerBoost,
+    });
+    fireEvent.click(screen.getByRole("button", { name: /increase atk boost/i }));
     expect(setAttackerBoost).toHaveBeenCalledWith("atk", 2);
   });
 
-  it("calls setAttackerBoost('spe', -1) when the -1 SPE button is clicked", () => {
+  it("clicking − calls setAttackerBoost with decremented value", () => {
     const setAttackerBoost = jest.fn();
-    renderBlock({ setAttackerBoost });
-    // -1 buttons — 5th occurrence corresponds to SPE row (last stat)
-    const minus1Buttons = screen.getAllByRole("button").filter(
-      (btn) => btn.textContent === "-1" && btn.getAttribute("aria-pressed") !== null
-    );
-    fireEvent.click(minus1Buttons[4]); // spe is last stat
-    expect(setAttackerBoost).toHaveBeenCalledWith("spe", -1);
+    renderAttacker({
+      attackerBoosts: makeBoosts({ atk: 2 }),
+      setAttackerBoost,
+    });
+    fireEvent.click(screen.getByRole("button", { name: /decrease atk boost/i }));
+    expect(setAttackerBoost).toHaveBeenCalledWith("atk", 1);
   });
 
-  it("calls setAttackerBoost with 0 when the 0 stage is clicked", () => {
+  it("+ clamps at +6 — does not exceed maximum", () => {
     const setAttackerBoost = jest.fn();
-    renderBlock({ attackerBoosts: makeBoosts({ atk: 2 }), setAttackerBoost });
-    // 0-stage buttons show text "0"
-    const zeroButtons = screen.getAllByRole("button").filter(
-      (btn) => btn.textContent === "0" && btn.getAttribute("aria-pressed") !== null
-    );
-    fireEvent.click(zeroButtons[0]); // first stat = ATK
-    expect(setAttackerBoost).toHaveBeenCalledWith("atk", 0);
+    renderAttacker({
+      attackerBoosts: makeBoosts({ atk: 6 }),
+      setAttackerBoost,
+    });
+    fireEvent.click(screen.getByRole("button", { name: /increase atk boost/i }));
+    expect(setAttackerBoost).toHaveBeenCalledWith("atk", 6);
   });
 
-  it.each([
-    ["atk", "+3", 3],
-    ["def", "-2", -2],
-    ["spa", "+6", 6],
-    ["spd", "-6", -6],
-  ] as const)(
-    "clicking %s stage button '%s' fires setAttackerBoost with value %i",
-    (stat, _label, value) => {
-      const setAttackerBoost = jest.fn();
-      renderBlock({ setAttackerBoost });
-      const statOrder = ["atk", "def", "spa", "spd", "spe"];
-      const statRowIdx = statOrder.indexOf(stat);
-      const label = value > 0 ? `+${value}` : String(value);
-      const matchingButtons = screen.getAllByRole("button").filter(
-        (btn) => btn.textContent === label && btn.getAttribute("aria-pressed") !== null
-      );
-      fireEvent.click(matchingButtons[statRowIdx]);
-      expect(setAttackerBoost).toHaveBeenCalledWith(stat, value);
+  it("− clamps at −6 — does not go below minimum", () => {
+    const setAttackerBoost = jest.fn();
+    renderAttacker({
+      attackerBoosts: makeBoosts({ spe: -6 }),
+      setAttackerBoost,
+    });
+    fireEvent.click(screen.getByRole("button", { name: /decrease spe boost/i }));
+    expect(setAttackerBoost).toHaveBeenCalledWith("spe", -6);
+  });
+
+  it("clicking + on SPE stat calls setAttackerBoost('spe', incremented)", () => {
+    const setAttackerBoost = jest.fn();
+    renderAttacker({
+      attackerBoosts: makeBoosts({ spe: 3 }),
+      setAttackerBoost,
+    });
+    fireEvent.click(screen.getByRole("button", { name: /increase spe boost/i }));
+    expect(setAttackerBoost).toHaveBeenCalledWith("spe", 4);
+  });
+});
+
+describe("CalcAttackerBlock — quick-pick chips", () => {
+  it("renders quick-pick chips +6 for all 5 stats", () => {
+    renderAttacker({ attackerBoosts: makeBoosts() });
+    const chips = screen.getAllByRole("button", { name: "+6" });
+    expect(chips.length).toBe(5);
+  });
+
+  it("renders quick-pick chips for values 0, +1, +2, +3, +6 per stat", () => {
+    renderAttacker({ attackerBoosts: makeBoosts() });
+    // 5 stats × 5 quick-pick values = 25 chips total; check the first stat row
+    // QUICK_PICKS = [0, 1, 2, 3, 6], rendered as "0", "+1", "+2", "+3", "+6"
+    expect(screen.getAllByRole("button", { name: "0" }).length).toBeGreaterThanOrEqual(5);
+    expect(screen.getAllByRole("button", { name: "+1" }).length).toBe(5);
+    expect(screen.getAllByRole("button", { name: "+2" }).length).toBe(5);
+    expect(screen.getAllByRole("button", { name: "+3" }).length).toBe(5);
+    expect(screen.getAllByRole("button", { name: "+6" }).length).toBe(5);
+  });
+
+  it("clicking a quick-pick chip calls setAttackerBoost with that value", () => {
+    const setAttackerBoost = jest.fn();
+    renderAttacker({
+      attackerBoosts: makeBoosts(),
+      setAttackerBoost,
+    });
+    // First "+2" chip corresponds to the ATK row (first stat)
+    fireEvent.click(screen.getAllByRole("button", { name: "+2" })[0]);
+    expect(setAttackerBoost).toHaveBeenCalledWith("atk", 2);
+  });
+
+  it("clicking the +6 quick-pick chip for DEF calls setAttackerBoost('def', 6)", () => {
+    const setAttackerBoost = jest.fn();
+    renderAttacker({
+      attackerBoosts: makeBoosts(),
+      setAttackerBoost,
+    });
+    // Second "+6" chip corresponds to the DEF row (second stat)
+    fireEvent.click(screen.getAllByRole("button", { name: "+6" })[1]);
+    expect(setAttackerBoost).toHaveBeenCalledWith("def", 6);
+  });
+
+  it("quick-pick chip shows aria-pressed=true when value matches current boost", () => {
+    renderAttacker({ attackerBoosts: makeBoosts({ atk: 2 }) });
+    // The "+2" chip in the ATK row should be aria-pressed=true
+    const plus2Chips = screen.getAllByRole("button", { name: "+2" });
+    expect(plus2Chips[0]).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("quick-pick chips other than the active value show aria-pressed=false", () => {
+    renderAttacker({ attackerBoosts: makeBoosts({ atk: 2 }) });
+    // "+1" chips should all be not-pressed
+    const plus1Chips = screen.getAllByRole("button", { name: "+1" });
+    for (const chip of plus1Chips) {
+      expect(chip).toHaveAttribute("aria-pressed", "false");
     }
-  );
+  });
+});
+
+describe("CalcAttackerBlock — stat boosts ordering", () => {
+  it("stat boosts section appears before inherits note in the DOM", () => {
+    renderAttacker();
+    const boostsLabel = screen.getByText(/stat boosts/i);
+    const inheritsNote = screen.getByText(/inherits spread/i);
+    expect(
+      boostsLabel.compareDocumentPosition(inheritsNote) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
 });
 
 describe("CalcAttackerBlock — types display", () => {
   it("renders no type pills when attacker species has no types", () => {
     mockGetSpeciesTypes.mockReturnValue([]);
-    renderBlock();
+    renderAttacker();
     expect(screen.queryByTestId(/^type-pill-/)).not.toBeInTheDocument();
   });
 
   it("renders a single type pill for mono-type species", () => {
     mockGetSpeciesTypes.mockReturnValue(["Fire"]);
-    renderBlock({
+    renderAttacker({
       teamSlots: [makePokemon({ species: "Incineroar" }), null, null, null, null, null],
     });
     expect(screen.getByTestId("type-pill-Fire")).toBeInTheDocument();

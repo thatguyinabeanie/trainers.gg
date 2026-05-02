@@ -170,7 +170,7 @@ jest.mock("../type-dot", () => ({
   TypeDot: ({ t }: { t: string }) => <span data-testid={`type-dot-${t}`} />,
 }));
 
-// FieldError — render as a simple alert span
+// FieldError + FieldErrors — render as simple alert spans
 jest.mock("../validation/field-error", () => ({
   FieldError: ({
     message,
@@ -182,6 +182,19 @@ jest.mock("../validation/field-error", () => ({
     <span role="alert" data-severity={severity ?? "error"}>
       {message}
     </span>
+  ),
+  FieldErrors: ({
+    errors,
+  }: {
+    errors: ReadonlyArray<{ message: string; severity?: string }>;
+  }) => (
+    <>
+      {errors.map((err, i) => (
+        <span key={i} role="alert" data-severity={err.severity ?? "error"}>
+          {err.message}
+        </span>
+      ))}
+    </>
   ),
 }));
 
@@ -206,6 +219,14 @@ jest.mock("@trainers/pokemon", () => ({
   STAT_KEYS: ["hp", "attack", "defense", "specialAttack", "specialDefense", "speed"],
   formatHasTera: jest.fn().mockReturnValue(true),
   isChampionsFormat: jest.fn().mockReturnValue(false),
+  // Form switching — defaults that single-form Pokemon hide chips. Override
+  // per test for species with alternate forms.
+  speciesHasForms: jest.fn().mockReturnValue(false),
+  getFormsForSpecies: jest.fn().mockReturnValue([]),
+  getCanonicalBaseSpecies: jest.fn((s: string) => s),
+  getMegaStoneForSpecies: jest.fn().mockReturnValue(null),
+  getMegaAbilityForSpecies: jest.fn().mockReturnValue(null),
+  getAbilityShortDesc: jest.fn().mockReturnValue(null),
 }));
 
 // format-gating — real implementation delegates to @trainers/pokemon mocks above
@@ -242,7 +263,8 @@ const VGC_FORMAT: GameFormat = {
   active: true,
 };
 
-const CHAMPIONS_FORMAT: GameFormat = {
+// Reserved for upcoming Champions-format identity-lane tests.
+const _CHAMPIONS_FORMAT: GameFormat = {
   id: "championsvgc2026regma",
   game: "Pokemon Champions",
   gameShort: "Champions",
@@ -339,7 +361,7 @@ describe("IdentityLane — basic render", () => {
 
   it("renders the nickname input with placeholder when no nickname", () => {
     renderLane({ nickname: null });
-    const input = screen.getByPlaceholderText("Nickname (optional)");
+    const input = screen.getByPlaceholderText("Nickname");
     expect(input).toBeInTheDocument();
     expect(input).toHaveValue("");
   });
@@ -350,32 +372,21 @@ describe("IdentityLane — basic render", () => {
   });
 });
 
-describe("IdentityLane — type pills", () => {
-  it("renders type pills for the species types", () => {
+describe("IdentityLane — type pills (moved to RibDecorations)", () => {
+  it("does NOT render type pills inside identity-lane (they live in the rib now)", () => {
     // mock returns ["Dragon", "Ground"]
     renderLane();
-    expect(screen.getByTestId("type-pill-Dragon")).toBeInTheDocument();
-    expect(screen.getByTestId("type-pill-Ground")).toBeInTheDocument();
+    expect(screen.queryByTestId("type-pill-Dragon")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("type-pill-Ground")).not.toBeInTheDocument();
   });
-
-  it.each([
-    [["Fire", "Flying"], "Fire", "Flying"],
-    [["Water"], "Water", null],
-    [["Psychic", "Fairy"], "Psychic", "Fairy"],
-  ] as const)(
-    "renders correct type pills for %j",
-    (types, first, second) => {
-      (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce(types);
-      renderLane();
-      expect(screen.getByTestId(`type-pill-${first}`)).toBeInTheDocument();
-      if (second) {
-        expect(screen.getByTestId(`type-pill-${second}`)).toBeInTheDocument();
-      }
-    }
-  );
 });
 
 describe("IdentityLane — gender toggle", () => {
+  it("renders a gender toggle inside identity-lane", () => {
+    renderLane({ gender: null });
+    expect(screen.getByTitle("Toggle gender")).toBeInTheDocument();
+  });
+
   it("shows '—' when gender is null", () => {
     renderLane({ gender: null });
     expect(screen.getByTitle("Toggle gender")).toHaveTextContent("—");
@@ -414,6 +425,11 @@ describe("IdentityLane — gender toggle", () => {
 });
 
 describe("IdentityLane — shiny toggle", () => {
+  it("renders a shiny toggle inside identity-lane", () => {
+    renderLane({ is_shiny: false });
+    expect(screen.getByTitle("Not shiny (click to set)")).toBeInTheDocument();
+  });
+
   it("renders shiny button with aria-pressed=false when not shiny", () => {
     renderLane({ is_shiny: false });
     expect(screen.getByTitle("Not shiny (click to set)")).toHaveAttribute(
@@ -448,7 +464,7 @@ describe("IdentityLane — shiny toggle", () => {
 describe("IdentityLane — nickname input", () => {
   it("calls onUpdate with trimmed value on blur", () => {
     const { onUpdate } = renderLane({ nickname: null });
-    const input = screen.getByPlaceholderText("Nickname (optional)");
+    const input = screen.getByPlaceholderText("Nickname");
     fireEvent.change(input, { target: { value: "  Sharky  " } });
     fireEvent.blur(input);
     expect(onUpdate).toHaveBeenCalledWith({ nickname: "Sharky" });
@@ -466,7 +482,7 @@ describe("IdentityLane — nickname input", () => {
     // Typing the species name is treated as "no nickname" (null), same as current state
     // so onUpdate is NOT fired (no change).
     const { onUpdate } = renderLane({ nickname: null, species: "Garchomp" });
-    const input = screen.getByPlaceholderText("Nickname (optional)");
+    const input = screen.getByPlaceholderText("Nickname");
     fireEvent.change(input, { target: { value: "Garchomp" } });
     fireEvent.blur(input);
     expect(onUpdate).not.toHaveBeenCalled();
@@ -490,7 +506,7 @@ describe("IdentityLane — nickname input", () => {
 
   it("blurs input when Enter is pressed", () => {
     renderLane({ nickname: null });
-    const input = screen.getByPlaceholderText("Nickname (optional)");
+    const input = screen.getByPlaceholderText("Nickname");
     const blurSpy = jest.spyOn(input, "blur");
     fireEvent.keyDown(input, { key: "Enter" });
     expect(blurSpy).toHaveBeenCalled();
@@ -600,33 +616,15 @@ describe("IdentityLane — nature picker", () => {
   });
 });
 
-describe("IdentityLane — level field (format-gated)", () => {
+describe("IdentityLane — level field (moved to RibDecorations)", () => {
   beforeEach(() => {
     (FormatGating.formatSupportsLevel as jest.Mock).mockReturnValue(true);
     (FormatGating.formatSupportsTera as jest.Mock).mockReturnValue(false);
   });
 
-  it("renders level field when format supports it", () => {
+  it("does NOT render the level field inside identity-lane", () => {
     renderLane({ level: 50 });
-    expect(screen.getByText("Lv")).toBeInTheDocument();
-    expect(screen.getByText("50")).toBeInTheDocument();
-  });
-
-  it("passes level=50 as default when pokemon.level is null", () => {
-    renderLane({ level: null });
-    expect(screen.getByText("50")).toBeInTheDocument();
-  });
-
-  it("calls onUpdate with level: 42 when NumberPicker fires", async () => {
-    const user = userEvent.setup();
-    const { onUpdate } = renderLane({ level: 50 });
-    await user.click(screen.getByText("pick-number"));
-    expect(onUpdate).toHaveBeenCalledWith({ level: 42 });
-  });
-
-  it("hides level field when format does not support it", () => {
-    (FormatGating.formatSupportsLevel as jest.Mock).mockReturnValue(false);
-    renderLane({}, CHAMPIONS_FORMAT);
+    // Level label "Lv" moved to RibDecorations — should not be in identity-lane
     expect(screen.queryByText("Lv")).not.toBeInTheDocument();
   });
 });
@@ -730,5 +728,255 @@ describe("IdentityLane — validation errors", () => {
     });
     const alerts = screen.getAllByRole("alert");
     expect(alerts.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// =============================================================================
+// Ghost mode (pokemon: null)
+// =============================================================================
+
+describe("IdentityLane — ghost mode (pokemon: null)", () => {
+  function renderGhost() {
+    return render(<IdentityLane pokemon={null} />);
+  }
+
+  it("renders without crashing when pokemon is null", () => {
+    expect(() => renderGhost()).not.toThrow();
+  });
+
+  it("shows '+ Add Pokémon' placeholder text", () => {
+    renderGhost();
+    expect(screen.getByText("+ Add Pokémon")).toBeInTheDocument();
+  });
+
+  it("shows 'Nickname' italic placeholder text", () => {
+    renderGhost();
+    expect(screen.getByText("Nickname")).toBeInTheDocument();
+  });
+
+  it("shows three loadout rows with labels Item, Abil, Nat", () => {
+    renderGhost();
+    expect(screen.getByText("Item")).toBeInTheDocument();
+    expect(screen.getByText("Abil")).toBeInTheDocument();
+    expect(screen.getByText("Nat")).toBeInTheDocument();
+  });
+
+  it("renders zero interactive elements — no buttons, inputs, or comboboxes", () => {
+    renderGhost();
+    expect(screen.queryAllByRole("button").length).toBe(0);
+    expect(screen.queryAllByRole("textbox").length).toBe(0);
+    expect(screen.queryAllByRole("combobox").length).toBe(0);
+  });
+});
+
+// =============================================================================
+// FormChips (form switching)
+// =============================================================================
+
+describe("IdentityLane — form chips", () => {
+  beforeEach(() => {
+    (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(false);
+    (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([]);
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockImplementation((s: string) => s);
+    (TrainersPokemon.getMegaStoneForSpecies as jest.Mock).mockReturnValue(null);
+  });
+
+  // Helper — install Charizard X/Y mocks the cluster of tests below all use.
+  function setupCharizardForms() {
+    (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(true);
+    (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([
+      "Charizard",
+      "Charizard-Mega-X",
+      "Charizard-Mega-Y",
+    ]);
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockReturnValue("Charizard");
+    (TrainersPokemon.getMegaStoneForSpecies as jest.Mock).mockImplementation(
+      (s: string) =>
+        s === "Charizard-Mega-X"
+          ? "Charizardite X"
+          : s === "Charizard-Mega-Y"
+            ? "Charizardite Y"
+            : null
+    );
+  }
+
+  it("renders no form chips for a species without alternate forms", () => {
+    render(
+      <IdentityLane
+        pokemon={{ ...makePokemon(), species: "Pikachu" }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={jest.fn()}
+      />
+    );
+    expect(screen.queryByText("Mega X")).toBeNull();
+  });
+
+  it("renders one chip per alternate form (no 'Regular' chip)", () => {
+    setupCharizardForms();
+    render(
+      <IdentityLane
+        pokemon={{ ...makePokemon(), species: "Charizard" }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={jest.fn()}
+      />
+    );
+    expect(screen.queryByRole("button", { name: "Regular" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Mega X" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mega Y" })).toBeInTheDocument();
+  });
+
+  it("disables every mega chip when no mega stone is held", () => {
+    setupCharizardForms();
+    render(
+      <IdentityLane
+        pokemon={{ ...makePokemon(), species: "Charizard", held_item: null }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={jest.fn()}
+      />
+    );
+    const x = screen.getByRole("button", { name: "Mega X" });
+    const y = screen.getByRole("button", { name: "Mega Y" });
+    expect(x).toBeDisabled();
+    expect(y).toBeDisabled();
+    expect(x).toHaveAttribute("title", "Hold Charizardite X to use this form");
+    expect(y).toHaveAttribute("title", "Hold Charizardite Y to use this form");
+  });
+
+  it("disables Mega Y when Charizardite X is held; Mega X is enabled", () => {
+    setupCharizardForms();
+    render(
+      <IdentityLane
+        pokemon={{
+          ...makePokemon(),
+          species: "Charizard",
+          held_item: "Charizardite X",
+        }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={jest.fn()}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Mega X" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Mega Y" })).toBeDisabled();
+  });
+
+  it("dimmed mega chip click is a no-op (does not call onUpdate)", async () => {
+    setupCharizardForms();
+    const onUpdate = jest.fn();
+    render(
+      <IdentityLane
+        pokemon={{
+          ...makePokemon(),
+          species: "Charizard",
+          held_item: "Choice Band",
+        }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={onUpdate}
+      />
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Mega Y" }));
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it("clicking an enabled inactive mega chip switches species (no item change)", async () => {
+    setupCharizardForms();
+    const onUpdate = jest.fn();
+    render(
+      <IdentityLane
+        pokemon={{
+          ...makePokemon(),
+          species: "Charizard",
+          held_item: "Charizardite Y",
+        }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={onUpdate}
+      />
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Mega Y" }));
+    expect(onUpdate).toHaveBeenCalledWith({ species: "Charizard-Mega-Y" });
+  });
+
+  it("clicking the active mega chip toggles back to base (item kept)", async () => {
+    setupCharizardForms();
+    const onUpdate = jest.fn();
+    render(
+      <IdentityLane
+        pokemon={{
+          ...makePokemon(),
+          species: "Charizard-Mega-Y",
+          held_item: "Charizardite Y",
+        }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={onUpdate}
+      />
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Mega Y" }));
+    expect(onUpdate).toHaveBeenCalledWith({ species: "Charizard" });
+  });
+
+  it("renders 'Mega' chip for Floette-Eternal even though base differs from form prefix", () => {
+    // Regression: Floette-Eternal → Floette-Mega doesn't share a "<base>-"
+    // prefix with the canonical base "Floette-Eternal" (15 chars vs 12).
+    // Earlier impl produced an empty label and the chip appeared invisible.
+    (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(true);
+    (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([
+      "Floette-Eternal",
+      "Floette-Mega",
+    ]);
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockReturnValue(
+      "Floette-Eternal"
+    );
+    (TrainersPokemon.getMegaStoneForSpecies as jest.Mock).mockImplementation(
+      (s: string) => (s === "Floette-Mega" ? "Floettite" : null)
+    );
+
+    render(
+      <IdentityLane
+        pokemon={{
+          ...makePokemon(),
+          species: "Floette-Eternal",
+          held_item: "Floettite",
+        }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={jest.fn()}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Mega" })).toBeInTheDocument();
+  });
+
+  it("clicking a different enabled mega while one is active swaps species", async () => {
+    setupCharizardForms();
+    const onUpdate = jest.fn();
+    // Mega X active, Mega X stone held → both chips enabled (X active, Y disabled
+    // because Y stone not held). Swap to Y by FIRST holding Charizardite Y, but
+    // here we exercise the simpler swap: hold both stones can't happen, so
+    // verify with a state where Y is enabled (item changed externally first).
+    render(
+      <IdentityLane
+        pokemon={{
+          ...makePokemon(),
+          species: "Charizard-Mega-X",
+          // User just swapped item to Charizardite Y manually; Mega Y is now
+          // enabled (matches stone), Mega X is dimmed (stone gone). Click Y.
+          held_item: "Charizardite Y",
+        }}
+        format={VGC_FORMAT}
+        teamItems={[]}
+        onUpdate={onUpdate}
+      />
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Mega Y" }));
+    expect(onUpdate).toHaveBeenCalledWith({ species: "Charizard-Mega-Y" });
   });
 });

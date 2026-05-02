@@ -47,6 +47,7 @@ function getMoveOptsFor(moveName: string): Record<string, unknown> | undefined {
   return call ? (call[2] as Record<string, unknown>) : undefined;
 }
 
+import { getFormatById } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
 import { getVerdict, useCalcState } from "../use-calc-state";
@@ -286,5 +287,479 @@ describe("getVerdict", () => {
     [10, 20, null],
   ])("min=%i max=%i → %s", (min, max, expected) => {
     expect(getVerdict(min, max)).toBe(expected);
+  });
+});
+
+// =============================================================================
+// Format clamp on switch (Champions ↔ VGC)
+// =============================================================================
+
+describe("format clamp — switching from VGC to Champions", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("clamps EVs to Champions caps (32 per stat, 66 total) when format switches to Champions", () => {
+    const vgcFormat = getFormatById("gen9vgc2026regi");
+    const championsFormat = getFormatById("championsvgc2026regma");
+
+    const { result, rerender } = renderHook(
+      ({ format }: { format: typeof vgcFormat }) =>
+        useCalcState({ selectedPokemon: makePokemon(), format }),
+      { initialProps: { format: vgcFormat } }
+    );
+
+    // Seed high EVs that exceed Champions caps
+    act(() =>
+      result.current.resetDefenderForSpecies("Pikachu", {
+        evs: { hp: 252, atk: 0, def: 4, spa: 252, spd: 0, spe: 0 },
+      })
+    );
+
+    // Before switch: EVs are as seeded
+    expect(result.current.defenderEvs.hp).toBe(252);
+
+    // Switch to Champions format — render-time clamp fires
+    rerender({ format: championsFormat });
+
+    // Clamp iteration: hp→atk→def→spa→spd→spe, perStatCap=32, totalCap=66
+    // hp=min(252,32)=32, running=32; atk=min(0,32)=0, running=32;
+    // def=min(4,32)=4, running=36; spa=min(252,32)=32 but allowed=min(32,66-36)=30, running=66;
+    // spd=min(0,66-66)=0; spe=min(0,66-66)=0
+    expect(result.current.defenderEvs).toEqual({
+      hp: 32,
+      atk: 0,
+      def: 4,
+      spa: 30,
+      spd: 0,
+      spe: 0,
+    });
+  });
+
+  it("switching back from Champions to VGC restores 252-per-stat cap (does not re-inflate EVs)", () => {
+    const vgcFormat = getFormatById("gen9vgc2026regi");
+    const championsFormat = getFormatById("championsvgc2026regma");
+
+    const { result, rerender } = renderHook(
+      ({ format }: { format: typeof vgcFormat }) =>
+        useCalcState({ selectedPokemon: makePokemon(), format }),
+      { initialProps: { format: championsFormat } }
+    );
+
+    // Seed EVs within Champions caps
+    act(() =>
+      result.current.resetDefenderForSpecies("Pikachu", {
+        evs: { hp: 32, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      })
+    );
+
+    rerender({ format: vgcFormat });
+
+    // EVs at 32 are under VGC per-stat cap (252) and total (510) — should be preserved as-is
+    expect(result.current.defenderEvs.hp).toBe(32);
+  });
+
+  it("first render with VGC format: default EVs {hp:252,spd:4} total=256 survive unchanged", () => {
+    const vgcFormat = getFormatById("gen9vgc2026regi");
+
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon(), format: vgcFormat })
+    );
+
+    // DEFAULT_DEFENDER_EVS = { hp:252, atk:0, def:0, spa:0, spd:4, spe:0 }
+    // All ≤252 individually, total=256 ≤510 — clamp with VGC caps leaves them intact
+    expect(result.current.defenderEvs.hp).toBe(252);
+    expect(result.current.defenderEvs.spd).toBe(4);
+  });
+});
+
+// =============================================================================
+// setDefenderIv clamping
+// =============================================================================
+
+describe("setDefenderIv — clamping", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it.each<[number, number | typeof NaN]>([
+    [-5, 0],
+    [0, 0],
+    [15, 15],
+    [31, 31],
+    [32, 31],
+    [50, 31],
+    [15.7, 16],
+  ])(
+    "setDefenderIv('hp', %i) → stored value %s",
+    (input, expectedOrNaN) => {
+      const { result } = renderHook(() =>
+        useCalcState({ selectedPokemon: makePokemon() })
+      );
+      act(() => result.current.setDefenderIv("hp", input));
+      expect(result.current.defenderIvs.hp).toBe(expectedOrNaN);
+    }
+  );
+
+  it("NaN input: state becomes NaN (Math.round(NaN) = NaN)", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    act(() => result.current.setDefenderIv("hp", NaN));
+    expect(Number.isNaN(result.current.defenderIvs.hp)).toBe(true);
+  });
+});
+
+// =============================================================================
+// setDefenderEv — Champions caps enforced after format flip
+// =============================================================================
+
+describe("setDefenderEv — Champions caps enforced after format flip", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("clamps a single per-stat assignment to 32", () => {
+    const championsFormat = getFormatById("championsvgc2026regma");
+
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon(), format: championsFormat })
+    );
+
+    // Default EVs after Champions format clamp: hp=32, spd=4 (total=36)
+    // Setting hp to a value > 32 must be clamped to 32
+    act(() => result.current.setDefenderEv("hp", 100));
+    expect(result.current.defenderEvs.hp).toBe(32);
+  });
+
+  it("clamps to remaining headroom under the 66 total cap", () => {
+    const championsFormat = getFormatById("championsvgc2026regma");
+
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon(), format: championsFormat })
+    );
+
+    // Default Champions clamp leaves spd=4 from the VGC defaults — clear it
+    // so the headroom math below is unambiguous.
+    act(() => result.current.setDefenderEv("spd", 0));
+
+    // Now bring hp and atk to 32 each (total = 64).
+    act(() => result.current.setDefenderEv("hp", 32));
+    act(() => result.current.setDefenderEv("atk", 32));
+
+    // Total headroom remaining: 66 - 64 = 2. Requesting 32 for def must clamp to 2.
+    act(() => result.current.setDefenderEv("def", 32));
+    expect(result.current.defenderEvs.def).toBe(2);
+
+    const total = Object.values(result.current.defenderEvs).reduce(
+      (s, n) => s + n,
+      0
+    );
+    expect(total).toBeLessThanOrEqual(66);
+  });
+
+  it("classic VGC format still clamps to 252 per stat and 510 total", () => {
+    const vgcFormat = getFormatById("gen9vgc2026regi");
+
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon(), format: vgcFormat })
+    );
+
+    // 300 > 252 per-stat cap for VGC
+    act(() => result.current.setDefenderEv("atk", 300));
+    expect(result.current.defenderEvs.atk).toBe(252);
+
+    // Default EVs: hp=252, spd=4 → total=256 after initial clamp.
+    // With atk now 252, total = 252+252+4 = 508.
+    // Setting def to 252 must be clamped by headroom (510 - 508 = 2).
+    act(() => result.current.setDefenderEv("def", 252));
+    expect(result.current.defenderEvs.def).toBe(2);
+
+    const total = Object.values(result.current.defenderEvs).reduce(
+      (s, n) => s + n,
+      0
+    );
+    expect(total).toBeLessThanOrEqual(510);
+  });
+});
+
+// =============================================================================
+// HP percent — raw state storage, no clamping at the setter
+// =============================================================================
+
+describe("setDefenderHpPercent — state stores raw value", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it.each([150, -10, 0, 50, 100])(
+    "setDefenderHpPercent(%i) stores that exact value in state",
+    (pct) => {
+      const { result } = renderHook(() =>
+        useCalcState({ selectedPokemon: makePokemon() })
+      );
+      act(() => result.current.setDefenderHpPercent(pct));
+      expect(result.current.defenderHpPercent).toBe(pct);
+    }
+  );
+
+  it("hook does not throw and still produces calc output for out-of-range HP percent", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    // 150 is clamped internally in buildDefenderPokemon, but the hook keeps running
+    act(() => result.current.setDefenderHpPercent(150));
+    expect(result.current.moveCalcOutputs[0]).not.toBeNull();
+  });
+});
+
+// =============================================================================
+// Inferred weather / terrain from attacker ability
+// =============================================================================
+
+describe("inferredWeather / inferredTerrain", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("Drought ability → inferredWeather='Sun' when no explicit weather set", () => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ ability: "Drought" }),
+      })
+    );
+    expect(result.current.inferredWeather).toBe("Sun");
+  });
+
+  it("Drizzle ability → inferredWeather='Rain'", () => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ ability: "Drizzle" }),
+      })
+    );
+    expect(result.current.inferredWeather).toBe("Rain");
+  });
+
+  it("Drought ability + explicit weather set → inferredWeather is null (explicit takes precedence)", () => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ ability: "Drought" }),
+      })
+    );
+    act(() => result.current.setWeather("Rain"));
+    expect(result.current.inferredWeather).toBeNull();
+  });
+
+  it("Hadron Engine ability → inferredTerrain='Electric'", () => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ ability: "Hadron Engine" }),
+      })
+    );
+    expect(result.current.inferredTerrain).toBe("Electric");
+  });
+
+  it("Levitate ability → inferredWeather and inferredTerrain both null (not in maps)", () => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ ability: "Levitate" }),
+      })
+    );
+    expect(result.current.inferredWeather).toBeNull();
+    expect(result.current.inferredTerrain).toBeNull();
+  });
+
+  it("null selectedPokemon → both inferred values are null", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: null })
+    );
+    expect(result.current.inferredWeather).toBeNull();
+    expect(result.current.inferredTerrain).toBeNull();
+  });
+
+  it("setWeather('None') sentinel suppresses ability-based inference", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon({ ability: "Drought" }) })
+    );
+    expect(result.current.inferredWeather).toBe("Sun");
+    act(() => result.current.setWeather("None"));
+    expect(result.current.inferredWeather).toBeNull();
+  });
+
+  it("setTerrain('None') sentinel suppresses Hadron Engine inference", () => {
+    const { result } = renderHook(() =>
+      useCalcState({
+        selectedPokemon: makePokemon({ ability: "Hadron Engine" }),
+      })
+    );
+    expect(result.current.inferredTerrain).toBe("Electric");
+    act(() => result.current.setTerrain("None"));
+    expect(result.current.inferredTerrain).toBeNull();
+  });
+});
+
+// =============================================================================
+// resetDefenderForSpecies
+// =============================================================================
+
+describe("resetDefenderForSpecies — additional paths", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("without overrides: zeroes all EVs, resets IVs to 31, nature to Hardy", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    // First set some EVs so we can confirm they're zeroed
+    act(() => result.current.setDefenderEv("hp", 100));
+    act(() => result.current.resetDefenderForSpecies("Garchomp"));
+    expect(result.current.defenderSpecies).toBe("Garchomp");
+    expect(result.current.defenderEvs).toEqual({
+      hp: 0,
+      atk: 0,
+      def: 0,
+      spa: 0,
+      spd: 0,
+      spe: 0,
+    });
+    expect(result.current.defenderIvs).toEqual({
+      hp: 31,
+      atk: 31,
+      def: 31,
+      spa: 31,
+      spd: 31,
+      spe: 31,
+    });
+    expect(result.current.defenderNature).toBe("Hardy");
+    expect(result.current.defenderAbility).toBe("");
+    expect(result.current.defenderItem).toBe("");
+    expect(result.current.defenderBoosts).toEqual({
+      atk: 0,
+      def: 0,
+      spa: 0,
+      spd: 0,
+      spe: 0,
+    });
+  });
+
+  it("with evs override: stores the provided EVs exactly", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    const customEvs = { hp: 252, atk: 0, def: 4, spa: 0, spd: 252, spe: 0 };
+    act(() =>
+      result.current.resetDefenderForSpecies("Incineroar", {
+        evs: customEvs,
+        ability: "Intimidate",
+        item: "Sitrus Berry",
+        nature: "Careful",
+      })
+    );
+    expect(result.current.defenderEvs).toEqual(customEvs);
+    expect(result.current.defenderAbility).toBe("Intimidate");
+    expect(result.current.defenderItem).toBe("Sitrus Berry");
+    expect(result.current.defenderNature).toBe("Careful");
+  });
+
+  it("resets defenderMoves to all-empty slots", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    act(() => result.current.setDefenderMove(0, "Earthquake"));
+    act(() => result.current.resetDefenderForSpecies("Garchomp"));
+    expect(result.current.defenderMoves).toEqual(["", "", "", ""]);
+  });
+});
+
+// =============================================================================
+// computeReverseOutput short-circuits
+// =============================================================================
+
+describe("computeReverseOutput — short-circuits", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("returns null for empty string moveName", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    expect(result.current.computeReverseOutput("")).toBeNull();
+  });
+
+  it("returns null when selectedPokemon is null", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: null })
+    );
+    expect(result.current.computeReverseOutput("Flamethrower")).toBeNull();
+  });
+
+  it("moveCalcOutputsReverse is [null,null,null,null] when all defenderMoves are empty", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    // defenderMoves defaults to ["","","",""] — hasAnyDefenderMove is false
+    expect(result.current.moveCalcOutputsReverse).toEqual([
+      null,
+      null,
+      null,
+      null,
+    ]);
+  });
+
+  it("moveCalcOutputsReverse computes output once a defender move is set", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    act(() => result.current.setDefenderMove(0, "Flamethrower"));
+    // First slot should now have an output (mockCalculate returns a valid result)
+    expect(result.current.moveCalcOutputsReverse[0]).not.toBeNull();
+    // Remaining empty slots remain null
+    expect(result.current.moveCalcOutputsReverse[1]).toBeNull();
+    expect(result.current.moveCalcOutputsReverse[2]).toBeNull();
+    expect(result.current.moveCalcOutputsReverse[3]).toBeNull();
+  });
+});
+
+// =============================================================================
+// Per-calc mega toggle (attackerMegaActive / defenderMegaActive)
+// =============================================================================
+
+describe("attackerMegaActive / defenderMegaActive", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("attackerMegaActive defaults to true", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    expect(result.current.attackerMegaActive).toBe(true);
+  });
+
+  it("defenderMegaActive defaults to true", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    expect(result.current.defenderMegaActive).toBe(true);
+  });
+
+  it("setAttackerMegaActive updates the flag without affecting defender flag", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    act(() => result.current.setAttackerMegaActive(false));
+    expect(result.current.attackerMegaActive).toBe(false);
+    expect(result.current.defenderMegaActive).toBe(true);
+  });
+
+  it("setDefenderMegaActive updates the flag without affecting attacker flag", () => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    act(() => result.current.setDefenderMegaActive(false));
+    expect(result.current.defenderMegaActive).toBe(false);
+    expect(result.current.attackerMegaActive).toBe(true);
   });
 });

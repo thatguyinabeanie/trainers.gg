@@ -1,16 +1,26 @@
 "use client";
 
-import { type DraggableAttributes, type DraggableSyntheticListeners } from "@dnd-kit/core";
+import {
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
+} from "@dnd-kit/core";
 
 import { type GameFormat } from "@trainers/pokemon";
-import { type Tables, type TablesUpdate, type TeamWithPokemon } from "@trainers/supabase";
+import {
+  type Tables,
+  type TablesUpdate,
+  type TeamWithPokemon,
+} from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 
 import { type ValidationError } from "../../validation-hooks";
+import { useCalcEnabled } from "../calc/calc-state-context";
 import s from "../builder.module.css";
+import { CalcColumn } from "./calc-column";
 import { IdentityLane } from "./identity-lane";
 import { MovesLane } from "./moves-lane";
+import { RibDecorations } from "./rib-decorations";
 import { StatsLane } from "./stats-lane";
 
 // =============================================================================
@@ -22,6 +32,11 @@ interface ActiveRowProps {
   pokemon: Tables<"pokemon">;
   teamPokemon: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
+  /** True when this row is the workspace's active row. Used by PokeRow to gate
+   *  expand/collapse — ActiveRow itself doesn't read it (CalcColumn now computes
+   *  per-row outputs against the shared defender, so every row's CALC populates
+   *  regardless of which row is workspace-active). */
+  isActive: boolean;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   onRemove: () => void;
   /** All validation errors for this Pokemon — filtered per lane by field. */
@@ -62,6 +77,7 @@ export function ActiveRow({
   pokemon,
   teamPokemon,
   format,
+  isActive: _isActive,
   onUpdate,
   onRemove,
   fieldErrors = [],
@@ -69,6 +85,8 @@ export function ActiveRow({
   dragListeners,
   isDragging = false,
 }: ActiveRowProps) {
+  const calcEnabled = useCalcEnabled();
+
   // Collect held items from sibling pokemon for the item picker duplicate warning
   const teamItems = teamPokemon
     .filter((tp) => tp.pokemon && tp.pokemon.id !== pokemon.id)
@@ -77,49 +95,70 @@ export function ActiveRow({
 
   // Identity lane receives both identity and loadout errors
   const identityErrors = errorsForFields(fieldErrors, [
-    "species", "nickname", "gender", "level",
-    "item", "heldItem", "ability", "nature", "tera_type",
+    "species",
+    "nickname",
+    "gender",
+    "level",
+    "item",
+    "heldItem",
+    "ability",
+    "nature",
+    "tera_type",
   ]);
   const movesErrors = errorsForFields(fieldErrors, [
-    "move1", "move2", "move3", "move4", "moves",
+    "move1",
+    "move2",
+    "move3",
+    "move4",
+    "moves",
   ]);
   const statsErrors = errorsForFields(fieldErrors, [
-    "evs", "evTotal", "ev_hp", "ev_attack", "ev_defense",
-    "ev_special_attack", "ev_special_defense", "ev_speed",
+    "evs",
+    "evTotal",
+    "ev_hp",
+    "ev_attack",
+    "ev_defense",
+    "ev_special_attack",
+    "ev_special_defense",
+    "ev_speed",
   ]);
 
   return (
     <div
       className={cn(
         s.rowActive,
-        "flex min-w-0 flex-wrap items-stretch overflow-hidden rounded-lg border bg-card",
+        "bg-card flex w-fit min-w-0 flex-wrap items-stretch self-start overflow-hidden rounded-lg border",
         "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]",
         isDragging && s.rowDragging
       )}
     >
-      {/* RIB — slot number (drag handle) + remove button */}
+      {/* RIB — slot number (drag handle) + decorations + remove button */}
       <div
         className={cn(
           s.rib,
-          "flex w-8 shrink-0 flex-col items-center justify-between border-r border-dashed border-border/60 bg-muted/20 py-2"
+          "border-border/60 bg-muted/20 flex w-10 shrink-0 flex-col items-center justify-between border-r border-dashed py-2"
         )}
       >
         <span
           {...dragAttributes}
           {...dragListeners}
           className={cn(
-            "font-mono text-[10px] font-medium tracking-wide text-muted-foreground",
+            "text-muted-foreground font-mono text-[10px] font-medium tracking-wide",
             dragListeners && s.dragHandle
           )}
           aria-label={`Drag to reorder slot ${idx + 1}`}
         >
           {String(idx + 1).padStart(2, "0")}
         </span>
+
+        {/* Type pills (rotated), gender, shiny, level controls */}
+        <RibDecorations pokemon={pokemon} format={format} onUpdate={onUpdate} />
+
         <button
           type="button"
           onClick={onRemove}
           aria-label={`Remove ${pokemon.species ?? "Pokémon"} from slot ${idx + 1}`}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+          className="text-muted-foreground hover:bg-destructive/15 hover:text-destructive flex size-5 items-center justify-center rounded transition-colors"
         >
           ×
         </button>
@@ -151,6 +190,9 @@ export function ActiveRow({
         onUpdate={onUpdate}
         fieldErrors={movesErrors}
       />
+
+      {/* Calc column — fixed 160px, aligns row-for-row with move tiles */}
+      {calcEnabled && <CalcColumn pokemon={pokemon} />}
     </div>
   );
 }

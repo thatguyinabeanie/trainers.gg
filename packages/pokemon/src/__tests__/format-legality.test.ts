@@ -1,15 +1,34 @@
 import {
+  getCanonicalBaseSpecies,
+  getFormsForSpecies,
   getLegalAbilities,
   getLegalItems,
   getLegalMoves,
   getLegalSpecies,
   getLegalTeraTypes,
+  getMegaStoneForSpecies,
   isLegalAbility,
   isLegalItem,
   isLegalMove,
   isLegalSpecies,
   isLegalTeraType,
+  type LegalityResult,
+  LEGALITY_UNAVAILABLE,
+  speciesHasForms,
 } from "../format-legality";
+
+/**
+ * Helper: assert a `getLegal*` call returned an actual set (not the
+ * permissive `undefined` or the `LEGALITY_UNAVAILABLE` sentinel) and
+ * narrow the type for downstream `.size` / `.has()` assertions.
+ */
+function asSet(value: LegalityResult): ReadonlySet<string> {
+  expect(value).toBeInstanceOf(Set);
+  if (value === undefined || value === LEGALITY_UNAVAILABLE) {
+    throw new Error("expected a ReadonlySet, got " + String(value));
+  }
+  return value;
+}
 
 describe("format-legality — Champions M-A", () => {
   const CHAMPIONS = "championsvgc2026regma";
@@ -29,35 +48,34 @@ describe("format-legality — Champions M-A", () => {
   });
 
   it("returns a ReadonlySet for Champions M-A", () => {
-    const legal = getLegalSpecies(CHAMPIONS);
-    expect(legal).toBeInstanceOf(Set);
+    const legal = asSet(getLegalSpecies(CHAMPIONS));
     // 215 base species + 59 mega forms (36 standard + 23 Champions-exclusive)
     // minus duplicates: Aegislash-Shield → Aegislash, Maushold-Three → Maushold
     // Floette-Eternal-Mega removed (Floette-Mega is the Champions name)
-    expect(legal?.size).toBe(275);
+    expect(legal.size).toBe(275);
   });
 
   it("includes Mega forms using Showdown naming (not 'Mega X' naming)", () => {
-    const legal = getLegalSpecies(CHAMPIONS);
+    const legal = asSet(getLegalSpecies(CHAMPIONS));
     // Wrong naming format — should not be present
-    expect(legal?.has("Mega Venusaur")).toBe(false);
-    expect(legal?.has("Mega Charizard X")).toBe(false);
+    expect(legal.has("Mega Venusaur")).toBe(false);
+    expect(legal.has("Mega Charizard X")).toBe(false);
     // Correct Showdown naming — should be present (standard + Champions-exclusive)
-    expect(legal?.has("Venusaur-Mega")).toBe(true);
-    expect(legal?.has("Charizard-Mega-X")).toBe(true);
-    expect(legal?.has("Greninja-Mega")).toBe(true);
+    expect(legal.has("Venusaur-Mega")).toBe(true);
+    expect(legal.has("Charizard-Mega-X")).toBe(true);
+    expect(legal.has("Greninja-Mega")).toBe(true);
     // Base species still present
-    expect(legal?.has("Venusaur")).toBe(true);
-    expect(legal?.has("Charizard")).toBe(true);
+    expect(legal.has("Venusaur")).toBe(true);
+    expect(legal.has("Charizard")).toBe(true);
   });
 
   it("retains distinct battle forms", () => {
-    const legal = getLegalSpecies(CHAMPIONS);
-    expect(legal?.has("Rotom-Heat")).toBe(true);
-    expect(legal?.has("Tauros-Paldea-Combat")).toBe(true);
-    expect(legal?.has("Aegislash-Blade")).toBe(true);
-    expect(legal?.has("Meowstic-F")).toBe(true);
-    expect(legal?.has("Slowking-Galar")).toBe(true);
+    const legal = asSet(getLegalSpecies(CHAMPIONS));
+    expect(legal.has("Rotom-Heat")).toBe(true);
+    expect(legal.has("Tauros-Paldea-Combat")).toBe(true);
+    expect(legal.has("Aegislash-Blade")).toBe(true);
+    expect(legal.has("Meowstic-F")).toBe(true);
+    expect(legal.has("Slowking-Galar")).toBe(true);
   });
 });
 
@@ -84,9 +102,8 @@ describe("format-legality — @pkmn/sim path", () => {
   });
 
   it("returns a non-empty set for VGC Reg I", () => {
-    const legal = getLegalSpecies(REG_I);
-    expect(legal).toBeInstanceOf(Set);
-    expect(legal?.size).toBeGreaterThan(100);
+    const legal = asSet(getLegalSpecies(REG_I));
+    expect(legal.size).toBeGreaterThan(100);
   });
 
   it("marks Mewtwo legal in Reg G (restricted-legendary format)", () => {
@@ -110,25 +127,24 @@ describe("format-legality — items", () => {
   });
 
   it("returns the Champions M-A static item set (30 hold + 59 Mega Stones + 28 Berries)", () => {
-    const items = getLegalItems("championsvgc2026regma");
-    expect(items).toBeInstanceOf(Set);
+    const items = asSet(getLegalItems("championsvgc2026regma"));
     // Hold items
-    expect(items?.has("Choice Scarf")).toBe(true);
-    expect(items?.has("Focus Sash")).toBe(true);
-    expect(items?.has("Leftovers")).toBe(true);
+    expect(items.has("Choice Scarf")).toBe(true);
+    expect(items.has("Focus Sash")).toBe(true);
+    expect(items.has("Leftovers")).toBe(true);
     // Mega Stones
-    expect(items?.has("Venusaurite")).toBe(true);
-    expect(items?.has("Charizardite X")).toBe(true);
-    expect(items?.has("Chandelurite")).toBe(true); // Champions-new
+    expect(items.has("Venusaurite")).toBe(true);
+    expect(items.has("Charizardite X")).toBe(true);
+    expect(items.has("Chandelurite")).toBe(true); // Champions-new
     // Berries
-    expect(items?.has("Sitrus Berry")).toBe(true);
-    expect(items?.has("Lum Berry")).toBe(true);
+    expect(items.has("Sitrus Berry")).toBe(true);
+    expect(items.has("Lum Berry")).toBe(true);
     // NOT in Champions
-    expect(items?.has("Life Orb")).toBe(false);
-    expect(items?.has("Choice Band")).toBe(false);
-    expect(items?.has("Assault Vest")).toBe(false);
+    expect(items.has("Life Orb")).toBe(false);
+    expect(items.has("Choice Band")).toBe(false);
+    expect(items.has("Assault Vest")).toBe(false);
     // Total: 30 + 59 + 28 = 117
-    expect(items?.size).toBe(117);
+    expect(items.size).toBe(117);
   });
 
   it("returns undefined for unknown formats (permissive)", () => {
@@ -159,10 +175,9 @@ describe("format-legality — moves", () => {
   });
 
   it("returns a learnset-filtered set for Champions species", () => {
-    const legal = getLegalMoves("Incineroar", "championsvgc2026regma");
-    expect(legal).toBeInstanceOf(Set);
-    expect(legal?.has("Fake Out")).toBe(true);
-    expect(legal?.has("Hyperspace Hole")).toBe(false);
+    const legal = asSet(getLegalMoves("Incineroar", "championsvgc2026regma"));
+    expect(legal.has("Fake Out")).toBe(true);
+    expect(legal.has("Hyperspace Hole")).toBe(false);
   });
 
   it("returns permissive true for unknown formats", () => {
@@ -182,19 +197,19 @@ describe("format-legality — moves", () => {
 
 describe("format-legality — tera types", () => {
   it("returns all 18 types for Reg I (no Terastal Clause)", () => {
-    const tera = getLegalTeraTypes("gen9vgc2026regi");
-    expect(tera?.size).toBe(18);
-    expect(tera?.has("Fire")).toBe(true);
+    const tera = asSet(getLegalTeraTypes("gen9vgc2026regi"));
+    expect(tera.size).toBe(18);
+    expect(tera.has("Fire")).toBe(true);
   });
 
   it("returns empty set for Champions M-A (no Tera — only Megas)", () => {
-    const tera = getLegalTeraTypes("championsvgc2026regma");
-    expect(tera?.size).toBe(0);
+    const tera = asSet(getLegalTeraTypes("championsvgc2026regma"));
+    expect(tera.size).toBe(0);
   });
 
   it("returns empty set when format has Terastal Clause ([Gen 9] Monotype)", () => {
-    const tera = getLegalTeraTypes("gen9monotype");
-    expect(tera?.size).toBe(0);
+    const tera = asSet(getLegalTeraTypes("gen9monotype"));
+    expect(tera.size).toBe(0);
   });
 
   it("returns undefined for unknown formats (permissive)", () => {
@@ -229,9 +244,9 @@ describe("format-legality — abilities", () => {
   });
 
   it("returns a set of the species' legal abilities", () => {
-    const legal = getLegalAbilities("Incineroar", "gen9vgc2026regi");
-    expect(legal?.has("Intimidate")).toBe(true);
-    expect(legal?.has("Blaze")).toBe(true);
+    const legal = asSet(getLegalAbilities("Incineroar", "gen9vgc2026regi"));
+    expect(legal.has("Intimidate")).toBe(true);
+    expect(legal.has("Blaze")).toBe(true);
   });
 
   it("returns undefined for unknown formats (permissive)", () => {
@@ -240,13 +255,135 @@ describe("format-legality — abilities", () => {
   });
 
   it("returns all species abilities for Champions (no ability banlist)", () => {
-    const legal = getLegalAbilities("Incineroar", "championsvgc2026regma");
-    expect(legal).toBeInstanceOf(Set);
-    expect(legal?.has("Intimidate")).toBe(true);
-    expect(legal?.has("Blaze")).toBe(true);
+    const legal = asSet(
+      getLegalAbilities("Incineroar", "championsvgc2026regma")
+    );
+    expect(legal.has("Intimidate")).toBe(true);
+    expect(legal.has("Blaze")).toBe(true);
   });
 
   it("isLegalAbility returns true for empty string (no ability selected)", () => {
     expect(isLegalAbility("", "Pikachu", "gen9vgc2026regi")).toBe(true);
+  });
+
+  describe("mega forms — base ability legality", () => {
+    it.each([
+      ["Charizard-Mega-Y", "Solar Power"],
+      ["Charizard-Mega-Y", "Blaze"],
+      ["Charizard-Mega-X", "Blaze"],
+      ["Garchomp-Mega", "Rough Skin"],
+      ["Garchomp-Mega", "Sand Veil"],
+    ])(
+      "%s with stored base ability %s is legal (tournament submission shape)",
+      (megaSpecies, baseAbility) => {
+        expect(
+          isLegalAbility(baseAbility, megaSpecies, "championsvgc2026regma")
+        ).toBe(true);
+      }
+    );
+
+    it("Charizard-Mega-Y rejects an ability not in Charizard's pool", () => {
+      expect(
+        isLegalAbility("Intimidate", "Charizard-Mega-Y", "championsvgc2026regma")
+      ).toBe(false);
+    });
+  });
+});
+
+describe("form switching", () => {
+  describe("getCanonicalBaseSpecies", () => {
+    it.each([
+      ["Charizard", "Charizard"],
+      ["Charizard-Mega-X", "Charizard"],
+      ["Charizard-Mega-Y", "Charizard"],
+      ["Garchomp-Mega", "Garchomp"],
+      ["Aegislash", "Aegislash"],
+      ["Aegislash-Blade", "Aegislash"],
+      ["Wishiwashi-School", "Wishiwashi"],
+      ["Greninja-Ash", "Greninja"],
+      ["Mimikyu-Busted", "Mimikyu"],
+      ["Eternatus-Eternamax", "Eternatus"],
+      // Champions Floette-Mega's canonical base is Floette-Eternal, not Floette.
+      ["Floette-Mega", "Floette-Eternal"],
+      ["Floette-Eternal", "Floette-Eternal"],
+    ])("%s → %s", (input, expected) => {
+      expect(getCanonicalBaseSpecies(input)).toBe(expected);
+    });
+
+    it("returns empty string for empty input", () => {
+      expect(getCanonicalBaseSpecies("")).toBe("");
+    });
+
+    it("returns species unchanged when no transform applies", () => {
+      expect(getCanonicalBaseSpecies("Pikachu")).toBe("Pikachu");
+      expect(getCanonicalBaseSpecies("Iron Hands")).toBe("Iron Hands");
+    });
+  });
+
+  describe("getFormsForSpecies", () => {
+    it("returns single-element array for species without alternate forms", () => {
+      expect(getFormsForSpecies("Pikachu")).toEqual(["Pikachu"]);
+      expect(getFormsForSpecies("Garchomp").length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("returns base + every mega for Charizard", () => {
+      const forms = getFormsForSpecies("Charizard");
+      expect(forms[0]).toBe("Charizard");
+      expect(forms).toContain("Charizard-Mega-X");
+      expect(forms).toContain("Charizard-Mega-Y");
+    });
+
+    it("resolves variant input to the same form list as base input", () => {
+      const fromBase = getFormsForSpecies("Charizard");
+      const fromMega = getFormsForSpecies("Charizard-Mega-Y");
+      expect(fromMega).toEqual(fromBase);
+    });
+
+    it("includes Aegislash-Blade for Aegislash", () => {
+      expect(getFormsForSpecies("Aegislash")).toEqual([
+        "Aegislash",
+        "Aegislash-Blade",
+      ]);
+    });
+
+    it("Floette-Eternal lists Floette-Mega as the alternate form", () => {
+      const forms = getFormsForSpecies("Floette-Eternal");
+      expect(forms[0]).toBe("Floette-Eternal");
+      expect(forms).toContain("Floette-Mega");
+    });
+
+    it("returns empty array for empty input", () => {
+      expect(getFormsForSpecies("")).toEqual([]);
+    });
+  });
+
+  describe("speciesHasForms", () => {
+    it.each([
+      ["Charizard", true],
+      ["Garchomp", true],
+      ["Aegislash", true],
+      ["Floette-Eternal", true],
+      ["Floette-Mega", true], // input variant resolves to base, still has forms
+      ["Pikachu", false],
+      ["Iron Hands", false],
+      ["", false],
+    ])("%s → %s", (input, expected) => {
+      expect(speciesHasForms(input)).toBe(expected);
+    });
+  });
+
+  describe("getMegaStoneForSpecies", () => {
+    it.each([
+      ["Charizard-Mega-X", "Charizardite X"],
+      ["Charizard-Mega-Y", "Charizardite Y"],
+      ["Floette-Mega", "Floettite"],
+      ["Garchomp-Mega", "Garchompite"],
+      ["Charizard", null],
+      ["Aegislash-Blade", null], // not a mega — no stone
+      ["Pikachu", null],
+      ["", null],
+    ])("%s → %s", (input, expected) => {
+      expect(getMegaStoneForSpecies(input)).toBe(expected);
+    });
   });
 });

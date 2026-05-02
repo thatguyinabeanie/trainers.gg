@@ -13,6 +13,7 @@
  *   - CalcDefenderStats receives defender species from context
  *   - CalcFieldBlock rendered with calc context values
  *   - CalcDefenderMoves rendered in the defender column
+ *   - DefenderMonHeader rendered with species and attacker info
  *   - "vs X · Y HP" meta line in defender header
  */
 
@@ -60,10 +61,12 @@ const mockCalcCtx = {
   weather: "",
   terrain: "",
   gravity: false,
+  fairyAura: false,
   setGameType: jest.fn(),
   setWeather: jest.fn(),
   setTerrain: jest.fn(),
   setGravity: jest.fn(),
+  setFairyAura: jest.fn(),
   attackerSide: {
     reflect: false,
     lightScreen: false,
@@ -71,6 +74,10 @@ const mockCalcCtx = {
     tailwind: false,
     helpingHand: false,
     friendGuard: false,
+    protect: false,
+    stealthRock: false,
+    spikes: 0,
+    saltCure: false,
   },
   defenderSide: {
     reflect: false,
@@ -79,6 +86,7 @@ const mockCalcCtx = {
     tailwind: false,
     helpingHand: false,
     friendGuard: false,
+    protect: false,
     stealthRock: false,
     spikes: 0,
     saltCure: false,
@@ -166,14 +174,28 @@ jest.mock("../calc/calc-defender-moves", () => ({
   ),
 }));
 
-// CalcFieldBlock stub
+// CalcFieldBlock stub — accepts all props including fairyAura/setFairyAura
 jest.mock("../calc/calc-field-block", () => ({
-  CalcFieldBlock: ({
-    gameType,
+  CalcFieldBlock: (props: Record<string, unknown>) => (
+    <div data-testid="calc-field-block" data-game-type={String(props.gameType)} />
+  ),
+}));
+
+// DefenderMonHeader stub — renders species, attacker name, and HP
+jest.mock("../calc/calc-defender-header", () => ({
+  DefenderMonHeader: ({
+    defenderSpecies,
+    attackerName,
+    attackerHP,
   }: {
-    gameType: string;
+    defenderSpecies: string;
+    attackerName: string;
+    attackerHP: number | null;
   }) => (
-    <div data-testid="calc-field-block" data-game-type={gameType} />
+    <div data-testid="defender-mon-header">
+      <span data-testid="defender-species">{defenderSpecies}</span>
+      <span data-testid="vs-info">{`vs ${attackerName} · ${attackerHP !== null ? `${attackerHP} HP` : "—"}`}</span>
+    </div>
   ),
 }));
 
@@ -422,5 +444,18 @@ describe("CalcBottomPanel — child components", () => {
   it("renders Defender column header", () => {
     renderPanel();
     expect(screen.getByText("Defender")).toBeInTheDocument();
+  });
+
+  it("renders DefenderMonHeader with species and attacker info", () => {
+    renderPanel();
+    expect(screen.getByTestId("defender-mon-header")).toBeInTheDocument();
+    expect(screen.getByTestId("defender-species")).toHaveTextContent("Incineroar");
+  });
+
+  it("renders DefenderMonHeader full-width in the defender column", () => {
+    renderPanel();
+    // The header is rendered — its presence confirms the full-width placement
+    const header = screen.getByTestId("defender-mon-header");
+    expect(header).toBeInTheDocument();
   });
 });

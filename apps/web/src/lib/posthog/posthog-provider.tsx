@@ -2,9 +2,12 @@
 
 import { PostHogProvider as PHProvider, usePostHog } from "posthog-js/react";
 import { Suspense, useEffect, useRef, type ReactNode } from "react";
+
+import { setErrorSink } from "@trainers/utils";
+
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { getConsentStatus } from "@/components/cookie-consent";
-import { initPostHog, posthog } from "@/lib/posthog/client";
+import { captureException, initPostHog, posthog } from "@/lib/posthog/client";
 import { PostHogPageview } from "@/lib/posthog/posthog-pageview";
 
 function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
@@ -71,6 +74,18 @@ export function PostHogProvider({
   useEffect(() => {
     initPostHog();
 
+    // Wire the project-wide `logError` helper to PostHog so any package's
+    // catch-block reporting (validators, supabase queries, calc dispatch)
+    // ends up in the same exception stream as React error boundaries.
+    // The default sink stays `console.error` for SSR / edge / Node.
+    const restoreSink = setErrorSink((scope, error, context) => {
+      const props = { scope, ...context };
+      captureException(error, props);
+      // Keep the console line too — Vercel runtime logs are still useful
+      // for cross-referencing client errors with server traces.
+      console.error(`[error-sink] ${scope}`, error, context ?? {});
+    });
+
     // Re-apply consent for returning users who already opted in.
     // "denied" and "undecided" require no action because PostHog
     // starts opted out by default (opt_out_capturing_by_default: true).
@@ -104,6 +119,7 @@ export function PostHogProvider({
     window.addEventListener("consent-change", handleConsentChange);
     return () => {
       window.removeEventListener("consent-change", handleConsentChange);
+      restoreSink();
     };
   }, []);
 

@@ -62,6 +62,7 @@ export {
   parseAndValidateTeam,
   validateTeamStructure,
   validateTeamFormat,
+  validateChampionsLegality,
   parsePokepaseUrl,
   getPokepaseRawUrl,
   getPkmnFormat,

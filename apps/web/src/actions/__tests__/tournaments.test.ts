@@ -158,6 +158,10 @@ jest.mock("@/lib/supabase/server", () => ({
 
 jest.mock("@trainers/utils", () => ({
   getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
+  // Production code routes catch-block reporting through `logError`; the
+  // tests just need it to not throw. We don't assert on its calls.
+  logError: jest.fn(),
+  setErrorSink: jest.fn(() => () => undefined),
 }));
 
 // Discord enqueue helper mocks — all helpers are fire-and-forget, so failures
@@ -589,7 +593,7 @@ describe("removePlayerFromTournament", () => {
 
 describe("bulkForceCheckIn", () => {
   it("performs bulk update and returns counts", async () => {
-    // First call: select registrations
+    // 1: select registrations
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       in: jest.fn().mockResolvedValue({
@@ -601,7 +605,17 @@ describe("bulkForceCheckIn", () => {
       }),
     });
 
-    // Second call: bulk update
+    // 2: tournament lookup for permission check
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 1 },
+        error: null,
+      }),
+    });
+
+    // 3: bulk update
     (mockSupabase.from as jest.Mock).mockReturnValueOnce({
       update: jest.fn().mockReturnThis(),
       in: jest.fn().mockReturnThis(),
@@ -612,11 +626,17 @@ describe("bulkForceCheckIn", () => {
       }),
     });
 
+    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true });
+
     const result = await bulkForceCheckIn([1, 2]);
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ checkedIn: 2, failed: 0 });
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
+    expect(mockSupabase.rpc).toHaveBeenCalledWith("has_community_permission", {
+      p_community_id: 1,
+      permission_key: "tournament.manage",
+    });
   });
 
   it("returns empty result for empty array", async () => {
@@ -626,8 +646,30 @@ describe("bulkForceCheckIn", () => {
     expect(result.data).toEqual({ checkedIn: 0, failed: 0 });
   });
 
+  it("rejects when caller lacks tournament.manage permission", async () => {
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({
+        data: [{ id: 1, tournament_id: 10 }],
+        error: null,
+      }),
+    });
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 1 },
+        error: null,
+      }),
+    });
+    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: false });
+
+    const result = await bulkForceCheckIn([1]);
+
+    expect(result.success).toBe(false);
+  });
+
   it("handles partial update failures", async () => {
-    // Select returns 3 registrations
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       in: jest.fn().mockResolvedValue({
@@ -640,7 +682,15 @@ describe("bulkForceCheckIn", () => {
       }),
     });
 
-    // Update only succeeds for 2 of them
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 1 },
+        error: null,
+      }),
+    });
+
     (mockSupabase.from as jest.Mock).mockReturnValueOnce({
       update: jest.fn().mockReturnThis(),
       in: jest.fn().mockReturnThis(),
@@ -650,6 +700,8 @@ describe("bulkForceCheckIn", () => {
         error: null,
       }),
     });
+
+    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true });
 
     const result = await bulkForceCheckIn([1, 2, 3]);
 
@@ -1073,7 +1125,7 @@ describe("updateRegistrationAction", () => {
   it("updates registration and revalidates tournament", async () => {
     mockUpdateRegistrationPreferences.mockResolvedValue({ registrationId: 42 });
 
-    const result = await updateRegistrationAction(5, {
+    const result = await updateRegistrationAction(42, 5, {
       inGameName: "Trainer Red",
       showCountryFlag: true,
     });
@@ -1084,6 +1136,7 @@ describe("updateRegistrationAction", () => {
     });
     expect(mockUpdateRegistrationPreferences).toHaveBeenCalledWith(
       mockSupabase,
+      42,
       5,
       { inGameName: "Trainer Red", showCountryFlag: true }
     );
@@ -1095,7 +1148,7 @@ describe("updateRegistrationAction", () => {
       new Error("registration closed")
     );
 
-    const result = await updateRegistrationAction(5, {});
+    const result = await updateRegistrationAction(42, 5, {});
 
     expect(result).toEqual({
       success: false,
@@ -1985,6 +2038,14 @@ describe("bulkForceCheckIn additional error cases", () => {
         }),
       })
       .mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { community_id: 1 },
+          error: null,
+        }),
+      })
+      .mockReturnValueOnce({
         update: jest.fn().mockReturnThis(),
         in: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1993,6 +2054,8 @@ describe("bulkForceCheckIn additional error cases", () => {
           error: { message: "constraint violation" },
         }),
       });
+
+    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true });
 
     const result = await bulkForceCheckIn([1]);
 

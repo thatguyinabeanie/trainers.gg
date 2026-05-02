@@ -258,8 +258,26 @@ function getDatabaseUrl(projectRef) {
   };
 }
 
+// Network-layer error codes that are retryable on a different connection.
+// Notably, the non-pooling Supabase host resolves to IPv6 only; Vercel build
+// runners don't have IPv6 outbound, so we fall back to the IPv4 pooler.
+const RETRYABLE_NET_CODES = new Set([
+  "ENETUNREACH",
+  "EHOSTUNREACH",
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "EAI_AGAIN",
+]);
+
 /**
- * Run seed files against the database using postgres client
+ * Run seed files against the database using postgres client.
+ *
+ * Tries the non-pooling URL first (it's required for `auth.users` writes
+ * on older Supabase versions). On a NETWORK-LEVEL connection failure
+ * (typically ENETUNREACH because Vercel can't reach Supabase's IPv6 host),
+ * falls back to the pooled URL — which is IPv4-reachable. SQL-level
+ * errors are NOT retried; per CLAUDE.md "never suppress errors", real
+ * seed bugs must still surface.
  */
 async function runSeedSql(projectRef) {
   if (!existsSync(SEEDS_DIR)) {
@@ -279,17 +297,80 @@ async function runSeedSql(projectRef) {
 
   console.log(`   Found ${existingSeeds.length} seed files`);
 
-  const connection = getDatabaseUrl(projectRef);
-  if (!connection) {
+  // Build the candidate connection list: non-pooling preferred, pooled as
+  // fallback. We dedupe by URL so a setup that only exposes one URL doesn't
+  // try the same connection twice.
+  const candidates = [];
+  const nonPoolingUrl =
+    process.env.SUPABASE_POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_URL_NON_POOLING;
+  if (nonPoolingUrl) {
+    candidates.push({
+      label: "non-pooling (direct)",
+      url: nonPoolingUrl,
+      needsExplicitPassword: false,
+    });
+  }
+  const pooledUrl =
+    process.env.SUPABASE_POSTGRES_URL || process.env.POSTGRES_URL;
+  if (pooledUrl && pooledUrl !== nonPoolingUrl) {
+    candidates.push({
+      label: "pooled (IPv4 fallback)",
+      url: pooledUrl,
+      needsExplicitPassword: false,
+    });
+  }
+  if (candidates.length === 0) {
+    // Original direct-build path — only available when POSTGRES_PASSWORD is set.
+    const fallback = getDatabaseUrl(projectRef);
+    if (fallback) candidates.push({ label: "built direct", ...fallback });
+  }
+  if (candidates.length === 0) {
     console.log(`   ❌ No database connection URL available`);
     return false;
   }
 
+  let lastErr;
+  for (let i = 0; i < candidates.length; i++) {
+    const candidate = candidates[i];
+    const isLast = i === candidates.length - 1;
+    console.log(`   Connecting via ${candidate.label}...`);
+    try {
+      return await runSeedAgainst(candidate, existingSeeds);
+    } catch (err) {
+      lastErr = err;
+      const code = err && typeof err === "object" ? err.code : undefined;
+      if (!RETRYABLE_NET_CODES.has(code)) {
+        // Not a network error — surface it. Per CLAUDE.md "Error Visibility":
+        // SQL-level seed bugs must fail the build.
+        throw err;
+      }
+      if (isLast) {
+        console.error(
+          `   ❌ All ${candidates.length} connection candidates failed (last: ${code}).`
+        );
+        throw err;
+      }
+      console.warn(
+        `   ⚠️  ${candidate.label} unreachable (${code}); falling back to next candidate.`
+      );
+    }
+  }
+
+  // Unreachable in practice — the loop either returns or throws.
+  throw lastErr ?? new Error("Seed runner exhausted candidates");
+}
+
+async function runSeedAgainst(connection, existingSeeds) {
   console.log(`   Connecting to database...`);
 
   // postgres.js options:
-  //   ssl: true — widely-supported across postgres.js versions; Supabase
-  //   direct/pooled connections require TLS.
+  //   ssl — Supabase's pooled (Supavisor) endpoint presents a cert that
+  //   Node's default CA bundle doesn't trust ("self-signed in chain"),
+  //   so strict `ssl: true` fails on the IPv4 fallback path. We use
+  //   `rejectUnauthorized: false`: the connection is still TLS-encrypted,
+  //   we just skip CA-chain verification. Acceptable for a build-time
+  //   seed script targeting a host we control via the integration env.
   //   password — only supply when the URL came from the fallback branch
   //   (the only branch that intentionally omits credentials). Supplying it
   //   on pooled/non-pooling URLs would either override the embedded password
@@ -297,7 +378,7 @@ async function runSeedSql(projectRef) {
   //   of which break auth.
   //   connect_timeout / idle_timeout / max_lifetime — increased for seeding.
   const sql = postgres(connection.url, {
-    ssl: true,
+    ssl: { rejectUnauthorized: false },
     ...(connection.needsExplicitPassword
       ? { password: process.env.POSTGRES_PASSWORD }
       : {}),
@@ -330,11 +411,43 @@ async function runSeedSql(projectRef) {
         `   Failed query (truncated): ${error.query.substring(0, 200)}...`
       );
     }
-    // Don't fail the build for seed errors
-    return false;
+    // Re-throw so the migration runner fails the build. Per CLAUDE.md
+    // "Error Visibility": failures must be visible. Silent fallback to
+    // `return false` previously let preview builds ship with a broken
+    // seed state and no signal — wasted hours debugging downstream.
+    throw error;
   } finally {
     await sql.end();
   }
+}
+
+/**
+ * Deploy edge functions with automatic retry on transient Supabase API
+ * errors. The deploy API occasionally returns "Function deploy failed due
+ * to an internal error" 500s mid-batch; the API is idempotent for already-
+ * deployed functions, so re-running picks up where it left off.
+ *
+ * Retries up to 3 times with linear backoff (10s, 20s) before giving up.
+ */
+async function deployEdgeFunctionsWithRetry(projectRef, cliEnv) {
+  const cmd = `npx supabase functions deploy --project-ref ${projectRef} --use-api`;
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const isLast = attempt === maxAttempts;
+    const succeeded = exec(cmd, {
+      env: cliEnv,
+      ignoreError: !isLast,
+    });
+    if (succeeded) return;
+    if (!isLast) {
+      const delaySec = attempt * 10;
+      console.log(
+        `\n⚠️  Edge function deploy failed (attempt ${attempt}/${maxAttempts}). Retrying in ${delaySec}s...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delaySec * 1000));
+    }
+  }
+  throw new Error(`Edge function deploy failed after ${maxAttempts} attempts.`);
 }
 
 /**
@@ -435,16 +548,20 @@ async function runMigrations() {
     });
 
     console.log("\n🚀 Deploying edge functions...");
-    exec(
-      `npx supabase functions deploy --project-ref ${projectRef} --use-api`,
-      { env: cliEnv }
-    );
+    await deployEdgeFunctionsWithRetry(projectRef, cliEnv);
   }
 
-  // Run seed data for preview environments
+  // Run seed data for preview environments. `runSeedSql` throws on failure
+  // — we deliberately do NOT swallow that here; a broken seed should fail
+  // the preview build so the issue is fixed before merging.
   if (env.shouldSeed) {
     console.log("\n🌱 Running seed data...");
-    await runSeedSql(projectRef);
+    const seedSucceeded = await runSeedSql(projectRef);
+    if (!seedSucceeded) {
+      throw new Error(
+        "Seed data did not run (no seed files or no DB connection)."
+      );
+    }
   }
 
   console.log("\n" + "=".repeat(50));

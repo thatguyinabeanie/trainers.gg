@@ -117,6 +117,38 @@ describe("CALC_TARGETS", () => {
     });
   });
 
+  describe("parameterized invariant walk — named-target diagnostics", () => {
+    // Uses it.each so test output names the failing target directly rather than
+    // surfacing a generic "index N" failure inside a for-loop.
+    it.each(CALC_TARGETS.map((t) => [t.name, t] as [string, CalcTarget]))(
+      "%s has valid VGC EV totals + non-empty required fields",
+      (_name, target) => {
+        const total =
+          target.evs.hp +
+          target.evs.atk +
+          target.evs.def +
+          target.evs.spa +
+          target.evs.spd +
+          target.evs.spe;
+        expect(total).toBeLessThanOrEqual(510);
+
+        Object.values(target.evs).forEach((v) => {
+          expect(v).toBeGreaterThanOrEqual(0);
+          expect(v).toBeLessThanOrEqual(252);
+        });
+
+        expect(target.species).not.toBe("");
+        expect(target.ability).not.toBe("");
+        expect(target.nature).not.toBe("");
+
+        if (target.moves !== undefined) {
+          expect(target.moves).toHaveLength(4);
+          target.moves.forEach((m) => expect(typeof m).toBe("string"));
+        }
+      }
+    );
+  });
+
   describe("specific entries have expected configurations", () => {
     let incineroar: CalcTarget | undefined;
 

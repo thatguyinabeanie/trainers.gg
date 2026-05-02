@@ -31,7 +31,8 @@
   flex: 1;
   display: flex;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: hidden;
+  overflow-x: visible;
 }
 
 .builderWorklane {
@@ -39,16 +40,17 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow: hidden;
+  overflow-y: hidden;
+  overflow-x: visible;
 }
 
-/* Editor region — flex grows to fill remaining height; rows scroll inside.
-   No longer wraps the inline panel — the panel lives in its own flex sibling. */
+/* Editor region — rows scroll vertically. overflow-x: visible lets builderRows
+   expand wider than the container when calc opens without clipping the extra width. */
 .editorRegion {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: visible;
 }
 
 /* Resizer handle between editor and panel regions. */
@@ -83,6 +85,17 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px;
+  max-width: 1600px;
+  margin-inline: auto;
+  width: 100%;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When the calc column is open, the row list expands by the calc column width so
+   identity + stats + moves keep their X width and calc is added as +Y. */
+.builderRows[data-calc-open="true"] {
+  width: calc(100% + 220px);
+  max-width: calc(1600px + 220px); /* 1820px — allows the 220px expansion on wide screens */
 }
 
 [data-density="compact"] .builderRows {
@@ -99,15 +112,6 @@
   gap: 6px;
 }
 
-/* Reduce stat-row vertical padding */
-[data-density="compact"] .laneStats {
-  padding-block: 4px;
-}
-
-/* Identity lane: compact — smaller sprite; flex direction stays */
-[data-density="compact"] .laneId {
-  min-width: 200px;
-}
 
 /* ============================================================
    Inline analytics panel — Type matchups / Speed tiers
@@ -121,7 +125,9 @@
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
-  margin: 0 12px 0;
+  max-width: calc(1600px - 24px);
+  width: calc(100% - 24px);
+  margin-inline: auto;
   border: 1px solid var(--border);
   border-radius: 10px 10px 0 0;
   border-bottom: none;
@@ -194,27 +200,6 @@
   overflow-y: auto;
 }
 
-.heatmap {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: auto;
-}
-
-.speedTiers {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.builderCalcdrawerSlot {
-  width: 380px;
-  flex-shrink: 0;
-  border-left: 1px solid var(--border);
-  background: var(--background);
-  overflow-y: auto;
-}
 
 /* ============================================================
    Calc drawer
@@ -798,44 +783,6 @@
     border-bottom: 1px dashed var(--border);
   }
 
-  /* Identity lane: full width, horizontal (sprite + meta side-by-side) */
-  .laneId {
-    width: 100%;
-    flex-direction: row;
-    align-items: stretch;
-    padding: 10px;
-  }
-
-  /* Setup lane: full width */
-  .laneSetup {
-    width: 100%;
-    border-top: 1px solid var(--border);
-    padding: 4px 0;
-  }
-
-  /* Moves lane: full width */
-  .laneMoves {
-    width: 100%;
-    border-top: 1px solid var(--border);
-    flex: none;
-  }
-
-  /* Stats lane: full width */
-  .laneStats {
-    width: 100%;
-    border-top: 1px solid var(--border);
-    flex: none;
-  }
-
-  /* Meta lane: full width, horizontal row instead of column */
-  .laneMeta {
-    width: 100%;
-    flex-direction: row;
-    gap: 16px;
-    justify-content: flex-start;
-    border-top: 1px solid var(--border);
-    padding: 6px 12px;
-  }
 }
 
 /* Left slot rib */
@@ -845,6 +792,19 @@
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+}
+
+/* Decorations shown in the rib middle (type pills, level).
+   On mobile (≤767px) hide the type pills but keep .levelPicker visible so
+   Champions / Reg-MA format users can still edit level on narrow viewports. */
+.ribDecorations {
+  display: flex;
+}
+
+@media (max-width: 767px) {
+  .ribDecorations > :not(.levelPicker) {
+    display: none;
+  }
 }
 
 /* Drag handle — the slot number label on the RIB.
@@ -863,65 +823,6 @@
   opacity: 0.5;
 }
 
-/* Identity lane — 128px sprite + meta column (flex row) */
-.laneId {
-  display: flex;
-  align-items: stretch;
-  flex-shrink: 0;
-  min-width: 240px;
-}
-
-/* Setup lane — item/abil/nat/tera stacked rows */
-.laneSetup {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* Moves lane — 4 stacked move tiles */
-.laneMoves {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 200px;
-  min-width: 0;
-}
-
-/* Stats lane — 6-col stat grid */
-.laneStats {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 340px;
-  min-width: 0;
-}
-
-/* Meta lane — BST/Spe/WR column */
-.laneMeta {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* Setup row button (item / abil / nat / tera) */
-.setupLine {
-  display: grid;
-  grid-template-columns: 30px 1fr;
-  align-items: baseline;
-  gap: 8px;
-  padding: 4px 6px;
-  border-radius: 4px;
-  background: transparent;
-  border: none;
-  text-align: left;
-  min-width: 0;
-  cursor: pointer;
-  position: relative;
-}
-
-.setupLine:hover {
-  background: var(--muted);
-}
 
 /* Move tile row — :global() because lanes/moves-lane.tsx references it as a
    plain string class via cn("mvline", ...) rather than via the CSS-module
@@ -934,26 +835,129 @@
 :global(.mvline) {
   display: grid;
   grid-template-columns:
-    auto              /* type pill */
-    auto              /* cat icon */
-    minmax(0, 11rem)  /* name */
-    auto              /* BP */
-    auto              /* Acc */
-    minmax(0, 1fr)    /* description */
-    auto;             /* calc pill / hint (empty when not applicable) */
+    max-content        /* type + category */
+    minmax(0, 1fr)     /* name — fills space, shrinks to 0 (no overflow) */
+    56px               /* BP */
+    72px;              /* Acc */
+
   align-items: center;
-  gap: 14px;
-  padding: 7px 12px;
-  background: var(--card);
+  gap: 6px;
+  padding: 5px 8px;
+  background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
   text-align: left;
   width: 100%;
-  min-width: 0;
   overflow: hidden;
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
 }
+
+/* Calc result row — spans all columns as row 2 inside .mvline grid */
+:global(.mvline-calc-row) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0 1px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  border-top: 1px solid color-mix(in oklch, var(--border) 40%, transparent);
+  margin-top: 2px;
+}
+
+:global(.mvline-calc-row--ko1) {
+  color: var(--ko-red);
+}
+:global(.mvline-calc-row--ko2) {
+  color: var(--ko-amber2-fg);
+}
+:global(.mvline-calc-row--ko3) {
+  color: var(--ko-yellow-fg);
+}
+:global(.mvline-calc-row--ko4) {
+  color: var(--muted-foreground);
+}
+
+/* Calc result section — sibling to .mvline, only rendered when calc is enabled */
+:global(.mvline-calc-section) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 160px;
+  padding: 2px 10px;
+  border-left: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+:global(.mvline-calc-section--ko1) {
+  background: color-mix(in oklch, var(--ko-red) 8%, transparent);
+}
+:global(.mvline-calc-section--ko2) {
+  background: color-mix(in oklch, var(--ko-amber2-fg) 8%, transparent);
+}
+:global(.mvline-calc-section--ko3) {
+  background: color-mix(in oklch, var(--ko-yellow-bg) 10%, transparent);
+}
+:global(.mvline-calc-section--ko4) {
+  background: color-mix(in oklch, var(--muted-foreground) 8%, transparent);
+}
+
+/* Calc column — fixed-width sibling to the moves lane */
+:global(.calc-col) {
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 220px;
+  max-width: 220px;
+  overflow: hidden;
+  background: color-mix(in oklch, var(--muted) 40%, transparent);
+  border-left: 1px solid var(--border);
+  padding: 8px 0;
+  animation: calc-col-enter 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes calc-col-enter {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+:global(.calc-col-header) {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  padding: 0 8px 5px;
+  height: 21px;
+  display: flex;
+  align-items: flex-end;
+}
+
+:global(.calc-col-row) {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  min-height: 30px;
+}
+
+:global(.calc-col-row--ko1) { color: var(--ko-red); }
+:global(.calc-col-row--ko2) { color: var(--ko-amber2-fg); }
+:global(.calc-col-row--ko3) { color: var(--ko-yellow-fg); }
+:global(.calc-col-row--ko4) { color: var(--muted-foreground); }
 
 :global(.mvline):hover {
   border-color: var(--border);
@@ -1002,6 +1006,11 @@
   white-space: nowrap;
   font-size: 13px;
   font-weight: 500;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 /* Description cell — muted, truncated, smaller font */
@@ -1015,20 +1024,24 @@
   line-height: 1.2;
 }
 
-/* Type pill slot — fixed min-width so empty slots reserve the column */
+/* Type + category grouped cell — min-width reserves space for empty rows */
+:global(.mvline-type-cat) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 113px;
+}
+
+/* Type pill slot */
 :global(.mvline-type) {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 56px;
 }
 
-/* Category icon slot — fixed min-width so empty slots reserve the column */
+/* Category icon slot */
 :global(.mvline-cat) {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 28px;
 }
 
 /* BP / Acc readout — fixed-width value cells so they align across rows */
@@ -1058,11 +1071,11 @@
 }
 
 :global(.mvline-stat-value--bp) {
-  width: 1.75rem; /* fits 3-digit BP like "140" */
+  width: 1.75rem; /* fits "140" */
 }
 
 :global(.mvline-stat-value--acc) {
-  width: 2.25rem; /* fits "100%" */
+  width: 2.75rem; /* fits "100%" */
 }
 
 /* Legacy alias — keep .mvline-bp working for any consumer that still uses it */
@@ -1195,11 +1208,11 @@
  * Tinted by KO tier; contains KO label + range + optional modifier chips. */
 :global(.mvline-pill) {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
-  padding: 3px 8px;
-  border-radius: 5px;
+  padding: 2px 4px;
+  border-radius: 4px;
   border: 1px solid transparent;
   font-family: var(--font-mono, monospace);
   font-size: 11px;
@@ -1249,11 +1262,10 @@
   white-space: nowrap;
 }
 
-/* Modifier group on the right side of the pill */
+/* Modifier group — sits right after the range */
 :global(.mvline-pill-mods) {
-  margin-left: auto;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 4px;
   flex-shrink: 0;
 }
@@ -1641,91 +1653,69 @@
   min-width: 0;
 }
 
-/* Stat cell — one per stat in the 6-col grid */
-.stcell {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
-  padding: 4px 4px 5px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 11px;
-  text-align: center;
-  min-width: 0;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
-}
-
-.stcell:hover {
-  background: var(--muted);
-  border-color: var(--border);
-}
-
-/* ============================================================
-   PokeRow overhaul — Loadout (chip-labeled), Spread (stat rows),
-   Moves (empty tile style)
-   ============================================================ */
-
-/* Chip-labeled — unified picker trigger for item / abil / nat / tera */
-.chipLabeled {
-  background: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 10px 4px 4px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  line-height: 1.3;
-  cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
-  text-align: left;
-  width: 100%;
-}
-
-.chipLabeled:hover {
-  border-color: var(--primary);
-}
-
-/* Prefix label inside a chip (e.g. "item", "abil") */
-.chipPrefix {
-  background: var(--background);
-  color: var(--muted-foreground);
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  min-width: 32px;
-  text-align: center;
-  font-family: ui-monospace, SFMono-Regular, monospace;
-  flex-shrink: 0;
-}
-
-/* Value text inside a chip */
-.chipValue {
-  font-size: 11.5px;
-  color: var(--foreground);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
 
 /* Stat row — Showdown-style 6-column grid per stat */
 .spreadRow {
   display: grid;
-  grid-template-columns: 30px 24px minmax(40px, 1fr) 38px minmax(80px, 2fr) 28px;
-  gap: 8px;
+  grid-template-columns:
+    32px          /* label: "SpD" fits without clipping */
+    30px          /* base stat: 3-digit values like 133 */
+    minmax(30px, 0.8fr)  /* viz bar */
+    40px          /* EV input */
+    minmax(60px, 1.6fr)  /* slider */
+    36px;         /* final stat: 3-digit values like 203 */
+
+  gap: 6px;
   align-items: center;
   padding: 2px 4px;
   border-radius: 4px;
 }
 
 .spreadRow:hover {
+  background: var(--muted);
+}
+
+/* 7-column variant: adds an IV input column before the final stat */
+.spreadRowWithIv {
+  display: grid;
+  grid-template-columns:
+    32px          /* label */
+    30px          /* base stat */
+    minmax(30px, 0.8fr)  /* viz bar */
+    40px          /* EV input */
+    minmax(60px, 1.6fr)  /* slider */
+    40px          /* IV input */
+    36px;         /* final stat */
+
+  gap: 6px;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.spreadRowWithIv:hover {
+  background: var(--muted);
+}
+
+/* 7-column variant: adds a stage dropdown column before the final stat (defender) */
+.spreadRowWithStage {
+  display: grid;
+  grid-template-columns:
+    32px          /* label */
+    30px          /* base stat */
+    minmax(30px, 0.8fr)  /* viz bar */
+    40px          /* EV input */
+    minmax(60px, 1.6fr)  /* slider */
+    32px          /* stage dropdown */
+    36px;         /* final stat */
+
+  gap: 6px;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.spreadRowWithStage:hover {
   background: var(--muted);
 }
 
@@ -1750,6 +1740,7 @@
   font-size: 9.5px;
   color: var(--muted-foreground);
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Viz bar track — col 3, read-only */
@@ -1841,6 +1832,15 @@
   background: currentColor;
   margin-top: 2px; /* (track 14px - thumb 10px) / 2 → center on track */
   border: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* When the slider sits exactly on a breakpoint, render the thumb as an
+ * outlined circle (visual continuity with the bump tick) — confirms the
+ * user has the breakpoint selected. */
+.spreadSlider[data-at-bump]::-webkit-slider-thumb {
+  background: var(--card, #fff);
+  box-shadow: inset 0 0 0 2px currentColor;
 }
 
 .spreadSlider::-moz-range-track {
@@ -1855,6 +1855,12 @@
   border-radius: 50%;
   background: currentColor;
   border: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.spreadSlider[data-at-bump]::-moz-range-thumb {
+  background: var(--card, #fff);
+  box-shadow: inset 0 0 0 2px currentColor;
 }
 
 /* Breakpoint ticks overlay — pointer-events: none so slider stays interactive.
@@ -1870,7 +1876,10 @@
 }
 
 /* Individual tick — circle outline at the bump position. border picks up
- * the wrap's currentColor (set per-stat-tier on .spreadSliderWrap). */
+ * the wrap's currentColor (set per-stat-tier on .spreadSliderWrap).
+ * Now an interactive button: pointer-events: auto re-enables clicks
+ * (the parent .spreadBumps disables them globally), and the hover
+ * scale-up makes them easier to target. */
 .spreadBumpTick {
   position: absolute;
   top: 50%;
@@ -1881,6 +1890,22 @@
   border-radius: 50%;
   transform: translate(-50%, -50%);
   box-sizing: border-box;
+  pointer-events: auto;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: transform 0.15s ease, border-width 0.15s ease;
+}
+
+.spreadBumpTick:hover {
+  /* Keep the centred translate; just add the scale on top. */
+  transform: translate(-50%, -50%) scale(1.7);
+  border-width: 2px;
+}
+
+.spreadBumpTick:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 /* Next breakpoint above current invest — thicker ring */
@@ -1894,4 +1919,5 @@
   font-size: 11.5px;
   font-weight: 700;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
