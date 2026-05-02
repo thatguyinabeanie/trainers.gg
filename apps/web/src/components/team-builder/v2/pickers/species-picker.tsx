@@ -49,13 +49,15 @@ const HIGH_STAT_THRESHOLD = 110;
  *   minmax(160px,2fr) — Regular abilities — slot 1 stacked above slot 2.
  *                       If the species has only one regular ability, only
  *                       that ability renders (no empty placeholder line).
- *   minmax(140px,1.5fr) — Hidden ability (italic + muted).
+ *   minmax(180px,2fr) — Hidden ability (italic + muted). 180px floor so
+ *                       names like "Magic Guard", "Heavy Metal", "Aroma
+ *                       Veil", "Sheer Force" don't truncate.
  *   repeat(6,36px)    — HP/Atk/Def/SpA/SpD/Spe stat cells (3-letter
  *                       header labels + active sort arrow fit comfortably)
  *   40px              — BST rollup
  */
 const ROW_GRID =
-  "grid-cols-[64px_minmax(180px,2fr)_72px_minmax(160px,2fr)_minmax(140px,1.5fr)_repeat(6,36px)_40px]";
+  "grid-cols-[64px_minmax(180px,2fr)_72px_minmax(160px,2fr)_minmax(180px,2fr)_repeat(6,36px)_40px]";
 
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
@@ -304,9 +306,9 @@ function SpeciesRow({
         )}
       </div>
 
-      {/* Regular abilities — slot 1 stacked above slot 2, both centered.
+      {/* Regular abilities — slot 1 stacked above slot 2, left-aligned.
           If the species has only one regular ability, render just that one. */}
-      <div className="relative z-10 flex min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden text-center">
+      <div className="relative z-10 flex min-w-0 flex-col justify-center gap-0.5 overflow-hidden">
         {entry.abilitySlot1 ? (
           <AbilityCell
             name={entry.abilitySlot1}
@@ -323,8 +325,8 @@ function SpeciesRow({
         ) : null}
       </div>
 
-      {/* Hidden ability — italic + muted, centered in its own column */}
-      <div className="relative z-10 flex min-w-0 items-center justify-center overflow-hidden text-center">
+      {/* Hidden ability — italic + muted, left-aligned in its own column */}
+      <div className="relative z-10 flex min-w-0 items-center overflow-hidden">
         <AbilityCell
           name={entry.hiddenAbility ?? null}
           slot="hidden"
@@ -740,10 +742,10 @@ export function SpeciesPicker({
                 <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
                   Types
                 </span>
-                <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
+                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
                   Abilities
                 </span>
-                <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
+                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
                   Hidden
                 </span>
                 <SortHeaderButton
