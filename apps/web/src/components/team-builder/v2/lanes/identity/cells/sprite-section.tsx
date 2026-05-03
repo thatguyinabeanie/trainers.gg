@@ -46,8 +46,8 @@ export function SpriteSection({
         aria-label={`Change species (${pokemon.species ?? "none"})`}
         className={cn(
           "border-border bg-background hover:border-primary focus-visible:border-primary",
-          "flex w-36 items-center gap-1 rounded-md border px-2 py-1.5 text-left text-xs",
-          "transition-colors outline-none sm:w-40 md:w-44",
+          "flex w-44 items-center gap-1 rounded-md border px-2 py-1.5 text-left text-xs",
+          "transition-colors outline-none sm:w-48 md:w-52",
           speciesHasError && "ring-destructive/40 rounded ring-1"
         )}
       >
