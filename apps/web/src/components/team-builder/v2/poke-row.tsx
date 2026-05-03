@@ -101,9 +101,9 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
           <div className={s.rowRight}>
             <StatsLane pokemon={null} format={_format} />
             <MovesLane pokemon={null} format={_format} />
-            {calcEnabled && <CalcColumn pokemon={null} />}
           </div>
         </div>
+        {calcEnabled && <CalcColumn pokemon={null} />}
       </button>
 
       <SpeciesPickerDialog
@@ -296,7 +296,7 @@ function ActiveRowShell({
   isDragging = false,
 }: ActiveRowShellProps) {
   return (
-    <div className="h-full overflow-hidden rounded-lg">
+    <div className="h-full rounded-lg">
       <ActiveRow
         idx={idx}
         pokemon={pokemon}

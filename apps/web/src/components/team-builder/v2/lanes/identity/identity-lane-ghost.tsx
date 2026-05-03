@@ -59,7 +59,12 @@ function MidGhost() {
       {/* MetaBar ghost — nickname placeholder, same height as real MetaBar */}
       <div className={ids.midMetaBar}>
         <span />
-        <span className="text-muted-foreground/20 text-sm font-normal italic">
+        <span
+          className={cn(
+            ids.midNickname,
+            "pointer-events-none text-muted-foreground/20 italic"
+          )}
+        >
           Nickname
         </span>
         <span />
@@ -139,7 +144,11 @@ function SpeciesPillGhost() {
   );
 }
 
-function SpriteGhost({ size = 144 }: { size?: number }) {
+interface SpriteGhostProps {
+  size?: number;
+}
+
+function SpriteGhost({ size = 144 }: SpriteGhostProps) {
   return (
     <div
       className="bg-muted/40 rounded-xl"
