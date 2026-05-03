@@ -23,7 +23,8 @@ import { AbilityPicker } from "../../../pickers/ability-picker";
 import { FieldErrors } from "../../../validation/field-error";
 import { DescriptionTooltip } from "../../description-tooltip";
 import { type CellVariant } from "./identity-cell-shared";
-import s from "../../../builder.module.css";
+import sLegacy from "../../../builder.module.css";
+import sNew from "../identity-lane.module.css";
 
 // =============================================================================
 // AbilityCell — ability form cell, row (compact) or grid (hero) variant
@@ -82,7 +83,7 @@ export function AbilityCell({
                     <button
                       type="button"
                       className={cn(
-                        s.formRow,
+                        sNew.formRow,
                         errors.length > 0 &&
                           "ring-destructive/40 rounded ring-1"
                       )}
@@ -91,10 +92,10 @@ export function AbilityCell({
                 />
               }
             >
-              <span className={s.formLabel}>Abil</span>
+              <span className={sNew.formLabel}>Abil</span>
               <span
                 className={cn(
-                  s.formValue,
+                  sNew.formValue,
                   !displayAbility && "text-muted-foreground/50 italic"
                 )}
               >
@@ -125,16 +126,16 @@ export function AbilityCell({
           <button
             type="button"
             className={cn(
-              s.heroFormCell,
+              sLegacy.heroFormCell,
               errors.length > 0 && "ring-destructive/40 rounded ring-1"
             )}
           />
         }
       >
-        <span className={s.heroFormLbl}>ABIL</span>
+        <span className={sLegacy.heroFormLbl}>ABIL</span>
         <span
           className={cn(
-            s.heroFormVal,
+            sLegacy.heroFormVal,
             !displayAbility && "text-muted-foreground/50 italic"
           )}
         >

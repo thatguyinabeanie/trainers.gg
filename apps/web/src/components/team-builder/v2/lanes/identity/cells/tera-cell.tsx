@@ -16,7 +16,8 @@ import { TypeDot } from "../../../type-dot";
 import { TypePicker } from "../../../pickers/type-picker";
 import { formatSupportsTera } from "../../../format-gating";
 import { type CellVariant } from "./identity-cell-shared";
-import s from "../../../builder.module.css";
+import sLegacy from "../../../builder.module.css";
+import sNew from "../identity-lane.module.css";
 
 // =============================================================================
 // TeraCell — tera type form cell, row (compact) or grid (hero) variant
@@ -54,7 +55,7 @@ export function TeraCell({
       <TypeDot t={pokemon.tera_type} size={10} />
       <span
         className={
-          variant === "row" ? s.formValue : s.heroFormVal
+          variant === "row" ? sNew.formValue : sLegacy.heroFormVal
         }
       >
         {pokemon.tera_type}
@@ -63,7 +64,7 @@ export function TeraCell({
   ) : (
     <span
       className={cn(
-        variant === "row" ? s.formValue : s.heroFormVal,
+        variant === "row" ? sNew.formValue : sLegacy.heroFormVal,
         "text-muted-foreground/50 italic"
       )}
     >
@@ -75,9 +76,9 @@ export function TeraCell({
     return (
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
-          render={<button type="button" className={s.formRow} />}
+          render={<button type="button" className={sNew.formRow} />}
         >
-          <span className={s.formLabel}>Tera</span>
+          <span className={sNew.formLabel}>Tera</span>
           <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
             {teraContent}
           </span>
@@ -96,11 +97,11 @@ export function TeraCell({
         render={
           <button
             type="button"
-            className={cn(s.heroFormCell, s.heroFormCellSpan2)}
+            className={cn(sLegacy.heroFormCell, sLegacy.heroFormCellSpan2)}
           />
         }
       >
-        <span className={s.heroFormLbl}>TERA</span>
+        <span className={sLegacy.heroFormLbl}>TERA</span>
         <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
           {teraContent}
         </span>

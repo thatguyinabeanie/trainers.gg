@@ -12,7 +12,7 @@ import { FormChips } from "./cells/form-chips";
 import { MetaBar } from "./cells/meta-bar";
 import { SpriteSection } from "./cells/sprite-section";
 import { type IdentityLayoutProps } from "./identity-layout-props";
-import s from "../../builder.module.css";
+import s from "./identity-lane.module.css";
 
 // =============================================================================
 // IdentitySingleRow — compact layout (slot ≥ 1240px)
@@ -61,7 +61,7 @@ export function IdentitySingleRow({
   );
 
   return (
-    <div className={s.identCompact}>
+    <div className={s.root}>
       <SpeciesPickerDialog
         open={speciesOpen}
         onOpenChange={setSpeciesOpen}
@@ -86,7 +86,7 @@ export function IdentitySingleRow({
         {/* Form column */}
         <div className="flex w-56 min-w-0 shrink-0 flex-col justify-center gap-0.5">
           {/* BANNER — nickname + chips rows */}
-          <div className={s.idBanner}>
+          <div className={s.banner}>
             <MetaBar
               pokemon={pokemon}
               format={format}
