@@ -99,7 +99,7 @@ export function SpriteSection({
       className={s.midSpriteBtn}
       onClick={onSpeciesClick}
     >
-      <Sprite species={pokemon.species ?? ""} types={types} size={130} />
+      <Sprite species={pokemon.species ?? ""} types={types} size={144} />
     </button>
   );
 
