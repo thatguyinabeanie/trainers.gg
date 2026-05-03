@@ -318,8 +318,9 @@
 
    Structure:
      ┌─ MetaBar ─────────────────────────────────────┐
-     │  sprite + species pill (centered)              │
-     │  form cells (item / abil / nat / tera)         │
+     ├─ vertSpriteCol ─┬─ vertFormCol ───────────────┤
+     │   sprite        │   form cells                 │
+     │   species pill  │                              │
    ============================================================ */
 
 /* Root — full width, column flex, bottom divider separates from stats+moves */
@@ -330,32 +331,37 @@
   border-bottom: 1px dashed var(--border);
 }
 
-/* Sprite + form stack vertically below MetaBar — same pattern as MidStack
-   (sprite section centered on top, form fields full width below). */
+/* Sprite + form sit side-by-side (adjacent) in a row below MetaBar.
+   This is the distinction from MidStack — MidStack stacks sprite/form
+   vertically; Vertical keeps them adjacent because the WHOLE CELL has
+   stats+moves stacked below, so saving vertical height inside identity
+   matters. */
 .vertSpriteFormRow {
   flex: 1 1 auto;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  align-items: stretch;
   min-width: 0;
-  gap: 8px;
+}
+
+/* Sprite section — fixed width column on the left, vertically centered */
+.vertSpriteCol {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
   padding: 12px 8px;
 }
 
-/* Sprite section — sprite + species pill stacked, centered */
-.vertSpriteCol {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-}
-
-/* Form fields — full width below the sprite section */
+/* Form section — fills remaining width, vertically centered cells */
 .vertFormCol {
-  width: 100%;
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 4px;
+  padding: 12px 8px;
 }
