@@ -430,10 +430,9 @@ export function SpeciesPicker({
   const [filters, setFilters] = useState<SpeciesFilterState>(
     DEFAULT_SPECIES_FILTERS
   );
-  // Default sort: Speed descending — competitive teambuilding usually
-  // starts with "what outspeeds what", so sorting on Spe DESC by default
-  // surfaces the fastest legal Pokémon first.
-  const [sort, setSort] = useState<SortState>({ col: "spe", dir: "desc" });
+  // Default sort: BST descending — surfaces the strongest legal Pokémon
+  // overall before the user narrows by stat or role.
+  const [sort, setSort] = useState<SortState>({ col: "bst", dir: "desc" });
 
   // Scroll container ref for the virtualizer
   const scrollRef = useRef<HTMLDivElement>(null);
