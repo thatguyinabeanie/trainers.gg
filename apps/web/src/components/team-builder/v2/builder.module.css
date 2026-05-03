@@ -2242,6 +2242,34 @@
   text-overflow: ellipsis;
 }
 
+/* Vertical stack for cells that need a main value + sub-line annotation
+   (e.g., the Mega Ability cell with a "base: Solar Power" sub-line). */
+.heroFormValStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.heroFormSubline {
+  font-size: 10px;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: color-mix(in oklch, var(--muted-foreground) 50%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.heroFormCell:hover .heroFormSubline {
+  color: var(--foreground);
+  text-decoration-color: var(--foreground);
+}
+
 /* Value inside form cell */
 .heroFormVal {
   font-size: 12px;

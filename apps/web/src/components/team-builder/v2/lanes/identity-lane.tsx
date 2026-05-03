@@ -841,32 +841,10 @@ function IdentityLaneReal({
               </PopoverContent>
             </Popover>
 
-            {/* Base ability — full-width row above Mega ability. Renders
-                only when the species has a forced Mega ability so we can
-                show "what was selected" → "what's actually active" stacked
-                top-down for the user to read in order. */}
-            {megaAbility !== null && (
-              <div
-                className={cn(
-                  s.heroFormCell,
-                  s.heroFormCellSpan2,
-                  s.heroFormCellReadonly
-                )}
-              >
-                <span className={s.heroFormLbl}>Base Ability</span>
-                <span
-                  className={cn(
-                    s.heroFormVal,
-                    !pokemon.ability && "text-muted-foreground/50 italic"
-                  )}
-                >
-                  {pokemon.ability || "—"}
-                </span>
-              </div>
-            )}
-
-            {/* Mega Ability (or plain Ability when not a Mega form). Full-
-                width row in both cases so the form reads top-down. */}
+            {/* Ability — single cell with main value + optional `base:` sub-
+                line, mirroring the compact-mode pattern. The sub-line shows
+                the stored base ability when this is a Mega form (where the
+                effective in-battle ability is forced to megaAbility). */}
             <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
               <PopoverTrigger
                 render={
@@ -881,17 +859,22 @@ function IdentityLaneReal({
                   />
                 }
               >
-                <span className={s.heroFormLbl}>
-                  {megaAbility !== null ? "Mega Ability" : "Ability"}
-                </span>
-                <span
-                  className={cn(
-                    s.heroFormVal,
-                    !(megaAbility ?? pokemon.ability) &&
-                      "text-muted-foreground/50 italic"
+                <span className={s.heroFormLbl}>Abil</span>
+                <span className={s.heroFormValStack}>
+                  <span
+                    className={cn(
+                      s.heroFormVal,
+                      !(megaAbility ?? pokemon.ability) &&
+                        "text-muted-foreground/50 italic"
+                    )}
+                  >
+                    {(megaAbility ?? pokemon.ability) || "—"}
+                  </span>
+                  {megaAbility !== null && (
+                    <span className={s.heroFormSubline}>
+                      base: {pokemon.ability || "—"}
+                    </span>
                   )}
-                >
-                  {(megaAbility ?? pokemon.ability) || "—"}
                 </span>
               </PopoverTrigger>
               <PopoverContent
