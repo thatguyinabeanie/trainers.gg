@@ -192,21 +192,25 @@
 
 /* Sprite section — sprite + species pill stacked, centered.
    Form column matches this width so both halves of the stack share the
-   same horizontal extents inside the panel (sprite ↔ form widths align). */
+   same horizontal extents inside the panel (sprite ↔ form widths align).
+   margin-inline: auto enforces explicit horizontal centering even when
+   the parent's align-items doesn't cooperate (e.g. wider panels). */
 .midSpriteCol {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   width: 100%;
-  max-width: 240px;
+  max-width: 280px;
+  margin-inline: auto;
 }
 
 /* Form fields — stacked vertically below sprite, same max-width so the
    form rows visually align with the sprite/pill above. */
 .midFormCol {
   width: 100%;
-  max-width: 240px;
+  max-width: 280px;
+  margin-inline: auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
