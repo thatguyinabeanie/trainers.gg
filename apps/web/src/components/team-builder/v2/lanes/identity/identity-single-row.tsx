@@ -84,7 +84,7 @@ export function IdentitySingleRow({
         </div>
 
         {/* Form column */}
-        <div className="flex w-56 min-w-0 shrink-0 flex-col justify-center gap-0.5">
+        <div className="flex w-64 min-w-0 shrink-0 flex-col justify-center gap-0.5">
           {/* BANNER — nickname + chips rows */}
           <div className={s.banner}>
             <MetaBar
