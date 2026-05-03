@@ -158,14 +158,12 @@ export function MetaBar({
   }
 
   // variant === "row" — MidStack meta bar
-  // Layout: auto 1fr auto grid
-  //   col 1: Lv pill (popover trigger), gated by showLevel
-  //   col 2: nickname input (text-centered, fills space)
-  //   col 3: gender + shiny pills grouped with 6px gap
+  // Layout (Lv shown):    auto 1fr auto — Lv | nickname | gender+shiny
+  // Layout (Lv hidden):        1fr auto — nickname | gender+shiny  (visually centered)
   return (
-    <div className={s.midMetaBar}>
-      {/* Left: Lv pill */}
-      {showLevel ? (
+    <div className={cn(s.midMetaBar, !showLevel && s.midMetaBarNoLv)}>
+      {/* Left: Lv pill — only rendered when format supports level */}
+      {showLevel && (
         <Popover open={levelOpen} onOpenChange={setLevelOpen}>
           <PopoverTrigger
             render={
@@ -193,9 +191,6 @@ export function MetaBar({
             />
           </PopoverContent>
         </Popover>
-      ) : (
-        /* Placeholder span keeps the grid column occupied even when showLevel is false */
-        <span />
       )}
 
       {/* Center: nickname input */}

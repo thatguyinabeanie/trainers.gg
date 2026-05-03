@@ -102,6 +102,13 @@
   flex-shrink: 0;
 }
 
+/* When the format hides the Lv pill, drop the left column so the
+   nickname stays visually centered between the bar's edges and the
+   right-side gender/shiny pills. */
+.midMetaBarNoLv {
+  grid-template-columns: 1fr auto;
+}
+
 /* Shared pill shape — uniform 22px height, monospace, muted foreground */
 .midPill {
   display: inline-flex;
@@ -163,38 +170,37 @@
   gap: 6px;
 }
 
-/* ── Body (below MetaBar) ─────────────────────────────────── */
+/* ── Body (below MetaBar) ───────────────────────────────────
+   Sprite section on top, form fields below — both centered horizontally
+   inside the identity panel. No divider between them. */
 
-/* Fills remaining height, row layout: sprite-col on left, form-col right */
 .midBody {
   flex: 1 1 auto;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  align-items: center;
   min-width: 0;
   min-height: 0;
+  gap: 8px;
+  padding: 12px 8px;
 }
 
-/* Sprite column — fixed width, vertically centered content */
+/* Sprite section — sprite + species pill stacked, centered */
 .midSpriteCol {
-  flex: 0 0 160px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   gap: 6px;
-  padding: 12px 8px;
-  border-right: 1px dashed var(--border);
+  width: 100%;
 }
 
-/* Form column — fills remaining width, vertically centered cells */
+/* Form fields — stacked vertically below sprite, full panel width */
 .midFormCol {
-  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: 4px;
-  padding: 12px 8px;
 }
 
 /* ── Form cells ──────────────────────────────────────────────
@@ -202,9 +208,9 @@
 
 .midFormCell {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: baseline;
-  gap: 6px;
+  gap: 8px;
   padding: 4px 6px;
   border-radius: 5px;
   cursor: pointer;
@@ -310,9 +316,8 @@
 
    Structure:
      ┌─ MetaBar ─────────────────────────────────────┐
-     ├─ vertSpriteCol ─┬─ vertFormCol ───────────────┤
-     │   sprite        │  form cells                  │
-     │   species pill  │                              │
+     │  sprite + species pill (centered)              │
+     │  form cells (item / abil / nat / tera)         │
    ============================================================ */
 
 /* Root — full width, column flex, bottom divider separates from stats+moves */
@@ -323,32 +328,32 @@
   border-bottom: 1px dashed var(--border);
 }
 
-/* Sprite + form sit side-by-side in a row below MetaBar */
+/* Sprite + form stack vertically below MetaBar — same pattern as MidStack
+   (sprite section centered on top, form fields full width below). */
 .vertSpriteFormRow {
   flex: 1 1 auto;
   display: flex;
-  flex-direction: row;
-  min-width: 0;
-}
-
-/* Sprite column — fixed width, vertically centered content */
-.vertSpriteCol {
-  flex: 0 0 200px;
-  display: flex;
   flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  min-width: 0;
   gap: 8px;
   padding: 12px 8px;
-  border-right: 1px dashed var(--border);
 }
 
-/* Form column — fills remaining width, vertically centered form cells */
+/* Sprite section — sprite + species pill stacked, centered */
+.vertSpriteCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+/* Form fields — full width below the sprite section */
 .vertFormCol {
-  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: 4px;
-  padding: 12px 8px;
 }
