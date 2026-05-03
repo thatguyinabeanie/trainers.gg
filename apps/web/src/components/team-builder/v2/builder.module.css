@@ -838,15 +838,15 @@
   flex-shrink: 0;
 }
 
-/* Decorations shown in the rib middle (type pills, level).
-   On mobile (≤767px) hide the type pills but keep .levelPicker visible so
-   Champions / Reg-MA format users can still edit level on narrow viewports. */
+/* Decorations shown in the rib middle (type pills only — level picker
+   moved to the identity panel meta row). Hidden entirely at full-stack
+   widths since the rib pivots horizontal and there's no vertical room. */
 .ribDecorations {
   display: flex;
 }
 
 @container slot (max-width: 699px) {
-  .ribDecorations > :not(.levelPicker) {
+  .ribDecorations {
     display: none;
   }
 }
@@ -2036,6 +2036,26 @@
   }
 }
 
+/* When the user picks 3×2-stack mode, each cell renders the full-stack
+   shape but the cells are wide enough (~620px+) to put the form fields
+   to the RIGHT of the sprite section instead of below it. */
+[data-layout="3x2-stack"] .identHero {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+[data-layout="3x2-stack"] .heroPanel {
+  flex: 0 0 220px;
+  width: auto;
+  border-bottom: none;
+  border-right: 1px dashed var(--border);
+}
+
+[data-layout="3x2-stack"] .heroForm {
+  flex: 1 1 auto;
+  width: auto;
+}
+
 /* ── Hero panel ─────────────────────────────────────────── */
 
 /* Sprite section — stacked above the form inside identHero. Spans the
@@ -2092,7 +2112,8 @@
   transition: colors 0.1s;
 }
 
-/* Level badge — non-interactive display */
+/* Level picker button — popover trigger styled to match the
+   gender / shiny pills in the meta row. */
 .heroLv {
   flex-shrink: 0;
   font-size: 10px;
@@ -2100,6 +2121,16 @@
   font-family: ui-monospace, SFMono-Regular, monospace;
   color: var(--muted-foreground);
   white-space: nowrap;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.heroLv:hover {
+  background: color-mix(in oklch, var(--muted) 80%, var(--foreground));
 }
 
 /* Nickname input — fills remaining space */

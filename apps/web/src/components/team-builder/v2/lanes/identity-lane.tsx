@@ -27,10 +27,11 @@ import { type ValidationError } from "../../validation-hooks";
 import { NatureChevrons } from "../nature-chevrons";
 import { Sprite } from "../sprite";
 import { TypeDot } from "../type-dot";
-import { formatSupportsTera } from "../format-gating";
+import { formatSupportsLevel, formatSupportsTera } from "../format-gating";
 import { AbilityPicker } from "../pickers/ability-picker";
 import { ItemPicker } from "../pickers/item-picker";
 import { NaturePicker } from "../pickers/nature-picker";
+import { NumberPicker } from "../pickers/number-picker";
 import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
 import { TypePicker } from "../pickers/type-picker";
 import { FieldErrors } from "../validation/field-error";
@@ -364,9 +365,12 @@ function IdentityLaneReal({
   const [abilityOpen, setAbilityOpen] = useState(false);
   const [natureOpen, setNatureOpen] = useState(false);
   const [teraOpen, setTeraOpen] = useState(false);
+  const [levelOpen, setLevelOpen] = useState(false);
 
   const gender = pokemon.gender as GenderValue;
   const isShiny = pokemon.is_shiny ?? false;
+  const level = pokemon.level ?? 50;
+  const showLevel = formatSupportsLevel(format);
   const showTera = formatSupportsTera(format);
 
   // Nature effect labels for the mini suffix
@@ -702,7 +706,35 @@ function IdentityLaneReal({
         <div className={s.heroPanel}>
           {/* Meta row: gender | shiny | Lv | nickname */}
           <div className={s.heroMetaRow}>
-            <span className={s.heroLv}>Lv {pokemon.level ?? 50}</span>
+            {showLevel && (
+              <Popover open={levelOpen} onOpenChange={setLevelOpen}>
+                <PopoverTrigger
+                  render={
+                    <button
+                      type="button"
+                      title={`Level ${level}`}
+                      className={s.heroLv}
+                    />
+                  }
+                >
+                  <span>Lv {level}</span>
+                </PopoverTrigger>
+                <PopoverContent
+                  side="bottom"
+                  align="start"
+                  className="w-auto p-0"
+                >
+                  <NumberPicker
+                    title="Level"
+                    value={level}
+                    min={1}
+                    max={100}
+                    onChange={(v) => onUpdate({ level: v })}
+                    onClose={() => setLevelOpen(false)}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
             {/* Duplicate nickname input — shares nickDraft state with compact mode */}
             <input
               type="text"
