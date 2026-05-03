@@ -8,15 +8,21 @@ import { useIsMobile } from "@/hooks/use-mobile";
 // Types
 // =============================================================================
 
-export type TeamLayoutMode = "1x6" | "2x3" | "3x2-mid" | "3x2-stack";
+export type TeamLayoutMode =
+  | "1x6"
+  | "2x3"
+  | "2x3-vertical"
+  | "3x2"
+  | "3x2-vertical";
 
 const STORAGE_KEY = "tg.team-layout";
 const DEFAULT_MODE: TeamLayoutMode = "1x6";
 const VALID_MODES: readonly TeamLayoutMode[] = [
   "1x6",
   "2x3",
-  "3x2-mid",
-  "3x2-stack",
+  "2x3-vertical",
+  "3x2",
+  "3x2-vertical",
 ];
 
 // Viewport thresholds for auto-degrading the persisted grid mode. The
@@ -51,6 +57,15 @@ function subscribe(callback: () => void) {
 function getSnapshot(): TeamLayoutMode {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
+    // Migrate old mode names written by pre-8a versions of the app.
+    if (raw === "3x2-mid") {
+      window.localStorage.setItem(STORAGE_KEY, "3x2");
+      return "3x2";
+    }
+    if (raw === "3x2-stack") {
+      window.localStorage.setItem(STORAGE_KEY, "3x2-vertical");
+      return "3x2-vertical";
+    }
     if (raw && (VALID_MODES as readonly string[]).includes(raw)) {
       return raw as TeamLayoutMode;
     }
@@ -97,15 +112,23 @@ function degradeForViewport(
   persisted: TeamLayoutMode,
   viewportWidth: number
 ): TeamLayoutMode {
+  const isVertical =
+    persisted === "2x3-vertical" || persisted === "3x2-vertical";
   const wantedCols =
-    persisted === "1x6" ? 1 : persisted === "2x3" ? 2 : 3;
+    persisted === "1x6"
+      ? 1
+      : persisted === "2x3" || persisted === "2x3-vertical"
+        ? 2
+        : 3;
 
   let cols = wantedCols;
   if (cols === 3 && viewportWidth < MIN_VIEWPORT_FOR_3_COLS) cols = 2;
   if (cols === 2 && viewportWidth < MIN_VIEWPORT_FOR_2_COLS) cols = 1;
 
   if (cols === wantedCols) return persisted;
-  if (cols === 2) return "2x3";
+  // Preserve vertical orientation when stepping down to 2 columns so users
+  // who prefer the stacked layout don't lose it on moderately wide viewports.
+  if (cols === 2) return isVertical ? "2x3-vertical" : "2x3";
   return "1x6";
 }
 

@@ -102,12 +102,13 @@
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.builderRows[data-layout="2x3"] {
+.builderRows[data-layout="2x3"],
+.builderRows[data-layout="2x3-vertical"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.builderRows[data-layout="3x2-mid"],
-.builderRows[data-layout="3x2-stack"] {
+.builderRows[data-layout="3x2"],
+.builderRows[data-layout="3x2-vertical"] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -2036,12 +2037,12 @@
   }
 }
 
-/* When the user picks 2×3 or 3×2-stack mode, identity flips back to a
+/* When the user picks 2×3 or 3×2-vertical mode, identity flips back to a
    horizontal row inside the cell — sprite section on the left, form
    fields on the right. Cells in these modes are wide enough
    (~600–1100px) to fit sprite + form side-by-side without truncation. */
 [data-layout="2x3"] .identHero,
-[data-layout="3x2-stack"] .identHero {
+[data-layout="3x2-vertical"] .identHero {
   flex-direction: row;
   align-items: stretch;
 }
@@ -2053,7 +2054,7 @@
 }
 
 [data-layout="2x3"] .heroPanel,
-[data-layout="3x2-stack"] .heroPanel {
+[data-layout="3x2-vertical"] .heroPanel {
   flex: 0 0 220px;
   width: auto;
   border-bottom: none;
@@ -2061,7 +2062,7 @@
 }
 
 [data-layout="2x3"] .heroForm,
-[data-layout="3x2-stack"] .heroForm {
+[data-layout="3x2-vertical"] .heroForm {
   flex: 1 1 auto;
   width: auto;
 }
