@@ -1,0 +1,144 @@
+"use client";
+
+import { useState } from "react";
+
+import { speciesHasForms } from "@trainers/pokemon";
+
+import { FieldErrors } from "../../validation/field-error";
+import { SpeciesPickerDialog } from "../../pickers/species-picker-dialog";
+import { useIdentityState } from "./use-identity-state";
+import { FormCells } from "./cells/form-cells";
+import { FormChips } from "./cells/form-chips";
+import { MetaBar } from "./cells/meta-bar";
+import { SpriteSection } from "./cells/sprite-section";
+import { type IdentityLayoutProps } from "./identity-layout-props";
+import s from "../../builder.module.css";
+
+// =============================================================================
+// IdentitySingleRow — compact layout (slot ≥ 1240px)
+//
+// Renders the existing compact branch: sprite column on the left, form
+// column (banner + loadout rows) on the right, all in a horizontal flex row.
+// =============================================================================
+
+export function IdentitySingleRow({
+  pokemon,
+  format,
+  teamItems,
+  teamSiblings,
+  onUpdate,
+  fieldErrors,
+}: IdentityLayoutProps) {
+  const {
+    types,
+    gender,
+    isShiny,
+    level,
+    showLevel,
+    natUp,
+    natDown,
+    isMegaStone,
+    nicknameErrors,
+    speciesErrors,
+    genderErrors,
+    itemErrors,
+    abilityErrors,
+    natureErrors,
+    nickDraft,
+    setNickDraft,
+    nicknameRef,
+    handleNickBlur,
+    handleGenderToggle,
+    handleShinyToggle,
+    handleSpeciesPick,
+  } = useIdentityState(pokemon, format, fieldErrors, onUpdate);
+
+  const [speciesOpen, setSpeciesOpen] = useState(false);
+
+  const currentTeam = (teamSiblings ?? []).filter(
+    (p): p is { species: string } =>
+      typeof p.species === "string" && p.species.length > 0
+  );
+
+  return (
+    <div className={s.identCompact}>
+      <SpeciesPickerDialog
+        open={speciesOpen}
+        onOpenChange={setSpeciesOpen}
+        value={pokemon.species ?? null}
+        format={format}
+        currentTeam={currentTeam}
+        onPick={handleSpeciesPick}
+      />
+
+      <div className="flex min-w-0 gap-3 p-3">
+        {/* Sprite column */}
+        <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
+          <SpriteSection
+            pokemon={pokemon}
+            onSpeciesClick={() => setSpeciesOpen(true)}
+            variant="pill-top"
+            speciesHasError={speciesErrors.length > 0}
+            types={types}
+          />
+        </div>
+
+        {/* Form column */}
+        <div className="flex w-56 min-w-0 shrink-0 flex-col justify-center gap-0.5">
+          {/* BANNER — nickname + chips rows */}
+          <div className={s.idBanner}>
+            <MetaBar
+              pokemon={pokemon}
+              format={format}
+              nickDraft={nickDraft}
+              setNickDraft={setNickDraft}
+              nicknameRef={nicknameRef}
+              gender={gender}
+              isShiny={isShiny}
+              level={level}
+              showLevel={showLevel}
+              handleNickBlur={handleNickBlur}
+              handleGenderToggle={handleGenderToggle}
+              handleShinyToggle={handleShinyToggle}
+              onUpdate={onUpdate}
+              nicknameErrors={nicknameErrors}
+              genderErrors={genderErrors}
+              variant="banner"
+            />
+
+            {/* Row 2: form chips. Disabled until the matching mega stone is held;
+                click → swap species only (no auto-item-attach). */}
+            {pokemon.species && speciesHasForms(pokemon.species) && (
+              <FormChips
+                currentSpecies={pokemon.species}
+                currentItem={pokemon.held_item}
+                onPick={(nextSpecies) => {
+                  if (nextSpecies === pokemon.species) return;
+                  onUpdate({ species: nextSpecies });
+                }}
+              />
+            )}
+          </div>
+
+          {/* LOADOUT FORM ROWS */}
+          <FormCells
+            pokemon={pokemon}
+            format={format}
+            teamItems={teamItems}
+            isMegaStone={isMegaStone}
+            natUp={natUp}
+            natDown={natDown}
+            itemErrors={itemErrors}
+            abilityErrors={abilityErrors}
+            natureErrors={natureErrors}
+            onUpdate={onUpdate}
+            variant="row"
+          />
+
+          {/* Species validation errors */}
+          <FieldErrors errors={speciesErrors} />
+        </div>
+      </div>
+    </div>
+  );
+}
