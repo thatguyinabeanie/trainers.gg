@@ -107,19 +107,20 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.builderRows[data-layout="3x2"],
 .builderRows[data-layout="3x2-vertical"] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 /* In 1×6 mode the slot fills the grid column, which without a cap
    stretches the row card across the full content area. The row's
-   internal columns (rib + sprite + form + stats + moves) only need
-   ~1340px total — beyond that everything just gets sparse. Cap the
-   slot itself so the row stops at column-total width and centers
-   inside the grid column. */
+   internal columns are rib (40) + identity (~500: sprite section + form
+   column with 256px form col + 180px species pill stack) + stats (400) +
+   moves (520) ≈ 1460px total. Cap the slot at 1500 so wider viewports
+   give the row 40px of headroom for side-by-side mode without sprawling
+   sparse, and so the @container threshold below has room to gate
+   side-by-side ↔ stacked correctly. */
 .builderRows[data-layout="1x6"] .slotHost {
-  max-width: 1380px;
+  max-width: 1500px;
   margin-inline: auto;
 }
 
@@ -814,8 +815,12 @@
 }
 
 /* Mid-stack — identity hero panel left, stats above moves on the right.
-   1:1 ratio with .identHero so the cell splits evenly. */
-@container slot (max-width: 1239px) {
+   Threshold raised from 1239 → 1459 to match the actual minimum slot
+   width that fits side-by-side: rib(40) + identity(~500) + stats(400) +
+   moves(520) ≈ 1460. Below this the row stacks stats above moves so the
+   teal active-row border wraps every lane without inner content
+   overflowing past the rounded edge. */
+@container slot (max-width: 1459px) {
   .rowRight {
     display: flex;
     flex-direction: column;
@@ -928,8 +933,10 @@
 /* Tighten BP / Acc widths at narrow slot widths so move names get more
    room before truncating. The "BP" / "ACC" labels are still rendered
    but the value column fits a 3-digit BP / 4-char "100%" without
-   reserving extra space. */
-@container slot (max-width: 1239px) {
+   reserving extra space. Threshold matches the side-by-side ↔ stacked
+   transition above (1459) so move tiles tighten the moment the row
+   drops out of full side-by-side mode. */
+@container slot (max-width: 1459px) {
   :global(.mvline) {
     grid-template-columns:
       max-content

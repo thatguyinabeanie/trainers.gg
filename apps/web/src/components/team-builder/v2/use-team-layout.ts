@@ -12,7 +12,6 @@ export type TeamLayoutMode =
   | "1x6"
   | "2x3"
   | "2x3-vertical"
-  | "3x2"
   | "3x2-vertical";
 
 const STORAGE_KEY = "tg.team-layout";
@@ -21,7 +20,6 @@ const VALID_MODES: readonly TeamLayoutMode[] = [
   "1x6",
   "2x3",
   "2x3-vertical",
-  "3x2",
   "3x2-vertical",
 ];
 
@@ -58,11 +56,13 @@ function getSnapshot(): TeamLayoutMode {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     // Migrate old mode names written by pre-8a versions of the app.
-    if (raw === "3x2-mid") {
-      window.localStorage.setItem(STORAGE_KEY, "3x2");
-      return "3x2";
-    }
     if (raw === "3x2-stack") {
+      window.localStorage.setItem(STORAGE_KEY, "3x2-vertical");
+      return "3x2-vertical";
+    }
+    // 3x2 mid-stack mode was removed — collapse persisted "3x2" / "3x2-mid"
+    // values to the closest surviving 3-column mode.
+    if (raw === "3x2-mid" || raw === "3x2") {
       window.localStorage.setItem(STORAGE_KEY, "3x2-vertical");
       return "3x2-vertical";
     }

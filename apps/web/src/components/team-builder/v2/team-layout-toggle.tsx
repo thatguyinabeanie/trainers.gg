@@ -46,20 +46,6 @@ function Icon2x3Vertical() {
   );
 }
 
-// 3×2 — three columns, cells show a horizontal bar per row (mid-stacked)
-function Icon3x2Mid() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden className="size-3.5">
-      <rect x="2" y="4" width="3" height="3" fill="currentColor" />
-      <rect x="6.5" y="4" width="3" height="3" fill="currentColor" />
-      <rect x="11" y="4" width="3" height="3" fill="currentColor" />
-      <rect x="2" y="9" width="3" height="3" fill="currentColor" />
-      <rect x="6.5" y="9" width="3" height="3" fill="currentColor" />
-      <rect x="11" y="9" width="3" height="3" fill="currentColor" />
-    </svg>
-  );
-}
-
 // 3×2-vertical — three columns, each cell stacks sprite + form vertically
 function Icon3x2Vertical() {
   return (
@@ -95,7 +81,6 @@ const BUTTONS: readonly ToggleButton[] = [
     label: "2 × 3 — stacked per cell",
     icon: Icon2x3Vertical,
   },
-  { mode: "3x2", label: "3 × 2 — mid-stacked per cell", icon: Icon3x2Mid },
   {
     mode: "3x2-vertical",
     label: "3 × 2 — stacked per cell",

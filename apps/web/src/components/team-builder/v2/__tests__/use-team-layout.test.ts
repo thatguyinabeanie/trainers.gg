@@ -42,9 +42,9 @@ describe("useTeamLayout", () => {
 
   it("persists changes via setMode", () => {
     const { result } = renderHook(() => useTeamLayout());
-    act(() => result.current.setMode("3x2"));
-    expect(window.localStorage.getItem("tg.team-layout")).toBe("3x2");
-    expect(result.current.mode).toBe("3x2");
+    act(() => result.current.setMode("3x2-vertical"));
+    expect(window.localStorage.getItem("tg.team-layout")).toBe("3x2-vertical");
+    expect(result.current.mode).toBe("3x2-vertical");
   });
 
   it("forces 1x6 on mobile but preserves the persisted value", () => {
@@ -70,12 +70,24 @@ describe("useTeamLayout", () => {
   });
 
   describe("backward-compat migration", () => {
-    it("migrates 3x2-mid localStorage value to 3x2", () => {
+    it("migrates legacy 3x2-mid localStorage value to 3x2-vertical", () => {
       window.localStorage.setItem("tg.team-layout", "3x2-mid");
       const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("3x2");
-      expect(result.current.persisted).toBe("3x2");
-      expect(window.localStorage.getItem("tg.team-layout")).toBe("3x2");
+      expect(result.current.mode).toBe("3x2-vertical");
+      expect(result.current.persisted).toBe("3x2-vertical");
+      expect(window.localStorage.getItem("tg.team-layout")).toBe(
+        "3x2-vertical"
+      );
+    });
+
+    it("migrates removed 3x2 mid-stack mode to 3x2-vertical", () => {
+      window.localStorage.setItem("tg.team-layout", "3x2");
+      const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("3x2-vertical");
+      expect(result.current.persisted).toBe("3x2-vertical");
+      expect(window.localStorage.getItem("tg.team-layout")).toBe(
+        "3x2-vertical"
+      );
     });
 
     it("migrates 3x2-stack localStorage value to 3x2-vertical", () => {
@@ -105,23 +117,6 @@ describe("useTeamLayout", () => {
       const { result } = renderHook(() => useTeamLayout());
       expect(result.current.mode).toBe("2x3");
       expect(result.current.isAutoDegraded).toBe(false);
-    });
-
-    it("degrades 3x2 to 2x3 between 1500 and 2199", () => {
-      window.localStorage.setItem("tg.team-layout", "3x2");
-      setViewportWidth(1800);
-      const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("2x3");
-      expect(result.current.persisted).toBe("3x2");
-      expect(result.current.isAutoDegraded).toBe(true);
-    });
-
-    it("degrades 3x2 all the way to 1x6 below 1500", () => {
-      window.localStorage.setItem("tg.team-layout", "3x2");
-      setViewportWidth(1200);
-      const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("1x6");
-      expect(result.current.isAutoDegraded).toBe(true);
     });
 
     it("degrades 3x2-vertical to 2x3-vertical between 1500 and 2199", () => {
@@ -158,7 +153,7 @@ describe("useTeamLayout", () => {
     });
 
     it("mobile override beats viewport-based degrade", () => {
-      window.localStorage.setItem("tg.team-layout", "3x2");
+      window.localStorage.setItem("tg.team-layout", "3x2-vertical");
       mockUseIsMobile.mockReturnValue(true);
       setViewportWidth(2400);
       const { result } = renderHook(() => useTeamLayout());

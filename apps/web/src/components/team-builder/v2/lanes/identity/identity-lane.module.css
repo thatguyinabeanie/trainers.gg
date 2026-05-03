@@ -22,13 +22,16 @@
   margin-bottom: 4px;
 }
 
-/* Loadout form row — label on the left, value on the right. */
-/* Compact form row — narrow label column so 4-char labels (Item/Abil/Nat)
-   don't waste horizontal space, leaving more room for the value text
-   ("Modest +SpA/-Atk", "Charizardite Y MEGA"). */
+/* Loadout form row — label on the left, value on the right.
+   Label column is 56px so 4-char labels (Item/Abil/Nat/Tera) render fully
+   under bold uppercase ui-monospace at 9px with 0.08em letter-spacing. A
+   tighter column truncates "Abil" to "AB…" and "Tera" to "TE…". This also
+   matches the FormChip column width used by Item/Nat for visual alignment
+   between rows that route through FormChip and rows (Ability/Tera) that
+   render this CSS directly. */
 .formRow {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-columns: 56px minmax(0, 1fr);
   align-items: center;
   gap: 6px;
   padding: 3px 4px;
@@ -216,11 +219,15 @@
 }
 
 /* ── Form cells ──────────────────────────────────────────────
-   Each cell: 38px label col + value col. Matches mockup's 38px label. */
+   Label column 56px so bold uppercase 4-char labels (ITEM/ABIL/TERA) render
+   fully — at 9px ui-monospace with 0.08em letter-spacing the rendered width
+   sits just over 44px and clips to "IT…" / "AB…". 56px gives every label
+   headroom while leaving the .midFormCol 200px cap with ~120px for values
+   (enough for "Choice Scarf", "Adaptability", "Adamant +Atk/-SpA"). */
 
 .midFormCell {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 56px minmax(0, 1fr);
   align-items: baseline;
   gap: 8px;
   padding: 4px 6px;
@@ -350,19 +357,19 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: row;
-  align-items: stretch;
+  align-items: center;
   min-width: 0;
 }
 
-/* Sprite section — fixed width column on the left, vertically centered */
+/* Sprite section — compact column on the left, vertically centered */
 .vertSpriteCol {
-  flex: 0 0 200px;
+  flex: 0 0 140px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 6px;
-  padding: 12px 8px;
+  padding: 8px 4px;
 }
 
 /* Form section — fills remaining width, vertically centered cells */
@@ -373,5 +380,5 @@
   flex-direction: column;
   justify-content: center;
   gap: 4px;
-  padding: 12px 8px;
+  padding: 8px 6px;
 }
