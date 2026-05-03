@@ -23,10 +23,12 @@
 }
 
 /* Loadout form row — label on the left, value on the right. */
-/* Mirrors legacy .formRow */
+/* Compact form row — narrow label column so 4-char labels (Item/Abil/Nat)
+   don't waste horizontal space, leaving more room for the value text
+   ("Modest +SpA/-Atk", "Charizardite Y MEGA"). */
 .formRow {
   display: grid;
-  grid-template-columns: 60px minmax(0, 1fr);
+  grid-template-columns: 36px minmax(0, 1fr);
   align-items: center;
   gap: 6px;
   padding: 3px 4px;
