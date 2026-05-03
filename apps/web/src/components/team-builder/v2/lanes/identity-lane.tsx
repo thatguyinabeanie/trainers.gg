@@ -787,19 +787,10 @@ function IdentityLaneReal({
             </div>
           )}
 
-          {/* Form chips (mega / alt-form switcher) */}
-          {pokemon.species && speciesHasForms(pokemon.species) && (
-            <div className="flex justify-center">
-              <FormChips
-                currentSpecies={pokemon.species}
-                currentItem={pokemon.held_item}
-                onPick={(nextSpecies) => {
-                  if (nextSpecies === pokemon.species) return;
-                  onUpdate({ species: nextSpecies });
-                }}
-              />
-            </div>
-          )}
+          {/* Form chips deliberately omitted in hero mode — alt-form
+              switching happens via the species picker dialog opened by
+              clicking the sprite or species pill. The compact-mode
+              FormChips strip below the held-item row is still wired. */}
 
           <hr className={s.heroDivider} />
 

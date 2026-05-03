@@ -175,21 +175,26 @@ export function ActiveRow({
           .map((tp) => ({ species: tp.pokemon!.species }))}
       />
 
-      {/* STATS lane */}
-      <StatsLane
-        pokemon={pokemon}
-        format={format}
-        onUpdate={onUpdate}
-        fieldErrors={statsErrors}
-      />
+      {/* Right column — at compact widths stats and moves sit side-by-side
+          as direct children of the row; at mid-stack widths this wrapper
+          stacks them vertically on the right of the identity panel. CSS
+          (.rowRight) flips between display: contents and flex-column based
+          on container query. */}
+      <div className={s.rowRight}>
+        <StatsLane
+          pokemon={pokemon}
+          format={format}
+          onUpdate={onUpdate}
+          fieldErrors={statsErrors}
+        />
 
-      {/* MOVES lane */}
-      <MovesLane
-        pokemon={pokemon}
-        format={format}
-        onUpdate={onUpdate}
-        fieldErrors={movesErrors}
-      />
+        <MovesLane
+          pokemon={pokemon}
+          format={format}
+          onUpdate={onUpdate}
+          fieldErrors={movesErrors}
+        />
+      </div>
 
       {/* Calc column — fixed 160px, aligns row-for-row with move tiles */}
       {calcEnabled && <CalcColumn pokemon={pokemon} />}

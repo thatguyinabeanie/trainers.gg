@@ -779,28 +779,41 @@
 
 /* ============================================================
    Active row — lane layout
+
+   Three layout states, all driven by @container queries on the slotHost:
+     • Compact   (≥ 1240px) — rib | identity | stats | moves   side-by-side
+     • Mid-stack (500–1239) — rib | identity-hero | (stats / moves)  right col
+     • Full-stack (< 500px) — rib (top bar) / identity / stats / moves  stacked
    ============================================================ */
 
-/* Row container — wraps lanes onto a second line when the worklane is too
-   narrow (e.g. when the CalcDrawer is open). Never forces horizontal scroll. */
 .rowActive {
   display: flex;
   align-items: stretch;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   min-width: 0;
   overflow: visible;
 }
 
-/* ============================================================
-   Mobile active row — single-column stacked layout (< md / 768px)
-   ============================================================ */
+/* Right column wrapper — at compact widths it disappears (display: contents)
+   so stats and moves render as direct flex children of .rowActive. At mid
+   widths it becomes a flex column so stats sits above moves. */
+.rowRight {
+  display: contents;
+}
 
-/* Layout 3 — full vertical stack
-   Triggers when the slot's container is < 700px (phone viewport, OR 3×2
-   stacked grid at desktop, OR a 2×3 cell on a very small laptop). */
-@container slot (max-width: 699px) {
-  .rowActive {
+/* Mid-stack — identity hero panel left, stats above moves on the right */
+@container slot (max-width: 1239px) {
+  .rowRight {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
     min-width: 0;
+  }
+}
+
+/* Full-stack — rib pivots horizontal at the top, everything else stacks */
+@container slot (max-width: 499px) {
+  .rowActive {
     flex-direction: column;
     align-items: stretch;
   }
@@ -831,7 +844,7 @@
   display: flex;
 }
 
-@container slot (max-width: 699px) {
+@container slot (max-width: 499px) {
   .ribDecorations > :not(.levelPicker) {
     display: none;
   }
@@ -1969,7 +1982,7 @@
 }
 
 /* At slot width ≤1099px, flip to hero */
-@container slot (max-width: 1099px) {
+@container slot (max-width: 1239px) {
   .identCompact {
     display: none;
   }
@@ -2126,18 +2139,12 @@
   margin: 0;
 }
 
-/* Form grid — 2-column by default */
+/* Form grid — 2-column at all widths so Ability+Base stay adjacent. The
+   Item, Nature, and Tera cells use heroFormCellSpan2 to span the row. */
 .heroForm {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-}
-
-/* At slot width ≤699px, collapse to single column */
-@container slot (max-width: 699px) {
-  .heroForm {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Single cell in the form grid */

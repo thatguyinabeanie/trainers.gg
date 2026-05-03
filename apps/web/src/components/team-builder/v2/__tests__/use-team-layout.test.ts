@@ -33,11 +33,11 @@ describe("useTeamLayout", () => {
     expect(result.current.mode).toBe("3x2-mid");
   });
 
-  it("forces 3x2-stack on mobile but preserves the persisted value", () => {
+  it("forces 1x6 on mobile but preserves the persisted value", () => {
     window.localStorage.setItem("tg.team-layout", "2x3");
     mockUseIsMobile.mockReturnValue(true);
     const { result } = renderHook(() => useTeamLayout());
-    expect(result.current.mode).toBe("3x2-stack");
+    expect(result.current.mode).toBe("1x6");
     expect(result.current.persisted).toBe("2x3");
     expect(result.current.isMobileLocked).toBe(true);
   });

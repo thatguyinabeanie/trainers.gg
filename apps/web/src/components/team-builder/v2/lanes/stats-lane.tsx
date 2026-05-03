@@ -648,7 +648,7 @@ export function StatsLane({
   if (!pokemon) {
     return (
       <div
-        className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1100px]:w-[400px]"
+        className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1240px]:w-[400px]"
       >
         {/* Column headers — same structure as real but dimmed */}
         <div
@@ -738,7 +738,7 @@ export function StatsLane({
 
   return (
     <div
-      className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1100px]:w-[400px]"
+      className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1240px]:w-[400px]"
     >
       {/* Column headers */}
       <div className={cn(

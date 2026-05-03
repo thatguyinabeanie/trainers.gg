@@ -70,9 +70,11 @@ interface UseTeamLayoutResult {
 
 /**
  * Returns the user's team layout preference and a setter that persists to
- * localStorage. On phone viewports the effective mode is forced to
- * `3x2-stack` regardless of the persisted value, but the persisted value
- * is preserved (so toggling back to desktop restores it).
+ * localStorage. On phone viewports the effective mode is forced to `1x6`
+ * (one slot per row) regardless of the persisted value, but the persisted
+ * value is preserved (so toggling back to desktop restores it). The
+ * per-cell hero layout selects itself via container queries based on the
+ * resulting cell width.
  */
 export function useTeamLayout(): UseTeamLayoutResult {
   const isMobile = useIsMobile();
@@ -82,7 +84,7 @@ export function useTeamLayout(): UseTeamLayoutResult {
     getServerSnapshot
   );
 
-  const mode: TeamLayoutMode = isMobile ? "3x2-stack" : persisted;
+  const mode: TeamLayoutMode = isMobile ? "1x6" : persisted;
 
   function setMode(next: TeamLayoutMode) {
     try {
