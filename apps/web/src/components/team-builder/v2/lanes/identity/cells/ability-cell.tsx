@@ -23,15 +23,14 @@ import { AbilityPicker } from "../../../pickers/ability-picker";
 import { FieldErrors } from "../../../validation/field-error";
 import { DescriptionTooltip } from "../../description-tooltip";
 import { type CellVariant } from "./identity-cell-shared";
-import sLegacy from "../../../builder.module.css";
-import sNew from "../identity-lane.module.css";
+import s from "../identity-lane.module.css";
 
 // =============================================================================
 // AbilityCell — ability form cell, row (compact) or grid (hero) variant
 //
 // Row variant: custom Tooltip → TooltipTrigger → PopoverTrigger nesting
 // (cannot use FormChip because FormChip has no outer Tooltip).
-// Grid variant: plain Popover + .heroFormCell chrome.
+// Grid variant: plain Popover + .midFormCell chrome.
 //
 // Absorbs the former IdentityAbilityRow helper (compact-mode logic) and adds
 // the hero-mode branch.
@@ -83,7 +82,7 @@ export function AbilityCell({
                     <button
                       type="button"
                       className={cn(
-                        sNew.formRow,
+                        s.formRow,
                         errors.length > 0 &&
                           "ring-destructive/40 rounded ring-1"
                       )}
@@ -92,10 +91,10 @@ export function AbilityCell({
                 />
               }
             >
-              <span className={sNew.formLabel}>Abil</span>
+              <span className={s.formLabel}>Abil</span>
               <span
                 className={cn(
-                  sNew.formValue,
+                  s.formValue,
                   !displayAbility && "text-muted-foreground/50 italic"
                 )}
               >
@@ -118,7 +117,7 @@ export function AbilityCell({
     );
   }
 
-  // variant === "grid" — hero layout
+  // variant === "grid" — MidStack layout
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
@@ -126,16 +125,16 @@ export function AbilityCell({
           <button
             type="button"
             className={cn(
-              sLegacy.heroFormCell,
+              s.midFormCell,
               errors.length > 0 && "ring-destructive/40 rounded ring-1"
             )}
           />
         }
       >
-        <span className={sLegacy.heroFormLbl}>ABIL</span>
+        <span className={s.midFormLbl}>ABIL</span>
         <span
           className={cn(
-            sLegacy.heroFormVal,
+            s.midFormVal,
             !displayAbility && "text-muted-foreground/50 italic"
           )}
         >

@@ -9,15 +9,20 @@ import { FormCells } from "./cells/form-cells";
 import { MetaBar } from "./cells/meta-bar";
 import { SpriteSection } from "./cells/sprite-section";
 import { type IdentityLayoutProps } from "./identity-layout-props";
-import s from "../../builder.module.css";
+import s from "./identity-lane.module.css";
 
 // =============================================================================
-// IdentityMidStack — hero layout (slot < 1240px)
+// IdentityMidStack — MidStack layout (slot < 1240px)
 //
-// Renders the existing hero branch: a fixed-width heroPanel (sprite +
-// meta bar) alongside a heroForm (full form grid) as flex siblings inside
-// identHero. FormChips are intentionally omitted in this layout — alt-form
-// switching happens via the species picker dialog.
+// Identity panel structure:
+//   ┌─ MetaBar ──────────────────────────────┐  ← dedicated top bar
+//   ├─ sprite-col ─┬─ form-col ──────────────┤  ← body row
+//   │  sprite      │  ITEM / ABIL / NAT / TERA│
+//   │  species pill│                          │
+//
+// MetaBar sits ABOVE the sprite section (not inside it), giving it its own
+// dedicated bar with the auto 1fr auto grid: Lv pill left, nickname centered,
+// gender + shiny grouped right.
 // =============================================================================
 
 export function IdentityMidStack({
@@ -60,7 +65,7 @@ export function IdentityMidStack({
   );
 
   return (
-    <div className={s.identHero}>
+    <div className={s.midRoot}>
       <SpeciesPickerDialog
         open={speciesOpen}
         onOpenChange={setSpeciesOpen}
@@ -70,69 +75,62 @@ export function IdentityMidStack({
         onPick={handleSpeciesPick}
       />
 
-      <div className={s.heroPanel}>
-        {/* Meta row: gender | shiny | Lv | nickname */}
-        <MetaBar
-          pokemon={pokemon}
-          format={format}
-          nickDraft={nickDraft}
-          setNickDraft={setNickDraft}
-          nicknameRef={nicknameRef}
-          gender={gender}
-          isShiny={isShiny}
-          level={level}
-          showLevel={showLevel}
-          handleNickBlur={handleNickBlur}
-          handleGenderToggle={handleGenderToggle}
-          handleShinyToggle={handleShinyToggle}
-          onUpdate={onUpdate}
-          nicknameErrors={nicknameErrors}
-          genderErrors={genderErrors}
-          variant="row"
-        />
+      {/* MetaBar sits at the top of the identity panel, outside the sprite
+          section. Layout: Lv pill (left) | nickname (center) | gender+shiny (right) */}
+      <MetaBar
+        pokemon={pokemon}
+        format={format}
+        nickDraft={nickDraft}
+        setNickDraft={setNickDraft}
+        nicknameRef={nicknameRef}
+        gender={gender}
+        isShiny={isShiny}
+        level={level}
+        showLevel={showLevel}
+        handleNickBlur={handleNickBlur}
+        handleGenderToggle={handleGenderToggle}
+        handleShinyToggle={handleShinyToggle}
+        onUpdate={onUpdate}
+        nicknameErrors={nicknameErrors}
+        genderErrors={genderErrors}
+        variant="row"
+      />
 
-        {/* Sprite + species pill — centered, click to open species picker */}
-        <SpriteSection
-          pokemon={pokemon}
-          onSpeciesClick={() => setSpeciesOpen(true)}
-          variant="pill-bottom"
-          speciesHasError={speciesErrors.length > 0}
-          types={types}
-        />
+      {/* Body: sprite-col (left) + form-col (right), both vertically centered */}
+      <div className={s.midBody}>
+        <div className={s.midSpriteCol}>
+          <SpriteSection
+            pokemon={pokemon}
+            onSpeciesClick={() => setSpeciesOpen(true)}
+            variant="pill-bottom"
+            speciesHasError={speciesErrors.length > 0}
+            types={types}
+          />
+        </div>
 
-        {/* Type pills omitted in hero mode — types are already conveyed
-            by the sprite's tinted background and the type dots in the
-            rib decorations. Adding pills here clutters the panel. */}
+        <div className={s.midFormCol}>
+          <FormCells
+            pokemon={pokemon}
+            format={format}
+            teamItems={teamItems}
+            isMegaStone={isMegaStone}
+            natUp={natUp}
+            natDown={natDown}
+            itemErrors={itemErrors}
+            abilityErrors={abilityErrors}
+            natureErrors={natureErrors}
+            onUpdate={onUpdate}
+            variant="grid"
+          />
 
-        {/* Form chips deliberately omitted in hero mode — alt-form
-            switching happens via the species picker dialog opened by
-            clicking the sprite or species pill. */}
-      </div>
-
-      {/* Form grid — sibling of heroPanel inside identHero so it gets
-          its share of identHero's flex width (heroPanel is fixed at
-          200px, this fills the rest). */}
-      <div className={s.heroForm}>
-        <FormCells
-          pokemon={pokemon}
-          format={format}
-          teamItems={teamItems}
-          isMegaStone={isMegaStone}
-          natUp={natUp}
-          natDown={natDown}
-          itemErrors={itemErrors}
-          abilityErrors={abilityErrors}
-          natureErrors={natureErrors}
-          onUpdate={onUpdate}
-          variant="grid"
-        />
-        {/* Validation errors — sit below the form, still inside heroForm */}
-        <FieldErrors errors={speciesErrors} />
-        <FieldErrors errors={nicknameErrors} />
-        <FieldErrors errors={genderErrors} />
-        <FieldErrors errors={itemErrors} />
-        <FieldErrors errors={abilityErrors} />
-        <FieldErrors errors={natureErrors} />
+          {/* Validation errors — sit below the form cells, inside form-col */}
+          <FieldErrors errors={speciesErrors} />
+          <FieldErrors errors={nicknameErrors} />
+          <FieldErrors errors={genderErrors} />
+          <FieldErrors errors={itemErrors} />
+          <FieldErrors errors={abilityErrors} />
+          <FieldErrors errors={natureErrors} />
+        </div>
       </div>
     </div>
   );

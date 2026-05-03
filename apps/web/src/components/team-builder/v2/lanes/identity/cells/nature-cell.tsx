@@ -18,7 +18,7 @@ import { NaturePicker } from "../../../pickers/nature-picker";
 import { FieldErrors } from "../../../validation/field-error";
 import { FormChip } from "../../form-chip";
 import { type CellVariant } from "./identity-cell-shared";
-import s from "../../../builder.module.css";
+import s from "../identity-lane.module.css";
 
 // =============================================================================
 // NatureCell — nature form cell, row (compact) or grid (hero) variant
@@ -69,7 +69,7 @@ export function NatureCell({
     );
   }
 
-  // variant === "grid" — hero layout
+  // variant === "grid" — MidStack layout
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
@@ -77,16 +77,16 @@ export function NatureCell({
           <button
             type="button"
             className={cn(
-              s.heroFormCell,
+              s.midFormCell,
               errors.length > 0 && "ring-destructive/40 rounded ring-1"
             )}
           />
         }
       >
-        <span className={s.heroFormLbl}>NAT</span>
+        <span className={s.midFormLbl}>NAT</span>
         <span
           className={cn(
-            s.heroFormVal,
+            s.midFormVal,
             !pokemon.nature && "text-muted-foreground/50 italic"
           )}
         >

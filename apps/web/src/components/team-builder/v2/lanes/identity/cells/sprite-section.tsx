@@ -6,13 +6,13 @@ import { type Tables } from "@trainers/supabase";
 import { cn } from "@/lib/utils";
 
 import { Sprite } from "../../../sprite";
-import s from "../../../builder.module.css";
+import s from "../identity-lane.module.css";
 
 // =============================================================================
 // SpriteSection — sprite button + species pill in compact or hero arrangement
 //
 // variant="pill-top"    → species pill ABOVE sprite (compact-mode shape, ≥1240px)
-// variant="pill-bottom" → species pill BELOW sprite (hero-mode shape, <1240px)
+// variant="pill-bottom" → species pill BELOW sprite (MidStack shape, <1240px)
 // =============================================================================
 
 interface SpriteSectionProps {
@@ -21,7 +21,7 @@ interface SpriteSectionProps {
   onSpeciesClick: () => void;
   /**
    * "pill-top"    — species pill renders ABOVE the sprite (compact-mode shape).
-   * "pill-bottom" — species pill renders BELOW the sprite (hero-mode shape).
+   * "pill-bottom" — species pill renders BELOW the sprite (MidStack shape).
    */
   variant: "pill-top" | "pill-bottom";
   /** Forwarded to the species pill button (so validation ring can be applied). */
@@ -37,7 +37,7 @@ export function SpriteSection({
   speciesHasError = false,
   types,
 }: SpriteSectionProps) {
-  // ── pill-top (compact) ─────────────────────────────────────────────────────
+  // ── pill-top (compact / SingleRow) ────────────────────────────────────────
   if (variant === "pill-top") {
     const pill = (
       <button
@@ -91,15 +91,15 @@ export function SpriteSection({
     );
   }
 
-  // ── pill-bottom (hero) ─────────────────────────────────────────────────────
+  // ── pill-bottom (MidStack) ─────────────────────────────────────────────────
   const spriteBtn = (
     <button
       type="button"
       aria-label={`Change species (${pokemon.species ?? "none"})`}
-      className={s.heroSpriteBtn}
+      className={s.midSpriteBtn}
       onClick={onSpeciesClick}
     >
-      <Sprite species={pokemon.species ?? ""} types={types} size={150} />
+      <Sprite species={pokemon.species ?? ""} types={types} size={130} />
     </button>
   );
 
@@ -108,7 +108,7 @@ export function SpriteSection({
       type="button"
       aria-label={`Change species (${pokemon.species ?? "none"})`}
       className={cn(
-        s.heroSpeciesPill,
+        s.midSpeciesPill,
         speciesHasError && "ring-destructive/40 rounded ring-1"
       )}
       onClick={onSpeciesClick}

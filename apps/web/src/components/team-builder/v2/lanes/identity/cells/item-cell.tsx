@@ -17,7 +17,7 @@ import { ItemPicker } from "../../../pickers/item-picker";
 import { FieldErrors } from "../../../validation/field-error";
 import { FormChip } from "../../form-chip";
 import { type CellVariant } from "./identity-cell-shared";
-import s from "../../../builder.module.css";
+import s from "../identity-lane.module.css";
 
 // =============================================================================
 // ItemCell — held-item form cell, row (compact) or grid (hero) variant
@@ -71,7 +71,7 @@ export function ItemCell({
     );
   }
 
-  // variant === "grid" — hero layout
+  // variant === "grid" — MidStack layout
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
@@ -79,15 +79,14 @@ export function ItemCell({
           <button
             type="button"
             className={cn(
-              s.heroFormCell,
-              s.heroFormCellSpan2,
+              s.midFormCell,
               errors.length > 0 && "ring-destructive/40 rounded ring-1"
             )}
           />
         }
       >
-        <span className={s.heroFormLbl}>ITEM</span>
-        <span className={s.heroFormVal}>
+        <span className={s.midFormLbl}>ITEM</span>
+        <span className={s.midFormVal}>
           <span
             className={cn(
               "min-w-0 truncate",
@@ -96,7 +95,7 @@ export function ItemCell({
           >
             {pokemon.held_item || "—"}
           </span>
-          {isMegaStone && <span className={s.heroMegaChip}>MEGA</span>}
+          {isMegaStone && <span className={s.midMegaChip}>MEGA</span>}
         </span>
       </PopoverTrigger>
       <PopoverContent side="bottom" align="start" className="w-auto p-0">

@@ -15,7 +15,7 @@ import {
 import { type ValidationError } from "../../../../validation-hooks";
 import { NumberPicker } from "../../../pickers/number-picker";
 import { FieldErrors } from "../../../validation/field-error";
-import s from "../../../builder.module.css";
+import s from "../identity-lane.module.css";
 
 // =============================================================================
 // Types
@@ -45,7 +45,8 @@ interface MetaBarProps {
   /**
    * "banner" — the compact-mode inner meta-row (flex items-center gap-2) —
    *   s.idBanner wrapper remains in the parent; FormChips is a sibling.
-   * "row" — the hero-mode wrapper (.heroMetaRow).
+   * "row" — the MidStack meta bar (.midMetaBar):
+   *   auto 1fr auto grid — Lv pill left, nickname centered, gender+shiny right.
    */
   variant: "banner" | "row";
 }
@@ -65,7 +66,8 @@ function genderSymbol(g: GenderValue): string {
 //
 // Extracted from IdentityLaneReal. Two rendering modes via `variant` prop:
 //   banner — compact-mode inner row (no Lv popover)
-//   row    — hero-mode row (with Lv popover, gated by showLevel)
+//   row    — MidStack meta bar (auto 1fr auto grid: Lv left, nick center,
+//             gender+shiny right) with Lv popover, gated by showLevel
 // =============================================================================
 
 export function MetaBar({
@@ -155,17 +157,22 @@ export function MetaBar({
     );
   }
 
-  // variant === "row"
+  // variant === "row" — MidStack meta bar
+  // Layout: auto 1fr auto grid
+  //   col 1: Lv pill (popover trigger), gated by showLevel
+  //   col 2: nickname input (text-centered, fills space)
+  //   col 3: gender + shiny pills grouped with 6px gap
   return (
-    <div className={s.heroMetaRow}>
-      {showLevel && (
+    <div className={s.midMetaBar}>
+      {/* Left: Lv pill */}
+      {showLevel ? (
         <Popover open={levelOpen} onOpenChange={setLevelOpen}>
           <PopoverTrigger
             render={
               <button
                 type="button"
                 title={`Level ${level}`}
-                className={s.heroLv}
+                className={cn(s.midPill, s.midLvPill)}
               />
             }
           >
@@ -186,8 +193,12 @@ export function MetaBar({
             />
           </PopoverContent>
         </Popover>
+      ) : (
+        /* Placeholder span keeps the grid column occupied even when showLevel is false */
+        <span />
       )}
-      {/* Duplicate nickname input — shares nickDraft state with compact mode */}
+
+      {/* Center: nickname input */}
       <input
         type="text"
         value={nickDraft}
@@ -200,40 +211,43 @@ export function MetaBar({
         maxLength={24}
         aria-label="Nickname"
         className={cn(
-          s.heroNicknameInput,
-          nicknameErrors.length > 0 &&
-            "border-b-destructive focus:border-b-destructive"
+          s.midNickname,
+          nicknameErrors.length > 0 && "border-b-destructive focus:border-b-destructive"
         )}
       />
-      <button
-        type="button"
-        onClick={handleGenderToggle}
-        title="Toggle gender"
-        className={cn(
-          s.heroGender,
-          genderErrors.length > 0 && "border-destructive"
-        )}
-      >
-        {genderSymbol(gender)}
-      </button>
-      <button
-        type="button"
-        onClick={handleShinyToggle}
-        aria-pressed={isShiny}
-        title={
-          isShiny
-            ? "Shiny (click to clear)"
-            : "Not shiny (click to set)"
-        }
-        className={cn(
-          s.heroShiny,
-          isShiny
-            ? "border-yellow-400/40 bg-yellow-400/20 text-yellow-600 dark:text-yellow-400"
-            : "text-muted-foreground"
-        )}
-      >
-        ✦
-      </button>
+
+      {/* Right: gender + shiny pills */}
+      <span className={s.midRightPills}>
+        <button
+          type="button"
+          onClick={handleGenderToggle}
+          title="Toggle gender"
+          className={cn(
+            s.midPill,
+            genderErrors.length > 0 && "border-destructive"
+          )}
+        >
+          {genderSymbol(gender)}
+        </button>
+        <button
+          type="button"
+          onClick={handleShinyToggle}
+          aria-pressed={isShiny}
+          title={
+            isShiny
+              ? "Shiny (click to clear)"
+              : "Not shiny (click to set)"
+          }
+          className={cn(
+            s.midPill,
+            isShiny
+              ? "border-yellow-400/40 bg-yellow-400/20 text-yellow-600 dark:text-yellow-400"
+              : "text-muted-foreground"
+          )}
+        >
+          ✦
+        </button>
+      </span>
     </div>
   );
 }

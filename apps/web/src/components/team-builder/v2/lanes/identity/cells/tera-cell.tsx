@@ -16,8 +16,7 @@ import { TypeDot } from "../../../type-dot";
 import { TypePicker } from "../../../pickers/type-picker";
 import { formatSupportsTera } from "../../../format-gating";
 import { type CellVariant } from "./identity-cell-shared";
-import sLegacy from "../../../builder.module.css";
-import sNew from "../identity-lane.module.css";
+import s from "../identity-lane.module.css";
 
 // =============================================================================
 // TeraCell — tera type form cell, row (compact) or grid (hero) variant
@@ -50,24 +49,15 @@ export function TeraCell({
     />
   );
 
+  // teraContent is variant-aware: row variant uses formValue, grid uses midFormVal
+  const valueClass = variant === "row" ? s.formValue : s.midFormVal;
   const teraContent = pokemon.tera_type ? (
     <>
       <TypeDot t={pokemon.tera_type} size={10} />
-      <span
-        className={
-          variant === "row" ? sNew.formValue : sLegacy.heroFormVal
-        }
-      >
-        {pokemon.tera_type}
-      </span>
+      <span className={valueClass}>{pokemon.tera_type}</span>
     </>
   ) : (
-    <span
-      className={cn(
-        variant === "row" ? sNew.formValue : sLegacy.heroFormVal,
-        "text-muted-foreground/50 italic"
-      )}
-    >
+    <span className={cn(valueClass, "text-muted-foreground/50 italic")}>
       —
     </span>
   );
@@ -76,9 +66,9 @@ export function TeraCell({
     return (
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
-          render={<button type="button" className={sNew.formRow} />}
+          render={<button type="button" className={s.formRow} />}
         >
-          <span className={sNew.formLabel}>Tera</span>
+          <span className={s.formLabel}>Tera</span>
           <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
             {teraContent}
           </span>
@@ -90,18 +80,13 @@ export function TeraCell({
     );
   }
 
-  // variant === "grid" — hero layout
+  // variant === "grid" — MidStack layout
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className={cn(sLegacy.heroFormCell, sLegacy.heroFormCellSpan2)}
-          />
-        }
+        render={<button type="button" className={s.midFormCell} />}
       >
-        <span className={sLegacy.heroFormLbl}>TERA</span>
+        <span className={s.midFormLbl}>TERA</span>
         <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
           {teraContent}
         </span>

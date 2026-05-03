@@ -9,6 +9,6 @@
  * Controls which chrome variant the cell renders:
  *   "row"  — compact layout (.formRow / .formLabel / .formValue chrome),
  *            uses FormChip where possible.
- *   "grid" — hero layout (.heroFormCell / .heroFormLbl / .heroFormVal chrome).
+ *   "grid" — MidStack layout (.midFormCell / .midFormLbl / .midFormVal chrome).
  */
 export type CellVariant = "row" | "grid";
