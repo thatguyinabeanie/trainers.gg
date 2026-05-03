@@ -3,13 +3,11 @@
 import { useRef, useState } from "react";
 
 import {
-  NATURE_EFFECTS,
   getAbilityShortDesc,
   getCanonicalBaseSpecies,
   getFormsForSpecies,
   getMegaAbilityForSpecies,
   getMegaStoneForSpecies,
-  getSpeciesTypes,
   speciesHasForms,
   type GameFormat,
 } from "@trainers/pokemon";
@@ -27,7 +25,7 @@ import { type ValidationError } from "../../validation-hooks";
 import { NatureChevrons } from "../nature-chevrons";
 import { Sprite } from "../sprite";
 import { TypeDot } from "../type-dot";
-import { formatSupportsLevel, formatSupportsTera } from "../format-gating";
+import { useIdentityState } from "./identity/use-identity-state";
 import { AbilityPicker } from "../pickers/ability-picker";
 import { ItemPicker } from "../pickers/item-picker";
 import { NaturePicker } from "../pickers/nature-picker";
@@ -75,26 +73,6 @@ function genderSymbol(g: GenderValue): string {
   if (g === "Male") return "♂";
   if (g === "Female") return "♀";
   return "—";
-}
-
-function nextGender(current: GenderValue): GenderValue {
-  if (current === null) return "Male";
-  if (current === "Male") return "Female";
-  return null;
-}
-
-function errorsForField(
-  errors: ValidationError[],
-  field: string
-): ValidationError[] {
-  return errors.filter((e) => e.field === field);
-}
-
-function errorsForFields(
-  errors: ValidationError[],
-  fields: string[]
-): ValidationError[] {
-  return errors.filter((e) => fields.includes(e.field));
 }
 
 // =============================================================================
@@ -355,11 +333,33 @@ function IdentityLaneReal({
   onUpdate,
   fieldErrors,
 }: IdentityLaneRealProps) {
-  const types = getSpeciesTypes(pokemon.species ?? "");
+  const {
+    types,
+    gender,
+    isShiny,
+    level,
+    showLevel,
+    showTera,
+    natUp,
+    natDown,
+    megaAbility,
+    isMegaStone,
+    nicknameErrors,
+    speciesErrors,
+    genderErrors,
+    itemErrors,
+    abilityErrors,
+    natureErrors,
+    nickDraft,
+    setNickDraft,
+    nicknameRef,
+    handleNickBlur,
+    handleGenderToggle,
+    handleShinyToggle,
+    handleSpeciesPick,
+  } = useIdentityState(pokemon, format, fieldErrors, onUpdate);
   const rootRef = useRef<HTMLDivElement>(null);
   const isCompact = useContainerCompact(rootRef);
-  const nicknameRef = useRef<HTMLInputElement>(null);
-  const [nickDraft, setNickDraft] = useState(pokemon.nickname ?? "");
   const [speciesOpen, setSpeciesOpen] = useState(false);
   const [itemOpen, setItemOpen] = useState(false);
   const [abilityOpen, setAbilityOpen] = useState(false);
@@ -367,60 +367,10 @@ function IdentityLaneReal({
   const [teraOpen, setTeraOpen] = useState(false);
   const [levelOpen, setLevelOpen] = useState(false);
 
-  const gender = pokemon.gender as GenderValue;
-  const isShiny = pokemon.is_shiny ?? false;
-  const level = pokemon.level ?? 50;
-  const showLevel = formatSupportsLevel(format);
-  const showTera = formatSupportsTera(format);
-
-  // Nature effect labels for the mini suffix
-  const natureEffect = pokemon.nature
-    ? NATURE_EFFECTS[pokemon.nature]
-    : undefined;
-  const natUp = natureEffect?.boost;
-  const natDown = natureEffect?.reduce;
-
-  // Error partitions
-  const nicknameErrors = errorsForField(fieldErrors, "nickname");
-  const speciesErrors = errorsForField(fieldErrors, "species");
-  const genderErrors = errorsForField(fieldErrors, "gender");
-  const itemErrors = errorsForFields(fieldErrors, ["item", "heldItem"]);
-  const abilityErrors = errorsForField(fieldErrors, "ability");
-  const natureErrors = errorsForField(fieldErrors, "nature");
-
-  function handleNickBlur() {
-    const trimmed = nickDraft.trim();
-    // Treat "empty" OR "matches species" as "no nickname" so the displayed
-    // name falls back to the species without storing a redundant override.
-    const next = trimmed === "" || trimmed === pokemon.species ? null : trimmed;
-    if (next !== pokemon.nickname) {
-      onUpdate({ nickname: next });
-      // Reflect the canonical state — if the user typed the species name, snap
-      // the field back to empty so future edits start clean.
-      if (next === null && nickDraft !== "") {
-        setNickDraft("");
-      }
-    }
-  }
-
-  function handleGenderToggle() {
-    onUpdate({ gender: nextGender(gender) });
-  }
-
-  function handleShinyToggle() {
-    onUpdate({ is_shiny: !isShiny });
-  }
-
   const currentTeam = (teamSiblings ?? []).filter(
     (p): p is { species: string } =>
       typeof p.species === "string" && p.species.length > 0
   );
-
-  // Used by hero mode: determines mega ability display and base-ability cell
-  const megaAbility = getMegaAbilityForSpecies(pokemon.species ?? "");
-  // True when the held item is the mega stone that matches the current species
-  const isMegaStone =
-    getMegaStoneForSpecies(pokemon.species ?? "") === pokemon.held_item;
 
   // Shared species picker — rendered once, opened from both compact and hero
   const speciesPicker = (
@@ -430,36 +380,7 @@ function IdentityLaneReal({
       value={pokemon.species ?? null}
       format={format}
       currentTeam={currentTeam}
-      onPick={(species) => {
-        if (species === pokemon.species) return;
-        setNickDraft("");
-        onUpdate({
-          species,
-          nickname: null,
-          held_item: null,
-          ability: "",
-          nature: "Serious",
-          tera_type: null,
-          gender: null,
-          is_shiny: false,
-          move1: "",
-          move2: null,
-          move3: null,
-          move4: null,
-          ev_hp: 0,
-          ev_attack: 0,
-          ev_defense: 0,
-          ev_special_attack: 0,
-          ev_special_defense: 0,
-          ev_speed: 0,
-          iv_hp: 31,
-          iv_attack: 31,
-          iv_defense: 31,
-          iv_special_attack: 31,
-          iv_special_defense: 31,
-          iv_speed: 31,
-        });
-      }}
+      onPick={handleSpeciesPick}
     />
   );
 
