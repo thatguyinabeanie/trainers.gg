@@ -109,9 +109,6 @@ function IdentityAbilityRow({
   const displayDesc = displayAbility
     ? getAbilityShortDesc(displayAbility)
     : null;
-  const baseDesc = pokemon.ability
-    ? getAbilityShortDesc(pokemon.ability)
-    : null;
   return (
     <div className="flex flex-col">
       <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
@@ -147,26 +144,6 @@ function IdentityAbilityRow({
             </span>
           </TooltipTrigger>
         </DescriptionTooltip>
-        {megaAbility && (
-          <DescriptionTooltip
-            title={pokemon.ability}
-            description={baseDesc}
-            showContent={showTooltip}
-          >
-            <TooltipTrigger
-              render={
-                <button
-                  type="button"
-                  aria-label={`Change base ability (${pokemon.ability || "none"})`}
-                  onClick={() => setAbilityOpen(true)}
-                  className="text-muted-foreground/70 hover:bg-muted hover:text-foreground self-start rounded px-1 pt-0.5 font-mono text-[9px]"
-                />
-              }
-            >
-              base: {pokemon.ability || "—"}
-            </TooltipTrigger>
-          </DescriptionTooltip>
-        )}
         <PopoverContent side="bottom" align="start" className="w-auto p-0">
           <AbilityPicker
             value={pokemon.ability}
@@ -709,10 +686,8 @@ function IdentityLaneReal({
               </PopoverContent>
             </Popover>
 
-            {/* Ability — single cell with main value + optional `base:` sub-
-                line, mirroring the compact-mode pattern. The sub-line shows
-                the stored base ability when this is a Mega form (where the
-                effective in-battle ability is forced to megaAbility). */}
+            {/* Ability — shows the effective ability (mega override if any,
+                otherwise the stored ability). Click to change via picker. */}
             <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
               <PopoverTrigger
                 render={
@@ -720,7 +695,6 @@ function IdentityLaneReal({
                     type="button"
                     className={cn(
                       s.heroFormCell,
-                      s.heroFormCellSpan2,
                       abilityErrors.length > 0 &&
                         "ring-destructive/40 rounded ring-1"
                     )}
@@ -728,21 +702,14 @@ function IdentityLaneReal({
                 }
               >
                 <span className={s.heroFormLbl}>ABIL</span>
-                <span className={s.heroFormValStack}>
-                  <span
-                    className={cn(
-                      s.heroFormVal,
-                      !(megaAbility ?? pokemon.ability) &&
-                        "text-muted-foreground/50 italic"
-                    )}
-                  >
-                    {(megaAbility ?? pokemon.ability) || "—"}
-                  </span>
-                  {megaAbility !== null && (
-                    <span className={s.heroFormSubline}>
-                      base: {pokemon.ability || "—"}
-                    </span>
+                <span
+                  className={cn(
+                    s.heroFormVal,
+                    !(megaAbility ?? pokemon.ability) &&
+                      "text-muted-foreground/50 italic"
                   )}
+                >
+                  {(megaAbility ?? pokemon.ability) || "—"}
                 </span>
               </PopoverTrigger>
               <PopoverContent
