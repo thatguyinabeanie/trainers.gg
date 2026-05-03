@@ -702,6 +702,25 @@ function IdentityLaneReal({
         <div className={s.heroPanel}>
           {/* Meta row: gender | shiny | Lv | nickname */}
           <div className={s.heroMetaRow}>
+            <span className={s.heroLv}>Lv {pokemon.level ?? 50}</span>
+            {/* Duplicate nickname input — shares nickDraft state with compact mode */}
+            <input
+              type="text"
+              value={nickDraft}
+              onChange={(e) => setNickDraft(e.target.value)}
+              onBlur={handleNickBlur}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
+              placeholder="Nickname"
+              maxLength={24}
+              aria-label="Nickname"
+              className={cn(
+                s.heroNicknameInput,
+                nicknameErrors.length > 0 &&
+                  "border-b-destructive focus:border-b-destructive"
+              )}
+            />
             <button
               type="button"
               onClick={handleGenderToggle}
@@ -731,25 +750,6 @@ function IdentityLaneReal({
             >
               ✦
             </button>
-            <span className={s.heroLv}>Lv {pokemon.level ?? 50}</span>
-            {/* Duplicate nickname input — shares nickDraft state with compact mode */}
-            <input
-              type="text"
-              value={nickDraft}
-              onChange={(e) => setNickDraft(e.target.value)}
-              onBlur={handleNickBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-              }}
-              placeholder="Nickname"
-              maxLength={24}
-              aria-label="Nickname"
-              className={cn(
-                s.heroNicknameInput,
-                nicknameErrors.length > 0 &&
-                  "border-b-destructive focus:border-b-destructive"
-              )}
-            />
           </div>
 
           {/* Sprite — centered, click to open species picker */}

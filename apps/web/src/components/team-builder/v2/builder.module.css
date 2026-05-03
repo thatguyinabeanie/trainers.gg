@@ -92,7 +92,7 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding: 12px;
-  max-width: 1600px;
+  max-width: 1800px;
   margin-inline: auto;
   /* Vertical auto-margin centers the rows when they don't fill the editor
      region. Collapses to 0 once content overflows so scrolling still
@@ -801,12 +801,14 @@
   display: contents;
 }
 
-/* Mid-stack — identity hero panel left, stats above moves on the right */
+/* Mid-stack — identity hero panel left, stats above moves on the right.
+   The right column gets 1.5x the identity panel's flex grow so moves
+   have enough horizontal room for full move names. */
 @container slot (max-width: 1239px) {
   .rowRight {
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
+    flex: 1.5 1 0;
     min-width: 0;
   }
 }
@@ -2014,6 +2016,11 @@
     display: flex;
     flex-direction: row;
     align-items: stretch;
+    /* 1 : 1.5 ratio between identity (this) and the rowRight column
+       (stats + moves) — gives moves enough room for full move names
+       while keeping the identity panel comfortably wide. */
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 
@@ -2149,7 +2156,7 @@
 .heroSpeciesPill {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 4px;
   align-self: center;
   padding: 4px 10px;
@@ -2159,8 +2166,11 @@
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
+  /* Fixed width regardless of species name length so the panel doesn't
+     reflow when switching between short ("Wo-Chien") and long
+     ("Charizard-Mega-Y") species. Inner span truncates with ellipsis. */
+  width: 180px;
   min-width: 0;
-  max-width: 200px;
   transition: border-color 0.1s;
 }
 
