@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -606,15 +606,38 @@ export function SpeciesPicker({
   // Virtualizer
   // ---------------------------------------------------------------------------
 
+  // The smart-search banner + sticky header sit ABOVE the virtualized rows
+  // inside the same scroll container. Measure that offset so we can pass it
+  // to the virtualizer as `scrollMargin` — without it, virtualRow.start is
+  // measured from scrollRef's top while the rows actually live further down,
+  // and the virtualizer unmounts top rows prematurely as you scroll.
+  const virtualParentRef = useRef<HTMLDivElement>(null);
+  const [scrollMargin, setScrollMargin] = useState(0);
+
+  const showSmartSearch = query.trim().length > 0;
+
+  useEffect(() => {
+    const measure = () => {
+      if (!virtualParentRef.current) return;
+      setScrollMargin(virtualParentRef.current.offsetTop);
+    };
+    measure();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    if (virtualParentRef.current) observer.observe(virtualParentRef.current);
+    if (scrollRef.current) observer.observe(scrollRef.current);
+    return () => observer.disconnect();
+  }, [showSmartSearch]);
+
   const rowVirtualizer = useVirtualizer({
     count: matched.length,
     getScrollElement: () => scrollRef.current,
     // Row height: 64px sprite (size-16) + py-2 top + py-2 bottom ≈ 80px
     estimateSize: () => 80,
     overscan: 5,
+    scrollMargin,
   });
-
-  const showSmartSearch = query.trim().length > 0;
 
   function clearAllFilters() {
     setFilters(DEFAULT_SPECIES_FILTERS);
@@ -704,31 +727,30 @@ export function SpeciesPicker({
             the table below as full rich rows — they are not duplicated
             in the smart-search panel. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          {/* Smart-search banner sits ABOVE the scroll container so it
-              doesn't shift the virtualizer's row offsets. Keeping it inside
-              the scroll element causes @tanstack/react-virtual to unmount
-              top rows prematurely as you scroll, since virtualRow.start is
-              measured from scrollRef but actual row offsets include the
-              banner's height. */}
-          {showSmartSearch && (
-            <div
-              className="border-border border-b"
-              data-testid="smart-search-container"
-            >
-              <SpeciesSmartSearch
-                query={query}
-                index={speciesIndex}
-                format={format}
-                onFilter={handleSmartFilter}
-              />
-            </div>
-          )}
-
           <div
             ref={scrollRef}
-            className="flex-1 overflow-x-hidden overflow-y-auto"
+            className="relative flex-1 overflow-x-hidden overflow-y-auto"
             data-testid="species-rows"
           >
+            {/* Smart-search banner scrolls UP with the content as you move
+                through results. The virtualizer's `scrollMargin` accounts
+                for the banner + sticky header height (measured via
+                virtualParentRef.offsetTop), so top species rows stay
+                mounted even when the banner is partly visible. */}
+            {showSmartSearch && (
+              <div
+                className="border-border border-b"
+                data-testid="smart-search-container"
+              >
+                <SpeciesSmartSearch
+                  query={query}
+                  index={speciesIndex}
+                  format={format}
+                  onFilter={handleSmartFilter}
+                />
+              </div>
+            )}
+
             <div>
               {/* Sticky sortable header */}
               <div
@@ -818,8 +840,11 @@ export function SpeciesPicker({
                 </div>
               ) : (
                 <div
+                  ref={virtualParentRef}
                   className="relative w-full"
-                  style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+                  style={{
+                    height: `${rowVirtualizer.getTotalSize() - scrollMargin}px`,
+                  }}
                 >
                   {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                     const entry = matched[virtualRow.index];
@@ -828,7 +853,7 @@ export function SpeciesPicker({
                       <div
                         key={virtualRow.key}
                         className="absolute right-0 left-0"
-                        style={{ top: virtualRow.start }}
+                        style={{ top: virtualRow.start - scrollMargin }}
                       >
                         <SpeciesRow
                           entry={entry}
