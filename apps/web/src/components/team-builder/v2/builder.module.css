@@ -2036,14 +2036,23 @@
   }
 }
 
-/* When the user picks 3×2-stack mode, each cell renders the full-stack
-   shape but the cells are wide enough (~620px+) to put the form fields
-   to the RIGHT of the sprite section instead of below it. */
+/* When the user picks 2×3 or 3×2-stack mode, identity flips back to a
+   horizontal row inside the cell — sprite section on the left, form
+   fields on the right. Cells in these modes are wide enough
+   (~600–1100px) to fit sprite + form side-by-side without truncation. */
+[data-layout="2x3"] .identHero,
 [data-layout="3x2-stack"] .identHero {
   flex-direction: row;
   align-items: stretch;
 }
 
+/* 2×3 cells are mid-stack-sized; identity needs an explicit width so
+   sprite + form fit while leaving stats+moves enough room on the right. */
+[data-layout="2x3"] .identHero {
+  flex: 0 0 420px;
+}
+
+[data-layout="2x3"] .heroPanel,
 [data-layout="3x2-stack"] .heroPanel {
   flex: 0 0 220px;
   width: auto;
@@ -2051,6 +2060,7 @@
   border-right: 1px dashed var(--border);
 }
 
+[data-layout="2x3"] .heroForm,
 [data-layout="3x2-stack"] .heroForm {
   flex: 1 1 auto;
   width: auto;
