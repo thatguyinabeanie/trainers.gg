@@ -918,9 +918,14 @@ function computeLegalMovesForChampions(
 
   // Use AG as a permissive base validator — empty banlist, purely
   // learnset-based checkCanLearn with no format-specific restrictions.
+  // "Min Source Gen = 9" ensures only moves obtainable within Scarlet/Violet
+  // are legal — transfer-only moves from earlier gens are rejected.
   const format = SimDex.formats.get("[Gen 9] Anything Goes");
   if (!format?.exists) return undefined;
-  const validator = new TeamValidator(format, SimDex);
+  const validator = new TeamValidator(
+    Object.assign({}, format, { customRules: ["Min Source Gen = 9"] }),
+    SimDex
+  );
 
   const legal = new Set<string>();
 
