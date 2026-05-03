@@ -112,6 +112,17 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* In 1×6 mode the slot fills the grid column, which without a cap
+   stretches the row card across the full content area. The row's
+   internal columns (rib + sprite + form + stats + moves) only need
+   ~1340px total — beyond that everything just gets sparse. Cap the
+   slot itself so the row stops at column-total width and centers
+   inside the grid column. */
+.builderRows[data-layout="1x6"] .slotHost {
+  max-width: 1340px;
+  margin-inline: auto;
+}
+
 /* When the calc column is open, the row list expands by the calc column width so
    identity + stats + moves keep their X width and calc is added as +Y. */
 .builderRows[data-calc-open="true"] {

@@ -173,8 +173,11 @@
 }
 
 /* ── Body (below MetaBar) ───────────────────────────────────
-   Sprite section on top, form fields below — both centered horizontally
-   inside the identity panel. No divider between them. */
+   Sprite section on top, form fields below — both centered as a unit
+   inside the identity panel. The whole stack is constrained to a
+   reasonable max-width and centered with margin-inline auto so wide
+   panels don't leave the form left-aligned with a sea of empty space
+   on the right. */
 
 .midBody {
   flex: 1 1 auto;
@@ -187,18 +190,23 @@
   padding: 12px 8px;
 }
 
-/* Sprite section — sprite + species pill stacked, centered */
+/* Sprite section — sprite + species pill stacked, centered.
+   Form column matches this width so both halves of the stack share the
+   same horizontal extents inside the panel (sprite ↔ form widths align). */
 .midSpriteCol {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   width: 100%;
+  max-width: 240px;
 }
 
-/* Form fields — stacked vertically below sprite, full panel width */
+/* Form fields — stacked vertically below sprite, same max-width so the
+   form rows visually align with the sprite/pill above. */
 .midFormCol {
   width: 100%;
+  max-width: 240px;
   min-width: 0;
   display: flex;
   flex-direction: column;
