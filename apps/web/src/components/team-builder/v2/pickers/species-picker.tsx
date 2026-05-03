@@ -704,25 +704,31 @@ export function SpeciesPicker({
             the table below as full rich rows — they are not duplicated
             in the smart-search panel. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          {/* Smart-search banner sits ABOVE the scroll container so it
+              doesn't shift the virtualizer's row offsets. Keeping it inside
+              the scroll element causes @tanstack/react-virtual to unmount
+              top rows prematurely as you scroll, since virtualRow.start is
+              measured from scrollRef but actual row offsets include the
+              banner's height. */}
+          {showSmartSearch && (
+            <div
+              className="border-border border-b"
+              data-testid="smart-search-container"
+            >
+              <SpeciesSmartSearch
+                query={query}
+                index={speciesIndex}
+                format={format}
+                onFilter={handleSmartFilter}
+              />
+            </div>
+          )}
+
           <div
             ref={scrollRef}
             className="flex-1 overflow-x-hidden overflow-y-auto"
             data-testid="species-rows"
           >
-            {showSmartSearch && (
-              <div
-                className="border-border border-b"
-                data-testid="smart-search-container"
-              >
-                <SpeciesSmartSearch
-                  query={query}
-                  index={speciesIndex}
-                  format={format}
-                  onFilter={handleSmartFilter}
-                />
-              </div>
-            )}
-
             <div>
               {/* Sticky sortable header */}
               <div
