@@ -124,8 +124,10 @@ function degradeForViewport(
   if (cols === 2 && viewportWidth < MIN_VIEWPORT_FOR_2_COLS) cols = 1;
 
   if (cols === wantedCols) return persisted;
-  // Preserve vertical orientation when stepping down to 2 columns so users
-  // who prefer the stacked layout don't lose it on moderately wide viewports.
+  // 3x2-vertical uses CSS auto-fit for responsive column count (3→2),
+  // only degrade to 1x6 at very narrow viewports (< MIN_VIEWPORT_FOR_2_COLS).
+  if (persisted === "3x2-vertical" && viewportWidth >= MIN_VIEWPORT_FOR_2_COLS)
+    return "3x2-vertical";
   if (cols === 2) return "2x3";
   return "1x6";
 }

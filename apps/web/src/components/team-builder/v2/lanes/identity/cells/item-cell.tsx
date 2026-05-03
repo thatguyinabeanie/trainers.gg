@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 
-import { type GameFormat } from "@trainers/pokemon";
+import {
+  type GameFormat,
+  getCanonicalBaseSpecies,
+  getFormsForSpecies,
+  getMegaStoneForSpecies,
+} from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -44,15 +49,45 @@ export function ItemCell({
 }: ItemCellProps) {
   const [open, setOpen] = useState(false);
 
+  // Toggle mega form when the MEGA chip is clicked.
+  const handleMegaToggle = () => {
+    if (!pokemon.species) return;
+    const base = getCanonicalBaseSpecies(pokemon.species);
+    const forms = getFormsForSpecies(pokemon.species);
+    // If currently mega → go back to base. If base → find the mega form
+    // whose required stone matches the held item.
+    if (pokemon.species !== base) {
+      onUpdate({ species: base });
+    } else {
+      const megaForm = forms.find((f) => {
+        const stone = getMegaStoneForSpecies(f);
+        return stone !== null && stone === pokemon.held_item;
+      });
+      if (megaForm) onUpdate({ species: megaForm });
+    }
+  };
+
+  const megaChip = isMegaStone ? (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        handleMegaToggle();
+      }}
+      className={s.midMegaChip}
+      title="Toggle mega form"
+    >
+      MEGA
+    </button>
+  ) : null;
+
   if (variant === "row") {
     return (
       <div className="flex flex-col">
         <FormChip
           label="Item"
           value={pokemon.held_item ?? ""}
-          trailing={
-            isMegaStone ? <span className={s.midMegaChip}>MEGA</span> : null
-          }
+          trailing={megaChip}
           triggerClassName={
             errors.length > 0
               ? "ring-1 ring-destructive/40 rounded"
@@ -98,7 +133,7 @@ export function ItemCell({
           >
             {pokemon.held_item || "—"}
           </span>
-          {isMegaStone && <span className={s.midMegaChip}>MEGA</span>}
+          {megaChip}
         </span>
       </PopoverTrigger>
       <PopoverContent side="bottom" align="start" className="w-auto p-0">

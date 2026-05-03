@@ -2,13 +2,10 @@
 
 import { useState } from "react";
 
-import { speciesHasForms } from "@trainers/pokemon";
-
 import { FieldErrors } from "../../validation/field-error";
 import { SpeciesPickerDialog } from "../../pickers/species-picker-dialog";
 import { useIdentityState } from "./use-identity-state";
 import { FormCells } from "./cells/form-cells";
-import { FormChips } from "./cells/form-chips";
 import { MetaBar } from "./cells/meta-bar";
 import { SpriteSection } from "./cells/sprite-section";
 import { type IdentityLayoutProps } from "./identity-layout-props";
@@ -106,18 +103,6 @@ export function IdentitySingleRow({
               variant="banner"
             />
 
-            {/* Row 2: form chips. Disabled until the matching mega stone is held;
-                click → swap species only (no auto-item-attach). */}
-            {pokemon.species && speciesHasForms(pokemon.species) && (
-              <FormChips
-                currentSpecies={pokemon.species}
-                currentItem={pokemon.held_item}
-                onPick={(nextSpecies) => {
-                  if (nextSpecies === pokemon.species) return;
-                  onUpdate({ species: nextSpecies });
-                }}
-              />
-            )}
           </div>
 
           {/* LOADOUT FORM ROWS */}

@@ -107,7 +107,8 @@
 }
 
 .builderRows[data-layout="3x2-vertical"] {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(500px, 600px));
+  justify-content: center;
 }
 
 /* In 1×6 mode the slot fills the grid column, which without a cap
@@ -844,6 +845,22 @@
   min-width: 0;
 }
 
+/* In 3x2-vertical, pivot the rib to a horizontal top bar:
+   number on the left, × on the right, same line. */
+[data-layout="3x2-vertical"] .rowActive {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+[data-layout="3x2-vertical"] .rib {
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  padding: 4px 10px;
+  border-right: none;
+  border-bottom: 1px dashed var(--border);
+}
+
 /* Full-stack — rib pivots horizontal at the top, everything else stacks */
 @container slot (max-width: 699px) {
   .rowActive {
@@ -868,6 +885,9 @@
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  width: 40px;
+  padding: 8px 0;
+  border-right-width: 1px;
 }
 
 /* Decorations shown in the rib middle (type pills only — level picker
@@ -881,6 +901,13 @@
   .ribDecorations {
     display: none;
   }
+}
+
+/* Override: show type icons in horizontal rib for 3x2-vertical */
+[data-layout="3x2-vertical"] .ribDecorations {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
 }
 
 /* Drag handle — the slot number label on the RIB.

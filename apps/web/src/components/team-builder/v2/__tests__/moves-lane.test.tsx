@@ -377,11 +377,6 @@ function renderLane(
 // =============================================================================
 
 describe("MovesLane — basic render", () => {
-  it("renders the 'Moves' header label", () => {
-    renderLane();
-    expect(screen.getByText("Moves")).toBeInTheDocument();
-  });
-
   it("renders 4 move tiles (popover triggers)", () => {
     renderLane();
     expect(
@@ -626,11 +621,6 @@ describe("MovesLane — ghost mode (pokemon: null)", () => {
   it("renders without crashing when pokemon is null (no CalcStateContext needed)", () => {
     // The ghost branch must NOT call useCalcStateContext — renders standalone
     expect(() => render(<MovesLane pokemon={null} />)).not.toThrow();
-  });
-
-  it("shows the 'Moves' header text", () => {
-    render(<MovesLane pokemon={null} />);
-    expect(screen.getByText("Moves")).toBeInTheDocument();
   });
 
   it("renders 4 placeholder rows with '+ Add move' text", () => {

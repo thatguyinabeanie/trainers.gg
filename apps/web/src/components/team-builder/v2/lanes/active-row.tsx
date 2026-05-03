@@ -136,7 +136,7 @@ export function ActiveRow({
       <div
         className={cn(
           s.rib,
-          "border-border/60 bg-muted/20 flex w-10 shrink-0 flex-col items-center justify-between border-r border-dashed py-2"
+          "border-border/60 bg-muted/20 flex shrink-0 border-dashed"
         )}
       >
         <span

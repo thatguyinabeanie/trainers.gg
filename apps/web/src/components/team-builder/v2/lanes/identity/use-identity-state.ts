@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 
 import {
   NATURE_EFFECTS,
+  getFormsForSpecies,
   getMegaAbilityForSpecies,
   getMegaStoneForSpecies,
   getSpeciesTypes,
@@ -63,9 +64,14 @@ export function useIdentityState(
 
   // Mega flags
   const megaAbility = getMegaAbilityForSpecies(pokemon.species ?? "");
-  // True when the held item is the mega stone that matches the current species
-  const isMegaStone =
-    getMegaStoneForSpecies(pokemon.species ?? "") === pokemon.held_item;
+  // True when the held item is a mega stone for ANY form of this species
+  const isMegaStone = (() => {
+    if (!pokemon.held_item || !pokemon.species) return false;
+    const forms = getFormsForSpecies(pokemon.species);
+    return forms.some(
+      (f) => getMegaStoneForSpecies(f) === pokemon.held_item
+    );
+  })();
 
   // ── Error partitions ───────────────────────────────────────────────────────
 

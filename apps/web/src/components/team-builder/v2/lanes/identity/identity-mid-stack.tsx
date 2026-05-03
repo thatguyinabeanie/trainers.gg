@@ -102,7 +102,7 @@ export function IdentityMidStack({
           <SpriteSection
             pokemon={pokemon}
             onSpeciesClick={() => setSpeciesOpen(true)}
-            variant="pill-bottom"
+            variant="pill-top"
             speciesHasError={speciesErrors.length > 0}
             types={types}
           />

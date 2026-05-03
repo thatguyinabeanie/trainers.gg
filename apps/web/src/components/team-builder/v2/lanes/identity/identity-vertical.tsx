@@ -76,37 +76,37 @@ export function IdentityVertical({
         onPick={handleSpeciesPick}
       />
 
-      <MetaBar
-        pokemon={pokemon}
-        format={format}
-        nickDraft={nickDraft}
-        setNickDraft={setNickDraft}
-        nicknameRef={nicknameRef}
-        gender={gender}
-        isShiny={isShiny}
-        level={level}
-        showLevel={showLevel}
-        handleNickBlur={handleNickBlur}
-        handleGenderToggle={handleGenderToggle}
-        handleShinyToggle={handleShinyToggle}
-        onUpdate={onUpdate}
-        nicknameErrors={nicknameErrors}
-        genderErrors={genderErrors}
-        variant="row"
-      />
-
       <div className={s.vertSpriteFormRow}>
         <div className={s.vertSpriteCol}>
           <SpriteSection
             pokemon={pokemon}
             onSpeciesClick={() => setSpeciesOpen(true)}
-            variant="pill-bottom"
+            variant="pill-top"
             speciesHasError={speciesErrors.length > 0}
             types={types}
           />
         </div>
 
         <div className={s.vertFormCol}>
+          <MetaBar
+            pokemon={pokemon}
+            format={format}
+            nickDraft={nickDraft}
+            setNickDraft={setNickDraft}
+            nicknameRef={nicknameRef}
+            gender={gender}
+            isShiny={isShiny}
+            level={level}
+            showLevel={showLevel}
+            handleNickBlur={handleNickBlur}
+            handleGenderToggle={handleGenderToggle}
+            handleShinyToggle={handleShinyToggle}
+            onUpdate={onUpdate}
+            nicknameErrors={nicknameErrors}
+            genderErrors={genderErrors}
+            variant="row"
+          />
+
           <FormCells
             pokemon={pokemon}
             format={format}

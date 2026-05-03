@@ -836,7 +836,7 @@ describe("IdentityLane — ghost mode (pokemon: null)", () => {
 // FormChips (form switching)
 // =============================================================================
 
-describe("IdentityLane — form chips", () => {
+describe("IdentityLane — MEGA chip on item cell", () => {
   beforeEach(() => {
     (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(false);
     (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([]);
@@ -846,7 +846,6 @@ describe("IdentityLane — form chips", () => {
     (TrainersPokemon.getMegaStoneForSpecies as jest.Mock).mockReturnValue(null);
   });
 
-  // Helper — install Charizard X/Y mocks the cluster of tests below all use.
   function setupCharizardForms() {
     (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(true);
     (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([
@@ -867,90 +866,36 @@ describe("IdentityLane — form chips", () => {
     );
   }
 
-  it("renders no form chips for a species without alternate forms", () => {
+  it("shows no MEGA chip when held item is not a mega stone", () => {
     render(
       <IdentityLane
-        pokemon={{ ...makePokemon(), species: "Pikachu" }}
+        pokemon={{ ...makePokemon(), species: "Pikachu", held_item: "Leftovers" }}
         format={VGC_FORMAT}
         teamItems={[]}
         onUpdate={jest.fn()}
       />
     );
-    expect(screen.queryByText("Mega X")).toBeNull();
+    expect(screen.queryByText("MEGA")).toBeNull();
   });
 
-  it("renders one chip per alternate form (no 'Regular' chip)", () => {
-    setupCharizardForms();
-    render(
-      <IdentityLane
-        pokemon={{ ...makePokemon(), species: "Charizard" }}
-        format={VGC_FORMAT}
-        teamItems={[]}
-        onUpdate={jest.fn()}
-      />
-    );
-    expect(screen.queryByRole("button", { name: "Regular" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Mega X" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Mega Y" })).toBeInTheDocument();
-  });
-
-  it("disables every mega chip when no mega stone is held", () => {
-    setupCharizardForms();
-    render(
-      <IdentityLane
-        pokemon={{ ...makePokemon(), species: "Charizard", held_item: null }}
-        format={VGC_FORMAT}
-        teamItems={[]}
-        onUpdate={jest.fn()}
-      />
-    );
-    const x = screen.getByRole("button", { name: "Mega X" });
-    const y = screen.getByRole("button", { name: "Mega Y" });
-    expect(x).toBeDisabled();
-    expect(y).toBeDisabled();
-    expect(x).toHaveAttribute("title", "Hold Charizardite X to use this form");
-    expect(y).toHaveAttribute("title", "Hold Charizardite Y to use this form");
-  });
-
-  it("disables Mega Y when Charizardite X is held; Mega X is enabled", () => {
+  it("shows MEGA chip when held item is a mega stone", () => {
     setupCharizardForms();
     render(
       <IdentityLane
         pokemon={{
           ...makePokemon(),
           species: "Charizard",
-          held_item: "Charizardite X",
+          held_item: "Charizardite Y",
         }}
         format={VGC_FORMAT}
         teamItems={[]}
         onUpdate={jest.fn()}
       />
     );
-    expect(screen.getByRole("button", { name: "Mega X" })).not.toBeDisabled();
-    expect(screen.getByRole("button", { name: "Mega Y" })).toBeDisabled();
+    expect(screen.getByText("MEGA")).toBeInTheDocument();
   });
 
-  it("dimmed mega chip click is a no-op (does not call onUpdate)", async () => {
-    setupCharizardForms();
-    const onUpdate = jest.fn();
-    render(
-      <IdentityLane
-        pokemon={{
-          ...makePokemon(),
-          species: "Charizard",
-          held_item: "Choice Band",
-        }}
-        format={VGC_FORMAT}
-        teamItems={[]}
-        onUpdate={onUpdate}
-      />
-    );
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Mega Y" }));
-    expect(onUpdate).not.toHaveBeenCalled();
-  });
-
-  it("clicking an enabled inactive mega chip switches species (no item change)", async () => {
+  it("clicking MEGA chip on base form switches to matching mega form", async () => {
     setupCharizardForms();
     const onUpdate = jest.fn();
     render(
@@ -966,12 +911,15 @@ describe("IdentityLane — form chips", () => {
       />
     );
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Mega Y" }));
+    await user.click(screen.getByText("MEGA"));
     expect(onUpdate).toHaveBeenCalledWith({ species: "Charizard-Mega-Y" });
   });
 
-  it("clicking the active mega chip toggles back to base (item kept)", async () => {
+  it("clicking MEGA chip on mega form toggles back to base", async () => {
     setupCharizardForms();
+    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockReturnValue(
+      "Charizard"
+    );
     const onUpdate = jest.fn();
     render(
       <IdentityLane
@@ -986,64 +934,7 @@ describe("IdentityLane — form chips", () => {
       />
     );
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Mega Y" }));
+    await user.click(screen.getByText("MEGA"));
     expect(onUpdate).toHaveBeenCalledWith({ species: "Charizard" });
-  });
-
-  it("renders 'Mega' chip for Floette-Eternal even though base differs from form prefix", () => {
-    // Regression: Floette-Eternal → Floette-Mega doesn't share a "<base>-"
-    // prefix with the canonical base "Floette-Eternal" (15 chars vs 12).
-    // Earlier impl produced an empty label and the chip appeared invisible.
-    (TrainersPokemon.speciesHasForms as jest.Mock).mockReturnValue(true);
-    (TrainersPokemon.getFormsForSpecies as jest.Mock).mockReturnValue([
-      "Floette-Eternal",
-      "Floette-Mega",
-    ]);
-    (TrainersPokemon.getCanonicalBaseSpecies as jest.Mock).mockReturnValue(
-      "Floette-Eternal"
-    );
-    (TrainersPokemon.getMegaStoneForSpecies as jest.Mock).mockImplementation(
-      (s: string) => (s === "Floette-Mega" ? "Floettite" : null)
-    );
-
-    render(
-      <IdentityLane
-        pokemon={{
-          ...makePokemon(),
-          species: "Floette-Eternal",
-          held_item: "Floettite",
-        }}
-        format={VGC_FORMAT}
-        teamItems={[]}
-        onUpdate={jest.fn()}
-      />
-    );
-    expect(screen.getByRole("button", { name: "Mega" })).toBeInTheDocument();
-  });
-
-  it("clicking a different enabled mega while one is active swaps species", async () => {
-    setupCharizardForms();
-    const onUpdate = jest.fn();
-    // Mega X active, Mega X stone held → both chips enabled (X active, Y disabled
-    // because Y stone not held). Swap to Y by FIRST holding Charizardite Y, but
-    // here we exercise the simpler swap: hold both stones can't happen, so
-    // verify with a state where Y is enabled (item changed externally first).
-    render(
-      <IdentityLane
-        pokemon={{
-          ...makePokemon(),
-          species: "Charizard-Mega-X",
-          // User just swapped item to Charizardite Y manually; Mega Y is now
-          // enabled (matches stone), Mega X is dimmed (stone gone). Click Y.
-          held_item: "Charizardite Y",
-        }}
-        format={VGC_FORMAT}
-        teamItems={[]}
-        onUpdate={onUpdate}
-      />
-    );
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Mega Y" }));
-    expect(onUpdate).toHaveBeenCalledWith({ species: "Charizard-Mega-Y" });
   });
 });
