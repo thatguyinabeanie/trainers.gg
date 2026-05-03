@@ -2015,11 +2015,12 @@
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    /* Fixed 380px so every card has the same identity width (alignment
-       across the grid) and so the form column doesn't carry dead space
-       wider than its content. Anything beyond 380 in the cell goes to
-       rowRight, which is what needs room for full move names. */
-    flex: 0 0 380px;
+    /* 1:1 split with rowRight (basis 0 so flex-grow shares the cell
+       evenly). Identity gets the same width as stats/moves, which means
+       wide cells (1x6 auto-degraded from 2x3 at 1440 viewport) give
+       identity 500+px to spread out — no more truncated item values
+       and no dead space inside heroForm. */
+    flex: 1 1 0;
     min-width: 0;
   }
 }

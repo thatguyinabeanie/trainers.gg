@@ -791,11 +791,12 @@ function IdentityLaneReal({
               switching happens via the species picker dialog opened by
               clicking the sprite or species pill. The compact-mode
               FormChips strip below the held-item row is still wired. */}
+        </div>
 
-          <hr className={s.heroDivider} />
-
-          {/* Form grid */}
-          <div className={s.heroForm}>
+        {/* Form grid — sibling of heroPanel inside identHero so it gets
+            its share of identHero's flex width (heroPanel is fixed at
+            200px, this fills the rest). */}
+        <div className={s.heroForm}>
             {/* Item — full-width span */}
             <Popover open={itemOpen} onOpenChange={setItemOpen}>
               <PopoverTrigger
@@ -983,7 +984,7 @@ function IdentityLaneReal({
             )}
           </div>
 
-          {/* Validation errors */}
+          {/* Validation errors — sit below the form, still inside heroForm */}
           <FieldErrors errors={speciesErrors} />
           <FieldErrors errors={nicknameErrors} />
           <FieldErrors errors={genderErrors} />
@@ -991,7 +992,6 @@ function IdentityLaneReal({
           <FieldErrors errors={abilityErrors} />
           <FieldErrors errors={natureErrors} />
         </div>
-      </div>
       )}
     </div>
   );
