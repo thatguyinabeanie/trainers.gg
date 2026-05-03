@@ -73,7 +73,7 @@ export function IdentityLane({
   return (
     <div ref={rootRef} className="contents">
       {!pokemon ? (
-        <IdentityLaneGhost />
+        <IdentityLaneGhost variant={isCompact ? "compact" : isVertical ? "vertical" : "mid"} />
       ) : isCompact ? (
         <IdentitySingleRow pokemon={pokemon} {...sharedProps} />
       ) : isVertical ? (
