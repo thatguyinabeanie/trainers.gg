@@ -599,11 +599,14 @@ describe("ghost mode (pokemon: null)", () => {
   // ---------------------------------------------------------------------------
   // 2. Root container has correct style and className
   // ---------------------------------------------------------------------------
-  it("root container has style={{ width: 400 }} and expected className", () => {
+  it("root container has the fluid + container-query width classes and expected className", () => {
     const { container } = render(<StatsLane pokemon={null} />);
     const root = container.firstElementChild as HTMLElement;
     expect(root).toBeTruthy();
-    expect(root.style.width).toBe("400px");
+    // Width is now driven by Tailwind: w-full at narrow widths,
+    // @[1240px]:w-[400px] at compact widths via container queries.
+    expect(root.className).toContain("w-full");
+    expect(root.className).toContain("@[1240px]:w-[400px]");
     expect(root.className).toContain("border-dashed");
     expect(root.className).toContain("flex-col");
   });

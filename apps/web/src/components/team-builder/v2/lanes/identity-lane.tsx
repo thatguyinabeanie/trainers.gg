@@ -27,7 +27,6 @@ import { type ValidationError } from "../../validation-hooks";
 import { NatureChevrons } from "../nature-chevrons";
 import { Sprite } from "../sprite";
 import { TypeDot } from "../type-dot";
-import { TypePill } from "../type-pill";
 import { formatSupportsTera } from "../format-gating";
 import { AbilityPicker } from "../pickers/ability-picker";
 import { ItemPicker } from "../pickers/item-picker";
@@ -35,6 +34,7 @@ import { NaturePicker } from "../pickers/nature-picker";
 import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
 import { TypePicker } from "../pickers/type-picker";
 import { FieldErrors } from "../validation/field-error";
+import { useContainerCompact } from "../use-container-compact";
 import { DescriptionTooltip } from "./description-tooltip";
 import { FormChip } from "./form-chip";
 import s from "../builder.module.css";
@@ -355,6 +355,8 @@ function IdentityLaneReal({
   fieldErrors,
 }: IdentityLaneRealProps) {
   const types = getSpeciesTypes(pokemon.species ?? "");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const isCompact = useContainerCompact(rootRef);
   const nicknameRef = useRef<HTMLInputElement>(null);
   const [nickDraft, setNickDraft] = useState(pokemon.nickname ?? "");
   const [speciesOpen, setSpeciesOpen] = useState(false);
@@ -458,10 +460,11 @@ function IdentityLaneReal({
   );
 
   return (
-    <>
+    <div ref={rootRef} className="contents">
       {speciesPicker}
 
-      {/* ── COMPACT layout (≥1100px) — sprite-left + form-right ────── */}
+      {/* ── COMPACT layout (≥1240px slot) — sprite-left + form-right ── */}
+      {isCompact && (
       <div className={s.identCompact}>
         <div className="flex min-w-0 gap-3 p-3">
           {/* Sprite column */}
@@ -691,8 +694,10 @@ function IdentityLaneReal({
           </div>
         </div>
       </div>
+      )}
 
-      {/* ── HERO layout (<1100px) — full-width centered panel ────────── */}
+      {/* ── HERO layout (<1240px slot) — full-width centered panel ──── */}
+      {!isCompact && (
       <div className={s.identHero}>
         <div className={s.heroPanel}>
           {/* Meta row: gender | shiny | Lv | nickname */}
@@ -778,14 +783,9 @@ function IdentityLaneReal({
             </span>
           </button>
 
-          {/* Type pills */}
-          {types.length > 0 && (
-            <div className={s.heroTypes}>
-              {types.map((t) => (
-                <TypePill key={t} t={t} size={22} />
-              ))}
-            </div>
-          )}
+          {/* Type pills omitted in hero mode — types are already conveyed
+              by the sprite's tinted background and the type dots in the
+              rib decorations. Adding pills here clutters the panel. */}
 
           {/* Form chips deliberately omitted in hero mode — alt-form
               switching happens via the species picker dialog opened by
@@ -815,7 +815,7 @@ function IdentityLaneReal({
                 <span className={s.heroFormVal}>
                   <span
                     className={cn(
-                      "min-w-0 flex-1 truncate",
+                      "min-w-0 truncate",
                       !pokemon.held_item && "text-muted-foreground/50 italic"
                     )}
                   >
@@ -841,7 +841,8 @@ function IdentityLaneReal({
               </PopoverContent>
             </Popover>
 
-            {/* Ability */}
+            {/* Ability — pairs with Base when this is a Mega form, otherwise
+                spans the full row so Nature naturally drops to its own line. */}
             <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
               <PopoverTrigger
                 render={
@@ -849,13 +850,16 @@ function IdentityLaneReal({
                     type="button"
                     className={cn(
                       s.heroFormCell,
+                      megaAbility === null && s.heroFormCellSpan2,
                       abilityErrors.length > 0 &&
                         "ring-destructive/40 rounded ring-1"
                     )}
                   />
                 }
               >
-                <span className={s.heroFormLbl}>Ability</span>
+                <span className={s.heroFormLbl}>
+                  {megaAbility !== null ? "Mega Ability" : "Ability"}
+                </span>
                 <span
                   className={cn(
                     s.heroFormVal,
@@ -888,7 +892,7 @@ function IdentityLaneReal({
             {/* Base ability — only shown for Mega forms where ability is forced */}
             {megaAbility !== null && (
               <div className={cn(s.heroFormCell, s.heroFormCellReadonly)}>
-                <span className={s.heroFormLbl}>Base</span>
+                <span className={s.heroFormLbl}>Base Ability</span>
                 <span
                   className={cn(
                     s.heroFormVal,
@@ -996,7 +1000,8 @@ function IdentityLaneReal({
           <FieldErrors errors={natureErrors} />
         </div>
       </div>
-    </>
+      )}
+    </div>
   );
 }
 

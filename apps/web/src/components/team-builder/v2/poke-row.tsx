@@ -357,7 +357,7 @@ export function PokeRow({
     // Empty slot — sortable ref still attached so it can act as a drop target,
     // but drag is disabled so it won't be picked up.
     return (
-      <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)}>
+      <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)} data-slot-host>
         <EmptyRow idx={idx} density={density} format={format} onAdd={onAdd} />
       </div>
     );
@@ -367,7 +367,7 @@ export function PokeRow({
 
   if (showExpanded) {
     return (
-      <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)}>
+      <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)} data-slot-host>
         <ActiveRowShell
           idx={idx}
           pokemon={pokemon}
@@ -386,7 +386,7 @@ export function PokeRow({
   }
 
   return (
-    <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)}>
+    <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)} data-slot-host>
       <CollapsedRow
         idx={idx}
         pokemon={pokemon}

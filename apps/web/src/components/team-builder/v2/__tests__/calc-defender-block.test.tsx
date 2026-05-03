@@ -145,41 +145,6 @@ function makeBoosts(overrides: Partial<DefenderBoosts> = {}): DefenderBoosts {
   return { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, ...overrides };
 }
 
-function makePokemon(overrides: Partial<Tables<"pokemon">> = {}): Tables<"pokemon"> {
-  return {
-    id: 1,
-    species: "Incineroar",
-    ability: "Intimidate",
-    nature: "Careful",
-    move1: "Knock Off",
-    move2: "Fake Out",
-    move3: null,
-    move4: null,
-    ev_hp: 252,
-    ev_attack: 0,
-    ev_defense: 4,
-    ev_special_attack: 0,
-    ev_special_defense: 252,
-    ev_speed: 0,
-    iv_hp: 31,
-    iv_attack: 31,
-    iv_defense: 31,
-    iv_special_attack: 31,
-    iv_special_defense: 31,
-    iv_speed: 31,
-    level: 50,
-    held_item: "Sitrus Berry",
-    nickname: null,
-    notes: null,
-    tera_type: "Fire",
-    is_shiny: null,
-    gender: null,
-    format_legal: null,
-    created_at: null,
-    ...overrides,
-  };
-}
-
 interface RenderProps {
   defenderSpecies?: string;
   defenderAbility?: string;

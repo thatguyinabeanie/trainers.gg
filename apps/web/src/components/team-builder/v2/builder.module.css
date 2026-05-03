@@ -893,6 +893,29 @@
   width: 100%;
   overflow: hidden;
   cursor: pointer;
+}
+
+/* Tighten BP / Acc widths at narrow slot widths so move names get more
+   room before truncating. The "BP" / "ACC" labels are still rendered
+   but the value column fits a 3-digit BP / 4-char "100%" without
+   reserving extra space. */
+@container slot (max-width: 1239px) {
+  :global(.mvline) {
+    grid-template-columns:
+      max-content
+      minmax(0, 1fr)
+      40px
+      48px;
+    gap: 4px;
+    padding: 4px 6px;
+  }
+  :global(.mvline-stat-label) {
+    display: none;
+  }
+}
+
+:global(.mvline-init-anchor) {
+  /* unused — placeholder so the previous block's closing brace is removed cleanly */
   transition: border-color 0.12s, background 0.12s;
 }
 
