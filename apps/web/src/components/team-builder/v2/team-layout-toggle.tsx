@@ -85,7 +85,8 @@ const BUTTONS: readonly ToggleButton[] = [
 
 /** Topbar control for switching between team grid layouts. */
 export function TeamLayoutToggle() {
-  const { mode, setMode, isMobileLocked } = useTeamLayout();
+  const { setMode, persisted, isMobileLocked, isAutoDegraded } =
+    useTeamLayout();
 
   return (
     <div
@@ -97,19 +98,30 @@ export function TeamLayoutToggle() {
       )}
     >
       {BUTTONS.map(({ mode: btnMode, label, icon: IconCmp }) => {
-        const active = mode === btnMode;
+        // Pressed reflects the user's persisted choice, not the
+        // (possibly auto-degraded) effective mode — the toggle should
+        // show what the user picked even when the viewport forced a
+        // smaller column count.
+        const active = persisted === btnMode;
+        const fullLabel =
+          active && isAutoDegraded
+            ? `${label} (auto-fit at this width — widen the window to apply)`
+            : label;
         return (
           <button
             key={btnMode}
             type="button"
             onClick={() => setMode(btnMode)}
             aria-pressed={active}
-            aria-label={label}
-            title={label}
+            aria-label={fullLabel}
+            title={fullLabel}
             className={cn(
               "flex size-7 items-center justify-center rounded transition-colors",
               active
-                ? "bg-background text-primary shadow-sm"
+                ? cn(
+                    "bg-background text-primary shadow-sm",
+                    isAutoDegraded && "opacity-60"
+                  )
                 : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
             )}
           >

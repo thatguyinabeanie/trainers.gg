@@ -19,6 +19,13 @@ const VALID_MODES: readonly TeamLayoutMode[] = [
   "3x2-stack",
 ];
 
+// Viewport thresholds for auto-degrading the persisted grid mode. The
+// numbers are total viewport widths (not slot widths) — the choice of
+// columns has to happen before the slots can know their own width. Each
+// threshold corresponds to ~700px per cell after sidebar + padding.
+const MIN_VIEWPORT_FOR_2_COLS = 1500;
+const MIN_VIEWPORT_FOR_3_COLS = 2200;
+
 // =============================================================================
 // External store — keeps all hook consumers in sync within and across tabs
 // =============================================================================
@@ -58,23 +65,73 @@ function getServerSnapshot(): TeamLayoutMode {
 }
 
 // =============================================================================
+// Viewport-width store — drives auto-degrade based on browser width
+// =============================================================================
+
+function subscribeToViewport(callback: () => void) {
+  window.addEventListener("resize", callback);
+  return () => window.removeEventListener("resize", callback);
+}
+
+function getViewportSnapshot(): number {
+  return window.innerWidth;
+}
+
+function getServerViewportSnapshot(): number {
+  // SSR fallback — pick a wide value so the persisted preference renders
+  // as-is on the server (no degrade). Hydration corrects to actual width.
+  return MIN_VIEWPORT_FOR_3_COLS;
+}
+
+// =============================================================================
+// Auto-degrade
+// =============================================================================
+
+/**
+ * Reduce a persisted layout to one that fits the viewport. 3-column modes
+ * step down to 2 columns at 1500–2199, then to 1 column under 1500.
+ * 2-column modes step down to 1 column under 1500. 1-column modes pass
+ * through.
+ */
+function degradeForViewport(
+  persisted: TeamLayoutMode,
+  viewportWidth: number
+): TeamLayoutMode {
+  const wantedCols =
+    persisted === "1x6" ? 1 : persisted === "2x3" ? 2 : 3;
+
+  let cols = wantedCols;
+  if (cols === 3 && viewportWidth < MIN_VIEWPORT_FOR_3_COLS) cols = 2;
+  if (cols === 2 && viewportWidth < MIN_VIEWPORT_FOR_2_COLS) cols = 1;
+
+  if (cols === wantedCols) return persisted;
+  if (cols === 2) return "2x3";
+  return "1x6";
+}
+
+// =============================================================================
 // Hook
 // =============================================================================
 
 interface UseTeamLayoutResult {
+  /** The mode actually rendered — accounts for mobile + viewport degrade. */
   mode: TeamLayoutMode;
   setMode: (next: TeamLayoutMode) => void;
+  /** The user's persisted preference, regardless of overrides. */
   persisted: TeamLayoutMode;
+  /** True when mobile viewport is forcing 1×6 regardless of preference. */
   isMobileLocked: boolean;
+  /** True when the viewport is too narrow to honour persisted column count. */
+  isAutoDegraded: boolean;
 }
 
 /**
  * Returns the user's team layout preference and a setter that persists to
- * localStorage. On phone viewports the effective mode is forced to `1x6`
- * (one slot per row) regardless of the persisted value, but the persisted
- * value is preserved (so toggling back to desktop restores it). The
- * per-cell hero layout selects itself via container queries based on the
- * resulting cell width.
+ * localStorage. On phone viewports the effective mode is forced to `1x6`.
+ * On non-mobile viewports the effective mode is auto-degraded when the
+ * viewport is too narrow for the persisted column count to render with
+ * usable cell widths — the persisted value is preserved so widening the
+ * viewport restores the user's pick.
  */
 export function useTeamLayout(): UseTeamLayoutResult {
   const isMobile = useIsMobile();
@@ -83,8 +140,22 @@ export function useTeamLayout(): UseTeamLayoutResult {
     getSnapshot,
     getServerSnapshot
   );
+  const viewportWidth = useSyncExternalStore(
+    subscribeToViewport,
+    getViewportSnapshot,
+    getServerViewportSnapshot
+  );
 
-  const mode: TeamLayoutMode = isMobile ? "1x6" : persisted;
+  let mode: TeamLayoutMode;
+  let isAutoDegraded = false;
+
+  if (isMobile) {
+    mode = "1x6";
+  } else {
+    const degraded = degradeForViewport(persisted, viewportWidth);
+    mode = degraded;
+    isAutoDegraded = degraded !== persisted;
+  }
 
   function setMode(next: TeamLayoutMode) {
     try {
@@ -96,5 +167,11 @@ export function useTeamLayout(): UseTeamLayoutResult {
     }
   }
 
-  return { mode, setMode, persisted, isMobileLocked: isMobile };
+  return {
+    mode,
+    setMode,
+    persisted,
+    isMobileLocked: isMobile,
+    isAutoDegraded,
+  };
 }

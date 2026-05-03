@@ -759,7 +759,7 @@ function IdentityLaneReal({
             className={s.heroSpriteBtn}
             onClick={() => setSpeciesOpen(true)}
           >
-            <Sprite species={pokemon.species ?? ""} types={types} size={120} />
+            <Sprite species={pokemon.species ?? ""} types={types} size={150} />
           </button>
 
           {/* Species pill below sprite */}
@@ -811,7 +811,7 @@ function IdentityLaneReal({
                   />
                 }
               >
-                <span className={s.heroFormLbl}>Item</span>
+                <span className={s.heroFormLbl}>ITEM</span>
                 <span className={s.heroFormVal}>
                   <span
                     className={cn(
@@ -859,7 +859,7 @@ function IdentityLaneReal({
                   />
                 }
               >
-                <span className={s.heroFormLbl}>Abil</span>
+                <span className={s.heroFormLbl}>ABIL</span>
                 <span className={s.heroFormValStack}>
                   <span
                     className={cn(
@@ -910,7 +910,7 @@ function IdentityLaneReal({
                   />
                 }
               >
-                <span className={s.heroFormLbl}>Nature</span>
+                <span className={s.heroFormLbl}>NAT</span>
                 <span
                   className={cn(
                     s.heroFormVal,
@@ -947,7 +947,7 @@ function IdentityLaneReal({
                     />
                   }
                 >
-                  <span className={s.heroFormLbl}>Tera</span>
+                  <span className={s.heroFormLbl}>TERA</span>
                   <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
                     {pokemon.tera_type ? (
                       <>
