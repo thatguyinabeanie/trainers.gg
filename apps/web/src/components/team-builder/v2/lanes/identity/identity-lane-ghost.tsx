@@ -90,18 +90,30 @@ function VerticalGhost() {
     <div className={ids.vertRoot}>
       <div className={ids.vertSpriteFormRow}>
         <div className={ids.vertSpriteCol}>
-          <SpriteGhost size={120} />
+          <SpriteGhost />
           <SpeciesPillGhost />
         </div>
 
-        <div className={ids.vertFormCol}>
-          {/* MetaBar ghost — nickname + level/gender/shiny placeholders */}
-          <div className="flex h-[22px] items-center gap-2">
-            <span className="text-muted-foreground/20 text-sm font-normal italic">
+        <div className={ids.vertFormCol} style={{ minWidth: 263 }}>
+          {/* MetaBar ghost — matches .midMetaBar grid (1fr auto) */}
+          <div className={cn(ids.midMetaBar, ids.midMetaBarNoLv)}>
+            <span
+              className={cn(ids.midNickname, "text-muted-foreground/20 italic")}
+            >
               Nickname
             </span>
-            <span className="text-muted-foreground/20 text-xs">—</span>
-            <span className="text-muted-foreground/20 text-xs">+</span>
+            <span className={ids.midRightPills}>
+              <span
+                className={cn(ids.midPill, "pointer-events-none opacity-30")}
+              >
+                —
+              </span>
+              <span
+                className={cn(ids.midPill, "pointer-events-none opacity-30")}
+              >
+                ✦
+              </span>
+            </span>
           </div>
           <MidFormRowsGhost />
         </div>
@@ -128,7 +140,12 @@ function SpeciesPillGhost() {
 }
 
 function SpriteGhost({ size = 144 }: { size?: number }) {
-  return <div className="bg-muted/40 rounded-xl" style={{ width: size, height: size }} />;
+  return (
+    <div
+      className="bg-muted/40 rounded-xl"
+      style={{ width: size, height: size }}
+    />
+  );
 }
 
 function BannerGhost() {
@@ -152,9 +169,7 @@ function FormRowsGhost() {
       {(["Item", "Abil", "Nat"] as const).map((label) => (
         <div key={label} className={s.formRow}>
           <span className={s.formLabel}>{label}</span>
-          <span
-            className={cn(s.formValue, "text-muted-foreground/25 italic")}
-          >
+          <span className={cn(s.formValue, "text-muted-foreground/25 italic")}>
             —
           </span>
         </div>
