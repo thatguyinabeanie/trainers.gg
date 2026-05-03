@@ -34,23 +34,31 @@ function makeRef(el: HTMLElement | null): RefObject<HTMLElement | null> {
 
 describe("useContainerCompact", () => {
   it("returns true (compact) when observed width >= 1240", () => {
+    const parent = document.createElement("div");
     const el = document.createElement("div");
+    parent.appendChild(el);
+    document.body.appendChild(parent);
     const ref = makeRef(el);
 
     const { result } = renderHook(() => useContainerCompact(ref));
     act(() => triggerResize(1400));
 
     expect(result.current).toBe(true);
+    document.body.removeChild(parent);
   });
 
   it("returns false when observed width < 1240", () => {
+    const parent = document.createElement("div");
     const el = document.createElement("div");
+    parent.appendChild(el);
+    document.body.appendChild(parent);
     const ref = makeRef(el);
 
     const { result } = renderHook(() => useContainerCompact(ref));
     act(() => triggerResize(1000));
 
     expect(result.current).toBe(false);
+    document.body.removeChild(parent);
   });
 
   it("uses [data-slot-host] ancestor if present", () => {

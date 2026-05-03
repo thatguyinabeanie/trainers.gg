@@ -71,7 +71,7 @@ export function IdentityLane({
   };
 
   return (
-    <div ref={rootRef} className="w-full">
+    <div ref={rootRef} className="contents">
       {!pokemon ? (
         <IdentityLaneGhost />
       ) : isCompact ? (

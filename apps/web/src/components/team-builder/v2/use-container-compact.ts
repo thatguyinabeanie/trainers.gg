@@ -22,8 +22,10 @@ export function useContainerCompact(ref: RefObject<HTMLElement | null>) {
     const el = ref.current;
     if (!el) return;
 
-    const slotHost = el.closest("[data-slot-host]");
-    const target = slotHost ?? el;
+    // The ref element may use display:contents (no layout box), so always
+    // walk up to the nearest [data-slot-host] ancestor for measurement.
+    const target = el.closest("[data-slot-host]") ?? el.parentElement;
+    if (!target) return;
 
     if (typeof ResizeObserver === "undefined") return;
 
