@@ -339,7 +339,7 @@ describe("PokeRow — empty slot", () => {
     expect(screen.getAllByText(/\+ Add move/i)).toHaveLength(4);
   });
 
-  it("outer button has w-fit and self-center classes", () => {
+  it("outer button has w-full to fill its grid cell", () => {
     render(
       <PokeRow
         idx={0}
@@ -352,10 +352,7 @@ describe("PokeRow — empty slot", () => {
       />
     );
     const button = screen.getByText(/\+ Add Pokémon/i).closest("button")!;
-    expect(button.className).toContain("w-fit");
-    // self-center keeps each row centered horizontally inside .builderRows
-    // when its content is narrower than the editor lane.
-    expect(button.className).toContain("self-center");
+    expect(button.className).toContain("w-full");
   });
 
   it("ghost lane components do not introduce nested buttons inside the wrapper", () => {
