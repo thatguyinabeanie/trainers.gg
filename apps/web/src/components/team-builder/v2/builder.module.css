@@ -2005,7 +2005,11 @@
   display: none;
 }
 
-/* At slot width ≤1099px, flip to hero */
+/* At slot width ≤1239px, flip to hero (sprite section on top, form below).
+   identHero becomes a fixed-width column on the left of the stats+moves
+   stack — at typical mid-stack slot widths (~900–1100px) this gives
+   identity 260px and the right column 600+px for generous stats bars
+   and full-width move tiles. */
 @container slot (max-width: 1239px) {
   .identCompact {
     display: none;
@@ -2013,48 +2017,40 @@
 
   .identHero {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: stretch;
-    /* 1:1 split with rowRight (basis 0 so flex-grow shares the cell
-       evenly). Identity gets the same width as stats/moves, which means
-       wide cells (1x6 auto-degraded from 2x3 at 1440 viewport) give
-       identity 500+px to spread out — no more truncated item values
-       and no dead space inside heroForm. */
-    flex: 1 1 0;
+    flex: 0 0 260px;
     min-width: 0;
+    border-right: 1px dashed var(--border);
   }
 }
 
-/* At very narrow widths (full-stack), the panel + form stack vertically
-   again. Triggers from the same <500px container query as the rib pivot. */
+/* At full-stack widths (<700), identHero pivots to a full-slot-width
+   horizontal stripe that sits between the rib and the stacked
+   stats/moves below. */
 @container slot (max-width: 699px) {
   .identHero {
-    flex-direction: column;
+    flex: 1 1 auto;
+    border-right: none;
+    border-bottom: 1px dashed var(--border);
   }
 }
 
 /* ── Hero panel ─────────────────────────────────────────── */
 
-/* Sprite/identity column — fixed 200px so the 150px sprite + 180px
-   species pill (overflows by 4px which the rounded pill absorbs) +
-   padding sit consistently. heroForm gets identHero's remaining 180px. */
+/* Sprite section — stacked above the form inside identHero. Spans the
+   full identity column width, separated from heroForm by a bottom
+   divider. */
 .heroPanel {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
   padding: 10px 8px;
-  flex: 0 0 200px;
+  flex: 0 0 auto;
+  width: 100%;
   min-width: 0;
-  border-right: 1px dashed var(--border);
-}
-
-@container slot (max-width: 699px) {
-  .heroPanel {
-    flex: 0 0 auto;
-    border-right: none;
-    border-bottom: 1px dashed var(--border);
-  }
+  border-bottom: 1px dashed var(--border);
 }
 
 /* Top meta row: [gender] [✦] [Lv N] [nickname input] */
@@ -2195,11 +2191,13 @@
   margin: 0;
 }
 
-/* Form column — fills the remaining width of identHero (~200px) */
+/* Form section — sits below the sprite/species pill inside identHero,
+   spans the full identity column width. */
 .heroForm {
   display: flex;
   flex-direction: column;
-  flex: 1 1 0;
+  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
   padding: 10px 12px;
   gap: 2px;
