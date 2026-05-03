@@ -50,6 +50,9 @@ export function ItemCell({
         <FormChip
           label="Item"
           value={pokemon.held_item ?? ""}
+          trailing={
+            isMegaStone ? <span className={s.midMegaChip}>MEGA</span> : null
+          }
           triggerClassName={
             errors.length > 0
               ? "ring-1 ring-destructive/40 rounded"
