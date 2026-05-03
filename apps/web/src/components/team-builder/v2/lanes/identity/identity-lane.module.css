@@ -374,9 +374,9 @@
   padding: 8px 4px;
 }
 
-/* Form section — fills remaining width, vertically centered cells */
+/* Form section — auto-width, vertically centered cells */
 .vertFormCol {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
