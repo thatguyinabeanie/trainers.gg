@@ -18,7 +18,7 @@ import { type ValidationError } from "../../validation-hooks";
 import { useCalcEnabled } from "../calc/calc-state-context";
 import s from "../builder.module.css";
 import { CalcColumn } from "./calc-column";
-import { IdentityLane } from "./identity-lane";
+import { IdentityLane } from "./identity";
 import { MovesLane } from "./moves-lane";
 import { RibDecorations } from "./rib-decorations";
 import { StatsLane } from "./stats-lane";

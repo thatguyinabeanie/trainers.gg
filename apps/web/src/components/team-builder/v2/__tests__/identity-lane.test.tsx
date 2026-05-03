@@ -298,7 +298,7 @@ jest.mock("../format-gating", () => ({
 // Import after mocks
 // =============================================================================
 
-import { IdentityLane } from "../lanes/identity-lane";
+import { IdentityLane } from "../lanes/identity";
 import { type ValidationError } from "../../validation-hooks";
 import * as FormatGating from "../format-gating";
 import * as TrainersPokemon from "@trainers/pokemon";

@@ -23,7 +23,7 @@ import { Sprite } from "./sprite";
 import { TypePill } from "./type-pill";
 import { ActiveRow } from "./lanes/active-row";
 import { CalcColumn } from "./lanes/calc-column";
-import { IdentityLane } from "./lanes/identity-lane";
+import { IdentityLane } from "./lanes/identity";
 import { StatsLane } from "./lanes/stats-lane";
 import { MovesLane } from "./lanes/moves-lane";
 import { useCalcEnabled } from "./calc/calc-state-context";
