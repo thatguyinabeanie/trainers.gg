@@ -21,7 +21,6 @@ import { TooltipTrigger } from "@/components/ui/tooltip";
 
 import { type ValidationError } from "../../validation-hooks";
 import { NatureChevrons } from "../nature-chevrons";
-import { Sprite } from "../sprite";
 import { TypeDot } from "../type-dot";
 import { useIdentityState } from "./identity/use-identity-state";
 import { AbilityPicker } from "../pickers/ability-picker";
@@ -211,6 +210,7 @@ function IdentityLaneGhost() {
 }
 
 import { FormChips } from "./identity/cells/form-chips";
+import { SpriteSection } from "./identity/cells/sprite-section";
 
 // =============================================================================
 // IdentityLaneReal — full interactive lane (existing logic, unchanged)
@@ -285,46 +285,13 @@ function IdentityLaneReal({
         <div className="flex min-w-0 gap-3 p-3">
           {/* Sprite column */}
           <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
-            {/* Species pill — typeable control above the sprite */}
-            <button
-              type="button"
-              onClick={() => setSpeciesOpen(true)}
-              aria-label={`Change species (${pokemon.species ?? "none"})`}
-              className={cn(
-                "border-border bg-background hover:border-primary focus-visible:border-primary",
-                "flex w-36 items-center gap-1 rounded-md border px-2 py-1.5 text-left text-xs",
-                "transition-colors outline-none sm:w-40 md:w-44"
-              )}
-            >
-              <span
-                className={cn(
-                  "min-w-0 flex-1 truncate",
-                  pokemon.species
-                    ? "text-foreground font-medium"
-                    : "text-muted-foreground"
-                )}
-                title={pokemon.species ?? undefined}
-              >
-                {pokemon.species ?? "Choose species…"}
-              </span>
-              <span aria-hidden className="text-muted-foreground text-[9px]">
-                ▾
-              </span>
-            </button>
-
-            {/* Sprite — 144×144, click to open species picker */}
-            <button
-              type="button"
-              onClick={() => setSpeciesOpen(true)}
-              aria-label={`Change species (${pokemon.species ?? "none"})`}
-              className="shrink-0 transition-opacity hover:opacity-80"
-            >
-              <Sprite
-                species={pokemon.species ?? ""}
-                types={types}
-                size={144}
-              />
-            </button>
+            <SpriteSection
+              pokemon={pokemon}
+              onSpeciesClick={() => setSpeciesOpen(true)}
+              variant="pill-top"
+              speciesHasError={speciesErrors.length > 0}
+              types={types}
+            />
           </div>
 
           {/* Form column */}
@@ -596,36 +563,14 @@ function IdentityLaneReal({
             </button>
           </div>
 
-          {/* Sprite — centered, click to open species picker */}
-          <button
-            type="button"
-            aria-label={`Change species (${pokemon.species ?? "none"})`}
-            className={s.heroSpriteBtn}
-            onClick={() => setSpeciesOpen(true)}
-          >
-            <Sprite species={pokemon.species ?? ""} types={types} size={150} />
-          </button>
-
-          {/* Species pill below sprite */}
-          <button
-            type="button"
-            aria-label={`Change species (${pokemon.species ?? "none"})`}
-            className={s.heroSpeciesPill}
-            onClick={() => setSpeciesOpen(true)}
-          >
-            <span
-              className={cn(
-                "min-w-0 truncate",
-                pokemon.species ? "font-semibold" : "text-muted-foreground"
-              )}
-              title={pokemon.species ?? undefined}
-            >
-              {pokemon.species ?? "Choose species…"}
-            </span>
-            <span aria-hidden className="text-muted-foreground text-[9px]">
-              ▾
-            </span>
-          </button>
+          {/* Sprite + species pill — centered, click to open species picker */}
+          <SpriteSection
+            pokemon={pokemon}
+            onSpeciesClick={() => setSpeciesOpen(true)}
+            variant="pill-bottom"
+            speciesHasError={speciesErrors.length > 0}
+            types={types}
+          />
 
           {/* Type pills omitted in hero mode — types are already conveyed
               by the sprite's tinted background and the type dots in the
