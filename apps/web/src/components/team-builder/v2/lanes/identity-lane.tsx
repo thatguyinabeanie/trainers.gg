@@ -3,36 +3,24 @@
 import { useRef, useState } from "react";
 
 import {
-  getAbilityShortDesc,
-  getCanonicalBaseSpecies,
-  getMegaAbilityForSpecies,
   speciesHasForms,
   type GameFormat,
 } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { TooltipTrigger } from "@/components/ui/tooltip";
 
 import { type ValidationError } from "../../validation-hooks";
-import { NatureChevrons } from "../nature-chevrons";
-import { TypeDot } from "../type-dot";
 import { useIdentityState } from "./identity/use-identity-state";
-import { AbilityPicker } from "../pickers/ability-picker";
-import { ItemPicker } from "../pickers/item-picker";
-import { NaturePicker } from "../pickers/nature-picker";
 import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
-import { TypePicker } from "../pickers/type-picker";
 import { FieldErrors } from "../validation/field-error";
 import { useContainerCompact } from "../use-container-compact";
-import { DescriptionTooltip } from "./description-tooltip";
-import { FormChip } from "./form-chip";
+import { FormCells } from "./identity/cells/form-cells";
+import { FormChips } from "./identity/cells/form-chips";
+import { MetaBar } from "./identity/cells/meta-bar";
+import { SpriteSection } from "./identity/cells/sprite-section";
 import s from "../builder.module.css";
+
 
 // =============================================================================
 // Types
@@ -57,92 +45,6 @@ interface IdentityLaneRealProps {
   teamSiblings: { species: string }[];
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   fieldErrors: ValidationError[];
-}
-
-// =============================================================================
-// IdentityAbilityRow — ability popover with tooltip + mega secondary line
-//
-// Extracted from the 75-line IIFE in IdentityLaneReal. Keeps the custom
-// Tooltip → TooltipTrigger → PopoverTrigger nesting that FormChip cannot
-// model (FormChip is a plain Popover with no outer Tooltip).
-// =============================================================================
-
-interface IdentityAbilityRowProps {
-  pokemon: Tables<"pokemon">;
-  format: GameFormat | undefined;
-  abilityOpen: boolean;
-  setAbilityOpen: (open: boolean) => void;
-  onUpdate: (patch: TablesUpdate<"pokemon">) => void;
-  abilityErrors: ValidationError[];
-}
-
-function IdentityAbilityRow({
-  pokemon,
-  format,
-  abilityOpen,
-  setAbilityOpen,
-  onUpdate,
-  abilityErrors,
-}: IdentityAbilityRowProps) {
-  const megaAbility = pokemon.species
-    ? getMegaAbilityForSpecies(pokemon.species)
-    : null;
-  const pickerSpecies = pokemon.species
-    ? getCanonicalBaseSpecies(pokemon.species)
-    : "";
-  const displayAbility = megaAbility ?? pokemon.ability;
-  const showTooltip = !abilityOpen;
-  const displayDesc = displayAbility
-    ? getAbilityShortDesc(displayAbility)
-    : null;
-  return (
-    <div className="flex flex-col">
-      <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
-        <DescriptionTooltip
-          title={displayAbility}
-          description={displayDesc}
-          showContent={showTooltip}
-        >
-          <TooltipTrigger
-            render={
-              <PopoverTrigger
-                render={
-                  <button
-                    type="button"
-                    className={cn(
-                      s.formRow,
-                      abilityErrors.length > 0 &&
-                        "ring-destructive/40 rounded ring-1"
-                    )}
-                  />
-                }
-              />
-            }
-          >
-            <span className={s.formLabel}>Abil</span>
-            <span
-              className={cn(
-                s.formValue,
-                !displayAbility && "text-muted-foreground/50 italic"
-              )}
-            >
-              {displayAbility || "—"}
-            </span>
-          </TooltipTrigger>
-        </DescriptionTooltip>
-        <PopoverContent side="bottom" align="start" className="w-auto p-0">
-          <AbilityPicker
-            value={pokemon.ability}
-            species={pickerSpecies}
-            format={format}
-            onPick={(ability) => onUpdate({ ability })}
-            onClose={() => setAbilityOpen(false)}
-          />
-        </PopoverContent>
-      </Popover>
-      <FieldErrors errors={abilityErrors} className="px-1" />
-    </div>
-  );
 }
 
 // =============================================================================
@@ -196,10 +98,6 @@ function IdentityLaneGhost() {
   );
 }
 
-import { FormChips } from "./identity/cells/form-chips";
-import { MetaBar } from "./identity/cells/meta-bar";
-import { SpriteSection } from "./identity/cells/sprite-section";
-
 // =============================================================================
 // IdentityLaneReal — full interactive lane (existing logic, unchanged)
 // =============================================================================
@@ -218,10 +116,8 @@ function IdentityLaneReal({
     isShiny,
     level,
     showLevel,
-    showTera,
     natUp,
     natDown,
-    megaAbility,
     isMegaStone,
     nicknameErrors,
     speciesErrors,
@@ -240,10 +136,6 @@ function IdentityLaneReal({
   const rootRef = useRef<HTMLDivElement>(null);
   const isCompact = useContainerCompact(rootRef);
   const [speciesOpen, setSpeciesOpen] = useState(false);
-  const [itemOpen, setItemOpen] = useState(false);
-  const [abilityOpen, setAbilityOpen] = useState(false);
-  const [natureOpen, setNatureOpen] = useState(false);
-  const [teraOpen, setTeraOpen] = useState(false);
 
   const currentTeam = (teamSiblings ?? []).filter(
     (p): p is { species: string } =>
@@ -319,99 +211,19 @@ function IdentityLaneReal({
         </div>
 
         {/* LOADOUT FORM ROWS */}
-
-        <div className="flex flex-col">
-          <FormChip
-            label="Item"
-            value={pokemon.held_item ?? ""}
-            triggerClassName={
-              itemErrors.length > 0
-                ? "ring-1 ring-destructive/40 rounded"
-                : undefined
-            }
-            open={itemOpen}
-            onOpenChange={setItemOpen}
-          >
-            <ItemPicker
-              value={pokemon.held_item}
-              format={format}
-              teamItems={teamItems}
-              onPick={(item) => onUpdate({ held_item: item })}
-              onClose={() => setItemOpen(false)}
-            />
-          </FormChip>
-          <FieldErrors errors={itemErrors} className="px-1" />
-        </div>
-
-        {/* Ability — when species is a mega, show the post-evolution ability
-            as the primary display and the stored base ability as a secondary
-            line. The picker is scoped to the BASE form's abilities so the
-            user keeps editing what'll get submitted on the team sheet. */}
-        <IdentityAbilityRow
+        <FormCells
           pokemon={pokemon}
           format={format}
-          abilityOpen={abilityOpen}
-          setAbilityOpen={setAbilityOpen}
-          onUpdate={onUpdate}
+          teamItems={teamItems}
+          isMegaStone={isMegaStone}
+          natUp={natUp}
+          natDown={natDown}
+          itemErrors={itemErrors}
           abilityErrors={abilityErrors}
+          natureErrors={natureErrors}
+          onUpdate={onUpdate}
+          variant="row"
         />
-
-        <div className="flex flex-col">
-          <FormChip
-            label="Nat"
-            value={pokemon.nature ?? ""}
-            trailing={<NatureChevrons boost={natUp} reduce={natDown} />}
-            triggerClassName={
-              natureErrors.length > 0
-                ? "ring-1 ring-destructive/40 rounded"
-                : undefined
-            }
-            open={natureOpen}
-            onOpenChange={setNatureOpen}
-          >
-            <NaturePicker
-              value={pokemon.nature ?? ""}
-              onPick={(nature) => onUpdate({ nature })}
-              onClose={() => setNatureOpen(false)}
-            />
-          </FormChip>
-          <FieldErrors errors={natureErrors} className="px-1" />
-        </div>
-
-        {/* Tera — gen-gated (only when format supports Terastallization) */}
-        {showTera && (
-          <Popover open={teraOpen} onOpenChange={setTeraOpen}>
-            <PopoverTrigger
-              render={<button type="button" className={s.formRow} />}
-            >
-              <span className={s.formLabel}>Tera</span>
-              <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-                {pokemon.tera_type ? (
-                  <>
-                    <TypeDot t={pokemon.tera_type} size={10} />
-                    <span className={s.formValue}>{pokemon.tera_type}</span>
-                  </>
-                ) : (
-                  <span
-                    className={cn(
-                      s.formValue,
-                      "text-muted-foreground/50 italic"
-                    )}
-                  >
-                    —
-                  </span>
-                )}
-              </span>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" align="start" className="w-auto p-0">
-              <TypePicker
-                value={pokemon.tera_type}
-                onPick={(type) => onUpdate({ tera_type: type })}
-                onClose={() => setTeraOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
-        )}
 
           {/* Species validation errors */}
           <FieldErrors errors={speciesErrors} />
@@ -467,183 +279,19 @@ function IdentityLaneReal({
             its share of identHero's flex width (heroPanel is fixed at
             200px, this fills the rest). */}
         <div className={s.heroForm}>
-            {/* Item — full-width span */}
-            <Popover open={itemOpen} onOpenChange={setItemOpen}>
-              <PopoverTrigger
-                render={
-                  <button
-                    type="button"
-                    className={cn(
-                      s.heroFormCell,
-                      s.heroFormCellSpan2,
-                      itemErrors.length > 0 &&
-                        "ring-destructive/40 rounded ring-1"
-                    )}
-                  />
-                }
-              >
-                <span className={s.heroFormLbl}>ITEM</span>
-                <span className={s.heroFormVal}>
-                  <span
-                    className={cn(
-                      "min-w-0 truncate",
-                      !pokemon.held_item && "text-muted-foreground/50 italic"
-                    )}
-                  >
-                    {pokemon.held_item || "—"}
-                  </span>
-                  {isMegaStone && (
-                    <span className={s.heroMegaChip}>MEGA</span>
-                  )}
-                </span>
-              </PopoverTrigger>
-              <PopoverContent
-                side="bottom"
-                align="start"
-                className="w-auto p-0"
-              >
-                <ItemPicker
-                  value={pokemon.held_item}
-                  format={format}
-                  teamItems={teamItems}
-                  onPick={(item) => onUpdate({ held_item: item })}
-                  onClose={() => setItemOpen(false)}
-                />
-              </PopoverContent>
-            </Popover>
-
-            {/* Ability — shows the effective ability (mega override if any,
-                otherwise the stored ability). Click to change via picker. */}
-            <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
-              <PopoverTrigger
-                render={
-                  <button
-                    type="button"
-                    className={cn(
-                      s.heroFormCell,
-                      abilityErrors.length > 0 &&
-                        "ring-destructive/40 rounded ring-1"
-                    )}
-                  />
-                }
-              >
-                <span className={s.heroFormLbl}>ABIL</span>
-                <span
-                  className={cn(
-                    s.heroFormVal,
-                    !(megaAbility ?? pokemon.ability) &&
-                      "text-muted-foreground/50 italic"
-                  )}
-                >
-                  {(megaAbility ?? pokemon.ability) || "—"}
-                </span>
-              </PopoverTrigger>
-              <PopoverContent
-                side="bottom"
-                align="start"
-                className="w-auto p-0"
-              >
-                <AbilityPicker
-                  value={pokemon.ability}
-                  species={
-                    pokemon.species
-                      ? getCanonicalBaseSpecies(pokemon.species)
-                      : ""
-                  }
-                  format={format}
-                  onPick={(ability) => onUpdate({ ability })}
-                  onClose={() => setAbilityOpen(false)}
-                />
-              </PopoverContent>
-            </Popover>
-
-            {/* Nature */}
-            <Popover open={natureOpen} onOpenChange={setNatureOpen}>
-              <PopoverTrigger
-                render={
-                  <button
-                    type="button"
-                    className={cn(
-                      s.heroFormCell,
-                      natureErrors.length > 0 &&
-                        "ring-destructive/40 rounded ring-1"
-                    )}
-                  />
-                }
-              >
-                <span className={s.heroFormLbl}>NAT</span>
-                <span
-                  className={cn(
-                    s.heroFormVal,
-                    !pokemon.nature && "text-muted-foreground/50 italic"
-                  )}
-                >
-                  {pokemon.nature || "—"}
-                  {pokemon.nature && (
-                    <NatureChevrons boost={natUp} reduce={natDown} />
-                  )}
-                </span>
-              </PopoverTrigger>
-              <PopoverContent
-                side="bottom"
-                align="start"
-                className="w-auto p-0"
-              >
-                <NaturePicker
-                  value={pokemon.nature ?? ""}
-                  onPick={(nature) => onUpdate({ nature })}
-                  onClose={() => setNatureOpen(false)}
-                />
-              </PopoverContent>
-            </Popover>
-
-            {/* Tera — format-gated, full-width span */}
-            {showTera && (
-              <Popover open={teraOpen} onOpenChange={setTeraOpen}>
-                <PopoverTrigger
-                  render={
-                    <button
-                      type="button"
-                      className={cn(s.heroFormCell, s.heroFormCellSpan2)}
-                    />
-                  }
-                >
-                  <span className={s.heroFormLbl}>TERA</span>
-                  <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-                    {pokemon.tera_type ? (
-                      <>
-                        <TypeDot t={pokemon.tera_type} size={10} />
-                        <span className={s.heroFormVal}>
-                          {pokemon.tera_type}
-                        </span>
-                      </>
-                    ) : (
-                      <span
-                        className={cn(
-                          s.heroFormVal,
-                          "text-muted-foreground/50 italic"
-                        )}
-                      >
-                        —
-                      </span>
-                    )}
-                  </span>
-                </PopoverTrigger>
-                <PopoverContent
-                  side="bottom"
-                  align="start"
-                  className="w-auto p-0"
-                >
-                  <TypePicker
-                    value={pokemon.tera_type}
-                    onPick={(type) => onUpdate({ tera_type: type })}
-                    onClose={() => setTeraOpen(false)}
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
-
+          <FormCells
+            pokemon={pokemon}
+            format={format}
+            teamItems={teamItems}
+            isMegaStone={isMegaStone}
+            natUp={natUp}
+            natDown={natDown}
+            itemErrors={itemErrors}
+            abilityErrors={abilityErrors}
+            natureErrors={natureErrors}
+            onUpdate={onUpdate}
+            variant="grid"
+          />
           {/* Validation errors — sit below the form, still inside heroForm */}
           <FieldErrors errors={speciesErrors} />
           <FieldErrors errors={nicknameErrors} />
@@ -652,6 +300,7 @@ function IdentityLaneReal({
           <FieldErrors errors={abilityErrors} />
           <FieldErrors errors={natureErrors} />
         </div>
+      </div>
       )}
     </div>
   );

@@ -1,0 +1,113 @@
+"use client";
+
+import { useState } from "react";
+
+import { type GameFormat } from "@trainers/pokemon";
+import { type Tables, type TablesUpdate } from "@trainers/supabase";
+
+import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+import { type ValidationError } from "../../../../validation-hooks";
+import { ItemPicker } from "../../../pickers/item-picker";
+import { FieldErrors } from "../../../validation/field-error";
+import { FormChip } from "../../form-chip";
+import { type CellVariant } from "./identity-cell-shared";
+import s from "../../../builder.module.css";
+
+// =============================================================================
+// ItemCell — held-item form cell, row (compact) or grid (hero) variant
+// =============================================================================
+
+interface ItemCellProps {
+  pokemon: Tables<"pokemon">;
+  format: GameFormat | undefined;
+  teamItems: string[];
+  errors: ValidationError[];
+  isMegaStone: boolean;
+  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  variant: CellVariant;
+}
+
+export function ItemCell({
+  pokemon,
+  format,
+  teamItems,
+  errors,
+  isMegaStone,
+  onUpdate,
+  variant,
+}: ItemCellProps) {
+  const [open, setOpen] = useState(false);
+
+  if (variant === "row") {
+    return (
+      <div className="flex flex-col">
+        <FormChip
+          label="Item"
+          value={pokemon.held_item ?? ""}
+          triggerClassName={
+            errors.length > 0
+              ? "ring-1 ring-destructive/40 rounded"
+              : undefined
+          }
+          open={open}
+          onOpenChange={setOpen}
+        >
+          <ItemPicker
+            value={pokemon.held_item}
+            format={format}
+            teamItems={teamItems}
+            onPick={(item) => onUpdate({ held_item: item })}
+            onClose={() => setOpen(false)}
+          />
+        </FormChip>
+        <FieldErrors errors={errors} className="px-1" />
+      </div>
+    );
+  }
+
+  // variant === "grid" — hero layout
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            className={cn(
+              s.heroFormCell,
+              s.heroFormCellSpan2,
+              errors.length > 0 && "ring-destructive/40 rounded ring-1"
+            )}
+          />
+        }
+      >
+        <span className={s.heroFormLbl}>ITEM</span>
+        <span className={s.heroFormVal}>
+          <span
+            className={cn(
+              "min-w-0 truncate",
+              !pokemon.held_item && "text-muted-foreground/50 italic"
+            )}
+          >
+            {pokemon.held_item || "—"}
+          </span>
+          {isMegaStone && <span className={s.heroMegaChip}>MEGA</span>}
+        </span>
+      </PopoverTrigger>
+      <PopoverContent side="bottom" align="start" className="w-auto p-0">
+        <ItemPicker
+          value={pokemon.held_item}
+          format={format}
+          teamItems={teamItems}
+          onPick={(item) => onUpdate({ held_item: item })}
+          onClose={() => setOpen(false)}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
