@@ -80,13 +80,14 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         onClick={() => setOpen(true)}
         aria-label={`Add Pokémon to slot ${String(idx + 1).padStart(2, "0")}`}
         className={cn(
-          "border-border bg-card flex w-fit min-w-0 flex-wrap items-stretch self-center overflow-hidden rounded-lg border border-dashed",
+          s.rowActive,
+          "border-border bg-card flex h-full w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-dashed",
           "hover:border-primary/40 hover:bg-muted/10 text-left transition-colors",
           "focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
         )}
       >
         {/* RIB — slot number + × placeholder */}
-        <div className="border-border/60 bg-muted/20 flex w-10 shrink-0 flex-col items-center justify-between border-r border-dashed py-2">
+        <div className={cn(s.rib, "border-border/60 bg-muted/20 flex shrink-0 border-dashed")}>
           <span className="text-muted-foreground font-mono text-[10px] font-medium tracking-wide">
             {String(idx + 1).padStart(2, "0")}
           </span>
@@ -95,9 +96,13 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
           </span>
         </div>
 
-        <IdentityLane pokemon={null} format={_format} />
-        <StatsLane pokemon={null} format={_format} />
-        <MovesLane pokemon={null} format={_format} />
+        <div className={s.rowVerticalContent}>
+          <IdentityLane pokemon={null} format={_format} />
+          <div className={s.rowRight}>
+            <StatsLane pokemon={null} format={_format} />
+            <MovesLane pokemon={null} format={_format} />
+          </div>
+        </div>
         {calcEnabled && <CalcColumn pokemon={null} />}
       </button>
 
@@ -291,7 +296,7 @@ function ActiveRowShell({
   isDragging = false,
 }: ActiveRowShellProps) {
   return (
-    <div className="rounded-lg">
+    <div className="h-full rounded-lg">
       <ActiveRow
         idx={idx}
         pokemon={pokemon}

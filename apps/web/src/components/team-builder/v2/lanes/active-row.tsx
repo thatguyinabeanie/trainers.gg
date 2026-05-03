@@ -113,7 +113,7 @@ export function ActiveRow({
     <div
       className={cn(
         s.rowActive,
-        "bg-card flex w-full min-w-0 items-stretch self-center overflow-hidden rounded-lg border",
+        "bg-card flex h-full w-full min-w-0 items-stretch self-center overflow-hidden rounded-lg border",
         "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]",
         isDragging && s.rowDragging
       )}
