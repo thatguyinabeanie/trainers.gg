@@ -62,7 +62,7 @@ import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
 import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
 import { useBuilderState } from "./use-builder-state";
-import { useTeamLayout } from "./use-team-layout";
+import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
 import s from "./builder.module.css";
 
 // =============================================================================
@@ -504,15 +504,16 @@ export function TeamWorkspaceV2({
   }
 
   return (
-    <CalcStateProvider
-      selectedPokemon={slots[calcAttackerIdx] ?? null}
-      format={format}
-      field={state.field}
-      setField={state.setField}
-      calcEnabled={state.drawer === "calc"}
-      faintedYours={state.faintedYours}
-      faintedTheirs={state.faintedTheirs}
-    >
+    <TeamLayoutContext.Provider value={layoutMode}>
+      <CalcStateProvider
+        selectedPokemon={slots[calcAttackerIdx] ?? null}
+        format={format}
+        field={state.field}
+        setField={state.setField}
+        calcEnabled={state.drawer === "calc"}
+        faintedYours={state.faintedYours}
+        faintedTheirs={state.faintedTheirs}
+      >
       <div className={s.builderApp}>
         <Topbar
           team={team}
@@ -806,6 +807,7 @@ export function TeamWorkspaceV2({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </CalcStateProvider>
+      </CalcStateProvider>
+    </TeamLayoutContext.Provider>
   );
 }

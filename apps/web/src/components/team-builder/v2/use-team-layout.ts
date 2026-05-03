@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { createContext, useContext, useSyncExternalStore } from "react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -174,4 +174,22 @@ export function useTeamLayout(): UseTeamLayoutResult {
     isMobileLocked: isMobile,
     isAutoDegraded,
   };
+}
+
+// =============================================================================
+// TeamLayoutContext — consumed by IdentityLane (and any other component that
+// needs to know the effective grid layout mode without prop-drilling).
+//
+// Default value: "1x6". Tests that mount components directly without a
+// provider get this default, which matches the persisted-default constant.
+// =============================================================================
+
+export const TeamLayoutContext = createContext<TeamLayoutMode>("1x6");
+
+/**
+ * Read the effective team-layout mode from context. Returns "1x6" when no
+ * provider is mounted (the default that matches the persisted default).
+ */
+export function useTeamLayoutMode(): TeamLayoutMode {
+  return useContext(TeamLayoutContext);
 }
