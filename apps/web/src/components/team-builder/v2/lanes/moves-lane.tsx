@@ -286,12 +286,7 @@ function MoveTile({
 
 function MovesLaneGhost() {
   return (
-    <div className="border-border/60 flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3">
-      <div className="mb-1 flex items-baseline">
-        <span className="text-muted-foreground/30 font-mono text-[9.5px] font-medium tracking-widest uppercase">
-          Moves
-        </span>
-      </div>
+    <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3 @[1460px]:w-[520px] @[1460px]:flex-none">
       <div className="flex flex-col gap-1">
         {([0, 1, 2, 3] as const).map((i) => (
           <div key={i} className="mvline mvline--empty">
@@ -336,13 +331,7 @@ function MovesLaneReal({
   }
 
   return (
-    <div className="border-border/60 flex w-[440px] shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3">
-      <div className="mb-1 flex items-baseline justify-between">
-        <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
-          Moves
-        </span>
-      </div>
-
+    <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3 @[1460px]:w-[520px] @[1460px]:flex-none">
       {/* Move tiles */}
       <div className="flex flex-col gap-1">
         {MOVE_SLOTS.map((slotKey) => {

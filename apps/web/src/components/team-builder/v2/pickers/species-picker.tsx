@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -430,10 +430,9 @@ export function SpeciesPicker({
   const [filters, setFilters] = useState<SpeciesFilterState>(
     DEFAULT_SPECIES_FILTERS
   );
-  // Default sort: Speed descending — competitive teambuilding usually
-  // starts with "what outspeeds what", so sorting on Spe DESC by default
-  // surfaces the fastest legal Pokémon first.
-  const [sort, setSort] = useState<SortState>({ col: "spe", dir: "desc" });
+  // Default sort: BST descending — surfaces the strongest legal Pokémon
+  // overall before the user narrows by stat or role.
+  const [sort, setSort] = useState<SortState>({ col: "bst", dir: "desc" });
 
   // Scroll container ref for the virtualizer
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -607,15 +606,38 @@ export function SpeciesPicker({
   // Virtualizer
   // ---------------------------------------------------------------------------
 
+  // The smart-search banner + sticky header sit ABOVE the virtualized rows
+  // inside the same scroll container. Measure that offset so we can pass it
+  // to the virtualizer as `scrollMargin` — without it, virtualRow.start is
+  // measured from scrollRef's top while the rows actually live further down,
+  // and the virtualizer unmounts top rows prematurely as you scroll.
+  const virtualParentRef = useRef<HTMLDivElement>(null);
+  const [scrollMargin, setScrollMargin] = useState(0);
+
+  const showSmartSearch = query.trim().length > 0;
+
+  useEffect(() => {
+    const measure = () => {
+      if (!virtualParentRef.current) return;
+      setScrollMargin(virtualParentRef.current.offsetTop);
+    };
+    measure();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    if (virtualParentRef.current) observer.observe(virtualParentRef.current);
+    if (scrollRef.current) observer.observe(scrollRef.current);
+    return () => observer.disconnect();
+  }, [showSmartSearch, query]);
+
   const rowVirtualizer = useVirtualizer({
     count: matched.length,
     getScrollElement: () => scrollRef.current,
     // Row height: 64px sprite (size-16) + py-2 top + py-2 bottom ≈ 80px
     estimateSize: () => 80,
     overscan: 5,
+    scrollMargin,
   });
-
-  const showSmartSearch = query.trim().length > 0;
 
   function clearAllFilters() {
     setFilters(DEFAULT_SPECIES_FILTERS);
@@ -707,9 +729,14 @@ export function SpeciesPicker({
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div
             ref={scrollRef}
-            className="flex-1 overflow-x-hidden overflow-y-auto"
+            className="relative flex-1 overflow-x-hidden overflow-y-auto"
             data-testid="species-rows"
           >
+            {/* Smart-search banner scrolls UP with the content as you move
+                through results. The virtualizer's `scrollMargin` accounts
+                for the banner + sticky header height (measured via
+                virtualParentRef.offsetTop), so top species rows stay
+                mounted even when the banner is partly visible. */}
             {showSmartSearch && (
               <div
                 className="border-border border-b"
@@ -813,8 +840,11 @@ export function SpeciesPicker({
                 </div>
               ) : (
                 <div
+                  ref={virtualParentRef}
                   className="relative w-full"
-                  style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+                  style={{
+                    height: `${rowVirtualizer.getTotalSize()}px`,
+                  }}
                 >
                   {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                     const entry = matched[virtualRow.index];
@@ -823,7 +853,7 @@ export function SpeciesPicker({
                       <div
                         key={virtualRow.key}
                         className="absolute right-0 left-0"
-                        style={{ top: virtualRow.start }}
+                        style={{ top: virtualRow.start - scrollMargin }}
                       >
                         <SpeciesRow
                           entry={entry}

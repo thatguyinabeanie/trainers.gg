@@ -14,11 +14,11 @@ import {
 
 import { cn } from "@/lib/utils";
 
-import { type ValidationError } from "../../validation-hooks";
+import { errorsForFields, type ValidationError } from "../../validation-hooks";
 import { useCalcEnabled } from "../calc/calc-state-context";
 import s from "../builder.module.css";
 import { CalcColumn } from "./calc-column";
-import { IdentityLane } from "./identity-lane";
+import { IdentityLane } from "./identity";
 import { MovesLane } from "./moves-lane";
 import { RibDecorations } from "./rib-decorations";
 import { StatsLane } from "./stats-lane";
@@ -47,20 +47,6 @@ interface ActiveRowProps {
   dragListeners?: DraggableSyntheticListeners;
   /** Whether the row is currently being dragged. */
   isDragging?: boolean;
-}
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-/**
- * Filter the flat fieldErrors list to only those matching any of the given field keys.
- */
-function errorsForFields(
-  errors: ValidationError[],
-  fields: string[]
-): ValidationError[] {
-  return errors.filter((e) => fields.includes(e.field));
 }
 
 // =============================================================================
@@ -127,7 +113,7 @@ export function ActiveRow({
     <div
       className={cn(
         s.rowActive,
-        "bg-card flex w-fit min-w-0 flex-wrap items-stretch self-center overflow-hidden rounded-lg border",
+        "bg-card flex w-full min-w-0 items-stretch self-center overflow-hidden rounded-lg border",
         "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]",
         isDragging && s.rowDragging
       )}
@@ -136,7 +122,7 @@ export function ActiveRow({
       <div
         className={cn(
           s.rib,
-          "border-border/60 bg-muted/20 flex w-10 shrink-0 flex-col items-center justify-between border-r border-dashed py-2"
+          "border-border/60 bg-muted/20 flex shrink-0 border-dashed"
         )}
       >
         <span
@@ -164,32 +150,43 @@ export function ActiveRow({
         </button>
       </div>
 
-      <IdentityLane
-        pokemon={pokemon}
-        format={format}
-        teamItems={teamItems}
-        onUpdate={onUpdate}
-        fieldErrors={identityErrors}
-        teamSiblings={teamPokemon
-          .filter((tp) => tp.pokemon && tp.pokemon.id !== pokemon.id)
-          .map((tp) => ({ species: tp.pokemon!.species }))}
-      />
+      {/* rowVerticalContent — transparent wrapper (display: contents) in
+          horizontal modes; flips to flex-column in 2×3-vertical and
+          3×2-vertical modes so identity sits above stats+moves. CSS in
+          builder.module.css controls the switch via data-layout attribute. */}
+      <div className={s.rowVerticalContent}>
+        <IdentityLane
+          pokemon={pokemon}
+          format={format}
+          teamItems={teamItems}
+          onUpdate={onUpdate}
+          fieldErrors={identityErrors}
+          teamSiblings={teamPokemon
+            .filter((tp) => tp.pokemon && tp.pokemon.id !== pokemon.id)
+            .map((tp) => ({ species: tp.pokemon!.species }))}
+        />
 
-      {/* STATS lane */}
-      <StatsLane
-        pokemon={pokemon}
-        format={format}
-        onUpdate={onUpdate}
-        fieldErrors={statsErrors}
-      />
+        {/* Right column — at compact widths stats and moves sit side-by-side
+            as direct children of the row; at mid-stack widths this wrapper
+            stacks them vertically on the right of the identity panel. CSS
+            (.rowRight) flips between display: contents and flex-column based
+            on container query. */}
+        <div className={s.rowRight}>
+          <StatsLane
+            pokemon={pokemon}
+            format={format}
+            onUpdate={onUpdate}
+            fieldErrors={statsErrors}
+          />
 
-      {/* MOVES lane */}
-      <MovesLane
-        pokemon={pokemon}
-        format={format}
-        onUpdate={onUpdate}
-        fieldErrors={movesErrors}
-      />
+          <MovesLane
+            pokemon={pokemon}
+            format={format}
+            onUpdate={onUpdate}
+            fieldErrors={movesErrors}
+          />
+        </div>
+      </div>
 
       {/* Calc column — fixed 160px, aligns row-for-row with move tiles */}
       {calcEnabled && <CalcColumn pokemon={pokemon} />}

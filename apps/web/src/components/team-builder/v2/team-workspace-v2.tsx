@@ -62,6 +62,7 @@ import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
 import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
 import { useBuilderState } from "./use-builder-state";
+import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
 import s from "./builder.module.css";
 
 // =============================================================================
@@ -386,6 +387,7 @@ export function TeamWorkspaceV2({
   }
 
   const isMobile = useIsMobile();
+  const { mode: layoutMode } = useTeamLayout();
 
   // ---------------------------------------------------------------------------
   // DnD sensors
@@ -502,15 +504,16 @@ export function TeamWorkspaceV2({
   }
 
   return (
-    <CalcStateProvider
-      selectedPokemon={slots[calcAttackerIdx] ?? null}
-      format={format}
-      field={state.field}
-      setField={state.setField}
-      calcEnabled={state.drawer === "calc"}
-      faintedYours={state.faintedYours}
-      faintedTheirs={state.faintedTheirs}
-    >
+    <TeamLayoutContext.Provider value={layoutMode}>
+      <CalcStateProvider
+        selectedPokemon={slots[calcAttackerIdx] ?? null}
+        format={format}
+        field={state.field}
+        setField={state.setField}
+        calcEnabled={state.drawer === "calc"}
+        faintedYours={state.faintedYours}
+        faintedTheirs={state.faintedTheirs}
+      >
       <div className={s.builderApp}>
         <Topbar
           team={team}
@@ -543,6 +546,7 @@ export function TeamWorkspaceV2({
                 data-calc-open={
                   state.drawer === "calc" && !isMobile ? "true" : "false"
                 }
+                data-layout={layoutMode}
               >
                 {isMobile ? (
                   // Mobile: no drag-and-drop, render rows directly.
@@ -803,6 +807,7 @@ export function TeamWorkspaceV2({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </CalcStateProvider>
+      </CalcStateProvider>
+    </TeamLayoutContext.Provider>
   );
 }

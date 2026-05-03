@@ -17,18 +17,17 @@ import {
 } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 import { type ValidationError } from "../validation-hooks";
 import { Sprite } from "./sprite";
 import { TypePill } from "./type-pill";
 import { ActiveRow } from "./lanes/active-row";
 import { CalcColumn } from "./lanes/calc-column";
-import { IdentityLane } from "./lanes/identity-lane";
+import { IdentityLane } from "./lanes/identity";
 import { StatsLane } from "./lanes/stats-lane";
 import { MovesLane } from "./lanes/moves-lane";
 import { useCalcEnabled } from "./calc/calc-state-context";
-import { SpeciesPicker } from "./pickers/species-picker";
+import { SpeciesPickerDialog } from "./pickers/species-picker-dialog";
 import s from "./builder.module.css";
 
 // =============================================================================
@@ -102,23 +101,13 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         {calcEnabled && <CalcColumn pokemon={null} />}
       </button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent
-          showCloseButton={false}
-          className="max-w-[calc(100vw-2rem)] overflow-hidden p-0 sm:max-w-[920px]"
-          style={{ height: "min(70vh, 640px)" }}
-        >
-          <SpeciesPicker
-            value={null}
-            format={_format}
-            onPick={(species) => {
-              onAdd?.(idx, species);
-              setOpen(false);
-            }}
-            onClose={() => setOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <SpeciesPickerDialog
+        open={open}
+        onOpenChange={setOpen}
+        value={null}
+        format={_format}
+        onPick={(species) => onAdd?.(idx, species)}
+      />
     </>
   );
 }
@@ -368,7 +357,7 @@ export function PokeRow({
     // Empty slot — sortable ref still attached so it can act as a drop target,
     // but drag is disabled so it won't be picked up.
     return (
-      <div ref={setNodeRef} style={style} className="mx-auto w-fit">
+      <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)} data-slot-host>
         <EmptyRow idx={idx} density={density} format={format} onAdd={onAdd} />
       </div>
     );
@@ -378,7 +367,7 @@ export function PokeRow({
 
   if (showExpanded) {
     return (
-      <div ref={setNodeRef} style={style} className="mx-auto w-fit">
+      <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)} data-slot-host>
         <ActiveRowShell
           idx={idx}
           pokemon={pokemon}
@@ -397,7 +386,7 @@ export function PokeRow({
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="mx-auto w-fit">
+    <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)} data-slot-host>
       <CollapsedRow
         idx={idx}
         pokemon={pokemon}

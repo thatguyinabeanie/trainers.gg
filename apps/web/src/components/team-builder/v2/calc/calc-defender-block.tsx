@@ -1,13 +1,13 @@
 "use client";
 
+import { useState } from "react";
+
 import {
   type GameFormat,
   getSpeciesTypes,
   getValidAbilities,
   getValidNatures,
   getLegalAbilities,
-  getMetaSpeedTiers,
-  isLegalSpecies,
   isChampionsFormat,
   legalSetOrPermissive,
 } from "@trainers/pokemon";
@@ -22,6 +22,7 @@ import {
 } from "../../use-calc-state";
 import { Sprite } from "../sprite";
 import { TypePill } from "../type-pill";
+import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
 import { CALC_TARGETS } from "./calc-target-options";
 
 // =============================================================================
@@ -45,7 +46,7 @@ interface CalcDefenderBlockProps {
   setDefenderHpPercent: (v: number) => void;
   resetDefenderForSpecies: UseCalcStateReturn["resetDefenderForSpecies"];
   format: GameFormat | undefined;
-  /** The user's team — available as extra target options in the picker */
+  /** The user's team — currently unused; kept on the interface for callers. */
   teammates: Tables<"pokemon">[];
 }
 
@@ -78,7 +79,7 @@ const selectClass = cn(
 
 /**
  * Defender configuration block in the Calc Drawer.
- * Shows target select, sprite, meta line, HP/DEF/SPD EV inputs,
+ * Shows target picker trigger, sprite, meta line, HP/DEF/SPD EV inputs,
  * nature/item selects, HP% slider, and stage buttons.
  */
 export function CalcDefenderBlock({
@@ -98,7 +99,7 @@ export function CalcDefenderBlock({
   setDefenderHpPercent,
   resetDefenderForSpecies,
   format,
-  teammates,
+  teammates: _teammates,
 }: CalcDefenderBlockProps) {
   const types = defenderSpecies ? getSpeciesTypes(defenderSpecies) : [];
   const natures = getValidNatures();
@@ -111,34 +112,20 @@ export function CalcDefenderBlock({
       )
     : getValidAbilities(defenderSpecies);
 
-  // Meta options for the target group (already curated per format)
-  const meta = format ? getMetaSpeedTiers(format.id) : [];
-
-  // Filter the hardcoded VGC presets down to species legal in the active
-  // format. For Champions Reg M-A this drops the entire VGC roster (Flutter
-  // Mane, Calyrex, Miraidon, etc.) and only the Meta optgroup + teammates
-  // remain — which is correct.
-  const presets = formatId
-    ? CALC_TARGETS.filter((t) => isLegalSpecies(t.species, formatId))
-    : CALC_TARGETS;
-
-  // Defensive: also filter teammates by legality so a stale team can't
-  // surface a non-legal defender via the "Your team" optgroup.
-  const legalTeammates = formatId
-    ? teammates.filter(
-        (p) => p.species && isLegalSpecies(p.species, formatId)
-      )
-    : teammates;
-
   // The item select shows QUICK_ITEMS plus the current item if not already there
   const itemOptions = [
     ...(defenderItem && !QUICK_ITEMS.includes(defenderItem) ? [defenderItem] : []),
     ...QUICK_ITEMS,
   ];
 
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   function handleTargetChange(value: string) {
-    // Check the format-filtered presets first for full spread
-    const preset = presets.find((t) => t.species === value);
+    if (value === defenderSpecies) return;
+    // If the picked species matches a hardcoded preset, apply the preset's
+    // full spread (ability/item/nature/EVs). Otherwise reset to species
+    // defaults — works for any legal species the user picks via the picker.
+    const preset = CALC_TARGETS.find((t) => t.species === value);
     if (preset) {
       resetDefenderForSpecies(preset.species, {
         ability: preset.ability,
@@ -148,45 +135,45 @@ export function CalcDefenderBlock({
       });
       return;
     }
-    // Team mate — reset with just the species name
     resetDefenderForSpecies(value);
   }
 
   return (
     <section className="cd-block">
-      {/* Block header with target select */}
+      {/* Block header with target picker trigger */}
       <div className="cd-block-head">
         <span className="cd-eyebrow">DEFENDER</span>
-        <select
-          className={cn(selectClass, "max-w-[160px]")}
-          value={defenderSpecies}
-          onChange={(e) => handleTargetChange(e.target.value)}
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
           aria-label="Defender target"
+          className={cn(
+            "border-border bg-background hover:border-primary focus-visible:border-primary",
+            "flex h-6 max-w-[160px] flex-1 items-center gap-1 rounded border px-2 text-left text-[11px]",
+            "outline-none transition-colors focus:ring-1 focus:ring-primary"
+          )}
         >
-          {presets.map((t) => (
-            <option key={t.species} value={t.species}>
-              {t.name}
-            </option>
-          ))}
-          {meta.length > 0 && (
-            <optgroup label="Meta">
-              {meta.map((m) => (
-                <option key={`meta-${m.species}`} value={m.displayName}>
-                  {m.displayName}
-                </option>
-              ))}
-            </optgroup>
-          )}
-          {legalTeammates.length > 0 && (
-            <optgroup label="Your team">
-              {legalTeammates.map((p) => (
-                <option key={`team-${p.id}`} value={p.species ?? ""}>
-                  {p.nickname ?? p.species ?? "—"}
-                </option>
-              ))}
-            </optgroup>
-          )}
-        </select>
+          <span
+            className={cn(
+              "min-w-0 flex-1 truncate",
+              defenderSpecies ? "text-foreground font-medium" : "text-muted-foreground"
+            )}
+            title={defenderSpecies || undefined}
+          >
+            {defenderSpecies || "Choose species…"}
+          </span>
+          <span aria-hidden className="text-[9px] text-muted-foreground">
+            ▾
+          </span>
+        </button>
+
+        <SpeciesPickerDialog
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          value={defenderSpecies}
+          format={format}
+          onPick={handleTargetChange}
+        />
       </div>
 
       {/* Mon identity row */}

@@ -31,7 +31,7 @@ jest.mock("../lanes/calc-column", () => ({
   CalcColumn: () => <div data-testid="calc-column" />,
 }));
 
-jest.mock("../lanes/identity-lane", () => ({
+jest.mock("../lanes/identity", () => ({
   IdentityLane: ({
     pokemon,
     fieldErrors,

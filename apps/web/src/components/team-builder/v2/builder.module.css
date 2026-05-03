@@ -88,11 +88,11 @@
 }
 
 .builderRows {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding: 12px;
-  max-width: 1600px;
+  max-width: 1800px;
   margin-inline: auto;
   /* Vertical auto-margin centers the rows when they don't fill the editor
      region. Collapses to 0 once content overflows so scrolling still
@@ -100,6 +100,28 @@
   margin-block: auto;
   width: 100%;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.builderRows[data-layout="2x3"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.builderRows[data-layout="3x2-vertical"] {
+  grid-template-columns: repeat(auto-fit, minmax(500px, 600px));
+  justify-content: center;
+}
+
+/* In 1×6 mode the slot fills the grid column, which without a cap
+   stretches the row card across the full content area. The row's
+   internal columns are rib (40) + identity (~500: sprite section + form
+   column with 256px form col + 180px species pill stack) + stats (400) +
+   moves (520) ≈ 1460px total. Cap the slot at 1500 so wider viewports
+   give the row 40px of headroom for side-by-side mode without sprawling
+   sparse, and so the @container threshold below has room to gate
+   side-by-side ↔ stacked correctly. */
+.builderRows[data-layout="1x6"] .slotHost {
+  max-width: 1500px;
+  margin-inline: auto;
 }
 
 /* When the calc column is open, the row list expands by the calc column width so
@@ -112,6 +134,16 @@
 [data-density="compact"] .builderRows {
   gap: 4px;
   padding: 8px;
+}
+
+/* Container-query host — every slot wrapper opts into inline-size containment
+   so the layout rules in @container blocks below select the correct shape
+   based on the slot's own width (works for both viewport changes AND the
+   future grid toggle). */
+.slotHost {
+  container-type: inline-size;
+  container-name: slot;
+  width: 100%;
 }
 
 /* ============================================================
@@ -760,31 +792,82 @@
 
 /* ============================================================
    Active row — lane layout
+
+   Three layout states, all driven by @container queries on the slotHost:
+     • Compact   (≥ 1240px) — rib | identity | stats | moves   side-by-side
+     • Mid-stack (500–1239) — rib | identity-hero | (stats / moves)  right col
+     • Full-stack (< 500px) — rib (top bar) / identity / stats / moves  stacked
    ============================================================ */
 
-/* Row container — wraps lanes onto a second line when the worklane is too
-   narrow (e.g. when the CalcDrawer is open). Never forces horizontal scroll. */
 .rowActive {
   display: flex;
   align-items: stretch;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   min-width: 0;
   overflow: visible;
 }
 
-/* ============================================================
-   Mobile active row — single-column stacked layout (< md / 768px)
-   ============================================================ */
+/* Right column wrapper — at compact widths it disappears (display: contents)
+   so stats and moves render as direct flex children of .rowActive. At mid
+   widths it becomes a flex column so stats sits above moves. */
+.rowRight {
+  display: contents;
+}
 
-@media (max-width: 767px) {
-  /* Remove the 900px min-width so the row fits the phone viewport */
-  .rowActive {
+/* Mid-stack — identity hero panel left, stats above moves on the right.
+   Threshold raised from 1239 → 1459 to match the actual minimum slot
+   width that fits side-by-side: rib(40) + identity(~500) + stats(400) +
+   moves(520) ≈ 1460. Below this the row stacks stats above moves so the
+   teal active-row border wraps every lane without inner content
+   overflowing past the rounded edge. */
+@container slot (max-width: 1459px) {
+  .rowRight {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
     min-width: 0;
+  }
+}
+
+/* Vertical-orientation wrapper — transparent (display: contents) in all
+   horizontal grid modes so identity and rowRight remain direct flex children
+   of .rowActive. In 2×3-vertical and 3×2-vertical modes the data-layout
+   attribute on .builderRows switches it to a flex column so identity stacks
+   above stats+moves within each cell. */
+.rowVerticalContent {
+  display: contents;
+}
+
+[data-layout="3x2-vertical"] .rowVerticalContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* In 3x2-vertical, pivot the rib to a horizontal top bar:
+   number on the left, × on the right, same line. */
+[data-layout="3x2-vertical"] .rowActive {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+[data-layout="3x2-vertical"] .rib {
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  padding: 4px 10px;
+  border-right: none;
+  border-bottom: 1px dashed var(--border);
+}
+
+/* Full-stack — rib pivots horizontal at the top, everything else stacks */
+@container slot (max-width: 699px) {
+  .rowActive {
     flex-direction: column;
     align-items: stretch;
   }
 
-  /* Rib becomes a slim horizontal bar at the top */
   .rib {
     flex-direction: row;
     justify-content: space-between;
@@ -793,7 +876,6 @@
     border-right: none;
     border-bottom: 1px dashed var(--border);
   }
-
 }
 
 /* Left slot rib */
@@ -803,19 +885,29 @@
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  width: 40px;
+  padding: 8px 0;
+  border-right-width: 1px;
 }
 
-/* Decorations shown in the rib middle (type pills, level).
-   On mobile (≤767px) hide the type pills but keep .levelPicker visible so
-   Champions / Reg-MA format users can still edit level on narrow viewports. */
+/* Decorations shown in the rib middle (type pills only — level picker
+   moved to the identity panel meta row). Hidden entirely at full-stack
+   widths since the rib pivots horizontal and there's no vertical room. */
 .ribDecorations {
   display: flex;
 }
 
-@media (max-width: 767px) {
-  .ribDecorations > :not(.levelPicker) {
+@container slot (max-width: 699px) {
+  .ribDecorations {
     display: none;
   }
+}
+
+/* Override: show type icons in horizontal rib for 3x2-vertical */
+[data-layout="3x2-vertical"] .ribDecorations {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
 }
 
 /* Drag handle — the slot number label on the RIB.
@@ -862,6 +954,29 @@
   overflow: hidden;
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
+}
+
+/* Tighten BP / Acc widths at narrow slot widths so move names get more
+   room before truncating. The "BP" / "ACC" labels are still rendered
+   but the value column fits a 3-digit BP / 4-char "100%" without
+   reserving extra space. Threshold matches the side-by-side ↔ stacked
+   transition above (1459) so move tiles tighten the moment the row
+   drops out of full side-by-side mode. */
+@container slot (max-width: 1459px) {
+  /* stylelint-disable-next-line selector-pseudo-class-no-unknown */
+  :global(.mvline) {
+    grid-template-columns:
+      max-content
+      minmax(0, 1fr)
+      40px
+      48px;
+    gap: 4px;
+    padding: 4px 6px;
+  }
+  /* stylelint-disable-next-line selector-pseudo-class-no-unknown */
+  :global(.mvline-stat-label) {
+    display: none;
+  }
 }
 
 /* Calc result row — spans all columns as row 2 inside .mvline grid */
@@ -1932,3 +2047,11 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================
+   Identity panel — compact vs hero modes
+   Compact layout (≥~1240px): sprite-left + form-right (current design)
+   Hero layout (<~1240px): full-width centered panel
+   Layouts are conditionally rendered by useContainerCompact.
+   ============================================================ */
+

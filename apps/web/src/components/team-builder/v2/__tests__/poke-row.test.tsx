@@ -57,7 +57,7 @@ jest.mock("../lanes/active-row", () => ({
 }));
 
 // Lane component ghost mocks — return static content matching the real ghost output
-jest.mock("../lanes/identity-lane", () => ({
+jest.mock("../lanes/identity", () => ({
   IdentityLane: ({ pokemon }: { pokemon: null | { species?: string } }) => {
     if (!pokemon) {
       return (

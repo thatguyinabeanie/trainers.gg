@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * Tests for RibDecorations — type pills (rotated) and level picker rendered
- * inside the active-row rib.
+ * Tests for RibDecorations — type pills rendered inside the active-row rib.
+ * Level picker has moved to the identity panel meta-bar; gender / shiny
+ * controls live there too. The rib only renders type pills now.
  */
 
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import React from "react";
 
 import { type Tables } from "@trainers/supabase";
@@ -18,62 +18,6 @@ import { type GameFormat } from "@trainers/pokemon";
 
 jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 
-// Popover: render content inline so it's always queryable
-jest.mock("@/components/ui/popover", () => ({
-  Popover: ({
-    children,
-    open,
-  }: {
-    children: React.ReactNode;
-    open?: boolean;
-  }) => (
-    <div data-testid="popover" data-open={String(!!open)}>
-      {children}
-    </div>
-  ),
-  PopoverTrigger: ({
-    children,
-    render: renderProp,
-  }: {
-    children?: React.ReactNode;
-    render?: React.ReactElement;
-  }) => {
-    if (renderProp) {
-      return (
-        <div data-testid="popover-trigger">
-          {renderProp}
-          {children}
-        </div>
-      );
-    }
-    return <div data-testid="popover-trigger">{children}</div>;
-  },
-  PopoverContent: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="popover-content">{children}</div>
-  ),
-}));
-
-jest.mock("../pickers/number-picker", () => ({
-  NumberPicker: ({
-    title,
-    value,
-    onChange,
-    onClose,
-  }: {
-    title: string;
-    value: number;
-    min: number;
-    max: number;
-    onChange: (v: number) => void;
-    onClose: () => void;
-  }) => (
-    <div data-testid="number-picker" data-title={title} data-value={value}>
-      <button onClick={() => onChange(42)}>pick-number</button>
-      <button onClick={onClose}>close-number</button>
-    </div>
-  ),
-}));
-
 // @trainers/pokemon — control type resolution per test
 jest.mock("@trainers/pokemon", () => ({
   getSpeciesTypes: jest.fn().mockReturnValue(["Dragon", "Ground"]),
@@ -84,18 +28,12 @@ jest.mock("@trainers/pokemon/sprites", () => ({
   getShowdownTypeIconUrl: (t: string) => `https://sprites.test/${t}.png`,
 }));
 
-// format-gating — control level gate per test
-jest.mock("../format-gating", () => ({
-  formatSupportsLevel: jest.fn().mockReturnValue(true),
-}));
-
 // =============================================================================
 // Import after mocks
 // =============================================================================
 
 import { RibDecorations } from "../lanes/rib-decorations";
 import * as TrainersPokemon from "@trainers/pokemon";
-import * as FormatGating from "../format-gating";
 
 // =============================================================================
 // Fixtures
@@ -111,20 +49,6 @@ const VGC_FORMAT: GameFormat = {
   regulation: "I",
   label: "SV: Reg I",
   showdownName: "[Gen 9] VGC 2026 Reg I",
-  doubles: true,
-  active: true,
-};
-
-const CHAMPIONS_FORMAT: GameFormat = {
-  id: "championsvgc2026regma",
-  game: "Pokemon Champions",
-  gameShort: "Champions",
-  generation: 9,
-  category: "VGC",
-  year: 2026,
-  regulation: "M-A",
-  label: "Champions: Reg M-A",
-  showdownName: "[Champions] VGC 2026 Reg M-A",
   doubles: true,
   active: true,
 };
@@ -210,8 +134,6 @@ describe("RibDecorations — type pills", () => {
     ]);
     renderDecorations();
     const pill = screen.getByRole("img", { name: "Water" });
-    // The wordless TypeSymbolIcon renders a <span role="img"> — the type
-    // name is exposed via aria-label rather than image text content.
     expect(pill.tagName.toLowerCase()).toBe("span");
     expect(pill).toHaveAttribute("data-type", "Water");
   });
@@ -225,60 +147,32 @@ describe("RibDecorations — type pills", () => {
   });
 });
 
-describe("RibDecorations — level picker (format-gated)", () => {
-  beforeEach(() => {
-    (FormatGating.formatSupportsLevel as jest.Mock).mockReturnValue(true);
-  });
+describe("RibDecorations — moved-out controls", () => {
+  // Level picker, gender toggle, and shiny toggle have all moved to the
+  // identity panel meta-bar. The rib renders type pills only.
 
-  it("renders the level trigger button when format supports levels", () => {
-    renderDecorations({ level: 50 }, VGC_FORMAT);
-    // The trigger renders "L50" (L prefix + level number)
-    expect(screen.getByTitle("Level 50")).toBeInTheDocument();
-  });
-
-  it("shows 'L50' as default when pokemon.level is null", () => {
-    renderDecorations({ level: null }, VGC_FORMAT);
-    expect(screen.getByTitle("Level 50")).toBeInTheDocument();
-  });
-
-  it("renders 'L42' when level is 42", () => {
-    renderDecorations({ level: 42 }, VGC_FORMAT);
-    expect(screen.getByText("L42")).toBeInTheDocument();
-  });
-
-  it("calls onUpdate with level: 42 when NumberPicker fires onChange", async () => {
-    const user = userEvent.setup();
-    const { onUpdate } = renderDecorations({ level: 50 }, VGC_FORMAT);
-    await user.click(screen.getByText("pick-number"));
-    expect(onUpdate).toHaveBeenCalledWith({ level: 42 });
-  });
-
-  it("does NOT render level picker when format does not support levels", () => {
-    (FormatGating.formatSupportsLevel as jest.Mock).mockReturnValue(false);
-    renderDecorations({}, CHAMPIONS_FORMAT);
+  it("does NOT render the level picker (it lives in the identity meta-bar)", () => {
+    renderDecorations({ level: 50 });
     expect(screen.queryByTitle(/Level/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("number-picker")).not.toBeInTheDocument();
   });
 
-  it("renders the NumberPicker in the popover content", () => {
-    renderDecorations({ level: 50 }, VGC_FORMAT);
-    expect(screen.getByTestId("number-picker")).toBeInTheDocument();
-    expect(screen.getByTestId("number-picker")).toHaveAttribute(
-      "data-title",
-      "Level"
-    );
+  it("does NOT render the gender toggle", () => {
+    renderDecorations({ gender: null });
+    expect(screen.queryByTitle("Toggle gender")).not.toBeInTheDocument();
   });
-});
 
-describe("RibDecorations — combined render", () => {
-  it("renders without crashing for a mono-type pokemon", () => {
-    (TrainersPokemon.getSpeciesTypes as jest.Mock).mockReturnValueOnce([
-      "Normal",
-    ]);
-    expect(() => renderDecorations()).not.toThrow();
+  it("does NOT render the shiny toggle", () => {
+    renderDecorations({ is_shiny: false });
+    expect(
+      screen.queryByTitle("Not shiny (click to set)")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle("Shiny (click to clear)")
+    ).not.toBeInTheDocument();
   });
 
   it("renders without crashing when format is undefined", () => {
-    (FormatGating.formatSupportsLevel as jest.Mock).mockReturnValue(false);
     expect(() =>
       render(
         <RibDecorations
@@ -288,34 +182,5 @@ describe("RibDecorations — combined render", () => {
         />
       )
     ).not.toThrow();
-  });
-
-  it("renders types and level when format supports levels", () => {
-    (FormatGating.formatSupportsLevel as jest.Mock).mockReturnValue(true);
-    renderDecorations();
-    expect(screen.getAllByRole("img").length).toBeGreaterThan(0);
-    expect(screen.getByTitle("Level 50")).toBeInTheDocument();
-  });
-
-  it("renders types but NOT level when format does not support levels", () => {
-    (FormatGating.formatSupportsLevel as jest.Mock).mockReturnValue(false);
-    renderDecorations({}, CHAMPIONS_FORMAT);
-    expect(screen.getAllByRole("img").length).toBeGreaterThan(0);
-    expect(screen.queryByTitle(/Level/)).not.toBeInTheDocument();
-  });
-
-  it("does NOT render gender toggle in the rib", () => {
-    renderDecorations({ gender: null });
-    expect(screen.queryByTitle("Toggle gender")).not.toBeInTheDocument();
-  });
-
-  it("does NOT render shiny toggle in the rib", () => {
-    renderDecorations({ is_shiny: false });
-    expect(
-      screen.queryByTitle("Not shiny (click to set)")
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByTitle("Shiny (click to clear)")
-    ).not.toBeInTheDocument();
   });
 });

@@ -778,10 +778,10 @@ describe("SpeciesPicker", () => {
   // smart-search panel only offers Type / Moves / Abilities suggestions.
 
   // ---------------------------------------------------------------------------
-  // Default sort: Speed DESC
+  // Default sort: BST DESC
   // ---------------------------------------------------------------------------
 
-  it("default sort is Speed descending — SPE column shows ↓ indicator", () => {
+  it("default sort is BST descending — BST column shows ↓ indicator", () => {
     render(
       <SpeciesPicker
         value={null}
@@ -790,13 +790,13 @@ describe("SpeciesPicker", () => {
         onClose={jest.fn()}
       />
     );
-    // The SPE sort button should be active and show the descending arrow
-    const speButton = screen.getByRole("button", { name: "Sort by SPE" });
-    expect(speButton).toHaveAttribute("aria-pressed", "true");
-    expect(speButton).toHaveTextContent("↓");
+    // The BST sort button should be active and show the descending arrow
+    const bstButton = screen.getByRole("button", { name: "Sort by BST" });
+    expect(bstButton).toHaveAttribute("aria-pressed", "true");
+    expect(bstButton).toHaveTextContent("↓");
   });
 
-  it("default sort renders rows in Speed DESC order (Garchomp > Pikachu > Bulbasaur)", () => {
+  it("default sort renders rows in BST DESC order (Garchomp > Pikachu > Bulbasaur)", () => {
     render(
       <SpeciesPicker
         value={null}
@@ -809,8 +809,8 @@ describe("SpeciesPicker", () => {
     // Filter to only species rows (not the header row).
     const rows = screen.getAllByRole("row", { name: /select/i });
     const names = rows.map((r) => r.getAttribute("aria-label") ?? "");
-    // Garchomp spe=102, Pikachu spe=90, Bulbasaur spe=45 → DESC order.
-    // Use indexOf-relative assertions so the test survives if faster species
+    // Garchomp BST=600, Pikachu BST=320, Bulbasaur BST=318 → DESC order.
+    // Use indexOf-relative assertions so the test survives if heavier species
     // are added to the fixture later.
     expect(names).toContain("Select Garchomp");
     expect(names).toContain("Select Pikachu");
