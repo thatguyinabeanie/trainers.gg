@@ -164,36 +164,42 @@ export function ActiveRow({
         </button>
       </div>
 
-      <IdentityLane
-        pokemon={pokemon}
-        format={format}
-        teamItems={teamItems}
-        onUpdate={onUpdate}
-        fieldErrors={identityErrors}
-        teamSiblings={teamPokemon
-          .filter((tp) => tp.pokemon && tp.pokemon.id !== pokemon.id)
-          .map((tp) => ({ species: tp.pokemon!.species }))}
-      />
-
-      {/* Right column — at compact widths stats and moves sit side-by-side
-          as direct children of the row; at mid-stack widths this wrapper
-          stacks them vertically on the right of the identity panel. CSS
-          (.rowRight) flips between display: contents and flex-column based
-          on container query. */}
-      <div className={s.rowRight}>
-        <StatsLane
+      {/* rowVerticalContent — transparent wrapper (display: contents) in
+          horizontal modes; flips to flex-column in 2×3-vertical and
+          3×2-vertical modes so identity sits above stats+moves. CSS in
+          builder.module.css controls the switch via data-layout attribute. */}
+      <div className={s.rowVerticalContent}>
+        <IdentityLane
           pokemon={pokemon}
           format={format}
+          teamItems={teamItems}
           onUpdate={onUpdate}
-          fieldErrors={statsErrors}
+          fieldErrors={identityErrors}
+          teamSiblings={teamPokemon
+            .filter((tp) => tp.pokemon && tp.pokemon.id !== pokemon.id)
+            .map((tp) => ({ species: tp.pokemon!.species }))}
         />
 
-        <MovesLane
-          pokemon={pokemon}
-          format={format}
-          onUpdate={onUpdate}
-          fieldErrors={movesErrors}
-        />
+        {/* Right column — at compact widths stats and moves sit side-by-side
+            as direct children of the row; at mid-stack widths this wrapper
+            stacks them vertically on the right of the identity panel. CSS
+            (.rowRight) flips between display: contents and flex-column based
+            on container query. */}
+        <div className={s.rowRight}>
+          <StatsLane
+            pokemon={pokemon}
+            format={format}
+            onUpdate={onUpdate}
+            fieldErrors={statsErrors}
+          />
+
+          <MovesLane
+            pokemon={pokemon}
+            format={format}
+            onUpdate={onUpdate}
+            fieldErrors={movesErrors}
+          />
+        </div>
       </div>
 
       {/* Calc column — fixed 160px, aligns row-for-row with move tiles */}

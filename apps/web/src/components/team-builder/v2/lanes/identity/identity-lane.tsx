@@ -53,9 +53,7 @@ export function IdentityLane({
   const rootRef = useRef<HTMLDivElement>(null);
   const isCompact = useContainerCompact(rootRef);
 
-  // Widen to string so TypeScript doesn't narrow the "-vertical" comparisons
-  // to `never` — those mode values don't exist in TeamLayoutMode yet (step 8).
-  const layoutMode: string = useTeamLayoutMode();
+  const layoutMode = useTeamLayoutMode();
   const isVertical = layoutMode.endsWith("-vertical");
 
   const sharedProps = {

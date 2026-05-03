@@ -299,3 +299,56 @@
   color: var(--primary);
   white-space: nowrap;
 }
+
+/* ============================================================
+   Vertical — 2×3-vertical and 3×2-vertical grid modes
+
+   Identity panel stacks sprite + form vertically inside a full-
+   height column. The active-row wraps identity + right-stack in
+   .rowVerticalContent which flips to flex-column in these modes,
+   so identity sits on top and stats+moves sit below.
+
+   Structure:
+     ┌─ MetaBar ─────────────────────────────────────┐
+     ├─ vertSpriteCol ─┬─ vertFormCol ───────────────┤
+     │   sprite        │  form cells                  │
+     │   species pill  │                              │
+   ============================================================ */
+
+/* Root — full width, column flex, bottom divider separates from stats+moves */
+.vertRoot {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-bottom: 1px dashed var(--border);
+}
+
+/* Sprite + form sit side-by-side in a row below MetaBar */
+.vertSpriteFormRow {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: row;
+  min-width: 0;
+}
+
+/* Sprite column — fixed width, vertically centered content */
+.vertSpriteCol {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border-right: 1px dashed var(--border);
+}
+
+/* Form column — fills remaining width, vertically centered form cells */
+.vertFormCol {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 8px;
+}

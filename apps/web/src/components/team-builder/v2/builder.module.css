@@ -813,6 +813,23 @@
   }
 }
 
+/* Vertical-orientation wrapper — transparent (display: contents) in all
+   horizontal grid modes so identity and rowRight remain direct flex children
+   of .rowActive. In 2×3-vertical and 3×2-vertical modes the data-layout
+   attribute on .builderRows switches it to a flex column so identity stacks
+   above stats+moves within each cell. */
+.rowVerticalContent {
+  display: contents;
+}
+
+[data-layout="2x3-vertical"] .rowVerticalContent,
+[data-layout="3x2-vertical"] .rowVerticalContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 /* Full-stack — rib pivots horizontal at the top, everything else stacks */
 @container slot (max-width: 699px) {
   .rowActive {
