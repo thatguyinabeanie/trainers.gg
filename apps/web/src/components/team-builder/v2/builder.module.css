@@ -2012,19 +2012,40 @@
 
   .identHero {
     display: flex;
+    flex-direction: row;
+    align-items: stretch;
+  }
+}
+
+/* At very narrow widths (full-stack), the panel + form stack vertically
+   again. Triggers from the same <500px container query as the rib pivot. */
+@container slot (max-width: 499px) {
+  .identHero {
+    flex-direction: column;
   }
 }
 
 /* ── Hero panel ─────────────────────────────────────────── */
 
-/* Outer flex wrapper — fills the slot width */
+/* Sprite/identity column — left half of the hero in side-by-side mid-stack
+   mode, full-width top section in full-stack mode. */
 .heroPanel {
+  display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
   padding: 10px 12px;
-  width: 100%;
+  flex: 1 1 50%;
   min-width: 0;
+  border-right: 1px dashed var(--border);
+}
+
+@container slot (max-width: 499px) {
+  .heroPanel {
+    flex: 0 0 auto;
+    border-right: none;
+    border-bottom: 1px dashed var(--border);
+  }
 }
 
 /* Top meta row: [gender] [✦] [Lv N] [nickname input] */
@@ -2162,19 +2183,23 @@
   margin: 0;
 }
 
-/* Form grid — 2-column at all widths so Ability+Base stay adjacent. The
-   Item, Nature, and Tera cells use heroFormCellSpan2 to span the row. */
+/* Form column — right half of the hero. Single column of label-left,
+   value-right rows. */
 .heroForm {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-}
-
-/* Single cell in the form grid */
-.heroFormCell {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  flex: 1 1 50%;
+  min-width: 0;
+  padding: 10px 12px;
+  gap: 2px;
+}
+
+/* Single cell — label on the left, value on the right */
+.heroFormCell {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
   padding: 5px 7px;
   border-radius: 5px;
   cursor: pointer;

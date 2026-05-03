@@ -841,8 +841,32 @@ function IdentityLaneReal({
               </PopoverContent>
             </Popover>
 
-            {/* Ability — pairs with Base when this is a Mega form, otherwise
-                spans the full row so Nature naturally drops to its own line. */}
+            {/* Base ability — full-width row above Mega ability. Renders
+                only when the species has a forced Mega ability so we can
+                show "what was selected" → "what's actually active" stacked
+                top-down for the user to read in order. */}
+            {megaAbility !== null && (
+              <div
+                className={cn(
+                  s.heroFormCell,
+                  s.heroFormCellSpan2,
+                  s.heroFormCellReadonly
+                )}
+              >
+                <span className={s.heroFormLbl}>Base Ability</span>
+                <span
+                  className={cn(
+                    s.heroFormVal,
+                    !pokemon.ability && "text-muted-foreground/50 italic"
+                  )}
+                >
+                  {pokemon.ability || "—"}
+                </span>
+              </div>
+            )}
+
+            {/* Mega Ability (or plain Ability when not a Mega form). Full-
+                width row in both cases so the form reads top-down. */}
             <Popover open={abilityOpen} onOpenChange={setAbilityOpen}>
               <PopoverTrigger
                 render={
@@ -850,7 +874,7 @@ function IdentityLaneReal({
                     type="button"
                     className={cn(
                       s.heroFormCell,
-                      megaAbility === null && s.heroFormCellSpan2,
+                      s.heroFormCellSpan2,
                       abilityErrors.length > 0 &&
                         "ring-destructive/40 rounded ring-1"
                     )}
@@ -888,21 +912,6 @@ function IdentityLaneReal({
                 />
               </PopoverContent>
             </Popover>
-
-            {/* Base ability — only shown for Mega forms where ability is forced */}
-            {megaAbility !== null && (
-              <div className={cn(s.heroFormCell, s.heroFormCellReadonly)}>
-                <span className={s.heroFormLbl}>Base Ability</span>
-                <span
-                  className={cn(
-                    s.heroFormVal,
-                    !pokemon.ability && "text-muted-foreground/50 italic"
-                  )}
-                >
-                  {pokemon.ability || "—"}
-                </span>
-              </div>
-            )}
 
             {/* Nature */}
             <Popover open={natureOpen} onOpenChange={setNatureOpen}>
