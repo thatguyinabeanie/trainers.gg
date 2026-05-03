@@ -26,7 +26,6 @@ import { useIdentityState } from "./identity/use-identity-state";
 import { AbilityPicker } from "../pickers/ability-picker";
 import { ItemPicker } from "../pickers/item-picker";
 import { NaturePicker } from "../pickers/nature-picker";
-import { NumberPicker } from "../pickers/number-picker";
 import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
 import { TypePicker } from "../pickers/type-picker";
 import { FieldErrors } from "../validation/field-error";
@@ -58,18 +57,6 @@ interface IdentityLaneRealProps {
   teamSiblings: { species: string }[];
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   fieldErrors: ValidationError[];
-}
-
-type GenderValue = "Male" | "Female" | null;
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-function genderSymbol(g: GenderValue): string {
-  if (g === "Male") return "♂";
-  if (g === "Female") return "♀";
-  return "—";
 }
 
 // =============================================================================
@@ -210,6 +197,7 @@ function IdentityLaneGhost() {
 }
 
 import { FormChips } from "./identity/cells/form-chips";
+import { MetaBar } from "./identity/cells/meta-bar";
 import { SpriteSection } from "./identity/cells/sprite-section";
 
 // =============================================================================
@@ -256,7 +244,6 @@ function IdentityLaneReal({
   const [abilityOpen, setAbilityOpen] = useState(false);
   const [natureOpen, setNatureOpen] = useState(false);
   const [teraOpen, setTeraOpen] = useState(false);
-  const [levelOpen, setLevelOpen] = useState(false);
 
   const currentTeam = (teamSiblings ?? []).filter(
     (p): p is { species: string } =>
@@ -298,70 +285,24 @@ function IdentityLaneReal({
           <div className="flex w-56 min-w-0 shrink-0 flex-col justify-center gap-0.5">
         {/* BANNER — nickname + chips rows */}
         <div className={s.idBanner}>
-          <div className="flex items-center gap-2">
-            <div className="flex min-w-0 flex-1 flex-col">
-              <input
-                ref={nicknameRef}
-                type="text"
-                value={nickDraft}
-                onChange={(e) => setNickDraft(e.target.value)}
-                onBlur={handleNickBlur}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") nicknameRef.current?.blur();
-                }}
-                placeholder="Nickname"
-                maxLength={24}
-                aria-label="Nickname"
-                className={cn(
-                  "w-full min-w-0 truncate bg-transparent text-sm font-bold outline-none",
-                  "placeholder:text-muted-foreground/50 border-b border-transparent placeholder:font-normal",
-                  "hover:border-border focus:border-primary hover:border-dashed focus:border-solid",
-                  "py-0.5 leading-snug",
-                  nicknameErrors.length > 0 &&
-                    "border-destructive focus:border-destructive"
-                )}
-              />
-              <FieldErrors errors={nicknameErrors} />
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1">
-              {/* Gender 3-way toggle */}
-              <div className="flex flex-col">
-                <button
-                  type="button"
-                  onClick={handleGenderToggle}
-                  title="Toggle gender"
-                  className={cn(
-                    "bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 text-[10px] font-medium",
-                    genderErrors.length > 0 && "border-destructive"
-                  )}
-                >
-                  {genderSymbol(gender)}
-                </button>
-                <FieldErrors errors={genderErrors} />
-              </div>
-
-              {/* Shiny toggle */}
-              <button
-                type="button"
-                onClick={handleShinyToggle}
-                aria-pressed={isShiny}
-                title={
-                  isShiny
-                    ? "Shiny (click to clear)"
-                    : "Not shiny (click to set)"
-                }
-                className={cn(
-                  "border-border rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
-                  isShiny
-                    ? "border-yellow-400/40 bg-yellow-400/20 text-yellow-600 dark:text-yellow-400"
-                    : "bg-muted/60 hover:bg-muted text-muted-foreground"
-                )}
-              >
-                ✦
-              </button>
-            </div>
-          </div>
+          <MetaBar
+            pokemon={pokemon}
+            format={format}
+            nickDraft={nickDraft}
+            setNickDraft={setNickDraft}
+            nicknameRef={nicknameRef}
+            gender={gender}
+            isShiny={isShiny}
+            level={level}
+            showLevel={showLevel}
+            handleNickBlur={handleNickBlur}
+            handleGenderToggle={handleGenderToggle}
+            handleShinyToggle={handleShinyToggle}
+            onUpdate={onUpdate}
+            nicknameErrors={nicknameErrors}
+            genderErrors={genderErrors}
+            variant="banner"
+          />
 
           {/* Row 2: form chips. Disabled until the matching mega stone is held;
               click → swap species only (no auto-item-attach). */}
@@ -484,84 +425,24 @@ function IdentityLaneReal({
       <div className={s.identHero}>
         <div className={s.heroPanel}>
           {/* Meta row: gender | shiny | Lv | nickname */}
-          <div className={s.heroMetaRow}>
-            {showLevel && (
-              <Popover open={levelOpen} onOpenChange={setLevelOpen}>
-                <PopoverTrigger
-                  render={
-                    <button
-                      type="button"
-                      title={`Level ${level}`}
-                      className={s.heroLv}
-                    />
-                  }
-                >
-                  <span>Lv {level}</span>
-                </PopoverTrigger>
-                <PopoverContent
-                  side="bottom"
-                  align="start"
-                  className="w-auto p-0"
-                >
-                  <NumberPicker
-                    title="Level"
-                    value={level}
-                    min={1}
-                    max={100}
-                    onChange={(v) => onUpdate({ level: v })}
-                    onClose={() => setLevelOpen(false)}
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
-            {/* Duplicate nickname input — shares nickDraft state with compact mode */}
-            <input
-              type="text"
-              value={nickDraft}
-              onChange={(e) => setNickDraft(e.target.value)}
-              onBlur={handleNickBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-              }}
-              placeholder="Nickname"
-              maxLength={24}
-              aria-label="Nickname"
-              className={cn(
-                s.heroNicknameInput,
-                nicknameErrors.length > 0 &&
-                  "border-b-destructive focus:border-b-destructive"
-              )}
-            />
-            <button
-              type="button"
-              onClick={handleGenderToggle}
-              title="Toggle gender"
-              className={cn(
-                s.heroGender,
-                genderErrors.length > 0 && "border-destructive"
-              )}
-            >
-              {genderSymbol(gender)}
-            </button>
-            <button
-              type="button"
-              onClick={handleShinyToggle}
-              aria-pressed={isShiny}
-              title={
-                isShiny
-                  ? "Shiny (click to clear)"
-                  : "Not shiny (click to set)"
-              }
-              className={cn(
-                s.heroShiny,
-                isShiny
-                  ? "border-yellow-400/40 bg-yellow-400/20 text-yellow-600 dark:text-yellow-400"
-                  : "text-muted-foreground"
-              )}
-            >
-              ✦
-            </button>
-          </div>
+          <MetaBar
+            pokemon={pokemon}
+            format={format}
+            nickDraft={nickDraft}
+            setNickDraft={setNickDraft}
+            nicknameRef={nicknameRef}
+            gender={gender}
+            isShiny={isShiny}
+            level={level}
+            showLevel={showLevel}
+            handleNickBlur={handleNickBlur}
+            handleGenderToggle={handleGenderToggle}
+            handleShinyToggle={handleShinyToggle}
+            onUpdate={onUpdate}
+            nicknameErrors={nicknameErrors}
+            genderErrors={genderErrors}
+            variant="row"
+          />
 
           {/* Sprite + species pill — centered, click to open species picker */}
           <SpriteSection
