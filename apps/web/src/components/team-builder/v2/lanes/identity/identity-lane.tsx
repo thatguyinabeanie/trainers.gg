@@ -51,10 +51,13 @@ export function IdentityLane({
   fieldErrors = [],
 }: IdentityLaneProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const isCompact = useContainerCompact(rootRef);
+  const containerCompact = useContainerCompact(rootRef);
 
   const layoutMode = useTeamLayoutMode();
   const isVertical = layoutMode.endsWith("-vertical");
+  // In 1x6 mode, always use compact (single-row) layout immediately — don't
+  // wait for ResizeObserver to confirm width, which causes a 1-frame flash.
+  const isCompact = layoutMode === "1x6" || containerCompact;
 
   const sharedProps = {
     format,
