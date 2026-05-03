@@ -286,7 +286,7 @@ function MoveTile({
 
 function MovesLaneGhost() {
   return (
-    <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3 @[1240px]:w-[440px]">
+    <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3 @[1240px]:min-w-[440px] @[1240px]:flex-1">
       <div className="mb-1 flex items-baseline">
         <span className="text-muted-foreground/30 font-mono text-[9.5px] font-medium tracking-widest uppercase">
           Moves
@@ -336,7 +336,7 @@ function MovesLaneReal({
   }
 
   return (
-    <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3 @[1240px]:w-[440px]">
+    <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3 @[1240px]:min-w-[440px] @[1240px]:flex-1">
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
           Moves
