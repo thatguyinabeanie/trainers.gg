@@ -8,18 +8,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 // Types
 // =============================================================================
 
-export type TeamLayoutMode =
-  | "1x6"
-  | "2x3"
-  | "2x3-vertical"
-  | "3x2-vertical";
+export type TeamLayoutMode = "1x6" | "2x3" | "3x2-vertical";
 
 const STORAGE_KEY = "tg.team-layout";
 const DEFAULT_MODE: TeamLayoutMode = "1x6";
 const VALID_MODES: readonly TeamLayoutMode[] = [
   "1x6",
   "2x3",
-  "2x3-vertical",
   "3x2-vertical",
 ];
 
@@ -65,6 +60,11 @@ function getSnapshot(): TeamLayoutMode {
     if (raw === "3x2-mid" || raw === "3x2") {
       window.localStorage.setItem(STORAGE_KEY, "3x2-vertical");
       return "3x2-vertical";
+    }
+    // 2x3-vertical mode was removed — collapse to 2x3.
+    if (raw === "2x3-vertical") {
+      window.localStorage.setItem(STORAGE_KEY, "2x3");
+      return "2x3";
     }
     if (raw && (VALID_MODES as readonly string[]).includes(raw)) {
       return raw as TeamLayoutMode;
@@ -112,12 +112,10 @@ function degradeForViewport(
   persisted: TeamLayoutMode,
   viewportWidth: number
 ): TeamLayoutMode {
-  const isVertical =
-    persisted === "2x3-vertical" || persisted === "3x2-vertical";
   const wantedCols =
     persisted === "1x6"
       ? 1
-      : persisted === "2x3" || persisted === "2x3-vertical"
+      : persisted === "2x3"
         ? 2
         : 3;
 
@@ -128,7 +126,7 @@ function degradeForViewport(
   if (cols === wantedCols) return persisted;
   // Preserve vertical orientation when stepping down to 2 columns so users
   // who prefer the stacked layout don't lose it on moderately wide viewports.
-  if (cols === 2) return isVertical ? "2x3-vertical" : "2x3";
+  if (cols === 2) return "2x3";
   return "1x6";
 }
 

@@ -23,9 +23,9 @@ beforeEach(() => {
 });
 
 describe("TeamLayoutToggle", () => {
-  it("renders four buttons", () => {
+  it("renders three buttons", () => {
     render(<TeamLayoutToggle />);
-    expect(screen.getAllByRole("button")).toHaveLength(4);
+    expect(screen.getAllByRole("button")).toHaveLength(3);
   });
 
   it("marks the persisted mode as pressed", () => {
@@ -33,13 +33,6 @@ describe("TeamLayoutToggle", () => {
     render(<TeamLayoutToggle />);
     const btn = screen.getByLabelText("2 × 3 — mid-stacked per cell");
     expect(btn).toHaveAttribute("aria-pressed", "true");
-  });
-
-  it("changes the persisted mode to 2x3-vertical on click", () => {
-    render(<TeamLayoutToggle />);
-    const btn = screen.getByLabelText("2 × 3 — stacked per cell");
-    fireEvent.click(btn);
-    expect(window.localStorage.getItem("tg.team-layout")).toBe("2x3-vertical");
   });
 
   it("changes the persisted mode to 3x2-vertical on click", () => {

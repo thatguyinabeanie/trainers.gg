@@ -102,8 +102,7 @@
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.builderRows[data-layout="2x3"],
-.builderRows[data-layout="2x3-vertical"] {
+.builderRows[data-layout="2x3"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -838,7 +837,6 @@
   display: contents;
 }
 
-[data-layout="2x3-vertical"] .rowVerticalContent,
 [data-layout="3x2-vertical"] .rowVerticalContent {
   display: flex;
   flex-direction: column;

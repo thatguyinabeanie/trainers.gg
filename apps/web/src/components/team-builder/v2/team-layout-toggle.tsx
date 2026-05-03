@@ -34,18 +34,6 @@ function Icon2x3() {
   );
 }
 
-// 2×3-vertical — two columns, cells stacked vertically (taller blocks per slot)
-function Icon2x3Vertical() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden className="size-3.5">
-      <rect x="2" y="3" width="5" height="4" fill="currentColor" />
-      <rect x="9" y="3" width="5" height="4" fill="currentColor" />
-      <rect x="2" y="9" width="5" height="4" fill="currentColor" />
-      <rect x="9" y="9" width="5" height="4" fill="currentColor" />
-    </svg>
-  );
-}
-
 // 3×2-vertical — three columns, each cell stacks sprite + form vertically
 function Icon3x2Vertical() {
   return (
@@ -76,11 +64,6 @@ interface ToggleButton {
 const BUTTONS: readonly ToggleButton[] = [
   { mode: "1x6", label: "1 × 6 — full row layout", icon: Icon1x6 },
   { mode: "2x3", label: "2 × 3 — mid-stacked per cell", icon: Icon2x3 },
-  {
-    mode: "2x3-vertical",
-    label: "2 × 3 — stacked per cell",
-    icon: Icon2x3Vertical,
-  },
   {
     mode: "3x2-vertical",
     label: "3 × 2 — stacked per cell",

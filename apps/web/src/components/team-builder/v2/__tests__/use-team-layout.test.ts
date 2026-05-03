@@ -119,11 +119,11 @@ describe("useTeamLayout", () => {
       expect(result.current.isAutoDegraded).toBe(false);
     });
 
-    it("degrades 3x2-vertical to 2x3-vertical between 1500 and 2199", () => {
+    it("degrades 3x2-vertical to 2x3 between 1500 and 2199", () => {
       window.localStorage.setItem("tg.team-layout", "3x2-vertical");
       setViewportWidth(1800);
       const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("2x3-vertical");
+      expect(result.current.mode).toBe("2x3");
       expect(result.current.persisted).toBe("3x2-vertical");
       expect(result.current.isAutoDegraded).toBe(true);
     });
@@ -136,12 +136,12 @@ describe("useTeamLayout", () => {
       expect(result.current.isAutoDegraded).toBe(true);
     });
 
-    it("degrades 2x3-vertical to 1x6 below 1500", () => {
+    it("migrates persisted 2x3-vertical to 2x3", () => {
       window.localStorage.setItem("tg.team-layout", "2x3-vertical");
-      setViewportWidth(1200);
+      setViewportWidth(1800);
       const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("1x6");
-      expect(result.current.isAutoDegraded).toBe(true);
+      expect(result.current.mode).toBe("2x3");
+      expect(window.localStorage.getItem("tg.team-layout")).toBe("2x3");
     });
 
     it("keeps 3x2-vertical at 2200+", () => {
