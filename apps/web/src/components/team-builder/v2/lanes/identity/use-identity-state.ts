@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   NATURE_EFFECTS,
@@ -12,26 +12,11 @@ import {
 } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
-import { type ValidationError } from "../../../validation-hooks";
-import { formatSupportsLevel, formatSupportsTera } from "../../format-gating";
-
-// =============================================================================
-// Helpers (file-private — not re-exported)
-// =============================================================================
-
-function errorsForField(
-  errors: ValidationError[],
-  field: string
-): ValidationError[] {
-  return errors.filter((e) => e.field === field);
-}
-
-function errorsForFields(
-  errors: ValidationError[],
-  fields: string[]
-): ValidationError[] {
-  return errors.filter((e) => fields.includes(e.field));
-}
+import {
+  errorsForFields,
+  type ValidationError,
+} from "../../../validation-hooks";
+import { formatSupportsLevel } from "../../format-gating";
 
 // =============================================================================
 // useIdentityState
@@ -46,6 +31,12 @@ export function useIdentityState(
   const nicknameRef = useRef<HTMLInputElement>(null);
   const [nickDraft, setNickDraft] = useState(pokemon.nickname ?? "");
 
+  // Sync draft when the upstream nickname changes (e.g. switching Pokémon)
+  const incomingNickname = pokemon.nickname ?? "";
+  useEffect(() => {
+    setNickDraft(incomingNickname);
+  }, [incomingNickname]);
+
   // ── Derived data ───────────────────────────────────────────────────────────
 
   const types = getSpeciesTypes(pokemon.species ?? "");
@@ -53,7 +44,6 @@ export function useIdentityState(
   const isShiny = pokemon.is_shiny ?? false;
   const level = pokemon.level ?? 50;
   const showLevel = formatSupportsLevel(format);
-  const showTera = formatSupportsTera(format);
 
   // Nature effect labels for the mini suffix
   const natureEffect = pokemon.nature
@@ -75,12 +65,12 @@ export function useIdentityState(
 
   // ── Error partitions ───────────────────────────────────────────────────────
 
-  const nicknameErrors = errorsForField(fieldErrors, "nickname");
-  const speciesErrors = errorsForField(fieldErrors, "species");
-  const genderErrors = errorsForField(fieldErrors, "gender");
+  const nicknameErrors = errorsForFields(fieldErrors, ["nickname"]);
+  const speciesErrors = errorsForFields(fieldErrors, ["species"]);
+  const genderErrors = errorsForFields(fieldErrors, ["gender"]);
   const itemErrors = errorsForFields(fieldErrors, ["item", "heldItem"]);
-  const abilityErrors = errorsForField(fieldErrors, "ability");
-  const natureErrors = errorsForField(fieldErrors, "nature");
+  const abilityErrors = errorsForFields(fieldErrors, ["ability"]);
+  const natureErrors = errorsForFields(fieldErrors, ["nature"]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -150,7 +140,6 @@ export function useIdentityState(
     isShiny,
     level,
     showLevel,
-    showTera,
     natUp,
     natDown,
     megaAbility,

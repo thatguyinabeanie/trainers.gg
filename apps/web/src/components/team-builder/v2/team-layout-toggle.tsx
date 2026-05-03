@@ -80,9 +80,10 @@ export function TeamLayoutToggle() {
     <div
       role="group"
       aria-label="Team layout"
+      aria-disabled={isMobileLocked}
       className={cn(
         "border-border bg-muted inline-flex gap-px rounded-md border p-0.5",
-        isMobileLocked && "pointer-events-none opacity-50"
+        isMobileLocked && "opacity-50"
       )}
     >
       {BUTTONS.map(({ mode: btnMode, label, icon: IconCmp }) => {
@@ -99,12 +100,14 @@ export function TeamLayoutToggle() {
           <button
             key={btnMode}
             type="button"
+            disabled={isMobileLocked}
             onClick={() => setMode(btnMode)}
             aria-pressed={active}
             aria-label={fullLabel}
             title={fullLabel}
             className={cn(
               "flex size-7 items-center justify-center rounded transition-colors",
+              isMobileLocked && "cursor-not-allowed",
               active
                 ? cn(
                     "bg-background text-primary shadow-sm",

@@ -102,38 +102,30 @@ describe("useTeamLayout", () => {
   });
 
   describe("auto-degrade", () => {
-    it("degrades 2x3 to 1x6 when viewport is below 1500px", () => {
+    it.each([
+      // [persisted, viewport, expectedMode, expectedDegraded]
+      ["2x3", 1440, "1x6", true],
+      ["2x3", 1500, "2x3", false],
+      ["3x2-vertical", 1800, "2x3", true],
+      ["3x2-vertical", 1200, "1x6", true],
+      ["3x2-vertical", 2400, "3x2-vertical", false],
+      ["1x6", 800, "1x6", false],
+    ] as const)(
+      "persisted=%s at %dpx → mode=%s, degraded=%s",
+      (persisted, width, expectedMode, expectedDegraded) => {
+        window.localStorage.setItem("tg.team-layout", persisted);
+        setViewportWidth(width);
+        const { result } = renderHook(() => useTeamLayout());
+        expect(result.current.mode).toBe(expectedMode);
+        expect(result.current.isAutoDegraded).toBe(expectedDegraded);
+      }
+    );
+
+    it("preserves persisted value when auto-degraded", () => {
       window.localStorage.setItem("tg.team-layout", "2x3");
       setViewportWidth(1440);
       const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("1x6");
       expect(result.current.persisted).toBe("2x3");
-      expect(result.current.isAutoDegraded).toBe(true);
-    });
-
-    it("keeps 2x3 at exactly 1500px", () => {
-      window.localStorage.setItem("tg.team-layout", "2x3");
-      setViewportWidth(1500);
-      const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("2x3");
-      expect(result.current.isAutoDegraded).toBe(false);
-    });
-
-    it("degrades 3x2-vertical to 2x3 between 1500 and 2199", () => {
-      window.localStorage.setItem("tg.team-layout", "3x2-vertical");
-      setViewportWidth(1800);
-      const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("2x3");
-      expect(result.current.persisted).toBe("3x2-vertical");
-      expect(result.current.isAutoDegraded).toBe(true);
-    });
-
-    it("degrades 3x2-vertical to 1x6 below 1500", () => {
-      window.localStorage.setItem("tg.team-layout", "3x2-vertical");
-      setViewportWidth(1200);
-      const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("1x6");
-      expect(result.current.isAutoDegraded).toBe(true);
     });
 
     it("migrates persisted 2x3-vertical to 2x3", () => {
@@ -144,14 +136,6 @@ describe("useTeamLayout", () => {
       expect(window.localStorage.getItem("tg.team-layout")).toBe("2x3");
     });
 
-    it("keeps 3x2-vertical at 2200+", () => {
-      window.localStorage.setItem("tg.team-layout", "3x2-vertical");
-      setViewportWidth(2400);
-      const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("3x2-vertical");
-      expect(result.current.isAutoDegraded).toBe(false);
-    });
-
     it("mobile override beats viewport-based degrade", () => {
       window.localStorage.setItem("tg.team-layout", "3x2-vertical");
       mockUseIsMobile.mockReturnValue(true);
@@ -159,14 +143,6 @@ describe("useTeamLayout", () => {
       const { result } = renderHook(() => useTeamLayout());
       expect(result.current.mode).toBe("1x6");
       expect(result.current.isMobileLocked).toBe(true);
-    });
-
-    it("isAutoDegraded stays false when persisted is 1x6", () => {
-      window.localStorage.setItem("tg.team-layout", "1x6");
-      setViewportWidth(800);
-      const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("1x6");
-      expect(result.current.isAutoDegraded).toBe(false);
     });
   });
 });

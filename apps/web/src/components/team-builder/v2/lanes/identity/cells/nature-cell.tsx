@@ -71,38 +71,41 @@ export function NatureCell({
 
   // variant === "grid" — MidStack layout
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className={cn(
-              s.midFormCell,
-              errors.length > 0 && "ring-destructive/40 rounded ring-1"
-            )}
-          />
-        }
-      >
-        <span className={s.midFormLbl}>NAT</span>
-        <span
-          className={cn(
-            s.midFormVal,
-            !pokemon.nature && "text-muted-foreground/50 italic"
-          )}
+    <div className="flex flex-col">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              className={cn(
+                s.midFormCell,
+                errors.length > 0 && "ring-destructive/40 rounded ring-1"
+              )}
+            />
+          }
         >
-          {pokemon.nature || "—"}
-          {pokemon.nature && (
-            <NatureChevrons boost={natUp} reduce={natDown} />
-          )}
-        </span>
-      </PopoverTrigger>
-      <PopoverContent side="bottom" align="start" className="w-auto p-0">
-        <NaturePicker
-          value={pokemon.nature ?? ""}
-          onPick={(nature) => onUpdate({ nature })}
-          onClose={() => setOpen(false)}
-        />
-      </PopoverContent>
-    </Popover>
+          <span className={s.midFormLbl}>NAT</span>
+          <span
+            className={cn(
+              s.midFormVal,
+              !pokemon.nature && "text-muted-foreground/50 italic"
+            )}
+          >
+            {pokemon.nature || "—"}
+            {pokemon.nature && (
+              <NatureChevrons boost={natUp} reduce={natDown} />
+            )}
+          </span>
+        </PopoverTrigger>
+        <PopoverContent side="bottom" align="start" className="w-auto p-0">
+          <NaturePicker
+            value={pokemon.nature ?? ""}
+            onPick={(nature) => onUpdate({ nature })}
+            onClose={() => setOpen(false)}
+          />
+        </PopoverContent>
+      </Popover>
+      <FieldErrors errors={errors} className="px-1" />
+    </div>
   );
 }

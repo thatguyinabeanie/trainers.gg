@@ -29,7 +29,8 @@ export function useContainerCompact(ref: RefObject<HTMLElement | null>) {
 
     const observer = new ResizeObserver((entries) => {
       const width = entries[0]?.contentRect.width ?? 0;
-      setIsCompact(width >= COMPACT_THRESHOLD_PX);
+      const next = width >= COMPACT_THRESHOLD_PX;
+      setIsCompact((prev) => (prev === next ? prev : next));
     });
     observer.observe(target);
     return () => observer.disconnect();

@@ -111,40 +111,43 @@ export function ItemCell({
 
   // variant === "grid" — MidStack layout
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className={cn(
-              s.midFormCell,
-              errors.length > 0 && "ring-destructive/40 rounded ring-1"
-            )}
-          />
-        }
-      >
-        <span className={s.midFormLbl}>ITEM</span>
-        <span className={s.midFormVal}>
-          <span
-            className={cn(
-              "min-w-0 truncate",
-              !pokemon.held_item && "text-muted-foreground/50 italic"
-            )}
-          >
-            {pokemon.held_item || "—"}
+    <div className="flex flex-col">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              className={cn(
+                s.midFormCell,
+                errors.length > 0 && "ring-destructive/40 rounded ring-1"
+              )}
+            />
+          }
+        >
+          <span className={s.midFormLbl}>ITEM</span>
+          <span className={s.midFormVal}>
+            <span
+              className={cn(
+                "min-w-0 truncate",
+                !pokemon.held_item && "text-muted-foreground/50 italic"
+              )}
+            >
+              {pokemon.held_item || "—"}
+            </span>
+            {megaChip}
           </span>
-          {megaChip}
-        </span>
-      </PopoverTrigger>
-      <PopoverContent side="bottom" align="start" className="w-auto p-0">
-        <ItemPicker
-          value={pokemon.held_item}
-          format={format}
-          teamItems={teamItems}
-          onPick={(item) => onUpdate({ held_item: item })}
-          onClose={() => setOpen(false)}
-        />
-      </PopoverContent>
-    </Popover>
+        </PopoverTrigger>
+        <PopoverContent side="bottom" align="start" className="w-auto p-0">
+          <ItemPicker
+            value={pokemon.held_item}
+            format={format}
+            teamItems={teamItems}
+            onPick={(item) => onUpdate({ held_item: item })}
+            onClose={() => setOpen(false)}
+          />
+        </PopoverContent>
+      </Popover>
+      <FieldErrors errors={errors} className="px-1" />
+    </div>
   );
 }

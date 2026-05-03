@@ -28,6 +28,8 @@ interface SpriteSectionProps {
   speciesHasError?: boolean;
   /** Pre-derived type array from useIdentityState — required for Sprite tinting. */
   types: PokemonType[];
+  /** Render the shiny variant of the sprite. */
+  isShiny?: boolean;
 }
 
 export function SpriteSection({
@@ -36,6 +38,7 @@ export function SpriteSection({
   variant,
   speciesHasError = false,
   types,
+  isShiny = false,
 }: SpriteSectionProps) {
   // ── pill-top (compact / SingleRow) ────────────────────────────────────────
   if (variant === "pill-top") {
@@ -72,13 +75,15 @@ export function SpriteSection({
       <button
         type="button"
         onClick={onSpeciesClick}
-        aria-label={`Change species (${pokemon.species ?? "none"})`}
+        aria-hidden="true"
+        tabIndex={-1}
         className="shrink-0 transition-opacity hover:opacity-80"
       >
         <Sprite
           species={pokemon.species ?? ""}
           types={types}
           size={144}
+          shiny={isShiny}
         />
       </button>
     );
@@ -95,11 +100,17 @@ export function SpriteSection({
   const spriteBtn = (
     <button
       type="button"
-      aria-label={`Change species (${pokemon.species ?? "none"})`}
+      aria-hidden="true"
+      tabIndex={-1}
       className={s.midSpriteBtn}
       onClick={onSpeciesClick}
     >
-      <Sprite species={pokemon.species ?? ""} types={types} size={144} />
+      <Sprite
+        species={pokemon.species ?? ""}
+        types={types}
+        size={144}
+        shiny={isShiny}
+      />
     </button>
   );
 

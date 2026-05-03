@@ -22,7 +22,7 @@ export function IdentitySingleRow({
   pokemon,
   format,
   teamItems,
-  teamSiblings,
+  currentTeam,
   onUpdate,
   fieldErrors,
 }: IdentityLayoutProps) {
@@ -52,11 +52,6 @@ export function IdentitySingleRow({
 
   const [speciesOpen, setSpeciesOpen] = useState(false);
 
-  const currentTeam = (teamSiblings ?? []).filter(
-    (p): p is { species: string } =>
-      typeof p.species === "string" && p.species.length > 0
-  );
-
   return (
     <div className={s.root}>
       <SpeciesPickerDialog
@@ -77,6 +72,7 @@ export function IdentitySingleRow({
             variant="pill-top"
             speciesHasError={speciesErrors.length > 0}
             types={types}
+            isShiny={isShiny}
           />
         </div>
 
@@ -85,8 +81,6 @@ export function IdentitySingleRow({
           {/* BANNER — nickname + chips rows */}
           <div className={s.banner}>
             <MetaBar
-              pokemon={pokemon}
-              format={format}
               nickDraft={nickDraft}
               setNickDraft={setNickDraft}
               nicknameRef={nicknameRef}
@@ -102,7 +96,6 @@ export function IdentitySingleRow({
               genderErrors={genderErrors}
               variant="banner"
             />
-
           </div>
 
           {/* LOADOUT FORM ROWS */}

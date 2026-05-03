@@ -14,7 +14,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-import { type ValidationError } from "../../validation-hooks";
+import { errorsForFields, type ValidationError } from "../../validation-hooks";
 import { useCalcEnabled } from "../calc/calc-state-context";
 import s from "../builder.module.css";
 import { CalcColumn } from "./calc-column";
@@ -47,20 +47,6 @@ interface ActiveRowProps {
   dragListeners?: DraggableSyntheticListeners;
   /** Whether the row is currently being dragged. */
   isDragging?: boolean;
-}
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-/**
- * Filter the flat fieldErrors list to only those matching any of the given field keys.
- */
-function errorsForFields(
-  errors: ValidationError[],
-  fields: string[]
-): ValidationError[] {
-  return errors.filter((e) => fields.includes(e.field));
 }
 
 // =============================================================================

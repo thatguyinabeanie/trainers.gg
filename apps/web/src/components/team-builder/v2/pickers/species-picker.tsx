@@ -628,7 +628,7 @@ export function SpeciesPicker({
     if (virtualParentRef.current) observer.observe(virtualParentRef.current);
     if (scrollRef.current) observer.observe(scrollRef.current);
     return () => observer.disconnect();
-  }, [showSmartSearch]);
+  }, [showSmartSearch, query]);
 
   const rowVirtualizer = useVirtualizer({
     count: matched.length,
@@ -843,7 +843,7 @@ export function SpeciesPicker({
                   ref={virtualParentRef}
                   className="relative w-full"
                   style={{
-                    height: `${rowVirtualizer.getTotalSize() - scrollMargin}px`,
+                    height: `${rowVirtualizer.getTotalSize()}px`,
                   }}
                 >
                   {rowVirtualizer.getVirtualItems().map((virtualRow) => {

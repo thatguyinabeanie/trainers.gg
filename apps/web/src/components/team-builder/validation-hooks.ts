@@ -39,6 +39,17 @@ type TeamPokemonEntry = TeamWithPokemon["team_pokemon"][number];
 const DEBOUNCE_MS = 1500;
 
 // =============================================================================
+// Error filtering helpers
+// =============================================================================
+
+export function errorsForFields(
+  errors: ValidationError[],
+  fields: readonly string[]
+): ValidationError[] {
+  return errors.filter((e) => fields.includes(e.field));
+}
+
+// =============================================================================
 // Validation logic
 // =============================================================================
 

@@ -15,6 +15,7 @@ interface SpriteProps {
   species: string;
   size?: number;
   types: PokemonType[];
+  shiny?: boolean;
 }
 
 // Maps PokemonType to a CSS color value for the background tint.
@@ -50,8 +51,8 @@ const TYPE_TINT: Partial<Record<PokemonType, string>> = {
  * Default size is 128px (per the PokeRow redesign spec).
  * Tint mix is 40% for a softer background.
  */
-export function Sprite({ species, size = 128, types }: SpriteProps) {
-  const sprite = getPokemonSprite(species, { shiny: false });
+export function Sprite({ species, size = 128, types, shiny = false }: SpriteProps) {
+  const sprite = getPokemonSprite(species, { shiny });
   const primaryType = types[0];
   const tint = primaryType ? (TYPE_TINT[primaryType] ?? "#a8a878") : "#a8a878";
 

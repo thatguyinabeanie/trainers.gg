@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 
-import { type GameFormat } from "@trainers/pokemon";
-import { type Tables, type TablesUpdate } from "@trainers/supabase";
+import { type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 import {
@@ -24,8 +23,6 @@ import s from "../identity-lane.module.css";
 type GenderValue = "Male" | "Female" | null;
 
 interface MetaBarProps {
-  pokemon: Tables<"pokemon">;
-  format: GameFormat | undefined;
   /** Pulled from useIdentityState — controlled nickname draft. */
   nickDraft: string;
   setNickDraft: (v: string) => void;

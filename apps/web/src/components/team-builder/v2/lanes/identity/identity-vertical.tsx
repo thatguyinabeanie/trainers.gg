@@ -30,7 +30,7 @@ export function IdentityVertical({
   pokemon,
   format,
   teamItems,
-  teamSiblings,
+  currentTeam,
   onUpdate,
   fieldErrors,
 }: IdentityLayoutProps) {
@@ -60,11 +60,6 @@ export function IdentityVertical({
 
   const [speciesOpen, setSpeciesOpen] = useState(false);
 
-  const currentTeam = (teamSiblings ?? []).filter(
-    (p): p is { species: string } =>
-      typeof p.species === "string" && p.species.length > 0
-  );
-
   return (
     <div className={s.vertRoot}>
       <SpeciesPickerDialog
@@ -81,16 +76,15 @@ export function IdentityVertical({
           <SpriteSection
             pokemon={pokemon}
             onSpeciesClick={() => setSpeciesOpen(true)}
-            variant="pill-top"
+            variant="pill-bottom"
             speciesHasError={speciesErrors.length > 0}
             types={types}
+            isShiny={isShiny}
           />
         </div>
 
         <div className={s.vertFormCol}>
           <MetaBar
-            pokemon={pokemon}
-            format={format}
             nickDraft={nickDraft}
             setNickDraft={setNickDraft}
             nicknameRef={nicknameRef}

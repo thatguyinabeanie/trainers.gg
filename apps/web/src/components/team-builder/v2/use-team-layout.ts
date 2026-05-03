@@ -84,8 +84,19 @@ function getServerSnapshot(): TeamLayoutMode {
 // =============================================================================
 
 function subscribeToViewport(callback: () => void) {
-  window.addEventListener("resize", callback);
-  return () => window.removeEventListener("resize", callback);
+  // rAF-coalesce burst resize events into one notification per frame so
+  // every IdentityLane consumer of useTeamLayoutMode doesn't re-render at
+  // browser-resize cadence (~60Hz) while the user is dragging the window.
+  let rafId = 0;
+  const handler = () => {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(callback);
+  };
+  window.addEventListener("resize", handler);
+  return () => {
+    if (rafId) cancelAnimationFrame(rafId);
+    window.removeEventListener("resize", handler);
+  };
 }
 
 function getViewportSnapshot(): number {
@@ -124,10 +135,6 @@ function degradeForViewport(
   if (cols === 2 && viewportWidth < MIN_VIEWPORT_FOR_2_COLS) cols = 1;
 
   if (cols === wantedCols) return persisted;
-  // 3x2-vertical uses CSS auto-fit for responsive column count (3→2),
-  // only degrade to 1x6 at very narrow viewports (< MIN_VIEWPORT_FOR_2_COLS).
-  if (persisted === "3x2-vertical" && viewportWidth >= MIN_VIEWPORT_FOR_2_COLS)
-    return "3x2-vertical";
   if (cols === 2) return "2x3";
   return "1x6";
 }

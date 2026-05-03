@@ -35,19 +35,27 @@ describe("TeamLayoutToggle", () => {
     expect(btn).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("changes the persisted mode to 3x2-vertical on click", () => {
+  it.each([
+    ["1 × 6 — full row layout", "1x6"],
+    ["2 × 3 — mid-stacked per cell", "2x3"],
+    ["3 × 2 — stacked per cell", "3x2-vertical"],
+  ])("changes the persisted mode to %s on click", (ariaLabel, expectedValue) => {
     render(<TeamLayoutToggle />);
-    const btn = screen.getByLabelText("3 × 2 — stacked per cell");
-    fireEvent.click(btn);
-    expect(window.localStorage.getItem("tg.team-layout")).toBe("3x2-vertical");
+    fireEvent.click(screen.getByLabelText(ariaLabel));
+    expect(window.localStorage.getItem("tg.team-layout")).toBe(expectedValue);
   });
 
   it("disables interaction on mobile", () => {
     mockUseIsMobile.mockReturnValue(true);
     const { container } = render(<TeamLayoutToggle />);
     const group = container.firstChild as HTMLElement;
-    expect(group.className).toContain("pointer-events-none");
     expect(group.className).toContain("opacity-50");
+    expect(group).toHaveAttribute("aria-disabled", "true");
+    // All buttons should be disabled
+    const buttons = screen.getAllByRole("button");
+    for (const btn of buttons) {
+      expect(btn).toBeDisabled();
+    }
   });
 
   it("keeps the persisted button pressed even when auto-degraded", () => {

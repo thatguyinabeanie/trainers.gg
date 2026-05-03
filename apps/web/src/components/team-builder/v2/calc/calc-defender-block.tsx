@@ -121,6 +121,7 @@ export function CalcDefenderBlock({
   const [pickerOpen, setPickerOpen] = useState(false);
 
   function handleTargetChange(value: string) {
+    if (value === defenderSpecies) return;
     // If the picked species matches a hardcoded preset, apply the preset's
     // full spread (ability/item/nature/EVs). Otherwise reset to species
     // defaults — works for any legal species the user picks via the picker.

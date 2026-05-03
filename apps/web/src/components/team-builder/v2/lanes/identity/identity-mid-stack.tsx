@@ -29,7 +29,7 @@ export function IdentityMidStack({
   pokemon,
   format,
   teamItems,
-  teamSiblings,
+  currentTeam,
   onUpdate,
   fieldErrors,
 }: IdentityLayoutProps) {
@@ -59,11 +59,6 @@ export function IdentityMidStack({
 
   const [speciesOpen, setSpeciesOpen] = useState(false);
 
-  const currentTeam = (teamSiblings ?? []).filter(
-    (p): p is { species: string } =>
-      typeof p.species === "string" && p.species.length > 0
-  );
-
   return (
     <div className={s.midRoot}>
       <SpeciesPickerDialog
@@ -78,8 +73,6 @@ export function IdentityMidStack({
       {/* MetaBar sits at the top of the identity panel, outside the sprite
           section. Layout: Lv pill (left) | nickname (center) | gender+shiny (right) */}
       <MetaBar
-        pokemon={pokemon}
-        format={format}
         nickDraft={nickDraft}
         setNickDraft={setNickDraft}
         nicknameRef={nicknameRef}
@@ -105,6 +98,7 @@ export function IdentityMidStack({
             variant="pill-top"
             speciesHasError={speciesErrors.length > 0}
             types={types}
+            isShiny={isShiny}
           />
         </div>
 

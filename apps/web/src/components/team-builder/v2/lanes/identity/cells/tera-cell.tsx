@@ -54,7 +54,9 @@ export function TeraCell({
   const teraContent = pokemon.tera_type ? (
     <>
       <TypeDot t={pokemon.tera_type} size={10} />
-      <span className={valueClass}>{pokemon.tera_type}</span>
+      <span className={valueClass}>
+        {pokemon.tera_type.charAt(0).toUpperCase() + pokemon.tera_type.slice(1)}
+      </span>
     </>
   ) : (
     <span className={cn(valueClass, "text-muted-foreground/50 italic")}>

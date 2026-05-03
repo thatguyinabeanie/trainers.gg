@@ -119,37 +119,40 @@ export function AbilityCell({
 
   // variant === "grid" — MidStack layout
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className={cn(
-              s.midFormCell,
-              errors.length > 0 && "ring-destructive/40 rounded ring-1"
-            )}
-          />
-        }
-      >
-        <span className={s.midFormLbl}>ABIL</span>
-        <span
-          className={cn(
-            s.midFormVal,
-            !displayAbility && "text-muted-foreground/50 italic"
-          )}
+    <div className="flex flex-col">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              className={cn(
+                s.midFormCell,
+                errors.length > 0 && "ring-destructive/40 rounded ring-1"
+              )}
+            />
+          }
         >
-          {displayAbility || "—"}
-        </span>
-      </PopoverTrigger>
-      <PopoverContent side="bottom" align="start" className="w-auto p-0">
-        <AbilityPicker
-          value={pokemon.ability}
-          species={pickerSpecies}
-          format={format}
-          onPick={(ability) => onUpdate({ ability })}
-          onClose={() => setOpen(false)}
-        />
-      </PopoverContent>
-    </Popover>
+          <span className={s.midFormLbl}>ABIL</span>
+          <span
+            className={cn(
+              s.midFormVal,
+              !displayAbility && "text-muted-foreground/50 italic"
+            )}
+          >
+            {displayAbility || "—"}
+          </span>
+        </PopoverTrigger>
+        <PopoverContent side="bottom" align="start" className="w-auto p-0">
+          <AbilityPicker
+            value={pokemon.ability}
+            species={pickerSpecies}
+            format={format}
+            onPick={(ability) => onUpdate({ ability })}
+            onClose={() => setOpen(false)}
+          />
+        </PopoverContent>
+      </Popover>
+      <FieldErrors errors={errors} className="px-1" />
+    </div>
   );
 }

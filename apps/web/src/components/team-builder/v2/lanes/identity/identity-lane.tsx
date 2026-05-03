@@ -9,6 +9,7 @@ import { type ValidationError } from "../../../validation-hooks";
 import { useContainerCompact } from "../../use-container-compact";
 import { useTeamLayoutMode } from "../../use-team-layout";
 import { IdentityLaneGhost } from "./identity-lane-ghost";
+import { filterCurrentTeam } from "./identity-layout-props";
 import { IdentityMidStack } from "./identity-mid-stack";
 import { IdentitySingleRow } from "./identity-single-row";
 import { IdentityVertical } from "./identity-vertical";
@@ -37,7 +38,7 @@ interface IdentityLaneProps {
 //
 //   IdentitySingleRow  — slot ≥ 1240px (compact)
 //   IdentityMidStack   — slot < 1240px, non-vertical mode
-//   IdentityVertical   — slot < 1240px, vertical mode (step 8 — dead branch)
+//   IdentityVertical   — slot < 1240px, vertical mode
 //
 // Falls back to <IdentityLaneGhost /> when pokemon == null.
 // =============================================================================
@@ -59,16 +60,18 @@ export function IdentityLane({
   // wait for ResizeObserver to confirm width, which causes a 1-frame flash.
   const isCompact = layoutMode === "1x6" || containerCompact;
 
+  const currentTeam = filterCurrentTeam(teamSiblings);
+
   const sharedProps = {
     format,
     teamItems: teamItems ?? [],
-    teamSiblings: teamSiblings ?? [],
+    currentTeam,
     onUpdate: onUpdate ?? (() => {}),
     fieldErrors,
   };
 
   return (
-    <div ref={rootRef} className="contents">
+    <div ref={rootRef} className="w-full">
       {!pokemon ? (
         <IdentityLaneGhost />
       ) : isCompact ? (
