@@ -63,7 +63,32 @@ import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
 import { useBuilderState } from "./use-builder-state";
 import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
-import s from "./builder.module.css";
+
+// =============================================================================
+// KO-tier semantic tokens (migrated from .builderApp's CSS-module rule).
+//
+// These cascade to every descendant, so move tiles, calc detail cards, etc.
+// can read `var(--ko-red)` / `var(--ko-amber-bg)` without redefining the
+// tokens at every consumer. Previously lived inline in builder.module.css.
+//   • --ko-red    — OHKO indicator; reuses --destructive so the theme wins
+//   • --ko-amber* — 2HKO band, with bg/fg variants for tile background vs text
+//   • --ko-yellow*— 3HKO band, same bg/fg split
+//   • --ko-green* — super-effective hint
+//   • --ko-ne     — not-very-effective hint
+// =============================================================================
+const builderTokenStyle: React.CSSProperties = {
+  "--ko-red": "var(--destructive)",
+  "--ko-amber-bg": "oklch(0.7 0.15 80)",
+  "--ko-amber-fg": "oklch(0.65 0.15 80)",
+  "--ko-amber2-fg": "oklch(0.65 0.15 55)",
+  "--ko-yellow-bg": "oklch(0.78 0.15 90)",
+  "--ko-yellow-fg": "oklch(0.72 0.15 90)",
+  "--ko-green": "oklch(0.72 0.2 145)",
+  "--ko-green-fg": "oklch(0.6 0.2 145)",
+  "--ko-ne": "oklch(0.55 0.15 30)",
+  "--builder-shadow": "oklch(0 0 0 / 30%)",
+  "--builder-backdrop": "oklch(0 0 0 / 25%)",
+} as React.CSSProperties;
 
 // =============================================================================
 // Types
@@ -514,7 +539,10 @@ export function TeamWorkspaceV2({
         faintedYours={state.faintedYours}
         faintedTheirs={state.faintedTheirs}
       >
-      <div className={s.builderApp}>
+      <div
+        className="flex h-full flex-col overflow-hidden"
+        style={builderTokenStyle}
+      >
         <Topbar
           team={team}
           filledCount={filledCount}
@@ -537,12 +565,15 @@ export function TeamWorkspaceV2({
           exportMenu={<ExportMenu team={team} />}
         />
 
-        <div className={s.builderWorkshell}>
-          <div className={s.builderWorklane} ref={worklaneRef}>
+        <div className="flex flex-1 min-h-0 overflow-y-hidden overflow-x-visible">
+          <div
+            className="flex flex-1 flex-col min-w-0 overflow-y-hidden overflow-x-visible"
+            ref={worklaneRef}
+          >
             {/* Editor region — rows scroll inside this region only */}
-            <div className={s.editorRegion}>
+            <div className="flex flex-auto flex-col min-h-0 overflow-y-auto overflow-x-visible">
               <section
-                className={s.builderRows}
+                className="grid w-full mx-auto my-auto max-w-[1800px] grid-cols-[minmax(0,1fr)] gap-2 p-3 transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] data-[layout=2x3]:grid-cols-[repeat(2,minmax(0,1fr))] data-[layout=3x2-vertical]:grid-cols-[repeat(auto-fit,minmax(500px,600px))] data-[layout=3x2-vertical]:justify-center [[data-density=compact]_&]:gap-1 [[data-density=compact]_&]:p-2"
                 data-calc-open={
                   state.drawer === "calc" && !isMobile ? "true" : "false"
                 }
@@ -630,7 +661,7 @@ export function TeamWorkspaceV2({
                   aria-valuemax={80}
                   aria-valuenow={Math.round(state.panelHeightPct)}
                   tabIndex={0}
-                  className={s.resizer}
+                  className="h-[6px] shrink-0 bg-border cursor-row-resize transition-colors duration-[120ms] touch-none hover:bg-primary focus-visible:bg-primary focus-visible:outline-none"
                   onPointerDown={(e) => {
                     const target = e.currentTarget;
                     const worklane = worklaneRef.current;
@@ -670,26 +701,26 @@ export function TeamWorkspaceV2({
                   }}
                 />
                 <div
-                  className={s.panelRegion}
+                  className="flex flex-col flex-grow-0 flex-shrink-0 min-h-0 overflow-hidden"
                   style={{ flexBasis: `${state.panelHeightPct}%` }}
                 >
                   {/* Type matchups and Speed tiers keep their existing header chrome */}
                   {(state.drawer === "matchups" ||
                     state.drawer === "speed") && (
-                    <section className={s.inlinePanel}>
-                      <header className={s.inlinePanelHead}>
-                        <div className={s.inlinePanelHeadL}>
-                          <span className={s.inlinePanelEyebrow}>
+                    <section className="flex flex-auto flex-col min-h-0 mx-auto w-[calc(100%-24px)] max-w-[calc(1600px-24px)] rounded-t-[10px] border border-b-0 border-border bg-background overflow-hidden">
+                      <header className="flex items-start gap-3 px-3.5 py-2.5 border-b border-border bg-muted">
+                        <div className="flex flex-auto min-w-0 flex-col gap-0.5">
+                          <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-muted-foreground">
                             {state.drawer === "matchups"
                               ? "DEFENSIVE"
                               : "SPEED"}
                           </span>
-                          <span className={s.inlinePanelTitle}>
+                          <span className="text-[13px] font-semibold text-foreground">
                             {state.drawer === "matchups"
                               ? "Defensive type coverage"
                               : "Speed tier ladder"}
                           </span>
-                          <span className={s.inlinePanelSub}>
+                          <span className="text-[10px] text-muted-foreground">
                             {state.drawer === "matchups"
                               ? "18 attacking types × your 6 slots"
                               : "Your team vs the format · all values @ Lv 50"}
@@ -700,12 +731,12 @@ export function TeamWorkspaceV2({
                           onClick={() => state.setDrawer(null)}
                           aria-label="Close panel"
                           title="Close panel"
-                          className={s.inlinePanelClose}
+                          className="shrink-0 size-[26px] rounded-md border border-border bg-transparent text-base flex items-center justify-center text-muted-foreground cursor-pointer transition-colors duration-[120ms] hover:bg-background hover:text-foreground"
                         >
                           ×
                         </button>
                       </header>
-                      <div className={s.inlinePanelBody}>
+                      <div className="flex flex-auto flex-col min-h-0 overflow-y-auto">
                         {state.drawer === "matchups" && (
                           <HeatmapPanel
                             team={optimisticTeamPokemon}

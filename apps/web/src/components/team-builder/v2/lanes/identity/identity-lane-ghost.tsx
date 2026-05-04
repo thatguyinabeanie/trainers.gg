@@ -187,7 +187,7 @@ function SpriteGhost({ size = 144 }: SpriteGhostProps) {
 
 function BannerGhost() {
   return (
-    <div className={s.idBanner}>
+    <div className="mb-1 flex flex-col gap-[3px] border-b border-border pb-1.5">
       <div className="flex h-[22px] items-center">
         <span className="text-muted-foreground/20 text-sm font-normal italic">
           Nickname
