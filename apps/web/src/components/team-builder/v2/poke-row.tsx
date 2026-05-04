@@ -9,7 +9,7 @@ import {
   type DraggableSyntheticListeners,
 } from "@dnd-kit/core";
 
-import { getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
+import { getSpeciesTypes, getTypeColor, type GameFormat } from "@trainers/pokemon";
 import {
   type Tables,
   type TablesUpdate,
@@ -20,13 +20,10 @@ import { cn } from "@/lib/utils";
 
 import { type ValidationError } from "../validation-hooks";
 import { Sprite } from "./sprite";
-import { TypePill } from "./type-pill";
 import { ActiveRow } from "./lanes/active-row";
-import { CalcColumn } from "./lanes/calc-column";
 import { IdentityLane } from "./lanes/identity";
 import { StatsLane } from "./lanes/stats-lane";
 import { MovesLane } from "./lanes/moves-lane";
-import { useCalcEnabled } from "./calc/calc-state-context";
 import { SpeciesPickerDialog } from "./pickers/species-picker-dialog";
 import s from "./builder.module.css";
 
@@ -71,7 +68,6 @@ interface EmptyRowProps {
 
 function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
   const [open, setOpen] = useState(false);
-  const calcEnabled = useCalcEnabled();
 
   return (
     <>
@@ -103,7 +99,6 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
             <MovesLane pokemon={null} format={_format} />
           </div>
         </div>
-        {calcEnabled && <CalcColumn pokemon={null} />}
       </button>
 
       <SpeciesPickerDialog
@@ -155,6 +150,16 @@ function CollapsedRow({
   const hasError = slotErrors.some((e) => e.severity === "error");
   const hasWarning = slotErrors.some((e) => e.severity === "warning");
 
+  // Derive type-based rib color (20% opacity)
+  const ribBackground = (() => {
+    if (types.length === 0) return undefined;
+    const alpha = "33";
+    const c1 = getTypeColor(types[0]!);
+    if (types.length === 1) return `${c1}${alpha}`;
+    const c2 = getTypeColor(types[1]!);
+    return `linear-gradient(135deg, ${c1}${alpha}, ${c2}${alpha})`;
+  })();
+
   return (
     <div
       className={cn(
@@ -168,9 +173,11 @@ function CollapsedRow({
         {...dragAttributes}
         {...dragListeners}
         className={cn(
-          "text-muted-foreground relative w-7 shrink-0 font-mono text-xs font-medium",
+          "relative flex w-7 shrink-0 items-center justify-center rounded font-mono text-xs font-medium",
+          ribBackground ? "text-foreground/70" : "text-muted-foreground",
           dragListeners && s.dragHandle
         )}
+        style={ribBackground ? { background: ribBackground } : undefined}
         aria-label={
           dragListeners ? `Drag to reorder slot ${idx + 1}` : undefined
         }
@@ -214,11 +221,6 @@ function CollapsedRow({
               (pokemon.species ?? "Unknown")
             )}
           </span>
-          <div className="flex gap-1">
-            {types.map((t) => (
-              <TypePill key={t} t={t} />
-            ))}
-          </div>
         </div>
       </button>
 

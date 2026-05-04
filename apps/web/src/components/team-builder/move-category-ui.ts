@@ -22,3 +22,15 @@ export const CATEGORY_ICON_URLS: Record<string, string> = {
   Special: "https://play.pokemonshowdown.com/sprites/categories/Special.png",
   Status: "https://play.pokemonshowdown.com/sprites/categories/Status.png",
 };
+
+/**
+ * Bulbapedia archive URLs for the Pokemon HOME category icons.
+ */
+export const CATEGORY_ICON_URLS_MONO: Record<string, string> = {
+  Physical:
+    "https://archives.bulbagarden.net/media/upload/a/a4/Physical_icon_HOME.png",
+  Special:
+    "https://archives.bulbagarden.net/media/upload/c/c4/Special_icon_HOME.png",
+  Status:
+    "https://archives.bulbagarden.net/media/upload/3/34/Status_icon_HOME.png",
+};

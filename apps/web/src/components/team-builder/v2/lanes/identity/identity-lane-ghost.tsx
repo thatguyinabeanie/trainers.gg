@@ -183,6 +183,14 @@ function FormRowsGhost() {
           </span>
         </div>
       ))}
+      {/* Type row — two circle placeholders matching TypePill size */}
+      <div className={cn(s.formRow, "cursor-default")}>
+        <span className={s.formLabel}>Type</span>
+        <span className={cn(s.formValue, "flex items-center gap-1")}>
+          <div className="bg-muted/40 size-[18px] rounded-full" />
+          <div className="bg-muted/40 size-[18px] rounded-full" />
+        </span>
+      </div>
     </>
   );
 }

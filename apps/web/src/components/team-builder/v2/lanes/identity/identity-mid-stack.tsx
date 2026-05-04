@@ -110,6 +110,7 @@ export function IdentityMidStack({
             isMegaStone={isMegaStone}
             natUp={natUp}
             natDown={natDown}
+            types={types}
             itemErrors={itemErrors}
             abilityErrors={abilityErrors}
             natureErrors={natureErrors}

@@ -885,9 +885,48 @@
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  width: 40px;
+  width: 28px;
   padding: 8px 0;
   border-right-width: 1px;
+}
+
+/* Right rib — mirrors left rib, holds remove button. Only visible in
+   wide (vertical-rib) layout; hidden when rib pivots horizontal. */
+.ribRight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  width: 28px;
+  padding: 8px 0;
+  border-left-width: 1px;
+}
+
+@container slot (max-width: 699px) {
+  .ribRight {
+    display: none;
+  }
+}
+
+[data-layout="3x2-vertical"] .ribRight {
+  display: none;
+}
+
+/* Fallback remove button in left rib — hidden in wide layout (right rib
+   provides the remove button), shown in stacked/compact layouts. */
+.ribRemoveFallback {
+  display: none;
+}
+
+@container slot (max-width: 699px) {
+  .ribRemoveFallback {
+    display: flex;
+  }
+}
+
+[data-layout="3x2-vertical"] .ribRemoveFallback {
+  display: flex;
 }
 
 /* Decorations shown in the rib middle (type pills only — level picker
@@ -938,10 +977,12 @@
 :global(.mvline) {
   display: grid;
   grid-template-columns:
-    max-content        /* type + category */
-    minmax(0, 1fr)     /* name — fills space, shrinks to 0 (no overflow) */
+    max-content        /* type */
+    max-content        /* category */
+    140px              /* name — fixed width, no truncation */
     56px               /* BP */
-    72px;              /* Acc */
+    72px               /* Acc */
+    auto;              /* Calc result (pill + range) */
 
   align-items: center;
   gap: 6px;
@@ -967,9 +1008,11 @@
   :global(.mvline) {
     grid-template-columns:
       max-content
-      minmax(0, 1fr)
+      max-content
+      120px
       40px
-      48px;
+      48px
+      auto;
     gap: 4px;
     padding: 4px 6px;
   }
@@ -1036,17 +1079,19 @@
 
 /* Calc column — fixed-width sibling to the moves lane */
 :global(.calc-col) {
-  min-width: 220px;
+  min-width: 240px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   flex-shrink: 0;
-  width: 220px;
-  max-width: 220px;
+  width: 240px;
+  max-width: 240px;
   overflow: hidden;
   background: color-mix(in oklch, var(--muted) 40%, transparent);
   border-left: 1px solid var(--border);
-  padding: 8px 0;
+  padding: 12px 0;
+  gap: 4px;
+  position: relative;
   animation: calc-col-enter 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
@@ -1056,34 +1101,67 @@
 }
 
 :global(.calc-col-header) {
+  position: absolute;
+  top: 6px;
+  left: 8px;
   font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted-foreground);
-  padding: 0 8px 5px;
-  height: 21px;
-  display: flex;
-  align-items: flex-end;
 }
 
 :global(.calc-col-row) {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 8px;
+  padding: 0 8px;
   font-family: var(--font-mono, monospace);
   font-size: 10.5px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
-  min-height: 30px;
+  text-overflow: ellipsis;
+  min-height: 28px;
 }
 
 :global(.calc-col-row--ko1) { color: var(--ko-red); }
 :global(.calc-col-row--ko2) { color: var(--ko-amber2-fg); }
 :global(.calc-col-row--ko3) { color: var(--ko-yellow-fg); }
 :global(.calc-col-row--ko4) { color: var(--muted-foreground); }
+
+/* Inline calc result within move tile — after ACC, separated by vertical line */
+:global(.mvline-calc-inline) {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 16px;
+  margin-left: 8px;
+  border-left: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+:global(.mvline-calc-inline--ko1) { color: var(--ko-red); }
+:global(.mvline-calc-inline--ko2) { color: var(--ko-amber2-fg); }
+:global(.mvline-calc-inline--ko3) { color: var(--ko-yellow-fg); }
+:global(.mvline-calc-inline--ko4) { color: var(--muted-foreground); }
+
+:global(.mvline-calc-inline__tier) {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:global(.mvline-calc-inline__range) {
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: black;
+}
 
 :global(.mvline):hover {
   border-color: var(--border);
@@ -1127,8 +1205,6 @@
 /* Move name inside a tile */
 :global(.mvline-name) {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 13px;
   font-weight: 500;
@@ -1174,6 +1250,7 @@
 :global(.mvline-stat) {
   display: inline-flex;
   align-items: baseline;
+  justify-content: flex-end;
   gap: 4px;
   font-family: var(--font-mono, monospace);
   font-size: 11px;
@@ -1181,6 +1258,7 @@
   flex-shrink: 0;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 :global(.mvline-stat-label) {

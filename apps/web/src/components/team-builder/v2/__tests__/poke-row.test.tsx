@@ -25,6 +25,7 @@ jest.mock("@trainers/pokemon", () => ({
     if (species === "Garchomp") return ["Dragon", "Ground"];
     return ["Normal"];
   }),
+  getTypeColor: jest.fn(() => "#A8A878"),
 }));
 
 jest.mock("../sprite", () => ({

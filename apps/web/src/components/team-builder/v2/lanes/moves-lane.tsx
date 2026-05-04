@@ -15,7 +15,7 @@ import {
 import { TooltipTrigger } from "@/components/ui/tooltip";
 
 import { type ValidationError } from "../../validation-hooks";
-import { CATEGORY_ICON_URLS } from "../../move-category-ui";
+import { CATEGORY_ICON_URLS_MONO } from "../../move-category-ui";
 import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { MovePicker } from "../pickers/move-picker";
 import { useCalcStateContext } from "../calc/calc-state-context";
@@ -98,7 +98,7 @@ function MoveTile({
 
   // KO tier (used for tile border colour) and spread-adjusted range come
   // from the shared helper so calc-column and moves-lane never drift apart.
-  const { koTier } = getDisplayRangeAndKoTier({
+  const { koTier, displayMin, displayMax } = getDisplayRangeAndKoTier({
     moveName,
     output,
     hasCalc,
@@ -159,30 +159,26 @@ function MoveTile({
           }
         >
           {/* Col 1: Type + category grouped */}
-          <span className="mvline-type-cat">
-            <span className="mvline-type">
-              {moveName && moveData?.type ? (
-                <TypeSymbolIcon
-                  type={
-                    moveData.type as Parameters<
-                      typeof TypeSymbolIcon
-                    >[0]["type"]
-                  }
-                  size={20}
-                />
-              ) : null}
-            </span>
-            <span className="mvline-cat">
-              {moveName &&
-              moveData?.category &&
-              CATEGORY_ICON_URLS[moveData.category] ? (
-                <img
-                  src={CATEGORY_ICON_URLS[moveData.category]}
-                  alt={moveData.category}
-                  className="h-6 w-auto [image-rendering:pixelated]"
-                />
-              ) : null}
-            </span>
+          <span className="mvline-type">
+            {moveName && moveData?.type ? (
+              <TypeSymbolIcon
+                type={
+                  moveData.type as Parameters<
+                    typeof TypeSymbolIcon
+                  >[0]["type"]
+                }
+                size={20}
+              />
+            ) : null}
+          </span>
+          <span className="mvline-cat">
+            {moveName && moveData?.category && CATEGORY_ICON_URLS_MONO[moveData.category] ? (
+              <img
+                src={CATEGORY_ICON_URLS_MONO[moveData.category]}
+                alt={moveData.category}
+                className="h-6 w-6"
+              />
+            ) : null}
           </span>
 
           {/* Col 2: Move name */}
@@ -203,7 +199,6 @@ function MoveTile({
 
           {/* Col 4: BP */}
           <span className="mvline-stat">
-            <span className="mvline-stat-label">BP</span>
             <span className="mvline-stat-value mvline-stat-value--bp">
               {moveName && moveData?.basePower && moveData.basePower > 0
                 ? moveData.basePower
@@ -215,7 +210,6 @@ function MoveTile({
 
           {/* Col 4: Acc */}
           <span className="mvline-stat">
-            <span className="mvline-stat-label">Acc</span>
             <span className="mvline-stat-value mvline-stat-value--acc">
               {moveName
                 ? moveData?.accuracy === true || !moveData?.accuracy
@@ -224,6 +218,31 @@ function MoveTile({
                 : ""}
             </span>
           </span>
+
+          {/* Col 5: Inline calc result */}
+          {hasCalc && koTier ? (
+            <span
+              className={cn(
+                "mvline-calc-inline",
+                `mvline-calc-inline--ko${koTier}`
+              )}
+            >
+              <span className="mvline-calc-inline__range">
+                {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%
+              </span>
+              <span className="mvline-calc-inline__tier">
+                {koTier === "1"
+                  ? "OHKO"
+                  : koTier === "2"
+                    ? "2HKO"
+                    : koTier === "3"
+                      ? "3HKO"
+                      : "4HKO+"}
+              </span>
+            </span>
+          ) : (
+            <span />
+          )}
         </PopoverTrigger>
 
         <PopoverContent side="bottom" align="start" className="w-auto p-0">
@@ -287,10 +306,19 @@ function MoveTile({
 function MovesLaneGhost() {
   return (
     <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3 @[1460px]:w-[520px] @[1460px]:flex-none">
+      <div className="mvline pointer-events-none !border-0 !bg-transparent !px-2 !py-0 text-[9.5px] font-medium tracking-[0.04em] uppercase text-muted-foreground">
+        <span>TYPE</span>
+        <span>CAT</span>
+        <span>NAME</span>
+        <span>BP</span>
+        <span>ACC</span>
+        <span>CALC</span>
+      </div>
       <div className="flex flex-col gap-1">
         {([0, 1, 2, 3] as const).map((i) => (
           <div key={i} className="mvline mvline--empty">
-            <span className="mvline-type-cat" />
+            <span className="mvline-type" />
+            <span className="mvline-cat" />
             <span className="mvline-name text-muted-foreground/30">
               + Add move
             </span>
@@ -302,6 +330,7 @@ function MovesLaneGhost() {
               <span className="mvline-stat-label">ACC</span>
               <span className="mvline-stat-value mvline-stat-value--acc" />
             </span>
+            <span />
           </div>
         ))}
       </div>
@@ -331,7 +360,16 @@ function MovesLaneReal({
   }
 
   return (
-    <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3 @[1460px]:w-[520px] @[1460px]:flex-none">
+    <div className="flex w-full min-w-0 flex-1 flex-col justify-center gap-1 p-3">
+      {/* Column headers */}
+      <div className="mvline pointer-events-none !border-0 !bg-transparent !px-2 !py-0 text-[9.5px] font-medium tracking-[0.04em] uppercase text-muted-foreground">
+        <span>TYPE</span>
+        <span>CAT</span>
+        <span>NAME</span>
+        <span>BP</span>
+        <span>ACC</span>
+        <span>CALC</span>
+      </div>
       {/* Move tiles */}
       <div className="flex flex-col gap-1">
         {MOVE_SLOTS.map((slotKey) => {

@@ -5,7 +5,7 @@ import {
   type DraggableSyntheticListeners,
 } from "@dnd-kit/core";
 
-import { type GameFormat } from "@trainers/pokemon";
+import { getSpeciesTypes, getTypeColor, type GameFormat } from "@trainers/pokemon";
 import {
   type Tables,
   type TablesUpdate,
@@ -15,12 +15,9 @@ import {
 import { cn } from "@/lib/utils";
 
 import { errorsForFields, type ValidationError } from "../../validation-hooks";
-import { useCalcEnabled } from "../calc/calc-state-context";
 import s from "../builder.module.css";
-import { CalcColumn } from "./calc-column";
 import { IdentityLane } from "./identity";
 import { MovesLane } from "./moves-lane";
-import { RibDecorations } from "./rib-decorations";
 import { StatsLane } from "./stats-lane";
 
 // =============================================================================
@@ -71,7 +68,6 @@ export function ActiveRow({
   dragListeners,
   isDragging = false,
 }: ActiveRowProps) {
-  const calcEnabled = useCalcEnabled();
 
   // Collect held items from sibling pokemon for the item picker duplicate warning
   const teamItems = teamPokemon
@@ -109,21 +105,51 @@ export function ActiveRow({
     "ev_speed",
   ]);
 
+  // Derive type-based rib background (20% opacity type colors)
+  const types = getSpeciesTypes(pokemon.species ?? "");
+  const ribBackground = (() => {
+    if (types.length === 0) return undefined;
+    const alpha = "33"; // ~20% opacity
+    const c1 = getTypeColor(types[0]!);
+    if (types.length === 1) return `${c1}${alpha}`;
+    const c2 = getTypeColor(types[1]!);
+    return { left: `linear-gradient(135deg, ${c1}${alpha}, ${c2}${alpha})`, right: `linear-gradient(45deg, ${c1}${alpha}, ${c2}${alpha})` };
+  })();
+
+  const leftBg = typeof ribBackground === "string" ? ribBackground : ribBackground?.left;
+  const rightBg = typeof ribBackground === "string" ? ribBackground : ribBackground?.right;
+
+  // Border color derived from types
+  const borderColor = (() => {
+    if (types.length === 0) return undefined;
+    const c1 = getTypeColor(types[0]!);
+    if (types.length === 1) return c1;
+    // For dual types, blend via color-mix
+    const c2 = getTypeColor(types[1]!);
+    return `color-mix(in oklch, ${c1}, ${c2})`;
+  })();
+
   return (
     <div
       className={cn(
         s.rowActive,
         "bg-card flex h-full w-full min-w-0 items-stretch self-center overflow-hidden rounded-lg border",
-        "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]",
+        !borderColor && "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]",
         isDragging && s.rowDragging
       )}
+      style={borderColor ? {
+        borderColor,
+        boxShadow: `0 0 0 1px ${borderColor}33, 0 8px 28px -16px ${borderColor}66`,
+      } : undefined}
     >
-      {/* RIB — slot number (drag handle) + decorations + remove button */}
+      {/* RIB LEFT — slot number + drag handle */}
       <div
         className={cn(
           s.rib,
-          "border-border/60 bg-muted/20 flex shrink-0 border-dashed"
+          "border-border/60 flex shrink-0 border-dashed",
+          !leftBg && "bg-muted/20"
         )}
+        style={leftBg ? { background: leftBg } : undefined}
       >
         <span
           {...dragAttributes}
@@ -137,14 +163,15 @@ export function ActiveRow({
           {String(idx + 1).padStart(2, "0")}
         </span>
 
-        {/* Type pills (rotated), gender, shiny, level controls */}
-        <RibDecorations pokemon={pokemon} format={format} onUpdate={onUpdate} />
-
+        {/* Remove button — shown only when right rib is hidden (stacked layouts) */}
         <button
           type="button"
           onClick={onRemove}
           aria-label={`Remove ${pokemon.species ?? "Pokémon"} from slot ${idx + 1}`}
-          className="text-muted-foreground hover:bg-destructive/15 hover:text-destructive flex size-5 items-center justify-center rounded transition-colors"
+          className={cn(
+            s.ribRemoveFallback,
+            "text-muted-foreground hover:bg-destructive/15 hover:text-destructive flex size-5 items-center justify-center rounded transition-colors"
+          )}
         >
           ×
         </button>
@@ -188,8 +215,24 @@ export function ActiveRow({
         </div>
       </div>
 
-      {/* Calc column — fixed 160px, aligns row-for-row with move tiles */}
-      {calcEnabled && <CalcColumn pokemon={pokemon} />}
+      {/* RIB RIGHT — mirrored gradient + remove button (wide layout only) */}
+      <div
+        className={cn(
+          s.ribRight,
+          "border-border/60 flex shrink-0 border-dashed",
+          !rightBg && "bg-muted/20"
+        )}
+        style={rightBg ? { background: rightBg } : undefined}
+      >
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Remove ${pokemon.species ?? "Pokémon"} from slot ${idx + 1}`}
+          className="text-muted-foreground hover:bg-destructive/15 hover:text-destructive flex size-5 items-center justify-center rounded transition-colors"
+        >
+          ×
+        </button>
+      </div>
     </div>
   );
 }

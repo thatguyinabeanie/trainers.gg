@@ -1,6 +1,6 @@
 "use client";
 
-import { type GameFormat, type StatKey } from "@trainers/pokemon";
+import { type GameFormat, type PokemonType, type StatKey } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { type ValidationError } from "../../../../validation-hooks";
@@ -9,9 +9,10 @@ import { type CellVariant } from "./identity-cell-shared";
 import { ItemCell } from "./item-cell";
 import { NatureCell } from "./nature-cell";
 import { TeraCell } from "./tera-cell";
+import { TypeCell } from "./type-cell";
 
 // =============================================================================
-// FormCells — thin wrapper that renders the four loadout cells in order
+// FormCells — thin wrapper that renders the loadout cells in order
 //
 // Both branches of IdentityLaneReal use this:
 //   compact:  <FormCells variant="row" ... />
@@ -25,6 +26,7 @@ interface FormCellsProps {
   isMegaStone: boolean;
   natUp: StatKey | null | undefined;
   natDown: StatKey | null | undefined;
+  types: PokemonType[];
   itemErrors: ValidationError[];
   abilityErrors: ValidationError[];
   natureErrors: ValidationError[];
@@ -39,6 +41,7 @@ export function FormCells({
   isMegaStone,
   natUp,
   natDown,
+  types,
   itemErrors,
   abilityErrors,
   natureErrors,
@@ -71,6 +74,7 @@ export function FormCells({
         onUpdate={onUpdate}
         variant={variant}
       />
+      <TypeCell types={types} variant={variant} />
       <TeraCell
         pokemon={pokemon}
         format={format}

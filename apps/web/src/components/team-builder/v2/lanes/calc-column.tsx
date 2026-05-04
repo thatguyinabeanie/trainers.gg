@@ -109,7 +109,7 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
                   className="text-muted-foreground text-[8.5px] font-bold"
                   title="Spread −25%"
                 >
-                  spread
+                  spr
                 </span>
               )}
             </span>
