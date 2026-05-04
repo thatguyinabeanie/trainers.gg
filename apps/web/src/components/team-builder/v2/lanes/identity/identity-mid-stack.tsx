@@ -89,7 +89,7 @@ export function IdentityMidStack({
       />
 
       {/* Body: sprite-col (left) + form-col (right), both vertically centered */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 min-h-0 min-w-0 px-2 py-3">
+      <div className="flex flex-auto flex-col items-center justify-center gap-2 min-h-0 min-w-0 px-2 py-3">
         <div className="mx-auto flex w-full max-w-[240px] flex-col items-center gap-1.5">
           <SpriteSection
             pokemon={pokemon}

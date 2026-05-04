@@ -70,7 +70,7 @@ export function IdentityVertical({
         onPick={handleSpeciesPick}
       />
 
-      <div className="flex flex-1 flex-row items-center justify-center min-w-0">
+      <div className="flex flex-auto flex-row items-center justify-center min-w-0">
         <div className="flex shrink-0 grow-0 basis-[140px] flex-col items-center justify-center gap-1.5 px-1 py-2">
           <SpriteSection
             pokemon={pokemon}

@@ -19,7 +19,7 @@ const midPill =
   "inline-flex h-[22px] shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-[5px] border border-border bg-background px-2 font-mono text-[11px] font-semibold leading-none text-muted-foreground transition-colors hover:bg-muted";
 const midRightPills = "inline-flex items-center gap-1.5";
 const midBody =
-  "flex flex-1 flex-col items-center justify-center gap-2 min-h-0 min-w-0 px-2 py-3";
+  "flex flex-auto flex-col items-center justify-center gap-2 min-h-0 min-w-0 px-2 py-3";
 const midSpriteCol =
   "mx-auto flex w-full max-w-[240px] flex-col items-center gap-1.5";
 const midFormCol =
@@ -27,7 +27,7 @@ const midFormCol =
 const vertRoot =
   "flex w-full flex-col border-b border-dashed border-border";
 const vertSpriteFormRow =
-  "flex flex-1 flex-row items-center justify-center min-w-0";
+  "flex flex-auto flex-row items-center justify-center min-w-0";
 const vertSpriteCol =
   "flex shrink-0 grow-0 basis-[140px] flex-col items-center justify-center gap-1.5 px-1 py-2";
 const vertFormCol =
