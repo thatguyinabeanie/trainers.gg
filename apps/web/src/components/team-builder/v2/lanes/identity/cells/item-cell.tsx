@@ -21,8 +21,7 @@ import { type ValidationError } from "../../../../validation-hooks";
 import { ItemPicker } from "../../../pickers/item-picker";
 import { FieldErrors } from "../../../validation/field-error";
 import { FormChip } from "../../form-chip";
-import { type CellVariant } from "./identity-cell-shared";
-import s from "../identity-lane.module.css";
+import { cellClasses, type CellVariant } from "./identity-cell-shared";
 
 // =============================================================================
 // ItemCell — held-item form cell, row (compact) or grid (hero) variant
@@ -74,7 +73,7 @@ export function ItemCell({
         e.stopPropagation();
         handleMegaToggle();
       }}
-      className={s.midMegaChip}
+      className={cellClasses.midMegaChip}
       title="Toggle mega form"
     >
       MEGA
@@ -118,14 +117,14 @@ export function ItemCell({
             <button
               type="button"
               className={cn(
-                s.midFormCell,
+                cellClasses.midFormCell,
                 errors.length > 0 && "ring-destructive/40 rounded ring-1"
               )}
             />
           }
         >
-          <span className={s.midFormLbl}>ITEM</span>
-          <span className={s.midFormVal}>
+          <span className={cellClasses.midFormLbl}>ITEM</span>
+          <span className={cellClasses.midFormVal}>
             <span
               className={cn(
                 "min-w-0 truncate",

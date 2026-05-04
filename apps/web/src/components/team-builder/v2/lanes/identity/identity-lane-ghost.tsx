@@ -2,8 +2,36 @@
 
 import { cn } from "@/lib/utils";
 
+import { cellClasses } from "./cells/identity-cell-shared";
 import s from "../../builder.module.css";
-import ids from "./identity-lane.module.css";
+
+// Migrated identity-lane.module.css class strings used by ghost variants only.
+// Most cell-level chrome lives in cellClasses (shared with the real cells);
+// the layout-shell classes below are ghost-specific.
+const midRoot =
+  "flex shrink-0 grow-0 basis-[380px] min-w-0 flex-col border-r border-dashed border-border";
+const midMetaBar =
+  "grid h-9 shrink-0 grid-cols-[auto_1fr_auto] items-center gap-2.5 border-b border-dashed border-border px-3 py-2";
+const midMetaBarNoLv = "grid-cols-[1fr_auto]";
+const midNickname =
+  "w-full min-w-0 border-0 border-b border-dashed border-b-transparent bg-transparent px-1 py-0.5 text-center text-[13px] font-semibold leading-none text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground placeholder:opacity-70 hover:border-b-border focus:border-b-primary focus:border-solid";
+const midPill =
+  "inline-flex h-[22px] shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-[5px] border border-border bg-background px-2 font-mono text-[11px] font-semibold leading-none text-muted-foreground transition-colors hover:bg-muted";
+const midRightPills = "inline-flex items-center gap-1.5";
+const midBody =
+  "flex flex-1 flex-col items-center justify-center gap-2 min-h-0 min-w-0 px-2 py-3";
+const midSpriteCol =
+  "mx-auto flex w-full max-w-[240px] flex-col items-center gap-1.5";
+const midFormCol =
+  "mx-auto flex w-full min-w-0 max-w-[240px] flex-col gap-1";
+const vertRoot =
+  "flex w-full flex-col border-b border-dashed border-border";
+const vertSpriteFormRow =
+  "flex flex-1 flex-row items-center justify-center min-w-0";
+const vertSpriteCol =
+  "flex shrink-0 grow-0 basis-[140px] flex-col items-center justify-center gap-1.5 px-1 py-2";
+const vertFormCol =
+  "flex min-w-0 shrink basis-auto flex-col justify-center gap-1 px-1.5 py-2 [&_input]:text-left";
 
 // =============================================================================
 // IdentityLaneGhost — static visual placeholder (no interactive elements)
@@ -55,13 +83,13 @@ function CompactGhost() {
 
 function MidGhost() {
   return (
-    <div className={ids.midRoot}>
+    <div className={midRoot}>
       {/* MetaBar ghost — nickname placeholder, same height as real MetaBar */}
-      <div className={ids.midMetaBar}>
+      <div className={midMetaBar}>
         <span />
         <span
           className={cn(
-            ids.midNickname,
+            midNickname,
             "pointer-events-none text-muted-foreground/20 italic"
           )}
         >
@@ -71,13 +99,13 @@ function MidGhost() {
       </div>
 
       {/* Body — sprite + form stacked vertically, centered */}
-      <div className={ids.midBody}>
-        <div className={ids.midSpriteCol}>
+      <div className={midBody}>
+        <div className={midSpriteCol}>
           <SpeciesPillGhost />
           <SpriteGhost />
         </div>
 
-        <div className={ids.midFormCol}>
+        <div className={midFormCol}>
           <MidFormRowsGhost />
         </div>
       </div>
@@ -92,29 +120,29 @@ function MidGhost() {
 
 function VerticalGhost() {
   return (
-    <div className={ids.vertRoot}>
-      <div className={ids.vertSpriteFormRow}>
-        <div className={ids.vertSpriteCol}>
+    <div className={vertRoot}>
+      <div className={vertSpriteFormRow}>
+        <div className={vertSpriteCol}>
           <SpriteGhost />
           <SpeciesPillGhost />
         </div>
 
-        <div className={ids.vertFormCol} style={{ minWidth: 263 }}>
-          {/* MetaBar ghost — matches .midMetaBar grid (1fr auto) */}
-          <div className={cn(ids.midMetaBar, ids.midMetaBarNoLv)}>
+        <div className={vertFormCol} style={{ minWidth: 263 }}>
+          {/* MetaBar ghost — matches midMetaBar grid (1fr auto) */}
+          <div className={cn(midMetaBar, midMetaBarNoLv)}>
             <span
-              className={cn(ids.midNickname, "text-muted-foreground/20 italic")}
+              className={cn(midNickname, "text-muted-foreground/20 italic")}
             >
               Nickname
             </span>
-            <span className={ids.midRightPills}>
+            <span className={midRightPills}>
               <span
-                className={cn(ids.midPill, "pointer-events-none opacity-30")}
+                className={cn(midPill, "pointer-events-none opacity-30")}
               >
                 —
               </span>
               <span
-                className={cn(ids.midPill, "pointer-events-none opacity-30")}
+                className={cn(midPill, "pointer-events-none opacity-30")}
               >
                 ✦
               </span>
@@ -199,10 +227,13 @@ function MidFormRowsGhost() {
   return (
     <>
       {(["Item", "Abil", "Nat"] as const).map((label) => (
-        <div key={label} className={ids.midFormCell}>
-          <span className={ids.midFormLbl}>{label}</span>
+        <div key={label} className={cellClasses.midFormCell}>
+          <span className={cellClasses.midFormLbl}>{label}</span>
           <span
-            className={cn(ids.midFormVal, "text-muted-foreground/25 italic")}
+            className={cn(
+              cellClasses.midFormVal,
+              "text-muted-foreground/25 italic"
+            )}
           >
             —
           </span>

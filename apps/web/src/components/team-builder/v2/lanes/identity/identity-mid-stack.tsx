@@ -9,7 +9,6 @@ import { FormCells } from "./cells/form-cells";
 import { MetaBar } from "./cells/meta-bar";
 import { SpriteSection } from "./cells/sprite-section";
 import { type IdentityLayoutProps } from "./identity-layout-props";
-import s from "./identity-lane.module.css";
 
 // =============================================================================
 // IdentityMidStack — MidStack layout (slot < 1240px)
@@ -60,7 +59,7 @@ export function IdentityMidStack({
   const [speciesOpen, setSpeciesOpen] = useState(false);
 
   return (
-    <div className={s.midRoot}>
+    <div className="flex shrink-0 grow-0 basis-[380px] min-w-0 flex-col border-r border-dashed border-border">
       <SpeciesPickerDialog
         open={speciesOpen}
         onOpenChange={setSpeciesOpen}
@@ -90,8 +89,8 @@ export function IdentityMidStack({
       />
 
       {/* Body: sprite-col (left) + form-col (right), both vertically centered */}
-      <div className={s.midBody}>
-        <div className={s.midSpriteCol}>
+      <div className="flex flex-1 flex-col items-center justify-center gap-2 min-h-0 min-w-0 px-2 py-3">
+        <div className="mx-auto flex w-full max-w-[240px] flex-col items-center gap-1.5">
           <SpriteSection
             pokemon={pokemon}
             onSpeciesClick={() => setSpeciesOpen(true)}
@@ -102,7 +101,7 @@ export function IdentityMidStack({
           />
         </div>
 
-        <div className={s.midFormCol}>
+        <div className="mx-auto flex w-full min-w-0 max-w-[240px] flex-col gap-1">
           <FormCells
             pokemon={pokemon}
             format={format}

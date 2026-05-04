@@ -14,7 +14,18 @@ import {
 import { type ValidationError } from "../../../../validation-hooks";
 import { NumberPicker } from "../../../pickers/number-picker";
 import { FieldErrors } from "../../../validation/field-error";
-import s from "../identity-lane.module.css";
+
+// Shared Tailwind class strings for MidStack/Vertical meta-bar pieces.
+// Migrated from identity-lane.module.css. Kept as locals so they read
+// cleanly inline in the JSX below.
+const midMetaBarBase =
+  "grid h-9 shrink-0 items-center gap-2.5 border-b border-dashed border-border px-3 py-2";
+const midMetaBarLv = "grid-cols-[auto_1fr_auto]";
+const midMetaBarNoLvCols = "grid-cols-[1fr_auto]";
+const midPill =
+  "inline-flex h-[22px] shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-[5px] border border-border bg-background px-2 font-mono text-[11px] font-semibold leading-none text-muted-foreground transition-colors hover:bg-muted";
+const midNickname =
+  "w-full min-w-0 border-0 border-b border-dashed border-b-transparent bg-transparent px-1 py-0.5 text-center text-[13px] font-semibold leading-none text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground placeholder:opacity-70 hover:border-b-border focus:border-b-primary focus:border-solid";
 
 // =============================================================================
 // Types
@@ -158,7 +169,12 @@ export function MetaBar({
   // Layout (Lv shown):    auto 1fr auto — Lv | nickname | gender+shiny
   // Layout (Lv hidden):        1fr auto — nickname | gender+shiny  (visually centered)
   return (
-    <div className={cn(s.midMetaBar, !showLevel && s.midMetaBarNoLv)}>
+    <div
+      className={cn(
+        midMetaBarBase,
+        showLevel ? midMetaBarLv : midMetaBarNoLvCols
+      )}
+    >
       {/* Left: Lv pill — only rendered when format supports level */}
       {showLevel && (
         <Popover open={levelOpen} onOpenChange={setLevelOpen}>
@@ -167,7 +183,7 @@ export function MetaBar({
               <button
                 type="button"
                 title={`Level ${level}`}
-                className={cn(s.midPill, s.midLvPill)}
+                className={cn(midPill, "font-bold")}
               />
             }
           >
@@ -203,19 +219,20 @@ export function MetaBar({
         maxLength={24}
         aria-label="Nickname"
         className={cn(
-          s.midNickname,
-          nicknameErrors.length > 0 && "border-b-destructive focus:border-b-destructive"
+          midNickname,
+          nicknameErrors.length > 0 &&
+            "border-b-destructive focus:border-b-destructive"
         )}
       />
 
       {/* Right: gender + shiny pills */}
-      <span className={s.midRightPills}>
+      <span className="inline-flex items-center gap-1.5">
         <button
           type="button"
           onClick={handleGenderToggle}
           title="Toggle gender"
           className={cn(
-            s.midPill,
+            midPill,
             genderErrors.length > 0 && "border-destructive"
           )}
         >
@@ -226,12 +243,10 @@ export function MetaBar({
           onClick={handleShinyToggle}
           aria-pressed={isShiny}
           title={
-            isShiny
-              ? "Shiny (click to clear)"
-              : "Not shiny (click to set)"
+            isShiny ? "Shiny (click to clear)" : "Not shiny (click to set)"
           }
           className={cn(
-            s.midPill,
+            midPill,
             isShiny
               ? "border-yellow-400/40 bg-yellow-400/20 text-yellow-600 dark:text-yellow-400"
               : "text-muted-foreground"

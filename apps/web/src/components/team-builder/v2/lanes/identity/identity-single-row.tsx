@@ -9,7 +9,6 @@ import { FormCells } from "./cells/form-cells";
 import { MetaBar } from "./cells/meta-bar";
 import { SpriteSection } from "./cells/sprite-section";
 import { type IdentityLayoutProps } from "./identity-layout-props";
-import s from "./identity-lane.module.css";
 
 // =============================================================================
 // IdentitySingleRow — compact layout (slot ≥ 1240px)
@@ -53,7 +52,7 @@ export function IdentitySingleRow({
   const [speciesOpen, setSpeciesOpen] = useState(false);
 
   return (
-    <div className={s.root}>
+    <div className="flex">
       <SpeciesPickerDialog
         open={speciesOpen}
         onOpenChange={setSpeciesOpen}
@@ -79,7 +78,7 @@ export function IdentitySingleRow({
         {/* Form column */}
         <div className="flex w-64 min-w-0 shrink-0 flex-col justify-center gap-0.5">
           {/* BANNER — nickname + chips rows */}
-          <div className={s.banner}>
+          <div className="mb-1 flex flex-col gap-[3px] border-b border-border pb-1.5">
             <MetaBar
               nickDraft={nickDraft}
               setNickDraft={setNickDraft}

@@ -15,8 +15,7 @@ import {
 import { TypeDot } from "../../../type-dot";
 import { TypePicker } from "../../../pickers/type-picker";
 import { formatSupportsTera } from "../../../format-gating";
-import { type CellVariant } from "./identity-cell-shared";
-import s from "../identity-lane.module.css";
+import { cellClasses, type CellVariant } from "./identity-cell-shared";
 
 // =============================================================================
 // TeraCell — tera type form cell, row (compact) or grid (hero) variant
@@ -50,7 +49,8 @@ export function TeraCell({
   );
 
   // teraContent is variant-aware: row variant uses formValue, grid uses midFormVal
-  const valueClass = variant === "row" ? s.formValue : s.midFormVal;
+  const valueClass =
+    variant === "row" ? cellClasses.formValue : cellClasses.midFormVal;
   const teraContent = pokemon.tera_type ? (
     <>
       <TypeDot t={pokemon.tera_type} size={10} />
@@ -68,9 +68,9 @@ export function TeraCell({
     return (
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
-          render={<button type="button" className={s.formRow} />}
+          render={<button type="button" className={cellClasses.formRow} />}
         >
-          <span className={s.formLabel}>Tera</span>
+          <span className={cellClasses.formLabel}>Tera</span>
           <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
             {teraContent}
           </span>
@@ -86,9 +86,9 @@ export function TeraCell({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        render={<button type="button" className={s.midFormCell} />}
+        render={<button type="button" className={cellClasses.midFormCell} />}
       >
-        <span className={s.midFormLbl}>TERA</span>
+        <span className={cellClasses.midFormLbl}>TERA</span>
         <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
           {teraContent}
         </span>

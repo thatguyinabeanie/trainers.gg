@@ -9,7 +9,6 @@ import { FormCells } from "./cells/form-cells";
 import { MetaBar } from "./cells/meta-bar";
 import { SpriteSection } from "./cells/sprite-section";
 import { type IdentityLayoutProps } from "./identity-layout-props";
-import s from "./identity-lane.module.css";
 
 // =============================================================================
 // IdentityVertical — 2×3-vertical and 3×2-vertical grid modes
@@ -61,7 +60,7 @@ export function IdentityVertical({
   const [speciesOpen, setSpeciesOpen] = useState(false);
 
   return (
-    <div className={s.vertRoot}>
+    <div className="flex w-full flex-col border-b border-dashed border-border">
       <SpeciesPickerDialog
         open={speciesOpen}
         onOpenChange={setSpeciesOpen}
@@ -71,8 +70,8 @@ export function IdentityVertical({
         onPick={handleSpeciesPick}
       />
 
-      <div className={s.vertSpriteFormRow}>
-        <div className={s.vertSpriteCol}>
+      <div className="flex flex-1 flex-row items-center justify-center min-w-0">
+        <div className="flex shrink-0 grow-0 basis-[140px] flex-col items-center justify-center gap-1.5 px-1 py-2">
           <SpriteSection
             pokemon={pokemon}
             onSpeciesClick={() => setSpeciesOpen(true)}
@@ -83,7 +82,7 @@ export function IdentityVertical({
           />
         </div>
 
-        <div className={s.vertFormCol}>
+        <div className="flex min-w-0 shrink basis-auto flex-col justify-center gap-1 px-1.5 py-2 [&_input]:text-left">
           <MetaBar
             nickDraft={nickDraft}
             setNickDraft={setNickDraft}
