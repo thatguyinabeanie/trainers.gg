@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useOptimistic, useRef, useState, useTransition } from "react";
+import { useId, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -61,6 +61,7 @@ import { HeatmapPanel } from "./dock/heatmap-panel";
 import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
 import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
+import { warmSpeciesIndex } from "./pickers/species-picker";
 import { useBuilderState } from "./use-builder-state";
 import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
 
@@ -276,6 +277,15 @@ export function TeamWorkspaceV2({
    * level shared state across tabs, tests, or HMR reloads.
    */
   const nextOptimisticIdRef = useRef(-1);
+
+  // Eagerly warm the species search index in an idle callback so the first
+  // open of the species picker is instant rather than blocking on index build.
+  useEffect(() => {
+    const formatId = format?.id;
+    if (!formatId) return;
+    const id = requestIdleCallback(() => warmSpeciesIndex(formatId));
+    return () => cancelIdleCallback(id);
+  }, [format?.id]);
 
   // ---------------------------------------------------------------------------
   // Optimistic team-pokemon state
@@ -576,8 +586,77 @@ export function TeamWorkspaceV2({
           className="flex flex-1 flex-col min-w-0 overflow-hidden"
           ref={worklaneRef}
         >
-          {/* Horizontal split: editor + optional right sidebar */}
+          {/* Horizontal split: optional left sidebar + editor */}
           <div className="flex flex-1 min-w-0 overflow-hidden">
+
+              {/* Desktop: side panels on the left */}
+              {!isMobile && state.sideDrawer && (
+                <>
+                  <div
+                    className="shrink-0 flex flex-col border-r border-border bg-muted/30 transition-[width] duration-200 ease-in-out"
+                    style={{ width: state.sideWidthPx }}
+                  >
+                  {state.sideDrawer === "speed" ? (
+                    <>
+                      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary">
+                          Speed Tiers
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => state.setSideDrawer(null)}
+                          aria-label="Close speed tiers"
+                          className="ml-auto text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded transition-colors"
+                        >
+                          ×
+                        </button>
+                      </header>
+                      <div className="min-h-0 flex-1 overflow-y-auto">
+                        <SpeedTiersPanel
+                          team={optimisticTeamPokemon}
+                          format={format}
+                        />
+                      </div>
+                    </>
+                  ) : state.sideDrawer === "calc" ? (
+                    <CalcBottomPanel
+                      teamSlots={slots}
+                      format={format}
+                      onClose={() => state.setSideDrawer(null)}
+                      attackerIdx={calcAttackerIdx}
+                      faintedYours={state.faintedYours}
+                      setFaintedYours={state.setFaintedYours}
+                      faintedTheirs={state.faintedTheirs}
+                      setFaintedTheirs={state.setFaintedTheirs}
+                    />
+                  ) : null}
+                  </div>
+                  <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="Resize side panel"
+                    className="w-[6px] shrink-0 cursor-col-resize bg-border transition-colors duration-100 touch-none hover:bg-primary focus-visible:bg-primary focus-visible:outline-none"
+                    onPointerDown={(e) => {
+                      const startX = e.clientX;
+                      const startWidth = state.sideWidthPx;
+                      const target = e.currentTarget;
+                      target.setPointerCapture(e.pointerId);
+
+                      const onMove = (ev: PointerEvent) => {
+                        const delta = startX - ev.clientX;
+                        state.setSideWidthPx(startWidth - delta);
+                      };
+                      const onUp = () => {
+                        target.removeEventListener("pointermove", onMove);
+                        target.removeEventListener("pointerup", onUp);
+                      };
+                      target.addEventListener("pointermove", onMove);
+                      target.addEventListener("pointerup", onUp);
+                    }}
+                  />
+                </>
+              )}
+
             {/* Editor region — rows scroll inside this region only */}
             <div className="flex flex-1 flex-col min-w-0 overflow-y-auto">
               {/* Section wraps pokemon rows */}
@@ -669,74 +748,6 @@ export function TeamWorkspaceV2({
 
               </section>
             </div>
-
-              {/* Desktop: calc sidebar (default open) + speed tiers overlay */}
-              {!isMobile && state.sideDrawer && (
-                <>
-                  <div
-                    role="separator"
-                    aria-orientation="vertical"
-                    aria-label="Resize side panel"
-                    className="w-[6px] shrink-0 cursor-col-resize bg-border transition-colors duration-100 touch-none hover:bg-primary focus-visible:bg-primary focus-visible:outline-none"
-                    onPointerDown={(e) => {
-                      const startX = e.clientX;
-                      const startWidth = state.sideWidthPx;
-                      const target = e.currentTarget;
-                      target.setPointerCapture(e.pointerId);
-
-                      const onMove = (ev: PointerEvent) => {
-                        const delta = startX - ev.clientX;
-                        state.setSideWidthPx(startWidth + delta);
-                      };
-                      const onUp = () => {
-                        target.removeEventListener("pointermove", onMove);
-                        target.removeEventListener("pointerup", onUp);
-                      };
-                      target.addEventListener("pointermove", onMove);
-                      target.addEventListener("pointerup", onUp);
-                    }}
-                  />
-                  <div
-                    className="shrink-0 flex flex-col border-l border-border bg-muted/30 transition-[width] duration-200 ease-in-out"
-                    style={{ width: state.sideDrawer === "speed" ? Math.max(state.sideWidthPx, 800) : state.sideWidthPx }}
-                  >
-                  {state.sideDrawer === "speed" ? (
-                    <>
-                      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
-                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary">
-                          Speed Tiers
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => state.setSideDrawer(null)}
-                          aria-label="Close speed tiers"
-                          className="ml-auto text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded transition-colors"
-                        >
-                          ×
-                        </button>
-                      </header>
-                      <div className="min-h-0 flex-1 overflow-y-auto">
-                        <SpeedTiersPanel
-                          team={optimisticTeamPokemon}
-                          format={format}
-                        />
-                      </div>
-                    </>
-                  ) : state.sideDrawer === "calc" ? (
-                    <CalcBottomPanel
-                      teamSlots={slots}
-                      format={format}
-                      onClose={() => state.setSideDrawer(null)}
-                      attackerIdx={calcAttackerIdx}
-                      faintedYours={state.faintedYours}
-                      setFaintedYours={state.setFaintedYours}
-                      faintedTheirs={state.faintedTheirs}
-                      setFaintedTheirs={state.setFaintedTheirs}
-                    />
-                  ) : null}
-                  </div>
-                </>
-              )}
 
               {/* Mobile: calc/speed panels render inline below the editor rows */}
               {isMobile && state.sideDrawer === "calc" && (

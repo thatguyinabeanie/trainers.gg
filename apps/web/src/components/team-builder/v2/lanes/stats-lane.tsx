@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   findStatBreakpoints,
@@ -351,6 +351,8 @@ function StatRow({
     budget.total,
     budget.perStat
   );
+  const investBudgetRef = useRef(investBudget);
+  investBudgetRef.current = investBudget;
 
   // --- EV draft + debounced commit ---
   // Slider/keyboard updates the local draft synchronously for snappy UI;
@@ -363,7 +365,15 @@ function StatRow({
   );
   if (ev !== prevEv) {
     setPrevEv(ev);
-    setDraftEv(null);
+    // Only clear the draft if the incoming prop is an *external* change (e.g.
+    // nature swap, preset load), not our own debounce landing. When our
+    // debounce fires, `ev` will equal `draftEv` — clearing it then is fine
+    // (no visual change). But if the user is still dragging ahead of the
+    // debounce, `draftEv` will differ from `ev` and we must NOT reset it,
+    // otherwise the slider snaps back mid-drag causing jitter.
+    if (draftEv === null || ev === draftEv) {
+      setDraftEv(null);
+    }
   }
   const displayEv = draftEv ?? ev;
 
@@ -429,32 +439,38 @@ function StatRow({
   useEffect(() => {
     if (draftEv === null) return;
     const timer = setTimeout(() => {
-      onUpdate({ [evFieldKey]: draftEv });
+      const committed = Math.min(draftEv, investBudgetRef.current);
+      // Clear draft and snap slider to the clamped value before committing.
+      // This prevents a stale draft from lingering after the prop catches up.
+      setDraftEv(null);
+      onLiveEv?.(statKey, committed);
+      onUpdate({ [evFieldKey]: committed });
     }, DRAFT_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [draftEv, evFieldKey, onUpdate]);
+  }, [draftEv, evFieldKey, onUpdate, statKey, onLiveEv]);
 
   function flushEvDraft() {
     if (draftEv === null) return;
-    // Clear draft before committing — see IV onBlur for the same pattern.
-    // Without this, the still-armed debounce timer fires a duplicate
-    // onUpdate 400ms later.
-    const nextEv = draftEv;
+    // Clamp to budget on commit, then clear draft.
+    const committed = Math.min(draftEv, investBudget);
     setDraftEv(null);
-    onLiveEv?.(statKey, nextEv);
-    onUpdate({ [evFieldKey]: nextEv });
+    onLiveEv?.(statKey, committed);
+    onUpdate({ [evFieldKey]: committed });
   }
 
   // --- Handle slider change ---
+  // During drag we only snap to the step grid — we do NOT clamp to
+  // investBudget here, because that causes visible jitter when the thumb
+  // overshoots the effective limit and snaps back every frame. Instead,
+  // clamping happens on commit (debounce fire / pointer-up / blur).
   function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = Number(e.target.value);
-    const clamped = Math.min(raw, investBudget);
-    const snapped = Math.round(clamped / budget.step) * budget.step;
+    const snapped = Math.round(raw / budget.step) * budget.step;
     setDraftEv(snapped);
-    // Bubble the live value to the parent in the same render pass as the
-    // setDraftEv call, so the lane-level total tracks the drag without
-    // waiting for an after-commit effect.
-    onLiveEv?.(statKey, snapped);
+    // Bubble the live value to the parent — clamp here so the running total
+    // never exceeds the budget (visual counter stays correct), but the
+    // slider thumb itself stays where the user's finger is.
+    onLiveEv?.(statKey, Math.min(snapped, investBudget));
   }
 
   // --- Handle breakpoint tick click — jump straight to that bump value

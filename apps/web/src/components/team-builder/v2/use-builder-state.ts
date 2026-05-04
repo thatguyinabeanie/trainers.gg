@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // =============================================================================
 // Types
@@ -156,7 +156,7 @@ const DEFAULT_FIELD: FieldState = {
  */
 export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
-  const [sideDrawer, setSideDrawer] = useState<SideDrawerKey>("calc");
+  const [sideDrawer, setSideDrawer] = useState<SideDrawerKey>("speed");
   const [bottomDrawer, setBottomDrawer] = useState<BottomDrawerKey>(null);
 
   // Legacy compat: `drawer` returns whichever is open (side takes precedence for reads)
@@ -173,19 +173,11 @@ export function useBuilderState(): BuilderState {
   }
 
   const [panelHeightPct, setPanelHeightPctState] = useState<number>(
-    () =>
-      readPersisted(PANEL_HEIGHT_STORAGE_KEY, (raw) => {
-        const n = clampPanelHeight(Number(raw));
-        return Number.isNaN(Number(raw)) ? null : n;
-      }) ?? DEFAULT_PANEL_HEIGHT_PCT
+    DEFAULT_PANEL_HEIGHT_PCT
   );
 
   const [sideWidthPx, setSideWidthPxState] = useState<number>(
-    () =>
-      readPersisted(SIDE_WIDTH_STORAGE_KEY, (raw) => {
-        const n = clampSideWidth(Number(raw));
-        return Number.isNaN(Number(raw)) ? null : n;
-      }) ?? DEFAULT_SIDE_WIDTH_PX
+    DEFAULT_SIDE_WIDTH_PX
   );
   const [field, setFieldState] = useState<FieldState>(DEFAULT_FIELD);
 
@@ -194,28 +186,53 @@ export function useBuilderState(): BuilderState {
   }
 
   // --- Calc workspace tweaks — persisted to localStorage ---
-  const [attackerSlot, setAttackerSlotState] = useState<number | null>(() =>
-    readPersisted(ATTACKER_SLOT_STORAGE_KEY, (raw) => {
+  const [attackerSlot, setAttackerSlotState] = useState<number | null>(null);
+
+  const [faintedYours, setFaintedYoursState] = useState<number>(0);
+
+  const [faintedTheirs, setFaintedTheirsState] = useState<number>(0);
+
+  // Hydrate persisted values from localStorage after mount to avoid
+  // hydration mismatches (server renders defaults, client must match).
+  useEffect(() => {
+    const persistedPanel = readPersisted(PANEL_HEIGHT_STORAGE_KEY, (raw) => {
+      const n = clampPanelHeight(Number(raw));
+      return Number.isNaN(Number(raw)) ? null : n;
+    });
+    if (persistedPanel !== null) setPanelHeightPctState(persistedPanel);
+
+    const persistedSide = readPersisted(SIDE_WIDTH_STORAGE_KEY, (raw) => {
+      const n = clampSideWidth(Number(raw));
+      return Number.isNaN(Number(raw)) ? null : n;
+    });
+    if (persistedSide !== null) setSideWidthPxState(persistedSide);
+
+    const persistedSlot = readPersisted(ATTACKER_SLOT_STORAGE_KEY, (raw) => {
       const parsed = Number(raw);
       return Number.isNaN(parsed) ? null : clampSlot(parsed);
-    })
-  );
+    });
+    if (persistedSlot !== null) setAttackerSlotState(persistedSlot);
 
-  const [faintedYours, setFaintedYoursState] = useState<number>(
-    () =>
-      readPersisted(FAINTED_YOURS_STORAGE_KEY, (raw) => {
+    const persistedFaintedYours = readPersisted(
+      FAINTED_YOURS_STORAGE_KEY,
+      (raw) => {
         const n = Number(raw);
         return Number.isNaN(n) ? null : clampFainted(n);
-      }) ?? 0
-  );
+      }
+    );
+    if (persistedFaintedYours !== null)
+      setFaintedYoursState(persistedFaintedYours);
 
-  const [faintedTheirs, setFaintedTheirsState] = useState<number>(
-    () =>
-      readPersisted(FAINTED_THEIRS_STORAGE_KEY, (raw) => {
+    const persistedFaintedTheirs = readPersisted(
+      FAINTED_THEIRS_STORAGE_KEY,
+      (raw) => {
         const n = Number(raw);
         return Number.isNaN(n) ? null : clampFainted(n);
-      }) ?? 0
-  );
+      }
+    );
+    if (persistedFaintedTheirs !== null)
+      setFaintedTheirsState(persistedFaintedTheirs);
+  }, []);
 
   function setPanelHeightPct(n: number) {
     const clamped = clampPanelHeight(n);

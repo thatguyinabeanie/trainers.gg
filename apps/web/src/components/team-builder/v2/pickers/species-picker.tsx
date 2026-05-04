@@ -403,6 +403,19 @@ function SpeciesRow({
 }
 
 // =============================================================================
+// Warm-up helper
+// =============================================================================
+
+/**
+ * Eagerly builds the species search index for a format so the first open of
+ * the species picker is instant. Call from the workspace on mount via
+ * requestIdleCallback.
+ */
+export function warmSpeciesIndex(formatId: string): void {
+  buildSpeciesSearchIndex(formatId, getRolesForSpecies);
+}
+
+// =============================================================================
 // SpeciesPicker
 // =============================================================================
 
