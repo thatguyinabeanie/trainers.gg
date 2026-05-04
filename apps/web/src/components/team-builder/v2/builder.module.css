@@ -984,6 +984,7 @@
   border-collapse: separate;
   border-spacing: 0 3px;
   table-layout: fixed;
+  width: 100%;
 }
 
 /* Strip shadcn defaults from the table container */
@@ -1048,20 +1049,22 @@
 
 :global(.mvline-cell--name) {
   width: 140px;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 :global(.mvline-cell--stat) {
-  width: 40px;
+  width: 44px;
+  max-width: 44px;
   font-family: var(--font-mono, monospace);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  text-align: left;
+  text-align: right;
 }
 
 :global(.mvline-cell--calc) {
-  width: 140px;
+  width: 180px;
   padding-left: 10px !important;
   border-left: 1px solid var(--border);
 }
@@ -1146,23 +1149,24 @@
 :global(.mvline-calc-inline) {
   display: flex;
   align-items: baseline;
-  gap: 2px;
-  font-size: 12px;
-  font-weight: 600;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 :global(.mvline-calc-inline--ko1) {
-  color: var(--ko-red);
+  --ko-tier-color: var(--ko-red);
 }
 :global(.mvline-calc-inline--ko2) {
-  color: var(--ko-amber2-fg);
+  --ko-tier-color: var(--ko-amber2-fg);
 }
 :global(.mvline-calc-inline--ko3) {
-  color: var(--ko-yellow-fg);
+  --ko-tier-color: var(--ko-yellow-fg);
 }
 :global(.mvline-calc-inline--ko4) {
-  color: var(--muted-foreground);
+  --ko-tier-color: var(--muted-foreground);
 }
 
 /* Hover — apply border to cells */

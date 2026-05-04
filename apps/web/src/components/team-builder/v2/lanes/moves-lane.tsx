@@ -80,7 +80,7 @@ function CalcRange({
   empty?: boolean;
 }) {
   return (
-    <span className="inline-block w-[7.5em] text-right font-mono text-xs font-medium tabular-nums">
+    <span className="inline-block w-[7.5em] text-right text-[13px] font-medium tabular-nums">
       {empty ? "—" : `${min.toFixed(1)}–${max.toFixed(1)}%`}
     </span>
   );
@@ -99,7 +99,7 @@ const KO_LABELS: Record<string, string> = {
 
 function KoLabel({ tier }: { tier: string }) {
   return (
-    <span className="inline-block w-[3.5em] text-[9px] font-extrabold tracking-wide uppercase">
+    <span className="inline-block w-[3.5em] text-[9px] font-extrabold tracking-wide uppercase text-[var(--ko-tier-color)]">
       {KO_LABELS[tier] ?? "4HKO+"}
     </span>
   );
@@ -358,7 +358,7 @@ function MovesLaneGhost() {
       className="border-border/60 flex min-w-0 flex-1 flex-col justify-center border-r border-dashed p-3"
       data-calc={calcEnabled ? "on" : "off"}
     >
-      <Table className="mvtable w-auto">
+      <Table className="mvtable">
         <TableHeader>
           <TableRow className="mvline-header">
             <TableHead className="mvline-cell mvline-cell--icon" />
@@ -427,7 +427,7 @@ function MovesLaneReal({
       className="flex min-w-0 flex-1 flex-col justify-center py-3 pr-5 pl-3"
       data-calc={calc.calcEnabled ? "on" : "off"}
     >
-      <Table className="mvtable w-auto">
+      <Table className="mvtable">
         <TableHeader>
           <TableRow className="mvline-header">
             <TableHead className="mvline-cell mvline-cell--icon" />
