@@ -113,22 +113,19 @@
 
 /* In 1×6 mode the slot fills the grid column, which without a cap
    stretches the row card across the full content area. The row's
-   internal columns are rib (40) + identity (~500: sprite section + form
-   column with 256px form col + 180px species pill stack) + stats (400) +
-   moves (520) ≈ 1460px total. Cap the slot at 1500 so wider viewports
-   give the row 40px of headroom for side-by-side mode without sprawling
-   sparse, and so the @container threshold below has room to gate
-   side-by-side ↔ stacked correctly. */
+   internal columns are rib (28) + identity (~500) + stats (400) +
+   moves (flex-1, grows to fill) + rib (28). Cap the slot so the row
+   doesn't sprawl indefinitely on ultra-wide screens. */
 .builderRows[data-layout="1x6"] .slotHost {
-  max-width: 1500px;
+  max-width: 1620px;
   margin-inline: auto;
 }
 
-/* When the calc column is open, the row list expands by the calc column width so
-   identity + stats + moves keep their X width and calc is added as +Y. */
+/* When the calc column is open, the inline calc values fit within the moves
+   grid (the name column truncates to accommodate). No width expansion needed
+   since the separate calc-col sidebar is no longer rendered. */
 .builderRows[data-calc-open="true"] {
-  width: calc(100% + 220px);
-  max-width: calc(1600px + 220px); /* 1820px — allows the 220px expansion on wide screens */
+  /* intentionally no width override — inline calc fits within existing layout */
 }
 
 [data-density="compact"] .builderRows {
@@ -154,7 +151,6 @@
 [data-density="compact"] .rowActive {
   gap: 6px;
 }
-
 
 /* ============================================================
    Inline analytics panel — Type matchups / Speed tiers
@@ -227,7 +223,9 @@
   justify-content: center;
   color: var(--muted-foreground);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .inlinePanelClose:hover {
@@ -242,7 +240,6 @@
   min-height: 0;
   overflow-y: auto;
 }
-
 
 /* ============================================================
    Calc drawer
@@ -310,7 +307,9 @@
   align-items: center;
   justify-content: center;
   color: var(--muted-foreground);
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 :global(.cd-close:hover) {
@@ -427,7 +426,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
   color: var(--foreground);
 }
 
@@ -553,7 +554,9 @@
   font-size: 11px;
   font-family: var(--font-mono, monospace);
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
   color: var(--muted-foreground);
 }
 
@@ -585,7 +588,10 @@
   font-weight: 500;
   cursor: pointer;
   color: var(--muted-foreground);
-  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s,
+    color 0.1s;
   line-height: 1.6;
 }
 
@@ -815,12 +821,13 @@
 }
 
 /* Mid-stack — identity hero panel left, stats above moves on the right.
-   Threshold raised from 1239 → 1459 to match the actual minimum slot
-   width that fits side-by-side: rib(40) + identity(~500) + stats(400) +
-   moves(520) ≈ 1460. Below this the row stacks stats above moves so the
-   teal active-row border wraps every lane without inner content
-   overflowing past the rounded edge. */
-@container slot (max-width: 1459px) {
+   Below this threshold the row stacks stats above moves so the active-row
+   border wraps every lane without inner content overflowing past the
+   rounded edge. Minimum side-by-side: rib(28) + identity(~500) +
+   stats(400) + moves(~570 grid min with calc column) + rib(28) ≈ 1526.
+   Threshold at 1579 aligns with the Tailwind @[1580px] breakpoint on
+   stats-lane (fixed 400px) so both switch at the same container width. */
+@container slot (max-width: 1579px) {
   .rowRight {
     display: flex;
     flex-direction: column;
@@ -965,116 +972,107 @@
   opacity: 0.5;
 }
 
+/* =============================================================
+   Move table — uses shadcn/ui Table, styled to not look tabular.
+   .mvtable: the <table> element
+   .mvline:  each <tr> (move row)
+   .mvline-cell: each <td>/<th>
+   ============================================================= */
 
-/* Move tile row — :global() because lanes/moves-lane.tsx references it as a
-   plain string class via cn("mvline", ...) rather than via the CSS-module
-   `s.mvline` import. Without :global() this rule was hashed and never
-   applied, leaving the button at default inline-block layout — which made
-   the inner mvline-calc (display: flex / block-level) wrap onto a new line
-   below the move name.
-   Grid columns mirror the move-picker's column layout:
-   type pill | cat icon | name | description | BP | Acc | calc info */
-:global(.mvline) {
-  display: grid;
-  grid-template-columns:
-    max-content        /* type */
-    max-content        /* category */
-    140px              /* name — fixed width, no truncation */
-    56px               /* BP */
-    72px               /* Acc */
-    auto;              /* Calc result (pill + range) */
-
-  align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  text-align: left;
-  width: 100%;
-  overflow: hidden;
-  cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
+/* Table element: fixed layout ensures all 6 cards align identically */
+:global(.mvtable) {
+  border-collapse: separate;
+  border-spacing: 0 3px;
+  table-layout: fixed;
 }
 
-/* Tighten BP / Acc widths at narrow slot widths so move names get more
-   room before truncating. The "BP" / "ACC" labels are still rendered
-   but the value column fits a 3-digit BP / 4-char "100%" without
-   reserving extra space. Threshold matches the side-by-side ↔ stacked
-   transition above (1459) so move tiles tighten the moment the row
-   drops out of full side-by-side mode. */
-@container slot (max-width: 1459px) {
-  /* stylelint-disable-next-line selector-pseudo-class-no-unknown */
-  :global(.mvline) {
-    grid-template-columns:
-      max-content
-      max-content
-      120px
-      40px
-      48px
-      auto;
-    gap: 4px;
-    padding: 4px 6px;
-  }
-  /* stylelint-disable-next-line selector-pseudo-class-no-unknown */
-  :global(.mvline-stat-label) {
-    display: none;
-  }
+/* Strip shadcn defaults from the table container */
+:global(.mvtable) [data-slot="table-container"] {
+  overflow: visible;
 }
 
-/* Calc result row — spans all columns as row 2 inside .mvline grid */
-:global(.mvline-calc-row) {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 0 1px;
-  font-family: var(--font-mono, monospace);
-  font-size: 10px;
-  font-weight: 600;
-  white-space: nowrap;
-  border-top: 1px solid color-mix(in oklch, var(--border) 40%, transparent);
-  margin-top: 2px;
+/* Header row — tiny uppercase labels */
+:global(.mvline-header) {
+  border: none !important;
 }
 
-:global(.mvline-calc-row--ko1) {
-  color: var(--ko-red);
-}
-:global(.mvline-calc-row--ko2) {
-  color: var(--ko-amber2-fg);
-}
-:global(.mvline-calc-row--ko3) {
-  color: var(--ko-yellow-fg);
-}
-:global(.mvline-calc-row--ko4) {
+:global(.mvline-header) th {
+  height: auto !important;
+  padding: 0 4px 2px !important;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted-foreground);
+  border: none;
 }
 
-/* Calc result section — sibling to .mvline, only rendered when calc is enabled */
-:global(.mvline-calc-section) {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  min-width: 160px;
-  padding: 2px 10px;
-  border-left: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+/* Move row — the clickable <tr> */
+:global(.mvline) {
+  cursor: pointer;
+  transition: background 0.12s;
+  border: none !important;
+}
+
+:global(.mvline) td {
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    border-color 0.12s,
+    background-color 0.12s;
+}
+
+:global(.mvline) td:first-child {
+  border-left: 1px solid transparent;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+:global(.mvline) td:last-child {
+  border-right: 1px solid transparent;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+/* Cell base — tight padding, vertical center */
+:global(.mvline-cell) {
+  padding: 4px 4px !important;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+:global(.mvline-cell--icon) {
+  width: 24px;
+  padding: 4px 2px !important;
+}
+
+:global(.mvline-cell--name) {
+  width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:global(.mvline-cell--stat) {
+  width: 40px;
   font-family: var(--font-mono, monospace);
   font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
 }
 
-:global(.mvline-calc-section--ko1) {
-  background: color-mix(in oklch, var(--ko-red) 8%, transparent);
+:global(.mvline-cell--calc) {
+  width: 140px;
+  padding-left: 10px !important;
+  border-left: 1px solid var(--border);
 }
-:global(.mvline-calc-section--ko2) {
-  background: color-mix(in oklch, var(--ko-amber2-fg) 8%, transparent);
+
+/* When calc is off, tighten row padding */
+[data-calc="off"] :global(.mvline-cell) {
+  padding: 3px 3px !important;
 }
-:global(.mvline-calc-section--ko3) {
-  background: color-mix(in oklch, var(--ko-yellow-bg) 10%, transparent);
-}
-:global(.mvline-calc-section--ko4) {
-  background: color-mix(in oklch, var(--muted-foreground) 8%, transparent);
+
+[data-calc="off"] :global(.mvline-cell--icon) {
+  padding: 3px 2px !important;
 }
 
 /* Calc column — fixed-width sibling to the moves lane */
@@ -1096,8 +1094,14 @@
 }
 
 @keyframes calc-col-enter {
-  from { opacity: 0; transform: translateX(16px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 :global(.calc-col-header) {
@@ -1125,66 +1129,77 @@
   min-height: 28px;
 }
 
-:global(.calc-col-row--ko1) { color: var(--ko-red); }
-:global(.calc-col-row--ko2) { color: var(--ko-amber2-fg); }
-:global(.calc-col-row--ko3) { color: var(--ko-yellow-fg); }
-:global(.calc-col-row--ko4) { color: var(--muted-foreground); }
+:global(.calc-col-row--ko1) {
+  color: var(--ko-red);
+}
+:global(.calc-col-row--ko2) {
+  color: var(--ko-amber2-fg);
+}
+:global(.calc-col-row--ko3) {
+  color: var(--ko-yellow-fg);
+}
+:global(.calc-col-row--ko4) {
+  color: var(--muted-foreground);
+}
 
-/* Inline calc result within move tile — after ACC, separated by vertical line */
+/* Inline calc result within move tile — inside the calc cell */
 :global(.mvline-calc-inline) {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  padding-left: 16px;
-  margin-left: 8px;
-  border-left: 1px solid var(--border);
-  font-size: 13px;
+  align-items: baseline;
+  gap: 2px;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
-  min-width: 0;
 }
 
-:global(.mvline-calc-inline--ko1) { color: var(--ko-red); }
-:global(.mvline-calc-inline--ko2) { color: var(--ko-amber2-fg); }
-:global(.mvline-calc-inline--ko3) { color: var(--ko-yellow-fg); }
-:global(.mvline-calc-inline--ko4) { color: var(--muted-foreground); }
-
-:global(.mvline-calc-inline__tier) {
-  font-size: 8.5px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+:global(.mvline-calc-inline--ko1) {
+  color: var(--ko-red);
+}
+:global(.mvline-calc-inline--ko2) {
+  color: var(--ko-amber2-fg);
+}
+:global(.mvline-calc-inline--ko3) {
+  color: var(--ko-yellow-fg);
+}
+:global(.mvline-calc-inline--ko4) {
+  color: var(--muted-foreground);
 }
 
-:global(.mvline-calc-inline__range) {
-  font-size: 13px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: black;
-}
-
-:global(.mvline):hover {
+/* Hover — apply border to cells */
+:global(.mvline):hover td {
   border-color: var(--border);
   background: var(--muted);
 }
 
 /* ============================================================
-   Calc-aware move tile (mvline)
+   Calc-aware move tile (mvline) — state variants
    ============================================================ */
 
-/* KO tier ring/text emphasis */
-:global(.mvline--ko1) {
-  border-color: color-mix(in oklch, var(--ko-red) 50%, var(--border)) !important;
+/* KO tier — border + background on cells */
+:global(.mvline--ko1) td {
+  border-color: color-mix(
+    in oklch,
+    var(--ko-red) 50%,
+    var(--border)
+  ) !important;
   background: color-mix(in oklch, var(--ko-red) 8%, var(--card));
 }
 
-:global(.mvline--ko2) {
-  border-color: color-mix(in oklch, var(--ko-amber2-fg) 45%, var(--border)) !important;
+:global(.mvline--ko2) td {
+  border-color: color-mix(
+    in oklch,
+    var(--ko-amber2-fg) 45%,
+    var(--border)
+  ) !important;
   background: color-mix(in oklch, var(--ko-amber2-fg) 6%, var(--card));
 }
 
-:global(.mvline--ko3) {
-  border-color: color-mix(in oklch, var(--ko-yellow-bg) 40%, var(--border)) !important;
+:global(.mvline--ko3) td {
+  border-color: color-mix(
+    in oklch,
+    var(--ko-yellow-bg) 40%,
+    var(--border)
+  ) !important;
   background: color-mix(in oklch, var(--ko-yellow-bg) 5%, var(--card));
 }
 
@@ -1192,11 +1207,11 @@
   /* neutral — inherits default .mvline styles */
 }
 
-:global(.mvline--set) {
+:global(.mvline--set) td {
   border-color: var(--border);
 }
 
-:global(.mvline--empty) {
+:global(.mvline--empty) td {
   border-style: dashed;
   border-color: var(--border);
   opacity: 0.7;
@@ -1205,6 +1220,8 @@
 /* Move name inside a tile */
 :global(.mvline-name) {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 13px;
   font-weight: 500;
@@ -1215,62 +1232,12 @@
   cursor: pointer;
 }
 
-/* Description cell — muted, truncated, smaller font */
-:global(.mvline-desc) {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-  color: var(--muted-foreground);
-  line-height: 1.2;
-}
-
-/* Type + category grouped cell — min-width reserves space for empty rows */
-:global(.mvline-type-cat) {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  min-width: 113px;
-}
-
-/* Type pill slot */
-:global(.mvline-type) {
-  display: inline-flex;
-  align-items: center;
-}
-
-/* Category icon slot */
-:global(.mvline-cat) {
-  display: inline-flex;
-  align-items: center;
-}
-
-/* BP / Acc readout — fixed-width value cells so they align across rows */
-:global(.mvline-stat) {
-  display: inline-flex;
-  align-items: baseline;
-  justify-content: flex-end;
-  gap: 4px;
+/* BP / Acc value inside a cell */
+:global(.mvline-stat-value) {
   font-family: var(--font-mono, monospace);
   font-size: 11px;
-  color: var(--foreground);
-  flex-shrink: 0;
-  white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-:global(.mvline-stat-label) {
-  color: var(--muted-foreground);
-  font-size: 9.5px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-:global(.mvline-stat-value) {
-  text-align: right;
+  text-align: left;
   display: inline-block;
 }
 
@@ -1280,15 +1247,6 @@
 
 :global(.mvline-stat-value--acc) {
   width: 2.75rem; /* fits "100%" */
-}
-
-/* Legacy alias — keep .mvline-bp working for any consumer that still uses it */
-:global(.mvline-bp) {
-  font-family: var(--font-mono, monospace);
-  font-size: 11px;
-  color: var(--foreground);
-  flex-shrink: 0;
-  white-space: nowrap;
 }
 
 /* Calc output column — must stay on one line, never wrap */
@@ -1453,10 +1411,18 @@
   flex-shrink: 0;
 }
 
-:global(.mvline-pill-tier--ko1) { color: var(--ko-red); }
-:global(.mvline-pill-tier--ko2) { color: var(--ko-amber2-fg); }
-:global(.mvline-pill-tier--ko3) { color: var(--ko-yellow-fg); }
-:global(.mvline-pill-tier--ko4) { color: var(--muted-foreground); }
+:global(.mvline-pill-tier--ko1) {
+  color: var(--ko-red);
+}
+:global(.mvline-pill-tier--ko2) {
+  color: var(--ko-amber2-fg);
+}
+:global(.mvline-pill-tier--ko3) {
+  color: var(--ko-yellow-fg);
+}
+:global(.mvline-pill-tier--ko4) {
+  color: var(--muted-foreground);
+}
 
 /* Range "16.6–20.0%" — primary numeric */
 :global(.mvline-pill-range) {
@@ -1664,10 +1630,18 @@
   text-transform: uppercase;
 }
 
-:global(.mvdetail-ko--1) { color: var(--ko-red); }
-:global(.mvdetail-ko--2) { color: var(--ko-amber2-fg); }
-:global(.mvdetail-ko--3) { color: var(--ko-yellow-fg); }
-:global(.mvdetail-ko--4) { color: var(--muted-foreground); }
+:global(.mvdetail-ko--1) {
+  color: var(--ko-red);
+}
+:global(.mvdetail-ko--2) {
+  color: var(--ko-amber2-fg);
+}
+:global(.mvdetail-ko--3) {
+  color: var(--ko-yellow-fg);
+}
+:global(.mvdetail-ko--4) {
+  color: var(--muted-foreground);
+}
 
 :global(.mvdetail-spread-tag) {
   font-size: 10px;
@@ -1774,7 +1748,10 @@
   font-weight: 500;
   cursor: pointer;
   color: var(--muted-foreground);
-  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s,
+    color 0.1s;
   line-height: 1.6;
 }
 
@@ -1857,17 +1834,16 @@
   min-width: 0;
 }
 
-
 /* Stat row — Showdown-style 6-column grid per stat */
 .spreadRow {
   display: grid;
   grid-template-columns:
-    32px          /* label: "SpD" fits without clipping */
-    30px          /* base stat: 3-digit values like 133 */
-    minmax(30px, 0.8fr)  /* viz bar */
-    40px          /* EV input */
-    minmax(60px, 1.6fr)  /* slider */
-    36px;         /* final stat: 3-digit values like 203 */
+    32px /* label: "SpD" fits without clipping */
+    30px /* base stat: 3-digit values like 133 */
+    minmax(30px, 0.8fr) /* viz bar */
+    40px /* EV input */
+    minmax(60px, 1.6fr) /* slider */
+    36px; /* final stat: 3-digit values like 203 */
 
   gap: 6px;
   align-items: center;
@@ -1883,13 +1859,13 @@
 .spreadRowWithIv {
   display: grid;
   grid-template-columns:
-    32px          /* label */
-    30px          /* base stat */
-    minmax(30px, 0.8fr)  /* viz bar */
-    40px          /* EV input */
-    minmax(60px, 1.6fr)  /* slider */
-    40px          /* IV input */
-    36px;         /* final stat */
+    32px /* label */
+    30px /* base stat */
+    minmax(30px, 0.8fr) /* viz bar */
+    40px /* EV input */
+    minmax(60px, 1.6fr) /* slider */
+    40px /* IV input */
+    36px; /* final stat */
 
   gap: 6px;
   align-items: center;
@@ -1905,13 +1881,13 @@
 .spreadRowWithStage {
   display: grid;
   grid-template-columns:
-    32px          /* label */
-    30px          /* base stat */
-    minmax(30px, 0.8fr)  /* viz bar */
-    40px          /* EV input */
-    minmax(60px, 1.6fr)  /* slider */
-    32px          /* stage dropdown */
-    36px;         /* final stat */
+    32px /* label */
+    30px /* base stat */
+    minmax(30px, 0.8fr) /* viz bar */
+    40px /* EV input */
+    minmax(60px, 1.6fr) /* slider */
+    32px /* stage dropdown */
+    36px; /* final stat */
 
   gap: 6px;
   align-items: center;
@@ -2036,7 +2012,9 @@
   background: currentColor;
   margin-top: 2px; /* (track 14px - thumb 10px) / 2 → center on track */
   border: none;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 /* When the slider sits exactly on a breakpoint, render the thumb as an
@@ -2059,7 +2037,9 @@
   border-radius: 50%;
   background: currentColor;
   border: none;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .spreadSlider[data-at-bump]::-moz-range-thumb {
@@ -2098,7 +2078,9 @@
   cursor: pointer;
   padding: 0;
   outline: none;
-  transition: transform 0.15s ease, border-width 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    border-width 0.15s ease;
 }
 
 .spreadBumpTick:hover {
@@ -2132,4 +2114,3 @@
    Hero layout (<~1240px): full-width centered panel
    Layouts are conditionally rendered by useContainerCompact.
    ============================================================ */
-

@@ -12,13 +12,24 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 
 import { type ValidationError } from "../../validation-hooks";
 import { CATEGORY_ICON_URLS_MONO } from "../../move-category-ui";
 import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { MovePicker } from "../pickers/move-picker";
-import { useCalcStateContext } from "../calc/calc-state-context";
+import {
+  useCalcStateContext,
+  useCalcEnabled,
+} from "../calc/calc-state-context";
 import { CalcDetailCard } from "../calc/calc-detail-card";
 import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
 import { FieldErrors } from "../validation/field-error";
@@ -56,7 +67,46 @@ const SLOT_IDX: Record<MoveSlot, number> = {
 };
 
 // =============================================================================
-// MoveTile — one calc-aware move row
+// CalcRange — displays the damage percentage range (e.g., "41.5–49.0%")
+// =============================================================================
+
+function CalcRange({
+  min,
+  max,
+  empty,
+}: {
+  min: number;
+  max: number;
+  empty?: boolean;
+}) {
+  return (
+    <span className="inline-block w-[7.5em] text-right font-mono text-xs font-medium tabular-nums">
+      {empty ? "—" : `${min.toFixed(1)}–${max.toFixed(1)}%`}
+    </span>
+  );
+}
+
+// =============================================================================
+// KoLabel — displays the KO tier badge (OHKO, 2HKO, 3HKO, 4HKO+)
+// =============================================================================
+
+const KO_LABELS: Record<string, string> = {
+  "1": "OHKO",
+  "2": "2HKO",
+  "3": "3HKO",
+  "4": "4HKO+",
+};
+
+function KoLabel({ tier }: { tier: string }) {
+  return (
+    <span className="inline-block w-[3.5em] text-[9px] font-extrabold tracking-wide uppercase">
+      {KO_LABELS[tier] ?? "4HKO+"}
+    </span>
+  );
+}
+
+// =============================================================================
+// MoveTile — one calc-aware move row (renders as <tr> inside table)
 // =============================================================================
 
 interface MoveTileProps {
@@ -83,9 +133,6 @@ function MoveTile({
 
   const calc = useCalcStateContext();
   const moveIdx = SLOT_IDX[slotKey];
-  // Per-row output (this attacker vs the configured defender). The MoveTile
-  // border colour reflects each row's own KO tier, not just the calc panel's
-  // focused attacker — matches the per-row CALC column.
   const rowOutputs = calc.computeForwardOutputsForRow(attacker);
   const output = rowOutputs[moveIdx] ?? null;
 
@@ -96,8 +143,6 @@ function MoveTile({
   const foesAlive = calc.field.foesAlive;
   const allyAlive = calc.field.allyAlive;
 
-  // KO tier (used for tile border colour) and spread-adjusted range come
-  // from the shared helper so calc-column and moves-lane never drift apart.
   const { koTier, displayMin, displayMax } = getDisplayRangeAndKoTier({
     moveName,
     output,
@@ -127,13 +172,11 @@ function MoveTile({
     }
   }
 
-  // The "detail" panel anchors near the move row (Popover); the "picker" panel
-  // is a centered Dialog modal so it has room for the 3-column layout.
   const detailOpen = panel === "detail";
   const pickerOpen = panel === "picker";
 
   return (
-    <div className="flex flex-col">
+    <>
       <Popover
         open={detailOpen}
         onOpenChange={(open) => {
@@ -142,8 +185,7 @@ function MoveTile({
       >
         <PopoverTrigger
           render={
-            <button
-              type="button"
+            <TableRow
               onClick={handleClick}
               onContextMenu={handleContextMenu}
               className={cn(
@@ -158,47 +200,51 @@ function MoveTile({
             />
           }
         >
-          {/* Col 1: Type + category grouped */}
-          <span className="mvline-type">
+          {/* Type icon */}
+          <TableCell className="mvline-cell mvline-cell--icon">
             {moveName && moveData?.type ? (
               <TypeSymbolIcon
                 type={
-                  moveData.type as Parameters<
-                    typeof TypeSymbolIcon
-                  >[0]["type"]
+                  moveData.type as Parameters<typeof TypeSymbolIcon>[0]["type"]
                 }
                 size={20}
               />
             ) : null}
-          </span>
-          <span className="mvline-cat">
-            {moveName && moveData?.category && CATEGORY_ICON_URLS_MONO[moveData.category] ? (
+          </TableCell>
+
+          {/* Category icon */}
+          <TableCell className="mvline-cell mvline-cell--icon">
+            {moveName &&
+            moveData?.category &&
+            CATEGORY_ICON_URLS_MONO[moveData.category] ? (
               <img
                 src={CATEGORY_ICON_URLS_MONO[moveData.category]}
                 alt={moveData.category}
                 className="h-6 w-6"
               />
             ) : null}
-          </span>
+          </TableCell>
 
-          {/* Col 2: Move name */}
-          <DescriptionTooltip
-            description={moveName ? moveData?.shortDesc : null}
-            showContent={panel === null}
-          >
-            <TooltipTrigger
-              render={<span />}
-              className={cn(
-                "mvline-name",
-                !moveName && "text-muted-foreground/50"
-              )}
+          {/* Move name */}
+          <TableCell className="mvline-cell mvline-cell--name">
+            <DescriptionTooltip
+              description={moveName ? moveData?.shortDesc : null}
+              showContent={panel === null}
             >
-              {moveName ?? "+ Add move"}
-            </TooltipTrigger>
-          </DescriptionTooltip>
+              <TooltipTrigger
+                render={<span />}
+                className={cn(
+                  "mvline-name",
+                  !moveName && "text-muted-foreground/50"
+                )}
+              >
+                {moveName ?? "+ Add move"}
+              </TooltipTrigger>
+            </DescriptionTooltip>
+          </TableCell>
 
-          {/* Col 4: BP */}
-          <span className="mvline-stat">
+          {/* Base Power */}
+          <TableCell className="mvline-cell mvline-cell--stat">
             <span className="mvline-stat-value mvline-stat-value--bp">
               {moveName && moveData?.basePower && moveData.basePower > 0
                 ? moveData.basePower
@@ -206,10 +252,10 @@ function MoveTile({
                   ? "—"
                   : ""}
             </span>
-          </span>
+          </TableCell>
 
-          {/* Col 4: Acc */}
-          <span className="mvline-stat">
+          {/* Accuracy */}
+          <TableCell className="mvline-cell mvline-cell--stat">
             <span className="mvline-stat-value mvline-stat-value--acc">
               {moveName
                 ? moveData?.accuracy === true || !moveData?.accuracy
@@ -217,31 +263,27 @@ function MoveTile({
                   : `${moveData.accuracy}%`
                 : ""}
             </span>
-          </span>
+          </TableCell>
 
-          {/* Col 5: Inline calc result */}
-          {hasCalc && koTier ? (
-            <span
-              className={cn(
-                "mvline-calc-inline",
-                `mvline-calc-inline--ko${koTier}`
+          {/* Calc result */}
+          {calc.calcEnabled && (
+            <TableCell className="mvline-cell mvline-cell--calc">
+              {hasCalc && koTier ? (
+                <span
+                  className={cn(
+                    "mvline-calc-inline",
+                    `mvline-calc-inline--ko${koTier}`
+                  )}
+                >
+                  <CalcRange min={displayMin} max={displayMax} />
+                  <KoLabel tier={koTier} />
+                </span>
+              ) : (
+                <span className="mvline-calc-inline mvline-calc-inline--empty">
+                  <CalcRange min={0} max={0} empty />
+                </span>
               )}
-            >
-              <span className="mvline-calc-inline__range">
-                {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%
-              </span>
-              <span className="mvline-calc-inline__tier">
-                {koTier === "1"
-                  ? "OHKO"
-                  : koTier === "2"
-                    ? "2HKO"
-                    : koTier === "3"
-                      ? "3HKO"
-                      : "4HKO+"}
-              </span>
-            </span>
-          ) : (
-            <span />
+            </TableCell>
           )}
         </PopoverTrigger>
 
@@ -268,7 +310,7 @@ function MoveTile({
         </PopoverContent>
       </Popover>
 
-      {/* Move picker — centered Dialog modal (matches species picker sizing) */}
+      {/* Move picker — centered Dialog modal */}
       <Dialog
         open={pickerOpen}
         onOpenChange={(open) => {
@@ -293,9 +335,15 @@ function MoveTile({
         </DialogContent>
       </Dialog>
 
-      {/* Inline error chips per move slot */}
-      <FieldErrors errors={slotErrors} />
-    </div>
+      {/* Inline error chips — rendered as a full-colspan row */}
+      {slotErrors.length > 0 && (
+        <tr>
+          <td colSpan={calc.calcEnabled ? 6 : 5} className="p-0 pt-0.5 pb-1">
+            <FieldErrors errors={slotErrors} />
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -304,36 +352,50 @@ function MoveTile({
 // =============================================================================
 
 function MovesLaneGhost() {
+  const calcEnabled = useCalcEnabled();
   return (
-    <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-1 border-r border-dashed p-3 @[1460px]:w-[520px] @[1460px]:flex-none">
-      <div className="mvline pointer-events-none !border-0 !bg-transparent !px-2 !py-0 text-[9.5px] font-medium tracking-[0.04em] uppercase text-muted-foreground">
-        <span>TYPE</span>
-        <span>CAT</span>
-        <span>NAME</span>
-        <span>BP</span>
-        <span>ACC</span>
-        <span>CALC</span>
-      </div>
-      <div className="flex flex-col gap-1">
-        {([0, 1, 2, 3] as const).map((i) => (
-          <div key={i} className="mvline mvline--empty">
-            <span className="mvline-type" />
-            <span className="mvline-cat" />
-            <span className="mvline-name text-muted-foreground/30">
-              + Add move
-            </span>
-            <span className="mvline-stat">
-              <span className="mvline-stat-label">BP</span>
-              <span className="mvline-stat-value mvline-stat-value--bp" />
-            </span>
-            <span className="mvline-stat">
-              <span className="mvline-stat-label">ACC</span>
-              <span className="mvline-stat-value mvline-stat-value--acc" />
-            </span>
-            <span />
-          </div>
-        ))}
-      </div>
+    <div
+      className="border-border/60 flex min-w-0 flex-1 flex-col justify-center border-r border-dashed p-3"
+      data-calc={calcEnabled ? "on" : "off"}
+    >
+      <Table className="mvtable w-auto">
+        <TableHeader>
+          <TableRow className="mvline-header">
+            <TableHead className="mvline-cell mvline-cell--icon" />
+            <TableHead className="mvline-cell mvline-cell--icon" />
+            <TableHead className="mvline-cell mvline-cell--name">
+              NAME
+            </TableHead>
+            <TableHead className="mvline-cell mvline-cell--stat">BP</TableHead>
+            <TableHead className="mvline-cell mvline-cell--stat">ACC</TableHead>
+            {calcEnabled && (
+              <TableHead className="mvline-cell mvline-cell--calc" />
+            )}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {([0, 1, 2, 3] as const).map((i) => (
+            <TableRow key={i} className="mvline mvline--empty">
+              <TableCell className="mvline-cell mvline-cell--icon" />
+              <TableCell className="mvline-cell mvline-cell--icon" />
+              <TableCell className="mvline-cell mvline-cell--name">
+                <span className="mvline-name text-muted-foreground/30">
+                  + Add move
+                </span>
+              </TableCell>
+              <TableCell className="mvline-cell mvline-cell--stat">
+                <span className="mvline-stat-value mvline-stat-value--bp" />
+              </TableCell>
+              <TableCell className="mvline-cell mvline-cell--stat">
+                <span className="mvline-stat-value mvline-stat-value--acc" />
+              </TableCell>
+              {calcEnabled && (
+                <TableCell className="mvline-cell mvline-cell--calc" />
+              )}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -355,39 +417,49 @@ function MovesLaneReal({
   onUpdate,
   fieldErrors,
 }: MovesLaneRealProps) {
+  const calc = useCalcStateContext();
   function handlePick(slotKey: MoveSlot, name: string) {
     onUpdate({ [slotKey]: name });
   }
 
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col justify-center gap-1 p-3">
-      {/* Column headers */}
-      <div className="mvline pointer-events-none !border-0 !bg-transparent !px-2 !py-0 text-[9.5px] font-medium tracking-[0.04em] uppercase text-muted-foreground">
-        <span>TYPE</span>
-        <span>CAT</span>
-        <span>NAME</span>
-        <span>BP</span>
-        <span>ACC</span>
-        <span>CALC</span>
-      </div>
-      {/* Move tiles */}
-      <div className="flex flex-col gap-1">
-        {MOVE_SLOTS.map((slotKey) => {
-          const slotErrors = fieldErrors.filter((e) => e.field === slotKey);
-          return (
-            <MoveTile
-              key={slotKey}
-              slotKey={slotKey}
-              moveName={pokemon[slotKey] || null}
-              species={pokemon.species ?? ""}
-              format={format}
-              attacker={pokemon}
-              onPick={handlePick}
-              slotErrors={slotErrors}
-            />
-          );
-        })}
-      </div>
+    <div
+      className="flex min-w-0 flex-1 flex-col justify-center py-3 pr-5 pl-3"
+      data-calc={calc.calcEnabled ? "on" : "off"}
+    >
+      <Table className="mvtable w-auto">
+        <TableHeader>
+          <TableRow className="mvline-header">
+            <TableHead className="mvline-cell mvline-cell--icon" />
+            <TableHead className="mvline-cell mvline-cell--icon" />
+            <TableHead className="mvline-cell mvline-cell--name">
+              NAME
+            </TableHead>
+            <TableHead className="mvline-cell mvline-cell--stat">BP</TableHead>
+            <TableHead className="mvline-cell mvline-cell--stat">ACC</TableHead>
+            {calc.calcEnabled && (
+              <TableHead className="mvline-cell mvline-cell--calc" />
+            )}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {MOVE_SLOTS.map((slotKey) => {
+            const slotErrors = fieldErrors.filter((e) => e.field === slotKey);
+            return (
+              <MoveTile
+                key={slotKey}
+                slotKey={slotKey}
+                moveName={pokemon[slotKey] || null}
+                species={pokemon.species ?? ""}
+                format={format}
+                attacker={pokemon}
+                onPick={handlePick}
+                slotErrors={slotErrors}
+              />
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }

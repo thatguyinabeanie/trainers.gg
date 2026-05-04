@@ -41,11 +41,31 @@ import s from "../builder.module.css";
 
 export const GHOST_STATS = [
   { key: "hp", label: "HP", colorClass: "text-rose-500 dark:text-rose-400" },
-  { key: "attack", label: "ATK", colorClass: "text-orange-500 dark:text-orange-400" },
-  { key: "defense", label: "DEF", colorClass: "text-amber-500 dark:text-amber-400" },
-  { key: "specialAttack", label: "SPA", colorClass: "text-sky-500 dark:text-sky-400" },
-  { key: "specialDefense", label: "SPD", colorClass: "text-emerald-500 dark:text-emerald-400" },
-  { key: "speed", label: "SPE", colorClass: "text-fuchsia-500 dark:text-fuchsia-400" },
+  {
+    key: "attack",
+    label: "ATK",
+    colorClass: "text-orange-500 dark:text-orange-400",
+  },
+  {
+    key: "defense",
+    label: "DEF",
+    colorClass: "text-amber-500 dark:text-amber-400",
+  },
+  {
+    key: "specialAttack",
+    label: "SPA",
+    colorClass: "text-sky-500 dark:text-sky-400",
+  },
+  {
+    key: "specialDefense",
+    label: "SPD",
+    colorClass: "text-emerald-500 dark:text-emerald-400",
+  },
+  {
+    key: "speed",
+    label: "SPE",
+    colorClass: "text-fuchsia-500 dark:text-fuchsia-400",
+  },
 ] as const;
 
 // =============================================================================
@@ -114,7 +134,12 @@ function getIvs(pokemon: Tables<"pokemon">): StatValues {
 /** Canonical neutral nature — the rest (Hardy/Docile/Bashful/Quirky) are duplicates. */
 const NEUTRAL_NATURE = "Serious";
 
-type NatureStat = "attack" | "defense" | "specialAttack" | "specialDefense" | "speed";
+type NatureStat =
+  | "attack"
+  | "defense"
+  | "specialAttack"
+  | "specialDefense"
+  | "speed";
 
 /** When the user adds "+" to a stat with no current −nature, default to a sensible reduced stat. */
 const DEFAULT_REDUCE_FOR_BOOST: Record<NatureStat, NatureStat> = {
@@ -182,9 +207,7 @@ function pickFreshPartner(
 ): NatureStat {
   const def = defaults[mover];
   if (def !== avoid) return def;
-  return (
-    ALL_NATURE_STATS.find((s) => s !== mover && s !== avoid) ?? def
-  );
+  return ALL_NATURE_STATS.find((s) => s !== mover && s !== avoid) ?? def;
 }
 
 /**
@@ -300,7 +323,12 @@ function StatRow({
   const statColorClass = STAT_COLOR_CLASS[statKey];
 
   // --- Slider budget ---
-  const investBudget = computeInvestBudget(totalEv, ev, budget.total, budget.perStat);
+  const investBudget = computeInvestBudget(
+    totalEv,
+    ev,
+    budget.total,
+    budget.perStat
+  );
 
   // --- EV draft + debounced commit ---
   // Slider/keyboard updates the local draft synchronously for snappy UI;
@@ -356,14 +384,19 @@ function StatRow({
   const nextBpEv = breakpoints.find((bp) => bp > displayEv);
   // True when the slider sits exactly on a breakpoint — used to render the
   // thumb as an outline circle (visual continuity with the bump tick).
-  const isAtBump = isNatureBoosted && breakpoints.includes(displayEv) && displayEv > 0;
+  const isAtBump =
+    isNatureBoosted && breakpoints.includes(displayEv) && displayEv > 0;
 
   // --- Label color: always the stat-key color; nature is shown only via the
   //                  ▲/▽ chevron next to the label, not by recoloring it. ---
   const labelTextClass = statColorClass;
 
   // --- Input display value ---
-  const inputDisplay = buildInputDisplay(displayEv, isNatureBoosted, isNatureReduced);
+  const inputDisplay = buildInputDisplay(
+    displayEv,
+    isNatureBoosted,
+    isNatureReduced
+  );
 
   // --- Edit buffer: while focused, show what the user is typing instead of
   //                  the derived display, so the controlled value doesn't
@@ -465,8 +498,13 @@ function StatRow({
   // --- IV draft (only used when showIv) ---
   const iv = ivs[statKey];
   const [draftIv, setDraftIv] = useState<number | null>(null);
-  const [prevIv, setPrevIv] = useState<number | typeof UNINITIALIZED>(UNINITIALIZED);
-  if (iv !== prevIv) { setPrevIv(iv); setDraftIv(null); }
+  const [prevIv, setPrevIv] = useState<number | typeof UNINITIALIZED>(
+    UNINITIALIZED
+  );
+  if (iv !== prevIv) {
+    setPrevIv(iv);
+    setDraftIv(null);
+  }
   const displayIv = draftIv ?? iv;
 
   useEffect(() => {
@@ -484,7 +522,9 @@ function StatRow({
   }, [draftIv, showIv, statKey, onUpdate]);
 
   return (
-    <div className={cn(showIv ? s.spreadRowWithIv : s.spreadRow, statColorClass)}>
+    <div
+      className={cn(showIv ? s.spreadRowWithIv : s.spreadRow, statColorClass)}
+    >
       {/* Col 1: Stat label, color-coded, with nature chevron.
           Matches the +/− nature label colours in IdentityLane:
           boost = emerald, reduce = rose. */}
@@ -526,8 +566,10 @@ function StatRow({
         aria-label={`${label} investment`}
         className={cn(
           "focus:ring-primary h-[18px] w-9 rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
-          isNatureBoosted && "border-emerald-400/70 text-emerald-600 dark:text-emerald-400",
-          isNatureReduced && "border-rose-400/70 text-rose-600 dark:text-rose-400",
+          isNatureBoosted &&
+            "border-emerald-400/70 text-emerald-600 dark:text-emerald-400",
+          isNatureReduced &&
+            "border-rose-400/70 text-rose-600 dark:text-rose-400",
           !isNatureBoosted &&
             !isNatureReduced &&
             "border-border text-foreground"
@@ -635,7 +677,9 @@ export function StatsLane({
   // ghost and filled renders. Live EVs from each row's slider draft are
   // bubbled up so the SP/EV total refreshes during drag (ahead of the
   // 400ms debounce). Empty in the ghost path; the real path overrides it.
-  const [liveEvByStat, setLiveEvByStat] = useState<Partial<Record<StatKey, number>>>({});
+  const [liveEvByStat, setLiveEvByStat] = useState<
+    Partial<Record<StatKey, number>>
+  >({});
 
   // Match the active format so empty slots line up with filled ones — same
   // grid (with-IV vs without), same investment header (SP vs EVs), same total
@@ -647,9 +691,7 @@ export function StatsLane({
 
   if (!pokemon) {
     return (
-      <div
-        className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1460px]:w-[400px]"
-      >
+      <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1580px]:w-[400px]">
         {/* Column headers — same structure as real but dimmed */}
         <div
           className={cn(
@@ -658,18 +700,18 @@ export function StatsLane({
           )}
         >
           <span />
-          <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
+          <span className="text-muted-foreground/30 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
             Base
           </span>
           <span />
-          <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
+          <span className="text-muted-foreground/30 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
             {isChampions ? "SP" : "EVs"}
           </span>
-          <span className="text-right font-mono text-[8.5px] text-muted-foreground/30">
+          <span className="text-muted-foreground/30 text-right font-mono text-[8.5px]">
             0/{budget.total}
           </span>
           {showIv && (
-            <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
+            <span className="text-muted-foreground/30 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
               IVs
             </span>
           )}
@@ -678,20 +720,17 @@ export function StatsLane({
         {GHOST_STATS.map(({ key, label, colorClass }) => (
           <div
             key={key}
-            className={cn(
-              showIv ? s.spreadRowWithIv : s.spreadRow,
-              colorClass
-            )}
+            className={cn(showIv ? s.spreadRowWithIv : s.spreadRow, colorClass)}
           >
             <span className={cn(s.spreadLabel, "opacity-30")}>{label}</span>
             <span className={cn(s.spreadBase, "opacity-25")}>—</span>
             <div className={s.spreadVbar} />
-            <div className="h-[18px] w-9 rounded border border-dashed border-border/30" />
+            <div className="border-border/30 h-[18px] w-9 rounded border border-dashed" />
             <div className={s.spreadSliderWrap}>
               <div className={cn(s.spreadSliderTrack, "opacity-25")} />
             </div>
             {showIv && (
-              <div className="h-[18px] w-10 rounded border border-dashed border-border/30" />
+              <div className="border-border/30 h-[18px] w-10 rounded border border-dashed" />
             )}
             <span className={cn(s.spreadFinal, "opacity-25")}>—</span>
           </div>
@@ -708,7 +747,9 @@ export function StatsLane({
   const level = pokemon.level ?? 50;
   const nature = pokemon.nature ?? "Hardy";
   function handleLiveEv(statKey: StatKey, value: number) {
-    setLiveEvByStat((prev) => (prev[statKey] === value ? prev : { ...prev, [statKey]: value }));
+    setLiveEvByStat((prev) =>
+      prev[statKey] === value ? prev : { ...prev, [statKey]: value }
+    );
   }
   const liveTotal = STAT_KEYS.reduce(
     (sum, k) => sum + (liveEvByStat[k] ?? evs[k]),
@@ -737,39 +778,41 @@ export function StatsLane({
   );
 
   return (
-    <div
-      className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1460px]:w-[400px]"
-    >
+    <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1580px]:w-[400px]">
       {/* Column headers */}
-      <div className={cn(
-        "mb-0.5",
-        showIv ? s.spreadRowWithIv : s.spreadRow,
-        "py-0"
-      )}>
+      <div
+        className={cn(
+          "mb-0.5",
+          showIv ? s.spreadRowWithIv : s.spreadRow,
+          "py-0"
+        )}
+      >
         {/* Col 1: (stat label — no heading) */}
         <span />
         {/* Col 2: Base */}
-        <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+        <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
           Base
         </span>
         {/* Col 3: viz bar — no heading */}
         <span />
         {/* Col 4: Points / SP */}
-        <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+        <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
           {isChampions ? "SP" : "EVs"}
         </span>
         {/* Col 5: slider — no heading, but show total */}
         <span
           className={cn(
             "text-right font-mono text-[8.5px]",
-            totalEv > budget.total ? "text-destructive font-semibold" : "text-muted-foreground/70"
+            totalEv > budget.total
+              ? "text-destructive font-semibold"
+              : "text-muted-foreground/70"
           )}
         >
           {totalEv}/{budget.total}
         </span>
         {/* Col 6 (with-IV): IVs */}
         {showIv && (
-          <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+          <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
             IVs
           </span>
         )}
