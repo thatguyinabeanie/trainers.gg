@@ -448,7 +448,7 @@ function MovesLaneReal({
   }
 
   return (
-    <div className={cn("flex min-w-0 flex-col py-1 pr-5 pl-3 transition-[padding,flex] duration-300 ease-in-out")}>
+    <div className={cn("flex min-w-0 flex-col px-3 py-1 transition-[padding,flex] duration-300 ease-in-out")}>
       <Table className={cn("border-separate border-spacing-y-[3px]", calc.calcEnabled && "w-full")}>
         <MovesLaneTileGhost />
         <TableBody>
