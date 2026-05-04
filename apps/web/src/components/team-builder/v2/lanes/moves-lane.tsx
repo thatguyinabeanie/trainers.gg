@@ -80,7 +80,7 @@ function CalcRange({
   empty?: boolean;
 }) {
   return (
-    <span className="inline-block w-[7.5em] text-right text-[13px] font-medium tabular-nums">
+    <span className="text-[13px] font-medium tabular-nums">
       {empty ? "—" : `${min.toFixed(1)}–${max.toFixed(1)}%`}
     </span>
   );
@@ -97,9 +97,21 @@ const KO_LABELS: Record<string, string> = {
   "4": "4HKO+",
 };
 
+const KO_COLORS: Record<string, string> = {
+  "1": "text-[var(--ko-red)]",
+  "2": "text-[var(--ko-amber2-fg)]",
+  "3": "text-[var(--ko-yellow-fg)]",
+  "4": "text-muted-foreground",
+};
+
 function KoLabel({ tier }: { tier: string }) {
   return (
-    <span className="inline-block w-[3.5em] text-[9px] font-extrabold tracking-wide uppercase text-[var(--ko-tier-color)]">
+    <span
+      className={cn(
+        "text-[9px] font-extrabold tracking-wide uppercase",
+        KO_COLORS[tier] ?? "text-muted-foreground"
+      )}
+    >
       {KO_LABELS[tier] ?? "4HKO+"}
     </span>
   );
@@ -189,19 +201,25 @@ function MoveTile({
               onClick={handleClick}
               onContextMenu={handleContextMenu}
               className={cn(
-                "mvline",
-                moveName ? "mvline--set" : "mvline--empty",
-                koTier === "1" && "mvline--ko1",
-                koTier === "2" && "mvline--ko2",
-                koTier === "3" && "mvline--ko3",
-                koTier === "4" && "mvline--ko4",
+                "cursor-pointer border-none transition-colors",
+                "[&_td]:border-y [&_td]:border-transparent [&_td]:transition-colors",
+                "[&_td:first-child]:rounded-l-md [&_td:first-child]:border-l",
+                "[&_td:last-child]:rounded-r-md [&_td:last-child]:border-r",
+                "hover:[&_td]:border-border hover:[&_td]:bg-muted",
+                koTier === "1" &&
+                  "[&_td]:border-[color-mix(in_oklch,var(--ko-red)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-red)_8%,transparent)]",
+                koTier === "2" &&
+                  "[&_td]:border-[color-mix(in_oklch,var(--ko-amber2-fg)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-amber2-fg)_8%,transparent)]",
+                koTier === "3" &&
+                  "[&_td]:border-[color-mix(in_oklch,var(--ko-yellow-fg)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-yellow-fg)_8%,transparent)]",
+                koTier === "4" && "[&_td]:border-border/50 [&_td]:bg-muted/30",
                 hasError && "ring-destructive/50 ring-1"
               )}
             />
           }
         >
           {/* Type icon */}
-          <TableCell className="mvline-cell mvline-cell--icon">
+          <TableCell className="w-6 p-1 align-middle">
             {moveName && moveData?.type ? (
               <TypeSymbolIcon
                 type={
@@ -213,7 +231,7 @@ function MoveTile({
           </TableCell>
 
           {/* Category icon */}
-          <TableCell className="mvline-cell mvline-cell--icon">
+          <TableCell className="w-6 p-1 align-middle">
             {moveName &&
             moveData?.category &&
             CATEGORY_ICON_URLS_MONO[moveData.category] ? (
@@ -226,7 +244,7 @@ function MoveTile({
           </TableCell>
 
           {/* Move name */}
-          <TableCell className="mvline-cell mvline-cell--name">
+          <TableCell className="p-1 align-middle whitespace-nowrap">
             <DescriptionTooltip
               description={moveName ? moveData?.shortDesc : null}
               showContent={panel === null}
@@ -234,7 +252,7 @@ function MoveTile({
               <TooltipTrigger
                 render={<span />}
                 className={cn(
-                  "mvline-name",
+                  "text-[13px] font-medium",
                   !moveName && "text-muted-foreground/50"
                 )}
               >
@@ -244,44 +262,41 @@ function MoveTile({
           </TableCell>
 
           {/* Base Power */}
-          <TableCell className="mvline-cell mvline-cell--stat">
-            <span className="mvline-stat-value mvline-stat-value--bp">
-              {moveName && moveData?.basePower && moveData.basePower > 0
-                ? moveData.basePower
-                : moveName
-                  ? "—"
-                  : ""}
-            </span>
+          <TableCell className="w-11 p-1 align-middle font-mono text-[11px] tabular-nums">
+            {moveName && moveData?.basePower && moveData.basePower > 0
+              ? moveData.basePower
+              : moveName
+                ? "—"
+                : ""}
           </TableCell>
 
           {/* Accuracy */}
-          <TableCell className="mvline-cell mvline-cell--stat">
-            <span className="mvline-stat-value mvline-stat-value--acc">
-              {moveName
-                ? moveData?.accuracy === true || !moveData?.accuracy
-                  ? "—"
-                  : `${moveData.accuracy}%`
-                : ""}
-            </span>
+          <TableCell className="w-12 p-1 align-middle font-mono text-[11px] tabular-nums">
+            {moveName
+              ? moveData?.accuracy === true || !moveData?.accuracy
+                ? "—"
+                : `${moveData.accuracy}%`
+              : ""}
           </TableCell>
 
-          {/* Calc result */}
+          {/* Calc percentage */}
           {calc.calcEnabled && (
-            <TableCell className="mvline-cell mvline-cell--calc">
+            <TableCell className="p-1 pl-3 whitespace-nowrap">
               {hasCalc && koTier ? (
-                <span
-                  className={cn(
-                    "mvline-calc-inline",
-                    `mvline-calc-inline--ko${koTier}`
-                  )}
-                >
-                  <CalcRange min={displayMin} max={displayMax} />
-                  <KoLabel tier={koTier} />
-                </span>
+                <CalcRange min={displayMin} max={displayMax} />
               ) : (
-                <span className="mvline-calc-inline mvline-calc-inline--empty">
-                  <CalcRange min={0} max={0} empty />
-                </span>
+                <span className="text-muted-foreground text-[13px]">—</span>
+              )}
+            </TableCell>
+          )}
+
+          {/* KO tier label */}
+          {calc.calcEnabled && (
+            <TableCell className="p-1 whitespace-nowrap">
+              {hasCalc && koTier ? (
+                <KoLabel tier={koTier} />
+              ) : (
+                <span className="text-muted-foreground text-[13px]">—</span>
               )}
             </TableCell>
           )}
@@ -338,12 +353,43 @@ function MoveTile({
       {/* Inline error chips — rendered as a full-colspan row */}
       {slotErrors.length > 0 && (
         <tr>
-          <td colSpan={calc.calcEnabled ? 6 : 5} className="p-0 pt-0.5 pb-1">
+          <td colSpan={calc.calcEnabled ? 7 : 5} className="p-0 pt-0.5 pb-1">
             <FieldErrors errors={slotErrors} />
           </td>
         </tr>
       )}
     </>
+  );
+}
+
+function MovesLaneTileGhost() {
+  const calcEnabled = useCalcEnabled();
+  return (
+    <TableHeader>
+      <TableRow className="border-none">
+        <TableHead className="!h-auto w-6 border-none p-0 pb-0.5" />
+        <TableHead className="!h-auto w-6 border-none p-0 pb-0.5" />
+        <TableHead className="text-muted-foreground !h-auto border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
+          NAME
+        </TableHead>
+        <TableHead className="text-muted-foreground !h-auto w-11 border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
+          BP
+        </TableHead>
+        <TableHead className="text-muted-foreground !h-auto w-12 border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
+          ACC
+        </TableHead>
+        {calcEnabled && (
+          <TableHead className="text-muted-foreground !h-auto border-none p-0 pb-0.5">
+            PERCENT
+          </TableHead>
+        )}
+        {calcEnabled && (
+          <TableHead className="text-muted-foreground !h-auto border-none p-0 pb-0.5">
+            HITS
+          </TableHead>
+        )}
+      </TableRow>
+    </TableHeader>
   );
 }
 
@@ -354,44 +400,23 @@ function MoveTile({
 function MovesLaneGhost() {
   const calcEnabled = useCalcEnabled();
   return (
-    <div
-      className="border-border/60 flex min-w-0 flex-1 flex-col justify-center border-r border-dashed p-3"
-      data-calc={calcEnabled ? "on" : "off"}
-    >
-      <Table className="mvtable">
-        <TableHeader>
-          <TableRow className="mvline-header">
-            <TableHead className="mvline-cell mvline-cell--icon" />
-            <TableHead className="mvline-cell mvline-cell--icon" />
-            <TableHead className="mvline-cell mvline-cell--name">
-              NAME
-            </TableHead>
-            <TableHead className="mvline-cell mvline-cell--stat">BP</TableHead>
-            <TableHead className="mvline-cell mvline-cell--stat">ACC</TableHead>
-            {calcEnabled && (
-              <TableHead className="mvline-cell mvline-cell--calc" />
-            )}
-          </TableRow>
-        </TableHeader>
+    <div className={cn("border-border/60 flex min-w-0 flex-col justify-center border-r border-dashed p-3", calcEnabled ? "flex-1" : "flex-initial")}>
+      <Table className={cn("border-separate border-spacing-y-[3px]", calcEnabled && "w-full")}>
+        <MovesLaneTileGhost />
         <TableBody>
           {([0, 1, 2, 3] as const).map((i) => (
-            <TableRow key={i} className="mvline mvline--empty">
-              <TableCell className="mvline-cell mvline-cell--icon" />
-              <TableCell className="mvline-cell mvline-cell--icon" />
-              <TableCell className="mvline-cell mvline-cell--name">
-                <span className="mvline-name text-muted-foreground/30">
+            <TableRow key={i} className="border-none">
+              <TableCell className="w-6 p-1" />
+              <TableCell className="w-6 p-1" />
+              <TableCell className="p-1">
+                <span className="text-muted-foreground/30 text-[13px] font-medium">
                   + Add move
                 </span>
               </TableCell>
-              <TableCell className="mvline-cell mvline-cell--stat">
-                <span className="mvline-stat-value mvline-stat-value--bp" />
-              </TableCell>
-              <TableCell className="mvline-cell mvline-cell--stat">
-                <span className="mvline-stat-value mvline-stat-value--acc" />
-              </TableCell>
-              {calcEnabled && (
-                <TableCell className="mvline-cell mvline-cell--calc" />
-              )}
+              <TableCell className="w-11 p-1  font-mono text-[11px] tabular-nums" />
+              <TableCell className="w-12 p-1  font-mono text-[11px] tabular-nums" />
+              {calcEnabled && <TableCell className="p-1 pl-3" />}
+              {calcEnabled && <TableCell className="p-1" />}
             </TableRow>
           ))}
         </TableBody>
@@ -423,25 +448,9 @@ function MovesLaneReal({
   }
 
   return (
-    <div
-      className="flex min-w-0 flex-1 flex-col justify-center py-3 pr-5 pl-3"
-      data-calc={calc.calcEnabled ? "on" : "off"}
-    >
-      <Table className="mvtable">
-        <TableHeader>
-          <TableRow className="mvline-header">
-            <TableHead className="mvline-cell mvline-cell--icon" />
-            <TableHead className="mvline-cell mvline-cell--icon" />
-            <TableHead className="mvline-cell mvline-cell--name">
-              NAME
-            </TableHead>
-            <TableHead className="mvline-cell mvline-cell--stat">BP</TableHead>
-            <TableHead className="mvline-cell mvline-cell--stat">ACC</TableHead>
-            {calc.calcEnabled && (
-              <TableHead className="mvline-cell mvline-cell--calc" />
-            )}
-          </TableRow>
-        </TableHeader>
+    <div className={cn("flex min-w-0 flex-col justify-center py-3 pr-5 pl-3", calc.calcEnabled ? "flex-1" : "flex-initial")}>
+      <Table className={cn("border-separate border-spacing-y-[3px]", calc.calcEnabled && "w-full")}>
+        <MovesLaneTileGhost />
         <TableBody>
           {MOVE_SLOTS.map((slotKey) => {
             const slotErrors = fieldErrors.filter((e) => e.field === slotKey);

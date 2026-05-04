@@ -199,6 +199,10 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 
 **Never merge stderr into stdout with `2>&1`.** Keep stdout and stderr as separate streams. Merging them makes it impossible to distinguish errors from normal output when inspecting subagent processes.
 
+### Styling: Tailwind Over CSS Modules
+
+**Always use Tailwind CSS utility classes instead of writing or editing CSS module files.** Do not add new rules to `.module.css` files — express all styling via Tailwind classes in the component JSX. Existing CSS module rules may remain for legacy reasons, but new work should never introduce more. If a design requires something Tailwind cannot express (e.g., complex selectors, animations with multiple keyframes), use inline `style` props or a `<style>` tag scoped to the component before reaching for a CSS module.
+
 ### React Compiler
 
 **Do NOT write `useMemo`, `useCallback`, or `React.memo`** — React Compiler handles memoization across all packages automatically. Manual memoization conflicts with compiler optimizations.

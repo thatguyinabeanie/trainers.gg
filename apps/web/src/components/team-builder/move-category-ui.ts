@@ -24,13 +24,11 @@ export const CATEGORY_ICON_URLS: Record<string, string> = {
 };
 
 /**
- * Bulbapedia archive URLs for the Pokemon HOME category icons.
+ * Local icons for the Pokemon HOME category symbols
+ * (starburst = Physical, concentric circles = Special, yin-yang = Status).
  */
 export const CATEGORY_ICON_URLS_MONO: Record<string, string> = {
-  Physical:
-    "https://archives.bulbagarden.net/media/upload/a/a4/Physical_icon_HOME.png",
-  Special:
-    "https://archives.bulbagarden.net/media/upload/c/c4/Special_icon_HOME.png",
-  Status:
-    "https://archives.bulbagarden.net/media/upload/3/34/Status_icon_HOME.png",
+  Physical: "/icons/category/Physical_icon_HOME.png",
+  Special: "/icons/category/Special_icon_HOME.png",
+  Status: "/icons/category/Status_icon_HOME.png",
 };

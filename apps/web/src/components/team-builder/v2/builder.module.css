@@ -121,13 +121,6 @@
   margin-inline: auto;
 }
 
-/* When the calc column is open, the inline calc values fit within the moves
-   grid (the name column truncates to accommodate). No width expansion needed
-   since the separate calc-col sidebar is no longer rendered. */
-.builderRows[data-calc-open="true"] {
-  /* intentionally no width override — inline calc fits within existing layout */
-}
-
 [data-density="compact"] .builderRows {
   gap: 4px;
   padding: 8px;
@@ -1064,7 +1057,6 @@
 }
 
 :global(.mvline-cell--calc) {
-  width: 180px;
   padding-left: 10px !important;
   border-left: 1px solid var(--border);
 }
