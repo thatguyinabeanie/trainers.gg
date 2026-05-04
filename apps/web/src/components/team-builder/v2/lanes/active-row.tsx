@@ -15,7 +15,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { errorsForFields, type ValidationError } from "../../validation-hooks";
-import s from "../builder.module.css";
 import { IdentityLane } from "./identity";
 import { MovesLane } from "./moves-lane";
 import { StatsLane } from "./stats-lane";
@@ -132,10 +131,10 @@ export function ActiveRow({
   return (
     <div
       className={cn(
-        s.rowActive,
-        "bg-card flex h-full w-full min-w-0 items-stretch self-center overflow-hidden rounded-lg border",
+        "flex items-stretch flex-nowrap min-w-0 overflow-visible",
+        "row-active bg-card flex h-full w-full min-w-0 items-stretch self-center overflow-hidden rounded-lg border",
         !borderColor && "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]",
-        isDragging && s.rowDragging
+        isDragging && "opacity-50"
       )}
       style={borderColor ? {
         borderColor,
@@ -145,8 +144,8 @@ export function ActiveRow({
       {/* RIB LEFT — slot number + drag handle */}
       <div
         className={cn(
-          s.rib,
-          "border-border/60 flex shrink-0 border-dashed",
+          "flex flex-col items-center justify-between shrink-0 w-7 py-2 border-r",
+          "rib border-border/60 flex shrink-0 border-dashed",
           !leftBg && "bg-muted/20"
         )}
         style={leftBg ? { background: leftBg } : undefined}
@@ -156,7 +155,7 @@ export function ActiveRow({
           {...dragListeners}
           className={cn(
             "text-muted-foreground font-mono text-[10px] font-medium tracking-wide",
-            dragListeners && s.dragHandle
+            dragListeners && "cursor-grab touch-none active:cursor-grabbing"
           )}
           aria-label={`Drag to reorder slot ${idx + 1}`}
         >
@@ -169,7 +168,7 @@ export function ActiveRow({
           onClick={onRemove}
           aria-label={`Remove ${pokemon.species ?? "Pokémon"} from slot ${idx + 1}`}
           className={cn(
-            s.ribRemoveFallback,
+            "rib-remove-fallback",
             "text-muted-foreground hover:bg-destructive/15 hover:text-destructive flex size-5 items-center justify-center rounded transition-colors"
           )}
         >
@@ -180,8 +179,8 @@ export function ActiveRow({
       {/* rowVerticalContent — transparent wrapper (display: contents) in
           horizontal modes; flips to flex-column in 2×3-vertical and
           3×2-vertical modes so identity sits above stats+moves. CSS in
-          builder.module.css controls the switch via data-layout attribute. */}
-      <div className={s.rowVerticalContent}>
+          globals.css controls the switch via data-layout attribute. */}
+      <div className="row-vertical-content">
         <IdentityLane
           pokemon={pokemon}
           format={format}
@@ -198,7 +197,7 @@ export function ActiveRow({
             stacks them vertically on the right of the identity panel. CSS
             (.rowRight) flips between display: contents and flex-column based
             on container query. */}
-        <div className={s.rowRight}>
+        <div className="row-right">
           <StatsLane
             pokemon={pokemon}
             format={format}
@@ -218,8 +217,8 @@ export function ActiveRow({
       {/* RIB RIGHT — mirrored gradient + remove button (wide layout only) */}
       <div
         className={cn(
-          s.ribRight,
-          "border-border/60 flex shrink-0 border-dashed",
+          "flex flex-col items-center justify-start shrink-0 w-7 py-2 border-l",
+          "rib-right border-border/60 flex shrink-0 border-dashed",
           !rightBg && "bg-muted/20"
         )}
         style={rightBg ? { background: rightBg } : undefined}

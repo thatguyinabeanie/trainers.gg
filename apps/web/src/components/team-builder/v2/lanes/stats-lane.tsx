@@ -33,7 +33,7 @@ import {
 import { formatSupportsIvs } from "../format-gating";
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { FieldErrors } from "../validation/field-error";
-import s from "../builder.module.css";
+
 
 // =============================================================================
 // Constants (ghost-mode placeholder rows)
@@ -523,12 +523,12 @@ function StatRow({
 
   return (
     <div
-      className={cn(showIv ? s.spreadRowWithIv : s.spreadRow, statColorClass)}
+      className={cn(showIv ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted" : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted", statColorClass)}
     >
       {/* Col 1: Stat label, color-coded, with nature chevron.
           Matches the +/− nature label colours in IdentityLane:
           boost = emerald, reduce = rose. */}
-      <span className={cn(s.spreadLabel, labelTextClass)}>
+      <span className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap overflow-hidden flex items-center gap-px", labelTextClass)}>
         {label}
         {isNatureBoosted && (
           <span className="text-[9px] font-black tracking-tighter text-emerald-600 dark:text-emerald-400">
@@ -543,7 +543,7 @@ function StatRow({
       </span>
 
       {/* Col 2: Base stat number, muted mono */}
-      <span className={s.spreadBase}>{base}</span>
+      <span className={"font-mono text-[9.5px] text-muted-foreground text-right tabular-nums"}>{base}</span>
 
       {/* Col 3: Read-only viz bar (solid base + striped invest).
        * `bg-current` so both layers inherit the stat-key color from the row. */}
@@ -579,8 +579,8 @@ function StatRow({
       {/* Col 5: Slider with optional breakpoint ticks.
        * Stat-key color is on the row, so the thumb (background: currentColor)
        * and the bump rings (border: currentColor) inherit it from the row. */}
-      <div className={s.spreadSliderWrap}>
-        <div className={s.spreadSliderTrack} aria-hidden />
+      <div className={"relative h-3.5"}>
+        <div className={"absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none"} aria-hidden />
         <input
           type="range"
           min={0}
@@ -595,7 +595,7 @@ function StatRow({
           aria-valuemax={budget.perStat}
           aria-valuenow={displayEv}
           data-at-bump={isAtBump || undefined}
-          className={s.spreadSlider}
+          className={"spread-slider"}
         />
 
         {/* Breakpoint ticks overlay — only on +nature stat. Buttons so they're
@@ -644,7 +644,7 @@ function StatRow({
       )}
 
       {/* Col 6/7: Final stat, mono bold */}
-      <span className={s.spreadFinal}>{liveFinalStat}</span>
+      <span className={"font-mono text-[11.5px] font-bold text-right tabular-nums"}>{liveFinalStat}</span>
     </div>
   );
 }
@@ -696,7 +696,7 @@ export function StatsLane({
         <div
           className={cn(
             "mb-0.5 py-0",
-            showIv ? s.spreadRowWithIv : s.spreadRow
+            showIv ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted" : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
           )}
         >
           <span />
@@ -720,19 +720,19 @@ export function StatsLane({
         {GHOST_STATS.map(({ key, label, colorClass }) => (
           <div
             key={key}
-            className={cn(showIv ? s.spreadRowWithIv : s.spreadRow, colorClass)}
+            className={cn(showIv ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted" : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted", colorClass)}
           >
-            <span className={cn(s.spreadLabel, "opacity-30")}>{label}</span>
-            <span className={cn(s.spreadBase, "opacity-25")}>—</span>
-            <div className={s.spreadVbar} />
+            <span className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap overflow-hidden flex items-center gap-px", "opacity-30")}>{label}</span>
+            <span className={cn("font-mono text-[9.5px] text-muted-foreground text-right tabular-nums", "opacity-25")}>—</span>
+            <div className={"h-2 bg-muted rounded-full overflow-hidden relative min-w-0"} />
             <div className="border-border/30 h-[18px] w-9 rounded border border-dashed" />
-            <div className={s.spreadSliderWrap}>
-              <div className={cn(s.spreadSliderTrack, "opacity-25")} />
+            <div className={"relative h-3.5"}>
+              <div className={cn("absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none", "opacity-25")} />
             </div>
             {showIv && (
               <div className="border-border/30 h-[18px] w-10 rounded border border-dashed" />
             )}
-            <span className={cn(s.spreadFinal, "opacity-25")}>—</span>
+            <span className={cn("font-mono text-[11.5px] font-bold text-right tabular-nums", "opacity-25")}>—</span>
           </div>
         ))}
       </div>
@@ -783,7 +783,7 @@ export function StatsLane({
       <div
         className={cn(
           "mb-0.5",
-          showIv ? s.spreadRowWithIv : s.spreadRow,
+          showIv ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted" : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
           "py-0"
         )}
       >

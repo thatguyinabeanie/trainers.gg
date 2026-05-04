@@ -35,6 +35,7 @@ import {
   updateTeamAction,
 } from "@/actions/teams";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,7 +70,7 @@ import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
 //
 // These cascade to every descendant, so move tiles, calc detail cards, etc.
 // can read `var(--ko-red)` / `var(--ko-amber-bg)` without redefining the
-// tokens at every consumer. Previously lived inline in builder.module.css.
+// tokens at every consumer. Previously lived inline in globals.css.
 //   • --ko-red    — OHKO indicator; reuses --destructive so the theme wins
 //   • --ko-amber* — 2HKO band, with bg/fg variants for tile background vs text
 //   • --ko-yellow*— 3HKO band, same bg/fg split
@@ -573,7 +574,18 @@ export function TeamWorkspaceV2({
             {/* Editor region — rows scroll inside this region only */}
             <div className="flex flex-auto flex-col min-h-0 overflow-y-auto overflow-x-visible">
               <section
-                className="grid w-full mx-auto my-auto max-w-[1800px] grid-cols-[minmax(0,1fr)] gap-2 p-3 transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] data-[layout='2x3']:grid-cols-[repeat(2,minmax(0,1fr))] data-[layout='3x2-vertical']:grid-cols-[repeat(auto-fit,minmax(500px,600px))] data-[layout='3x2-vertical']:justify-center [[data-density=compact]_&]:gap-1 [[data-density=compact]_&]:p-2"
+                // Tailwind 4 strips quotes from values inside data-* / arbitrary
+                // variants when emitting the CSS selector, and Lightning CSS
+                // then rejects digit-prefixed values like 2x3 / 3x2-vertical
+                // (they look like CSS dimensions). Apply layout-specific grid
+                // classes conditionally instead of via [data-layout=...]:.
+                className={cn(
+                  "grid w-full mx-auto my-auto max-w-[1800px] grid-cols-[minmax(0,1fr)] gap-2 p-3 transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] [[data-density=compact]_&]:gap-1 [[data-density=compact]_&]:p-2",
+                  layoutMode === "2x3" &&
+                    "grid-cols-[repeat(2,minmax(0,1fr))]",
+                  layoutMode === "3x2-vertical" &&
+                    "grid-cols-[repeat(auto-fit,minmax(500px,600px))] justify-center"
+                )}
                 data-calc-open={
                   state.drawer === "calc" && !isMobile ? "true" : "false"
                 }

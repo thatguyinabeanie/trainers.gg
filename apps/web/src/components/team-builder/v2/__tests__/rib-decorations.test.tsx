@@ -16,7 +16,6 @@ import { type GameFormat } from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 
 // @trainers/pokemon — control type resolution per test
 jest.mock("@trainers/pokemon", () => ({

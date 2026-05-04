@@ -31,9 +31,6 @@ import { type GameFormat } from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
 
 // Mock getMoveData and getSpeciesTypes from @trainers/pokemon
 const mockGetMoveData = jest.fn();

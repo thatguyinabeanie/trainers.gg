@@ -168,7 +168,6 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: mockRouterRefresh }),
 }));
 
-jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 
 // Toast — capture calls
 const mockToastError = jest.fn();

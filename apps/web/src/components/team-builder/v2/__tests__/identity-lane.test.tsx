@@ -16,7 +16,6 @@ import { type GameFormat } from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 
 // Popover: render content inline so it's always queryable
 jest.mock("@/components/ui/popover", () => ({

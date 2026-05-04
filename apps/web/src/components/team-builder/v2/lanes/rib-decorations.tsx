@@ -6,7 +6,6 @@ import { type Tables, type TablesUpdate } from "@trainers/supabase";
 import { cn } from "@/lib/utils";
 
 import { TypeSymbolIcon } from "../../type-symbol-icon";
-import s from "../builder.module.css";
 
 // =============================================================================
 // Types
@@ -36,7 +35,7 @@ export function RibDecorations({
   const types = getSpeciesTypes(pokemon.species ?? "");
 
   return (
-    <div className={cn(s.ribDecorations, "flex flex-col items-center gap-2")}>
+    <div className={cn("rib-decorations", "flex flex-col items-center gap-2")}>
       {/* Wordless round type symbols — translation-friendly (no English text). */}
       {types.map((t) => (
         <TypeSymbolIcon

@@ -22,7 +22,7 @@ import { type IdentityLayoutProps } from "./identity-layout-props";
 //
 // The entire identity column sits above stats+moves because the parent
 // active-row wraps both in .rowVerticalContent, which becomes a flex-column
-// in vertical grid modes (controlled by builder.module.css).
+// in vertical grid modes (controlled by globals.css).
 // =============================================================================
 
 export function IdentityVertical({

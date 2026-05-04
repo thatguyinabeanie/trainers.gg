@@ -25,7 +25,7 @@ import { IdentityLane } from "./lanes/identity";
 import { StatsLane } from "./lanes/stats-lane";
 import { MovesLane } from "./lanes/moves-lane";
 import { SpeciesPickerDialog } from "./pickers/species-picker-dialog";
-import s from "./builder.module.css";
+import { useTeamLayoutMode } from "./use-team-layout";
 
 // =============================================================================
 // Types
@@ -76,14 +76,14 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         onClick={() => setOpen(true)}
         aria-label={`Add Pokémon to slot ${String(idx + 1).padStart(2, "0")}`}
         className={cn(
-          s.rowActive,
+          "flex items-stretch flex-nowrap min-w-0 overflow-visible",
           "border-border bg-card flex h-full w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-dashed",
           "hover:border-primary/40 hover:bg-muted/10 text-left transition-colors",
           "focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
         )}
       >
         {/* RIB — slot number + × placeholder */}
-        <div className={cn(s.rib, "border-border/60 bg-muted/20 flex shrink-0 border-dashed")}>
+        <div className={cn("flex flex-col items-center justify-between shrink-0 w-7 py-2 border-r", "rib border-border/60 bg-muted/20 flex shrink-0 border-dashed")}>
           <span className="text-muted-foreground font-mono text-[10px] font-medium tracking-wide">
             {String(idx + 1).padStart(2, "0")}
           </span>
@@ -92,9 +92,9 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
           </span>
         </div>
 
-        <div className={s.rowVerticalContent}>
+        <div className="row-vertical-content">
           <IdentityLane pokemon={null} format={_format} />
-          <div className={s.rowRight}>
+          <div className="row-right">
             <StatsLane pokemon={null} format={_format} />
             <MovesLane pokemon={null} format={_format} />
           </div>
@@ -165,7 +165,7 @@ function CollapsedRow({
       className={cn(
         "group border-border bg-card hover:bg-muted/30 flex w-full items-center gap-3 rounded-lg border px-3 transition-colors",
         density === "comfy" ? "py-2" : "py-1.5",
-        isDragging && s.rowDragging
+        isDragging && "opacity-50"
       )}
     >
       {/* Slot rib — drag handle when filled */}
@@ -175,7 +175,7 @@ function CollapsedRow({
         className={cn(
           "relative flex w-7 shrink-0 items-center justify-center rounded font-mono text-xs font-medium",
           ribBackground ? "text-foreground/70" : "text-muted-foreground",
-          dragListeners && s.dragHandle
+          dragListeners && "cursor-grab touch-none active:cursor-grabbing"
         )}
         style={ribBackground ? { background: ribBackground } : undefined}
         aria-label={
@@ -360,11 +360,20 @@ export function PokeRow({
     zIndex: isDragging ? 10 : undefined,
   };
 
+  // Tailwind 4 strips quotes from attribute selector values when emitting CSS,
+  // causing Lightning CSS to reject the dimension-like token. Apply max-width
+  // conditionally via JS instead of an arbitrary variant.
+  const layoutMode = useTeamLayoutMode();
+  const slotHostClass = cn(
+    "@container/slot mx-auto w-full",
+    layoutMode === "1x6" && "max-w-[1620px]"
+  );
+
   if (!pokemon) {
     // Empty slot — sortable ref still attached so it can act as a drop target,
     // but drag is disabled so it won't be picked up.
     return (
-      <div ref={setNodeRef} style={style} className="@container/slot mx-auto w-full [[data-layout='1x6']_&]:max-w-[1620px]" data-slot-host>
+      <div ref={setNodeRef} style={style} className={slotHostClass} data-slot-host>
         <EmptyRow idx={idx} density={density} format={format} onAdd={onAdd} />
       </div>
     );
@@ -374,7 +383,7 @@ export function PokeRow({
 
   if (showExpanded) {
     return (
-      <div ref={setNodeRef} style={style} className="@container/slot mx-auto w-full [[data-layout='1x6']_&]:max-w-[1620px]" data-slot-host>
+      <div ref={setNodeRef} style={style} className={slotHostClass} data-slot-host>
         <ActiveRowShell
           idx={idx}
           pokemon={pokemon}
@@ -393,7 +402,7 @@ export function PokeRow({
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="@container/slot mx-auto w-full [[data-layout='1x6']_&]:max-w-[1620px]" data-slot-host>
+    <div ref={setNodeRef} style={style} className={slotHostClass} data-slot-host>
       <CollapsedRow
         idx={idx}
         pokemon={pokemon}

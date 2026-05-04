@@ -11,7 +11,6 @@ import { StatsLane } from "../lanes/stats-lane";
 
 // CSS modules aren't processed by ts-jest — mock them as identity proxies so
 // every className lookup returns the property key (e.g. s.spreadRow → "spreadRow").
-jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 
 // =============================================================================
 // Mock the pokemon package for deterministic, fast tests.

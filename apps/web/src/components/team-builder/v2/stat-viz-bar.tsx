@@ -2,7 +2,12 @@
 
 import { cn } from "@/lib/utils";
 
-import s from "./builder.module.css";
+const spreadVbarClass = "h-2 bg-muted rounded-full overflow-hidden relative min-w-0";
+const spreadVbarBaseClass = "block h-full absolute left-0 rounded-full";
+const spreadVbarInvestClass = "block h-full absolute [background-image:repeating-linear-gradient(45deg,rgba(255,255,255,0.55)_0,rgba(255,255,255,0.55)_3px,transparent_3px,transparent_7px)]";
+const spreadBumpsClass = "absolute inset-y-0 left-[5px] right-[5px] pointer-events-none";
+const spreadBumpTickClass = "absolute top-1/2 size-[9px] bg-card border-[1.5px] border-current rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer p-0 outline-none transition-[transform,border-width] duration-150 ease-in-out hover:scale-[1.7] hover:border-2 focus-visible:outline-2 focus-visible:outline-current focus-visible:outline-offset-2";
+const spreadBumpTickNextClass = "border-2";
 
 // =============================================================================
 // StatVizBar
@@ -29,14 +34,14 @@ export function StatVizBar({
   investLayerWidth,
 }: StatVizBarProps) {
   return (
-    <div className={s.spreadVbar}>
+    <div className={spreadVbarClass}>
       <span
-        className={cn(s.spreadVbarBase, "bg-current")}
+        className={cn(spreadVbarBaseClass, "bg-current")}
         style={{ width: `${baseLayerWidth}%` }}
       />
       {investLayerWidth > 0 && (
         <span
-          className={cn(s.spreadVbarInvest, "bg-current")}
+          className={cn(spreadVbarInvestClass, "bg-current")}
           style={{
             left: `${investLayerLeft}%`,
             width: `${investLayerWidth}%`,
@@ -82,11 +87,11 @@ export function StatBumpsOverlay({
   testId,
 }: StatBumpsOverlayProps) {
   return (
-    <div className={s.spreadBumps} data-testid={testId}>
+    <div className={spreadBumpsClass} data-testid={testId}>
       {breakpoints.map((bpEv) => {
         const tickClass = cn(
-          s.spreadBumpTick,
-          bpEv === nextBpEv && s.spreadBumpTickNext
+          spreadBumpTickClass,
+          bpEv === nextBpEv && spreadBumpTickNextClass
         );
         const style = { left: `${(bpEv / perStatMax) * 100}%` };
 

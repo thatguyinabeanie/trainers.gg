@@ -16,9 +16,6 @@ import { type Tables } from "@trainers/supabase";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
 
 jest.mock("@trainers/pokemon", () => ({
   getSpeciesTypes: jest.fn((species: string) => {

@@ -29,7 +29,14 @@ import {
 } from "../../calc-stat-helpers";
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { StageDropdown } from "./stage-dropdown";
-import s from "../builder.module.css";
+const spreadRowClass = "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
+const spreadRowWithStageClass = "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_32px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
+const spreadLabelClass = "text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap overflow-hidden flex items-center gap-px";
+const spreadBaseClass = "font-mono text-[9.5px] text-muted-foreground text-right tabular-nums";
+const spreadSliderWrapClass = "relative h-3.5";
+const spreadSliderTrackClass = "absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none";
+const spreadSliderClass = "spread-slider";
+const spreadFinalClass = "font-mono text-[11.5px] font-bold text-right tabular-nums";
 
 // =============================================================================
 // Types
@@ -218,12 +225,12 @@ function DefenderStatRow({
     <div
       className={cn(
         // Match poke-row's .spreadRow / .spreadRowWithStage for visual parity
-        boostKey ? s.spreadRowWithStage : s.spreadRow,
+        boostKey ? spreadRowWithStageClass : spreadRowClass,
         colorClass
       )}
     >
       {/* Col 1: Stat label */}
-      <span className={s.spreadLabel}>
+      <span className={spreadLabelClass}>
         {label}
         {isNatureBoosted && (
           <span className="text-[9px] font-black tracking-tighter text-red-600 dark:text-red-400">
@@ -238,7 +245,7 @@ function DefenderStatRow({
       </span>
 
       {/* Col 2: Base stat */}
-      <span className={s.spreadBase}>{base}</span>
+      <span className={spreadBaseClass}>{base}</span>
 
       {/* Col 3: Viz bar */}
       <StatVizBar
@@ -269,8 +276,8 @@ function DefenderStatRow({
       />
 
       {/* Col 5: EV slider with breakpoint ticks */}
-      <div className={s.spreadSliderWrap}>
-        <div className={s.spreadSliderTrack} aria-hidden />
+      <div className={spreadSliderWrapClass}>
+        <div className={spreadSliderTrackClass} aria-hidden />
         <input
           type="range"
           min={0}
@@ -279,7 +286,7 @@ function DefenderStatRow({
           value={ev}
           onChange={handleSliderChange}
           aria-label={`${label} ${isChampions ? "Stat Point slider" : "EV slider"}`}
-          className={s.spreadSlider}
+          className={spreadSliderClass}
         />
         {isNatureBoosted && breakpoints.length > 0 && (
           <StatBumpsOverlay
@@ -301,7 +308,7 @@ function DefenderStatRow({
       )}
 
       {/* Col 6 (HP) / Col 7 (non-HP): Final stat with stage applied */}
-      <span className={s.spreadFinal}>{finalStat}</span>
+      <span className={spreadFinalClass}>{finalStat}</span>
     </div>
   );
 }

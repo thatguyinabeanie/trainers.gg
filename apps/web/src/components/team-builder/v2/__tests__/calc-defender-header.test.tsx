@@ -27,9 +27,6 @@ import { type GameFormat } from "@trainers/pokemon";
 // =============================================================================
 
 // CSS module
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => String(k) })
-);
 
 // Popover — render children directly so we don't need a real DOM-portal.
 // Used by Item / Ability / Nature / Tera FormChips below.

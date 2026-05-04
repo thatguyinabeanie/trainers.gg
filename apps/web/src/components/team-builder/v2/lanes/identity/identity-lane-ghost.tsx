@@ -3,7 +3,6 @@
 import { cn } from "@/lib/utils";
 
 import { cellClasses } from "./cells/identity-cell-shared";
-import s from "../../builder.module.css";
 
 // Migrated identity-lane.module.css class strings used by ghost variants only.
 // Most cell-level chrome lives in cellClasses (shared with the real cells);
@@ -204,17 +203,17 @@ function FormRowsGhost() {
   return (
     <>
       {(["Item", "Abil", "Nat"] as const).map((label) => (
-        <div key={label} className={s.formRow}>
-          <span className={s.formLabel}>{label}</span>
-          <span className={cn(s.formValue, "text-muted-foreground/25 italic")}>
+        <div key={label} className={"grid grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 px-1 py-[3px] rounded cursor-pointer bg-transparent text-left w-full transition-colors hover:bg-muted"}>
+          <span className={"text-[9px] font-bold tracking-[0.08em] uppercase text-muted-foreground font-mono whitespace-nowrap overflow-hidden text-ellipsis shrink-0"}>{label}</span>
+          <span className={cn("text-[11.5px] text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0", "text-muted-foreground/25 italic")}>
             —
           </span>
         </div>
       ))}
       {/* Type row — two circle placeholders matching TypePill size */}
-      <div className={cn(s.formRow, "cursor-default")}>
-        <span className={s.formLabel}>Type</span>
-        <span className={cn(s.formValue, "flex items-center gap-1")}>
+      <div className={cn("grid grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 px-1 py-[3px] rounded cursor-pointer bg-transparent text-left w-full transition-colors hover:bg-muted", "cursor-default")}>
+        <span className={"text-[9px] font-bold tracking-[0.08em] uppercase text-muted-foreground font-mono whitespace-nowrap overflow-hidden text-ellipsis shrink-0"}>Type</span>
+        <span className={cn("text-[11.5px] text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0", "flex items-center gap-1")}>
           <div className="bg-muted/40 size-[18px] rounded-full" />
           <div className="bg-muted/40 size-[18px] rounded-full" />
         </span>

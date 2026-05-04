@@ -31,7 +31,6 @@ import type * as TrainersPokemon from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 
 // Popover — render children inline
 jest.mock("@/components/ui/popover", () => ({

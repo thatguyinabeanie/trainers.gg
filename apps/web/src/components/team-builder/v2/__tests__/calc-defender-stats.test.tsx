@@ -32,9 +32,6 @@ import { type GameFormat } from "@trainers/pokemon";
 // =============================================================================
 
 // CSS modules — identity proxy so every class lookup returns the key name.
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
 
 // StageDropdown — render a simple select so we can fire change events.
 jest.mock("../calc/stage-dropdown", () => ({

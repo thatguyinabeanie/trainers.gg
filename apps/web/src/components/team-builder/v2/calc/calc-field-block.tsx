@@ -154,7 +154,11 @@ function ToggleBtn({ active, onClick, children }: ToggleBtnProps) {
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={cn("cd-toggle", active && "cd-toggle--on")}
+      className={cn(
+        "cd-toggle",
+        active &&
+          "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
+      )}
     >
       {children}
     </button>

@@ -150,7 +150,7 @@ export function CalcColumn({ pokemon }: CalcColumnProps) {
   const outputs = calc.computeForwardOutputsForRow(pokemon);
   const hasPokemon = pokemon !== null;
   return (
-    <div className="calc-col">
+    <div className="min-w-60 w-60 max-w-60 flex flex-col justify-center shrink-0 overflow-hidden bg-[color-mix(in_oklch,var(--muted)_40%,transparent)] border-l border-border py-3 gap-1 relative animate-[calc-col-enter_0.3s_cubic-bezier(0.4,0,0.2,1)_both]">
       <div className="calc-col-header">CALC</div>
       {MOVE_SLOTS.map((slot, i) => (
         <CalcRow

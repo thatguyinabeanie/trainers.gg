@@ -18,9 +18,6 @@ import { type Tables } from "@trainers/supabase";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
 
 jest.mock("../calc/calc-state-context", () => ({
   useCalcStateContext: () => ({ calcEnabled: false }),

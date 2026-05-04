@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import s from "../builder.module.css";
+
 
 // =============================================================================
 // FormChip — shared loadout row chip (Item / Ability / Nature / Tera etc.)
@@ -65,16 +65,16 @@ export function FormChip({
         render={
           <button
             type="button"
-            className={cn(s.formRow, triggerClassName)}
+            className={cn("grid grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 px-1 py-[3px] rounded cursor-pointer bg-transparent text-left w-full transition-colors hover:bg-muted", triggerClassName)}
           />
         }
       >
-        <span className={s.formLabel}>{label}</span>
+        <span className="text-[9px] font-bold tracking-[0.08em] uppercase text-muted-foreground font-mono whitespace-nowrap overflow-hidden text-ellipsis shrink-0">{label}</span>
         {trailing ? (
           <span className="flex min-w-0 items-baseline gap-1.5 overflow-hidden">
             <span
               className={cn(
-                s.formValue,
+                "text-[11.5px] text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0",
                 !value && "italic text-muted-foreground/50"
               )}
             >
@@ -85,7 +85,7 @@ export function FormChip({
         ) : (
           <span
             className={cn(
-              s.formValue,
+              "text-[11.5px] text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0",
               !value && "italic text-muted-foreground/50"
             )}
           >
