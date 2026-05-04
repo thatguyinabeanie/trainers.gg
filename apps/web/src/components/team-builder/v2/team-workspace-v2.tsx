@@ -573,7 +573,7 @@ export function TeamWorkspaceV2({
             {/* Editor region — rows scroll inside this region only */}
             <div className="flex flex-auto flex-col min-h-0 overflow-y-auto overflow-x-visible">
               <section
-                className="grid w-full mx-auto my-auto max-w-[1800px] grid-cols-[minmax(0,1fr)] gap-2 p-3 transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] data-[layout=2x3]:grid-cols-[repeat(2,minmax(0,1fr))] data-[layout=3x2-vertical]:grid-cols-[repeat(auto-fit,minmax(500px,600px))] data-[layout=3x2-vertical]:justify-center [[data-density=compact]_&]:gap-1 [[data-density=compact]_&]:p-2"
+                className="grid w-full mx-auto my-auto max-w-[1800px] grid-cols-[minmax(0,1fr)] gap-2 p-3 transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] data-[layout='2x3']:grid-cols-[repeat(2,minmax(0,1fr))] data-[layout='3x2-vertical']:grid-cols-[repeat(auto-fit,minmax(500px,600px))] data-[layout='3x2-vertical']:justify-center [[data-density=compact]_&]:gap-1 [[data-density=compact]_&]:p-2"
                 data-calc-open={
                   state.drawer === "calc" && !isMobile ? "true" : "false"
                 }
