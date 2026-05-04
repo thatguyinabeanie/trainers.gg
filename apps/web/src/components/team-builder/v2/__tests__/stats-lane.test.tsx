@@ -604,8 +604,8 @@ describe("ghost mode (pokemon: null)", () => {
     const root = container.firstElementChild as HTMLElement;
     expect(root).toBeTruthy();
     // Width is now driven by Tailwind: w-full at narrow widths,
-    // @[1460px]:w-[400px] at compact widths via container queries.
-    expect(root.className).toContain("@[1460px]:w-[400px]");
+    // @[1580px]:w-[400px] at compact widths via container queries.
+    expect(root.className).toContain("@[1580px]:w-[400px]");
     expect(root.className).toContain("border-dashed");
     expect(root.className).toContain("flex-col");
   });
