@@ -231,20 +231,20 @@ function MoveTile({
           </TableCell>
 
           {/* Category icon */}
-          <TableCell className="w-6 p-1 align-middle">
+          <TableCell className="w-8 p-1 align-middle">
             {moveName &&
             moveData?.category &&
             CATEGORY_ICON_URLS_MONO[moveData.category] ? (
               <img
                 src={CATEGORY_ICON_URLS_MONO[moveData.category]}
                 alt={moveData.category}
-                className="h-6 w-6"
+                className="h-6 w-6 shrink-0"
               />
             ) : null}
           </TableCell>
 
           {/* Move name */}
-          <TableCell className="p-1 align-middle whitespace-nowrap">
+          <TableCell className="w-[160px] max-w-[160px] p-1 align-middle">
             <DescriptionTooltip
               description={moveName ? moveData?.shortDesc : null}
               showContent={panel === null}
@@ -252,7 +252,7 @@ function MoveTile({
               <TooltipTrigger
                 render={<span />}
                 className={cn(
-                  "text-[13px] font-medium",
+                  "block w-[160px] truncate text-[13px] font-medium",
                   !moveName && "text-muted-foreground/50"
                 )}
               >
@@ -271,11 +271,11 @@ function MoveTile({
           </TableCell>
 
           {/* Accuracy */}
-          <TableCell className="w-12 p-1 align-middle font-mono text-[11px] tabular-nums">
+          <TableCell className="w-[52px] p-1 align-middle font-mono text-[11px] tabular-nums">
             {moveName
               ? moveData?.accuracy === true || !moveData?.accuracy
                 ? "—"
-                : `${moveData.accuracy}%`
+                : moveData.accuracy
               : ""}
           </TableCell>
 
@@ -368,7 +368,7 @@ function MovesLaneTileGhost() {
     <TableHeader>
       <TableRow className="border-none">
         <TableHead className="!h-auto w-6 border-none p-0 pb-0.5" />
-        <TableHead className="!h-auto w-6 border-none p-0 pb-0.5" />
+        <TableHead className="!h-auto w-8 border-none p-0 pb-0.5" />
         <TableHead className="text-muted-foreground !h-auto border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
           NAME
         </TableHead>
@@ -407,7 +407,7 @@ function MovesLaneGhost() {
           {([0, 1, 2, 3] as const).map((i) => (
             <TableRow key={i} className="border-none">
               <TableCell className="w-6 p-1" />
-              <TableCell className="w-6 p-1" />
+              <TableCell className="w-8 p-1" />
               <TableCell className="p-1">
                 <span className="text-muted-foreground/30 text-[13px] font-medium">
                   + Add move
