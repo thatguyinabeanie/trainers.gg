@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { TypeDot } from "../type-dot";
+import Image from "next/image";
 import { formatSupportsTera } from "../format-gating";
 import { effectiveDefensiveMult } from "./heatmap-effects";
 import { effectiveOffensiveMult } from "./move-type-overrides";
@@ -31,12 +31,15 @@ import { effectiveOffensiveMult } from "./move-type-overrides";
 export interface HeatmapPanelProps {
   team: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
+  onClose?: () => void;
 }
 
 type CoverageMode = "defensive" | "offensive";
 
-interface MatrixRow {
-  type: PokemonType;
+// Transposed: each row is a Pokemon, each column is a type
+interface PokemonRow {
+  pokemon: Tables<"pokemon">;
+  /** multipliers[typeIdx] — one per ALL_TYPES entry */
   multipliers: (number | null)[];
   weakCount: number;
   resistCount: number;
@@ -47,44 +50,42 @@ interface MatrixRow {
 // Helpers
 // =============================================================================
 
-/**
- * Returns the effective defender types for a Pokemon in the heatmap.
- *
- * When showTera is true and the Pokemon has a tera_type set, the Tera type
- * replaces all species types (matching in-game Tera behavior: the Pokemon's
- * type becomes solely the Tera type for all defensive matchup purposes).
- * Falls back to species types if tera_type is not set.
- *
- * When showTera is false, always returns species types (pre-Tera baseline).
- */
 function getDefenderTypes(
   pokemon: Tables<"pokemon">,
   showTera: boolean
 ): PokemonType[] {
-  if (showTera && pokemon.tera_type && (ALL_TYPES as readonly string[]).includes(pokemon.tera_type)) {
+  if (
+    showTera &&
+    pokemon.tera_type &&
+    (ALL_TYPES as readonly string[]).includes(pokemon.tera_type)
+  ) {
     return [pokemon.tera_type as PokemonType];
   }
   return getSpeciesTypes(pokemon.species ?? "") as PokemonType[];
 }
 
-function buildDefensiveMatrix(
+/**
+ * Build transposed defensive matrix: rows = Pokemon, columns = 18 types.
+ * Each cell = multiplier that Pokemon TAKES from that attacking type.
+ */
+function buildDefensiveRows(
   teamPokemon: TeamWithPokemon["team_pokemon"],
   showTera: boolean
-): MatrixRow[] {
+): PokemonRow[] {
   const pokemons = teamPokemon
     .slice()
     .sort((a, b) => a.team_position - b.team_position)
     .map((tp) => tp.pokemon)
     .filter((p): p is Tables<"pokemon"> => p !== null && p !== undefined);
 
-  return ALL_TYPES.map((attackingType) => {
+  return pokemons.map((p) => {
+    const defenderTypes = getDefenderTypes(p, showTera);
     const multipliers: (number | null)[] = [];
     let weakCount = 0;
     let resistCount = 0;
     let immuneCount = 0;
 
-    for (const p of pokemons) {
-      const defenderTypes = getDefenderTypes(p, showTera);
+    for (const attackingType of ALL_TYPES) {
       const mult = effectiveDefensiveMult({
         attackingType,
         defenderTypes,
@@ -97,28 +98,33 @@ function buildDefensiveMatrix(
       else if (mult > 1) weakCount++;
     }
 
-    return { type: attackingType, multipliers, weakCount, resistCount, immuneCount };
+    return { pokemon: p, multipliers, weakCount, resistCount, immuneCount };
   });
 }
 
 const MOVE_SLOTS = ["move1", "move2", "move3", "move4"] as const;
 
-function buildOffensiveMatrix(
+/**
+ * Build transposed offensive matrix: rows = Pokemon, columns = 18 types.
+ * Each cell = best coverage multiplier across the Pokemon's damaging moves
+ * against that defending type.
+ */
+function buildOffensiveRows(
   teamPokemon: TeamWithPokemon["team_pokemon"]
-): MatrixRow[] {
+): PokemonRow[] {
   const pokemons = teamPokemon
     .slice()
     .sort((a, b) => a.team_position - b.team_position)
     .map((tp) => tp.pokemon)
     .filter((p): p is Tables<"pokemon"> => p !== null && p !== undefined);
 
-  return ALL_TYPES.map((defendingType) => {
+  return pokemons.map((p) => {
     const multipliers: (number | null)[] = [];
-    let weakCount = 0; // super-effective for attacker = "good"
+    let weakCount = 0;
     let resistCount = 0;
     let immuneCount = 0;
 
-    for (const p of pokemons) {
+    for (const defendingType of ALL_TYPES) {
       let best: number | null = null;
 
       for (const slot of MOVE_SLOTS) {
@@ -143,56 +149,72 @@ function buildOffensiveMatrix(
       else if (best > 1) weakCount++;
     }
 
-    return { type: defendingType, multipliers, weakCount, resistCount, immuneCount };
-  });
-}
-
-/** Sort rows so most threatened (highest max multiplier) appear first. */
-function sortDefensive(rows: MatrixRow[]): MatrixRow[] {
-  return [...rows].sort((a, b) => {
-    const maxA = Math.max(...a.multipliers.map((m) => m ?? 0));
-    const maxB = Math.max(...b.multipliers.map((m) => m ?? 0));
-    return maxB - maxA;
+    return { pokemon: p, multipliers, weakCount, resistCount, immuneCount };
   });
 }
 
 function formatMultiplier(mult: number): string {
   if (mult === 0) return "0";
-  if (mult === 0.25) return "1/4";
-  if (mult === 0.5) return "1/2";
+  if (mult === 0.25) return "¼";
+  if (mult === 0.5) return "½";
+  if (mult === 1) return "1×";
   if (mult === 1.25) return "1.25";
-  return `x${mult}`;
+  if (mult === 2) return "2×";
+  if (mult === 4) return "4×";
+  return `${mult}×`;
 }
 
 function cellClass(mult: number, mode: CoverageMode): string {
   if (mode === "defensive") {
     if (mult === 0)
-      return "bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 font-bold";
-    if (mult >= 4) return "bg-destructive/15 text-destructive font-semibold";
+      return "bg-muted-foreground/20 text-muted-foreground font-bold";
+    if (mult >= 4) return "bg-destructive/25 text-destructive font-bold";
     if (mult >= 2) return "bg-destructive/10 text-destructive";
     if (mult <= 0.25)
-      return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-semibold";
+      return "bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 font-bold";
     if (mult < 1)
       return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
-    return "bg-muted/30 text-muted-foreground";
+    return "text-muted-foreground/50";
   }
   // Offensive
   if (mult === 0)
-    return "bg-muted text-muted-foreground/60 line-through font-semibold";
+    return "bg-muted-foreground/20 text-muted-foreground font-bold";
   if (mult >= 4)
-    return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-semibold";
+    return "bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 font-bold";
   if (mult >= 2)
     return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
-  if (mult <= 0.25) return "bg-destructive/15 text-destructive font-semibold";
+  if (mult <= 0.25) return "bg-destructive/25 text-destructive font-bold";
   if (mult < 1) return "bg-destructive/10 text-destructive";
-  return "bg-muted/30 text-muted-foreground";
+  return "text-muted-foreground/50";
 }
 
+// 3-letter type abbreviations for column headers
+const TYPE_ABBR: Record<PokemonType, string> = {
+  Normal: "NOR",
+  Fire: "FIR",
+  Water: "WAT",
+  Electric: "ELE",
+  Grass: "GRS",
+  Ice: "ICE",
+  Fighting: "FIG",
+  Poison: "POI",
+  Ground: "GND",
+  Flying: "FLY",
+  Psychic: "PSY",
+  Bug: "BUG",
+  Rock: "ROK",
+  Ghost: "GHO",
+  Dragon: "DRA",
+  Dark: "DRK",
+  Steel: "STL",
+  Fairy: "FAI",
+};
+
 // =============================================================================
-// MonHeaderIcon
+// MonRowLabel
 // =============================================================================
 
-function MonHeaderIcon({ pokemon }: { pokemon: Tables<"pokemon"> }) {
+function MonRowLabel({ pokemon }: { pokemon: Tables<"pokemon"> }) {
   let spriteUrl: string | undefined;
   try {
     spriteUrl = getPokemonSprite(pokemon.species ?? "", {
@@ -201,346 +223,368 @@ function MonHeaderIcon({ pokemon }: { pokemon: Tables<"pokemon"> }) {
   } catch {
     spriteUrl = undefined;
   }
-  const label = pokemon.nickname
-    ? `${pokemon.nickname} (${pokemon.species})`
-    : (pokemon.species ?? "Unknown");
+  const name =
+    pokemon.nickname || pokemon.species?.split("-")[0] || "Unknown";
 
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <span
-            tabIndex={0}
-            aria-label={label}
-            className="bg-muted/40 inline-flex size-6 cursor-default items-center justify-center rounded-full"
-          >
-            {spriteUrl ? (
-              <img
-                src={spriteUrl}
-                alt=""
-                aria-hidden="true"
-                className="size-5 object-contain select-none"
-                draggable={false}
-              />
-            ) : (
-              <span className="text-muted-foreground text-[8px]" aria-hidden>
-                ?
-              </span>
-            )}
+    <div className="flex items-center gap-1.5 min-w-0">
+      <span className="bg-muted/40 inline-flex size-8 shrink-0 items-center justify-center rounded-full">
+        {spriteUrl ? (
+          <img
+            src={spriteUrl}
+            alt=""
+            aria-hidden="true"
+            className="size-7 object-contain select-none"
+            draggable={false}
+          />
+        ) : (
+          <span className="text-muted-foreground text-[8px]" aria-hidden>
+            ?
           </span>
-        }
-      />
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
+        )}
+      </span>
+      <span className="text-[11px] font-medium text-foreground whitespace-nowrap">
+        {name}
+      </span>
+    </div>
   );
 }
 
 // =============================================================================
-// HeatmapPanel
+// HeatmapPanel (Transposed: Pokemon rows × Type columns)
 // =============================================================================
 
-/**
- * Defensive/offensive type coverage matrix for the v2 team builder bottom drawer.
- *
- * DEFENSIVE (default): rows = 18 attacking types, columns = team slots.
- *   Cell = multiplier the team member TAKES from that type.
- *   Ability/item modifiers applied via effectiveDefensiveMult.
- *   When showTera is true (Tera-format only): each Pokemon's defender types
- *   become [tera_type] if set, otherwise fall back to species types.
- *
- * OFFENSIVE: rows = 18 defending types, columns = team slots.
- *   Cell = best multiplier that team member can deal with its damaging moves.
- *   This matrix is coverage-only (no STAB weighting). Tera does not change
- *   which types a move hits — it only changes STAB identity. Since this matrix
- *   does not weight by STAB, the offensive view is invariant to Tera and the
- *   toggle has no effect on offensive rows (showTera only affects defensive view).
- *
- * Sorted by severity (most weaknesses first) in defensive view.
- */
-export function HeatmapPanel({ team, format }: HeatmapPanelProps) {
+export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
   const [mode, setMode] = useState<CoverageMode>("defensive");
-  // showTera is only meaningful when the format supports Tera.
-  // Defaults to false so the baseline view is always species types.
   const [showTera, setShowTera] = useState(false);
+  const [hoverCell, setHoverCell] = useState<{
+    row: number;
+    col: number;
+  } | null>(null);
 
   const teraSupported = formatSupportsTera(format);
-
-  const pokemons = team
-    .slice()
-    .sort((a, b) => a.team_position - b.team_position)
-    .map((tp) => tp.pokemon)
-    .filter((p): p is Tables<"pokemon"> => p !== null && p !== undefined);
-
-  const monCount = pokemons.length;
-
-  // showTera is only active in defensive mode (offensive is coverage-only, not STAB-weighted)
   const effectiveShowTera = showTera && teraSupported && mode === "defensive";
 
-  const rawRows =
+  const rows =
     mode === "defensive"
-      ? buildDefensiveMatrix(team, effectiveShowTera)
-      : buildOffensiveMatrix(team);
+      ? buildDefensiveRows(team, effectiveShowTera)
+      : buildOffensiveRows(team);
 
-  const rows = mode === "defensive" ? sortDefensive(rawRows) : rawRows;
+  // Column totals: per-type weakness count across all Pokemon
+  const colTotals = ALL_TYPES.map((_, typeIdx) => {
+    let wk = 0;
+    let rs = 0;
+    let im = 0;
+    for (const row of rows) {
+      const m = row.multipliers[typeIdx] ?? null;
+      if (m === null) continue;
+      if (m === 0) im++;
+      else if (m < 1) rs++;
+      else if (m > 1) wk++;
+    }
+    return { wk, rs, im };
+  });
 
-  // Summary counts (team-wide totals) for the footer row
-  const totalWeak = rows.reduce((sum, r) => sum + r.weakCount, 0);
-  const totalResist = rows.reduce((sum, r) => sum + r.resistCount, 0);
-  const totalImmune = rows.reduce((sum, r) => sum + r.immuneCount, 0);
-
-  // CSS grid: type-icon col + one per mon + summary col
+  // Grid: row-label + 18 type columns + summary column
   const gridStyle: CSSProperties = {
-    "--mon-count": monCount,
-    gridTemplateColumns: `2.5rem repeat(${monCount}, minmax(0, 1fr)) 4rem`,
-  } as CSSProperties;
+    gridTemplateColumns: `9.5rem repeat(18, minmax(0, 1fr)) 4.5rem`,
+  };
 
   return (
     <div data-testid="heatmap-panel" className="flex h-full min-h-0 flex-col">
-      {/* Panel header + toggles — outside the scroll wrapper so it stays pinned */}
-      <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-        <span className="text-foreground text-sm font-semibold">
-          {mode === "defensive" ? "Defensive coverage" : "Offensive coverage"}
-        </span>
-        <div className="flex items-center gap-2">
-          {/* Tera toggle — only shown for Tera-supporting formats, defensive mode only */}
-          {teraSupported && mode === "defensive" && (
-            <button
-              type="button"
-              aria-pressed={showTera}
-              onClick={() => setShowTera((v) => !v)}
-              className={cn(
-                "rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
-                showTera
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {showTera ? "Tera on" : "View as Tera"}
-            </button>
-          )}
-          <div
-            role="group"
-            aria-label="Coverage mode"
-            className="bg-muted flex overflow-hidden rounded-md"
+      {/* Header: toggle + legend + close */}
+      <div className="flex items-center gap-3 border-b px-3 py-1.5">
+        {/* Mode toggle (left) */}
+        <div
+          role="group"
+          aria-label="Coverage mode"
+          className="bg-muted flex overflow-hidden rounded-md"
+        >
+          <button
+            type="button"
+            aria-pressed={mode === "defensive"}
+            onClick={() => setMode("defensive")}
+            className={cn(
+              "px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
+              mode === "defensive"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
           >
-            <button
-              type="button"
-              aria-pressed={mode === "defensive"}
-              onClick={() => setMode("defensive")}
-              className={cn(
-                "px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
-                mode === "defensive"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Defensive
-            </button>
-            <button
-              type="button"
-              aria-pressed={mode === "offensive"}
-              onClick={() => setMode("offensive")}
-              className={cn(
-                "px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
-                mode === "offensive"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Offensive
-            </button>
-          </div>
+            Defensive
+          </button>
+          <button
+            type="button"
+            aria-pressed={mode === "offensive"}
+            onClick={() => setMode("offensive")}
+            className={cn(
+              "px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
+              mode === "offensive"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Offensive
+          </button>
         </div>
+
+        {/* Tera toggle */}
+        {teraSupported && mode === "defensive" && (
+          <button
+            type="button"
+            aria-pressed={showTera}
+            onClick={() => setShowTera((v) => !v)}
+            className={cn(
+              "rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
+              showTera
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {showTera ? "Tera on" : "View as Tera"}
+          </button>
+        )}
+
+        {/* Legend (center, fills space) */}
+        <div className="flex flex-1 items-center justify-center gap-1.5 text-[10px]">
+          {(
+            [
+              {
+                label: "0",
+                cls: "bg-muted-foreground/20 text-muted-foreground font-bold",
+              },
+              {
+                label: "¼×",
+                cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+              },
+              {
+                label: "½×",
+                cls: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+              },
+              { label: "1×", cls: "bg-muted/50 text-muted-foreground/50" },
+              { label: "2×", cls: "bg-destructive/10 text-destructive" },
+              {
+                label: "4×",
+                cls: "bg-destructive/15 text-destructive font-semibold",
+              },
+            ] as { label: string; cls: string }[]
+          ).map(({ label, cls }) => (
+            <span
+              key={label}
+              className={cn(
+                "inline-flex items-center justify-center rounded px-1.5 py-0.5 font-mono text-[10px] leading-tight min-w-[26px]",
+                cls
+              )}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+
+        {/* Close button (right) */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close panel"
+            className="text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded transition-colors"
+          >
+            ×
+          </button>
+        )}
       </div>
 
-      {monCount === 0 && (
+      {rows.length === 0 && (
         <div className="text-muted-foreground px-3 py-6 text-center text-xs">
           Add Pokémon to your team to see the type chart.
         </div>
       )}
 
-      {monCount > 0 && (
-        /* Inner scroll wrapper: the matrix can be wide (18 rows × N cols +
-           summary col) AND tall (18 type rows). Scroll both axes inside the
-           panel so the worklane editor + dock never need to scroll. */
+      {rows.length > 0 && (
         <div className="min-h-0 flex-1 overflow-auto">
-          {/* Column headers */}
+          {/* Column headers: type abbreviations */}
           <div
-            className="bg-muted/50 grid items-center gap-0.5 px-2 py-1"
+            className="bg-muted/50 grid items-end gap-px px-2 py-1.5 sticky top-0 z-10"
             style={gridStyle}
           >
+            {/* Row label spacer */}
             <span aria-hidden />
-            {pokemons.map((mon) => (
-              <span key={mon.id} className="flex justify-center">
-                <MonHeaderIcon pokemon={mon} />
-              </span>
+            {ALL_TYPES.map((t, idx) => (
+              <Tooltip key={t}>
+                <TooltipTrigger
+                  render={
+                    <span
+                      tabIndex={0}
+                      className={cn(
+                        "flex items-center justify-center cursor-default transition-opacity duration-100",
+                        hoverCell !== null &&
+                          hoverCell.col !== idx &&
+                          "opacity-40"
+                      )}
+                    >
+                      <Image
+                        src={`/types/${t}.png`}
+                        alt={t}
+                        width={24}
+                        height={24}
+                        className="size-6"
+                        unoptimized
+                      />
+                    </span>
+                  }
+                />
+                <TooltipContent>{t}</TooltipContent>
+              </Tooltip>
             ))}
             {/* Summary header */}
-            <span className="text-muted-foreground text-center text-[9px] font-semibold uppercase tracking-wide">
-              {mode === "defensive" ? "Weak/Res/Imm" : "SE/Res/Imm"}
+            <span className="text-muted-foreground text-center text-[8px] font-semibold uppercase tracking-wide">
+              Net
             </span>
           </div>
 
-          {/* Type rows */}
+          {/* Pokemon rows */}
           <div className="divide-muted/40 divide-y">
-            {rows.map((row) => {
-              const maxMult = Math.max(...row.multipliers.map((m) => m ?? 0));
-              return (
-                <div
-                  key={row.type}
-                  className={cn(
-                    "grid items-center gap-0.5 px-2 py-px text-xs",
-                    mode === "defensive" && maxMult >= 4 && "bg-destructive/5"
-                  )}
-                  style={gridStyle}
-                >
-                  {/* Type icon */}
-                  <span className="flex items-center justify-center">
-                    <TypeDot t={row.type} size={12} />
-                  </span>
+            {rows.map((row, rowIdx) => (
+              <div
+                key={row.pokemon.id}
+                className={cn(
+                  "grid items-center gap-px px-2 py-1 transition-colors duration-100",
+                  hoverCell !== null &&
+                    hoverCell.row === rowIdx &&
+                    "bg-muted/30"
+                )}
+                style={gridStyle}
+              >
+                {/* Pokemon label */}
+                <MonRowLabel pokemon={row.pokemon} />
 
-                  {/* Per-mon cells */}
-                  {pokemons.map((mon, idx) => {
-                    const mult = row.multipliers[idx] ?? null;
-                    if (mult === null) {
-                      return (
-                        <span
-                          key={`${row.type}-${mon.id}`}
-                          className="text-muted-foreground/40 inline-flex items-center justify-center font-mono text-[10px] leading-none"
-                        >
-                          —
-                        </span>
-                      );
-                    }
+                {/* Type cells */}
+                {ALL_TYPES.map((t, colIdx) => {
+                  const mult = row.multipliers[colIdx] ?? null;
+                  const isHighlightedCol =
+                    hoverCell !== null && hoverCell.col === colIdx;
+                  const isHighlightedRow =
+                    hoverCell !== null && hoverCell.row === rowIdx;
+                  const isCrosshair = isHighlightedCol || isHighlightedRow;
+
+                  if (mult === null) {
                     return (
                       <span
-                        key={`${row.type}-${mon.id}`}
-                        className={cn(
-                          "inline-flex items-center justify-center rounded px-0.5 py-0 font-mono text-[10px] leading-tight",
-                          cellClass(mult, mode)
-                        )}
+                        key={`${row.pokemon.id}-${t}`}
+                        className="text-muted-foreground/40 inline-flex items-center justify-center font-mono text-[10px] leading-none"
+                        onMouseEnter={() =>
+                          setHoverCell({ row: rowIdx, col: colIdx })
+                        }
+                        onMouseLeave={() => setHoverCell(null)}
                       >
-                        {formatMultiplier(mult)}
+                        —
                       </span>
                     );
-                  })}
+                  }
 
-                  {/* Row summary */}
-                  <span className="flex justify-center gap-1 font-mono text-[9px]">
+                  return (
+                    <span
+                      key={`${row.pokemon.id}-${t}`}
+                      className={cn(
+                        "inline-flex items-center justify-center rounded px-0.5 py-0.5 font-mono text-[10px] leading-tight transition-all duration-100",
+                        cellClass(mult, mode),
+                        isCrosshair && "ring-1 ring-primary/30"
+                      )}
+                      onMouseEnter={() =>
+                        setHoverCell({ row: rowIdx, col: colIdx })
+                      }
+                      onMouseLeave={() => setHoverCell(null)}
+                    >
+                      {formatMultiplier(mult)}
+                    </span>
+                  );
+                })}
+
+                {/* Row summary — net score */}
+                {(() => {
+                  // Defensive: (resists + immunities) - weaknesses (positive = well-defended)
+                  // Offensive: super-effective - (resisted + immune) (positive = good coverage)
+                  const net =
+                    mode === "defensive"
+                      ? row.resistCount + row.immuneCount - row.weakCount
+                      : row.weakCount - row.resistCount - row.immuneCount;
+                  return (
                     <span
                       className={cn(
-                        row.weakCount > 0
-                          ? mode === "defensive"
-                            ? "text-destructive font-semibold"
-                            : "text-emerald-600 dark:text-emerald-400 font-semibold"
-                          : "text-muted-foreground/40"
+                        "flex justify-center font-mono text-[10px] font-semibold",
+                        net > 0
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : net < 0
+                            ? "text-destructive"
+                            : "text-muted-foreground/60"
                       )}
                     >
-                      {row.weakCount}
+                      {net > 0 ? `+${net}` : net}
                     </span>
-                    <span className="text-muted-foreground/40">/</span>
-                    <span
-                      className={cn(
-                        row.resistCount > 0
-                          ? mode === "defensive"
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-destructive"
-                          : "text-muted-foreground/40"
-                      )}
-                    >
-                      {row.resistCount}
-                    </span>
-                    <span className="text-muted-foreground/40">/</span>
-                    <span
-                      className={cn(
-                        row.immuneCount > 0
-                          ? "text-emerald-600 dark:text-emerald-400 font-semibold"
-                          : "text-muted-foreground/40"
-                      )}
-                    >
-                      {row.immuneCount}
-                    </span>
-                  </span>
-                </div>
-              );
-            })}
+                  );
+                })()}
+              </div>
+            ))}
           </div>
 
-          {/* Team-wide totals footer */}
+          {/* Column totals footer */}
           <div
-            className="bg-muted/50 grid items-center gap-0.5 border-t px-2 py-1.5"
+            className="bg-muted/50 grid items-center gap-px border-t px-2 py-1.5 sticky bottom-0"
             style={gridStyle}
           >
             <span className="text-muted-foreground text-[9px] font-semibold uppercase tracking-wide">
               TOTAL
             </span>
-            {pokemons.map((mon, monIdx) => {
-              // Per-mon totals (count across all type rows)
-              let wk = 0;
-              let rs = 0;
-              let im = 0;
-              for (const row of rows) {
-                const m = row.multipliers[monIdx] ?? null;
-                if (m === null) continue;
-                if (m === 0) im++;
-                else if (m < 1) rs++;
-                else if (m > 1) wk++;
-              }
+            {colTotals.map((col, idx) => {
+              const net =
+                mode === "defensive"
+                  ? col.rs + col.im - col.wk
+                  : col.wk - col.rs - col.im;
               return (
-                <div key={mon.id} className="flex flex-col items-center gap-0">
-                  <span className="text-destructive font-mono text-[9px] font-semibold">
-                    {wk}w
-                  </span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[9px]">
-                    {rs}r
-                  </span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[9px]">
-                    {im}i
-                  </span>
-                </div>
+                <span
+                  key={ALL_TYPES[idx]}
+                  className={cn(
+                    "flex justify-center font-mono text-[9px] font-semibold transition-opacity duration-100",
+                    hoverCell !== null &&
+                      hoverCell.col !== idx &&
+                      "opacity-40",
+                    net > 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : net < 0
+                        ? "text-destructive"
+                        : "text-muted-foreground/60"
+                  )}
+                >
+                  {net > 0 ? `+${net}` : net}
+                </span>
               );
             })}
-            <div className="flex flex-col items-center gap-0">
-              <span className="text-destructive font-mono text-[9px] font-semibold">
-                {totalWeak}
-              </span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[9px]">
-                {totalResist}
-              </span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[9px]">
-                {totalImmune}
-              </span>
-            </div>
+            {/* Grand total */}
+            {(() => {
+              const grandNet = colTotals.reduce((s, col) => {
+                const n =
+                  mode === "defensive"
+                    ? col.rs + col.im - col.wk
+                    : col.wk - col.rs - col.im;
+                return s + n;
+              }, 0);
+              return (
+                <span
+                  className={cn(
+                    "flex justify-center font-mono text-[9px] font-semibold",
+                    grandNet > 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : grandNet < 0
+                        ? "text-destructive"
+                        : "text-muted-foreground/60"
+                  )}
+                >
+                  {grandNet > 0 ? `+${grandNet}` : grandNet}
+                </span>
+              );
+            })()}
           </div>
 
-          {/* Legend */}
-          <div className="bg-muted/30 text-muted-foreground px-3 py-1.5 text-[10px]">
-            {mode === "defensive"
-              ? effectiveShowTera
-                ? "Columns: Tera type active · ability & item modifiers applied · Pokemon without a Tera type use species types"
-                : teraSupported
-                  ? "Columns: ability & item modifiers applied · Toggle 'View as Tera' to simulate Tera defensive types"
-                  : "Columns: ability & item modifiers applied"
-              : "Best coverage move per slot · STAB not weighted (Tera does not change move types offensively)"}
-          </div>
-
-          {/* Legend dots */}
-          <div className="bg-muted/30 flex flex-wrap gap-2 px-3 pb-2 text-[10px]">
-            {(
-              [
-                { label: "Immune (0)", cls: "bg-emerald-500/25 text-emerald-800 dark:text-emerald-300" },
-                { label: "1/4×", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" },
-                { label: "1/2×", cls: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
-                { label: "1× neutral", cls: "bg-muted/30 text-muted-foreground" },
-                { label: "2×", cls: "bg-destructive/10 text-destructive" },
-                { label: "4×", cls: "bg-destructive/15 text-destructive font-semibold" },
-              ] as { label: string; cls: string }[]
-            ).map(({ label, cls }) => (
-              <span key={label} className={cn("rounded px-1 font-mono", cls)}>
-                {label}
-              </span>
-            ))}
-          </div>
         </div>
       )}
     </div>

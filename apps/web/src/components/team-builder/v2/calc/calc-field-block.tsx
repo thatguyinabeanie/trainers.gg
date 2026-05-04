@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 import { type BaseSideState } from "../../use-calc-state";
 
@@ -118,17 +119,17 @@ interface StepperProps<T extends number> {
 
 function Stepper<T extends number>({ options, value, onChange }: StepperProps<T>) {
   return (
-    <div className="inline-flex overflow-hidden rounded border bg-card">
+    <div className="inline-flex overflow-hidden rounded-full border border-border">
       {options.map((o) => (
         <button
           key={o}
           type="button"
           onClick={() => onChange(o)}
           className={cn(
-            "cursor-default border-r px-1.5 py-px font-mono text-[10px] last:border-r-0",
+            "border-r border-border px-1.5 py-px font-mono text-[10px] last:border-r-0 transition-colors",
             value === o
-              ? "bg-primary text-primary-foreground"
-              : "bg-card text-foreground hover:bg-muted"
+              ? "bg-primary text-primary-foreground font-semibold"
+              : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           {String(o)}
@@ -155,9 +156,10 @@ function ToggleBtn({ active, onClick, children }: ToggleBtnProps) {
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "cd-toggle",
-        active &&
-          "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
+        "rounded-full border px-2 py-0.5 font-mono text-[10px] leading-tight transition-all",
+        active
+          ? "border-primary/50 bg-primary/10 text-primary font-semibold shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
+          : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"
       )}
     >
       {children}
@@ -166,10 +168,10 @@ function ToggleBtn({ active, onClick, children }: ToggleBtnProps) {
 }
 
 // =============================================================================
-// SideCard — yours / theirs side condition block
+// SideColumn — one column within the combined Sides card
 // =============================================================================
 
-interface SideCardProps {
+interface SideColumnProps {
   title: "Yours" | "Theirs";
   color: "primary" | "destructive";
   side: BaseSideState;
@@ -178,66 +180,60 @@ interface SideCardProps {
   setFainted: (n: number) => void;
 }
 
-function SideCard({ title, color, side, onUpdate, fainted, setFainted }: SideCardProps) {
+function SideRow({ label, active, onToggle }: { label: string; active: boolean; onToggle: () => void }) {
   return (
-    <div className="rounded-md border bg-card p-2">
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-foreground">{label}</span>
+      <Switch checked={active} onCheckedChange={onToggle} />
+    </div>
+  );
+}
+
+function SideColumn({ title, color, side, onUpdate, fainted, setFainted }: SideColumnProps) {
+  return (
+    <div className="flex flex-col gap-1.5">
       <div
         className={cn(
-          "mb-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.07em]",
+          "font-mono text-[9px] font-bold uppercase tracking-[0.12em]",
           color === "primary" ? "text-primary" : "text-destructive"
         )}
       >
-        ▸ {title}
+        {title}
       </div>
 
-      <div className="mb-1.5 flex flex-wrap gap-1">
-        <ToggleBtn active={side.tailwind} onClick={() => onUpdate({ tailwind: !side.tailwind })}>
-          Tailwind
-        </ToggleBtn>
-        <ToggleBtn active={side.reflect} onClick={() => onUpdate({ reflect: !side.reflect })}>
-          Reflect
-        </ToggleBtn>
-        <ToggleBtn active={side.lightScreen} onClick={() => onUpdate({ lightScreen: !side.lightScreen })}>
-          Light Screen
-        </ToggleBtn>
-        <ToggleBtn active={side.auroraVeil} onClick={() => onUpdate({ auroraVeil: !side.auroraVeil })}>
-          Aurora Veil
-        </ToggleBtn>
-        <ToggleBtn active={side.helpingHand} onClick={() => onUpdate({ helpingHand: !side.helpingHand })}>
-          Helping Hand
-        </ToggleBtn>
-        <ToggleBtn active={side.friendGuard} onClick={() => onUpdate({ friendGuard: !side.friendGuard })}>
-          Friend Guard
-        </ToggleBtn>
-        <ToggleBtn active={side.protect} onClick={() => onUpdate({ protect: !side.protect })}>
-          Protect
-        </ToggleBtn>
+      {/* Boosts */}
+      <SideRow label="Helping Hand" active={side.helpingHand} onToggle={() => onUpdate({ helpingHand: !side.helpingHand })} />
+      <SideRow label="Friend Guard" active={side.friendGuard} onToggle={() => onUpdate({ friendGuard: !side.friendGuard })} />
+      <SideRow label="Salt Cure" active={side.saltCure} onToggle={() => onUpdate({ saltCure: !side.saltCure })} />
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-foreground">Knocked Out</span>
+        <Stepper<(typeof FAINTED_OPTIONS)[number]>
+          options={FAINTED_OPTIONS}
+          value={fainted as (typeof FAINTED_OPTIONS)[number]}
+          onChange={setFainted}
+        />
       </div>
 
-      <div className="mb-1.5 flex flex-wrap items-center gap-1 border-t border-dashed pt-1.5">
-        <ToggleBtn active={side.stealthRock} onClick={() => onUpdate({ stealthRock: !side.stealthRock })}>
-          Stealth Rock
-        </ToggleBtn>
-        <div className="flex items-center gap-1 font-mono text-[9.5px] text-muted-foreground">
-          <span>Spikes</span>
+      {/* Screens */}
+      <div className="flex flex-col gap-1">
+        <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70">Screens</span>
+        <SideRow label="Reflect" active={side.reflect} onToggle={() => onUpdate({ reflect: !side.reflect })} />
+        <SideRow label="Light Screen" active={side.lightScreen} onToggle={() => onUpdate({ lightScreen: !side.lightScreen })} />
+        <SideRow label="Aurora Veil" active={side.auroraVeil} onToggle={() => onUpdate({ auroraVeil: !side.auroraVeil })} />
+      </div>
+
+      {/* Hazards */}
+      <div className="flex flex-col gap-1">
+        <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70">Hazards</span>
+        <SideRow label="Stealth Rock" active={side.stealthRock} onToggle={() => onUpdate({ stealthRock: !side.stealthRock })} />
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-foreground">Spikes</span>
           <Stepper<0 | 1 | 2 | 3>
             options={[0, 1, 2, 3] as const}
             value={side.spikes}
             onChange={(v) => onUpdate({ spikes: v })}
           />
         </div>
-        <ToggleBtn active={side.saltCure} onClick={() => onUpdate({ saltCure: !side.saltCure })}>
-          Salt Cure
-        </ToggleBtn>
-      </div>
-
-      <div className="flex items-center gap-1 border-t border-dashed pt-1.5 font-mono text-[9.5px] text-muted-foreground">
-        <span>Fainted</span>
-        <Stepper<(typeof FAINTED_OPTIONS)[number]>
-          options={FAINTED_OPTIONS}
-          value={fainted as (typeof FAINTED_OPTIONS)[number]}
-          onChange={setFainted}
-        />
       </div>
     </div>
   );
@@ -276,103 +272,133 @@ export function CalcFieldBlock({
   const inferredTerrain = inferred?.terrain ?? null;
   const attackerAbility = inferred?.attackerAbility ?? null;
   return (
-    <div className="flex h-full flex-col gap-2.5 overflow-y-auto">
+    <div className="flex h-full flex-col gap-3 overflow-y-auto">
       {/* Header: eyebrow + Singles/Doubles toggle */}
-      <div className="flex items-center justify-between border-b pb-2">
-        <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] text-amber-600 dark:text-amber-400">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
           Field
         </span>
-        <div className="flex gap-1">
-          <ToggleBtn active={gameType === "Singles"} onClick={() => setGameType("Singles")}>
+        <div className="inline-flex overflow-hidden rounded-full border border-border">
+          <button
+            type="button"
+            onClick={() => setGameType("Singles")}
+            className={cn(
+              "px-2.5 py-0.5 font-mono text-[10px] transition-colors",
+              gameType === "Singles"
+                ? "bg-primary text-primary-foreground font-semibold"
+                : "bg-card text-muted-foreground hover:text-foreground"
+            )}
+          >
             Singles
-          </ToggleBtn>
-          <ToggleBtn active={gameType === "Doubles"} onClick={() => setGameType("Doubles")}>
+          </button>
+          <button
+            type="button"
+            onClick={() => setGameType("Doubles")}
+            className={cn(
+              "px-2.5 py-0.5 font-mono text-[10px] border-l border-border transition-colors",
+              gameType === "Doubles"
+                ? "bg-primary text-primary-foreground font-semibold"
+                : "bg-card text-muted-foreground hover:text-foreground"
+            )}
+          >
             Doubles
-          </ToggleBtn>
+          </button>
         </div>
       </div>
 
-      {/* Global effects */}
-      <div>
-        <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
-          Global
-        </div>
-        <div className="flex flex-wrap items-center gap-1 rounded-md bg-muted/40 px-2 py-1.5">
-          {gameType === "Doubles" && (
-            <>
-              <span className="font-mono text-[10.5px] text-muted-foreground">Foes</span>
-              <Stepper<1 | 2>
-                options={FOES_ALIVE_OPTIONS}
-                value={foesAlive}
-                onChange={setFoesAlive}
-              />
-              <span className="font-mono text-[10.5px] text-muted-foreground">Ally</span>
-              <ToggleBtn active={allyAlive} onClick={() => setAllyAlive(!allyAlive)}>
-                {allyAlive ? "Alive" : "Fainted"}
-              </ToggleBtn>
-            </>
-          )}
-          <ToggleBtn active={gravity} onClick={() => setGravity(!gravity)}>
-            Gravity
-          </ToggleBtn>
-          <ToggleBtn active={fairyAura} onClick={() => setFairyAura(!fairyAura)}>
-            Fairy Aura
-          </ToggleBtn>
-        </div>
-      </div>
-
-      {/* Conditions: weather + terrain side-by-side */}
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
-            Weather
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {WEATHER_OPTIONS.map(({ value, label }) => (
-              <ToggleBtn
-                key={value}
-                active={weather === value || (weather === "" && inferredWeather === value)}
-                onClick={() => setWeather(weather === value ? "" : value)}
-              >
-                {label}
-              </ToggleBtn>
-            ))}
-          </div>
-          {weather === "" && inferredWeather && (
-            <div className="mt-1 font-mono text-[9.5px] italic text-muted-foreground">
-              ↳ inferred from {attackerAbility ?? inferredWeather}
+      {/* Conditions: weather, terrain, gravity, fairy aura */}
+      <fieldset className="rounded-lg border border-border/60 px-2.5 py-2">
+        <legend className="px-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+          Conditions
+        </legend>
+        <div className="flex flex-col gap-2">
+          {/* Weather */}
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70 shrink-0">
+              Weather
+            </span>
+            <div className="flex flex-1 flex-wrap justify-end gap-1">
+              {WEATHER_OPTIONS.map(({ value, label }) => (
+                <ToggleBtn
+                  key={value}
+                  active={weather === value || (weather === "" && inferredWeather === value)}
+                  onClick={() => setWeather(weather === value ? "" : value)}
+                >
+                  {label}
+                </ToggleBtn>
+              ))}
             </div>
-          )}
-        </div>
-        <div>
-          <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
-            Terrain
+            {weather === "" && inferredWeather && (
+              <span className="font-mono text-[8.5px] italic text-muted-foreground">
+                ↳ {attackerAbility ?? inferredWeather}
+              </span>
+            )}
           </div>
-          <div className="flex flex-wrap gap-1">
-            {TERRAIN_OPTIONS.map(({ value, label }) => (
-              <ToggleBtn
-                key={value}
-                active={terrain === value || (terrain === "" && inferredTerrain === value)}
-                onClick={() => setTerrain(terrain === value ? "" : value)}
-              >
-                {label}
-              </ToggleBtn>
-            ))}
-          </div>
-          {terrain === "" && inferredTerrain && (
-            <div className="mt-1 font-mono text-[9.5px] italic text-muted-foreground">
-              ↳ inferred from {attackerAbility ?? inferredTerrain}
+          {/* Terrain */}
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70 shrink-0">
+              Terrain
+            </span>
+            <div className="flex flex-1 flex-wrap justify-end gap-1">
+              {TERRAIN_OPTIONS.map(({ value, label }) => (
+                <ToggleBtn
+                  key={value}
+                  active={terrain === value || (terrain === "" && inferredTerrain === value)}
+                  onClick={() => setTerrain(terrain === value ? "" : value)}
+                >
+                  {label}
+                </ToggleBtn>
+              ))}
             </div>
-          )}
+            {terrain === "" && inferredTerrain && (
+              <span className="font-mono text-[8.5px] italic text-muted-foreground">
+                ↳ {attackerAbility ?? inferredTerrain}
+              </span>
+            )}
+          </div>
+          {/* Other */}
+          <div className="flex items-center gap-2 border-t border-dashed border-border/40 pt-1.5">
+            <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70 shrink-0">
+              Other
+            </span>
+            <div className="flex flex-1 flex-wrap justify-end gap-1">
+              <ToggleBtn active={gravity} onClick={() => setGravity(!gravity)}>
+                Gravity
+              </ToggleBtn>
+              <ToggleBtn active={fairyAura} onClick={() => setFairyAura(!fairyAura)}>
+                Fairy Aura
+              </ToggleBtn>
+            </div>
+          </div>
         </div>
-      </div>
+      </fieldset>
 
-      <div>
-        <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
+      {/* Doubles-specific row — only visible in Doubles mode */}
+      {gameType === "Doubles" && (
+        <div className="flex items-center gap-2 rounded-md bg-muted/50 px-2.5 py-1.5">
+          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+            Doubles
+          </span>
+          <span className="font-mono text-[9px] text-muted-foreground">Foes</span>
+          <Stepper<1 | 2>
+            options={FOES_ALIVE_OPTIONS}
+            value={foesAlive}
+            onChange={setFoesAlive}
+          />
+          <span className="font-mono text-[9px] text-muted-foreground">Ally</span>
+          <ToggleBtn active={allyAlive} onClick={() => setAllyAlive(!allyAlive)}>
+            {allyAlive ? "Alive" : "Fainted"}
+          </ToggleBtn>
+        </div>
+      )}
+
+      {/* Sides — stacked vertically */}
+      <fieldset className="rounded-lg border border-border/60 px-2.5 py-2">
+        <legend className="px-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
           Sides
-        </div>
-        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-          <SideCard
+        </legend>
+        <div className="flex flex-col gap-4">
+          <SideColumn
             title="Yours"
             color="primary"
             side={attackerSide}
@@ -380,7 +406,8 @@ export function CalcFieldBlock({
             fainted={faintedYours}
             setFainted={setFaintedYours}
           />
-          <SideCard
+          <div className="border-t border-border/40" />
+          <SideColumn
             title="Theirs"
             color="destructive"
             side={defenderSide}
@@ -389,7 +416,7 @@ export function CalcFieldBlock({
             setFainted={setFaintedTheirs}
           />
         </div>
-      </div>
+      </fieldset>
     </div>
   );
 }

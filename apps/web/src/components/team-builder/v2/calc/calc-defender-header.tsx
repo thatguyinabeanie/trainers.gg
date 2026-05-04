@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   getCanonicalBaseSpecies,
   getMegaAbilityForSpecies,
+  getMegaSpeciesForBaseAndItem,
   getSpeciesTypes,
   getLegalAbilities,
   legalSetOrPermissive,
@@ -75,7 +76,6 @@ export function DefenderMonHeader({
   setDefenderMegaActive,
 }: DefenderMonHeaderProps) {
   const showTera = formatSupportsTera(format);
-  const types = defenderSpecies ? getSpeciesTypes(defenderSpecies) : [];
 
   const megaAbility = defenderSpecies
     ? getMegaAbilityForSpecies(defenderSpecies)
@@ -84,9 +84,30 @@ export function DefenderMonHeader({
   const baseSpecies = defenderSpecies
     ? getCanonicalBaseSpecies(defenderSpecies)
     : "";
+  // Also detect when base species is holding its mega stone
+  const megaFromItem = defenderSpecies
+    ? getMegaSpeciesForBaseAndItem(defenderSpecies, defenderItem)
+    : null;
+  const megaAbilityFromItem = megaFromItem
+    ? getMegaAbilityForSpecies(megaFromItem)
+    : null;
+  // Show mega toggle if species IS mega OR if holding its mega stone
+  const canMega = isMegaForm || megaFromItem !== null;
+  const activeMegaAbility = isMegaForm ? megaAbility : megaAbilityFromItem;
   const pickerSpecies = isMegaForm ? baseSpecies : defenderSpecies;
   const displayAbility =
-    isMegaForm && defenderMegaActive ? megaAbility : defenderAbility;
+    canMega && defenderMegaActive && activeMegaAbility
+      ? activeMegaAbility
+      : defenderAbility;
+
+  // Show mega types when active
+  const displaySpeciesForTypes =
+    canMega && defenderMegaActive
+      ? (megaFromItem ?? defenderSpecies)
+      : defenderSpecies;
+  const types = displaySpeciesForTypes
+    ? getSpeciesTypes(displaySpeciesForTypes)
+    : [];
 
   const hasLegalAbility =
     !defenderSpecies ||
@@ -102,26 +123,27 @@ export function DefenderMonHeader({
 
   return (
     <div className="flex w-full flex-col border-b border-dashed border-border">
-      {/* Sprite + meta row */}
-      <div className="flex min-w-0 flex-row items-center">
-        {/* Sprite column */}
-        <div className="flex shrink-0 grow-0 basis-[140px] flex-col items-center justify-center gap-1.5 px-1 py-2">
-          <div className="size-24 shrink-0 overflow-hidden rounded-md">
-            <Sprite
-              species={defenderSpecies || "Incineroar"}
-              types={types}
-              size={96}
-            />
-          </div>
+      {/* Sprite + Meta fields — centered together, fixed height to avoid layout shift */}
+      <div className="flex min-h-[160px] min-w-0 flex-row items-center justify-center gap-2 px-2.5 py-2">
+        {/* Sprite — left of form */}
+        <div className="shrink-0">
+          <Sprite
+            species={displaySpeciesForTypes || "Floette-Eternal"}
+            types={types}
+            size={140}
+          />
+        </div>
 
-          {/* Species picker pill below sprite */}
-          <div className="flex w-full items-center justify-center gap-1">
+        {/* Meta fields column — species, item, ability, nature, tera */}
+        <div className="flex min-w-0 flex-col justify-center gap-1">
+          {/* Species picker */}
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => setPickerOpen(true)}
               className={cn(
                 "border-border bg-background hover:border-primary focus-visible:border-primary",
-                "flex min-w-0 items-center gap-1 rounded-md border px-2 py-0.5 text-left text-[11px]",
+                "flex min-w-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-left text-sm",
                 "outline-none transition-colors"
               )}
             >
@@ -129,18 +151,38 @@ export function DefenderMonHeader({
                 className={cn(
                   "min-w-0 truncate",
                   defenderSpecies
-                    ? "text-foreground font-medium"
+                    ? "text-foreground font-semibold"
                     : "text-muted-foreground"
                 )}
               >
                 {defenderSpecies || "Choose…"}
               </span>
-              <span aria-hidden className="text-[9px] text-muted-foreground">
+              <span aria-hidden className="text-[10px] text-muted-foreground">
                 ▾
               </span>
             </button>
 
-            {isMegaForm && (
+            {/* Type pills inline */}
+            {types.length > 0 && (
+              <div className="flex gap-1">
+                {types.map((t) => (
+                  <TypePill key={t} t={t} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <FormChip label="ITEM" value={defenderItem}>
+              <ItemPicker
+                value={defenderItem}
+                format={format}
+                teamItems={[]}
+                onPick={(item) => setDefenderItem(item)}
+                onClose={() => undefined}
+              />
+            </FormChip>
+            {canMega && (
               <MegaToggle
                 active={defenderMegaActive}
                 onToggle={() => setDefenderMegaActive(!defenderMegaActive)}
@@ -148,55 +190,22 @@ export function DefenderMonHeader({
             )}
           </div>
 
-          <SpeciesPickerDialog
-            open={pickerOpen}
-            onOpenChange={setPickerOpen}
-            value={defenderSpecies}
-            format={format}
-            onPick={(species) => setDefenderSpecies(species)}
-          />
-
-          {/* Type pills */}
-          {types.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-1">
-              {types.map((t) => (
-                <TypePill key={t} t={t} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Meta fields column — item, ability, nature, tera */}
-        <div className="flex min-w-0 shrink basis-auto flex-col justify-center gap-1 px-1.5 py-2">
-          <FormChip label="ITEM" value={defenderItem}>
-            <ItemPicker
-              value={defenderItem}
-              format={format}
-              teamItems={[]}
-              onPick={(item) => setDefenderItem(item)}
-              onClose={() => undefined}
-            />
-          </FormChip>
-
-          <FormChip
-            label="ABIL"
-            value={displayAbility}
-            trailing={
-              isMegaForm && defenderMegaActive ? (
-                <span className="shrink-0 whitespace-nowrap font-mono text-[9px] text-muted-foreground/70">
-                  base: {defenderAbility || "—"}
-                </span>
-              ) : null
-            }
-          >
-            <AbilityPicker
-              value={defenderAbility}
-              species={pickerSpecies}
-              format={format}
-              onPick={(ability) => setDefenderAbility(ability)}
-              onClose={() => undefined}
-            />
-          </FormChip>
+          <div className="flex flex-col gap-0.5">
+            <FormChip label="ABIL" value={displayAbility}>
+              <AbilityPicker
+                value={defenderAbility}
+                species={pickerSpecies}
+                format={format}
+                onPick={(ability) => setDefenderAbility(ability)}
+                onClose={() => undefined}
+              />
+            </FormChip>
+            {canMega && (
+              <span className="pl-[calc(60px+6px+4px)] font-mono text-[9px] text-muted-foreground/50">
+                {defenderMegaActive ? defenderAbility : displayAbility}
+              </span>
+            )}
+          </div>
 
           <FormChip
             label="NAT"
@@ -229,6 +238,14 @@ export function DefenderMonHeader({
           )}
         </div>
       </div>
+
+      <SpeciesPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        value={defenderSpecies}
+        format={format}
+        onPick={(species) => setDefenderSpecies(species)}
+      />
     </div>
   );
 }

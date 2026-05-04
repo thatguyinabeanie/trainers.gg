@@ -2,6 +2,8 @@
 
 import {
   type GameFormat,
+  getMegaAbilityForSpecies,
+  getMegaSpeciesForBaseAndItem,
 } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
@@ -57,6 +59,17 @@ export function CalcBottomPanel({
 
   const attacker = teamSlots[attackerIdx] ?? null;
 
+  // Compute effective species for stats display (mega form when mega active)
+  const isMegaForm = getMegaAbilityForSpecies(calc.defenderSpecies) !== null;
+  const megaFromItem = !isMegaForm
+    ? getMegaSpeciesForBaseAndItem(calc.defenderSpecies, calc.defenderItem)
+    : null;
+  const canMega = isMegaForm || megaFromItem !== null;
+  const effectiveDefenderSpecies =
+    canMega && calc.defenderMegaActive
+      ? (megaFromItem ?? calc.defenderSpecies)
+      : calc.defenderSpecies;
+
   // Build the flat teammates list (non-null pokemon slots)
   const teammates = teamSlots.filter(
     (p): p is NonNullable<typeof p> => p !== null
@@ -71,110 +84,105 @@ export function CalcBottomPanel({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col" aria-label="Damage Calc">
-      {/* PokeRow-style card — teal rib + rounded border */}
-      <div
-        className="flex min-h-0 flex-1 items-stretch overflow-hidden rounded-lg border border-primary/60 bg-card shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]"
-      >
-        {/* Left rib — teal accent, vertical label */}
-        <div className="flex w-7 shrink-0 flex-col items-center justify-between border-r border-border/60 border-dashed bg-primary/10 py-2">
-          <span className="font-mono text-[9px] font-bold tracking-[0.1em] text-primary [writing-mode:vertical-rl] rotate-180">
-            CALC
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close damage calc"
-            className="text-muted-foreground hover:bg-destructive/15 hover:text-destructive flex size-5 items-center justify-center rounded transition-colors"
-          >
-            ×
-          </button>
+      {/* Panel header */}
+      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary">
+          Damage Calc
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close damage calc"
+          className="ml-auto text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded transition-colors"
+        >
+          ×
+        </button>
+      </header>
+
+      {/* Content */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        {/* Defender identity (sprite + meta) */}
+        <DefenderMonHeader
+          defenderSpecies={calc.defenderSpecies}
+          defenderAbility={calc.defenderAbility}
+          defenderItem={calc.defenderItem}
+          defenderNature={calc.defenderNature}
+          defenderTera={calc.defenderTera}
+          format={format}
+          setDefenderSpecies={calc.setDefenderSpecies}
+          setDefenderAbility={calc.setDefenderAbility}
+          setDefenderItem={calc.setDefenderItem}
+          setDefenderNature={calc.setDefenderNature}
+          setDefenderTera={calc.setDefenderTera}
+          defenderMegaActive={calc.defenderMegaActive}
+          setDefenderMegaActive={calc.setDefenderMegaActive}
+        />
+
+        {/* Defender stats */}
+        <div className="border-b border-dashed border-border px-2 py-1.5">
+          <CalcDefenderStats
+            defenderSpecies={effectiveDefenderSpecies}
+            defenderNature={calc.defenderNature}
+            defenderEvs={calc.defenderEvs}
+            defenderIvs={calc.defenderIvs}
+            defenderBoosts={calc.defenderBoosts}
+            defenderHpPercent={calc.defenderHpPercent}
+            format={format}
+            setDefenderEv={calc.setDefenderEv}
+            setDefenderBoost={calc.setDefenderBoost}
+            setDefenderHpPercent={calc.setDefenderHpPercent}
+          />
         </div>
 
-        {/* Content — mirrors vertical PokeRow: identity → stats → moves | field */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
-          {/* Defender identity (sprite + meta) */}
-          <DefenderMonHeader
+        {/* Defender moves */}
+        <div className="border-b border-dashed border-border p-2">
+          <CalcDefenderMoves
+            effectiveMoves={effectiveMoves}
             defenderSpecies={calc.defenderSpecies}
-            defenderAbility={calc.defenderAbility}
-            defenderItem={calc.defenderItem}
-            defenderNature={calc.defenderNature}
-            defenderTera={calc.defenderTera}
             format={format}
-            setDefenderSpecies={calc.setDefenderSpecies}
-            setDefenderAbility={calc.setDefenderAbility}
-            setDefenderItem={calc.setDefenderItem}
-            setDefenderNature={calc.setDefenderNature}
-            setDefenderTera={calc.setDefenderTera}
-            defenderMegaActive={calc.defenderMegaActive}
-            setDefenderMegaActive={calc.setDefenderMegaActive}
+            onPick={(slotIdx, moveName) =>
+              calc.setDefenderMove(slotIdx, moveName)
+            }
           />
+        </div>
 
-          {/* Defender stats */}
-          <div className="border-b border-dashed border-border px-2 py-1.5">
-            <CalcDefenderStats
-              defenderSpecies={calc.defenderSpecies}
-              defenderNature={calc.defenderNature}
-              defenderEvs={calc.defenderEvs}
-              defenderIvs={calc.defenderIvs}
-              defenderBoosts={calc.defenderBoosts}
-              defenderHpPercent={calc.defenderHpPercent}
-              format={format}
-              setDefenderEv={calc.setDefenderEv}
-              setDefenderBoost={calc.setDefenderBoost}
-              setDefenderHpPercent={calc.setDefenderHpPercent}
-            />
-          </div>
-
-          {/* Defender moves */}
-          <div className="border-b border-dashed border-border p-2">
-            <CalcDefenderMoves
-              effectiveMoves={effectiveMoves}
-              defenderSpecies={calc.defenderSpecies}
-              format={format}
-              onPick={(slotIdx, moveName) =>
-                calc.setDefenderMove(slotIdx, moveName)
-              }
-            />
-          </div>
-
-          {/* Field conditions */}
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            <CalcFieldBlock
-              gameType={calc.gameType}
-              setGameType={calc.setGameType}
-              attackerSide={calc.attackerSide}
-              setAttackerSide={calc.setAttackerSide}
-              defenderSide={calc.defenderSide}
-              setDefenderSide={calc.setDefenderSide}
-              field={{
-                weather: calc.weather,
-                terrain: calc.terrain,
-                gravity: calc.gravity,
-                fairyAura: calc.fairyAura,
-              }}
-              setField={{
-                setWeather: calc.setWeather,
-                setTerrain: calc.setTerrain,
-                setGravity: calc.setGravity,
-                setFairyAura: calc.setFairyAura,
-              }}
-              doubles={{
-                foesAlive: calc.field.foesAlive,
-                allyAlive: calc.field.allyAlive,
-              }}
-              setDoubles={{
-                setFoesAlive: (v) => calc.setField({ foesAlive: v }),
-                setAllyAlive: (v) => calc.setField({ allyAlive: v }),
-              }}
-              fainted={{ yours: faintedYours, theirs: faintedTheirs }}
-              setFainted={{ setYours: setFaintedYours, setTheirs: setFaintedTheirs }}
-              inferred={{
-                weather: calc.inferredWeather,
-                terrain: calc.inferredTerrain,
-                attackerAbility: attacker?.ability ?? null,
-              }}
-            />
-          </div>
+        {/* Field conditions */}
+        <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          <CalcFieldBlock
+            gameType={calc.gameType}
+            setGameType={calc.setGameType}
+            attackerSide={calc.attackerSide}
+            setAttackerSide={calc.setAttackerSide}
+            defenderSide={calc.defenderSide}
+            setDefenderSide={calc.setDefenderSide}
+            field={{
+              weather: calc.weather,
+              terrain: calc.terrain,
+              gravity: calc.gravity,
+              fairyAura: calc.fairyAura,
+            }}
+            setField={{
+              setWeather: calc.setWeather,
+              setTerrain: calc.setTerrain,
+              setGravity: calc.setGravity,
+              setFairyAura: calc.setFairyAura,
+            }}
+            doubles={{
+              foesAlive: calc.field.foesAlive,
+              allyAlive: calc.field.allyAlive,
+            }}
+            setDoubles={{
+              setFoesAlive: (v) => calc.setField({ foesAlive: v }),
+              setAllyAlive: (v) => calc.setField({ allyAlive: v }),
+            }}
+            fainted={{ yours: faintedYours, theirs: faintedTheirs }}
+            setFainted={{ setYours: setFaintedYours, setTheirs: setFaintedTheirs }}
+            inferred={{
+              weather: calc.inferredWeather,
+              terrain: calc.inferredTerrain,
+              attackerAbility: attacker?.ability ?? null,
+            }}
+          />
         </div>
       </div>
     </section>

@@ -26,14 +26,24 @@ export interface FieldState {
 }
 
 export type DrawerKey = "matchups" | "speed" | "calc" | null;
+export type SideDrawerKey = "speed" | "calc" | null;
+export type BottomDrawerKey = "matchups" | null;
 
 interface BuilderState {
   activeIdx: number;
   setActiveIdx: (idx: number) => void;
+  /** @deprecated Use sideDrawer/bottomDrawer instead. Kept for compat. */
   drawer: DrawerKey;
+  /** @deprecated Use setSideDrawer/setBottomDrawer instead. */
   setDrawer: (drawer: DrawerKey) => void;
+  sideDrawer: SideDrawerKey;
+  setSideDrawer: (d: SideDrawerKey) => void;
+  bottomDrawer: BottomDrawerKey;
+  setBottomDrawer: (d: BottomDrawerKey) => void;
   panelHeightPct: number;
   setPanelHeightPct: (n: number) => void;
+  sideWidthPx: number;
+  setSideWidthPx: (n: number) => void;
   field: FieldState;
   setField: (patch: Partial<FieldState>) => void;
   // Calc-specific workspace state
@@ -91,6 +101,16 @@ function clampPanelHeight(n: number): number {
   return Math.min(MAX_PANEL_HEIGHT_PCT, Math.max(MIN_PANEL_HEIGHT_PCT, n));
 }
 
+const SIDE_WIDTH_STORAGE_KEY = "trainersgg.builder.sideWidthPx.v1";
+const DEFAULT_SIDE_WIDTH_PX = 480;
+const MIN_SIDE_WIDTH_PX = 360;
+const MAX_SIDE_WIDTH_PX = 1200;
+
+function clampSideWidth(n: number): number {
+  if (Number.isNaN(n)) return DEFAULT_SIDE_WIDTH_PX;
+  return Math.min(MAX_SIDE_WIDTH_PX, Math.max(MIN_SIDE_WIDTH_PX, n));
+}
+
 // Calc workspace tweaks — persisted alongside panelHeightPct
 const ATTACKER_SLOT_STORAGE_KEY = "trainersgg.builder.attackerSlot.v1";
 const FAINTED_YOURS_STORAGE_KEY = "trainersgg.builder.faintedYours.v1";
@@ -136,13 +156,36 @@ const DEFAULT_FIELD: FieldState = {
  */
 export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
-  const [drawer, setDrawer] = useState<DrawerKey>(null);
+  const [sideDrawer, setSideDrawer] = useState<SideDrawerKey>("calc");
+  const [bottomDrawer, setBottomDrawer] = useState<BottomDrawerKey>(null);
+
+  // Legacy compat: `drawer` returns whichever is open (side takes precedence for reads)
+  const drawer: DrawerKey = sideDrawer ?? bottomDrawer;
+  function setDrawer(d: DrawerKey) {
+    if (d === "matchups") {
+      setBottomDrawer(d);
+    } else if (d === null) {
+      setSideDrawer(null);
+      setBottomDrawer(null);
+    } else {
+      setSideDrawer(d);
+    }
+  }
+
   const [panelHeightPct, setPanelHeightPctState] = useState<number>(
     () =>
       readPersisted(PANEL_HEIGHT_STORAGE_KEY, (raw) => {
         const n = clampPanelHeight(Number(raw));
         return Number.isNaN(Number(raw)) ? null : n;
       }) ?? DEFAULT_PANEL_HEIGHT_PCT
+  );
+
+  const [sideWidthPx, setSideWidthPxState] = useState<number>(
+    () =>
+      readPersisted(SIDE_WIDTH_STORAGE_KEY, (raw) => {
+        const n = clampSideWidth(Number(raw));
+        return Number.isNaN(Number(raw)) ? null : n;
+      }) ?? DEFAULT_SIDE_WIDTH_PX
   );
   const [field, setFieldState] = useState<FieldState>(DEFAULT_FIELD);
 
@@ -180,6 +223,12 @@ export function useBuilderState(): BuilderState {
     writePersisted(PANEL_HEIGHT_STORAGE_KEY, String(clamped));
   }
 
+  function setSideWidthPx(n: number) {
+    const clamped = clampSideWidth(n);
+    setSideWidthPxState(clamped);
+    writePersisted(SIDE_WIDTH_STORAGE_KEY, String(clamped));
+  }
+
   function setAttackerSlot(idx: number | null) {
     if (idx === null) {
       setAttackerSlotState(null);
@@ -208,8 +257,14 @@ export function useBuilderState(): BuilderState {
     setActiveIdx,
     drawer,
     setDrawer,
+    sideDrawer,
+    setSideDrawer,
+    bottomDrawer,
+    setBottomDrawer,
     panelHeightPct,
     setPanelHeightPct,
+    sideWidthPx,
+    setSideWidthPx,
     field,
     setField,
     attackerSlot,

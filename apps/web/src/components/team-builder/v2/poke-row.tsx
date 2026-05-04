@@ -77,14 +77,14 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         onClick={() => setOpen(true)}
         aria-label={`Add Pokémon to slot ${String(idx + 1).padStart(2, "0")}`}
         className={cn(
-          "flex items-stretch flex-nowrap min-w-0 overflow-visible",
-          "border-border bg-card flex h-full w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-dashed",
-          "hover:border-primary/40 hover:bg-muted/10 text-left transition-colors",
+          "flex h-full w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-dashed",
+          "border-border bg-card text-left transition-colors",
+          "hover:border-primary/40 hover:bg-muted/10",
           "focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
         )}
       >
         {/* RIB — slot number + × placeholder */}
-        <div className={cn("flex flex-col items-center justify-between shrink-0 w-7 py-2 border-r", "rib border-border/60 bg-muted/20 flex shrink-0 border-dashed")}>
+        <div className="rib flex flex-col items-center justify-between shrink-0 w-7 py-2 border-r border-border/60 border-dashed bg-muted/20">
           <span className="text-muted-foreground font-mono text-[10px] font-medium tracking-wide">
             {String(idx + 1).padStart(2, "0")}
           </span>

@@ -15,6 +15,7 @@ import {
   type PokemonType,
   getCanonicalBaseSpecies,
   getMegaAbilityForSpecies,
+  getMegaSpeciesForBaseAndItem,
   getSpeciesTypes,
   isChampionsFormat,
 } from "@trainers/pokemon";
@@ -410,13 +411,20 @@ function buildAttackerFromDb(
     // base form (pre-mega turn 1, or two-megas scenario where THIS Pokemon
     // doesn't mega this match).
     const isMegaForm = getMegaAbilityForSpecies(db.species) !== null;
+    const megaFromItem = !isMegaForm
+      ? getMegaSpeciesForBaseAndItem(db.species, db.held_item ?? "")
+      : null;
+    const canMega = isMegaForm || megaFromItem !== null;
+    const megaSpecies = isMegaForm ? db.species : megaFromItem;
     const effectiveSpecies =
-      isMegaForm && !megaActive
-        ? getCanonicalBaseSpecies(db.species)
-        : db.species;
+      canMega && megaActive && megaSpecies
+        ? megaSpecies
+        : canMega && !megaActive && isMegaForm
+          ? getCanonicalBaseSpecies(db.species)
+          : db.species;
     const calcAbility =
-      isMegaForm && megaActive
-        ? (getMegaAbilityForSpecies(db.species) ?? db.ability ?? null)
+      canMega && megaActive && megaSpecies
+        ? (getMegaAbilityForSpecies(megaSpecies) ?? db.ability ?? null)
         : (db.ability ?? null);
     return new Pokemon(gen, effectiveSpecies, {
       level: db.level ?? 50,
@@ -460,11 +468,21 @@ function buildDefenderPokemon(
   try {
     // Per-calc mega toggle (see buildAttackerFromDb).
     const isMegaForm = getMegaAbilityForSpecies(species) !== null;
+    // Also handle base species holding its mega stone
+    const megaFromItem = !isMegaForm
+      ? getMegaSpeciesForBaseAndItem(species, item)
+      : null;
+    const canMega = isMegaForm || megaFromItem !== null;
+    const megaSpecies = isMegaForm ? species : megaFromItem;
     const effectiveSpecies =
-      isMegaForm && !megaActive ? getCanonicalBaseSpecies(species) : species;
+      canMega && megaActive && megaSpecies
+        ? megaSpecies
+        : canMega && !megaActive && isMegaForm
+          ? getCanonicalBaseSpecies(species)
+          : species;
     const calcAbility =
-      isMegaForm && megaActive
-        ? (getMegaAbilityForSpecies(species) ?? ability)
+      canMega && megaActive && megaSpecies
+        ? (getMegaAbilityForSpecies(megaSpecies) ?? ability)
         : ability;
     // Build without curHP first so we can call maxHP() to compute the real value.
     const mon = new Pokemon(gen, effectiveSpecies, {
@@ -911,10 +929,10 @@ export function useCalcState({
     useState<AttackerBoosts>(EMPTY_BOOSTS);
 
   // --- Defender ---
-  const [defenderSpecies, setDefenderSpecies] = useState("Incineroar");
-  const [defenderAbility, setDefenderAbility] = useState("Intimidate");
-  const [defenderItem, setDefenderItem] = useState("Sitrus Berry");
-  const [defenderNature, setDefenderNature] = useState("Careful");
+  const [defenderSpecies, setDefenderSpecies] = useState("Floette-Eternal");
+  const [defenderAbility, setDefenderAbility] = useState("Flower Veil");
+  const [defenderItem, setDefenderItem] = useState("Floettite");
+  const [defenderNature, setDefenderNature] = useState("Modest");
   const [defenderTera, setDefenderTera] = useState("");
   const [defenderEvs, setDefenderEvs] =
     useState<DefenderEvs>(DEFAULT_DEFENDER_EVS);

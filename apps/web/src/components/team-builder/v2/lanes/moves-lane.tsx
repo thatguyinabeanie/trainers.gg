@@ -238,15 +238,7 @@ function MoveTile({
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!moveName) {
-      setPanel("picker");
-      return;
-    }
-    if (hasCalc) {
-      setPanel("detail");
-    } else {
-      setPanel("picker");
-    }
+    setPanel("picker");
   }
 
   const detailOpen = panel === "detail";
@@ -261,6 +253,7 @@ function MoveTile({
         }}
       >
         <PopoverTrigger
+          nativeButton={false}
           render={
             <TableRow
               onClick={handleClick}

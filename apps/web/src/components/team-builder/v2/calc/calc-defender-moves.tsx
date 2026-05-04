@@ -108,11 +108,6 @@ function DefenderMoveTile({
               BP {basePower}
             </span>
           )}
-          {accuracy !== null && accuracy < 100 && (
-            <span className="text-muted-foreground font-mono text-[9px]">
-              · {accuracy}% acc
-            </span>
-          )}
           <span className="text-muted-foreground text-[10px]" aria-hidden>
             ▾
           </span>
@@ -158,26 +153,23 @@ export function CalcDefenderMoves({
 }: CalcDefenderMovesProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      {/* Sub-column header */}
-      <div className="text-destructive mb-0.5 font-mono text-[9.5px] font-semibold tracking-[0.08em] uppercase">
-        Their moves → your atk
+      {/* Move list */}
+      <div className="flex flex-col gap-1.5">
+        {([0, 1, 2, 3] as const).map((slotIdx) => {
+          const moveName = effectiveMoves[slotIdx] ?? "";
+
+          return (
+            <DefenderMoveTile
+              key={slotIdx}
+              slotIdx={slotIdx}
+              moveName={moveName}
+              defenderSpecies={defenderSpecies}
+              format={format}
+              onPick={onPick}
+            />
+          );
+        })}
       </div>
-
-      {/* 4 move tiles */}
-      {([0, 1, 2, 3] as const).map((slotIdx) => {
-        const moveName = effectiveMoves[slotIdx] ?? "";
-
-        return (
-          <DefenderMoveTile
-            key={slotIdx}
-            slotIdx={slotIdx}
-            moveName={moveName}
-            defenderSpecies={defenderSpecies}
-            format={format}
-            onPick={onPick}
-          />
-        );
-      })}
     </div>
   );
 }

@@ -108,7 +108,7 @@ function renderPanel(
     (base: number) => base
   );
 
-  return render(<SpeedTiersPanel team={[]} activeIdx={0} format={format} />);
+  return render(<SpeedTiersPanel team={[]} format={format} />);
 }
 
 // =============================================================================
@@ -117,7 +117,7 @@ function renderPanel(
 
 describe("SpeedTiersPanel — no format", () => {
   it("shows a prompt when no format is provided", () => {
-    render(<SpeedTiersPanel team={[]} activeIdx={0} format={undefined} />);
+    render(<SpeedTiersPanel team={[]} format={undefined} />);
     expect(
       screen.getByText(/select a format to see speed tiers/i)
     ).toBeInTheDocument();
@@ -194,25 +194,11 @@ describe("SpeedTiersPanel — Trick Room sort order", () => {
 // Summary counts
 // =============================================================================
 
-describe("SpeedTiersPanel — summary count labels", () => {
-  it("shows 'outspeed' / 'outsped by' labels without Trick Room", () => {
+describe("SpeedTiersPanel — summary removed", () => {
+  it("does not show outspeed/outsped summary labels (feature removed)", () => {
     renderPanel([makeEntry("Pikachu", 110)]);
-    expect(screen.getByText("outspeed")).toBeInTheDocument();
-    expect(screen.getByText("outsped by")).toBeInTheDocument();
-  });
-
-  it("flips labels to 'outsped by' / 'outspeed' under Trick Room", async () => {
-    renderPanel([makeEntry("Pikachu", 110)]);
-
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /trick room/i }));
-
-    // Under TR the first label column becomes "outsped by"
-    const allLabels = screen.getAllByText(/outsped by|outspeed/i).map(
-      (el) => el.textContent?.trim()
-    );
-    expect(allLabels).toContain("outsped by");
-    expect(allLabels).toContain("outspeed");
+    expect(screen.queryByText("outspeed")).not.toBeInTheDocument();
+    expect(screen.queryByText("outsped by")).not.toBeInTheDocument();
   });
 });
 

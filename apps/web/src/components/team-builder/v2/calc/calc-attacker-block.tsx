@@ -83,6 +83,17 @@ export function CalcAttackerBlock({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <div className="text-[12.5px] font-bold">{attacker.species}</div>
+            </div>
+            <div className="mb-1 mt-0.5 flex gap-1">
+              {attackerTypes.map((t) => (
+                <TypePill key={t} t={t} />
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5 font-mono text-[10px] leading-relaxed text-muted-foreground">
+              <span>{attacker.nature ?? "—"} · Lv {attacker.level ?? 50}</span>
+            </div>
+            <div className="flex items-center gap-1.5 font-mono text-[10px] leading-relaxed text-muted-foreground">
+              <span>@ {attacker.held_item ?? "—"}</span>
               {attackerIsMega && (
                 <MegaToggle
                   active={attackerMegaActive}
@@ -90,14 +101,8 @@ export function CalcAttackerBlock({
                 />
               )}
             </div>
-            <div className="mb-1 mt-0.5 flex gap-1">
-              {attackerTypes.map((t) => (
-                <TypePill key={t} t={t} />
-              ))}
-            </div>
             <div className="font-mono text-[10px] leading-relaxed text-muted-foreground">
-              {attacker.nature ?? "—"} · Lv {attacker.level ?? 50}
-              <br />@ {attacker.held_item ?? "—"} · {attacker.ability ?? "—"}
+              {attacker.ability ?? "—"}
             </div>
           </div>
         </div>

@@ -46,10 +46,10 @@ function DockPill({ active, onOpen, ariaLabel, children }: DockPillProps) {
 export interface DockbarProps {
   drawer: "matchups" | "speed" | "calc" | null;
   onOpen: (key: "matchups" | "speed" | "calc") => void;
-  /** Pre-computed weak-type count for the matchups pill. */
-  weakCount: number;
-  /** Pre-computed covered-type count for the matchups pill. */
-  coveredCount: number;
+  /** Side drawer state (calc/speed) for independent active tracking. */
+  sideDrawer?: "speed" | "calc" | null;
+  /** Bottom drawer state (matchups) for independent active tracking. */
+  bottomDrawer?: "matchups" | null;
   /** Pre-computed fastest speed for the speed pill. */
   fastest: number;
   /** Active attacker's defender name, for the calc pill label. */
@@ -94,12 +94,17 @@ export function getWorstCaseVerdict(
 export function Dockbar({
   drawer,
   onOpen,
-  weakCount,
-  coveredCount,
+  sideDrawer,
+  bottomDrawer,
   fastest,
   defenderSpecies,
   moveCalcOutputs,
 }: DockbarProps) {
+
+  // Use split state if available, fall back to legacy `drawer` for compat
+  const isMatchupsActive = bottomDrawer !== undefined ? bottomDrawer === "matchups" : drawer === "matchups";
+  const isSpeedActive = sideDrawer !== undefined ? sideDrawer === "speed" : drawer === "speed";
+  const isCalcActive = sideDrawer !== undefined ? sideDrawer === "calc" : drawer === "calc";
 
   const calcVerdict = getWorstCaseVerdict(moveCalcOutputs);
   const calcSubLabel = defenderSpecies
@@ -115,76 +120,41 @@ export function Dockbar({
     >
       {/* Type matchups pill */}
       <DockPill
-        active={drawer === "matchups"}
+        active={isMatchupsActive}
         onOpen={() => onOpen("matchups")}
         ariaLabel="Defensive type matchups"
       >
         <span className="shrink-0 text-[15px] leading-none" aria-hidden>
           ▦
         </span>
-        <span className="flex min-w-0 items-center gap-2">
-          <span className="text-xs font-semibold leading-none">
-            Type matchups
-          </span>
-          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-none text-muted-foreground">
-            <span
-              className={cn(
-                "font-semibold",
-                weakCount > 0 ? "text-destructive" : "text-muted-foreground"
-              )}
-            >
-              {weakCount}
-            </span>
-            <span>weak</span>
-            <span className="opacity-40">·</span>
-            <span
-              className={cn(
-                "font-semibold",
-                coveredCount > 0
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-muted-foreground"
-              )}
-            >
-              {coveredCount}
-            </span>
-            <span className="hidden sm:inline">covered</span>
-          </span>
+        <span className="text-xs font-semibold leading-none">
+          Type matchups
         </span>
         <span className="ml-1 shrink-0 text-[10px] text-muted-foreground" aria-hidden>
-          {drawer === "matchups" ? "▾" : "▴"}
+          {isMatchupsActive ? "▾" : "▴"}
         </span>
       </DockPill>
 
       {/* Speed tiers pill */}
       <DockPill
-        active={drawer === "speed"}
+        active={isSpeedActive}
         onOpen={() => onOpen("speed")}
         ariaLabel="Speed tier ladder"
       >
         <span className="shrink-0 text-[15px] leading-none" aria-hidden>
           ≫
         </span>
-        <span className="flex min-w-0 items-center gap-2">
-          <span className="text-xs font-semibold leading-none">
-            Speed tiers
-          </span>
-          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-none text-muted-foreground">
-            <span className="font-semibold">
-              {fastest > 0 ? fastest : "—"}
-            </span>
-            <span>fastest</span>
-            <span className="hidden opacity-40 sm:inline">·</span>
-            <span className="hidden sm:inline">vs format</span>
-          </span>
+        <span className="text-xs font-semibold leading-none">
+          Speed tiers
         </span>
         <span className="ml-1 shrink-0 text-[10px] text-muted-foreground" aria-hidden>
-          {drawer === "speed" ? "▾" : "▴"}
+          {isSpeedActive ? "▾" : "▴"}
         </span>
       </DockPill>
 
       {/* Damage calc pill */}
       <DockPill
-        active={drawer === "calc"}
+        active={isCalcActive}
         onOpen={() => onOpen("calc")}
         ariaLabel="Damage calc"
       >
@@ -197,24 +167,10 @@ export function Dockbar({
           </span>
           <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-none text-muted-foreground">
             <span className="truncate">{calcSubLabel}</span>
-            {calcVerdict && (
-              <>
-                <span className="opacity-40">·</span>
-                <span className="font-semibold text-primary">
-                  {calcVerdict}
-                </span>
-              </>
-            )}
-            {!calcVerdict && defenderSpecies && (
-              <>
-                <span className="opacity-40">·</span>
-                <span>—</span>
-              </>
-            )}
           </span>
         </span>
         <span className="ml-1 shrink-0 text-[10px] text-muted-foreground" aria-hidden>
-          {drawer === "calc" ? "▾" : "▴"}
+          {isCalcActive ? "▾" : "▴"}
         </span>
       </DockPill>
 

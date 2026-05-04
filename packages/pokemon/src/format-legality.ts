@@ -908,9 +908,10 @@ function computeLegalMovesForChampions(
   const cached = championsMoveCache.get(species);
   if (cached) return cached;
 
-  // For Champions megas derived from non-standard base forms, use the
-  // correct base for learnset lookups (e.g. Floette-Mega → Floette-Eternal).
-  const lookupSpecies = CHAMPIONS_MEGA_LEARNSET_BASE[species] ?? species;
+  // For mega species, look up learnset from the base form.
+  // Special cases (e.g. Floette-Mega → Floette-Eternal) override the default.
+  const lookupSpecies = CHAMPIONS_MEGA_LEARNSET_BASE[species]
+    ?? (MEGA_SPECIES_TO_STONE.has(species) ? getCanonicalBaseSpecies(species) : species);
 
   const gen = SimDex.forGen(9);
   const speciesObj = gen.species.get(lookupSpecies);
@@ -1438,6 +1439,29 @@ export function isMegaSpeciesWithAbility(
  */
 export function getMegaAbilityForSpecies(species: string): string | null {
   return MEGA_SPECIES_TO_ABILITY.get(species) ?? null;
+}
+
+/**
+ * Reverse lookup: given a base species + held item, return the mega species
+ * name if the item is its mega stone. Returns null otherwise.
+ *
+ * Example: getMegaSpeciesForBaseAndItem("Floette-Eternal", "Floettite") → "Floette-Mega"
+ *          getMegaSpeciesForBaseAndItem("Charizard", "Charizardite Y") → "Charizard-Mega-Y"
+ */
+const STONE_TO_MEGA: ReadonlyMap<string, string> = new Map(
+  MEGA_STONE_ENTRIES.map(([mega, stone]) => [stone, mega] as const)
+);
+
+export function getMegaSpeciesForBaseAndItem(
+  species: string,
+  item: string
+): string | null {
+  if (!species || !item) return null;
+  const megaSpecies = STONE_TO_MEGA.get(item);
+  if (!megaSpecies) return null;
+  // Verify the mega's base form matches the given species
+  if (getCanonicalBaseSpecies(megaSpecies) === species) return megaSpecies;
+  return null;
 }
 
 // =============================================================================
