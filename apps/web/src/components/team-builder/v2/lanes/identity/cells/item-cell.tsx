@@ -67,17 +67,25 @@ export function ItemCell({
   };
 
   const megaChip = isMegaStone ? (
-    <button
-      type="button"
+    <span
+      role="button"
+      tabIndex={0}
       onClick={(e) => {
         e.stopPropagation();
         handleMegaToggle();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          handleMegaToggle();
+        }
       }}
       className={cellClasses.midMegaChip}
       title="Toggle mega form"
     >
       MEGA
-    </button>
+    </span>
   ) : null;
 
   if (variant === "row") {

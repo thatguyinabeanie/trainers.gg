@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { useCalcEnabled } from "../../calc/calc-state-context";
+import { cn } from "@/lib/utils";
 import { FieldErrors } from "../../validation/field-error";
 import { SpeciesPickerDialog } from "../../pickers/species-picker-dialog";
 import { useIdentityState } from "./use-identity-state";
@@ -50,6 +52,7 @@ export function IdentitySingleRow({
   } = useIdentityState(pokemon, format, fieldErrors, onUpdate);
 
   const [speciesOpen, setSpeciesOpen] = useState(false);
+  const calcEnabled = useCalcEnabled();
 
   return (
     <div className="flex">
@@ -62,7 +65,7 @@ export function IdentitySingleRow({
         onPick={handleSpeciesPick}
       />
 
-      <div className="flex min-w-0 gap-3 p-3">
+      <div className={cn("flex min-w-0 gap-3 transition-[padding] duration-300 ease-in-out", calcEnabled ? "p-3" : "p-2")}>
         {/* Sprite column */}
         <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
           <SpriteSection

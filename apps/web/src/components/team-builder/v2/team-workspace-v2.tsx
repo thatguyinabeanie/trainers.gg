@@ -2,6 +2,7 @@
 
 import { useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -767,23 +768,33 @@ export function TeamWorkspaceV2({
                   )}
 
                   {/* Calc panel — desktop only; mobile falls back to CalcDrawer Sheet */}
-                  {state.drawer === "calc" && !isMobile && (
-                    <CalcBottomPanel
-                      teamSlots={slots}
-                      format={format}
-                      onClose={() => state.setDrawer(null)}
-                      attackerIdx={calcAttackerIdx}
-                      onPickAttacker={(idx) =>
-                        state.setAttackerSlot(
-                          idx === state.activeIdx ? null : idx
-                        )
-                      }
-                      faintedYours={state.faintedYours}
-                      setFaintedYours={state.setFaintedYours}
-                      faintedTheirs={state.faintedTheirs}
-                      setFaintedTheirs={state.setFaintedTheirs}
-                    />
-                  )}
+                  <AnimatePresence>
+                    {state.drawer === "calc" && !isMobile && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <CalcBottomPanel
+                          teamSlots={slots}
+                          format={format}
+                          onClose={() => state.setDrawer(null)}
+                          attackerIdx={calcAttackerIdx}
+                          onPickAttacker={(idx) =>
+                            state.setAttackerSlot(
+                              idx === state.activeIdx ? null : idx
+                            )
+                          }
+                          faintedYours={state.faintedYours}
+                          setFaintedYours={state.setFaintedYours}
+                          faintedTheirs={state.faintedTheirs}
+                          setFaintedTheirs={state.setFaintedTheirs}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </>
             )}

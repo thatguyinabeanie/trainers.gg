@@ -14,6 +14,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
+import { useCalcEnabled } from "../calc/calc-state-context";
 import { errorsForFields, type ValidationError } from "../../validation-hooks";
 import { IdentityLane } from "./identity";
 import { MovesLane } from "./moves-lane";
@@ -117,6 +118,7 @@ export function ActiveRow({
 
   const leftBg = typeof ribBackground === "string" ? ribBackground : ribBackground?.left;
   const rightBg = typeof ribBackground === "string" ? ribBackground : ribBackground?.right;
+  const calcEnabled = useCalcEnabled();
 
   // Border color derived from types
   const borderColor = (() => {
@@ -144,8 +146,9 @@ export function ActiveRow({
       {/* RIB LEFT — slot number + drag handle */}
       <div
         className={cn(
-          "flex flex-col items-center justify-between shrink-0 w-7 py-2 border-r",
+          "flex flex-col items-center justify-between shrink-0 w-7 border-r transition-[padding] duration-300 ease-in-out",
           "rib border-border/60 flex shrink-0 border-dashed",
+          calcEnabled ? "py-2" : "py-1",
           !leftBg && "bg-muted/20"
         )}
         style={leftBg ? { background: leftBg } : undefined}
@@ -217,8 +220,9 @@ export function ActiveRow({
       {/* RIB RIGHT — mirrored gradient + remove button (wide layout only) */}
       <div
         className={cn(
-          "flex flex-col items-center justify-start shrink-0 w-7 py-2 border-l",
+          "flex flex-col items-center justify-start shrink-0 w-7 border-l transition-[padding] duration-300 ease-in-out",
           "rib-right border-border/60 flex shrink-0 border-dashed",
+          calcEnabled ? "py-2" : "py-1",
           !rightBg && "bg-muted/20"
         )}
         style={rightBg ? { background: rightBg } : undefined}

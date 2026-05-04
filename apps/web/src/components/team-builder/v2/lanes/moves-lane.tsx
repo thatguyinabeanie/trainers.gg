@@ -400,7 +400,7 @@ function MovesLaneTileGhost() {
 function MovesLaneGhost() {
   const calcEnabled = useCalcEnabled();
   return (
-    <div className={cn("border-border/60 flex min-w-0 flex-col justify-center border-r border-dashed p-3", calcEnabled ? "flex-1" : "flex-initial")}>
+    <div className={cn("border-border/60 flex min-w-0 flex-col border-r border-dashed px-3 py-1 transition-[padding,flex] duration-300 ease-in-out")}>
       <Table className={cn("border-separate border-spacing-y-[3px]", calcEnabled && "w-full")}>
         <MovesLaneTileGhost />
         <TableBody>
@@ -448,7 +448,7 @@ function MovesLaneReal({
   }
 
   return (
-    <div className={cn("flex min-w-0 flex-col justify-center py-3 pr-5 pl-3", calc.calcEnabled ? "flex-1" : "flex-initial")}>
+    <div className={cn("flex min-w-0 flex-col py-1 pr-5 pl-3 transition-[padding,flex] duration-300 ease-in-out")}>
       <Table className={cn("border-separate border-spacing-y-[3px]", calc.calcEnabled && "w-full")}>
         <MovesLaneTileGhost />
         <TableBody>

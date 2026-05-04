@@ -30,6 +30,7 @@ import {
   getStatBudget,
   type StatBudget,
 } from "../../calc-stat-helpers";
+import { useCalcEnabled } from "../calc/calc-state-context";
 import { formatSupportsIvs } from "../format-gating";
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { FieldErrors } from "../validation/field-error";
@@ -688,10 +689,13 @@ export function StatsLane({
   const isChampions = isChampionsFormat(format);
   const showIv = formatSupportsIvs(format);
   const budget = getStatBudget(isChampions);
+  const calcEnabled = useCalcEnabled();
 
   if (!pokemon) {
     return (
-      <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1580px]:w-[400px]">
+      <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
+
+
         {/* Column headers — same structure as real but dimmed */}
         <div
           className={cn(
@@ -778,7 +782,7 @@ export function StatsLane({
   );
 
   return (
-    <div className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1580px]:w-[400px]">
+    <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
       {/* Column headers */}
       <div
         className={cn(
