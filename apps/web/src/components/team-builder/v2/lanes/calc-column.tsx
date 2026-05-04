@@ -76,13 +76,17 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
       {hasCalc && koTier ? (
         <>
           <span className="flex-shrink-0 font-mono text-[8.5px] font-black tracking-[0.07em] uppercase">
-            {koTier === "1"
-              ? "OHKO"
-              : koTier === "2"
-                ? "2HKO"
-                : koTier === "3"
-                  ? "3HKO"
-                  : "4HKO+"}
+            {output?.koChance != null &&
+            output.koChance > 0 &&
+            output.koChance < 100
+              ? `${output.koChance % 1 === 0 ? output.koChance.toFixed(0) : output.koChance.toFixed(1)}% OHKO`
+              : koTier === "1"
+                ? "OHKO"
+                : koTier === "2"
+                  ? "2HKO"
+                  : koTier === "3"
+                    ? "3HKO"
+                    : "4HKO+"}
           </span>
           <span className="flex-shrink-0 tabular-nums">
             {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%

@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 
 import { useCalcEnabled } from "../calc/calc-state-context";
 import { errorsForFields, type ValidationError } from "../../validation-hooks";
+import { CalcReverseColumn } from "./calc-reverse-card";
 import { IdentityLane } from "./identity";
 import { MovesLane } from "./moves-lane";
 import { StatsLane } from "./stats-lane";
@@ -133,7 +134,6 @@ export function ActiveRow({
   return (
     <div
       className={cn(
-        "flex items-stretch flex-nowrap min-w-0 overflow-visible",
         "row-active bg-card flex h-full w-full min-w-0 items-stretch self-center overflow-hidden rounded-lg border",
         !borderColor && "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]",
         isDragging && "opacity-50"
@@ -179,42 +179,58 @@ export function ActiveRow({
         </button>
       </div>
 
-      {/* rowVerticalContent — transparent wrapper (display: contents) in
-          horizontal modes; flips to flex-column in 2×3-vertical and
-          3×2-vertical modes so identity sits above stats+moves. CSS in
-          globals.css controls the switch via data-layout attribute. */}
-      <div className="row-vertical-content">
-        <IdentityLane
-          pokemon={pokemon}
-          format={format}
-          teamItems={teamItems}
-          onUpdate={onUpdate}
-          fieldErrors={identityErrors}
-          teamSiblings={teamPokemon
-            .filter((tp) => tp.pokemon && tp.pokemon.id !== pokemon.id)
-            .map((tp) => ({ species: tp.pokemon!.species }))}
-        />
-
-        {/* Right column — at compact widths stats and moves sit side-by-side
-            as direct children of the row; at mid-stack widths this wrapper
-            stacks them vertically on the right of the identity panel. CSS
-            (.rowRight) flips between display: contents and flex-column based
-            on container query. */}
-        <div className="row-right">
-          <StatsLane
+      {/* Center content — flex-col: main horizontal row on top, incoming strip below */}
+      <div className="flex flex-col min-w-0 flex-1">
+        {/* Main horizontal row content */}
+        <div className="flex items-stretch flex-nowrap min-w-0 overflow-visible">
+          {/* rowVerticalContent — transparent wrapper (display: contents) in
+              horizontal modes; flips to flex-column in 2×3-vertical and
+              3×2-vertical modes so identity sits above stats+moves. CSS in
+              globals.css controls the switch via data-layout attribute. */}
+          <div className="row-vertical-content">
+          <IdentityLane
             pokemon={pokemon}
             format={format}
+            teamItems={teamItems}
             onUpdate={onUpdate}
-            fieldErrors={statsErrors}
+            fieldErrors={identityErrors}
+            teamSiblings={teamPokemon
+              .filter((tp) => tp.pokemon && tp.pokemon.id !== pokemon.id)
+              .map((tp) => ({ species: tp.pokemon!.species }))}
           />
 
-          <MovesLane
-            pokemon={pokemon}
-            format={format}
-            onUpdate={onUpdate}
-            fieldErrors={movesErrors}
-          />
+          {/* Right column — at compact widths stats and moves sit side-by-side
+              as direct children of the row; at mid-stack widths this wrapper
+              stacks them vertically on the right of the identity panel. CSS
+              (.rowRight) flips between display: contents and flex-column based
+              on container query. */}
+          <div className="row-right">
+            <StatsLane
+              pokemon={pokemon}
+              format={format}
+              onUpdate={onUpdate}
+              fieldErrors={statsErrors}
+            />
+
+            <MovesLane
+              pokemon={pokemon}
+              format={format}
+              onUpdate={onUpdate}
+              fieldErrors={movesErrors}
+            />
+          </div>
         </div>
+        </div>
+
+        {/* Incoming damage strip — inside ribs, below main content */}
+        {calcEnabled && (
+          <CalcReverseColumn
+            pokemon={pokemon}
+            teammates={teamPokemon
+              .map((tp) => tp.pokemon)
+              .filter((p): p is NonNullable<typeof p> => p !== null)}
+          />
+        )}
       </div>
 
       {/* RIB RIGHT — mirrored gradient + remove button (wide layout only) */}

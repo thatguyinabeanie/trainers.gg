@@ -2,7 +2,6 @@
 
 import { useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -51,7 +50,6 @@ import { ExportMenu } from "../export-menu";
 import { ImportDialog } from "../import-dialog";
 import { useTeamValidation } from "../validation-hooks";
 import { CalcBottomPanel } from "./calc/calc-bottom-panel";
-import { CalcDrawer } from "./calc/calc-drawer";
 import {
   CalcStateProvider,
   useCalcStateContext,
@@ -573,19 +571,24 @@ export function TeamWorkspaceV2({
             ref={worklaneRef}
           >
             {/* Editor region — rows scroll inside this region only */}
-            <div className="flex flex-auto flex-col min-h-0 overflow-y-auto overflow-x-visible">
+            <div className="flex flex-auto min-h-0 overflow-y-auto overflow-x-visible">
+              {/* Rows grid */}
               <section
                 // Tailwind 4 strips quotes from values inside data-* / arbitrary
                 // variants when emitting the CSS selector, and Lightning CSS
-                // then rejects digit-prefixed values like 2x3 / 3x2-vertical
+                // then rejects digit-prefixed values like 2x3-vertical
                 // (they look like CSS dimensions). Apply layout-specific grid
                 // classes conditionally instead of via [data-layout=...]:.
                 className={cn(
-                  "grid w-full mx-auto my-auto max-w-[1800px] grid-cols-[minmax(0,1fr)] gap-2 p-3 transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] [[data-density=compact]_&]:gap-1 [[data-density=compact]_&]:p-2",
-                  layoutMode === "2x3" &&
-                    "grid-cols-[repeat(2,minmax(0,1fr))]",
-                  layoutMode === "3x2-vertical" &&
-                    "grid-cols-[repeat(auto-fit,minmax(500px,600px))] justify-center"
+                  "grid w-full my-auto max-w-[1800px] grid-cols-[minmax(0,1fr)] gap-2 p-3 transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] [[data-density=compact]_&]:gap-1 [[data-density=compact]_&]:p-2",
+                  // Center rows when no side panel is open
+                  !(state.drawer === "calc" || state.drawer === "speed") && "mx-auto",
+                  // Remove max-width constraint when side panel is open to reduce gap
+                  (state.drawer === "calc" || state.drawer === "speed") && !isMobile && "max-w-none",
+                  layoutMode === "2x3-vertical" &&
+                    "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] justify-center",
+                  // When calc/speed is open on desktop, let rows section shrink
+                  !isMobile && (state.drawer === "calc" || state.drawer === "speed") && "flex-1 min-w-0"
                 )}
                 data-calc-open={
                   state.drawer === "calc" && !isMobile ? "true" : "false"
@@ -663,8 +666,33 @@ export function TeamWorkspaceV2({
               </section>
             </div>
 
-            {/* Resizer + analytics panel region — only when panel is open */}
-            {state.drawer !== null && (
+              {/* Mobile: calc/speed panels render inline below the editor rows */}
+              {isMobile && state.drawer === "calc" && (
+                <div className="border-t p-3 w-full">
+                  <CalcBottomPanel
+                    teamSlots={slots}
+                    format={format}
+                    onClose={() => state.setDrawer(null)}
+                    attackerIdx={calcAttackerIdx}
+                    faintedYours={state.faintedYours}
+                    setFaintedYours={state.setFaintedYours}
+                    faintedTheirs={state.faintedTheirs}
+                    setFaintedTheirs={state.setFaintedTheirs}
+                  />
+                </div>
+              )}
+              {isMobile && state.drawer === "speed" && (
+                <div className="border-t p-3 w-full">
+                  <SpeedTiersPanel
+                    team={optimisticTeamPokemon}
+                    activeIdx={state.activeIdx}
+                    format={format}
+                  />
+                </div>
+              )}
+
+            {/* Resizer + bottom panel — only for type matchups */}
+            {state.drawer === "matchups" && (
               <>
                 <div
                   role="separator"
@@ -717,114 +745,94 @@ export function TeamWorkspaceV2({
                   className="flex flex-col flex-grow-0 flex-shrink-0 min-h-0 overflow-hidden"
                   style={{ flexBasis: `${state.panelHeightPct}%` }}
                 >
-                  {/* Type matchups and Speed tiers keep their existing header chrome */}
-                  {(state.drawer === "matchups" ||
-                    state.drawer === "speed") && (
-                    <section className="flex flex-auto flex-col min-h-0 mx-auto w-[calc(100%-24px)] max-w-[calc(1600px-24px)] rounded-t-[10px] border border-b-0 border-border bg-background overflow-hidden">
-                      <header className="flex items-start gap-3 px-3.5 py-2.5 border-b border-border bg-muted">
-                        <div className="flex flex-auto min-w-0 flex-col gap-0.5">
-                          <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-muted-foreground">
-                            {state.drawer === "matchups"
-                              ? "DEFENSIVE"
-                              : "SPEED"}
-                          </span>
-                          <span className="text-[13px] font-semibold text-foreground">
-                            {state.drawer === "matchups"
-                              ? "Defensive type coverage"
-                              : "Speed tier ladder"}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {state.drawer === "matchups"
-                              ? "18 attacking types × your 6 slots"
-                              : "Your team vs the format · all values @ Lv 50"}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => state.setDrawer(null)}
-                          aria-label="Close panel"
-                          title="Close panel"
-                          className="shrink-0 size-[26px] rounded-md border border-border bg-transparent text-base flex items-center justify-center text-muted-foreground cursor-pointer transition-colors duration-[120ms] hover:bg-background hover:text-foreground"
-                        >
-                          ×
-                        </button>
-                      </header>
-                      <div className="flex flex-auto flex-col min-h-0 overflow-y-auto">
-                        {state.drawer === "matchups" && (
-                          <HeatmapPanel
-                            team={optimisticTeamPokemon}
-                            format={format}
-                          />
-                        )}
-                        {state.drawer === "speed" && (
-                          <SpeedTiersPanel
-                            team={optimisticTeamPokemon}
-                            activeIdx={state.activeIdx}
-                            format={format}
-                          />
-                        )}
+                  <section className="flex flex-auto flex-col min-h-0 mx-auto w-[calc(100%-24px)] max-w-[calc(1600px-24px)] rounded-t-[10px] border border-b-0 border-border bg-background overflow-hidden">
+                    <header className="flex items-start gap-3 px-3.5 py-2.5 border-b border-border bg-muted">
+                      <div className="flex flex-auto min-w-0 flex-col gap-0.5">
+                        <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-muted-foreground">
+                          DEFENSIVE
+                        </span>
+                        <span className="text-[13px] font-semibold text-foreground">
+                          Defensive type coverage
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          18 attacking types × your 6 slots
+                        </span>
                       </div>
-                    </section>
-                  )}
-
-                  {/* Calc panel — desktop only; mobile falls back to CalcDrawer Sheet */}
-                  <AnimatePresence>
-                    {state.drawer === "calc" && !isMobile && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                        className="overflow-hidden"
+                      <button
+                        type="button"
+                        onClick={() => state.setDrawer(null)}
+                        aria-label="Close panel"
+                        title="Close panel"
+                        className="shrink-0 size-[26px] rounded-md border border-border bg-transparent text-base flex items-center justify-center text-muted-foreground cursor-pointer transition-colors duration-[120ms] hover:bg-background hover:text-foreground"
                       >
-                        <CalcBottomPanel
-                          teamSlots={slots}
-                          format={format}
-                          onClose={() => state.setDrawer(null)}
-                          attackerIdx={calcAttackerIdx}
-                          onPickAttacker={(idx) =>
-                            state.setAttackerSlot(
-                              idx === state.activeIdx ? null : idx
-                            )
-                          }
-                          faintedYours={state.faintedYours}
-                          setFaintedYours={state.setFaintedYours}
-                          faintedTheirs={state.faintedTheirs}
-                          setFaintedTheirs={state.setFaintedTheirs}
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        ×
+                      </button>
+                    </header>
+                    <div className="flex flex-auto flex-col min-h-0 overflow-y-auto">
+                      <HeatmapPanel
+                        team={optimisticTeamPokemon}
+                        format={format}
+                      />
+                    </div>
+                  </section>
                 </div>
               </>
             )}
 
-            <DockbarConnected
-              drawer={state.drawer}
-              onOpen={(key) =>
-                state.setDrawer(state.drawer === key ? null : key)
-              }
-              weakCount={defensiveSummary.weakCount}
-              coveredCount={defensiveSummary.coveredCount}
-              fastest={fastestSpeed}
-            />
           </div>
 
-          {/* Mobile: when the dock "Damage calc" pill is active, show calc as Sheet */}
-          {state.drawer === "calc" && isMobile && (
-            <CalcDrawer
-              open
-              selectedPokemon={slots[calcAttackerIdx] ?? null}
-              team={team}
-              format={format}
-              faintedYours={state.faintedYours}
-              setFaintedYours={state.setFaintedYours}
-              faintedTheirs={state.faintedTheirs}
-              setFaintedTheirs={state.setFaintedTheirs}
-              onClose={() => state.setDrawer(null)}
-            />
+          {/* Desktop: calc/speed card — stays fixed adjacent to editor, scrolls independently */}
+          {!isMobile && (state.drawer === "calc" || state.drawer === "speed") && (
+            <div className="w-[580px] shrink-0 self-stretch overflow-y-auto py-3 pr-2 flex items-center">
+              {state.drawer === "calc" && (
+                <CalcBottomPanel
+                  teamSlots={slots}
+                  format={format}
+                  onClose={() => state.setDrawer(null)}
+                  attackerIdx={calcAttackerIdx}
+                  faintedYours={state.faintedYours}
+                  setFaintedYours={state.setFaintedYours}
+                  faintedTheirs={state.faintedTheirs}
+                  setFaintedTheirs={state.setFaintedTheirs}
+                />
+              )}
+              {state.drawer === "speed" && (
+                <div className="flex min-h-0 flex-1 items-stretch overflow-hidden rounded-lg border border-primary/60 bg-card shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]">
+                  <div className="flex w-7 shrink-0 flex-col items-center justify-between border-r border-border/60 border-dashed bg-primary/10 py-2">
+                    <span className="font-mono text-[9px] font-bold tracking-[0.1em] text-primary [writing-mode:vertical-rl] rotate-180">
+                      SPEED
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => state.setDrawer(null)}
+                      aria-label="Close speed tiers"
+                      className="text-muted-foreground hover:bg-destructive/15 hover:text-destructive flex size-5 items-center justify-center rounded transition-colors"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="min-w-0 flex-1 overflow-y-auto">
+                    <SpeedTiersPanel
+                      team={optimisticTeamPokemon}
+                      activeIdx={state.activeIdx}
+                      format={format}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
+
+        <DockbarConnected
+          drawer={state.drawer}
+          onOpen={(key) =>
+            state.setDrawer(state.drawer === key ? null : key)
+          }
+          weakCount={defensiveSummary.weakCount}
+          coveredCount={defensiveSummary.coveredCount}
+          fastest={fastestSpeed}
+        />
       </div>
 
       {/* Import dialog — opened by topbar Import button */}

@@ -12,12 +12,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import {
-  type CalcOutput,
-  getVerdict,
-  type KoTierLabel,
-  type UseCalcStateReturn,
-} from "../../use-calc-state";
 import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { MovePicker } from "../pickers/move-picker";
 
@@ -28,14 +22,6 @@ import { MovePicker } from "../pickers/move-picker";
 export interface CalcDefenderMovesProps {
   /** Effective 4 move slots (after default resolution). */
   effectiveMoves: [string, string, string, string];
-  /**
-   * Function from useCalcState to compute a single reverse-direction output.
-   * Passed instead of a pre-computed array so we can use effective move names
-   * (which may come from preset defaults not stored in defenderMoves state).
-   */
-  computeReverseOutput: UseCalcStateReturn["computeReverseOutput"];
-  /** Max HP of the active attacker (our pokemon), for the "X–Y / HP" line. */
-  attackerHP: number | null;
   /** Defender species — passed to MovePicker. */
   defenderSpecies: string;
   /** Active game format — passed to MovePicker. */
@@ -45,78 +31,12 @@ export interface CalcDefenderMovesProps {
 }
 
 // =============================================================================
-// Constants
-// =============================================================================
-
-/** KO tier → Tailwind text-color class for the damage % display. */
-const KO_TIER_COLOR: Record<NonNullable<KoTierLabel>, string> = {
-  OHKO: "text-destructive",
-  "2HKO": "text-yellow-400 dark:text-yellow-300",
-  "3HKO": "text-orange-400",
-  "4HKO+": "text-muted-foreground",
-};
-
-/** Moves that cause an SpA self-drop after use. */
-const SPA_DROP_MOVES = new Set([
-  "Draco Meteor",
-  "Leaf Storm",
-  "Overheat",
-  "Psycho Boost",
-  "Glacial Lance",
-]);
-
-/** Moves that cause a Def+SpD self-drop (like Close Combat). */
-const DEF_DROP_MOVES = new Set(["Close Combat", "Superpower"]);
-
-/** Moves that switch the user out after use. */
-const PIVOT_MOVES = new Set([
-  "U-turn",
-  "Volt Switch",
-  "Flip Turn",
-  "Parting Shot",
-  "Teleport",
-]);
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-/**
- * Resolve the KO tier label for a damage range. Distinguishes "doesn't KO
- * within 4 hits" (`"4HKO+"`) from "no damage at all" (`null`) — see
- * `KoTierLabel` in `calc/recovery.ts` for the canonical type.
- */
-function resolveKoTierLabel(
-  minPercent: number,
-  maxPercent: number
-): KoTierLabel {
-  const verdict = getVerdict(minPercent, maxPercent);
-  if (verdict === "OHKO") return "OHKO";
-  if (verdict === "2HKO") return "2HKO";
-  if (verdict === "3HKO") return "3HKO";
-  if (maxPercent > 0) return "4HKO+";
-  return null;
-}
-
-/**
- * Extra note for the detail line — self-debuff or pivot hint.
- */
-function getMoveExtraNote(moveName: string): string | null {
-  if (SPA_DROP_MOVES.has(moveName)) return "−2 SpA after";
-  if (DEF_DROP_MOVES.has(moveName)) return "−1 Def/SpD after";
-  if (PIVOT_MOVES.has(moveName)) return "pivots out";
-  return null;
-}
-
-// =============================================================================
 // DefenderMoveTile — one card in the 4-tile stack
 // =============================================================================
 
 interface DefenderMoveTileProps {
   slotIdx: number;
   moveName: string;
-  computeReverseOutput: UseCalcStateReturn["computeReverseOutput"];
-  attackerHP: number | null;
   defenderSpecies: string;
   format: GameFormat | undefined;
   onPick: (slotIdx: number, moveName: string) => void;
@@ -125,38 +45,15 @@ interface DefenderMoveTileProps {
 function DefenderMoveTile({
   slotIdx,
   moveName,
-  computeReverseOutput,
-  attackerHP,
   defenderSpecies,
   format,
   onPick,
 }: DefenderMoveTileProps) {
-  // Compute the reverse calc output using the effective move name. This runs
-  // for both user-set overrides and preset/teammate defaults.
-  const output: CalcOutput | null = moveName
-    ? computeReverseOutput(moveName)
-    : null;
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const isEmpty = !moveName;
   const moveData = moveName ? getMoveData(moveName) : null;
   const moveType = moveData?.type ?? null;
-
-  // KO tier + damage %
-  // Prefer the recovery-aware tier (from the hit-by-hit simulation) when it
-  // differs from the raw percent verdict — e.g. Sitrus Berry converting a
-  // 2HKO into a 3HKO should show "3HKO" not "2HKO".
-  const koTierLabel =
-    output && !isEmpty
-      ? (output.recoveryTier ??
-        resolveKoTierLabel(output.minPercent, output.maxPercent))
-      : null;
-
-  // Raw damage range — rolls are sorted ascending by @smogon/calc
-  const dmgMin = output?.rolls.length ? output.rolls[0] : null;
-  const dmgMax = output?.rolls.length
-    ? output.rolls[output.rolls.length - 1]
-    : null;
 
   // Accuracy note
   const accuracy =
@@ -166,11 +63,6 @@ function DefenderMoveTile({
 
   // Base power — omit for status moves (basePower === 0)
   const basePower = moveData?.basePower ?? 0;
-
-  // Extra note (debuff / pivot)
-  const extraNote = moveName ? getMoveExtraNote(moveName) : null;
-
-  const isOhko = koTierLabel === "OHKO";
 
   return (
     <Dialog
@@ -186,15 +78,14 @@ function DefenderMoveTile({
             className={cn(
               "bg-card w-full rounded-md border p-2 text-left",
               "hover:border-border transition-colors",
-              isEmpty ? "border-border/50 border-dashed" : "border-border/60",
-              isOhko && "dmv-tile--ohko"
+              isEmpty ? "border-border/50 border-dashed" : "border-border/60"
             )}
             onClick={() => setPickerOpen(true)}
             aria-label={moveName ? `Change move: ${moveName}` : "Add move"}
           />
         }
       >
-        {/* Row 1: type badge + move name + BP + accuracy + chevron */}
+        {/* Type badge + move name + BP + accuracy + chevron */}
         <div className="flex items-center gap-1.5">
           {moveType ? (
             <TypeSymbolIcon
@@ -226,50 +117,6 @@ function DefenderMoveTile({
             ▾
           </span>
         </div>
-
-        {/* Row 2: damage % · KO tier · HP range · contextual notes */}
-        {output && (
-          <div className="mt-1 flex items-center gap-1.5">
-            <span
-              className={cn(
-                "font-mono text-[12px] font-bold",
-                koTierLabel
-                  ? (KO_TIER_COLOR[koTierLabel] ?? "text-muted-foreground")
-                  : "text-muted-foreground"
-              )}
-            >
-              {output.minPercent.toFixed(1)}–{output.maxPercent.toFixed(1)}%
-            </span>
-            {koTierLabel && (
-              <>
-                <span
-                  className="bg-border h-[10px] w-px flex-shrink-0"
-                  aria-hidden
-                />
-                <span className="text-muted-foreground font-mono text-[9px]">
-                  {koTierLabel}
-                </span>
-              </>
-            )}
-            {dmgMin !== null && dmgMax !== null && (
-              <>
-                <span
-                  className="bg-border h-[10px] w-px flex-shrink-0"
-                  aria-hidden
-                />
-                <span className="text-muted-foreground font-mono text-[9px]">
-                  {dmgMin}–{dmgMax}
-                  {attackerHP !== null ? ` / ${attackerHP} HP` : ""}
-                </span>
-              </>
-            )}
-            {extraNote && (
-              <span className="font-mono text-[9px] text-teal-500 dark:text-teal-400">
-                · {extraNote}
-              </span>
-            )}
-          </div>
-        )}
       </DialogTrigger>
 
       <DialogContent
@@ -305,8 +152,6 @@ function DefenderMoveTile({
  */
 export function CalcDefenderMoves({
   effectiveMoves,
-  computeReverseOutput,
-  attackerHP,
   defenderSpecies,
   format,
   onPick,
@@ -327,8 +172,6 @@ export function CalcDefenderMoves({
             key={slotIdx}
             slotIdx={slotIdx}
             moveName={moveName}
-            computeReverseOutput={computeReverseOutput}
-            attackerHP={attackerHP}
             defenderSpecies={defenderSpecies}
             format={format}
             onPick={onPick}

@@ -26,6 +26,7 @@ import { StatsLane } from "./lanes/stats-lane";
 import { MovesLane } from "./lanes/moves-lane";
 import { SpeciesPickerDialog } from "./pickers/species-picker-dialog";
 import { useTeamLayoutMode } from "./use-team-layout";
+import { useCalcEnabled } from "./calc/calc-state-context";
 
 // =============================================================================
 // Types
@@ -364,14 +365,13 @@ export function PokeRow({
   // causing Lightning CSS to reject the dimension-like token. Apply max-width
   // conditionally via JS instead of an arbitrary variant.
   const layoutMode = useTeamLayoutMode();
+  const calcEnabled = useCalcEnabled();
   const slotHostClass = cn(
     "@container/slot mx-auto w-full",
-    layoutMode === "1x6" && "max-w-[1620px]"
+    layoutMode === "1x6" && (calcEnabled ? "max-w-[1620px]" : "max-w-[1460px]")
   );
 
   if (!pokemon) {
-    // Empty slot — sortable ref still attached so it can act as a drop target,
-    // but drag is disabled so it won't be picked up.
     return (
       <div ref={setNodeRef} style={style} className={slotHostClass} data-slot-host>
         <EmptyRow idx={idx} density={density} format={format} onAdd={onAdd} />

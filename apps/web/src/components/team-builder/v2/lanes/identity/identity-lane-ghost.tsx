@@ -40,7 +40,7 @@ const vertFormCol =
 // without violating nested-button constraints.
 //
 // variant="compact" — 1x6 layout, horizontal sprite+form (IdentitySingleRow)
-// variant="mid"     — 2x3 layout, vertical column stack (IdentityMidStack)
+// variant="mid"     — mid-stack layout, vertical column stack (IdentityMidStack)
 // =============================================================================
 
 interface IdentityLaneGhostProps {

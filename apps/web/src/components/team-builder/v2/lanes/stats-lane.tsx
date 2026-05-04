@@ -30,11 +30,23 @@ import {
   getStatBudget,
   type StatBudget,
 } from "../../calc-stat-helpers";
-import { useCalcEnabled } from "../calc/calc-state-context";
+import { useCalcEnabled, useCalcStateContext } from "../calc/calc-state-context";
 import { formatSupportsIvs } from "../format-gating";
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { FieldErrors } from "../validation/field-error";
+import { type StatBoosts } from "../../use-calc-state";
 
+// =============================================================================
+// Stat key → boost key mapping
+// =============================================================================
+
+const STAT_TO_BOOST_KEY: Partial<Record<StatKey, keyof StatBoosts>> = {
+  attack: "atk",
+  defense: "def",
+  specialAttack: "spa",
+  specialDefense: "spd",
+  speed: "spe",
+};
 
 // =============================================================================
 // Constants (ghost-mode placeholder rows)
@@ -300,6 +312,12 @@ interface StatRowProps {
    *  in the lane header tracks the slider drag without waiting for the
    *  400ms onUpdate debounce. */
   onLiveEv?: (statKey: StatKey, displayEv: number) => void;
+  /** Current stat boost stage (-6 to +6). Only for non-HP stats when calc is open. */
+  boost?: number;
+  /** Set stat boost stage. */
+  onBoostChange?: (value: number) => void;
+  /** Whether to reserve space for the boost column (keeps grid aligned). */
+  showBoostCol?: boolean;
 }
 
 function StatRow({
@@ -319,6 +337,9 @@ function StatRow({
   showIv,
   onUpdate,
   onLiveEv,
+  boost,
+  onBoostChange,
+  showBoostCol,
 }: StatRowProps) {
   const label = STAT_LABELS[statKey];
   const statColorClass = STAT_COLOR_CLASS[statKey];
@@ -524,7 +545,16 @@ function StatRow({
 
   return (
     <div
-      className={cn(showIv ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted" : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted", statColorClass)}
+      className={cn(
+        showIv
+          ? showBoostCol
+            ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+            : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+          : showBoostCol
+            ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+            : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
+        statColorClass
+      )}
     >
       {/* Col 1: Stat label, color-coded, with nature chevron.
           Matches the +/− nature label colours in IdentityLane:
@@ -646,6 +676,40 @@ function StatRow({
 
       {/* Col 6/7: Final stat, mono bold */}
       <span className={"font-mono text-[11.5px] font-bold text-right tabular-nums"}>{liveFinalStat}</span>
+
+      {/* Boost stepper — only rendered when calc is active and stat is not HP */}
+      {showBoostCol && boost !== undefined && onBoostChange && (
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            aria-label={`Decrease ${STAT_LABELS[statKey]} boost`}
+            onClick={() => onBoostChange(Math.max(-6, boost - 1))}
+            className="size-[16px] rounded text-[10px] font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            −
+          </button>
+          <span
+            className={cn(
+              "font-mono text-[10px] font-semibold tabular-nums w-[20px] text-center",
+              boost > 0 && "text-teal-600 dark:text-teal-400",
+              boost < 0 && "text-rose-600 dark:text-rose-400",
+              boost === 0 && "text-muted-foreground"
+            )}
+          >
+            {boost > 0 ? `+${boost}` : boost}
+          </span>
+          <button
+            type="button"
+            aria-label={`Increase ${STAT_LABELS[statKey]} boost`}
+            onClick={() => onBoostChange(Math.min(6, boost + 1))}
+            className="size-[16px] rounded text-[10px] font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            +
+          </button>
+        </div>
+      )}
+      {/* Empty cell for HP row when boost column is visible */}
+      {showBoostCol && boost === undefined && <span />}
     </div>
   );
 }
@@ -690,6 +754,7 @@ export function StatsLane({
   const showIv = formatSupportsIvs(format);
   const budget = getStatBudget(isChampions);
   const calcEnabled = useCalcEnabled();
+  const calcState = useCalcStateContext();
 
   if (!pokemon) {
     return (
@@ -700,7 +765,13 @@ export function StatsLane({
         <div
           className={cn(
             "mb-0.5 py-0",
-            showIv ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted" : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+            showIv
+              ? calcEnabled
+                ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+              : calcEnabled
+                ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
           )}
         >
           <span />
@@ -720,11 +791,21 @@ export function StatsLane({
             </span>
           )}
           <span />
+          {calcEnabled && <span />}
         </div>
         {GHOST_STATS.map(({ key, label, colorClass }) => (
           <div
             key={key}
-            className={cn(showIv ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted" : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted", colorClass)}
+            className={cn(
+              showIv
+                ? calcEnabled
+                  ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                  : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                : calcEnabled
+                  ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                  : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
+              colorClass
+            )}
           >
             <span className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap overflow-hidden flex items-center gap-px", "opacity-30")}>{label}</span>
             <span className={cn("font-mono text-[9.5px] text-muted-foreground text-right tabular-nums", "opacity-25")}>—</span>
@@ -737,6 +818,7 @@ export function StatsLane({
               <div className="border-border/30 h-[18px] w-10 rounded border border-dashed" />
             )}
             <span className={cn("font-mono text-[11.5px] font-bold text-right tabular-nums", "opacity-25")}>—</span>
+            {calcEnabled && <span />}
           </div>
         ))}
       </div>
@@ -787,7 +869,13 @@ export function StatsLane({
       <div
         className={cn(
           "mb-0.5",
-          showIv ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted" : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
+          showIv
+            ? calcEnabled
+              ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+              : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+            : calcEnabled
+              ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+              : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
           "py-0"
         )}
       >
@@ -822,6 +910,12 @@ export function StatsLane({
         )}
         {/* Col 6/7: final — no heading */}
         <span />
+        {/* Boost header */}
+        {calcEnabled && (
+          <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
+            ±
+          </span>
+        )}
       </div>
 
       {/* 6 horizontal stat rows */}
@@ -844,6 +938,8 @@ export function StatsLane({
             isChampions,
           });
 
+          const boostKey = STAT_TO_BOOST_KEY[statKey];
+
           return (
             <StatRow
               key={statKey}
@@ -863,6 +959,9 @@ export function StatsLane({
               showIv={showIv}
               onUpdate={handleUpdate}
               onLiveEv={handleLiveEv}
+              boost={calcEnabled && boostKey ? calcState.attackerBoosts[boostKey] : undefined}
+              onBoostChange={calcEnabled && boostKey ? (v) => calcState.setAttackerBoost(boostKey, v) : undefined}
+              showBoostCol={calcEnabled}
             />
           );
         })}

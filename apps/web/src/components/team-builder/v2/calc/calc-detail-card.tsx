@@ -227,7 +227,12 @@ export function CalcDetailCard({
 
         {verdict && (
           <div className={cn("mvdetail-ko", koClass)}>
-            {verdict}
+            {baseOutput.koChance != null &&
+            baseOutput.koChance > 0 &&
+            baseOutput.koChance < 100 &&
+            factor === 1
+              ? `${baseOutput.koChance % 1 === 0 ? baseOutput.koChance.toFixed(0) : baseOutput.koChance.toFixed(1)}% chance to OHKO`
+              : verdict}
             {baseOutput.recoverySuffix && (
               <span className="mvdetail-recovery-tag">
                 {" "}

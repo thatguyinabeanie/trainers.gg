@@ -227,6 +227,12 @@
   display: contents;
 }
 
+/* When calc is off the slot max-width shrinks below 1579px, which would
+   normally trigger the mid-stack layout. Override to keep side-by-side. */
+[data-calc-open="false"] .row-right {
+  display: contents;
+}
+
 @container slot (max-width: 1579px) {
   .row-right {
     display: flex;
@@ -240,19 +246,19 @@
   display: contents;
 }
 
-[data-layout="3x2-vertical"] .row-vertical-content {
+[data-layout="2x3-vertical"] .row-vertical-content {
   display: flex;
   flex-direction: column;
   flex: 1 1 0;
   min-width: 0;
 }
 
-[data-layout="3x2-vertical"] .row-active {
+[data-layout="2x3-vertical"] .row-active {
   flex-direction: column;
   align-items: stretch;
 }
 
-[data-layout="3x2-vertical"] .rib {
+[data-layout="2x3-vertical"] .rib {
   flex-direction: row;
   justify-content: space-between;
   width: 100%;
@@ -289,15 +295,15 @@
   }
 }
 
-[data-layout="3x2-vertical"] .rib-right {
+[data-layout="2x3-vertical"] .rib-right {
   display: none;
 }
 
-[data-layout="3x2-vertical"] .rib-remove-fallback {
+[data-layout="2x3-vertical"] .rib-remove-fallback {
   display: flex;
 }
 
-[data-layout="3x2-vertical"] .rib-decorations {
+[data-layout="2x3-vertical"] .rib-decorations {
   display: flex;
   flex-direction: row;
   gap: 4px;

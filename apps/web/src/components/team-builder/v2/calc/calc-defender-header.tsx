@@ -54,11 +54,10 @@ export interface DefenderMonHeaderProps {
 /**
  * Identity section for the damage calc defender panel.
  *
- * Vertical-stack layout: species pill, sprite, type pills, then Item / Ability /
- * Nature / Tera formRows below the sprite. Sits as the left lane of the defender
- * column with the spread stats lane to its right.
- *
- * The "vs Attacker · HP" badge lives in the parent panel header, not here.
+ * Mirrors the vertical PokeRow card identity layout:
+ * - Sprite left (140px basis) with species picker pill below
+ * - Item / Ability / Nature / Tera fields to the right of sprite
+ * - Type pills below the sprite section
  */
 export function DefenderMonHeader({
   defenderSpecies,
@@ -78,9 +77,6 @@ export function DefenderMonHeader({
   const showTera = formatSupportsTera(format);
   const types = defenderSpecies ? getSpeciesTypes(defenderSpecies) : [];
 
-  // Mega-aware ability display. The team-sheet column stores the BASE
-  // ability (legality requirement); the calc engine uses the mega's
-  // post-evolution ability for damage. Show both when species is a mega.
   const megaAbility = defenderSpecies
     ? getMegaAbilityForSpecies(defenderSpecies)
     : null;
@@ -88,8 +84,6 @@ export function DefenderMonHeader({
   const baseSpecies = defenderSpecies
     ? getCanonicalBaseSpecies(defenderSpecies)
     : "";
-  // Picker is scoped to the BASE form so the user keeps editing the
-  // tournament-relevant ability — not the mega's intrinsic ability.
   const pickerSpecies = isMegaForm ? baseSpecies : defenderSpecies;
   const displayAbility =
     isMegaForm && defenderMegaActive ? megaAbility : defenderAbility;
@@ -107,131 +101,134 @@ export function DefenderMonHeader({
   const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
-    <div className="flex w-60 shrink-0 flex-col gap-1.5 border-r p-2">
-      {/* Species pill + mega toggle (when applicable) */}
-      <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => setPickerOpen(true)}
-          className={cn(
-            "border-border bg-background hover:border-primary focus-visible:border-primary",
-            "flex min-w-0 flex-1 items-center gap-1 rounded-md border px-2 py-1 text-left text-[11.5px]",
-            "outline-none transition-colors"
-          )}
-        >
-          <span
-            className={cn(
-              "min-w-0 flex-1 truncate",
-              defenderSpecies
-                ? "text-foreground font-medium"
-                : "text-muted-foreground"
+    <div className="flex w-full flex-col border-b border-dashed border-border">
+      {/* Sprite + meta row */}
+      <div className="flex min-w-0 flex-row items-center">
+        {/* Sprite column */}
+        <div className="flex shrink-0 grow-0 basis-[140px] flex-col items-center justify-center gap-1.5 px-1 py-2">
+          <div className="size-24 shrink-0 overflow-hidden rounded-md">
+            <Sprite
+              species={defenderSpecies || "Incineroar"}
+              types={types}
+              size={96}
+            />
+          </div>
+
+          {/* Species picker pill below sprite */}
+          <div className="flex w-full items-center justify-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className={cn(
+                "border-border bg-background hover:border-primary focus-visible:border-primary",
+                "flex min-w-0 items-center gap-1 rounded-md border px-2 py-0.5 text-left text-[11px]",
+                "outline-none transition-colors"
+              )}
+            >
+              <span
+                className={cn(
+                  "min-w-0 truncate",
+                  defenderSpecies
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground"
+                )}
+              >
+                {defenderSpecies || "Choose…"}
+              </span>
+              <span aria-hidden className="text-[9px] text-muted-foreground">
+                ▾
+              </span>
+            </button>
+
+            {isMegaForm && (
+              <MegaToggle
+                active={defenderMegaActive}
+                onToggle={() => setDefenderMegaActive(!defenderMegaActive)}
+              />
             )}
-            title={defenderSpecies || undefined}
-          >
-            {defenderSpecies || "Choose species…"}
-          </span>
-          <span aria-hidden className="text-[9px] text-muted-foreground">
-            ▾
-          </span>
-        </button>
+          </div>
 
-        <SpeciesPickerDialog
-          open={pickerOpen}
-          onOpenChange={setPickerOpen}
-          value={defenderSpecies}
-          format={format}
-          onPick={(species) => setDefenderSpecies(species)}
-        />
-
-        {isMegaForm && (
-          <MegaToggle
-            active={defenderMegaActive}
-            onToggle={() => setDefenderMegaActive(!defenderMegaActive)}
+          <SpeciesPickerDialog
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+            value={defenderSpecies}
+            format={format}
+            onPick={(species) => setDefenderSpecies(species)}
           />
-        )}
-      </div>
 
-      {/* Sprite — centered in the lane */}
-      <div className="mx-auto size-24 shrink-0 overflow-hidden rounded-md">
-        <Sprite
-          species={defenderSpecies || "Incineroar"}
-          types={types}
-          size={96}
-        />
-      </div>
-
-      {types.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {types.map((t) => (
-            <TypePill key={t} t={t} />
-          ))}
+          {/* Type pills */}
+          {types.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-1">
+              {types.map((t) => (
+                <TypePill key={t} t={t} />
+              ))}
+            </div>
+          )}
         </div>
-      )}
 
-      <FormChip label="Item" value={defenderItem}>
-        <ItemPicker
-          value={defenderItem}
-          format={format}
-          teamItems={[]}
-          onPick={(item) => setDefenderItem(item)}
-          onClose={() => undefined}
-        />
-      </FormChip>
+        {/* Meta fields column — item, ability, nature, tera */}
+        <div className="flex min-w-0 shrink basis-auto flex-col justify-center gap-1 px-1.5 py-2">
+          <FormChip label="ITEM" value={defenderItem}>
+            <ItemPicker
+              value={defenderItem}
+              format={format}
+              teamItems={[]}
+              onPick={(item) => setDefenderItem(item)}
+              onClose={() => undefined}
+            />
+          </FormChip>
 
-      {/* Ability — when species is a mega and the toggle is on, the picker
-          edits the BASE ability (stored) but the row's primary value shows
-          the post-evolution ability for clarity. The base ability is shown
-          as a small secondary line for tournament transparency. */}
-      <FormChip
-        label="Abil"
-        value={displayAbility}
-        trailing={
-          isMegaForm && defenderMegaActive ? (
-            <span className="shrink-0 whitespace-nowrap font-mono text-[9px] text-muted-foreground/70">
-              base: {defenderAbility || "—"}
-            </span>
-          ) : null
-        }
-      >
-        <AbilityPicker
-          value={defenderAbility}
-          species={pickerSpecies}
-          format={format}
-          onPick={(ability) => setDefenderAbility(ability)}
-          onClose={() => undefined}
-        />
-      </FormChip>
+          <FormChip
+            label="ABIL"
+            value={displayAbility}
+            trailing={
+              isMegaForm && defenderMegaActive ? (
+                <span className="shrink-0 whitespace-nowrap font-mono text-[9px] text-muted-foreground/70">
+                  base: {defenderAbility || "—"}
+                </span>
+              ) : null
+            }
+          >
+            <AbilityPicker
+              value={defenderAbility}
+              species={pickerSpecies}
+              format={format}
+              onPick={(ability) => setDefenderAbility(ability)}
+              onClose={() => undefined}
+            />
+          </FormChip>
 
-      {/* Nature — passes nature ±chevrons as the trailing element */}
-      <FormChip
-        label="Nat"
-        value={defenderNature}
-        trailing={
-          <NatureChevrons boost={natUp} reduce={natDown} className="shrink-0" />
-        }
-      >
-        <NaturePicker
-          value={defenderNature}
-          onPick={(nat) => setDefenderNature(nat)}
-          onClose={() => undefined}
-        />
-      </FormChip>
+          <FormChip
+            label="NAT"
+            value={defenderNature}
+            trailing={
+              <NatureChevrons boost={natUp} reduce={natDown} className="shrink-0" />
+            }
+          >
+            <NaturePicker
+              value={defenderNature}
+              onPick={(nat) => setDefenderNature(nat)}
+              onClose={() => undefined}
+            />
+          </FormChip>
 
-      {showTera && (
-        <FormChip label="Tera" value={defenderTera}>
-          <TypePicker
-            value={defenderTera}
-            onPick={(type) => setDefenderTera(type)}
-            onClose={() => undefined}
-          />
-        </FormChip>
-      )}
+          {showTera && (
+            <FormChip label="Tera" value={defenderTera}>
+              <TypePicker
+                value={defenderTera}
+                onPick={(type) => setDefenderTera(type)}
+                onClose={() => undefined}
+              />
+            </FormChip>
+          )}
 
-      {!hasLegalAbility && (
-        <p className="px-1 font-mono text-[9px] text-muted-foreground/60">
-          No abilities found for format
-        </p>
-      )}
+          {!hasLegalAbility && (
+            <p className="px-1 font-mono text-[9px] text-muted-foreground/60">
+              No abilities found for format
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 
 import { Tooltip, TooltipContent } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface DescriptionTooltipProps {
   /** Optional bold header rendered above the description (e.g. ability name). */
@@ -13,6 +14,8 @@ interface DescriptionTooltipProps {
   showContent: boolean;
   /** The trigger element — typically a `TooltipTrigger`. */
   children: ReactNode;
+  /** Override classes on the tooltip content container. */
+  tooltipClassName?: string;
 }
 
 export function DescriptionTooltip({
@@ -20,6 +23,7 @@ export function DescriptionTooltip({
   description,
   showContent,
   children,
+  tooltipClassName,
 }: DescriptionTooltipProps) {
   const visible = Boolean(showContent && description);
   // When showContent flips false → true (e.g. a sibling picker popover just
@@ -43,7 +47,7 @@ export function DescriptionTooltip({
     <Tooltip key={remountKey}>
       {children}
       {visible && (
-        <TooltipContent side="bottom" className="max-w-64 text-xs">
+        <TooltipContent side="bottom" className={cn("max-w-64 text-xs", tooltipClassName)}>
           {title && <span className="font-semibold">{title}</span>}
           <span className="block">{description}</span>
         </TooltipContent>
