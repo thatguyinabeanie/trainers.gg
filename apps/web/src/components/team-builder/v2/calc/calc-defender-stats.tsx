@@ -446,7 +446,7 @@ export function CalcDefenderStats({
       </div>
 
       {/* ── HP% slider ────────────────────────────────────────────── */}
-      <div className="mt-1 flex items-center gap-2">
+      <div className="mt-1 flex items-center gap-2 px-1">
         <span className="w-5 font-mono text-[9.5px] font-semibold text-rose-500 dark:text-rose-400">
           HP
         </span>
