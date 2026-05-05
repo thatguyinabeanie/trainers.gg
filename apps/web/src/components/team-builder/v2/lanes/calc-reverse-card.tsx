@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { getMoveData } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
@@ -99,7 +101,9 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
                         )}
                         onClick={() => {
                           if (m.hasCalc && m.desc) {
-                            void navigator.clipboard.writeText(m.desc);
+                            navigator.clipboard.writeText(m.desc).catch(() => {
+                              toast.error("Couldn't copy to clipboard");
+                            });
                           }
                         }}
                       />

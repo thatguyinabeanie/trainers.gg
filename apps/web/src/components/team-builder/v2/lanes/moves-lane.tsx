@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import { getMoveData, type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
@@ -149,12 +150,17 @@ function CalcDescTooltip({ desc, children }: { desc: string; children: ReactNode
 
 function CalcCopyButton({ desc }: { desc: string }) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function handleCopy(e: React.MouseEvent) {
     e.stopPropagation();
-    void navigator.clipboard.writeText(desc);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    navigator.clipboard.writeText(desc).then(() => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setCopied(true);
+      timerRef.current = setTimeout(() => setCopied(false), 1500);
+    }).catch(() => {
+      toast.error("Couldn't copy to clipboard");
+    });
   }
 
   return (
