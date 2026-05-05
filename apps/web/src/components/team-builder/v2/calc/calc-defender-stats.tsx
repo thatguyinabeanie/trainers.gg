@@ -462,7 +462,7 @@ export function CalcDefenderStats({
           style={{ height: 6 }}
         />
         <span className="w-[72px] text-right font-mono text-[10px] text-muted-foreground">
-          {currentHP}/{maxHP} HP
+          {currentHP}/{maxHP}
         </span>
         <span className="w-8 text-right font-mono text-[10px] font-semibold text-muted-foreground">
           {defenderHpPercent}%
