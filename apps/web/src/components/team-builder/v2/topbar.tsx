@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronDownIcon, CheckIcon } from "lucide-react";
 
@@ -65,13 +65,15 @@ function EditableName({ defaultValue, onSave }: EditableNameProps) {
   const [value, setValue] = useState(defaultValue);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [prevDefault, setPrevDefault] = useState(defaultValue);
 
-  // Sync local value when defaultValue changes externally (e.g. after save)
-  useEffect(() => {
+  // Sync local value when defaultValue changes externally (render-time reset)
+  if (prevDefault !== defaultValue) {
+    setPrevDefault(defaultValue);
     if (!editing) {
       setValue(defaultValue);
     }
-  }, [defaultValue, editing]);
+  }
 
   async function commit() {
     const trimmed = value.trim();
