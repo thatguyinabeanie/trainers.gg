@@ -550,18 +550,19 @@ export async function addStaffToGroup(
 
   // Remove any existing user_group_roles for this community
   if (existingGroupRoleIds.length > 0) {
-    await supabase
+    const { error: deleteError } = await supabase
       .from("user_group_roles")
       .delete()
       .eq("user_id", userId)
       .in("group_role_id", existingGroupRoleIds);
+
+    if (deleteError) throw deleteError;
   }
 
   // Add user to the new group
-  const { error: roleError } = await supabase.from("user_group_roles").insert({
-    user_id: userId,
-    group_role_id: groupRole.id,
-  });
+  const { error: roleError } = await supabase
+    .from("user_group_roles")
+    .insert({ user_id: userId, group_role_id: groupRole.id });
 
   if (roleError) throw roleError;
 

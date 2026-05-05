@@ -745,14 +745,17 @@ export function StaffClient({
     Map<string, { group: CommunityGroup | null }>
   >(new Map());
 
-  // Clear optimistic moves when server confirms
-  const [prevStaffMembers, setPrevStaffMembers] = useState(staffMembers);
-  if (prevStaffMembers !== staffMembers) {
-    setPrevStaffMembers(staffMembers);
+  // Clear optimistic moves when server data arrives (confirms the mutation).
+  // This is a legitimate sync-with-external-data effect: the refetch after a
+  // successful drag-drop delivers new staffMembers, and we reset local
+  // optimistic state in response. Using useEffect (not render-time comparison)
+  // avoids mid-render setState that can interfere with @dnd-kit's pointer tracking.
+  useEffect(() => {
     if (staffMembers) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate: sync optimistic state with server data
       setOptimisticMoves(new Map());
     }
-  }
+  }, [staffMembers]);
 
   // Apply optimistic moves to staff data
   const baseStaff = staffMembers ?? initialStaff;
