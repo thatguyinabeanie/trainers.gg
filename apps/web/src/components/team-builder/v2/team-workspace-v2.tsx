@@ -638,7 +638,7 @@ export function TeamWorkspaceV2({
               {!isMobile && state.sideDrawer && (
                 <>
                   <div
-                    className="border-border bg-muted/30 flex shrink-0 flex-col border-r transition-[width] duration-200 ease-in-out"
+                    className="border-border bg-muted/30 flex min-h-0 shrink-0 flex-col overflow-hidden border-r transition-[width] duration-200 ease-in-out"
                     style={{ width: state.sideWidthPx }}
                   >
                     {state.sideDrawer === "speed" ? (
@@ -656,7 +656,7 @@ export function TeamWorkspaceV2({
                             ×
                           </button>
                         </header>
-                        <div className="min-h-0 flex-1 overflow-y-auto">
+                        <div className="min-h-0 flex-1 overflow-hidden">
                           <SpeedTiersPanel
                             team={optimisticTeamPokemon}
                             format={format}

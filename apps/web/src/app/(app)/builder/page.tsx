@@ -10,16 +10,18 @@ export const metadata = {
 
 export default function BuilderPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-full items-center justify-center">
-          <div className="text-muted-foreground text-sm">
-            Loading builder...
+    <div className="h-[calc(100dvh-4rem)] overflow-hidden">
+      <Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center">
+            <div className="text-muted-foreground text-sm">
+              Loading builder...
+            </div>
           </div>
-        </div>
-      }
-    >
-      <LocalBuilderWorkspace />
-    </Suspense>
+        }
+      >
+        <LocalBuilderWorkspace />
+      </Suspense>
+    </div>
   );
 }
