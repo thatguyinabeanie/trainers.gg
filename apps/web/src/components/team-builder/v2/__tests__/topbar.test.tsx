@@ -51,6 +51,10 @@ jest.mock("@/components/dashboard/page-header", () => ({
   ),
 }));
 
+jest.mock("@/components/dashboard/notifications-popover", () => ({
+  NotificationsPopover: () => <button data-testid="notifications">Notifications</button>,
+}));
+
 // =============================================================================
 // Import after mocks
 // =============================================================================
@@ -123,6 +127,11 @@ function renderTopbar(
   const onOpenImport = jest.fn();
   const onJumpToPokemon = jest.fn();
   const onValidate = jest.fn();
+  const onNameChange = jest.fn().mockResolvedValue(undefined);
+
+  const alts = [
+    { id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null },
+  ];
 
   const utils = render(
     <Topbar
@@ -130,15 +139,17 @@ function renderTopbar(
       filledCount={props.filledCount ?? 2}
       format={props.format as GameFormat | undefined}
       username="ash_ketchum"
+      alts={alts as any}
       onOpenImport={onOpenImport}
       validationErrors={props.validationErrors ?? []}
       onJumpToPokemon={onJumpToPokemon}
       onValidate={onValidate}
+      onNameChange={onNameChange}
       exportMenu={props.exportMenu}
     />
   );
 
-  return { ...utils, onOpenImport, onJumpToPokemon, onValidate };
+  return { ...utils, onOpenImport, onJumpToPokemon, onValidate, onNameChange };
 }
 
 // =============================================================================
@@ -146,20 +157,16 @@ function renderTopbar(
 // =============================================================================
 
 describe("Topbar — basic render", () => {
-  it("renders the team name in the input", () => {
+  it("renders the team name as an editable button", () => {
     renderTopbar();
-    expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /edit team name/i })).toBeInTheDocument();
+    expect(screen.getByText("Test Team")).toBeInTheDocument();
   });
 
-  it("renders a link to the teams page with the username", () => {
+  it("renders a link to the teams page with the username (single alt)", () => {
     renderTopbar();
     const link = screen.getByRole("link", { name: "ash_ketchum" });
     expect(link).toHaveAttribute("href", "/dashboard/alts/ash_ketchum/teams");
-  });
-
-  it("renders the filled count stat block", () => {
-    renderTopbar({ filledCount: 4 });
-    expect(screen.getByText("4/6")).toBeInTheDocument();
   });
 
   it("renders the Import button", () => {

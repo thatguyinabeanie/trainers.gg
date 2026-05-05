@@ -181,6 +181,7 @@ function renderComponent(props: RenderProps = {}) {
       setDefenderEv={setDefenderEv}
       setDefenderBoost={setDefenderBoost}
       setDefenderHpPercent={setDefenderHpPercent}
+      setDefenderNature={jest.fn()}
     />
   );
 

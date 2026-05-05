@@ -131,6 +131,7 @@ export function CalcBottomPanel({
             setDefenderEv={calc.setDefenderEv}
             setDefenderBoost={calc.setDefenderBoost}
             setDefenderHpPercent={calc.setDefenderHpPercent}
+            setDefenderNature={calc.setDefenderNature}
           />
         </div>
 

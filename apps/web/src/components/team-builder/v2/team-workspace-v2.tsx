@@ -38,6 +38,7 @@ import {
   addPokemonToTeamAction,
   removePokemonFromTeamAction,
   reorderTeamPokemonAction,
+  transferTeamAction,
   updatePokemonAction,
   updateTeamAction,
 } from "@/actions/teams";
@@ -105,6 +106,7 @@ interface TeamWorkspaceV2Props {
   team: TeamWithPokemon;
   format: GameFormat | undefined;
   username: string;
+  alts: Tables<"alts">[];
 }
 
 // =============================================================================
@@ -255,6 +257,7 @@ export function TeamWorkspaceV2({
   team,
   format,
   username,
+  alts,
 }: TeamWorkspaceV2Props) {
   const router = useRouter();
   const state = useBuilderState();
@@ -564,10 +567,19 @@ export function TeamWorkspaceV2({
             filledCount={filledCount}
             format={format}
             username={username}
+            alts={alts}
             onOpenImport={() => setImportOpen(true)}
             validationErrors={validationErrors}
             onJumpToPokemon={handleJumpToPokemon}
             onValidate={validate}
+            onNameChange={async (name) => {
+              const result = await updateTeamAction(team.id, { name });
+              if (!result.success) {
+                toast.error(result.error ?? "Failed to rename team.");
+                return;
+              }
+              router.refresh();
+            }}
             onFormatChange={async (formatId) => {
               const result = await updateTeamAction(team.id, {
                 format: formatId,
@@ -576,6 +588,20 @@ export function TeamWorkspaceV2({
                 toast.error(result.error ?? "Failed to update format.");
                 return;
               }
+              router.refresh();
+            }}
+            onAltChange={async (altId) => {
+              const targetAlt = alts.find((a) => a.id === altId);
+              if (!targetAlt) return;
+              const result = await transferTeamAction(team.id, altId);
+              if (!result.success) {
+                toast.error(result.error ?? "Failed to transfer team.");
+                return;
+              }
+              toast.success(`Team transferred to ${targetAlt.username}.`);
+              router.push(
+                `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
+              );
               router.refresh();
             }}
             exportMenu={<ExportMenu team={team} />}

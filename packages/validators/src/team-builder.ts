@@ -50,6 +50,14 @@ export const forkTeamInputSchema = z.object({
 
 export type ForkTeamInput = z.infer<typeof forkTeamInputSchema>;
 
+/** Input for transferring a team to a different alt. */
+export const transferTeamInputSchema = z.object({
+  teamId: positiveIntSchema,
+  targetAltId: positiveIntSchema,
+});
+
+export type TransferTeamInput = z.infer<typeof transferTeamInputSchema>;
+
 // =============================================================================
 // Pokemon CRUD schemas
 // =============================================================================

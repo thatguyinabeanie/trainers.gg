@@ -155,6 +155,8 @@ import { TeamWorkspaceV2 } from "../team-workspace-v2";
 // Fixtures
 // =============================================================================
 
+const MOCK_ALTS = [{ id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null }] as any;
+
 function makePokemon(
   id: number,
   species: string,
@@ -236,6 +238,7 @@ describe("TeamWorkspaceV2 — slot rendering", () => {
         team={TWO_POKEMON_TEAM}
         format={undefined}
         username="ash_ketchum"
+        alts={MOCK_ALTS}
       />
     );
 
@@ -250,6 +253,7 @@ describe("TeamWorkspaceV2 — slot rendering", () => {
         team={TWO_POKEMON_TEAM}
         format={undefined}
         username="ash_ketchum"
+        alts={MOCK_ALTS}
       />
     );
 
@@ -272,6 +276,7 @@ describe("TeamWorkspaceV2 — buildSlots position mapping", () => {
         team={team}
         format={undefined}
         username="ash_ketchum"
+        alts={MOCK_ALTS}
       />
     );
 
@@ -297,6 +302,7 @@ describe("TeamWorkspaceV2 — reorder success path", () => {
         team={TWO_POKEMON_TEAM}
         format={undefined}
         username="ash_ketchum"
+        alts={MOCK_ALTS}
       />
     );
 
@@ -313,6 +319,7 @@ describe("TeamWorkspaceV2 — empty team", () => {
         team={emptyTeam}
         format={undefined}
         username="ash_ketchum"
+        alts={MOCK_ALTS}
       />
     );
 
@@ -331,6 +338,7 @@ describe("TeamWorkspaceV2 — no duplicate slot IDs", () => {
         team={TWO_POKEMON_TEAM}
         format={undefined}
         username="ash_ketchum"
+        alts={MOCK_ALTS}
       />
     );
 
@@ -347,6 +355,7 @@ describe("TeamWorkspaceV2 — no duplicate slot IDs", () => {
         team={TWO_POKEMON_TEAM}
         format={undefined}
         username="ash_ketchum"
+        alts={MOCK_ALTS}
       />
     );
 
@@ -364,6 +373,7 @@ describe("TeamWorkspaceV2 — no duplicate slot IDs", () => {
         team={TWO_POKEMON_TEAM}
         format={undefined}
         username="ash_ketchum"
+        alts={MOCK_ALTS}
       />
     );
 
