@@ -119,7 +119,7 @@ export function CalcBottomPanel({
         />
 
         {/* Defender stats */}
-        <div className="border-b border-dashed border-border px-2 py-1.5">
+        <div className="border-b border-dashed border-border px-3 py-1.5">
           <CalcDefenderStats
             defenderSpecies={effectiveDefenderSpecies}
             defenderNature={calc.defenderNature}
@@ -135,7 +135,7 @@ export function CalcBottomPanel({
         </div>
 
         {/* Defender moves */}
-        <div className="border-b border-dashed border-border p-2">
+        <div className="border-b border-dashed border-border px-3 py-2">
           <CalcDefenderMoves
             effectiveMoves={effectiveMoves}
             defenderSpecies={calc.defenderSpecies}

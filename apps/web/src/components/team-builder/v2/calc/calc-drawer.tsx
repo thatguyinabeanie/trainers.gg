@@ -162,33 +162,35 @@ function CalcDrawerContent({
         teammates={teammates}
       />
 
-      <CalcFieldBlock
-        gameType={calc.gameType}
-        setGameType={handleGameTypeChange}
-        attackerSide={calc.attackerSide}
-        setAttackerSide={calc.setAttackerSide}
-        defenderSide={calc.defenderSide}
-        setDefenderSide={calc.setDefenderSide}
-        field={{
-          weather: calc.weather,
-          terrain: calc.terrain,
-          gravity: calc.gravity,
-          fairyAura: calc.fairyAura,
-        }}
-        setField={{
-          setWeather: calc.setWeather,
-          setTerrain: calc.setTerrain,
-          setGravity: calc.setGravity,
-          setFairyAura: calc.setFairyAura,
-        }}
-        doubles={{ foesAlive: field.foesAlive, allyAlive: field.allyAlive }}
-        setDoubles={{
-          setFoesAlive: handleSetFoesAlive,
-          setAllyAlive: handleSetAllyAlive,
-        }}
-        fainted={{ yours: faintedYours, theirs: faintedTheirs }}
-        setFainted={{ setYours: setFaintedYours, setTheirs: setFaintedTheirs }}
-      />
+      <div className="px-3 py-2">
+        <CalcFieldBlock
+          gameType={calc.gameType}
+          setGameType={handleGameTypeChange}
+          attackerSide={calc.attackerSide}
+          setAttackerSide={calc.setAttackerSide}
+          defenderSide={calc.defenderSide}
+          setDefenderSide={calc.setDefenderSide}
+          field={{
+            weather: calc.weather,
+            terrain: calc.terrain,
+            gravity: calc.gravity,
+            fairyAura: calc.fairyAura,
+          }}
+          setField={{
+            setWeather: calc.setWeather,
+            setTerrain: calc.setTerrain,
+            setGravity: calc.setGravity,
+            setFairyAura: calc.setFairyAura,
+          }}
+          doubles={{ foesAlive: field.foesAlive, allyAlive: field.allyAlive }}
+          setDoubles={{
+            setFoesAlive: handleSetFoesAlive,
+            setAllyAlive: handleSetAllyAlive,
+          }}
+          fainted={{ yours: faintedYours, theirs: faintedTheirs }}
+          setFainted={{ setYours: setFaintedYours, setTheirs: setFaintedTheirs }}
+        />
+      </div>
     </div>
   );
 }
