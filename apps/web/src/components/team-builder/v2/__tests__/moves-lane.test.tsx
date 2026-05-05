@@ -178,6 +178,10 @@ jest.mock("../calc/calc-detail-card", () => ({
 type RowOutputs = readonly (null | {
   minPercent: number;
   maxPercent: number;
+  rolls?: number[];
+  koChance?: number | null;
+  desc?: string;
+  recoveryTier?: string | null;
 })[];
 const mockCalcContext: {
   calcEnabled: boolean;
@@ -447,8 +451,8 @@ describe("MovesLane — move tile display", () => {
 
   it("shows accuracy for a move with numeric accuracy", () => {
     renderLane({ move1: "Moonblast" });
-    // getMoveData returns accuracy: 100 → "100%"
-    expect(screen.getAllByText("100%").length).toBeGreaterThan(0);
+    // getMoveData returns accuracy: 100 → rendered as plain number
+    expect(screen.getAllByText("100").length).toBeGreaterThan(0);
   });
 
   it("shows '—' for accuracy when accuracy is true (always-hit)", () => {
@@ -640,11 +644,68 @@ describe("MovesLane — ghost mode (pokemon: null)", () => {
   });
 
   it("renders '+ Add move' as span elements, not buttons", () => {
-    const { container } = render(<MovesLane pokemon={null} />);
-    const spans = container.querySelectorAll("span.mvline-name");
-    expect(spans.length).toBe(4);
-    spans.forEach((span) => {
-      expect(span.tagName.toLowerCase()).toBe("span");
+    render(<MovesLane pokemon={null} />);
+    const addMoveSpans = screen.getAllByText("+ Add move");
+    expect(addMoveSpans.length).toBe(4);
+    addMoveSpans.forEach((el) => {
+      expect(el.tagName.toLowerCase()).toBe("span");
     });
+  });
+});
+
+describe("MovesLane — table headers", () => {
+  it("provides sr-only accessible labels for Type and Category column headers", () => {
+    renderLane();
+    const headers = screen.getAllByRole("columnheader");
+    const texts = headers.map((h) => h.textContent?.trim());
+    expect(texts).toContain("Type");
+    expect(texts).toContain("Category");
+  });
+});
+
+describe("MovesLane — inline calc display", () => {
+  beforeEach(() => {
+    (useCalcStateContext as jest.Mock).mockImplementation(() => mockCalcContext);
+    mockCalcContext.calcEnabled = false;
+    mockCalcContext.rowOutputs = [null, null, null, null];
+  });
+
+  afterEach(() => {
+    mockCalcContext.calcEnabled = false;
+    mockCalcContext.rowOutputs = [null, null, null, null];
+  });
+
+  it("shows damage percentage range and KO tier for a damaging move when calc is enabled", () => {
+    mockCalcContext.calcEnabled = true;
+    mockCalcContext.rowOutputs = [
+      { minPercent: 65.4, maxPercent: 77.2, rolls: [] },
+      null,
+      null,
+      null,
+    ];
+    renderLane({ move1: "Moonblast", move2: null, move3: null, move4: null });
+    expect(screen.getByText("65.4–77.2%")).toBeInTheDocument();
+    expect(screen.getByText("4HKO+")).toBeInTheDocument();
+  });
+
+  it("shows '—' placeholder for Status moves even when calc is enabled", () => {
+    (getMoveData as jest.Mock).mockReturnValueOnce({
+      type: "Normal",
+      category: "Status",
+      basePower: 0,
+      accuracy: true,
+      shortDesc: "User falls asleep.",
+    });
+    mockCalcContext.calcEnabled = true;
+    mockCalcContext.rowOutputs = [
+      { minPercent: 50.0, maxPercent: 60.0, rolls: [] },
+      null,
+      null,
+      null,
+    ];
+    renderLane({ move1: "Rest", move2: null, move3: null, move4: null });
+    // Status move: hasCalc = false → percentage cell shows "—" not a range
+    expect(screen.queryByText("50.0–60.0%")).not.toBeInTheDocument();
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
 });

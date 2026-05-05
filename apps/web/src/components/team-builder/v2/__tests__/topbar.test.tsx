@@ -3,7 +3,7 @@
 /**
  * Tests for the Topbar component.
  * Verifies: Import button, Validate popover trigger, error/warning styling,
- * format badge rendering, filledCount display.
+ * format badge rendering.
  */
 
 import { render, screen } from "@testing-library/react";
@@ -11,7 +11,7 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 
 import { type GameFormat } from "@trainers/pokemon";
-import { type TeamWithPokemon } from "@trainers/supabase";
+import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 
 // =============================================================================
 // Mocks
@@ -49,6 +49,10 @@ jest.mock("@/components/dashboard/page-header", () => ({
   PageHeader: ({ children }: { children: React.ReactNode }) => (
     <header data-testid="page-header">{children}</header>
   ),
+}));
+
+jest.mock("@/components/dashboard/notifications-popover", () => ({
+  NotificationsPopover: () => <button data-testid="notifications">Notifications</button>,
 }));
 
 // =============================================================================
@@ -114,7 +118,6 @@ const DEFAULT_FORMAT = {
 
 function renderTopbar(
   props: Partial<{
-    filledCount: number;
     format: typeof DEFAULT_FORMAT | undefined;
     validationErrors: ValidationError[];
     exportMenu: React.ReactNode;
@@ -123,22 +126,28 @@ function renderTopbar(
   const onOpenImport = jest.fn();
   const onJumpToPokemon = jest.fn();
   const onValidate = jest.fn();
+  const onNameChange = jest.fn().mockResolvedValue(undefined);
+
+  const alts = [
+    { id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null },
+  ];
 
   const utils = render(
     <Topbar
       team={makeTeam()}
-      filledCount={props.filledCount ?? 2}
       format={props.format as GameFormat | undefined}
       username="ash_ketchum"
+      alts={alts as unknown as Tables<"alts">[]}
       onOpenImport={onOpenImport}
       validationErrors={props.validationErrors ?? []}
       onJumpToPokemon={onJumpToPokemon}
       onValidate={onValidate}
+      onNameChange={onNameChange}
       exportMenu={props.exportMenu}
     />
   );
 
-  return { ...utils, onOpenImport, onJumpToPokemon, onValidate };
+  return { ...utils, onOpenImport, onJumpToPokemon, onValidate, onNameChange };
 }
 
 // =============================================================================
@@ -146,20 +155,16 @@ function renderTopbar(
 // =============================================================================
 
 describe("Topbar — basic render", () => {
-  it("renders the team name in the input", () => {
+  it("renders the team name as an editable button", () => {
     renderTopbar();
-    expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /edit team name/i })).toBeInTheDocument();
+    expect(screen.getByText("Test Team")).toBeInTheDocument();
   });
 
-  it("renders a link to the teams page with the username", () => {
+  it("renders a link to the teams page with the username (single alt)", () => {
     renderTopbar();
     const link = screen.getByRole("link", { name: "ash_ketchum" });
     expect(link).toHaveAttribute("href", "/dashboard/alts/ash_ketchum/teams");
-  });
-
-  it("renders the filled count stat block", () => {
-    renderTopbar({ filledCount: 4 });
-    expect(screen.getByText("4/6")).toBeInTheDocument();
   });
 
   it("renders the Import button", () => {
@@ -264,5 +269,123 @@ describe("Topbar — exportMenu slot", () => {
   it("does not crash when exportMenu is undefined", () => {
     renderTopbar({ exportMenu: undefined });
     expect(screen.getByRole("button", { name: /import/i })).toBeInTheDocument();
+  });
+});
+
+describe("Topbar — inline name editing", () => {
+  it("enters edit mode when the name button is clicked", async () => {
+    const user = userEvent.setup();
+    renderTopbar();
+    const nameBtn = screen.getByRole("button", { name: /edit team name/i });
+    await user.click(nameBtn);
+    // Should now show an input with the team name
+    expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
+  });
+
+  it("commits name change on Enter and calls onNameChange", async () => {
+    const user = userEvent.setup();
+    const { onNameChange } = renderTopbar();
+    const nameBtn = screen.getByRole("button", { name: /edit team name/i });
+    await user.click(nameBtn);
+    const input = screen.getByDisplayValue("Test Team");
+    await user.clear(input);
+    await user.type(input, "New Name{Enter}");
+    expect(onNameChange).toHaveBeenCalledWith("New Name");
+  });
+
+  it("cancels editing on Escape and reverts to original name", async () => {
+    const user = userEvent.setup();
+    const { onNameChange } = renderTopbar();
+    const nameBtn = screen.getByRole("button", { name: /edit team name/i });
+    await user.click(nameBtn);
+    const input = screen.getByDisplayValue("Test Team");
+    await user.clear(input);
+    await user.type(input, "Temp Name{Escape}");
+    expect(onNameChange).not.toHaveBeenCalled();
+    // Should exit editing mode (button visible again)
+    expect(screen.getByRole("button", { name: /edit team name/i })).toBeInTheDocument();
+  });
+
+  it("does not call onNameChange when value is unchanged", async () => {
+    const user = userEvent.setup();
+    const { onNameChange } = renderTopbar();
+    const nameBtn = screen.getByRole("button", { name: /edit team name/i });
+    await user.click(nameBtn);
+    const input = screen.getByDisplayValue("Test Team");
+    // Press Enter without changing
+    await user.type(input, "{Enter}");
+    expect(onNameChange).not.toHaveBeenCalled();
+  });
+
+  it("does not call onNameChange when value is empty/whitespace only", async () => {
+    const user = userEvent.setup();
+    const { onNameChange } = renderTopbar();
+    const nameBtn = screen.getByRole("button", { name: /edit team name/i });
+    await user.click(nameBtn);
+    const input = screen.getByDisplayValue("Test Team");
+    await user.clear(input);
+    await user.type(input, "   {Enter}");
+    expect(onNameChange).not.toHaveBeenCalled();
+  });
+
+  it("commits name change on blur", async () => {
+    const user = userEvent.setup();
+    const { onNameChange } = renderTopbar();
+    const nameBtn = screen.getByRole("button", { name: /edit team name/i });
+    await user.click(nameBtn);
+    const input = screen.getByDisplayValue("Test Team");
+    await user.clear(input);
+    await user.type(input, "Blur Name");
+    await user.tab(); // blur
+    expect(onNameChange).toHaveBeenCalledWith("Blur Name");
+  });
+});
+
+describe("Topbar — format picker", () => {
+  it("renders changeable format badge when onFormatChange is provided", () => {
+    const onFormatChange = jest.fn().mockResolvedValue(undefined);
+    const alts = [
+      { id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null },
+    ];
+    render(
+      <Topbar
+        team={makeTeam()}
+        format={DEFAULT_FORMAT as unknown as GameFormat}
+        username="ash_ketchum"
+        alts={alts as unknown as Tables<"alts">[]}
+        onOpenImport={jest.fn()}
+        validationErrors={[]}
+        onJumpToPokemon={jest.fn()}
+        onValidate={jest.fn()}
+        onNameChange={jest.fn().mockResolvedValue(undefined)}
+        onFormatChange={onFormatChange}
+      />
+    );
+    // Format badge should be present
+    expect(screen.getByText("VGC 2026 Reg I")).toBeInTheDocument();
+  });
+
+  it("renders multiple alts dropdown when onAltChange and multiple alts provided", () => {
+    const onAltChange = jest.fn().mockResolvedValue(undefined);
+    const alts = [
+      { id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null },
+      { id: 2, username: "gary_oak", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null },
+    ];
+    render(
+      <Topbar
+        team={makeTeam()}
+        format={DEFAULT_FORMAT as unknown as GameFormat}
+        username="ash_ketchum"
+        alts={alts as unknown as Tables<"alts">[]}
+        onOpenImport={jest.fn()}
+        validationErrors={[]}
+        onJumpToPokemon={jest.fn()}
+        onValidate={jest.fn()}
+        onNameChange={jest.fn().mockResolvedValue(undefined)}
+        onAltChange={onAltChange}
+      />
+    );
+    // Should show the "Switch alt" button
+    expect(screen.getByRole("button", { name: /switch alt/i })).toBeInTheDocument();
   });
 });

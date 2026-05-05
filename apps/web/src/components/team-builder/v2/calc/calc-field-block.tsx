@@ -168,73 +168,43 @@ function ToggleBtn({ active, onClick, children }: ToggleBtnProps) {
 }
 
 // =============================================================================
-// SideColumn — one column within the combined Sides card
+// SideMirrorRow — a single row in the mirrored Ours | Label | Theirs grid
 // =============================================================================
 
-interface SideColumnProps {
-  title: "Yours" | "Theirs";
-  color: "primary" | "destructive";
-  side: BaseSideState;
-  onUpdate: (patch: Partial<BaseSideState>) => void;
-  fainted: number;
-  setFainted: (n: number) => void;
-}
-
-function SideRow({ label, active, onToggle }: { label: string; active: boolean; onToggle: () => void }) {
+function SideSwitchRow({
+  label,
+  yours,
+  theirs,
+  onToggleYours,
+  onToggleTheirs,
+}: {
+  label: string;
+  yours: boolean;
+  theirs: boolean;
+  onToggleYours: () => void;
+  onToggleTheirs: () => void;
+}) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-xs text-foreground">{label}</span>
-      <Switch checked={active} onCheckedChange={onToggle} />
-    </div>
+    <>
+      <div className="flex justify-end">
+        <Switch size="sm" checked={yours} onCheckedChange={onToggleYours} aria-label={`${label} (ours)`} />
+      </div>
+      <span className="text-center text-[11px]">{label}</span>
+      <div className="flex justify-start">
+        <Switch size="sm" checked={theirs} onCheckedChange={onToggleTheirs} aria-label={`${label} (theirs)`} />
+      </div>
+    </>
   );
 }
 
-function SideColumn({ title, color, side, onUpdate, fainted, setFainted }: SideColumnProps) {
+function SideSectionLabel({ label }: { label: string }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <div
-        className={cn(
-          "font-mono text-[9px] font-bold uppercase tracking-[0.12em]",
-          color === "primary" ? "text-primary" : "text-destructive"
-        )}
-      >
-        {title}
-      </div>
-
-      {/* Boosts */}
-      <SideRow label="Helping Hand" active={side.helpingHand} onToggle={() => onUpdate({ helpingHand: !side.helpingHand })} />
-      <SideRow label="Friend Guard" active={side.friendGuard} onToggle={() => onUpdate({ friendGuard: !side.friendGuard })} />
-      <SideRow label="Salt Cure" active={side.saltCure} onToggle={() => onUpdate({ saltCure: !side.saltCure })} />
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-foreground">Knocked Out</span>
-        <Stepper<(typeof FAINTED_OPTIONS)[number]>
-          options={FAINTED_OPTIONS}
-          value={fainted as (typeof FAINTED_OPTIONS)[number]}
-          onChange={setFainted}
-        />
-      </div>
-
-      {/* Screens */}
-      <div className="flex flex-col gap-1">
-        <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70">Screens</span>
-        <SideRow label="Reflect" active={side.reflect} onToggle={() => onUpdate({ reflect: !side.reflect })} />
-        <SideRow label="Light Screen" active={side.lightScreen} onToggle={() => onUpdate({ lightScreen: !side.lightScreen })} />
-        <SideRow label="Aurora Veil" active={side.auroraVeil} onToggle={() => onUpdate({ auroraVeil: !side.auroraVeil })} />
-      </div>
-
-      {/* Hazards */}
-      <div className="flex flex-col gap-1">
-        <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70">Hazards</span>
-        <SideRow label="Stealth Rock" active={side.stealthRock} onToggle={() => onUpdate({ stealthRock: !side.stealthRock })} />
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-foreground">Spikes</span>
-          <Stepper<0 | 1 | 2 | 3>
-            options={[0, 1, 2, 3] as const}
-            value={side.spikes}
-            onChange={(v) => onUpdate({ spikes: v })}
-          />
-        </div>
-      </div>
+    <div className="col-span-3 flex items-center gap-2 pt-1">
+      <div className="flex-1 border-t border-dashed border-border/40" />
+      <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70">
+        {label}
+      </span>
+      <div className="flex-1 border-t border-dashed border-border/40" />
     </div>
   );
 }
@@ -307,7 +277,7 @@ export function CalcFieldBlock({
       </div>
 
       {/* Conditions: weather, terrain, gravity, fairy aura */}
-      <fieldset className="rounded-lg border border-border/60 px-2.5 py-2">
+      <fieldset className="rounded-lg border border-border/60 px-3 py-2">
         <legend className="px-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
           Conditions
         </legend>
@@ -392,29 +362,111 @@ export function CalcFieldBlock({
         </div>
       )}
 
-      {/* Sides — stacked vertically */}
-      <fieldset className="rounded-lg border border-border/60 px-2.5 py-2">
+      {/* Sides — mirrored Ours | Label | Theirs grid */}
+      <fieldset className="rounded-lg border border-border/60 px-3 py-2">
         <legend className="px-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
           Sides
         </legend>
-        <div className="flex flex-col gap-4">
-          <SideColumn
-            title="Yours"
-            color="primary"
-            side={attackerSide}
-            onUpdate={setAttackerSide}
-            fainted={faintedYours}
-            setFainted={setFaintedYours}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-1 gap-y-0.5">
+          {/* Header */}
+          <span className="text-muted-foreground text-right text-[10px] font-semibold uppercase tracking-wider">
+            Ours
+          </span>
+          <span />
+          <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
+            Theirs
+          </span>
+
+          {/* Boosts */}
+          <SideSwitchRow
+            label="Helping Hand"
+            yours={attackerSide.helpingHand}
+            theirs={defenderSide.helpingHand}
+            onToggleYours={() => setAttackerSide({ helpingHand: !attackerSide.helpingHand })}
+            onToggleTheirs={() => setDefenderSide({ helpingHand: !defenderSide.helpingHand })}
           />
-          <div className="border-t border-border/40" />
-          <SideColumn
-            title="Theirs"
-            color="destructive"
-            side={defenderSide}
-            onUpdate={setDefenderSide}
-            fainted={faintedTheirs}
-            setFainted={setFaintedTheirs}
+          <SideSwitchRow
+            label="Friend Guard"
+            yours={attackerSide.friendGuard}
+            theirs={defenderSide.friendGuard}
+            onToggleYours={() => setAttackerSide({ friendGuard: !attackerSide.friendGuard })}
+            onToggleTheirs={() => setDefenderSide({ friendGuard: !defenderSide.friendGuard })}
           />
+          <SideSwitchRow
+            label="Salt Cure"
+            yours={attackerSide.saltCure}
+            theirs={defenderSide.saltCure}
+            onToggleYours={() => setAttackerSide({ saltCure: !attackerSide.saltCure })}
+            onToggleTheirs={() => setDefenderSide({ saltCure: !defenderSide.saltCure })}
+          />
+
+          {/* Knocked Out */}
+          <div className="flex justify-end">
+            <Stepper<(typeof FAINTED_OPTIONS)[number]>
+              options={FAINTED_OPTIONS}
+              value={faintedYours as (typeof FAINTED_OPTIONS)[number]}
+              onChange={setFaintedYours}
+            />
+          </div>
+          <span className="text-center text-[11px]">Knocked Out</span>
+          <div className="flex justify-start">
+            <Stepper<(typeof FAINTED_OPTIONS)[number]>
+              options={FAINTED_OPTIONS}
+              value={faintedTheirs as (typeof FAINTED_OPTIONS)[number]}
+              onChange={setFaintedTheirs}
+            />
+          </div>
+
+          {/* Screens */}
+          <SideSectionLabel label="Screens" />
+          <SideSwitchRow
+            label="Reflect"
+            yours={attackerSide.reflect}
+            theirs={defenderSide.reflect}
+            onToggleYours={() => setAttackerSide({ reflect: !attackerSide.reflect })}
+            onToggleTheirs={() => setDefenderSide({ reflect: !defenderSide.reflect })}
+          />
+          <SideSwitchRow
+            label="Light Screen"
+            yours={attackerSide.lightScreen}
+            theirs={defenderSide.lightScreen}
+            onToggleYours={() => setAttackerSide({ lightScreen: !attackerSide.lightScreen })}
+            onToggleTheirs={() => setDefenderSide({ lightScreen: !defenderSide.lightScreen })}
+          />
+          <SideSwitchRow
+            label="Aurora Veil"
+            yours={attackerSide.auroraVeil}
+            theirs={defenderSide.auroraVeil}
+            onToggleYours={() => setAttackerSide({ auroraVeil: !attackerSide.auroraVeil })}
+            onToggleTheirs={() => setDefenderSide({ auroraVeil: !defenderSide.auroraVeil })}
+          />
+
+          {/* Hazards */}
+          <SideSectionLabel label="Hazards" />
+          <SideSwitchRow
+            label="Stealth Rock"
+            yours={attackerSide.stealthRock}
+            theirs={defenderSide.stealthRock}
+            onToggleYours={() => setAttackerSide({ stealthRock: !attackerSide.stealthRock })}
+            onToggleTheirs={() => setDefenderSide({ stealthRock: !defenderSide.stealthRock })}
+          />
+
+          {/* Spikes */}
+          <div className="flex justify-end">
+            <Stepper<0 | 1 | 2 | 3>
+              options={[0, 1, 2, 3] as const}
+              value={attackerSide.spikes}
+              onChange={(v) => setAttackerSide({ spikes: v })}
+            />
+          </div>
+          <span className="text-center text-[11px]">Spikes</span>
+          <div className="flex justify-start">
+            <Stepper<0 | 1 | 2 | 3>
+              options={[0, 1, 2, 3] as const}
+              value={defenderSide.spikes}
+              onChange={(v) => setDefenderSide({ spikes: v })}
+            />
+          </div>
         </div>
       </fieldset>
     </div>

@@ -130,6 +130,8 @@ jest.mock("@trainers/pokemon", () => ({
   calculateHP: (...args: unknown[]) => mockCalculateHP(...args),
   calculateChampionsHP: (...args: unknown[]) =>
     mockCalculateChampionsHP(...args),
+  getMegaAbilityForSpecies: jest.fn().mockReturnValue(null),
+  getMegaSpeciesForBaseAndItem: jest.fn().mockReturnValue(null),
 }));
 
 // CalcAttackerBlock stub
@@ -178,20 +180,15 @@ jest.mock("../calc/calc-field-block", () => ({
   ),
 }));
 
-// DefenderMonHeader stub — renders species, attacker name, and HP
+// DefenderMonHeader stub
 jest.mock("../calc/calc-defender-header", () => ({
   DefenderMonHeader: ({
     defenderSpecies,
-    attackerName,
-    attackerHP,
   }: {
     defenderSpecies: string;
-    attackerName: string;
-    attackerHP: number | null;
   }) => (
     <div data-testid="defender-mon-header">
       <span data-testid="defender-species">{defenderSpecies}</span>
-      <span data-testid="vs-info">{`vs ${attackerName} · ${attackerHP !== null ? `${attackerHP} HP` : "—"}`}</span>
     </div>
   ),
 }));
@@ -269,7 +266,6 @@ interface RenderProps {
   format?: GameFormat | undefined;
   onClose?: jest.Mock;
   attackerIdx?: number;
-  onPickAttacker?: jest.Mock;
   faintedYours?: number;
   setFaintedYours?: jest.Mock;
   faintedTheirs?: number;
@@ -278,7 +274,6 @@ interface RenderProps {
 
 function renderPanel(props: RenderProps = {}) {
   const onClose = props.onClose ?? jest.fn();
-  const onPickAttacker = props.onPickAttacker ?? jest.fn();
   const setFaintedYours = props.setFaintedYours ?? jest.fn();
   const setFaintedTheirs = props.setFaintedTheirs ?? jest.fn();
   const teamSlots = props.teamSlots ?? [makePokemon(), null, null, null, null, null];
@@ -289,7 +284,6 @@ function renderPanel(props: RenderProps = {}) {
       format={props.format ?? VGC_FORMAT}
       onClose={onClose}
       attackerIdx={props.attackerIdx ?? 0}
-      onPickAttacker={onPickAttacker}
       faintedYours={props.faintedYours ?? 0}
       setFaintedYours={setFaintedYours}
       faintedTheirs={props.faintedTheirs ?? 0}
@@ -315,14 +309,9 @@ beforeEach(() => {
 // =============================================================================
 
 describe("CalcBottomPanel — header", () => {
-  it("renders the 'Damage calc' eyebrow label", () => {
+  it("renders the 'Damage Calc' eyebrow label", () => {
     renderPanel();
-    expect(screen.getByText("Damage calc")).toBeInTheDocument();
-  });
-
-  it("renders 'live · 2-way' label", () => {
-    renderPanel();
-    expect(screen.getByText("live · 2-way")).toBeInTheDocument();
+    expect(screen.getByText("Damage Calc")).toBeInTheDocument();
   });
 
   it("renders the Close button", () => {
@@ -346,79 +335,7 @@ describe("CalcBottomPanel — header", () => {
   });
 });
 
-describe("CalcBottomPanel — attacker name in defender header", () => {
-  it("shows attacker species name in 'vs X' readout", () => {
-    renderPanel({
-      teamSlots: [makePokemon({ species: "Gardevoir", nickname: null }), null, null, null, null, null],
-      attackerIdx: 0,
-    });
-    expect(screen.getByText(/vs Gardevoir/)).toBeInTheDocument();
-  });
-
-  it("prefers nickname over species in 'vs X' readout", () => {
-    renderPanel({
-      teamSlots: [makePokemon({ species: "Gardevoir", nickname: "Lady G" }), null, null, null, null, null],
-      attackerIdx: 0,
-    });
-    expect(screen.getByText(/vs Lady G/)).toBeInTheDocument();
-  });
-
-  it("shows '—' when slot is null", () => {
-    renderPanel({
-      teamSlots: [null, null, null, null, null, null],
-      attackerIdx: 0,
-    });
-    expect(screen.getByText(/vs —/)).toBeInTheDocument();
-  });
-});
-
-describe("CalcBottomPanel — attacker HP readout", () => {
-  it("shows HP in defender header when species has base stats", () => {
-    mockGetBaseStats.mockReturnValue({ hp: 68 });
-    mockCalculateHP.mockReturnValue(145);
-    renderPanel({
-      teamSlots: [makePokemon({ species: "Gardevoir" }), null, null, null, null, null],
-    });
-    expect(screen.getByText(/145 HP/)).toBeInTheDocument();
-  });
-
-  it("shows '—' in HP position when slot species is absent", () => {
-    renderPanel({
-      teamSlots: [null, null, null, null, null, null],
-    });
-    // "vs — · —" for name and HP
-    const metaLine = screen.getByText(/vs —/);
-    expect(metaLine).toBeInTheDocument();
-  });
-
-  it("uses calculateChampionsHP for champions format", () => {
-    mockIsChampionsFormat.mockReturnValue(true);
-    mockGetBaseStats.mockReturnValue({ hp: 68 });
-    mockCalculateChampionsHP.mockReturnValue(135);
-    renderPanel({
-      teamSlots: [makePokemon({ species: "Gardevoir" }), null, null, null, null, null],
-    });
-    expect(mockCalculateChampionsHP).toHaveBeenCalled();
-    expect(screen.getByText(/135 HP/)).toBeInTheDocument();
-  });
-
-  it("shows '—' HP when getBaseStats returns null", () => {
-    mockGetBaseStats.mockReturnValue(null);
-    renderPanel({
-      teamSlots: [makePokemon({ species: "Gardevoir" }), null, null, null, null, null],
-    });
-    // No HP number in the readout
-    expect(screen.queryByText(/\d+ HP/)).not.toBeInTheDocument();
-  });
-});
-
 describe("CalcBottomPanel — child components", () => {
-  it("renders CalcAttackerBlock", () => {
-    renderPanel({ attackerIdx: 2 });
-    expect(screen.getByTestId("calc-attacker-block")).toBeInTheDocument();
-    expect(screen.getByTestId("calc-attacker-block")).toHaveAttribute("data-idx", "2");
-  });
-
   it("renders CalcFieldBlock with gameType from context", () => {
     renderPanel();
     const fieldBlock = screen.getByTestId("calc-field-block");
@@ -438,21 +355,9 @@ describe("CalcBottomPanel — child components", () => {
     expect(screen.getByTestId("calc-defender-moves")).toBeInTheDocument();
   });
 
-  it("renders Defender column header", () => {
-    renderPanel();
-    expect(screen.getByText("Defender")).toBeInTheDocument();
-  });
-
-  it("renders DefenderMonHeader with species and attacker info", () => {
+  it("renders DefenderMonHeader with species from context", () => {
     renderPanel();
     expect(screen.getByTestId("defender-mon-header")).toBeInTheDocument();
     expect(screen.getByTestId("defender-species")).toHaveTextContent("Incineroar");
-  });
-
-  it("renders DefenderMonHeader full-width in the defender column", () => {
-    renderPanel();
-    // The header is rendered — its presence confirms the full-width placement
-    const header = screen.getByTestId("defender-mon-header");
-    expect(header).toBeInTheDocument();
   });
 });

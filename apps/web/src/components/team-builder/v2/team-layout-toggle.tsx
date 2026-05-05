@@ -21,7 +21,7 @@ function Icon1x6() {
 }
 
 // 2×3 — mid-stack layout: two columns, cells show a horizontal bar per row
-function Icon2x3() {
+function _Icon2x3() {
   return (
     <svg viewBox="0 0 16 16" aria-hidden className="size-3.5">
       <rect x="2" y="3" width="5" height="2" fill="currentColor" />

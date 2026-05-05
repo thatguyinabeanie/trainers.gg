@@ -862,9 +862,9 @@ describe("TournamentSettings", () => {
       );
 
       await user.click(screen.getByRole("button", { name: /edit settings/i }));
-      // Use getByLabelText since Base UI's Switch derives its accessible name
-      // from htmlFor/id, not aria-label.
-      await user.click(screen.getByLabelText("Late Registration"));
+      // Use getByRole("switch") since Base UI's Switch renders role="switch"
+      // with aria-labelledby pointing to the label.
+      await user.click(screen.getByRole("switch", { name: "Late Registration" }));
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
       expect(updateTournament).toHaveBeenCalledTimes(1);
@@ -888,7 +888,7 @@ describe("TournamentSettings", () => {
       );
 
       await user.click(screen.getByRole("button", { name: /edit settings/i }));
-      await user.click(screen.getByLabelText("Player Cap"));
+      await user.click(screen.getByRole("switch", { name: "Player Cap" }));
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
       expect(updateTournament).toHaveBeenCalledTimes(1);

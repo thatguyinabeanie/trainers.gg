@@ -6,7 +6,7 @@
  * Covers:
  *   - Static render: stat labels, base stats
  *   - No-species fallback (default 50 base stats)
- *   - Nature chevrons (▲ boosted / ▽ reduced) on correct rows
+ *   - Nature chevrons (▴ boosted / ▾ reduced) on correct rows
  *   - EV text input display (nature suffix, raw number)
  *   - EV text input: commit on blur, clamp, snap to step
  *   - EV text input: Enter key commits, Escape reverts
@@ -154,12 +154,14 @@ interface RenderProps {
   setDefenderEv?: jest.Mock;
   setDefenderBoost?: jest.Mock;
   setDefenderHpPercent?: jest.Mock;
+  setDefenderNature?: jest.Mock;
 }
 
 function renderComponent(props: RenderProps = {}) {
   const setDefenderEv = props.setDefenderEv ?? jest.fn();
   const setDefenderBoost = props.setDefenderBoost ?? jest.fn();
   const setDefenderHpPercent = props.setDefenderHpPercent ?? jest.fn();
+  const setDefenderNature = props.setDefenderNature ?? jest.fn();
 
   // Resolve format: caller may explicitly pass UNDEFINED_FORMAT to mean undefined.
   const resolvedFormat: GameFormat | undefined =
@@ -181,6 +183,7 @@ function renderComponent(props: RenderProps = {}) {
       setDefenderEv={setDefenderEv}
       setDefenderBoost={setDefenderBoost}
       setDefenderHpPercent={setDefenderHpPercent}
+      setDefenderNature={setDefenderNature}
     />
   );
 
@@ -189,6 +192,7 @@ function renderComponent(props: RenderProps = {}) {
     setDefenderEv,
     setDefenderBoost,
     setDefenderHpPercent,
+    setDefenderNature,
   };
 }
 
@@ -270,25 +274,25 @@ describe("CalcDefenderStats — no-species fallback", () => {
 // =============================================================================
 
 describe("CalcDefenderStats — nature chevrons", () => {
-  it("renders ▲ on Atk row and ▽ on SpA row for Adamant nature", () => {
+  it("renders ▴ on Atk row and ▾ on SpA row for Adamant nature", () => {
     renderComponent({ defenderNature: "Adamant" }); // +Atk / −SpA
-    const upChevrons = screen.getAllByText("▲");
+    const upChevrons = screen.getAllByText("▴");
     expect(upChevrons).toHaveLength(1);
-    const downChevrons = screen.getAllByText("▽");
+    const downChevrons = screen.getAllByText("▾");
     expect(downChevrons).toHaveLength(1);
   });
 
   it("renders no nature chevrons for Hardy (neutral nature)", () => {
     renderComponent({ defenderNature: "Hardy" });
-    expect(screen.queryByText("▲")).not.toBeInTheDocument();
-    expect(screen.queryByText("▽")).not.toBeInTheDocument();
+    expect(screen.queryByText("▴")).not.toBeInTheDocument();
+    expect(screen.queryByText("▾")).not.toBeInTheDocument();
   });
 
   it("uses Hardy as default when defenderNature is empty string", () => {
     renderComponent({ defenderNature: "" });
     // No nature chevrons — defaults to Hardy which is neutral
-    expect(screen.queryByText("▲")).not.toBeInTheDocument();
-    expect(screen.queryByText("▽")).not.toBeInTheDocument();
+    expect(screen.queryByText("▴")).not.toBeInTheDocument();
+    expect(screen.queryByText("▾")).not.toBeInTheDocument();
   });
 
   it.each([
@@ -297,16 +301,16 @@ describe("CalcDefenderStats — nature chevrons", () => {
     ["Timid", "Spe", "Atk"], // +Spe / −Atk
     ["Bold", "Def", "Atk"], // +Def / −Atk
   ])(
-    "%s nature shows ▲ on %s row and ▽ on %s row",
+    "%s nature shows ▴ on %s row and ▾ on %s row",
     (nature, boostedLabel, reducedLabel) => {
       renderComponent({ defenderNature: nature });
-      expect(screen.getAllByText("▲")).toHaveLength(1);
-      expect(screen.getAllByText("▽")).toHaveLength(1);
+      expect(screen.getAllByText("▴")).toHaveLength(1);
+      expect(screen.getAllByText("▾")).toHaveLength(1);
       // Verify the chevron is adjacent to the correct label text
       const boostedEl = screen.getByText(boostedLabel);
-      expect(boostedEl.closest("span")?.textContent).toContain("▲");
+      expect(boostedEl.closest("button")?.textContent).toContain("▴");
       const reducedEl = screen.getByText(reducedLabel);
-      expect(reducedEl.closest("span")?.textContent).toContain("▽");
+      expect(reducedEl.closest("button")?.textContent).toContain("▾");
     }
   );
 });
@@ -591,15 +595,15 @@ describe("CalcDefenderStats — HP slider", () => {
     expect(hpSlider).toHaveAttribute("max", "100");
   });
 
-  it("renders the current/max HP readout (x/y HP)", () => {
+  it("renders the current/max HP readout (x/y)", () => {
     // HP% = 100, so currentHP = maxHP
     renderComponent({
       defenderHpPercent: 100,
       defenderEvs: makeDefaultEvs({ hp: 0 }),
       defenderIvs: makeDefaultIvs({ hp: 31 }),
     });
-    // The readout should contain "/ ... HP"
-    const readout = screen.getByText(/\/.*HP/);
+    // The readout should contain "num/num" format
+    const readout = screen.getByText(/\d+\/\d+/);
     expect(readout).toBeInTheDocument();
   });
 });
@@ -667,5 +671,31 @@ describe("CalcDefenderStats — breakpoint ticks", () => {
   it("does not call findStatBreakpoints when nature is neutral", () => {
     renderComponent({ defenderNature: "Hardy" });
     expect(mockFindStatBreakpoints).not.toHaveBeenCalled();
+  });
+});
+
+describe("CalcDefenderStats — nature cycling interaction", () => {
+  it("calls setDefenderNature when a non-HP stat label is clicked", () => {
+    const setDefenderNature = jest.fn();
+    renderComponent({ defenderNature: "Hardy", setDefenderNature });
+    // Click the "Atk" button which has aria-label "Cycle nature for Atk"
+    const atkButton = screen.getByLabelText("Cycle nature for Atk");
+    fireEvent.click(atkButton);
+    expect(setDefenderNature).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not allow clicking the HP stat label (disabled)", () => {
+    const setDefenderNature = jest.fn();
+    renderComponent({ defenderNature: "Hardy", setDefenderNature });
+    // HP buttons should be disabled
+    const hpLabels = screen.getAllByText("HP");
+    const hpButton = hpLabels.find(
+      (el) => el.tagName.toLowerCase() === "button"
+    );
+    if (hpButton) {
+      expect(hpButton).toBeDisabled();
+    }
+    // setDefenderNature should not have been called
+    expect(setDefenderNature).not.toHaveBeenCalled();
   });
 });

@@ -109,6 +109,7 @@ import {
   updateTeamAction,
   deleteTeamAction,
   forkTeamAction,
+  transferTeamAction,
   addPokemonToTeamAction,
   updatePokemonAction,
   removePokemonFromTeamAction,
@@ -408,6 +409,144 @@ describe("forkTeamAction", () => {
 
     expect(result.success).toBe(false);
     expect(mockForkTeam).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// transferTeamAction
+// =============================================================================
+
+describe("transferTeamAction", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Default: caller is authenticated
+    (mockSupabase.auth.getUser as ReturnType<typeof jest.fn>).mockResolvedValue(
+      { data: { user: { id: "user-123" } } }
+    );
+  });
+
+  it("transfers a team to the target alt successfully", async () => {
+    // Mock: target alt lookup returns a valid alt
+    const mockAltQb = createMockQueryBuilder();
+    mockAltQb.maybeSingle.mockResolvedValue({
+      data: { id: 5 },
+      error: null,
+    });
+    // Mock: teams update returns success
+    const mockTeamsQb = {
+      update: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: { id: 10 }, error: null }),
+    };
+    (mockSupabase.from as ReturnType<typeof jest.fn>)
+      .mockReturnValueOnce(mockAltQb)   // alts query
+      .mockReturnValueOnce(mockTeamsQb); // teams update
+
+    const result = await transferTeamAction(10, 5);
+
+    expect(result).toEqual({ success: true, data: undefined });
+  });
+
+  it("returns a validation error for non-positive teamId", async () => {
+    const result = await transferTeamAction(0, 5);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBeTruthy();
+    }
+  });
+
+  it("returns a validation error for non-positive targetAltId", async () => {
+    const result = await transferTeamAction(10, -1);
+
+    expect(result.success).toBe(false);
+  });
+
+  it("returns an error when a bot is detected", async () => {
+    simulateBot();
+
+    const result = await transferTeamAction(10, 5);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Failed to transfer team");
+    }
+  });
+
+  it("returns an error when not authenticated", async () => {
+    (mockSupabase.auth.getUser as ReturnType<typeof jest.fn>).mockResolvedValue(
+      { data: { user: null } }
+    );
+
+    const result = await transferTeamAction(10, 5);
+
+    expect(result).toEqual({ success: false, error: "Not authenticated." });
+  });
+
+  it("returns an error when target alt query fails", async () => {
+    const mockAltQb = createMockQueryBuilder();
+    mockAltQb.maybeSingle.mockResolvedValue({
+      data: null,
+      error: new Error("DB error"),
+    });
+    (mockSupabase.from as ReturnType<typeof jest.fn>).mockReturnValueOnce(
+      mockAltQb
+    );
+
+    const result = await transferTeamAction(10, 5);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Failed to verify alt ownership");
+    }
+  });
+
+  it("returns an error when target alt is not found/owned", async () => {
+    const mockAltQb = createMockQueryBuilder();
+    mockAltQb.maybeSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+    (mockSupabase.from as ReturnType<typeof jest.fn>).mockReturnValueOnce(
+      mockAltQb
+    );
+
+    const result = await transferTeamAction(10, 5);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Target alt not found or not owned by you.",
+    });
+  });
+
+  it("returns an error when the team update fails", async () => {
+    // Mock: target alt found
+    const mockAltQb = createMockQueryBuilder();
+    mockAltQb.maybeSingle.mockResolvedValue({
+      data: { id: 5 },
+      error: null,
+    });
+    // Mock: teams update returns error
+    const mockTeamsQb = {
+      update: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: null,
+        error: new Error("Update denied"),
+      }),
+    };
+    (mockSupabase.from as ReturnType<typeof jest.fn>)
+      .mockReturnValueOnce(mockAltQb)
+      .mockReturnValueOnce(mockTeamsQb);
+
+    const result = await transferTeamAction(10, 5);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Failed to transfer team");
+    }
   });
 });
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import { getMoveData, type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
@@ -149,16 +150,26 @@ function CalcDescTooltip({ desc, children }: { desc: string; children: ReactNode
 
 function CalcCopyButton({ desc }: { desc: string }) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleCopy = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      navigator.clipboard.writeText(desc);
+  // Clear timer on unmount to avoid setting state on an unmounted component
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  async function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(desc);
+      if (timerRef.current) clearTimeout(timerRef.current);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    },
-    [desc]
-  );
+      timerRef.current = setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Couldn't copy to clipboard");
+    }
+  }
 
   return (
     <CalcDescTooltip desc={desc}>
@@ -447,8 +458,8 @@ function MovesLaneTileGhost() {
   return (
     <TableHeader>
       <TableRow className="border-none">
-        <TableHead className="!h-auto w-6 border-none p-0 pb-0.5" />
-        <TableHead className="!h-auto w-8 border-none p-0 pb-0.5" />
+        <TableHead className="!h-auto w-6 border-none p-0 pb-0.5"><span className="sr-only">Type</span></TableHead>
+        <TableHead className="!h-auto w-8 border-none p-0 pb-0.5"><span className="sr-only">Category</span></TableHead>
         <TableHead className="text-muted-foreground !h-auto border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
           NAME
         </TableHead>
@@ -488,7 +499,7 @@ function MovesLaneTileGhost() {
 function MovesLaneGhost() {
   const calcEnabled = useCalcEnabled();
   return (
-    <div className={cn("border-border/60 flex min-w-0 flex-1 flex-col border-r border-dashed px-3 py-1 transition-[padding,flex] duration-300 ease-in-out")}>
+    <div className={cn("flex min-w-0 flex-1 flex-col px-3 py-1 transition-[padding,flex] duration-300 ease-in-out")}>
       <Table className="w-full border-separate border-spacing-y-[3px]">
         <MovesLaneTileGhost />
         <TableBody>
@@ -532,7 +543,7 @@ function MovesLaneReal({
   onUpdate,
   fieldErrors,
 }: MovesLaneRealProps) {
-  const calc = useCalcStateContext();
+  const _calc = useCalcStateContext();
   function handlePick(slotKey: MoveSlot, name: string) {
     onUpdate({ [slotKey]: name });
   }

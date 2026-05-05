@@ -16,9 +16,18 @@ const mockCalculate = jest.fn(() => ({
 
 // Tracks all Move constructor invocations: [gen, name, opts]
 const mockMoveConstructor = jest.fn();
+// Tracks all Pokemon constructor invocations: [gen, species, opts]. Lets tests
+// verify which species was passed to new Pokemon() (e.g. mega vs base form).
+const mockPokemonConstructor = jest.fn();
 
 jest.mock("@smogon/calc", () => {
-  const MockPokemon = jest.fn(function (this: Record<string, unknown>) {
+  const MockPokemon = jest.fn(function (
+    this: Record<string, unknown>,
+    gen: unknown,
+    species: unknown,
+    opts: unknown
+  ) {
+    mockPokemonConstructor(gen, species, opts);
     this.maxHP = mockMaxHP;
   });
   const MockMove = jest.fn(function (
@@ -45,6 +54,11 @@ jest.mock("@smogon/calc", () => {
 function getMoveOptsFor(moveName: string): Record<string, unknown> | undefined {
   const call = mockMoveConstructor.mock.calls.find((c) => c[1] === moveName);
   return call ? (call[2] as Record<string, unknown>) : undefined;
+}
+
+/** Returns every species name passed to new Pokemon(gen, species, opts). */
+function getPokemonSpeciesCalls(): string[] {
+  return mockPokemonConstructor.mock.calls.map((c) => String(c[1]));
 }
 
 import { getFormatById } from "@trainers/pokemon";
@@ -761,5 +775,94 @@ describe("attackerMegaActive / defenderMegaActive", () => {
     act(() => result.current.setDefenderMegaActive(false));
     expect(result.current.defenderMegaActive).toBe(false);
     expect(result.current.attackerMegaActive).toBe(true);
+  });
+});
+
+// =============================================================================
+// Per-row mega scoping in computeReverseOutputsForRow
+// Regression guard for the bug fixed at use-calc-state.ts:1355 — the panel's
+// attackerMegaActive flag must only apply to the FOCUSED row. Non-focused team
+// rows always build with megaActive=true so each species shows its raw matchup
+// vs the defender (mirrors the forward-path symmetry at line 1276).
+// =============================================================================
+
+describe("computeReverseOutputsForRow — mega scoping", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("non-focused row builds with mega species even when attackerMegaActive is false", () => {
+    // Both rows are mega-capable Charizards (Charizardite Y → Charizard-Mega-Y).
+    // Same species + same item lets us isolate the megaActive flag as the only
+    // differentiator in effectiveSpecies between focused vs non-focused rows.
+    const focusedCharizard = makePokemon({
+      id: 1,
+      species: "Charizard",
+      held_item: "Charizardite Y",
+    });
+    const nonFocusedCharizard = makePokemon({
+      id: 2,
+      species: "Charizard",
+      held_item: "Charizardite Y",
+    });
+
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: focusedCharizard })
+    );
+
+    // Turn off the panel-level mega flag for the focused row.
+    act(() => result.current.setAttackerMegaActive(false));
+    // Reverse calc requires a defender species to engage.
+    act(() => result.current.setDefenderSpecies("Garchomp"));
+
+    // Drop all prior Pokemon constructions (shared attacker/defender, etc.) so
+    // we only inspect what the upcoming row-level call constructs.
+    mockPokemonConstructor.mockClear();
+
+    result.current.computeReverseOutputsForRow(nonFocusedCharizard, [
+      "Earthquake",
+      "",
+      "",
+      "",
+    ] as const);
+
+    // The non-focused row's defender Pokemon should be the Mega form because
+    // the fix passes `true` for non-focused rows regardless of the panel flag.
+    // Without the isFocused guard this would be base "Charizard" and the test
+    // would fail — that's the exact regression we're guarding against.
+    const speciesCalls = getPokemonSpeciesCalls();
+    expect(speciesCalls).toContain("Charizard-Mega-Y");
+    expect(speciesCalls).not.toContain("Charizard");
+  });
+
+  it("focused row honors attackerMegaActive=false (builds as base species)", () => {
+    // Counterpart assertion: when the row IS focused, the panel flag governs.
+    // This proves the isFocused branch is wired correctly in both directions.
+    const focusedCharizard = makePokemon({
+      id: 1,
+      species: "Charizard",
+      held_item: "Charizardite Y",
+    });
+
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: focusedCharizard })
+    );
+
+    act(() => result.current.setAttackerMegaActive(false));
+    act(() => result.current.setDefenderSpecies("Garchomp"));
+
+    mockPokemonConstructor.mockClear();
+
+    // Pass the SAME pokemon instance so isFocused matches by id.
+    result.current.computeReverseOutputsForRow(focusedCharizard, [
+      "Earthquake",
+      "",
+      "",
+      "",
+    ] as const);
+
+    const speciesCalls = getPokemonSpeciesCalls();
+    expect(speciesCalls).toContain("Charizard");
+    expect(speciesCalls).not.toContain("Charizard-Mega-Y");
   });
 });

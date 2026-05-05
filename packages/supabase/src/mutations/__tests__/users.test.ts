@@ -628,7 +628,6 @@ describe("User Mutations", () => {
       expect(insertMock).toHaveBeenCalledWith({
         user_id: mockUser.id,
         username: "player",
-        display_name: "player",
         avatar_url: "https://example.com/avatar.png",
       });
     });
@@ -661,7 +660,6 @@ describe("User Mutations", () => {
       expect(insertMock).toHaveBeenCalledWith(
         expect.objectContaining({
           username: "MixedCase",
-          display_name: "MixedCase",
         })
       );
     });

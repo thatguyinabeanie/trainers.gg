@@ -392,7 +392,7 @@ describe("PokeRow — empty slot", () => {
       expect(screen.queryByTestId("calc-column")).not.toBeInTheDocument();
     });
 
-    it("renders a ghost calc column when calc is enabled — keeps width parity with active rows", () => {
+    it("does not render the calc column for empty slots regardless of calc state", () => {
       mockUseCalcStateContext.mockReturnValue({ calcEnabled: true });
       render(
         <PokeRow
@@ -405,10 +405,7 @@ describe("PokeRow — empty slot", () => {
           onActivate={jest.fn()}
         />
       );
-      const calcCol = screen.getByTestId("calc-column");
-      expect(calcCol).toBeInTheDocument();
-      // Ghost mode is signaled by pokemon === null
-      expect(calcCol.dataset.ghost).toBe("true");
+      expect(screen.queryByTestId("calc-column")).not.toBeInTheDocument();
     });
   });
 });

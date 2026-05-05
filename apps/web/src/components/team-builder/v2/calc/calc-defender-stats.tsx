@@ -29,9 +29,9 @@ import {
 } from "../../calc-stat-helpers";
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { StageDropdown } from "./stage-dropdown";
-const spreadRowClass = "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
-const spreadRowWithStageClass = "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_32px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
-const spreadLabelClass = "text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap overflow-hidden flex items-center gap-px";
+const spreadRowClass = "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
+const spreadRowWithStageClass = "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_32px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
+const spreadLabelClass = "text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px";
 const spreadBaseClass = "font-mono text-[9.5px] text-muted-foreground text-right tabular-nums";
 const spreadSliderWrapClass = "relative h-3.5";
 const spreadSliderTrackClass = "absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none";
@@ -53,6 +53,7 @@ export interface CalcDefenderStatsProps {
   setDefenderEv: (stat: keyof DefenderEvs, v: number) => void;
   setDefenderBoost: (stat: keyof DefenderBoosts, v: number) => void;
   setDefenderHpPercent: (v: number) => void;
+  setDefenderNature: (v: string) => void;
 }
 
 // =============================================================================
@@ -95,6 +96,109 @@ function totalDefenderEvs(evs: DefenderEvs): number {
 }
 
 // =============================================================================
+// Nature cycling helpers
+// =============================================================================
+
+type NatureStat =
+  | "attack"
+  | "defense"
+  | "specialAttack"
+  | "specialDefense"
+  | "speed";
+
+const SHORT_TO_LONG: Record<string, NatureStat> = {
+  atk: "attack",
+  def: "defense",
+  spa: "specialAttack",
+  spd: "specialDefense",
+  spe: "speed",
+};
+
+/** Default − stat when user clicks to boost. */
+const DEFAULT_REDUCE_FOR_BOOST: Record<NatureStat, NatureStat> = {
+  attack: "specialAttack",
+  defense: "specialAttack",
+  specialAttack: "attack",
+  specialDefense: "attack",
+  speed: "specialAttack",
+};
+
+/** Default + stat when user clicks to reduce. */
+const DEFAULT_BOOST_FOR_REDUCE: Record<NatureStat, NatureStat> = {
+  attack: "specialAttack",
+  defense: "specialAttack",
+  specialAttack: "attack",
+  specialDefense: "attack",
+  speed: "attack",
+};
+
+const ALL_NATURE_STATS: NatureStat[] = [
+  "attack",
+  "defense",
+  "specialAttack",
+  "specialDefense",
+  "speed",
+];
+
+const NEUTRAL_NATURE = "Serious";
+
+function findNatureFor(boost: NatureStat, reduce: NatureStat): string | null {
+  for (const [name, eff] of Object.entries(NATURE_EFFECTS)) {
+    if (eff.boost === boost && eff.reduce === reduce) return name;
+  }
+  return null;
+}
+
+function pickFreshPartner(
+  mover: NatureStat,
+  avoid: NatureStat | null,
+  defaults: Record<NatureStat, NatureStat>
+): NatureStat {
+  const def = defaults[mover];
+  if (def !== avoid) return def;
+  return ALL_NATURE_STATS.find((s) => s !== mover && s !== avoid) ?? def;
+}
+
+/**
+ * Cycle a stat's nature influence on click:
+ * neutral → boosted → reduced → neutral
+ *
+ * HP cannot have nature effects — returns null (no change).
+ */
+function cycleNature(
+  currentNature: string,
+  statKey: string
+): string | null {
+  if (statKey === "hp") return null;
+  const longStat = SHORT_TO_LONG[statKey] ?? (statKey as NatureStat);
+  if (!ALL_NATURE_STATS.includes(longStat)) return null;
+
+  const current = NATURE_EFFECTS[currentNature] ?? {};
+  const currentBoost = current.boost ?? null;
+  const currentReduce = current.reduce ?? null;
+
+  // Currently boosted → switch to reduced
+  if (currentBoost === longStat) {
+    const boost = pickFreshPartner(longStat, currentReduce, DEFAULT_BOOST_FOR_REDUCE);
+    return findNatureFor(boost, longStat);
+  }
+
+  // Currently reduced → switch to neutral
+  if (currentReduce === longStat) {
+    return NEUTRAL_NATURE;
+  }
+
+  // Currently neutral → switch to boosted
+  let reduce: NatureStat;
+  if (currentReduce && currentReduce !== longStat) {
+    reduce = currentReduce;
+  } else {
+    reduce = pickFreshPartner(longStat, currentBoost, DEFAULT_REDUCE_FOR_BOOST);
+  }
+  return findNatureFor(longStat, reduce);
+}
+
+// =============================================================================
 // DefenderStatRow — one horizontal stat row
 // =============================================================================
 
@@ -119,6 +223,7 @@ interface DefenderStatRowProps {
   boost: number;
   setDefenderEv: (stat: keyof DefenderEvs, v: number) => void;
   setDefenderBoost: (stat: keyof DefenderBoosts, v: number) => void;
+  onNatureClick: () => void;
 }
 
 function DefenderStatRow({
@@ -140,6 +245,7 @@ function DefenderStatRow({
   boost,
   setDefenderEv,
   setDefenderBoost,
+  onNatureClick,
 }: DefenderStatRowProps) {
   const colorClass = STAT_COLOR_CLASS[statKey as keyof typeof STAT_COLOR_CLASS] ?? "";
 
@@ -229,20 +335,20 @@ function DefenderStatRow({
         colorClass
       )}
     >
-      {/* Col 1: Stat label */}
-      <span className={spreadLabelClass}>
+      {/* Col 1: Stat label — clickable to cycle nature */}
+      <button
+        type="button"
+        onClick={onNatureClick}
+        disabled={statKey === "hp"}
+        aria-label={statKey !== "hp" ? `Cycle nature for ${label}` : undefined}
+        className={cn(spreadLabelClass, statKey !== "hp" && "cursor-pointer hover:opacity-70")}
+      >
         {label}
-        {isNatureBoosted && (
-          <span className="text-[9px] font-black tracking-tighter text-red-600 dark:text-red-400">
-            ▲
-          </span>
-        )}
-        {isNatureReduced && (
-          <span className="text-[9px] font-black tracking-tighter text-sky-600 dark:text-sky-400">
-            ▽
-          </span>
-        )}
-      </span>
+        <span className="inline-block w-[9px] text-[7px] leading-none">
+          {isNatureBoosted && "▴"}
+          {isNatureReduced && "▾"}
+        </span>
+      </button>
 
       {/* Col 2: Base stat */}
       <span className={spreadBaseClass}>{base}</span>
@@ -338,6 +444,7 @@ export function CalcDefenderStats({
   setDefenderEv,
   setDefenderBoost,
   setDefenderHpPercent,
+  setDefenderNature,
 }: CalcDefenderStatsProps) {
   const isChampions = isChampionsFormat(format);
 
@@ -440,13 +547,17 @@ export function CalcDefenderStats({
               boost={boost}
               setDefenderEv={setDefenderEv}
               setDefenderBoost={setDefenderBoost}
+              onNatureClick={() => {
+                const newNature = cycleNature(nature, row.evKey);
+                if (newNature) setDefenderNature(newNature);
+              }}
             />
           );
         })}
       </div>
 
       {/* ── HP% slider ────────────────────────────────────────────── */}
-      <div className="mt-1 flex items-center gap-2">
+      <div className="mt-2 flex items-center gap-2 px-2 pb-1">
         <span className="w-5 font-mono text-[9.5px] font-semibold text-rose-500 dark:text-rose-400">
           HP
         </span>
@@ -462,7 +573,7 @@ export function CalcDefenderStats({
           style={{ height: 6 }}
         />
         <span className="w-[72px] text-right font-mono text-[10px] text-muted-foreground">
-          {currentHP}/{maxHP} HP
+          {currentHP}/{maxHP}
         </span>
         <span className="w-8 text-right font-mono text-[10px] font-semibold text-muted-foreground">
           {defenderHpPercent}%

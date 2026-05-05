@@ -1345,13 +1345,14 @@ export function useCalcState({
     if (!sharedDefenderAsAttacker) return NULL_OUTPUTS;
     if (!effectiveMoves.some(Boolean)) return NULL_OUTPUTS;
 
+    const isFocused = selectedPokemon?.id === rowPokemon.id;
     // Build this team member as a defender (neutral boosts, healthy)
     const ourDefender = buildAttackerFromDb(
       gen,
       rowPokemon,
       EMPTY_BOOSTS,
       "Healthy",
-      attackerMegaActive
+      isFocused ? attackerMegaActive : true
     );
     if (!ourDefender) return NULL_OUTPUTS;
 

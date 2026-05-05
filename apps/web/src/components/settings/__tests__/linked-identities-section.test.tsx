@@ -34,9 +34,11 @@ jest.mock("next/link", () => ({
 }));
 
 // Mock TanStack Query — useQuery returns data from our per-test variable
-const mockUseQuery = jest.fn(() => ({ data: 0 }));
+const mockUseQuery = jest.fn();
+const mockQueryClient = { invalidateQueries: jest.fn() };
 jest.mock("@tanstack/react-query", () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
+  useQueryClient: () => mockQueryClient,
 }));
 
 // Mock dependencies
@@ -111,8 +113,14 @@ describe("LinkedIdentitiesSection", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUserIdentities = [];
-    // Reset useQuery to return 0 enabled DM preferences by default
-    mockUseQuery.mockReturnValue({ data: 0 });
+    // Default: bluesky status query returns loaded with null, DM count returns 0
+    mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
+      if (opts.queryKey[0] === "bluesky-status") {
+        return { data: { did: null, handle: null }, isLoading: false };
+      }
+      // discord-dm-preferences-count
+      return { data: 0, isLoading: false };
+    });
     mockGetBlueskyStatus.mockResolvedValue({
       success: true,
       data: { did: null, pdsStatus: null, handle: null },
@@ -121,6 +129,12 @@ describe("LinkedIdentitiesSection", () => {
 
   describe("rendering", () => {
     it("shows loading state initially", () => {
+      mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
+        if (opts.queryKey[0] === "bluesky-status") {
+          return { data: undefined, isLoading: true };
+        }
+        return { data: 0, isLoading: false };
+      });
       render(<LinkedIdentitiesSection />);
       expect(screen.getByRole("status")).toBeInTheDocument();
     });
@@ -165,13 +179,17 @@ describe("LinkedIdentitiesSection", () => {
     });
 
     it("renders Bluesky when user has DID", async () => {
-      mockGetBlueskyStatus.mockResolvedValue({
-        success: true,
-        data: {
-          did: "did:plc:test123",
-          pdsStatus: "active",
-          handle: "testuser.trainers.gg",
-        },
+      mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
+        if (opts.queryKey[0] === "bluesky-status") {
+          return {
+            data: {
+              did: "did:plc:test123",
+              handle: "testuser.trainers.gg",
+            },
+            isLoading: false,
+          };
+        }
+        return { data: 0, isLoading: false };
       });
 
       render(<LinkedIdentitiesSection />);
@@ -376,13 +394,17 @@ describe("LinkedIdentitiesSection", () => {
           provider: "discord",
         },
       ];
-      mockGetBlueskyStatus.mockResolvedValue({
-        success: true,
-        data: {
-          did: "did:plc:test123",
-          pdsStatus: "active",
-          handle: "testuser.trainers.gg",
-        },
+      mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
+        if (opts.queryKey[0] === "bluesky-status") {
+          return {
+            data: {
+              did: "did:plc:test123",
+              handle: "testuser.trainers.gg",
+            },
+            isLoading: false,
+          };
+        }
+        return { data: 0, isLoading: false };
       });
       mockUnlinkBlueskyAction.mockResolvedValue({ success: true });
 
@@ -446,13 +468,17 @@ describe("LinkedIdentitiesSection", () => {
           provider: "discord",
         },
       ];
-      mockGetBlueskyStatus.mockResolvedValue({
-        success: true,
-        data: {
-          did: "did:plc:test123",
-          pdsStatus: "active",
-          handle: "testuser.trainers.gg",
-        },
+      mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
+        if (opts.queryKey[0] === "bluesky-status") {
+          return {
+            data: {
+              did: "did:plc:test123",
+              handle: "testuser.trainers.gg",
+            },
+            isLoading: false,
+          };
+        }
+        return { data: 0, isLoading: false };
       });
 
       render(<LinkedIdentitiesSection />);
@@ -645,13 +671,17 @@ describe("LinkedIdentitiesSection", () => {
           provider: "discord",
         },
       ];
-      mockGetBlueskyStatus.mockResolvedValue({
-        success: true,
-        data: {
-          did: "did:plc:test123",
-          pdsStatus: "active",
-          handle: "testuser.trainers.gg",
-        },
+      mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
+        if (opts.queryKey[0] === "bluesky-status") {
+          return {
+            data: {
+              did: "did:plc:test123",
+              handle: "testuser.trainers.gg",
+            },
+            isLoading: false,
+          };
+        }
+        return { data: 0, isLoading: false };
       });
       mockUnlinkBlueskyAction.mockResolvedValue({
         success: false,
@@ -692,7 +722,12 @@ describe("LinkedIdentitiesSection", () => {
     });
 
     it("renders DM summary when Discord is linked", async () => {
-      mockUseQuery.mockReturnValue({ data: 7 });
+      mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
+        if (opts.queryKey[0] === "bluesky-status") {
+          return { data: { did: null, handle: null }, isLoading: false };
+        }
+        return { data: 7, isLoading: false };
+      });
       mockUserIdentities = [
         {
           id: "identity-1",
@@ -717,7 +752,12 @@ describe("LinkedIdentitiesSection", () => {
     });
 
     it("Manage link points to /dashboard/settings/notifications#discord-dms", async () => {
-      mockUseQuery.mockReturnValue({ data: 3 });
+      mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
+        if (opts.queryKey[0] === "bluesky-status") {
+          return { data: { did: null, handle: null }, isLoading: false };
+        }
+        return { data: 3, isLoading: false };
+      });
       mockUserIdentities = [
         {
           id: "identity-1",
@@ -741,7 +781,12 @@ describe("LinkedIdentitiesSection", () => {
     });
 
     it("shows 0 enabled when no DM preferences are set", async () => {
-      mockUseQuery.mockReturnValue({ data: 0 });
+      mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
+        if (opts.queryKey[0] === "bluesky-status") {
+          return { data: { did: null, handle: null }, isLoading: false };
+        }
+        return { data: 0, isLoading: false };
+      });
       mockUserIdentities = [
         {
           id: "identity-1",

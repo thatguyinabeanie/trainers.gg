@@ -7,15 +7,8 @@
  *   - "Attacker" and "your team" header labels render
  *   - AttackerChipStrip receives teamSlots and activeIdx
  *   - Attacker species name, types, nature/level/item/ability display
- *   - "No attacker selected" fallback when slot is null
+ *   - "No attacker selected." fallback when attacker slot is null
  *   - Inherits-from-row note shows correct 1-based slot number
- *   - Stat-boost grid: all 5 stat keys render labels
- *   - Stat-boost stepper: decrease/increase buttons per stat
- *   - Clicking stepper + calls setAttackerBoost with incremented value
- *   - Clicking stepper − calls setAttackerBoost with decremented value
- *   - Stepper clamps at +6 max / −6 min
- *   - Quick-pick chips render for each stat and fire setAttackerBoost
- *   - Stat boosts section appears before inherits note
  *   - onPickAttacker is called through the chip strip
  */
 
@@ -28,7 +21,6 @@ import { type Tables } from "@trainers/supabase";
 // =============================================================================
 // Mocks
 // =============================================================================
-
 
 // AttackerChipStrip — render a simple test stub
 jest.mock("../calc/attacker-chip-strip", () => ({
@@ -70,7 +62,16 @@ jest.mock("../type-pill", () => ({
   ),
 }));
 
-// @trainers/pokemon — only getSpeciesTypes is used
+// MegaToggle — stub
+jest.mock("../calc/mega-toggle", () => ({
+  MegaToggle: ({ active, onToggle }: { active: boolean; onToggle: () => void }) => (
+    <button data-testid="mega-toggle" aria-pressed={active} onClick={onToggle}>
+      Mega
+    </button>
+  ),
+}));
+
+// @trainers/pokemon
 const mockGetSpeciesTypes = jest.fn();
 
 jest.mock("@trainers/pokemon", () => {
@@ -78,6 +79,7 @@ jest.mock("@trainers/pokemon", () => {
   return {
     ...actual,
     getSpeciesTypes: (...args: unknown[]) => mockGetSpeciesTypes(...args),
+    getMegaAbilityForSpecies: jest.fn().mockReturnValue(null),
   };
 });
 
@@ -86,7 +88,6 @@ jest.mock("@trainers/pokemon", () => {
 // =============================================================================
 
 import { CalcAttackerBlock } from "../calc/calc-attacker-block";
-import { type AttackerBoosts } from "../../use-calc-state";
 
 // =============================================================================
 // Fixtures
@@ -129,34 +130,30 @@ function makePokemon(
   };
 }
 
-function makeBoosts(overrides: Partial<AttackerBoosts> = {}): AttackerBoosts {
-  return { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, ...overrides };
-}
-
 interface RenderProps {
   teamSlots?: (Tables<"pokemon"> | null)[];
   attackerIdx?: number;
   onPickAttacker?: jest.Mock;
-  attackerBoosts?: AttackerBoosts;
-  setAttackerBoost?: jest.Mock;
+  attackerMegaActive?: boolean;
+  setAttackerMegaActive?: jest.Mock;
 }
 
 function renderAttacker(props: RenderProps = {}) {
   const teamSlots = props.teamSlots ?? [makePokemon(), null, null, null, null, null];
   const onPickAttacker = props.onPickAttacker ?? jest.fn();
-  const setAttackerBoost = props.setAttackerBoost ?? jest.fn();
+  const setAttackerMegaActive = props.setAttackerMegaActive ?? jest.fn();
 
   const result = render(
     <CalcAttackerBlock
       teamSlots={teamSlots}
       attackerIdx={props.attackerIdx ?? 0}
       onPickAttacker={onPickAttacker}
-      attackerBoosts={props.attackerBoosts ?? makeBoosts()}
-      setAttackerBoost={setAttackerBoost}
+      attackerMegaActive={props.attackerMegaActive ?? false}
+      setAttackerMegaActive={setAttackerMegaActive}
     />
   );
 
-  return { ...result, onPickAttacker, setAttackerBoost };
+  return { ...result, onPickAttacker, setAttackerMegaActive };
 }
 
 // =============================================================================
@@ -181,11 +178,6 @@ describe("CalcAttackerBlock — header labels", () => {
   it("renders the 'your team' sub-label", () => {
     renderAttacker();
     expect(screen.getByText("your team")).toBeInTheDocument();
-  });
-
-  it("renders the 'Stat boosts' section header", () => {
-    renderAttacker();
-    expect(screen.getByText("Stat boosts")).toBeInTheDocument();
   });
 });
 
@@ -219,7 +211,6 @@ describe("CalcAttackerBlock — chip strip", () => {
 describe("CalcAttackerBlock — attacker display", () => {
   it("renders the attacker species name in the mon head", () => {
     renderAttacker({ teamSlots: [makePokemon({ species: "Garchomp" }), null, null, null, null, null] });
-    // The name appears in both the chip stub and the mon head — at least one must be present
     expect(screen.getAllByText("Garchomp").length).toBeGreaterThanOrEqual(1);
   });
 
@@ -306,161 +297,6 @@ describe("CalcAttackerBlock — inherits-from note", () => {
   );
 });
 
-describe("CalcAttackerBlock — stat boost grid labels", () => {
-  it.each([
-    ["ATK", "atk"],
-    ["DEF", "def"],
-    ["SPA", "spa"],
-    ["SPD", "spd"],
-    ["SPE", "spe"],
-  ] as const)(
-    "renders the %s stat label",
-    (label) => {
-      renderAttacker();
-      expect(screen.getByText(label)).toBeInTheDocument();
-    }
-  );
-});
-
-describe("CalcAttackerBlock — stat boost stepper", () => {
-  it("renders stat boost stepper with decrease and increase buttons for each stat", () => {
-    renderAttacker({ attackerBoosts: makeBoosts() });
-    expect(screen.getByRole("button", { name: /decrease atk boost/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /increase atk boost/i })).toBeInTheDocument();
-  });
-
-  it("renders stepper decrease/increase buttons for all 5 stats", () => {
-    renderAttacker({ attackerBoosts: makeBoosts() });
-    const statKeys = ["atk", "def", "spa", "spd", "spe"] as const;
-    for (const stat of statKeys) {
-      expect(
-        screen.getByRole("button", { name: new RegExp(`decrease ${stat} boost`, "i") })
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: new RegExp(`increase ${stat} boost`, "i") })
-      ).toBeInTheDocument();
-    }
-  });
-
-  it("clicking + calls setAttackerBoost with incremented value", () => {
-    const setAttackerBoost = jest.fn();
-    renderAttacker({
-      attackerBoosts: makeBoosts({ atk: 1 }),
-      setAttackerBoost,
-    });
-    fireEvent.click(screen.getByRole("button", { name: /increase atk boost/i }));
-    expect(setAttackerBoost).toHaveBeenCalledWith("atk", 2);
-  });
-
-  it("clicking − calls setAttackerBoost with decremented value", () => {
-    const setAttackerBoost = jest.fn();
-    renderAttacker({
-      attackerBoosts: makeBoosts({ atk: 2 }),
-      setAttackerBoost,
-    });
-    fireEvent.click(screen.getByRole("button", { name: /decrease atk boost/i }));
-    expect(setAttackerBoost).toHaveBeenCalledWith("atk", 1);
-  });
-
-  it("+ clamps at +6 — does not exceed maximum", () => {
-    const setAttackerBoost = jest.fn();
-    renderAttacker({
-      attackerBoosts: makeBoosts({ atk: 6 }),
-      setAttackerBoost,
-    });
-    fireEvent.click(screen.getByRole("button", { name: /increase atk boost/i }));
-    expect(setAttackerBoost).toHaveBeenCalledWith("atk", 6);
-  });
-
-  it("− clamps at −6 — does not go below minimum", () => {
-    const setAttackerBoost = jest.fn();
-    renderAttacker({
-      attackerBoosts: makeBoosts({ spe: -6 }),
-      setAttackerBoost,
-    });
-    fireEvent.click(screen.getByRole("button", { name: /decrease spe boost/i }));
-    expect(setAttackerBoost).toHaveBeenCalledWith("spe", -6);
-  });
-
-  it("clicking + on SPE stat calls setAttackerBoost('spe', incremented)", () => {
-    const setAttackerBoost = jest.fn();
-    renderAttacker({
-      attackerBoosts: makeBoosts({ spe: 3 }),
-      setAttackerBoost,
-    });
-    fireEvent.click(screen.getByRole("button", { name: /increase spe boost/i }));
-    expect(setAttackerBoost).toHaveBeenCalledWith("spe", 4);
-  });
-});
-
-describe("CalcAttackerBlock — quick-pick chips", () => {
-  it("renders quick-pick chips +6 for all 5 stats", () => {
-    renderAttacker({ attackerBoosts: makeBoosts() });
-    const chips = screen.getAllByRole("button", { name: "+6" });
-    expect(chips.length).toBe(5);
-  });
-
-  it("renders quick-pick chips for values 0, +1, +2, +3, +6 per stat", () => {
-    renderAttacker({ attackerBoosts: makeBoosts() });
-    // 5 stats × 5 quick-pick values = 25 chips total; check the first stat row
-    // QUICK_PICKS = [0, 1, 2, 3, 6], rendered as "0", "+1", "+2", "+3", "+6"
-    expect(screen.getAllByRole("button", { name: "0" }).length).toBeGreaterThanOrEqual(5);
-    expect(screen.getAllByRole("button", { name: "+1" }).length).toBe(5);
-    expect(screen.getAllByRole("button", { name: "+2" }).length).toBe(5);
-    expect(screen.getAllByRole("button", { name: "+3" }).length).toBe(5);
-    expect(screen.getAllByRole("button", { name: "+6" }).length).toBe(5);
-  });
-
-  it("clicking a quick-pick chip calls setAttackerBoost with that value", () => {
-    const setAttackerBoost = jest.fn();
-    renderAttacker({
-      attackerBoosts: makeBoosts(),
-      setAttackerBoost,
-    });
-    // First "+2" chip corresponds to the ATK row (first stat)
-    fireEvent.click(screen.getAllByRole("button", { name: "+2" })[0]);
-    expect(setAttackerBoost).toHaveBeenCalledWith("atk", 2);
-  });
-
-  it("clicking the +6 quick-pick chip for DEF calls setAttackerBoost('def', 6)", () => {
-    const setAttackerBoost = jest.fn();
-    renderAttacker({
-      attackerBoosts: makeBoosts(),
-      setAttackerBoost,
-    });
-    // Second "+6" chip corresponds to the DEF row (second stat)
-    fireEvent.click(screen.getAllByRole("button", { name: "+6" })[1]);
-    expect(setAttackerBoost).toHaveBeenCalledWith("def", 6);
-  });
-
-  it("quick-pick chip shows aria-pressed=true when value matches current boost", () => {
-    renderAttacker({ attackerBoosts: makeBoosts({ atk: 2 }) });
-    // The "+2" chip in the ATK row should be aria-pressed=true
-    const plus2Chips = screen.getAllByRole("button", { name: "+2" });
-    expect(plus2Chips[0]).toHaveAttribute("aria-pressed", "true");
-  });
-
-  it("quick-pick chips other than the active value show aria-pressed=false", () => {
-    renderAttacker({ attackerBoosts: makeBoosts({ atk: 2 }) });
-    // "+1" chips should all be not-pressed
-    const plus1Chips = screen.getAllByRole("button", { name: "+1" });
-    for (const chip of plus1Chips) {
-      expect(chip).toHaveAttribute("aria-pressed", "false");
-    }
-  });
-});
-
-describe("CalcAttackerBlock — stat boosts ordering", () => {
-  it("stat boosts section appears before inherits note in the DOM", () => {
-    renderAttacker();
-    const boostsLabel = screen.getByText(/stat boosts/i);
-    const inheritsNote = screen.getByText(/inherits spread/i);
-    expect(
-      boostsLabel.compareDocumentPosition(inheritsNote) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-  });
-});
-
 describe("CalcAttackerBlock — types display", () => {
   it("renders no type pills when attacker species has no types", () => {
     mockGetSpeciesTypes.mockReturnValue([]);
@@ -475,5 +311,35 @@ describe("CalcAttackerBlock — types display", () => {
     });
     expect(screen.getByTestId("type-pill-Fire")).toBeInTheDocument();
     expect(screen.queryByTestId(/^type-pill-(?!Fire)/)).not.toBeInTheDocument();
+  });
+});
+
+describe("CalcAttackerBlock — mega toggle interaction", () => {
+  beforeEach(() => {
+    // Make getMegaAbilityForSpecies return a value so MegaToggle renders
+    const pokemon = jest.requireMock("@trainers/pokemon") as { getMegaAbilityForSpecies: jest.Mock };
+    pokemon.getMegaAbilityForSpecies.mockReturnValue("Tough Claws");
+  });
+
+  afterEach(() => {
+    const pokemon = jest.requireMock("@trainers/pokemon") as { getMegaAbilityForSpecies: jest.Mock };
+    pokemon.getMegaAbilityForSpecies.mockReturnValue(null);
+  });
+
+  it("calls setAttackerMegaActive when mega-toggle is clicked", () => {
+    const setAttackerMegaActive = jest.fn();
+    renderAttacker({ attackerMegaActive: false, setAttackerMegaActive });
+    fireEvent.click(screen.getByTestId("mega-toggle"));
+    expect(setAttackerMegaActive).toHaveBeenCalled();
+  });
+
+  it("reflects active state via aria-pressed", () => {
+    renderAttacker({ attackerMegaActive: true });
+    expect(screen.getByTestId("mega-toggle")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("reflects inactive state via aria-pressed", () => {
+    renderAttacker({ attackerMegaActive: false });
+    expect(screen.getByTestId("mega-toggle")).toHaveAttribute("aria-pressed", "false");
   });
 });

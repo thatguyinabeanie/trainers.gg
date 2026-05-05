@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { checkSudoStatus } from "@/lib/sudo/actions";
+import { queryKeys } from "@/lib/query-keys";
 import { ShieldAlert } from "lucide-react";
 
 /**
@@ -13,21 +14,14 @@ import { ShieldAlert } from "lucide-react";
  * This component should be included in the root layout to appear on all pages.
  */
 export function SudoModeIndicator() {
-  const [isActive, setIsActive] = useState(false);
-
-  useEffect(() => {
-    // Check sudo status on mount
-    checkSudoStatus().then((status) => setIsActive(status.isActive));
-
-    // Poll for sudo status changes every 30 seconds
-    // This ensures the indicator updates if sudo expires or is toggled elsewhere
-    const interval = setInterval(async () => {
+  const { data: isActive = false } = useQuery({
+    queryKey: queryKeys.sudo.status(),
+    queryFn: async () => {
       const status = await checkSudoStatus();
-      setIsActive(status.isActive);
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
+      return status.isActive;
+    },
+    refetchInterval: 30000,
+  });
 
   if (!isActive) {
     return null;

@@ -427,12 +427,12 @@ describe("IdentityLane — basic render", () => {
   });
 });
 
-describe("IdentityLane — type pills (moved to RibDecorations)", () => {
-  it("does NOT render type pills inside identity-lane (they live in the rib now)", () => {
+describe("IdentityLane — type pills", () => {
+  it("renders type pills for the species types", () => {
     // mock returns ["Dragon", "Ground"]
     renderLane();
-    expect(screen.queryByTestId("type-pill-Dragon")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("type-pill-Ground")).not.toBeInTheDocument();
+    expect(screen.getByTestId("type-pill-Dragon")).toBeInTheDocument();
+    expect(screen.getByTestId("type-pill-Ground")).toBeInTheDocument();
   });
 });
 

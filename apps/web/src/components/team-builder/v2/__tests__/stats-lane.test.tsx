@@ -9,6 +9,26 @@ import { type Tables } from "@trainers/supabase";
 
 import { StatsLane } from "../lanes/stats-lane";
 
+jest.mock("../calc/calc-state-context", () => ({
+  CalcStateProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  useCalcStateContext: () => ({
+    defenderSpecies: "",
+    moveCalcOutputs: [null, null, null, null],
+    field: {
+      doubles: true,
+      tailwind: false,
+      foesAlive: 2,
+      allyAlive: 2,
+      atkTera: false,
+    },
+    setField: jest.fn(),
+    calcEnabled: false,
+  }),
+  useCalcEnabled: () => false,
+}));
+
 // CSS modules aren't processed by ts-jest — mock them as identity proxies so
 // every className lookup returns the property key (e.g. s.spreadRow → "spreadRow").
 
@@ -272,10 +292,10 @@ describe("StatsLane", () => {
   it("renders ▲ on Atk row for Adamant nature", () => {
     renderLane({ nature: "Adamant" });
     // ▲ should appear exactly once — on the Atk label
-    const upChevrons = screen.getAllByText("▲");
+    const upChevrons = screen.getAllByText("▴");
     expect(upChevrons).toHaveLength(1);
     // HP, Def, SpA, SpD, Spe rows should NOT have ▲
-    expect(screen.queryAllByText("▽")).toHaveLength(1); // SpA gets ▽ under Adamant
+    expect(screen.queryAllByText("▾")).toHaveLength(1); // SpA gets ▽ under Adamant
   });
 
   // ---------------------------------------------------------------------------
@@ -283,11 +303,11 @@ describe("StatsLane", () => {
   // ---------------------------------------------------------------------------
   it("renders ▽ on SpA row for Adamant nature, not on other rows", () => {
     renderLane({ nature: "Adamant" }); // Adamant: +Atk / −SpA
-    const downChevrons = screen.getAllByText("▽");
+    const downChevrons = screen.getAllByText("▾");
     expect(downChevrons).toHaveLength(1);
     // The ▽ should be near the SpA label — confirm SpA text is adjacent in DOM
     const spaLabel = screen.getByText("SpA");
-    expect(spaLabel.closest("span")?.textContent).toContain("▽");
+    expect(spaLabel.closest("button")?.textContent).toContain("▾");
   });
 
   // ---------------------------------------------------------------------------
@@ -578,6 +598,44 @@ describe("StatsLane", () => {
 
     const slider = screen.getByLabelText("Atk slider");
     expect(slider).not.toHaveAttribute("data-at-bump");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Regression: liveEvByStat must clear when the rendered Pokemon changes.
+  // Without the prevPokemonIdRef reset (stats-lane.tsx ~778), an in-flight
+  // slider draft from Pokemon A would contaminate Pokemon B's EV total when
+  // the lane swaps to a new slot. Verifies the render-time reset fires on
+  // pokemon.id change.
+  // ---------------------------------------------------------------------------
+  it("clears in-flight liveEvByStat when the lane swaps to a different pokemon", () => {
+    const pokemonA = makeGarchomp({ id: 1, ev_attack: 0 });
+    const pokemonB = makeGarchomp({ id: 2, ev_attack: 0 });
+
+    const { rerender } = render(
+      <StatsLane pokemon={pokemonA} format={VGC_FORMAT} onUpdate={jest.fn()} />
+    );
+
+    // Baseline: both Pokemon have all EVs at 0, so the chip starts at 0/508.
+    expect(screen.getByText("0/508")).toBeInTheDocument();
+
+    // Simulate a slider drag on Atk — handleSliderChange bubbles the live
+    // value via onLiveEv, which sets liveEvByStat in the lane.
+    const atkSlider = screen.getByLabelText("Atk slider");
+    fireEvent.change(atkSlider, { target: { value: "100" } });
+
+    // Live total now reflects the dragged value (100), not the prop value (0).
+    expect(screen.getByText("100/508")).toBeInTheDocument();
+
+    // Swap to a different pokemon (different id) without committing the drag.
+    rerender(
+      <StatsLane pokemon={pokemonB} format={VGC_FORMAT} onUpdate={jest.fn()} />
+    );
+
+    // If liveEvByStat were not cleared on pokemon swap, the chip would still
+    // show "100/508" because liveEvByStat['attack'] would override pokemon B's
+    // ev_attack=0. The reset wipes the draft, so we see B's true total.
+    expect(screen.getByText("0/508")).toBeInTheDocument();
+    expect(screen.queryByText("100/508")).not.toBeInTheDocument();
   });
 });
 

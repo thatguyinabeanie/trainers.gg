@@ -12,6 +12,10 @@ import { type Page, test, expect } from "@playwright/test";
  * The page renders a Loader2 spinner while loading; the discord privacy row
  * only appears after loading is complete ({!isLoading && <Row />}).
  * We wait for the spinner to disappear, then the switch to appear.
+ *
+ * NOTE: We avoid waitForLoadState("networkidle") because persistent connections
+ * (Vercel preview toolbar, analytics, WebSocket devtools) prevent it from
+ * resolving in CI. Instead, we wait for the concrete UI element we need.
  */
 async function waitForProfilePageLoaded(page: Page) {
   // The loading card contains an svg with the animate-spin class
@@ -20,8 +24,11 @@ async function waitForProfilePageLoaded(page: Page) {
   await spinner.waitFor({ state: "hidden", timeout: 15000 }).catch(() => {
     // Spinner may not appear at all if load is fast — that's fine
   });
-  // Also ensure networkidle so any in-flight Server Actions settle
-  await page.waitForLoadState("networkidle");
+  // Wait for the discord privacy switch to appear as a signal that load is done
+  await page.locator("#show-discord-publicly").waitFor({
+    state: "attached",
+    timeout: 15000,
+  });
 }
 
 test.describe("Discord user settings", () => {
@@ -35,7 +42,7 @@ test.describe("Discord user settings", () => {
 
   test("notifications page renders discord DMs section", async ({ page }) => {
     await page.goto("/dashboard/settings/notifications");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // The #discord-dms section is Server-rendered. Scroll it into view so
     // Playwright's toBeVisible check passes (element must be in viewport).
@@ -51,7 +58,7 @@ test.describe("Discord user settings", () => {
     // "no Discord linked" state. When Discord is linked, the section would
     // show "Connected as @handle" and interactive checkboxes instead.
     await page.goto("/dashboard/settings/notifications");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const discordSection = page.locator("#discord-dms");
     await discordSection.scrollIntoViewIfNeeded();
@@ -75,7 +82,7 @@ test.describe("Discord user settings", () => {
     // user cannot accidentally think they have enabled notifications without a
     // connected account.
     await page.goto("/dashboard/settings/notifications");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const discordSection = page.locator("#discord-dms");
     await discordSection.scrollIntoViewIfNeeded();
@@ -94,7 +101,7 @@ test.describe("Discord user settings", () => {
     page,
   }) => {
     await page.goto("/dashboard/settings/notifications");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const discordSection = page.locator("#discord-dms");
     await discordSection.scrollIntoViewIfNeeded();
@@ -159,8 +166,8 @@ test.describe("Discord user settings", () => {
   });
 
   // CI timeout: waitForProfilePageLoaded consumes ~20s of the 30s budget,
-  // leaving insufficient time for the switch interaction + networkidle wait.
-  // Needs either a higher timeout or a faster page-load detection strategy.
+  // leaving insufficient time for the switch interaction.
+  // Now that networkidle is removed, these may pass — kept as fixme until verified.
   test.fixme("can toggle show-Discord-on-profile setting on", async ({
     page,
   }) => {
@@ -176,9 +183,7 @@ test.describe("Discord user settings", () => {
     if (!isCurrentlyChecked) {
       // Toggle ON
       await discordSwitch.click();
-      await page.waitForLoadState("networkidle");
-
-      await expect(discordSwitch).toBeChecked();
+      await expect(discordSwitch).toBeChecked({ timeout: 5000 });
 
       // Success toast confirms the Server Action completed
       await expect(
@@ -205,15 +210,12 @@ test.describe("Discord user settings", () => {
     const isCurrentlyChecked = await discordSwitch.isChecked();
     if (!isCurrentlyChecked) {
       await discordSwitch.click();
-      await page.waitForLoadState("networkidle");
-      await expect(discordSwitch).toBeChecked();
+      await expect(discordSwitch).toBeChecked({ timeout: 5000 });
     }
 
     // Toggle OFF
     await discordSwitch.click();
-    await page.waitForLoadState("networkidle");
-
-    await expect(discordSwitch).not.toBeChecked();
+    await expect(discordSwitch).not.toBeChecked({ timeout: 5000 });
 
     // Success toast confirms the Server Action completed
     await expect(page.getByText(/discord handle hidden/i)).toBeVisible({
@@ -236,19 +238,16 @@ test.describe("Discord user settings", () => {
     const isOn = await discordSwitch.isChecked();
     if (isOn) {
       await discordSwitch.click();
-      await page.waitForLoadState("networkidle");
-      await expect(discordSwitch).not.toBeChecked();
+      await expect(discordSwitch).not.toBeChecked({ timeout: 5000 });
     }
 
     // Toggle ON
     await discordSwitch.click();
-    await page.waitForLoadState("networkidle");
-    await expect(discordSwitch).toBeChecked();
+    await expect(discordSwitch).toBeChecked({ timeout: 5000 });
 
     // Toggle OFF
     await discordSwitch.click();
-    await page.waitForLoadState("networkidle");
-    await expect(discordSwitch).not.toBeChecked();
+    await expect(discordSwitch).not.toBeChecked({ timeout: 5000 });
   });
 
   // ---------------------------------------------------------------------------
@@ -269,13 +268,12 @@ test.describe("Discord user settings", () => {
     const isOn = await discordSwitch.isChecked();
     if (isOn) {
       await discordSwitch.click();
-      await page.waitForLoadState("networkidle");
-      await expect(discordSwitch).not.toBeChecked();
+      await expect(discordSwitch).not.toBeChecked({ timeout: 5000 });
     }
 
     // Visit the player's public profile
     await page.goto("/u/ash_ketchum");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Profile page should load (verify a heading is present)
     await expect(page.getByRole("heading").first()).toBeVisible({
@@ -293,7 +291,7 @@ test.describe("Discord user settings", () => {
     page,
   }) => {
     await page.goto("/u/ash_ketchum");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Profile heading should be present (the player exists in seed data)
     await expect(page.getByRole("heading").first()).toBeVisible({

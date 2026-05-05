@@ -211,12 +211,12 @@ function FormRowsGhost() {
         </div>
       ))}
       {/* Type row — two circle placeholders matching TypePill size */}
-      <div className={cn("grid grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 px-1 py-[3px] rounded cursor-pointer bg-transparent text-left w-full transition-colors hover:bg-muted", "cursor-default")}>
+      <div className={cn("grid grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 px-1 py-[3px] rounded cursor-pointer bg-transparent text-left w-full transition-colors hover:bg-muted", "cursor-default hover:bg-transparent")}>
         <span className={"text-[9px] font-bold tracking-[0.08em] uppercase text-muted-foreground font-mono whitespace-nowrap overflow-hidden text-ellipsis shrink-0"}>Type</span>
-        <span className={cn("text-[11.5px] text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0", "flex items-center gap-1")}>
+        <div className={cn("text-[11.5px] text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0", "flex items-center gap-1")}>
           <div className="bg-muted/40 size-[18px] rounded-full" />
           <div className="bg-muted/40 size-[18px] rounded-full" />
-        </span>
+        </div>
       </div>
     </>
   );
@@ -238,6 +238,13 @@ function MidFormRowsGhost() {
           </span>
         </div>
       ))}
+      <div className={cn(cellClasses.midFormCell, "cursor-default hover:bg-transparent")}>
+        <span className={cellClasses.midFormLbl}>Type</span>
+        <div className={cn(cellClasses.midFormVal, "items-center")}>
+          <div className="bg-muted/40 size-[18px] rounded-full" />
+          <div className="bg-muted/40 size-[18px] rounded-full" />
+        </div>
+      </div>
     </>
   );
 }

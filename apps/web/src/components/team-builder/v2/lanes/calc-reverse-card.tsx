@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { getMoveData } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
@@ -8,7 +10,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useCalcStateContext } from "../calc/calc-state-context";
 import { useDefenderMoves } from "../calc/use-defender-moves";
-import { type CalcOutput } from "../../use-calc-state";
 import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
 import { useTeamLayoutMode } from "../use-team-layout";
@@ -90,17 +91,24 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
                 <Tooltip key={i}>
                   <TooltipTrigger
                     render={
-                      <div
-                        className={cn(
-                          "flex items-center gap-1 py-px",
-                          m.hasCalc && m.desc && "cursor-pointer hover:bg-muted/50 rounded"
-                        )}
-                        onClick={() => {
-                          if (m.hasCalc && m.desc) {
-                            navigator.clipboard.writeText(m.desc);
-                          }
-                        }}
-                      />
+                      m.hasCalc && m.desc ? (
+                        <button
+                          type="button"
+                          aria-label={`Copy damage calc for ${m.moveName}`}
+                          className="flex items-center gap-1 py-px cursor-pointer hover:bg-muted/50 rounded"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(m.desc!);
+                            } catch {
+                              toast.error("Couldn't copy to clipboard");
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span
+                          className="flex items-center gap-1 py-px"
+                        />
+                      )
                     }
                   >
                     {/* Bullet + Type icon */}
@@ -179,17 +187,24 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
           <Tooltip key={i}>
             <TooltipTrigger
               render={
-                <div
-                  className={cn(
-                    "flex items-center shrink-0",
-                    m.hasCalc && m.desc && "cursor-pointer hover:bg-muted/50 rounded"
-                  )}
-                  onClick={() => {
-                    if (m.hasCalc && m.desc) {
-                      navigator.clipboard.writeText(m.desc);
-                    }
-                  }}
-                />
+                m.hasCalc && m.desc ? (
+                  <button
+                    type="button"
+                    aria-label={`Copy damage calc for ${m.moveName}`}
+                    className="flex items-center shrink-0 cursor-pointer hover:bg-muted/50 rounded"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(m.desc!);
+                      } catch {
+                        toast.error("Couldn't copy to clipboard");
+                      }
+                    }}
+                  />
+                ) : (
+                  <span
+                    className="flex items-center shrink-0"
+                  />
+                )
               }
             >
             {/* Bullet separator */}

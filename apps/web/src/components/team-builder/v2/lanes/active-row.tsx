@@ -140,7 +140,10 @@ export function ActiveRow({
       )}
       style={borderColor ? {
         borderColor,
-        boxShadow: `0 0 0 1px ${borderColor}33, 0 8px 28px -16px ${borderColor}66`,
+        boxShadow: [
+          `0 0 0 1px color-mix(in oklch, ${borderColor} 20%, transparent)`,
+          `0 8px 28px -16px color-mix(in oklch, ${borderColor} 40%, transparent)`,
+        ].join(", "),
       } : undefined}
     >
       {/* RIB LEFT — slot number + drag handle */}

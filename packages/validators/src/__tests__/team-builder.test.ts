@@ -5,6 +5,7 @@ import {
   updateTeamInputSchema,
   deleteTeamInputSchema,
   forkTeamInputSchema,
+  transferTeamInputSchema,
   addPokemonInputSchema,
   updatePokemonInputSchema,
   removePokemonInputSchema,
@@ -652,5 +653,56 @@ describe("teamUpdateDataSchema", () => {
         tags: Array.from({ length: 10 }, (_, i) => `tag${i}`),
       }).success
     ).toBe(true);
+  });
+});
+
+// =============================================================================
+// transferTeamInputSchema
+// =============================================================================
+
+describe("transferTeamInputSchema", () => {
+  it("accepts valid teamId and targetAltId", () => {
+    const result = transferTeamInputSchema.safeParse({
+      teamId: 1,
+      targetAltId: 2,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects non-positive teamId", () => {
+    expect(
+      transferTeamInputSchema.safeParse({ teamId: 0, targetAltId: 1 }).success
+    ).toBe(false);
+    expect(
+      transferTeamInputSchema.safeParse({ teamId: -1, targetAltId: 1 }).success
+    ).toBe(false);
+  });
+
+  it("rejects non-positive targetAltId", () => {
+    expect(
+      transferTeamInputSchema.safeParse({ teamId: 1, targetAltId: 0 }).success
+    ).toBe(false);
+    expect(
+      transferTeamInputSchema.safeParse({ teamId: 1, targetAltId: -5 }).success
+    ).toBe(false);
+  });
+
+  it("rejects missing fields", () => {
+    expect(transferTeamInputSchema.safeParse({}).success).toBe(false);
+    expect(
+      transferTeamInputSchema.safeParse({ teamId: 1 }).success
+    ).toBe(false);
+    expect(
+      transferTeamInputSchema.safeParse({ targetAltId: 1 }).success
+    ).toBe(false);
+  });
+
+  it("rejects non-integer values", () => {
+    expect(
+      transferTeamInputSchema.safeParse({ teamId: 1.5, targetAltId: 2 }).success
+    ).toBe(false);
+    expect(
+      transferTeamInputSchema.safeParse({ teamId: 1, targetAltId: 2.7 }).success
+    ).toBe(false);
   });
 });

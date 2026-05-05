@@ -1,20 +1,29 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import Link from "next/link";
+import { ChevronDownIcon, CheckIcon } from "lucide-react";
 
 import { getActiveFormats, type GameFormat } from "@trainers/pokemon";
-import { type TeamWithPokemon } from "@trainers/supabase";
+import { type TeamWithPokemon, type Tables } from "@trainers/supabase";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuGroup,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { NotificationsPopover } from "@/components/dashboard/notifications-popover";
 import { cn } from "@/lib/utils";
 
 import { type ValidationError } from "../validation-hooks";
@@ -23,47 +32,133 @@ import { ValidationPopover } from "./validation/validation-popover";
 
 const ACTIVE_FORMATS = getActiveFormats();
 
+// =============================================================================
+// Props
+// =============================================================================
+
 interface TopbarProps {
   team: TeamWithPokemon;
-  filledCount: number;
   format: GameFormat | undefined;
   username: string;
+  alts: Tables<"alts">[];
   onOpenImport: () => void;
   validationErrors: ValidationError[];
   onJumpToPokemon: (pokemonId: number) => void;
   onValidate: () => void;
+  onNameChange: (name: string) => Promise<void>;
   onFormatChange?: (formatId: string) => Promise<void>;
+  onAltChange?: (altId: number) => Promise<void>;
   exportMenu?: ReactNode;
 }
 
-interface StatBlockProps {
-  label: string;
-  value: string;
+// =============================================================================
+// Inline editable team name
+// =============================================================================
+
+interface EditableNameProps {
+  defaultValue: string;
+  onSave: (name: string) => Promise<void>;
 }
 
-function StatBlock({ label, value }: StatBlockProps) {
+function EditableName({ defaultValue, onSave }: EditableNameProps) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(defaultValue);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [prevDefault, setPrevDefault] = useState(defaultValue);
+
+  // Sync local value when defaultValue changes externally (render-time reset)
+  if (prevDefault !== defaultValue) {
+    setPrevDefault(defaultValue);
+    if (!editing) {
+      setValue(defaultValue);
+    }
+  }
+
+  async function commit() {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === defaultValue) {
+      setValue(defaultValue);
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(trimmed);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void commit();
+    } else if (e.key === "Escape") {
+      setValue(defaultValue);
+      setEditing(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => void commit()}
+        onKeyDown={handleKeyDown}
+        disabled={saving}
+        autoFocus
+        className={cn(
+          "h-7 w-36 rounded-md border border-border bg-background px-2 text-sm font-semibold shadow-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring sm:w-44 md:w-56",
+          saving && "opacity-60"
+        )}
+        aria-label="Team name"
+      />
+    );
+  }
+
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="font-mono text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
-      <span className="font-mono text-xs font-semibold leading-none">
-        {value}
-      </span>
-    </div>
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className="flex h-7 max-w-36 items-center gap-1 rounded-md px-2 text-sm font-semibold transition-colors hover:bg-accent sm:max-w-44 md:max-w-56"
+      aria-label="Edit team name"
+    >
+      <span className="truncate">{defaultValue}</span>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 16 16"
+        fill="currentColor"
+        aria-hidden="true"
+        focusable="false"
+        className="size-3 shrink-0 text-muted-foreground"
+      >
+        <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L3.22 10.306a1 1 0 0 0-.26.445l-.836 3.04a.25.25 0 0 0 .305.305l3.04-.836a1 1 0 0 0 .445-.26l7.793-7.793a1.75 1.75 0 0 0 0-2.475l-.219-.219Z" />
+      </svg>
+    </button>
   );
 }
 
+// =============================================================================
+// Topbar
+// =============================================================================
+
 export function Topbar({
   team,
-  filledCount,
   format,
   username,
+  alts,
   onOpenImport,
   validationErrors,
   onJumpToPokemon,
   onValidate,
+  onNameChange,
   onFormatChange,
+  onAltChange,
   exportMenu,
 }: TopbarProps) {
   const teamsUrl = `/dashboard/alts/${username}/teams`;
@@ -105,6 +200,11 @@ export function Topbar({
       ? [format, ...ACTIVE_FORMATS]
       : ACTIVE_FORMATS;
 
+  const currentAlt = alts.find((a) => a.username === username);
+  const hasMultipleAlts = alts.length > 1;
+
+  // ─── Format badge / selector ────────────────────────────────────────────────
+
   const formatBadge = onFormatChange ? (
     <Popover open={formatOpen} onOpenChange={setFormatOpen}>
       <PopoverTrigger
@@ -112,7 +212,7 @@ export function Topbar({
           <button
             type="button"
             disabled={formatPending}
-            className="ml-2 shrink-0"
+            className="shrink-0"
             aria-label="Change format"
           />
         }
@@ -130,12 +230,12 @@ export function Topbar({
               {format.label}
             </>
           ) : (
-            <span className="text-muted-foreground">Set format…</span>
+            <span className="text-muted-foreground">Set format...</span>
           )}
         </Badge>
       </PopoverTrigger>
       <PopoverContent side="bottom" align="start" className="w-auto p-3">
-        <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Format
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -159,36 +259,92 @@ export function Topbar({
       </PopoverContent>
     </Popover>
   ) : format ? (
-    <Badge variant="secondary" className="ml-2 shrink-0">
+    <Badge variant="secondary" className="shrink-0">
       <span className="mr-1 inline-block size-1.5 rounded-full bg-primary" />
       {format.label}
     </Badge>
   ) : null;
 
+  // ─── Render ─────────────────────────────────────────────────────────────────
+
   return (
-    <PageHeader>
-      <Link
-        href={teamsUrl}
-        className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline"
-      >
-        {username}
-      </Link>
-      <span className="hidden text-muted-foreground sm:inline">/</span>
-      <Input
-        defaultValue={team.name}
-        readOnly
-        className="h-7 w-28 border-transparent bg-transparent px-1.5 text-sm font-medium shadow-none focus-visible:border-border focus-visible:ring-0 sm:w-32 md:w-44"
-        aria-label="Team name"
-      />
+    <PageHeader hideNotifications>
+      {/* Left: Owner + Format (labeled, inline) */}
+      <div className="hidden items-center gap-4 sm:flex">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Owner
+          </span>
+          {hasMultipleAlts && onAltChange ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-0.5 text-sm font-medium transition-colors hover:text-primary"
+                    aria-label="Switch alt"
+                  />
+                }
+              >
+                {username}
+                <ChevronDownIcon className="size-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" sideOffset={6} className="min-w-60">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Team owner</DropdownMenuLabel>
+                  {alts.map((alt) => (
+                    <DropdownMenuItem
+                      key={alt.id}
+                      onClick={() => {
+                        if (alt.id !== currentAlt?.id) {
+                          onAltChange(alt.id);
+                        }
+                      }}
+                      className={cn(
+                        "gap-2 py-2 text-sm",
+                        alt.id === currentAlt?.id && "font-medium"
+                      )}
+                    >
+                      {alt.id === currentAlt?.id && (
+                        <CheckIcon className="size-4 text-primary" />
+                      )}
+                      <span className={cn(alt.id !== currentAlt?.id && "pl-6")}>
+                        {alt.username}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link
+              href={teamsUrl}
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              {username}
+            </Link>
+          )}
+        </div>
 
-      {formatBadge}
-
-      <div className="hidden items-center gap-3 lg:flex">
-        <StatBlock label="Slots" value={`${filledCount}/6`} />
-        <StatBlock label="Record" value="—·—" />
-        <StatBlock label="WR" value="—%" />
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Format
+          </span>
+          {formatBadge}
+        </div>
       </div>
 
+      {/* Center: Team name (absolutely centered, with label) */}
+      <div className="absolute inset-x-0 flex items-center justify-center pointer-events-none">
+        <div className="pointer-events-auto flex items-center gap-1.5">
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Team
+          </span>
+          <EditableName defaultValue={team.name} onSave={onNameChange} />
+        </div>
+      </div>
+
+      {/* Right: Actions (flush with far right / notifications) */}
       <div className="ml-auto flex items-center gap-1">
         <TeamLayoutToggle />
         <Button
@@ -239,6 +395,7 @@ export function Topbar({
             />
           </PopoverContent>
         </Popover>
+        <NotificationsPopover />
       </div>
     </PageHeader>
   );

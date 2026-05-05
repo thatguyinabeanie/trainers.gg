@@ -352,7 +352,10 @@ function StatRow({
     budget.perStat
   );
   const investBudgetRef = useRef(investBudget);
-  investBudgetRef.current = investBudget;
+  // Update ref in an effect to avoid "Cannot access refs during render"
+  useEffect(() => {
+    investBudgetRef.current = investBudget;
+  });
 
   // --- EV draft + debounced commit ---
   // Slider/keyboard updates the local draft synchronously for snappy UI;
@@ -564,30 +567,43 @@ function StatRow({
       className={cn(
         showIv
           ? showBoostCol
-            ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-            : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+            ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+            : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
           : showBoostCol
-            ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-            : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
+            ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+            : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
         statColorClass
       )}
     >
       {/* Col 1: Stat label, color-coded, with nature chevron.
           Matches the +/− nature label colours in IdentityLane:
-          boost = emerald, reduce = rose. */}
-      <span className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap overflow-hidden flex items-center gap-px", labelTextClass)}>
+          boost = emerald, reduce = rose.
+          Clickable to cycle nature: neutral → boost → reduce → neutral. */}
+      <button
+        type="button"
+        onClick={() => {
+          // Cycle: neutral → "+" → "−" → neutral
+          let suffix: "+" | "-" | null;
+          if (isNatureBoosted) suffix = "-";
+          else if (isNatureReduced) suffix = null;
+          else suffix = "+";
+          const newNature = computeNatureForSuffix({
+            currentNature: nature,
+            statKey,
+            suffix,
+          });
+          if (newNature) onUpdate({ nature: newNature });
+        }}
+        disabled={statKey === "hp"}
+        aria-label={statKey !== "hp" ? `Cycle nature for ${label}` : undefined}
+        className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px", labelTextClass, statKey !== "hp" && "cursor-pointer hover:opacity-70")}
+      >
         {label}
-        {isNatureBoosted && (
-          <span className="text-[9px] font-black tracking-tighter text-emerald-600 dark:text-emerald-400">
-            ▲
-          </span>
-        )}
-        {isNatureReduced && (
-          <span className="text-[9px] font-black tracking-tighter text-rose-600 dark:text-rose-400">
-            ▽
-          </span>
-        )}
-      </span>
+        <span className="inline-block w-[9px] text-[7px] leading-none">
+          {isNatureBoosted && "▴"}
+          {isNatureReduced && "▾"}
+        </span>
+      </button>
 
       {/* Col 2: Base stat number, muted mono */}
       <span className={"font-mono text-[9.5px] text-muted-foreground text-right tabular-nums"}>{base}</span>
@@ -761,6 +777,14 @@ export function StatsLane({
   const [liveEvByStat, setLiveEvByStat] = useState<
     Partial<Record<StatKey, number>>
   >({});
+  const currentPokemonId = pokemon?.id ?? null;
+  const [prevPokemonId, setPrevPokemonId] = useState<number | null>(
+    currentPokemonId
+  );
+  if (prevPokemonId !== currentPokemonId) {
+    setPrevPokemonId(currentPokemonId);
+    setLiveEvByStat({});
+  }
 
   // Match the active format so empty slots line up with filled ones — same
   // grid (with-IV vs without), same investment header (SP vs EVs), same total
@@ -783,11 +807,11 @@ export function StatsLane({
             "mb-0.5 py-0",
             showIv
               ? calcEnabled
-                ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-                : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
               : calcEnabled
-                ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-                : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
           )}
         >
           <span />
@@ -815,15 +839,15 @@ export function StatsLane({
             className={cn(
               showIv
                 ? calcEnabled
-                  ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-                  : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                  ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                  : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
                 : calcEnabled
-                  ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-                  : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
+                  ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                  : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
               colorClass
             )}
           >
-            <span className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap overflow-hidden flex items-center gap-px", "opacity-30")}>{label}</span>
+            <span className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px", "opacity-30")}>{label}</span>
             <span className={cn("font-mono text-[9.5px] text-muted-foreground text-right tabular-nums", "opacity-25")}>—</span>
             <div className={"h-2 bg-muted rounded-full overflow-hidden relative min-w-0"} />
             <div className="border-border/30 h-[18px] w-9 rounded border border-dashed" />
@@ -887,11 +911,11 @@ export function StatsLane({
           "mb-0.5",
           showIv
             ? calcEnabled
-              ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-              : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+              ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+              : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
             : calcEnabled
-              ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-              : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
+              ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+              : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
           "py-0"
         )}
       >

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { formatDateTime } from "@trainers/utils";
 import {
   Sheet,
@@ -31,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { queryKeys } from "@/lib/query-keys";
 import { supabase } from "@/lib/supabase/client";
 import {
   getUserAdminDetails,
@@ -123,12 +125,32 @@ export function UserDetailSheet({
   onOpenChange,
   onUserUpdated,
 }: UserDetailSheetProps) {
-  const [user, setUser] = useState<UserDetail | null>(null);
-  const [siteRoles, setSiteRoles] = useState<SiteRole[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data: userData, isLoading: loading, error: queryError, refetch: refetchUser } = useQuery({
+    queryKey: queryKeys.admin.userDetail(userId),
+    queryFn: async () => {
+      const [userResult, rolesData] = await Promise.all([
+        getUserAdminDetails(supabase, userId!),
+        fetchSiteRoles(supabase),
+      ]);
+      return { user: userResult as UserDetail | null, siteRoles: rolesData as SiteRole[] };
+    },
+    enabled: open && !!userId,
+  });
+
+  const user = userData?.user ?? null;
+  const siteRoles = userData?.siteRoles ?? [];
+  const error = queryError?.message ?? null;
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [prevOpen, setPrevOpen] = useState(open);
+
+  // Reset action error when sheet closes (render-time state reset)
+  if (prevOpen !== open) {
+    setPrevOpen(open);
+    if (!open) {
+      setActionError(null);
+    }
+  }
 
   // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -149,41 +171,13 @@ export function UserDetailSheet({
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
 
   const fetchUser = async () => {
-    if (!userId) return;
-
-    setLoading(true);
-    setError(null);
     setActionError(null);
     setShowImpersonateInput(false);
     setImpersonateReason("");
     setSuspendReason("");
     setSelectedRoleId("");
-
-    try {
-      const [userData, rolesData] = await Promise.all([
-        getUserAdminDetails(supabase, userId),
-        fetchSiteRoles(supabase),
-      ]);
-      setUser(userData as UserDetail | null);
-      setSiteRoles(rolesData as SiteRole[]);
-    } catch (err) {
-      console.error("Error fetching user details:", err);
-      setError("Failed to load user details");
-    } finally {
-      setLoading(false);
-    }
+    await refetchUser();
   };
-
-  useEffect(() => {
-    if (open && userId) {
-      fetchUser();
-    }
-    if (!open) {
-      setUser(null);
-      setError(null);
-      setActionError(null);
-    }
-  }, [open, userId]);
 
   const userSiteRoles = !user?.user_roles
     ? []

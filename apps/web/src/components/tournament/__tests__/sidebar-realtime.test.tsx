@@ -36,6 +36,11 @@ const mockSupabase = {
 // Mocks — must be declared before imports
 // --------------------------------------------------------------------------
 
+// Mock @tanstack/react-query (useQuery used for user teams)
+jest.mock("@tanstack/react-query", () => ({
+  useQuery: jest.fn(() => ({ data: [], isLoading: false })),
+}));
+
 jest.mock("@/lib/supabase", () => ({
   useSupabase: () => mockSupabase,
   useSupabaseQuery: (_queryFn: unknown, _deps: unknown) => ({

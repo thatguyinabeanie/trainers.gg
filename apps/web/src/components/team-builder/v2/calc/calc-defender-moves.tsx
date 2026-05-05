@@ -56,7 +56,7 @@ function DefenderMoveTile({
   const moveType = moveData?.type ?? null;
 
   // Accuracy note
-  const accuracy =
+  const _accuracy =
     moveData?.accuracy === true || !moveData?.accuracy
       ? null
       : (moveData.accuracy as number);
