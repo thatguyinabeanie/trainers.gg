@@ -332,7 +332,7 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
     throw new Error("Tournament is not open for check-in");
   }
 
-  const updateData: Record<string, unknown> = {
+  const updateData: { status: "checked_in"; checked_in_at: string } = {
     status: "checked_in",
     checked_in_at: new Date().toISOString(),
   };

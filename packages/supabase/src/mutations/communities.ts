@@ -254,7 +254,6 @@ export async function inviteToCommunity(
       community_id: communityId,
       invited_user_id: invitedUserId,
       invited_by_user_id: user.id,
-      role: "org_moderator", // Default role
       status: "pending",
       expires_at: getInvitationExpiryDate(),
     })

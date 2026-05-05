@@ -1,6 +1,13 @@
 "use client";
 
-import { useId, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
+import {
+  useId,
+  useEffect,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -55,7 +62,6 @@ import {
   useCalcStateContext,
 } from "./calc/calc-state-context";
 import { Dockbar } from "./dock/dockbar";
-import { getTeamDefensiveSummary } from "./dock/heatmap-panel";
 import { getTeamFastestSpeed } from "./dock/speed-tiers-panel";
 import { HeatmapPanel } from "./dock/heatmap-panel";
 import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
@@ -206,8 +212,6 @@ interface DockbarConnectedProps {
   onOpen: (key: "matchups" | "speed" | "calc") => void;
   sideDrawer?: "speed" | "calc" | null;
   bottomDrawer?: "matchups" | null;
-  weakCount: number;
-  coveredCount: number;
   fastest: number;
 }
 
@@ -220,8 +224,6 @@ function DockbarConnected({
   onOpen,
   sideDrawer,
   bottomDrawer,
-  weakCount,
-  coveredCount,
   fastest,
 }: DockbarConnectedProps) {
   const calc = useCalcStateContext();
@@ -232,8 +234,6 @@ function DockbarConnected({
       onOpen={onOpen}
       sideDrawer={sideDrawer}
       bottomDrawer={bottomDrawer}
-      weakCount={weakCount}
-      coveredCount={coveredCount}
       fastest={fastest}
       defenderSpecies={calc.defenderSpecies}
       moveCalcOutputs={calc.moveCalcOutputs}
@@ -523,8 +523,7 @@ export function TeamWorkspaceV2({
   const filledCount = slots.filter(Boolean).length;
 
   // Pre-compute dock-pill summaries once here so DockbarConnected never runs
-  // getTeamDefensiveSummary / getTeamFastestSpeed on every EV slider tick.
-  const defensiveSummary = getTeamDefensiveSummary(optimisticTeamPokemon);
+  // getTeamFastestSpeed on every EV slider tick.
   const fastestSpeed = format
     ? getTeamFastestSpeed(optimisticTeamPokemon, format)
     : 0;
@@ -556,86 +555,85 @@ export function TeamWorkspaceV2({
         faintedYours={state.faintedYours}
         faintedTheirs={state.faintedTheirs}
       >
-      <div
-        className="flex h-full flex-col overflow-hidden"
-        style={builderTokenStyle}
-      >
-        <Topbar
-          team={team}
-          filledCount={filledCount}
-          format={format}
-          username={username}
-          onOpenImport={() => setImportOpen(true)}
-          validationErrors={validationErrors}
-          onJumpToPokemon={handleJumpToPokemon}
-          onValidate={validate}
-          onFormatChange={async (formatId) => {
-            const result = await updateTeamAction(team.id, {
-              format: formatId,
-            });
-            if (!result.success) {
-              toast.error(result.error ?? "Failed to update format.");
-              return;
-            }
-            router.refresh();
-          }}
-          exportMenu={<ExportMenu team={team} />}
-        />
-
         <div
-          className="flex flex-1 flex-col min-w-0 overflow-hidden"
-          ref={worklaneRef}
+          className="flex h-full flex-col overflow-hidden"
+          style={builderTokenStyle}
         >
-          {/* Horizontal split: optional left sidebar + editor */}
-          <div className="flex flex-1 min-w-0 overflow-hidden">
+          <Topbar
+            team={team}
+            filledCount={filledCount}
+            format={format}
+            username={username}
+            onOpenImport={() => setImportOpen(true)}
+            validationErrors={validationErrors}
+            onJumpToPokemon={handleJumpToPokemon}
+            onValidate={validate}
+            onFormatChange={async (formatId) => {
+              const result = await updateTeamAction(team.id, {
+                format: formatId,
+              });
+              if (!result.success) {
+                toast.error(result.error ?? "Failed to update format.");
+                return;
+              }
+              router.refresh();
+            }}
+            exportMenu={<ExportMenu team={team} />}
+          />
 
+          <div
+            className="flex min-w-0 flex-1 flex-col overflow-hidden"
+            ref={worklaneRef}
+          >
+            {/* Horizontal split: optional left sidebar + editor */}
+            <div className="flex min-w-0 flex-1 overflow-hidden">
               {/* Desktop: side panels on the left */}
               {!isMobile && state.sideDrawer && (
                 <>
                   <div
-                    className="shrink-0 flex flex-col border-r border-border bg-muted/30 transition-[width] duration-200 ease-in-out"
+                    className="border-border bg-muted/30 flex shrink-0 flex-col border-r transition-[width] duration-200 ease-in-out"
                     style={{ width: state.sideWidthPx }}
                   >
-                  {state.sideDrawer === "speed" ? (
-                    <>
-                      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
-                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary">
-                          Speed Tiers
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => state.setSideDrawer(null)}
-                          aria-label="Close speed tiers"
-                          className="ml-auto text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded transition-colors"
-                        >
-                          ×
-                        </button>
-                      </header>
-                      <div className="min-h-0 flex-1 overflow-y-auto">
-                        <SpeedTiersPanel
-                          team={optimisticTeamPokemon}
-                          format={format}
-                        />
-                      </div>
-                    </>
-                  ) : state.sideDrawer === "calc" ? (
-                    <CalcBottomPanel
-                      teamSlots={slots}
-                      format={format}
-                      onClose={() => state.setSideDrawer(null)}
-                      attackerIdx={calcAttackerIdx}
-                      faintedYours={state.faintedYours}
-                      setFaintedYours={state.setFaintedYours}
-                      faintedTheirs={state.faintedTheirs}
-                      setFaintedTheirs={state.setFaintedTheirs}
-                    />
-                  ) : null}
+                    {state.sideDrawer === "speed" ? (
+                      <>
+                        <header className="border-border flex items-center gap-2 border-b px-3 py-2">
+                          <span className="text-primary font-mono text-[10px] font-bold tracking-wider uppercase">
+                            Speed Tiers
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => state.setSideDrawer(null)}
+                            aria-label="Close speed tiers"
+                            className="text-muted-foreground hover:text-foreground ml-auto flex size-5 items-center justify-center rounded transition-colors"
+                          >
+                            ×
+                          </button>
+                        </header>
+                        <div className="min-h-0 flex-1 overflow-y-auto">
+                          <SpeedTiersPanel
+                            team={optimisticTeamPokemon}
+                            format={format}
+                          />
+                        </div>
+                      </>
+                    ) : state.sideDrawer === "calc" ? (
+                      <CalcBottomPanel
+                        teamSlots={slots}
+                        format={format}
+                        onClose={() => state.setSideDrawer(null)}
+                        attackerIdx={calcAttackerIdx}
+                        faintedYours={state.faintedYours}
+                        setFaintedYours={state.setFaintedYours}
+                        faintedTheirs={state.faintedTheirs}
+                        setFaintedTheirs={state.setFaintedTheirs}
+                      />
+                    ) : null}
                   </div>
                   <div
                     role="separator"
                     aria-orientation="vertical"
                     aria-label="Resize side panel"
-                    className="w-[6px] shrink-0 cursor-col-resize bg-border transition-colors duration-100 touch-none hover:bg-primary focus-visible:bg-primary focus-visible:outline-none"
+                    className="bg-border hover:bg-primary focus-visible:bg-primary w-[6px] shrink-0 cursor-col-resize touch-none transition-colors duration-100 focus-visible:outline-none"
                     onPointerDown={(e) => {
                       const startX = e.clientX;
                       const startWidth = state.sideWidthPx;
@@ -657,65 +655,27 @@ export function TeamWorkspaceV2({
                 </>
               )}
 
-            {/* Editor region — rows scroll inside this region only */}
-            <div className="flex flex-1 flex-col min-w-0 overflow-y-auto">
-              {/* Section wraps pokemon rows */}
-              <section
-                className="grid w-full my-auto p-3 gap-2 mx-auto max-w-[1800px] [[data-density=compact]_&]:p-2"
-                data-calc-open={
-                  state.sideDrawer === "calc" && !isMobile ? "true" : "false"
-                }
-                data-layout={layoutMode}
-              >
-              {/* Pokemon rows wrapper */}
-              <div
-                className={cn(
-                  "grid grid-cols-[minmax(0,1fr)] gap-2 [[data-density=compact]_&]:gap-1",
-                  layoutMode === "2x3-vertical" &&
-                    "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] justify-center"
-                )}
-              >
-                {isMobile ? (
-                  // Mobile: no drag-and-drop, render rows directly.
-                  slots.map((p, i) => {
-                    const slotPokemonId = p?.id ?? null;
-                    const slotErrors =
-                      slotPokemonId !== null
-                        ? (pokemonErrors.get(slotPokemonId) ?? [])
-                        : [];
-
-                    return (
-                      <PokeRow
-                        key={itemIds[i]}
-                        sortableId={itemIds[i] ?? `__empty__${i}`}
-                        idx={i}
-                        pokemon={p}
-                        isActive={state.activeIdx === i}
-                        density="comfy"
-                        expandMode="all"
-                        onActivate={state.setActiveIdx}
-                        onAdd={handleAdd}
-                        onRemove={handleRemoveByIdx}
-                        teamPokemon={optimisticTeamPokemon}
-                        format={format}
-                        onPokemonUpdate={handlePokemonUpdate}
-                        slotErrors={slotErrors}
-                      />
-                    );
-                  })
-                ) : (
-                  // Desktop: wrap in DnD context for drag-and-drop reordering.
-                  <DndContext
-                    id={dndId}
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
+              {/* Editor region — rows scroll inside this region only */}
+              <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+                {/* Section wraps pokemon rows */}
+                <section
+                  className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3 [[data-density=compact]_&]:p-2"
+                  data-calc-open={
+                    state.sideDrawer === "calc" && !isMobile ? "true" : "false"
+                  }
+                  data-layout={layoutMode}
+                >
+                  {/* Pokemon rows wrapper */}
+                  <div
+                    className={cn(
+                      "grid grid-cols-[minmax(0,1fr)] gap-2 [[data-density=compact]_&]:gap-1",
+                      layoutMode === "2x3-vertical" &&
+                        "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] justify-center"
+                    )}
                   >
-                    <SortableContext
-                      items={itemIds}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {slots.map((p, i) => {
+                    {isMobile ? (
+                      // Mobile: no drag-and-drop, render rows directly.
+                      slots.map((p, i) => {
                         const slotPokemonId = p?.id ?? null;
                         const slotErrors =
                           slotPokemonId !== null
@@ -740,18 +700,55 @@ export function TeamWorkspaceV2({
                             slotErrors={slotErrors}
                           />
                         );
-                      })}
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </div>
+                      })
+                    ) : (
+                      // Desktop: wrap in DnD context for drag-and-drop reordering.
+                      <DndContext
+                        id={dndId}
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={itemIds}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {slots.map((p, i) => {
+                            const slotPokemonId = p?.id ?? null;
+                            const slotErrors =
+                              slotPokemonId !== null
+                                ? (pokemonErrors.get(slotPokemonId) ?? [])
+                                : [];
 
-              </section>
-            </div>
+                            return (
+                              <PokeRow
+                                key={itemIds[i]}
+                                sortableId={itemIds[i] ?? `__empty__${i}`}
+                                idx={i}
+                                pokemon={p}
+                                isActive={state.activeIdx === i}
+                                density="comfy"
+                                expandMode="all"
+                                onActivate={state.setActiveIdx}
+                                onAdd={handleAdd}
+                                onRemove={handleRemoveByIdx}
+                                teamPokemon={optimisticTeamPokemon}
+                                format={format}
+                                onPokemonUpdate={handlePokemonUpdate}
+                                slotErrors={slotErrors}
+                              />
+                            );
+                          })}
+                        </SortableContext>
+                      </DndContext>
+                    )}
+                  </div>
+                </section>
+              </div>
 
               {/* Mobile: calc/speed panels render inline below the editor rows */}
               {isMobile && state.sideDrawer === "calc" && (
-                <div className="border-t p-3 w-full">
+                <div className="w-full border-t p-3">
                   <CalcBottomPanel
                     teamSlots={slots}
                     format={format}
@@ -765,21 +762,20 @@ export function TeamWorkspaceV2({
                 </div>
               )}
               {isMobile && state.sideDrawer === "speed" && (
-                <div className="border-t p-3 w-full">
+                <div className="w-full border-t p-3">
                   <SpeedTiersPanel
                     team={optimisticTeamPokemon}
                     format={format}
                   />
                 </div>
               )}
+            </div>
+            {/* End horizontal split */}
 
-          </div>
-          {/* End horizontal split */}
-
-          {/* Bottom panel — type matchups (fixed height, no resize) */}
-          {state.bottomDrawer === "matchups" && (
+            {/* Bottom panel — type matchups (fixed height, no resize) */}
+            {state.bottomDrawer === "matchups" && (
               <div
-                className="shrink-0 min-h-0 overflow-auto border-t border-border bg-background"
+                className="border-border bg-background min-h-0 shrink-0 overflow-auto border-t"
                 style={{ maxHeight: "45%" }}
               >
                 <HeatmapPanel
@@ -789,60 +785,59 @@ export function TeamWorkspaceV2({
                 />
               </div>
             )}
-
           </div>
 
-        <DockbarConnected
-          drawer={state.drawer}
-          onOpen={(key) => {
-            if (key === "matchups") {
-              state.setBottomDrawer(state.bottomDrawer === "matchups" ? null : "matchups");
-            } else {
-              state.setSideDrawer(state.sideDrawer === key ? null : key);
-            }
-          }}
-          sideDrawer={state.sideDrawer}
-          bottomDrawer={state.bottomDrawer}
-          weakCount={defensiveSummary.weakCount}
-          coveredCount={defensiveSummary.coveredCount}
-          fastest={fastestSpeed}
+          <DockbarConnected
+            drawer={state.drawer}
+            onOpen={(key) => {
+              if (key === "matchups") {
+                state.setBottomDrawer(
+                  state.bottomDrawer === "matchups" ? null : "matchups"
+                );
+              } else {
+                state.setSideDrawer(state.sideDrawer === key ? null : key);
+              }
+            }}
+            sideDrawer={state.sideDrawer}
+            bottomDrawer={state.bottomDrawer}
+            fastest={fastestSpeed}
+          />
+        </div>
+
+        {/* Import dialog — opened by topbar Import button */}
+        <ImportDialog
+          team={team}
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onImportComplete={() => router.refresh()}
+          formatId={format?.id}
         />
-      </div>
 
-      {/* Import dialog — opened by topbar Import button */}
-      <ImportDialog
-        team={team}
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        onImportComplete={() => router.refresh()}
-        formatId={format?.id}
-      />
-
-      {/* Remove confirmation dialog */}
-      <AlertDialog
-        open={removeSlotIdx !== null}
-        onOpenChange={(open) => {
-          if (!open) setRemoveSlotIdx(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove Pokémon?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove the Pokémon from this slot.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmRemove}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Remove confirmation dialog */}
+        <AlertDialog
+          open={removeSlotIdx !== null}
+          onOpenChange={(open) => {
+            if (!open) setRemoveSlotIdx(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Pokémon?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove the Pokémon from this slot.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmRemove}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CalcStateProvider>
     </TeamLayoutContext.Provider>
   );

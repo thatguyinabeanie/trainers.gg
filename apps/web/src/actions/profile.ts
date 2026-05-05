@@ -304,7 +304,11 @@ export async function updateProfile(data: {
     const currentUsername = currentUser?.username;
 
     // Build update data for the users table
-    const userUpdate: Record<string, string> = {};
+    const userUpdate: {
+      username?: string;
+      birth_date?: string;
+      country?: string;
+    } = {};
     const hasUsernameChange = validated.username !== undefined;
 
     if (hasUsernameChange) {
@@ -456,10 +460,9 @@ export async function updateProfile(data: {
       }
 
       if (userData?.main_alt_id) {
-        const altUpdate: Record<string, string | null> = {};
+        const altUpdate: { username?: string; bio?: string | null } = {};
         if (hasUsernameChange) {
           altUpdate.username = validated.username!;
-          altUpdate.display_name = validated.username!;
         }
         if (validated.bio !== undefined) {
           altUpdate.bio = validated.bio || null;

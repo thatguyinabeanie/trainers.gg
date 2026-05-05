@@ -146,13 +146,11 @@ export async function ensureAlt(supabase: TypedClient) {
     username = `user_${user.id.slice(0, 12)}`;
   }
 
-  // display_name is auto-synced with username
   const { data: alt, error } = await supabase
     .from("alts")
     .insert({
       user_id: user.id,
       username,
-      display_name: username,
       avatar_url: userData?.image ?? null,
     })
     .select()
@@ -189,13 +187,11 @@ export async function createAlt(
     throw new Error("Username is already taken");
   }
 
-  // display_name is auto-synced with username
   const { data: alt, error } = await supabase
     .from("alts")
     .insert({
       user_id: user.id,
       username: data.username,
-      display_name: data.username,
       avatar_url: data.avatarUrl ?? null,
     })
     .select()
