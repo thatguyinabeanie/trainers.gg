@@ -41,6 +41,12 @@ interface TopbarProps {
   format: GameFormat | undefined;
   username: string;
   alts: Tables<"alts">[];
+  /** Builder mode — controls which UI elements are visible. */
+  mode?: "local" | "api";
+  /** Called when authenticated user clicks "Save to account" in local mode. */
+  onSaveToAccount?: () => void;
+  /** Whether the save-to-account operation is in progress. */
+  isSaving?: boolean;
   onOpenImport: () => void;
   validationErrors: ValidationError[];
   onJumpToPokemon: (pokemonId: number) => void;
@@ -152,6 +158,9 @@ export function Topbar({
   format,
   username,
   alts,
+  mode = "api",
+  onSaveToAccount,
+  isSaving,
   onOpenImport,
   validationErrors,
   onJumpToPokemon,
@@ -165,6 +174,8 @@ export function Topbar({
   const [validateOpen, setValidateOpen] = useState(false);
   const [formatOpen, setFormatOpen] = useState(false);
   const [formatPending, setFormatPending] = useState(false);
+
+  const isLocalMode = mode === "local";
 
   const hasErrors = validationErrors.some((e) => e.severity === "error");
   const hasWarnings = validationErrors.some((e) => e.severity === "warning");
@@ -267,64 +278,67 @@ export function Topbar({
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
-  return (
-    <PageHeader hideNotifications>
-      {/* Left: Owner + Format (labeled, inline) */}
+  // Content shared between both header modes
+  const headerContent = (
+    <>
+      {/* Left: Owner + Format (labeled, inline) — hide owner in local mode */}
       <div className="hidden items-center gap-4 sm:flex">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Owner
-          </span>
-          {hasMultipleAlts && onAltChange ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-0.5 text-sm font-medium transition-colors hover:text-primary"
-                    aria-label="Switch alt"
-                  />
-                }
+        {!isLocalMode && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Owner
+            </span>
+            {hasMultipleAlts && onAltChange ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-0.5 text-sm font-medium transition-colors hover:text-primary"
+                      aria-label="Switch alt"
+                    />
+                  }
+                >
+                  {username}
+                  <ChevronDownIcon className="size-3" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" sideOffset={6} className="min-w-60">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Team owner</DropdownMenuLabel>
+                    {alts.map((alt) => (
+                      <DropdownMenuItem
+                        key={alt.id}
+                        onClick={() => {
+                          if (alt.id !== currentAlt?.id) {
+                            onAltChange(alt.id);
+                          }
+                        }}
+                        className={cn(
+                          "gap-2 py-2 text-sm",
+                          alt.id === currentAlt?.id && "font-medium"
+                        )}
+                      >
+                        {alt.id === currentAlt?.id && (
+                          <CheckIcon className="size-4 text-primary" />
+                        )}
+                        <span className={cn(alt.id !== currentAlt?.id && "pl-6")}>
+                          {alt.username}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link
+                href={teamsUrl}
+                className="text-sm font-medium transition-colors hover:text-primary"
               >
                 {username}
-                <ChevronDownIcon className="size-3" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" sideOffset={6} className="min-w-60">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Team owner</DropdownMenuLabel>
-                  {alts.map((alt) => (
-                    <DropdownMenuItem
-                      key={alt.id}
-                      onClick={() => {
-                        if (alt.id !== currentAlt?.id) {
-                          onAltChange(alt.id);
-                        }
-                      }}
-                      className={cn(
-                        "gap-2 py-2 text-sm",
-                        alt.id === currentAlt?.id && "font-medium"
-                      )}
-                    >
-                      {alt.id === currentAlt?.id && (
-                        <CheckIcon className="size-4 text-primary" />
-                      )}
-                      <span className={cn(alt.id !== currentAlt?.id && "pl-6")}>
-                        {alt.username}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Link
-              href={teamsUrl}
-              className="text-sm font-medium transition-colors hover:text-primary"
-            >
-              {username}
-            </Link>
-          )}
-        </div>
+              </Link>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -395,8 +409,40 @@ export function Topbar({
             />
           </PopoverContent>
         </Popover>
-        <NotificationsPopover />
+        {isLocalMode ? (
+          onSaveToAccount ? (
+            <button
+              type="button"
+              onClick={onSaveToAccount}
+              disabled={isSaving}
+              className="inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 disabled:opacity-50 sm:h-8 sm:px-3 sm:text-sm"
+            >
+              {isSaving ? "Saving..." : "Save to account"}
+            </button>
+          ) : (
+            <Link
+              href={`/sign-in?redirect=${encodeURIComponent("/builder?action=save")}`}
+              className="inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 sm:h-8 sm:px-3 sm:text-sm"
+            >
+              Sign in to save
+            </Link>
+          )
+        ) : (
+          <NotificationsPopover />
+        )}
       </div>
-    </PageHeader>
+    </>
   );
+
+  // In local mode, render a standalone header (no SidebarProvider available).
+  // In API mode, use PageHeader which integrates with the dashboard sidebar.
+  if (isLocalMode) {
+    return (
+      <header className="relative flex h-12 shrink-0 items-center gap-2 border-b px-4">
+        {headerContent}
+      </header>
+    );
+  }
+
+  return <PageHeader hideNotifications>{headerContent}</PageHeader>;
 }

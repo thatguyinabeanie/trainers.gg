@@ -34,14 +34,7 @@ import {
   type TablesUpdate,
 } from "@trainers/supabase";
 
-import {
-  addPokemonToTeamAction,
-  removePokemonFromTeamAction,
-  reorderTeamPokemonAction,
-  transferTeamAction,
-  updatePokemonAction,
-  updateTeamAction,
-} from "@/actions/teams";
+import type { BuilderPersistence } from "./persistence/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
@@ -107,6 +100,12 @@ interface TeamWorkspaceV2Props {
   format: GameFormat | undefined;
   username: string;
   alts: Tables<"alts">[];
+  /** Persistence adapter — controls how mutations are applied (API vs local). */
+  persistence: BuilderPersistence;
+  /** Called when authenticated user wants to save local team to their account. */
+  onSaveToAccount?: () => void;
+  /** Whether the save-to-account operation is in progress. */
+  isSaving?: boolean;
 }
 
 // =============================================================================
@@ -258,6 +257,9 @@ export function TeamWorkspaceV2({
   format,
   username,
   alts,
+  persistence,
+  onSaveToAccount,
+  isSaving,
 }: TeamWorkspaceV2Props) {
   const router = useRouter();
   const state = useBuilderState();
@@ -354,17 +356,18 @@ export function TeamWorkspaceV2({
   ) {
     // Negative ids are optimistic placeholders — the row hasn't landed in
     // the DB yet, so the server can't accept an update for it.
-    if (pokemonId < 1) {
+    // (In local mode, negative IDs are valid since they're the real IDs.)
+    if (persistence.mode === "api" && pokemonId < 1) {
       toast.info("Still saving the new Pokémon — try again in a moment.");
       return;
     }
     startTransition(async () => {
       applyOptimistic({ kind: "update", pokemonId, fields });
-      const result = await updatePokemonAction(team.id, pokemonId, fields);
+      const result = await persistence.updatePokemon(team.id, pokemonId, fields);
       if (!result.success) {
         toast.error(result.error ?? "Failed to save changes.");
       }
-      router.refresh();
+      persistence.onMutationSuccess();
     });
   }
 
@@ -388,14 +391,14 @@ export function TeamWorkspaceV2({
 
     startTransition(async () => {
       applyOptimistic({ kind: "add", position, species: speciesId, tempId });
-      const result = await addPokemonToTeamAction(team.id, pokemon, position);
+      const result = await persistence.addPokemon(team.id, pokemon, position);
       if (!result.success) {
         toast.error(result.error ?? "Failed to add Pokémon.");
-        router.refresh();
+        persistence.onMutationSuccess();
         return;
       }
       toast.success(`${speciesId} added to slot ${position}.`);
-      router.refresh();
+      persistence.onMutationSuccess();
     });
   }
 
@@ -412,21 +415,21 @@ export function TeamWorkspaceV2({
     if (!p) return;
     const pokemonId = p.id;
 
-    if (pokemonId < 1) {
+    if (persistence.mode === "api" && pokemonId < 1) {
       toast.info("Still saving the new Pokémon — try again in a moment.");
       return;
     }
 
     startTransition(async () => {
       applyOptimistic({ kind: "remove", pokemonId });
-      const result = await removePokemonFromTeamAction(team.id, pokemonId);
+      const result = await persistence.removePokemon(team.id, pokemonId);
       if (!result.success) {
         toast.error(result.error ?? "Failed to remove Pokémon.");
-        router.refresh();
+        persistence.onMutationSuccess();
         return;
       }
       toast.success("Pokémon removed.");
-      router.refresh();
+      persistence.onMutationSuccess();
     });
   }
 
@@ -490,7 +493,10 @@ export function TeamWorkspaceV2({
     // Block reorder while any optimistic placeholder is pending — its negative
     // id can't be sent to reorderTeamPokemonAction (rejected by positiveIntSchema)
     // and a partial reorder would desync the UI from the server.
-    if (optimisticTeamPokemon.some((tp) => tp.pokemon_id < 1)) {
+    if (
+      persistence.mode === "api" &&
+      optimisticTeamPokemon.some((tp) => tp.pokemon_id < 1)
+    ) {
       toast.info("Still saving the new Pokémon — try reordering in a moment.");
       return;
     }
@@ -511,7 +517,7 @@ export function TeamWorkspaceV2({
 
     if (positions.length === 0) return;
 
-    const result = await reorderTeamPokemonAction(team.id, positions);
+    const result = await persistence.reorderPokemon(team.id, positions);
     if (!result.success) {
       toast.error(result.error ?? "Failed to reorder team.");
       // Revert to previous order.
@@ -519,7 +525,7 @@ export function TeamWorkspaceV2({
       return;
     }
     // Server confirmed — let router.refresh() restore the canonical order.
-    router.refresh();
+    persistence.onMutationSuccess();
     setReorderIds(null);
   }
 
@@ -566,41 +572,48 @@ export function TeamWorkspaceV2({
             format={format}
             username={username}
             alts={alts}
+            mode={persistence.mode}
+            onSaveToAccount={onSaveToAccount}
+            isSaving={isSaving}
             onOpenImport={() => setImportOpen(true)}
             validationErrors={validationErrors}
             onJumpToPokemon={handleJumpToPokemon}
             onValidate={validate}
             onNameChange={async (name) => {
-              const result = await updateTeamAction(team.id, { name });
+              const result = await persistence.updateTeam(team.id, { name });
               if (!result.success) {
                 toast.error(result.error ?? "Failed to rename team.");
                 return;
               }
-              router.refresh();
+              persistence.onMutationSuccess();
             }}
             onFormatChange={async (formatId) => {
-              const result = await updateTeamAction(team.id, {
+              const result = await persistence.updateTeam(team.id, {
                 format: formatId,
               });
               if (!result.success) {
                 toast.error(result.error ?? "Failed to update format.");
                 return;
               }
-              router.refresh();
+              persistence.onMutationSuccess();
             }}
-            onAltChange={async (altId) => {
-              const targetAlt = alts.find((a) => a.id === altId);
-              if (!targetAlt) return;
-              const result = await transferTeamAction(team.id, altId);
-              if (!result.success) {
-                toast.error(result.error ?? "Failed to transfer team.");
-                return;
-              }
-              toast.success(`Team transferred to ${targetAlt.username}.`);
-              router.push(
-                `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
-              );
-            }}
+            onAltChange={
+              persistence.transferTeam
+                ? async (altId) => {
+                    const targetAlt = alts.find((a) => a.id === altId);
+                    if (!targetAlt) return;
+                    const result = await persistence.transferTeam!(team.id, altId);
+                    if (!result.success) {
+                      toast.error(result.error ?? "Failed to transfer team.");
+                      return;
+                    }
+                    toast.success(`Team transferred to ${targetAlt.username}.`);
+                    router.push(
+                      `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
+                    );
+                  }
+                : undefined
+            }
             exportMenu={<ExportMenu team={team} />}
           />
 
@@ -832,7 +845,7 @@ export function TeamWorkspaceV2({
           team={team}
           open={importOpen}
           onOpenChange={setImportOpen}
-          onImportComplete={() => router.refresh()}
+          onImportComplete={() => persistence.onMutationSuccess()}
           formatId={format?.id}
         />
 
