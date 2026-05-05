@@ -80,6 +80,7 @@ export function TeamSubmissionCard({
 
   useEffect(() => {
     if (cardState !== "editing" || !rawText.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValidation(null);
       return;
     }

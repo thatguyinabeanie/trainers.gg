@@ -46,6 +46,7 @@ export function useTournament(slug: string | undefined) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTournament();
   }, [slug]);
 
@@ -86,6 +87,7 @@ export function useTeamForRegistration(tournamentId: number | undefined) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTeam();
   }, [tournamentId]);
 

@@ -845,6 +845,9 @@ describe("mega toggle (real engine)", () => {
       })
     );
 
+    // Remove the defender's mega stone so toggling its mega flag has no effect.
+    act(() => result.current.setDefenderItem(""));
+
     act(() => result.current.setAttackerMegaActive(false));
     const onlyAttackerOff = mid(
       result.current.selectedMoveOutput!.minPercent,
@@ -857,8 +860,8 @@ describe("mega toggle (real engine)", () => {
       result.current.selectedMoveOutput!.maxPercent
     );
 
-    // Defender is the default Incineroar (not a mega), so toggling the
-    // defender flag must not change damage.
+    // Defender has no mega stone, so toggling the defender flag must not
+    // change damage.
     expect(bothOff).toBeCloseTo(onlyAttackerOff, 1);
   });
 });
@@ -1145,14 +1148,14 @@ describe("null and empty guards", () => {
   });
 
   it("multi-move pokemon: filled slots produce outputs (immunities included), empty slots are null", () => {
-    // Default defender is Incineroar (Dark/Fire). Moonblast (Fairy → Dark)
-    // is super-effective; Psyshock (Psychic → Dark) is immune and now
-    // surfaces as a valid 0%/0% output rather than null.
+    // Default defender is Floette-Eternal (Fairy). Moonblast (Fairy → Fairy)
+    // is resisted but deals damage; Draco Meteor (Dragon → Fairy) is immune
+    // and surfaces as a valid 0%/0% output rather than null.
     const { result } = renderHook(() =>
       useCalcState({
         selectedPokemon: makePokemon({
           move1: "Moonblast",
-          move2: "Psyshock",
+          move2: "Draco Meteor",
           move3: null,
           move4: null,
         }),

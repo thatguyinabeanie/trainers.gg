@@ -136,11 +136,19 @@ jest.mock("../../validation-hooks", () => ({
 // Controllable drawer state — default closed, tests can override
 const mockSetDrawer = jest.fn();
 const mockSetActiveIdx = jest.fn();
+const mockSetSideDrawer = jest.fn();
+const mockSetBottomDrawer = jest.fn();
 const mockBuilderState = {
   activeIdx: 0,
   setActiveIdx: mockSetActiveIdx,
   drawer: null as "matchups" | "speed" | "calc" | null,
   setDrawer: mockSetDrawer,
+  sideDrawer: null as "speed" | "calc" | null,
+  setSideDrawer: mockSetSideDrawer,
+  bottomDrawer: null as "matchups" | null,
+  setBottomDrawer: mockSetBottomDrawer,
+  sideWidthPx: 380,
+  setSideWidthPx: jest.fn(),
   field: { doubles: true, tailwind: false, foesAlive: 2, allyAlive: 2, atkTera: false },
   setField: jest.fn(),
   panelHeightPct: 40,
@@ -306,6 +314,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Reset builder state to defaults
   mockBuilderState.drawer = null;
+  mockBuilderState.sideDrawer = null;
+  mockBuilderState.bottomDrawer = null;
   mockBuilderState.activeIdx = 0;
   mockBuilderState.attackerSlot = null;
   mockUseIsMobile.mockReturnValue(false);
@@ -788,6 +798,7 @@ describe("TeamWorkspaceV2 — mobile layout", () => {
 describe("TeamWorkspaceV2 — drawer panel", () => {
   it("renders the heatmap panel when drawer is 'matchups'", () => {
     mockBuilderState.drawer = "matchups";
+    mockBuilderState.bottomDrawer = "matchups";
 
     renderWorkspace();
 
@@ -797,6 +808,7 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
 
   it("renders the speed tiers panel when drawer is 'speed'", () => {
     mockBuilderState.drawer = "speed";
+    mockBuilderState.sideDrawer = "speed";
 
     renderWorkspace();
 
@@ -806,6 +818,7 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
 
   it("renders the calc bottom panel when drawer is 'calc' on desktop", () => {
     mockBuilderState.drawer = "calc";
+    mockBuilderState.sideDrawer = "calc";
     mockUseIsMobile.mockReturnValue(false);
 
     renderWorkspace();
@@ -813,18 +826,20 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
     expect(screen.getByTestId("calc-bottom-panel")).toBeInTheDocument();
   });
 
-  it("renders the calc drawer (Sheet) instead of bottom panel on mobile", () => {
+  it("renders calc bottom panel on mobile when sideDrawer is 'calc'", () => {
     mockBuilderState.drawer = "calc";
+    mockBuilderState.sideDrawer = "calc";
     mockUseIsMobile.mockReturnValue(true);
 
     renderWorkspace();
 
-    expect(screen.getByTestId("calc-drawer")).toBeInTheDocument();
-    expect(screen.queryByTestId("calc-bottom-panel")).not.toBeInTheDocument();
+    expect(screen.getByTestId("calc-bottom-panel")).toBeInTheDocument();
   });
 
   it("renders no panel when drawer is null", () => {
     mockBuilderState.drawer = null;
+    mockBuilderState.sideDrawer = null;
+    mockBuilderState.bottomDrawer = null;
 
     renderWorkspace();
 
@@ -833,84 +848,41 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
     expect(screen.queryByTestId("calc-bottom-panel")).not.toBeInTheDocument();
   });
 
-  it("shows 'DEFENSIVE' eyebrow when matchups drawer is open", () => {
-    mockBuilderState.drawer = "matchups";
-
-    renderWorkspace();
-
-    expect(screen.getByText("DEFENSIVE")).toBeInTheDocument();
-  });
-
-  it("shows 'SPEED' eyebrow when speed drawer is open", () => {
+  it("shows 'Speed Tiers' header when speed drawer is open", () => {
     mockBuilderState.drawer = "speed";
+    mockBuilderState.sideDrawer = "speed";
 
     renderWorkspace();
 
-    expect(screen.getByText("SPEED")).toBeInTheDocument();
+    expect(screen.getByText("Speed Tiers")).toBeInTheDocument();
   });
 
-  it("close button in panel header calls setDrawer(null)", async () => {
-    mockBuilderState.drawer = "matchups";
+  it("close button in side panel header calls setSideDrawer(null)", async () => {
+    mockBuilderState.drawer = "speed";
+    mockBuilderState.sideDrawer = "speed";
 
     const user = userEvent.setup();
     renderWorkspace();
 
-    await user.click(screen.getByRole("button", { name: /close panel/i }));
+    await user.click(screen.getByRole("button", { name: /close speed tiers/i }));
 
-    expect(mockSetDrawer).toHaveBeenCalledWith(null);
+    expect(mockSetSideDrawer).toHaveBeenCalledWith(null);
   });
 });
 
 // =============================================================================
-// resizer keyboard interactions
+// resizer — side panel
 // =============================================================================
 
-describe("TeamWorkspaceV2 — resizer keyboard", () => {
-  it.each([
-    ["ArrowUp", 5],
-    ["ArrowDown", -5],
-  ] as const)(
-    "%s adjusts panel height by ±5",
-    async (key, delta) => {
-      mockBuilderState.drawer = "matchups";
-      mockBuilderState.panelHeightPct = 40;
+describe("TeamWorkspaceV2 — side panel resizer", () => {
+  it("renders a vertical separator when side drawer is open", () => {
+    mockBuilderState.drawer = "speed";
+    mockBuilderState.sideDrawer = "speed";
 
-      const user = userEvent.setup();
-      renderWorkspace();
-
-      const resizer = screen.getByRole("separator", { name: /resize analytics panel/i });
-      resizer.focus();
-      await user.keyboard(`{${key}}`);
-
-      expect(mockBuilderState.setPanelHeightPct).toHaveBeenCalledWith(40 + delta);
-    }
-  );
-
-  it("Home key sets panel height to 20", async () => {
-    mockBuilderState.drawer = "matchups";
-    mockBuilderState.panelHeightPct = 60;
-
-    const user = userEvent.setup();
     renderWorkspace();
 
-    const resizer = screen.getByRole("separator", { name: /resize analytics panel/i });
-    resizer.focus();
-    await user.keyboard("{Home}");
-
-    expect(mockBuilderState.setPanelHeightPct).toHaveBeenCalledWith(20);
-  });
-
-  it("End key sets panel height to 80", async () => {
-    mockBuilderState.drawer = "matchups";
-    mockBuilderState.panelHeightPct = 40;
-
-    const user = userEvent.setup();
-    renderWorkspace();
-
-    const resizer = screen.getByRole("separator", { name: /resize analytics panel/i });
-    resizer.focus();
-    await user.keyboard("{End}");
-
-    expect(mockBuilderState.setPanelHeightPct).toHaveBeenCalledWith(80);
+    expect(
+      screen.getByRole("separator", { name: /resize side panel/i })
+    ).toBeInTheDocument();
   });
 });

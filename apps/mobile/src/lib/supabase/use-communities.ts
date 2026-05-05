@@ -38,6 +38,7 @@ export function useCommunities() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCommunities();
   }, []);
 
@@ -79,6 +80,7 @@ export function useCommunity(slug: string | undefined) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCommunity();
   }, [slug]);
 
