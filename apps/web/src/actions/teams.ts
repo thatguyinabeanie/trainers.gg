@@ -271,13 +271,19 @@ export async function transferTeamAction(
   }
 
   // Verify the target alt belongs to this user
-  const { data: targetAlt } = await supabase
+  const { data: targetAlt, error: targetAltError } = await supabase
     .from("alts")
     .select("id")
     .eq("id", parsed.data.targetAltId)
     .eq("user_id", user.id)
     .maybeSingle();
 
+  if (targetAltError) {
+    return {
+      success: false,
+      error: getErrorMessage(targetAltError, "Failed to verify alt ownership"),
+    };
+  }
   if (!targetAlt) {
     return { success: false, error: "Target alt not found or not owned by you." };
   }

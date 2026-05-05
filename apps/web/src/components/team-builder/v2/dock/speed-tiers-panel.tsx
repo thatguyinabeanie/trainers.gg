@@ -134,6 +134,12 @@ const WEATHER_LABELS: Record<Weather, string> = {
 const STAGE_MIN = -6;
 const STAGE_MAX = 6;
 
+/**
+ * Sentinel for the render-time state-reset pattern (see react-patterns.md).
+ * Module-scoped so its identity is stable across renders.
+ */
+const UNINITIALIZED_FORMAT_ID = Symbol("uninitialized-format-id");
+
 const SPEED_ABILITY_LOOKUP: Partial<Record<string, SpeedAbility>> = {
   Chlorophyll: "chlorophyll",
   "Swift Swim": "swift-swim",
@@ -505,6 +511,36 @@ export function SpeedTiersPanel({
   format,
 }: SpeedTiersPanelProps) {
   const [toggle, setToggle] = useState<ToggleState>(DEFAULT_TOGGLE);
+  const [prevFormatId, setPrevFormatId] = useState<
+    string | undefined | typeof UNINITIALIZED_FORMAT_ID
+  >(UNINITIALIZED_FORMAT_ID);
+
+  // Format can change (user switches VGC → Champions). Different formats have
+  // different max EVs (VGC 252 vs Champions 32), so a stale 100-EV override
+  // would otherwise pass out-of-range to calculateChampionsStat. Clamp on
+  // change using the render-time sentinel pattern from react-patterns.md.
+  const currentFormatId = format?.id;
+  if (currentFormatId !== prevFormatId) {
+    setPrevFormatId(currentFormatId);
+    if (format) {
+      const newMaxEv = isChampionsFormat(format) ? 32 : 252;
+      setToggle((prev) => {
+        const yoursEvs = prev.yours.evs;
+        const theirsEvs = prev.theirs.evs;
+        const clampedYours =
+          yoursEvs != null && yoursEvs > newMaxEv ? newMaxEv : yoursEvs;
+        const clampedTheirs =
+          theirsEvs != null && theirsEvs > newMaxEv ? newMaxEv : theirsEvs;
+        if (clampedYours === yoursEvs && clampedTheirs === theirsEvs)
+          return prev;
+        return {
+          ...prev,
+          yours: { ...prev.yours, evs: clampedYours },
+          theirs: { ...prev.theirs, evs: clampedTheirs },
+        };
+      });
+    }
+  }
 
   if (!format) {
     return (

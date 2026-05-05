@@ -16,9 +16,18 @@ const mockCalculate = jest.fn(() => ({
 
 // Tracks all Move constructor invocations: [gen, name, opts]
 const mockMoveConstructor = jest.fn();
+// Tracks all Pokemon constructor invocations: [gen, species, opts]. Lets tests
+// verify which species was passed to new Pokemon() (e.g. mega vs base form).
+const mockPokemonConstructor = jest.fn();
 
 jest.mock("@smogon/calc", () => {
-  const MockPokemon = jest.fn(function (this: Record<string, unknown>) {
+  const MockPokemon = jest.fn(function (
+    this: Record<string, unknown>,
+    gen: unknown,
+    species: unknown,
+    opts: unknown
+  ) {
+    mockPokemonConstructor(gen, species, opts);
     this.maxHP = mockMaxHP;
   });
   const MockMove = jest.fn(function (
@@ -45,6 +54,11 @@ jest.mock("@smogon/calc", () => {
 function getMoveOptsFor(moveName: string): Record<string, unknown> | undefined {
   const call = mockMoveConstructor.mock.calls.find((c) => c[1] === moveName);
   return call ? (call[2] as Record<string, unknown>) : undefined;
+}
+
+/** Returns every species name passed to new Pokemon(gen, species, opts). */
+function getPokemonSpeciesCalls(): string[] {
+  return mockPokemonConstructor.mock.calls.map((c) => String(c[1]));
 }
 
 import { getFormatById } from "@trainers/pokemon";

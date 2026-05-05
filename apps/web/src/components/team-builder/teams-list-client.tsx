@@ -16,6 +16,8 @@ import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { getTeamsForAltList, type TeamListItem } from "@trainers/supabase";
 import { formatTimeAgo } from "@trainers/utils";
 
+import { toast } from "sonner";
+
 import { createTeamAction } from "@/actions/teams";
 import { useSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -108,6 +110,8 @@ export function TeamsListClient({
       const result = await createTeamAction(altId, "Untitled Team", defaultFormat);
       if (result.success) {
         router.push(`/dashboard/alts/${handle}/teams/${result.data.id}`);
+      } else {
+        toast.error(result.error ?? "Failed to create team");
       }
     } finally {
       setCreating(false);

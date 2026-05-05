@@ -179,7 +179,7 @@ function cycleNature(
 
   // Currently boosted → switch to reduced
   if (currentBoost === longStat) {
-    const boost = pickFreshPartner(longStat, null, DEFAULT_BOOST_FOR_REDUCE);
+    const boost = pickFreshPartner(longStat, currentReduce, DEFAULT_BOOST_FOR_REDUCE);
     return findNatureFor(boost, longStat);
   }
 

@@ -155,7 +155,7 @@ import { TeamWorkspaceV2 } from "../team-workspace-v2";
 // Fixtures
 // =============================================================================
 
-const MOCK_ALTS = [{ id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null }] as any;
+const MOCK_ALTS = [{ id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null }] as unknown as Tables<"alts">[];
 
 function makePokemon(
   id: number,

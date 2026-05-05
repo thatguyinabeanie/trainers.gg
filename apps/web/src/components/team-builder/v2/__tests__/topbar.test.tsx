@@ -11,7 +11,7 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 
 import { type GameFormat } from "@trainers/pokemon";
-import { type TeamWithPokemon } from "@trainers/supabase";
+import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 
 // =============================================================================
 // Mocks
@@ -137,7 +137,7 @@ function renderTopbar(
       team={makeTeam()}
       format={props.format as GameFormat | undefined}
       username="ash_ketchum"
-      alts={alts as any}
+      alts={alts as unknown as Tables<"alts">[]}
       onOpenImport={onOpenImport}
       validationErrors={props.validationErrors ?? []}
       onJumpToPokemon={onJumpToPokemon}

@@ -600,7 +600,6 @@ export function TeamWorkspaceV2({
               router.push(
                 `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
               );
-              router.refresh();
             }}
             exportMenu={<ExportMenu team={team} />}
           />

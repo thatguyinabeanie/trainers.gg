@@ -287,7 +287,7 @@ function renderWorkspace(
   team: TeamWithPokemon = TWO_POKEMON_TEAM,
   format = undefined
 ) {
-  const alts = [{ id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null }] as any;
+  const alts = [{ id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null }] as unknown as Tables<"alts">[];
   return render(
     <TeamWorkspaceV2 team={team} format={format} username="ash_ketchum" alts={alts} />
   );
