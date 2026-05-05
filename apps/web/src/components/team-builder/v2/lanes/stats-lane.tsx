@@ -597,8 +597,8 @@ function StatRow({
       >
         {label}
         <span className="inline-block w-[9px] text-[7px] leading-none">
-          {isNatureBoosted && "▲"}
-          {isNatureReduced && "▼"}
+          {isNatureBoosted && "▴"}
+          {isNatureReduced && "▾"}
         </span>
       </button>
 
