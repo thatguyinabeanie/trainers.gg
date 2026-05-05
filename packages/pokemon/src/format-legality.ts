@@ -919,14 +919,14 @@ function computeLegalMovesForChampions(
 
   // Use AG as a permissive base validator — empty banlist, purely
   // learnset-based checkCanLearn with no format-specific restrictions.
-  // "Min Source Gen = 9" ensures only moves obtainable within Scarlet/Violet
-  // are legal — transfer-only moves from earlier gens are rejected.
+  // Champions includes transfer Pokémon (e.g. Aerodactyl, Metagross) that
+  // aren't natively in the Gen 9 Paldea dex. "Min Source Gen = 9" would
+  // incorrectly reject moves these mons learn via older-gen TMs/tutors that
+  // are valid in Gen 9. No Min Source Gen restriction is applied — the Gen 9
+  // learnset data + CHAMPIONS_MA_MOVE_BANLIST is the source of truth.
   const format = SimDex.formats.get("[Gen 9] Anything Goes");
   if (!format?.exists) return undefined;
-  const validator = new TeamValidator(
-    Object.assign({}, format, { customRules: ["Min Source Gen = 9"] }),
-    SimDex
-  );
+  const validator = new TeamValidator(format, SimDex);
 
   const legal = new Set<string>();
 

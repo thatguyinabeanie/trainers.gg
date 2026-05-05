@@ -16,6 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ItemSprite } from "@/components/tournament/item-sprite";
 
 import { type ValidationError } from "../../../../validation-hooks";
 import { ItemPicker } from "../../../pickers/item-picker";
@@ -94,6 +95,7 @@ export function ItemCell({
         <FormChip
           label="Item"
           value={pokemon.held_item ?? ""}
+          leading={pokemon.held_item ? <ItemSprite item={pokemon.held_item} size={16} className="shrink-0" /> : undefined}
           trailing={megaChip}
           triggerClassName={
             errors.length > 0

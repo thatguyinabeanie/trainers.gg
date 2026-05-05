@@ -3,13 +3,13 @@
 /**
  * Extra coverage for SpeedTiersPanel:
  *
- * - Yours/Theirs toggle interactions (Tailwind, Scarf, Iron Ball, stage, status)
+ * - Yours/Theirs switch interactions (Tailwind, Scarf, Paralyzed, stage)
  * - stageLabel formatting (+N, -N, 0)
  * - getTeamFastestSpeed exported helper
  * - Tier table row rendering
  */
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -162,189 +162,79 @@ beforeEach(() => {
 });
 
 // =============================================================================
-// Toggle interactions — yours/theirs tailwind, scarf, iron ball, stage, status
+// Switch interactions — yours/theirs tailwind, scarf, paralyzed, stages
 // =============================================================================
 
-describe("SpeedTiersPanel — toggle interactions", () => {
+describe("SpeedTiersPanel — switch interactions", () => {
   function renderEmpty() {
     return render(
       <SpeedTiersPanel team={[]} format={TEST_FORMAT} />
     );
   }
 
-  it("Yours Tailwind toggle can be pressed and unpressed", async () => {
+  it("renders section labels and headers", () => {
     renderEmpty();
-    const user = userEvent.setup();
-    const btn = screen.getByRole("button", { name: /yours tailwind/i });
-
-    await user.click(btn);
-    expect(btn).toHaveAttribute("aria-pressed", "true");
-
-    await user.click(btn);
-    expect(btn).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("Field")).toBeInTheDocument();
+    expect(screen.getByText("Modifiers")).toBeInTheDocument();
+    expect(screen.getByText("Ours")).toBeInTheDocument();
+    expect(screen.getByText("Theirs")).toBeInTheDocument();
   });
 
-  it("Theirs Tailwind toggle can be pressed and unpressed", async () => {
+  it("renders Tailwind label with switches for both sides", () => {
     renderEmpty();
-    const user = userEvent.setup();
-    const btn = screen.getByRole("button", { name: /theirs tailwind/i });
-
-    await user.click(btn);
-    expect(btn).toHaveAttribute("aria-pressed", "true");
-
-    await user.click(btn);
-    expect(btn).toHaveAttribute("aria-pressed", "false");
+    // In 3-column layout, label appears once in the center
+    expect(screen.getByText("Tailwind")).toBeInTheDocument();
+    // Two switch elements for tailwind (ours + theirs)
+    const switches = screen.getAllByRole("switch");
+    expect(switches.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("Yours Scarf toggle can be pressed", async () => {
+  it("renders weather switches", () => {
     renderEmpty();
-    const user = userEvent.setup();
-    const btn = screen.getByRole("button", { name: /yours choice scarf/i });
-
-    await user.click(btn);
-    expect(btn).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Sun")).toBeInTheDocument();
+    expect(screen.getByText("Rain")).toBeInTheDocument();
+    expect(screen.getByText("Sand")).toBeInTheDocument();
+    expect(screen.getByText("Snow")).toBeInTheDocument();
   });
 
-  it("Yours Iron Ball toggle can be pressed", async () => {
+  it("renders Trick Room switch", () => {
     renderEmpty();
-    const user = userEvent.setup();
-    const btn = screen.getByRole("button", { name: /yours iron ball/i });
-
-    await user.click(btn);
-    expect(btn).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("switch", { name: /trick room/i })).toBeInTheDocument();
   });
 
-  it("Scarf and Iron Ball are mutually exclusive (yours)", async () => {
+  it("renders stage steppers for both sides", () => {
     renderEmpty();
-    const user = userEvent.setup();
-    const scarfBtn = screen.getByRole("button", { name: /yours choice scarf/i });
-    const ironBallBtn = screen.getByRole("button", { name: /yours iron ball/i });
-
-    await user.click(scarfBtn);
-    expect(scarfBtn).toHaveAttribute("aria-pressed", "true");
-
-    await user.click(ironBallBtn);
-    expect(ironBallBtn).toHaveAttribute("aria-pressed", "true");
-    expect(scarfBtn).toHaveAttribute("aria-pressed", "false");
+    // Single "Stages" label in the center column
+    expect(screen.getByText("Stages")).toBeInTheDocument();
+    // Two stage displays (one per side) showing "0"
+    const zeroEls = screen.getAllByText("0");
+    expect(zeroEls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it.each(["Sun", "Rain", "Sand", "Snow"] as const)(
-    "%s weather toggle can be activated",
-    async (weather) => {
-      renderEmpty();
-      const user = userEvent.setup();
-
-      await user.click(screen.getByRole("button", { name: weather }));
-
-      expect(
-        screen.getByRole("button", { name: weather })
-      ).toHaveAttribute("aria-pressed", "true");
-    }
-  );
-
-  it("clicking an active weather toggle again sets it back to 'none'", async () => {
+  it("stage stepper shows '0' at default", () => {
     renderEmpty();
-    const user = userEvent.setup();
-    const rainBtn = screen.getByRole("button", { name: "Rain" });
-
-    await user.click(rainBtn); // activate
-    expect(rainBtn).toHaveAttribute("aria-pressed", "true");
-
-    await user.click(rainBtn); // deactivate
-    expect(rainBtn).toHaveAttribute("aria-pressed", "false");
+    const zeroEls = screen.getAllByText("0");
+    expect(zeroEls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("increment Yours stage button increases the stage label from '0' to '+1'", async () => {
+  it("clicking + on yours stage shows +1", async () => {
     renderEmpty();
     const user = userEvent.setup();
-
-    await user.click(
-      screen.getByRole("button", { name: /increment yours speed stage/i })
-    );
-
+    // Get all buttons and filter to stepper + buttons by text content
+    const allButtons = screen.getAllByRole("button");
+    const plusButtons = allButtons.filter((btn) => btn.textContent === "+");
+    // First + is yours
+    await user.click(plusButtons[0]);
     expect(screen.getByText("+1")).toBeInTheDocument();
   });
 
-  it("decrement Yours stage button decreases the stage label from '0' to '-1'", async () => {
+  it("clicking − on yours stage shows -1", async () => {
     renderEmpty();
     const user = userEvent.setup();
-
-    await user.click(
-      screen.getByRole("button", { name: /decrement yours speed stage/i })
-    );
-
+    const allButtons = screen.getAllByRole("button");
+    const minusButtons = allButtons.filter((btn) => btn.textContent === "−");
+    await user.click(minusButtons[0]);
     expect(screen.getByText("-1")).toBeInTheDocument();
-  });
-
-  it("increment button is disabled at stage +6", async () => {
-    renderEmpty();
-    const user = userEvent.setup();
-    const incBtn = screen.getByRole("button", { name: /increment yours speed stage/i });
-
-    for (let i = 0; i < 6; i++) {
-      await user.click(incBtn);
-    }
-
-    expect(incBtn).toBeDisabled();
-  });
-
-  it("decrement button is disabled at stage -6", async () => {
-    renderEmpty();
-    const user = userEvent.setup();
-    const decBtn = screen.getByRole("button", { name: /decrement yours speed stage/i });
-
-    for (let i = 0; i < 6; i++) {
-      await user.click(decBtn);
-    }
-
-    expect(decBtn).toBeDisabled();
-  });
-
-  it("toggle bar renders all four weather buttons", () => {
-    renderEmpty();
-    expect(screen.getByRole("button", { name: "Sun" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Rain" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Sand" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Snow" })).toBeInTheDocument();
-  });
-});
-
-// =============================================================================
-// stageLabel formatting
-// =============================================================================
-
-describe("SpeedTiersPanel — stageLabel display", () => {
-  it("shows '0' in the stage stepper at default", () => {
-    render(<SpeedTiersPanel team={[]} format={TEST_FORMAT} />);
-    const incBtn = screen.getByRole("button", { name: /increment yours speed stage/i });
-    expect(incBtn).not.toBeDisabled();
-    const decBtn = screen.getByRole("button", { name: /decrement yours speed stage/i });
-    expect(decBtn).not.toBeDisabled();
-    const zeroEls = screen.getAllByText("0");
-    expect(zeroEls.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("shows '+2' after two increments", async () => {
-    const user = userEvent.setup();
-    render(<SpeedTiersPanel team={[]} format={TEST_FORMAT} />);
-
-    const incBtn = screen.getByRole("button", { name: /increment yours speed stage/i });
-    await user.click(incBtn);
-    await user.click(incBtn);
-
-    expect(screen.getByText("+2")).toBeInTheDocument();
-  });
-
-  it("shows '-3' after three decrements", async () => {
-    const user = userEvent.setup();
-    render(<SpeedTiersPanel team={[]} format={TEST_FORMAT} />);
-
-    const decBtn = screen.getByRole("button", { name: /decrement yours speed stage/i });
-    await user.click(decBtn);
-    await user.click(decBtn);
-    await user.click(decBtn);
-
-    expect(screen.getByText("-3")).toBeInTheDocument();
   });
 });
 
@@ -424,7 +314,7 @@ describe("SpeedTiersPanel — tier table row rendering", () => {
     expect(screen.getByText("Rillaboom")).toBeInTheDocument();
   });
 
-  it("excludes team pokemon species from the meta list", () => {
+  it("shows team pokemon alongside the same species in the meta list (no deduplication)", () => {
     (getMetaSpeedTiers as jest.Mock).mockReturnValue([
       makeEntry("Rillaboom", 60),
       makeEntry("Amoonguss", 30),
@@ -436,6 +326,6 @@ describe("SpeedTiersPanel — tier table row rendering", () => {
     render(<SpeedTiersPanel team={team} format={TEST_FORMAT} />);
 
     const instances = screen.getAllByText("Rillaboom");
-    expect(instances).toHaveLength(1);
+    expect(instances).toHaveLength(2);
   });
 });

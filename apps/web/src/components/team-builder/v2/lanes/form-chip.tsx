@@ -23,6 +23,8 @@ export interface FormChipProps {
   label: string;
   /** Display string. Empty string renders the muted-italic em-dash placeholder. */
   value: string;
+  /** Optional leading element rendered before the value (e.g. item icon). */
+  leading?: ReactNode;
   /** Optional trailing element rendered after the value (e.g. nature ±chevrons). */
   trailing?: ReactNode;
   /**
@@ -47,6 +49,7 @@ export interface FormChipProps {
 export function FormChip({
   label,
   value,
+  leading,
   trailing,
   triggerClassName,
   open,
@@ -70,8 +73,9 @@ export function FormChip({
         }
       >
         <span className="text-[9px] font-bold tracking-[0.08em] uppercase text-muted-foreground font-mono whitespace-nowrap overflow-hidden text-ellipsis shrink-0">{label}</span>
-        {trailing ? (
-          <span className="flex min-w-0 items-baseline gap-1.5 overflow-hidden">
+        {trailing || leading ? (
+          <span className="flex min-w-0 items-center gap-1 overflow-hidden">
+            {leading}
             <span
               className={cn(
                 "text-[11.5px] text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0",
