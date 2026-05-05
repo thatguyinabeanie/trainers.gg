@@ -556,7 +556,21 @@ function RegisterModalBody({
                   <FormItem>
                     <FormLabel>Register as</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+
+                        const nextAlt = alts.find(
+                          (alt) => alt.id.toString() === value
+                        );
+
+                        if (!nextAlt?.first_name) {
+                          form.setValue("displayNameOption", "username");
+                        }
+
+                        if (!nextAlt?.country) {
+                          form.setValue("showCountryFlag", false);
+                        }
+                      }}
                       value={field.value}
                       disabled={isEditMode}
                     >

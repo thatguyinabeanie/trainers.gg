@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 import { Swords, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -35,7 +36,7 @@ export function CurrentMatchBanner({
   const userId = user?.id;
 
   const { data: match = null } = useQuery<MatchData | null>({
-    queryKey: ['current-match-banner', tournamentId, userId],
+    queryKey: queryKeys.tournament.currentMatchBanner(tournamentId, userId),
     queryFn: async () => {
       const { data: alts, error: altsError } = await supabase
         .from("alts")

@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { queryKeys } from "@/lib/query-keys";
 import { supabase } from "@/lib/supabase/client";
 import {
   getUserAdminDetails,
@@ -125,7 +126,7 @@ export function UserDetailSheet({
   onUserUpdated,
 }: UserDetailSheetProps) {
   const { data: userData, isLoading: loading, error: queryError, refetch: refetchUser } = useQuery({
-    queryKey: ['admin-user-detail', userId],
+    queryKey: queryKeys.admin.userDetail(userId),
     queryFn: async () => {
       const [userResult, rolesData] = await Promise.all([
         getUserAdminDetails(supabase, userId!),

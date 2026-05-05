@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { checkSudoStatus } from "@/lib/sudo/actions";
+import { queryKeys } from "@/lib/query-keys";
 import { ShieldAlert } from "lucide-react";
 
 /**
@@ -14,7 +15,7 @@ import { ShieldAlert } from "lucide-react";
  */
 export function SudoModeIndicator() {
   const { data: isActive = false } = useQuery({
-    queryKey: ['sudo-status'],
+    queryKey: queryKeys.sudo.status(),
     queryFn: async () => {
       const status = await checkSudoStatus();
       return status.isActive;

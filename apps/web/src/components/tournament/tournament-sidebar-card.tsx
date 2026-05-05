@@ -65,6 +65,7 @@ import {
 } from "@trainers/validators/team";
 import { RegisterModal } from "./register-modal";
 import { TeamPreview } from "./team-preview";
+import { queryKeys } from "@/lib/query-keys";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -368,7 +369,7 @@ export function TournamentSidebarCard({
     (checkInStatus?.isCheckedIn ?? false);
 
   const { data: availableTeams = [] } = useQuery({
-    queryKey: ['user-teams-for-tournament', tournamentId],
+    queryKey: queryKeys.tournament.userTeams(tournamentId),
     queryFn: async () => {
       const result = await getUserTeamsAction();
       if (result.success) return result.data;

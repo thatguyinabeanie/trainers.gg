@@ -313,3 +313,33 @@ describe("CalcAttackerBlock — types display", () => {
     expect(screen.queryByTestId(/^type-pill-(?!Fire)/)).not.toBeInTheDocument();
   });
 });
+
+describe("CalcAttackerBlock — mega toggle interaction", () => {
+  beforeEach(() => {
+    // Make getMegaAbilityForSpecies return a value so MegaToggle renders
+    const pokemon = jest.requireMock("@trainers/pokemon") as { getMegaAbilityForSpecies: jest.Mock };
+    pokemon.getMegaAbilityForSpecies.mockReturnValue("Tough Claws");
+  });
+
+  afterEach(() => {
+    const pokemon = jest.requireMock("@trainers/pokemon") as { getMegaAbilityForSpecies: jest.Mock };
+    pokemon.getMegaAbilityForSpecies.mockReturnValue(null);
+  });
+
+  it("calls setAttackerMegaActive when mega-toggle is clicked", () => {
+    const setAttackerMegaActive = jest.fn();
+    renderAttacker({ attackerMegaActive: false, setAttackerMegaActive });
+    fireEvent.click(screen.getByTestId("mega-toggle"));
+    expect(setAttackerMegaActive).toHaveBeenCalled();
+  });
+
+  it("reflects active state via aria-pressed", () => {
+    renderAttacker({ attackerMegaActive: true });
+    expect(screen.getByTestId("mega-toggle")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("reflects inactive state via aria-pressed", () => {
+    renderAttacker({ attackerMegaActive: false });
+    expect(screen.getByTestId("mega-toggle")).toHaveAttribute("aria-pressed", "false");
+  });
+});

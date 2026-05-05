@@ -94,7 +94,7 @@ function EditableName({ defaultValue, onSave }: EditableNameProps) {
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter") {
       e.preventDefault();
-      commit();
+      void commit();
     } else if (e.key === "Escape") {
       setValue(defaultValue);
       setEditing(false);
@@ -108,7 +108,7 @@ function EditableName({ defaultValue, onSave }: EditableNameProps) {
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        onBlur={commit}
+        onBlur={() => void commit()}
         onKeyDown={handleKeyDown}
         disabled={saving}
         autoFocus
@@ -133,6 +133,8 @@ function EditableName({ defaultValue, onSave }: EditableNameProps) {
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 16 16"
         fill="currentColor"
+        aria-hidden="true"
+        focusable="false"
         className="size-3 shrink-0 text-muted-foreground"
       >
         <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L3.22 10.306a1 1 0 0 0-.26.445l-.836 3.04a.25.25 0 0 0 .305.305l3.04-.836a1 1 0 0 0 .445-.26l7.793-7.793a1.75 1.75 0 0 0 0-2.475l-.219-.219Z" />

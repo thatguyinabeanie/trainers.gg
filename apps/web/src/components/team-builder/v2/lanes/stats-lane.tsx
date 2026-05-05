@@ -351,10 +351,6 @@ function StatRow({
     budget.total,
     budget.perStat
   );
-  const [investBudgetState, setInvestBudgetState] = useState(investBudget);
-  if (investBudgetState !== investBudget) {
-    setInvestBudgetState(investBudget);
-  }
   const investBudgetRef = useRef(investBudget);
   // Update ref in an effect to avoid "Cannot access refs during render"
   useEffect(() => {
@@ -586,7 +582,6 @@ function StatRow({
       <button
         type="button"
         onClick={() => {
-          if (statKey === "hp") return;
           // Cycle: neutral → "+" → "−" → neutral
           let suffix: "+" | "-" | null;
           if (isNatureBoosted) suffix = "-";
@@ -600,6 +595,7 @@ function StatRow({
           if (newNature) onUpdate({ nature: newNature });
         }}
         disabled={statKey === "hp"}
+        aria-label={statKey !== "hp" ? `Cycle nature for ${label}` : undefined}
         className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px", labelTextClass, statKey !== "hp" && "cursor-pointer hover:opacity-70")}
       >
         {label}
@@ -782,9 +778,11 @@ export function StatsLane({
     Partial<Record<StatKey, number>>
   >({});
   const currentPokemonId = pokemon?.id ?? null;
-  const prevPokemonIdRef = useRef<number | null>(currentPokemonId);
-  if (currentPokemonId !== prevPokemonIdRef.current) {
-    prevPokemonIdRef.current = currentPokemonId;
+  const [prevPokemonId, setPrevPokemonId] = useState<number | null>(
+    currentPokemonId
+  );
+  if (prevPokemonId !== currentPokemonId) {
+    setPrevPokemonId(currentPokemonId);
     setLiveEvByStat({});
   }
 

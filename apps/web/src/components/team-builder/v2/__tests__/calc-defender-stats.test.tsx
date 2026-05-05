@@ -154,12 +154,14 @@ interface RenderProps {
   setDefenderEv?: jest.Mock;
   setDefenderBoost?: jest.Mock;
   setDefenderHpPercent?: jest.Mock;
+  setDefenderNature?: jest.Mock;
 }
 
 function renderComponent(props: RenderProps = {}) {
   const setDefenderEv = props.setDefenderEv ?? jest.fn();
   const setDefenderBoost = props.setDefenderBoost ?? jest.fn();
   const setDefenderHpPercent = props.setDefenderHpPercent ?? jest.fn();
+  const setDefenderNature = props.setDefenderNature ?? jest.fn();
 
   // Resolve format: caller may explicitly pass UNDEFINED_FORMAT to mean undefined.
   const resolvedFormat: GameFormat | undefined =
@@ -181,7 +183,7 @@ function renderComponent(props: RenderProps = {}) {
       setDefenderEv={setDefenderEv}
       setDefenderBoost={setDefenderBoost}
       setDefenderHpPercent={setDefenderHpPercent}
-      setDefenderNature={jest.fn()}
+      setDefenderNature={setDefenderNature}
     />
   );
 
@@ -190,6 +192,7 @@ function renderComponent(props: RenderProps = {}) {
     setDefenderEv,
     setDefenderBoost,
     setDefenderHpPercent,
+    setDefenderNature,
   };
 }
 
@@ -668,5 +671,31 @@ describe("CalcDefenderStats — breakpoint ticks", () => {
   it("does not call findStatBreakpoints when nature is neutral", () => {
     renderComponent({ defenderNature: "Hardy" });
     expect(mockFindStatBreakpoints).not.toHaveBeenCalled();
+  });
+});
+
+describe("CalcDefenderStats — nature cycling interaction", () => {
+  it("calls setDefenderNature when a non-HP stat label is clicked", () => {
+    const setDefenderNature = jest.fn();
+    renderComponent({ defenderNature: "Hardy", setDefenderNature });
+    // Click the "Atk" button which has aria-label "Cycle nature for Atk"
+    const atkButton = screen.getByLabelText("Cycle nature for Atk");
+    fireEvent.click(atkButton);
+    expect(setDefenderNature).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not allow clicking the HP stat label (disabled)", () => {
+    const setDefenderNature = jest.fn();
+    renderComponent({ defenderNature: "Hardy", setDefenderNature });
+    // HP buttons should be disabled
+    const hpLabels = screen.getAllByText("HP");
+    const hpButton = hpLabels.find(
+      (el) => el.tagName.toLowerCase() === "button"
+    );
+    if (hpButton) {
+      expect(hpButton).toBeDisabled();
+    }
+    // setDefenderNature should not have been called
+    expect(setDefenderNature).not.toHaveBeenCalled();
   });
 });

@@ -340,6 +340,7 @@ function DefenderStatRow({
         type="button"
         onClick={onNatureClick}
         disabled={statKey === "hp"}
+        aria-label={statKey !== "hp" ? `Cycle nature for ${label}` : undefined}
         className={cn(spreadLabelClass, statKey !== "hp" && "cursor-pointer hover:opacity-70")}
       >
         {label}

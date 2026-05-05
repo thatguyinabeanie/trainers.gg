@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 import { getPlayerMatches } from "@trainers/supabase";
 import { Trophy, TrendingUp, Clock, ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -30,7 +31,7 @@ export function PostMatchSummary({
   const supabase = useSupabase();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['post-match-summary', tournamentId, matchId, userAltId],
+    queryKey: queryKeys.match.postMatchSummary(tournamentId, matchId, userAltId),
     queryFn: async () => {
       // Get all player matches to find the next one
       const matches = await getPlayerMatches(
