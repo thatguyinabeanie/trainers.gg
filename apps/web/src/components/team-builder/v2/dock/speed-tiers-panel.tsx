@@ -53,6 +53,8 @@ interface SideModifiers {
   unburden: boolean;
   stage: number;
   status: "healthy" | "paralyzed";
+  /** Custom EV override (0-252 for VGC, 0-32 for Champions). null = use defaults. */
+  evs: number | null;
 }
 
 type SortDir = "desc" | "asc";
@@ -100,6 +102,7 @@ const DEFAULT_YOURS: SideModifiers = {
   unburden: false,
   stage: 0,
   status: "healthy",
+  evs: null,
 };
 
 const DEFAULT_THEIRS: SideModifiers = {
@@ -108,6 +111,7 @@ const DEFAULT_THEIRS: SideModifiers = {
   unburden: false,
   stage: 0,
   status: "healthy",
+  evs: null,
 };
 
 const DEFAULT_TOGGLE: ToggleState = {
@@ -287,6 +291,7 @@ function teamMonToScored(
 /**
  * Score a meta mon — compute min (0 EVs, -nature) and max (max EVs, +nature)
  * speeds with THEIRS modifiers applied.
+ * When custom EVs are set, all three columns use that EV value with different natures.
  */
 function metaToScored(
   entry: MetaSpeedEntry,
@@ -295,17 +300,23 @@ function metaToScored(
 ): ScoredMon {
   const champions = isChampionsFormat(format);
   const b = entry.base;
+  const customEvs = toggle.theirs.evs;
 
   // Compute raw min/neutral/max stat values
+  // If custom EVs are set, all three columns use that EV with -/neutral/+ nature
+  const minEvs = customEvs ?? 0;
+  const neutralEvs = customEvs ?? (champions ? 32 : 252);
+  const maxEvs = customEvs ?? (champions ? 32 : 252);
+
   const rawMin = champions
-    ? calculateChampionsStat(b, 0, 0.9)
-    : calculateStat(b, 31, 0, 50, 0.9);
+    ? calculateChampionsStat(b, minEvs, 0.9)
+    : calculateStat(b, 31, minEvs, 50, 0.9);
   const rawNeutral = champions
-    ? calculateChampionsStat(b, 32, 1.0)
-    : calculateStat(b, 31, 252, 50, 1.0);
+    ? calculateChampionsStat(b, neutralEvs, 1.0)
+    : calculateStat(b, 31, neutralEvs, 50, 1.0);
   const rawMax = champions
-    ? calculateChampionsStat(b, 32, 1.1)
-    : calculateStat(b, 31, 252, 50, 1.1);
+    ? calculateChampionsStat(b, maxEvs, 1.1)
+    : calculateStat(b, 31, maxEvs, 50, 1.1);
 
   // Apply THEIRS modifiers to all three
   const theirsMods = buildSpeedMods(toggle.theirs, toggle.weather, entry.speedAbility);
@@ -765,6 +776,68 @@ export function SpeedTiersPanel({
                     setToggle((prev) => ({
                       ...prev,
                       theirs: { ...prev.theirs, stage: prev.theirs.stage + 1 },
+                    }))
+                  }
+                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* EVs — only theirs side has input, ours is empty */}
+            <div />
+            <span className="text-center text-[11px]">EVs</span>
+            <div className="flex justify-start">
+              <div className="bg-card grid grid-cols-[20px_40px_20px] overflow-hidden rounded-md border">
+                <button
+                  type="button"
+                  disabled={toggle.theirs.evs === null || toggle.theirs.evs <= 0}
+                  onClick={() =>
+                    setToggle((prev) => ({
+                      ...prev,
+                      theirs: {
+                        ...prev.theirs,
+                        evs: Math.max(0, (prev.theirs.evs ?? maxEv) - 4),
+                      },
+                    }))
+                  }
+                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  −
+                </button>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={toggle.theirs.evs ?? ""}
+                  placeholder={String(maxEv)}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    if (raw === "") {
+                      setToggle((prev) => ({
+                        ...prev,
+                        theirs: { ...prev.theirs, evs: null },
+                      }));
+                      return;
+                    }
+                    const val = Math.min(maxEv, Math.max(0, Number(raw)));
+                    setToggle((prev) => ({
+                      ...prev,
+                      theirs: { ...prev.theirs, evs: val },
+                    }));
+                  }}
+                  className="text-foreground bg-transparent text-center font-mono text-[10px] font-semibold outline-none w-full [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <button
+                  type="button"
+                  disabled={toggle.theirs.evs !== null && toggle.theirs.evs >= maxEv}
+                  onClick={() =>
+                    setToggle((prev) => ({
+                      ...prev,
+                      theirs: {
+                        ...prev.theirs,
+                        evs: Math.min(maxEv, (prev.theirs.evs ?? maxEv) + 4),
+                      },
                     }))
                   }
                   className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
