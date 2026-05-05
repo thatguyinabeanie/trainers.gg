@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Plus, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, Plus, Upload } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -15,6 +16,7 @@ import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { getTeamsForAltList, type TeamListItem } from "@trainers/supabase";
 import { formatTimeAgo } from "@trainers/utils";
 
+import { createTeamAction } from "@/actions/teams";
 import { useSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,10 +63,11 @@ export function TeamsListClient({
   activeFormats,
 }: TeamsListClientProps) {
   const supabase = useSupabase();
+  const router = useRouter();
   const [selectedGame, setSelectedGame] = useState<string>("");
   const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<"empty" | "import">("empty");
+  const [creating, setCreating] = useState(false);
 
   const {
     data: teams = [],
@@ -93,9 +96,22 @@ export function TeamsListClient({
     ? teams.filter((t) => t.format === selectedFormat)
     : teams;
 
-  function openDialog(mode: "empty" | "import") {
-    setDialogMode(mode);
+  function openImportDialog() {
     setDialogOpen(true);
+  }
+
+  async function handleNewTeam() {
+    if (creating || activeFormats.length === 0) return;
+    setCreating(true);
+    try {
+      const defaultFormat = selectedFormat ?? activeFormats[0]!.id;
+      const result = await createTeamAction(altId, "Untitled Team", defaultFormat);
+      if (result.success) {
+        router.push(`/dashboard/alts/${handle}/teams/${result.data.id}`);
+      }
+    } finally {
+      setCreating(false);
+    }
   }
 
   return (
@@ -140,13 +156,17 @@ export function TeamsListClient({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => openDialog("import")}
+            onClick={openImportDialog}
           >
             <Upload className="size-4" />
             Import Paste
           </Button>
-          <Button size="sm" onClick={() => openDialog("empty")}>
-            <Plus className="size-4" />
+          <Button size="sm" onClick={handleNewTeam} disabled={creating}>
+            {creating ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Plus className="size-4" />
+            )}
             New Team
           </Button>
         </div>
@@ -171,12 +191,16 @@ export function TeamsListClient({
           }
           action={
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => openDialog("import")}>
+              <Button variant="outline" onClick={openImportDialog}>
                 <Upload className="size-4" />
                 Import Paste
               </Button>
-              <Button onClick={() => openDialog("empty")}>
-                <Plus className="size-4" />
+              <Button onClick={handleNewTeam} disabled={creating}>
+                {creating ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Plus className="size-4" />
+                )}
                 New Team
               </Button>
             </div>
@@ -208,7 +232,7 @@ export function TeamsListClient({
         onOpenChange={setDialogOpen}
         activeFormats={activeFormats}
         defaultFormat={selectedFormat ?? undefined}
-        initialMode={dialogMode}
+        initialMode="import"
         altId={altId}
         altUsername={handle}
       />
