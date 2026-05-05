@@ -38,7 +38,6 @@ const ACTIVE_FORMATS = getActiveFormats();
 
 interface TopbarProps {
   team: TeamWithPokemon;
-  filledCount: number;
   format: GameFormat | undefined;
   username: string;
   alts: Tables<"alts">[];
@@ -75,9 +74,12 @@ function EditableName({ defaultValue, onSave }: EditableNameProps) {
       return;
     }
     setSaving(true);
-    await onSave(trimmed);
-    setSaving(false);
-    setEditing(false);
+    try {
+      await onSave(trimmed);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -136,7 +138,6 @@ function EditableName({ defaultValue, onSave }: EditableNameProps) {
 
 export function Topbar({
   team,
-  filledCount,
   format,
   username,
   alts,

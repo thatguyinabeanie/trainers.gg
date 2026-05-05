@@ -523,7 +523,6 @@ export function TeamWorkspaceV2({
     setReorderIds(null);
   }
 
-  const filledCount = slots.filter(Boolean).length;
 
   // Pre-compute dock-pill summaries once here so DockbarConnected never runs
   // getTeamFastestSpeed on every EV slider tick.
@@ -564,7 +563,6 @@ export function TeamWorkspaceV2({
         >
           <Topbar
             team={team}
-            filledCount={filledCount}
             format={format}
             username={username}
             alts={alts}

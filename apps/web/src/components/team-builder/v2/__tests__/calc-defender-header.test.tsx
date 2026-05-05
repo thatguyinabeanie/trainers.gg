@@ -212,6 +212,7 @@ jest.mock("@trainers/pokemon", () => ({
   formatHasTera: (...args: unknown[]) => mockFormatHasTera(...args),
   // Mega-aware helpers — defaults assume non-mega species (no override).
   getMegaAbilityForSpecies: jest.fn().mockReturnValue(null),
+  getMegaSpeciesForBaseAndItem: jest.fn().mockReturnValue(null),
   getCanonicalBaseSpecies: jest.fn((s: string) => s),
   // Used by NatureChevrons, which calc-defender-header renders for the Nat chip.
   STAT_LABELS: {
@@ -312,7 +313,7 @@ beforeEach(() => {
 describe("DefenderMonHeader — species pill", () => {
   it("shows 'Choose species…' placeholder when no species is set", () => {
     render(<DefenderMonHeader {...makeProps()} />);
-    expect(screen.getByText("Choose species…")).toBeInTheDocument();
+    expect(screen.getByText("Choose…")).toBeInTheDocument();
   });
 
   it("shows the species name when defenderSpecies is set", () => {
@@ -363,7 +364,7 @@ describe("DefenderMonHeader — sprite", () => {
 describe("DefenderMonHeader — Item row", () => {
   it("renders the Item label", () => {
     render(<DefenderMonHeader {...makeProps()} />);
-    expect(screen.getByText("Item")).toBeInTheDocument();
+    expect(screen.getByText("ITEM")).toBeInTheDocument();
   });
 
   it("shows the em-dash placeholder when defenderItem is empty", () => {
@@ -394,7 +395,7 @@ describe("DefenderMonHeader — Item row", () => {
 describe("DefenderMonHeader — Ability row", () => {
   it("renders the Abil label", () => {
     render(<DefenderMonHeader {...makeProps()} />);
-    expect(screen.getByText("Abil")).toBeInTheDocument();
+    expect(screen.getByText("ABIL")).toBeInTheDocument();
   });
 
   it("shows the em-dash placeholder when defenderAbility is empty", () => {
@@ -494,7 +495,7 @@ describe("DefenderMonHeader — no-abilities warning", () => {
 describe("DefenderMonHeader — Nature row", () => {
   it("renders the Nat label", () => {
     render(<DefenderMonHeader {...makeProps()} />);
-    expect(screen.getByText("Nat")).toBeInTheDocument();
+    expect(screen.getByText("NAT")).toBeInTheDocument();
   });
 
   it("shows the em-dash placeholder when defenderNature is empty", () => {

@@ -774,12 +774,10 @@ export function StatsLane({
   const [liveEvByStat, setLiveEvByStat] = useState<
     Partial<Record<StatKey, number>>
   >({});
-  const [prevPokemonId, setPrevPokemonId] = useState<
-    number | null | typeof UNINITIALIZED
-  >(UNINITIALIZED);
   const currentPokemonId = pokemon?.id ?? null;
-  if (currentPokemonId !== prevPokemonId) {
-    setPrevPokemonId(currentPokemonId);
+  const prevPokemonIdRef = useRef<number | null>(currentPokemonId);
+  if (currentPokemonId !== prevPokemonIdRef.current) {
+    prevPokemonIdRef.current = currentPokemonId;
     setLiveEvByStat({});
   }
 

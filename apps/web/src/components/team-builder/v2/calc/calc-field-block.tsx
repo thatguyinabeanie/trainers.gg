@@ -187,11 +187,11 @@ function SideSwitchRow({
   return (
     <>
       <div className="flex justify-end">
-        <Switch size="sm" checked={yours} onCheckedChange={onToggleYours} />
+        <Switch size="sm" checked={yours} onCheckedChange={onToggleYours} aria-label={`${label} (ours)`} />
       </div>
       <span className="text-center text-[11px]">{label}</span>
       <div className="flex justify-start">
-        <Switch size="sm" checked={theirs} onCheckedChange={onToggleTheirs} />
+        <Switch size="sm" checked={theirs} onCheckedChange={onToggleTheirs} aria-label={`${label} (theirs)`} />
       </div>
     </>
   );

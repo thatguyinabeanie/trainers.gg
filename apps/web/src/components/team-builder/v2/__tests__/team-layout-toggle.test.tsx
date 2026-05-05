@@ -23,9 +23,9 @@ beforeEach(() => {
 });
 
 describe("TeamLayoutToggle", () => {
-  it("renders three buttons", () => {
+  it("renders two buttons", () => {
     render(<TeamLayoutToggle />);
-    expect(screen.getAllByRole("button")).toHaveLength(3);
+    expect(screen.getAllByRole("button")).toHaveLength(2);
   });
 
   it("marks the persisted mode as pressed", () => {
@@ -58,14 +58,14 @@ describe("TeamLayoutToggle", () => {
   });
 
   it("keeps the persisted button pressed even when auto-degraded", () => {
-    window.localStorage.setItem("tg.team-layout", "2x3");
+    window.localStorage.setItem("tg.team-layout", "2x3-vertical");
     setViewportWidth(1200); // below 1500 — degrades to 1x6
     render(<TeamLayoutToggle />);
     const persistedBtn = screen.getByLabelText(
-      /2 × 3 — mid-stacked per cell/
+      /2 × 3 — stacked per cell/
     );
     expect(persistedBtn).toHaveAttribute("aria-pressed", "true");
-    // Effective is 1x6, but user's pick (2x3) should still show pressed.
+    // Effective is 1x6, but user's pick (2x3-vertical) should still show pressed.
     const oneByBtn = screen.getByLabelText(/1 × 6 — full row layout/);
     expect(oneByBtn).toHaveAttribute("aria-pressed", "false");
   });

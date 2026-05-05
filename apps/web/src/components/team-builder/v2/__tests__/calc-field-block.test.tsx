@@ -218,10 +218,10 @@ describe("CalcFieldBlock — basic render", () => {
     expect(screen.getByText("Sides")).toBeInTheDocument();
   });
 
-  it("renders Yours and Theirs side cards", () => {
+  it("renders Ours and Theirs side headings", () => {
     renderBlock();
-    expect(screen.getByText(/▸ Yours/i)).toBeInTheDocument();
-    expect(screen.getByText(/▸ Theirs/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ours/i)).toBeInTheDocument();
+    expect(screen.getByText(/Theirs/i)).toBeInTheDocument();
   });
 });
 
@@ -300,7 +300,7 @@ describe("CalcFieldBlock — weather chips", () => {
       inferredWeather: "Sun",
       attackerAbility: "Drought",
     });
-    expect(screen.getByText("↳ inferred from Drought")).toBeInTheDocument();
+    expect(screen.getByText("↳ Drought")).toBeInTheDocument();
   });
 
   it("does NOT show inferred badge when explicit weather is set", () => {
@@ -344,7 +344,7 @@ describe("CalcFieldBlock — terrain chips", () => {
       inferredTerrain: "Electric",
       attackerAbility: "Hadron Engine",
     });
-    expect(screen.getByText("↳ inferred from Hadron Engine")).toBeInTheDocument();
+    expect(screen.getByText("↳ Hadron Engine")).toBeInTheDocument();
   });
 });
 
@@ -418,23 +418,13 @@ describe("CalcFieldBlock — fairy aura toggle", () => {
 // =============================================================================
 
 describe("CalcFieldBlock — Yours side toggles", () => {
-  it("calls setAttackerSide with tailwind patch when Tailwind clicked on Yours side", () => {
-    const setAttackerSide = jest.fn();
-    renderBlock({
-      attackerSide: makeSideState({ tailwind: false }),
-      setAttackerSide,
-    });
-    fireEvent.click(screen.getAllByRole("button", { name: /^tailwind$/i })[0]);
-    expect(setAttackerSide).toHaveBeenCalledWith({ tailwind: true });
-  });
-
   it("calls setAttackerSide with reflect patch when Reflect clicked on Yours side", () => {
     const setAttackerSide = jest.fn();
     renderBlock({
       attackerSide: makeSideState({ reflect: false }),
       setAttackerSide,
     });
-    fireEvent.click(screen.getAllByRole("button", { name: /^reflect$/i })[0]);
+    fireEvent.click(screen.getByRole("switch", { name: /reflect \(ours\)/i }));
     expect(setAttackerSide).toHaveBeenCalledWith({ reflect: true });
   });
 
@@ -444,7 +434,7 @@ describe("CalcFieldBlock — Yours side toggles", () => {
       attackerSide: makeSideState({ lightScreen: false }),
       setAttackerSide,
     });
-    fireEvent.click(screen.getAllByRole("button", { name: /^light screen$/i })[0]);
+    fireEvent.click(screen.getByRole("switch", { name: /light screen \(ours\)/i }));
     expect(setAttackerSide).toHaveBeenCalledWith({ lightScreen: true });
   });
 
@@ -454,21 +444,20 @@ describe("CalcFieldBlock — Yours side toggles", () => {
       attackerSide: makeSideState({ helpingHand: false }),
       setAttackerSide,
     });
-    fireEvent.click(screen.getAllByRole("button", { name: /^helping hand$/i })[0]);
+    fireEvent.click(screen.getByRole("switch", { name: /helping hand \(ours\)/i }));
     expect(setAttackerSide).toHaveBeenCalledWith({ helpingHand: true });
   });
 });
 
 describe("CalcFieldBlock — Theirs side toggles", () => {
-  it("calls setDefenderSide with tailwind patch when Tailwind clicked on Theirs side", () => {
+  it("calls setDefenderSide with reflect patch when Reflect clicked on Theirs side", () => {
     const setDefenderSide = jest.fn();
     renderBlock({
-      defenderSide: makeSideState({ tailwind: false }),
+      defenderSide: makeSideState({ reflect: false }),
       setDefenderSide,
     });
-    // "Tailwind" appears in both side cards; second button is Theirs
-    fireEvent.click(screen.getAllByRole("button", { name: /^tailwind$/i })[1]);
-    expect(setDefenderSide).toHaveBeenCalledWith({ tailwind: true });
+    fireEvent.click(screen.getByRole("switch", { name: /reflect \(theirs\)/i }));
+    expect(setDefenderSide).toHaveBeenCalledWith({ reflect: true });
   });
 
   it("calls setDefenderSide with stealthRock patch when Stealth Rock clicked on Theirs side", () => {
@@ -477,8 +466,7 @@ describe("CalcFieldBlock — Theirs side toggles", () => {
       defenderSide: makeSideState({ stealthRock: false }),
       setDefenderSide,
     });
-    // "Stealth Rock" appears in both side cards; second button is Theirs
-    fireEvent.click(screen.getAllByRole("button", { name: /^stealth rock$/i })[1]);
+    fireEvent.click(screen.getByRole("switch", { name: /stealth rock \(theirs\)/i }));
     expect(setDefenderSide).toHaveBeenCalledWith({ stealthRock: true });
   });
 });
@@ -488,41 +476,36 @@ describe("CalcFieldBlock — Theirs side toggles", () => {
 // =============================================================================
 
 describe("CalcFieldBlock — symmetric side card fields", () => {
-  it("renders Tailwind on both sides", () => {
-    renderBlock();
-    expect(screen.getAllByRole("button", { name: /^tailwind$/i })).toHaveLength(2);
-  });
-
   it("renders Reflect on both sides", () => {
     renderBlock();
-    expect(screen.getAllByRole("button", { name: /^reflect$/i })).toHaveLength(2);
+    expect(screen.getByRole("switch", { name: /reflect \(ours\)/i })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: /reflect \(theirs\)/i })).toBeInTheDocument();
   });
 
   it("renders Light Screen on both sides", () => {
     renderBlock();
-    expect(screen.getAllByRole("button", { name: /^light screen$/i })).toHaveLength(2);
+    expect(screen.getByRole("switch", { name: /light screen \(ours\)/i })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: /light screen \(theirs\)/i })).toBeInTheDocument();
   });
 
   it("renders Aurora Veil on both sides", () => {
     renderBlock({ attackerSide: makeSideState({ auroraVeil: true }) });
-    const buttons = screen.getAllByRole("button", { name: /aurora veil/i });
-    expect(buttons).toHaveLength(2);
-    expect(buttons[0]).toHaveAttribute("aria-pressed", "true"); // Yours active
-    expect(buttons[1]).toHaveAttribute("aria-pressed", "false"); // Theirs inactive
+    const ours = screen.getByRole("switch", { name: /aurora veil \(ours\)/i });
+    const theirs = screen.getByRole("switch", { name: /aurora veil \(theirs\)/i });
+    expect(ours).toBeChecked();
+    expect(theirs).not.toBeChecked();
   });
 
-  it("renders Stealth Rock on both sides (was previously Theirs only)", () => {
+  it("renders Stealth Rock on both sides", () => {
     renderBlock({ attackerSide: makeSideState({ stealthRock: true }) });
-    const srButtons = screen.getAllByRole("button", { name: /^stealth rock$/i });
-    expect(srButtons).toHaveLength(2);
-    expect(srButtons[0]).toHaveAttribute("aria-pressed", "true");
+    const ours = screen.getByRole("switch", { name: /stealth rock \(ours\)/i });
+    expect(ours).toBeChecked();
   });
 
-  it("renders Helping Hand on both sides (was previously Yours only)", () => {
+  it("renders Helping Hand on both sides", () => {
     renderBlock({ defenderSide: makeSideState({ helpingHand: true }) });
-    const hhButtons = screen.getAllByRole("button", { name: /^helping hand$/i });
-    expect(hhButtons).toHaveLength(2);
-    expect(hhButtons[1]).toHaveAttribute("aria-pressed", "true");
+    const theirs = screen.getByRole("switch", { name: /helping hand \(theirs\)/i });
+    expect(theirs).toBeChecked();
   });
 });
 
@@ -584,11 +567,10 @@ describe("CalcFieldBlock — ally alive toggle", () => {
 // =============================================================================
 
 describe("CalcFieldBlock — fainted stepper", () => {
-  it("renders Fainted label in side cards", () => {
+  it("renders Knocked Out label in side grid", () => {
     renderBlock();
-    const faintedLabels = screen.getAllByText("Fainted");
-    // One per side card (plus possibly ally toggle if allyAlive=false)
-    expect(faintedLabels.length).toBeGreaterThanOrEqual(2);
+    const labels = screen.getAllByText("Knocked Out");
+    expect(labels.length).toBeGreaterThanOrEqual(1);
   });
 
   it("clicking fainted '5' in Yours calls setFaintedYours(5)", () => {
@@ -607,28 +589,36 @@ describe("CalcFieldBlock — fainted stepper", () => {
 // Tests — active state styling
 // =============================================================================
 
-describe("CalcFieldBlock — active state aria-pressed", () => {
+describe("CalcFieldBlock — active state aria-checked", () => {
   it.each([
-    [false, "false"],
-    [true, "true"],
+    [false, false],
+    [true, true],
   ] as const)(
-    "tailwind=%s → Tailwind button aria-pressed=%s on Yours side",
-    (tailwind, expected) => {
-      renderBlock({ attackerSide: makeSideState({ tailwind }) });
-      const twBtns = screen.getAllByRole("button", { name: /^tailwind$/i });
-      expect(twBtns[0]).toHaveAttribute("aria-pressed", expected);
+    "reflect=%s → Reflect switch checked=%s on Ours side",
+    (reflect, expected) => {
+      renderBlock({ attackerSide: makeSideState({ reflect }) });
+      const sw = screen.getByRole("switch", { name: /reflect \(ours\)/i });
+      if (expected) {
+        expect(sw).toBeChecked();
+      } else {
+        expect(sw).not.toBeChecked();
+      }
     }
   );
 
   it.each([
-    [false, "false"],
-    [true, "true"],
+    [false, false],
+    [true, true],
   ] as const)(
-    "stealthRock=%s → Stealth Rock button aria-pressed=%s on Theirs side",
+    "stealthRock=%s → Stealth Rock switch checked=%s on Theirs side",
     (stealthRock, expected) => {
       renderBlock({ defenderSide: makeSideState({ stealthRock }) });
-      const srBtns = screen.getAllByRole("button", { name: /^stealth rock$/i });
-      expect(srBtns[1]).toHaveAttribute("aria-pressed", expected);
+      const sw = screen.getByRole("switch", { name: /stealth rock \(theirs\)/i });
+      if (expected) {
+        expect(sw).toBeChecked();
+      } else {
+        expect(sw).not.toBeChecked();
+      }
     }
   );
 });

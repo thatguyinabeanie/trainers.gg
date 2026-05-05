@@ -24,10 +24,10 @@ describe("MegaToggle", () => {
     expect(button).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("renders 'Base' when inactive and exposes aria-pressed=false", () => {
+  it("renders 'Mega' when inactive and exposes aria-pressed=false", () => {
     render(<MegaToggle active={false} onToggle={() => {}} />);
     const button = screen.getByRole("button");
-    expect(button).toHaveTextContent("Base");
+    expect(button).toHaveTextContent("Mega");
     expect(button).toHaveAttribute("aria-pressed", "false");
   });
 

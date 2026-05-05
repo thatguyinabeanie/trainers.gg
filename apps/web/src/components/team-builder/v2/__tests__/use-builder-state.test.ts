@@ -24,9 +24,9 @@ describe("useBuilderState — ephemeral state defaults", () => {
     expect(result.current.activeIdx).toBe(0);
   });
 
-  it("starts with drawer=null", () => {
+  it("starts with drawer='speed' (sideDrawer defaults to speed)", () => {
     const { result } = renderHook(() => useBuilderState());
-    expect(result.current.drawer).toBe(null);
+    expect(result.current.drawer).toBe("speed");
   });
 
   it("setActiveIdx updates the value", () => {
@@ -39,6 +39,10 @@ describe("useBuilderState — ephemeral state defaults", () => {
 
   it("setDrawer updates the drawer value", () => {
     const { result } = renderHook(() => useBuilderState());
+    // Clear sideDrawer first (default is "speed"), then set matchups via bottomDrawer
+    act(() => {
+      result.current.setDrawer(null);
+    });
     act(() => {
       result.current.setDrawer("matchups");
     });

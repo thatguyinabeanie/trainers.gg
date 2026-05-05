@@ -3,7 +3,7 @@
 /**
  * Tests for the Topbar component.
  * Verifies: Import button, Validate popover trigger, error/warning styling,
- * format badge rendering, filledCount display.
+ * format badge rendering.
  */
 
 import { render, screen } from "@testing-library/react";
@@ -118,7 +118,6 @@ const DEFAULT_FORMAT = {
 
 function renderTopbar(
   props: Partial<{
-    filledCount: number;
     format: typeof DEFAULT_FORMAT | undefined;
     validationErrors: ValidationError[];
     exportMenu: React.ReactNode;
@@ -136,7 +135,6 @@ function renderTopbar(
   const utils = render(
     <Topbar
       team={makeTeam()}
-      filledCount={props.filledCount ?? 2}
       format={props.format as GameFormat | undefined}
       username="ash_ketchum"
       alts={alts as any}

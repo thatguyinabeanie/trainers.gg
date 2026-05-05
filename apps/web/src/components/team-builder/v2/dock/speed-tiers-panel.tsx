@@ -570,7 +570,10 @@ export function SpeedTiersPanel({
     }));
   }
 
-  const maxEv = isChampionsFormat(format) ? 32 : 252;
+  const champions = isChampionsFormat(format);
+  const maxEv = champions ? 32 : 252;
+  const evStep = champions ? 1 : 4;
+  const evLabel = champions ? "SP" : "EVs";
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -787,18 +790,19 @@ export function SpeedTiersPanel({
 
             {/* EVs — only theirs side has input, ours is empty */}
             <div />
-            <span className="text-center text-[11px]">EVs</span>
+            <span className="text-center text-[11px]">{evLabel}</span>
             <div className="flex justify-start">
               <div className="bg-card grid grid-cols-[20px_40px_20px] overflow-hidden rounded-md border">
                 <button
                   type="button"
+                  aria-label={`Decrease speed ${evLabel}`}
                   disabled={toggle.theirs.evs === null || toggle.theirs.evs <= 0}
                   onClick={() =>
                     setToggle((prev) => ({
                       ...prev,
                       theirs: {
                         ...prev.theirs,
-                        evs: Math.max(0, (prev.theirs.evs ?? maxEv) - 4),
+                        evs: Math.max(0, (prev.theirs.evs ?? maxEv) - evStep),
                       },
                     }))
                   }
@@ -809,6 +813,7 @@ export function SpeedTiersPanel({
                 <input
                   type="text"
                   inputMode="numeric"
+                  aria-label={`Speed ${evLabel} override`}
                   value={toggle.theirs.evs ?? ""}
                   placeholder={String(maxEv)}
                   onChange={(e) => {
@@ -830,13 +835,14 @@ export function SpeedTiersPanel({
                 />
                 <button
                   type="button"
+                  aria-label={`Increase speed ${evLabel}`}
                   disabled={toggle.theirs.evs !== null && toggle.theirs.evs >= maxEv}
                   onClick={() =>
                     setToggle((prev) => ({
                       ...prev,
                       theirs: {
                         ...prev.theirs,
-                        evs: Math.min(maxEv, (prev.theirs.evs ?? maxEv) + 4),
+                        evs: Math.min(maxEv, (prev.theirs.evs ?? maxEv) + evStep),
                       },
                     }))
                   }

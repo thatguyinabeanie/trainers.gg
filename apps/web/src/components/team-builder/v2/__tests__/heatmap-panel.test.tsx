@@ -163,10 +163,11 @@ describe("HeatmapPanel — with team", () => {
     expect(screen.getByTestId("heatmap-panel")).toBeInTheDocument();
   });
 
-  it("renders 'Defensive coverage' heading by default", () => {
+  it("renders 'Defensive' button as active by default", () => {
     const team = makeTeamPokemon([GARCHOMP]);
     render(<HeatmapPanel team={team} format={undefined} />);
-    expect(screen.getByText("Defensive coverage")).toBeInTheDocument();
+    const defBtn = screen.getByRole("button", { name: /defensive/i });
+    expect(defBtn).toHaveAttribute("aria-pressed", "true");
   });
 
   it("renders the TOTAL footer row", () => {
@@ -184,13 +185,13 @@ describe("HeatmapPanel — with team", () => {
 });
 
 describe("HeatmapPanel — mode toggle", () => {
-  it("switches to 'Offensive coverage' when clicking Offensive button", async () => {
+  it("switches to 'Offensive' active when clicking Offensive button", async () => {
     const user = userEvent.setup();
     const team = makeTeamPokemon([GARCHOMP]);
     render(<HeatmapPanel team={team} format={undefined} />);
 
     await user.click(screen.getByRole("button", { name: /offensive/i }));
-    expect(screen.getByText("Offensive coverage")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /offensive/i })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("switches back to defensive when clicking Defensive button", async () => {
@@ -200,7 +201,7 @@ describe("HeatmapPanel — mode toggle", () => {
 
     await user.click(screen.getByRole("button", { name: /offensive/i }));
     await user.click(screen.getByRole("button", { name: /defensive/i }));
-    expect(screen.getByText("Defensive coverage")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /defensive/i })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("Defensive button is aria-pressed=true by default", () => {
@@ -255,18 +256,18 @@ describe("HeatmapPanel — Tera toggle", () => {
   });
 });
 
-describe("HeatmapPanel — weak/resist counts", () => {
-  it("shows non-zero weak counts when a pokemon has weaknesses (mult >= 2)", () => {
+describe("HeatmapPanel — row summary", () => {
+  it("shows net score values when a pokemon has weaknesses", () => {
     // Make all types deal 2x to make the weak count predictable
     (mockEffectiveDefensiveMult as jest.Mock).mockReturnValue(2);
     const team = makeTeamPokemon([GARCHOMP]);
     render(<HeatmapPanel team={team} format={undefined} />);
 
-    // TOTAL row weakCount for that mon should be 18 (all 18 types at 2x)
+    // TOTAL row should be present
     expect(screen.getByText("TOTAL")).toBeInTheDocument();
-    // At least one "w" count that's non-zero (destructive color)
-    const wTokens = screen.getAllByText(/\d+w/);
-    expect(wTokens.length).toBeGreaterThan(0);
+    // Net scores for rows with all weaknesses will be negative numbers
+    const negativeScores = screen.getAllByText(/-\d+/);
+    expect(negativeScores.length).toBeGreaterThan(0);
   });
 });
 

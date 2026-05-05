@@ -1,10 +1,19 @@
 import { describe, it, expect } from "@jest/globals";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import React from "react";
 
 // =============================================================================
 // Module-level mocks
 // =============================================================================
+
+const mockPush = jest.fn();
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush, refresh: jest.fn() }),
+}));
+
+jest.mock("@/actions/teams", () => ({
+  createTeamAction: jest.fn().mockResolvedValue({ success: true, data: { id: 999 } }),
+}));
 
 jest.mock("@tanstack/react-query", () => ({
   useQuery: jest.fn(({ initialData }: { initialData: unknown }) => ({
@@ -223,20 +232,20 @@ describe("TeamsListClient", () => {
     expect(importLinks.length).toBeGreaterThan(0);
   });
 
-  it("opens the dialog in empty mode when New Team is clicked", () => {
-    render(<TeamsListClient {...defaultProps} initialTeams={[buildTeam()]} />);
+  it("calls createTeamAction and navigates when New Team is clicked", async () => {
+    const { createTeamAction } = jest.requireMock("@/actions/teams");
+    (createTeamAction as jest.Mock).mockResolvedValue({ success: true, data: { id: 999 } });
+    mockPush.mockClear();
 
-    // Dialog starts closed
-    expect(screen.getByTestId("new-team-dialog")).toHaveAttribute(
-      "data-open",
-      "false"
-    );
+    render(<TeamsListClient {...defaultProps} initialTeams={[buildTeam()]} />);
 
     fireEvent.click(screen.getByText("New Team"));
 
-    const dialog = screen.getByTestId("new-team-dialog");
-    expect(dialog).toHaveAttribute("data-open", "true");
-    expect(dialog).toHaveAttribute("data-mode", "empty");
+    // Wait for async action to resolve
+    await screen.findByText("New Team");
+
+    expect(createTeamAction).toHaveBeenCalledWith(42, "Untitled Team", "gen9vgc2024regg");
+    expect(mockPush).toHaveBeenCalledWith("/dashboard/alts/ash_ketchum/teams/999");
   });
 
   it("opens the dialog in import mode when Import Paste is clicked", () => {

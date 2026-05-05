@@ -283,11 +283,14 @@ export async function transferTeamAction(
   }
 
   return withAction(async () => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("teams")
       .update({ created_by: parsed.data.targetAltId })
-      .eq("id", parsed.data.teamId);
-    if (error) throw new Error(`Failed to transfer team: ${error.message}`);
+      .eq("id", parsed.data.teamId)
+      .select("id")
+      .single();
+    if (error || !data)
+      throw new Error("Failed to transfer team — team not found or access denied.");
     invalidateTeamDetailCache(parsed.data.teamId);
   }, "Failed to transfer team");
 }
