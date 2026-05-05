@@ -369,10 +369,9 @@ export default function AdminConfigPage() {
     }
   };
 
-  useEffect(() => {
+   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchFlags();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAnnouncements();
   }, []);
 

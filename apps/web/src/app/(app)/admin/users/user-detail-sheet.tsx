@@ -180,11 +180,8 @@ export function UserDetailSheet({
       fetchUser();
     }
     if (!open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUser(null);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(null);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActionError(null);
     }
   }, [open, userId]);
