@@ -343,13 +343,9 @@ function DefenderStatRow({
         className={cn(spreadLabelClass, statKey !== "hp" && "cursor-pointer hover:opacity-70")}
       >
         {label}
-        <span className="inline-block w-[9px] text-[9px] font-black tracking-tighter">
-          {isNatureBoosted && (
-            <span className="text-red-600 dark:text-red-400">▲</span>
-          )}
-          {isNatureReduced && (
-            <span className="text-sky-600 dark:text-sky-400">▽</span>
-          )}
+        <span className="inline-block w-[9px] text-[7px] leading-none">
+          {isNatureBoosted && "▲"}
+          {isNatureReduced && "▼"}
         </span>
       </button>
 

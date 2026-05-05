@@ -596,13 +596,9 @@ function StatRow({
         className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px", labelTextClass, statKey !== "hp" && "cursor-pointer hover:opacity-70")}
       >
         {label}
-        <span className="inline-block w-[9px] text-[9px] font-black tracking-tighter">
-          {isNatureBoosted && (
-            <span className="text-emerald-600 dark:text-emerald-400">▲</span>
-          )}
-          {isNatureReduced && (
-            <span className="text-rose-600 dark:text-rose-400">▽</span>
-          )}
+        <span className="inline-block w-[9px] text-[7px] leading-none">
+          {isNatureBoosted && "▲"}
+          {isNatureReduced && "▼"}
         </span>
       </button>
 
