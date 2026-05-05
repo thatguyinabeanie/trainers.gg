@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   NATURE_EFFECTS,
@@ -33,9 +33,11 @@ export function useIdentityState(
 
   // Sync draft when the upstream nickname changes (e.g. switching Pokémon)
   const incomingNickname = pokemon.nickname ?? "";
-  useEffect(() => {
+  const [prevNickname, setPrevNickname] = useState(incomingNickname);
+  if (prevNickname !== incomingNickname) {
+    setPrevNickname(incomingNickname);
     setNickDraft(incomingNickname);
-  }, [incomingNickname]);
+  }
 
   // ── Derived data ───────────────────────────────────────────────────────────
 

@@ -351,8 +351,15 @@ function StatRow({
     budget.total,
     budget.perStat
   );
+  const [investBudgetState, setInvestBudgetState] = useState(investBudget);
+  if (investBudgetState !== investBudget) {
+    setInvestBudgetState(investBudget);
+  }
   const investBudgetRef = useRef(investBudget);
-  investBudgetRef.current = investBudget;
+  // Update ref in an effect to avoid "Cannot access refs during render"
+  useEffect(() => {
+    investBudgetRef.current = investBudget;
+  });
 
   // --- EV draft + debounced commit ---
   // Slider/keyboard updates the local draft synchronously for snappy UI;

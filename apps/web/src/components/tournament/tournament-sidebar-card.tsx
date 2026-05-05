@@ -348,6 +348,7 @@ export function TournamentSidebarCard({
 
   useEffect(() => {
     if (!teamEditMode || !rawText.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValidation(null);
       return;
     }

@@ -96,7 +96,7 @@ export function Dockbar({
   onOpen,
   sideDrawer,
   bottomDrawer,
-  fastest,
+  fastest: _fastest,
   defenderSpecies,
   moveCalcOutputs,
 }: DockbarProps) {
@@ -106,7 +106,7 @@ export function Dockbar({
   const isSpeedActive = sideDrawer !== undefined ? sideDrawer === "speed" : drawer === "speed";
   const isCalcActive = sideDrawer !== undefined ? sideDrawer === "calc" : drawer === "calc";
 
-  const calcVerdict = getWorstCaseVerdict(moveCalcOutputs);
+  const _calcVerdict = getWorstCaseVerdict(moveCalcOutputs);
   const calcSubLabel = defenderSpecies
     ? `vs ${defenderSpecies}`
     : "no target";

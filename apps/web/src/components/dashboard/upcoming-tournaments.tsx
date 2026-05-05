@@ -33,13 +33,13 @@ export function UpcomingTournaments({
 }) {
   const [isPending, startTransition] = useTransition();
   const [checkingInId, setCheckingInId] = useState<number | null>(null);
+  const [now] = useState(() => Date.now());
 
   const formatDate = (timestamp: number | null) => {
     if (!timestamp) return "Date TBD";
     const date = new Date(timestamp);
-    const now = new Date();
     const diffDays = Math.ceil(
-      (date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      (date.getTime() - now) / (1000 * 60 * 60 * 24)
     );
 
     if (diffDays < 0) return "In Progress";
@@ -51,7 +51,6 @@ export function UpcomingTournaments({
   };
 
   const getStatusInfo = (tournament: DashboardTournament) => {
-    const now = Date.now();
     const startDate = tournament.startDate ?? null;
     const hoursUntilStart = startDate
       ? (startDate - now) / (1000 * 60 * 60)
@@ -172,7 +171,6 @@ export function UpcomingTournaments({
   const thisWeekGroup = shouldGroup
     ? sortedTournaments.filter((t) => {
         const status = getStatusInfo(t);
-        const now = Date.now();
         const startDate = t.startDate ?? null;
         const hoursUntilStart = startDate
           ? (startDate - now) / (1000 * 60 * 60)

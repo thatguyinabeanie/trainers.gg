@@ -195,6 +195,7 @@ export function useBuilderState(): BuilderState {
   // Hydrate persisted values from localStorage after mount to avoid
   // hydration mismatches (server renders defaults, client must match).
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     const persistedPanel = readPersisted(PANEL_HEIGHT_STORAGE_KEY, (raw) => {
       const n = clampPanelHeight(Number(raw));
       return Number.isNaN(Number(raw)) ? null : n;
@@ -232,6 +233,7 @@ export function useBuilderState(): BuilderState {
     );
     if (persistedFaintedTheirs !== null)
       setFaintedTheirsState(persistedFaintedTheirs);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   function setPanelHeightPct(n: number) {

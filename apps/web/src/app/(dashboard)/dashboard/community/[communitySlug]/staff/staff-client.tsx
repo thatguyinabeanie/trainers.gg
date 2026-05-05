@@ -746,11 +746,13 @@ export function StaffClient({
   >(new Map());
 
   // Clear optimistic moves when server confirms
-  useEffect(() => {
+  const [prevStaffMembers, setPrevStaffMembers] = useState(staffMembers);
+  if (prevStaffMembers !== staffMembers) {
+    setPrevStaffMembers(staffMembers);
     if (staffMembers) {
       setOptimisticMoves(new Map());
     }
-  }, [staffMembers]);
+  }
 
   // Apply optimistic moves to staff data
   const baseStaff = staffMembers ?? initialStaff;

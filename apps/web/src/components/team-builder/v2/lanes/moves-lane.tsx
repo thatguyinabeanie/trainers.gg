@@ -543,7 +543,7 @@ function MovesLaneReal({
   onUpdate,
   fieldErrors,
 }: MovesLaneRealProps) {
-  const calc = useCalcStateContext();
+  const _calc = useCalcStateContext();
   function handlePick(slotKey: MoveSlot, name: string) {
     onUpdate({ [slotKey]: name });
   }

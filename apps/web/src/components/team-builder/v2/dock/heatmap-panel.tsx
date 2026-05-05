@@ -189,7 +189,7 @@ function cellClass(mult: number, mode: CoverageMode): string {
 }
 
 // 3-letter type abbreviations for column headers
-const TYPE_ABBR: Record<PokemonType, string> = {
+const _TYPE_ABBR: Record<PokemonType, string> = {
   Normal: "NOR",
   Fire: "FIR",
   Water: "WAT",

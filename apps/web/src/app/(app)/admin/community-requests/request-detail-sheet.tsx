@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, ExternalLink, X } from "lucide-react";
 import {
   Sheet,
@@ -69,11 +69,13 @@ export function RequestDetailSheet({
   );
 
   // Reset state when request changes
-  useEffect(() => {
+  const [prevRequestId, setPrevRequestId] = useState(request?.id);
+  if (prevRequestId !== request?.id) {
+    setPrevRequestId(request?.id);
     setRejectReason("");
     setApproveReason("");
     setConfirmAction(null);
-  }, [request?.id]);
+  }
 
   if (!request) return null;
 

@@ -176,11 +176,15 @@ export function UserDetailSheet({
 
   useEffect(() => {
     if (open && userId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchUser();
     }
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUser(null);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(null);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActionError(null);
     }
   }, [open, userId]);

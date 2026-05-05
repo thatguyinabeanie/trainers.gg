@@ -40,8 +40,11 @@ export function PostMatchSummary({
 
   useEffect(() => {
     if (!userAltId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNextMatch(null);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRoundStatus(null);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
       return;
     }

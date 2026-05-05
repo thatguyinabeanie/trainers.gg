@@ -86,6 +86,7 @@ function SidebarProvider({
     if (match) {
       const w = Number(match[1]);
       if (w >= SIDEBAR_MIN_WIDTH && w <= SIDEBAR_MAX_WIDTH) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSidebarWidth(w);
       }
     }

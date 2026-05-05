@@ -10,7 +10,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useCalcStateContext } from "../calc/calc-state-context";
 import { useDefenderMoves } from "../calc/use-defender-moves";
-import { type CalcOutput } from "../../use-calc-state";
 import { TypeSymbolIcon } from "../../type-symbol-icon";
 import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
 import { useTeamLayoutMode } from "../use-team-layout";
