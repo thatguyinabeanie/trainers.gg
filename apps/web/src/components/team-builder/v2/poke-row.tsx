@@ -9,7 +9,7 @@ import {
   type DraggableSyntheticListeners,
 } from "@dnd-kit/core";
 
-import { getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
+import { getSpeciesTypes, getTypeColor, type GameFormat } from "@trainers/pokemon";
 import {
   type Tables,
   type TablesUpdate,
@@ -20,15 +20,13 @@ import { cn } from "@/lib/utils";
 
 import { type ValidationError } from "../validation-hooks";
 import { Sprite } from "./sprite";
-import { TypePill } from "./type-pill";
 import { ActiveRow } from "./lanes/active-row";
-import { CalcColumn } from "./lanes/calc-column";
 import { IdentityLane } from "./lanes/identity";
 import { StatsLane } from "./lanes/stats-lane";
 import { MovesLane } from "./lanes/moves-lane";
-import { useCalcEnabled } from "./calc/calc-state-context";
 import { SpeciesPickerDialog } from "./pickers/species-picker-dialog";
-import s from "./builder.module.css";
+import { useTeamLayoutMode } from "./use-team-layout";
+import { useCalcEnabled } from "./calc/calc-state-context";
 
 // =============================================================================
 // Types
@@ -71,7 +69,6 @@ interface EmptyRowProps {
 
 function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
   const [open, setOpen] = useState(false);
-  const calcEnabled = useCalcEnabled();
 
   return (
     <>
@@ -80,14 +77,14 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         onClick={() => setOpen(true)}
         aria-label={`Add Pokémon to slot ${String(idx + 1).padStart(2, "0")}`}
         className={cn(
-          s.rowActive,
-          "border-border bg-card flex h-full w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-dashed",
-          "hover:border-primary/40 hover:bg-muted/10 text-left transition-colors",
+          "flex h-full w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-dashed",
+          "border-border bg-card text-left transition-colors",
+          "hover:border-primary/40 hover:bg-muted/10",
           "focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
         )}
       >
         {/* RIB — slot number + × placeholder */}
-        <div className={cn(s.rib, "border-border/60 bg-muted/20 flex shrink-0 border-dashed")}>
+        <div className="rib flex flex-col items-center justify-between shrink-0 w-7 py-2 border-r border-border/60 border-dashed bg-muted/20">
           <span className="text-muted-foreground font-mono text-[10px] font-medium tracking-wide">
             {String(idx + 1).padStart(2, "0")}
           </span>
@@ -96,14 +93,13 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
           </span>
         </div>
 
-        <div className={s.rowVerticalContent}>
+        <div className="row-vertical-content">
           <IdentityLane pokemon={null} format={_format} />
-          <div className={s.rowRight}>
+          <div className="row-right">
             <StatsLane pokemon={null} format={_format} />
             <MovesLane pokemon={null} format={_format} />
           </div>
         </div>
-        {calcEnabled && <CalcColumn pokemon={null} />}
       </button>
 
       <SpeciesPickerDialog
@@ -155,12 +151,22 @@ function CollapsedRow({
   const hasError = slotErrors.some((e) => e.severity === "error");
   const hasWarning = slotErrors.some((e) => e.severity === "warning");
 
+  // Derive type-based rib color (20% opacity)
+  const ribBackground = (() => {
+    if (types.length === 0) return undefined;
+    const alpha = "33";
+    const c1 = getTypeColor(types[0]!);
+    if (types.length === 1) return `${c1}${alpha}`;
+    const c2 = getTypeColor(types[1]!);
+    return `linear-gradient(135deg, ${c1}${alpha}, ${c2}${alpha})`;
+  })();
+
   return (
     <div
       className={cn(
         "group border-border bg-card hover:bg-muted/30 flex w-full items-center gap-3 rounded-lg border px-3 transition-colors",
         density === "comfy" ? "py-2" : "py-1.5",
-        isDragging && s.rowDragging
+        isDragging && "opacity-50"
       )}
     >
       {/* Slot rib — drag handle when filled */}
@@ -168,9 +174,11 @@ function CollapsedRow({
         {...dragAttributes}
         {...dragListeners}
         className={cn(
-          "text-muted-foreground relative w-7 shrink-0 font-mono text-xs font-medium",
-          dragListeners && s.dragHandle
+          "relative flex w-7 shrink-0 items-center justify-center rounded font-mono text-xs font-medium",
+          ribBackground ? "text-foreground/70" : "text-muted-foreground",
+          dragListeners && "cursor-grab touch-none active:cursor-grabbing"
         )}
+        style={ribBackground ? { background: ribBackground } : undefined}
         aria-label={
           dragListeners ? `Drag to reorder slot ${idx + 1}` : undefined
         }
@@ -214,11 +222,6 @@ function CollapsedRow({
               (pokemon.species ?? "Unknown")
             )}
           </span>
-          <div className="flex gap-1">
-            {types.map((t) => (
-              <TypePill key={t} t={t} />
-            ))}
-          </div>
         </div>
       </button>
 
@@ -358,11 +361,19 @@ export function PokeRow({
     zIndex: isDragging ? 10 : undefined,
   };
 
+  // Tailwind 4 strips quotes from attribute selector values when emitting CSS,
+  // causing Lightning CSS to reject the dimension-like token. Apply max-width
+  // conditionally via JS instead of an arbitrary variant.
+  const layoutMode = useTeamLayoutMode();
+  const calcEnabled = useCalcEnabled();
+  const slotHostClass = cn(
+    "@container/slot mx-auto w-full",
+    layoutMode === "1x6" && (calcEnabled ? "max-w-[1620px]" : "max-w-[1460px]")
+  );
+
   if (!pokemon) {
-    // Empty slot — sortable ref still attached so it can act as a drop target,
-    // but drag is disabled so it won't be picked up.
     return (
-      <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)} data-slot-host>
+      <div ref={setNodeRef} style={style} className={slotHostClass} data-slot-host>
         <EmptyRow idx={idx} density={density} format={format} onAdd={onAdd} />
       </div>
     );
@@ -372,7 +383,7 @@ export function PokeRow({
 
   if (showExpanded) {
     return (
-      <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)} data-slot-host>
+      <div ref={setNodeRef} style={style} className={slotHostClass} data-slot-host>
         <ActiveRowShell
           idx={idx}
           pokemon={pokemon}
@@ -391,7 +402,7 @@ export function PokeRow({
   }
 
   return (
-    <div ref={setNodeRef} style={style} className={cn("mx-auto w-full", s.slotHost)} data-slot-host>
+    <div ref={setNodeRef} style={style} className={slotHostClass} data-slot-host>
       <CollapsedRow
         idx={idx}
         pokemon={pokemon}

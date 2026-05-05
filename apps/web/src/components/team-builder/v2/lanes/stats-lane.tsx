@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   findStatBreakpoints,
@@ -30,10 +30,23 @@ import {
   getStatBudget,
   type StatBudget,
 } from "../../calc-stat-helpers";
+import { useCalcEnabled, useCalcStateContext } from "../calc/calc-state-context";
 import { formatSupportsIvs } from "../format-gating";
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { FieldErrors } from "../validation/field-error";
-import s from "../builder.module.css";
+import { type StatBoosts } from "../../use-calc-state";
+
+// =============================================================================
+// Stat key → boost key mapping
+// =============================================================================
+
+const STAT_TO_BOOST_KEY: Partial<Record<StatKey, keyof StatBoosts>> = {
+  attack: "atk",
+  defense: "def",
+  specialAttack: "spa",
+  specialDefense: "spd",
+  speed: "spe",
+};
 
 // =============================================================================
 // Constants (ghost-mode placeholder rows)
@@ -41,11 +54,31 @@ import s from "../builder.module.css";
 
 export const GHOST_STATS = [
   { key: "hp", label: "HP", colorClass: "text-rose-500 dark:text-rose-400" },
-  { key: "attack", label: "ATK", colorClass: "text-orange-500 dark:text-orange-400" },
-  { key: "defense", label: "DEF", colorClass: "text-amber-500 dark:text-amber-400" },
-  { key: "specialAttack", label: "SPA", colorClass: "text-sky-500 dark:text-sky-400" },
-  { key: "specialDefense", label: "SPD", colorClass: "text-emerald-500 dark:text-emerald-400" },
-  { key: "speed", label: "SPE", colorClass: "text-fuchsia-500 dark:text-fuchsia-400" },
+  {
+    key: "attack",
+    label: "ATK",
+    colorClass: "text-orange-500 dark:text-orange-400",
+  },
+  {
+    key: "defense",
+    label: "DEF",
+    colorClass: "text-amber-500 dark:text-amber-400",
+  },
+  {
+    key: "specialAttack",
+    label: "SPA",
+    colorClass: "text-sky-500 dark:text-sky-400",
+  },
+  {
+    key: "specialDefense",
+    label: "SPD",
+    colorClass: "text-emerald-500 dark:text-emerald-400",
+  },
+  {
+    key: "speed",
+    label: "SPE",
+    colorClass: "text-fuchsia-500 dark:text-fuchsia-400",
+  },
 ] as const;
 
 // =============================================================================
@@ -114,7 +147,12 @@ function getIvs(pokemon: Tables<"pokemon">): StatValues {
 /** Canonical neutral nature — the rest (Hardy/Docile/Bashful/Quirky) are duplicates. */
 const NEUTRAL_NATURE = "Serious";
 
-type NatureStat = "attack" | "defense" | "specialAttack" | "specialDefense" | "speed";
+type NatureStat =
+  | "attack"
+  | "defense"
+  | "specialAttack"
+  | "specialDefense"
+  | "speed";
 
 /** When the user adds "+" to a stat with no current −nature, default to a sensible reduced stat. */
 const DEFAULT_REDUCE_FOR_BOOST: Record<NatureStat, NatureStat> = {
@@ -182,9 +220,7 @@ function pickFreshPartner(
 ): NatureStat {
   const def = defaults[mover];
   if (def !== avoid) return def;
-  return (
-    ALL_NATURE_STATS.find((s) => s !== mover && s !== avoid) ?? def
-  );
+  return ALL_NATURE_STATS.find((s) => s !== mover && s !== avoid) ?? def;
 }
 
 /**
@@ -276,6 +312,12 @@ interface StatRowProps {
    *  in the lane header tracks the slider drag without waiting for the
    *  400ms onUpdate debounce. */
   onLiveEv?: (statKey: StatKey, displayEv: number) => void;
+  /** Current stat boost stage (-6 to +6). Only for non-HP stats when calc is open. */
+  boost?: number;
+  /** Set stat boost stage. */
+  onBoostChange?: (value: number) => void;
+  /** Whether to reserve space for the boost column (keeps grid aligned). */
+  showBoostCol?: boolean;
 }
 
 function StatRow({
@@ -295,12 +337,22 @@ function StatRow({
   showIv,
   onUpdate,
   onLiveEv,
+  boost,
+  onBoostChange,
+  showBoostCol,
 }: StatRowProps) {
   const label = STAT_LABELS[statKey];
   const statColorClass = STAT_COLOR_CLASS[statKey];
 
   // --- Slider budget ---
-  const investBudget = computeInvestBudget(totalEv, ev, budget.total, budget.perStat);
+  const investBudget = computeInvestBudget(
+    totalEv,
+    ev,
+    budget.total,
+    budget.perStat
+  );
+  const investBudgetRef = useRef(investBudget);
+  investBudgetRef.current = investBudget;
 
   // --- EV draft + debounced commit ---
   // Slider/keyboard updates the local draft synchronously for snappy UI;
@@ -313,7 +365,15 @@ function StatRow({
   );
   if (ev !== prevEv) {
     setPrevEv(ev);
-    setDraftEv(null);
+    // Only clear the draft if the incoming prop is an *external* change (e.g.
+    // nature swap, preset load), not our own debounce landing. When our
+    // debounce fires, `ev` will equal `draftEv` — clearing it then is fine
+    // (no visual change). But if the user is still dragging ahead of the
+    // debounce, `draftEv` will differ from `ev` and we must NOT reset it,
+    // otherwise the slider snaps back mid-drag causing jitter.
+    if (draftEv === null || ev === draftEv) {
+      setDraftEv(null);
+    }
   }
   const displayEv = draftEv ?? ev;
 
@@ -356,14 +416,19 @@ function StatRow({
   const nextBpEv = breakpoints.find((bp) => bp > displayEv);
   // True when the slider sits exactly on a breakpoint — used to render the
   // thumb as an outline circle (visual continuity with the bump tick).
-  const isAtBump = isNatureBoosted && breakpoints.includes(displayEv) && displayEv > 0;
+  const isAtBump =
+    isNatureBoosted && breakpoints.includes(displayEv) && displayEv > 0;
 
   // --- Label color: always the stat-key color; nature is shown only via the
   //                  ▲/▽ chevron next to the label, not by recoloring it. ---
   const labelTextClass = statColorClass;
 
   // --- Input display value ---
-  const inputDisplay = buildInputDisplay(displayEv, isNatureBoosted, isNatureReduced);
+  const inputDisplay = buildInputDisplay(
+    displayEv,
+    isNatureBoosted,
+    isNatureReduced
+  );
 
   // --- Edit buffer: while focused, show what the user is typing instead of
   //                  the derived display, so the controlled value doesn't
@@ -374,32 +439,38 @@ function StatRow({
   useEffect(() => {
     if (draftEv === null) return;
     const timer = setTimeout(() => {
-      onUpdate({ [evFieldKey]: draftEv });
+      const committed = Math.min(draftEv, investBudgetRef.current);
+      // Clear draft and snap slider to the clamped value before committing.
+      // This prevents a stale draft from lingering after the prop catches up.
+      setDraftEv(null);
+      onLiveEv?.(statKey, committed);
+      onUpdate({ [evFieldKey]: committed });
     }, DRAFT_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [draftEv, evFieldKey, onUpdate]);
+  }, [draftEv, evFieldKey, onUpdate, statKey, onLiveEv]);
 
   function flushEvDraft() {
     if (draftEv === null) return;
-    // Clear draft before committing — see IV onBlur for the same pattern.
-    // Without this, the still-armed debounce timer fires a duplicate
-    // onUpdate 400ms later.
-    const nextEv = draftEv;
+    // Clamp to budget on commit, then clear draft.
+    const committed = Math.min(draftEv, investBudget);
     setDraftEv(null);
-    onLiveEv?.(statKey, nextEv);
-    onUpdate({ [evFieldKey]: nextEv });
+    onLiveEv?.(statKey, committed);
+    onUpdate({ [evFieldKey]: committed });
   }
 
   // --- Handle slider change ---
+  // During drag we only snap to the step grid — we do NOT clamp to
+  // investBudget here, because that causes visible jitter when the thumb
+  // overshoots the effective limit and snaps back every frame. Instead,
+  // clamping happens on commit (debounce fire / pointer-up / blur).
   function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = Number(e.target.value);
-    const clamped = Math.min(raw, investBudget);
-    const snapped = Math.round(clamped / budget.step) * budget.step;
+    const snapped = Math.round(raw / budget.step) * budget.step;
     setDraftEv(snapped);
-    // Bubble the live value to the parent in the same render pass as the
-    // setDraftEv call, so the lane-level total tracks the drag without
-    // waiting for an after-commit effect.
-    onLiveEv?.(statKey, snapped);
+    // Bubble the live value to the parent — clamp here so the running total
+    // never exceeds the budget (visual counter stays correct), but the
+    // slider thumb itself stays where the user's finger is.
+    onLiveEv?.(statKey, Math.min(snapped, investBudget));
   }
 
   // --- Handle breakpoint tick click — jump straight to that bump value
@@ -465,8 +536,13 @@ function StatRow({
   // --- IV draft (only used when showIv) ---
   const iv = ivs[statKey];
   const [draftIv, setDraftIv] = useState<number | null>(null);
-  const [prevIv, setPrevIv] = useState<number | typeof UNINITIALIZED>(UNINITIALIZED);
-  if (iv !== prevIv) { setPrevIv(iv); setDraftIv(null); }
+  const [prevIv, setPrevIv] = useState<number | typeof UNINITIALIZED>(
+    UNINITIALIZED
+  );
+  if (iv !== prevIv) {
+    setPrevIv(iv);
+    setDraftIv(null);
+  }
   const displayIv = draftIv ?? iv;
 
   useEffect(() => {
@@ -484,11 +560,22 @@ function StatRow({
   }, [draftIv, showIv, statKey, onUpdate]);
 
   return (
-    <div className={cn(showIv ? s.spreadRowWithIv : s.spreadRow, statColorClass)}>
+    <div
+      className={cn(
+        showIv
+          ? showBoostCol
+            ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+            : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+          : showBoostCol
+            ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+            : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
+        statColorClass
+      )}
+    >
       {/* Col 1: Stat label, color-coded, with nature chevron.
           Matches the +/− nature label colours in IdentityLane:
           boost = emerald, reduce = rose. */}
-      <span className={cn(s.spreadLabel, labelTextClass)}>
+      <span className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap overflow-hidden flex items-center gap-px", labelTextClass)}>
         {label}
         {isNatureBoosted && (
           <span className="text-[9px] font-black tracking-tighter text-emerald-600 dark:text-emerald-400">
@@ -503,7 +590,7 @@ function StatRow({
       </span>
 
       {/* Col 2: Base stat number, muted mono */}
-      <span className={s.spreadBase}>{base}</span>
+      <span className={"font-mono text-[9.5px] text-muted-foreground text-right tabular-nums"}>{base}</span>
 
       {/* Col 3: Read-only viz bar (solid base + striped invest).
        * `bg-current` so both layers inherit the stat-key color from the row. */}
@@ -526,8 +613,10 @@ function StatRow({
         aria-label={`${label} investment`}
         className={cn(
           "focus:ring-primary h-[18px] w-9 rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
-          isNatureBoosted && "border-emerald-400/70 text-emerald-600 dark:text-emerald-400",
-          isNatureReduced && "border-rose-400/70 text-rose-600 dark:text-rose-400",
+          isNatureBoosted &&
+            "border-emerald-400/70 text-emerald-600 dark:text-emerald-400",
+          isNatureReduced &&
+            "border-rose-400/70 text-rose-600 dark:text-rose-400",
           !isNatureBoosted &&
             !isNatureReduced &&
             "border-border text-foreground"
@@ -537,8 +626,8 @@ function StatRow({
       {/* Col 5: Slider with optional breakpoint ticks.
        * Stat-key color is on the row, so the thumb (background: currentColor)
        * and the bump rings (border: currentColor) inherit it from the row. */}
-      <div className={s.spreadSliderWrap}>
-        <div className={s.spreadSliderTrack} aria-hidden />
+      <div className={"relative h-3.5"}>
+        <div className={"absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none"} aria-hidden />
         <input
           type="range"
           min={0}
@@ -553,7 +642,7 @@ function StatRow({
           aria-valuemax={budget.perStat}
           aria-valuenow={displayEv}
           data-at-bump={isAtBump || undefined}
-          className={s.spreadSlider}
+          className={"spread-slider"}
         />
 
         {/* Breakpoint ticks overlay — only on +nature stat. Buttons so they're
@@ -602,7 +691,41 @@ function StatRow({
       )}
 
       {/* Col 6/7: Final stat, mono bold */}
-      <span className={s.spreadFinal}>{liveFinalStat}</span>
+      <span className={"font-mono text-[11.5px] font-bold text-right tabular-nums"}>{liveFinalStat}</span>
+
+      {/* Boost stepper — only rendered when calc is active and stat is not HP */}
+      {showBoostCol && boost !== undefined && onBoostChange && (
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            aria-label={`Decrease ${STAT_LABELS[statKey]} boost`}
+            onClick={() => onBoostChange(Math.max(-6, boost - 1))}
+            className="size-[16px] rounded text-[10px] font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            −
+          </button>
+          <span
+            className={cn(
+              "font-mono text-[10px] font-semibold tabular-nums w-[20px] text-center",
+              boost > 0 && "text-teal-600 dark:text-teal-400",
+              boost < 0 && "text-rose-600 dark:text-rose-400",
+              boost === 0 && "text-muted-foreground"
+            )}
+          >
+            {boost > 0 ? `+${boost}` : boost}
+          </span>
+          <button
+            type="button"
+            aria-label={`Increase ${STAT_LABELS[statKey]} boost`}
+            onClick={() => onBoostChange(Math.min(6, boost + 1))}
+            className="size-[16px] rounded text-[10px] font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            +
+          </button>
+        </div>
+      )}
+      {/* Empty cell for HP row when boost column is visible */}
+      {showBoostCol && boost === undefined && <span />}
     </div>
   );
 }
@@ -635,7 +758,9 @@ export function StatsLane({
   // ghost and filled renders. Live EVs from each row's slider draft are
   // bubbled up so the SP/EV total refreshes during drag (ahead of the
   // 400ms debounce). Empty in the ghost path; the real path overrides it.
-  const [liveEvByStat, setLiveEvByStat] = useState<Partial<Record<StatKey, number>>>({});
+  const [liveEvByStat, setLiveEvByStat] = useState<
+    Partial<Record<StatKey, number>>
+  >({});
 
   // Match the active format so empty slots line up with filled ones — same
   // grid (with-IV vs without), same investment header (SP vs EVs), same total
@@ -644,56 +769,72 @@ export function StatsLane({
   const isChampions = isChampionsFormat(format);
   const showIv = formatSupportsIvs(format);
   const budget = getStatBudget(isChampions);
+  const calcEnabled = useCalcEnabled();
+  const calcState = useCalcStateContext();
 
   if (!pokemon) {
     return (
-      <div
-        className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1460px]:w-[400px]"
-      >
+      <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
+
+
         {/* Column headers — same structure as real but dimmed */}
         <div
           className={cn(
             "mb-0.5 py-0",
-            showIv ? s.spreadRowWithIv : s.spreadRow
+            showIv
+              ? calcEnabled
+                ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+              : calcEnabled
+                ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
           )}
         >
           <span />
-          <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
+          <span className="text-muted-foreground/30 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
             Base
           </span>
           <span />
-          <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
+          <span className="text-muted-foreground/30 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
             {isChampions ? "SP" : "EVs"}
           </span>
-          <span className="text-right font-mono text-[8.5px] text-muted-foreground/30">
+          <span className="text-muted-foreground/30 text-right font-mono text-[8.5px]">
             0/{budget.total}
           </span>
           {showIv && (
-            <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/30">
+            <span className="text-muted-foreground/30 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
               IVs
             </span>
           )}
           <span />
+          {calcEnabled && <span />}
         </div>
         {GHOST_STATS.map(({ key, label, colorClass }) => (
           <div
             key={key}
             className={cn(
-              showIv ? s.spreadRowWithIv : s.spreadRow,
+              showIv
+                ? calcEnabled
+                  ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                  : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                : calcEnabled
+                  ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                  : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
               colorClass
             )}
           >
-            <span className={cn(s.spreadLabel, "opacity-30")}>{label}</span>
-            <span className={cn(s.spreadBase, "opacity-25")}>—</span>
-            <div className={s.spreadVbar} />
-            <div className="h-[18px] w-9 rounded border border-dashed border-border/30" />
-            <div className={s.spreadSliderWrap}>
-              <div className={cn(s.spreadSliderTrack, "opacity-25")} />
+            <span className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap overflow-hidden flex items-center gap-px", "opacity-30")}>{label}</span>
+            <span className={cn("font-mono text-[9.5px] text-muted-foreground text-right tabular-nums", "opacity-25")}>—</span>
+            <div className={"h-2 bg-muted rounded-full overflow-hidden relative min-w-0"} />
+            <div className="border-border/30 h-[18px] w-9 rounded border border-dashed" />
+            <div className={"relative h-3.5"}>
+              <div className={cn("absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none", "opacity-25")} />
             </div>
             {showIv && (
-              <div className="h-[18px] w-10 rounded border border-dashed border-border/30" />
+              <div className="border-border/30 h-[18px] w-10 rounded border border-dashed" />
             )}
-            <span className={cn(s.spreadFinal, "opacity-25")}>—</span>
+            <span className={cn("font-mono text-[11.5px] font-bold text-right tabular-nums", "opacity-25")}>—</span>
+            {calcEnabled && <span />}
           </div>
         ))}
       </div>
@@ -708,7 +849,9 @@ export function StatsLane({
   const level = pokemon.level ?? 50;
   const nature = pokemon.nature ?? "Hardy";
   function handleLiveEv(statKey: StatKey, value: number) {
-    setLiveEvByStat((prev) => (prev[statKey] === value ? prev : { ...prev, [statKey]: value }));
+    setLiveEvByStat((prev) =>
+      prev[statKey] === value ? prev : { ...prev, [statKey]: value }
+    );
   }
   const liveTotal = STAT_KEYS.reduce(
     (sum, k) => sum + (liveEvByStat[k] ?? evs[k]),
@@ -737,44 +880,58 @@ export function StatsLane({
   );
 
   return (
-    <div
-      className="border-border/60 flex w-full min-w-0 shrink-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-2 @[1460px]:w-[400px]"
-    >
+    <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
       {/* Column headers */}
-      <div className={cn(
-        "mb-0.5",
-        showIv ? s.spreadRowWithIv : s.spreadRow,
-        "py-0"
-      )}>
+      <div
+        className={cn(
+          "mb-0.5",
+          showIv
+            ? calcEnabled
+              ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+              : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+            : calcEnabled
+              ? "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+              : "grid grid-cols-[32px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
+          "py-0"
+        )}
+      >
         {/* Col 1: (stat label — no heading) */}
         <span />
         {/* Col 2: Base */}
-        <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+        <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
           Base
         </span>
         {/* Col 3: viz bar — no heading */}
         <span />
         {/* Col 4: Points / SP */}
-        <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+        <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
           {isChampions ? "SP" : "EVs"}
         </span>
         {/* Col 5: slider — no heading, but show total */}
         <span
           className={cn(
             "text-right font-mono text-[8.5px]",
-            totalEv > budget.total ? "text-destructive font-semibold" : "text-muted-foreground/70"
+            totalEv > budget.total
+              ? "text-destructive font-semibold"
+              : "text-muted-foreground/70"
           )}
         >
           {totalEv}/{budget.total}
         </span>
         {/* Col 6 (with-IV): IVs */}
         {showIv && (
-          <span className="text-center font-mono text-[8.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+          <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
             IVs
           </span>
         )}
         {/* Col 6/7: final — no heading */}
         <span />
+        {/* Boost header */}
+        {calcEnabled && (
+          <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
+            ±
+          </span>
+        )}
       </div>
 
       {/* 6 horizontal stat rows */}
@@ -797,6 +954,8 @@ export function StatsLane({
             isChampions,
           });
 
+          const boostKey = STAT_TO_BOOST_KEY[statKey];
+
           return (
             <StatRow
               key={statKey}
@@ -816,6 +975,9 @@ export function StatsLane({
               showIv={showIv}
               onUpdate={handleUpdate}
               onLiveEv={handleLiveEv}
+              boost={calcEnabled && boostKey ? calcState.attackerBoosts[boostKey] : undefined}
+              onBoostChange={calcEnabled && boostKey ? (v) => calcState.setAttackerBoost(boostKey, v) : undefined}
+              showBoostCol={calcEnabled}
             />
           );
         })}

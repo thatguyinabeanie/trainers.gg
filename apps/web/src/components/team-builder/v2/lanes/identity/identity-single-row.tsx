@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { useCalcEnabled } from "../../calc/calc-state-context";
+import { cn } from "@/lib/utils";
 import { FieldErrors } from "../../validation/field-error";
 import { SpeciesPickerDialog } from "../../pickers/species-picker-dialog";
 import { useIdentityState } from "./use-identity-state";
@@ -9,7 +11,6 @@ import { FormCells } from "./cells/form-cells";
 import { MetaBar } from "./cells/meta-bar";
 import { SpriteSection } from "./cells/sprite-section";
 import { type IdentityLayoutProps } from "./identity-layout-props";
-import s from "./identity-lane.module.css";
 
 // =============================================================================
 // IdentitySingleRow — compact layout (slot ≥ 1240px)
@@ -51,9 +52,10 @@ export function IdentitySingleRow({
   } = useIdentityState(pokemon, format, fieldErrors, onUpdate);
 
   const [speciesOpen, setSpeciesOpen] = useState(false);
+  const calcEnabled = useCalcEnabled();
 
   return (
-    <div className={s.root}>
+    <div className="flex">
       <SpeciesPickerDialog
         open={speciesOpen}
         onOpenChange={setSpeciesOpen}
@@ -63,7 +65,7 @@ export function IdentitySingleRow({
         onPick={handleSpeciesPick}
       />
 
-      <div className="flex min-w-0 gap-3 p-3">
+      <div className={cn("flex min-w-0 gap-3 transition-[padding] duration-300 ease-in-out", calcEnabled ? "p-3" : "p-2")}>
         {/* Sprite column */}
         <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-center">
           <SpriteSection
@@ -79,7 +81,7 @@ export function IdentitySingleRow({
         {/* Form column */}
         <div className="flex w-64 min-w-0 shrink-0 flex-col justify-center gap-0.5">
           {/* BANNER — nickname + chips rows */}
-          <div className={s.banner}>
+          <div className="mb-1 flex flex-col gap-[3px] border-b border-border pb-1.5">
             <MetaBar
               nickDraft={nickDraft}
               setNickDraft={setNickDraft}
@@ -106,6 +108,7 @@ export function IdentitySingleRow({
             isMegaStone={isMegaStone}
             natUp={natUp}
             natDown={natDown}
+            types={types}
             itemErrors={itemErrors}
             abilityErrors={abilityErrors}
             natureErrors={natureErrors}

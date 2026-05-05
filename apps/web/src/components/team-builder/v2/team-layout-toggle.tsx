@@ -63,10 +63,9 @@ interface ToggleButton {
 
 const BUTTONS: readonly ToggleButton[] = [
   { mode: "1x6", label: "1 × 6 — full row layout", icon: Icon1x6 },
-  { mode: "2x3", label: "2 × 3 — mid-stacked per cell", icon: Icon2x3 },
   {
-    mode: "3x2-vertical",
-    label: "3 × 2 — stacked per cell",
+    mode: "2x3-vertical",
+    label: "2 × 3 — stacked per cell",
     icon: Icon3x2Vertical,
   },
 ];

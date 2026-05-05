@@ -16,13 +16,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ItemSprite } from "@/components/tournament/item-sprite";
 
 import { type ValidationError } from "../../../../validation-hooks";
 import { ItemPicker } from "../../../pickers/item-picker";
 import { FieldErrors } from "../../../validation/field-error";
 import { FormChip } from "../../form-chip";
-import { type CellVariant } from "./identity-cell-shared";
-import s from "../identity-lane.module.css";
+import { cellClasses, type CellVariant } from "./identity-cell-shared";
 
 // =============================================================================
 // ItemCell — held-item form cell, row (compact) or grid (hero) variant
@@ -68,17 +68,25 @@ export function ItemCell({
   };
 
   const megaChip = isMegaStone ? (
-    <button
-      type="button"
+    <span
+      role="button"
+      tabIndex={0}
       onClick={(e) => {
         e.stopPropagation();
         handleMegaToggle();
       }}
-      className={s.midMegaChip}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          handleMegaToggle();
+        }
+      }}
+      className={cellClasses.midMegaChip}
       title="Toggle mega form"
     >
       MEGA
-    </button>
+    </span>
   ) : null;
 
   if (variant === "row") {
@@ -87,6 +95,7 @@ export function ItemCell({
         <FormChip
           label="Item"
           value={pokemon.held_item ?? ""}
+          leading={pokemon.held_item ? <ItemSprite item={pokemon.held_item} size={16} className="shrink-0" /> : undefined}
           trailing={megaChip}
           triggerClassName={
             errors.length > 0
@@ -118,14 +127,14 @@ export function ItemCell({
             <button
               type="button"
               className={cn(
-                s.midFormCell,
+                cellClasses.midFormCell,
                 errors.length > 0 && "ring-destructive/40 rounded ring-1"
               )}
             />
           }
         >
-          <span className={s.midFormLbl}>ITEM</span>
-          <span className={s.midFormVal}>
+          <span className={cellClasses.midFormLbl}>ITEM</span>
+          <span className={cellClasses.midFormVal}>
             <span
               className={cn(
                 "min-w-0 truncate",

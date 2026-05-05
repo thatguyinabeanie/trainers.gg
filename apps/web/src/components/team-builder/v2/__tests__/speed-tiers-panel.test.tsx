@@ -9,6 +9,18 @@ import { type GameFormat, type MetaSpeedEntry } from "@trainers/pokemon";
 
 import { SpeedTiersPanel } from "../dock/speed-tiers-panel";
 
+// base-ui Switch uses PointerEvent which jsdom doesn't have
+if (typeof globalThis.PointerEvent === "undefined") {
+  // @ts-expect-error — minimal polyfill for jsdom
+  globalThis.PointerEvent = class PointerEvent extends MouseEvent {
+    readonly pointerId: number;
+    constructor(type: string, params: PointerEventInit = {}) {
+      super(type, params);
+      this.pointerId = params.pointerId ?? 0;
+    }
+  };
+}
+
 // =============================================================================
 // Mock heavy pokemon package functions so tests stay fast and deterministic.
 // We want to test the panel's SORT LOGIC, not the pokemon stat calculations.
@@ -28,12 +40,12 @@ jest.mock("@trainers/pokemon", () => {
     getSpeedTierLabel: jest.fn().mockReturnValue("mid"),
     // No speed-affecting items so the Select has no options to worry about
     getSpeedAffectingItems: jest.fn().mockReturnValue([]),
-    // Minimal stat calc — just return the base speed so tests are predictable
+    // Minimal stat calc — return base speed so sort order is deterministic
     getBaseStats: jest
       .fn()
       .mockImplementation((_species: string) => ({ speed: 0 })),
-    calculateStat: jest.fn().mockReturnValue(0),
-    calculateChampionsStat: jest.fn().mockReturnValue(0),
+    calculateStat: jest.fn().mockImplementation((base: number) => base),
+    calculateChampionsStat: jest.fn().mockImplementation((base: number) => base),
     getNatureMultiplier: jest.fn().mockReturnValue(1.0),
     // Speed modifiers passthrough — return the base unchanged
     applySpeedModifiers: jest
@@ -108,7 +120,7 @@ function renderPanel(
     (base: number) => base
   );
 
-  return render(<SpeedTiersPanel team={[]} activeIdx={0} format={format} />);
+  return render(<SpeedTiersPanel team={[]} format={format} />);
 }
 
 // =============================================================================
@@ -117,7 +129,7 @@ function renderPanel(
 
 describe("SpeedTiersPanel — no format", () => {
   it("shows a prompt when no format is provided", () => {
-    render(<SpeedTiersPanel team={[]} activeIdx={0} format={undefined} />);
+    render(<SpeedTiersPanel team={[]} format={undefined} />);
     expect(
       screen.getByText(/select a format to see speed tiers/i)
     ).toBeInTheDocument();
@@ -155,7 +167,7 @@ describe("SpeedTiersPanel — Trick Room sort order", () => {
     renderPanel(ENTRIES);
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /trick room/i }));
+    await user.click(screen.getByRole("switch", { name: /trick room/i }));
 
     const names = screen.getAllByText(/flutter mane|rillaboom|amoonguss/i).map(
       (el) => el.textContent?.trim()
@@ -174,10 +186,10 @@ describe("SpeedTiersPanel — Trick Room sort order", () => {
     renderPanel(ENTRIES);
 
     const user = userEvent.setup();
-    const trBtn = screen.getByRole("button", { name: /trick room/i });
+    const trSwitch = screen.getByRole("switch", { name: /trick room/i });
 
-    await user.click(trBtn); // TR on
-    await user.click(trBtn); // TR off
+    await user.click(trSwitch); // TR on
+    await user.click(trSwitch); // TR off
 
     const names = screen.getAllByText(/flutter mane|rillaboom|amoonguss/i).map(
       (el) => el.textContent?.trim()
@@ -194,25 +206,11 @@ describe("SpeedTiersPanel — Trick Room sort order", () => {
 // Summary counts
 // =============================================================================
 
-describe("SpeedTiersPanel — summary count labels", () => {
-  it("shows 'outspeed' / 'outsped by' labels without Trick Room", () => {
+describe("SpeedTiersPanel — summary removed", () => {
+  it("does not show outspeed/outsped summary labels (feature removed)", () => {
     renderPanel([makeEntry("Pikachu", 110)]);
-    expect(screen.getByText("outspeed")).toBeInTheDocument();
-    expect(screen.getByText("outsped by")).toBeInTheDocument();
-  });
-
-  it("flips labels to 'outsped by' / 'outspeed' under Trick Room", async () => {
-    renderPanel([makeEntry("Pikachu", 110)]);
-
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /trick room/i }));
-
-    // Under TR the first label column becomes "outsped by"
-    const allLabels = screen.getAllByText(/outsped by|outspeed/i).map(
-      (el) => el.textContent?.trim()
-    );
-    expect(allLabels).toContain("outsped by");
-    expect(allLabels).toContain("outspeed");
+    expect(screen.queryByText("outspeed")).not.toBeInTheDocument();
+    expect(screen.queryByText("outsped by")).not.toBeInTheDocument();
   });
 });
 
@@ -220,22 +218,20 @@ describe("SpeedTiersPanel — summary count labels", () => {
 // TR badge in hero readout
 // =============================================================================
 
-describe("SpeedTiersPanel — TR badge visibility", () => {
-  it("does not show TR badge without Trick Room", () => {
+describe("SpeedTiersPanel — TR switch state", () => {
+  it("TR switch is not checked by default", () => {
     renderPanel([makeEntry("Pikachu", 110)]);
-    expect(screen.queryByText("TR")).not.toBeInTheDocument();
+    const trSwitch = screen.getByRole("switch", { name: /trick room/i });
+    expect(trSwitch).toHaveAttribute("aria-checked", "false");
   });
 
-  it("shows TR badge when Trick Room is active", async () => {
+  it("TR switch is checked when Trick Room is active", async () => {
     renderPanel([makeEntry("Pikachu", 110)]);
 
     const user = userEvent.setup();
-    // Need a selected pokemon for the hero readout to appear
-    // With empty team there's no hero readout, so test at the summary level
-    await user.click(screen.getByRole("button", { name: /trick room/i }));
+    await user.click(screen.getByRole("switch", { name: /trick room/i }));
 
-    // The TR toggle should be visually pressed (aria-pressed)
-    const trBtn = screen.getByRole("button", { name: /trick room/i });
-    expect(trBtn).toHaveAttribute("aria-pressed", "true");
+    const trSwitch = screen.getByRole("switch", { name: /trick room/i });
+    expect(trSwitch).toHaveAttribute("aria-checked", "true");
   });
 });

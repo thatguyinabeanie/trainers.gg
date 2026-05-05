@@ -149,3 +149,181 @@
     border-color: oklch(0.35 0.02 250);
   }
 }
+
+/* ==========================================================================
+   Team Builder v2 — styles that cannot be expressed in Tailwind
+   - Slider pseudo-elements (thumb styling)
+   - @container queries for responsive layout
+   - [data-layout] ancestor selectors
+   ========================================================================== */
+
+/* -- Spread slider thumb styling ------------------------------------------ */
+
+.spread-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+  outline: none;
+  z-index: 1;
+}
+
+.spread-slider::-webkit-slider-runnable-track {
+  height: 14px;
+  background: transparent;
+  border: none;
+}
+
+.spread-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-top: 2px;
+  border: none;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.spread-slider[data-at-bump]::-webkit-slider-thumb {
+  background: var(--card, #fff);
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.spread-slider::-moz-range-track {
+  height: 14px;
+  background: transparent;
+  border: none;
+}
+
+.spread-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  border: none;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.spread-slider[data-at-bump]::-moz-range-thumb {
+  background: var(--card, #fff);
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+/* -- Active row @container responsive layout ------------------------------ */
+
+.row-right {
+  display: contents;
+}
+
+/* When calc is off the slot max-width shrinks below 1579px, which would
+   normally trigger the mid-stack layout. Override to keep side-by-side. */
+[data-calc-open="false"] .row-right {
+  display: contents;
+}
+
+@container slot (max-width: 1579px) {
+  .row-right {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.row-vertical-content {
+  display: contents;
+}
+
+[data-layout="2x3-vertical"] .row-vertical-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+[data-layout="2x3-vertical"] .row-active {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+[data-layout="2x3-vertical"] .rib {
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  padding: 4px 10px;
+  border-right: none;
+  border-bottom: 1px dashed var(--border);
+}
+
+@container slot (max-width: 699px) {
+  .row-active {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rib {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    padding: 4px 10px;
+    border-right: none;
+    border-bottom: 1px dashed var(--border);
+  }
+
+  .rib-right {
+    display: none;
+  }
+
+  .rib-remove-fallback {
+    display: flex;
+  }
+
+  .rib-decorations {
+    display: none;
+  }
+}
+
+[data-layout="2x3-vertical"] .rib-right {
+  display: none;
+}
+
+[data-layout="2x3-vertical"] .rib-remove-fallback {
+  display: flex;
+}
+
+[data-layout="2x3-vertical"] .rib-decorations {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
+.rib-remove-fallback {
+  display: none;
+}
+
+
+
+/* -- Calc column enter animation (keyframe for Tailwind animate-[]) ------- */
+
+@keyframes calc-col-enter {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

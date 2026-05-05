@@ -40,7 +40,7 @@ export function MegaToggle({ active, onToggle }: MegaToggleProps) {
           : "border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/70"
       )}
     >
-      {active ? "Mega" : "Base"}
+      Mega
     </button>
   );
 }

@@ -170,7 +170,7 @@ export function CalcDetailCard({
         <div className="mvdetail-head-r">
           <button
             type="button"
-            className="mvdetail-change-btn"
+            className="mvdetail-change-btn hover:bg-[color-mix(in_oklch,var(--primary)_10%,transparent)]"
             onClick={onChangeMove}
             title="Change move"
           >
@@ -227,7 +227,12 @@ export function CalcDetailCard({
 
         {verdict && (
           <div className={cn("mvdetail-ko", koClass)}>
-            {verdict}
+            {baseOutput.koChance != null &&
+            baseOutput.koChance > 0 &&
+            baseOutput.koChance < 100 &&
+            factor === 1
+              ? `${baseOutput.koChance % 1 === 0 ? baseOutput.koChance.toFixed(0) : baseOutput.koChance.toFixed(1)}% chance to OHKO`
+              : verdict}
             {baseOutput.recoverySuffix && (
               <span className="mvdetail-recovery-tag">
                 {" "}
@@ -288,7 +293,8 @@ export function CalcDetailCard({
               type="button"
               className={cn(
                 "mvdetail-tog-btn",
-                localFoesAlive === 1 && "mvdetail-tog-btn--on"
+                localFoesAlive === 1 &&
+                  "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
               )}
               onClick={() => setLocalFoesAlive(1)}
             >
@@ -298,7 +304,8 @@ export function CalcDetailCard({
               type="button"
               className={cn(
                 "mvdetail-tog-btn",
-                localFoesAlive === 2 && "mvdetail-tog-btn--on"
+                localFoesAlive === 2 &&
+                  "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
               )}
               onClick={() => setLocalFoesAlive(2)}
             >
@@ -313,7 +320,8 @@ export function CalcDetailCard({
                 type="button"
                 className={cn(
                   "mvdetail-tog-btn",
-                  localAllyAlive && "mvdetail-tog-btn--on"
+                  localAllyAlive &&
+                    "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
                 )}
                 onClick={() => setLocalAllyAlive(true)}
               >
@@ -323,7 +331,8 @@ export function CalcDetailCard({
                 type="button"
                 className={cn(
                   "mvdetail-tog-btn",
-                  !localAllyAlive && "mvdetail-tog-btn--on"
+                  !localAllyAlive &&
+                    "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
                 )}
                 onClick={() => setLocalAllyAlive(false)}
               >

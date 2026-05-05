@@ -16,15 +16,13 @@ import { type Tables } from "@trainers/supabase";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
 
 jest.mock("@trainers/pokemon", () => ({
   getSpeciesTypes: jest.fn((species: string) => {
     if (species === "Garchomp") return ["Dragon", "Ground"];
     return ["Normal"];
   }),
+  getTypeColor: jest.fn(() => "#A8A878"),
 }));
 
 jest.mock("../sprite", () => ({

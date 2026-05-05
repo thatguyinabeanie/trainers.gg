@@ -41,6 +41,8 @@ export interface SpeedModifiers {
   ability?: string;
   /** Whether the pokémon is the Ditto/Smeargle holder for Quick Powder */
   isDitto?: boolean;
+  /** Whether Unburden is active (item consumed) — doubles speed for mons with Unburden */
+  unburden?: boolean;
 }
 
 /** Verbal speed tiers. Boundaries are calibrated for L50 competitive play. */
@@ -191,6 +193,11 @@ export function applySpeedModifiers(
   // Quick Feet boosts speed by 1.5× when statused (paralysis already exempted above).
   if (ability === "quickfeet" && mods.status && mods.status !== "healthy") {
     value = Math.floor(value * 1.5);
+  }
+
+  // Unburden: ×2 when item consumed (only for mons with Unburden ability)
+  if (mods.unburden && ability === "unburden") {
+    value = Math.floor(value * 2);
   }
 
   // Tailwind: ×2 (applied last)

@@ -208,6 +208,7 @@ const mockCalcContext: {
 
 jest.mock("../calc/calc-state-context", () => ({
   useCalcStateContext: jest.fn(() => mockCalcContext),
+  useCalcEnabled: jest.fn(() => mockCalcContext.calcEnabled),
 }));
 
 // getMoveEffectiveness
@@ -252,6 +253,11 @@ jest.mock("../../move-category-ui", () => ({
     Physical: "/icons/physical.png",
     Special: "/icons/special.png",
     Status: "/icons/status.png",
+  },
+  CATEGORY_ICON_URLS_MONO: {
+    Physical: "/icons/physical-mono.png",
+    Special: "/icons/special-mono.png",
+    Status: "/icons/status-mono.png",
   },
 }));
 

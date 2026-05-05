@@ -21,9 +21,6 @@ import React from "react";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
 
 // Popover — render children inline so popover content is always visible.
 jest.mock("@/components/ui/popover", () => ({

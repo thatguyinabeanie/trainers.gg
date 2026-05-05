@@ -15,6 +15,7 @@ import {
   type PokemonType,
   getCanonicalBaseSpecies,
   getMegaAbilityForSpecies,
+  getMegaSpeciesForBaseAndItem,
   getSpeciesTypes,
   isChampionsFormat,
 } from "@trainers/pokemon";
@@ -101,6 +102,14 @@ export interface CalcOutput {
    * non-null, since the simulation accounts for mid-battle healing.
    */
   recoveryTier: KoTierLabel;
+  /**
+   * Percentage chance (0–100) that the move OHKOs, computed from the
+   * distribution of damage rolls vs the defender's current HP. null when
+   * the move is immune or no rolls are available.
+   *
+   * Examples: 100 = guaranteed OHKO, 93.75 = 15/16 rolls KO, 0 = no roll KOs.
+   */
+  koChance: number | null;
 }
 
 // Attacker's max HP — used in the "X–Y / HP" detail line for reverse calcs.
@@ -402,13 +411,20 @@ function buildAttackerFromDb(
     // base form (pre-mega turn 1, or two-megas scenario where THIS Pokemon
     // doesn't mega this match).
     const isMegaForm = getMegaAbilityForSpecies(db.species) !== null;
+    const megaFromItem = !isMegaForm
+      ? getMegaSpeciesForBaseAndItem(db.species, db.held_item ?? "")
+      : null;
+    const canMega = isMegaForm || megaFromItem !== null;
+    const megaSpecies = isMegaForm ? db.species : megaFromItem;
     const effectiveSpecies =
-      isMegaForm && !megaActive
-        ? getCanonicalBaseSpecies(db.species)
-        : db.species;
+      canMega && megaActive && megaSpecies
+        ? megaSpecies
+        : canMega && !megaActive && isMegaForm
+          ? getCanonicalBaseSpecies(db.species)
+          : db.species;
     const calcAbility =
-      isMegaForm && megaActive
-        ? (getMegaAbilityForSpecies(db.species) ?? db.ability ?? null)
+      canMega && megaActive && megaSpecies
+        ? (getMegaAbilityForSpecies(megaSpecies) ?? db.ability ?? null)
         : (db.ability ?? null);
     return new Pokemon(gen, effectiveSpecies, {
       level: db.level ?? 50,
@@ -452,11 +468,21 @@ function buildDefenderPokemon(
   try {
     // Per-calc mega toggle (see buildAttackerFromDb).
     const isMegaForm = getMegaAbilityForSpecies(species) !== null;
+    // Also handle base species holding its mega stone
+    const megaFromItem = !isMegaForm
+      ? getMegaSpeciesForBaseAndItem(species, item)
+      : null;
+    const canMega = isMegaForm || megaFromItem !== null;
+    const megaSpecies = isMegaForm ? species : megaFromItem;
     const effectiveSpecies =
-      isMegaForm && !megaActive ? getCanonicalBaseSpecies(species) : species;
+      canMega && megaActive && megaSpecies
+        ? megaSpecies
+        : canMega && !megaActive && isMegaForm
+          ? getCanonicalBaseSpecies(species)
+          : species;
     const calcAbility =
-      isMegaForm && megaActive
-        ? (getMegaAbilityForSpecies(species) ?? ability)
+      canMega && megaActive && megaSpecies
+        ? (getMegaAbilityForSpecies(megaSpecies) ?? ability)
         : ability;
     // Build without curHP first so we can call maxHP() to compute the real value.
     const mon = new Pokemon(gen, effectiveSpecies, {
@@ -647,12 +673,27 @@ function runCalc(
     // tier when recoveryTier is null.
     const recoveryTier = recoverySuffix ? recoveryVerdict.tier : null;
 
+    // Compute OHKO chance: percentage of rolls that KO the defender at
+    // current HP. The engine produces 16 equally-likely damage rolls.
+    // Use the defender's originalCurHP (the numeric value we passed in via
+    // the constructor) — accessing curHP() could return maxHP if unset.
+    const defenderCurrentHP: number =
+      typeof defender.originalCurHP === "number"
+        ? defender.originalCurHP
+        : defHP;
+    let koChance: number | null = null;
+    if (!isImmune && rolls.length > 0) {
+      const koingRolls = rolls.filter((r) => r >= defenderCurrentHP).length;
+      koChance = (koingRolls / rolls.length) * 100;
+    }
+
     return {
       minPercent,
       maxPercent,
       desc: isImmune ? `${moveName}: 0 - 0 (0 - 0%) -- immune` : result.desc(),
       recoverySuffix,
       recoveryTier,
+      koChance,
       rolls,
       defenderMaxHP: defHP,
     };
@@ -667,6 +708,7 @@ export type Verdict = "OHKO" | "2HKO" | "3HKO" | null;
 
 export function getVerdict(minPercent: number, maxPercent: number): Verdict {
   if (minPercent >= 100) return "OHKO";
+  if (maxPercent >= 100) return "OHKO";
   if (maxPercent >= 50) return "2HKO";
   if (maxPercent >= 34) return "3HKO";
   return null;
@@ -784,6 +826,14 @@ export interface UseCalcStateReturn {
   computeForwardOutputsForRow: (
     rowPokemon: Tables<"pokemon"> | null
   ) => readonly (CalcOutput | null)[];
+  /**
+   * Compute reverse outputs for any team row — the defender's effective moves
+   * aimed at the given team member. Returns 4 outputs parallel to effectiveMoves.
+   */
+  computeReverseOutputsForRow: (
+    rowPokemon: Tables<"pokemon"> | null,
+    effectiveMoves: readonly [string, string, string, string]
+  ) => readonly (CalcOutput | null)[];
   selectedMoveName: string | null;
   selectedMoveOutput: CalcOutput | null;
   /**
@@ -879,10 +929,10 @@ export function useCalcState({
     useState<AttackerBoosts>(EMPTY_BOOSTS);
 
   // --- Defender ---
-  const [defenderSpecies, setDefenderSpecies] = useState("Incineroar");
-  const [defenderAbility, setDefenderAbility] = useState("Intimidate");
-  const [defenderItem, setDefenderItem] = useState("Sitrus Berry");
-  const [defenderNature, setDefenderNature] = useState("Careful");
+  const [defenderSpecies, setDefenderSpecies] = useState("Floette-Eternal");
+  const [defenderAbility, setDefenderAbility] = useState("Flower Veil");
+  const [defenderItem, setDefenderItem] = useState("Floettite");
+  const [defenderNature, setDefenderNature] = useState("Modest");
   const [defenderTera, setDefenderTera] = useState("");
   const [defenderEvs, setDefenderEvs] =
     useState<DefenderEvs>(DEFAULT_DEFENDER_EVS);
@@ -1282,6 +1332,44 @@ export function useCalcState({
         )
       : [null, null, null, null];
 
+  /**
+   * Compute reverse outputs for any team row — the defender's 4 moves aimed
+   * at the given pokemon. Similar to computeForwardOutputsForRow but in the
+   * reverse direction. Used by per-row damage cards.
+   */
+  function computeReverseOutputsForRow(
+    rowPokemon: Tables<"pokemon"> | null,
+    effectiveMoves: readonly [string, string, string, string]
+  ): readonly (CalcOutput | null)[] {
+    if (!rowPokemon) return NULL_OUTPUTS;
+    if (!sharedDefenderAsAttacker) return NULL_OUTPUTS;
+    if (!effectiveMoves.some(Boolean)) return NULL_OUTPUTS;
+
+    // Build this team member as a defender (neutral boosts, healthy)
+    const ourDefender = buildAttackerFromDb(
+      gen,
+      rowPokemon,
+      EMPTY_BOOSTS,
+      "Healthy",
+      attackerMegaActive
+    );
+    if (!ourDefender) return NULL_OUTPUTS;
+
+    return effectiveMoves.map((moveName) => {
+      if (!moveName) return null;
+      return runCalc(
+        gen,
+        sharedDefenderAsAttacker,
+        ourDefender,
+        moveName,
+        false,
+        sharedDefenseField,
+        faintedTheirs,
+        effectiveWeather
+      );
+    });
+  }
+
   return {
     direction,
     setDirection,
@@ -1337,6 +1425,7 @@ export function useCalcState({
     moves,
     moveCalcOutputs,
     computeForwardOutputsForRow,
+    computeReverseOutputsForRow,
     moveCalcOutputsReverse,
     computeReverseOutput,
     selectedMoveName,

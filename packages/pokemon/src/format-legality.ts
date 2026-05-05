@@ -908,9 +908,10 @@ function computeLegalMovesForChampions(
   const cached = championsMoveCache.get(species);
   if (cached) return cached;
 
-  // For Champions megas derived from non-standard base forms, use the
-  // correct base for learnset lookups (e.g. Floette-Mega → Floette-Eternal).
-  const lookupSpecies = CHAMPIONS_MEGA_LEARNSET_BASE[species] ?? species;
+  // For mega species, look up learnset from the base form.
+  // Special cases (e.g. Floette-Mega → Floette-Eternal) override the default.
+  const lookupSpecies = CHAMPIONS_MEGA_LEARNSET_BASE[species]
+    ?? (MEGA_SPECIES_TO_STONE.has(species) ? getCanonicalBaseSpecies(species) : species);
 
   const gen = SimDex.forGen(9);
   const speciesObj = gen.species.get(lookupSpecies);
@@ -918,14 +919,14 @@ function computeLegalMovesForChampions(
 
   // Use AG as a permissive base validator — empty banlist, purely
   // learnset-based checkCanLearn with no format-specific restrictions.
-  // "Min Source Gen = 9" ensures only moves obtainable within Scarlet/Violet
-  // are legal — transfer-only moves from earlier gens are rejected.
+  // Champions includes transfer Pokémon (e.g. Aerodactyl, Metagross) that
+  // aren't natively in the Gen 9 Paldea dex. "Min Source Gen = 9" would
+  // incorrectly reject moves these mons learn via older-gen TMs/tutors that
+  // are valid in Gen 9. No Min Source Gen restriction is applied — the Gen 9
+  // learnset data + CHAMPIONS_MA_MOVE_BANLIST is the source of truth.
   const format = SimDex.formats.get("[Gen 9] Anything Goes");
   if (!format?.exists) return undefined;
-  const validator = new TeamValidator(
-    Object.assign({}, format, { customRules: ["Min Source Gen = 9"] }),
-    SimDex
-  );
+  const validator = new TeamValidator(format, SimDex);
 
   const legal = new Set<string>();
 
@@ -1438,6 +1439,29 @@ export function isMegaSpeciesWithAbility(
  */
 export function getMegaAbilityForSpecies(species: string): string | null {
   return MEGA_SPECIES_TO_ABILITY.get(species) ?? null;
+}
+
+/**
+ * Reverse lookup: given a base species + held item, return the mega species
+ * name if the item is its mega stone. Returns null otherwise.
+ *
+ * Example: getMegaSpeciesForBaseAndItem("Floette-Eternal", "Floettite") → "Floette-Mega"
+ *          getMegaSpeciesForBaseAndItem("Charizard", "Charizardite Y") → "Charizard-Mega-Y"
+ */
+const STONE_TO_MEGA: ReadonlyMap<string, string> = new Map(
+  MEGA_STONE_ENTRIES.map(([mega, stone]) => [stone, mega] as const)
+);
+
+export function getMegaSpeciesForBaseAndItem(
+  species: string,
+  item: string
+): string | null {
+  if (!species || !item) return null;
+  const megaSpecies = STONE_TO_MEGA.get(item);
+  if (!megaSpecies) return null;
+  // Verify the mega's base form matches the given species
+  if (getCanonicalBaseSpecies(megaSpecies) === species) return megaSpecies;
+  return null;
 }
 
 // =============================================================================

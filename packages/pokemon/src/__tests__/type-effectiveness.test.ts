@@ -312,11 +312,11 @@ describe("getTypeColor", () => {
   });
 
   it("returns expected colors for specific types", () => {
-    expect(getTypeColor("Fire")).toBe("#F08030");
-    expect(getTypeColor("Water")).toBe("#6890F0");
-    expect(getTypeColor("Grass")).toBe("#78C850");
-    expect(getTypeColor("Electric")).toBe("#F8D030");
-    expect(getTypeColor("Normal")).toBe("#A8A878");
+    expect(getTypeColor("Fire")).toBe("#FF612C");
+    expect(getTypeColor("Water")).toBe("#3B90FF");
+    expect(getTypeColor("Grass")).toBe("#38BF4B");
+    expect(getTypeColor("Electric")).toBe("#FCC631");
+    expect(getTypeColor("Normal")).toBe("#9298A0");
     expect(getTypeColor("Dragon")).toBe("#7038F8");
   });
 

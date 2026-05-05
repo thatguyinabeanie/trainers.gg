@@ -14,7 +14,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "fishery": "^2"
+    "fishery": "^2.4.0"
   },
   "devDependencies": {
     "@atproto/api": "catalog:atproto",

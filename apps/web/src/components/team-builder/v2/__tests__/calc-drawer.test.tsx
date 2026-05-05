@@ -24,9 +24,6 @@ import { type GameFormat } from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
 
 // Sheet components — render children directly so we don't need base-ui/dialog
 jest.mock("@/components/ui/sheet", () => ({

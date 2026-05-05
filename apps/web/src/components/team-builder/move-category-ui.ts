@@ -22,3 +22,13 @@ export const CATEGORY_ICON_URLS: Record<string, string> = {
   Special: "https://play.pokemonshowdown.com/sprites/categories/Special.png",
   Status: "https://play.pokemonshowdown.com/sprites/categories/Status.png",
 };
+
+/**
+ * Local icons for the Pokemon HOME category symbols
+ * (starburst = Physical, concentric circles = Special, yin-yang = Status).
+ */
+export const CATEGORY_ICON_URLS_MONO: Record<string, string> = {
+  Physical: "/icons/category/Physical_icon_HOME.png",
+  Special: "/icons/category/Special_icon_HOME.png",
+  Status: "/icons/category/Status_icon_HOME.png",
+};

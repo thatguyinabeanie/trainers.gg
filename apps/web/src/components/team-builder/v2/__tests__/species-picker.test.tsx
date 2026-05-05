@@ -247,7 +247,6 @@ jest.mock("@tanstack/react-virtual", () => ({
 // Mock CSS module
 // =============================================================================
 
-jest.mock("../builder.module.css", () => new Proxy({}, { get: (_t, k) => k }));
 
 import { SpeciesPicker } from "../pickers/species-picker";
 import { type GameFormat } from "@trainers/pokemon";

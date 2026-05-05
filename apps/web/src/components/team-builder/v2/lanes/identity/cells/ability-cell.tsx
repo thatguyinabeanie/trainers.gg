@@ -22,15 +22,14 @@ import { type ValidationError } from "../../../../validation-hooks";
 import { AbilityPicker } from "../../../pickers/ability-picker";
 import { FieldErrors } from "../../../validation/field-error";
 import { DescriptionTooltip } from "../../description-tooltip";
-import { type CellVariant } from "./identity-cell-shared";
-import s from "../identity-lane.module.css";
+import { cellClasses, type CellVariant } from "./identity-cell-shared";
 
 // =============================================================================
 // AbilityCell — ability form cell, row (compact) or grid (hero) variant
 //
 // Row variant: custom Tooltip → TooltipTrigger → PopoverTrigger nesting
 // (cannot use FormChip because FormChip has no outer Tooltip).
-// Grid variant: plain Popover + .midFormCell chrome.
+// Grid variant: plain Popover + midFormCell chrome.
 //
 // Absorbs the former IdentityAbilityRow helper (compact-mode logic) and adds
 // the hero-mode branch.
@@ -82,7 +81,7 @@ export function AbilityCell({
                     <button
                       type="button"
                       className={cn(
-                        s.formRow,
+                        cellClasses.formRow,
                         errors.length > 0 &&
                           "ring-destructive/40 rounded ring-1"
                       )}
@@ -91,10 +90,10 @@ export function AbilityCell({
                 />
               }
             >
-              <span className={s.formLabel}>Abil</span>
+              <span className={cellClasses.formLabel}>Abil</span>
               <span
                 className={cn(
-                  s.formValue,
+                  cellClasses.formValue,
                   !displayAbility && "text-muted-foreground/50 italic"
                 )}
               >
@@ -126,16 +125,16 @@ export function AbilityCell({
             <button
               type="button"
               className={cn(
-                s.midFormCell,
+                cellClasses.midFormCell,
                 errors.length > 0 && "ring-destructive/40 rounded ring-1"
               )}
             />
           }
         >
-          <span className={s.midFormLbl}>ABIL</span>
+          <span className={cellClasses.midFormLbl}>ABIL</span>
           <span
             className={cn(
-              s.midFormVal,
+              cellClasses.midFormVal,
               !displayAbility && "text-muted-foreground/50 italic"
             )}
           >

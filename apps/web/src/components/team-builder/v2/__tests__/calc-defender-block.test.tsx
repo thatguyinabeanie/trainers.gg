@@ -30,9 +30,6 @@ import { type Tables } from "@trainers/supabase";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
 
 // Sprite stub
 jest.mock("../sprite", () => ({

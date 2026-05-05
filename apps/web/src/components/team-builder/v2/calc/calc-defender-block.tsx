@@ -309,7 +309,11 @@ export function CalcDefenderBlock({
               type="button"
               aria-pressed={defenderBoosts.def === s}
               onClick={() => setDefenderBoost("def", s)}
-              className={cn("cd-stage", defenderBoosts.def === s && "cd-stage--on")}
+              className={cn(
+                "cd-stage",
+                defenderBoosts.def === s &&
+                  "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
+              )}
             >
               {s > 0 ? `+${s}` : s}
             </button>
@@ -327,7 +331,11 @@ export function CalcDefenderBlock({
               type="button"
               aria-pressed={defenderBoosts.spd === s}
               onClick={() => setDefenderBoost("spd", s)}
-              className={cn("cd-stage", defenderBoosts.spd === s && "cd-stage--on")}
+              className={cn(
+                "cd-stage",
+                defenderBoosts.spd === s &&
+                  "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
+              )}
             >
               {s > 0 ? `+${s}` : s}
             </button>

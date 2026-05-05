@@ -5,7 +5,7 @@ import {
   type DraggableSyntheticListeners,
 } from "@dnd-kit/core";
 
-import { type GameFormat } from "@trainers/pokemon";
+import { getSpeciesTypes, getTypeColor, type GameFormat } from "@trainers/pokemon";
 import {
   type Tables,
   type TablesUpdate,
@@ -14,13 +14,11 @@ import {
 
 import { cn } from "@/lib/utils";
 
-import { errorsForFields, type ValidationError } from "../../validation-hooks";
 import { useCalcEnabled } from "../calc/calc-state-context";
-import s from "../builder.module.css";
-import { CalcColumn } from "./calc-column";
+import { errorsForFields, type ValidationError } from "../../validation-hooks";
+import { CalcReverseColumn } from "./calc-reverse-card";
 import { IdentityLane } from "./identity";
 import { MovesLane } from "./moves-lane";
-import { RibDecorations } from "./rib-decorations";
 import { StatsLane } from "./stats-lane";
 
 // =============================================================================
@@ -71,7 +69,6 @@ export function ActiveRow({
   dragListeners,
   isDragging = false,
 }: ActiveRowProps) {
-  const calcEnabled = useCalcEnabled();
 
   // Collect held items from sibling pokemon for the item picker duplicate warning
   const teamItems = teamPokemon
@@ -109,37 +106,143 @@ export function ActiveRow({
     "ev_speed",
   ]);
 
+  // Derive type-based rib background (20% opacity type colors)
+  const types = getSpeciesTypes(pokemon.species ?? "");
+  const ribBackground = (() => {
+    if (types.length === 0) return undefined;
+    const alpha = "33"; // ~20% opacity
+    const c1 = getTypeColor(types[0]!);
+    if (types.length === 1) return `${c1}${alpha}`;
+    const c2 = getTypeColor(types[1]!);
+    return { left: `linear-gradient(135deg, ${c1}${alpha}, ${c2}${alpha})`, right: `linear-gradient(45deg, ${c1}${alpha}, ${c2}${alpha})` };
+  })();
+
+  const leftBg = typeof ribBackground === "string" ? ribBackground : ribBackground?.left;
+  const rightBg = typeof ribBackground === "string" ? ribBackground : ribBackground?.right;
+  const calcEnabled = useCalcEnabled();
+
+  // Border color derived from types
+  const borderColor = (() => {
+    if (types.length === 0) return undefined;
+    const c1 = getTypeColor(types[0]!);
+    if (types.length === 1) return c1;
+    // For dual types, blend via color-mix
+    const c2 = getTypeColor(types[1]!);
+    return `color-mix(in oklch, ${c1}, ${c2})`;
+  })();
+
   return (
     <div
       className={cn(
-        s.rowActive,
-        "bg-card flex h-full w-full min-w-0 items-stretch self-center overflow-hidden rounded-lg border",
-        "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]",
-        isDragging && s.rowDragging
+        "row-active bg-card flex h-full w-full min-w-0 items-stretch self-center overflow-hidden rounded-lg border",
+        !borderColor && "border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.3),0_8px_28px_-16px_hsl(var(--primary)/0.4)]",
+        isDragging && "opacity-50"
       )}
+      style={borderColor ? {
+        borderColor,
+        boxShadow: `0 0 0 1px ${borderColor}33, 0 8px 28px -16px ${borderColor}66`,
+      } : undefined}
     >
-      {/* RIB — slot number (drag handle) + decorations + remove button */}
+      {/* RIB LEFT — slot number + drag handle */}
       <div
         className={cn(
-          s.rib,
-          "border-border/60 bg-muted/20 flex shrink-0 border-dashed"
+          "flex flex-col items-center justify-between shrink-0 w-7 border-r transition-[padding] duration-300 ease-in-out",
+          "rib border-border/60 flex shrink-0 border-dashed",
+          calcEnabled ? "py-2" : "py-1",
+          !leftBg && "bg-muted/20"
         )}
+        style={leftBg ? { background: leftBg } : undefined}
       >
         <span
           {...dragAttributes}
           {...dragListeners}
           className={cn(
             "text-muted-foreground font-mono text-[10px] font-medium tracking-wide",
-            dragListeners && s.dragHandle
+            dragListeners && "cursor-grab touch-none active:cursor-grabbing"
           )}
           aria-label={`Drag to reorder slot ${idx + 1}`}
         >
           {String(idx + 1).padStart(2, "0")}
         </span>
 
-        {/* Type pills (rotated), gender, shiny, level controls */}
-        <RibDecorations pokemon={pokemon} format={format} onUpdate={onUpdate} />
+        {/* Remove button — shown only when right rib is hidden (stacked layouts) */}
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Remove ${pokemon.species ?? "Pokémon"} from slot ${idx + 1}`}
+          className={cn(
+            "rib-remove-fallback",
+            "text-muted-foreground hover:bg-destructive/15 hover:text-destructive flex size-5 items-center justify-center rounded transition-colors"
+          )}
+        >
+          ×
+        </button>
+      </div>
 
+      {/* Center content — flex-col: main horizontal row on top, incoming strip below */}
+      <div className="flex flex-col min-w-0 flex-1">
+        {/* Main horizontal row content */}
+        <div className="flex items-stretch flex-nowrap min-w-0 overflow-visible">
+          {/* rowVerticalContent — transparent wrapper (display: contents) in
+              horizontal modes; flips to flex-column in 2×3-vertical and
+              3×2-vertical modes so identity sits above stats+moves. CSS in
+              globals.css controls the switch via data-layout attribute. */}
+          <div className="row-vertical-content">
+          <IdentityLane
+            pokemon={pokemon}
+            format={format}
+            teamItems={teamItems}
+            onUpdate={onUpdate}
+            fieldErrors={identityErrors}
+            teamSiblings={teamPokemon
+              .filter((tp) => tp.pokemon && tp.pokemon.id !== pokemon.id)
+              .map((tp) => ({ species: tp.pokemon!.species }))}
+          />
+
+          {/* Right column — at compact widths stats and moves sit side-by-side
+              as direct children of the row; at mid-stack widths this wrapper
+              stacks them vertically on the right of the identity panel. CSS
+              (.rowRight) flips between display: contents and flex-column based
+              on container query. */}
+          <div className="row-right">
+            <StatsLane
+              pokemon={pokemon}
+              format={format}
+              onUpdate={onUpdate}
+              fieldErrors={statsErrors}
+            />
+
+            <MovesLane
+              pokemon={pokemon}
+              format={format}
+              onUpdate={onUpdate}
+              fieldErrors={movesErrors}
+            />
+          </div>
+        </div>
+        </div>
+
+        {/* Incoming damage strip — inside ribs, below main content */}
+        {calcEnabled && (
+          <CalcReverseColumn
+            pokemon={pokemon}
+            teammates={teamPokemon
+              .map((tp) => tp.pokemon)
+              .filter((p): p is NonNullable<typeof p> => p !== null)}
+          />
+        )}
+      </div>
+
+      {/* RIB RIGHT — mirrored gradient + remove button (wide layout only) */}
+      <div
+        className={cn(
+          "flex flex-col items-center justify-start shrink-0 w-7 border-l transition-[padding] duration-300 ease-in-out",
+          "rib-right border-border/60 flex shrink-0 border-dashed",
+          calcEnabled ? "py-2" : "py-1",
+          !rightBg && "bg-muted/20"
+        )}
+        style={rightBg ? { background: rightBg } : undefined}
+      >
         <button
           type="button"
           onClick={onRemove}
@@ -149,47 +252,6 @@ export function ActiveRow({
           ×
         </button>
       </div>
-
-      {/* rowVerticalContent — transparent wrapper (display: contents) in
-          horizontal modes; flips to flex-column in 2×3-vertical and
-          3×2-vertical modes so identity sits above stats+moves. CSS in
-          builder.module.css controls the switch via data-layout attribute. */}
-      <div className={s.rowVerticalContent}>
-        <IdentityLane
-          pokemon={pokemon}
-          format={format}
-          teamItems={teamItems}
-          onUpdate={onUpdate}
-          fieldErrors={identityErrors}
-          teamSiblings={teamPokemon
-            .filter((tp) => tp.pokemon && tp.pokemon.id !== pokemon.id)
-            .map((tp) => ({ species: tp.pokemon!.species }))}
-        />
-
-        {/* Right column — at compact widths stats and moves sit side-by-side
-            as direct children of the row; at mid-stack widths this wrapper
-            stacks them vertically on the right of the identity panel. CSS
-            (.rowRight) flips between display: contents and flex-column based
-            on container query. */}
-        <div className={s.rowRight}>
-          <StatsLane
-            pokemon={pokemon}
-            format={format}
-            onUpdate={onUpdate}
-            fieldErrors={statsErrors}
-          />
-
-          <MovesLane
-            pokemon={pokemon}
-            format={format}
-            onUpdate={onUpdate}
-            fieldErrors={movesErrors}
-          />
-        </div>
-      </div>
-
-      {/* Calc column — fixed 160px, aligns row-for-row with move tiles */}
-      {calcEnabled && <CalcColumn pokemon={pokemon} />}
     </div>
   );
 }

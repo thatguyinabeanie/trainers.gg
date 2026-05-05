@@ -6,7 +6,6 @@ import { type Tables } from "@trainers/supabase";
 import { cn } from "@/lib/utils";
 
 import { Sprite } from "../../../sprite";
-import s from "../identity-lane.module.css";
 
 // =============================================================================
 // SpriteSection — sprite button + species pill in compact or hero arrangement
@@ -102,7 +101,7 @@ export function SpriteSection({
       type="button"
       aria-hidden="true"
       tabIndex={-1}
-      className={s.midSpriteBtn}
+      className="flex cursor-pointer items-center justify-center border-0 bg-transparent p-0 transition-opacity hover:opacity-80"
       onClick={onSpeciesClick}
     >
       <Sprite
@@ -119,7 +118,7 @@ export function SpriteSection({
       type="button"
       aria-label={`Change species (${pokemon.species ?? "none"})`}
       className={cn(
-        s.midSpeciesPill,
+        "flex w-full min-w-0 cursor-pointer items-center justify-between gap-1 rounded-md border border-border bg-background px-2.5 py-1 font-mono text-[11px] font-semibold transition-colors hover:border-primary focus-visible:border-primary focus-visible:outline-none",
         speciesHasError && "ring-destructive/40 rounded ring-1"
       )}
       onClick={onSpeciesClick}

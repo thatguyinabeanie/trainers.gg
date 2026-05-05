@@ -76,13 +76,17 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
       {hasCalc && koTier ? (
         <>
           <span className="flex-shrink-0 font-mono text-[8.5px] font-black tracking-[0.07em] uppercase">
-            {koTier === "1"
-              ? "OHKO"
-              : koTier === "2"
-                ? "2HKO"
-                : koTier === "3"
-                  ? "3HKO"
-                  : "4HKO+"}
+            {output?.koChance != null &&
+            output.koChance > 0 &&
+            output.koChance < 100
+              ? `${output.koChance % 1 === 0 ? output.koChance.toFixed(0) : output.koChance.toFixed(1)}% OHKO`
+              : koTier === "1"
+                ? "OHKO"
+                : koTier === "2"
+                  ? "2HKO"
+                  : koTier === "3"
+                    ? "3HKO"
+                    : "4HKO+"}
           </span>
           <span className="flex-shrink-0 tabular-nums">
             {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%
@@ -109,7 +113,7 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
                   className="text-muted-foreground text-[8.5px] font-bold"
                   title="Spread −25%"
                 >
-                  spread
+                  spr
                 </span>
               )}
             </span>
@@ -150,7 +154,7 @@ export function CalcColumn({ pokemon }: CalcColumnProps) {
   const outputs = calc.computeForwardOutputsForRow(pokemon);
   const hasPokemon = pokemon !== null;
   return (
-    <div className="calc-col">
+    <div className="min-w-60 w-60 max-w-60 flex flex-col justify-center shrink-0 overflow-hidden bg-[color-mix(in_oklch,var(--muted)_40%,transparent)] border-l border-border py-3 gap-1 relative animate-[calc-col-enter_0.3s_cubic-bezier(0.4,0,0.2,1)_both]">
       <div className="calc-col-header">CALC</div>
       {MOVE_SLOTS.map((slot, i) => (
         <CalcRow

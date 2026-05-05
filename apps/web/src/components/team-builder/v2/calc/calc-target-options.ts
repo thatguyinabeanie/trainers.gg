@@ -28,6 +28,15 @@ export interface CalcTarget {
 /** Common VGC / Pokemon Champions meta defensive spread targets. */
 export const CALC_TARGETS: CalcTarget[] = [
   {
+    name: "Floette-Eternal",
+    species: "Floette-Eternal",
+    ability: "Flower Veil",
+    item: "Floettite",
+    nature: "Modest",
+    evs: { hp: 252, atk: 0, def: 0, spa: 252, spd: 4, spe: 0 },
+    moves: ["Moonblast", "Light of Ruin", "Dazzling Gleam", "Protect"],
+  },
+  {
     name: "Incineroar",
     species: "Incineroar",
     ability: "Intimidate",

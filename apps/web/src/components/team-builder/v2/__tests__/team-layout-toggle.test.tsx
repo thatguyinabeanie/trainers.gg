@@ -29,16 +29,15 @@ describe("TeamLayoutToggle", () => {
   });
 
   it("marks the persisted mode as pressed", () => {
-    window.localStorage.setItem("tg.team-layout", "2x3");
+    window.localStorage.setItem("tg.team-layout", "2x3-vertical");
     render(<TeamLayoutToggle />);
-    const btn = screen.getByLabelText("2 × 3 — mid-stacked per cell");
+    const btn = screen.getByLabelText("2 × 3 — stacked per cell");
     expect(btn).toHaveAttribute("aria-pressed", "true");
   });
 
   it.each([
     ["1 × 6 — full row layout", "1x6"],
-    ["2 × 3 — mid-stacked per cell", "2x3"],
-    ["3 × 2 — stacked per cell", "3x2-vertical"],
+    ["2 × 3 — stacked per cell", "2x3-vertical"],
   ])("changes the persisted mode to %s on click", (ariaLabel, expectedValue) => {
     render(<TeamLayoutToggle />);
     fireEvent.click(screen.getByLabelText(ariaLabel));

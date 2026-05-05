@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useRef, useState, useTransition } from "react";
+import { useId, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -35,6 +35,7 @@ import {
   updateTeamAction,
 } from "@/actions/teams";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +50,6 @@ import { ExportMenu } from "../export-menu";
 import { ImportDialog } from "../import-dialog";
 import { useTeamValidation } from "../validation-hooks";
 import { CalcBottomPanel } from "./calc/calc-bottom-panel";
-import { CalcDrawer } from "./calc/calc-drawer";
 import {
   CalcStateProvider,
   useCalcStateContext,
@@ -61,9 +61,35 @@ import { HeatmapPanel } from "./dock/heatmap-panel";
 import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
 import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
+import { warmSpeciesIndex } from "./pickers/species-picker";
 import { useBuilderState } from "./use-builder-state";
 import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
-import s from "./builder.module.css";
+
+// =============================================================================
+// KO-tier semantic tokens (migrated from .builderApp's CSS-module rule).
+//
+// These cascade to every descendant, so move tiles, calc detail cards, etc.
+// can read `var(--ko-red)` / `var(--ko-amber-bg)` without redefining the
+// tokens at every consumer. Previously lived inline in globals.css.
+//   • --ko-red    — OHKO indicator; reuses --destructive so the theme wins
+//   • --ko-amber* — 2HKO band, with bg/fg variants for tile background vs text
+//   • --ko-yellow*— 3HKO band, same bg/fg split
+//   • --ko-green* — super-effective hint
+//   • --ko-ne     — not-very-effective hint
+// =============================================================================
+const builderTokenStyle: React.CSSProperties = {
+  "--ko-red": "var(--destructive)",
+  "--ko-amber-bg": "oklch(0.7 0.15 80)",
+  "--ko-amber-fg": "oklch(0.65 0.15 80)",
+  "--ko-amber2-fg": "oklch(0.65 0.15 55)",
+  "--ko-yellow-bg": "oklch(0.78 0.15 90)",
+  "--ko-yellow-fg": "oklch(0.72 0.15 90)",
+  "--ko-green": "oklch(0.72 0.2 145)",
+  "--ko-green-fg": "oklch(0.6 0.2 145)",
+  "--ko-ne": "oklch(0.55 0.15 30)",
+  "--builder-shadow": "oklch(0 0 0 / 30%)",
+  "--builder-backdrop": "oklch(0 0 0 / 25%)",
+} as React.CSSProperties;
 
 // =============================================================================
 // Types
@@ -178,6 +204,8 @@ function buildOptimisticTeamPokemon(
 interface DockbarConnectedProps {
   drawer: "matchups" | "speed" | "calc" | null;
   onOpen: (key: "matchups" | "speed" | "calc") => void;
+  sideDrawer?: "speed" | "calc" | null;
+  bottomDrawer?: "matchups" | null;
   weakCount: number;
   coveredCount: number;
   fastest: number;
@@ -190,6 +218,8 @@ interface DockbarConnectedProps {
 function DockbarConnected({
   drawer,
   onOpen,
+  sideDrawer,
+  bottomDrawer,
   weakCount,
   coveredCount,
   fastest,
@@ -200,6 +230,8 @@ function DockbarConnected({
     <Dockbar
       drawer={drawer}
       onOpen={onOpen}
+      sideDrawer={sideDrawer}
+      bottomDrawer={bottomDrawer}
       weakCount={weakCount}
       coveredCount={coveredCount}
       fastest={fastest}
@@ -245,6 +277,15 @@ export function TeamWorkspaceV2({
    * level shared state across tabs, tests, or HMR reloads.
    */
   const nextOptimisticIdRef = useRef(-1);
+
+  // Eagerly warm the species search index in an idle callback so the first
+  // open of the species picker is instant rather than blocking on index build.
+  useEffect(() => {
+    const formatId = format?.id;
+    if (!formatId) return;
+    const id = requestIdleCallback(() => warmSpeciesIndex(formatId));
+    return () => cancelIdleCallback(id);
+  }, [format?.id]);
 
   // ---------------------------------------------------------------------------
   // Optimistic team-pokemon state
@@ -396,6 +437,7 @@ export function TeamWorkspaceV2({
   // KeyboardSensor for accessibility.
   // ---------------------------------------------------------------------------
 
+  const dndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -510,11 +552,14 @@ export function TeamWorkspaceV2({
         format={format}
         field={state.field}
         setField={state.setField}
-        calcEnabled={state.drawer === "calc"}
+        calcEnabled={state.sideDrawer === "calc"}
         faintedYours={state.faintedYours}
         faintedTheirs={state.faintedTheirs}
       >
-      <div className={s.builderApp}>
+      <div
+        className="flex h-full flex-col overflow-hidden"
+        style={builderTokenStyle}
+      >
         <Topbar
           team={team}
           filledCount={filledCount}
@@ -537,16 +582,98 @@ export function TeamWorkspaceV2({
           exportMenu={<ExportMenu team={team} />}
         />
 
-        <div className={s.builderWorkshell}>
-          <div className={s.builderWorklane} ref={worklaneRef}>
+        <div
+          className="flex flex-1 flex-col min-w-0 overflow-hidden"
+          ref={worklaneRef}
+        >
+          {/* Horizontal split: optional left sidebar + editor */}
+          <div className="flex flex-1 min-w-0 overflow-hidden">
+
+              {/* Desktop: side panels on the left */}
+              {!isMobile && state.sideDrawer && (
+                <>
+                  <div
+                    className="shrink-0 flex flex-col border-r border-border bg-muted/30 transition-[width] duration-200 ease-in-out"
+                    style={{ width: state.sideWidthPx }}
+                  >
+                  {state.sideDrawer === "speed" ? (
+                    <>
+                      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary">
+                          Speed Tiers
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => state.setSideDrawer(null)}
+                          aria-label="Close speed tiers"
+                          className="ml-auto text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded transition-colors"
+                        >
+                          ×
+                        </button>
+                      </header>
+                      <div className="min-h-0 flex-1 overflow-y-auto">
+                        <SpeedTiersPanel
+                          team={optimisticTeamPokemon}
+                          format={format}
+                        />
+                      </div>
+                    </>
+                  ) : state.sideDrawer === "calc" ? (
+                    <CalcBottomPanel
+                      teamSlots={slots}
+                      format={format}
+                      onClose={() => state.setSideDrawer(null)}
+                      attackerIdx={calcAttackerIdx}
+                      faintedYours={state.faintedYours}
+                      setFaintedYours={state.setFaintedYours}
+                      faintedTheirs={state.faintedTheirs}
+                      setFaintedTheirs={state.setFaintedTheirs}
+                    />
+                  ) : null}
+                  </div>
+                  <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="Resize side panel"
+                    className="w-[6px] shrink-0 cursor-col-resize bg-border transition-colors duration-100 touch-none hover:bg-primary focus-visible:bg-primary focus-visible:outline-none"
+                    onPointerDown={(e) => {
+                      const startX = e.clientX;
+                      const startWidth = state.sideWidthPx;
+                      const target = e.currentTarget;
+                      target.setPointerCapture(e.pointerId);
+
+                      const onMove = (ev: PointerEvent) => {
+                        const delta = startX - ev.clientX;
+                        state.setSideWidthPx(startWidth - delta);
+                      };
+                      const onUp = () => {
+                        target.removeEventListener("pointermove", onMove);
+                        target.removeEventListener("pointerup", onUp);
+                      };
+                      target.addEventListener("pointermove", onMove);
+                      target.addEventListener("pointerup", onUp);
+                    }}
+                  />
+                </>
+              )}
+
             {/* Editor region — rows scroll inside this region only */}
-            <div className={s.editorRegion}>
+            <div className="flex flex-1 flex-col min-w-0 overflow-y-auto">
+              {/* Section wraps pokemon rows */}
               <section
-                className={s.builderRows}
+                className="grid w-full my-auto p-3 gap-2 mx-auto max-w-[1800px] [[data-density=compact]_&]:p-2"
                 data-calc-open={
-                  state.drawer === "calc" && !isMobile ? "true" : "false"
+                  state.sideDrawer === "calc" && !isMobile ? "true" : "false"
                 }
                 data-layout={layoutMode}
+              >
+              {/* Pokemon rows wrapper */}
+              <div
+                className={cn(
+                  "grid grid-cols-[minmax(0,1fr)] gap-2 [[data-density=compact]_&]:gap-1",
+                  layoutMode === "2x3-vertical" &&
+                    "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] justify-center"
+                )}
               >
                 {isMobile ? (
                   // Mobile: no drag-and-drop, render rows directly.
@@ -579,6 +706,7 @@ export function TeamWorkspaceV2({
                 ) : (
                   // Desktop: wrap in DnD context for drag-and-drop reordering.
                   <DndContext
+                    id={dndId}
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
@@ -616,161 +744,69 @@ export function TeamWorkspaceV2({
                     </SortableContext>
                   </DndContext>
                 )}
+              </div>
+
               </section>
             </div>
 
-            {/* Resizer + analytics panel region — only when panel is open */}
-            {state.drawer !== null && (
-              <>
-                <div
-                  role="separator"
-                  aria-orientation="horizontal"
-                  aria-label="Resize analytics panel"
-                  aria-valuemin={20}
-                  aria-valuemax={80}
-                  aria-valuenow={Math.round(state.panelHeightPct)}
-                  tabIndex={0}
-                  className={s.resizer}
-                  onPointerDown={(e) => {
-                    const target = e.currentTarget;
-                    const worklane = worklaneRef.current;
-                    if (!worklane) return;
-                    target.setPointerCapture(e.pointerId);
-                    const onMove = (ev: PointerEvent) => {
-                      const rect = worklane.getBoundingClientRect();
-                      const offsetFromTop = ev.clientY - rect.top;
-                      const pct =
-                        ((rect.height - offsetFromTop) / rect.height) * 100;
-                      state.setPanelHeightPct(pct);
-                    };
-                    const onUp = () => {
-                      target.releasePointerCapture(e.pointerId);
-                      target.removeEventListener("pointermove", onMove);
-                      target.removeEventListener("pointerup", onUp);
-                      target.removeEventListener("pointercancel", onUp);
-                    };
-                    target.addEventListener("pointermove", onMove);
-                    target.addEventListener("pointerup", onUp);
-                    target.addEventListener("pointercancel", onUp);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "ArrowUp") {
-                      e.preventDefault();
-                      state.setPanelHeightPct(state.panelHeightPct + 5);
-                    } else if (e.key === "ArrowDown") {
-                      e.preventDefault();
-                      state.setPanelHeightPct(state.panelHeightPct - 5);
-                    } else if (e.key === "Home") {
-                      e.preventDefault();
-                      state.setPanelHeightPct(20);
-                    } else if (e.key === "End") {
-                      e.preventDefault();
-                      state.setPanelHeightPct(80);
-                    }
-                  }}
-                />
-                <div
-                  className={s.panelRegion}
-                  style={{ flexBasis: `${state.panelHeightPct}%` }}
-                >
-                  {/* Type matchups and Speed tiers keep their existing header chrome */}
-                  {(state.drawer === "matchups" ||
-                    state.drawer === "speed") && (
-                    <section className={s.inlinePanel}>
-                      <header className={s.inlinePanelHead}>
-                        <div className={s.inlinePanelHeadL}>
-                          <span className={s.inlinePanelEyebrow}>
-                            {state.drawer === "matchups"
-                              ? "DEFENSIVE"
-                              : "SPEED"}
-                          </span>
-                          <span className={s.inlinePanelTitle}>
-                            {state.drawer === "matchups"
-                              ? "Defensive type coverage"
-                              : "Speed tier ladder"}
-                          </span>
-                          <span className={s.inlinePanelSub}>
-                            {state.drawer === "matchups"
-                              ? "18 attacking types × your 6 slots"
-                              : "Your team vs the format · all values @ Lv 50"}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => state.setDrawer(null)}
-                          aria-label="Close panel"
-                          title="Close panel"
-                          className={s.inlinePanelClose}
-                        >
-                          ×
-                        </button>
-                      </header>
-                      <div className={s.inlinePanelBody}>
-                        {state.drawer === "matchups" && (
-                          <HeatmapPanel
-                            team={optimisticTeamPokemon}
-                            format={format}
-                          />
-                        )}
-                        {state.drawer === "speed" && (
-                          <SpeedTiersPanel
-                            team={optimisticTeamPokemon}
-                            activeIdx={state.activeIdx}
-                            format={format}
-                          />
-                        )}
-                      </div>
-                    </section>
-                  )}
-
-                  {/* Calc panel — desktop only; mobile falls back to CalcDrawer Sheet */}
-                  {state.drawer === "calc" && !isMobile && (
-                    <CalcBottomPanel
-                      teamSlots={slots}
-                      format={format}
-                      onClose={() => state.setDrawer(null)}
-                      attackerIdx={calcAttackerIdx}
-                      onPickAttacker={(idx) =>
-                        state.setAttackerSlot(
-                          idx === state.activeIdx ? null : idx
-                        )
-                      }
-                      faintedYours={state.faintedYours}
-                      setFaintedYours={state.setFaintedYours}
-                      faintedTheirs={state.faintedTheirs}
-                      setFaintedTheirs={state.setFaintedTheirs}
-                    />
-                  )}
+              {/* Mobile: calc/speed panels render inline below the editor rows */}
+              {isMobile && state.sideDrawer === "calc" && (
+                <div className="border-t p-3 w-full">
+                  <CalcBottomPanel
+                    teamSlots={slots}
+                    format={format}
+                    onClose={() => state.setSideDrawer(null)}
+                    attackerIdx={calcAttackerIdx}
+                    faintedYours={state.faintedYours}
+                    setFaintedYours={state.setFaintedYours}
+                    faintedTheirs={state.faintedTheirs}
+                    setFaintedTheirs={state.setFaintedTheirs}
+                  />
                 </div>
-              </>
+              )}
+              {isMobile && state.sideDrawer === "speed" && (
+                <div className="border-t p-3 w-full">
+                  <SpeedTiersPanel
+                    team={optimisticTeamPokemon}
+                    format={format}
+                  />
+                </div>
+              )}
+
+          </div>
+          {/* End horizontal split */}
+
+          {/* Bottom panel — type matchups (fixed height, no resize) */}
+          {state.bottomDrawer === "matchups" && (
+              <div
+                className="shrink-0 min-h-0 overflow-auto border-t border-border bg-background"
+                style={{ maxHeight: "45%" }}
+              >
+                <HeatmapPanel
+                  team={optimisticTeamPokemon}
+                  format={format}
+                  onClose={() => state.setBottomDrawer(null)}
+                />
+              </div>
             )}
 
-            <DockbarConnected
-              drawer={state.drawer}
-              onOpen={(key) =>
-                state.setDrawer(state.drawer === key ? null : key)
-              }
-              weakCount={defensiveSummary.weakCount}
-              coveredCount={defensiveSummary.coveredCount}
-              fastest={fastestSpeed}
-            />
           </div>
 
-          {/* Mobile: when the dock "Damage calc" pill is active, show calc as Sheet */}
-          {state.drawer === "calc" && isMobile && (
-            <CalcDrawer
-              open
-              selectedPokemon={slots[calcAttackerIdx] ?? null}
-              team={team}
-              format={format}
-              faintedYours={state.faintedYours}
-              setFaintedYours={state.setFaintedYours}
-              faintedTheirs={state.faintedTheirs}
-              setFaintedTheirs={state.setFaintedTheirs}
-              onClose={() => state.setDrawer(null)}
-            />
-          )}
-        </div>
+        <DockbarConnected
+          drawer={state.drawer}
+          onOpen={(key) => {
+            if (key === "matchups") {
+              state.setBottomDrawer(state.bottomDrawer === "matchups" ? null : "matchups");
+            } else {
+              state.setSideDrawer(state.sideDrawer === key ? null : key);
+            }
+          }}
+          sideDrawer={state.sideDrawer}
+          bottomDrawer={state.bottomDrawer}
+          weakCount={defensiveSummary.weakCount}
+          coveredCount={defensiveSummary.coveredCount}
+          fastest={fastestSpeed}
+        />
       </div>
 
       {/* Import dialog — opened by topbar Import button */}

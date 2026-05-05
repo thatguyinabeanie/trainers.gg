@@ -18,9 +18,6 @@ import { type Tables } from "@trainers/supabase";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
 
 jest.mock("../calc/calc-state-context", () => ({
   useCalcStateContext: () => ({ calcEnabled: false }),
@@ -232,7 +229,7 @@ describe("ActiveRow — remove button", () => {
       />
     );
     expect(
-      screen.getByRole("button", { name: /Remove Garchomp from slot 1/i })
+      screen.getAllByRole("button", { name: /Remove Garchomp from slot 1/i })[0]
     ).toBeInTheDocument();
   });
 
@@ -250,7 +247,7 @@ describe("ActiveRow — remove button", () => {
       />
     );
     await user.click(
-      screen.getByRole("button", { name: /Remove Garchomp from slot 1/i })
+      screen.getAllByRole("button", { name: /Remove Garchomp from slot 1/i })[0]!
     );
     expect(onRemove).toHaveBeenCalledTimes(1);
   });

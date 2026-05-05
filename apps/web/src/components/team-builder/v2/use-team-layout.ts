@@ -8,21 +8,19 @@ import { useIsMobile } from "@/hooks/use-mobile";
 // Types
 // =============================================================================
 
-export type TeamLayoutMode = "1x6" | "2x3" | "3x2-vertical";
+export type TeamLayoutMode = "1x6" | "2x3-vertical";
 
 const STORAGE_KEY = "tg.team-layout";
 const DEFAULT_MODE: TeamLayoutMode = "1x6";
 const VALID_MODES: readonly TeamLayoutMode[] = [
   "1x6",
-  "2x3",
-  "3x2-vertical",
+  "2x3-vertical",
 ];
 
 // Viewport thresholds for auto-degrading the persisted grid mode. The
 // numbers are total viewport widths (not slot widths) — the choice of
 // columns has to happen before the slots can know their own width. Each
 // threshold corresponds to ~700px per cell after sidebar + padding.
-const MIN_VIEWPORT_FOR_2_COLS = 1500;
 const MIN_VIEWPORT_FOR_3_COLS = 2200;
 
 // =============================================================================
@@ -50,21 +48,16 @@ function subscribe(callback: () => void) {
 function getSnapshot(): TeamLayoutMode {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    // Migrate old mode names written by pre-8a versions of the app.
-    if (raw === "3x2-stack") {
-      window.localStorage.setItem(STORAGE_KEY, "3x2-vertical");
-      return "3x2-vertical";
+    // Migrate old mode names to surviving modes.
+    // Old 3-column modes → "2x3-vertical" (our remaining multi-col mode)
+    if (raw === "3x2-stack" || raw === "3x2-mid" || raw === "3x2" || raw === "3x2-vertical") {
+      window.localStorage.setItem(STORAGE_KEY, "2x3-vertical");
+      return "2x3-vertical";
     }
-    // 3x2 mid-stack mode was removed — collapse persisted "3x2" / "3x2-mid"
-    // values to the closest surviving 3-column mode.
-    if (raw === "3x2-mid" || raw === "3x2") {
-      window.localStorage.setItem(STORAGE_KEY, "3x2-vertical");
-      return "3x2-vertical";
-    }
-    // 2x3-vertical mode was removed — collapse to 2x3.
-    if (raw === "2x3-vertical") {
-      window.localStorage.setItem(STORAGE_KEY, "2x3");
-      return "2x3";
+    // Old 2-column mode was removed — collapse to 1x6.
+    if (raw === "2x3") {
+      window.localStorage.setItem(STORAGE_KEY, "1x6");
+      return "1x6";
     }
     if (raw && (VALID_MODES as readonly string[]).includes(raw)) {
       return raw as TeamLayoutMode;
@@ -123,20 +116,10 @@ function degradeForViewport(
   persisted: TeamLayoutMode,
   viewportWidth: number
 ): TeamLayoutMode {
-  const wantedCols =
-    persisted === "1x6"
-      ? 1
-      : persisted === "2x3"
-        ? 2
-        : 3;
-
-  let cols = wantedCols;
-  if (cols === 3 && viewportWidth < MIN_VIEWPORT_FOR_3_COLS) cols = 2;
-  if (cols === 2 && viewportWidth < MIN_VIEWPORT_FOR_2_COLS) cols = 1;
-
-  if (cols === wantedCols) return persisted;
-  if (cols === 2) return "2x3";
-  return "1x6";
+  if (persisted === "2x3-vertical" && viewportWidth < MIN_VIEWPORT_FOR_3_COLS) {
+    return "1x6";
+  }
+  return persisted;
 }
 
 // =============================================================================

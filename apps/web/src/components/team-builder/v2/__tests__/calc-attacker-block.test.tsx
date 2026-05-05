@@ -29,9 +29,6 @@ import { type Tables } from "@trainers/supabase";
 // Mocks
 // =============================================================================
 
-jest.mock("../builder.module.css", () =>
-  new Proxy({}, { get: (_t, k) => k })
-);
 
 // AttackerChipStrip — render a simple test stub
 jest.mock("../calc/attacker-chip-strip", () => ({
