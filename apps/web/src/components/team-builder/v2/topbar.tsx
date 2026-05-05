@@ -22,7 +22,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { PageHeader } from "@/components/dashboard/page-header";
 import { NotificationsPopover } from "@/components/dashboard/notifications-popover";
 import { cn } from "@/lib/utils";
 
@@ -278,8 +277,7 @@ export function Topbar({
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
-  // Content shared between both header modes
-  const headerContent = (
+  return (
     <>
       {/* Left: Owner + Format (labeled, inline) — hide owner in local mode */}
       <div className="hidden items-center gap-4 sm:flex">
@@ -433,16 +431,4 @@ export function Topbar({
       </div>
     </>
   );
-
-  // In local mode, render a standalone header (no SidebarProvider available).
-  // In API mode, use PageHeader which integrates with the dashboard sidebar.
-  if (isLocalMode) {
-    return (
-      <header className="relative flex h-12 shrink-0 items-center gap-2 border-b px-4">
-        {headerContent}
-      </header>
-    );
-  }
-
-  return <PageHeader hideNotifications>{headerContent}</PageHeader>;
 }

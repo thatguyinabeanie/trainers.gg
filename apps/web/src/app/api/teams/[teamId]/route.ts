@@ -20,7 +20,7 @@ import {
 import { getErrorMessage } from "@trainers/utils";
 
 import { createClient } from "@/lib/supabase/server";
-import { invalidateTeamDetailCache } from "@/lib/cache-invalidation";
+import { revalidateTeamDetailCache } from "@/lib/cache-invalidation";
 import { checkFormatChangeLegality } from "@/actions/format-legality-guard";
 
 export async function PATCH(
@@ -76,7 +76,7 @@ export async function PATCH(
     }
 
     await updateTeamMutation(supabase, teamId, parsedData.data);
-    invalidateTeamDetailCache(teamId);
+    revalidateTeamDetailCache(teamId);
 
     const result: ActionResult = { success: true, data: undefined };
     return NextResponse.json(result);
@@ -115,7 +115,7 @@ export async function DELETE(
     }
 
     await deleteTeamMutation(supabase, teamId);
-    invalidateTeamDetailCache(teamId);
+    revalidateTeamDetailCache(teamId);
 
     const result: ActionResult = { success: true, data: undefined };
     return NextResponse.json(result);

@@ -21,7 +21,7 @@ import {
 import { getErrorMessage } from "@trainers/utils";
 
 import { createClient } from "@/lib/supabase/server";
-import { invalidateTeamDetailCache } from "@/lib/cache-invalidation";
+import { revalidateTeamDetailCache } from "@/lib/cache-invalidation";
 
 // Schema for the save-local request body
 const saveLocalBodySchema = z.object({
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    invalidateTeamDetailCache(teamResult.id);
+    revalidateTeamDetailCache(teamResult.id);
 
     const redirectUrl = `/dashboard/alts/${ownedAlt.username}/teams/${teamResult.id}`;
     const result: ActionResult<{ teamId: number; redirectUrl: string }> = {

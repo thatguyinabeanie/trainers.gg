@@ -16,10 +16,13 @@ import { toast } from "sonner";
 import { type GameFormat } from "@trainers/pokemon";
 import { type TeamWithPokemon, type Tables } from "@trainers/supabase";
 
+import { PageHeader } from "@/components/dashboard/page-header";
+
 import { createApiPersistence } from "./persistence/api-persistence";
 import { PersistenceProvider } from "./persistence/context";
 import { useLocalBackup } from "./persistence/use-local-backup";
 import { TeamWorkspaceV2 } from "./team-workspace-v2";
+import { Topbar } from "./topbar";
 
 // =============================================================================
 // Props
@@ -96,9 +99,20 @@ export function DashboardBuilderWrapper({
       <TeamWorkspaceV2
         team={team}
         format={format}
-        username={username}
         alts={alts}
         persistence={persistence}
+        renderHeader={(actions) => (
+          <PageHeader hideNotifications>
+            <Topbar
+              team={team}
+              format={format}
+              username={username}
+              alts={alts}
+              mode="api"
+              {...actions}
+            />
+          </PageHeader>
+        )}
       />
     </PersistenceProvider>
   );

@@ -16,7 +16,7 @@ import {
 import { getErrorMessage } from "@trainers/utils";
 
 import { createClient } from "@/lib/supabase/server";
-import { invalidateTeamDetailCache } from "@/lib/cache-invalidation";
+import { revalidateTeamDetailCache } from "@/lib/cache-invalidation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       parsed.data.name,
       parsed.data.format
     );
-    invalidateTeamDetailCache(teamResult.id);
+    revalidateTeamDetailCache(teamResult.id);
 
     const result: ActionResult<{ id: number }> = {
       success: true,

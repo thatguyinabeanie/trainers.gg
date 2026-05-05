@@ -20,7 +20,7 @@ import {
 import { getErrorMessage } from "@trainers/utils";
 
 import { createClient } from "@/lib/supabase/server";
-import { invalidateTeamDetailCache } from "@/lib/cache-invalidation";
+import { revalidateTeamDetailCache } from "@/lib/cache-invalidation";
 import { findLegalityViolation } from "@/actions/_legality";
 
 export async function POST(
@@ -86,7 +86,7 @@ export async function POST(
       parsedPokemon.data as TablesInsert<"pokemon">,
       parsed.data.position
     );
-    invalidateTeamDetailCache(teamId);
+    revalidateTeamDetailCache(teamId);
 
     const result: ActionResult<{ pokemonId: number }> = {
       success: true,

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type ReactNode,
   useId,
   useEffect,
   useOptimistic,
@@ -49,17 +50,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ExportMenu } from "../export-menu";
 import { ImportDialog } from "../import-dialog";
-import { useTeamValidation } from "../validation-hooks";
+import { useTeamValidation, type ValidationError } from "../validation-hooks";
 import { CalcBottomPanel } from "./calc/calc-bottom-panel";
 import {
   CalcStateProvider,
   useCalcStateContext,
 } from "./calc/calc-state-context";
 import { Dockbar } from "./dock/dockbar";
-import { getTeamFastestSpeed } from "./dock/speed-tiers-panel";
+import { getTeamFastestSpeed, SpeedTiersPanel } from "./dock/speed-tiers-panel";
 import { HeatmapPanel } from "./dock/heatmap-panel";
-import { SpeedTiersPanel } from "./dock/speed-tiers-panel";
-import { Topbar } from "./topbar";
 import { PokeRow } from "./poke-row";
 import { warmSpeciesIndex } from "./pickers/species-picker";
 import { useBuilderState } from "./use-builder-state";
@@ -98,14 +97,37 @@ const builderTokenStyle: React.CSSProperties = {
 interface TeamWorkspaceV2Props {
   team: TeamWithPokemon;
   format: GameFormat | undefined;
-  username: string;
   alts: Tables<"alts">[];
   /** Persistence adapter — controls how mutations are applied (API vs local). */
   persistence: BuilderPersistence;
-  /** Called when authenticated user wants to save local team to their account. */
-  onSaveToAccount?: () => void;
-  /** Whether the save-to-account operation is in progress. */
-  isSaving?: boolean;
+  /**
+   * Render prop for the page header/topbar. Receives workspace-internal actions
+   * (import toggle, validation, jump-to-pokemon) so the parent can compose its
+   * own header chrome (standalone vs dashboard PageHeader).
+   */
+  renderHeader: (actions: WorkspaceHeaderActions) => ReactNode;
+}
+
+/**
+ * Actions exposed to the header render prop from workspace internals.
+ */
+export interface WorkspaceHeaderActions {
+  /** Open the import dialog. */
+  onOpenImport: () => void;
+  /** Current validation errors for the team. */
+  validationErrors: ValidationError[];
+  /** Trigger a full validation pass. */
+  onValidate: () => void;
+  /** Jump to a pokemon slot by its ID (scrolls/activates it). */
+  onJumpToPokemon: (pokemonId: number) => void;
+  /** Rename the team. */
+  onNameChange: (name: string) => Promise<void>;
+  /** Change the team's format. */
+  onFormatChange: (formatId: string) => Promise<void>;
+  /** Transfer the team to another alt (undefined if not supported). */
+  onAltChange?: (altId: number) => Promise<void>;
+  /** Pre-built export menu ReactNode. */
+  exportMenu: ReactNode;
 }
 
 // =============================================================================
@@ -255,11 +277,9 @@ function DockbarConnected({
 export function TeamWorkspaceV2({
   team,
   format,
-  username,
   alts,
   persistence,
-  onSaveToAccount,
-  isSaving,
+  renderHeader,
 }: TeamWorkspaceV2Props) {
   const router = useRouter();
   const state = useBuilderState();
@@ -567,27 +587,20 @@ export function TeamWorkspaceV2({
           className="flex h-full flex-col overflow-hidden"
           style={builderTokenStyle}
         >
-          <Topbar
-            team={team}
-            format={format}
-            username={username}
-            alts={alts}
-            mode={persistence.mode}
-            onSaveToAccount={onSaveToAccount}
-            isSaving={isSaving}
-            onOpenImport={() => setImportOpen(true)}
-            validationErrors={validationErrors}
-            onJumpToPokemon={handleJumpToPokemon}
-            onValidate={validate}
-            onNameChange={async (name) => {
+          {renderHeader({
+            onOpenImport: () => setImportOpen(true),
+            validationErrors,
+            onValidate: validate,
+            onJumpToPokemon: handleJumpToPokemon,
+            onNameChange: async (name) => {
               const result = await persistence.updateTeam(team.id, { name });
               if (!result.success) {
                 toast.error(result.error ?? "Failed to rename team.");
                 return;
               }
               persistence.onMutationSuccess();
-            }}
-            onFormatChange={async (formatId) => {
+            },
+            onFormatChange: async (formatId) => {
               const result = await persistence.updateTeam(team.id, {
                 format: formatId,
               });
@@ -596,26 +609,24 @@ export function TeamWorkspaceV2({
                 return;
               }
               persistence.onMutationSuccess();
-            }}
-            onAltChange={
-              persistence.transferTeam
-                ? async (altId) => {
-                    const targetAlt = alts.find((a) => a.id === altId);
-                    if (!targetAlt) return;
-                    const result = await persistence.transferTeam!(team.id, altId);
-                    if (!result.success) {
-                      toast.error(result.error ?? "Failed to transfer team.");
-                      return;
-                    }
-                    toast.success(`Team transferred to ${targetAlt.username}.`);
-                    router.push(
-                      `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
-                    );
+            },
+            onAltChange: persistence.transferTeam
+              ? async (altId) => {
+                  const targetAlt = alts.find((a) => a.id === altId);
+                  if (!targetAlt) return;
+                  const result = await persistence.transferTeam!(team.id, altId);
+                  if (!result.success) {
+                    toast.error(result.error ?? "Failed to transfer team.");
+                    return;
                   }
-                : undefined
-            }
-            exportMenu={<ExportMenu team={team} />}
-          />
+                  toast.success(`Team transferred to ${targetAlt.username}.`);
+                  router.push(
+                    `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
+                  );
+                }
+              : undefined,
+            exportMenu: <ExportMenu team={team} />,
+          })}
 
           <div
             className="flex min-w-0 flex-1 flex-col overflow-hidden"

@@ -21,7 +21,7 @@ import {
 import { getErrorMessage } from "@trainers/utils";
 
 import { createClient } from "@/lib/supabase/server";
-import { invalidateTeamDetailCache } from "@/lib/cache-invalidation";
+import { revalidateTeamDetailCache } from "@/lib/cache-invalidation";
 import { findLegalityViolation } from "@/actions/_legality";
 
 export async function PATCH(
@@ -88,7 +88,7 @@ export async function PATCH(
       pokemonId,
       parsedData.data as Partial<TablesUpdate<"pokemon">>
     );
-    invalidateTeamDetailCache(teamId);
+    revalidateTeamDetailCache(teamId);
 
     const result: ActionResult = { success: true, data: undefined };
     return NextResponse.json(result);
@@ -128,7 +128,7 @@ export async function DELETE(
     }
 
     await removePokemonFromTeamMutation(supabase, teamId, pokemonId);
-    invalidateTeamDetailCache(teamId);
+    revalidateTeamDetailCache(teamId);
 
     const result: ActionResult = { success: true, data: undefined };
     return NextResponse.json(result);

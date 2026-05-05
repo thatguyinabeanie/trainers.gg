@@ -50,20 +50,6 @@ jest.mock("../dock/speed-tiers-panel", () => ({
   getTeamFastestSpeed: () => 120,
 }));
 
-jest.mock("../topbar", () => ({
-  Topbar: ({ onOpenImport, onJumpToPokemon }: {
-    onOpenImport: () => void;
-    onJumpToPokemon: (id: number) => void;
-  }) => (
-    <div data-testid="topbar">
-      <button onClick={onOpenImport} data-testid="open-import">Import</button>
-      <button onClick={() => onJumpToPokemon(10)} data-testid="jump-to-pokemon">
-        Jump to 10
-      </button>
-    </div>
-  ),
-}));
-
 jest.mock("../poke-row", () => ({
   PokeRow: ({
     idx,
@@ -189,20 +175,14 @@ jest.mock("sonner", () => ({
   },
 }));
 
-// Action mocks
-const mockUpdatePokemonAction = jest.fn();
-const mockAddPokemonToTeamAction = jest.fn();
-const mockRemovePokemonFromTeamAction = jest.fn();
-const mockReorderTeamPokemonAction = jest.fn();
-
+// Action mocks — no longer used; workspace now calls persistence.*
+// (kept as dead mock to avoid unmocking @/actions/teams which may be
+//  transitively imported)
 jest.mock("@/actions/teams", () => ({
-  updatePokemonAction: (...args: unknown[]) => mockUpdatePokemonAction(...args),
-  addPokemonToTeamAction: (...args: unknown[]) =>
-    mockAddPokemonToTeamAction(...args),
-  removePokemonFromTeamAction: (...args: unknown[]) =>
-    mockRemovePokemonFromTeamAction(...args),
-  reorderTeamPokemonAction: (...args: unknown[]) =>
-    mockReorderTeamPokemonAction(...args),
+  updatePokemonAction: jest.fn(),
+  addPokemonToTeamAction: jest.fn(),
+  removePokemonFromTeamAction: jest.fn(),
+  reorderTeamPokemonAction: jest.fn(),
 }));
 
 // =============================================================================
@@ -210,10 +190,22 @@ jest.mock("@/actions/teams", () => ({
 // =============================================================================
 
 import { TeamWorkspaceV2 } from "../team-workspace-v2";
+import { type WorkspaceHeaderActions } from "../team-workspace-v2";
+import { type BuilderPersistence } from "../persistence/types";
 
 // =============================================================================
 // Fixtures
 // =============================================================================
+
+const MOCK_PERSISTENCE: BuilderPersistence = {
+  mode: "api",
+  addPokemon: jest.fn().mockResolvedValue({ success: true, data: { pokemonId: 99 } }),
+  updatePokemon: jest.fn().mockResolvedValue({ success: true, data: undefined }),
+  removePokemon: jest.fn().mockResolvedValue({ success: true, data: undefined }),
+  reorderPokemon: jest.fn().mockResolvedValue({ success: true, data: undefined }),
+  updateTeam: jest.fn().mockResolvedValue({ success: true, data: undefined }),
+  onMutationSuccess: jest.fn(),
+};
 
 function makePokemon(
   id: number,
@@ -289,7 +281,20 @@ function renderWorkspace(
 ) {
   const alts = [{ id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null }] as unknown as Tables<"alts">[];
   return render(
-    <TeamWorkspaceV2 team={team} format={format} username="ash_ketchum" alts={alts} />
+    <TeamWorkspaceV2
+      team={team}
+      format={format}
+      alts={alts}
+      persistence={MOCK_PERSISTENCE}
+      renderHeader={(actions: WorkspaceHeaderActions) => (
+        <div data-testid="topbar">
+          <button onClick={actions.onOpenImport} data-testid="open-import">Import</button>
+          <button onClick={() => actions.onJumpToPokemon(10)} data-testid="jump-to-pokemon">
+            Jump to 10
+          </button>
+        </div>
+      )}
+    />
   );
 }
 
@@ -319,11 +324,12 @@ beforeEach(() => {
   mockBuilderState.activeIdx = 0;
   mockBuilderState.attackerSlot = null;
   mockUseIsMobile.mockReturnValue(false);
-  // Default: all actions succeed
-  mockUpdatePokemonAction.mockResolvedValue({ success: true });
-  mockAddPokemonToTeamAction.mockResolvedValue({ success: true });
-  mockRemovePokemonFromTeamAction.mockResolvedValue({ success: true });
-  mockReorderTeamPokemonAction.mockResolvedValue({ success: true });
+  // Default: all persistence methods succeed
+  (MOCK_PERSISTENCE.addPokemon as jest.Mock).mockResolvedValue({ success: true, data: { pokemonId: 99 } });
+  (MOCK_PERSISTENCE.updatePokemon as jest.Mock).mockResolvedValue({ success: true, data: undefined });
+  (MOCK_PERSISTENCE.removePokemon as jest.Mock).mockResolvedValue({ success: true, data: undefined });
+  (MOCK_PERSISTENCE.reorderPokemon as jest.Mock).mockResolvedValue({ success: true, data: undefined });
+  (MOCK_PERSISTENCE.updateTeam as jest.Mock).mockResolvedValue({ success: true, data: undefined });
 });
 
 // =============================================================================
@@ -393,14 +399,14 @@ describe("TeamWorkspaceV2 — buildSlots position mapping", () => {
 // =============================================================================
 
 describe("TeamWorkspaceV2 — add pokemon flow", () => {
-  it("calls addPokemonToTeamAction with correct position (1-indexed) on success", async () => {
+  it("calls persistence.addPokemon with correct position (1-indexed) on success", async () => {
     const user = userEvent.setup();
     renderWorkspace(EMPTY_TEAM);
 
     await user.click(screen.getByTestId("add-2")); // slot index 2 → position 3
 
     await waitFor(() => {
-      expect(mockAddPokemonToTeamAction).toHaveBeenCalledWith(
+      expect(MOCK_PERSISTENCE.addPokemon).toHaveBeenCalledWith(
         1, // team id
         expect.objectContaining({
           species: "Pikachu",
@@ -413,7 +419,7 @@ describe("TeamWorkspaceV2 — add pokemon flow", () => {
     });
   });
 
-  it("shows a success toast and refreshes on add success", async () => {
+  it("shows a success toast and calls onMutationSuccess on add success", async () => {
     const user = userEvent.setup();
     renderWorkspace(EMPTY_TEAM);
 
@@ -423,16 +429,16 @@ describe("TeamWorkspaceV2 — add pokemon flow", () => {
       expect(mockToastSuccess).toHaveBeenCalledWith(
         expect.stringContaining("added to slot 1")
       );
-      expect(mockRouterRefresh).toHaveBeenCalled();
+      expect(MOCK_PERSISTENCE.onMutationSuccess).toHaveBeenCalled();
     });
   });
 
-  it("renders the new pokemon in the slot optimistically before the server action resolves", async () => {
+  it("renders the new pokemon in the slot optimistically before persistence resolves", async () => {
     const { promise, resolve } = deferred<{
       success: true;
       data: { pokemonId: number };
     }>();
-    mockAddPokemonToTeamAction.mockImplementationOnce(() => promise);
+    (MOCK_PERSISTENCE.addPokemon as jest.Mock).mockImplementationOnce(() => promise);
 
     const user = userEvent.setup();
     renderWorkspace(EMPTY_TEAM);
@@ -444,16 +450,16 @@ describe("TeamWorkspaceV2 — add pokemon flow", () => {
     await waitFor(() => {
       expect(screen.getByTestId("species-0")).toHaveTextContent("Pikachu");
     });
-    expect(mockRouterRefresh).not.toHaveBeenCalled();
+    expect(MOCK_PERSISTENCE.onMutationSuccess).not.toHaveBeenCalled();
 
     resolve({ success: true, data: { pokemonId: 99 } });
     await waitFor(() => {
-      expect(mockRouterRefresh).toHaveBeenCalled();
+      expect(MOCK_PERSISTENCE.onMutationSuccess).toHaveBeenCalled();
     });
   });
 
-  it("shows an error toast and refreshes (rolling back the optimistic add) on add failure", async () => {
-    mockAddPokemonToTeamAction.mockResolvedValueOnce({
+  it("shows an error toast on add failure", async () => {
+    (MOCK_PERSISTENCE.addPokemon as jest.Mock).mockResolvedValueOnce({
       success: false,
       error: "Slot is full.",
     });
@@ -465,12 +471,12 @@ describe("TeamWorkspaceV2 — add pokemon flow", () => {
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Slot is full.");
-      expect(mockRouterRefresh).toHaveBeenCalled();
+      expect(MOCK_PERSISTENCE.onMutationSuccess).toHaveBeenCalled();
     });
   });
 
   it("falls back to generic add error message when error field is missing", async () => {
-    mockAddPokemonToTeamAction.mockResolvedValueOnce({ success: false });
+    (MOCK_PERSISTENCE.addPokemon as jest.Mock).mockResolvedValueOnce({ success: false });
 
     const user = userEvent.setup();
     renderWorkspace(EMPTY_TEAM);
@@ -499,7 +505,7 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
     expect(screen.getByText(/remove pokémon\?/i)).toBeInTheDocument();
   });
 
-  it("calls removePokemonFromTeamAction after the user confirms removal", async () => {
+  it("calls persistence.removePokemon after the user confirms removal", async () => {
     const user = userEvent.setup();
     renderWorkspace();
 
@@ -507,11 +513,11 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
     await user.click(screen.getByRole("button", { name: /^remove$/i })); // confirm
 
     await waitFor(() => {
-      expect(mockRemovePokemonFromTeamAction).toHaveBeenCalledWith(1, 10);
+      expect(MOCK_PERSISTENCE.removePokemon).toHaveBeenCalledWith(1, 10);
     });
   });
 
-  it("shows success toast and refreshes after successful removal", async () => {
+  it("shows success toast and calls onMutationSuccess after successful removal", async () => {
     const user = userEvent.setup();
     renderWorkspace();
 
@@ -520,16 +526,16 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
 
     await waitFor(() => {
       expect(mockToastSuccess).toHaveBeenCalledWith("Pokémon removed.");
-      expect(mockRouterRefresh).toHaveBeenCalled();
+      expect(MOCK_PERSISTENCE.onMutationSuccess).toHaveBeenCalled();
     });
   });
 
-  it("empties the slot optimistically before the server action resolves", async () => {
+  it("empties the slot optimistically before persistence resolves", async () => {
     const { promise, resolve } = deferred<{
       success: true;
       data: undefined;
     }>();
-    mockRemovePokemonFromTeamAction.mockImplementationOnce(() => promise);
+    (MOCK_PERSISTENCE.removePokemon as jest.Mock).mockImplementationOnce(() => promise);
 
     const user = userEvent.setup();
     renderWorkspace();
@@ -542,16 +548,16 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
     await waitFor(() => {
       expect(screen.getByTestId("species-0")).toHaveTextContent("empty");
     });
-    expect(mockRouterRefresh).not.toHaveBeenCalled();
+    expect(MOCK_PERSISTENCE.onMutationSuccess).not.toHaveBeenCalled();
 
     resolve({ success: true, data: undefined });
     await waitFor(() => {
-      expect(mockRouterRefresh).toHaveBeenCalled();
+      expect(MOCK_PERSISTENCE.onMutationSuccess).toHaveBeenCalled();
     });
   });
 
-  it("shows error toast and refreshes (rolling back the optimistic remove) on removal failure", async () => {
-    mockRemovePokemonFromTeamAction.mockResolvedValueOnce({
+  it("shows error toast on removal failure", async () => {
+    (MOCK_PERSISTENCE.removePokemon as jest.Mock).mockResolvedValueOnce({
       success: false,
       error: "Permission denied.",
     });
@@ -564,12 +570,12 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Permission denied.");
-      expect(mockRouterRefresh).toHaveBeenCalled();
+      expect(MOCK_PERSISTENCE.onMutationSuccess).toHaveBeenCalled();
     });
   });
 
   it("falls back to generic remove error message when error field is missing", async () => {
-    mockRemovePokemonFromTeamAction.mockResolvedValueOnce({ success: false });
+    (MOCK_PERSISTENCE.removePokemon as jest.Mock).mockResolvedValueOnce({ success: false });
 
     const user = userEvent.setup();
     renderWorkspace();
@@ -593,7 +599,7 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
 
     await waitFor(() => {
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-      expect(mockRemovePokemonFromTeamAction).not.toHaveBeenCalled();
+      expect(MOCK_PERSISTENCE.removePokemon).not.toHaveBeenCalled();
     });
   });
 
@@ -606,7 +612,7 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
 
     await waitFor(() => {
       // No pokemon in slot → action should not be called
-      expect(mockRemovePokemonFromTeamAction).not.toHaveBeenCalled();
+      expect(MOCK_PERSISTENCE.removePokemon).not.toHaveBeenCalled();
     });
   });
 });
@@ -637,7 +643,7 @@ describe("TeamWorkspaceV2 — optimistic placeholder guards", () => {
         expect.stringContaining("Still saving")
       );
     });
-    expect(mockUpdatePokemonAction).not.toHaveBeenCalled();
+    expect(MOCK_PERSISTENCE.updatePokemon).not.toHaveBeenCalled();
   });
 
   it("remove on a pending placeholder is skipped and shows an info toast", async () => {
@@ -652,7 +658,7 @@ describe("TeamWorkspaceV2 — optimistic placeholder guards", () => {
         expect.stringContaining("Still saving")
       );
     });
-    expect(mockRemovePokemonFromTeamAction).not.toHaveBeenCalled();
+    expect(MOCK_PERSISTENCE.removePokemon).not.toHaveBeenCalled();
   });
 });
 
@@ -661,22 +667,22 @@ describe("TeamWorkspaceV2 — optimistic placeholder guards", () => {
 // =============================================================================
 
 describe("TeamWorkspaceV2 — optimistic update flow", () => {
-  it("calls updatePokemonAction with the team id, pokemon id, and patch fields", async () => {
+  it("calls persistence.updatePokemon with the team id, pokemon id, and patch fields", async () => {
     const user = userEvent.setup();
     renderWorkspace();
 
     await user.click(screen.getByTestId("update-0")); // updates pokemon id 10
 
     await waitFor(() => {
-      expect(mockUpdatePokemonAction).toHaveBeenCalledWith(1, 10, {
+      expect(MOCK_PERSISTENCE.updatePokemon).toHaveBeenCalledWith(1, 10, {
         nickname: "Sparky",
       });
     });
   });
 
-  it("renders the patched field optimistically before the server action resolves", async () => {
+  it("renders the patched field optimistically before persistence resolves", async () => {
     const { promise, resolve } = deferred<{ success: true; data: undefined }>();
-    mockUpdatePokemonAction.mockImplementationOnce(() => promise);
+    (MOCK_PERSISTENCE.updatePokemon as jest.Mock).mockImplementationOnce(() => promise);
 
     const user = userEvent.setup();
     renderWorkspace();
@@ -688,16 +694,16 @@ describe("TeamWorkspaceV2 — optimistic update flow", () => {
     await waitFor(() => {
       expect(screen.getByTestId("nickname-0")).toHaveTextContent("Sparky");
     });
-    expect(mockRouterRefresh).not.toHaveBeenCalled();
+    expect(MOCK_PERSISTENCE.onMutationSuccess).not.toHaveBeenCalled();
 
     resolve({ success: true, data: undefined });
     await waitFor(() => {
-      expect(mockRouterRefresh).toHaveBeenCalled();
+      expect(MOCK_PERSISTENCE.onMutationSuccess).toHaveBeenCalled();
     });
   });
 
-  it("toasts and refreshes (rolling back the optimistic patch) on update failure", async () => {
-    mockUpdatePokemonAction.mockResolvedValueOnce({
+  it("toasts on update failure", async () => {
+    (MOCK_PERSISTENCE.updatePokemon as jest.Mock).mockResolvedValueOnce({
       success: false,
       error: "Validation failed.",
     });
@@ -709,12 +715,12 @@ describe("TeamWorkspaceV2 — optimistic update flow", () => {
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Validation failed.");
-      expect(mockRouterRefresh).toHaveBeenCalled();
+      expect(MOCK_PERSISTENCE.onMutationSuccess).toHaveBeenCalled();
     });
   });
 
   it("falls back to a generic message when the failure shape omits an error string", async () => {
-    mockUpdatePokemonAction.mockResolvedValueOnce({ success: false });
+    (MOCK_PERSISTENCE.updatePokemon as jest.Mock).mockResolvedValueOnce({ success: false });
 
     const user = userEvent.setup();
     renderWorkspace();

@@ -14,7 +14,7 @@ import {
 import { getErrorMessage } from "@trainers/utils";
 
 import { createClient } from "@/lib/supabase/server";
-import { invalidateTeamDetailCache } from "@/lib/cache-invalidation";
+import { revalidateTeamDetailCache } from "@/lib/cache-invalidation";
 
 export async function POST(
   request: NextRequest,
@@ -85,7 +85,7 @@ export async function POST(
       return NextResponse.json(result, { status: 404 });
     }
 
-    invalidateTeamDetailCache(parsed.data.teamId);
+    revalidateTeamDetailCache(parsed.data.teamId);
 
     const result: ActionResult = { success: true, data: undefined };
     return NextResponse.json(result);

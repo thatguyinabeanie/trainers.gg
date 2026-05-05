@@ -56,10 +56,6 @@ jest.mock("../dock/speed-tiers-panel", () => ({
   getTeamFastestSpeed: () => 0,
 }));
 
-jest.mock("../topbar", () => ({
-  Topbar: () => <div data-testid="topbar" />,
-}));
-
 jest.mock("../poke-row", () => ({
   PokeRow: ({ idx, pokemon, sortableId }: {
     idx: number;
@@ -150,10 +146,21 @@ jest.mock("@/actions/teams", () => ({
 // =============================================================================
 
 import { TeamWorkspaceV2 } from "../team-workspace-v2";
+import { type BuilderPersistence } from "../persistence/types";
 
 // =============================================================================
 // Fixtures
 // =============================================================================
+
+const MOCK_PERSISTENCE: BuilderPersistence = {
+  mode: "api",
+  addPokemon: jest.fn().mockResolvedValue({ success: true, data: { pokemonId: 99 } }),
+  updatePokemon: jest.fn().mockResolvedValue({ success: true, data: undefined }),
+  removePokemon: jest.fn().mockResolvedValue({ success: true, data: undefined }),
+  reorderPokemon: (...args: unknown[]) => mockReorderTeamPokemonAction(...args),
+  updateTeam: jest.fn().mockResolvedValue({ success: true, data: undefined }),
+  onMutationSuccess: jest.fn(),
+};
 
 const MOCK_ALTS = [{ id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null }] as unknown as Tables<"alts">[];
 
@@ -237,8 +244,9 @@ describe("TeamWorkspaceV2 — slot rendering", () => {
       <TeamWorkspaceV2
         team={TWO_POKEMON_TEAM}
         format={undefined}
-        username="ash_ketchum"
         alts={MOCK_ALTS}
+        persistence={MOCK_PERSISTENCE}
+        renderHeader={() => null}
       />
     );
 
@@ -252,8 +260,9 @@ describe("TeamWorkspaceV2 — slot rendering", () => {
       <TeamWorkspaceV2
         team={TWO_POKEMON_TEAM}
         format={undefined}
-        username="ash_ketchum"
         alts={MOCK_ALTS}
+        persistence={MOCK_PERSISTENCE}
+        renderHeader={() => null}
       />
     );
 
@@ -275,8 +284,9 @@ describe("TeamWorkspaceV2 — buildSlots position mapping", () => {
       <TeamWorkspaceV2
         team={team}
         format={undefined}
-        username="ash_ketchum"
         alts={MOCK_ALTS}
+        persistence={MOCK_PERSISTENCE}
+        renderHeader={() => null}
       />
     );
 
@@ -301,8 +311,9 @@ describe("TeamWorkspaceV2 — reorder success path", () => {
       <TeamWorkspaceV2
         team={TWO_POKEMON_TEAM}
         format={undefined}
-        username="ash_ketchum"
         alts={MOCK_ALTS}
+        persistence={MOCK_PERSISTENCE}
+        renderHeader={() => null}
       />
     );
 
@@ -318,8 +329,9 @@ describe("TeamWorkspaceV2 — empty team", () => {
       <TeamWorkspaceV2
         team={emptyTeam}
         format={undefined}
-        username="ash_ketchum"
         alts={MOCK_ALTS}
+        persistence={MOCK_PERSISTENCE}
+        renderHeader={() => null}
       />
     );
 
@@ -337,8 +349,9 @@ describe("TeamWorkspaceV2 — no duplicate slot IDs", () => {
       <TeamWorkspaceV2
         team={TWO_POKEMON_TEAM}
         format={undefined}
-        username="ash_ketchum"
         alts={MOCK_ALTS}
+        persistence={MOCK_PERSISTENCE}
+        renderHeader={() => null}
       />
     );
 
@@ -354,8 +367,9 @@ describe("TeamWorkspaceV2 — no duplicate slot IDs", () => {
       <TeamWorkspaceV2
         team={TWO_POKEMON_TEAM}
         format={undefined}
-        username="ash_ketchum"
         alts={MOCK_ALTS}
+        persistence={MOCK_PERSISTENCE}
+        renderHeader={() => null}
       />
     );
 
@@ -372,8 +386,9 @@ describe("TeamWorkspaceV2 — no duplicate slot IDs", () => {
       <TeamWorkspaceV2
         team={TWO_POKEMON_TEAM}
         format={undefined}
-        username="ash_ketchum"
         alts={MOCK_ALTS}
+        persistence={MOCK_PERSISTENCE}
+        renderHeader={() => null}
       />
     );
 

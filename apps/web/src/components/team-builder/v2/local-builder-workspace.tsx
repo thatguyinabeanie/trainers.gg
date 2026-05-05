@@ -32,6 +32,7 @@ import {
   clearLocalTeamStorage,
 } from "./persistence/use-local-team-storage";
 import { TeamWorkspaceV2 } from "./team-workspace-v2";
+import { Topbar } from "./topbar";
 
 // =============================================================================
 // Component
@@ -142,13 +143,26 @@ export function LocalBuilderWorkspace() {
       <TeamWorkspaceV2
         team={team}
         format={format}
-        username="local"
         alts={[]}
         persistence={persistence}
-        onSaveToAccount={
-          isAuthenticated && !authLoading ? handleSaveToAccount : undefined
-        }
-        isSaving={isSaving}
+        renderHeader={(actions) => (
+          <header className="relative flex h-12 shrink-0 items-center gap-2 border-b px-4">
+            <Topbar
+              team={team}
+              format={format}
+              username="local"
+              alts={[]}
+              mode="local"
+              onSaveToAccount={
+                isAuthenticated && !authLoading
+                  ? handleSaveToAccount
+                  : undefined
+              }
+              isSaving={isSaving}
+              {...actions}
+            />
+          </header>
+        )}
       />
     </PersistenceProvider>
   );
