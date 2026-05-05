@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabase } from "@/lib/supabase";
 import { Swords, ChevronRight } from "lucide-react";
@@ -31,16 +31,12 @@ export function CurrentMatchBanner({
 }: CurrentMatchBannerProps) {
   const { user, isAuthenticated } = useAuth();
   const supabase = useSupabase();
-  const [match, setMatch] = useState<MatchData | null>(null);
 
   const userId = user?.id;
 
-  useEffect(() => {
-    if (!isAuthenticated || !userId) return;
-
-    let cancelled = false;
-
-    async function fetchActiveMatch() {
+  const { data: match = null } = useQuery<MatchData | null>({
+    queryKey: ['current-match-banner', tournamentId, userId],
+    queryFn: async () => {
       const { data: alts, error: altsError } = await supabase
         .from("alts")
         .select("id")
@@ -48,10 +44,10 @@ export function CurrentMatchBanner({
 
       if (altsError) {
         console.error("[CurrentMatchBanner] Failed to fetch alts:", altsError);
-        return;
+        return null;
       }
 
-      if (!alts || alts.length === 0 || cancelled) return;
+      if (!alts || alts.length === 0) return null;
 
       const altIds = alts.map((a) => a.id);
 
@@ -84,10 +80,10 @@ export function CurrentMatchBanner({
           "[CurrentMatchBanner] Failed to fetch match:",
           matchError
         );
-        return;
+        return null;
       }
 
-      if (cancelled || !matchData) return;
+      if (!matchData) return null;
 
       const round = matchData.round as unknown as {
         round_number: number;
@@ -102,7 +98,7 @@ export function CurrentMatchBanner({
         | null;
       const opponentProfile = opponentArr?.[0] ?? null;
 
-      setMatch({
+      return {
         id: matchData.id,
         status: matchData.status as "pending" | "active",
         roundNumber: round?.round_number ?? 0,
@@ -114,15 +110,10 @@ export function CurrentMatchBanner({
               username: opponentProfile.username,
             }
           : null,
-      });
-    }
-
-    fetchActiveMatch();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated, userId, supabase, tournamentId]);
+      };
+    },
+    enabled: isAuthenticated && !!userId,
+  });
 
   if (!match) return null;
 

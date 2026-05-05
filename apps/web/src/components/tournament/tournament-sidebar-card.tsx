@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import {
   useSupabase,
@@ -268,9 +269,6 @@ export function TournamentSidebarCard({
   const [isSubmittingTeam, setIsSubmittingTeam] = useState(false);
 
   // ---- Existing teams for selection ----
-  const [availableTeams, setAvailableTeams] = useState<
-    Array<{ id: number; name: string | null; pokemonCount: number }>
-  >([]);
   const [isSelectingTeam, setIsSelectingTeam] = useState(false);
 
   // ---- Data fetching ----
@@ -369,22 +367,15 @@ export function TournamentSidebarCard({
     registrationStatus?.userStatus?.status === "checked_in" ||
     (checkInStatus?.isCheckedIn ?? false);
 
-  useEffect(() => {
-    if (!showTeamSection) return;
-
-    let cancelled = false;
-
-    getUserTeamsAction().then((result) => {
-      if (cancelled) return;
-      if (result.success) {
-        setAvailableTeams(result.data);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [showTeamSection]);
+  const { data: availableTeams = [] } = useQuery({
+    queryKey: ['user-teams-for-tournament', tournamentId],
+    queryFn: async () => {
+      const result = await getUserTeamsAction();
+      if (result.success) return result.data;
+      return [];
+    },
+    enabled: showTeamSection,
+  });
 
   // ---- Handlers ----
 

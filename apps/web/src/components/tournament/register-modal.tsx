@@ -76,6 +76,17 @@ export interface RegisterModalProps {
   onSuccess?: () => void;
 }
 
+interface RegisterModalBodyProps {
+  onOpenChange: (open: boolean) => void;
+  tournamentId: number;
+  tournamentSlug: string;
+  tournamentName: string;
+  startDate?: string | null;
+  isFull: boolean;
+  mode?: "register" | "edit";
+  onSuccess?: () => void;
+}
+
 // --------------------------------------------------------------------------
 // Helpers
 // --------------------------------------------------------------------------
@@ -161,11 +172,10 @@ const registrationSchema = z.object({
 type RegistrationFormData = z.infer<typeof registrationSchema>;
 
 // --------------------------------------------------------------------------
-// Component
+// RegisterModalBody (internal — only mounts when dialog is open)
 // --------------------------------------------------------------------------
 
-export function RegisterModal({
-  open,
+function RegisterModalBody({
   onOpenChange,
   tournamentId,
   tournamentSlug,
@@ -174,7 +184,7 @@ export function RegisterModal({
   isFull,
   mode = "register",
   onSuccess,
-}: RegisterModalProps) {
+}: RegisterModalBodyProps) {
   const isEditMode = mode === "edit";
   const router = useRouter();
   const { isAuthenticated } = useAuthContext();
@@ -208,10 +218,16 @@ export function RegisterModal({
   const selectedAlt = alts.find((a) => a.id.toString() === selectedAltId);
   const hasName = !!selectedAlt?.first_name;
 
-  // Load alts + teams when dialog opens
+  // Redirect unauthenticated users to sign-in
   useEffect(() => {
-    if (!open) return;
+    if (!isAuthenticated) {
+      onOpenChange(false);
+      router.push(`/sign-in?redirect=/tournaments/${tournamentSlug}`);
+    }
+  }, [isAuthenticated, onOpenChange, router, tournamentSlug]);
 
+  // Load alts + registration data on mount
+  useEffect(() => {
     let cancelled = false;
 
     async function loadData() {
@@ -264,27 +280,7 @@ export function RegisterModal({
     return () => {
       cancelled = true;
     };
-  }, [open, form, isEditMode, tournamentId]);
-
-  // Redirect unauthenticated users to sign-in when modal opens
-  useEffect(() => {
-    if (open && !isAuthenticated) {
-      onOpenChange(false);
-      router.push(`/sign-in?redirect=/tournaments/${tournamentSlug}`);
-    }
-  }, [open, isAuthenticated, onOpenChange, router, tournamentSlug]);
-
-  // Reset form when dialog closes
-  useEffect(() => {
-    if (!open) {
-      form.reset();
-      setError(null);
-      setAlts([]);
-      setRegistrationSuccess(null);
-      setTournamentFullError(false);
-      setEditRegistrationId(null);
-    }
-  }, [open, form]);
+  }, [form, isEditMode, tournamentId]);
 
   // --------------------------------------------------------------------------
   // Submit
@@ -350,445 +346,478 @@ export function RegisterModal({
   // --------------------------------------------------------------------------
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditMode
-              ? "Edit Registration"
-              : isFull
-                ? "Join Waitlist"
-                : "Register for Tournament"}
-          </DialogTitle>
-          <DialogDescription>
-            {isEditMode
-              ? "Update your registration preferences for"
-              : isFull
-                ? "Join the waitlist for"
-                : "Register for"}{" "}
-            <strong>{tournamentName}</strong>
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <DialogHeader>
+        <DialogTitle>
+          {isEditMode
+            ? "Edit Registration"
+            : isFull
+              ? "Join Waitlist"
+              : "Register for Tournament"}
+        </DialogTitle>
+        <DialogDescription>
+          {isEditMode
+            ? "Update your registration preferences for"
+            : isFull
+              ? "Join the waitlist for"
+              : "Register for"}{" "}
+          <strong>{tournamentName}</strong>
+        </DialogDescription>
+      </DialogHeader>
 
-        {/* Tournament Full State (3b) */}
-        {tournamentFullError ? (
-          <div className="space-y-6 py-4">
-            <div
-              className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-5"
-              data-testid="tournament-full-state"
-            >
-              <div className="flex items-start gap-3">
-                <div className="rounded-full bg-amber-500/20 p-2.5 text-amber-600 dark:text-amber-400">
-                  <Users className="size-6" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">
-                    This tournament is full
-                  </h3>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    All spots have been filled. You can join the waitlist to be
-                    notified if a spot opens up.
-                  </p>
-                </div>
+      {/* Tournament Full State (3b) */}
+      {tournamentFullError ? (
+        <div className="space-y-6 py-4">
+          <div
+            className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-5"
+            data-testid="tournament-full-state"
+          >
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-amber-500/20 p-2.5 text-amber-600 dark:text-amber-400">
+                <Users className="size-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold">
+                  This tournament is full
+                </h3>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  All spots have been filled. You can join the waitlist to be
+                  notified if a spot opens up.
+                </p>
               </div>
             </div>
+          </div>
 
-            <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="w-full sm:w-auto"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </div>
+      ) : /* Success Confirmation State (3a) */
+      registrationSuccess ? (
+        <div className="space-y-6 py-4">
+          {/* Confirmation banner */}
+          <div
+            className={cn(
+              "rounded-lg border p-5",
+              registrationSuccess.status === "waitlist"
+                ? "border-amber-500/20 bg-amber-500/10"
+                : "border-emerald-500/20 bg-emerald-500/10"
+            )}
+            data-testid="registration-success-state"
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className={cn(
+                  "rounded-full p-2.5",
+                  registrationSuccess.status === "waitlist"
+                    ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                    : "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                )}
+              >
+                <CheckCircle2 className="size-7" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold">
+                  {registrationSuccess.status === "waitlist"
+                    ? "Added to Waitlist"
+                    : "You're Registered!"}
+                </h3>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {registrationSuccess.status === "waitlist" ? (
+                    <>
+                      You&apos;ve been added to the waitlist
+                      {registrationSuccess.waitlistPosition
+                        ? ` at position #${registrationSuccess.waitlistPosition}`
+                        : ""}
+                      . You&apos;ll be notified if a spot opens up.
+                    </>
+                  ) : (
+                    `You're registered for ${tournamentName}`
+                  )}
+                </p>
+                {/* Tournament date/time */}
+                {startDate && (
+                  <p className="text-muted-foreground mt-2 flex items-center gap-1.5 text-xs">
+                    <Calendar className="size-3.5" />
+                    {formatTournamentDate(startDate)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Next Steps */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">Next Steps</h4>
+            <ul className="text-muted-foreground space-y-2 text-sm">
+              {registrationSuccess.status === "registered" ? (
+                <>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-emerald-500">•</span>
+                    <span>
+                      <strong className="text-foreground">
+                        Submit your team
+                      </strong>{" "}
+                      before the tournament starts
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-emerald-500">•</span>
+                    <span>
+                      <strong className="text-foreground">Check in</strong>{" "}
+                      when check-in opens (you&apos;ll be notified)
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-emerald-500">•</span>
+                    <span>
+                      Monitor the tournament page for updates and pairings
+                    </span>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-amber-500">•</span>
+                    <span>
+                      You&apos;ll be automatically registered if a spot opens
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-amber-500">•</span>
+                    <span>
+                      We&apos;ll notify you immediately if you move off the
+                      waitlist
+                    </span>
+                  </li>
+                </>
+              )}
+            </ul>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            {registrationSuccess.status === "registered" && (
               <Button
                 variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="w-full sm:w-auto"
-              >
-                Close
-              </Button>
-            </DialogFooter>
-          </div>
-        ) : /* Success Confirmation State (3a) */
-        registrationSuccess ? (
-          <div className="space-y-6 py-4">
-            {/* Confirmation banner */}
-            <div
-              className={cn(
-                "rounded-lg border p-5",
-                registrationSuccess.status === "waitlist"
-                  ? "border-amber-500/20 bg-amber-500/10"
-                  : "border-emerald-500/20 bg-emerald-500/10"
-              )}
-              data-testid="registration-success-state"
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className={cn(
-                    "rounded-full p-2.5",
-                    registrationSuccess.status === "waitlist"
-                      ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                      : "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                  )}
-                >
-                  <CheckCircle2 className="size-7" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">
-                    {registrationSuccess.status === "waitlist"
-                      ? "Added to Waitlist"
-                      : "You're Registered!"}
-                  </h3>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    {registrationSuccess.status === "waitlist" ? (
-                      <>
-                        You&apos;ve been added to the waitlist
-                        {registrationSuccess.waitlistPosition
-                          ? ` at position #${registrationSuccess.waitlistPosition}`
-                          : ""}
-                        . You&apos;ll be notified if a spot opens up.
-                      </>
-                    ) : (
-                      `You're registered for ${tournamentName}`
-                    )}
-                  </p>
-                  {/* Tournament date/time */}
-                  {startDate && (
-                    <p className="text-muted-foreground mt-2 flex items-center gap-1.5 text-xs">
-                      <Calendar className="size-3.5" />
-                      {formatTournamentDate(startDate)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Next Steps */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Next Steps</h4>
-              <ul className="text-muted-foreground space-y-2 text-sm">
-                {registrationSuccess.status === "registered" ? (
-                  <>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 text-emerald-500">•</span>
-                      <span>
-                        <strong className="text-foreground">
-                          Submit your team
-                        </strong>{" "}
-                        before the tournament starts
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 text-emerald-500">•</span>
-                      <span>
-                        <strong className="text-foreground">Check in</strong>{" "}
-                        when check-in opens (you&apos;ll be notified)
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 text-emerald-500">•</span>
-                      <span>
-                        Monitor the tournament page for updates and pairings
-                      </span>
-                    </li>
-                  </>
-                ) : (
-                  <>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 text-amber-500">•</span>
-                      <span>
-                        You&apos;ll be automatically registered if a spot opens
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 text-amber-500">•</span>
-                      <span>
-                        We&apos;ll notify you immediately if you move off the
-                        waitlist
-                      </span>
-                    </li>
-                  </>
-                )}
-              </ul>
-            </div>
-
-            <DialogFooter className="gap-2 sm:gap-0">
-              {registrationSuccess.status === "registered" && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    onOpenChange(false);
-                    router.push(`/tournaments/${tournamentSlug}#team`);
-                  }}
-                  className="w-full sm:w-auto"
-                >
-                  <ClipboardList className="mr-2 size-4" />
-                  Submit Your Team
-                </Button>
-              )}
-              <Button
                 onClick={() => {
                   onOpenChange(false);
-                  if (registrationSuccess.status === "registered") {
-                    router.push(`/tournaments/${tournamentSlug}`);
-                  }
+                  router.push(`/tournaments/${tournamentSlug}#team`);
                 }}
                 className="w-full sm:w-auto"
               >
-                {registrationSuccess.status === "registered"
-                  ? "Go to Tournament"
-                  : "Close"}
+                <ClipboardList className="mr-2 size-4" />
+                Submit Your Team
               </Button>
-            </DialogFooter>
-          </div>
-        ) : isLoadingData ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-6 animate-spin" />
-          </div>
-        ) : alts.length === 0 ? (
-          <div className="text-muted-foreground py-8 text-center text-sm">
-            <p>No player profiles found.</p>
-            <p className="mt-1">
-              Please contact support if you believe this is an error.
-            </p>
-          </div>
-        ) : (
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="space-y-6 py-4"
+            )}
+            <Button
+              onClick={() => {
+                onOpenChange(false);
+                if (registrationSuccess.status === "registered") {
+                  router.push(`/tournaments/${tournamentSlug}`);
+                }
+              }}
+              className="w-full sm:w-auto"
             >
-              {/* Alt Selection (only show if multiple alts; disabled in edit mode) */}
-              {alts.length > 1 && (
-                <FormField
-                  control={form.control}
-                  name="altId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Register as</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isEditMode}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select profile">
-                              {selectedAlt
-                                ? `${selectedAlt.username || selectedAlt.username} (@${selectedAlt.username})`
-                                : "Select profile"}
-                            </SelectValue>
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {alts.map((alt) => (
-                            <SelectItem key={alt.id} value={alt.id.toString()}>
-                              {alt.username || alt.username} (@
-                              {alt.username})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {/* In-Game Name */}
+              {registrationSuccess.status === "registered"
+                ? "Go to Tournament"
+                : "Close"}
+            </Button>
+          </DialogFooter>
+        </div>
+      ) : isLoadingData ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="size-6 animate-spin" />
+        </div>
+      ) : alts.length === 0 ? (
+        <div className="text-muted-foreground py-8 text-center text-sm">
+          <p>No player profiles found.</p>
+          <p className="mt-1">
+            Please contact support if you believe this is an error.
+          </p>
+        </div>
+      ) : (
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-6 py-4"
+          >
+            {/* Alt Selection (only show if multiple alts; disabled in edit mode) */}
+            {alts.length > 1 && (
               <FormField
                 control={form.control}
-                name="inGameName"
+                name="altId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>In-game name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Switch profile name" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Your Nintendo Switch profile name for verification
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Display Name Options */}
-              <FormField
-                control={form.control}
-                name="displayNameOption"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Display name</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem
-                            value="username"
-                            id="display-username"
-                          />
-                          <FormLabel
-                            htmlFor="display-username"
-                            className="font-normal"
-                          >
-                            Username
-                            {selectedAlt && (
-                              <span className="text-muted-foreground ml-1">
-                                ({selectedAlt.username})
-                              </span>
-                            )}
-                          </FormLabel>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem
-                            value="shortened"
-                            id="display-shortened"
-                            disabled={!hasName}
-                          />
-                          <FormLabel
-                            htmlFor="display-shortened"
-                            className={cn(
-                              "font-normal",
-                              !hasName && "text-muted-foreground"
-                            )}
-                          >
-                            Shortened name
-                            {selectedAlt && hasName ? (
-                              <span className="text-muted-foreground ml-1">
-                                ({getShortenedName(selectedAlt)})
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground ml-1">
-                                (set name in profile)
-                              </span>
-                            )}
-                          </FormLabel>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem
-                            value="full"
-                            id="display-full"
-                            disabled={!hasName}
-                          />
-                          <FormLabel
-                            htmlFor="display-full"
-                            className={cn(
-                              "font-normal",
-                              !hasName && "text-muted-foreground"
-                            )}
-                          >
-                            Full name
-                            {selectedAlt && hasName ? (
-                              <span className="text-muted-foreground ml-1">
-                                ({getFullName(selectedAlt)})
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground ml-1">
-                                (set name in profile)
-                              </span>
-                            )}
-                          </FormLabel>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Country Flag Option */}
-              <FormField
-                control={form.control}
-                name="showCountryFlag"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center gap-2 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={!selectedAlt?.country}
-                      />
-                    </FormControl>
-                    <FormLabel
-                      className={cn(
-                        "font-normal",
-                        !selectedAlt?.country && "text-muted-foreground"
-                      )}
+                    <FormLabel>Register as</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isEditMode}
                     >
-                      Show country flag
-                      {selectedAlt?.country ? (
-                        <span className="ml-1">
-                          {countryCodeToFlag(selectedAlt.country)}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground ml-1">
-                          (set country in profile)
-                        </span>
-                      )}
-                    </FormLabel>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select profile">
+                            {selectedAlt
+                              ? `${selectedAlt.username || selectedAlt.username} (@${selectedAlt.username})`
+                              : "Select profile"}
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {alts.map((alt) => (
+                          <SelectItem key={alt.id} value={alt.id.toString()}>
+                            {alt.username || alt.username} (@
+                            {alt.username})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
+            )}
 
-              {/* Bracket Preview */}
-              {selectedAlt && (
-                <div className="bg-muted rounded-lg p-4">
-                  <p className="text-muted-foreground mb-2 text-xs">
-                    Bracket Preview
-                  </p>
-                  <div className="space-y-0.5">
-                    <p className="font-medium">
-                      {getDisplayName(selectedAlt, displayNameOption)}
-                      {showCountryFlag && selectedAlt.country && (
-                        <span className="ml-1.5">
-                          {countryCodeToFlag(selectedAlt.country)}
-                        </span>
-                      )}
-                    </p>
-                    {inGameName && (
-                      <p className="text-muted-foreground text-sm">
-                        {inGameName}
-                      </p>
-                    )}
-                  </div>
-                </div>
+            {/* In-Game Name */}
+            <FormField
+              control={form.control}
+              name="inGameName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>In-game name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Switch profile name" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Your Nintendo Switch profile name for verification
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
               )}
+            />
 
-              {error && <p className="text-destructive text-sm">{error}</p>}
-
-              <DialogFooter>
-                <DialogClose
-                  render={
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={isSubmitting}
+            {/* Display Name Options */}
+            <FormField
+              control={form.control}
+              name="displayNameOption"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Display name</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
                     >
-                      Cancel
-                    </Button>
-                  }
-                />
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || isLoadingData || !selectedAltId}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                      {isEditMode
-                        ? "Saving..."
-                        : isFull
-                          ? "Joining..."
-                          : "Registering..."}
-                    </>
-                  ) : isEditMode ? (
-                    "Save Changes"
-                  ) : isFull ? (
-                    "Join Waitlist"
-                  ) : (
-                    "Confirm Registration"
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem
+                          value="username"
+                          id="display-username"
+                        />
+                        <FormLabel
+                          htmlFor="display-username"
+                          className="font-normal"
+                        >
+                          Username
+                          {selectedAlt && (
+                            <span className="text-muted-foreground ml-1">
+                              ({selectedAlt.username})
+                            </span>
+                          )}
+                        </FormLabel>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem
+                          value="shortened"
+                          id="display-shortened"
+                          disabled={!hasName}
+                        />
+                        <FormLabel
+                          htmlFor="display-shortened"
+                          className={cn(
+                            "font-normal",
+                            !hasName && "text-muted-foreground"
+                          )}
+                        >
+                          Shortened name
+                          {selectedAlt && hasName ? (
+                            <span className="text-muted-foreground ml-1">
+                              ({getShortenedName(selectedAlt)})
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground ml-1">
+                              (set name in profile)
+                            </span>
+                          )}
+                        </FormLabel>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem
+                          value="full"
+                          id="display-full"
+                          disabled={!hasName}
+                        />
+                        <FormLabel
+                          htmlFor="display-full"
+                          className={cn(
+                            "font-normal",
+                            !hasName && "text-muted-foreground"
+                          )}
+                        >
+                          Full name
+                          {selectedAlt && hasName ? (
+                            <span className="text-muted-foreground ml-1">
+                              ({getFullName(selectedAlt)})
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground ml-1">
+                              (set name in profile)
+                            </span>
+                          )}
+                        </FormLabel>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Country Flag Option */}
+            <FormField
+              control={form.control}
+              name="showCountryFlag"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={!selectedAlt?.country}
+                    />
+                  </FormControl>
+                  <FormLabel
+                    className={cn(
+                      "font-normal",
+                      !selectedAlt?.country && "text-muted-foreground"
+                    )}
+                  >
+                    Show country flag
+                    {selectedAlt?.country ? (
+                      <span className="ml-1">
+                        {countryCodeToFlag(selectedAlt.country)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground ml-1">
+                        (set country in profile)
+                      </span>
+                    )}
+                  </FormLabel>
+                </FormItem>
+              )}
+            />
+
+            {/* Bracket Preview */}
+            {selectedAlt && (
+              <div className="bg-muted rounded-lg p-4">
+                <p className="text-muted-foreground mb-2 text-xs">
+                  Bracket Preview
+                </p>
+                <div className="space-y-0.5">
+                  <p className="font-medium">
+                    {getDisplayName(selectedAlt, displayNameOption)}
+                    {showCountryFlag && selectedAlt.country && (
+                      <span className="ml-1.5">
+                        {countryCodeToFlag(selectedAlt.country)}
+                      </span>
+                    )}
+                  </p>
+                  {inGameName && (
+                    <p className="text-muted-foreground text-sm">
+                      {inGameName}
+                    </p>
                   )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+                </div>
+              </div>
+            )}
+
+            {error && <p className="text-destructive text-sm">{error}</p>}
+
+            <DialogFooter>
+              <DialogClose
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                }
+              />
+              <Button
+                type="submit"
+                disabled={isSubmitting || isLoadingData || !selectedAltId}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    {isEditMode
+                      ? "Saving..."
+                      : isFull
+                        ? "Joining..."
+                        : "Registering..."}
+                  </>
+                ) : isEditMode ? (
+                  "Save Changes"
+                ) : isFull ? (
+                  "Join Waitlist"
+                ) : (
+                  "Confirm Registration"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      )}
+    </>
+  );
+}
+
+// --------------------------------------------------------------------------
+// RegisterModal (public wrapper)
+// --------------------------------------------------------------------------
+
+export function RegisterModal({
+  open,
+  onOpenChange,
+  tournamentId,
+  tournamentSlug,
+  tournamentName,
+  startDate,
+  isFull,
+  mode = "register",
+  onSuccess,
+}: RegisterModalProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        {open && (
+          <RegisterModalBody
+            tournamentId={tournamentId}
+            tournamentSlug={tournamentSlug}
+            tournamentName={tournamentName}
+            startDate={startDate}
+            isFull={isFull}
+            mode={mode}
+            onSuccess={onSuccess}
+            onOpenChange={onOpenChange}
+          />
         )}
       </DialogContent>
     </Dialog>

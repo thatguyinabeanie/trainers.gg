@@ -5,6 +5,11 @@ import { TournamentSidebarCard } from "../tournament-sidebar-card";
 // Mocks
 // ---------------------------------------------------------------------------
 
+// Mock @tanstack/react-query useQuery (used for user teams)
+jest.mock("@tanstack/react-query", () => ({
+  useQuery: jest.fn(() => ({ data: [], isLoading: false })),
+}));
+
 const mockChannel = {
   on: jest.fn().mockReturnThis(),
   subscribe: jest.fn((cb) => {

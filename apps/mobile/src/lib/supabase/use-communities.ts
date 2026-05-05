@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getSupabase } from "./client";
 import {
   listPublicCommunities,
@@ -17,36 +17,23 @@ export type CommunityDetail = NonNullable<
  * Hook to fetch all public communities
  */
 export function useCommunities() {
-  const [communities, setCommunities] = useState<CommunityWithCounts[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const fetchCommunities = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const { data, isLoading, error, refetch } = useQuery<
+    CommunityWithCounts[],
+    Error
+  >({
+    queryKey: ["communities-public"],
+    queryFn: async () => {
       const supabase = getSupabase();
-      const data = await listPublicCommunities(supabase);
-      setCommunities(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error("Failed to fetch communities")
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchCommunities();
-  }, []);
+      return listPublicCommunities(supabase);
+    },
+    staleTime: 300_000, // 5 minutes - communities change infrequently
+  });
 
   return {
-    communities,
-    loading,
-    error,
-    refetch: fetchCommunities,
+    communities: data ?? [],
+    loading: isLoading,
+    error: error ?? null,
+    refetch,
   };
 }
 
@@ -54,40 +41,23 @@ export function useCommunities() {
  * Hook to fetch a single community by slug
  */
 export function useCommunity(slug: string | undefined) {
-  const [community, setCommunity] = useState<CommunityDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const fetchCommunity = async () => {
-    if (!slug) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
+  const { data, isLoading, error, refetch } = useQuery<
+    CommunityDetail | null,
+    Error
+  >({
+    queryKey: ["community-detail", slug],
+    queryFn: async () => {
       const supabase = getSupabase();
-      const data = await getCommunityBySlug(supabase, slug);
-      setCommunity(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error("Failed to fetch community")
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchCommunity();
-  }, [slug]);
+      return getCommunityBySlug(supabase, slug!);
+    },
+    enabled: !!slug,
+    staleTime: 300_000,
+  });
 
   return {
-    community,
-    loading,
-    error,
-    refetch: fetchCommunity,
+    community: data ?? null,
+    loading: isLoading,
+    error: error ?? null,
+    refetch,
   };
 }

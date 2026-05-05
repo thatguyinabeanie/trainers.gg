@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/use-auth";
 import { createClient } from "@/lib/supabase/client";
@@ -82,11 +82,24 @@ const providerIcons: Record<string, () => React.JSX.Element> = {
 export function LinkedIdentitiesSection() {
   const { user, signInWithOAuth } = useAuth();
   const supabase = createClient();
-  const [identities, setIdentities] = useState<UserIdentity[]>([]);
-  const [blueskyDid, setBlueskyDid] = useState<string | null>(null);
-  const [blueskyHandle, setBlueskyHandle] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [unlinking, setUnlinking] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  // Derive identities directly from user object
+  const identities = (user?.identities as UserIdentity[]) || [];
+
+  // Fetch Bluesky status
+  const { data: blueskyStatus, isLoading: loading } = useQuery({
+    queryKey: ['bluesky-status', user?.id],
+    queryFn: async () => {
+      const result = await getBlueskyStatus();
+      if (result.success) return result.data;
+      return { did: null, handle: null };
+    },
+    enabled: !!user,
+  });
+  const blueskyDid = blueskyStatus?.did ?? null;
+  const blueskyHandle = blueskyStatus?.handle ?? null;
 
   // Fetch enabled DM preference count via DB-side count (user-specific — TanStack Query)
   const { data: enabledDmCount = 0 } = useQuery({
@@ -105,30 +118,6 @@ export function LinkedIdentitiesSection() {
     enabled: !!user?.id,
     staleTime: 60_000,
   });
-
-  // Load identities and Bluesky status on mount
-  useEffect(() => {
-    const loadIdentities = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      // Set identities from user object
-      setIdentities((user.identities as UserIdentity[]) || []);
-
-      // Fetch Bluesky status from server
-      const result = await getBlueskyStatus();
-      if (result.success) {
-        setBlueskyDid(result.data.did);
-        setBlueskyHandle(result.data.handle);
-      }
-
-      setLoading(false);
-    };
-
-    loadIdentities();
-  }, [user]);
 
   // Calculate total linked methods for lockout protection
   const totalLinkedMethods = identities.length + (blueskyDid ? 1 : 0);
@@ -169,8 +158,7 @@ export function LinkedIdentitiesSection() {
         // Unlink Bluesky via server action
         const result = await unlinkBlueskyAction();
         if (result.success) {
-          setBlueskyDid(null);
-          setBlueskyHandle(null);
+          void queryClient.invalidateQueries({ queryKey: ['bluesky-status', user?.id] });
           toast.success("Bluesky account disconnected");
         } else {
           toast.error(result.error || "Failed to disconnect Bluesky");
@@ -188,8 +176,7 @@ export function LinkedIdentitiesSection() {
         if (error) {
           toast.error(error.message);
         } else {
-          // Remove from local state
-          setIdentities((prev) => prev.filter((i) => i.id !== identityId));
+          // Auth state will update via onAuthStateChange, refreshing user.identities
           toast.success("Account disconnected");
         }
       }

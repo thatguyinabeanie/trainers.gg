@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSupabase } from "@/lib/supabase";
 import { getPlayerMatches } from "@trainers/supabase";
 import { Trophy, TrendingUp, Clock, ArrowRight } from "lucide-react";
@@ -28,120 +28,89 @@ export function PostMatchSummary({
   roundNumber,
 }: PostMatchSummaryProps) {
   const supabase = useSupabase();
-  const [nextMatch, setNextMatch] = useState<{
-    id: number;
-    roundNumber: number;
-    tableNumber: number;
-  } | null>(null);
-  const [roundStatus, setRoundStatus] = useState<"active" | "completed" | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!userAltId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setNextMatch(null);
-      setRoundStatus(null);
-      setIsLoading(false);
-      return;
-    }
+  const { data, isLoading } = useQuery({
+    queryKey: ['post-match-summary', tournamentId, matchId, userAltId],
+    queryFn: async () => {
+      // Get all player matches to find the next one
+      const matches = await getPlayerMatches(
+        supabase,
+        tournamentId,
+        userAltId!
+      );
 
-    let isCancelled = false;
-
-    async function loadNextMatchData() {
-      try {
-        // Get all player matches to find the next one
-        const matches = await getPlayerMatches(
-          supabase,
-          tournamentId,
-          userAltId!
-        );
-
-        if (isCancelled) return;
-
-        // Find the next pending match (after current match) in a deterministic way
-        const pendingMatches = matches
-          .filter((m) => m.id !== matchId && m.status === "pending")
-          .map((m) => {
-            const round = m.round as { round_number: number } | null;
-            const matchRoundNumber =
-              typeof round?.round_number === "number"
-                ? round.round_number
-                : Number.POSITIVE_INFINITY;
-            return { match: m, roundNumber: matchRoundNumber };
-          });
-
-        let candidateMatches = pendingMatches;
-
-        // If we know the current match's round, prefer pending matches in later rounds
-        if (typeof roundNumber === "number") {
-          const laterRoundMatches = pendingMatches.filter(
-            (m) => m.roundNumber > roundNumber
-          );
-          if (laterRoundMatches.length > 0) {
-            candidateMatches = laterRoundMatches;
-          }
-        }
-
-        candidateMatches.sort((a, b) => {
-          if (a.roundNumber !== b.roundNumber) {
-            return a.roundNumber - b.roundNumber;
-          }
-          return a.match.id - b.match.id;
+      // Find the next pending match (after current match) in a deterministic way
+      const pendingMatches = matches
+        .filter((m) => m.id !== matchId && m.status === "pending")
+        .map((m) => {
+          const round = m.round as { round_number: number } | null;
+          const matchRoundNumber =
+            typeof round?.round_number === "number"
+              ? round.round_number
+              : Number.POSITIVE_INFINITY;
+          return { match: m, roundNumber: matchRoundNumber };
         });
 
-        const nextPendingMatch = candidateMatches[0]?.match;
+      let candidateMatches = pendingMatches;
 
-        if (nextPendingMatch) {
-          const round = nextPendingMatch.round as {
-            round_number: number;
-          } | null;
-          setNextMatch({
-            id: nextPendingMatch.id,
-            roundNumber: round?.round_number ?? 0,
-            tableNumber: nextPendingMatch.table_number ?? 0,
-          });
-        } else {
-          setNextMatch(null);
-        }
-
-        // Check current round status by deriving round_id from the current match
-        const currentMatch = matches.find((m) => m.id === matchId);
-        const currentRound = currentMatch?.round as {
-          id: number;
-          round_number: number;
-        } | null;
-
-        if (currentRound?.id) {
-          const { count, error: countError } = await supabase
-            .from("tournament_matches")
-            .select("*", { count: "exact", head: true })
-            .eq("round_id", currentRound.id)
-            .eq("status", "active");
-
-          if (countError) {
-            console.error("Error checking round status:", countError);
-          } else if (!isCancelled) {
-            setRoundStatus((count ?? 0) > 0 ? "active" : "completed");
-          }
-        }
-      } catch (error) {
-        if (isCancelled) return;
-        console.error("Error loading next match data:", error);
-      } finally {
-        if (!isCancelled) {
-          setIsLoading(false);
+      // If we know the current match's round, prefer pending matches in later rounds
+      if (typeof roundNumber === "number") {
+        const laterRoundMatches = pendingMatches.filter(
+          (m) => m.roundNumber > roundNumber
+        );
+        if (laterRoundMatches.length > 0) {
+          candidateMatches = laterRoundMatches;
         }
       }
-    }
 
-    loadNextMatchData();
+      candidateMatches.sort((a, b) => {
+        if (a.roundNumber !== b.roundNumber) {
+          return a.roundNumber - b.roundNumber;
+        }
+        return a.match.id - b.match.id;
+      });
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [supabase, tournamentId, userAltId, matchId, roundNumber]);
+      const nextPendingMatch = candidateMatches[0]?.match;
+
+      let nextMatch = null;
+      if (nextPendingMatch) {
+        const round = nextPendingMatch.round as {
+          round_number: number;
+        } | null;
+        nextMatch = {
+          id: nextPendingMatch.id,
+          roundNumber: round?.round_number ?? 0,
+          tableNumber: nextPendingMatch.table_number ?? 0,
+        };
+      }
+
+      // Check current round status by deriving round_id from the current match
+      const currentMatch = matches.find((m) => m.id === matchId);
+      const currentRound = currentMatch?.round as {
+        id: number;
+        round_number: number;
+      } | null;
+
+      let roundStatus: "active" | "completed" | null = null;
+      if (currentRound?.id) {
+        const { count, error: countError } = await supabase
+          .from("tournament_matches")
+          .select("*", { count: "exact", head: true })
+          .eq("round_id", currentRound.id)
+          .eq("status", "active");
+
+        if (!countError) {
+          roundStatus = (count ?? 0) > 0 ? "active" : "completed";
+        }
+      }
+
+      return { nextMatch, roundStatus };
+    },
+    enabled: !!userAltId,
+  });
+
+  const nextMatch = data?.nextMatch ?? null;
+  const roundStatus = data?.roundStatus ?? null;
 
   const didWin = myWins > opponentWins;
   const resultText = didWin

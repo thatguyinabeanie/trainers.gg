@@ -1,5 +1,6 @@
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -186,6 +187,18 @@ import { UserDetailSheet } from "../user-detail-sheet";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
+
 function buildUser(overrides: Record<string, unknown> = {}) {
   return {
     id: "user-abc-123",
@@ -211,9 +224,14 @@ const defaultProps = {
 };
 
 async function renderAndWaitForLoad(props = defaultProps) {
-  let result!: ReturnType<typeof render>;
-  await act(async () => {
-    result = render(<UserDetailSheet {...props} />);
+  const result = render(<UserDetailSheet {...props} />, {
+    wrapper: createWrapper(),
+  });
+  // Wait for loading to complete (spinner disappears or content renders)
+  await waitFor(() => {
+    // The loading spinner uses Loader2 with animate-spin class
+    const spinner = result.container.querySelector(".animate-spin");
+    expect(spinner).not.toBeInTheDocument();
   });
   return result;
 }
@@ -234,14 +252,18 @@ describe("UserDetailSheet", () => {
 
   describe("when closed", () => {
     it("renders nothing when open is false", () => {
-      render(<UserDetailSheet {...defaultProps} open={false} />);
+      render(<UserDetailSheet {...defaultProps} open={false} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.queryByTestId("sheet")).not.toBeInTheDocument();
     });
   });
 
   describe("when open with no userId", () => {
     it("does not fetch user data", () => {
-      render(<UserDetailSheet {...defaultProps} userId={null} />);
+      render(<UserDetailSheet {...defaultProps} userId={null} />, {
+        wrapper: createWrapper(),
+      });
       expect(mockGetUserAdminDetails).not.toHaveBeenCalled();
     });
   });
@@ -250,7 +272,9 @@ describe("UserDetailSheet", () => {
     it("shows loading spinner while fetching", () => {
       // Don't resolve — keep it in loading state
       mockGetUserAdminDetails.mockReturnValue(new Promise(() => {}));
-      render(<UserDetailSheet {...defaultProps} />);
+      render(<UserDetailSheet {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
       // Spinner is a Loader2 svg inside the loading container
       expect(screen.queryByText("ash_ketchum")).not.toBeInTheDocument();
     });
@@ -268,9 +292,7 @@ describe("UserDetailSheet", () => {
     it("shows error message when fetch fails", async () => {
       mockGetUserAdminDetails.mockRejectedValue(new Error("Network error"));
       await renderAndWaitForLoad();
-      expect(
-        screen.getByText("Failed to load user details")
-      ).toBeInTheDocument();
+      expect(screen.getByText("Network error")).toBeInTheDocument();
     });
   });
 
@@ -789,18 +811,22 @@ describe("UserDetailSheet", () => {
 
   describe("refetch on open", () => {
     it("re-fetches user data when sheet opens", async () => {
+      const wrapper = createWrapper();
       const { rerender } = render(
-        <UserDetailSheet {...defaultProps} open={false} />
+        <UserDetailSheet {...defaultProps} open={false} />,
+        { wrapper }
       );
 
       await act(async () => {
         rerender(<UserDetailSheet {...defaultProps} open={true} />);
       });
 
-      expect(mockGetUserAdminDetails).toHaveBeenCalledWith(
-        expect.anything(),
-        "user-abc-123"
-      );
+      await waitFor(() => {
+        expect(mockGetUserAdminDetails).toHaveBeenCalledWith(
+          expect.anything(),
+          "user-abc-123"
+        );
+      });
     });
 
     it("fetches site roles alongside user details", async () => {
