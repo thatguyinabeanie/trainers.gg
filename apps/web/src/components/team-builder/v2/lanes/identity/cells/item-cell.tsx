@@ -67,10 +67,15 @@ export function ItemCell({
     }
   };
 
+  const isMegaActive =
+    pokemon.species != null &&
+    pokemon.species !== getCanonicalBaseSpecies(pokemon.species);
+
   const megaChip = isMegaStone ? (
     <span
       role="button"
       tabIndex={0}
+      aria-pressed={isMegaActive}
       onClick={(e) => {
         e.stopPropagation();
         handleMegaToggle();

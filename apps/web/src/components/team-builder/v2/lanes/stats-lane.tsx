@@ -761,6 +761,14 @@ export function StatsLane({
   const [liveEvByStat, setLiveEvByStat] = useState<
     Partial<Record<StatKey, number>>
   >({});
+  const [prevPokemonId, setPrevPokemonId] = useState<
+    number | null | typeof UNINITIALIZED
+  >(UNINITIALIZED);
+  const currentPokemonId = pokemon?.id ?? null;
+  if (currentPokemonId !== prevPokemonId) {
+    setPrevPokemonId(currentPokemonId);
+    setLiveEvByStat({});
+  }
 
   // Match the active format so empty slots line up with filled ones — same
   // grid (with-IV vs without), same investment header (SP vs EVs), same total

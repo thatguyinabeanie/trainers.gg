@@ -90,14 +90,16 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
                 <Tooltip key={i}>
                   <TooltipTrigger
                     render={
-                      <div
+                      <button
+                        type="button"
+                        aria-label={m.hasCalc && m.desc ? `Copy damage calc for ${m.moveName}` : undefined}
                         className={cn(
                           "flex items-center gap-1 py-px",
                           m.hasCalc && m.desc && "cursor-pointer hover:bg-muted/50 rounded"
                         )}
                         onClick={() => {
                           if (m.hasCalc && m.desc) {
-                            navigator.clipboard.writeText(m.desc);
+                            void navigator.clipboard.writeText(m.desc);
                           }
                         }}
                       />
@@ -179,14 +181,16 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
           <Tooltip key={i}>
             <TooltipTrigger
               render={
-                <div
+                <button
+                  type="button"
+                  aria-label={m.hasCalc && m.desc ? `Copy damage calc for ${m.moveName}` : undefined}
                   className={cn(
                     "flex items-center shrink-0",
                     m.hasCalc && m.desc && "cursor-pointer hover:bg-muted/50 rounded"
                   )}
                   onClick={() => {
                     if (m.hasCalc && m.desc) {
-                      navigator.clipboard.writeText(m.desc);
+                      void navigator.clipboard.writeText(m.desc);
                     }
                   }}
                 />
