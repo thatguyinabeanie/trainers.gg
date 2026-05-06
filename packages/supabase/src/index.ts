@@ -40,6 +40,9 @@ export {
   type CheckInOpenResult,
 } from "./utils/registration";
 
+// Constants
+export { COOKIE_DOMAIN } from "./constants";
+
 // Storage exports
 export {
   STORAGE_BUCKETS,

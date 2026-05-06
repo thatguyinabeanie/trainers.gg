@@ -3,6 +3,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import type { Database } from "@trainers/supabase/types";
 import type { AtprotoDatabase } from "@trainers/supabase";
+import { COOKIE_DOMAIN } from "@trainers/supabase";
 import type { User } from "@supabase/supabase-js";
 
 /**
@@ -23,6 +24,9 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: {
+        domain: COOKIE_DOMAIN,
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();
@@ -30,7 +34,10 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
+              cookieStore.set(name, value, {
+                ...options,
+                domain: COOKIE_DOMAIN ?? options?.domain,
+              });
             });
           } catch (error) {
             console.warn("Failed to set cookies in Server Component:", error);
@@ -163,6 +170,9 @@ export async function createAtprotoClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: {
+        domain: COOKIE_DOMAIN,
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();
@@ -170,7 +180,10 @@ export async function createAtprotoClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
+              cookieStore.set(name, value, {
+                ...options,
+                domain: COOKIE_DOMAIN ?? options?.domain,
+              });
             });
           } catch (error) {
             console.warn("Failed to set cookies in Server Component:", error);

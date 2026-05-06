@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { COOKIE_DOMAIN } from "@trainers/supabase";
 
 /**
  * Cookie domain for cross-subdomain auth (builder.trainers.gg, dashboard.trainers.gg).

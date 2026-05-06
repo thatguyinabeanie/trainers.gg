@@ -9,6 +9,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { TypedSupabaseClient } from "../../client";
+import { COOKIE_DOMAIN } from "../../constants";
 
 /**
  * Cookie domain for cross-subdomain auth (builder.trainers.gg, dashboard.trainers.gg).
