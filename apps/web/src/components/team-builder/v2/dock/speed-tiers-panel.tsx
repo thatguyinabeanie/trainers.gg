@@ -586,7 +586,9 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
           ? prev.sortDir === "desc"
             ? "asc"
             : "desc"
-          : "desc",
+          : prev.trickRoom
+            ? "asc"
+            : "desc",
     }));
   }
 
@@ -992,26 +994,50 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
                 Pokémon
               </TableHead>
               <TableHead
-                className={cn(
-                  "text-muted-foreground h-auto cursor-pointer px-2 py-1.5 text-right text-[10px] leading-tight font-medium tracking-wide",
-                  toggle.sortBy === "base" && "text-primary"
-                )}
-                onClick={() => setSortBy("base")}
+                aria-sort={
+                  toggle.sortBy === "base"
+                    ? toggle.sortDir === "desc"
+                      ? "descending"
+                      : "ascending"
+                    : "none"
+                }
+                className="h-auto px-0 py-0"
               >
-                Base{" "}
-                {toggle.sortBy === "base" &&
-                  (toggle.sortDir === "desc" ? "↓" : "↑")}
+                <button
+                  type="button"
+                  onClick={() => setSortBy("base")}
+                  className={cn(
+                    "text-muted-foreground h-auto w-full px-2 py-1.5 text-right text-[10px] leading-tight font-medium tracking-wide",
+                    toggle.sortBy === "base" && "text-primary"
+                  )}
+                >
+                  Base{" "}
+                  {toggle.sortBy === "base" &&
+                    (toggle.sortDir === "desc" ? "↓" : "↑")}
+                </button>
               </TableHead>
               <TableHead
-                className={cn(
-                  "h-auto cursor-pointer px-2 py-1.5 text-right text-[10px] leading-tight font-semibold tracking-wide",
-                  toggle.sortBy === "speed" ? "text-primary" : "text-foreground"
-                )}
-                onClick={() => setSortBy("speed")}
+                aria-sort={
+                  toggle.sortBy === "speed"
+                    ? toggle.sortDir === "desc"
+                      ? "descending"
+                      : "ascending"
+                    : "none"
+                }
+                className="h-auto px-0 py-0"
               >
-                SPE{" "}
-                {toggle.sortBy === "speed" &&
-                  (toggle.sortDir === "desc" ? "↓" : "↑")}
+                <button
+                  type="button"
+                  onClick={() => setSortBy("speed")}
+                  className={cn(
+                    "h-auto w-full px-2 py-1.5 text-right text-[10px] leading-tight font-semibold tracking-wide",
+                    toggle.sortBy === "speed" ? "text-primary" : "text-foreground"
+                  )}
+                >
+                  SPE{" "}
+                  {toggle.sortBy === "speed" &&
+                    (toggle.sortDir === "desc" ? "↓" : "↑")}
+                </button>
               </TableHead>
             </TableRow>
           </TableHeader>

@@ -291,6 +291,7 @@ function WorkspaceMetadata({
   format,
   onFormatChange,
 }: WorkspaceMetadataProps) {
+  const [altPending, setAltPending] = useState(false);
   const [formatPending, setFormatPending] = useState(false);
 
   const selectedAlt = alts.find((a) => a.id === selectedAltId);
@@ -320,11 +321,21 @@ function WorkspaceMetadata({
           {hasMultipleAlts && onAltSelect ? (
             <select
               value={selectedAltId ?? ""}
-              onChange={(e) => {
+              disabled={altPending}
+              onChange={async (e) => {
                 const altId = Number(e.target.value);
-                if (altId) onAltSelect(altId);
+                if (!altId || altPending) return;
+                setAltPending(true);
+                try {
+                  await Promise.resolve(onAltSelect(altId));
+                } finally {
+                  setAltPending(false);
+                }
               }}
-              className="border-input bg-background text-foreground hover:bg-accent focus:ring-ring h-7 rounded-md border px-2 text-xs font-medium shadow-xs transition-colors focus:ring-2 focus:outline-none"
+              className={cn(
+                "border-input bg-background text-foreground hover:bg-accent focus:ring-ring h-7 rounded-md border px-2 text-xs font-medium shadow-xs transition-colors focus:ring-2 focus:outline-none",
+                altPending && "opacity-60"
+              )}
             >
               {alts.map((alt) => (
                 <option key={alt.id} value={alt.id}>
@@ -647,7 +658,9 @@ export function TeamWorkspaceV2({
     const result = await persistence.reorderPokemon(team.id, positions);
     if (!result.success) {
       toast.error(result.error ?? "Failed to reorder team.");
-      // Revert to previous order.
+      // Revert to previous order. Skip onMutationSuccess intentionally — the
+      // local optimistic state is already rolled back and local adapters treat
+      // this as a no-op (no server state changed).
       setReorderIds(prevSlots.map((p) => p?.id ?? null));
       return;
     }
@@ -774,12 +787,14 @@ export function TeamWorkspaceV2({
                             ? onAltSelect
                             : persistence.transferTeam
                               ? async (altId) => {
+                                  const transferTeam = persistence.transferTeam;
+                                  if (!transferTeam) return;
                                   const targetAlt = alts.find(
                                     (a) => a.id === altId
                                   );
                                   if (!targetAlt) return;
                                   const result =
-                                    await persistence.transferTeam!(
+                                    await transferTeam(
                                       team.id,
                                       altId
                                     );
@@ -923,12 +938,14 @@ export function TeamWorkspaceV2({
                           ? onAltSelect
                           : persistence.transferTeam
                             ? async (altId) => {
+                                const transferTeam = persistence.transferTeam;
+                                if (!transferTeam) return;
                                 const targetAlt = alts.find(
                                   (a) => a.id === altId
                                 );
                                 if (!targetAlt) return;
                                 const result =
-                                  await persistence.transferTeam!(
+                                  await transferTeam(
                                     team.id,
                                     altId
                                   );

@@ -12,7 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { TeraTypeIcon } from "@/components/team-builder/tera-type-icon";
+import { HEXAGON_CLIP, TeraTypeIcon } from "@/components/team-builder/tera-type-icon";
 import { TypePill } from "@/components/team-builder/v2/type-pill";
 import { formatSupportsTera } from "@/components/team-builder/v2/format-gating";
 import { TypePicker } from "@/components/team-builder/v2/pickers/type-picker";
@@ -51,15 +51,14 @@ export function TypeCell({
         render={
           <button type="button" className="inline-flex cursor-pointer">
             {pokemon.tera_type ? (
-              <TeraTypeIcon type={pokemon.tera_type as PokemonType} size={18} />
+              <TeraTypeIcon type={pokemon.tera_type as PokemonType | "Stellar"} size={18} />
             ) : (
               <span
                 className="border-muted-foreground/40 text-muted-foreground/50 inline-flex shrink-0 cursor-pointer items-center justify-center border border-dashed"
                 style={{
                   width: 18,
                   height: 18,
-                  clipPath:
-                    "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
+                  clipPath: HEXAGON_CLIP,
                 }}
                 aria-label="Set Tera type"
               >

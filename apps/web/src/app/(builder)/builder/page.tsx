@@ -1,8 +1,9 @@
 import { Suspense } from "react";
+import { type Metadata } from "next";
 
 import { LocalBuilderWorkspace } from "@/components/team-builder/v2/local-builder-workspace";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Team Builder — trainers.gg",
   description:
     "Build competitive Pokémon teams with type coverage checks, speed tiers, and damage calculations — no account required.",

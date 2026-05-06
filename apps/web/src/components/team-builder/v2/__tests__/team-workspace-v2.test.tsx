@@ -172,8 +172,9 @@ jest.mock("@/hooks/use-mobile", () => ({
 }));
 
 const mockRouterRefresh = jest.fn();
+const mockRouterPush = jest.fn();
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: mockRouterRefresh }),
+  useRouter: () => ({ refresh: mockRouterRefresh, push: mockRouterPush }),
 }));
 
 // Toast — capture calls
@@ -202,8 +203,7 @@ jest.mock("@/actions/teams", () => ({
 // Import AFTER mocks
 // =============================================================================
 
-import { TeamWorkspaceV2 } from "../team-workspace-v2";
-import { type WorkspaceHeaderActions } from "../team-workspace-v2";
+import { TeamWorkspaceV2, type WorkspaceHeaderActions } from "../team-workspace-v2";
 import { type BuilderPersistence } from "../persistence/types";
 
 // =============================================================================
@@ -993,5 +993,118 @@ describe("TeamWorkspaceV2 — side panel resizer", () => {
     expect(
       screen.getByRole("separator", { name: /resize speed panel/i })
     ).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// transferTeam / onAltChange
+// =============================================================================
+
+describe("TeamWorkspaceV2 — alt transfer", () => {
+  const MULTI_ALT_LIST = [
+    {
+      id: 1,
+      username: "ash_ketchum",
+      user_id: "u1",
+      avatar_url: null,
+      bio: null,
+      is_public: true,
+      tier: null,
+      tier_expires_at: null,
+      tier_started_at: null,
+      created_at: null,
+      updated_at: null,
+    },
+    {
+      id: 2,
+      username: "gary_oak",
+      user_id: "u1",
+      avatar_url: null,
+      bio: null,
+      is_public: true,
+      tier: null,
+      tier_expires_at: null,
+      tier_started_at: null,
+      created_at: null,
+      updated_at: null,
+    },
+  ] as unknown as Tables<"alts">[];
+
+  function renderWithTransfer() {
+    const mockTransferTeam = jest.fn().mockResolvedValue({
+      success: true,
+      data: undefined,
+    });
+    const persistence: BuilderPersistence = {
+      ...MOCK_PERSISTENCE,
+      transferTeam: mockTransferTeam,
+    };
+    render(
+      <TeamWorkspaceV2
+        team={TWO_POKEMON_TEAM}
+        format={undefined}
+        alts={MULTI_ALT_LIST}
+        persistence={persistence}
+        renderHeader={(actions: WorkspaceHeaderActions) => (
+          <div data-testid="topbar">
+            <button onClick={actions.onOpenImport} data-testid="open-import">
+              Import
+            </button>
+          </div>
+        )}
+      />
+    );
+    return { mockTransferTeam };
+  }
+
+  it("calls transferTeam and pushes to the new alt URL on success", async () => {
+    const user = userEvent.setup();
+    const { mockTransferTeam } = renderWithTransfer();
+
+    // Find the alt select dropdown and change to gary_oak
+    const altSelect = screen.getByRole("combobox");
+    await user.selectOptions(altSelect, "2");
+
+    expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);
+    expect(mockRouterPush).toHaveBeenCalledWith(
+      "/dashboard/alts/gary_oak/teams/1"
+    );
+    expect(mockToastSuccess).toHaveBeenCalledWith(
+      "Team transferred to gary_oak."
+    );
+  });
+
+  it("shows error toast when transferTeam fails", async () => {
+    const user = userEvent.setup();
+    const mockTransferTeam = jest.fn().mockResolvedValue({
+      success: false,
+      error: "Transfer denied",
+    });
+    const persistence: BuilderPersistence = {
+      ...MOCK_PERSISTENCE,
+      transferTeam: mockTransferTeam,
+    };
+    render(
+      <TeamWorkspaceV2
+        team={TWO_POKEMON_TEAM}
+        format={undefined}
+        alts={MULTI_ALT_LIST}
+        persistence={persistence}
+        renderHeader={(actions: WorkspaceHeaderActions) => (
+          <div data-testid="topbar">
+            <button onClick={actions.onOpenImport} data-testid="open-import">
+              Import
+            </button>
+          </div>
+        )}
+      />
+    );
+
+    const altSelect = screen.getByRole("combobox");
+    await user.selectOptions(altSelect, "2");
+
+    expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);
+    expect(mockRouterPush).not.toHaveBeenCalled();
+    expect(mockToastError).toHaveBeenCalledWith("Transfer denied");
   });
 });

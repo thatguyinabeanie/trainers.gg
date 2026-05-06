@@ -20,7 +20,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-import { exportTeamToShowdown } from "@trainers/pokemon";
+import { exportTeamToShowdown, getFormatById } from "@trainers/pokemon";
 import {
   type TeamWithPokemon,
   type CrossAltTeamListItem,
@@ -373,7 +373,7 @@ export function BuilderTopbar({
                         <p className="truncate font-medium">{t.name}</p>
                         <p className="text-muted-foreground text-xs">
                           {t.alt_username}
-                          {t.format ? ` · ${t.format}` : ""}
+                          {t.format ? ` · ${getFormatById(t.format)?.label ?? t.format}` : ""}
                           {" · "}
                           {t.team_pokemon.filter((tp) => tp.pokemon).length}/6
                         </p>

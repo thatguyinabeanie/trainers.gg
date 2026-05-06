@@ -71,8 +71,8 @@ export function DashboardBuilderWrapper({
   return (
     <PersistenceProvider persistence={persistence}>
       {hasPendingRestore && (
-        <div className="border-warning/30 bg-warning/5 flex items-center gap-3 border-b px-4 py-2">
-          <p className="text-warning-foreground text-sm">
+        <div className="flex items-center gap-3 border-b border-amber-500/30 bg-amber-500/5 px-4 py-2">
+          <p className="text-sm text-amber-600 dark:text-amber-400">
             A backup from{" "}
             {backupSavedAt
               ? new Date(backupSavedAt).toLocaleString()
@@ -83,7 +83,7 @@ export function DashboardBuilderWrapper({
             <button
               type="button"
               onClick={handleRestore}
-              className="text-warning-foreground hover:text-warning-foreground/80 text-xs font-medium underline underline-offset-2"
+              className="text-amber-600 hover:text-amber-600/80 dark:text-amber-400 dark:hover:text-amber-400/80 text-xs font-medium underline underline-offset-2"
             >
               Restore
             </button>

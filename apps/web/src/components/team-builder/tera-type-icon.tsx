@@ -64,7 +64,7 @@ const TYPE_SYMBOL_MAP: Record<
 };
 
 // Hexagonal clip-path (pointy-top hexagon)
-const HEXAGON_CLIP =
+export const HEXAGON_CLIP =
   "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)";
 
 // =============================================================================

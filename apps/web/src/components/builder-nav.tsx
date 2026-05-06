@@ -11,15 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TopNavAuthSection } from "@/components/topnav-auth-section";
-
-const NAV_LINKS = [
-  { href: "/tournaments", label: "Tournaments" },
-  { href: "/communities", label: "Communities" },
-  { href: "/builder", label: "Builder" },
-  { href: "/analytics", label: "Analytics" },
-  { href: "/articles", label: "Articles" },
-  { href: "/coaching", label: "Coaching" },
-];
+import { NAV_LINKS } from "@/components/nav-links";
 
 /**
  * Full-width top navigation for the /builder route.
@@ -27,7 +19,12 @@ const NAV_LINKS = [
  * Center: workspace toolbar controls (passed as children).
  * Far right: Auth section (notifications, theme, user avatar).
  */
-export function BuilderNav({ children }: { children?: ReactNode }) {
+
+interface BuilderNavProps {
+  children?: ReactNode;
+}
+
+export function BuilderNav({ children }: BuilderNavProps) {
   return (
     <header className="border-border/40 bg-background/95 supports-backdrop-filter:bg-background/60 relative z-50 w-full shrink-0 border-b pt-[env(safe-area-inset-top)] backdrop-blur">
       <div className="relative flex h-12 items-center px-4 md:px-6">

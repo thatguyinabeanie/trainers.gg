@@ -170,7 +170,7 @@ export function LocalBuilderWorkspace() {
       // Success — clear localStorage and redirect to the new team
       clearLocalTeamStorage();
       toast.success("Team saved to your account!");
-      router.push(result.data!.redirectUrl);
+      router.push(result.data.redirectUrl);
     } catch (error) {
       console.error("Save to account failed:", error);
       toast.error("Something went wrong. Please try again.");

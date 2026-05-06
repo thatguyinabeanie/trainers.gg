@@ -30,6 +30,8 @@ interface TopbarProps {
   onSaveToAccount?: () => void;
   /** Whether the save-to-account operation is in progress. */
   isSaving?: boolean;
+  /** Path to redirect to after sign-in when no `onSaveToAccount` is supplied. */
+  signInRedirectPath?: string;
   onOpenImport: () => void;
   validationErrors: ValidationError[];
   onJumpToPokemon: (pokemonId: number) => void;
@@ -139,6 +141,7 @@ export function Topbar({
   mode = "api",
   onSaveToAccount,
   isSaving,
+  signInRedirectPath,
   onOpenImport,
   validationErrors,
   onJumpToPokemon,
@@ -228,17 +231,17 @@ export function Topbar({
         </Popover>
         {isLocalMode ? (
           onSaveToAccount ? (
-            <button
-              type="button"
+            <Button
+              size="sm"
               onClick={onSaveToAccount}
               disabled={isSaving}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium shadow-xs transition-colors disabled:opacity-50 sm:h-8 sm:px-3 sm:text-sm"
+              className="h-7 px-2.5 text-xs sm:h-8 sm:px-3 sm:text-sm"
             >
               {isSaving ? "Saving..." : "Save to account"}
-            </button>
+            </Button>
           ) : (
             <Link
-              href={`/sign-in?redirect=${encodeURIComponent("/builder?action=save")}`}
+              href={`/sign-in?redirect=${encodeURIComponent(signInRedirectPath ?? "/builder?action=save")}`}
               className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium shadow-xs transition-colors sm:h-8 sm:px-3 sm:text-sm"
             >
               Sign in to save

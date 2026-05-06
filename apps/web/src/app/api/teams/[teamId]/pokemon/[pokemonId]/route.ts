@@ -33,7 +33,13 @@ export async function PATCH(
     const teamId = positiveIntSchema.parse(teamIdStr);
     const pokemonId = positiveIntSchema.parse(pokemonIdStr);
 
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      const result: ActionResult = { success: false, error: "Malformed JSON body" };
+      return NextResponse.json(result, { status: 400 });
+    }
     const parsedData = pokemonUpdateSchema.safeParse(body);
     if (!parsedData.success) {
       const result: ActionResult = {

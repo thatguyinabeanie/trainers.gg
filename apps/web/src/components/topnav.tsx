@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MobileNav } from "@/components/mobile-nav";
+import { NAV_LINKS } from "@/components/nav-links";
 import { TopNavAuthSection } from "@/components/topnav-auth-section";
 
 export function TopNav() {
@@ -16,42 +17,15 @@ export function TopNav() {
 
         {/* Center: Navigation */}
         <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">
-          <Link
-            href="/tournaments"
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-          >
-            Tournaments
-          </Link>
-          <Link
-            href="/communities"
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-          >
-            Communities
-          </Link>
-          <Link
-            href="/builder"
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-          >
-            Builder
-          </Link>
-          <Link
-            href="/analytics"
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-          >
-            Analytics
-          </Link>
-          <Link
-            href="/articles"
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-          >
-            Articles
-          </Link>
-          <Link
-            href="/coaching"
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-          >
-            Coaching
-          </Link>
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
         {/* Right: Auth & Theme */}
