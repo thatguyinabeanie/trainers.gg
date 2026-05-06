@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Search } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 
 import {
   ALL_TYPES,
@@ -29,6 +29,7 @@ import {
 } from "./species-filter-state";
 import { SpeciesSidebar } from "./species-sidebar";
 import { SpeciesSmartSearch } from "./species-smart-search";
+import { SpeciesExpandedPanel } from "./species-expanded-panel";
 
 // =============================================================================
 // Constants
@@ -40,6 +41,7 @@ const HIGH_STAT_THRESHOLD = 110;
 /**
  * Shared Tailwind grid template for each data row.
  *
+ *   20px              — expand/collapse chevron
  *   64px              — sprite circle (size-16, sprite rendered at size-14)
  *   minmax(180px,2fr) — name column. 180px floor fits "Kangaskhan-Mega",
  *                       "Aegislash-Blade", "Charizard-Mega-X", etc. without
@@ -61,7 +63,7 @@ const HIGH_STAT_THRESHOLD = 110;
  *                       by base-stat total)
  */
 const ROW_GRID =
-  "grid-cols-[64px_minmax(180px,2fr)_72px_minmax(160px,2fr)_minmax(180px,2fr)_repeat(6,44px)_48px]";
+  "grid-cols-[20px_64px_minmax(180px,2fr)_72px_minmax(160px,2fr)_minmax(180px,2fr)_repeat(6,44px)_48px]";
 
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
@@ -227,14 +229,22 @@ const STAT_HEADER_COLORS: Record<
 interface SpeciesRowProps {
   entry: SpeciesSearchEntry;
   isCurrent: boolean;
+  isExpanded: boolean;
+  formatId: string;
+  filteredMoves: readonly string[];
   onSelect: () => void;
+  onToggleExpand: () => void;
   onFilterAbility: (ability: string) => void;
 }
 
 function SpeciesRow({
   entry,
   isCurrent,
+  isExpanded,
+  formatId,
+  filteredMoves,
   onSelect,
+  onToggleExpand,
   onFilterAbility,
 }: SpeciesRowProps) {
   const sprite = getPokemonSprite(entry.species);
@@ -250,154 +260,186 @@ function SpeciesRow({
   }
 
   return (
-    // Using `<div role="row" tabIndex={0}>` instead of a wrapping `<button>`
-    // because the row contains nested interactive elements (AbilityCell
-    // `<button>`s) and nested buttons are invalid HTML. The row is itself
-    // keyboard-accessible (tabIndex + onKeyDown handles Enter/Space) and
-    // mouse-accessible (onClick fires onSelect). Nested AbilityCell buttons
-    // stopPropagation so cell clicks don't also select the row.
-    <div
-      role="row"
-      aria-label={`Select ${entry.species}`}
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={handleRowKey}
-      className={cn(
-        "hover:bg-muted/60 focus-visible:bg-muted/80 focus-visible:outline-primary relative grid w-full cursor-pointer items-center gap-2 border-b px-4 py-2 text-left transition-colors outline-none focus-visible:outline-2",
-        ROW_GRID,
-        isCurrent && "bg-primary/5"
-      )}
-    >
-      {/* Sprite — 64px circle, image rendered at 56px */}
-      <div className="bg-primary/10 relative z-10 flex size-16 shrink-0 items-center justify-center rounded-full">
-        <Image
-          src={sprite.url}
-          alt={entry.species}
-          width={56}
-          height={56}
+    <div>
+      {/* Using `<div role="row" tabIndex={0}>` instead of a wrapping `<button>`
+          because the row contains nested interactive elements (AbilityCell
+          `<button>`s) and nested buttons are invalid HTML. The row is itself
+          keyboard-accessible (tabIndex + onKeyDown handles Enter/Space) and
+          mouse-accessible (onClick fires onSelect). Nested AbilityCell buttons
+          stopPropagation so cell clicks don't also select the row. */}
+      <div
+        role="row"
+        aria-label={`Select ${entry.species}`}
+        aria-expanded={isExpanded}
+        tabIndex={0}
+        onClick={onSelect}
+        onKeyDown={handleRowKey}
+        className={cn(
+          "hover:bg-muted/60 focus-visible:bg-muted/80 focus-visible:outline-primary relative grid w-full cursor-pointer items-center gap-2 px-4 py-2 text-left transition-colors outline-none focus-visible:outline-2",
+          ROW_GRID,
+          isCurrent && "bg-primary/5",
+          !isExpanded && "border-b"
+        )}
+      >
+        {/* Expand/collapse chevron */}
+        <button
+          type="button"
+          aria-label={isExpanded ? `Collapse ${entry.species}` : `Expand ${entry.species}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleExpand();
+          }}
+          onKeyDown={(e) => e.stopPropagation()}
           className={cn(
-            "size-14 object-contain",
-            sprite.pixelated && "[image-rendering:pixelated]"
+            "text-muted-foreground hover:text-foreground relative z-10 flex items-center justify-center transition-transform",
+            isExpanded && "rotate-90"
           )}
-          unoptimized
-        />
-      </div>
+        >
+          <ChevronRight className="size-4" />
+        </button>
 
-      {/* Name */}
-      <span className="text-foreground relative z-10 min-w-0 truncate text-sm font-semibold">
-        {entry.species}
-      </span>
-
-      <div className="relative z-10 flex min-w-0 items-center gap-1.5">
-        {entry.types[0] ? (
-          <TypeSymbolIcon
-            type={
-              entry.types[0] as Parameters<typeof TypeSymbolIcon>[0]["type"]
-            }
-            size={28}
+        {/* Sprite — 64px circle */}
+        <div className="bg-primary/10 relative z-10 flex size-16 shrink-0 items-center justify-center rounded-full">
+          <Image
+            src={sprite.url}
+            alt={entry.species}
+            width={56}
+            height={56}
+            className={cn(
+              "size-14 object-contain",
+              sprite.pixelated && "[image-rendering:pixelated]"
+            )}
+            unoptimized
           />
-        ) : (
-          <span className="text-muted-foreground text-xs">—</span>
-        )}
-        {entry.types[1] ? (
-          <TypeSymbolIcon
-            type={
-              entry.types[1] as Parameters<typeof TypeSymbolIcon>[0]["type"]
-            }
-            size={28}
-          />
-        ) : (
-          <span className="text-muted-foreground text-xs">—</span>
-        )}
-      </div>
+        </div>
 
-      {/* Regular abilities — slot 1 stacked above slot 2, left-aligned.
-          If the species has only one regular ability, render just that one. */}
-      <div className="relative z-10 flex min-w-0 flex-col justify-center gap-0.5 overflow-hidden">
-        {entry.abilitySlot1 ? (
+        {/* Name */}
+        <span className="text-foreground relative z-10 min-w-0 truncate text-sm font-semibold">
+          {entry.species}
+        </span>
+
+        <div className="relative z-10 flex min-w-0 items-center gap-1.5">
+          {entry.types[0] ? (
+            <TypeSymbolIcon
+              type={
+                entry.types[0] as Parameters<typeof TypeSymbolIcon>[0]["type"]
+              }
+              size={28}
+            />
+          ) : (
+            <span className="text-muted-foreground text-xs">—</span>
+          )}
+          {entry.types[1] ? (
+            <TypeSymbolIcon
+              type={
+                entry.types[1] as Parameters<typeof TypeSymbolIcon>[0]["type"]
+              }
+              size={28}
+            />
+          ) : (
+            <span className="text-muted-foreground text-xs">—</span>
+          )}
+        </div>
+
+        {/* Regular abilities — slot 1 stacked above slot 2, left-aligned.
+            If the species has only one regular ability, render just that one. */}
+        <div className="relative z-10 flex min-w-0 flex-col justify-center gap-0.5 overflow-hidden">
+          {entry.abilitySlot1 ? (
+            <AbilityCell
+              name={entry.abilitySlot1}
+              slot="slot1"
+              onFilter={onFilterAbility}
+            />
+          ) : null}
+          {entry.abilitySlot2 ? (
+            <AbilityCell
+              name={entry.abilitySlot2}
+              slot="slot2"
+              onFilter={onFilterAbility}
+            />
+          ) : null}
+        </div>
+
+        {/* Hidden ability — italic + muted, left-aligned in its own column */}
+        <div className="relative z-10 flex min-w-0 items-center overflow-hidden">
           <AbilityCell
-            name={entry.abilitySlot1}
-            slot="slot1"
+            name={entry.hiddenAbility ?? null}
+            slot="hidden"
             onFilter={onFilterAbility}
           />
-        ) : null}
-        {entry.abilitySlot2 ? (
-          <AbilityCell
-            name={entry.abilitySlot2}
-            slot="slot2"
-            onFilter={onFilterAbility}
+        </div>
+
+        {/* HP */}
+        <span
+          className={cn(
+            "relative z-10 text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.hp)
+          )}
+        >
+          {entry.baseStats.hp}
+        </span>
+        {/* Atk */}
+        <span
+          className={cn(
+            "relative z-10 text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.atk)
+          )}
+        >
+          {entry.baseStats.atk}
+        </span>
+        {/* Def */}
+        <span
+          className={cn(
+            "relative z-10 text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.def)
+          )}
+        >
+          {entry.baseStats.def}
+        </span>
+        {/* SpA */}
+        <span
+          className={cn(
+            "relative z-10 text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.spa)
+          )}
+        >
+          {entry.baseStats.spa}
+        </span>
+        {/* SpD */}
+        <span
+          className={cn(
+            "relative z-10 text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.spd)
+          )}
+        >
+          {entry.baseStats.spd}
+        </span>
+        {/* Spe */}
+        <span
+          className={cn(
+            "relative z-10 text-center font-mono text-xs tabular-nums",
+            statValueClass(entry.baseStats.spe)
+          )}
+        >
+          {entry.baseStats.spe}
+        </span>
+
+        {/* BST */}
+        <span className="border-border/60 text-foreground relative z-10 border-l pl-1.5 text-center font-mono text-xs font-semibold tabular-nums">
+          {entry.bst}
+        </span>
+      </div>
+
+      {/* Expanded content — learnset panel */}
+      {isExpanded && (
+        <div className="border-b">
+          <SpeciesExpandedPanel
+            species={entry.species}
+            formatId={formatId}
+            filteredMoves={filteredMoves}
           />
-        ) : null}
-      </div>
-
-      {/* Hidden ability — italic + muted, left-aligned in its own column */}
-      <div className="relative z-10 flex min-w-0 items-center overflow-hidden">
-        <AbilityCell
-          name={entry.hiddenAbility ?? null}
-          slot="hidden"
-          onFilter={onFilterAbility}
-        />
-      </div>
-
-      {/* HP */}
-      <span
-        className={cn(
-          "relative z-10 text-center font-mono text-xs tabular-nums",
-          statValueClass(entry.baseStats.hp)
-        )}
-      >
-        {entry.baseStats.hp}
-      </span>
-      {/* Atk */}
-      <span
-        className={cn(
-          "relative z-10 text-center font-mono text-xs tabular-nums",
-          statValueClass(entry.baseStats.atk)
-        )}
-      >
-        {entry.baseStats.atk}
-      </span>
-      {/* Def */}
-      <span
-        className={cn(
-          "relative z-10 text-center font-mono text-xs tabular-nums",
-          statValueClass(entry.baseStats.def)
-        )}
-      >
-        {entry.baseStats.def}
-      </span>
-      {/* SpA */}
-      <span
-        className={cn(
-          "relative z-10 text-center font-mono text-xs tabular-nums",
-          statValueClass(entry.baseStats.spa)
-        )}
-      >
-        {entry.baseStats.spa}
-      </span>
-      {/* SpD */}
-      <span
-        className={cn(
-          "relative z-10 text-center font-mono text-xs tabular-nums",
-          statValueClass(entry.baseStats.spd)
-        )}
-      >
-        {entry.baseStats.spd}
-      </span>
-      {/* Spe */}
-      <span
-        className={cn(
-          "relative z-10 text-center font-mono text-xs tabular-nums",
-          statValueClass(entry.baseStats.spe)
-        )}
-      >
-        {entry.baseStats.spe}
-      </span>
-
-      {/* BST */}
-      <span className="border-border/60 text-foreground relative z-10 border-l pl-1.5 text-center font-mono text-xs font-semibold tabular-nums">
-        {entry.bst}
-      </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -446,6 +488,9 @@ export function SpeciesPicker({
   // Default sort: BST descending — surfaces the strongest legal Pokémon
   // overall before the user narrows by stat or role.
   const [sort, setSort] = useState<SortState>({ col: "bst", dir: "desc" });
+
+  // Track which species row is expanded (null = none expanded)
+  const [expandedSpecies, setExpandedSpecies] = useState<string | null>(null);
 
   // Scroll container ref for the virtualizer
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -646,14 +691,19 @@ export function SpeciesPicker({
   const rowVirtualizer = useVirtualizer({
     count: matched.length,
     getScrollElement: () => scrollRef.current,
-    // Row height: 64px sprite (size-16) + py-2 top + py-2 bottom ≈ 80px
-    estimateSize: () => 80,
+    // Estimate: collapsed row ~80px, expanded row will be measured dynamically
+    estimateSize: (index) => {
+      const entry = matched[index];
+      return entry?.species === expandedSpecies ? 400 : 80;
+    },
     overscan: 5,
     scrollMargin,
+    measureElement: (el) => el.getBoundingClientRect().height,
   });
 
   function clearAllFilters() {
     setFilters(DEFAULT_SPECIES_FILTERS);
+    setExpandedSpecies(null);
   }
 
   // ---------------------------------------------------------------------------
@@ -785,6 +835,7 @@ export function SpeciesPicker({
                 role="row"
               >
                 <span aria-hidden="true" />
+                <span aria-hidden="true" />
                 <SortHeaderButton
                   col="name"
                   label="Name"
@@ -876,13 +927,23 @@ export function SpeciesPicker({
                     return (
                       <div
                         key={virtualRow.key}
+                        ref={rowVirtualizer.measureElement}
+                        data-index={virtualRow.index}
                         className="absolute right-0 left-0"
                         style={{ top: virtualRow.start - scrollMargin }}
                       >
                         <SpeciesRow
                           entry={entry}
                           isCurrent={entry.species === value}
+                          isExpanded={entry.species === expandedSpecies}
+                          formatId={format?.id ?? DEFAULT_FORMAT_ID}
+                          filteredMoves={filters.moves}
                           onSelect={() => onPick(entry.species)}
+                          onToggleExpand={() =>
+                            setExpandedSpecies((prev) =>
+                              prev === entry.species ? null : entry.species
+                            )
+                          }
                           onFilterAbility={handleAbilityFilter}
                         />
                       </div>

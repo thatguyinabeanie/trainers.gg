@@ -103,8 +103,8 @@ const DEFAULT_YOURS: SideModifiers = {
   unburden: false,
   stage: 0,
   status: "healthy",
-  evs: null,
-  nature: "positive",
+  evs: 0,
+  nature: "neutral",
 };
 
 const DEFAULT_THEIRS: SideModifiers = {
@@ -113,8 +113,8 @@ const DEFAULT_THEIRS: SideModifiers = {
   unburden: false,
   stage: 0,
   status: "healthy",
-  evs: null,
-  nature: "positive",
+  evs: 0,
+  nature: "neutral",
 };
 
 const DEFAULT_TOGGLE: ToggleState = {
@@ -341,7 +341,7 @@ function metaToScored(
   // EVs: if custom set use that; otherwise max EVs for +/neutral, 0 for -
   const evs =
     customEvs ??
-    (toggle.theirs.nature === "negative" ? 0 : champions ? 32 : 252);
+    (toggle.theirs.nature === "negative" ? 0 : champions ? 0 : 252);
 
   const rawSpeed = champions
     ? calculateChampionsStat(b, evs, natureMult)
@@ -453,6 +453,8 @@ function TierMonRow({
           "border-border/30 [&:hover>td]:bg-muted/50 border-b hover:bg-transparent [&:hover>td:first-child]:rounded-l-lg [&:hover>td:last-child]:rounded-r-lg",
           mon.isSelected && "bg-primary/10",
           mon.isYours && !mon.isSelected && "bg-primary/5",
+          mon.isYours &&
+            "[&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg [&>td]:border-y [&>td]:border-primary/25 [&>td:first-child]:border-l [&>td:last-child]:border-r",
           isFaster && "opacity-40"
         )}
       >
@@ -739,7 +741,7 @@ export function SpeedTiersPanel({
 
       {/* Tier table */}
       <div className="min-h-0 flex-1 overflow-y-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <table className="w-full table-fixed caption-bottom text-sm">
+        <table className="w-full table-fixed border-separate border-spacing-0 caption-bottom text-sm">
           <colgroup>
             <col className="w-full" />
             <col className="w-14" />
@@ -863,7 +865,7 @@ export function SpeedTiersPanel({
                 aria-label="Our Scarf"
               />
             </div>
-            <span className="text-center text-[11px]">Scarf</span>
+            <span className="text-center text-[11px]">Choice Scarf</span>
             <div className="flex justify-start">
               <Switch
                 size="sm"
@@ -950,7 +952,7 @@ export function SpeedTiersPanel({
 
             {/* Nature — theirs only */}
             <div />
-            <span className="text-center text-[11px]">Nature</span>
+            <span className="text-center text-[11px]">SPE Nature</span>
             <div className="flex justify-start gap-0.5">
               {(["negative", "neutral", "positive"] as const).map((n) => (
                 <button
