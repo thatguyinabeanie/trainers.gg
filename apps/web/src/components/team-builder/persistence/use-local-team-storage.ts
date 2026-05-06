@@ -8,7 +8,7 @@
  * for the dashboard builder.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { TeamWithPokemon } from "@trainers/supabase";
 import { logError } from "@trainers/utils";
@@ -20,6 +20,9 @@ import type { LocalTeamData } from "./types";
 
 const LOCAL_TEAM_STORAGE_KEY = "trainersgg.builder.localTeam.v1";
 const DEBOUNCE_MS = 300;
+
+/** Module-level ref to the pending debounce timer so clearLocalTeamStorage can cancel it. */
+let pendingWriteTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** Default format for new local teams — current primary VGC format. */
 const DEFAULT_FORMAT = "gen9vgc2026regi";
@@ -81,6 +84,7 @@ function readFromStorage(): TeamWithPokemon | null {
     return team;
   } catch (error) {
     logError("localTeamStorage.read", error);
+    localStorage.removeItem(LOCAL_TEAM_STORAGE_KEY);
     toast.error(
       "Your saved team data was corrupted and couldn't be loaded. Starting fresh."
     );
@@ -112,6 +116,11 @@ function writeToStorage(team: TeamWithPokemon): void {
 export function clearLocalTeamStorage(): boolean {
   if (typeof window === "undefined") return true;
   try {
+    // Cancel any pending debounced write to prevent it from re-creating the key
+    if (pendingWriteTimer) {
+      clearTimeout(pendingWriteTimer);
+      pendingWriteTimer = null;
+    }
     localStorage.removeItem(LOCAL_TEAM_STORAGE_KEY);
     return true;
   } catch (error) {
@@ -141,7 +150,6 @@ interface UseLocalTeamStorageReturn {
 export function useLocalTeamStorage(): UseLocalTeamStorageReturn {
   const [team, setTeamState] = useState<TeamWithPokemon>(createEmptyTeam);
   const [hydrated, setHydrated] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -160,9 +168,10 @@ export function useLocalTeamStorage(): UseLocalTeamStorageReturn {
     setTeamState((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
 
-      // Schedule debounced write
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
+      // Schedule debounced write (module-level so clearLocalTeamStorage can cancel)
+      if (pendingWriteTimer) clearTimeout(pendingWriteTimer);
+      pendingWriteTimer = setTimeout(() => {
+        pendingWriteTimer = null;
         writeToStorage(next);
       }, DEBOUNCE_MS);
 

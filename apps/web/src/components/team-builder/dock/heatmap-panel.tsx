@@ -50,6 +50,20 @@ interface PokemonRow {
 // Helpers
 // =============================================================================
 
+/**
+ * Compute the net coverage score for a row or column.
+ * Defensive: (resists + immunities) - weaknesses (positive = well-defended)
+ * Offensive: super-effective - (resisted + immune) (positive = good coverage)
+ */
+function netScore(
+  counts: { wk: number; rs: number; im: number },
+  mode: CoverageMode
+): number {
+  return mode === "defensive"
+    ? counts.rs + counts.im - counts.wk
+    : counts.wk - counts.rs - counts.im;
+}
+
 function getDefenderTypes(
   pokemon: Tables<"pokemon">,
   showTera: boolean
@@ -492,12 +506,10 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
 
               {/* Row summary — net score */}
               {(() => {
-                // Defensive: (resists + immunities) - weaknesses (positive = well-defended)
-                // Offensive: super-effective - (resisted + immune) (positive = good coverage)
-                const net =
-                  mode === "defensive"
-                    ? row.resistCount + row.immuneCount - row.weakCount
-                    : row.weakCount - row.resistCount - row.immuneCount;
+                const net = netScore(
+                  { wk: row.weakCount, rs: row.resistCount, im: row.immuneCount },
+                  mode
+                );
                 return (
                   <span
                     className={cn(
@@ -517,6 +529,11 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
           ))}
 
           {/* Empty placeholder rows for remaining team slots */}
+          {rows.length === 0 && (
+            <span className="sr-only" role="status">
+              Add Pokémon to your team to populate the heatmap.
+            </span>
+          )}
           {Array.from({ length: Math.max(0, 6 - rows.length) }).map(
             (_, idx) => (
               <div
@@ -551,10 +568,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
             TOTAL
           </span>
           {colTotals.map((col, idx) => {
-            const net =
-              mode === "defensive"
-                ? col.rs + col.im - col.wk
-                : col.wk - col.rs - col.im;
+            const net = netScore(col, mode);
             return (
               <span
                 key={ALL_TYPES[idx]}
@@ -574,13 +588,10 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
           })}
           {/* Grand total */}
           {(() => {
-            const grandNet = colTotals.reduce((s, col) => {
-              const n =
-                mode === "defensive"
-                  ? col.rs + col.im - col.wk
-                  : col.wk - col.rs - col.im;
-              return s + n;
-            }, 0);
+            const grandNet = colTotals.reduce(
+              (s, col) => s + netScore(col, mode),
+              0
+            );
             return (
               <span
                 className={cn(

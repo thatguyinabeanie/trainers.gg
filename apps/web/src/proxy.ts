@@ -76,7 +76,18 @@ function createSubdomainAwareUrl(
 }
 
 /**
- * If the request came in on a mapped subdomain, rewrite the response to the
+ * Compute the rewritten pathname, guarding against double-prefixing.
+ * e.g. dashboard.trainers.gg/dashboard/teams → /dashboard/teams (not /dashboard/dashboard/teams)
+ */
+function getRewrittenPath(rewriteBase: string, pathname: string): string {
+  if (pathname === "/" || pathname === rewriteBase) return rewriteBase;
+  return pathname.startsWith(`${rewriteBase}/`)
+    ? pathname
+    : `${rewriteBase}${pathname}`;
+}
+
+/**
+ * When the request matches a subdomain host, rewrite the URL to the mapped
  * effective path and copy session-refresh cookies from the auth response.
  * Otherwise, return the auth response as-is.
  */
@@ -89,18 +100,13 @@ function applyRewrite(
   if (!rewriteBase) return response;
 
   const url = request.nextUrl.clone();
-  // Guard against double-prefixing (e.g., links like /dashboard/teams on dashboard.trainers.gg)
-  url.pathname =
-    pathname === "/" || pathname === rewriteBase
-      ? rewriteBase
-      : pathname.startsWith(`${rewriteBase}/`)
-        ? pathname
-        : `${rewriteBase}${pathname}`;
+  url.pathname = getRewrittenPath(rewriteBase, pathname);
   const rewrite = NextResponse.rewrite(url);
 
-  // Carry response headers (e.g., x-impersonation-session) — skip set-cookie
+  // Carry response headers (e.g., x-impersonation-session) — skip set-cookie and internal x-middleware-* headers
   for (const [name, value] of response.headers.entries()) {
-    if (name.toLowerCase() !== "set-cookie") {
+    const lower = name.toLowerCase();
+    if (lower !== "set-cookie" && !lower.startsWith("x-middleware-")) {
       rewrite.headers.set(name, value);
     }
   }
@@ -129,13 +135,10 @@ export default async function proxy(request: NextRequest) {
   const hostname = request.headers.get("host")?.replace(/:\d+$/, "") ?? "";
   const rewriteBase = subdomainRewriteMap[hostname];
   const shouldRewrite = rewriteBase && !isSubdomainExempt(pathname);
-  const effectivePathname = shouldRewrite
-    ? pathname === "/" || pathname === rewriteBase
-      ? rewriteBase
-      : pathname.startsWith(`${rewriteBase}/`)
-        ? pathname
-        : `${rewriteBase}${pathname}`
-    : pathname;
+  const effectivePathname =
+    shouldRewrite && rewriteBase
+      ? getRewrittenPath(rewriteBase, pathname)
+      : pathname;
 
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);

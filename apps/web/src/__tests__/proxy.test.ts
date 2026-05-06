@@ -313,5 +313,21 @@ describe("proxy", () => {
       const cookie = result.cookies.get("sb-access-token");
       expect(cookie?.value).toBe("refreshed-value");
     });
+
+    it("should NOT double-prefix when path already starts with rewrite base", async () => {
+      createMockSupabaseClient({
+        user: { id: "user-1", email: "u@test.com" },
+      });
+
+      const result = await proxy(
+        createRequest("/dashboard/teams", "http://dashboard.trainers.gg", {
+          host: "dashboard.trainers.gg",
+        })
+      );
+
+      const rewriteUrl = result.headers.get("x-middleware-rewrite");
+      expect(rewriteUrl).toContain("/dashboard/teams");
+      expect(rewriteUrl).not.toContain("/dashboard/dashboard");
+    });
   });
 });

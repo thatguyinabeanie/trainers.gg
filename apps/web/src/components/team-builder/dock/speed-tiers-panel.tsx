@@ -409,7 +409,8 @@ interface TierMonRowProps {
   trickRoom: boolean;
   abilityActive: boolean;
   showGroupSeparator?: boolean;
-  groupBaseSpeed?: number;
+  groupValue?: number;
+  groupLabel?: string;
 }
 
 function TierMonRow({
@@ -418,7 +419,8 @@ function TierMonRow({
   trickRoom,
   abilityActive,
   showGroupSeparator,
-  groupBaseSpeed,
+  groupValue,
+  groupLabel,
 }: TierMonRowProps) {
   const { mon, speed } = scored;
   const isTie = !mon.isSelected && speed === heroSpeed && heroSpeed > 0;
@@ -437,10 +439,10 @@ function TierMonRow({
           >
             <div className="border-primary/40 flex items-center justify-center gap-1.5 border-t-2 pt-0.5">
               <span className="text-primary/70 font-mono text-[10px]">
-                {groupBaseSpeed}
+                {groupValue}
               </span>
               <span className="text-muted-foreground/70 text-[9px] tracking-wider uppercase">
-                Base Speed
+                {groupLabel ?? "Base Speed"}
               </span>
             </div>
           </TableCell>
@@ -793,7 +795,8 @@ export function SpeedTiersPanel({
                       : toggle.theirs.unburden
                   )}
                   showGroupSeparator={showSeparator}
-                  groupBaseSpeed={scored.mon.baseSpeed}
+                  groupValue={curr}
+                  groupLabel={toggle.sortBy === "base" ? "Base Speed" : "Speed"}
                 />
               );
             })}
