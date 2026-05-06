@@ -25,7 +25,11 @@ function deriveCookieDomain(): string | undefined {
       return ".trainers.gg";
     }
   } catch {
-    // Invalid URL — fall through to undefined
+    // Invalid URL — log for visibility but fall through to undefined
+    console.warn(
+      "[supabase] Invalid NEXT_PUBLIC_SITE_URL, cannot derive cookie domain:",
+      siteUrl
+    );
   }
 
   return undefined;

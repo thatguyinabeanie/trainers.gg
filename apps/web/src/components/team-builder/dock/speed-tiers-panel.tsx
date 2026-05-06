@@ -624,6 +624,17 @@ export function SpeedTiersPanel({
     return isAsc ? aVal - bVal : bVal - aVal;
   });
 
+  const getGroupValue = (s: ScoredMon) => {
+    switch (toggle.sortBy) {
+      case "base":
+        return s.mon.baseSpeed;
+      case "speed":
+        return s.speed;
+      default:
+        return s.speed;
+    }
+  };
+
   // ---- helpers ----------------------------------------------------------------
 
   function setWeather(w: Weather) {
@@ -763,16 +774,6 @@ export function SpeedTiersPanel({
           </TableHeader>
           <TableBody>
             {sorted.map((scored, i) => {
-              const getGroupValue = (s: ScoredMon) => {
-                switch (toggle.sortBy) {
-                  case "base":
-                    return s.mon.baseSpeed;
-                  case "speed":
-                    return s.speed;
-                  default:
-                    return s.speed;
-                }
-              };
               const prev = i > 0 ? getGroupValue(sorted[i - 1]!) : null;
               const curr = getGroupValue(scored);
               const showSeparator = i === 0 || (prev !== null && prev !== curr);

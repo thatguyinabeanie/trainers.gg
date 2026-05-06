@@ -28,6 +28,27 @@ const DEFAULT_FORMAT = "gen9vgc2026regi";
 // Helpers
 // =============================================================================
 
+/**
+ * Deduplicate team_pokemon entries by pokemon_id.
+ * Keeps the last entry per ID (most recently added) by iterating in reverse.
+ * Returns the original array reference if no duplicates found.
+ */
+function dedupeTeamPokemon(
+  teamPokemon: TeamWithPokemon["team_pokemon"]
+): TeamWithPokemon["team_pokemon"] {
+  if (teamPokemon.length === 0) return teamPokemon;
+  const seen = new Set<number>();
+  const deduped: typeof teamPokemon = [];
+  for (let i = teamPokemon.length - 1; i >= 0; i--) {
+    const tp = teamPokemon[i]!;
+    if (!seen.has(tp.pokemon_id)) {
+      seen.add(tp.pokemon_id);
+      deduped.unshift(tp);
+    }
+  }
+  return deduped.length === teamPokemon.length ? teamPokemon : deduped;
+}
+
 function createEmptyTeam(): TeamWithPokemon {
   return {
     id: -1,
@@ -54,25 +75,8 @@ function readFromStorage(): TeamWithPokemon | null {
     const parsed: LocalTeamData = JSON.parse(raw);
     if (parsed.version !== 1) return null;
 
-    // Deduplicate team_pokemon by pokemon.id — previous HMR counter resets
-    // could produce entries with colliding IDs at different positions. Keep the
-    // last entry per ID (most recently added).
     const team = parsed.team;
-    if (team.team_pokemon.length > 0) {
-      const seen = new Set<number>();
-      const deduped: typeof team.team_pokemon = [];
-      // Iterate in reverse so the last-added entry (highest position) wins.
-      for (let i = team.team_pokemon.length - 1; i >= 0; i--) {
-        const tp = team.team_pokemon[i]!;
-        if (!seen.has(tp.pokemon_id)) {
-          seen.add(tp.pokemon_id);
-          deduped.unshift(tp);
-        }
-      }
-      if (deduped.length !== team.team_pokemon.length) {
-        team.team_pokemon = deduped;
-      }
-    }
+    team.team_pokemon = dedupeTeamPokemon(team.team_pokemon);
 
     return team;
   } catch (error) {
@@ -87,23 +91,11 @@ function readFromStorage(): TeamWithPokemon | null {
 function writeToStorage(team: TeamWithPokemon): void {
   if (typeof window === "undefined") return;
   try {
-    // Deduplicate before persisting as defense-in-depth against bugs
-    // producing duplicate pokemon_id entries during a session.
-    let teamToWrite = team;
-    if (team.team_pokemon.length > 0) {
-      const seen = new Set<number>();
-      const deduped: typeof team.team_pokemon = [];
-      for (let i = team.team_pokemon.length - 1; i >= 0; i--) {
-        const tp = team.team_pokemon[i]!;
-        if (!seen.has(tp.pokemon_id)) {
-          seen.add(tp.pokemon_id);
-          deduped.unshift(tp);
-        }
-      }
-      if (deduped.length !== team.team_pokemon.length) {
-        teamToWrite = { ...team, team_pokemon: deduped };
-      }
-    }
+    // Deduplicate before persisting as defense-in-depth
+    const teamToWrite = {
+      ...team,
+      team_pokemon: dedupeTeamPokemon(team.team_pokemon),
+    };
 
     const data: LocalTeamData = {
       team: teamToWrite,

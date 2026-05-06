@@ -289,10 +289,11 @@ describe("proxy", () => {
       );
 
       // dashboard.trainers.gg/ maps to /dashboard which is protected
+      // redirect uses raw pathname ("/") since the user stays on the subdomain
       expect(result.status).toBe(307);
       const location = new URL(result.headers.get("location")!);
       expect(location.pathname).toBe("/sign-in");
-      expect(location.searchParams.get("redirect")).toBe("/dashboard");
+      expect(location.searchParams.get("redirect")).toBe("/");
     });
 
     it("should carry session cookies on rewrite response", async () => {

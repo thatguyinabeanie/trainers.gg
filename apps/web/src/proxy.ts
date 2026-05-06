@@ -49,6 +49,32 @@ const subdomainRewriteMap: Record<string, string> = {
   "dashboard.trainers.gg": "/dashboard",
 };
 
+/** Paths that bypass subdomain rewriting — served as root-level routes even on subdomains. */
+const SUBDOMAIN_EXEMPT_PATHS = ["/sign-in", "/sign-up"];
+
+function isSubdomainExempt(pathname: string): boolean {
+  return SUBDOMAIN_EXEMPT_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
+}
+
+/**
+ * Create a redirect URL that accounts for subdomain rewriting.
+ * When on a subdomain, strips the rewrite base prefix from the target path
+ * so the subdomain rewrite doesn't double-prefix it.
+ */
+function createSubdomainAwareUrl(
+  request: NextRequest,
+  targetPath: string,
+  rewriteBase: string | undefined
+): URL {
+  if (rewriteBase && targetPath.startsWith(rewriteBase)) {
+    const stripped = targetPath.slice(rewriteBase.length) || "/";
+    return new URL(stripped, request.url);
+  }
+  return new URL(targetPath, request.url);
+}
+
 /**
  * If the request came in on a mapped subdomain, rewrite the response to the
  * effective path and copy session-refresh cookies from the auth response.
@@ -85,9 +111,12 @@ export default async function proxy(request: NextRequest) {
   // Determine if this is a subdomain request that needs rewriting.
   // We compute the effective pathname so all auth/route checks run against
   // the intended destination (e.g. dashboard.trainers.gg/ → /dashboard).
+  // Auth paths (/sign-in, /sign-up) are exempt from rewriting to prevent
+  // redirect loops (e.g. dashboard.trainers.gg/sign-in → /dashboard/sign-in → protected → loop).
   const hostname = request.headers.get("host")?.replace(/:\d+$/, "") ?? "";
   const rewriteBase = subdomainRewriteMap[hostname];
-  const effectivePathname = rewriteBase
+  const shouldRewrite = rewriteBase && !isSubdomainExempt(pathname);
+  const effectivePathname = shouldRewrite
     ? `${rewriteBase}${pathname === "/" ? "" : pathname}`
     : pathname;
 
@@ -209,13 +238,16 @@ export default async function proxy(request: NextRequest) {
     user &&
     (effectivePathname === "/sign-in" || effectivePathname === "/sign-up")
   ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(
+      createSubdomainAwareUrl(request, "/dashboard", rewriteBase)
+    );
   }
 
   // Protected routes always require authentication
   if (!user && isProtectedRoute(effectivePathname)) {
     const signInUrl = new URL("/sign-in", request.url);
-    signInUrl.searchParams.set("redirect", effectivePathname);
+    // Use raw pathname on subdomains (the rewrite will re-add the prefix after auth)
+    signInUrl.searchParams.set("redirect", rewriteBase ? pathname : effectivePathname);
     return NextResponse.redirect(signInUrl);
   }
 
@@ -226,7 +258,9 @@ export default async function proxy(request: NextRequest) {
     !isOnboardingExempt(effectivePathname) &&
     needsOnboarding(user.user_metadata?.username)
   ) {
-    return NextResponse.redirect(new URL("/dashboard/onboarding", request.url));
+    return NextResponse.redirect(
+      createSubdomainAwareUrl(request, "/dashboard/onboarding", rewriteBase)
+    );
   }
 
   // Reverse gate: if user is on /dashboard/onboarding but already has a
@@ -236,10 +270,17 @@ export default async function proxy(request: NextRequest) {
     effectivePathname.startsWith("/dashboard/onboarding") &&
     !needsOnboarding(user.user_metadata?.username)
   ) {
-    return NextResponse.redirect(new URL("/dashboard/overview", request.url));
+    return NextResponse.redirect(
+      createSubdomainAwareUrl(request, "/dashboard/overview", rewriteBase)
+    );
   }
 
-  return applyRewrite(request, rewriteBase, pathname, response);
+  return applyRewrite(
+    request,
+    shouldRewrite ? rewriteBase : undefined,
+    pathname,
+    response
+  );
 }
 
 export const config = {

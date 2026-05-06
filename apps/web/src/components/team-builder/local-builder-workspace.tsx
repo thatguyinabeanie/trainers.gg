@@ -80,18 +80,19 @@ export function LocalBuilderWorkspace() {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     let cancelled = false;
+    const userId = user.id;
 
     async function fetchData() {
       setTeamsLoading(true);
       try {
-        const fetchedAlts = await getAltsByUserId(supabase, user!.id);
+        const fetchedAlts = await getAltsByUserId(supabase, userId);
         if (cancelled) return;
         setAlts(fetchedAlts);
         if (fetchedAlts.length > 0 && !selectedAltId) {
           setSelectedAltId(fetchedAlts[0]!.id);
         }
 
-        const teams = await getTeamsForUser(supabase, user!.id);
+        const teams = await getTeamsForUser(supabase, userId);
         if (cancelled) return;
         setUserTeams(teams);
       } catch (err) {
@@ -138,6 +139,10 @@ export function LocalBuilderWorkspace() {
 
   async function handleSaveToAccount() {
     if (isSaving) return;
+    if (!user) {
+      toast.error("You must be signed in to save a team.");
+      return;
+    }
     setIsSaving(true);
 
     try {
@@ -147,7 +152,7 @@ export function LocalBuilderWorkspace() {
         targetAlt = alts.find((a) => a.id === selectedAltId);
       }
       if (!targetAlt) {
-        const fetchedAlts = await getAltsByUserId(supabase, user!.id);
+        const fetchedAlts = await getAltsByUserId(supabase, user.id);
         if (!fetchedAlts || fetchedAlts.length === 0) {
           toast.error(
             "No profile found. Please complete your profile setup first."
