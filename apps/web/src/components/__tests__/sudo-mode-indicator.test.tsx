@@ -1,10 +1,25 @@
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SudoModeIndicator } from "../sudo-mode-indicator";
 
 const mockCheckSudoStatus = jest.fn();
 jest.mock("@/lib/sudo/actions", () => ({
   checkSudoStatus: (...args: unknown[]) => mockCheckSudoStatus(...args),
 }));
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+    },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
 
 describe("SudoModeIndicator", () => {
   beforeEach(() => {
@@ -25,10 +40,12 @@ describe("SudoModeIndicator", () => {
       isActive: false,
       isSiteAdmin: false,
     });
-    const { container } = render(<SudoModeIndicator />);
+    const { container } = render(<SudoModeIndicator />, {
+      wrapper: createWrapper(),
+    });
 
-    await act(async () => {
-      await Promise.resolve();
+    await waitFor(() => {
+      expect(mockCheckSudoStatus).toHaveBeenCalled();
     });
 
     expect(container).toBeEmptyDOMElement();
@@ -39,13 +56,11 @@ describe("SudoModeIndicator", () => {
       isActive: true,
       isSiteAdmin: true,
     });
-    render(<SudoModeIndicator />);
+    render(<SudoModeIndicator />, { wrapper: createWrapper() });
 
-    await act(async () => {
-      await Promise.resolve();
+    await waitFor(() => {
+      expect(screen.getByText("Sudo Mode Active")).toBeInTheDocument();
     });
-
-    expect(screen.getByText("Sudo Mode Active")).toBeInTheDocument();
   });
 
   it("polls checkSudoStatus every 30 seconds", async () => {
@@ -53,20 +68,19 @@ describe("SudoModeIndicator", () => {
       isActive: false,
       isSiteAdmin: true,
     });
-    render(<SudoModeIndicator />);
+    render(<SudoModeIndicator />, { wrapper: createWrapper() });
 
-    await act(async () => {
-      await Promise.resolve();
+    await waitFor(() => {
+      expect(mockCheckSudoStatus).toHaveBeenCalledTimes(1);
     });
-
-    expect(mockCheckSudoStatus).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       jest.advanceTimersByTime(30_000);
-      await Promise.resolve();
     });
 
-    expect(mockCheckSudoStatus).toHaveBeenCalledTimes(2);
+    await waitFor(() => {
+      expect(mockCheckSudoStatus).toHaveBeenCalledTimes(2);
+    });
   });
 
   it("updates to active when poll returns isActive=true", async () => {
@@ -74,48 +88,36 @@ describe("SudoModeIndicator", () => {
       .mockResolvedValueOnce({ isActive: false, isSiteAdmin: true })
       .mockResolvedValueOnce({ isActive: true, isSiteAdmin: true });
 
-    render(<SudoModeIndicator />);
+    render(<SudoModeIndicator />, { wrapper: createWrapper() });
 
-    await act(async () => {
-      await Promise.resolve();
+    await waitFor(() => {
+      expect(mockCheckSudoStatus).toHaveBeenCalledTimes(1);
     });
 
     expect(screen.queryByText("Sudo Mode Active")).not.toBeInTheDocument();
 
     await act(async () => {
       jest.advanceTimersByTime(30_000);
-      await Promise.resolve();
     });
 
-    expect(screen.getByText("Sudo Mode Active")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Sudo Mode Active")).toBeInTheDocument();
+    });
   });
 
-  it("clears the polling interval on unmount", () => {
+  it("does not render border overlay when sudo is inactive", async () => {
     mockCheckSudoStatus.mockResolvedValue({
       isActive: false,
       isSiteAdmin: false,
     });
-    const clearIntervalSpy = jest.spyOn(global, "clearInterval");
-
-    const { unmount } = render(<SudoModeIndicator />);
-    unmount();
-
-    expect(clearIntervalSpy).toHaveBeenCalled();
-    clearIntervalSpy.mockRestore();
-  });
-
-  it("hides the border overlay when sudo is inactive", async () => {
-    mockCheckSudoStatus.mockResolvedValue({
-      isActive: false,
-      isSiteAdmin: false,
-    });
-    const { container } = render(<SudoModeIndicator />);
-
-    await act(async () => {
-      await Promise.resolve();
+    const { container } = render(<SudoModeIndicator />, {
+      wrapper: createWrapper(),
     });
 
-    // aria-hidden border div is not rendered when inactive
+    await waitFor(() => {
+      expect(mockCheckSudoStatus).toHaveBeenCalled();
+    });
+
     expect(container.querySelector("[aria-hidden]")).not.toBeInTheDocument();
   });
 
@@ -124,12 +126,14 @@ describe("SudoModeIndicator", () => {
       isActive: true,
       isSiteAdmin: true,
     });
-    const { container } = render(<SudoModeIndicator />);
-
-    await act(async () => {
-      await Promise.resolve();
+    const { container } = render(<SudoModeIndicator />, {
+      wrapper: createWrapper(),
     });
 
-    expect(container.querySelector("[aria-hidden='true']")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        container.querySelector("[aria-hidden='true']")
+      ).toBeInTheDocument();
+    });
   });
 });

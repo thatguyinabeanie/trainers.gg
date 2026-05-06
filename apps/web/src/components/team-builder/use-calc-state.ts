@@ -13,6 +13,7 @@ import {
 import {
   type GameFormat,
   type PokemonType,
+  getBaseStats,
   getCanonicalBaseSpecies,
   getMegaAbilityForSpecies,
   getMegaSpeciesForBaseAndItem,
@@ -22,11 +23,8 @@ import {
 import { type Tables } from "@trainers/supabase";
 import { logError } from "@trainers/utils";
 
-import { getMoveEffectiveness } from "./v2/calc/move-effectiveness";
-import {
-  getRecoveryAwareVerdict,
-  type KoTierLabel,
-} from "./calc/recovery";
+import { getMoveEffectiveness } from "./calc/move-effectiveness";
+import { getRecoveryAwareVerdict, type KoTierLabel } from "./calc/recovery";
 
 export type { KoTierLabel };
 
@@ -227,14 +225,16 @@ type TerrainInput =
 function parseWeatherString(s: string): WeatherInput {
   if (s === "" || s === "auto") return { kind: "auto" };
   if (s === "None") return { kind: "none" };
-  if (ENGINE_WEATHER_SET.has(s)) return { kind: "set", value: s as EngineWeather };
+  if (ENGINE_WEATHER_SET.has(s))
+    return { kind: "set", value: s as EngineWeather };
   return { kind: "auto" };
 }
 
 function parseTerrainString(s: string): TerrainInput {
   if (s === "" || s === "auto") return { kind: "auto" };
   if (s === "None") return { kind: "none" };
-  if (ENGINE_TERRAIN_SET.has(s)) return { kind: "set", value: s as EngineTerrain };
+  if (ENGINE_TERRAIN_SET.has(s))
+    return { kind: "set", value: s as EngineTerrain };
   return { kind: "auto" };
 }
 
@@ -404,6 +404,9 @@ function buildAttackerFromDb(
   megaActive: boolean
 ): Pokemon | null {
   if (!db.species) return null;
+  // Bail early if the species has no known base stats — prevents the Smogon
+  // calc Pokemon constructor from throwing when it can't resolve stats.
+  if (!getBaseStats(db.species)) return null;
   try {
     const { ivs, evs } = buildEngineStats(gen, db);
     // Per-calc mega toggle: when ON and species is a mega form, use the
@@ -422,6 +425,9 @@ function buildAttackerFromDb(
         : canMega && !megaActive && isMegaForm
           ? getCanonicalBaseSpecies(db.species)
           : db.species;
+    // Verify the effective species (which may differ from db.species after mega
+    // resolution) also has known base stats before constructing.
+    if (!getBaseStats(effectiveSpecies)) return null;
     const calcAbility =
       canMega && megaActive && megaSpecies
         ? (getMegaAbilityForSpecies(megaSpecies) ?? db.ability ?? null)
@@ -923,8 +929,7 @@ export function useCalcState({
   ]);
 
   // --- Attacker modifiers (calc-only) ---
-  const [attackerStatus, setAttackerStatus] =
-    useState<StatusLabel>("Healthy");
+  const [attackerStatus, setAttackerStatus] = useState<StatusLabel>("Healthy");
   const [attackerBoosts, setAttackerBoosts] =
     useState<AttackerBoosts>(EMPTY_BOOSTS);
 
@@ -974,8 +979,7 @@ export function useCalcState({
   }
   const [defenderBoosts, setDefenderBoosts] =
     useState<DefenderBoosts>(EMPTY_BOOSTS);
-  const [defenderStatus, setDefenderStatus] =
-    useState<StatusLabel>("Healthy");
+  const [defenderStatus, setDefenderStatus] = useState<StatusLabel>("Healthy");
   const [defenderHpPercent, setDefenderHpPercent] = useState(100);
   const [defenderMoves, setDefenderMovesState] = useState<
     [string, string, string, string]
@@ -1345,13 +1349,14 @@ export function useCalcState({
     if (!sharedDefenderAsAttacker) return NULL_OUTPUTS;
     if (!effectiveMoves.some(Boolean)) return NULL_OUTPUTS;
 
+    const isFocused = selectedPokemon?.id === rowPokemon.id;
     // Build this team member as a defender (neutral boosts, healthy)
     const ourDefender = buildAttackerFromDb(
       gen,
       rowPokemon,
       EMPTY_BOOSTS,
       "Healthy",
-      attackerMegaActive
+      isFocused ? attackerMegaActive : true
     );
     if (!ourDefender) return NULL_OUTPUTS;
 

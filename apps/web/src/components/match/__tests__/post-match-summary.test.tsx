@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PostMatchSummary } from "../post-match-summary";
 import { useSupabase } from "@/lib/supabase";
 import { getPlayerMatches } from "@trainers/supabase";
@@ -64,6 +65,18 @@ const mockSupabase = {
   from: jest.fn(() => createQueryBuilder()),
 };
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
+
 describe("PostMatchSummary", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -81,10 +94,16 @@ describe("PostMatchSummary", () => {
     roundNumber: 3,
   };
 
+  function renderComponent(props = defaultProps) {
+    return render(<PostMatchSummary {...props} />, {
+      wrapper: createWrapper(),
+    });
+  }
+
   it("displays win result correctly", async () => {
     (getPlayerMatches as jest.Mock).mockResolvedValue([]);
 
-    render(<PostMatchSummary {...defaultProps} />);
+    renderComponent();
 
     await waitFor(() => {
       expect(screen.getByText("Match Complete")).toBeInTheDocument();
@@ -95,7 +114,7 @@ describe("PostMatchSummary", () => {
   it("displays loss result correctly", async () => {
     (getPlayerMatches as jest.Mock).mockResolvedValue([]);
 
-    render(<PostMatchSummary {...defaultProps} myWins={1} opponentWins={2} />);
+    renderComponent({ ...defaultProps, myWins: 1, opponentWins: 2 });
 
     await waitFor(() => {
       expect(screen.getByText("Match Complete")).toBeInTheDocument();
@@ -106,7 +125,7 @@ describe("PostMatchSummary", () => {
   it("shows View Standings link", async () => {
     (getPlayerMatches as jest.Mock).mockResolvedValue([]);
 
-    render(<PostMatchSummary {...defaultProps} />);
+    renderComponent();
 
     await waitFor(() => {
       const standingsLink = screen.getByText("View Standings").closest("a");
@@ -127,7 +146,7 @@ describe("PostMatchSummary", () => {
       },
     ]);
 
-    render(<PostMatchSummary {...defaultProps} />);
+    renderComponent();
 
     await waitFor(() => {
       const nextMatchButton = screen.getByText(/Next Match \(Round 4\)/);
@@ -143,7 +162,7 @@ describe("PostMatchSummary", () => {
   it("does not show Next Match link when no next match exists", async () => {
     (getPlayerMatches as jest.Mock).mockResolvedValue([]);
 
-    render(<PostMatchSummary {...defaultProps} />);
+    renderComponent();
 
     await waitFor(() => {
       expect(screen.queryByText(/Next Match/)).not.toBeInTheDocument();
@@ -155,7 +174,7 @@ describe("PostMatchSummary", () => {
       { id: 100, status: "completed", round: { id: 1, round_number: 3 } },
     ]);
 
-    render(<PostMatchSummary {...defaultProps} />);
+    renderComponent();
 
     await waitFor(() => {
       expect(screen.getByText("Round 3 complete")).toBeInTheDocument();
@@ -181,7 +200,7 @@ describe("PostMatchSummary", () => {
 
     (useSupabase as jest.Mock).mockReturnValue(mockSupabaseWithActiveMatches);
 
-    render(<PostMatchSummary {...defaultProps} />);
+    renderComponent();
 
     await waitFor(() => {
       expect(
@@ -193,7 +212,7 @@ describe("PostMatchSummary", () => {
   it("handles null userAltId gracefully", async () => {
     (getPlayerMatches as jest.Mock).mockResolvedValue([]);
 
-    render(<PostMatchSummary {...defaultProps} userAltId={null} />);
+    renderComponent({ ...defaultProps, userAltId: null });
 
     await waitFor(() => {
       expect(screen.getByText("Match Complete")).toBeInTheDocument();
@@ -201,23 +220,16 @@ describe("PostMatchSummary", () => {
     });
   });
 
-  it("handles error when loading next match data", async () => {
-    const consoleErrorSpy = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
+  it("handles error when loading next match data gracefully", async () => {
     (getPlayerMatches as jest.Mock).mockRejectedValue(
       new Error("Failed to fetch")
     );
 
-    render(<PostMatchSummary {...defaultProps} />);
+    renderComponent();
 
+    // Should still render the result even if fetch fails
     await waitFor(() => {
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error loading next match data:",
-        expect.any(Error)
-      );
+      expect(screen.getByText("Match Complete")).toBeInTheDocument();
     });
-
-    consoleErrorSpy.mockRestore();
   });
 });

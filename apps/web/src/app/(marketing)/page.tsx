@@ -34,33 +34,6 @@ export default function HomePage() {
           }}
         />
 
-        {/* Dot grid with fade mask — light mode */}
-        <div
-          className="pointer-events-none absolute inset-0 dark:hidden"
-          aria-hidden="true"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, oklch(0.5 0.08 183 / 0.35) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-            maskImage: "linear-gradient(to bottom, black 20%, transparent 60%)",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, black 20%, transparent 60%)",
-          }}
-        />
-        {/* Dot grid — dark mode */}
-        <div
-          className="pointer-events-none absolute inset-0 hidden dark:block"
-          aria-hidden="true"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, oklch(0.7 0.12 183 / 0.18) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-            maskImage: "linear-gradient(to bottom, black 20%, transparent 60%)",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, black 20%, transparent 60%)",
-          }}
-        />
-
         {/* Hero content */}
         <section className="relative z-10 py-20 sm:py-28">
           <div className="mx-auto max-w-screen-xl px-4 text-center">

@@ -46,6 +46,30 @@ jest.mock("@/actions/discord-integration", () => ({
     mockSetDmPreferenceAction(...args),
 }));
 
+jest.mock("@/components/ui/switch", () => ({
+  Switch: ({
+    checked,
+    onCheckedChange,
+    disabled,
+    ...props
+  }: {
+    checked?: boolean;
+    onCheckedChange?: (v: boolean) => void;
+    disabled?: boolean;
+    "aria-label"?: string;
+    id?: string;
+  }) => (
+    <button
+      role="switch"
+      aria-checked={checked}
+      aria-label={props["aria-label"]}
+      aria-disabled={disabled || undefined}
+      data-disabled={disabled ? "" : undefined}
+      onClick={() => !disabled && onCheckedChange?.(!checked)}
+    />
+  ),
+}));
+
 // =============================================================================
 // Test helpers
 // =============================================================================

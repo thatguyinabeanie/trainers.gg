@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogClose,
@@ -85,13 +85,15 @@ export function DropPlayerDialog({
       : "This will drop the player from the tournament. Choose a reason category and optionally provide notes.";
 
   // Reset form state when dialog closes
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
     if (!open) {
       setCategory(null);
       setNotes("");
       setIsSubmitting(false);
     }
-  }, [open]);
+  }
 
   const handleConfirm = async () => {
     if (!isFormValid || category === null) return;

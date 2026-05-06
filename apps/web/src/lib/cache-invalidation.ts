@@ -10,7 +10,7 @@
  * - Async helpers when a DB lookup is needed to resolve an entity
  */
 
-import { updateTag } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 
 import { CacheTags } from "@/lib/cache";
 import { type createClient } from "@/lib/supabase/server";
@@ -153,6 +153,15 @@ export function invalidateCommunityRequestCaches(): void {
 /** Invalidate the detail cache for a specific team. Call after team metadata changes. */
 export function invalidateTeamDetailCache(teamId: number): void {
   updateTag(CacheTags.team(teamId));
+}
+
+/**
+ * Route Handler-safe version of `invalidateTeamDetailCache`.
+ * Uses `revalidateTag` which works in Route Handlers, middleware, and other
+ * non-Server-Action contexts. Prefer this in API route files.
+ */
+export function revalidateTeamDetailCache(teamId: number): void {
+  revalidateTag(CacheTags.team(teamId), "max");
 }
 
 // =============================================================================

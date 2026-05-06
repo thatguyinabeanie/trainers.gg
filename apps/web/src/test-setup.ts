@@ -13,6 +13,25 @@ Object.assign(globalThis, {
 
 import "@testing-library/jest-dom";
 
+// Polyfill PointerEvent for JSDOM — required by Base UI components (Switch, etc.)
+// that attach pointer event listeners. Guard on MouseEvent existing (not available
+// in pure Node environments used by API route tests).
+if (
+  typeof globalThis.PointerEvent === "undefined" &&
+  typeof globalThis.MouseEvent !== "undefined"
+) {
+  // @ts-expect-error — minimal polyfill for JSDOM
+  globalThis.PointerEvent = class PointerEvent extends MouseEvent {
+    readonly pointerId: number;
+    readonly pointerType: string;
+    constructor(type: string, params: PointerEventInit = {}) {
+      super(type, params);
+      this.pointerId = params.pointerId ?? 0;
+      this.pointerType = params.pointerType ?? "";
+    }
+  };
+}
+
 // Polyfill window.matchMedia for components using useIsMobile() and other
 // match-media-driven hooks. JSDOM doesn't implement it; the hook subscribes
 // at mount via matchMedia(query).addEventListener.

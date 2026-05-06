@@ -190,6 +190,8 @@ export {
   deleteTeamInputSchema,
   forkTeamInputSchema,
   type ForkTeamInput,
+  transferTeamInputSchema,
+  type TransferTeamInput,
   addPokemonInputSchema,
   type AddPokemonInput,
   updatePokemonInputSchema,

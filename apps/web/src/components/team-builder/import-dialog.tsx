@@ -23,7 +23,7 @@ import {
 } from "@trainers/validators";
 import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
 
-import { addPokemonToTeamAction } from "@/actions/teams";
+import { usePersistence } from "@/components/team-builder/persistence/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -190,6 +190,7 @@ export function ImportDialog({
   onImportComplete,
   formatId,
 }: ImportDialogProps) {
+  const persistence = usePersistence();
   const [paste, setPaste] = useState("");
   const [url, setUrl] = useState("");
   const [parsed, setParsed] = useState<ParsedPokemon[] | null>(null);
@@ -420,7 +421,7 @@ export function ImportDialog({
 
       const addResults = await Promise.all(
         toImport.map((pokemon, i) =>
-          addPokemonToTeamAction(
+          persistence.addPokemon(
             team.id,
             parsedToInsert(pokemon),
             availablePositions[i] ?? i + 1

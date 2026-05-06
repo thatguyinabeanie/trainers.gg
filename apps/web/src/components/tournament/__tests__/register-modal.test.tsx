@@ -545,6 +545,168 @@ describe("RegisterModal", () => {
   });
 
   // ========================================================================
+  // Multi-alt form rendering
+  // ========================================================================
+
+  describe("multi-alt form", () => {
+    const mockAlt2 = {
+      id: 2,
+      username: "gary_oak",
+      display_name: "Gary Oak",
+      avatar_url: null,
+      first_name: "Gary",
+      last_name: "Oak",
+      country: "US",
+    };
+
+    beforeEach(() => {
+      mockGetCurrentUserAltsAction.mockResolvedValue({
+        success: true,
+        data: [mockAlt, mockAlt2],
+      });
+    });
+
+    it("renders alt selection dropdown when multiple alts are available", async () => {
+      render(<RegisterModal {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Register as")).toBeInTheDocument();
+      });
+    });
+
+    it("shows confirm registration button in multi-alt mode", async () => {
+      render(<RegisterModal {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /confirm registration/i })
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("renders the form successfully with multiple alts", async () => {
+      render(<RegisterModal {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Register as")).toBeInTheDocument();
+      });
+
+      // The select trigger (combobox) should be present for alt selection
+      expect(screen.getByRole("combobox")).toBeInTheDocument();
+    });
+  });
+
+  // ========================================================================
+  // Edit mode
+  // ========================================================================
+
+  describe("edit mode", () => {
+    beforeEach(() => {
+      mockGetRegistrationDetailsAction.mockResolvedValue({
+        success: true,
+        data: {
+          id: 200,
+          alt_id: 1,
+          in_game_name: "AshTheChamp",
+          display_name_option: "shortened",
+          show_country_flag: true,
+        },
+      });
+    });
+
+    it("renders in edit mode and shows Save Changes button", async () => {
+      render(<RegisterModal {...defaultProps} mode="edit" />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /save changes/i })
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("submits updated preferences in edit mode", async () => {
+      const user = userEvent.setup();
+      mockUpdateRegistrationAction.mockResolvedValue({ success: true });
+
+      render(<RegisterModal {...defaultProps} mode="edit" />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /save changes/i })
+        ).toBeInTheDocument();
+      });
+
+      await user.click(
+        screen.getByRole("button", { name: /save changes/i })
+      );
+
+      await waitFor(() => {
+        expect(mockUpdateRegistrationAction).toHaveBeenCalledWith(
+          200,
+          42,
+          expect.objectContaining({
+            displayNameOption: "shortened",
+            showCountryFlag: true,
+          })
+        );
+      });
+    });
+
+    it("shows error when update fails", async () => {
+      const user = userEvent.setup();
+      mockUpdateRegistrationAction.mockResolvedValue({
+        success: false,
+        error: "Update failed",
+      });
+
+      render(<RegisterModal {...defaultProps} mode="edit" />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /save changes/i })
+        ).toBeInTheDocument();
+      });
+
+      await user.click(
+        screen.getByRole("button", { name: /save changes/i })
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText("Update failed")).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ========================================================================
+  // Loading / empty states
+  // ========================================================================
+
+  describe("loading and empty states", () => {
+    it("shows loading spinner while data is being fetched", () => {
+      // Make the action never resolve to keep loading state
+      mockGetCurrentUserAltsAction.mockReturnValue(new Promise(() => {}));
+
+      render(<RegisterModal {...defaultProps} />);
+
+      // Loading spinner should be present (animate-spin)
+      expect(document.querySelector(".animate-spin")).toBeInTheDocument();
+    });
+
+    it("shows no profiles message when alts array is empty", async () => {
+      mockGetCurrentUserAltsAction.mockResolvedValue({
+        success: true,
+        data: [],
+      });
+
+      render(<RegisterModal {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("No player profiles found.")).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ========================================================================
   // isCapacityError helper
   // ========================================================================
 

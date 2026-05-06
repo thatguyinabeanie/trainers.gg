@@ -7,6 +7,8 @@ import { NotificationsPopover } from "@/components/dashboard/notifications-popov
 interface PageHeaderProps {
   title?: string;
   children?: React.ReactNode;
+  /** When true, the notifications bell is not rendered (caller handles it). */
+  hideNotifications?: boolean;
 }
 
 /**
@@ -15,9 +17,9 @@ interface PageHeaderProps {
  * and a notifications bell icon on the right.
  * Each page renders this as its first element.
  */
-export function PageHeader({ title, children }: PageHeaderProps) {
+export function PageHeader({ title, children, hideNotifications }: PageHeaderProps) {
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+    <header className="relative flex h-12 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1 size-10 sm:size-7" />
       <Separator
         orientation="vertical"
@@ -26,9 +28,11 @@ export function PageHeader({ title, children }: PageHeaderProps) {
       {title && <span className="text-sm font-medium">{title}</span>}
       {children}
       {/* Notifications bell — pushed to the right */}
-      <div className="ml-auto">
-        <NotificationsPopover />
-      </div>
+      {!hideNotifications && (
+        <div className="ml-auto">
+          <NotificationsPopover />
+        </div>
+      )}
     </header>
   );
 }

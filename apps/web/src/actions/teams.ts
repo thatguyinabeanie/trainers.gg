@@ -29,6 +29,7 @@ import {
   teamUpdateDataSchema,
   deleteTeamInputSchema,
   forkTeamInputSchema,
+  transferTeamInputSchema,
   addPokemonInputSchema,
   updatePokemonInputSchema,
   removePokemonInputSchema,
@@ -234,6 +235,70 @@ export async function forkTeamAction(
     invalidateTeamDetailCache(result.id);
     return { id: result.id };
   }, "Failed to fork team");
+}
+
+/**
+ * Transfer a team to a different alt owned by the same user.
+ * Verifies the caller owns both the team's current alt and the target alt.
+ */
+export async function transferTeamAction(
+  teamId: number,
+  targetAltId: number
+): Promise<ActionResult<void>> {
+  const parsed = transferTeamInputSchema.safeParse({ teamId, targetAltId });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+
+  try {
+    await rejectBots();
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to transfer team"),
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated." };
+  }
+
+  // Verify the target alt belongs to this user
+  const { data: targetAlt, error: targetAltError } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("id", parsed.data.targetAltId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (targetAltError) {
+    return {
+      success: false,
+      error: getErrorMessage(targetAltError, "Failed to verify alt ownership"),
+    };
+  }
+  if (!targetAlt) {
+    return { success: false, error: "Target alt not found or not owned by you." };
+  }
+
+  return withAction(async () => {
+    const { data, error } = await supabase
+      .from("teams")
+      .update({ created_by: parsed.data.targetAltId })
+      .eq("id", parsed.data.teamId)
+      .select("id")
+      .single();
+    if (error || !data)
+      throw new Error("Failed to transfer team — team not found or access denied.");
+    invalidateTeamDetailCache(parsed.data.teamId);
+  }, "Failed to transfer team");
 }
 
 // =============================================================================
