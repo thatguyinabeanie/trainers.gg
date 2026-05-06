@@ -1,14 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-
-/**
- * Cookie domain for cross-subdomain auth (builder.trainers.gg, dashboard.trainers.gg).
- * Leading dot makes cookies available to all subdomains of trainers.gg.
- * Undefined in local dev / preview deploys so cookies use browser defaults.
- */
-const COOKIE_DOMAIN = process.env.NEXT_PUBLIC_SITE_URL?.includes("trainers.gg")
-  ? ".trainers.gg"
-  : undefined;
+import { COOKIE_DOMAIN } from "@trainers/supabase";
 
 export function createClient(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
