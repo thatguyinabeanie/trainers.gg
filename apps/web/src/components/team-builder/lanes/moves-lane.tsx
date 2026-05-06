@@ -463,27 +463,27 @@ function MovesLaneTileGhost() {
       <TableRow className="border-none">
         <TableHead className="!h-auto w-6 border-none p-0 pb-0.5"><span className="sr-only">Type</span></TableHead>
         <TableHead className="!h-auto w-8 border-none p-0 pb-0.5"><span className="sr-only">Category</span></TableHead>
-        <TableHead className="text-muted-foreground !h-auto border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
+        <TableHead className="text-muted-foreground/30 !h-auto border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
           NAME
         </TableHead>
-        <TableHead className="text-muted-foreground !h-auto w-11 border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
+        <TableHead className="text-muted-foreground/30 !h-auto w-11 border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
           BP
         </TableHead>
-        <TableHead className="text-muted-foreground !h-auto w-12 border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
+        <TableHead className="text-muted-foreground/30 !h-auto w-12 border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
           ACC
         </TableHead>
         {calcEnabled && (
-          <TableHead className="text-muted-foreground !h-auto border-none p-0 pb-0.5">
+          <TableHead className="text-muted-foreground/30 !h-auto border-none p-0 pb-0.5">
             DAMAGE
           </TableHead>
         )}
         {calcEnabled && (
-          <TableHead className="text-muted-foreground !h-auto border-none p-0 pb-0.5">
+          <TableHead className="text-muted-foreground/30 !h-auto border-none p-0 pb-0.5">
             %
           </TableHead>
         )}
         {calcEnabled && (
-          <TableHead className="text-muted-foreground !h-auto border-none p-0 pb-0.5">
+          <TableHead className="text-muted-foreground/30 !h-auto border-none p-0 pb-0.5">
             HITS
           </TableHead>
         )}

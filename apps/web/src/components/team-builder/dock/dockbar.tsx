@@ -186,13 +186,15 @@ export function Dockbar({
 
       {/* Footer copyright — right side, absolutely positioned */}
       <p className="text-muted-foreground absolute top-1/2 right-3 hidden -translate-y-1/2 items-center gap-1 text-[10px] whitespace-nowrap @[900px]/dock:flex">
-        <Image
-          src="/icons/beanie_logo.png"
-          alt="Beanie LLC"
-          width={28}
-          height={28}
-          className="inline-block"
-        />
+        <a href="https://x.com/thatguyinabeani" target="_blank" rel="noopener noreferrer">
+          <Image
+            src="/icons/beanie_logo.png"
+            alt="Beanie LLC"
+            width={28}
+            height={28}
+            className="inline-block"
+          />
+        </a>
         &copy; {new Date().getFullYear()} Beanie LLC
       </p>
     </div>
