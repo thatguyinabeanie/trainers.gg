@@ -795,8 +795,8 @@ export function SpeedTiersPanel({
                       : toggle.theirs.unburden
                   )}
                   showGroupSeparator={showSeparator}
-                  groupValue={curr}
-                  groupLabel={toggle.sortBy === "base" ? "Base Speed" : "Speed"}
+                  groupValue={scored.mon.baseSpeed}
+                  groupLabel="Base Speed"
                 />
               );
             })}
