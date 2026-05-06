@@ -171,7 +171,7 @@ const DEFAULT_FIELD: FieldState = {
 export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
   const [sideDrawer, setSideDrawer] = useState<SideDrawerKey>("speed");
-  const [rightDrawer, setRightDrawer] = useState<RightDrawerKey>(null);
+  const [rightDrawer, setRightDrawer] = useState<RightDrawerKey>("calc");
   const [bottomDrawer, setBottomDrawer] = useState<BottomDrawerKey>(null);
 
   const [panelHeightPct, setPanelHeightPctState] = useState<number>(

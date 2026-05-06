@@ -85,15 +85,15 @@ export function CalcBottomPanel({
   return (
     <section className="flex min-h-0 flex-1 flex-col" aria-label="Damage Calc">
       {/* Panel header */}
-      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary">
+      <header className="border-border flex items-center gap-2 border-b px-3 py-2">
+        <span className="text-primary flex-1 text-center font-mono text-[10px] font-bold tracking-wider uppercase">
           Damage Calc
         </span>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close damage calc"
-          className="ml-auto text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded transition-colors"
+          className="text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded transition-colors"
         >
           ×
         </button>
@@ -119,7 +119,7 @@ export function CalcBottomPanel({
         />
 
         {/* Defender stats */}
-        <div className="border-b border-dashed border-border px-3 py-1.5">
+        <div className="border-border border-b border-dashed px-3 py-1.5">
           <CalcDefenderStats
             defenderSpecies={effectiveDefenderSpecies}
             defenderNature={calc.defenderNature}
@@ -136,7 +136,7 @@ export function CalcBottomPanel({
         </div>
 
         {/* Defender moves */}
-        <div className="border-b border-dashed border-border px-3 py-2">
+        <div className="border-border border-b border-dashed px-3 py-2">
           <CalcDefenderMoves
             effectiveMoves={effectiveMoves}
             defenderSpecies={calc.defenderSpecies}
@@ -177,7 +177,10 @@ export function CalcBottomPanel({
               setAllyAlive: (v) => calc.setField({ allyAlive: v }),
             }}
             fainted={{ yours: faintedYours, theirs: faintedTheirs }}
-            setFainted={{ setYours: setFaintedYours, setTheirs: setFaintedTheirs }}
+            setFainted={{
+              setYours: setFaintedYours,
+              setTheirs: setFaintedTheirs,
+            }}
             inferred={{
               weather: calc.inferredWeather,
               terrain: calc.inferredTerrain,

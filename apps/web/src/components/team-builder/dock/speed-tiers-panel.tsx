@@ -31,8 +31,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
-import { Toggle } from "@/components/ui/toggle";
 
 // =============================================================================
 // Types
@@ -350,7 +348,7 @@ function metaToScored(
 // =============================================================================
 
 const STAT_CELL =
-  "text-right font-mono text-xs tabular-nums px-2 py-1.5 w-[3.5rem]";
+  "text-right font-mono text-xs tabular-nums px-2 py-1.5 whitespace-nowrap";
 
 /** Determine if a speed ability is currently active based on field/toggle state */
 function isSpeedAbilityActive(
@@ -385,6 +383,7 @@ interface TierMonRowProps {
   trickRoom: boolean;
   abilityActive: boolean;
   showGroupSeparator?: boolean;
+  groupBaseSpeed?: number;
 }
 
 function TierMonRow({
@@ -393,6 +392,7 @@ function TierMonRow({
   trickRoom,
   abilityActive,
   showGroupSeparator,
+  groupBaseSpeed,
 }: TierMonRowProps) {
   const { mon, speed } = scored;
   const isTie = !mon.isSelected && speed === heroSpeed && heroSpeed > 0;
@@ -402,74 +402,98 @@ function TierMonRow({
     (trickRoom ? speed > heroSpeed : speed < heroSpeed);
 
   return (
-    <TableRow
-      className={cn(
-        "border-border/30 border-b",
-        showGroupSeparator && "border-t-primary/40 border-t-2",
-        mon.isSelected && "bg-primary/10",
-        mon.isYours && !mon.isSelected && "bg-primary/5",
-        isFaster && "opacity-40"
-      )}
-    >
-      {/* Pokemon name + sprite */}
-      <TableCell className="px-1.5 py-1">
-        <div className="flex min-w-0 items-center gap-1.5">
-          {mon.spriteUrl ? (
-            <Image
-              src={mon.spriteUrl}
-              alt=""
-              width={44}
-              height={44}
-              unoptimized
-              className="size-11 shrink-0 object-contain"
-            />
-          ) : (
-            <span className="bg-muted inline-block size-11 shrink-0 rounded-full" />
-          )}
-          <span
-            className={cn(
-              "truncate text-xs leading-tight",
-              mon.isYours ? "text-primary font-semibold" : "text-foreground"
-            )}
+    <>
+      {showGroupSeparator && (
+        <TableRow className="border-0">
+          <TableCell
+            colSpan={2}
+            className="text-muted-foreground h-auto px-2 py-0.5 text-[10px] font-medium tabular-nums"
           >
-            {mon.name}
-          </span>
-          {mon.speedAbility && (
-            <span
-              className={cn(
-                "shrink-0 rounded-full px-1.5 py-0.5 text-[8px] leading-none font-medium capitalize",
-                abilityActive
-                  ? "bg-violet-500/15 text-violet-600 dark:text-violet-400"
-                  : "bg-muted text-muted-foreground/50"
-              )}
-            >
-              {mon.speedAbility.replace(/-/g, " ")}
-            </span>
-          )}
-          {mon.isYours && mon.heldItem && (
-            <ItemSprite item={mon.heldItem} size={14} className="shrink-0" />
-          )}
-          {isTie && (
-            <span className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[8px] leading-none font-medium text-amber-600 dark:text-amber-400">
-              Tie
-            </span>
-          )}
-        </div>
-      </TableCell>
-      {/* Base speed */}
-      <TableCell className="text-muted-foreground px-2 py-1.5 text-right font-mono text-xs tabular-nums">
-        {mon.baseSpeed}
-      </TableCell>
-      {/* SPE column */}
-      <TableCell
+            <div className="border-primary/40 flex items-center justify-center gap-1.5 border-t-2 pt-0.5">
+              <span className="text-primary/70 font-mono text-[10px]">
+                {groupBaseSpeed}
+              </span>
+              <span className="text-muted-foreground/70 text-[9px] tracking-wider uppercase">
+                Base Speed
+              </span>
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
+      <TableRow
         className={cn(
-          STAT_CELL,
-          mon.isYours ? "text-primary font-bold" : "text-foreground font-bold"
+          "border-border/30 [&:hover>td]:bg-muted/50 border-b hover:bg-transparent [&:hover>td:first-child]:rounded-l-lg [&:hover>td:last-child]:rounded-r-lg",
+          mon.isSelected && "bg-primary/10",
+          mon.isYours && !mon.isSelected && "bg-primary/5",
+          isFaster && "opacity-40"
         )}
       >
-        {speed}
-      </TableCell>
-    </TableRow>
+        {/* Pokemon name + sprite */}
+        <TableCell className="px-1.5 py-1">
+          <div className="flex min-w-0 items-center gap-2.5">
+            {mon.spriteUrl ? (
+              <Image
+                src={mon.spriteUrl}
+                alt=""
+                width={36}
+                height={36}
+                unoptimized
+                className="size-9 shrink-0 object-contain"
+              />
+            ) : (
+              <span className="bg-muted inline-block size-9 shrink-0 rounded-full" />
+            )}
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <div className="flex items-center gap-1">
+                <span
+                  className={cn(
+                    "truncate text-xs leading-tight",
+                    mon.isYours
+                      ? "text-primary font-semibold"
+                      : "text-foreground"
+                  )}
+                >
+                  {mon.name}
+                </span>
+                {mon.isYours && mon.heldItem && (
+                  <ItemSprite
+                    item={mon.heldItem}
+                    size={14}
+                    className="shrink-0"
+                  />
+                )}
+                {isTie && (
+                  <span className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[8px] leading-none font-medium text-amber-600 dark:text-amber-400">
+                    Tie
+                  </span>
+                )}
+              </div>
+              {mon.speedAbility && (
+                <span
+                  className={cn(
+                    "w-fit truncate rounded-full px-1.5 py-0.5 text-[8px] leading-none font-medium capitalize",
+                    abilityActive
+                      ? "bg-violet-500/15 text-violet-600 dark:text-violet-400"
+                      : "bg-muted text-muted-foreground/50"
+                  )}
+                >
+                  {mon.speedAbility.replace(/-/g, " ")}
+                </span>
+              )}
+            </div>
+          </div>
+        </TableCell>
+        {/* SPE column */}
+        <TableCell
+          className={cn(
+            STAT_CELL,
+            mon.isYours ? "text-primary font-bold" : "text-foreground font-bold"
+          )}
+        >
+          {speed}
+        </TableCell>
+      </TableRow>
+    </>
   );
 }
 
@@ -599,422 +623,62 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Toolbar — two sections side by side: Field (left) | Modifiers (right) */}
-      <div className="bg-muted/30 flex gap-3 border-b px-3 py-2">
-        {/* Left column: Trick Room + Weather */}
-        <div className="flex w-36 flex-col gap-1.5">
-          <span className="text-primary font-mono text-[10px] font-bold tracking-[0.12em] uppercase">
+      {/* FIELD section — above table */}
+      <div className="border-b px-3 py-3">
+        <fieldset className="border-border/60 rounded-lg border px-3 py-2">
+          <legend className="text-primary px-1 font-mono text-[9px] font-bold tracking-[0.12em] uppercase">
             Field
-          </span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground/70 text-[11px]">
-              Trick Room
-            </span>
-            <Switch
-              size="sm"
-              checked={toggle.trickRoom}
-              onCheckedChange={setTrickRoom}
-              aria-label="Trick Room"
-            />
-          </div>
-          <span className="text-muted-foreground/70 text-[11px]">Weather</span>
-          <div className="flex flex-col gap-1">
-            {(["sun", "rain", "sand", "snow"] as const).map((w) => (
-              <Toggle
-                key={w}
-                variant="outline"
-                pressed={toggle.weather === w}
-                onPressedChange={() => setWeather(w)}
-                aria-label={WEATHER_LABELS[w]}
+          </legend>
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-[11px]">
+                Trick Room
+              </span>
+              <button
+                type="button"
+                aria-label="Trick Room"
+                onClick={() => setTrickRoom(!toggle.trickRoom)}
                 className={cn(
-                  "w-full",
-                  toggle.weather === w &&
-                    "bg-primary/15 text-primary border-primary/40"
+                  "size-4 rounded-full border-2 transition-colors",
+                  toggle.trickRoom
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/40 hover:border-muted-foreground"
                 )}
-              >
-                {WEATHER_LABELS[w]}
-              </Toggle>
-            ))}
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="bg-border w-px self-stretch" />
-
-        {/* Right section: Ours | Label | Theirs mirrored grid */}
-        <div className="flex flex-1 flex-col items-center gap-1.5">
-          <span className="text-primary font-mono text-[10px] font-bold tracking-[0.12em] uppercase">
-            Modifiers
-          </span>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-1 gap-y-0.5">
-            {/* Header */}
-            <span className="text-muted-foreground text-right text-[10px] font-semibold tracking-wider uppercase">
-              Ours
-            </span>
-            <span />
-            <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
-              Theirs
-            </span>
-
-            {/* Tailwind */}
-            <div className="flex justify-end">
-              <Switch
-                size="sm"
-                checked={toggle.yours.tailwind}
-                onCheckedChange={(v) =>
-                  setToggle((prev) => ({
-                    ...prev,
-                    yours: { ...prev.yours, tailwind: v },
-                  }))
-                }
               />
             </div>
-            <span className="text-center text-[11px]">Tailwind</span>
-            <div className="flex justify-start">
-              <Switch
-                size="sm"
-                checked={toggle.theirs.tailwind}
-                onCheckedChange={(v) =>
-                  setToggle((prev) => ({
-                    ...prev,
-                    theirs: { ...prev.theirs, tailwind: v },
-                  }))
-                }
-              />
-            </div>
-
-            {/* Scarf */}
-            <div className="flex justify-end">
-              <Switch
-                size="sm"
-                checked={toggle.yours.scarf}
-                onCheckedChange={(v) =>
-                  setToggle((prev) => ({
-                    ...prev,
-                    yours: { ...prev.yours, scarf: v },
-                  }))
-                }
-              />
-            </div>
-            <span className="text-center text-[11px]">Scarf</span>
-            <div className="flex justify-start">
-              <Switch
-                size="sm"
-                checked={toggle.theirs.scarf}
-                onCheckedChange={(v) =>
-                  setToggle((prev) => ({
-                    ...prev,
-                    theirs: { ...prev.theirs, scarf: v },
-                  }))
-                }
-              />
-            </div>
-
-            {/* Unburden */}
-            <div className="flex justify-end">
-              <Switch
-                size="sm"
-                checked={toggle.yours.unburden}
-                onCheckedChange={(v) =>
-                  setToggle((prev) => ({
-                    ...prev,
-                    yours: { ...prev.yours, unburden: v },
-                  }))
-                }
-              />
-            </div>
-            <span className="text-center text-[11px]">Unburden</span>
-            <div className="flex justify-start">
-              <Switch
-                size="sm"
-                checked={toggle.theirs.unburden}
-                onCheckedChange={(v) =>
-                  setToggle((prev) => ({
-                    ...prev,
-                    theirs: { ...prev.theirs, unburden: v },
-                  }))
-                }
-                aria-label="Unburden"
-              />
-            </div>
-
-            {/* Paralyzed */}
-            <div className="flex justify-end">
-              <Switch
-                size="sm"
-                checked={toggle.yours.status === "paralyzed"}
-                onCheckedChange={(v) =>
-                  setToggle((prev) => ({
-                    ...prev,
-                    yours: {
-                      ...prev.yours,
-                      status: v ? "paralyzed" : "healthy",
-                    },
-                  }))
-                }
-              />
-            </div>
-            <span className="text-center text-[11px]">Paralyzed</span>
-            <div className="flex justify-start">
-              <Switch
-                size="sm"
-                checked={toggle.theirs.status === "paralyzed"}
-                onCheckedChange={(v) =>
-                  setToggle((prev) => ({
-                    ...prev,
-                    theirs: {
-                      ...prev.theirs,
-                      status: v ? "paralyzed" : "healthy",
-                    },
-                  }))
-                }
-              />
-            </div>
-
-            {/* Nature toggle — only theirs side */}
-            <div />
-            <span className="text-center text-[11px]">Nature</span>
-            <div className="flex justify-start">
-              <div className="bg-card grid grid-cols-3 overflow-hidden rounded-md border">
+            <div className="flex items-center gap-1">
+              {(["sun", "rain", "sand", "snow"] as const).map((w) => (
                 <button
+                  key={w}
                   type="button"
-                  aria-label="Negative speed nature"
-                  onClick={() =>
-                    setToggle((prev) => ({
-                      ...prev,
-                      theirs: { ...prev.theirs, nature: "negative" },
-                    }))
-                  }
+                  aria-label={WEATHER_LABELS[w]}
+                  onClick={() => setWeather(w)}
                   className={cn(
-                    "flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold",
-                    toggle.theirs.nature === "negative"
-                      ? "bg-blue-500/15 text-blue-600 dark:text-blue-400"
-                      : "hover:bg-muted text-muted-foreground"
+                    "rounded-md px-2 py-0.5 text-[10px] font-medium capitalize transition-colors",
+                    toggle.weather === w
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  −
+                  {WEATHER_LABELS[w]}
                 </button>
-                <button
-                  type="button"
-                  aria-label="Neutral speed nature"
-                  onClick={() =>
-                    setToggle((prev) => ({
-                      ...prev,
-                      theirs: { ...prev.theirs, nature: "neutral" },
-                    }))
-                  }
-                  className={cn(
-                    "flex items-center justify-center border-x px-2 py-0.5 text-[10px] font-semibold",
-                    toggle.theirs.nature === "neutral"
-                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                      : "hover:bg-muted text-muted-foreground"
-                  )}
-                >
-                  ●
-                </button>
-                <button
-                  type="button"
-                  aria-label="Positive speed nature"
-                  onClick={() =>
-                    setToggle((prev) => ({
-                      ...prev,
-                      theirs: { ...prev.theirs, nature: "positive" },
-                    }))
-                  }
-                  className={cn(
-                    "flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold",
-                    toggle.theirs.nature === "positive"
-                      ? "bg-red-500/15 text-red-600 dark:text-red-400"
-                      : "hover:bg-muted text-muted-foreground"
-                  )}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            {/* EVs — only theirs side has input, ours is empty */}
-            <div />
-            <span className="text-center text-[11px]">{evLabel}</span>
-            <div className="flex justify-start">
-              <div className="bg-card grid grid-cols-[20px_40px_20px] overflow-hidden rounded-md border">
-                <button
-                  type="button"
-                  aria-label={`Decrease speed ${evLabel}`}
-                  disabled={
-                    toggle.theirs.evs === null || toggle.theirs.evs <= 0
-                  }
-                  onClick={() =>
-                    setToggle((prev) => ({
-                      ...prev,
-                      theirs: {
-                        ...prev.theirs,
-                        evs: Math.max(0, (prev.theirs.evs ?? maxEv) - evStep),
-                      },
-                    }))
-                  }
-                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  −
-                </button>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  aria-label={`Speed ${evLabel} override`}
-                  value={toggle.theirs.evs ?? ""}
-                  placeholder={String(maxEv)}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    if (raw === "") {
-                      setToggle((prev) => ({
-                        ...prev,
-                        theirs: { ...prev.theirs, evs: null },
-                      }));
-                      return;
-                    }
-                    const val = Math.min(maxEv, Math.max(0, Number(raw)));
-                    setToggle((prev) => ({
-                      ...prev,
-                      theirs: { ...prev.theirs, evs: val },
-                    }));
-                  }}
-                  className="text-foreground w-full [appearance:textfield] bg-transparent text-center font-mono text-[10px] font-semibold outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-                <button
-                  type="button"
-                  aria-label={`Increase speed ${evLabel}`}
-                  disabled={
-                    toggle.theirs.evs !== null && toggle.theirs.evs >= maxEv
-                  }
-                  onClick={() =>
-                    setToggle((prev) => ({
-                      ...prev,
-                      theirs: {
-                        ...prev.theirs,
-                        evs: Math.min(
-                          maxEv,
-                          (prev.theirs.evs ?? maxEv) + evStep
-                        ),
-                      },
-                    }))
-                  }
-                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            {/* Stages */}
-            <div className="flex justify-end">
-              <div className="bg-card grid grid-cols-[20px_28px_20px] overflow-hidden rounded-md border">
-                <button
-                  type="button"
-                  disabled={toggle.yours.stage <= STAGE_MIN}
-                  onClick={() =>
-                    setToggle((prev) => ({
-                      ...prev,
-                      yours: { ...prev.yours, stage: prev.yours.stage - 1 },
-                    }))
-                  }
-                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  −
-                </button>
-                <div className="text-foreground flex items-center justify-center font-mono text-[10px] font-semibold">
-                  {toggle.yours.stage === 0
-                    ? "0"
-                    : toggle.yours.stage > 0
-                      ? `+${toggle.yours.stage}`
-                      : toggle.yours.stage}
-                </div>
-                <button
-                  type="button"
-                  disabled={toggle.yours.stage >= STAGE_MAX}
-                  onClick={() =>
-                    setToggle((prev) => ({
-                      ...prev,
-                      yours: { ...prev.yours, stage: prev.yours.stage + 1 },
-                    }))
-                  }
-                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-            <span className="text-center text-[11px]">Stages</span>
-            <div className="flex justify-start">
-              <div className="bg-card grid grid-cols-[20px_28px_20px] overflow-hidden rounded-md border">
-                <button
-                  type="button"
-                  disabled={toggle.theirs.stage <= STAGE_MIN}
-                  onClick={() =>
-                    setToggle((prev) => ({
-                      ...prev,
-                      theirs: { ...prev.theirs, stage: prev.theirs.stage - 1 },
-                    }))
-                  }
-                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  −
-                </button>
-                <div className="text-foreground flex items-center justify-center font-mono text-[10px] font-semibold">
-                  {toggle.theirs.stage === 0
-                    ? "0"
-                    : toggle.theirs.stage > 0
-                      ? `+${toggle.theirs.stage}`
-                      : toggle.theirs.stage}
-                </div>
-                <button
-                  type="button"
-                  disabled={toggle.theirs.stage >= STAGE_MAX}
-                  onClick={() =>
-                    setToggle((prev) => ({
-                      ...prev,
-                      theirs: { ...prev.theirs, stage: prev.theirs.stage + 1 },
-                    }))
-                  }
-                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  +
-                </button>
-              </div>
+              ))}
             </div>
           </div>
-        </div>
+        </fieldset>
       </div>
 
       {/* Tier table */}
-      <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <table className="w-full caption-bottom text-sm">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <table className="w-full table-fixed caption-bottom text-sm">
+          <colgroup>
+            <col className="w-full" />
+            <col className="w-14" />
+          </colgroup>
           <TableHeader className="bg-card/95 sticky top-0 z-10 backdrop-blur-sm">
             <TableRow className="border-b">
-              <TableHead className="text-muted-foreground h-auto px-1.5 py-1.5 text-[10px] leading-tight font-medium tracking-wide">
+              <TableHead className="text-muted-foreground h-auto px-3 py-1.5 text-[10px] leading-tight font-medium tracking-wide">
                 Pokémon
-              </TableHead>
-              <TableHead
-                aria-sort={
-                  toggle.sortBy === "base"
-                    ? toggle.sortDir === "desc"
-                      ? "descending"
-                      : "ascending"
-                    : "none"
-                }
-                className="h-auto px-0 py-0"
-              >
-                <button
-                  type="button"
-                  onClick={() => setSortBy("base")}
-                  className={cn(
-                    "text-muted-foreground h-auto w-full px-2 py-1.5 text-right text-[10px] leading-tight font-medium tracking-wide",
-                    toggle.sortBy === "base" && "text-primary"
-                  )}
-                >
-                  Base{" "}
-                  {toggle.sortBy === "base" &&
-                    (toggle.sortDir === "desc" ? "↓" : "↑")}
-                </button>
               </TableHead>
               <TableHead
                 aria-sort={
@@ -1030,8 +694,10 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
                   type="button"
                   onClick={() => setSortBy("speed")}
                   className={cn(
-                    "h-auto w-full px-2 py-1.5 text-right text-[10px] leading-tight font-semibold tracking-wide",
-                    toggle.sortBy === "speed" ? "text-primary" : "text-foreground"
+                    "h-auto w-full px-3 py-1.5 text-right text-[10px] leading-tight font-semibold tracking-wide",
+                    toggle.sortBy === "speed"
+                      ? "text-primary"
+                      : "text-foreground"
                   )}
                 >
                   SPE{" "}
@@ -1055,7 +721,7 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
               };
               const prev = i > 0 ? getGroupValue(sorted[i - 1]!) : null;
               const curr = getGroupValue(scored);
-              const showSeparator = prev !== null && prev !== curr;
+              const showSeparator = i === 0 || (prev !== null && prev !== curr);
               return (
                 <TierMonRow
                   key={scored.mon.id}
@@ -1070,11 +736,396 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
                       : toggle.theirs.unburden
                   )}
                   showGroupSeparator={showSeparator}
+                  groupBaseSpeed={scored.mon.baseSpeed}
                 />
               );
             })}
           </TableBody>
         </table>
+      </div>
+
+      {/* MODIFIERS section — below table */}
+      <div className="border-t px-3 py-3">
+        <fieldset className="border-border/60 rounded-lg border px-3 py-2">
+          <legend className="text-primary px-1 font-mono text-[9px] font-bold tracking-[0.12em] uppercase">
+            Modifiers
+          </legend>
+          <div className="grid grid-cols-[auto_auto_auto] items-center gap-x-3 gap-y-1.5">
+            {/* Header */}
+            <span className="text-muted-foreground text-right text-[10px] font-semibold uppercase">
+              Ours
+            </span>
+            <span />
+            <span className="text-muted-foreground text-[10px] font-semibold uppercase">
+              Theirs
+            </span>
+
+            {/* Tailwind */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                aria-label="Our Tailwind"
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    yours: { ...prev.yours, tailwind: !prev.yours.tailwind },
+                  }))
+                }
+                className={cn(
+                  "size-4 rounded-full border-2 transition-colors",
+                  toggle.yours.tailwind
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/40 hover:border-muted-foreground"
+                )}
+              />
+            </div>
+            <span className="text-foreground text-center text-[11px]">
+              Tailwind
+            </span>
+            <div className="flex justify-start">
+              <button
+                type="button"
+                aria-label="Their Tailwind"
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: { ...prev.theirs, tailwind: !prev.theirs.tailwind },
+                  }))
+                }
+                className={cn(
+                  "size-4 rounded-full border-2 transition-colors",
+                  toggle.theirs.tailwind
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/40 hover:border-muted-foreground"
+                )}
+              />
+            </div>
+
+            {/* Scarf */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                aria-label="Our Scarf"
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    yours: { ...prev.yours, scarf: !prev.yours.scarf },
+                  }))
+                }
+                className={cn(
+                  "size-4 rounded-full border-2 transition-colors",
+                  toggle.yours.scarf
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/40 hover:border-muted-foreground"
+                )}
+              />
+            </div>
+            <span className="text-foreground text-center text-[11px]">
+              Scarf
+            </span>
+            <div className="flex justify-start">
+              <button
+                type="button"
+                aria-label="Their Scarf"
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: { ...prev.theirs, scarf: !prev.theirs.scarf },
+                  }))
+                }
+                className={cn(
+                  "size-4 rounded-full border-2 transition-colors",
+                  toggle.theirs.scarf
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/40 hover:border-muted-foreground"
+                )}
+              />
+            </div>
+
+            {/* Unburden */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                aria-label="Our Unburden"
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    yours: { ...prev.yours, unburden: !prev.yours.unburden },
+                  }))
+                }
+                className={cn(
+                  "size-4 rounded-full border-2 transition-colors",
+                  toggle.yours.unburden
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/40 hover:border-muted-foreground"
+                )}
+              />
+            </div>
+            <span className="text-foreground text-center text-[11px]">
+              Unburden
+            </span>
+            <div className="flex justify-start">
+              <button
+                type="button"
+                aria-label="Their Unburden"
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: { ...prev.theirs, unburden: !prev.theirs.unburden },
+                  }))
+                }
+                className={cn(
+                  "size-4 rounded-full border-2 transition-colors",
+                  toggle.theirs.unburden
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/40 hover:border-muted-foreground"
+                )}
+              />
+            </div>
+
+            {/* Paralyzed */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                aria-label="Our Paralyzed"
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    yours: {
+                      ...prev.yours,
+                      status:
+                        prev.yours.status === "paralyzed"
+                          ? "healthy"
+                          : "paralyzed",
+                    },
+                  }))
+                }
+                className={cn(
+                  "size-4 rounded-full border-2 transition-colors",
+                  toggle.yours.status === "paralyzed"
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/40 hover:border-muted-foreground"
+                )}
+              />
+            </div>
+            <span className="text-foreground text-center text-[11px]">
+              Paralyzed
+            </span>
+            <div className="flex justify-start">
+              <button
+                type="button"
+                aria-label="Their Paralyzed"
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: {
+                      ...prev.theirs,
+                      status:
+                        prev.theirs.status === "paralyzed"
+                          ? "healthy"
+                          : "paralyzed",
+                    },
+                  }))
+                }
+                className={cn(
+                  "size-4 rounded-full border-2 transition-colors",
+                  toggle.theirs.status === "paralyzed"
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/40 hover:border-muted-foreground"
+                )}
+              />
+            </div>
+
+            {/* Nature — theirs only */}
+            <div />
+            <span className="text-foreground text-center text-[11px]">
+              Nature
+            </span>
+            <div className="flex justify-start gap-0.5">
+              {(["negative", "neutral", "positive"] as const).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-label={`${n} speed nature`}
+                  onClick={() =>
+                    setToggle((prev) => ({
+                      ...prev,
+                      theirs: { ...prev.theirs, nature: n },
+                    }))
+                  }
+                  className={cn(
+                    "rounded px-1.5 py-0.5 font-mono text-[10px] font-bold transition-colors",
+                    toggle.theirs.nature === n
+                      ? "bg-primary/20 text-primary"
+                      : "text-muted-foreground/60 hover:text-muted-foreground"
+                  )}
+                >
+                  {n === "negative" ? "−" : n === "neutral" ? "●" : "+"}
+                </button>
+              ))}
+            </div>
+
+            {/* EVs — theirs only */}
+            <div />
+            <span className="text-foreground text-center text-[11px]">
+              {evLabel}
+            </span>
+            <div className="flex items-center justify-start gap-0.5">
+              <button
+                type="button"
+                aria-label={`Decrease speed ${evLabel}`}
+                disabled={toggle.theirs.evs === null || toggle.theirs.evs <= 0}
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: {
+                      ...prev.theirs,
+                      evs: Math.max(0, (prev.theirs.evs ?? maxEv) - evStep),
+                    },
+                  }))
+                }
+                className="text-muted-foreground hover:text-foreground text-xs font-bold disabled:opacity-30"
+              >
+                −
+              </button>
+              <input
+                type="text"
+                inputMode="numeric"
+                aria-label={`Speed ${evLabel} override`}
+                value={toggle.theirs.evs ?? ""}
+                placeholder={String(maxEv)}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  if (raw === "") {
+                    setToggle((prev) => ({
+                      ...prev,
+                      theirs: { ...prev.theirs, evs: null },
+                    }));
+                    return;
+                  }
+                  const val = Math.min(maxEv, Math.max(0, Number(raw)));
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: { ...prev.theirs, evs: val },
+                  }));
+                }}
+                className="text-foreground w-8 [appearance:textfield] bg-transparent text-center font-mono text-[10px] font-semibold outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <button
+                type="button"
+                aria-label={`Increase speed ${evLabel}`}
+                disabled={
+                  toggle.theirs.evs !== null && toggle.theirs.evs >= maxEv
+                }
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: {
+                      ...prev.theirs,
+                      evs: Math.min(maxEv, (prev.theirs.evs ?? maxEv) + evStep),
+                    },
+                  }))
+                }
+                className="text-muted-foreground hover:text-foreground text-xs font-bold disabled:opacity-30"
+              >
+                +
+              </button>
+            </div>
+
+            {/* Stages — compact ±stepper */}
+            <div className="flex items-center justify-end gap-0.5">
+              <button
+                type="button"
+                aria-label="Our stage decrease"
+                disabled={toggle.yours.stage <= STAGE_MIN}
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    yours: { ...prev.yours, stage: prev.yours.stage - 1 },
+                  }))
+                }
+                className="text-muted-foreground hover:text-foreground text-xs font-bold disabled:opacity-30"
+              >
+                −
+              </button>
+              <span
+                className={cn(
+                  "min-w-5 rounded px-1 text-center font-mono text-[10px] font-bold",
+                  toggle.yours.stage !== 0
+                    ? "bg-primary/20 text-primary"
+                    : "text-muted-foreground"
+                )}
+              >
+                {toggle.yours.stage === 0
+                  ? "0"
+                  : toggle.yours.stage > 0
+                    ? `+${toggle.yours.stage}`
+                    : toggle.yours.stage}
+              </span>
+              <button
+                type="button"
+                aria-label="Our stage increase"
+                disabled={toggle.yours.stage >= STAGE_MAX}
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    yours: { ...prev.yours, stage: prev.yours.stage + 1 },
+                  }))
+                }
+                className="text-muted-foreground hover:text-foreground text-xs font-bold disabled:opacity-30"
+              >
+                +
+              </button>
+            </div>
+            <span className="text-foreground text-center text-[11px]">
+              Stages
+            </span>
+            <div className="flex items-center justify-start gap-0.5">
+              <button
+                type="button"
+                aria-label="Their stage decrease"
+                disabled={toggle.theirs.stage <= STAGE_MIN}
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: { ...prev.theirs, stage: prev.theirs.stage - 1 },
+                  }))
+                }
+                className="text-muted-foreground hover:text-foreground text-xs font-bold disabled:opacity-30"
+              >
+                −
+              </button>
+              <span
+                className={cn(
+                  "min-w-5 rounded px-1 text-center font-mono text-[10px] font-bold",
+                  toggle.theirs.stage !== 0
+                    ? "bg-primary/20 text-primary"
+                    : "text-muted-foreground"
+                )}
+              >
+                {toggle.theirs.stage === 0
+                  ? "0"
+                  : toggle.theirs.stage > 0
+                    ? `+${toggle.theirs.stage}`
+                    : toggle.theirs.stage}
+              </span>
+              <button
+                type="button"
+                aria-label="Their stage increase"
+                disabled={toggle.theirs.stage >= STAGE_MAX}
+                onClick={() =>
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: { ...prev.theirs, stage: prev.theirs.stage + 1 },
+                  }))
+                }
+                className="text-muted-foreground hover:text-foreground text-xs font-bold disabled:opacity-30"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </fieldset>
       </div>
     </div>
   );

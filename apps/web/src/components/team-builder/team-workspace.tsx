@@ -27,7 +27,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
-import { type GameFormat, getActiveFormats } from "@trainers/pokemon";
+import {
+  type GameFormat,
+  getActiveFormats,
+  getMegaStoneForSpecies,
+} from "@trainers/pokemon";
 import {
   type TeamWithPokemon,
   type Tables,
@@ -173,6 +177,7 @@ type OptimisticAction =
       // invoke the reducer multiple times during reconciliation, and the row
       // must keep the same React key across every call.
       tempId: number;
+      heldItem?: string | null;
     }
   | { kind: "remove"; pokemonId: number };
 
@@ -184,7 +189,8 @@ type OptimisticAction =
 function buildOptimisticTeamPokemon(
   species: string,
   position: number,
-  tempId: number
+  tempId: number,
+  heldItem?: string | null
 ): TeamWithPokemon["team_pokemon"][number] {
   // Numeric and boolean defaults mirror pokemonPayloadSchema's `.default(...)`
   // values — the same defaults the server applies on insert. Without them the
@@ -201,7 +207,7 @@ function buildOptimisticTeamPokemon(
     nature: "Serious",
     nickname: null,
     notes: null,
-    held_item: null,
+    held_item: heldItem ?? null,
     tera_type: null,
     gender: null,
     is_shiny: false,
@@ -460,7 +466,8 @@ export function TeamWorkspaceV2({
             buildOptimisticTeamPokemon(
               action.species,
               action.position,
-              action.tempId
+              action.tempId,
+              action.heldItem
             ),
           ];
         }
@@ -514,18 +521,29 @@ export function TeamWorkspaceV2({
     // editors; nature defaults to the neutral "Serious" so the row
     // validates immediately. Serious is the canonical neutral nature in
     // the picker (Hardy/Docile/Bashful/Quirky are hidden as duplicates).
+
+    // Auto-attach mega stone when adding a mega species.
+    const megaStone = getMegaStoneForSpecies(speciesId);
+
     const pokemon: TablesInsert<"pokemon"> = {
       species: speciesId,
       ability: "",
       move1: "",
       nature: "Serious",
+      ...(megaStone ? { held_item: megaStone } : {}),
     };
     // Generate the temp id here, not in the reducer — the reducer must be
     // pure across React's reconciliation re-invocations.
     const tempId = nextOptimisticIdRef.current--;
 
     startTransition(async () => {
-      applyOptimistic({ kind: "add", position, species: speciesId, tempId });
+      applyOptimistic({
+        kind: "add",
+        position,
+        species: speciesId,
+        tempId,
+        heldItem: megaStone,
+      });
       const result = await persistence.addPokemon(team.id, pokemon, position);
       if (!result.success) {
         toast.error(result.error ?? "Failed to add Pokémon.");
@@ -743,14 +761,14 @@ export function TeamWorkspaceV2({
                     >
                       <div className="flex h-full flex-col overflow-hidden">
                         <header className="flex items-center gap-2 px-3 py-2">
-                          <span className="text-primary font-mono text-[10px] font-bold tracking-wider uppercase">
+                          <span className="text-primary flex-1 text-center font-mono text-[10px] font-bold tracking-wider uppercase">
                             Speed Tiers
                           </span>
                           <button
                             type="button"
                             onClick={() => state.setSideDrawer(null)}
                             aria-label="Close speed tiers"
-                            className="text-muted-foreground hover:text-foreground ml-auto flex size-5 items-center justify-center rounded transition-colors"
+                            className="text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded transition-colors"
                           >
                             ×
                           </button>
@@ -790,15 +808,13 @@ export function TeamWorkspaceV2({
                                     (a) => a.id === altId
                                   );
                                   if (!targetAlt) return;
-                                  const result =
-                                    await transferTeam(
-                                      team.id,
-                                      altId
-                                    );
+                                  const result = await transferTeam(
+                                    team.id,
+                                    altId
+                                  );
                                   if (!result.success) {
                                     toast.error(
-                                      result.error ??
-                                        "Failed to transfer team."
+                                      result.error ?? "Failed to transfer team."
                                     );
                                     return;
                                   }
@@ -813,10 +829,9 @@ export function TeamWorkspaceV2({
                         }
                         format={format}
                         onFormatChange={async (formatId) => {
-                          const result = await persistence.updateTeam(
-                            team.id,
-                            { format: formatId }
-                          );
+                          const result = await persistence.updateTeam(team.id, {
+                            format: formatId,
+                          });
                           if (!result.success) {
                             toast.error(
                               result.error ?? "Failed to update format."
@@ -941,11 +956,10 @@ export function TeamWorkspaceV2({
                                   (a) => a.id === altId
                                 );
                                 if (!targetAlt) return;
-                                const result =
-                                  await transferTeam(
-                                    team.id,
-                                    altId
-                                  );
+                                const result = await transferTeam(
+                                  team.id,
+                                  altId
+                                );
                                 if (!result.success) {
                                   toast.error(
                                     result.error ?? "Failed to transfer team."
