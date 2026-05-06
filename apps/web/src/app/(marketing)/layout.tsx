@@ -20,13 +20,15 @@ export default function MarketingLayout({
             Freak.
           </p>
           <p className="flex items-center gap-1 whitespace-nowrap">
-            <Image
-              src="/icons/beanie_logo.png"
-              alt="Beanie LLC"
-              width={28}
-              height={28}
-              className="inline-block"
-            />
+            <a href="https://x.com/thatguyinabeani" target="_blank" rel="noopener noreferrer">
+              <Image
+                src="/icons/beanie_logo.png"
+                alt="Beanie LLC"
+                width={28}
+                height={28}
+                className="inline-block"
+              />
+            </a>
             &copy; {new Date().getFullYear()} Beanie LLC
           </p>
         </div>
