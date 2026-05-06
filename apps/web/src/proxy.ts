@@ -50,11 +50,16 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Subdomain rewrites: builder.trainers.gg → /builder/*
+  // Subdomain rewrites: <sub>.trainers.gg → /<sub>/*
   const hostname = request.headers.get("host") ?? "";
-  if (hostname === "builder.trainers.gg") {
+  const subdomainRewriteMap: Record<string, string> = {
+    "builder.trainers.gg": "/builder",
+    "dashboard.trainers.gg": "/dashboard",
+  };
+  const rewriteBase = subdomainRewriteMap[hostname];
+  if (rewriteBase) {
     const url = request.nextUrl.clone();
-    url.pathname = `/builder${pathname === "/" ? "" : pathname}`;
+    url.pathname = `${rewriteBase}${pathname === "/" ? "" : pathname}`;
     return NextResponse.rewrite(url);
   }
 
