@@ -118,7 +118,7 @@ function clampSideWidth(n: number): number {
 const RIGHT_WIDTH_STORAGE_KEY = "trainersgg.builder.rightWidthPx.v1";
 const DEFAULT_RIGHT_WIDTH_PX = 380;
 const MIN_RIGHT_WIDTH_PX = 280;
-const MAX_RIGHT_WIDTH_PX = 800;
+const MAX_RIGHT_WIDTH_PX = 500;
 
 function clampRightWidth(n: number): number {
   if (Number.isNaN(n)) return DEFAULT_RIGHT_WIDTH_PX;

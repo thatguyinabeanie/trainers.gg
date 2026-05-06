@@ -933,7 +933,7 @@ export function TeamWorkspaceV2({
                       id="damage-calc"
                       defaultSize={`${state.rightWidthPx}px`}
                       minSize="280px"
-                      maxSize="800px"
+                      maxSize="500px"
                       onResize={(size) => {
                         state.setRightWidthPx(size.inPixels);
                       }}

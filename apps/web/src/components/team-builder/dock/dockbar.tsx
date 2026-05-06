@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 
@@ -176,6 +177,24 @@ export function Dockbar({
             {isCalcActive ? "▾" : "▴"}
           </span>
         </DockPill>
+      </div>
+
+      {/* Footer content */}
+      <div className="text-muted-foreground border-border/40 flex items-center justify-between border-t px-3 py-1.5 text-[8px]">
+        <p className="opacity-40">
+          trainers.gg is not affiliated with, endorsed by, or connected to
+          Nintendo, The Pok&eacute;mon Company, or Game Freak.
+        </p>
+        <p className="flex items-center gap-1 whitespace-nowrap">
+          <Image
+            src="/icons/beanie_logo.png"
+            alt="Beanie LLC"
+            width={12}
+            height={12}
+            className="inline-block"
+          />
+          &copy; {new Date().getFullYear()} Beanie LLC
+        </p>
       </div>
     </div>
   );
