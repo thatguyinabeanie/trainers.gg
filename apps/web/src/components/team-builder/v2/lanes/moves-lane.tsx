@@ -443,11 +443,14 @@ function MoveTile({
 
       {/* Inline error chips — rendered as a full-colspan row */}
       {slotErrors.length > 0 && (
-        <tr>
-          <td colSpan={calc.calcEnabled ? 8 : 5} className="p-0 pt-0.5 pb-1">
+        <TableRow className="border-none hover:bg-transparent">
+          <TableCell
+            colSpan={calc.calcEnabled ? 8 : 5}
+            className="p-0 pt-0.5 pb-1"
+          >
             <FieldErrors errors={slotErrors} />
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       )}
     </>
   );

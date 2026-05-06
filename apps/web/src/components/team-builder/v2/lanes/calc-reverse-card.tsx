@@ -57,7 +57,9 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
   if (!hasDefender) return null;
 
   const moves = ([0, 1, 2, 3] as const).map((idx) => {
-    const moveName = effectiveMoves[idx] ?? null;
+    // effectiveMoves uses "" for missing slots — coerce empty strings to null
+    // so the activeMoves filter below excludes blank bullets/rows.
+    const moveName = effectiveMoves[idx] || null;
     const output = outputs[idx] ?? null;
     const moveData = moveName ? getMoveData(moveName) : null;
     const isStatus = moveData?.category === "Status";
