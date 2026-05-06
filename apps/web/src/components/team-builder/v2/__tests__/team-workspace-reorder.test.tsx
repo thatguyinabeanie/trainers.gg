@@ -86,6 +86,16 @@ jest.mock("../calc/calc-drawer", () => ({
   CalcDrawer: () => <div />,
 }));
 
+jest.mock("@/components/ui/resizable", () => ({
+  ResizablePanelGroup: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="resizable-panel-group">{children}</div>
+  ),
+  ResizablePanel: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="resizable-panel">{children}</div>
+  ),
+  ResizableHandle: () => <div data-testid="resizable-handle" />,
+}));
+
 jest.mock("../../import-dialog", () => ({
   ImportDialog: () => <div />,
 }));

@@ -104,6 +104,16 @@ jest.mock("../calc/calc-drawer", () => ({
   CalcDrawer: () => <div data-testid="calc-drawer" />,
 }));
 
+jest.mock("@/components/ui/resizable", () => ({
+  ResizablePanelGroup: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="resizable-panel-group">{children}</div>
+  ),
+  ResizablePanel: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="resizable-panel">{children}</div>
+  ),
+  ResizableHandle: () => <div data-testid="resizable-handle" />,
+}));
+
 jest.mock("../../import-dialog", () => ({
   ImportDialog: ({ open }: { open: boolean }) => (
     <div data-testid="import-dialog" data-open={String(open)} />
@@ -984,15 +994,14 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
 // =============================================================================
 
 describe("TeamWorkspaceV2 — side panel resizer", () => {
-  it("renders a vertical separator when side drawer is open", () => {
+  it("renders a resize handle when side drawer is open", () => {
     mockBuilderState.drawer = "speed";
     mockBuilderState.sideDrawer = "speed";
 
     renderWorkspace();
 
-    expect(
-      screen.getByRole("separator", { name: /resize speed panel/i })
-    ).toBeInTheDocument();
+    // The resizable handle is rendered between the side panel and editor
+    expect(screen.getAllByTestId("resizable-handle").length).toBeGreaterThan(0);
   });
 });
 
@@ -1061,8 +1070,10 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
     const user = userEvent.setup();
     const { mockTransferTeam } = renderWithTransfer();
 
-    // Find the alt select dropdown and change to gary_oak
-    const altSelect = screen.getByRole("combobox");
+    // Find the alt select dropdown (contains alt usernames, not formats)
+    const altSelect = screen.getAllByRole("combobox").find((el) =>
+      el.querySelector('option[value="1"]')?.textContent?.includes("ash_ketchum")
+    )!;
     await user.selectOptions(altSelect, "2");
 
     expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);
@@ -1100,7 +1111,9 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
       />
     );
 
-    const altSelect = screen.getByRole("combobox");
+    const altSelect = screen.getAllByRole("combobox").find((el) =>
+      el.querySelector('option[value="1"]')?.textContent?.includes("ash_ketchum")
+    )!;
     await user.selectOptions(altSelect, "2");
 
     expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);

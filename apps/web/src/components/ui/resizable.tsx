@@ -7,8 +7,12 @@ import { cn } from "@/lib/utils";
 
 function ResizablePanelGroup({
   className,
+  direction,
   ...props
-}: React.ComponentProps<typeof Group>) {
+}: React.ComponentProps<typeof Group> & {
+  /** @deprecated Use `orientation` instead. Kept for shadcn/ui compat. */
+  direction?: "horizontal" | "vertical";
+}) {
   return (
     <Group
       data-slot="resizable-panel-group"
@@ -16,6 +20,7 @@ function ResizablePanelGroup({
         "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
         className
       )}
+      orientation={direction ?? props.orientation}
       {...props}
     />
   );
