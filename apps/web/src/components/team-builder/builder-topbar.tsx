@@ -29,6 +29,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
@@ -299,7 +300,7 @@ export function BuilderTopbar({
             File
             <ChevronDown className="text-muted-foreground size-3" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" sideOffset={6} className="min-w-44">
+          <DropdownMenuContent align="end" sideOffset={6} className="min-w-52">
             {onLoadTeam && (
               <>
                 <DropdownMenuItem onClick={() => setLoadOpen(true)}>
@@ -314,15 +315,17 @@ export function BuilderTopbar({
               Import paste
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Export</DropdownMenuLabel>
-            <DropdownMenuItem onClick={handleCopyShowdown}>
-              <Copy className="size-4" />
-              Copy as Showdown text
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleOpenPokepaste}>
-              <ExternalLink className="size-4" />
-              Open in Pokepaste
-            </DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Export</DropdownMenuLabel>
+              <DropdownMenuItem onClick={handleCopyShowdown}>
+                <Copy className="size-4" />
+                Copy as Showdown text
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleOpenPokepaste}>
+                <ExternalLink className="size-4" />
+                Open in Pokepaste
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -400,7 +403,9 @@ export function BuilderTopbar({
                         <p className="truncate font-medium">{t.name}</p>
                         <p className="text-muted-foreground text-xs">
                           {t.alt_username}
-                          {t.format ? ` · ${getFormatById(t.format)?.label ?? t.format}` : ""}
+                          {t.format
+                            ? ` · ${getFormatById(t.format)?.label ?? t.format}`
+                            : ""}
                           {" · "}
                           {t.team_pokemon.filter((tp) => tp.pokemon).length}/6
                         </p>
