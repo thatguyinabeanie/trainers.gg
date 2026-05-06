@@ -109,7 +109,7 @@ export function Dockbar({
   return (
     <div className="bg-background @container/dock relative w-full rounded-b-lg border-t">
       {/* Footer disclaimer — left side, absolutely positioned */}
-      <p className="text-muted-foreground absolute top-1/2 left-3 hidden -translate-y-1/2 text-[8px] opacity-40 @[900px]/dock:block">
+      <p className="text-muted-foreground absolute top-1/2 left-3 hidden -translate-y-1/2 text-[8px] @[900px]/dock:block">
         Not affiliated with Nintendo, The Pok&eacute;mon Company, or Game Freak.
       </p>
 

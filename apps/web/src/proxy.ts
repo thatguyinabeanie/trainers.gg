@@ -89,8 +89,21 @@ function applyRewrite(
   if (!rewriteBase) return response;
 
   const url = request.nextUrl.clone();
-  url.pathname = `${rewriteBase}${pathname === "/" ? "" : pathname}`;
+  // Guard against double-prefixing (e.g., links like /dashboard/teams on dashboard.trainers.gg)
+  url.pathname =
+    pathname === "/" || pathname === rewriteBase
+      ? rewriteBase
+      : pathname.startsWith(`${rewriteBase}/`)
+        ? pathname
+        : `${rewriteBase}${pathname}`;
   const rewrite = NextResponse.rewrite(url);
+
+  // Carry response headers (e.g., x-impersonation-session) — skip set-cookie
+  for (const [name, value] of response.headers.entries()) {
+    if (name.toLowerCase() !== "set-cookie") {
+      rewrite.headers.set(name, value);
+    }
+  }
 
   // Carry session-refresh cookies from the Supabase middleware response
   for (const cookie of response.cookies.getAll()) {
@@ -117,7 +130,11 @@ export default async function proxy(request: NextRequest) {
   const rewriteBase = subdomainRewriteMap[hostname];
   const shouldRewrite = rewriteBase && !isSubdomainExempt(pathname);
   const effectivePathname = shouldRewrite
-    ? `${rewriteBase}${pathname === "/" ? "" : pathname}`
+    ? pathname === "/" || pathname === rewriteBase
+      ? rewriteBase
+      : pathname.startsWith(`${rewriteBase}/`)
+        ? pathname
+        : `${rewriteBase}${pathname}`
     : pathname;
 
   // Create Supabase client and refresh session

@@ -581,7 +581,8 @@ export function SpeedTiersPanel({
   }
 
   // Weather: derive from external (calc) state if provided, else use local toggle
-  const effectiveWeather: Weather = externalWeather
+  const isExternallyControlled = externalWeather !== undefined;
+  const effectiveWeather: Weather = isExternallyControlled
     ? parseExternalWeather(externalWeather)
     : toggle.weather;
 
@@ -638,7 +639,8 @@ export function SpeedTiersPanel({
   // ---- helpers ----------------------------------------------------------------
 
   function setWeather(w: Weather) {
-    if (externalSetWeather) {
+    if (isExternallyControlled) {
+      if (!externalSetWeather) return;
       // Toggle off if already active, otherwise sync to calc state
       const current = parseExternalWeather(externalWeather);
       externalSetWeather(current === w ? "" : panelWeatherToEngine(w));

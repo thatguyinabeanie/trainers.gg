@@ -523,6 +523,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
                 key={`empty-slot-${rows.length + idx}`}
                 className="grid items-center gap-px px-2 py-1"
                 style={gridStyle}
+                aria-hidden="true"
               >
                 <span className="text-muted-foreground/30 text-[10px] italic">
                   {rows.length === 0 && idx === 2 ? "Add Pokémon…" : "\u00A0"}

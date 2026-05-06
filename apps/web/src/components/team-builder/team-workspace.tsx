@@ -277,13 +277,15 @@ function DockbarConnected({
 // SpeedTiersPanelConnected — reads weather from CalcStateContext
 // =============================================================================
 
+interface SpeedTiersPanelConnectedProps {
+  team: TeamWithPokemon["team_pokemon"];
+  format: GameFormat | undefined;
+}
+
 function SpeedTiersPanelConnected({
   team,
   format,
-}: {
-  team: TeamWithPokemon["team_pokemon"];
-  format: GameFormat | undefined;
-}) {
+}: SpeedTiersPanelConnectedProps) {
   const calc = useCalcStateContext();
   return (
     <SpeedTiersPanel

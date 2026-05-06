@@ -398,7 +398,7 @@ export function BuilderTopbar({
                         <p className="text-muted-foreground text-xs">
                           {t.alt_username}
                           {t.format
-                            ? ` · ${getFormatById(t.format)?.label ?? t.format}`
+                            ? ` · ${getFormatById(t.format)?.label ?? "Unknown format"}`
                             : ""}
                           {" · "}
                           {t.team_pokemon.filter((tp) => tp.pokemon).length}/6
