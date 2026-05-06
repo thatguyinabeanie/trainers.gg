@@ -37,7 +37,7 @@ jest.mock("@trainers/pokemon", () => ({
 
 // Mock Supabase queries
 jest.mock("@trainers/supabase", () => ({
-  getCurrentUserAlts: jest.fn().mockResolvedValue([]),
+  getAltsByUserId: jest.fn().mockResolvedValue([]),
   getTeamsForUser: jest.fn().mockResolvedValue([]),
   getTeamWithPokemon: jest.fn().mockResolvedValue(null),
 }));

@@ -22,7 +22,7 @@ import { toast } from "sonner";
 
 import { getFormatById } from "@trainers/pokemon";
 import {
-  getCurrentUserAlts,
+  getAltsByUserId,
   getTeamsForUser,
   getTeamWithPokemon,
   type Tables,
@@ -70,8 +70,9 @@ export function LocalBuilderWorkspace() {
 
   const format = team.format ? getFormatById(team.format) : undefined;
 
-  // Fetch alts and teams when authenticated (serialized to avoid
-  // concurrent Supabase auth lock contention).
+  // Fetch alts and teams when authenticated. Uses user.id from context
+  // directly to avoid a redundant supabase.auth.getUser() call that races
+  // with other auth requests and triggers lock contention.
   const fetchingRef = useRef(false);
   useEffect(() => {
     if (!isAuthenticated || authLoading || !user) return;
@@ -82,7 +83,7 @@ export function LocalBuilderWorkspace() {
     async function fetchData() {
       setTeamsLoading(true);
       try {
-        const fetchedAlts = await getCurrentUserAlts(supabase);
+        const fetchedAlts = await getAltsByUserId(supabase, user!.id);
         if (cancelled) return;
         setAlts(fetchedAlts);
         if (fetchedAlts.length > 0 && !selectedAltId) {
@@ -131,7 +132,7 @@ export function LocalBuilderWorkspace() {
         targetAlt = alts.find((a) => a.id === selectedAltId);
       }
       if (!targetAlt) {
-        const fetchedAlts = await getCurrentUserAlts(supabase);
+        const fetchedAlts = await getAltsByUserId(supabase, user!.id);
         if (!fetchedAlts || fetchedAlts.length === 0) {
           toast.error(
             "No profile found. Please complete your profile setup first."
