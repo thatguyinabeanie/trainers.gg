@@ -12,6 +12,15 @@ import { cookies } from "next/headers";
 import type { TypedSupabaseClient } from "../../client";
 
 /**
+ * Cookie domain for cross-subdomain auth (builder.trainers.gg, dashboard.trainers.gg).
+ * Leading dot makes cookies available to all subdomains of trainers.gg.
+ * Undefined in local dev / preview deploys so cookies use browser defaults.
+ */
+const COOKIE_DOMAIN = process.env.NEXT_PUBLIC_SITE_URL?.includes("trainers.gg")
+  ? ".trainers.gg"
+  : undefined;
+
+/**
  * Create a Supabase client for Next.js server-side rendering.
  * Reads and writes session cookies automatically.
  */
@@ -22,6 +31,9 @@ export async function createServerSupabaseClient(): Promise<TypedSupabaseClient>
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: {
+        domain: COOKIE_DOMAIN,
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();
@@ -37,7 +49,12 @@ export async function createServerSupabaseClient(): Promise<TypedSupabaseClient>
                 name: string;
                 value: string;
                 options: Record<string, unknown>;
-              }) => cookieStore.set(name, value, options)
+              }) =>
+                cookieStore.set(name, value, {
+                  ...(options as object),
+                  domain:
+                    COOKIE_DOMAIN ?? (options?.domain as string | undefined),
+                } as Parameters<typeof cookieStore.set>[2])
             );
           } catch {
             // Called from Server Component - can't mutate cookies here

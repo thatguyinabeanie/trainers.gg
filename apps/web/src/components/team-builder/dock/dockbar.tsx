@@ -107,11 +107,16 @@ export function Dockbar({
   const calcSubLabel = defenderSpecies ? `vs ${defenderSpecies}` : "no target";
 
   return (
-    <div className="bg-background @container/dock w-full rounded-b-lg border-t">
+    <div className="bg-background @container/dock relative w-full rounded-b-lg border-t">
+      {/* Footer disclaimer — left side, absolutely positioned */}
+      <p className="text-muted-foreground absolute top-1/2 left-3 hidden -translate-y-1/2 text-[8px] opacity-40 @[900px]/dock:block">
+        Not affiliated with Nintendo, The Pok&eacute;mon Company, or Game Freak.
+      </p>
+
       <div
         role="toolbar"
         aria-label="Builder tools"
-        className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto px-3 py-2 @[700px]/dock:flex-wrap @[700px]/dock:justify-center @[700px]/dock:overflow-visible"
+        className="flex min-w-0 items-center justify-center gap-2 overflow-x-auto px-3 py-2"
       >
         {/* Type matchups pill */}
         <DockPill
@@ -179,23 +184,17 @@ export function Dockbar({
         </DockPill>
       </div>
 
-      {/* Footer content */}
-      <div className="text-muted-foreground border-border/40 flex items-center justify-between border-t px-3 py-1.5 text-[8px]">
-        <p className="opacity-40">
-          trainers.gg is not affiliated with, endorsed by, or connected to
-          Nintendo, The Pok&eacute;mon Company, or Game Freak.
-        </p>
-        <p className="flex items-center gap-1 whitespace-nowrap">
-          <Image
-            src="/icons/beanie_logo.png"
-            alt="Beanie LLC"
-            width={12}
-            height={12}
-            className="inline-block"
-          />
-          &copy; {new Date().getFullYear()} Beanie LLC
-        </p>
-      </div>
+      {/* Footer copyright — right side, absolutely positioned */}
+      <p className="text-muted-foreground absolute top-1/2 right-3 hidden -translate-y-1/2 items-center gap-1 text-[10px] whitespace-nowrap @[900px]/dock:flex">
+        <Image
+          src="/icons/beanie_logo.png"
+          alt="Beanie LLC"
+          width={28}
+          height={28}
+          className="inline-block"
+        />
+        &copy; {new Date().getFullYear()} Beanie LLC
+      </p>
     </div>
   );
 }
