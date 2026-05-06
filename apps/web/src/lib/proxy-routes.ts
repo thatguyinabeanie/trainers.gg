@@ -101,6 +101,7 @@ const ONBOARDING_EXEMPT_ROUTES = [
   "/tournaments",
   "/communities",
   "/organizations",
+  "/builder",
 ];
 
 export function isOnboardingExempt(pathname: string): boolean {

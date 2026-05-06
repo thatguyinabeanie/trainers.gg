@@ -4,7 +4,7 @@ import { getFormatById } from "@trainers/pokemon";
 import { getCurrentUserAlts, getTeamWithPokemon } from "@trainers/supabase";
 
 import { createClientReadOnly } from "@/lib/supabase/server";
-import { TeamWorkspaceV2 } from "@/components/team-builder/v2/team-workspace-v2";
+import { DashboardBuilderWrapper } from "@/components/team-builder/dashboard-builder-wrapper";
 
 // =============================================================================
 // Metadata
@@ -48,7 +48,7 @@ export default async function TeamWorkspacePage({
   const format = team.format ? getFormatById(team.format) : undefined;
 
   return (
-    <TeamWorkspaceV2
+    <DashboardBuilderWrapper
       team={team}
       format={format}
       username={username}

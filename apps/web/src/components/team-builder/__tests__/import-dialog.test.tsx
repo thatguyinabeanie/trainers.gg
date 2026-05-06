@@ -80,13 +80,23 @@ jest.mock("@trainers/pokemon", () => ({
       : result,
 }));
 
-const mockAddPokemonToTeamAction = jest.fn(() =>
-  Promise.resolve({ success: true })
+const mockAddPokemon = jest.fn(() =>
+  Promise.resolve({ success: true, data: { pokemonId: 99 } })
 );
 
-jest.mock("@/actions/teams", () => ({
-  addPokemonToTeamAction: (...args: unknown[]) =>
-    mockAddPokemonToTeamAction(...args),
+const mockPersistence = {
+  mode: "api" as const,
+  addPokemon: (...args: unknown[]) => mockAddPokemon(...args),
+  updatePokemon: jest.fn(() => Promise.resolve({ success: true, data: undefined })),
+  removePokemon: jest.fn(() => Promise.resolve({ success: true, data: undefined })),
+  reorderPokemon: jest.fn(() => Promise.resolve({ success: true, data: undefined })),
+  updateTeam: jest.fn(() => Promise.resolve({ success: true, data: undefined })),
+  onMutationSuccess: jest.fn(),
+};
+
+jest.mock("@/components/team-builder/persistence/context", () => ({
+  usePersistence: () => mockPersistence,
+  PersistenceProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 jest.mock("sonner", () => ({
@@ -242,7 +252,7 @@ describe("ImportDialog", () => {
     mockParseShowdownText.mockReturnValue([mockParsedPikachu]);
     mockParsePokepaseUrl.mockReturnValue(null);
     mockValidateTeamStructure.mockReturnValue([]);
-    mockAddPokemonToTeamAction.mockResolvedValue({ success: true });
+    mockAddPokemon.mockResolvedValue({ success: true, data: { pokemonId: 99 } });
     // Default: permissive — no registered legality lists
     mockGetLegalSpecies.mockReturnValue(undefined);
     mockGetLegalItems.mockReturnValue(undefined);
@@ -533,7 +543,7 @@ describe("ImportDialog", () => {
   // ---------------------------------------------------------------------------
 
   describe("Import action — happy path", () => {
-    it("calls addPokemonToTeamAction for each parsed pokemon and fires onImportComplete", async () => {
+    it("calls persistence.addPokemon for each parsed pokemon and fires onImportComplete", async () => {
       const onImportComplete = jest.fn();
       const onOpenChange = jest.fn();
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
@@ -556,7 +566,7 @@ describe("ImportDialog", () => {
       await user.click(screen.getByRole("button", { name: /import 1/i }));
 
       await waitFor(() => {
-        expect(mockAddPokemonToTeamAction).toHaveBeenCalledTimes(1);
+        expect(mockAddPokemon).toHaveBeenCalledTimes(1);
       });
       expect(onImportComplete).toHaveBeenCalled();
       expect(toast.success).toHaveBeenCalledWith(
@@ -577,7 +587,7 @@ describe("ImportDialog", () => {
       await user.click(screen.getByRole("button", { name: /import 1/i }));
 
       await waitFor(() => {
-        expect(mockAddPokemonToTeamAction).toHaveBeenCalledWith(
+        expect(mockAddPokemon).toHaveBeenCalledWith(
           1, // team.id
           expect.objectContaining({ species: "Pikachu", ability: "Static" }),
           1 // first available position
@@ -602,7 +612,7 @@ describe("ImportDialog", () => {
       await user.click(screen.getByRole("button", { name: /import 1/i }));
 
       await waitFor(() => {
-        expect(mockAddPokemonToTeamAction).toHaveBeenCalledWith(
+        expect(mockAddPokemon).toHaveBeenCalledWith(
           team.id,
           expect.any(Object),
           2 // first available slot
@@ -639,7 +649,7 @@ describe("ImportDialog", () => {
 
   describe("Import action — error paths", () => {
     it("shows an error toast and keeps dialog open when all imports fail", async () => {
-      mockAddPokemonToTeamAction.mockResolvedValue({
+      mockAddPokemon.mockResolvedValue({
         success: false,
         error: "DB constraint violation",
       });
@@ -681,8 +691,8 @@ describe("ImportDialog", () => {
         mockParsedCharizard,
       ]);
       // First call succeeds, second fails
-      mockAddPokemonToTeamAction
-        .mockResolvedValueOnce({ success: true })
+      mockAddPokemon
+        .mockResolvedValueOnce({ success: true, data: { pokemonId: 99 } })
         .mockResolvedValueOnce({ success: false, error: "Slot taken" });
 
       const onImportComplete = jest.fn();
@@ -771,7 +781,7 @@ describe("ImportDialog", () => {
       await waitFor(() => {
         expect(screen.getByRole("alert")).toBeInTheDocument();
       });
-      expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+      expect(mockAddPokemon).not.toHaveBeenCalled();
     });
   });
 
@@ -809,8 +819,8 @@ describe("ImportDialog", () => {
       await user.click(screen.getByRole("button", { name: /import 1/i }));
 
       await waitFor(() => {
-        // Only 1 addPokemonToTeamAction call despite 2 parsed pokemon
-        expect(mockAddPokemonToTeamAction).toHaveBeenCalledTimes(1);
+        // Only 1 persistence.addPokemon call despite 2 parsed pokemon
+        expect(mockAddPokemon).toHaveBeenCalledTimes(1);
       });
     });
   });
@@ -1072,7 +1082,7 @@ describe("ImportDialog", () => {
       // Preview panel must not appear
       expect(screen.queryByText(/previewing/i)).not.toBeInTheDocument();
       // Import action should never be called
-      expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+      expect(mockAddPokemon).not.toHaveBeenCalled();
     });
 
     it("proceeds to preview when all held items are legal in the target format", async () => {
@@ -1158,7 +1168,7 @@ describe("ImportDialog", () => {
         expect(screen.getByRole("alert")).toBeInTheDocument();
       });
       expect(screen.getByRole("alert")).toHaveTextContent(/Hyperspace Hole/);
-      expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+      expect(mockAddPokemon).not.toHaveBeenCalled();
     });
 
     it("proceeds to preview when all moves are legal", async () => {
@@ -1287,7 +1297,7 @@ describe("ImportDialog", () => {
       expect(screen.getByRole("alert")).toHaveTextContent("Moody");
       // Preview panel must not appear
       expect(screen.queryByText(/previewing/i)).not.toBeInTheDocument();
-      expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+      expect(mockAddPokemon).not.toHaveBeenCalled();
     });
 
     it("proceeds to preview when abilities are legal", async () => {
@@ -1366,7 +1376,7 @@ describe("ImportDialog", () => {
       await user.click(screen.getByRole("button", { name: /import 1/i }));
 
       await waitFor(() => {
-        expect(mockAddPokemonToTeamAction).toHaveBeenCalledWith(
+        expect(mockAddPokemon).toHaveBeenCalledWith(
           expect.any(Number),
           expect.objectContaining({ gender: "Male" }),
           expect.any(Number)
@@ -1390,7 +1400,7 @@ describe("ImportDialog", () => {
       await user.click(screen.getByRole("button", { name: /import 1/i }));
 
       await waitFor(() => {
-        expect(mockAddPokemonToTeamAction).toHaveBeenCalledWith(
+        expect(mockAddPokemon).toHaveBeenCalledWith(
           expect.any(Number),
           expect.objectContaining({ gender: "Female" }),
           expect.any(Number)
@@ -1417,7 +1427,7 @@ describe("ImportDialog", () => {
       await user.click(screen.getByRole("button", { name: /import 1/i }));
 
       await waitFor(() => {
-        expect(mockAddPokemonToTeamAction).toHaveBeenCalledWith(
+        expect(mockAddPokemon).toHaveBeenCalledWith(
           expect.any(Number),
           expect.objectContaining({ gender: null }),
           expect.any(Number)
@@ -1445,7 +1455,7 @@ describe("ImportDialog", () => {
           screen.getByRole("button", { name: /import 1/i })
         ).toBeDisabled();
       });
-      expect(mockAddPokemonToTeamAction).not.toHaveBeenCalled();
+      expect(mockAddPokemon).not.toHaveBeenCalled();
     });
   });
 
