@@ -980,18 +980,18 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
 });
 
 // =============================================================================
-// resizer — side panel (resizer removed in builder refactor)
+// resizer — side panel
 // =============================================================================
 
 describe("TeamWorkspaceV2 — side panel resizer", () => {
-  it("does not render a resize separator (removed in builder refactor)", () => {
+  it("renders a vertical separator when side drawer is open", () => {
     mockBuilderState.drawer = "speed";
     mockBuilderState.sideDrawer = "speed";
 
     renderWorkspace();
 
     expect(
-      screen.queryByRole("separator", { name: /resize speed panel/i })
-    ).not.toBeInTheDocument();
+      screen.getByRole("separator", { name: /resize speed panel/i })
+    ).toBeInTheDocument();
   });
 });

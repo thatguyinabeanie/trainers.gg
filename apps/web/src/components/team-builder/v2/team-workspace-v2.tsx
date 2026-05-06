@@ -39,6 +39,11 @@ import type { BuilderPersistence } from "./persistence/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -707,133 +712,272 @@ export function TeamWorkspaceV2({
             className="flex min-w-0 flex-1 flex-col overflow-hidden"
             ref={worklaneRef}
           >
-            {/* Horizontal split: editor centered, panels overlay from edges */}
-            <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-              {/* Desktop: speed tiers overlay on the left */}
-              {!isMobile && state.sideDrawer === "speed" && (
-                <div
-                  className="absolute inset-y-0 left-0 z-10 flex"
-                  style={{ width: state.sideWidthPx }}
-                >
-                  <div className="border-border bg-background flex min-h-0 flex-1 flex-col overflow-hidden border-r shadow-lg">
-                    <header className="border-border flex items-center gap-2 border-b px-3 py-2">
-                      <span className="text-primary font-mono text-[10px] font-bold tracking-wider uppercase">
-                        Speed Tiers
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => state.setSideDrawer(null)}
-                        aria-label="Close speed tiers"
-                        className="text-muted-foreground hover:text-foreground ml-auto flex size-5 items-center justify-center rounded transition-colors"
-                      >
-                        ×
-                      </button>
-                    </header>
-                    <div className="min-h-0 flex-1 overflow-hidden">
-                      <SpeedTiersPanel
-                        team={optimisticTeamPokemon}
+            {/* Horizontal split: true flex layout with ghost resize handles */}
+            {!isMobile ? (
+              <ResizablePanelGroup
+                direction="horizontal"
+                className="min-w-0 flex-1"
+              >
+                {/* Left panel: Speed Tiers (conditional) */}
+                {state.sideDrawer === "speed" && (
+                  <>
+                    <ResizablePanel
+                      id="speed-tiers"
+                      defaultSize={`${state.sideWidthPx}px`}
+                      minSize="260px"
+                      maxSize="500px"
+                      onResize={(size) => {
+                        state.setSideWidthPx(size.inPixels);
+                      }}
+                      className="bg-background"
+                    >
+                      <div className="flex h-full flex-col overflow-hidden">
+                        <header className="flex items-center gap-2 px-3 py-2">
+                          <span className="text-primary font-mono text-[10px] font-bold tracking-wider uppercase">
+                            Speed Tiers
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => state.setSideDrawer(null)}
+                            aria-label="Close speed tiers"
+                            className="text-muted-foreground hover:text-foreground ml-auto flex size-5 items-center justify-center rounded transition-colors"
+                          >
+                            ×
+                          </button>
+                        </header>
+                        <div className="min-h-0 flex-1 overflow-hidden">
+                          <SpeedTiersPanel
+                            team={optimisticTeamPokemon}
+                            format={format}
+                          />
+                        </div>
+                      </div>
+                    </ResizablePanel>
+                    <ResizableHandle variant="ghost" />
+                  </>
+                )}
+
+                {/* Center panel: Editor (always present) */}
+                <ResizablePanel id="editor" minSize="30%">
+                  <div className="flex h-full flex-col items-center overflow-y-auto">
+                    {/* Inline metadata: alt + format (left), layout toggle (right) */}
+                    <div className="flex w-full max-w-[1800px] items-center gap-3 px-3 pt-2">
+                      <WorkspaceMetadata
+                        alts={alts}
+                        selectedAltId={
+                          selectedAltId ??
+                          alts.find((a) => a.id === team.created_by)?.id ??
+                          null
+                        }
+                        onAltSelect={
+                          persistence.mode === "local"
+                            ? onAltSelect
+                            : persistence.transferTeam
+                              ? async (altId) => {
+                                  const targetAlt = alts.find(
+                                    (a) => a.id === altId
+                                  );
+                                  if (!targetAlt) return;
+                                  const result =
+                                    await persistence.transferTeam!(
+                                      team.id,
+                                      altId
+                                    );
+                                  if (!result.success) {
+                                    toast.error(
+                                      result.error ??
+                                        "Failed to transfer team."
+                                    );
+                                    return;
+                                  }
+                                  toast.success(
+                                    `Team transferred to ${targetAlt.username}.`
+                                  );
+                                  router.push(
+                                    `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
+                                  );
+                                }
+                              : undefined
+                        }
                         format={format}
+                        onFormatChange={async (formatId) => {
+                          const result = await persistence.updateTeam(
+                            team.id,
+                            { format: formatId }
+                          );
+                          if (!result.success) {
+                            toast.error(
+                              result.error ?? "Failed to update format."
+                            );
+                            return;
+                          }
+                          persistence.onMutationSuccess();
+                        }}
                       />
+                      <div className="ml-auto">
+                        <TeamLayoutToggle />
+                      </div>
+                    </div>
+                    {/* Section wraps pokemon rows */}
+                    <section
+                      className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3 [[data-density=compact]_&]:p-2"
+                      data-calc-open={
+                        state.rightDrawer === "calc" ? "true" : "false"
+                      }
+                      data-layout={layoutMode}
+                    >
+                      <div
+                        className={cn(
+                          "grid grid-cols-[minmax(0,1fr)] gap-2 [[data-density=compact]_&]:gap-1",
+                          layoutMode === "2x3-vertical" &&
+                            "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] items-center justify-center"
+                        )}
+                      >
+                        <DndContext
+                          id={dndId}
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <SortableContext
+                            items={itemIds}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {slots.map((p, i) => {
+                              const slotPokemonId = p?.id ?? null;
+                              const slotErrors =
+                                slotPokemonId !== null
+                                  ? (pokemonErrors.get(slotPokemonId) ?? [])
+                                  : [];
+
+                              return (
+                                <PokeRow
+                                  key={itemIds[i]}
+                                  sortableId={itemIds[i] ?? `__empty__${i}`}
+                                  idx={i}
+                                  pokemon={p}
+                                  isActive={state.activeIdx === i}
+                                  density="comfy"
+                                  expandMode="all"
+                                  onActivate={state.setActiveIdx}
+                                  onAdd={handleAdd}
+                                  onRemove={handleRemoveByIdx}
+                                  teamPokemon={optimisticTeamPokemon}
+                                  format={format}
+                                  onPokemonUpdate={handlePokemonUpdate}
+                                  slotErrors={slotErrors}
+                                />
+                              );
+                            })}
+                          </SortableContext>
+                        </DndContext>
+                      </div>
+                    </section>
+                  </div>
+                </ResizablePanel>
+
+                {/* Right panel: Damage Calc (conditional) */}
+                {state.rightDrawer === "calc" && (
+                  <>
+                    <ResizableHandle variant="ghost" />
+                    <ResizablePanel
+                      id="damage-calc"
+                      defaultSize={`${state.rightWidthPx}px`}
+                      minSize="280px"
+                      maxSize="800px"
+                      onResize={(size) => {
+                        state.setRightWidthPx(size.inPixels);
+                      }}
+                      className="bg-background"
+                    >
+                      <div className="flex h-full flex-col overflow-hidden">
+                        <CalcBottomPanel
+                          teamSlots={slots}
+                          format={format}
+                          onClose={() => state.setRightDrawer(null)}
+                          attackerIdx={calcAttackerIdx}
+                          faintedYours={state.faintedYours}
+                          setFaintedYours={state.setFaintedYours}
+                          faintedTheirs={state.faintedTheirs}
+                          setFaintedTheirs={state.setFaintedTheirs}
+                        />
+                      </div>
+                    </ResizablePanel>
+                  </>
+                )}
+              </ResizablePanelGroup>
+            ) : (
+              /* Mobile: no panel group, inline layout */
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto">
+                  <div className="flex w-full max-w-[1800px] items-center gap-3 px-3 pt-2">
+                    <WorkspaceMetadata
+                      alts={alts}
+                      selectedAltId={
+                        selectedAltId ??
+                        alts.find((a) => a.id === team.created_by)?.id ??
+                        null
+                      }
+                      onAltSelect={
+                        persistence.mode === "local"
+                          ? onAltSelect
+                          : persistence.transferTeam
+                            ? async (altId) => {
+                                const targetAlt = alts.find(
+                                  (a) => a.id === altId
+                                );
+                                if (!targetAlt) return;
+                                const result =
+                                  await persistence.transferTeam!(
+                                    team.id,
+                                    altId
+                                  );
+                                if (!result.success) {
+                                  toast.error(
+                                    result.error ?? "Failed to transfer team."
+                                  );
+                                  return;
+                                }
+                                toast.success(
+                                  `Team transferred to ${targetAlt.username}.`
+                                );
+                                router.push(
+                                  `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
+                                );
+                              }
+                            : undefined
+                      }
+                      format={format}
+                      onFormatChange={async (formatId) => {
+                        const result = await persistence.updateTeam(team.id, {
+                          format: formatId,
+                        });
+                        if (!result.success) {
+                          toast.error(
+                            result.error ?? "Failed to update format."
+                          );
+                          return;
+                        }
+                        persistence.onMutationSuccess();
+                      }}
+                    />
+                    <div className="ml-auto">
+                      <TeamLayoutToggle />
                     </div>
                   </div>
-                </div>
-              )}
-
-              {/* Desktop: damage calc overlay on the right */}
-              {!isMobile && state.rightDrawer === "calc" && (
-                <div
-                  className="absolute inset-y-0 right-0 z-10 flex"
-                  style={{ width: state.rightWidthPx }}
-                >
-                  <div className="border-border bg-background flex min-h-0 flex-1 flex-col overflow-hidden border-l shadow-lg">
-                    <CalcBottomPanel
-                      teamSlots={slots}
-                      format={format}
-                      onClose={() => state.setRightDrawer(null)}
-                      attackerIdx={calcAttackerIdx}
-                      faintedYours={state.faintedYours}
-                      setFaintedYours={state.setFaintedYours}
-                      faintedTheirs={state.faintedTheirs}
-                      setFaintedTheirs={state.setFaintedTheirs}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Editor region — rows scroll inside this region only */}
-              <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto">
-                {/* Inline metadata: alt + format (left), layout toggle (right) */}
-                <div className="flex w-full max-w-[1800px] items-center gap-3 px-3 pt-2">
-                  <WorkspaceMetadata
-                    alts={alts}
-                    selectedAltId={
-                      selectedAltId ??
-                      alts.find((a) => a.id === team.created_by)?.id ??
-                      null
-                    }
-                    onAltSelect={
-                      persistence.mode === "local"
-                        ? onAltSelect
-                        : persistence.transferTeam
-                          ? async (altId) => {
-                              const targetAlt = alts.find(
-                                (a) => a.id === altId
-                              );
-                              if (!targetAlt) return;
-                              const result = await persistence.transferTeam!(
-                                team.id,
-                                altId
-                              );
-                              if (!result.success) {
-                                toast.error(
-                                  result.error ?? "Failed to transfer team."
-                                );
-                                return;
-                              }
-                              toast.success(
-                                `Team transferred to ${targetAlt.username}.`
-                              );
-                              router.push(
-                                `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
-                              );
-                            }
-                          : undefined
-                    }
-                    format={format}
-                    onFormatChange={async (formatId) => {
-                      const result = await persistence.updateTeam(team.id, {
-                        format: formatId,
-                      });
-                      if (!result.success) {
-                        toast.error(result.error ?? "Failed to update format.");
-                        return;
-                      }
-                      persistence.onMutationSuccess();
-                    }}
-                  />
-                  <div className="ml-auto">
-                    <TeamLayoutToggle />
-                  </div>
-                </div>
-                {/* Section wraps pokemon rows */}
-                <section
-                  className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3 [[data-density=compact]_&]:p-2"
-                  data-calc-open={
-                    state.rightDrawer === "calc" && !isMobile ? "true" : "false"
-                  }
-                  data-layout={layoutMode}
-                >
-                  {/* Pokemon rows wrapper */}
-                  <div
-                    className={cn(
-                      "grid grid-cols-[minmax(0,1fr)] gap-2 [[data-density=compact]_&]:gap-1",
-                      layoutMode === "2x3-vertical" &&
-                        "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] items-center justify-center"
-                    )}
+                  <section
+                    className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3 [[data-density=compact]_&]:p-2"
+                    data-calc-open="false"
+                    data-layout={layoutMode}
                   >
-                    {isMobile ? (
-                      // Mobile: no drag-and-drop, render rows directly.
-                      slots.map((p, i) => {
+                    <div
+                      className={cn(
+                        "grid grid-cols-[minmax(0,1fr)] gap-2 [[data-density=compact]_&]:gap-1",
+                        layoutMode === "2x3-vertical" &&
+                          "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] items-center justify-center"
+                      )}
+                    >
+                      {slots.map((p, i) => {
                         const slotPokemonId = p?.id ?? null;
                         const slotErrors =
                           slotPokemonId !== null
@@ -858,77 +1002,35 @@ export function TeamWorkspaceV2({
                             slotErrors={slotErrors}
                           />
                         );
-                      })
-                    ) : (
-                      // Desktop: wrap in DnD context for drag-and-drop reordering.
-                      <DndContext
-                        id={dndId}
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <SortableContext
-                          items={itemIds}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          {slots.map((p, i) => {
-                            const slotPokemonId = p?.id ?? null;
-                            const slotErrors =
-                              slotPokemonId !== null
-                                ? (pokemonErrors.get(slotPokemonId) ?? [])
-                                : [];
+                      })}
+                    </div>
+                  </section>
+                </div>
 
-                            return (
-                              <PokeRow
-                                key={itemIds[i]}
-                                sortableId={itemIds[i] ?? `__empty__${i}`}
-                                idx={i}
-                                pokemon={p}
-                                isActive={state.activeIdx === i}
-                                density="comfy"
-                                expandMode="all"
-                                onActivate={state.setActiveIdx}
-                                onAdd={handleAdd}
-                                onRemove={handleRemoveByIdx}
-                                teamPokemon={optimisticTeamPokemon}
-                                format={format}
-                                onPokemonUpdate={handlePokemonUpdate}
-                                slotErrors={slotErrors}
-                              />
-                            );
-                          })}
-                        </SortableContext>
-                      </DndContext>
-                    )}
+                {state.rightDrawer === "calc" && (
+                  <div className="w-full border-t p-3">
+                    <CalcBottomPanel
+                      teamSlots={slots}
+                      format={format}
+                      onClose={() => state.setRightDrawer(null)}
+                      attackerIdx={calcAttackerIdx}
+                      faintedYours={state.faintedYours}
+                      setFaintedYours={state.setFaintedYours}
+                      faintedTheirs={state.faintedTheirs}
+                      setFaintedTheirs={state.setFaintedTheirs}
+                    />
                   </div>
-                </section>
+                )}
+                {state.sideDrawer === "speed" && (
+                  <div className="w-full border-t p-3">
+                    <SpeedTiersPanel
+                      team={optimisticTeamPokemon}
+                      format={format}
+                    />
+                  </div>
+                )}
               </div>
-
-              {/* Mobile: calc/speed panels render inline below the editor rows */}
-              {isMobile && state.rightDrawer === "calc" && (
-                <div className="w-full border-t p-3">
-                  <CalcBottomPanel
-                    teamSlots={slots}
-                    format={format}
-                    onClose={() => state.setRightDrawer(null)}
-                    attackerIdx={calcAttackerIdx}
-                    faintedYours={state.faintedYours}
-                    setFaintedYours={state.setFaintedYours}
-                    faintedTheirs={state.faintedTheirs}
-                    setFaintedTheirs={state.setFaintedTheirs}
-                  />
-                </div>
-              )}
-              {isMobile && state.sideDrawer === "speed" && (
-                <div className="w-full border-t p-3">
-                  <SpeedTiersPanel
-                    team={optimisticTeamPokemon}
-                    format={format}
-                  />
-                </div>
-              )}
-            </div>
-            {/* End horizontal split */}
+            )}
 
             {/* Bottom panel — type matchups (fixed height, no resize) */}
             {state.bottomDrawer === "matchups" && (
