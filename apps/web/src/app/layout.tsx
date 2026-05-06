@@ -70,6 +70,33 @@ export default async function RootLayout({
         )}
       >
         <Providers isImpersonating={impersonating}>
+          {/* Global dot-grid background pattern */}
+          <div
+            className="pointer-events-none fixed inset-0 -z-10 dark:hidden"
+            aria-hidden="true"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, oklch(0.5 0.08 183 / 0.35) 1px, transparent 1px)",
+              backgroundSize: "28px 28px",
+              maskImage:
+                "linear-gradient(to bottom, black 20%, transparent 60%)",
+              WebkitMaskImage:
+                "linear-gradient(to bottom, black 20%, transparent 60%)",
+            }}
+          />
+          <div
+            className="pointer-events-none fixed inset-0 -z-10 hidden dark:block"
+            aria-hidden="true"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, oklch(0.7 0.12 183 / 0.18) 1px, transparent 1px)",
+              backgroundSize: "28px 28px",
+              maskImage:
+                "linear-gradient(to bottom, black 20%, transparent 60%)",
+              WebkitMaskImage:
+                "linear-gradient(to bottom, black 20%, transparent 60%)",
+            }}
+          />
           {children}
           <Toaster />
           <SudoModeIndicator />

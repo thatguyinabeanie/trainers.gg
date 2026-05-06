@@ -111,9 +111,9 @@ function clampPanelHeight(n: number): number {
 }
 
 const SIDE_WIDTH_STORAGE_KEY = "trainersgg.builder.sideWidthPx.v1";
-const DEFAULT_SIDE_WIDTH_PX = 380;
-const MIN_SIDE_WIDTH_PX = 280;
-const MAX_SIDE_WIDTH_PX = 600;
+const DEFAULT_SIDE_WIDTH_PX = 320;
+const MIN_SIDE_WIDTH_PX = 260;
+const MAX_SIDE_WIDTH_PX = 500;
 
 function clampSideWidth(n: number): number {
   if (Number.isNaN(n)) return DEFAULT_SIDE_WIDTH_PX;
@@ -121,8 +121,8 @@ function clampSideWidth(n: number): number {
 }
 
 const RIGHT_WIDTH_STORAGE_KEY = "trainersgg.builder.rightWidthPx.v1";
-const DEFAULT_RIGHT_WIDTH_PX = 480;
-const MIN_RIGHT_WIDTH_PX = 360;
+const DEFAULT_RIGHT_WIDTH_PX = 380;
+const MIN_RIGHT_WIDTH_PX = 280;
 const MAX_RIGHT_WIDTH_PX = 800;
 
 function clampRightWidth(n: number): number {
@@ -183,14 +183,21 @@ export function useBuilderState(): BuilderState {
   const drawer: DrawerKey = sideDrawer ?? rightDrawer ?? bottomDrawer;
   function setDrawer(d: DrawerKey) {
     if (d === "matchups") {
+      setSideDrawer(null);
+      setRightDrawer(null);
       setBottomDrawer(d);
     } else if (d === "calc") {
+      setSideDrawer(null);
+      setBottomDrawer(null);
       setRightDrawer(d);
     } else if (d === null) {
       setSideDrawer(null);
       setRightDrawer(null);
       setBottomDrawer(null);
     } else {
+      // "speed" or any side drawer value
+      setRightDrawer(null);
+      setBottomDrawer(null);
       setSideDrawer(d);
     }
   }

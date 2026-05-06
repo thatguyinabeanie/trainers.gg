@@ -27,7 +27,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
-import { type GameFormat } from "@trainers/pokemon";
+import { type GameFormat, getActiveFormats } from "@trainers/pokemon";
 import {
   type TeamWithPokemon,
   type Tables,
@@ -48,7 +48,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ExportMenu } from "../export-menu";
 import { ImportDialog } from "../import-dialog";
 import { useTeamValidation, type ValidationError } from "../validation-hooks";
 import { CalcBottomPanel } from "./calc/calc-bottom-panel";
@@ -63,6 +62,7 @@ import { PokeRow } from "./poke-row";
 import { warmSpeciesIndex } from "./pickers/species-picker";
 import { useBuilderState } from "./use-builder-state";
 import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
+import { TeamLayoutToggle } from "./team-layout-toggle";
 
 // =============================================================================
 // KO-tier semantic tokens (migrated from .builderApp's CSS-module rule).
@@ -100,6 +100,10 @@ interface TeamWorkspaceV2Props {
   alts: Tables<"alts">[];
   /** Persistence adapter — controls how mutations are applied (API vs local). */
   persistence: BuilderPersistence;
+  /** Currently selected alt for saving (local builder mode). */
+  selectedAltId?: number | null;
+  /** Called when user picks a different alt (local builder mode). */
+  onAltSelect?: (altId: number) => void;
   /**
    * Render prop for the page header/topbar. Receives workspace-internal actions
    * (import toggle, validation, jump-to-pokemon) so the parent can compose its
@@ -122,12 +126,6 @@ export interface WorkspaceHeaderActions {
   onJumpToPokemon: (pokemonId: number) => void;
   /** Rename the team. */
   onNameChange: (name: string) => Promise<void>;
-  /** Change the team's format. */
-  onFormatChange: (formatId: string) => Promise<void>;
-  /** Transfer the team to another alt (undefined if not supported). */
-  onAltChange?: (altId: number) => Promise<void>;
-  /** Pre-built export menu ReactNode. */
-  exportMenu: ReactNode;
 }
 
 // =============================================================================
@@ -268,6 +266,101 @@ function DockbarConnected({
 }
 
 // =============================================================================
+// WorkspaceMetadata — inline row above the pokemon grid
+// =============================================================================
+
+const WORKSPACE_FORMATS = getActiveFormats();
+
+interface WorkspaceMetadataProps {
+  alts: Tables<"alts">[];
+  selectedAltId: number | null;
+  onAltSelect?: (altId: number) => void;
+  format: GameFormat | undefined;
+  onFormatChange: (formatId: string) => Promise<void>;
+}
+
+function WorkspaceMetadata({
+  alts,
+  selectedAltId,
+  onAltSelect,
+  format,
+  onFormatChange,
+}: WorkspaceMetadataProps) {
+  const [formatPending, setFormatPending] = useState(false);
+
+  const selectedAlt = alts.find((a) => a.id === selectedAltId);
+  const hasMultipleAlts = alts.length > 1;
+
+  async function handleFormatPick(formatId: string) {
+    if (formatId === format?.id) return;
+    setFormatPending(true);
+    try {
+      await onFormatChange(formatId);
+    } finally {
+      setFormatPending(false);
+    }
+  }
+
+  // Show all active formats + current format if it's inactive
+  const displayFormats =
+    format && !WORKSPACE_FORMATS.find((f) => f.id === format.id)
+      ? [format, ...WORKSPACE_FORMATS]
+      : WORKSPACE_FORMATS;
+
+  return (
+    <div className="text-muted-foreground flex items-center gap-3 text-xs">
+      {/* Alt selector */}
+      {alts.length > 0 && (
+        <>
+          {hasMultipleAlts && onAltSelect ? (
+            <select
+              value={selectedAltId ?? ""}
+              onChange={(e) => {
+                const altId = Number(e.target.value);
+                if (altId) onAltSelect(altId);
+              }}
+              className="border-input bg-background text-foreground hover:bg-accent focus:ring-ring h-7 rounded-md border px-2 text-xs font-medium shadow-xs transition-colors focus:ring-2 focus:outline-none"
+            >
+              {alts.map((alt) => (
+                <option key={alt.id} value={alt.id}>
+                  {alt.username}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-foreground font-medium">
+              {selectedAlt?.username ?? alts[0]?.username}
+            </span>
+          )}
+        </>
+      )}
+
+      {/* Format selector */}
+      <select
+        value={format?.id ?? ""}
+        disabled={formatPending}
+        onChange={(e) => {
+          if (e.target.value) handleFormatPick(e.target.value);
+        }}
+        className={cn(
+          "border-input bg-background text-foreground hover:bg-accent focus:ring-ring h-7 rounded-md border px-2 text-xs font-medium shadow-xs transition-colors focus:ring-2 focus:outline-none",
+          formatPending && "opacity-60"
+        )}
+      >
+        <option value="" disabled>
+          Set format...
+        </option>
+        {displayFormats.map((fmt) => (
+          <option key={fmt.id} value={fmt.id}>
+            {fmt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+// =============================================================================
 // TeamWorkspaceV2
 // =============================================================================
 
@@ -282,6 +375,8 @@ export function TeamWorkspaceV2({
   format,
   alts,
   persistence,
+  selectedAltId,
+  onAltSelect,
   renderHeader,
 }: TeamWorkspaceV2Props) {
   const router = useRouter();
@@ -606,35 +701,6 @@ export function TeamWorkspaceV2({
               }
               persistence.onMutationSuccess();
             },
-            onFormatChange: async (formatId) => {
-              const result = await persistence.updateTeam(team.id, {
-                format: formatId,
-              });
-              if (!result.success) {
-                toast.error(result.error ?? "Failed to update format.");
-                return;
-              }
-              persistence.onMutationSuccess();
-            },
-            onAltChange: persistence.transferTeam
-              ? async (altId) => {
-                  const targetAlt = alts.find((a) => a.id === altId);
-                  if (!targetAlt) return;
-                  const result = await persistence.transferTeam!(
-                    team.id,
-                    altId
-                  );
-                  if (!result.success) {
-                    toast.error(result.error ?? "Failed to transfer team.");
-                    return;
-                  }
-                  toast.success(`Team transferred to ${targetAlt.username}.`);
-                  router.push(
-                    `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
-                  );
-                }
-              : undefined,
-            exportMenu: <ExportMenu team={team} />,
           })}
 
           <div
@@ -742,7 +808,60 @@ export function TeamWorkspaceV2({
               )}
 
               {/* Editor region — rows scroll inside this region only */}
-              <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto">
+                {/* Inline metadata: alt + format (left), layout toggle (right) */}
+                <div className="flex w-full max-w-[1800px] items-center gap-3 px-3 pt-2">
+                  <WorkspaceMetadata
+                    alts={alts}
+                    selectedAltId={
+                      selectedAltId ??
+                      alts.find((a) => a.id === team.created_by)?.id ??
+                      null
+                    }
+                    onAltSelect={
+                      persistence.mode === "local"
+                        ? onAltSelect
+                        : persistence.transferTeam
+                          ? async (altId) => {
+                              const targetAlt = alts.find(
+                                (a) => a.id === altId
+                              );
+                              if (!targetAlt) return;
+                              const result = await persistence.transferTeam!(
+                                team.id,
+                                altId
+                              );
+                              if (!result.success) {
+                                toast.error(
+                                  result.error ?? "Failed to transfer team."
+                                );
+                                return;
+                              }
+                              toast.success(
+                                `Team transferred to ${targetAlt.username}.`
+                              );
+                              router.push(
+                                `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
+                              );
+                            }
+                          : undefined
+                    }
+                    format={format}
+                    onFormatChange={async (formatId) => {
+                      const result = await persistence.updateTeam(team.id, {
+                        format: formatId,
+                      });
+                      if (!result.success) {
+                        toast.error(result.error ?? "Failed to update format.");
+                        return;
+                      }
+                      persistence.onMutationSuccess();
+                    }}
+                  />
+                  <div className="ml-auto">
+                    <TeamLayoutToggle />
+                  </div>
+                </div>
                 {/* Section wraps pokemon rows */}
                 <section
                   className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3 [[data-density=compact]_&]:p-2"

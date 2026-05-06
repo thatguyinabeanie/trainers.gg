@@ -1,11 +1,10 @@
-import { TopNav } from "@/components/topnav";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import { UsernameRequiredModal } from "@/components/auth/username-required-modal";
 import type { ReactNode } from "react";
 
 /**
  * Builder route group layout.
- * Full-viewport app layout — sticky TopNav, no footer, no page-level scroll.
+ * No top nav — the workspace renders its own full-width header bar.
  */
 export default function BuilderLayout({
   children,
@@ -15,8 +14,7 @@ export default function BuilderLayout({
   return (
     <>
       <AnnouncementBanner />
-      <TopNav />
-      <main className="flex w-full flex-1 flex-col overflow-hidden">
+      <main className="flex h-dvh w-full flex-col overflow-hidden">
         {children}
       </main>
       <UsernameRequiredModal />

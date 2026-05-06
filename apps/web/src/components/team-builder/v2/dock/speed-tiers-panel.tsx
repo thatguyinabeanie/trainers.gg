@@ -45,7 +45,9 @@ export interface SpeedTiersPanelProps {
 
 type Weather = "none" | "sun" | "rain" | "sand" | "snow";
 
-type SortColumn = "base" | "minSpeed" | "neutralSpeed" | "maxSpeed";
+type SortColumn = "base" | "speed";
+
+type NatureToggle = "positive" | "neutral" | "negative";
 
 interface SideModifiers {
   tailwind: boolean;
@@ -55,6 +57,8 @@ interface SideModifiers {
   status: "healthy" | "paralyzed";
   /** Custom EV override (0-252 for VGC, 0-32 for Champions). null = use defaults. */
   evs: number | null;
+  /** Nature toggle for speed — only applies to theirs */
+  nature: NatureToggle;
 }
 
 type SortDir = "desc" | "asc";
@@ -69,14 +73,8 @@ interface ToggleState {
 }
 
 interface ScoredMon {
-  /** Effective speed (for team mons) or max speed (for meta mons) */
+  /** Effective speed value to display in the SPE column */
   speed: number;
-  /** Min speed: 0 EVs, -nature + theirs modifiers */
-  minSpeed: number;
-  /** Neutral speed: 252 EVs, neutral nature + theirs modifiers */
-  neutralSpeed: number;
-  /** Max speed: max EVs, +nature + theirs modifiers */
-  maxSpeed: number;
   mon: {
     id: string;
     name: string;
@@ -103,6 +101,7 @@ const DEFAULT_YOURS: SideModifiers = {
   stage: 0,
   status: "healthy",
   evs: null,
+  nature: "positive",
 };
 
 const DEFAULT_THEIRS: SideModifiers = {
@@ -112,6 +111,7 @@ const DEFAULT_THEIRS: SideModifiers = {
   stage: 0,
   status: "healthy",
   evs: null,
+  nature: "positive",
 };
 
 const DEFAULT_TOGGLE: ToggleState = {
@@ -119,7 +119,7 @@ const DEFAULT_TOGGLE: ToggleState = {
   theirs: { ...DEFAULT_THEIRS },
   weather: "none",
   trickRoom: false,
-  sortBy: "maxSpeed",
+  sortBy: "speed",
   sortDir: "desc",
 };
 
@@ -237,7 +237,6 @@ function buildFullMetaTiers(
 
 /**
  * Score a team mon — effective speed uses YOUR modifiers + held item.
- * Min/max columns show effective speed in both (same value).
  */
 function teamMonToScored(
   pokemon: Tables<"pokemon">,
@@ -250,16 +249,18 @@ function teamMonToScored(
 
   // Build modifiers from YOURS side + held item
   const heldItem = pokemon.held_item;
-  const item = heldItem === "Choice Scarf"
-    ? "choice-scarf" as const
-    : heldItem === "Iron Ball"
-      ? "iron-ball" as const
-      : toggle.yours.scarf
-        ? "choice-scarf" as const
-        : null;
+  const item =
+    heldItem === "Choice Scarf"
+      ? ("choice-scarf" as const)
+      : heldItem === "Iron Ball"
+        ? ("iron-ball" as const)
+        : toggle.yours.scarf
+          ? ("choice-scarf" as const)
+          : null;
 
   const abilities = getValidAbilities(pokemon.species ?? "");
-  const speedAbilityName = abilities.find((a) => SPEED_ABILITY_LOOKUP[a]) ?? null;
+  const speedAbilityName =
+    abilities.find((a) => SPEED_ABILITY_LOOKUP[a]) ?? null;
 
   const mods: SpeedModifiers = {
     ability: pokemon.ability ?? undefined,
@@ -275,9 +276,6 @@ function teamMonToScored(
 
   return {
     speed,
-    minSpeed: speed,
-    neutralSpeed: speed,
-    maxSpeed: speed,
     mon: {
       id: `team-${pokemon.id}`,
       name: pokemon.species ?? "Unknown",
@@ -288,16 +286,16 @@ function teamMonToScored(
       nature: pokemon.nature,
       evSpeed: pokemon.ev_speed,
       ivSpeed: pokemon.iv_speed,
-      speedAbility: pokemon.ability === speedAbilityName ? speedAbilityName : null,
+      speedAbility:
+        pokemon.ability === speedAbilityName ? speedAbilityName : null,
       heldItem: pokemon.held_item,
     },
   };
 }
 
 /**
- * Score a meta mon — compute min (0 EVs, -nature) and max (max EVs, +nature)
- * speeds with THEIRS modifiers applied.
- * When custom EVs are set, all three columns use that EV value with different natures.
+ * Score a meta mon — compute speed based on the active nature toggle.
+ * Uses THEIRS modifiers applied to the calculated stat.
  */
 function metaToScored(
   entry: MetaSpeedEntry,
@@ -308,33 +306,33 @@ function metaToScored(
   const b = entry.base;
   const customEvs = toggle.theirs.evs;
 
-  // Compute raw min/neutral/max stat values
-  // If custom EVs are set, all three columns use that EV with -/neutral/+ nature
-  const minEvs = customEvs ?? 0;
-  const neutralEvs = customEvs ?? (champions ? 32 : 252);
-  const maxEvs = customEvs ?? (champions ? 32 : 252);
+  // Nature multiplier from toggle
+  const natureMult =
+    toggle.theirs.nature === "positive"
+      ? 1.1
+      : toggle.theirs.nature === "negative"
+        ? 0.9
+        : 1.0;
 
-  const rawMin = champions
-    ? calculateChampionsStat(b, minEvs, 0.9)
-    : calculateStat(b, 31, minEvs, 50, 0.9);
-  const rawNeutral = champions
-    ? calculateChampionsStat(b, neutralEvs, 1.0)
-    : calculateStat(b, 31, neutralEvs, 50, 1.0);
-  const rawMax = champions
-    ? calculateChampionsStat(b, maxEvs, 1.1)
-    : calculateStat(b, 31, maxEvs, 50, 1.1);
+  // EVs: if custom set use that; otherwise max EVs for +/neutral, 0 for -
+  const evs =
+    customEvs ??
+    (toggle.theirs.nature === "negative" ? 0 : champions ? 32 : 252);
 
-  // Apply THEIRS modifiers to all three
-  const theirsMods = buildSpeedMods(toggle.theirs, toggle.weather, entry.speedAbility);
-  const minSpeed = applySpeedModifiers(rawMin, theirsMods);
-  const neutralSpeed = applySpeedModifiers(rawNeutral, theirsMods);
-  const maxSpeed = applySpeedModifiers(rawMax, theirsMods);
+  const rawSpeed = champions
+    ? calculateChampionsStat(b, evs, natureMult)
+    : calculateStat(b, 31, evs, 50, natureMult);
+
+  // Apply THEIRS modifiers
+  const theirsMods = buildSpeedMods(
+    toggle.theirs,
+    toggle.weather,
+    entry.speedAbility
+  );
+  const speed = applySpeedModifiers(rawSpeed, theirsMods);
 
   return {
-    speed: maxSpeed,
-    minSpeed,
-    neutralSpeed,
-    maxSpeed,
+    speed,
     mon: {
       id: `meta-${entry.species}`,
       name: entry.displayName,
@@ -351,7 +349,8 @@ function metaToScored(
 // Tier table row
 // =============================================================================
 
-const STAT_CELL = "text-right font-mono text-[11px] tabular-nums px-1.5 py-1 w-[3.5rem]";
+const STAT_CELL =
+  "text-right font-mono text-xs tabular-nums px-2 py-1.5 w-[3.5rem]";
 
 /** Determine if a speed ability is currently active based on field/toggle state */
 function isSpeedAbilityActive(
@@ -361,14 +360,22 @@ function isSpeedAbilityActive(
 ): boolean {
   if (!ability) return false;
   switch (ability) {
-    case "chlorophyll": return weather === "sun";
-    case "swift-swim": return weather === "rain";
-    case "sand-rush": return weather === "sand";
-    case "slush-rush": return weather === "snow";
-    case "unburden": return unburden;
-    case "speed-boost": return true; // always active
-    case "quick-feet": return true; // active when statused (handled by modifier)
-    default: return false;
+    case "chlorophyll":
+      return weather === "sun";
+    case "swift-swim":
+      return weather === "rain";
+    case "sand-rush":
+      return weather === "sand";
+    case "slush-rush":
+      return weather === "snow";
+    case "unburden":
+      return unburden;
+    case "speed-boost":
+      return true; // always active
+    case "quick-feet":
+      return true; // active when statused (handled by modifier)
+    default:
+      return false;
   }
 }
 
@@ -380,116 +387,87 @@ interface TierMonRowProps {
   showGroupSeparator?: boolean;
 }
 
-function TierMonRow({ scored, heroSpeed, trickRoom, abilityActive, showGroupSeparator }: TierMonRowProps) {
-  const { mon, speed, minSpeed, neutralSpeed, maxSpeed } = scored;
+function TierMonRow({
+  scored,
+  heroSpeed,
+  trickRoom,
+  abilityActive,
+  showGroupSeparator,
+}: TierMonRowProps) {
+  const { mon, speed } = scored;
   const isTie = !mon.isSelected && speed === heroSpeed && heroSpeed > 0;
   const isFaster =
-    !mon.isYours && heroSpeed > 0 && (trickRoom ? speed > heroSpeed : speed < heroSpeed);
-
-  // Nature shorthand for team Pokemon
-  const natureLabel = mon.nature
-    ? getNatureMultiplier(mon.nature, "speed") > 1
-      ? "+Spe"
-      : getNatureMultiplier(mon.nature, "speed") < 1
-        ? "-Spe"
-        : ""
-    : "";
+    !mon.isYours &&
+    heroSpeed > 0 &&
+    (trickRoom ? speed > heroSpeed : speed < heroSpeed);
 
   return (
     <TableRow
       className={cn(
-        "border-b border-border/30",
-        showGroupSeparator && "border-t-2 border-t-primary/40",
+        "border-border/30 border-b",
+        showGroupSeparator && "border-t-primary/40 border-t-2",
         mon.isSelected && "bg-primary/10",
         mon.isYours && !mon.isSelected && "bg-primary/5",
         isFaster && "opacity-40"
       )}
     >
-      {/* Base speed */}
-      <TableCell className="text-muted-foreground px-1.5 py-1 text-center font-mono text-[11px] tabular-nums">
-        {mon.baseSpeed}
-      </TableCell>
-      {/* Pokemon name + metadata */}
-      <TableCell className="px-1 py-0.5">
-        <div className="flex min-w-0 items-center gap-1">
+      {/* Pokemon name + sprite */}
+      <TableCell className="px-1.5 py-1">
+        <div className="flex min-w-0 items-center gap-1.5">
           {mon.spriteUrl ? (
             <Image
               src={mon.spriteUrl}
               alt=""
-              width={36}
-              height={36}
+              width={44}
+              height={44}
               unoptimized
-              className="size-9 shrink-0 object-contain"
+              className="size-11 shrink-0 object-contain"
             />
           ) : (
-            <span className="bg-muted inline-block size-9 shrink-0 rounded-full" />
+            <span className="bg-muted inline-block size-11 shrink-0 rounded-full" />
           )}
           <span
             className={cn(
-              "truncate text-[11px] leading-tight",
+              "truncate text-xs leading-tight",
               mon.isYours ? "text-primary font-semibold" : "text-foreground"
             )}
           >
             {mon.name}
           </span>
-          {mon.isYours && natureLabel && (
+          {mon.speedAbility && (
             <span
               className={cn(
-                "text-[9px] font-semibold",
-                natureLabel === "+Spe" && "text-stat-good",
-                natureLabel === "-Spe" && "text-destructive"
+                "shrink-0 rounded-full px-1.5 py-0.5 text-[8px] leading-none font-medium capitalize",
+                abilityActive
+                  ? "bg-violet-500/15 text-violet-600 dark:text-violet-400"
+                  : "bg-muted text-muted-foreground/50"
               )}
             >
-              {natureLabel}
-            </span>
-          )}
-          {mon.isYours && mon.heldItem && (
-            <ItemSprite item={mon.heldItem} size={16} className="shrink-0" />
-          )}
-          {mon.speedAbility && (
-            <span className={cn(
-              "shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-medium capitalize",
-              abilityActive
-                ? "bg-violet-500/15 text-violet-600 dark:text-violet-400"
-                : "bg-muted text-muted-foreground/50"
-            )}>
               {mon.speedAbility.replace(/-/g, " ")}
             </span>
           )}
+          {mon.isYours && mon.heldItem && (
+            <ItemSprite item={mon.heldItem} size={14} className="shrink-0" />
+          )}
           {isTie && (
-            <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-medium">
+            <span className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[8px] leading-none font-medium text-amber-600 dark:text-amber-400">
               Tie
             </span>
           )}
         </div>
       </TableCell>
-      {/* -Speed column */}
-      <TableCell
-        className={cn(
-          STAT_CELL,
-          "border-l border-border/50",
-          mon.isYours ? "text-primary font-bold" : "text-muted-foreground"
-        )}
-      >
-        {minSpeed}
+      {/* Base speed */}
+      <TableCell className="text-muted-foreground px-2 py-1.5 text-right font-mono text-xs tabular-nums">
+        {mon.baseSpeed}
       </TableCell>
-      {/* Neutral speed column */}
-      <TableCell
-        className={cn(
-          STAT_CELL,
-          mon.isYours ? "text-primary font-bold" : "text-foreground"
-        )}
-      >
-        {neutralSpeed}
-      </TableCell>
-      {/* +Speed column */}
+      {/* SPE column */}
       <TableCell
         className={cn(
           STAT_CELL,
           mon.isYours ? "text-primary font-bold" : "text-foreground font-bold"
         )}
       >
-        {maxSpeed}
+        {speed}
       </TableCell>
     </TableRow>
   );
@@ -506,10 +484,7 @@ function TierMonRow({ scored, heroSpeed, trickRoom, abilityActive, showGroupSepa
  * YOURS/THEIRS switches let you simulate real game scenarios.
  * Trick Room toggle inverts the sort order.
  */
-export function SpeedTiersPanel({
-  team,
-  format,
-}: SpeedTiersPanelProps) {
+export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
   const [toggle, setToggle] = useState<ToggleState>(DEFAULT_TOGGLE);
   const [prevFormatId, setPrevFormatId] = useState<
     string | undefined | typeof UNINITIALIZED_FORMAT_ID
@@ -564,19 +539,19 @@ export function SpeedTiersPanel({
     ? buildFullMetaTiers(legalSpecies, format)
     : getMetaSpeedTiers(format.id);
 
-  const metaScored: ScoredMon[] = metaTiers
-    .map((e) => metaToScored(e, toggle, format));
+  const metaScored: ScoredMon[] = metaTiers.map((e) =>
+    metaToScored(e, toggle, format)
+  );
 
   const allScored = [...teamScored, ...metaScored];
 
   // Sort value extractor
   function getSortValue(scored: ScoredMon): number {
-    if (scored.mon.isYours) return scored.speed;
     switch (toggle.sortBy) {
-      case "base": return scored.mon.baseSpeed;
-      case "minSpeed": return scored.minSpeed;
-      case "neutralSpeed": return scored.neutralSpeed;
-      case "maxSpeed": return scored.maxSpeed;
+      case "base":
+        return scored.mon.baseSpeed;
+      case "speed":
+        return scored.speed;
     }
   }
 
@@ -596,13 +571,22 @@ export function SpeedTiersPanel({
     }));
   }
   function setTrickRoom(v: boolean) {
-    setToggle((prev) => ({ ...prev, trickRoom: v, sortDir: v ? "asc" : "desc" }));
+    setToggle((prev) => ({
+      ...prev,
+      trickRoom: v,
+      sortDir: v ? "asc" : "desc",
+    }));
   }
   function setSortBy(col: SortColumn) {
     setToggle((prev) => ({
       ...prev,
       sortBy: col,
-      sortDir: prev.sortBy === col ? (prev.sortDir === "desc" ? "asc" : "desc") : "desc",
+      sortDir:
+        prev.sortBy === col
+          ? prev.sortDir === "desc"
+            ? "asc"
+            : "desc"
+          : "desc",
     }));
   }
 
@@ -617,11 +601,13 @@ export function SpeedTiersPanel({
       <div className="bg-muted/30 flex gap-3 border-b px-3 py-2">
         {/* Left column: Trick Room + Weather */}
         <div className="flex w-36 flex-col gap-1.5">
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+          <span className="text-primary font-mono text-[10px] font-bold tracking-[0.12em] uppercase">
             Field
           </span>
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground/70">Trick Room</span>
+            <span className="text-muted-foreground/70 text-[11px]">
+              Trick Room
+            </span>
             <Switch
               size="sm"
               checked={toggle.trickRoom}
@@ -629,7 +615,7 @@ export function SpeedTiersPanel({
               aria-label="Trick Room"
             />
           </div>
-          <span className="text-[11px] text-muted-foreground/70">Weather</span>
+          <span className="text-muted-foreground/70 text-[11px]">Weather</span>
           <div className="flex flex-col gap-1">
             {(["sun", "rain", "sand", "snow"] as const).map((w) => (
               <Toggle
@@ -638,7 +624,11 @@ export function SpeedTiersPanel({
                 pressed={toggle.weather === w}
                 onPressedChange={() => setWeather(w)}
                 aria-label={WEATHER_LABELS[w]}
-                className={cn("w-full", toggle.weather === w && "bg-primary/15 text-primary border-primary/40")}
+                className={cn(
+                  "w-full",
+                  toggle.weather === w &&
+                    "bg-primary/15 text-primary border-primary/40"
+                )}
               >
                 {WEATHER_LABELS[w]}
               </Toggle>
@@ -651,16 +641,16 @@ export function SpeedTiersPanel({
 
         {/* Right section: Ours | Label | Theirs mirrored grid */}
         <div className="flex flex-1 flex-col items-center gap-1.5">
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+          <span className="text-primary font-mono text-[10px] font-bold tracking-[0.12em] uppercase">
             Modifiers
           </span>
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-1 gap-y-0.5">
             {/* Header */}
-            <span className="text-muted-foreground text-right text-[10px] font-semibold uppercase tracking-wider">
+            <span className="text-muted-foreground text-right text-[10px] font-semibold tracking-wider uppercase">
               Ours
             </span>
             <span />
-            <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
+            <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
               Theirs
             </span>
 
@@ -670,7 +660,10 @@ export function SpeedTiersPanel({
                 size="sm"
                 checked={toggle.yours.tailwind}
                 onCheckedChange={(v) =>
-                  setToggle((prev) => ({ ...prev, yours: { ...prev.yours, tailwind: v } }))
+                  setToggle((prev) => ({
+                    ...prev,
+                    yours: { ...prev.yours, tailwind: v },
+                  }))
                 }
               />
             </div>
@@ -680,7 +673,10 @@ export function SpeedTiersPanel({
                 size="sm"
                 checked={toggle.theirs.tailwind}
                 onCheckedChange={(v) =>
-                  setToggle((prev) => ({ ...prev, theirs: { ...prev.theirs, tailwind: v } }))
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: { ...prev.theirs, tailwind: v },
+                  }))
                 }
               />
             </div>
@@ -691,7 +687,10 @@ export function SpeedTiersPanel({
                 size="sm"
                 checked={toggle.yours.scarf}
                 onCheckedChange={(v) =>
-                  setToggle((prev) => ({ ...prev, yours: { ...prev.yours, scarf: v } }))
+                  setToggle((prev) => ({
+                    ...prev,
+                    yours: { ...prev.yours, scarf: v },
+                  }))
                 }
               />
             </div>
@@ -701,7 +700,10 @@ export function SpeedTiersPanel({
                 size="sm"
                 checked={toggle.theirs.scarf}
                 onCheckedChange={(v) =>
-                  setToggle((prev) => ({ ...prev, theirs: { ...prev.theirs, scarf: v } }))
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: { ...prev.theirs, scarf: v },
+                  }))
                 }
               />
             </div>
@@ -712,7 +714,10 @@ export function SpeedTiersPanel({
                 size="sm"
                 checked={toggle.yours.unburden}
                 onCheckedChange={(v) =>
-                  setToggle((prev) => ({ ...prev, yours: { ...prev.yours, unburden: v } }))
+                  setToggle((prev) => ({
+                    ...prev,
+                    yours: { ...prev.yours, unburden: v },
+                  }))
                 }
               />
             </div>
@@ -722,7 +727,10 @@ export function SpeedTiersPanel({
                 size="sm"
                 checked={toggle.theirs.unburden}
                 onCheckedChange={(v) =>
-                  setToggle((prev) => ({ ...prev, theirs: { ...prev.theirs, unburden: v } }))
+                  setToggle((prev) => ({
+                    ...prev,
+                    theirs: { ...prev.theirs, unburden: v },
+                  }))
                 }
                 aria-label="Unburden"
               />
@@ -736,7 +744,10 @@ export function SpeedTiersPanel({
                 onCheckedChange={(v) =>
                   setToggle((prev) => ({
                     ...prev,
-                    yours: { ...prev.yours, status: v ? "paralyzed" : "healthy" },
+                    yours: {
+                      ...prev.yours,
+                      status: v ? "paralyzed" : "healthy",
+                    },
                   }))
                 }
               />
@@ -749,75 +760,71 @@ export function SpeedTiersPanel({
                 onCheckedChange={(v) =>
                   setToggle((prev) => ({
                     ...prev,
-                    theirs: { ...prev.theirs, status: v ? "paralyzed" : "healthy" },
+                    theirs: {
+                      ...prev.theirs,
+                      status: v ? "paralyzed" : "healthy",
+                    },
                   }))
                 }
               />
             </div>
 
-            {/* Stages */}
-            <div className="flex justify-end">
-              <div className="bg-card grid grid-cols-[20px_28px_20px] overflow-hidden rounded-md border">
-                <button
-                  type="button"
-                  disabled={toggle.yours.stage <= STAGE_MIN}
-                  onClick={() =>
-                    setToggle((prev) => ({
-                      ...prev,
-                      yours: { ...prev.yours, stage: prev.yours.stage - 1 },
-                    }))
-                  }
-                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  −
-                </button>
-                <div className="text-foreground flex items-center justify-center font-mono text-[10px] font-semibold">
-                  {toggle.yours.stage === 0 ? "0" : toggle.yours.stage > 0 ? `+${toggle.yours.stage}` : toggle.yours.stage}
-                </div>
-                <button
-                  type="button"
-                  disabled={toggle.yours.stage >= STAGE_MAX}
-                  onClick={() =>
-                    setToggle((prev) => ({
-                      ...prev,
-                      yours: { ...prev.yours, stage: prev.yours.stage + 1 },
-                    }))
-                  }
-                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-            <span className="text-center text-[11px]">Stages</span>
+            {/* Nature toggle — only theirs side */}
+            <div />
+            <span className="text-center text-[11px]">Nature</span>
             <div className="flex justify-start">
-              <div className="bg-card grid grid-cols-[20px_28px_20px] overflow-hidden rounded-md border">
+              <div className="bg-card grid grid-cols-3 overflow-hidden rounded-md border">
                 <button
                   type="button"
-                  disabled={toggle.theirs.stage <= STAGE_MIN}
+                  aria-label="Negative speed nature"
                   onClick={() =>
                     setToggle((prev) => ({
                       ...prev,
-                      theirs: { ...prev.theirs, stage: prev.theirs.stage - 1 },
+                      theirs: { ...prev.theirs, nature: "negative" },
                     }))
                   }
-                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                  className={cn(
+                    "flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold",
+                    toggle.theirs.nature === "negative"
+                      ? "bg-blue-500/15 text-blue-600 dark:text-blue-400"
+                      : "hover:bg-muted text-muted-foreground"
+                  )}
                 >
                   −
                 </button>
-                <div className="text-foreground flex items-center justify-center font-mono text-[10px] font-semibold">
-                  {toggle.theirs.stage === 0 ? "0" : toggle.theirs.stage > 0 ? `+${toggle.theirs.stage}` : toggle.theirs.stage}
-                </div>
                 <button
                   type="button"
-                  disabled={toggle.theirs.stage >= STAGE_MAX}
+                  aria-label="Neutral speed nature"
                   onClick={() =>
                     setToggle((prev) => ({
                       ...prev,
-                      theirs: { ...prev.theirs, stage: prev.theirs.stage + 1 },
+                      theirs: { ...prev.theirs, nature: "neutral" },
                     }))
                   }
-                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                  className={cn(
+                    "flex items-center justify-center border-x px-2 py-0.5 text-[10px] font-semibold",
+                    toggle.theirs.nature === "neutral"
+                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                      : "hover:bg-muted text-muted-foreground"
+                  )}
+                >
+                  ●
+                </button>
+                <button
+                  type="button"
+                  aria-label="Positive speed nature"
+                  onClick={() =>
+                    setToggle((prev) => ({
+                      ...prev,
+                      theirs: { ...prev.theirs, nature: "positive" },
+                    }))
+                  }
+                  className={cn(
+                    "flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold",
+                    toggle.theirs.nature === "positive"
+                      ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                      : "hover:bg-muted text-muted-foreground"
+                  )}
                 >
                   +
                 </button>
@@ -832,7 +839,9 @@ export function SpeedTiersPanel({
                 <button
                   type="button"
                   aria-label={`Decrease speed ${evLabel}`}
-                  disabled={toggle.theirs.evs === null || toggle.theirs.evs <= 0}
+                  disabled={
+                    toggle.theirs.evs === null || toggle.theirs.evs <= 0
+                  }
                   onClick={() =>
                     setToggle((prev) => ({
                       ...prev,
@@ -867,19 +876,101 @@ export function SpeedTiersPanel({
                       theirs: { ...prev.theirs, evs: val },
                     }));
                   }}
-                  className="text-foreground bg-transparent text-center font-mono text-[10px] font-semibold outline-none w-full [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  className="text-foreground w-full [appearance:textfield] bg-transparent text-center font-mono text-[10px] font-semibold outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
                 <button
                   type="button"
                   aria-label={`Increase speed ${evLabel}`}
-                  disabled={toggle.theirs.evs !== null && toggle.theirs.evs >= maxEv}
+                  disabled={
+                    toggle.theirs.evs !== null && toggle.theirs.evs >= maxEv
+                  }
                   onClick={() =>
                     setToggle((prev) => ({
                       ...prev,
                       theirs: {
                         ...prev.theirs,
-                        evs: Math.min(maxEv, (prev.theirs.evs ?? maxEv) + evStep),
+                        evs: Math.min(
+                          maxEv,
+                          (prev.theirs.evs ?? maxEv) + evStep
+                        ),
                       },
+                    }))
+                  }
+                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Stages */}
+            <div className="flex justify-end">
+              <div className="bg-card grid grid-cols-[20px_28px_20px] overflow-hidden rounded-md border">
+                <button
+                  type="button"
+                  disabled={toggle.yours.stage <= STAGE_MIN}
+                  onClick={() =>
+                    setToggle((prev) => ({
+                      ...prev,
+                      yours: { ...prev.yours, stage: prev.yours.stage - 1 },
+                    }))
+                  }
+                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  −
+                </button>
+                <div className="text-foreground flex items-center justify-center font-mono text-[10px] font-semibold">
+                  {toggle.yours.stage === 0
+                    ? "0"
+                    : toggle.yours.stage > 0
+                      ? `+${toggle.yours.stage}`
+                      : toggle.yours.stage}
+                </div>
+                <button
+                  type="button"
+                  disabled={toggle.yours.stage >= STAGE_MAX}
+                  onClick={() =>
+                    setToggle((prev) => ({
+                      ...prev,
+                      yours: { ...prev.yours, stage: prev.yours.stage + 1 },
+                    }))
+                  }
+                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <span className="text-center text-[11px]">Stages</span>
+            <div className="flex justify-start">
+              <div className="bg-card grid grid-cols-[20px_28px_20px] overflow-hidden rounded-md border">
+                <button
+                  type="button"
+                  disabled={toggle.theirs.stage <= STAGE_MIN}
+                  onClick={() =>
+                    setToggle((prev) => ({
+                      ...prev,
+                      theirs: { ...prev.theirs, stage: prev.theirs.stage - 1 },
+                    }))
+                  }
+                  className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  −
+                </button>
+                <div className="text-foreground flex items-center justify-center font-mono text-[10px] font-semibold">
+                  {toggle.theirs.stage === 0
+                    ? "0"
+                    : toggle.theirs.stage > 0
+                      ? `+${toggle.theirs.stage}`
+                      : toggle.theirs.stage}
+                </div>
+                <button
+                  type="button"
+                  disabled={toggle.theirs.stage >= STAGE_MAX}
+                  onClick={() =>
+                    setToggle((prev) => ({
+                      ...prev,
+                      theirs: { ...prev.theirs, stage: prev.theirs.stage + 1 },
                     }))
                   }
                   className="hover:bg-muted text-foreground flex items-center justify-center text-xs disabled:cursor-not-allowed disabled:opacity-40"
@@ -897,44 +988,30 @@ export function SpeedTiersPanel({
         <table className="w-full caption-bottom text-sm">
           <TableHeader className="bg-card/95 sticky top-0 z-10 backdrop-blur-sm">
             <TableRow className="border-b">
-              <TableHead
-                className={cn(
-                  "text-muted-foreground h-auto cursor-pointer px-1.5 py-1.5 text-center text-[10px] font-medium leading-tight tracking-wide",
-                  toggle.sortBy === "base" && "text-primary"
-                )}
-                onClick={() => setSortBy("base")}
-              >
-                Base {toggle.sortBy === "base" && (toggle.sortDir === "desc" ? "↓" : "↑")}
-              </TableHead>
-              <TableHead className="text-muted-foreground h-auto px-1.5 py-1.5 text-[10px] font-medium leading-tight tracking-wide">
+              <TableHead className="text-muted-foreground h-auto px-1.5 py-1.5 text-[10px] leading-tight font-medium tracking-wide">
                 Pokémon
               </TableHead>
               <TableHead
                 className={cn(
-                  "h-auto cursor-pointer border-l border-border/50 px-1.5 py-1.5 text-right text-[10px] font-medium leading-tight tracking-wide",
-                  toggle.sortBy === "minSpeed" ? "text-primary" : "text-muted-foreground"
+                  "text-muted-foreground h-auto cursor-pointer px-2 py-1.5 text-right text-[10px] leading-tight font-medium tracking-wide",
+                  toggle.sortBy === "base" && "text-primary"
                 )}
-                onClick={() => setSortBy("minSpeed")}
+                onClick={() => setSortBy("base")}
               >
-                -Spe {toggle.sortBy === "minSpeed" && (toggle.sortDir === "desc" ? "↓" : "↑")}
+                Base{" "}
+                {toggle.sortBy === "base" &&
+                  (toggle.sortDir === "desc" ? "↓" : "↑")}
               </TableHead>
               <TableHead
                 className={cn(
-                  "h-auto cursor-pointer px-1.5 py-1.5 text-right text-[10px] font-medium leading-tight tracking-wide",
-                  toggle.sortBy === "neutralSpeed" ? "text-primary" : "text-foreground"
+                  "h-auto cursor-pointer px-2 py-1.5 text-right text-[10px] leading-tight font-semibold tracking-wide",
+                  toggle.sortBy === "speed" ? "text-primary" : "text-foreground"
                 )}
-                onClick={() => setSortBy("neutralSpeed")}
+                onClick={() => setSortBy("speed")}
               >
-                Spe {toggle.sortBy === "neutralSpeed" && (toggle.sortDir === "desc" ? "↓" : "↑")}
-              </TableHead>
-              <TableHead
-                className={cn(
-                  "h-auto cursor-pointer px-1.5 py-1.5 text-right text-[10px] font-semibold leading-tight tracking-wide",
-                  toggle.sortBy === "maxSpeed" ? "text-primary" : "text-foreground"
-                )}
-                onClick={() => setSortBy("maxSpeed")}
-              >
-                +Spe {toggle.sortBy === "maxSpeed" && (toggle.sortDir === "desc" ? "↓" : "↑")}
+                SPE{" "}
+                {toggle.sortBy === "speed" &&
+                  (toggle.sortDir === "desc" ? "↓" : "↑")}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -942,11 +1019,12 @@ export function SpeedTiersPanel({
             {sorted.map((scored, i) => {
               const getGroupValue = (s: ScoredMon) => {
                 switch (toggle.sortBy) {
-                  case "base": return s.mon.baseSpeed;
-                  case "minSpeed": return s.minSpeed;
-                  case "neutralSpeed": return s.neutralSpeed;
-                  case "maxSpeed": return s.maxSpeed;
-                  default: return s.speed;
+                  case "base":
+                    return s.mon.baseSpeed;
+                  case "speed":
+                    return s.speed;
+                  default:
+                    return s.speed;
                 }
               };
               const prev = i > 0 ? getGroupValue(sorted[i - 1]!) : null;
@@ -961,7 +1039,9 @@ export function SpeedTiersPanel({
                   abilityActive={isSpeedAbilityActive(
                     scored.mon.speedAbility,
                     toggle.weather,
-                    scored.mon.isYours ? toggle.yours.unburden : toggle.theirs.unburden
+                    scored.mon.isYours
+                      ? toggle.yours.unburden
+                      : toggle.theirs.unburden
                   )}
                   showGroupSeparator={showSeparator}
                 />

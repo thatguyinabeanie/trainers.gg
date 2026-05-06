@@ -18,6 +18,7 @@ import { type TeamWithPokemon, type Tables } from "@trainers/supabase";
 
 import { PageHeader } from "@/components/dashboard/page-header";
 
+import { ExportMenu } from "../export-menu";
 import { createApiPersistence } from "./persistence/api-persistence";
 import { PersistenceProvider } from "./persistence/context";
 import { useLocalBackup } from "./persistence/use-local-backup";
@@ -42,7 +43,7 @@ interface DashboardBuilderWrapperProps {
 export function DashboardBuilderWrapper({
   team,
   format,
-  username,
+  username: _username,
   alts,
 }: DashboardBuilderWrapperProps) {
   const router = useRouter();
@@ -105,10 +106,8 @@ export function DashboardBuilderWrapper({
           <PageHeader hideNotifications>
             <Topbar
               team={team}
-              format={format}
-              username={username}
-              alts={alts}
               mode="api"
+              exportMenu={<ExportMenu team={team} />}
               {...actions}
             />
           </PageHeader>

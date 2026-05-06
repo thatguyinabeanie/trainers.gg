@@ -83,7 +83,7 @@ function EmptyRow({ idx, format: _format, onAdd }: EmptyRowProps) {
         className={cn(
           "row-active flex h-full w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-dashed",
           "border-border bg-card text-left transition-colors",
-          "hover:border-primary/40 hover:bg-muted/10",
+          "hover:border-primary/40",
           "focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
         )}
       >
@@ -168,7 +168,7 @@ function CollapsedRow({
   return (
     <div
       className={cn(
-        "group border-border bg-card hover:bg-muted/30 flex w-full items-center gap-3 rounded-lg border px-3 transition-colors",
+        "group border-border bg-card hover:border-primary/40 flex w-full items-center gap-3 rounded-lg border px-3 transition-colors",
         density === "comfy" ? "py-2" : "py-1.5",
         isDragging && "opacity-50"
       )}

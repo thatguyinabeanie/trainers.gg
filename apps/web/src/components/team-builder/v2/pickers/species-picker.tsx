@@ -710,7 +710,7 @@ export function SpeciesPicker({
         {/* Left rail — sidebar (top) + role presets (bottom). Single column,
             stacked vertically. Both halves scroll independently. */}
         <div className="border-border flex w-[380px] flex-shrink-0 flex-col border-r">
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="shrink-0 overflow-y-auto">
             <SpeciesSidebar
               filters={filters}
               onFiltersChange={setFilters}

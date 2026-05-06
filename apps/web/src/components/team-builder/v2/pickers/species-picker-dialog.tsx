@@ -44,7 +44,7 @@ export function SpeciesPickerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="flex h-[calc(100vh-2rem)] max-h-[1080px] w-[calc(100vw-2rem)] max-w-[1600px] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[1600px]"
+        className="flex h-[min(calc(100vh-2rem),1400px)] w-[calc(100vw-2rem)] max-w-[1600px] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[1600px]"
       >
         <DialogTitle className="sr-only">Choose species</DialogTitle>
         <SpeciesPicker

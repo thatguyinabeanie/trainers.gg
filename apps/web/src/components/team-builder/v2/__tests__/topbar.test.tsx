@@ -10,8 +10,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
-import { type GameFormat } from "@trainers/pokemon";
-import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
+import { type TeamWithPokemon } from "@trainers/supabase";
 
 // =============================================================================
 // Mocks
@@ -19,8 +18,18 @@ import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 
 jest.mock("next/link", () => ({
   __esModule: true,
-  default: ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
-    <a href={href} className={className}>{children}</a>
+  default: ({
+    href,
+    children,
+    className,
+  }: {
+    href: string;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <a href={href} className={className}>
+      {children}
+    </a>
   ),
 }));
 
@@ -52,7 +61,9 @@ jest.mock("@/components/dashboard/page-header", () => ({
 }));
 
 jest.mock("@/components/dashboard/notifications-popover", () => ({
-  NotificationsPopover: () => <button data-testid="notifications">Notifications</button>,
+  NotificationsPopover: () => (
+    <button data-testid="notifications">Notifications</button>
+  ),
 }));
 
 // =============================================================================
@@ -96,7 +107,9 @@ function makeError(overrides: Partial<ValidationError> = {}): ValidationError {
   };
 }
 
-function makeWarning(overrides: Partial<ValidationError> = {}): ValidationError {
+function makeWarning(
+  overrides: Partial<ValidationError> = {}
+): ValidationError {
   return {
     pokemonId: 2,
     pokemonName: "Incineroar",
@@ -107,18 +120,8 @@ function makeWarning(overrides: Partial<ValidationError> = {}): ValidationError 
   };
 }
 
-const DEFAULT_FORMAT = {
-  id: "gen9vgc2026regi",
-  label: "VGC 2026 Reg I",
-  generation: 9,
-  isChampions: false,
-  isChampionsTeamSize: false,
-  legalLevelCap: 50,
-};
-
 function renderTopbar(
   props: Partial<{
-    format: typeof DEFAULT_FORMAT | undefined;
     validationErrors: ValidationError[];
     exportMenu: React.ReactNode;
   }> = {}
@@ -128,16 +131,9 @@ function renderTopbar(
   const onValidate = jest.fn();
   const onNameChange = jest.fn().mockResolvedValue(undefined);
 
-  const alts = [
-    { id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null },
-  ];
-
   const utils = render(
     <Topbar
       team={makeTeam()}
-      format={props.format as GameFormat | undefined}
-      username="ash_ketchum"
-      alts={alts as unknown as Tables<"alts">[]}
       onOpenImport={onOpenImport}
       validationErrors={props.validationErrors ?? []}
       onJumpToPokemon={onJumpToPokemon}
@@ -157,14 +153,10 @@ function renderTopbar(
 describe("Topbar — basic render", () => {
   it("renders the team name as an editable button", () => {
     renderTopbar();
-    expect(screen.getByRole("button", { name: /edit team name/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /edit team name/i })
+    ).toBeInTheDocument();
     expect(screen.getByText("Test Team")).toBeInTheDocument();
-  });
-
-  it("renders a link to the teams page with the username (single alt)", () => {
-    renderTopbar();
-    const link = screen.getByRole("link", { name: "ash_ketchum" });
-    expect(link).toHaveAttribute("href", "/dashboard/alts/ash_ketchum/teams");
   });
 
   it("renders the Import button", () => {
@@ -174,19 +166,9 @@ describe("Topbar — basic render", () => {
 
   it("renders the Validate button", () => {
     renderTopbar();
-    expect(screen.getByRole("button", { name: /validate/i })).toBeInTheDocument();
-  });
-});
-
-describe("Topbar — format badge", () => {
-  it("renders format label badge when format is provided", () => {
-    renderTopbar({ format: DEFAULT_FORMAT as unknown as GameFormat });
-    expect(screen.getByText("VGC 2026 Reg I")).toBeInTheDocument();
-  });
-
-  it("does not render format badge when format is undefined", () => {
-    renderTopbar({ format: undefined });
-    expect(screen.queryByText("VGC 2026 Reg I")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /validate/i })
+    ).toBeInTheDocument();
   });
 });
 
@@ -303,7 +285,9 @@ describe("Topbar — inline name editing", () => {
     await user.type(input, "Temp Name{Escape}");
     expect(onNameChange).not.toHaveBeenCalled();
     // Should exit editing mode (button visible again)
-    expect(screen.getByRole("button", { name: /edit team name/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /edit team name/i })
+    ).toBeInTheDocument();
   });
 
   it("does not call onNameChange when value is unchanged", async () => {
@@ -338,54 +322,5 @@ describe("Topbar — inline name editing", () => {
     await user.type(input, "Blur Name");
     await user.tab(); // blur
     expect(onNameChange).toHaveBeenCalledWith("Blur Name");
-  });
-});
-
-describe("Topbar — format picker", () => {
-  it("renders changeable format badge when onFormatChange is provided", () => {
-    const onFormatChange = jest.fn().mockResolvedValue(undefined);
-    const alts = [
-      { id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null },
-    ];
-    render(
-      <Topbar
-        team={makeTeam()}
-        format={DEFAULT_FORMAT as unknown as GameFormat}
-        username="ash_ketchum"
-        alts={alts as unknown as Tables<"alts">[]}
-        onOpenImport={jest.fn()}
-        validationErrors={[]}
-        onJumpToPokemon={jest.fn()}
-        onValidate={jest.fn()}
-        onNameChange={jest.fn().mockResolvedValue(undefined)}
-        onFormatChange={onFormatChange}
-      />
-    );
-    // Format badge should be present
-    expect(screen.getByText("VGC 2026 Reg I")).toBeInTheDocument();
-  });
-
-  it("renders multiple alts dropdown when onAltChange and multiple alts provided", () => {
-    const onAltChange = jest.fn().mockResolvedValue(undefined);
-    const alts = [
-      { id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null },
-      { id: 2, username: "gary_oak", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null },
-    ];
-    render(
-      <Topbar
-        team={makeTeam()}
-        format={DEFAULT_FORMAT as unknown as GameFormat}
-        username="ash_ketchum"
-        alts={alts as unknown as Tables<"alts">[]}
-        onOpenImport={jest.fn()}
-        validationErrors={[]}
-        onJumpToPokemon={jest.fn()}
-        onValidate={jest.fn()}
-        onNameChange={jest.fn().mockResolvedValue(undefined)}
-        onAltChange={onAltChange}
-      />
-    );
-    // Should show the "Switch alt" button
-    expect(screen.getByRole("button", { name: /switch alt/i })).toBeInTheDocument();
   });
 });

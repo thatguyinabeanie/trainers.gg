@@ -10,7 +10,7 @@ export const metadata = {
 
 export default function BuilderPage() {
   return (
-    <div className="h-[calc(100dvh-4rem)] overflow-hidden">
+    <div className="h-full overflow-hidden">
       <Suspense
         fallback={
           <div className="flex h-full items-center justify-center">
