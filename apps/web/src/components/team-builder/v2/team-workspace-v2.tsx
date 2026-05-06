@@ -713,7 +713,7 @@ export function TeamWorkspaceV2({
               {!isMobile && state.sideDrawer === "speed" && (
                 <div
                   className="absolute inset-y-0 left-0 z-10 flex"
-                  style={{ width: state.sideWidthPx + 6 }}
+                  style={{ width: state.sideWidthPx }}
                 >
                   <div className="border-border bg-background flex min-h-0 flex-1 flex-col overflow-hidden border-r shadow-lg">
                     <header className="border-border flex items-center gap-2 border-b px-3 py-2">
@@ -736,29 +736,6 @@ export function TeamWorkspaceV2({
                       />
                     </div>
                   </div>
-                  <div
-                    role="separator"
-                    aria-orientation="vertical"
-                    aria-label="Resize speed panel"
-                    className="hover:bg-primary/40 focus-visible:bg-primary/40 w-[6px] shrink-0 cursor-col-resize touch-none transition-colors duration-100 focus-visible:outline-none"
-                    onPointerDown={(e) => {
-                      const startX = e.clientX;
-                      const startWidth = state.sideWidthPx;
-                      const target = e.currentTarget;
-                      target.setPointerCapture(e.pointerId);
-
-                      const onMove = (ev: PointerEvent) => {
-                        const delta = ev.clientX - startX;
-                        state.setSideWidthPx(startWidth + delta);
-                      };
-                      const onUp = () => {
-                        target.removeEventListener("pointermove", onMove);
-                        target.removeEventListener("pointerup", onUp);
-                      };
-                      target.addEventListener("pointermove", onMove);
-                      target.addEventListener("pointerup", onUp);
-                    }}
-                  />
                 </div>
               )}
 
@@ -766,32 +743,8 @@ export function TeamWorkspaceV2({
               {!isMobile && state.rightDrawer === "calc" && (
                 <div
                   className="absolute inset-y-0 right-0 z-10 flex"
-                  style={{ width: state.rightWidthPx + 6 }}
+                  style={{ width: state.rightWidthPx }}
                 >
-                  <div
-                    role="separator"
-                    aria-orientation="vertical"
-                    aria-label="Resize calc panel"
-                    className="hover:bg-primary/40 focus-visible:bg-primary/40 w-[6px] shrink-0 cursor-col-resize touch-none transition-colors duration-100 focus-visible:outline-none"
-                    onPointerDown={(e) => {
-                      const startX = e.clientX;
-                      const startWidth = state.rightWidthPx;
-                      const target = e.currentTarget;
-                      target.setPointerCapture(e.pointerId);
-
-                      const onMove = (ev: PointerEvent) => {
-                        // Dragging left increases width
-                        const delta = startX - ev.clientX;
-                        state.setRightWidthPx(startWidth + delta);
-                      };
-                      const onUp = () => {
-                        target.removeEventListener("pointermove", onMove);
-                        target.removeEventListener("pointerup", onUp);
-                      };
-                      target.addEventListener("pointermove", onMove);
-                      target.addEventListener("pointerup", onUp);
-                    }}
-                  />
                   <div className="border-border bg-background flex min-h-0 flex-1 flex-col overflow-hidden border-l shadow-lg">
                     <CalcBottomPanel
                       teamSlots={slots}

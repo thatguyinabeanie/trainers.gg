@@ -56,19 +56,17 @@ describe("SpeciesSidebar", () => {
     expect(screen.getByText("Mega only")).toBeInTheDocument();
   });
 
-  it("Clear all resets filters", async () => {
+  it("clearing ability chip resets the ability filter", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     renderSidebar({
-      filters: {
-        ...DEFAULT_SPECIES_FILTERS,
-        types: ["Fire"],
-        roles: ["spread"],
-      },
+      filters: { ...DEFAULT_SPECIES_FILTERS, ability: "Drought" },
       onFiltersChange: onChange,
     });
-    await user.click(screen.getByRole("button", { name: /clear/i }));
-    expect(onChange).toHaveBeenCalledWith(DEFAULT_SPECIES_FILTERS);
+    await user.click(screen.getByRole("button", { name: /clear drought/i }));
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ ability: null })
+    );
   });
 
   it("ability section renders a typeahead input when no ability is set", () => {

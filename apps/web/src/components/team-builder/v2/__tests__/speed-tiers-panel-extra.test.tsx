@@ -220,20 +220,22 @@ describe("SpeedTiersPanel — switch interactions", () => {
   it("clicking + on yours stage shows +1", async () => {
     renderEmpty();
     const user = userEvent.setup();
-    // Get all buttons and filter to stepper + buttons by text content
-    const allButtons = screen.getAllByRole("button");
-    const plusButtons = allButtons.filter((btn) => btn.textContent === "+");
-    // First + is yours
-    await user.click(plusButtons[0]);
+    // The layout is a 3-column grid: [yours stepper] [Stages label] [theirs stepper]
+    // Find the "Stages" label, then grab its previous sibling (yours stepper div).
+    const stagesLabel = screen.getByText("Stages");
+    const yoursStepper = stagesLabel.previousElementSibling as HTMLElement;
+    const plusButton = yoursStepper.querySelector("button:last-child") as HTMLElement;
+    await user.click(plusButton);
     expect(screen.getByText("+1")).toBeInTheDocument();
   });
 
   it("clicking − on yours stage shows -1", async () => {
     renderEmpty();
     const user = userEvent.setup();
-    const allButtons = screen.getAllByRole("button");
-    const minusButtons = allButtons.filter((btn) => btn.textContent === "−");
-    await user.click(minusButtons[0]);
+    const stagesLabel = screen.getByText("Stages");
+    const yoursStepper = stagesLabel.previousElementSibling as HTMLElement;
+    const minusButton = yoursStepper.querySelector("button:first-child") as HTMLElement;
+    await user.click(minusButton);
     expect(screen.getByText("-1")).toBeInTheDocument();
   });
 });
