@@ -740,7 +740,7 @@ export function TeamWorkspaceV2({
                     role="separator"
                     aria-orientation="vertical"
                     aria-label="Resize speed panel"
-                    className="bg-border hover:bg-primary focus-visible:bg-primary w-[6px] shrink-0 cursor-col-resize touch-none transition-colors duration-100 focus-visible:outline-none"
+                    className="hover:bg-primary/40 focus-visible:bg-primary/40 w-[6px] shrink-0 cursor-col-resize touch-none transition-colors duration-100 focus-visible:outline-none"
                     onPointerDown={(e) => {
                       const startX = e.clientX;
                       const startWidth = state.sideWidthPx;
@@ -772,7 +772,7 @@ export function TeamWorkspaceV2({
                     role="separator"
                     aria-orientation="vertical"
                     aria-label="Resize calc panel"
-                    className="bg-border hover:bg-primary focus-visible:bg-primary w-[6px] shrink-0 cursor-col-resize touch-none transition-colors duration-100 focus-visible:outline-none"
+                    className="hover:bg-primary/40 focus-visible:bg-primary/40 w-[6px] shrink-0 cursor-col-resize touch-none transition-colors duration-100 focus-visible:outline-none"
                     onPointerDown={(e) => {
                       const startX = e.clientX;
                       const startWidth = state.rightWidthPx;
