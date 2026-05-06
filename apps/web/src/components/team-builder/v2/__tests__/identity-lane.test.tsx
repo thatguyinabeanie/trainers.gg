@@ -16,7 +16,6 @@ import { type GameFormat } from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-
 // Popover: render content inline so it's always queryable
 jest.mock("@/components/ui/popover", () => ({
   Popover: ({
@@ -205,7 +204,7 @@ jest.mock("../sprite", () => ({
   ),
 }));
 
-// TypePill + TypeDot — minimal stubs
+// TypePill + TypeDot + TeraTypeIcon — minimal stubs
 jest.mock("../type-pill", () => ({
   TypePill: ({ t }: { t: string }) => (
     <span data-testid={`type-pill-${t}`}>{t}</span>
@@ -214,6 +213,12 @@ jest.mock("../type-pill", () => ({
 
 jest.mock("../type-dot", () => ({
   TypeDot: ({ t }: { t: string }) => <span data-testid={`type-dot-${t}`} />,
+}));
+
+jest.mock("../../tera-type-icon", () => ({
+  TeraTypeIcon: ({ type }: { type: string }) => (
+    <span data-testid={`tera-type-icon-${type}`} />
+  ),
 }));
 
 // FieldError + FieldErrors — render as simple alert spans
@@ -693,35 +698,33 @@ describe("IdentityLane — tera field (format-gated)", () => {
     (FormatGating.formatSupportsTera as jest.Mock).mockReturnValue(true);
   });
 
-  it("renders tera field when format supports it", () => {
-    renderLane();
-    expect(screen.getByText("Tera")).toBeInTheDocument();
-  });
-
-  it("shows tera type with TypeDot when tera_type is set", () => {
+  it("renders tera icon inline in the type row when format supports it", () => {
     renderLane({ tera_type: "Fire" });
-    expect(screen.getByTestId("type-dot-Fire")).toBeInTheDocument();
-    expect(screen.getByText("Fire")).toBeInTheDocument();
+    expect(screen.getByTestId("tera-type-icon-Fire")).toBeInTheDocument();
   });
 
-  it("shows '—' when tera_type is null", () => {
+  it("shows tera type icon when tera_type is set", () => {
+    renderLane({ tera_type: "Fire" });
+    expect(screen.getByTestId("tera-type-icon-Fire")).toBeInTheDocument();
+  });
+
+  it("shows placeholder hex when tera_type is null", () => {
     renderLane({ tera_type: null });
-    expect(screen.getByText("Tera")).toBeInTheDocument();
-    // — is shown in the tera row
-    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Set Tera type")).toBeInTheDocument();
   });
 
   it("calls onUpdate with the picked tera type", async () => {
     const user = userEvent.setup();
     const { onUpdate } = renderLane({ tera_type: null });
+    await user.click(screen.getByLabelText("Set Tera type"));
     await user.click(screen.getByText("pick-type"));
     expect(onUpdate).toHaveBeenCalledWith({ tera_type: "Fairy" });
   });
 
-  it("hides tera field when format does not support it", () => {
+  it("hides tera icon when format does not support it", () => {
     (FormatGating.formatSupportsTera as jest.Mock).mockReturnValue(false);
     renderLane({}, VGC_FORMAT);
-    expect(screen.queryByText("Tera")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Set Tera type")).not.toBeInTheDocument();
   });
 });
 
@@ -864,7 +867,11 @@ describe("IdentityLane — MEGA chip on item cell", () => {
   it("shows no MEGA chip when held item is not a mega stone", () => {
     render(
       <IdentityLane
-        pokemon={{ ...makePokemon(), species: "Pikachu", held_item: "Leftovers" }}
+        pokemon={{
+          ...makePokemon(),
+          species: "Pikachu",
+          held_item: "Leftovers",
+        }}
         format={VGC_FORMAT}
         teamItems={[]}
         onUpdate={jest.fn()}

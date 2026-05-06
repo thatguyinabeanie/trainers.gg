@@ -1,6 +1,10 @@
 "use client";
 
-import { type GameFormat, type PokemonType, type StatKey } from "@trainers/pokemon";
+import {
+  type GameFormat,
+  type PokemonType,
+  type StatKey,
+} from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { type ValidationError } from "../../../../validation-hooks";
@@ -8,7 +12,6 @@ import { AbilityCell } from "./ability-cell";
 import { type CellVariant } from "./identity-cell-shared";
 import { ItemCell } from "./item-cell";
 import { NatureCell } from "./nature-cell";
-import { TeraCell } from "./tera-cell";
 import { TypeCell } from "./type-cell";
 
 // =============================================================================
@@ -74,12 +77,12 @@ export function FormCells({
         onUpdate={onUpdate}
         variant={variant}
       />
-      <TypeCell types={types} variant={variant} />
-      <TeraCell
+      <TypeCell
+        types={types}
+        variant={variant}
         pokemon={pokemon}
         format={format}
         onUpdate={onUpdate}
-        variant={variant}
       />
     </>
   );
