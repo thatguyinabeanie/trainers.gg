@@ -33,6 +33,19 @@ function deriveCookieDomain(): string | undefined {
 
 export const COOKIE_DOMAIN: string | undefined = deriveCookieDomain();
 
+// Warn if running in production without cross-subdomain cookies configured
+if (
+  typeof process !== "undefined" &&
+  process.env.NODE_ENV === "production" &&
+  !COOKIE_DOMAIN
+) {
+  console.warn(
+    "[supabase] COOKIE_DOMAIN is undefined in production. " +
+      "Cross-subdomain auth will not work. " +
+      "Ensure NEXT_PUBLIC_SITE_URL contains 'trainers.gg'."
+  );
+}
+
 // =============================================================================
 // Invitations
 // =============================================================================

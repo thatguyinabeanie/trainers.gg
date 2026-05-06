@@ -1,10 +1,10 @@
 /**
  * Tests for LocalBuilderWorkspace.
  * Verifies: hydration loading state, rendering after hydration,
- * saving overlay, and delegating to TeamWorkspaceV2.
+ * saving overlay, delegating to TeamWorkspaceV2, and handleSaveToAccount.
  */
 
-import { render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 
 // =============================================================================
@@ -41,7 +41,11 @@ jest.mock("@trainers/supabase", () => ({
 }));
 
 // Mock auth context
-const mockAuthContext = {
+const mockAuthContext: {
+  isAuthenticated: boolean;
+  loading: boolean;
+  user: { id: string } | null;
+} = {
   isAuthenticated: false,
   loading: false,
   user: null,
@@ -72,9 +76,13 @@ jest.mock("@/components/builder-nav", () => ({
   ),
 }));
 
-// Mock BuilderTopbar
+// Mock BuilderTopbar — capture onSaveToAccount for testing
+let capturedOnSaveToAccount: (() => Promise<void>) | undefined;
 jest.mock("../builder-topbar", () => ({
-  BuilderTopbar: () => <div data-testid="builder-topbar">Builder Topbar</div>,
+  BuilderTopbar: (props: { onSaveToAccount?: () => Promise<void> }) => {
+    capturedOnSaveToAccount = props.onSaveToAccount;
+    return <div data-testid="builder-topbar">Builder Topbar</div>;
+  },
 }));
 
 // Mock PersistenceProvider
@@ -120,7 +128,7 @@ jest.mock("../persistence/use-local-team-storage", () => ({
     setTeam: mockSetTeam,
     hydrated: mockHydrated,
   }),
-  clearLocalTeamStorage: jest.fn(),
+  clearLocalTeamStorage: jest.fn().mockReturnValue(true),
 }));
 
 // Mock TeamWorkspaceV2
@@ -208,5 +216,142 @@ describe("LocalBuilderWorkspace — unauthenticated", () => {
     expect(
       screen.queryByText("Saving your team to your account...")
     ).not.toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// handleSaveToAccount tests
+// =============================================================================
+
+describe("LocalBuilderWorkspace — handleSaveToAccount", () => {
+  const { toast } = jest.requireMock("sonner") as {
+    toast: { success: jest.Mock; error: jest.Mock };
+  };
+  const { teamsApi } = jest.requireMock("@/lib/api/teams-client") as {
+    teamsApi: { saveLocal: jest.Mock };
+  };
+  const { getAltsByUserId, getTeamsForUser } = jest.requireMock(
+    "@trainers/supabase"
+  ) as {
+    getAltsByUserId: jest.Mock;
+    getTeamsForUser: jest.Mock;
+  };
+  const { clearLocalTeamStorage } = jest.requireMock(
+    "../persistence/use-local-team-storage"
+  ) as { clearLocalTeamStorage: jest.Mock };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockHydrated = true;
+    mockAuthContext.isAuthenticated = true;
+    mockAuthContext.loading = false;
+    mockAuthContext.user = { id: "user-123" };
+    capturedOnSaveToAccount = undefined;
+
+    // Default mocks for the useEffect fetch
+    getAltsByUserId.mockResolvedValue([]);
+    getTeamsForUser.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    mockAuthContext.isAuthenticated = false;
+    mockAuthContext.user = null;
+  });
+
+  it("happy path: saves team, clears storage, shows toast, and redirects", async () => {
+    getAltsByUserId.mockResolvedValue([{ id: 42, name: "TestAlt" }]);
+    teamsApi.saveLocal.mockResolvedValue({
+      success: true,
+      data: { redirectUrl: "/dashboard/teams/99" },
+    });
+
+    render(<LocalBuilderWorkspace />);
+
+    // Wait for the full useEffect to settle (both API calls + re-render)
+    await waitFor(() => {
+      expect(getTeamsForUser).toHaveBeenCalled();
+    });
+
+    // Flush pending state updates so capturedOnSaveToAccount has current closure
+    await act(async () => {});
+
+    expect(capturedOnSaveToAccount).toBeDefined();
+
+    act(() => {
+      capturedOnSaveToAccount!();
+    });
+
+    // Wait for the save to complete and success toast to appear
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Team saved to your account!");
+    });
+
+    expect(teamsApi.saveLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        altId: 42,
+        name: "Untitled Team",
+        format: "gen9vgc2026regi",
+      })
+    );
+    expect(clearLocalTeamStorage).toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith("/dashboard/teams/99");
+  });
+
+  it("shows error toast on API failure without redirecting", async () => {
+    getAltsByUserId.mockResolvedValue([{ id: 42, name: "TestAlt" }]);
+    teamsApi.saveLocal.mockResolvedValue({
+      success: false,
+      error: "Server error",
+    });
+
+    render(<LocalBuilderWorkspace />);
+
+    // Wait for the full useEffect to settle
+    await waitFor(() => {
+      expect(getTeamsForUser).toHaveBeenCalled();
+    });
+
+    await act(async () => {});
+
+    expect(capturedOnSaveToAccount).toBeDefined();
+
+    act(() => {
+      capturedOnSaveToAccount!();
+    });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Server error");
+    });
+
+    expect(clearLocalTeamStorage).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("shows error toast when no alts are found", async () => {
+    // getAltsByUserId returns [] (default from beforeEach)
+    render(<LocalBuilderWorkspace />);
+
+    // Wait for the full useEffect to settle
+    await waitFor(() => {
+      expect(getTeamsForUser).toHaveBeenCalled();
+    });
+
+    await act(async () => {});
+
+    expect(capturedOnSaveToAccount).toBeDefined();
+
+    act(() => {
+      capturedOnSaveToAccount!();
+    });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "No profile found. Please complete your profile setup first."
+      );
+    });
+
+    expect(teamsApi.saveLocal).not.toHaveBeenCalled();
+    expect(clearLocalTeamStorage).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

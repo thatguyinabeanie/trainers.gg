@@ -288,13 +288,15 @@ describe("clearLocalTeamStorage", () => {
     localStorage.clear();
   });
 
-  it("removes the storage key from localStorage", () => {
+  it("removes the storage key from localStorage and returns true", () => {
     localStorage.setItem(STORAGE_KEY, "something");
-    clearLocalTeamStorage();
+    const result = clearLocalTeamStorage();
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(result).toBe(true);
   });
 
-  it("does nothing if storage key does not exist", () => {
-    expect(() => clearLocalTeamStorage()).not.toThrow();
+  it("returns true if storage key does not exist", () => {
+    const result = clearLocalTeamStorage();
+    expect(result).toBe(true);
   });
 });

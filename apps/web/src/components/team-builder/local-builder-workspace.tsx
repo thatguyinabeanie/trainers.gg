@@ -113,7 +113,7 @@ export function LocalBuilderWorkspace() {
       // Reset the fetch guard on unmount so StrictMode re-mounts can re-fetch
       fetchingRef.current = false;
     };
-  }, [isAuthenticated, authLoading, user]);
+  }, [isAuthenticated, authLoading, user, supabase]);
 
   // Auto-trigger save when returning from auth with ?action=save
   const actionParam = searchParams.get("action");

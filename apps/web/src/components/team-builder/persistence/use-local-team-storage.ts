@@ -77,6 +77,9 @@ function readFromStorage(): TeamWithPokemon | null {
     return team;
   } catch (error) {
     logError("localTeamStorage.read", error);
+    toast.error(
+      "Your saved team data was corrupted and couldn't be loaded. Starting fresh."
+    );
     return null;
   }
 }
@@ -84,8 +87,26 @@ function readFromStorage(): TeamWithPokemon | null {
 function writeToStorage(team: TeamWithPokemon): void {
   if (typeof window === "undefined") return;
   try {
+    // Deduplicate before persisting as defense-in-depth against bugs
+    // producing duplicate pokemon_id entries during a session.
+    let teamToWrite = team;
+    if (team.team_pokemon.length > 0) {
+      const seen = new Set<number>();
+      const deduped: typeof team.team_pokemon = [];
+      for (let i = team.team_pokemon.length - 1; i >= 0; i--) {
+        const tp = team.team_pokemon[i]!;
+        if (!seen.has(tp.pokemon_id)) {
+          seen.add(tp.pokemon_id);
+          deduped.unshift(tp);
+        }
+      }
+      if (deduped.length !== team.team_pokemon.length) {
+        teamToWrite = { ...team, team_pokemon: deduped };
+      }
+    }
+
     const data: LocalTeamData = {
-      team,
+      team: teamToWrite,
       updatedAt: new Date().toISOString(),
       version: 1,
     };
@@ -96,12 +117,17 @@ function writeToStorage(team: TeamWithPokemon): void {
   }
 }
 
-export function clearLocalTeamStorage(): void {
-  if (typeof window === "undefined") return;
+export function clearLocalTeamStorage(): boolean {
+  if (typeof window === "undefined") return true;
   try {
     localStorage.removeItem(LOCAL_TEAM_STORAGE_KEY);
+    return true;
   } catch (error) {
     logError("localTeamStorage.clear", error);
+    toast.error(
+      "Could not clear local team data. It may reappear on next visit."
+    );
+    return false;
   }
 }
 

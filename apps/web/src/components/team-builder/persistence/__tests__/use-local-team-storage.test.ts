@@ -124,15 +124,16 @@ describe("useLocalTeamStorage", () => {
     expect(result.current.team.name).toBe("Direct Set");
   });
 
-  it("clearLocalTeamStorage removes the key from localStorage", () => {
+  it("clearLocalTeamStorage removes the key from localStorage and returns true", () => {
     localStorageMock.setItem(
       STORAGE_KEY,
       JSON.stringify({ team: {}, updatedAt: "2024-01-01", version: 1 })
     );
     jest.clearAllMocks();
 
-    clearLocalTeamStorage();
+    const result = clearLocalTeamStorage();
 
     expect(localStorageMock.removeItem).toHaveBeenCalledWith(STORAGE_KEY);
+    expect(result).toBe(true);
   });
 });
