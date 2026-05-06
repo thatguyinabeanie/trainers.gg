@@ -274,6 +274,28 @@ function DockbarConnected({
 }
 
 // =============================================================================
+// SpeedTiersPanelConnected — reads weather from CalcStateContext
+// =============================================================================
+
+function SpeedTiersPanelConnected({
+  team,
+  format,
+}: {
+  team: TeamWithPokemon["team_pokemon"];
+  format: GameFormat | undefined;
+}) {
+  const calc = useCalcStateContext();
+  return (
+    <SpeedTiersPanel
+      team={team}
+      format={format}
+      weather={calc.weather}
+      setWeather={calc.setWeather}
+    />
+  );
+}
+
+// =============================================================================
 // WorkspaceMetadata — inline row above the pokemon grid
 // =============================================================================
 
@@ -774,7 +796,7 @@ export function TeamWorkspaceV2({
                           </button>
                         </header>
                         <div className="min-h-0 flex-1 overflow-hidden">
-                          <SpeedTiersPanel
+                          <SpeedTiersPanelConnected
                             team={optimisticTeamPokemon}
                             format={format}
                           />
@@ -1051,7 +1073,7 @@ export function TeamWorkspaceV2({
                 )}
                 {state.sideDrawer === "speed" && (
                   <div className="w-full border-t p-3">
-                    <SpeedTiersPanel
+                    <SpeedTiersPanelConnected
                       team={optimisticTeamPokemon}
                       format={format}
                     />

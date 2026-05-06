@@ -23,6 +23,7 @@ import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import { ItemSprite } from "@/components/tournament/item-sprite";
 import {
   TableBody,
@@ -39,6 +40,10 @@ import {
 export interface SpeedTiersPanelProps {
   team: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
+  /** Capitalized weather from calc state (e.g. "Sun", "Rain", "" for none). */
+  weather?: string;
+  /** Setter for the shared calc weather state. */
+  setWeather?: (v: string) => void;
 }
 
 type Weather = "none" | "sun" | "rain" | "sand" | "snow";
@@ -508,7 +513,12 @@ function TierMonRow({
  * YOURS/THEIRS switches let you simulate real game scenarios.
  * Trick Room toggle inverts the sort order.
  */
-export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
+export function SpeedTiersPanel({
+  team,
+  format,
+  weather: externalWeather,
+  setWeather: externalSetWeather,
+}: SpeedTiersPanelProps) {
   const [toggle, setToggle] = useState<ToggleState>(DEFAULT_TOGGLE);
   const [prevFormatId, setPrevFormatId] = useState<
     string | undefined | typeof UNINITIALIZED_FORMAT_ID
@@ -549,13 +559,21 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
     );
   }
 
+  // Weather: derive from external (calc) state if provided, else use local toggle
+  const effectiveWeather: Weather = externalWeather
+    ? (externalWeather.toLowerCase() as Weather) || "none"
+    : toggle.weather;
+
   // Filter to non-null pokemon on the team.
   const pokemons = team
     .filter((tp) => tp.pokemon != null)
     .map((tp) => tp.pokemon as Tables<"pokemon">);
 
+  // Use effectiveWeather (synced from calc) in the toggle for scoring
+  const effectiveToggle: ToggleState = { ...toggle, weather: effectiveWeather };
+
   const teamScored: ScoredMon[] = pokemons.map((p) =>
-    teamMonToScored(p, format, toggle, false)
+    teamMonToScored(p, format, effectiveToggle, false)
   );
 
   const legalSpecies = legalSetOrPermissive(getLegalSpecies(format.id));
@@ -564,7 +582,7 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
     : getMetaSpeedTiers(format.id);
 
   const metaScored: ScoredMon[] = metaTiers.map((e) =>
-    metaToScored(e, toggle, format)
+    metaToScored(e, effectiveToggle, format)
   );
 
   const allScored = [...teamScored, ...metaScored];
@@ -589,10 +607,21 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
   // ---- helpers ----------------------------------------------------------------
 
   function setWeather(w: Weather) {
-    setToggle((prev) => ({
-      ...prev,
-      weather: prev.weather === w ? "none" : w,
-    }));
+    if (externalSetWeather) {
+      // Sync to calc state: capitalize for @smogon/calc, "" for none
+      const capitalized =
+        w === "none" ? "" : w.charAt(0).toUpperCase() + w.slice(1);
+      // Toggle off if already active
+      const current = externalWeather
+        ? (externalWeather.toLowerCase() as Weather) || "none"
+        : "none";
+      externalSetWeather(current === w ? "" : capitalized);
+    } else {
+      setToggle((prev) => ({
+        ...prev,
+        weather: prev.weather === w ? "none" : w,
+      }));
+    }
   }
   function setTrickRoom(v: boolean) {
     setToggle((prev) => ({
@@ -629,40 +658,50 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
           <legend className="text-primary px-1 font-mono text-[9px] font-bold tracking-[0.12em] uppercase">
             Field
           </legend>
-          <div className="flex flex-col items-center gap-1.5">
+          <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-[11px]">
-                Trick Room
+              <span className="text-muted-foreground/70 shrink-0 font-mono text-[8.5px] tracking-wide uppercase">
+                Weather
               </span>
-              <button
-                type="button"
-                aria-label="Trick Room"
-                onClick={() => setTrickRoom(!toggle.trickRoom)}
-                className={cn(
-                  "size-4 rounded-full border-2 transition-colors",
-                  toggle.trickRoom
-                    ? "border-primary bg-primary"
-                    : "border-muted-foreground/40 hover:border-muted-foreground"
-                )}
-              />
+              <div className="flex flex-1 flex-wrap justify-end gap-1">
+                {(["sun", "rain", "sand", "snow"] as const).map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    aria-label={WEATHER_LABELS[w]}
+                    onClick={() => setWeather(w)}
+                    className={cn(
+                      "rounded-full border px-2 py-0.5 font-mono text-[10px] leading-tight transition-all",
+                      effectiveWeather === w
+                        ? "border-primary/50 bg-primary/10 text-primary font-semibold shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
+                        : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                    )}
+                  >
+                    {WEATHER_LABELS[w]}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              {(["sun", "rain", "sand", "snow"] as const).map((w) => (
+            <div className="border-border/40 flex items-center gap-2 border-t border-dashed pt-1.5">
+              <span className="text-muted-foreground/70 shrink-0 font-mono text-[8.5px] tracking-wide uppercase">
+                Other
+              </span>
+              <div className="flex flex-1 flex-wrap justify-end gap-1">
                 <button
-                  key={w}
                   type="button"
-                  aria-label={WEATHER_LABELS[w]}
-                  onClick={() => setWeather(w)}
+                  aria-label="Trick Room"
+                  aria-pressed={toggle.trickRoom}
+                  onClick={() => setTrickRoom(!toggle.trickRoom)}
                   className={cn(
-                    "rounded-md px-2 py-0.5 text-[10px] font-medium capitalize transition-colors",
-                    toggle.weather === w
-                      ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:text-foreground"
+                    "rounded-full border px-2 py-0.5 font-mono text-[10px] leading-tight transition-all",
+                    toggle.trickRoom
+                      ? "border-primary/50 bg-primary/10 text-primary font-semibold shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
+                      : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"
                   )}
                 >
-                  {WEATHER_LABELS[w]}
+                  Trick Room
                 </button>
-              ))}
+              </div>
             </div>
           </div>
         </fieldset>
@@ -730,7 +769,7 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
                   trickRoom={toggle.trickRoom}
                   abilityActive={isSpeedAbilityActive(
                     scored.mon.speedAbility,
-                    toggle.weather,
+                    effectiveWeather,
                     scored.mon.isYours
                       ? toggle.yours.unburden
                       : toggle.theirs.unburden
@@ -750,145 +789,109 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
           <legend className="text-primary px-1 font-mono text-[9px] font-bold tracking-[0.12em] uppercase">
             Modifiers
           </legend>
-          <div className="grid grid-cols-[auto_auto_auto] items-center gap-x-3 gap-y-1.5">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-1 gap-y-0.5">
             {/* Header */}
-            <span className="text-muted-foreground text-right text-[10px] font-semibold uppercase">
+            <span className="text-muted-foreground text-right text-[10px] font-semibold tracking-wider uppercase">
               Ours
             </span>
             <span />
-            <span className="text-muted-foreground text-[10px] font-semibold uppercase">
+            <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
               Theirs
             </span>
 
             {/* Tailwind */}
             <div className="flex justify-end">
-              <button
-                type="button"
-                aria-label="Our Tailwind"
-                onClick={() =>
+              <Switch
+                size="sm"
+                checked={toggle.yours.tailwind}
+                onCheckedChange={() =>
                   setToggle((prev) => ({
                     ...prev,
                     yours: { ...prev.yours, tailwind: !prev.yours.tailwind },
                   }))
                 }
-                className={cn(
-                  "size-4 rounded-full border-2 transition-colors",
-                  toggle.yours.tailwind
-                    ? "border-primary bg-primary"
-                    : "border-muted-foreground/40 hover:border-muted-foreground"
-                )}
+                aria-label="Our Tailwind"
               />
             </div>
-            <span className="text-foreground text-center text-[11px]">
-              Tailwind
-            </span>
+            <span className="text-center text-[11px]">Tailwind</span>
             <div className="flex justify-start">
-              <button
-                type="button"
-                aria-label="Their Tailwind"
-                onClick={() =>
+              <Switch
+                size="sm"
+                checked={toggle.theirs.tailwind}
+                onCheckedChange={() =>
                   setToggle((prev) => ({
                     ...prev,
                     theirs: { ...prev.theirs, tailwind: !prev.theirs.tailwind },
                   }))
                 }
-                className={cn(
-                  "size-4 rounded-full border-2 transition-colors",
-                  toggle.theirs.tailwind
-                    ? "border-primary bg-primary"
-                    : "border-muted-foreground/40 hover:border-muted-foreground"
-                )}
+                aria-label="Their Tailwind"
               />
             </div>
 
             {/* Scarf */}
             <div className="flex justify-end">
-              <button
-                type="button"
-                aria-label="Our Scarf"
-                onClick={() =>
+              <Switch
+                size="sm"
+                checked={toggle.yours.scarf}
+                onCheckedChange={() =>
                   setToggle((prev) => ({
                     ...prev,
                     yours: { ...prev.yours, scarf: !prev.yours.scarf },
                   }))
                 }
-                className={cn(
-                  "size-4 rounded-full border-2 transition-colors",
-                  toggle.yours.scarf
-                    ? "border-primary bg-primary"
-                    : "border-muted-foreground/40 hover:border-muted-foreground"
-                )}
+                aria-label="Our Scarf"
               />
             </div>
-            <span className="text-foreground text-center text-[11px]">
-              Scarf
-            </span>
+            <span className="text-center text-[11px]">Scarf</span>
             <div className="flex justify-start">
-              <button
-                type="button"
-                aria-label="Their Scarf"
-                onClick={() =>
+              <Switch
+                size="sm"
+                checked={toggle.theirs.scarf}
+                onCheckedChange={() =>
                   setToggle((prev) => ({
                     ...prev,
                     theirs: { ...prev.theirs, scarf: !prev.theirs.scarf },
                   }))
                 }
-                className={cn(
-                  "size-4 rounded-full border-2 transition-colors",
-                  toggle.theirs.scarf
-                    ? "border-primary bg-primary"
-                    : "border-muted-foreground/40 hover:border-muted-foreground"
-                )}
+                aria-label="Their Scarf"
               />
             </div>
 
             {/* Unburden */}
             <div className="flex justify-end">
-              <button
-                type="button"
-                aria-label="Our Unburden"
-                onClick={() =>
+              <Switch
+                size="sm"
+                checked={toggle.yours.unburden}
+                onCheckedChange={() =>
                   setToggle((prev) => ({
                     ...prev,
                     yours: { ...prev.yours, unburden: !prev.yours.unburden },
                   }))
                 }
-                className={cn(
-                  "size-4 rounded-full border-2 transition-colors",
-                  toggle.yours.unburden
-                    ? "border-primary bg-primary"
-                    : "border-muted-foreground/40 hover:border-muted-foreground"
-                )}
+                aria-label="Our Unburden"
               />
             </div>
-            <span className="text-foreground text-center text-[11px]">
-              Unburden
-            </span>
+            <span className="text-center text-[11px]">Unburden</span>
             <div className="flex justify-start">
-              <button
-                type="button"
-                aria-label="Their Unburden"
-                onClick={() =>
+              <Switch
+                size="sm"
+                checked={toggle.theirs.unburden}
+                onCheckedChange={() =>
                   setToggle((prev) => ({
                     ...prev,
                     theirs: { ...prev.theirs, unburden: !prev.theirs.unburden },
                   }))
                 }
-                className={cn(
-                  "size-4 rounded-full border-2 transition-colors",
-                  toggle.theirs.unburden
-                    ? "border-primary bg-primary"
-                    : "border-muted-foreground/40 hover:border-muted-foreground"
-                )}
+                aria-label="Their Unburden"
               />
             </div>
 
             {/* Paralyzed */}
             <div className="flex justify-end">
-              <button
-                type="button"
-                aria-label="Our Paralyzed"
-                onClick={() =>
+              <Switch
+                size="sm"
+                checked={toggle.yours.status === "paralyzed"}
+                onCheckedChange={() =>
                   setToggle((prev) => ({
                     ...prev,
                     yours: {
@@ -900,22 +903,15 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
                     },
                   }))
                 }
-                className={cn(
-                  "size-4 rounded-full border-2 transition-colors",
-                  toggle.yours.status === "paralyzed"
-                    ? "border-primary bg-primary"
-                    : "border-muted-foreground/40 hover:border-muted-foreground"
-                )}
+                aria-label="Our Paralyzed"
               />
             </div>
-            <span className="text-foreground text-center text-[11px]">
-              Paralyzed
-            </span>
+            <span className="text-center text-[11px]">Paralyzed</span>
             <div className="flex justify-start">
-              <button
-                type="button"
-                aria-label="Their Paralyzed"
-                onClick={() =>
+              <Switch
+                size="sm"
+                checked={toggle.theirs.status === "paralyzed"}
+                onCheckedChange={() =>
                   setToggle((prev) => ({
                     ...prev,
                     theirs: {
@@ -927,20 +923,13 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
                     },
                   }))
                 }
-                className={cn(
-                  "size-4 rounded-full border-2 transition-colors",
-                  toggle.theirs.status === "paralyzed"
-                    ? "border-primary bg-primary"
-                    : "border-muted-foreground/40 hover:border-muted-foreground"
-                )}
+                aria-label="Their Paralyzed"
               />
             </div>
 
             {/* Nature — theirs only */}
             <div />
-            <span className="text-foreground text-center text-[11px]">
-              Nature
-            </span>
+            <span className="text-center text-[11px]">Nature</span>
             <div className="flex justify-start gap-0.5">
               {(["negative", "neutral", "positive"] as const).map((n) => (
                 <button
@@ -967,9 +956,7 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
 
             {/* EVs — theirs only */}
             <div />
-            <span className="text-foreground text-center text-[11px]">
-              {evLabel}
-            </span>
+            <span className="text-center text-[11px]">{evLabel}</span>
             <div className="flex items-center justify-start gap-0.5">
               <button
                 type="button"
@@ -1077,9 +1064,7 @@ export function SpeedTiersPanel({ team, format }: SpeedTiersPanelProps) {
                 +
               </button>
             </div>
-            <span className="text-foreground text-center text-[11px]">
-              Stages
-            </span>
+            <span className="text-center text-[11px]">Stages</span>
             <div className="flex items-center justify-start gap-0.5">
               <button
                 type="button"
