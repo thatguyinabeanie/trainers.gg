@@ -50,6 +50,14 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Subdomain rewrites: builder.trainers.gg → /builder/*
+  const hostname = request.headers.get("host") ?? "";
+  if (hostname === "builder.trainers.gg") {
+    const url = request.nextUrl.clone();
+    url.pathname = `/builder${pathname === "/" ? "" : pathname}`;
+    return NextResponse.rewrite(url);
+  }
+
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
 
