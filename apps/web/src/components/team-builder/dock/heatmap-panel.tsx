@@ -394,24 +394,17 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
         )}
       </div>
 
-      {rows.length === 0 && (
-        <div className="text-muted-foreground px-3 py-6 text-center text-xs">
-          Add Pokémon to your team to see the type chart.
-        </div>
-      )}
-
-      {rows.length > 0 && (
-        <div className="min-h-0 flex-1 overflow-auto">
-          {/* Column headers: type abbreviations */}
-          <div
-            className="bg-muted/50 grid items-end gap-px px-2 py-1.5 sticky top-0 z-10"
-            style={gridStyle}
-          >
-            {/* Row label spacer */}
-            <span aria-hidden />
-            {ALL_TYPES.map((t, idx) => (
-              <Tooltip key={t}>
-                <TooltipTrigger
+      <div className="min-h-0 flex-1 overflow-auto">
+        {/* Column headers: type abbreviations */}
+        <div
+          className="bg-muted/50 grid items-end gap-px px-2 py-1.5 sticky top-0 z-10"
+          style={gridStyle}
+        >
+          {/* Row label spacer */}
+          <span aria-hidden />
+          {ALL_TYPES.map((t, idx) => (
+            <Tooltip key={t}>
+              <TooltipTrigger
                   render={
                     <span
                       tabIndex={0}
@@ -525,6 +518,32 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
                 })()}
               </div>
             ))}
+
+            {/* Empty placeholder rows for remaining team slots */}
+            {Array.from({ length: Math.max(0, 6 - rows.length) }).map(
+              (_, idx) => (
+                <div
+                  key={`empty-${idx}`}
+                  className="grid items-center gap-px px-2 py-1"
+                  style={gridStyle}
+                >
+                  <span className="text-muted-foreground/30 text-[10px] italic">
+                    {rows.length === 0 && idx === 2
+                      ? "Add Pokémon…"
+                      : "\u00A0"}
+                  </span>
+                  {ALL_TYPES.map((t) => (
+                    <span
+                      key={`empty-${idx}-${t}`}
+                      className="inline-flex items-center justify-center font-mono text-[10px] leading-none text-muted-foreground/15"
+                    >
+                      ·
+                    </span>
+                  ))}
+                  <span />
+                </div>
+              )
+            )}
           </div>
 
           {/* Column totals footer */}
@@ -586,7 +605,6 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
           </div>
 
         </div>
-      )}
     </div>
   );
 }

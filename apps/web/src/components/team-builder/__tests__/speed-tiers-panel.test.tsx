@@ -167,7 +167,7 @@ describe("SpeedTiersPanel — Trick Room sort order", () => {
     renderPanel(ENTRIES);
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("switch", { name: /trick room/i }));
+    await user.click(screen.getByRole("button", { name: /trick room/i }));
 
     const names = screen.getAllByText(/flutter mane|rillaboom|amoonguss/i).map(
       (el) => el.textContent?.trim()
@@ -186,10 +186,10 @@ describe("SpeedTiersPanel — Trick Room sort order", () => {
     renderPanel(ENTRIES);
 
     const user = userEvent.setup();
-    const trSwitch = screen.getByRole("switch", { name: /trick room/i });
+    const trButton = screen.getByRole("button", { name: /trick room/i });
 
-    await user.click(trSwitch); // TR on
-    await user.click(trSwitch); // TR off
+    await user.click(trButton); // TR on
+    await user.click(trButton); // TR off
 
     const names = screen.getAllByText(/flutter mane|rillaboom|amoonguss/i).map(
       (el) => el.textContent?.trim()
@@ -219,19 +219,19 @@ describe("SpeedTiersPanel — summary removed", () => {
 // =============================================================================
 
 describe("SpeedTiersPanel — TR switch state", () => {
-  it("TR switch is not checked by default", () => {
+  it("TR button is not active by default", () => {
     renderPanel([makeEntry("Pikachu", 110)]);
-    const trSwitch = screen.getByRole("switch", { name: /trick room/i });
-    expect(trSwitch).toHaveAttribute("aria-checked", "false");
+    const trButton = screen.getByRole("button", { name: /trick room/i });
+    expect(trButton.className).not.toMatch(/bg-primary/);
   });
 
-  it("TR switch is checked when Trick Room is active", async () => {
+  it("TR button is active when Trick Room is toggled", async () => {
     renderPanel([makeEntry("Pikachu", 110)]);
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("switch", { name: /trick room/i }));
+    await user.click(screen.getByRole("button", { name: /trick room/i }));
 
-    const trSwitch = screen.getByRole("switch", { name: /trick room/i });
-    expect(trSwitch).toHaveAttribute("aria-checked", "true");
+    const trButton = screen.getByRole("button", { name: /trick room/i });
+    expect(trButton.className).toMatch(/bg-primary/);
   });
 });

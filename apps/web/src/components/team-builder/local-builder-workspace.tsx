@@ -70,42 +70,34 @@ export function LocalBuilderWorkspace() {
 
   const format = team.format ? getFormatById(team.format) : undefined;
 
-  // Fetch alts when authenticated
+  // Fetch alts and teams when authenticated (serialized to avoid
+  // concurrent Supabase auth lock contention).
   useEffect(() => {
     if (!isAuthenticated || authLoading || !user) return;
+    let cancelled = false;
 
-    async function fetchAlts() {
+    async function fetchData() {
+      setTeamsLoading(true);
       try {
         const fetchedAlts = await getCurrentUserAlts(supabase);
+        if (cancelled) return;
         setAlts(fetchedAlts);
         if (fetchedAlts.length > 0 && !selectedAltId) {
           setSelectedAltId(fetchedAlts[0]!.id);
         }
-      } catch (err) {
-        console.error("Failed to fetch alts:", err);
-      }
-    }
 
-    fetchAlts();
-  }, [isAuthenticated, authLoading, user]);
-
-  // Fetch teams when authenticated
-  useEffect(() => {
-    if (!isAuthenticated || authLoading || !user) return;
-
-    async function fetchTeams() {
-      setTeamsLoading(true);
-      try {
         const teams = await getTeamsForUser(supabase, user!.id);
+        if (cancelled) return;
         setUserTeams(teams);
       } catch (err) {
-        console.error("Failed to fetch teams:", err);
+        if (!cancelled) console.error("Failed to fetch user data:", err);
       } finally {
-        setTeamsLoading(false);
+        if (!cancelled) setTeamsLoading(false);
       }
     }
 
-    fetchTeams();
+    fetchData();
+    return () => { cancelled = true; };
   }, [isAuthenticated, authLoading, user]);
 
   // Auto-trigger save when returning from auth with ?action=save

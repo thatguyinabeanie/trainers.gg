@@ -51,7 +51,28 @@ function readFromStorage(): TeamWithPokemon | null {
     if (!raw) return null;
     const parsed: LocalTeamData = JSON.parse(raw);
     if (parsed.version !== 1) return null;
-    return parsed.team;
+
+    // Deduplicate team_pokemon by pokemon.id — previous HMR counter resets
+    // could produce entries with colliding IDs at different positions. Keep the
+    // last entry per ID (most recently added).
+    const team = parsed.team;
+    if (team.team_pokemon.length > 0) {
+      const seen = new Set<number>();
+      const deduped: typeof team.team_pokemon = [];
+      // Iterate in reverse so the last-added entry (highest position) wins.
+      for (let i = team.team_pokemon.length - 1; i >= 0; i--) {
+        const tp = team.team_pokemon[i]!;
+        if (!seen.has(tp.pokemon_id)) {
+          seen.add(tp.pokemon_id);
+          deduped.unshift(tp);
+        }
+      }
+      if (deduped.length !== team.team_pokemon.length) {
+        team.team_pokemon = deduped;
+      }
+    }
+
+    return team;
   } catch {
     return null;
   }
