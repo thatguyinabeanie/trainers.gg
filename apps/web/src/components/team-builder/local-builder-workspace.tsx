@@ -16,7 +16,7 @@
  * - Load existing teams from any alt
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
@@ -72,8 +72,11 @@ export function LocalBuilderWorkspace() {
 
   // Fetch alts and teams when authenticated (serialized to avoid
   // concurrent Supabase auth lock contention).
+  const fetchingRef = useRef(false);
   useEffect(() => {
     if (!isAuthenticated || authLoading || !user) return;
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
     let cancelled = false;
 
     async function fetchData() {
@@ -92,12 +95,15 @@ export function LocalBuilderWorkspace() {
       } catch (err) {
         if (!cancelled) console.error("Failed to fetch user data:", err);
       } finally {
+        fetchingRef.current = false;
         if (!cancelled) setTeamsLoading(false);
       }
     }
 
     fetchData();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated, authLoading, user]);
 
   // Auto-trigger save when returning from auth with ?action=save
