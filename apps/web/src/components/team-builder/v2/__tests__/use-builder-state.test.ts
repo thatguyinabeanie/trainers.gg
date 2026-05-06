@@ -24,9 +24,9 @@ describe("useBuilderState — ephemeral state defaults", () => {
     expect(result.current.activeIdx).toBe(0);
   });
 
-  it("starts with drawer='speed' (sideDrawer defaults to speed)", () => {
+  it("starts with sideDrawer='speed'", () => {
     const { result } = renderHook(() => useBuilderState());
-    expect(result.current.drawer).toBe("speed");
+    expect(result.current.sideDrawer).toBe("speed");
   });
 
   it("setActiveIdx updates the value", () => {
@@ -37,16 +37,15 @@ describe("useBuilderState — ephemeral state defaults", () => {
     expect(result.current.activeIdx).toBe(3);
   });
 
-  it("setDrawer updates the drawer value", () => {
+  it("setSideDrawer(null) then setBottomDrawer('matchups') opens matchups", () => {
     const { result } = renderHook(() => useBuilderState());
-    // Clear sideDrawer first (default is "speed"), then set matchups via bottomDrawer
     act(() => {
-      result.current.setDrawer(null);
+      result.current.setSideDrawer(null);
     });
     act(() => {
-      result.current.setDrawer("matchups");
+      result.current.setBottomDrawer("matchups");
     });
-    expect(result.current.drawer).toBe("matchups");
+    expect(result.current.bottomDrawer).toBe("matchups");
   });
 
   it("field defaults to doubles=true", () => {
@@ -64,29 +63,29 @@ describe("useBuilderState — ephemeral state defaults", () => {
 });
 
 // =============================================================================
-// drawer — calc key supported
+// split drawer state — rightDrawer for calc
 // =============================================================================
 
-describe("useBuilderState — drawer calc key", () => {
+describe("useBuilderState — rightDrawer (calc)", () => {
   beforeEach(clearStorage);
 
-  it("setDrawer('calc') sets drawer to 'calc'", () => {
+  it("setRightDrawer('calc') opens the calc panel", () => {
     const { result } = renderHook(() => useBuilderState());
     act(() => {
-      result.current.setDrawer("calc");
+      result.current.setRightDrawer("calc");
     });
-    expect(result.current.drawer).toBe("calc");
+    expect(result.current.rightDrawer).toBe("calc");
   });
 
-  it("setDrawer(null) clears from 'calc'", () => {
+  it("setRightDrawer(null) closes the calc panel", () => {
     const { result } = renderHook(() => useBuilderState());
     act(() => {
-      result.current.setDrawer("calc");
+      result.current.setRightDrawer("calc");
     });
     act(() => {
-      result.current.setDrawer(null);
+      result.current.setRightDrawer(null);
     });
-    expect(result.current.drawer).toBe(null);
+    expect(result.current.rightDrawer).toBe(null);
   });
 });
 

@@ -25,7 +25,6 @@ export interface FieldState {
   allyAlive: boolean;
 }
 
-export type DrawerKey = "matchups" | "speed" | "calc" | null;
 export type SideDrawerKey = "speed" | null;
 export type RightDrawerKey = "calc" | null;
 export type BottomDrawerKey = "matchups" | null;
@@ -33,10 +32,6 @@ export type BottomDrawerKey = "matchups" | null;
 interface BuilderState {
   activeIdx: number;
   setActiveIdx: (idx: number) => void;
-  /** @deprecated Use sideDrawer/rightDrawer/bottomDrawer instead. Kept for compat. */
-  drawer: DrawerKey;
-  /** @deprecated Use setSideDrawer/setRightDrawer/setBottomDrawer instead. */
-  setDrawer: (drawer: DrawerKey) => void;
   /** Left panel — speed tiers */
   sideDrawer: SideDrawerKey;
   setSideDrawer: (d: SideDrawerKey) => void;
@@ -179,29 +174,6 @@ export function useBuilderState(): BuilderState {
   const [rightDrawer, setRightDrawer] = useState<RightDrawerKey>(null);
   const [bottomDrawer, setBottomDrawer] = useState<BottomDrawerKey>(null);
 
-  // Legacy compat: `drawer` returns whichever is open (side takes precedence for reads)
-  const drawer: DrawerKey = sideDrawer ?? rightDrawer ?? bottomDrawer;
-  function setDrawer(d: DrawerKey) {
-    if (d === "matchups") {
-      setSideDrawer(null);
-      setRightDrawer(null);
-      setBottomDrawer(d);
-    } else if (d === "calc") {
-      setSideDrawer(null);
-      setBottomDrawer(null);
-      setRightDrawer(d);
-    } else if (d === null) {
-      setSideDrawer(null);
-      setRightDrawer(null);
-      setBottomDrawer(null);
-    } else {
-      // "speed" or any side drawer value
-      setRightDrawer(null);
-      setBottomDrawer(null);
-      setSideDrawer(d);
-    }
-  }
-
   const [panelHeightPct, setPanelHeightPctState] = useState<number>(
     DEFAULT_PANEL_HEIGHT_PCT
   );
@@ -319,8 +291,6 @@ export function useBuilderState(): BuilderState {
   return {
     activeIdx,
     setActiveIdx,
-    drawer,
-    setDrawer,
     sideDrawer,
     setSideDrawer,
     rightDrawer,

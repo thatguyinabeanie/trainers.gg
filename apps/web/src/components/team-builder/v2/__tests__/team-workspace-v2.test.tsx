@@ -133,7 +133,6 @@ jest.mock("../../validation-hooks", () => ({
 }));
 
 // Controllable drawer state — default closed, tests can override
-const mockSetDrawer = jest.fn();
 const mockSetActiveIdx = jest.fn();
 const mockSetSideDrawer = jest.fn();
 const mockSetRightDrawer = jest.fn();
@@ -141,8 +140,6 @@ const mockSetBottomDrawer = jest.fn();
 const mockBuilderState = {
   activeIdx: 0,
   setActiveIdx: mockSetActiveIdx,
-  drawer: null as "matchups" | "speed" | "calc" | null,
-  setDrawer: mockSetDrawer,
   sideDrawer: null as "speed" | null,
   setSideDrawer: mockSetSideDrawer,
   rightDrawer: null as "calc" | null,
@@ -370,7 +367,6 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 beforeEach(() => {
   jest.clearAllMocks();
   // Reset builder state to defaults
-  mockBuilderState.drawer = null;
   mockBuilderState.sideDrawer = null;
   mockBuilderState.rightDrawer = null;
   mockBuilderState.bottomDrawer = null;
@@ -912,8 +908,7 @@ describe("TeamWorkspaceV2 — mobile layout", () => {
 // =============================================================================
 
 describe("TeamWorkspaceV2 — drawer panel", () => {
-  it("renders the heatmap panel when drawer is 'matchups'", () => {
-    mockBuilderState.drawer = "matchups";
+  it("renders the heatmap panel when bottomDrawer is 'matchups'", () => {
     mockBuilderState.bottomDrawer = "matchups";
 
     renderWorkspace();
@@ -922,8 +917,7 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
     expect(screen.queryByTestId("speed-tiers-panel")).not.toBeInTheDocument();
   });
 
-  it("renders the speed tiers panel when drawer is 'speed'", () => {
-    mockBuilderState.drawer = "speed";
+  it("renders the speed tiers panel when sideDrawer is 'speed'", () => {
     mockBuilderState.sideDrawer = "speed";
 
     renderWorkspace();
@@ -932,8 +926,7 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
     expect(screen.queryByTestId("heatmap-panel")).not.toBeInTheDocument();
   });
 
-  it("renders the calc bottom panel when drawer is 'calc' on desktop", () => {
-    mockBuilderState.drawer = "calc";
+  it("renders the calc bottom panel when rightDrawer is 'calc' on desktop", () => {
     mockBuilderState.rightDrawer = "calc";
     mockUseIsMobile.mockReturnValue(false);
 
@@ -943,7 +936,6 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
   });
 
   it("renders calc bottom panel on mobile when rightDrawer is 'calc'", () => {
-    mockBuilderState.drawer = "calc";
     mockBuilderState.rightDrawer = "calc";
     mockUseIsMobile.mockReturnValue(true);
 
@@ -952,8 +944,7 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
     expect(screen.getByTestId("calc-bottom-panel")).toBeInTheDocument();
   });
 
-  it("renders no panel when drawer is null", () => {
-    mockBuilderState.drawer = null;
+  it("renders no panel when all drawers are null", () => {
     mockBuilderState.sideDrawer = null;
     mockBuilderState.rightDrawer = null;
     mockBuilderState.bottomDrawer = null;
@@ -966,7 +957,6 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
   });
 
   it("shows 'Speed Tiers' header when speed drawer is open", () => {
-    mockBuilderState.drawer = "speed";
     mockBuilderState.sideDrawer = "speed";
 
     renderWorkspace();
@@ -975,7 +965,6 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
   });
 
   it("close button in side panel header calls setSideDrawer(null)", async () => {
-    mockBuilderState.drawer = "speed";
     mockBuilderState.sideDrawer = "speed";
 
     const user = userEvent.setup();
@@ -995,7 +984,6 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
 
 describe("TeamWorkspaceV2 — side panel resizer", () => {
   it("renders a resize handle when side drawer is open", () => {
-    mockBuilderState.drawer = "speed";
     mockBuilderState.sideDrawer = "speed";
 
     renderWorkspace();

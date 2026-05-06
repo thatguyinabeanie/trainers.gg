@@ -10,7 +10,7 @@
  *
  * Tests verify:
  *   - Each pill renders and fires onOpen with the correct key
- *   - aria-pressed reflects the active drawer (supporting both legacy and split state)
+ *   - aria-pressed reflects the active drawer via split state props
  *   - Chevron direction: active pill shows ▾, inactive shows ▴
  *   - Defender species sublabel in calc pill
  */
@@ -27,8 +27,10 @@ import { Dockbar, type DockbarProps } from "../dock/dockbar";
 
 function makeProps(overrides: Partial<DockbarProps> = {}): DockbarProps {
   return {
-    drawer: null,
     onOpen: jest.fn(),
+    sideDrawer: null,
+    rightDrawer: null,
+    bottomDrawer: null,
     fastest: 0,
     defenderSpecies: "",
     moveCalcOutputs: [null, null, null, null],
@@ -95,53 +97,23 @@ describe("Dockbar — click handlers", () => {
 });
 
 // =============================================================================
-// Tests — aria-pressed (active drawer via legacy prop)
+// Tests — aria-pressed reflects split drawer state
 // =============================================================================
 
 describe("Dockbar — aria-pressed reflects active drawer", () => {
-  it("matchups pill is pressed when drawer='matchups'", () => {
-    render(<Dockbar {...makeProps({ drawer: "matchups" })} />);
+  it("matchups pill is pressed when bottomDrawer='matchups'", () => {
+    render(<Dockbar {...makeProps({ bottomDrawer: "matchups" })} />);
     const btn = screen.getByTitle("Defensive type matchups");
     expect(btn).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("matchups pill is NOT pressed when drawer='speed'", () => {
-    render(<Dockbar {...makeProps({ drawer: "speed" })} />);
+  it("matchups pill is NOT pressed when sideDrawer='speed'", () => {
+    render(<Dockbar {...makeProps({ sideDrawer: "speed" })} />);
     const btn = screen.getByTitle("Defensive type matchups");
     expect(btn).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("speed pill is pressed when drawer='speed'", () => {
-    render(<Dockbar {...makeProps({ drawer: "speed" })} />);
-    expect(screen.getByTitle("Speed tier ladder")).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
-  });
-
-  it("calc pill is pressed when drawer='calc'", () => {
-    render(<Dockbar {...makeProps({ drawer: "calc" })} />);
-    expect(screen.getByTitle("Damage calc")).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
-  });
-
-  it("all pills are NOT pressed when drawer=null", () => {
-    render(<Dockbar {...makeProps({ drawer: null })} />);
-    const buttons = screen.getAllByRole("button");
-    for (const btn of buttons) {
-      expect(btn).toHaveAttribute("aria-pressed", "false");
-    }
-  });
-});
-
-// =============================================================================
-// Tests — split state (sideDrawer / bottomDrawer)
-// =============================================================================
-
-describe("Dockbar — split drawer state", () => {
-  it("uses sideDrawer for speed active state", () => {
+  it("speed pill is pressed when sideDrawer='speed'", () => {
     render(<Dockbar {...makeProps({ sideDrawer: "speed" })} />);
     expect(screen.getByTitle("Speed tier ladder")).toHaveAttribute(
       "aria-pressed",
@@ -149,7 +121,7 @@ describe("Dockbar — split drawer state", () => {
     );
   });
 
-  it("uses rightDrawer for calc active state", () => {
+  it("calc pill is pressed when rightDrawer='calc'", () => {
     render(<Dockbar {...makeProps({ rightDrawer: "calc" })} />);
     expect(screen.getByTitle("Damage calc")).toHaveAttribute(
       "aria-pressed",
@@ -157,12 +129,12 @@ describe("Dockbar — split drawer state", () => {
     );
   });
 
-  it("uses bottomDrawer for matchups active state", () => {
-    render(<Dockbar {...makeProps({ bottomDrawer: "matchups" })} />);
-    expect(screen.getByTitle("Defensive type matchups")).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
+  it("all pills are NOT pressed when all drawers are null", () => {
+    render(<Dockbar {...makeProps()} />);
+    const buttons = screen.getAllByRole("button");
+    for (const btn of buttons) {
+      expect(btn).toHaveAttribute("aria-pressed", "false");
+    }
   });
 });
 
@@ -172,13 +144,13 @@ describe("Dockbar — split drawer state", () => {
 
 describe("Dockbar — chevron direction", () => {
   it("active matchups pill shows ▾ chevron", () => {
-    render(<Dockbar {...makeProps({ drawer: "matchups" })} />);
+    render(<Dockbar {...makeProps({ bottomDrawer: "matchups" })} />);
     const matchupsBtn = screen.getByTitle("Defensive type matchups");
     expect(matchupsBtn.textContent).toContain("▾");
   });
 
   it("inactive matchups pill shows ▴ chevron", () => {
-    render(<Dockbar {...makeProps({ drawer: "speed" })} />);
+    render(<Dockbar {...makeProps({ sideDrawer: "speed" })} />);
     const matchupsBtn = screen.getByTitle("Defensive type matchups");
     expect(matchupsBtn.textContent).toContain("▴");
   });

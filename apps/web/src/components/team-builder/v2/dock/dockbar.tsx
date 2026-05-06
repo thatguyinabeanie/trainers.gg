@@ -41,14 +41,13 @@ function DockPill({ active, onOpen, ariaLabel, children }: DockPillProps) {
 // =============================================================================
 
 export interface DockbarProps {
-  drawer: "matchups" | "speed" | "calc" | null;
   onOpen: (key: "matchups" | "speed" | "calc") => void;
-  /** Left drawer state (speed tiers) for independent active tracking. */
-  sideDrawer?: "speed" | null;
-  /** Right drawer state (damage calc) for independent active tracking. */
-  rightDrawer?: "calc" | null;
-  /** Bottom drawer state (matchups) for independent active tracking. */
-  bottomDrawer?: "matchups" | null;
+  /** Left drawer state (speed tiers) */
+  sideDrawer: "speed" | null;
+  /** Right drawer state (damage calc) */
+  rightDrawer: "calc" | null;
+  /** Bottom drawer state (matchups) */
+  bottomDrawer: "matchups" | null;
   /** Pre-computed fastest speed for the speed pill. */
   fastest: number;
   /** Active attacker's defender name, for the calc pill label. */
@@ -91,7 +90,6 @@ export function getWorstCaseVerdict(
  * The active pill is highlighted.
  */
 export function Dockbar({
-  drawer,
   onOpen,
   sideDrawer,
   rightDrawer,
@@ -100,15 +98,9 @@ export function Dockbar({
   defenderSpecies,
   moveCalcOutputs,
 }: DockbarProps) {
-  // Use split state if available, fall back to legacy `drawer` for compat
-  const isMatchupsActive =
-    bottomDrawer !== undefined
-      ? bottomDrawer === "matchups"
-      : drawer === "matchups";
-  const isSpeedActive =
-    sideDrawer !== undefined ? sideDrawer === "speed" : drawer === "speed";
-  const isCalcActive =
-    rightDrawer !== undefined ? rightDrawer === "calc" : drawer === "calc";
+  const isMatchupsActive = bottomDrawer === "matchups";
+  const isSpeedActive = sideDrawer === "speed";
+  const isCalcActive = rightDrawer === "calc";
 
   const _calcVerdict = getWorstCaseVerdict(moveCalcOutputs);
   const calcSubLabel = defenderSpecies ? `vs ${defenderSpecies}` : "no target";

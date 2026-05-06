@@ -234,11 +234,10 @@ function buildOptimisticTeamPokemon(
 // =============================================================================
 
 interface DockbarConnectedProps {
-  drawer: "matchups" | "speed" | "calc" | null;
   onOpen: (key: "matchups" | "speed" | "calc") => void;
-  sideDrawer?: "speed" | null;
-  rightDrawer?: "calc" | null;
-  bottomDrawer?: "matchups" | null;
+  sideDrawer: "speed" | null;
+  rightDrawer: "calc" | null;
+  bottomDrawer: "matchups" | null;
   fastest: number;
 }
 
@@ -247,7 +246,6 @@ interface DockbarConnectedProps {
  * Must be mounted inside a CalcStateProvider.
  */
 function DockbarConnected({
-  drawer,
   onOpen,
   sideDrawer,
   rightDrawer,
@@ -258,7 +256,6 @@ function DockbarConnected({
 
   return (
     <Dockbar
-      drawer={drawer}
       onOpen={onOpen}
       sideDrawer={sideDrawer}
       rightDrawer={rightDrawer}
@@ -1065,7 +1062,6 @@ export function TeamWorkspaceV2({
           </div>
 
           <DockbarConnected
-            drawer={state.drawer}
             onOpen={(key) => {
               if (key === "matchups") {
                 state.setBottomDrawer(

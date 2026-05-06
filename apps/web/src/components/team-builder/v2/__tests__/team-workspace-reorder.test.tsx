@@ -116,8 +116,6 @@ jest.mock("../use-builder-state", () => ({
   useBuilderState: () => ({
     activeIdx: 0,
     setActiveIdx: jest.fn(),
-    drawer: null,
-    setDrawer: jest.fn(),
     sideDrawer: null,
     setSideDrawer: jest.fn(),
     rightDrawer: null,
