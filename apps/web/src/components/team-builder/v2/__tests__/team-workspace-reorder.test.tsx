@@ -36,7 +36,13 @@ jest.mock("../calc/calc-state-context", () => ({
   useCalcStateContext: () => ({
     defenderSpecies: "",
     moveCalcOutputs: [null, null, null, null],
-    field: { doubles: true, tailwind: false, foesAlive: 2, allyAlive: 2, atkTera: false },
+    field: {
+      doubles: true,
+      tailwind: false,
+      foesAlive: 2,
+      allyAlive: 2,
+      atkTera: false,
+    },
     setField: jest.fn(),
     calcEnabled: false,
   }),
@@ -57,7 +63,11 @@ jest.mock("../dock/speed-tiers-panel", () => ({
 }));
 
 jest.mock("../poke-row", () => ({
-  PokeRow: ({ idx, pokemon, sortableId }: {
+  PokeRow: ({
+    idx,
+    pokemon,
+    sortableId,
+  }: {
     idx: number;
     pokemon: Tables<"pokemon"> | null;
     sortableId: string;
@@ -98,7 +108,23 @@ jest.mock("../use-builder-state", () => ({
     setActiveIdx: jest.fn(),
     drawer: null,
     setDrawer: jest.fn(),
-    field: { doubles: true, tailwind: false, foesAlive: 2, allyAlive: 2, atkTera: false },
+    sideDrawer: null,
+    setSideDrawer: jest.fn(),
+    rightDrawer: null,
+    setRightDrawer: jest.fn(),
+    bottomDrawer: null,
+    setBottomDrawer: jest.fn(),
+    sideWidthPx: 380,
+    setSideWidthPx: jest.fn(),
+    rightWidthPx: 480,
+    setRightWidthPx: jest.fn(),
+    field: {
+      doubles: true,
+      tailwind: false,
+      foesAlive: 2,
+      allyAlive: 2,
+      atkTera: false,
+    },
     setField: jest.fn(),
     panelHeightPct: 40,
     setPanelHeightPct: jest.fn(),
@@ -154,15 +180,35 @@ import { type BuilderPersistence } from "../persistence/types";
 
 const MOCK_PERSISTENCE: BuilderPersistence = {
   mode: "api",
-  addPokemon: jest.fn().mockResolvedValue({ success: true, data: { pokemonId: 99 } }),
-  updatePokemon: jest.fn().mockResolvedValue({ success: true, data: undefined }),
-  removePokemon: jest.fn().mockResolvedValue({ success: true, data: undefined }),
+  addPokemon: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: { pokemonId: 99 } }),
+  updatePokemon: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: undefined }),
+  removePokemon: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: undefined }),
   reorderPokemon: (...args: unknown[]) => mockReorderTeamPokemonAction(...args),
   updateTeam: jest.fn().mockResolvedValue({ success: true, data: undefined }),
   onMutationSuccess: jest.fn(),
 };
 
-const MOCK_ALTS = [{ id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null }] as unknown as Tables<"alts">[];
+const MOCK_ALTS = [
+  {
+    id: 1,
+    username: "ash_ketchum",
+    user_id: "u1",
+    avatar_url: null,
+    bio: null,
+    is_public: true,
+    tier: null,
+    tier_expires_at: null,
+    tier_started_at: null,
+    created_at: null,
+    updated_at: null,
+  },
+] as unknown as Tables<"alts">[];
 
 function makePokemon(
   id: number,
@@ -203,7 +249,9 @@ function makePokemon(
   };
 }
 
-function makeTeam(teamPokemon: TeamWithPokemon["team_pokemon"]): TeamWithPokemon {
+function makeTeam(
+  teamPokemon: TeamWithPokemon["team_pokemon"]
+): TeamWithPokemon {
   return {
     id: 1,
     name: "Test Team",

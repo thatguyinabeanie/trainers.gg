@@ -30,7 +30,13 @@ jest.mock("../calc/calc-state-context", () => ({
   useCalcStateContext: () => ({
     defenderSpecies: "",
     moveCalcOutputs: [null, null, null, null],
-    field: { doubles: true, tailwind: false, foesAlive: 2, allyAlive: 2, atkTera: false },
+    field: {
+      doubles: true,
+      tailwind: false,
+      foesAlive: 2,
+      allyAlive: 2,
+      atkTera: false,
+    },
     setField: jest.fn(),
     calcEnabled: false,
   }),
@@ -72,10 +78,7 @@ jest.mock("../poke-row", () => ({
     <div data-testid={`poke-row-${idx}`} data-sortable-id={sortableId}>
       <span data-testid={`species-${idx}`}>{pokemon?.species ?? "empty"}</span>
       <span data-testid={`nickname-${idx}`}>{pokemon?.nickname ?? ""}</span>
-      <button
-        data-testid={`add-${idx}`}
-        onClick={() => onAdd(idx, "Pikachu")}
-      >
+      <button data-testid={`add-${idx}`} onClick={() => onAdd(idx, "Pikachu")}>
         Add
       </button>
       <button data-testid={`remove-${idx}`} onClick={() => onRemove(idx)}>
@@ -123,19 +126,30 @@ jest.mock("../../validation-hooks", () => ({
 const mockSetDrawer = jest.fn();
 const mockSetActiveIdx = jest.fn();
 const mockSetSideDrawer = jest.fn();
+const mockSetRightDrawer = jest.fn();
 const mockSetBottomDrawer = jest.fn();
 const mockBuilderState = {
   activeIdx: 0,
   setActiveIdx: mockSetActiveIdx,
   drawer: null as "matchups" | "speed" | "calc" | null,
   setDrawer: mockSetDrawer,
-  sideDrawer: null as "speed" | "calc" | null,
+  sideDrawer: null as "speed" | null,
   setSideDrawer: mockSetSideDrawer,
+  rightDrawer: null as "calc" | null,
+  setRightDrawer: mockSetRightDrawer,
   bottomDrawer: null as "matchups" | null,
   setBottomDrawer: mockSetBottomDrawer,
   sideWidthPx: 380,
   setSideWidthPx: jest.fn(),
-  field: { doubles: true, tailwind: false, foesAlive: 2, allyAlive: 2, atkTera: false },
+  rightWidthPx: 480,
+  setRightWidthPx: jest.fn(),
+  field: {
+    doubles: true,
+    tailwind: false,
+    foesAlive: 2,
+    allyAlive: 2,
+    atkTera: false,
+  },
   setField: jest.fn(),
   panelHeightPct: 40,
   setPanelHeightPct: jest.fn(),
@@ -161,7 +175,6 @@ const mockRouterRefresh = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: mockRouterRefresh }),
 }));
-
 
 // Toast — capture calls
 const mockToastError = jest.fn();
@@ -199,10 +212,18 @@ import { type BuilderPersistence } from "../persistence/types";
 
 const MOCK_PERSISTENCE: BuilderPersistence = {
   mode: "api",
-  addPokemon: jest.fn().mockResolvedValue({ success: true, data: { pokemonId: 99 } }),
-  updatePokemon: jest.fn().mockResolvedValue({ success: true, data: undefined }),
-  removePokemon: jest.fn().mockResolvedValue({ success: true, data: undefined }),
-  reorderPokemon: jest.fn().mockResolvedValue({ success: true, data: undefined }),
+  addPokemon: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: { pokemonId: 99 } }),
+  updatePokemon: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: undefined }),
+  removePokemon: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: undefined }),
+  reorderPokemon: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: undefined }),
   updateTeam: jest.fn().mockResolvedValue({ success: true, data: undefined }),
   onMutationSuccess: jest.fn(),
 };
@@ -246,7 +267,9 @@ function makePokemon(
   };
 }
 
-function makeTeam(teamPokemon: TeamWithPokemon["team_pokemon"]): TeamWithPokemon {
+function makeTeam(
+  teamPokemon: TeamWithPokemon["team_pokemon"]
+): TeamWithPokemon {
   return {
     id: 1,
     name: "Test Team",
@@ -279,7 +302,21 @@ function renderWorkspace(
   team: TeamWithPokemon = TWO_POKEMON_TEAM,
   format = undefined
 ) {
-  const alts = [{ id: 1, username: "ash_ketchum", user_id: "u1", avatar_url: null, bio: null, is_public: true, tier: null, tier_expires_at: null, tier_started_at: null, created_at: null, updated_at: null }] as unknown as Tables<"alts">[];
+  const alts = [
+    {
+      id: 1,
+      username: "ash_ketchum",
+      user_id: "u1",
+      avatar_url: null,
+      bio: null,
+      is_public: true,
+      tier: null,
+      tier_expires_at: null,
+      tier_started_at: null,
+      created_at: null,
+      updated_at: null,
+    },
+  ] as unknown as Tables<"alts">[];
   return render(
     <TeamWorkspaceV2
       team={team}
@@ -288,8 +325,13 @@ function renderWorkspace(
       persistence={MOCK_PERSISTENCE}
       renderHeader={(actions: WorkspaceHeaderActions) => (
         <div data-testid="topbar">
-          <button onClick={actions.onOpenImport} data-testid="open-import">Import</button>
-          <button onClick={() => actions.onJumpToPokemon(10)} data-testid="jump-to-pokemon">
+          <button onClick={actions.onOpenImport} data-testid="open-import">
+            Import
+          </button>
+          <button
+            onClick={() => actions.onJumpToPokemon(10)}
+            data-testid="jump-to-pokemon"
+          >
             Jump to 10
           </button>
         </div>
@@ -320,16 +362,32 @@ beforeEach(() => {
   // Reset builder state to defaults
   mockBuilderState.drawer = null;
   mockBuilderState.sideDrawer = null;
+  mockBuilderState.rightDrawer = null;
   mockBuilderState.bottomDrawer = null;
   mockBuilderState.activeIdx = 0;
   mockBuilderState.attackerSlot = null;
   mockUseIsMobile.mockReturnValue(false);
   // Default: all persistence methods succeed
-  (MOCK_PERSISTENCE.addPokemon as jest.Mock).mockResolvedValue({ success: true, data: { pokemonId: 99 } });
-  (MOCK_PERSISTENCE.updatePokemon as jest.Mock).mockResolvedValue({ success: true, data: undefined });
-  (MOCK_PERSISTENCE.removePokemon as jest.Mock).mockResolvedValue({ success: true, data: undefined });
-  (MOCK_PERSISTENCE.reorderPokemon as jest.Mock).mockResolvedValue({ success: true, data: undefined });
-  (MOCK_PERSISTENCE.updateTeam as jest.Mock).mockResolvedValue({ success: true, data: undefined });
+  (MOCK_PERSISTENCE.addPokemon as jest.Mock).mockResolvedValue({
+    success: true,
+    data: { pokemonId: 99 },
+  });
+  (MOCK_PERSISTENCE.updatePokemon as jest.Mock).mockResolvedValue({
+    success: true,
+    data: undefined,
+  });
+  (MOCK_PERSISTENCE.removePokemon as jest.Mock).mockResolvedValue({
+    success: true,
+    data: undefined,
+  });
+  (MOCK_PERSISTENCE.reorderPokemon as jest.Mock).mockResolvedValue({
+    success: true,
+    data: undefined,
+  });
+  (MOCK_PERSISTENCE.updateTeam as jest.Mock).mockResolvedValue({
+    success: true,
+    data: undefined,
+  });
 });
 
 // =============================================================================
@@ -366,12 +424,42 @@ describe("TeamWorkspaceV2 — buildSlots position mapping", () => {
 
   it("handles a full 6-pokemon team with no gaps", () => {
     const fullTeam = makeTeam([
-      { id: 100, pokemon_id: 10, team_position: 1, pokemon: makePokemon(10, "Pikachu") },
-      { id: 101, pokemon_id: 20, team_position: 2, pokemon: makePokemon(20, "Raichu") },
-      { id: 102, pokemon_id: 30, team_position: 3, pokemon: makePokemon(30, "Mewtwo") },
-      { id: 103, pokemon_id: 40, team_position: 4, pokemon: makePokemon(40, "Mew") },
-      { id: 104, pokemon_id: 50, team_position: 5, pokemon: makePokemon(50, "Lugia") },
-      { id: 105, pokemon_id: 60, team_position: 6, pokemon: makePokemon(60, "Ho-Oh") },
+      {
+        id: 100,
+        pokemon_id: 10,
+        team_position: 1,
+        pokemon: makePokemon(10, "Pikachu"),
+      },
+      {
+        id: 101,
+        pokemon_id: 20,
+        team_position: 2,
+        pokemon: makePokemon(20, "Raichu"),
+      },
+      {
+        id: 102,
+        pokemon_id: 30,
+        team_position: 3,
+        pokemon: makePokemon(30, "Mewtwo"),
+      },
+      {
+        id: 103,
+        pokemon_id: 40,
+        team_position: 4,
+        pokemon: makePokemon(40, "Mew"),
+      },
+      {
+        id: 104,
+        pokemon_id: 50,
+        team_position: 5,
+        pokemon: makePokemon(50, "Lugia"),
+      },
+      {
+        id: 105,
+        pokemon_id: 60,
+        team_position: 6,
+        pokemon: makePokemon(60, "Ho-Oh"),
+      },
     ]);
 
     renderWorkspace(fullTeam);
@@ -438,7 +526,9 @@ describe("TeamWorkspaceV2 — add pokemon flow", () => {
       success: true;
       data: { pokemonId: number };
     }>();
-    (MOCK_PERSISTENCE.addPokemon as jest.Mock).mockImplementationOnce(() => promise);
+    (MOCK_PERSISTENCE.addPokemon as jest.Mock).mockImplementationOnce(
+      () => promise
+    );
 
     const user = userEvent.setup();
     renderWorkspace(EMPTY_TEAM);
@@ -476,7 +566,9 @@ describe("TeamWorkspaceV2 — add pokemon flow", () => {
   });
 
   it("falls back to generic add error message when error field is missing", async () => {
-    (MOCK_PERSISTENCE.addPokemon as jest.Mock).mockResolvedValueOnce({ success: false });
+    (MOCK_PERSISTENCE.addPokemon as jest.Mock).mockResolvedValueOnce({
+      success: false,
+    });
 
     const user = userEvent.setup();
     renderWorkspace(EMPTY_TEAM);
@@ -535,7 +627,9 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
       success: true;
       data: undefined;
     }>();
-    (MOCK_PERSISTENCE.removePokemon as jest.Mock).mockImplementationOnce(() => promise);
+    (MOCK_PERSISTENCE.removePokemon as jest.Mock).mockImplementationOnce(
+      () => promise
+    );
 
     const user = userEvent.setup();
     renderWorkspace();
@@ -575,7 +669,9 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
   });
 
   it("falls back to generic remove error message when error field is missing", async () => {
-    (MOCK_PERSISTENCE.removePokemon as jest.Mock).mockResolvedValueOnce({ success: false });
+    (MOCK_PERSISTENCE.removePokemon as jest.Mock).mockResolvedValueOnce({
+      success: false,
+    });
 
     const user = userEvent.setup();
     renderWorkspace();
@@ -682,7 +778,9 @@ describe("TeamWorkspaceV2 — optimistic update flow", () => {
 
   it("renders the patched field optimistically before persistence resolves", async () => {
     const { promise, resolve } = deferred<{ success: true; data: undefined }>();
-    (MOCK_PERSISTENCE.updatePokemon as jest.Mock).mockImplementationOnce(() => promise);
+    (MOCK_PERSISTENCE.updatePokemon as jest.Mock).mockImplementationOnce(
+      () => promise
+    );
 
     const user = userEvent.setup();
     renderWorkspace();
@@ -720,7 +818,9 @@ describe("TeamWorkspaceV2 — optimistic update flow", () => {
   });
 
   it("falls back to a generic message when the failure shape omits an error string", async () => {
-    (MOCK_PERSISTENCE.updatePokemon as jest.Mock).mockResolvedValueOnce({ success: false });
+    (MOCK_PERSISTENCE.updatePokemon as jest.Mock).mockResolvedValueOnce({
+      success: false,
+    });
 
     const user = userEvent.setup();
     renderWorkspace();
@@ -824,7 +924,7 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
 
   it("renders the calc bottom panel when drawer is 'calc' on desktop", () => {
     mockBuilderState.drawer = "calc";
-    mockBuilderState.sideDrawer = "calc";
+    mockBuilderState.rightDrawer = "calc";
     mockUseIsMobile.mockReturnValue(false);
 
     renderWorkspace();
@@ -832,9 +932,9 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
     expect(screen.getByTestId("calc-bottom-panel")).toBeInTheDocument();
   });
 
-  it("renders calc bottom panel on mobile when sideDrawer is 'calc'", () => {
+  it("renders calc bottom panel on mobile when rightDrawer is 'calc'", () => {
     mockBuilderState.drawer = "calc";
-    mockBuilderState.sideDrawer = "calc";
+    mockBuilderState.rightDrawer = "calc";
     mockUseIsMobile.mockReturnValue(true);
 
     renderWorkspace();
@@ -845,6 +945,7 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
   it("renders no panel when drawer is null", () => {
     mockBuilderState.drawer = null;
     mockBuilderState.sideDrawer = null;
+    mockBuilderState.rightDrawer = null;
     mockBuilderState.bottomDrawer = null;
 
     renderWorkspace();
@@ -870,7 +971,9 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
     const user = userEvent.setup();
     renderWorkspace();
 
-    await user.click(screen.getByRole("button", { name: /close speed tiers/i }));
+    await user.click(
+      screen.getByRole("button", { name: /close speed tiers/i })
+    );
 
     expect(mockSetSideDrawer).toHaveBeenCalledWith(null);
   });
@@ -888,7 +991,7 @@ describe("TeamWorkspaceV2 — side panel resizer", () => {
     renderWorkspace();
 
     expect(
-      screen.getByRole("separator", { name: /resize side panel/i })
+      screen.getByRole("separator", { name: /resize speed panel/i })
     ).toBeInTheDocument();
   });
 });

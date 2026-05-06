@@ -26,24 +26,33 @@ export interface FieldState {
 }
 
 export type DrawerKey = "matchups" | "speed" | "calc" | null;
-export type SideDrawerKey = "speed" | "calc" | null;
+export type SideDrawerKey = "speed" | null;
+export type RightDrawerKey = "calc" | null;
 export type BottomDrawerKey = "matchups" | null;
 
 interface BuilderState {
   activeIdx: number;
   setActiveIdx: (idx: number) => void;
-  /** @deprecated Use sideDrawer/bottomDrawer instead. Kept for compat. */
+  /** @deprecated Use sideDrawer/rightDrawer/bottomDrawer instead. Kept for compat. */
   drawer: DrawerKey;
-  /** @deprecated Use setSideDrawer/setBottomDrawer instead. */
+  /** @deprecated Use setSideDrawer/setRightDrawer/setBottomDrawer instead. */
   setDrawer: (drawer: DrawerKey) => void;
+  /** Left panel — speed tiers */
   sideDrawer: SideDrawerKey;
   setSideDrawer: (d: SideDrawerKey) => void;
+  /** Right panel — damage calc */
+  rightDrawer: RightDrawerKey;
+  setRightDrawer: (d: RightDrawerKey) => void;
   bottomDrawer: BottomDrawerKey;
   setBottomDrawer: (d: BottomDrawerKey) => void;
   panelHeightPct: number;
   setPanelHeightPct: (n: number) => void;
+  /** Left panel width (speed tiers) */
   sideWidthPx: number;
   setSideWidthPx: (n: number) => void;
+  /** Right panel width (damage calc) */
+  rightWidthPx: number;
+  setRightWidthPx: (n: number) => void;
   field: FieldState;
   setField: (patch: Partial<FieldState>) => void;
   // Calc-specific workspace state
@@ -102,13 +111,23 @@ function clampPanelHeight(n: number): number {
 }
 
 const SIDE_WIDTH_STORAGE_KEY = "trainersgg.builder.sideWidthPx.v1";
-const DEFAULT_SIDE_WIDTH_PX = 480;
-const MIN_SIDE_WIDTH_PX = 360;
-const MAX_SIDE_WIDTH_PX = 1200;
+const DEFAULT_SIDE_WIDTH_PX = 380;
+const MIN_SIDE_WIDTH_PX = 280;
+const MAX_SIDE_WIDTH_PX = 600;
 
 function clampSideWidth(n: number): number {
   if (Number.isNaN(n)) return DEFAULT_SIDE_WIDTH_PX;
   return Math.min(MAX_SIDE_WIDTH_PX, Math.max(MIN_SIDE_WIDTH_PX, n));
+}
+
+const RIGHT_WIDTH_STORAGE_KEY = "trainersgg.builder.rightWidthPx.v1";
+const DEFAULT_RIGHT_WIDTH_PX = 480;
+const MIN_RIGHT_WIDTH_PX = 360;
+const MAX_RIGHT_WIDTH_PX = 800;
+
+function clampRightWidth(n: number): number {
+  if (Number.isNaN(n)) return DEFAULT_RIGHT_WIDTH_PX;
+  return Math.min(MAX_RIGHT_WIDTH_PX, Math.max(MIN_RIGHT_WIDTH_PX, n));
 }
 
 // Calc workspace tweaks — persisted alongside panelHeightPct
@@ -157,15 +176,19 @@ const DEFAULT_FIELD: FieldState = {
 export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
   const [sideDrawer, setSideDrawer] = useState<SideDrawerKey>("speed");
+  const [rightDrawer, setRightDrawer] = useState<RightDrawerKey>(null);
   const [bottomDrawer, setBottomDrawer] = useState<BottomDrawerKey>(null);
 
   // Legacy compat: `drawer` returns whichever is open (side takes precedence for reads)
-  const drawer: DrawerKey = sideDrawer ?? bottomDrawer;
+  const drawer: DrawerKey = sideDrawer ?? rightDrawer ?? bottomDrawer;
   function setDrawer(d: DrawerKey) {
     if (d === "matchups") {
       setBottomDrawer(d);
+    } else if (d === "calc") {
+      setRightDrawer(d);
     } else if (d === null) {
       setSideDrawer(null);
+      setRightDrawer(null);
       setBottomDrawer(null);
     } else {
       setSideDrawer(d);
@@ -178,6 +201,9 @@ export function useBuilderState(): BuilderState {
 
   const [sideWidthPx, setSideWidthPxState] = useState<number>(
     DEFAULT_SIDE_WIDTH_PX
+  );
+  const [rightWidthPx, setRightWidthPxState] = useState<number>(
+    DEFAULT_RIGHT_WIDTH_PX
   );
   const [field, setFieldState] = useState<FieldState>(DEFAULT_FIELD);
 
@@ -207,6 +233,12 @@ export function useBuilderState(): BuilderState {
       return Number.isNaN(Number(raw)) ? null : n;
     });
     if (persistedSide !== null) setSideWidthPxState(persistedSide);
+
+    const persistedRight = readPersisted(RIGHT_WIDTH_STORAGE_KEY, (raw) => {
+      const n = clampRightWidth(Number(raw));
+      return Number.isNaN(Number(raw)) ? null : n;
+    });
+    if (persistedRight !== null) setRightWidthPxState(persistedRight);
 
     const persistedSlot = readPersisted(ATTACKER_SLOT_STORAGE_KEY, (raw) => {
       const parsed = Number(raw);
@@ -248,6 +280,12 @@ export function useBuilderState(): BuilderState {
     writePersisted(SIDE_WIDTH_STORAGE_KEY, String(clamped));
   }
 
+  function setRightWidthPx(n: number) {
+    const clamped = clampRightWidth(n);
+    setRightWidthPxState(clamped);
+    writePersisted(RIGHT_WIDTH_STORAGE_KEY, String(clamped));
+  }
+
   function setAttackerSlot(idx: number | null) {
     if (idx === null) {
       setAttackerSlotState(null);
@@ -278,12 +316,16 @@ export function useBuilderState(): BuilderState {
     setDrawer,
     sideDrawer,
     setSideDrawer,
+    rightDrawer,
+    setRightDrawer,
     bottomDrawer,
     setBottomDrawer,
     panelHeightPct,
     setPanelHeightPct,
     sideWidthPx,
     setSideWidthPx,
+    rightWidthPx,
+    setRightWidthPx,
     field,
     setField,
     attackerSlot,

@@ -4,10 +4,7 @@ import { type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-import {
-  getVerdict,
-  type CalcOutput,
-} from "../../use-calc-state";
+import { getVerdict, type CalcOutput } from "../../use-calc-state";
 
 // =============================================================================
 // Internal components
@@ -46,8 +43,10 @@ function DockPill({ active, onOpen, ariaLabel, children }: DockPillProps) {
 export interface DockbarProps {
   drawer: "matchups" | "speed" | "calc" | null;
   onOpen: (key: "matchups" | "speed" | "calc") => void;
-  /** Side drawer state (calc/speed) for independent active tracking. */
-  sideDrawer?: "speed" | "calc" | null;
+  /** Left drawer state (speed tiers) for independent active tracking. */
+  sideDrawer?: "speed" | null;
+  /** Right drawer state (damage calc) for independent active tracking. */
+  rightDrawer?: "calc" | null;
   /** Bottom drawer state (matchups) for independent active tracking. */
   bottomDrawer?: "matchups" | null;
   /** Pre-computed fastest speed for the speed pill. */
@@ -95,86 +94,97 @@ export function Dockbar({
   drawer,
   onOpen,
   sideDrawer,
+  rightDrawer,
   bottomDrawer,
   fastest: _fastest,
   defenderSpecies,
   moveCalcOutputs,
 }: DockbarProps) {
-
   // Use split state if available, fall back to legacy `drawer` for compat
-  const isMatchupsActive = bottomDrawer !== undefined ? bottomDrawer === "matchups" : drawer === "matchups";
-  const isSpeedActive = sideDrawer !== undefined ? sideDrawer === "speed" : drawer === "speed";
-  const isCalcActive = sideDrawer !== undefined ? sideDrawer === "calc" : drawer === "calc";
+  const isMatchupsActive =
+    bottomDrawer !== undefined
+      ? bottomDrawer === "matchups"
+      : drawer === "matchups";
+  const isSpeedActive =
+    sideDrawer !== undefined ? sideDrawer === "speed" : drawer === "speed";
+  const isCalcActive =
+    rightDrawer !== undefined ? rightDrawer === "calc" : drawer === "calc";
 
   const _calcVerdict = getWorstCaseVerdict(moveCalcOutputs);
-  const calcSubLabel = defenderSpecies
-    ? `vs ${defenderSpecies}`
-    : "no target";
+  const calcSubLabel = defenderSpecies ? `vs ${defenderSpecies}` : "no target";
 
   return (
-    <div className="@container/dock w-full rounded-b-lg border-t bg-background">
-    <div
-      role="toolbar"
-      aria-label="Builder tools"
-      className="flex min-w-0 items-center gap-2 overflow-x-auto flex-nowrap px-3 py-2 @[700px]/dock:flex-wrap @[700px]/dock:overflow-visible @[700px]/dock:justify-center"
-    >
-      {/* Type matchups pill */}
-      <DockPill
-        active={isMatchupsActive}
-        onOpen={() => onOpen("matchups")}
-        ariaLabel="Defensive type matchups"
+    <div className="bg-background @container/dock w-full rounded-b-lg border-t">
+      <div
+        role="toolbar"
+        aria-label="Builder tools"
+        className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto px-3 py-2 @[700px]/dock:flex-wrap @[700px]/dock:justify-center @[700px]/dock:overflow-visible"
       >
-        <span className="shrink-0 text-[15px] leading-none" aria-hidden>
-          ▦
-        </span>
-        <span className="text-xs font-semibold leading-none">
-          Type matchups
-        </span>
-        <span className="ml-1 shrink-0 text-[10px] text-muted-foreground" aria-hidden>
-          {isMatchupsActive ? "▾" : "▴"}
-        </span>
-      </DockPill>
-
-      {/* Speed tiers pill */}
-      <DockPill
-        active={isSpeedActive}
-        onOpen={() => onOpen("speed")}
-        ariaLabel="Speed tier ladder"
-      >
-        <span className="shrink-0 text-[15px] leading-none" aria-hidden>
-          ≫
-        </span>
-        <span className="text-xs font-semibold leading-none">
-          Speed tiers
-        </span>
-        <span className="ml-1 shrink-0 text-[10px] text-muted-foreground" aria-hidden>
-          {isSpeedActive ? "▾" : "▴"}
-        </span>
-      </DockPill>
-
-      {/* Damage calc pill */}
-      <DockPill
-        active={isCalcActive}
-        onOpen={() => onOpen("calc")}
-        ariaLabel="Damage calc"
-      >
-        <span className="shrink-0 text-[15px] leading-none" aria-hidden>
-          🎯
-        </span>
-        <span className="flex min-w-0 items-center gap-2">
-          <span className="text-xs font-semibold leading-none">
-            Damage calc
+        {/* Type matchups pill */}
+        <DockPill
+          active={isMatchupsActive}
+          onOpen={() => onOpen("matchups")}
+          ariaLabel="Defensive type matchups"
+        >
+          <span className="shrink-0 text-[15px] leading-none" aria-hidden>
+            ▦
           </span>
-          <span className="flex min-w-0 items-center gap-1 font-mono text-[10px] leading-none text-muted-foreground">
-            <span className="truncate">{calcSubLabel}</span>
+          <span className="text-xs leading-none font-semibold">
+            Type matchups
           </span>
-        </span>
-        <span className="ml-1 shrink-0 text-[10px] text-muted-foreground" aria-hidden>
-          {isCalcActive ? "▾" : "▴"}
-        </span>
-      </DockPill>
+          <span
+            className="text-muted-foreground ml-1 shrink-0 text-[10px]"
+            aria-hidden
+          >
+            {isMatchupsActive ? "▾" : "▴"}
+          </span>
+        </DockPill>
 
-    </div>
+        {/* Speed tiers pill */}
+        <DockPill
+          active={isSpeedActive}
+          onOpen={() => onOpen("speed")}
+          ariaLabel="Speed tier ladder"
+        >
+          <span className="shrink-0 text-[15px] leading-none" aria-hidden>
+            ≫
+          </span>
+          <span className="text-xs leading-none font-semibold">
+            Speed tiers
+          </span>
+          <span
+            className="text-muted-foreground ml-1 shrink-0 text-[10px]"
+            aria-hidden
+          >
+            {isSpeedActive ? "▾" : "▴"}
+          </span>
+        </DockPill>
+
+        {/* Damage calc pill */}
+        <DockPill
+          active={isCalcActive}
+          onOpen={() => onOpen("calc")}
+          ariaLabel="Damage calc"
+        >
+          <span className="shrink-0 text-[15px] leading-none" aria-hidden>
+            🎯
+          </span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="text-xs leading-none font-semibold">
+              Damage calc
+            </span>
+            <span className="text-muted-foreground flex min-w-0 items-center gap-1 font-mono text-[10px] leading-none">
+              <span className="truncate">{calcSubLabel}</span>
+            </span>
+          </span>
+          <span
+            className="text-muted-foreground ml-1 shrink-0 text-[10px]"
+            aria-hidden
+          >
+            {isCalcActive ? "▾" : "▴"}
+          </span>
+        </DockPill>
+      </div>
     </div>
   );
 }

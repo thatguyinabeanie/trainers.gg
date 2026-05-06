@@ -233,7 +233,8 @@ function buildOptimisticTeamPokemon(
 interface DockbarConnectedProps {
   drawer: "matchups" | "speed" | "calc" | null;
   onOpen: (key: "matchups" | "speed" | "calc") => void;
-  sideDrawer?: "speed" | "calc" | null;
+  sideDrawer?: "speed" | null;
+  rightDrawer?: "calc" | null;
   bottomDrawer?: "matchups" | null;
   fastest: number;
 }
@@ -246,6 +247,7 @@ function DockbarConnected({
   drawer,
   onOpen,
   sideDrawer,
+  rightDrawer,
   bottomDrawer,
   fastest,
 }: DockbarConnectedProps) {
@@ -256,6 +258,7 @@ function DockbarConnected({
       drawer={drawer}
       onOpen={onOpen}
       sideDrawer={sideDrawer}
+      rightDrawer={rightDrawer}
       bottomDrawer={bottomDrawer}
       fastest={fastest}
       defenderSpecies={calc.defenderSpecies}
@@ -383,7 +386,11 @@ export function TeamWorkspaceV2({
     }
     startTransition(async () => {
       applyOptimistic({ kind: "update", pokemonId, fields });
-      const result = await persistence.updatePokemon(team.id, pokemonId, fields);
+      const result = await persistence.updatePokemon(
+        team.id,
+        pokemonId,
+        fields
+      );
       if (!result.success) {
         toast.error(result.error ?? "Failed to save changes.");
       }
@@ -549,7 +556,6 @@ export function TeamWorkspaceV2({
     setReorderIds(null);
   }
 
-
   // Pre-compute dock-pill summaries once here so DockbarConnected never runs
   // getTeamFastestSpeed on every EV slider tick.
   const fastestSpeed = format
@@ -579,7 +585,7 @@ export function TeamWorkspaceV2({
         format={format}
         field={state.field}
         setField={state.setField}
-        calcEnabled={state.sideDrawer === "calc"}
+        calcEnabled={state.rightDrawer === "calc"}
         faintedYours={state.faintedYours}
         faintedTheirs={state.faintedTheirs}
       >
@@ -614,7 +620,10 @@ export function TeamWorkspaceV2({
               ? async (altId) => {
                   const targetAlt = alts.find((a) => a.id === altId);
                   if (!targetAlt) return;
-                  const result = await persistence.transferTeam!(team.id, altId);
+                  const result = await persistence.transferTeam!(
+                    team.id,
+                    altId
+                  );
                   if (!result.success) {
                     toast.error(result.error ?? "Failed to transfer team.");
                     return;
@@ -632,54 +641,39 @@ export function TeamWorkspaceV2({
             className="flex min-w-0 flex-1 flex-col overflow-hidden"
             ref={worklaneRef}
           >
-            {/* Horizontal split: optional left sidebar + editor */}
-            <div className="flex min-w-0 flex-1 overflow-hidden">
-              {/* Desktop: side panels on the left */}
-              {!isMobile && state.sideDrawer && (
-                <>
-                  <div
-                    className="border-border bg-muted/30 flex min-h-0 shrink-0 flex-col overflow-hidden border-r transition-[width] duration-200 ease-in-out"
-                    style={{ width: state.sideWidthPx }}
-                  >
-                    {state.sideDrawer === "speed" ? (
-                      <>
-                        <header className="border-border flex items-center gap-2 border-b px-3 py-2">
-                          <span className="text-primary font-mono text-[10px] font-bold tracking-wider uppercase">
-                            Speed Tiers
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => state.setSideDrawer(null)}
-                            aria-label="Close speed tiers"
-                            className="text-muted-foreground hover:text-foreground ml-auto flex size-5 items-center justify-center rounded transition-colors"
-                          >
-                            ×
-                          </button>
-                        </header>
-                        <div className="min-h-0 flex-1 overflow-hidden">
-                          <SpeedTiersPanel
-                            team={optimisticTeamPokemon}
-                            format={format}
-                          />
-                        </div>
-                      </>
-                    ) : state.sideDrawer === "calc" ? (
-                      <CalcBottomPanel
-                        teamSlots={slots}
+            {/* Horizontal split: editor centered, panels overlay from edges */}
+            <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+              {/* Desktop: speed tiers overlay on the left */}
+              {!isMobile && state.sideDrawer === "speed" && (
+                <div
+                  className="absolute inset-y-0 left-0 z-10 flex"
+                  style={{ width: state.sideWidthPx + 6 }}
+                >
+                  <div className="border-border bg-background flex min-h-0 flex-1 flex-col overflow-hidden border-r shadow-lg">
+                    <header className="border-border flex items-center gap-2 border-b px-3 py-2">
+                      <span className="text-primary font-mono text-[10px] font-bold tracking-wider uppercase">
+                        Speed Tiers
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => state.setSideDrawer(null)}
+                        aria-label="Close speed tiers"
+                        className="text-muted-foreground hover:text-foreground ml-auto flex size-5 items-center justify-center rounded transition-colors"
+                      >
+                        ×
+                      </button>
+                    </header>
+                    <div className="min-h-0 flex-1 overflow-hidden">
+                      <SpeedTiersPanel
+                        team={optimisticTeamPokemon}
                         format={format}
-                        onClose={() => state.setSideDrawer(null)}
-                        attackerIdx={calcAttackerIdx}
-                        faintedYours={state.faintedYours}
-                        setFaintedYours={state.setFaintedYours}
-                        faintedTheirs={state.faintedTheirs}
-                        setFaintedTheirs={state.setFaintedTheirs}
                       />
-                    ) : null}
+                    </div>
                   </div>
                   <div
                     role="separator"
                     aria-orientation="vertical"
-                    aria-label="Resize side panel"
+                    aria-label="Resize speed panel"
                     className="bg-border hover:bg-primary focus-visible:bg-primary w-[6px] shrink-0 cursor-col-resize touch-none transition-colors duration-100 focus-visible:outline-none"
                     onPointerDown={(e) => {
                       const startX = e.clientX;
@@ -688,8 +682,8 @@ export function TeamWorkspaceV2({
                       target.setPointerCapture(e.pointerId);
 
                       const onMove = (ev: PointerEvent) => {
-                        const delta = startX - ev.clientX;
-                        state.setSideWidthPx(startWidth - delta);
+                        const delta = ev.clientX - startX;
+                        state.setSideWidthPx(startWidth + delta);
                       };
                       const onUp = () => {
                         target.removeEventListener("pointermove", onMove);
@@ -699,16 +693,61 @@ export function TeamWorkspaceV2({
                       target.addEventListener("pointerup", onUp);
                     }}
                   />
-                </>
+                </div>
+              )}
+
+              {/* Desktop: damage calc overlay on the right */}
+              {!isMobile && state.rightDrawer === "calc" && (
+                <div
+                  className="absolute inset-y-0 right-0 z-10 flex"
+                  style={{ width: state.rightWidthPx + 6 }}
+                >
+                  <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="Resize calc panel"
+                    className="bg-border hover:bg-primary focus-visible:bg-primary w-[6px] shrink-0 cursor-col-resize touch-none transition-colors duration-100 focus-visible:outline-none"
+                    onPointerDown={(e) => {
+                      const startX = e.clientX;
+                      const startWidth = state.rightWidthPx;
+                      const target = e.currentTarget;
+                      target.setPointerCapture(e.pointerId);
+
+                      const onMove = (ev: PointerEvent) => {
+                        // Dragging left increases width
+                        const delta = startX - ev.clientX;
+                        state.setRightWidthPx(startWidth + delta);
+                      };
+                      const onUp = () => {
+                        target.removeEventListener("pointermove", onMove);
+                        target.removeEventListener("pointerup", onUp);
+                      };
+                      target.addEventListener("pointermove", onMove);
+                      target.addEventListener("pointerup", onUp);
+                    }}
+                  />
+                  <div className="border-border bg-background flex min-h-0 flex-1 flex-col overflow-hidden border-l shadow-lg">
+                    <CalcBottomPanel
+                      teamSlots={slots}
+                      format={format}
+                      onClose={() => state.setRightDrawer(null)}
+                      attackerIdx={calcAttackerIdx}
+                      faintedYours={state.faintedYours}
+                      setFaintedYours={state.setFaintedYours}
+                      faintedTheirs={state.faintedTheirs}
+                      setFaintedTheirs={state.setFaintedTheirs}
+                    />
+                  </div>
+                </div>
               )}
 
               {/* Editor region — rows scroll inside this region only */}
-              <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+              <div className="min-h-0 flex-1 overflow-y-auto">
                 {/* Section wraps pokemon rows */}
                 <section
                   className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3 [[data-density=compact]_&]:p-2"
                   data-calc-open={
-                    state.sideDrawer === "calc" && !isMobile ? "true" : "false"
+                    state.rightDrawer === "calc" && !isMobile ? "true" : "false"
                   }
                   data-layout={layoutMode}
                 >
@@ -717,7 +756,7 @@ export function TeamWorkspaceV2({
                     className={cn(
                       "grid grid-cols-[minmax(0,1fr)] gap-2 [[data-density=compact]_&]:gap-1",
                       layoutMode === "2x3-vertical" &&
-                        "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] justify-center"
+                        "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] items-center justify-center"
                     )}
                   >
                     {isMobile ? (
@@ -794,12 +833,12 @@ export function TeamWorkspaceV2({
               </div>
 
               {/* Mobile: calc/speed panels render inline below the editor rows */}
-              {isMobile && state.sideDrawer === "calc" && (
+              {isMobile && state.rightDrawer === "calc" && (
                 <div className="w-full border-t p-3">
                   <CalcBottomPanel
                     teamSlots={slots}
                     format={format}
-                    onClose={() => state.setSideDrawer(null)}
+                    onClose={() => state.setRightDrawer(null)}
                     attackerIdx={calcAttackerIdx}
                     faintedYours={state.faintedYours}
                     setFaintedYours={state.setFaintedYours}
@@ -841,11 +880,16 @@ export function TeamWorkspaceV2({
                 state.setBottomDrawer(
                   state.bottomDrawer === "matchups" ? null : "matchups"
                 );
+              } else if (key === "calc") {
+                state.setRightDrawer(
+                  state.rightDrawer === "calc" ? null : "calc"
+                );
               } else {
                 state.setSideDrawer(state.sideDrawer === key ? null : key);
               }
             }}
             sideDrawer={state.sideDrawer}
+            rightDrawer={state.rightDrawer}
             bottomDrawer={state.bottomDrawer}
             fastest={fastestSpeed}
           />

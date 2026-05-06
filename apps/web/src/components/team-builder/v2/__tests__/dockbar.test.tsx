@@ -58,7 +58,9 @@ describe("Dockbar — pill labels render", () => {
 
   it("wraps pills in a toolbar region", () => {
     render(<Dockbar {...makeProps()} />);
-    expect(screen.getByRole("toolbar", { name: "Builder tools" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("toolbar", { name: "Builder tools" })
+    ).toBeInTheDocument();
   });
 });
 
@@ -111,12 +113,18 @@ describe("Dockbar — aria-pressed reflects active drawer", () => {
 
   it("speed pill is pressed when drawer='speed'", () => {
     render(<Dockbar {...makeProps({ drawer: "speed" })} />);
-    expect(screen.getByTitle("Speed tier ladder")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTitle("Speed tier ladder")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 
   it("calc pill is pressed when drawer='calc'", () => {
     render(<Dockbar {...makeProps({ drawer: "calc" })} />);
-    expect(screen.getByTitle("Damage calc")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTitle("Damage calc")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 
   it("all pills are NOT pressed when drawer=null", () => {
@@ -135,17 +143,26 @@ describe("Dockbar — aria-pressed reflects active drawer", () => {
 describe("Dockbar — split drawer state", () => {
   it("uses sideDrawer for speed active state", () => {
     render(<Dockbar {...makeProps({ sideDrawer: "speed" })} />);
-    expect(screen.getByTitle("Speed tier ladder")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTitle("Speed tier ladder")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 
-  it("uses sideDrawer for calc active state", () => {
-    render(<Dockbar {...makeProps({ sideDrawer: "calc" })} />);
-    expect(screen.getByTitle("Damage calc")).toHaveAttribute("aria-pressed", "true");
+  it("uses rightDrawer for calc active state", () => {
+    render(<Dockbar {...makeProps({ rightDrawer: "calc" })} />);
+    expect(screen.getByTitle("Damage calc")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 
   it("uses bottomDrawer for matchups active state", () => {
     render(<Dockbar {...makeProps({ bottomDrawer: "matchups" })} />);
-    expect(screen.getByTitle("Defensive type matchups")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTitle("Defensive type matchups")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 });
 
