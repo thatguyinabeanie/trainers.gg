@@ -223,11 +223,10 @@ function MonRowLabel({ pokemon }: { pokemon: Tables<"pokemon"> }) {
   } catch {
     spriteUrl = undefined;
   }
-  const name =
-    pokemon.nickname || pokemon.species?.split("-")[0] || "Unknown";
+  const name = pokemon.nickname || pokemon.species?.split("-")[0] || "Unknown";
 
   return (
-    <div className="flex items-center gap-1.5 min-w-0">
+    <div className="flex min-w-0 items-center gap-1.5">
       <span className="bg-muted/40 inline-flex size-8 shrink-0 items-center justify-center rounded-full">
         {spriteUrl ? (
           <img
@@ -243,7 +242,7 @@ function MonRowLabel({ pokemon }: { pokemon: Tables<"pokemon"> }) {
           </span>
         )}
       </span>
-      <span className="text-[11px] font-medium text-foreground whitespace-nowrap">
+      <span className="text-foreground text-[11px] font-medium whitespace-nowrap">
         {name}
       </span>
     </div>
@@ -372,7 +371,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
             <span
               key={label}
               className={cn(
-                "inline-flex items-center justify-center rounded px-1.5 py-0.5 font-mono text-[10px] leading-tight min-w-[26px]",
+                "inline-flex min-w-[26px] items-center justify-center rounded px-1.5 py-0.5 font-mono text-[10px] leading-tight",
                 cls
               )}
             >
@@ -397,7 +396,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
       <div className="min-h-0 flex-1 overflow-auto">
         {/* Column headers: type abbreviations */}
         <div
-          className="bg-muted/50 grid items-end gap-px px-2 py-1.5 sticky top-0 z-10"
+          className="bg-muted/50 sticky top-0 z-10 grid items-end gap-px px-2 py-1.5"
           style={gridStyle}
         >
           {/* Row label spacer */}
@@ -405,206 +404,199 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
           {ALL_TYPES.map((t, idx) => (
             <Tooltip key={t}>
               <TooltipTrigger
-                  render={
-                    <span
-                      tabIndex={0}
-                      className={cn(
-                        "flex items-center justify-center cursor-default transition-opacity duration-100",
-                        hoverCell !== null &&
-                          hoverCell.col !== idx &&
-                          "opacity-40"
-                      )}
-                    >
-                      <Image
-                        src={`/types/${t}.png`}
-                        alt={t}
-                        width={24}
-                        height={24}
-                        className="size-6"
-                        unoptimized
-                      />
-                    </span>
-                  }
-                />
-                <TooltipContent>{t}</TooltipContent>
-              </Tooltip>
-            ))}
-            {/* Summary header */}
-            <span className="text-muted-foreground text-center text-[8px] font-semibold uppercase tracking-wide">
-              Net
-            </span>
-          </div>
+                render={
+                  <span
+                    tabIndex={0}
+                    className={cn(
+                      "flex cursor-default items-center justify-center transition-opacity duration-100",
+                      hoverCell !== null &&
+                        hoverCell.col !== idx &&
+                        "opacity-40"
+                    )}
+                  >
+                    <Image
+                      src={`/types/${t}.png`}
+                      alt={t}
+                      width={24}
+                      height={24}
+                      className="size-6"
+                      unoptimized
+                    />
+                  </span>
+                }
+              />
+              <TooltipContent>{t}</TooltipContent>
+            </Tooltip>
+          ))}
+          {/* Summary header */}
+          <span className="text-muted-foreground text-center text-[8px] font-semibold tracking-wide uppercase">
+            Net
+          </span>
+        </div>
 
-          {/* Pokemon rows */}
-          <div className="divide-muted/40 divide-y">
-            {rows.map((row, rowIdx) => (
-              <div
-                key={row.pokemon.id}
-                className={cn(
-                  "grid items-center gap-px px-2 py-1 transition-colors duration-100",
-                  hoverCell !== null &&
-                    hoverCell.row === rowIdx &&
-                    "bg-muted/30"
-                )}
-                style={gridStyle}
-              >
-                {/* Pokemon label */}
-                <MonRowLabel pokemon={row.pokemon} />
+        {/* Pokemon rows */}
+        <div className="divide-muted/40 divide-y">
+          {rows.map((row, rowIdx) => (
+            <div
+              key={row.pokemon.id}
+              className={cn(
+                "grid items-center gap-px px-2 py-1 transition-colors duration-100",
+                hoverCell !== null && hoverCell.row === rowIdx && "bg-muted/30"
+              )}
+              style={gridStyle}
+            >
+              {/* Pokemon label */}
+              <MonRowLabel pokemon={row.pokemon} />
 
-                {/* Type cells */}
-                {ALL_TYPES.map((t, colIdx) => {
-                  const mult = row.multipliers[colIdx] ?? null;
-                  const isHighlightedCol =
-                    hoverCell !== null && hoverCell.col === colIdx;
-                  const isHighlightedRow =
-                    hoverCell !== null && hoverCell.row === rowIdx;
-                  const isCrosshair = isHighlightedCol || isHighlightedRow;
+              {/* Type cells */}
+              {ALL_TYPES.map((t, colIdx) => {
+                const mult = row.multipliers[colIdx] ?? null;
+                const isHighlightedCol =
+                  hoverCell !== null && hoverCell.col === colIdx;
+                const isHighlightedRow =
+                  hoverCell !== null && hoverCell.row === rowIdx;
+                const isCrosshair = isHighlightedCol || isHighlightedRow;
 
-                  if (mult === null) {
-                    return (
-                      <span
-                        key={`${row.pokemon.id}-${t}`}
-                        className="text-muted-foreground/40 inline-flex items-center justify-center font-mono text-[10px] leading-none"
-                        onMouseEnter={() =>
-                          setHoverCell({ row: rowIdx, col: colIdx })
-                        }
-                        onMouseLeave={() => setHoverCell(null)}
-                      >
-                        —
-                      </span>
-                    );
-                  }
-
+                if (mult === null) {
                   return (
                     <span
                       key={`${row.pokemon.id}-${t}`}
-                      className={cn(
-                        "inline-flex items-center justify-center rounded px-0.5 py-0.5 font-mono text-[10px] leading-tight transition-all duration-100",
-                        cellClass(mult, mode),
-                        isCrosshair && "ring-1 ring-primary/30"
-                      )}
+                      className="text-muted-foreground/40 inline-flex items-center justify-center font-mono text-[10px] leading-none"
                       onMouseEnter={() =>
                         setHoverCell({ row: rowIdx, col: colIdx })
                       }
                       onMouseLeave={() => setHoverCell(null)}
                     >
-                      {formatMultiplier(mult)}
+                      —
                     </span>
                   );
-                })}
+                }
 
-                {/* Row summary — net score */}
-                {(() => {
-                  // Defensive: (resists + immunities) - weaknesses (positive = well-defended)
-                  // Offensive: super-effective - (resisted + immune) (positive = good coverage)
-                  const net =
-                    mode === "defensive"
-                      ? row.resistCount + row.immuneCount - row.weakCount
-                      : row.weakCount - row.resistCount - row.immuneCount;
-                  return (
-                    <span
-                      className={cn(
-                        "flex justify-center font-mono text-[10px] font-semibold",
-                        net > 0
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : net < 0
-                            ? "text-destructive"
-                            : "text-muted-foreground/60"
-                      )}
-                    >
-                      {net > 0 ? `+${net}` : net}
-                    </span>
-                  );
-                })()}
-              </div>
-            ))}
-
-            {/* Empty placeholder rows for remaining team slots */}
-            {Array.from({ length: Math.max(0, 6 - rows.length) }).map(
-              (_, idx) => (
-                <div
-                  key={`empty-${idx}`}
-                  className="grid items-center gap-px px-2 py-1"
-                  style={gridStyle}
-                >
-                  <span className="text-muted-foreground/30 text-[10px] italic">
-                    {rows.length === 0 && idx === 2
-                      ? "Add Pokémon…"
-                      : "\u00A0"}
+                return (
+                  <span
+                    key={`${row.pokemon.id}-${t}`}
+                    className={cn(
+                      "inline-flex items-center justify-center rounded px-0.5 py-0.5 font-mono text-[10px] leading-tight transition-all duration-100",
+                      cellClass(mult, mode),
+                      isCrosshair && "ring-primary/30 ring-1"
+                    )}
+                    onMouseEnter={() =>
+                      setHoverCell({ row: rowIdx, col: colIdx })
+                    }
+                    onMouseLeave={() => setHoverCell(null)}
+                  >
+                    {formatMultiplier(mult)}
                   </span>
-                  {ALL_TYPES.map((t) => (
-                    <span
-                      key={`empty-${idx}-${t}`}
-                      className="inline-flex items-center justify-center font-mono text-[10px] leading-none text-muted-foreground/15"
-                    >
-                      ·
-                    </span>
-                  ))}
-                  <span />
-                </div>
-              )
-            )}
-          </div>
+                );
+              })}
 
-          {/* Column totals footer */}
-          <div
-            className="bg-muted/50 grid items-center gap-px border-t px-2 py-1.5 sticky bottom-0"
-            style={gridStyle}
-          >
-            <span className="text-muted-foreground text-[9px] font-semibold uppercase tracking-wide">
-              TOTAL
-            </span>
-            {colTotals.map((col, idx) => {
-              const net =
+              {/* Row summary — net score */}
+              {(() => {
+                // Defensive: (resists + immunities) - weaknesses (positive = well-defended)
+                // Offensive: super-effective - (resisted + immune) (positive = good coverage)
+                const net =
+                  mode === "defensive"
+                    ? row.resistCount + row.immuneCount - row.weakCount
+                    : row.weakCount - row.resistCount - row.immuneCount;
+                return (
+                  <span
+                    className={cn(
+                      "flex justify-center font-mono text-[10px] font-semibold",
+                      net > 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : net < 0
+                          ? "text-destructive"
+                          : "text-muted-foreground/60"
+                    )}
+                  >
+                    {net > 0 ? `+${net}` : net}
+                  </span>
+                );
+              })()}
+            </div>
+          ))}
+
+          {/* Empty placeholder rows for remaining team slots */}
+          {Array.from({ length: Math.max(0, 6 - rows.length) }).map(
+            (_, idx) => (
+              <div
+                key={`empty-slot-${rows.length + idx}`}
+                className="grid items-center gap-px px-2 py-1"
+                style={gridStyle}
+              >
+                <span className="text-muted-foreground/30 text-[10px] italic">
+                  {rows.length === 0 && idx === 2 ? "Add Pokémon…" : "\u00A0"}
+                </span>
+                {ALL_TYPES.map((t) => (
+                  <span
+                    key={`empty-${rows.length + idx}-${t}`}
+                    className="text-muted-foreground/15 inline-flex items-center justify-center font-mono text-[10px] leading-none"
+                  >
+                    ·
+                  </span>
+                ))}
+                <span />
+              </div>
+            )
+          )}
+        </div>
+
+        {/* Column totals footer */}
+        <div
+          className="bg-muted/50 sticky bottom-0 grid items-center gap-px border-t px-2 py-1.5"
+          style={gridStyle}
+        >
+          <span className="text-muted-foreground text-[9px] font-semibold tracking-wide uppercase">
+            TOTAL
+          </span>
+          {colTotals.map((col, idx) => {
+            const net =
+              mode === "defensive"
+                ? col.rs + col.im - col.wk
+                : col.wk - col.rs - col.im;
+            return (
+              <span
+                key={ALL_TYPES[idx]}
+                className={cn(
+                  "flex justify-center font-mono text-[9px] font-semibold transition-opacity duration-100",
+                  hoverCell !== null && hoverCell.col !== idx && "opacity-40",
+                  net > 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : net < 0
+                      ? "text-destructive"
+                      : "text-muted-foreground/60"
+                )}
+              >
+                {net > 0 ? `+${net}` : net}
+              </span>
+            );
+          })}
+          {/* Grand total */}
+          {(() => {
+            const grandNet = colTotals.reduce((s, col) => {
+              const n =
                 mode === "defensive"
                   ? col.rs + col.im - col.wk
                   : col.wk - col.rs - col.im;
-              return (
-                <span
-                  key={ALL_TYPES[idx]}
-                  className={cn(
-                    "flex justify-center font-mono text-[9px] font-semibold transition-opacity duration-100",
-                    hoverCell !== null &&
-                      hoverCell.col !== idx &&
-                      "opacity-40",
-                    net > 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : net < 0
-                        ? "text-destructive"
-                        : "text-muted-foreground/60"
-                  )}
-                >
-                  {net > 0 ? `+${net}` : net}
-                </span>
-              );
-            })}
-            {/* Grand total */}
-            {(() => {
-              const grandNet = colTotals.reduce((s, col) => {
-                const n =
-                  mode === "defensive"
-                    ? col.rs + col.im - col.wk
-                    : col.wk - col.rs - col.im;
-                return s + n;
-              }, 0);
-              return (
-                <span
-                  className={cn(
-                    "flex justify-center font-mono text-[9px] font-semibold",
-                    grandNet > 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : grandNet < 0
-                        ? "text-destructive"
-                        : "text-muted-foreground/60"
-                  )}
-                >
-                  {grandNet > 0 ? `+${grandNet}` : grandNet}
-                </span>
-              );
-            })()}
-          </div>
-
+              return s + n;
+            }, 0);
+            return (
+              <span
+                className={cn(
+                  "flex justify-center font-mono text-[9px] font-semibold",
+                  grandNet > 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : grandNet < 0
+                      ? "text-destructive"
+                      : "text-muted-foreground/60"
+                )}
+              >
+                {grandNet > 0 ? `+${grandNet}` : grandNet}
+              </span>
+            );
+          })()}
         </div>
+      </div>
     </div>
   );
 }

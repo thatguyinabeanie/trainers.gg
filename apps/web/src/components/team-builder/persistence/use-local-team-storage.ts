@@ -9,7 +9,9 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import type { TeamWithPokemon } from "@trainers/supabase";
+import { logError } from "@trainers/utils";
 import type { LocalTeamData } from "./types";
 
 // =============================================================================
@@ -73,7 +75,8 @@ function readFromStorage(): TeamWithPokemon | null {
     }
 
     return team;
-  } catch {
+  } catch (error) {
+    logError("localTeamStorage.read", error);
     return null;
   }
 }
@@ -87,8 +90,9 @@ function writeToStorage(team: TeamWithPokemon): void {
       version: 1,
     };
     localStorage.setItem(LOCAL_TEAM_STORAGE_KEY, JSON.stringify(data));
-  } catch {
-    // Quota exceeded or private mode — non-fatal
+  } catch (error) {
+    logError("localTeamStorage.write", error);
+    toast.error("Could not save your team locally. Storage may be full.");
   }
 }
 
@@ -96,8 +100,8 @@ export function clearLocalTeamStorage(): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(LOCAL_TEAM_STORAGE_KEY);
-  } catch {
-    // Non-fatal
+  } catch (error) {
+    logError("localTeamStorage.clear", error);
   }
 }
 
@@ -109,7 +113,9 @@ interface UseLocalTeamStorageReturn {
   /** Current local team state (source of truth for local mode). */
   team: TeamWithPokemon;
   /** Update the team — triggers debounced localStorage write. */
-  setTeam: (updater: TeamWithPokemon | ((prev: TeamWithPokemon) => TeamWithPokemon)) => void;
+  setTeam: (
+    updater: TeamWithPokemon | ((prev: TeamWithPokemon) => TeamWithPokemon)
+  ) => void;
   /** Whether the initial hydration from localStorage is complete. */
   hydrated: boolean;
 }

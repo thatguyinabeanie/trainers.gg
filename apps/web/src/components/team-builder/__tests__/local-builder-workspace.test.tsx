@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Tests for LocalBuilderWorkspace.
  * Verifies: hydration loading state, rendering after hydration,

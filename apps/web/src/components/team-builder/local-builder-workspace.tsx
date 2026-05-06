@@ -29,6 +29,7 @@ import {
   type TeamWithPokemon,
   type CrossAltTeamListItem,
 } from "@trainers/supabase";
+import { getErrorMessage, logError } from "@trainers/utils";
 
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { useSupabase } from "@/lib/supabase";
@@ -94,7 +95,12 @@ export function LocalBuilderWorkspace() {
         if (cancelled) return;
         setUserTeams(teams);
       } catch (err) {
-        if (!cancelled) console.error("Failed to fetch user data:", err);
+        if (!cancelled) {
+          logError("localBuilder.fetchData", err);
+          toast.error(
+            "Failed to load your account data. You can still build locally."
+          );
+        }
       } finally {
         fetchingRef.current = false;
         if (!cancelled) setTeamsLoading(false);
@@ -104,6 +110,8 @@ export function LocalBuilderWorkspace() {
     fetchData();
     return () => {
       cancelled = true;
+      // Reset the fetch guard on unmount so StrictMode re-mounts can re-fetch
+      fetchingRef.current = false;
     };
   }, [isAuthenticated, authLoading, user]);
 
@@ -119,7 +127,14 @@ export function LocalBuilderWorkspace() {
     ) {
       handleSaveToAccount();
     }
-  }, [actionParam, isAuthenticated, authLoading, hydrated]);
+  }, [
+    actionParam,
+    isAuthenticated,
+    authLoading,
+    hydrated,
+    isSaving,
+    handleSaveToAccount,
+  ]);
 
   async function handleSaveToAccount() {
     if (isSaving) return;
@@ -171,8 +186,10 @@ export function LocalBuilderWorkspace() {
       toast.success("Team saved to your account!");
       router.push(result.data.redirectUrl);
     } catch (error) {
-      console.error("Save to account failed:", error);
-      toast.error("Something went wrong. Please try again.");
+      logError("localBuilder.saveToAccount", error);
+      toast.error(
+        getErrorMessage(error, "Something went wrong. Please try again.")
+      );
       setIsSaving(false);
     }
   }
@@ -197,8 +214,10 @@ export function LocalBuilderWorkspace() {
 
       toast.success(`Loaded "${fullTeam.name}" into the builder.`);
     } catch (err) {
-      console.error("Failed to load team:", err);
-      toast.error("Failed to load team. Please try again.");
+      logError("localBuilder.loadTeam", err);
+      toast.error(
+        getErrorMessage(err, "Failed to load team. Please try again.")
+      );
     }
   }
 

@@ -42,11 +42,37 @@ import {
  *    - See isOnboardingExempt() in proxy-routes.ts for the exemption list
  */
 
-// Subdomain rewrites: <sub>.trainers.gg → /<sub>/*
+// Auth/onboarding/admin checks run against the effective (rewritten) path,
+// so subdomain requests receive the same protection as direct path access.
 const subdomainRewriteMap: Record<string, string> = {
   "builder.trainers.gg": "/builder",
   "dashboard.trainers.gg": "/dashboard",
 };
+
+/**
+ * If the request came in on a mapped subdomain, rewrite the response to the
+ * effective path and copy session-refresh cookies from the auth response.
+ * Otherwise, return the auth response as-is.
+ */
+function applyRewrite(
+  request: NextRequest,
+  rewriteBase: string | undefined,
+  pathname: string,
+  response: NextResponse
+): NextResponse {
+  if (!rewriteBase) return response;
+
+  const url = request.nextUrl.clone();
+  url.pathname = `${rewriteBase}${pathname === "/" ? "" : pathname}`;
+  const rewrite = NextResponse.rewrite(url);
+
+  // Carry session-refresh cookies from the Supabase middleware response
+  for (const cookie of response.cookies.getAll()) {
+    rewrite.cookies.set(cookie);
+  }
+
+  return rewrite;
+}
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -56,13 +82,14 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const hostname = request.headers.get("host") ?? "";
+  // Determine if this is a subdomain request that needs rewriting.
+  // We compute the effective pathname so all auth/route checks run against
+  // the intended destination (e.g. dashboard.trainers.gg/ → /dashboard).
+  const hostname = request.headers.get("host")?.replace(/:\d+$/, "") ?? "";
   const rewriteBase = subdomainRewriteMap[hostname];
-  if (rewriteBase) {
-    const url = request.nextUrl.clone();
-    url.pathname = `${rewriteBase}${pathname === "/" ? "" : pathname}`;
-    return NextResponse.rewrite(url);
-  }
+  const effectivePathname = rewriteBase
+    ? `${rewriteBase}${pathname === "/" ? "" : pathname}`
+    : pathname;
 
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
@@ -86,10 +113,10 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Admin routes require site_admin role in JWT AND active sudo mode
-  if (isAdminRoute(pathname)) {
+  if (isAdminRoute(effectivePathname)) {
     // Allow sudo-required page without sudo check (would cause infinite redirect)
-    if (pathname === "/admin/sudo-required") {
-      return response;
+    if (effectivePathname === "/admin/sudo-required") {
+      return applyRewrite(request, rewriteBase, pathname, response);
     }
 
     if (!user) {
@@ -137,7 +164,7 @@ export default async function proxy(request: NextRequest) {
     }
 
     // Admin routes always use the admin's real identity — no impersonation header
-    return response;
+    return applyRewrite(request, rewriteBase, pathname, response);
   }
 
   // === IMPERSONATION ===
@@ -163,8 +190,9 @@ export default async function proxy(request: NextRequest) {
           ) as { site_roles?: string[] };
           isAdmin = payload?.site_roles?.includes("site_admin") ?? false;
         }
-      } catch {
+      } catch (error) {
         // If JWT parsing fails, don't propagate impersonation
+        console.error("[proxy] Failed to decode impersonation JWT:", error);
       }
 
       if (isAdmin) {
@@ -177,14 +205,17 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Authenticated users on auth pages should go to the dashboard
-  if (user && (pathname === "/sign-in" || pathname === "/sign-up")) {
+  if (
+    user &&
+    (effectivePathname === "/sign-in" || effectivePathname === "/sign-up")
+  ) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   // Protected routes always require authentication
-  if (!user && isProtectedRoute(pathname)) {
+  if (!user && isProtectedRoute(effectivePathname)) {
     const signInUrl = new URL("/sign-in", request.url);
-    signInUrl.searchParams.set("redirect", pathname);
+    signInUrl.searchParams.set("redirect", effectivePathname);
     return NextResponse.redirect(signInUrl);
   }
 
@@ -192,7 +223,7 @@ export default async function proxy(request: NextRequest) {
   // Applies to ALL routes except auth flows, API, and the onboarding page itself
   if (
     user &&
-    !isOnboardingExempt(pathname) &&
+    !isOnboardingExempt(effectivePathname) &&
     needsOnboarding(user.user_metadata?.username)
   ) {
     return NextResponse.redirect(new URL("/dashboard/onboarding", request.url));
@@ -202,13 +233,13 @@ export default async function proxy(request: NextRequest) {
   // permanent username, redirect them to the dashboard
   if (
     user &&
-    pathname.startsWith("/dashboard/onboarding") &&
+    effectivePathname.startsWith("/dashboard/onboarding") &&
     !needsOnboarding(user.user_metadata?.username)
   ) {
     return NextResponse.redirect(new URL("/dashboard/overview", request.url));
   }
 
-  return response;
+  return applyRewrite(request, rewriteBase, pathname, response);
 }
 
 export const config = {

@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Tests for createLocalPersistence — the local in-memory persistence adapter.
  */

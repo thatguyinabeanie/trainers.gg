@@ -134,6 +134,25 @@ const WEATHER_LABELS: Record<Weather, string> = {
   snow: "Snow",
 };
 
+/** Map engine-level weather strings (from @smogon/calc) to panel Weather type. */
+const ENGINE_TO_PANEL_WEATHER: Record<string, Weather> = {
+  Sun: "sun",
+  Rain: "rain",
+  Sand: "sand",
+  Snow: "snow",
+};
+
+/** Safely convert an external engine weather string to a validated Weather value. */
+function parseExternalWeather(engineWeather: string | undefined): Weather {
+  if (!engineWeather) return "none";
+  return ENGINE_TO_PANEL_WEATHER[engineWeather] ?? "none";
+}
+
+/** Convert panel Weather back to engine format for the calc state setter. */
+function panelWeatherToEngine(w: Weather): string {
+  return w === "none" ? "" : w.charAt(0).toUpperCase() + w.slice(1);
+}
+
 const STAGE_MIN = -6;
 const STAGE_MAX = 6;
 
@@ -165,6 +184,8 @@ function safeSprite(species: string): string | undefined {
   try {
     return getPokemonSprite(species).url;
   } catch {
+    // getPokemonSprite throws for unknown/mismatched species names — graceful
+    // degradation to no sprite is preferred over crashing the entire panel.
     return undefined;
   }
 }
@@ -561,7 +582,7 @@ export function SpeedTiersPanel({
 
   // Weather: derive from external (calc) state if provided, else use local toggle
   const effectiveWeather: Weather = externalWeather
-    ? (externalWeather.toLowerCase() as Weather) || "none"
+    ? parseExternalWeather(externalWeather)
     : toggle.weather;
 
   // Filter to non-null pokemon on the team.
@@ -569,7 +590,6 @@ export function SpeedTiersPanel({
     .filter((tp) => tp.pokemon != null)
     .map((tp) => tp.pokemon as Tables<"pokemon">);
 
-  // Use effectiveWeather (synced from calc) in the toggle for scoring
   const effectiveToggle: ToggleState = { ...toggle, weather: effectiveWeather };
 
   const teamScored: ScoredMon[] = pokemons.map((p) =>
@@ -608,14 +628,9 @@ export function SpeedTiersPanel({
 
   function setWeather(w: Weather) {
     if (externalSetWeather) {
-      // Sync to calc state: capitalize for @smogon/calc, "" for none
-      const capitalized =
-        w === "none" ? "" : w.charAt(0).toUpperCase() + w.slice(1);
-      // Toggle off if already active
-      const current = externalWeather
-        ? (externalWeather.toLowerCase() as Weather) || "none"
-        : "none";
-      externalSetWeather(current === w ? "" : capitalized);
+      // Toggle off if already active, otherwise sync to calc state
+      const current = parseExternalWeather(externalWeather);
+      externalSetWeather(current === w ? "" : panelWeatherToEngine(w));
     } else {
       setToggle((prev) => ({
         ...prev,
