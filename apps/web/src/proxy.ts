@@ -42,12 +42,26 @@ import {
  *    - See isOnboardingExempt() in proxy-routes.ts for the exemption list
  */
 
+// Subdomain rewrites: <sub>.trainers.gg → /<sub>/*
+const subdomainRewriteMap: Record<string, string> = {
+  "builder.trainers.gg": "/builder",
+  "dashboard.trainers.gg": "/dashboard",
+};
+
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip proxy for static files and Next.js internals
   if (isStaticFile(pathname) || isNextInternal(pathname)) {
     return NextResponse.next();
+  }
+
+  const hostname = request.headers.get("host") ?? "";
+  const rewriteBase = subdomainRewriteMap[hostname];
+  if (rewriteBase) {
+    const url = request.nextUrl.clone();
+    url.pathname = `${rewriteBase}${pathname === "/" ? "" : pathname}`;
+    return NextResponse.rewrite(url);
   }
 
   // Create Supabase client and refresh session
