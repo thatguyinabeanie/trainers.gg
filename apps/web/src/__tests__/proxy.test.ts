@@ -40,9 +40,10 @@ function createMockJWT(payload: object): string {
 // Helper to create a NextRequest
 function createRequest(
   path: string,
-  base = "http://localhost:3000"
+  base = "http://localhost:3000",
+  headers?: Record<string, string>
 ): NextRequest {
-  return new NextRequest(new URL(path, base));
+  return new NextRequest(new URL(path, base), { headers });
 }
 
 // Helper to create a mock Supabase client + response pair
@@ -213,6 +214,120 @@ describe("proxy", () => {
       const result = await proxy(createRequest("/sign-in"));
 
       expect(result.headers.get("location")).toBeNull();
+    });
+  });
+
+  // ── Subdomain rewrites ────────────────────────────────────
+  describe("subdomain rewrites", () => {
+    it("should rewrite dashboard.trainers.gg/ to /dashboard for authenticated users", async () => {
+      createMockSupabaseClient({
+        user: { id: "user-1", email: "u@test.com" },
+      });
+
+      const result = await proxy(
+        createRequest("/", "http://dashboard.trainers.gg", {
+          host: "dashboard.trainers.gg",
+        })
+      );
+
+      const rewriteUrl = result.headers.get("x-middleware-rewrite");
+      expect(rewriteUrl).toContain("/dashboard");
+    });
+
+    it("should rewrite dashboard.trainers.gg/overview to /dashboard/overview", async () => {
+      createMockSupabaseClient({
+        user: { id: "user-1", email: "u@test.com" },
+      });
+
+      const result = await proxy(
+        createRequest("/overview", "http://dashboard.trainers.gg", {
+          host: "dashboard.trainers.gg",
+        })
+      );
+
+      const rewriteUrl = result.headers.get("x-middleware-rewrite");
+      expect(rewriteUrl).toContain("/dashboard/overview");
+    });
+
+    it("should strip port suffix from host header for matching", async () => {
+      createMockSupabaseClient({
+        user: { id: "user-1", email: "u@test.com" },
+      });
+
+      const result = await proxy(
+        createRequest("/", "http://builder.trainers.gg:3000", {
+          host: "builder.trainers.gg:3000",
+        })
+      );
+
+      const rewriteUrl = result.headers.get("x-middleware-rewrite");
+      expect(rewriteUrl).toContain("/builder");
+    });
+
+    it("should NOT rewrite for non-mapped hostnames", async () => {
+      const { mockResponse } = createMockSupabaseClient({
+        user: { id: "user-1", email: "u@test.com" },
+      });
+
+      const result = await proxy(
+        createRequest("/", "http://unknown.trainers.gg", {
+          host: "unknown.trainers.gg",
+        })
+      );
+
+      // No rewrite — returns the standard middleware response
+      expect(result).toBe(mockResponse);
+    });
+
+    it("should enforce auth on subdomain protected routes", async () => {
+      createMockSupabaseClient({ user: null });
+
+      const result = await proxy(
+        createRequest("/", "http://dashboard.trainers.gg", {
+          host: "dashboard.trainers.gg",
+        })
+      );
+
+      // dashboard.trainers.gg/ maps to /dashboard which is protected
+      // redirect uses raw pathname ("/") since the user stays on the subdomain
+      expect(result.status).toBe(307);
+      const location = new URL(result.headers.get("location")!);
+      expect(location.pathname).toBe("/sign-in");
+      expect(location.searchParams.get("redirect")).toBe("/");
+    });
+
+    it("should carry session cookies on rewrite response", async () => {
+      const { mockResponse } = createMockSupabaseClient({
+        user: { id: "user-1", email: "u@test.com" },
+      });
+      // Simulate a session-refresh cookie on the middleware response
+      mockResponse.cookies.set("sb-access-token", "refreshed-value");
+
+      const result = await proxy(
+        createRequest("/", "http://dashboard.trainers.gg", {
+          host: "dashboard.trainers.gg",
+        })
+      );
+
+      // The rewrite response should carry the session cookie
+      const cookie = result.cookies.get("sb-access-token");
+      expect(cookie?.value).toBe("refreshed-value");
+    });
+
+    it("should NOT double-prefix when path already starts with rewrite base", async () => {
+      createMockSupabaseClient({
+        user: { id: "user-1", email: "u@test.com" },
+      });
+
+      const result = await proxy(
+        createRequest("/dashboard/teams", "http://dashboard.trainers.gg", {
+          host: "dashboard.trainers.gg",
+        })
+      );
+
+      const rewriteUrl = result.headers.get("x-middleware-rewrite");
+      expect(rewriteUrl).toContain("/dashboard/teams");
+      expect(rewriteUrl).not.toContain("/dashboard/dashboard");
     });
   });
 });

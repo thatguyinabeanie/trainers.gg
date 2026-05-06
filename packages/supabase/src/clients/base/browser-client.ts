@@ -9,6 +9,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { TypedSupabaseClient } from "../../client";
+import { COOKIE_DOMAIN } from "../../constants";
 
 /**
  * Create a Supabase client for Next.js client-side rendering.
@@ -23,7 +24,12 @@ export function createBrowserSupabaseClient(): TypedSupabaseClient {
 
   browserClient = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookieOptions: {
+        domain: COOKIE_DOMAIN,
+      },
+    }
   ) as TypedSupabaseClient;
 
   return browserClient;

@@ -18,7 +18,8 @@ import type { BuilderPersistence, ActionResult } from "./types";
 // ID Generator
 // =============================================================================
 
-let nextLocalId = -100;
+/** Start from a timestamp-based negative value so HMR re-evaluation never collides. */
+let nextLocalId = -Date.now();
 
 /** Generate a unique negative ID for local pokemon/team_pokemon entries. */
 function generateLocalId(): number {

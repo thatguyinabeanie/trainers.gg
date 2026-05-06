@@ -19,6 +19,28 @@ import { TeamLayoutToggle } from "./team-layout-toggle";
 import { ValidationPopover } from "./validation/validation-popover";
 
 // =============================================================================
+// Shared Icons
+// =============================================================================
+
+const SaveIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-4"
+    aria-hidden="true"
+  >
+    <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+    <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+    <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+  </svg>
+);
+
+// =============================================================================
 // Props
 // =============================================================================
 
@@ -173,8 +195,29 @@ export function Topbar({
     <>
       {/* Center: Team name (absolutely centered) */}
       <div className="pointer-events-none absolute inset-x-0 flex items-center justify-center">
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto flex items-center gap-1.5">
           <EditableName defaultValue={team.name} onSave={onNameChange} />
+          {isLocalMode && (
+            onSaveToAccount ? (
+              <button
+                type="button"
+                onClick={onSaveToAccount}
+                disabled={isSaving}
+                aria-label={isSaving ? "Saving…" : "Save to account"}
+                className="text-muted-foreground hover:text-primary disabled:text-muted-foreground/40 flex size-7 items-center justify-center rounded-md transition-colors"
+              >
+                {SaveIcon}
+              </button>
+            ) : (
+              <Link
+                href={`/sign-in?redirect=${encodeURIComponent(signInRedirectPath ?? "/builder?action=save")}`}
+                aria-label="Sign in to save"
+                className="text-muted-foreground hover:text-primary flex size-7 items-center justify-center rounded-md transition-colors"
+              >
+                {SaveIcon}
+              </Link>
+            )
+          )}
         </div>
       </div>
 
@@ -229,27 +272,7 @@ export function Topbar({
             />
           </PopoverContent>
         </Popover>
-        {isLocalMode ? (
-          onSaveToAccount ? (
-            <Button
-              size="sm"
-              onClick={onSaveToAccount}
-              disabled={isSaving}
-              className="h-7 px-2.5 text-xs sm:h-8 sm:px-3 sm:text-sm"
-            >
-              {isSaving ? "Saving..." : "Save to account"}
-            </Button>
-          ) : (
-            <Link
-              href={`/sign-in?redirect=${encodeURIComponent(signInRedirectPath ?? "/builder?action=save")}`}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium shadow-xs transition-colors sm:h-8 sm:px-3 sm:text-sm"
-            >
-              Sign in to save
-            </Link>
-          )
-        ) : (
-          <NotificationsPopover />
-        )}
+        {isLocalMode ? null : <NotificationsPopover />}
       </div>
     </>
   );

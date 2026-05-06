@@ -14,10 +14,7 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 
 import type * as TrainersPokemon from "@trainers/pokemon";
-import {
-  type GameFormat,
-  type MetaSpeedEntry,
-} from "@trainers/pokemon";
+import { type GameFormat, type MetaSpeedEntry } from "@trainers/pokemon";
 
 import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 
@@ -26,9 +23,8 @@ import { type Tables, type TeamWithPokemon } from "@trainers/supabase";
 // =============================================================================
 
 jest.mock("@trainers/pokemon", () => {
-  const actual = jest.requireActual<typeof TrainersPokemon>(
-    "@trainers/pokemon"
-  );
+  const actual =
+    jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon");
   return {
     ...actual,
     getLegalSpecies: jest.fn().mockReturnValue(null),
@@ -40,9 +36,7 @@ jest.mock("@trainers/pokemon", () => {
     calculateStat: jest.fn().mockReturnValue(150),
     calculateChampionsStat: jest.fn().mockReturnValue(110),
     getNatureMultiplier: jest.fn().mockReturnValue(1.0),
-    applySpeedModifiers: jest
-      .fn()
-      .mockImplementation((base: number) => base),
+    applySpeedModifiers: jest.fn().mockImplementation((base: number) => base),
     groupBySpeed: actual.groupBySpeed,
     isChampionsFormat: actual.isChampionsFormat,
   };
@@ -63,16 +57,17 @@ jest.mock("next/image", () => ({
 // Access mocks
 // =============================================================================
 
-const {
-  getMetaSpeedTiers,
-  applySpeedModifiers,
-} = jest.requireMock<typeof TrainersPokemon>("@trainers/pokemon");
+const { getMetaSpeedTiers, applySpeedModifiers } =
+  jest.requireMock<typeof TrainersPokemon>("@trainers/pokemon");
 
 // =============================================================================
 // Imports AFTER mocks
 // =============================================================================
 
-import { SpeedTiersPanel, getTeamFastestSpeed } from "../dock/speed-tiers-panel";
+import {
+  SpeedTiersPanel,
+  getTeamFastestSpeed,
+} from "../dock/speed-tiers-panel";
 
 // =============================================================================
 // Fixtures
@@ -167,9 +162,7 @@ beforeEach(() => {
 
 describe("SpeedTiersPanel — switch interactions", () => {
   function renderEmpty() {
-    return render(
-      <SpeedTiersPanel team={[]} format={TEST_FORMAT} />
-    );
+    return render(<SpeedTiersPanel team={[]} format={TEST_FORMAT} />);
   }
 
   it("renders section labels and headers", () => {
@@ -180,13 +173,17 @@ describe("SpeedTiersPanel — switch interactions", () => {
     expect(screen.getByText("Theirs")).toBeInTheDocument();
   });
 
-  it("renders Tailwind label with switches for both sides", () => {
+  it("renders Tailwind label with toggle switches for both sides", () => {
     renderEmpty();
     // In 3-column layout, label appears once in the center
     expect(screen.getByText("Tailwind")).toBeInTheDocument();
-    // Two switch elements for tailwind (ours + theirs)
-    const switches = screen.getAllByRole("switch");
-    expect(switches.length).toBeGreaterThanOrEqual(2);
+    // Two switch toggles for tailwind (ours + theirs)
+    expect(
+      screen.getByRole("switch", { name: /our tailwind/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: /their tailwind/i })
+    ).toBeInTheDocument();
   });
 
   it("renders weather switches", () => {
@@ -197,9 +194,11 @@ describe("SpeedTiersPanel — switch interactions", () => {
     expect(screen.getByText("Snow")).toBeInTheDocument();
   });
 
-  it("renders Trick Room switch", () => {
+  it("renders Trick Room toggle button", () => {
     renderEmpty();
-    expect(screen.getByRole("switch", { name: /trick room/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /trick room/i })
+    ).toBeInTheDocument();
   });
 
   it("renders stage steppers for both sides", () => {
@@ -217,24 +216,22 @@ describe("SpeedTiersPanel — switch interactions", () => {
     expect(zeroEls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("clicking + on yours stage shows +1", async () => {
+  it("clicking stage + on ours side increases stage", async () => {
     renderEmpty();
     const user = userEvent.setup();
-    // The layout is a 3-column grid: [yours stepper] [Stages label] [theirs stepper]
-    // Find the "Stages" label, then grab its previous sibling (yours stepper div).
-    const stagesLabel = screen.getByText("Stages");
-    const yoursStepper = stagesLabel.previousElementSibling as HTMLElement;
-    const plusButton = yoursStepper.querySelector("button:last-child") as HTMLElement;
+    const plusButton = screen.getByRole("button", {
+      name: /our stage increase/i,
+    });
     await user.click(plusButton);
     expect(screen.getByText("+1")).toBeInTheDocument();
   });
 
-  it("clicking − on yours stage shows -1", async () => {
+  it("clicking stage − on ours side decreases stage", async () => {
     renderEmpty();
     const user = userEvent.setup();
-    const stagesLabel = screen.getByText("Stages");
-    const yoursStepper = stagesLabel.previousElementSibling as HTMLElement;
-    const minusButton = yoursStepper.querySelector("button:first-child") as HTMLElement;
+    const minusButton = screen.getByRole("button", {
+      name: /our stage decrease/i,
+    });
     await user.click(minusButton);
     expect(screen.getByText("-1")).toBeInTheDocument();
   });
@@ -270,9 +267,8 @@ describe("getTeamFastestSpeed", () => {
   });
 
   it("skips mons with no base stats (getBaseStats returns null)", () => {
-    const { getBaseStats } = jest.requireMock<typeof TrainersPokemon>(
-      "@trainers/pokemon"
-    );
+    const { getBaseStats } =
+      jest.requireMock<typeof TrainersPokemon>("@trainers/pokemon");
     (getBaseStats as jest.Mock).mockReturnValueOnce(null);
 
     const pikachu = makePokemon(1, "Pikachu");
@@ -287,9 +283,8 @@ describe("getTeamFastestSpeed", () => {
   });
 
   it("returns 0 for a single-mon team when getBaseStats returns null", () => {
-    const { getBaseStats } = jest.requireMock<typeof TrainersPokemon>(
-      "@trainers/pokemon"
-    );
+    const { getBaseStats } =
+      jest.requireMock<typeof TrainersPokemon>("@trainers/pokemon");
     (getBaseStats as jest.Mock).mockReturnValueOnce(null);
 
     const pikachu = makePokemon(1, "Pikachu");

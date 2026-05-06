@@ -16,19 +16,20 @@
  * - Load existing teams from any alt
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { getFormatById } from "@trainers/pokemon";
 import {
-  getCurrentUserAlts,
+  getAltsByUserId,
   getTeamsForUser,
   getTeamWithPokemon,
   type Tables,
   type TeamWithPokemon,
   type CrossAltTeamListItem,
 } from "@trainers/supabase";
+import { getErrorMessage, logError } from "@trainers/utils";
 
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { useSupabase } from "@/lib/supabase";
@@ -70,43 +71,50 @@ export function LocalBuilderWorkspace() {
 
   const format = team.format ? getFormatById(team.format) : undefined;
 
-  // Fetch alts when authenticated
+  // Fetch alts and teams when authenticated. Uses user.id from context
+  // directly to avoid a redundant supabase.auth.getUser() call that races
+  // with other auth requests and triggers lock contention.
+  const fetchingRef = useRef(false);
   useEffect(() => {
     if (!isAuthenticated || authLoading || !user) return;
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+    let cancelled = false;
+    const userId = user.id;
 
-    async function fetchAlts() {
+    async function fetchData() {
+      setTeamsLoading(true);
       try {
-        const fetchedAlts = await getCurrentUserAlts(supabase);
+        const fetchedAlts = await getAltsByUserId(supabase, userId);
+        if (cancelled) return;
         setAlts(fetchedAlts);
         if (fetchedAlts.length > 0 && !selectedAltId) {
           setSelectedAltId(fetchedAlts[0]!.id);
         }
-      } catch (err) {
-        console.error("Failed to fetch alts:", err);
-      }
-    }
 
-    fetchAlts();
-  }, [isAuthenticated, authLoading, user]);
-
-  // Fetch teams when authenticated
-  useEffect(() => {
-    if (!isAuthenticated || authLoading || !user) return;
-
-    async function fetchTeams() {
-      setTeamsLoading(true);
-      try {
-        const teams = await getTeamsForUser(supabase, user!.id);
+        const teams = await getTeamsForUser(supabase, userId);
+        if (cancelled) return;
         setUserTeams(teams);
       } catch (err) {
-        console.error("Failed to fetch teams:", err);
+        if (!cancelled) {
+          logError("localBuilder.fetchData", err);
+          toast.error(
+            "Failed to load your account data. You can still build locally."
+          );
+        }
       } finally {
-        setTeamsLoading(false);
+        fetchingRef.current = false;
+        if (!cancelled) setTeamsLoading(false);
       }
     }
 
-    fetchTeams();
-  }, [isAuthenticated, authLoading, user]);
+    fetchData();
+    return () => {
+      cancelled = true;
+      // Reset the fetch guard on unmount so StrictMode re-mounts can re-fetch
+      fetchingRef.current = false;
+    };
+  }, [isAuthenticated, authLoading, user, supabase]);
 
   // Auto-trigger save when returning from auth with ?action=save
   const actionParam = searchParams.get("action");
@@ -120,10 +128,21 @@ export function LocalBuilderWorkspace() {
     ) {
       handleSaveToAccount();
     }
-  }, [actionParam, isAuthenticated, authLoading, hydrated]);
+  }, [
+    actionParam,
+    isAuthenticated,
+    authLoading,
+    hydrated,
+    isSaving,
+    handleSaveToAccount,
+  ]);
 
   async function handleSaveToAccount() {
     if (isSaving) return;
+    if (!user) {
+      toast.error("You must be signed in to save a team.");
+      return;
+    }
     setIsSaving(true);
 
     try {
@@ -133,7 +152,7 @@ export function LocalBuilderWorkspace() {
         targetAlt = alts.find((a) => a.id === selectedAltId);
       }
       if (!targetAlt) {
-        const fetchedAlts = await getCurrentUserAlts(supabase);
+        const fetchedAlts = await getAltsByUserId(supabase, user.id);
         if (!fetchedAlts || fetchedAlts.length === 0) {
           toast.error(
             "No profile found. Please complete your profile setup first."
@@ -172,8 +191,10 @@ export function LocalBuilderWorkspace() {
       toast.success("Team saved to your account!");
       router.push(result.data.redirectUrl);
     } catch (error) {
-      console.error("Save to account failed:", error);
-      toast.error("Something went wrong. Please try again.");
+      logError("localBuilder.saveToAccount", error);
+      toast.error(
+        getErrorMessage(error, "Something went wrong. Please try again.")
+      );
       setIsSaving(false);
     }
   }
@@ -198,8 +219,10 @@ export function LocalBuilderWorkspace() {
 
       toast.success(`Loaded "${fullTeam.name}" into the builder.`);
     } catch (err) {
-      console.error("Failed to load team:", err);
-      toast.error("Failed to load team. Please try again.");
+      logError("localBuilder.loadTeam", err);
+      toast.error(
+        getErrorMessage(err, "Failed to load team. Please try again.")
+      );
     }
   }
 

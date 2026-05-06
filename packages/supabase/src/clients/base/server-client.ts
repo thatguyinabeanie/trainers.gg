@@ -10,6 +10,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { TypedSupabaseClient } from "../../client";
+import { COOKIE_DOMAIN } from "../../constants";
 
 /**
  * Create a Supabase client for Next.js server-side rendering.
@@ -22,6 +23,9 @@ export async function createServerSupabaseClient(): Promise<TypedSupabaseClient>
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: {
+        domain: COOKIE_DOMAIN,
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();
@@ -37,7 +41,12 @@ export async function createServerSupabaseClient(): Promise<TypedSupabaseClient>
                 name: string;
                 value: string;
                 options: Record<string, unknown>;
-              }) => cookieStore.set(name, value, options)
+              }) =>
+                cookieStore.set(name, value, {
+                  ...(options as object),
+                  domain:
+                    COOKIE_DOMAIN ?? (options?.domain as string | undefined),
+                } as Parameters<typeof cookieStore.set>[2])
             );
           } catch {
             // Called from Server Component - can't mutate cookies here

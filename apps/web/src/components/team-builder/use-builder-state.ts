@@ -118,7 +118,7 @@ function clampSideWidth(n: number): number {
 const RIGHT_WIDTH_STORAGE_KEY = "trainersgg.builder.rightWidthPx.v1";
 const DEFAULT_RIGHT_WIDTH_PX = 380;
 const MIN_RIGHT_WIDTH_PX = 280;
-const MAX_RIGHT_WIDTH_PX = 800;
+const MAX_RIGHT_WIDTH_PX = 500;
 
 function clampRightWidth(n: number): number {
   if (Number.isNaN(n)) return DEFAULT_RIGHT_WIDTH_PX;
@@ -171,7 +171,7 @@ const DEFAULT_FIELD: FieldState = {
 export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
   const [sideDrawer, setSideDrawer] = useState<SideDrawerKey>("speed");
-  const [rightDrawer, setRightDrawer] = useState<RightDrawerKey>(null);
+  const [rightDrawer, setRightDrawer] = useState<RightDrawerKey>("calc");
   const [bottomDrawer, setBottomDrawer] = useState<BottomDrawerKey>(null);
 
   const [panelHeightPct, setPanelHeightPctState] = useState<number>(

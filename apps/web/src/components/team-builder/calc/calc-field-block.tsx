@@ -278,7 +278,7 @@ export function CalcFieldBlock({
 
       {/* Conditions: weather, terrain, gravity, fairy aura */}
       <fieldset className="rounded-lg border border-border/60 px-3 py-2">
-        <legend className="px-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+        <legend className="px-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-primary">
           Conditions
         </legend>
         <div className="flex flex-col gap-2">
@@ -364,7 +364,7 @@ export function CalcFieldBlock({
 
       {/* Sides — mirrored Ours | Label | Theirs grid */}
       <fieldset className="rounded-lg border border-border/60 px-3 py-2">
-        <legend className="px-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+        <legend className="px-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-primary">
           Sides
         </legend>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-1 gap-y-0.5">

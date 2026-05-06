@@ -143,16 +143,14 @@ beforeEach(() => {
 });
 
 describe("HeatmapPanel — empty team", () => {
-  it("renders the empty-state message when team is empty", () => {
+  it("renders the grid with placeholder rows when team is empty", () => {
     render(<HeatmapPanel team={[]} format={undefined} />);
-    expect(
-      screen.getByText(/Add Pokémon to your team/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText("Add Pokémon…")).toBeInTheDocument();
   });
 
-  it("does not render the matrix when team is empty", () => {
+  it("renders the TOTAL footer even when team is empty", () => {
     render(<HeatmapPanel team={[]} format={undefined} />);
-    expect(screen.queryByText("TOTAL")).not.toBeInTheDocument();
+    expect(screen.getByText("TOTAL")).toBeInTheDocument();
   });
 });
 

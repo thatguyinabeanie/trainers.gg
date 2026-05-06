@@ -180,8 +180,8 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
         Incoming
       </span>
 
-      {/* Moves — left-aligned, wrap when narrow */}
-      <div className="flex-1 flex items-center flex-wrap gap-y-0.5 ml-2">
+      {/* Moves — centered, wrap when narrow */}
+      <div className="flex-1 flex items-center justify-center flex-wrap gap-x-6 gap-y-0.5 ml-2">
       {activeMoves.map((m, i) => {
         const moveType = m.moveData?.type ?? null;
 

@@ -4,6 +4,68 @@ import {
   getInvitationExpiryDate,
 } from "../constants";
 
+// =============================================================================
+// COOKIE_DOMAIN tests — use dynamic require to test env var behavior
+// =============================================================================
+
+describe("COOKIE_DOMAIN", () => {
+  const originalEnv = process.env.NEXT_PUBLIC_SITE_URL;
+
+  afterEach(() => {
+    if (originalEnv !== undefined) {
+      process.env.NEXT_PUBLIC_SITE_URL = originalEnv;
+    } else {
+      delete process.env.NEXT_PUBLIC_SITE_URL;
+    }
+    jest.resetModules();
+  });
+
+  it("returns '.trainers.gg' when NEXT_PUBLIC_SITE_URL contains trainers.gg", () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "https://trainers.gg";
+    jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { COOKIE_DOMAIN } = require("../constants");
+    expect(COOKIE_DOMAIN).toBe(".trainers.gg");
+  });
+
+  it("returns '.trainers.gg' for subdomain URLs", () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "https://builder.trainers.gg";
+    jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { COOKIE_DOMAIN } = require("../constants");
+    expect(COOKIE_DOMAIN).toBe(".trainers.gg");
+  });
+
+  it("returns undefined for localhost", () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "http://localhost:3000";
+    jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { COOKIE_DOMAIN } = require("../constants");
+    expect(COOKIE_DOMAIN).toBeUndefined();
+  });
+
+  it("returns undefined when NEXT_PUBLIC_SITE_URL is not set", () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { COOKIE_DOMAIN } = require("../constants");
+    expect(COOKIE_DOMAIN).toBeUndefined();
+  });
+
+  it("returns undefined for Vercel preview URLs", () => {
+    process.env.NEXT_PUBLIC_SITE_URL =
+      "https://trainers-gg-git-fix-branch.vercel.app";
+    jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { COOKIE_DOMAIN } = require("../constants");
+    expect(COOKIE_DOMAIN).toBeUndefined();
+  });
+});
+
+// =============================================================================
+// Invitation constants tests
+// =============================================================================
+
 describe("INVITATION_EXPIRY_DAYS", () => {
   it("equals 7", () => {
     expect(INVITATION_EXPIRY_DAYS).toBe(7);

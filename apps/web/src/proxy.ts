@@ -42,11 +42,82 @@ import {
  *    - See isOnboardingExempt() in proxy-routes.ts for the exemption list
  */
 
-// Subdomain rewrites: <sub>.trainers.gg → /<sub>/*
+// Auth/onboarding/admin checks run against the effective (rewritten) path,
+// so subdomain requests receive the same protection as direct path access.
 const subdomainRewriteMap: Record<string, string> = {
   "builder.trainers.gg": "/builder",
   "dashboard.trainers.gg": "/dashboard",
 };
+
+/** Paths that bypass subdomain rewriting — served as root-level routes even on subdomains. */
+const SUBDOMAIN_EXEMPT_PATHS = ["/sign-in", "/sign-up"];
+
+function isSubdomainExempt(pathname: string): boolean {
+  return SUBDOMAIN_EXEMPT_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
+}
+
+/**
+ * Create a redirect URL that accounts for subdomain rewriting.
+ * When on a subdomain, strips the rewrite base prefix from the target path
+ * so the subdomain rewrite doesn't double-prefix it.
+ */
+function createSubdomainAwareUrl(
+  request: NextRequest,
+  targetPath: string,
+  rewriteBase: string | undefined
+): URL {
+  if (rewriteBase && targetPath.startsWith(rewriteBase)) {
+    const stripped = targetPath.slice(rewriteBase.length) || "/";
+    return new URL(stripped, request.url);
+  }
+  return new URL(targetPath, request.url);
+}
+
+/**
+ * Compute the rewritten pathname, guarding against double-prefixing.
+ * e.g. dashboard.trainers.gg/dashboard/teams → /dashboard/teams (not /dashboard/dashboard/teams)
+ */
+function getRewrittenPath(rewriteBase: string, pathname: string): string {
+  if (pathname === "/" || pathname === rewriteBase) return rewriteBase;
+  return pathname.startsWith(`${rewriteBase}/`)
+    ? pathname
+    : `${rewriteBase}${pathname}`;
+}
+
+/**
+ * When the request matches a subdomain host, rewrite the URL to the mapped
+ * effective path and copy session-refresh cookies from the auth response.
+ * Otherwise, return the auth response as-is.
+ */
+function applyRewrite(
+  request: NextRequest,
+  rewriteBase: string | undefined,
+  pathname: string,
+  response: NextResponse
+): NextResponse {
+  if (!rewriteBase) return response;
+
+  const url = request.nextUrl.clone();
+  url.pathname = getRewrittenPath(rewriteBase, pathname);
+  const rewrite = NextResponse.rewrite(url);
+
+  // Carry response headers (e.g., x-impersonation-session) — skip set-cookie and internal x-middleware-* headers
+  for (const [name, value] of response.headers.entries()) {
+    const lower = name.toLowerCase();
+    if (lower !== "set-cookie" && !lower.startsWith("x-middleware-")) {
+      rewrite.headers.set(name, value);
+    }
+  }
+
+  // Carry session-refresh cookies from the Supabase middleware response
+  for (const cookie of response.cookies.getAll()) {
+    rewrite.cookies.set(cookie);
+  }
+
+  return rewrite;
+}
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -56,13 +127,18 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const hostname = request.headers.get("host") ?? "";
+  // Determine if this is a subdomain request that needs rewriting.
+  // We compute the effective pathname so all auth/route checks run against
+  // the intended destination (e.g. dashboard.trainers.gg/ → /dashboard).
+  // Auth paths (/sign-in, /sign-up) are exempt from rewriting to prevent
+  // redirect loops (e.g. dashboard.trainers.gg/sign-in → /dashboard/sign-in → protected → loop).
+  const hostname = request.headers.get("host")?.replace(/:\d+$/, "") ?? "";
   const rewriteBase = subdomainRewriteMap[hostname];
-  if (rewriteBase) {
-    const url = request.nextUrl.clone();
-    url.pathname = `${rewriteBase}${pathname === "/" ? "" : pathname}`;
-    return NextResponse.rewrite(url);
-  }
+  const shouldRewrite = rewriteBase && !isSubdomainExempt(pathname);
+  const effectivePathname =
+    shouldRewrite && rewriteBase
+      ? getRewrittenPath(rewriteBase, pathname)
+      : pathname;
 
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
@@ -86,10 +162,10 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Admin routes require site_admin role in JWT AND active sudo mode
-  if (isAdminRoute(pathname)) {
+  if (isAdminRoute(effectivePathname)) {
     // Allow sudo-required page without sudo check (would cause infinite redirect)
-    if (pathname === "/admin/sudo-required") {
-      return response;
+    if (effectivePathname === "/admin/sudo-required") {
+      return applyRewrite(request, rewriteBase, pathname, response);
     }
 
     if (!user) {
@@ -137,7 +213,7 @@ export default async function proxy(request: NextRequest) {
     }
 
     // Admin routes always use the admin's real identity — no impersonation header
-    return response;
+    return applyRewrite(request, rewriteBase, pathname, response);
   }
 
   // === IMPERSONATION ===
@@ -163,8 +239,9 @@ export default async function proxy(request: NextRequest) {
           ) as { site_roles?: string[] };
           isAdmin = payload?.site_roles?.includes("site_admin") ?? false;
         }
-      } catch {
+      } catch (error) {
         // If JWT parsing fails, don't propagate impersonation
+        console.error("[proxy] Failed to decode impersonation JWT:", error);
       }
 
       if (isAdmin) {
@@ -177,14 +254,20 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Authenticated users on auth pages should go to the dashboard
-  if (user && (pathname === "/sign-in" || pathname === "/sign-up")) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  if (
+    user &&
+    (effectivePathname === "/sign-in" || effectivePathname === "/sign-up")
+  ) {
+    return NextResponse.redirect(
+      createSubdomainAwareUrl(request, "/dashboard", rewriteBase)
+    );
   }
 
   // Protected routes always require authentication
-  if (!user && isProtectedRoute(pathname)) {
+  if (!user && isProtectedRoute(effectivePathname)) {
     const signInUrl = new URL("/sign-in", request.url);
-    signInUrl.searchParams.set("redirect", pathname);
+    // Use raw pathname on subdomains (the rewrite will re-add the prefix after auth)
+    signInUrl.searchParams.set("redirect", rewriteBase ? pathname : effectivePathname);
     return NextResponse.redirect(signInUrl);
   }
 
@@ -192,23 +275,32 @@ export default async function proxy(request: NextRequest) {
   // Applies to ALL routes except auth flows, API, and the onboarding page itself
   if (
     user &&
-    !isOnboardingExempt(pathname) &&
+    !isOnboardingExempt(effectivePathname) &&
     needsOnboarding(user.user_metadata?.username)
   ) {
-    return NextResponse.redirect(new URL("/dashboard/onboarding", request.url));
+    return NextResponse.redirect(
+      createSubdomainAwareUrl(request, "/dashboard/onboarding", rewriteBase)
+    );
   }
 
   // Reverse gate: if user is on /dashboard/onboarding but already has a
   // permanent username, redirect them to the dashboard
   if (
     user &&
-    pathname.startsWith("/dashboard/onboarding") &&
+    effectivePathname.startsWith("/dashboard/onboarding") &&
     !needsOnboarding(user.user_metadata?.username)
   ) {
-    return NextResponse.redirect(new URL("/dashboard/overview", request.url));
+    return NextResponse.redirect(
+      createSubdomainAwareUrl(request, "/dashboard/overview", rewriteBase)
+    );
   }
 
-  return response;
+  return applyRewrite(
+    request,
+    shouldRewrite ? rewriteBase : undefined,
+    pathname,
+    response
+  );
 }
 
 export const config = {
