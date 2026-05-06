@@ -6,9 +6,10 @@
  *   2. Ability combobox (input + datalist from getAllLegalAbilities)
  *   3. Champions M-A Mega toggle (gated on isChampionsFormat)
  *   4. Learns Move (search + quick-picks + removable chips)
- *   5. Clear all filters — pinned at bottom, always visible
  *
  * Does NOT own the `roles` filter — that lives in <RolePresetsPanel>.
+ * The "Clear all filters" button lives in the parent SpeciesPicker,
+ * pinned at the bottom of the left rail below Roles.
  */
 "use client";
 
@@ -26,24 +27,11 @@ import {
 import { cn } from "@/lib/utils";
 
 import { TypeSymbolIcon } from "../../type-symbol-icon";
-import {
-  DEFAULT_SPECIES_FILTERS,
-  type SpeciesFilterState,
-} from "./species-filter-state";
+import { type SpeciesFilterState } from "./species-filter-state";
 
 // =============================================================================
 // Constants
 // =============================================================================
-
-/** Quick-pick moves for the Learns Move section. */
-const QUICK_PICK_MOVES = [
-  "Tailwind",
-  "Trick Room",
-  "Follow Me",
-  "Protect",
-  "Spore",
-  "Fake Out",
-] as const;
 
 // =============================================================================
 // Types
@@ -192,10 +180,6 @@ export function SpeciesSidebar({
     } else if (e.key === "Escape") {
       setAbilityInput("");
     }
-  }
-
-  function clearAll() {
-    onFiltersChange(DEFAULT_SPECIES_FILTERS);
   }
 
   // ---------------------------------------------------------------------------
@@ -453,45 +437,6 @@ export function SpeciesSidebar({
             ))}
           </div>
         )}
-
-        {/* Quick-pick buttons */}
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          {QUICK_PICK_MOVES.map((move) => {
-            const isActive = filters.moves.includes(move);
-            return (
-              <button
-                key={move}
-                type="button"
-                onClick={() => addMove(move)}
-                disabled={isActive}
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] transition-colors",
-                  isActive
-                    ? "bg-primary/15 text-primary cursor-default"
-                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                {move}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Spacer so Clear button pins to bottom */}
-      <div className="flex-1" />
-
-      {/* ------------------------------------------------------------------ */}
-      {/* 5. Clear all filters                                                */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="border-border border-t px-3 py-2">
-        <button
-          type="button"
-          onClick={clearAll}
-          className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full rounded px-2 py-1.5 text-[11px] font-medium transition-colors"
-        >
-          Clear all filters
-        </button>
       </div>
     </aside>
   );

@@ -668,7 +668,7 @@ export function SpeciesPicker({
       {/* -------------------------------------------------------------------- */}
       {/* Header — search input + count                                         */}
       {/* -------------------------------------------------------------------- */}
-      <div className="flex shrink-0 items-center gap-2 border-b px-3 py-2">
+      <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3">
         <Search className="text-muted-foreground size-4 shrink-0" />
         <input
           type="text"
@@ -708,9 +708,9 @@ export function SpeciesPicker({
       {/* -------------------------------------------------------------------- */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Left rail — sidebar (top) + role presets (bottom). Single column,
-            stacked vertically. Both halves scroll independently. */}
+            stacked vertically. Sidebar takes natural height, roles fill rest. */}
         <div className="border-border flex w-[380px] flex-shrink-0 flex-col border-r">
-          <div className="shrink-0 overflow-y-auto">
+          <div className="min-h-0 overflow-y-auto">
             <SpeciesSidebar
               filters={filters}
               onFiltersChange={setFilters}
@@ -730,6 +730,17 @@ export function SpeciesPicker({
               bucketCount={bucketCount}
               className="h-full"
             />
+          </div>
+
+          {/* Clear all filters — pinned at bottom of left rail */}
+          <div className="border-border shrink-0 border-t px-3 py-2">
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full rounded px-2 py-1.5 text-[11px] font-medium transition-colors"
+            >
+              Clear all filters
+            </button>
           </div>
         </div>
 
