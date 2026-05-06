@@ -23,7 +23,7 @@ import {
 } from "@trainers/validators";
 import { type TeamWithPokemon, type TablesInsert } from "@trainers/supabase";
 
-import { usePersistence } from "@/components/team-builder/v2/persistence/context";
+import { usePersistence } from "@/components/team-builder/persistence/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

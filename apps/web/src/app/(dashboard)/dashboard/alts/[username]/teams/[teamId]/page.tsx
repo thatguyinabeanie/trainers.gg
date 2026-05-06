@@ -4,7 +4,7 @@ import { getFormatById } from "@trainers/pokemon";
 import { getCurrentUserAlts, getTeamWithPokemon } from "@trainers/supabase";
 
 import { createClientReadOnly } from "@/lib/supabase/server";
-import { DashboardBuilderWrapper } from "@/components/team-builder/v2/dashboard-builder-wrapper";
+import { DashboardBuilderWrapper } from "@/components/team-builder/dashboard-builder-wrapper";
 
 // =============================================================================
 // Metadata

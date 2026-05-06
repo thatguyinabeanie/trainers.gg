@@ -23,7 +23,7 @@ import {
 import { type Tables } from "@trainers/supabase";
 import { logError } from "@trainers/utils";
 
-import { getMoveEffectiveness } from "./v2/calc/move-effectiveness";
+import { getMoveEffectiveness } from "./calc/move-effectiveness";
 import { getRecoveryAwareVerdict, type KoTierLabel } from "./calc/recovery";
 
 export type { KoTierLabel };

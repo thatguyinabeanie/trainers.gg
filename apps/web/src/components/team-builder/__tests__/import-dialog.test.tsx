@@ -94,7 +94,7 @@ const mockPersistence = {
   onMutationSuccess: jest.fn(),
 };
 
-jest.mock("@/components/team-builder/v2/persistence/context", () => ({
+jest.mock("@/components/team-builder/persistence/context", () => ({
   usePersistence: () => mockPersistence,
   PersistenceProvider: ({ children }: { children: React.ReactNode }) => children,
 }));

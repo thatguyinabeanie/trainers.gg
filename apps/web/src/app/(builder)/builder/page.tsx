@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { type Metadata } from "next";
 
-import { LocalBuilderWorkspace } from "@/components/team-builder/v2/local-builder-workspace";
+import { LocalBuilderWorkspace } from "@/components/team-builder/local-builder-workspace";
 
 export const metadata: Metadata = {
   title: "Team Builder — trainers.gg",
