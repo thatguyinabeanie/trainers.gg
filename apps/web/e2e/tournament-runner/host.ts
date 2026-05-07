@@ -7,6 +7,9 @@
 
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@trainers/supabase/types";
+import { startTournamentEnhanced } from "@trainers/supabase";
 import type { Pairing, TestUser, TournamentConfig } from "./types";
 
 const DEFAULT_TIMEOUT = 30_000;
@@ -118,36 +121,103 @@ export async function openRegistration(
 }
 
 /**
- * Open check-in for the tournament.
- * This may be automatic or require a button click depending on settings.
+ * Activate the tournament via Supabase — transitions from upcoming → active.
+ *
+ * There is no UI button for this step (the startTournament server action exists
+ * but is not wired to any manage-page control). We call the mutation directly,
+ * matching the pattern used by tournament-simulator.ts.
+ *
+ * Also deletes phantom rounds pre-created by startTournamentEnhanced so the
+ * UI's "Start Round 1" button works correctly.
  */
-export async function openCheckIn(
-  page: Page,
-  communitySlug: string,
+export async function activateTournament(
+  host: TestUser,
   tournamentSlug: string
 ): Promise<void> {
-  await page.goto(
-    `/dashboard/community/${communitySlug}/tournaments/${tournamentSlug}/manage`
-  );
-  await page.waitForLoadState("networkidle");
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  const checkInBtn = page.getByRole("button", { name: /open check-in/i });
-  if (await checkInBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    await checkInBtn.click();
-    await page.waitForTimeout(1_000);
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — " +
+        "required for activateTournament (no UI button exists for this step)"
+    );
   }
+
+  // Create a Supabase client authenticated as the host
+  const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { error: authError } = await supabase.auth.signInWithPassword({
+    email: host.email,
+    password: host.password,
+  });
+  if (authError) {
+    throw new Error(`Host sign-in failed: ${authError.message}`);
+  }
+
+  // Look up tournament ID from slug
+  const { data: tournament, error: lookupError } = await supabase
+    .from("tournaments")
+    .select("id")
+    .eq("slug", tournamentSlug)
+    .single();
+
+  if (lookupError || !tournament) {
+    throw new Error(
+      `Tournament lookup failed for slug "${tournamentSlug}": ${lookupError?.message}`
+    );
+  }
+
+  // Start the tournament (sets status = active, locks teams, activates phase)
+  await startTournamentEnhanced(supabase, tournament.id);
+
+  // startTournamentEnhanced pre-creates Round 1 as pending with 0 matches.
+  // The UI's prepareRound flow (RoundCommandCenter) expects to create rounds
+  // from scratch via createRound(). Delete phantom rounds so the UI shows
+  // "Start Round 1" instead of "Start Round 2".
+  const { data: phases } = await supabase
+    .from("tournament_phases")
+    .select("id")
+    .eq("tournament_id", tournament.id);
+
+  if (phases?.length) {
+    for (const phase of phases) {
+      const { data: phantomRounds } = await supabase
+        .from("tournament_rounds")
+        .select("id")
+        .eq("phase_id", phase.id);
+
+      if (phantomRounds?.length) {
+        for (const round of phantomRounds) {
+          await supabase
+            .from("tournament_rounds")
+            .delete()
+            .eq("id", round.id);
+        }
+      }
+    }
+  }
+
+  // Sign out to clean up the client
+  await supabase.auth.signOut().catch(() => {});
 }
 
 /**
  * Start a round from the management UI.
- * Clicks "Start Round N" → waits for preview → clicks "Confirm & Start".
+ * Clicks "Start Round N" → reads pairings from the preview table →
+ * clicks "Confirm & Start" → waits for round active.
+ *
+ * Returns the pairings read from the preview (the preview table disappears
+ * after confirming, so we must capture pairings before clicking "Confirm & Start").
  */
 export async function startRound(
   page: Page,
   communitySlug: string,
   tournamentSlug: string,
   roundNumber: number
-): Promise<void> {
+): Promise<Pairing[]> {
   await page.goto(
     `/dashboard/community/${communitySlug}/tournaments/${tournamentSlug}/manage`
   );
@@ -164,10 +234,51 @@ export async function startRound(
     .getByRole("button", { name: `Start Round ${roundNumber}` })
     .click({ timeout: DEFAULT_TIMEOUT });
 
-  // Wait for pairings preview
+  // Wait for pairings preview card
   await page
     .getByText(`Round ${roundNumber} Preview`)
     .waitFor({ timeout: DEFAULT_TIMEOUT });
+
+  // Read pairings from the preview table BEFORE confirming
+  // The preview table has 3 columns: Table | Player 1 | Player 2
+  // Rows are <tr className="border-t"> inside <tbody>
+  const pairings = await page.evaluate(() => {
+    const results: Array<{
+      table: number;
+      player1: string;
+      player2: string | null;
+    }> = [];
+
+    // Target the preview table's data rows (skip the thead row)
+    const rows = document.querySelectorAll(
+      "table.w-full tbody tr"
+    );
+
+    rows.forEach((row) => {
+      const cells = row.querySelectorAll("td");
+      if (cells.length >= 3) {
+        const tableText = cells[0]?.textContent?.trim() ?? "";
+        const p1 = cells[1]?.textContent?.trim() ?? "";
+        const p2 = cells[2]?.textContent?.trim() ?? "";
+
+        // Skip rows with empty player1
+        if (!p1) return;
+
+        // Parse table number from "Table N" or use row index
+        const tableMatch = tableText.match(/Table\s+(\d+)/i);
+        const tableNum = tableMatch ? parseInt(tableMatch[1]!, 10) : 0;
+        const isBye = tableText === "BYE" || p2 === "BYE" || p2 === "";
+
+        results.push({
+          table: tableNum,
+          player1: p1,
+          player2: isBye ? null : p2,
+        });
+      }
+    });
+
+    return results;
+  });
 
   // Confirm & Start
   const confirmBtn = page.getByRole("button", { name: /Confirm & Start/ });
@@ -178,6 +289,8 @@ export async function startRound(
   await page
     .getByText(`Round ${roundNumber} in Progress`)
     .waitFor({ timeout: DEFAULT_TIMEOUT });
+
+  return pairings;
 }
 
 /**
@@ -202,77 +315,6 @@ export async function completeRound(
 
   // Wait for round completion confirmation
   await page.waitForTimeout(3_000);
-}
-
-/**
- * Read pairings from the management UI for the current round.
- * Parses the pairings table/list to extract player matchups.
- */
-export async function readPairings(
-  page: Page,
-  communitySlug: string,
-  tournamentSlug: string
-): Promise<Pairing[]> {
-  await page.goto(
-    `/dashboard/community/${communitySlug}/tournaments/${tournamentSlug}/manage`
-  );
-  await page.waitForLoadState("networkidle");
-
-  // Extract pairings from the page
-  // The pairings are displayed in the tournament management view
-  // We need to parse the match list to get player names and table numbers
-  const pairings = await page.evaluate(() => {
-    const results: Array<{
-      table: number;
-      player1: string;
-      player2: string | null;
-    }> = [];
-
-    // Look for match rows in the pairings section
-    // Each match row typically shows: Table # | Player 1 | vs | Player 2
-    const matchRows = document.querySelectorAll(
-      '[data-match-row], [class*="match"], tr[class*="pairing"]'
-    );
-
-    if (matchRows.length === 0) {
-      // Fallback: try to find match info from the round display
-      // The exact structure depends on the RoundCommandCenter component
-      const matchElements = document.querySelectorAll(
-        '[class*="table"], [class*="pairing"]'
-      );
-      matchElements.forEach((el, i) => {
-        const text = el.textContent ?? "";
-        // Try to parse "username1 vs username2" patterns (usernames may contain hyphens/underscores)
-        const vsMatch = text.match(/([\w-]+)\s+vs\.?\s+([\w-]+)/);
-        if (vsMatch) {
-          results.push({
-            table: i + 1,
-            player1: vsMatch[1]!,
-            player2: vsMatch[2]!,
-          });
-        }
-      });
-    } else {
-      matchRows.forEach((row, i) => {
-        const cells = row.querySelectorAll("td, [class*='player']");
-        if (cells.length >= 2) {
-          const p1 = cells[0]?.textContent?.trim() ?? "";
-          const p2 = cells[1]?.textContent?.trim() ?? "";
-          // Skip rows where player1 is empty (header/separator rows)
-          if (!p1) return;
-          results.push({
-            table: i + 1,
-            player1: p1,
-            player2: p2 || null, // Normalize empty string to null (bye)
-          });
-        }
-      });
-    }
-
-    return results;
-  });
-
-  return pairings;
 }
 
 /**

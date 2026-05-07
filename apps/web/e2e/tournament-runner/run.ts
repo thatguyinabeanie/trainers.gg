@@ -121,7 +121,7 @@ function printHelp(): void {
 Tournament Runner — UI-driven tournament simulation
 
 Usage:
-  pnpm test:tournament [options]
+  pnpm test:tournament -- [options]
 
 Options:
   --scenario <name>    Scenario to run (default: swiss-8)

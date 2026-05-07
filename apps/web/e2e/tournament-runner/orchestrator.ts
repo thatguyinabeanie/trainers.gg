@@ -15,10 +15,9 @@ import {
   loginAsHost,
   createTournament,
   openRegistration,
-  openCheckIn,
+  activateTournament,
   startRound,
   completeRound,
-  readPairings,
   readStandings,
 } from "./host";
 import {
@@ -55,6 +54,7 @@ export class TournamentOrchestrator {
       await this.phaseRegister();
       await this.phaseSubmitTeams();
       await this.phaseCheckIn();
+      await this.phaseActivate();
       await this.phaseRounds();
       this.log("Tournament simulation complete!");
     } finally {
@@ -179,19 +179,29 @@ export class TournamentOrchestrator {
   private async phaseCheckIn(): Promise<void> {
     this.log("=== Phase: Check-In ===");
 
-    // Host opens check-in
-    await openCheckIn(
-      this.hostPage!,
-      this.scenario.config.community,
-      this.tournamentSlug
-    );
-    this.log("  Check-in opened by host");
-
-    // All players check in
+    // Check-in is automatically open for upcoming tournaments —
+    // no host action needed (there is no "Open check-in" button in the manage UI).
+    // All players check in in parallel.
     await this.parallel("check-in", async (pc) => {
       await checkInToTournament(pc.page, this.tournamentSlug);
     });
     this.log(`  All ${this.scenario.players.length} players checked in`);
+  }
+
+  private async phaseActivate(): Promise<void> {
+    this.log("=== Phase: Activate Tournament ===");
+
+    // Transition tournament from upcoming → active via Supabase mutation.
+    // There is no UI button for this step — the startTournament server action
+    // exists but is not wired to any manage-page control.
+    await activateTournament(this.scenario.host, this.tournamentSlug);
+    this.log("  Tournament activated (status: active)");
+
+    // Reload the host's manage page so the RoundCommandCenter renders
+    await this.hostPage!.goto(
+      `/dashboard/community/${this.scenario.config.community}/tournaments/${this.tournamentSlug}/manage`
+    );
+    await this.hostPage!.waitForLoadState("networkidle");
   }
 
   private async phaseRounds(): Promise<void> {
@@ -200,22 +210,16 @@ export class TournamentOrchestrator {
     for (let round = 1; round <= this.scenario.config.rounds; round++) {
       this.log(`  --- Round ${round} ---`);
 
-      // Host starts the round
-      await startRound(
+      // Host starts the round and reads pairings from the preview table
+      // (pairings are captured before clicking "Confirm & Start" because
+      // the preview table disappears once the round goes active)
+      const pairings = await startRound(
         this.hostPage!,
         this.scenario.config.community,
         this.tournamentSlug,
         round
       );
-      this.log(`  Round ${round} started`);
-
-      // Host reads pairings
-      const pairings = await readPairings(
-        this.hostPage!,
-        this.scenario.config.community,
-        this.tournamentSlug
-      );
-      this.log(`  Pairings read: ${pairings.length} matches`);
+      this.log(`  Round ${round} started — ${pairings.length} pairings read`);
 
       if (pairings.length === 0) {
         throw new Error(
