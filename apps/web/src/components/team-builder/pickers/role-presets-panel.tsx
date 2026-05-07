@@ -59,11 +59,11 @@ export function RolePresetsPanel({
   return (
     <div
       className={cn(
-        "bg-muted/20 flex flex-col overflow-hidden px-0 py-2.5",
+        "flex flex-col px-0 py-2.5",
         className
       )}
     >
-      <span className="text-muted-foreground block px-3 pb-1.5 text-[8.5px] font-bold tracking-widest uppercase">
+      <span className="text-muted-foreground block px-3 pb-1.5 text-[9px] font-bold tracking-widest uppercase">
         Role
       </span>
 

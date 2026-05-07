@@ -236,7 +236,7 @@ export function MoveListRow({
       onClick={onSelect}
       onKeyDown={onSelect ? handleKey : undefined}
       className={cn(
-        "grid items-center gap-2 border-b px-3 py-1 text-xs transition-colors",
+        "grid h-full items-center gap-2 border-b px-3 py-1 text-xs transition-colors",
         onSelect && "cursor-pointer focus:outline-none",
         onSelect &&
           "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
@@ -362,7 +362,7 @@ export function MoveListRow({
       <div
         role="presentation"
         onClick={onRoleFilter ? (e) => e.stopPropagation() : undefined}
-        className="flex min-w-0 flex-wrap gap-1"
+        className="flex min-w-0 gap-1 overflow-x-auto"
       >
         {roles.map((roleId) => (
           <RoleChip

@@ -4,7 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronRight, Search } from "lucide-react";
+import {
+  ChevronRight,
+  Filter,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Sparkles,
+  Swords,
+  Zap,
+} from "lucide-react";
 
 import {
   ALL_TYPES,
@@ -46,14 +55,14 @@ const HIGH_STAT_THRESHOLD = 110;
  *   20px               — expand/collapse chevron
  *   56px               — sprite circle
  *   minmax(170px,2fr)  — name
- *   60px               — types (two icons)
+ *   72px               — types (two icons + right padding)
  *   minmax(120px,1.5fr)— abilities (stacked: ● slot1, ● slot2, ★ hidden)
- *   repeat(6,38px)     — HP/Atk/Def/SpA/SpD/Spe
- *   42px               — BST
+ *   repeat(6,48px)     — HP/Atk/Def/SpA/SpD/Spe (label + sort arrow)
+ *   48px               — BST
  *   minmax(0,2fr)      — matching move chips (collapses when empty)
  */
 const ROW_GRID =
-  "grid-cols-[20px_56px_minmax(170px,2fr)_60px_minmax(120px,1.5fr)_repeat(6,38px)_42px_minmax(0,2fr)]";
+  "grid-cols-[20px_56px_minmax(170px,2fr)_72px_minmax(120px,1.5fr)_repeat(6,48px)_48px_minmax(0,2fr)]";
 
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
@@ -189,11 +198,15 @@ function SortHeaderButton({
       )}
     >
       {label}
-      {isActive && (
-        <span aria-hidden="true" className="text-[8px] leading-none">
-          {sort.dir === "asc" ? "↑" : "↓"}
-        </span>
-      )}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "text-[8px] leading-none",
+          !isActive && "invisible"
+        )}
+      >
+        {isActive && sort.dir === "asc" ? "↑" : "↓"}
+      </span>
     </button>
   );
 }
@@ -304,15 +317,15 @@ function SpeciesRow({
           <ChevronRight className="size-4" />
         </button>
 
-        {/* Sprite — 64px circle */}
-        <div className="bg-primary/10 relative z-10 flex size-16 shrink-0 items-center justify-center rounded-full">
+        {/* Sprite — 48px circle inside 56px column */}
+        <div className="bg-primary/10 relative z-10 flex size-12 shrink-0 items-center justify-center self-center rounded-full">
           <Image
             src={sprite.url}
             alt={entry.species}
-            width={56}
-            height={56}
+            width={40}
+            height={40}
             className={cn(
-              "size-14 object-contain",
+              "size-10 object-contain",
               sprite.pixelated && "[image-rendering:pixelated]"
             )}
             unoptimized
@@ -481,6 +494,143 @@ export function warmSpeciesIndex(formatId: string): void {
 }
 
 // =============================================================================
+// CollapsedSidebarStrip
+// =============================================================================
+
+/**
+ * Thin icon strip shown when the filter sidebar is collapsed.
+ *
+ * Shows vertically stacked icon buttons representing each filter section,
+ * with small badges indicating active filter counts. Clicking any icon
+ * expands the sidebar. The top button is the expand toggle.
+ */
+function CollapsedSidebarStrip({
+  filters,
+  onExpand,
+}: {
+  filters: SpeciesFilterState;
+  onExpand: () => void;
+}) {
+  const typeCount = filters.types.length;
+  const moveCount = filters.moves.length;
+  const roleCount = filters.roles.length;
+  const hasAbility = filters.ability !== null;
+  const totalActive =
+    typeCount + moveCount + roleCount + (hasAbility ? 1 : 0) + (filters.megaOnly ? 1 : 0);
+
+  return (
+    <div className="bg-muted/50 flex h-full flex-col items-center gap-1 py-2">
+      {/* Expand toggle */}
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-label="Expand filter sidebar"
+        className="text-muted-foreground hover:text-foreground hover:bg-accent relative rounded p-1.5 transition-colors"
+      >
+        <PanelLeftOpen className="size-4" />
+      </button>
+
+      <div className="bg-border my-1 h-px w-6" />
+
+      {/* Filter indicator — total count */}
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-label={`${totalActive} active filters — expand sidebar`}
+        className={cn(
+          "relative rounded p-1.5 transition-colors",
+          totalActive > 0
+            ? "text-primary hover:bg-primary/10"
+            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+        )}
+      >
+        <Filter className="size-4" />
+        {totalActive > 0 && (
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white">
+            {totalActive}
+          </span>
+        )}
+      </button>
+
+      {/* Type filter indicator */}
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-label={`${typeCount} type filters — expand sidebar`}
+        className={cn(
+          "relative rounded p-1.5 transition-colors",
+          typeCount > 0
+            ? "text-primary hover:bg-primary/10"
+            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+        )}
+      >
+        <Sparkles className="size-4" />
+        {typeCount > 0 && (
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white">
+            {typeCount}
+          </span>
+        )}
+      </button>
+
+      {/* Ability indicator */}
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-label={hasAbility ? `Ability: ${filters.ability} — expand sidebar` : "Ability filter — expand sidebar"}
+        className={cn(
+          "relative rounded p-1.5 transition-colors",
+          hasAbility
+            ? "text-primary hover:bg-primary/10"
+            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+        )}
+      >
+        <Zap className="size-4" />
+        {hasAbility && (
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white">
+            1
+          </span>
+        )}
+      </button>
+
+      {/* Move filter indicator */}
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-label={`${moveCount} move filters — expand sidebar`}
+        className={cn(
+          "relative rounded p-1.5 transition-colors",
+          moveCount > 0
+            ? "text-primary hover:bg-primary/10"
+            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+        )}
+      >
+        <Swords className="size-4" />
+        {moveCount > 0 && (
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white">
+            {moveCount}
+          </span>
+        )}
+      </button>
+
+      {/* Role filter indicator */}
+      {roleCount > 0 && (
+        <button
+          type="button"
+          onClick={onExpand}
+          aria-label={`${roleCount} role filters — expand sidebar`}
+          className="text-primary hover:bg-primary/10 relative rounded p-1.5 transition-colors"
+        >
+          <span className="text-[10px] font-bold leading-none">R</span>
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white">
+            {roleCount}
+          </span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
 // SpeciesPicker
 // =============================================================================
 
@@ -514,6 +664,9 @@ export function SpeciesPicker({
 
   // Track which species row is expanded (null = none expanded)
   const [expandedSpecies, setExpandedSpecies] = useState<string | null>(null);
+
+  // Sidebar collapsed state
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Scroll container ref for the virtualizer
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -760,7 +913,7 @@ export function SpeciesPicker({
             <button
               type="button"
               onClick={clearAllFilters}
-              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
+              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
               aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
             >
               {activeFilterCount}{" "}
@@ -780,41 +933,70 @@ export function SpeciesPicker({
       {/* 3-column body                                                          */}
       {/* -------------------------------------------------------------------- */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Left rail — sidebar (top) + role presets (bottom). Single column,
-            stacked vertically. Sidebar takes natural height, roles fill rest. */}
-        <div className="border-border flex w-[380px] flex-shrink-0 flex-col border-r">
-          <div className="min-h-0 overflow-y-auto">
-            <SpeciesSidebar
-              filters={filters}
-              onFiltersChange={setFilters}
-              format={format}
-              currentTeam={currentTeam}
-            />
-          </div>
-          <div className="border-border min-h-0 flex-1 overflow-hidden border-t">
-            <RolePresetsPanel
-              selected={filters.roles}
-              onChange={(next) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  roles: next,
-                }))
-              }
-              bucketCount={bucketCount}
-              className="h-full"
-            />
-          </div>
+        {/* Left rail — collapsible sidebar with smooth transition.
+            Expanded: full filter panel (sidebar + roles + clear).
+            Collapsed: thin icon strip with filter indicators. */}
+        <div
+          className={cn(
+            "border-border flex flex-shrink-0 flex-col border-r transition-[width] duration-200 ease-in-out",
+            sidebarOpen ? "w-[340px]" : "w-12"
+          )}
+        >
+          {sidebarOpen ? (
+            <>
+              {/* Collapse toggle — top of expanded sidebar */}
+              <div className="border-border flex shrink-0 items-center justify-between border-b px-3 py-1.5">
+                <span className="text-muted-foreground text-[9px] font-bold tracking-widest uppercase">
+                  Filters
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(false)}
+                  aria-label="Collapse filter sidebar"
+                  className="text-muted-foreground hover:text-foreground -mr-1 rounded p-0.5 transition-colors"
+                >
+                  <PanelLeftClose className="size-4" />
+                </button>
+              </div>
 
-          {/* Clear all filters — pinned at bottom of left rail */}
-          <div className="border-border shrink-0 border-t px-3 py-2">
-            <button
-              type="button"
-              onClick={clearAllFilters}
-              className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full rounded px-2 py-1.5 text-[11px] font-medium transition-colors"
-            >
-              Clear all filters
-            </button>
-          </div>
+              <div className="min-h-0 overflow-y-auto">
+                <SpeciesSidebar
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  format={format}
+                  currentTeam={currentTeam}
+                />
+              </div>
+              <div className="bg-muted/20 border-border min-h-0 flex-1 overflow-y-auto border-t">
+                <RolePresetsPanel
+                  selected={filters.roles}
+                  onChange={(next) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      roles: next,
+                    }))
+                  }
+                  bucketCount={bucketCount}
+                />
+              </div>
+
+              {/* Clear all filters — pinned at bottom of left rail */}
+              <div className="border-border shrink-0 border-t px-3 py-2">
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full rounded px-2 py-1.5 text-[11px] font-medium transition-colors"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            </>
+          ) : (
+            <CollapsedSidebarStrip
+              filters={filters}
+              onExpand={() => setSidebarOpen(true)}
+            />
+          )}
         </div>
 
         {/* Right — table (always rendered, filtered by query). When the
@@ -869,7 +1051,7 @@ export function SpeciesPicker({
                 <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
                   Types
                 </span>
-                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
+                <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
                   Abilities
                 </span>
                 <SortHeaderButton
@@ -927,7 +1109,7 @@ export function SpeciesPicker({
                   sort={sort}
                   onSort={handleSort}
                 />
-                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
+                <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
                   Moves
                 </span>
               </div>

@@ -1,10 +1,10 @@
 /**
  * SpeciesSidebar — left-column panel of the species picker.
  *
- * Renders four filter sections in a fixed-width aside:
- *   1. Type grid (multi-select, 3-col, with team-needs hints)
- *   2. Ability combobox (input + datalist from getAllLegalAbilities)
- *   3. Champions M-A Mega toggle (gated on isChampionsFormat)
+ * Renders filter sections in a fixed-width aside:
+ *   1. Mega toggle (format-gated, Champions only)
+ *   2. Type grid (multi-select, 3-col, with team-needs hints)
+ *   3. Ability combobox (input + datalist from getAllLegalAbilities)
  *   4. Learns Move (search + quick-picks + removable chips)
  *
  * Does NOT own the `roles` filter — that lives in <RolePresetsPanel>.
@@ -25,13 +25,19 @@ import {
 } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
+import { getTypeStyle } from "@/lib/pokemon/type-colors";
 
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { type SpeciesFilterState } from "./species-filter-state";
 
 // =============================================================================
-// Constants
+// Shared section header style
 // =============================================================================
+
+const SECTION_HEADER =
+  "text-muted-foreground mb-1.5 block text-[9px] font-bold tracking-widest uppercase";
+
+const SECTION_PADDING = "px-3 py-2.5";
 
 // =============================================================================
 // Types
@@ -187,135 +193,12 @@ export function SpeciesSidebar({
   // ---------------------------------------------------------------------------
 
   return (
-    <aside className="bg-muted/50 flex h-full flex-col">
+    <aside className="flex h-full flex-col divide-y divide-border/40">
       {/* ------------------------------------------------------------------ */}
-      {/* 1. Type grid                                                        */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="px-3 pt-3 pb-2">
-        <span className="text-muted-foreground mb-2 block text-[9px] font-bold tracking-widest uppercase">
-          Type
-        </span>
-
-        <div className="grid grid-cols-3 gap-1">
-          {allTypes.map((type) => {
-            const isActive = filters.types.includes(type);
-            const isNeeded = neededTypes.includes(type);
-            return (
-              <button
-                key={type}
-                type="button"
-                aria-label={isNeeded ? `${type} (team needs coverage)` : type}
-                aria-pressed={isActive}
-                title={
-                  isNeeded
-                    ? `${type} — team is weak to this without coverage`
-                    : undefined
-                }
-                onClick={() => toggleType(type)}
-                className={cn(
-                  "relative flex items-center justify-center rounded px-1 py-1 transition-all",
-                  isActive
-                    ? "ring-primary bg-background ring-2 ring-offset-1"
-                    : "bg-muted/40 opacity-70 hover:opacity-100"
-                )}
-              >
-                {isNeeded && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute -top-1 -right-1 text-[9px] leading-none text-amber-500 drop-shadow"
-                  >
-                    ✦
-                  </span>
-                )}
-                <TypeSymbolIcon
-                  type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
-                  size={28}
-                />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* 2. Ability combobox                                                 */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="border-border border-t px-3 py-2">
-        <span className="text-muted-foreground mb-1.5 block text-[9px] font-bold tracking-widest uppercase">
-          Ability
-        </span>
-        {filters.ability ? (
-          <button
-            type="button"
-            onClick={() => onFiltersChange({ ...filters, ability: null })}
-            aria-label={`Clear ${filters.ability} filter`}
-            className="bg-primary/10 text-primary border-primary/30 hover:bg-primary/15 inline-flex w-full items-center justify-between gap-2 rounded border px-2 py-1 text-[11px] font-medium transition-colors"
-          >
-            <span className="truncate">{filters.ability}</span>
-            <span aria-hidden="true" className="text-[10px] opacity-70">
-              ×
-            </span>
-          </button>
-        ) : (
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Type or click an ability…"
-              value={abilityInput}
-              onChange={(e) => setAbilityInput(e.target.value)}
-              onKeyDown={handleAbilityKeyDown}
-              onFocus={() => setAbilityFocused(true)}
-              onBlur={() => {
-                // Defer so a click on a suggestion can fire before the
-                // dropdown disappears.
-                clearTimeout(abilityBlurTimerRef.current);
-                abilityBlurTimerRef.current = setTimeout(
-                  () => setAbilityFocused(false),
-                  120
-                );
-              }}
-              className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
-            />
-            {abilityFocused && abilitySuggestions.length > 0 && (
-              // Plain <ul> rather than role="listbox" — items are real <button>s
-              // with their own focus/keyboard handling, not aria-managed
-              // options. Listbox role would imply option semantics + arrow-key
-              // navigation we don't implement here.
-              <ul
-                aria-label="Matching abilities"
-                className="border-border bg-popover absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg"
-              >
-                {abilitySuggestions.map((ability) => (
-                  <li key={ability}>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => {
-                        // mousedown fires before blur; prevents the input from
-                        // losing focus and hiding the dropdown before our click
-                        // handler runs.
-                        e.preventDefault();
-                      }}
-                      onClick={() => {
-                        onFiltersChange({ ...filters, ability });
-                        setAbilityInput("");
-                      }}
-                      className="hover:bg-accent w-full px-2 py-1 text-left text-[11px]"
-                    >
-                      {ability}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* 3. Champions M-A Mega toggle (format-gated)                         */}
+      {/* 1. Mega toggle (Champions only)                                     */}
       {/* ------------------------------------------------------------------ */}
       {showMegaToggle && (
-        <div className="border-border border-t px-3 py-2">
+        <div className={SECTION_PADDING}>
           <button
             type="button"
             aria-pressed={filters.megaOnly}
@@ -366,18 +249,130 @@ export function SpeciesSidebar({
       )}
 
       {/* ------------------------------------------------------------------ */}
+      {/* 2. Type grid                                                        */}
+      {/* ------------------------------------------------------------------ */}
+      <div className={SECTION_PADDING}>
+        <span className={SECTION_HEADER}>Type</span>
+        <div className="grid grid-cols-3 gap-1">
+          {allTypes.map((type) => {
+            const isActive = filters.types.includes(type);
+            const isNeeded = neededTypes.includes(type);
+            const typeStyle = getTypeStyle(type);
+            return (
+              <button
+                key={type}
+                type="button"
+                aria-label={isNeeded ? `${type} (team needs coverage)` : type}
+                aria-pressed={isActive}
+                title={
+                  isNeeded
+                    ? `${type} — team is weak to this without coverage`
+                    : undefined
+                }
+                onClick={() => toggleType(type)}
+                className={cn(
+                  "relative flex items-center justify-center rounded border border-transparent px-1 py-1 transition-all",
+                  typeStyle.bg,
+                  isActive
+                    ? cn(typeStyle.border, "ring-primary ring-2 ring-offset-background ring-offset-1")
+                    : cn(typeStyle.borderHover, "before:absolute before:inset-0 before:rounded before:bg-background/50 before:transition-opacity before:pointer-events-none hover:before:opacity-0")
+                )}
+              >
+                {isNeeded && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-1 -right-1 z-10 text-[9px] leading-none text-amber-500 drop-shadow"
+                  >
+                    ✦
+                  </span>
+                )}
+                <TypeSymbolIcon
+                  type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
+                  size={28}
+                  className="relative z-10"
+                />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* 3. Ability combobox                                                 */}
+      {/* ------------------------------------------------------------------ */}
+      <div className={SECTION_PADDING}>
+        <span className={SECTION_HEADER}>Ability</span>
+        {filters.ability ? (
+          <button
+            type="button"
+            onClick={() => onFiltersChange({ ...filters, ability: null })}
+            aria-label={`Clear ${filters.ability} filter`}
+            className="bg-primary/10 text-primary border-primary hover:bg-primary/15 inline-flex w-full items-center justify-between gap-2 rounded border px-2 py-1 text-[11px] font-medium transition-colors"
+          >
+            <span className="truncate">{filters.ability}</span>
+            <span aria-hidden="true" className="text-[10px] opacity-70">
+              ×
+            </span>
+          </button>
+        ) : (
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Type or click an ability..."
+              value={abilityInput}
+              onChange={(e) => setAbilityInput(e.target.value)}
+              onKeyDown={handleAbilityKeyDown}
+              onFocus={() => setAbilityFocused(true)}
+              onBlur={() => {
+                // Defer so a click on a suggestion can fire before the
+                // dropdown disappears.
+                clearTimeout(abilityBlurTimerRef.current);
+                abilityBlurTimerRef.current = setTimeout(
+                  () => setAbilityFocused(false),
+                  120
+                );
+              }}
+              className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-[11px] focus:ring-1 focus:outline-none"
+            />
+            {abilityFocused && abilitySuggestions.length > 0 && (
+              <ul
+                aria-label="Matching abilities"
+                className="border-border bg-popover absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg"
+              >
+                {abilitySuggestions.map((ability) => (
+                  <li key={ability}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                      }}
+                      onClick={() => {
+                        onFiltersChange({ ...filters, ability });
+                        setAbilityInput("");
+                      }}
+                      className="hover:bg-accent w-full px-2 py-1 text-left text-[11px]"
+                    >
+                      {ability}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ------------------------------------------------------------------ */}
       {/* 4. Learns Move                                                      */}
       {/* ------------------------------------------------------------------ */}
-      <div className="border-border border-t px-3 py-2">
-        <span className="text-muted-foreground mb-1.5 block text-[9px] font-bold tracking-widest uppercase">
-          Learns Move
-        </span>
+      <div className={SECTION_PADDING}>
+        <span className={SECTION_HEADER}>Learns Move</span>
 
         {/* Typeahead input + suggestion dropdown */}
         <div className="relative">
           <input
             type="text"
-            placeholder="Type a move…"
+            placeholder="Type a move..."
             value={moveInput}
             onChange={(e) => setMoveInput(e.target.value)}
             onKeyDown={handleMoveKeyDown}
@@ -391,11 +386,9 @@ export function SpeciesSidebar({
                 120
               );
             }}
-            className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded border px-2 py-1 text-[11px] focus:ring-1 focus:outline-none"
+            className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-[11px] focus:ring-1 focus:outline-none"
           />
           {moveFocused && moveSuggestions.length > 0 && (
-            // See ability typeahead above — same rationale for dropping
-            // role="listbox" without option semantics.
             <ul
               aria-label="Matching moves"
               className="border-border bg-popover absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg"
@@ -427,7 +420,7 @@ export function SpeciesSidebar({
                 key={move}
                 type="button"
                 onClick={() => removeMove(move)}
-                className="bg-primary/15 text-primary hover:bg-primary/25 flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors"
+                className="bg-primary/15 text-primary border-primary hover:bg-primary/25 flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors"
               >
                 {move}
                 <span aria-hidden="true" className="ml-0.5 text-[9px]">

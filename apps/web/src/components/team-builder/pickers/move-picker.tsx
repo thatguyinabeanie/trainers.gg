@@ -301,18 +301,26 @@ export function MovePicker({
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Left rail — sidebar on top, role presets below */}
         <div className="border-border flex w-[380px] flex-shrink-0 flex-col border-r">
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="shrink-0">
             <MoveSidebar filters={filters} onFiltersChange={setFilters} />
           </div>
-          <div className="border-border min-h-0 flex-1 overflow-hidden border-t">
+          <div className="bg-muted/20 border-border min-h-0 flex-1 overflow-y-auto border-t">
             <RolePresetsPanel
               selected={filters.roles}
               onChange={(roles) =>
                 setFilters((f) => ({ ...f, roles }))
               }
               bucketCount={bucketCount}
-              className="h-full"
             />
+          </div>
+          <div className="border-border shrink-0 border-t p-2.5">
+            <button
+              type="button"
+              onClick={() => setFilters((f) => ({ ...DEFAULT_MOVE_FILTERS, search: f.search }))}
+              className="border-border bg-background text-muted-foreground hover:border-destructive/50 hover:text-destructive w-full rounded-md border py-1 text-[11px] transition-colors"
+            >
+              Clear all filters
+            </button>
           </div>
         </div>
 
