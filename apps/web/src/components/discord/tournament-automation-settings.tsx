@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import {
   upsertChannelMappingAction,
   upsertDmSettingAction,
+  updateServerSettingsAction,
 } from "@/actions/discord-integration";
 
 interface GuildChannel {
@@ -38,13 +39,14 @@ interface TournamentAutomationSettingsProps {
   settings: {
     roundPostedChannel: string | null;
     standingsChannel: string | null;
+    registrationReminderChannel: string | null;
     registrationReminderMinutes: number | null;
     checkInReminderEnabled: boolean;
   };
 }
 
 export function TournamentAutomationSettings({
-  serverId: _serverId,
+  serverId,
   communityId,
   guildChannels,
   settings,
@@ -69,6 +71,8 @@ export function TournamentAutomationSettings({
     useState(settings.registrationReminderMinutes !== null);
   const [registrationReminderMinutes, setRegistrationReminderMinutes] =
     useState(settings.registrationReminderMinutes ?? 60);
+  const [registrationReminderChannel, setRegistrationReminderChannel] =
+    useState(settings.registrationReminderChannel ?? "");
 
   const [checkInReminderEnabled, setCheckInReminderEnabled] = useState(
     settings.checkInReminderEnabled
@@ -232,26 +236,57 @@ export function TournamentAutomationSettings({
             Post a reminder before registration closes
           </p>
           {registrationReminderEnabled && (
-            <div className="ml-11 flex items-center gap-2">
-              <Input
-                type="number"
-                min={1}
-                value={registrationReminderMinutes}
-                onChange={(e) =>
-                  setRegistrationReminderMinutes(Number(e.target.value))
-                }
-                onBlur={() => {
-                  handleChannelMapping(
-                    String(registrationReminderMinutes),
-                    "registration_closing_soon"
-                  );
+            <div className="ml-11 space-y-2">
+              <Select
+                value={registrationReminderChannel}
+                onValueChange={(value) => {
+                  if (!value) return;
+                  setRegistrationReminderChannel(value);
+                  handleChannelMapping(value, "registration_closing_soon");
                 }}
-                className="w-20"
                 disabled={isPending}
-              />
-              <span className="text-muted-foreground text-sm">
-                minutes before close
-              </span>
+              >
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select channel" />
+                </SelectTrigger>
+                <SelectContent>
+                  {textChannels.map((channel) => (
+                    <SelectItem key={channel.id} value={channel.id}>
+                      # {channel.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  value={registrationReminderMinutes}
+                  onChange={(e) =>
+                    setRegistrationReminderMinutes(Number(e.target.value))
+                  }
+                  onBlur={() => {
+                    startTransition(async () => {
+                      const result = await updateServerSettingsAction({
+                        serverId,
+                        communityId,
+                        settings: {
+                          registration_reminder_minutes:
+                            registrationReminderMinutes,
+                        },
+                      });
+                      if (!result.success) {
+                        toast.error(result.error);
+                      }
+                    });
+                  }}
+                  className="w-20"
+                  disabled={isPending}
+                />
+                <span className="text-muted-foreground text-sm">
+                  minutes before close
+                </span>
+              </div>
             </div>
           )}
         </div>

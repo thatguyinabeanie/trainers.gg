@@ -876,6 +876,12 @@ export async function updateServerSettingsAction(input: {
     if (!server) {
       return { success: false, error: "Discord server not found" };
     }
+    if (server.community_id !== input.communityId) {
+      return {
+        success: false,
+        error: "Server does not belong to this community",
+      };
+    }
 
     const mergedSettings = {
       ...(server.settings as object),
@@ -917,6 +923,26 @@ export async function updateChannelPingRoleAction(input: {
     await rejectBots();
     const supabase = await createClient();
     await requireCommunityManage(supabase, input.communityId);
+
+    // Verify mapping belongs to this community's server
+    const { data: mapping } = await supabase
+      .from("discord_channels")
+      .select("id, discord_server_id, discord_servers!inner(community_id)")
+      .eq("id", input.mappingId)
+      .single();
+
+    if (!mapping) {
+      return { success: false, error: "Channel mapping not found" };
+    }
+    const serverData = mapping.discord_servers as unknown as {
+      community_id: number;
+    };
+    if (serverData.community_id !== input.communityId) {
+      return {
+        success: false,
+        error: "Mapping does not belong to this community",
+      };
+    }
 
     const { error } = await supabase
       .from("discord_channels")

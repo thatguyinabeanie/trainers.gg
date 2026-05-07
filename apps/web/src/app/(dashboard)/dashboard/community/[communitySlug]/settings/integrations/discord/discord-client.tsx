@@ -172,7 +172,12 @@ export function DiscordClient({
     standingsChannel:
       overview.channelMappings.find((m) => m.event_type === "standings_posted")
         ?.channel_id ?? null,
-    registrationReminderMinutes: null,
+    registrationReminderChannel:
+      overview.channelMappings.find(
+        (m) => m.event_type === "registration_closing_soon"
+      )?.channel_id ?? null,
+    registrationReminderMinutes:
+      (settings.registration_reminder_minutes as number) ?? null,
     checkInReminderEnabled: overview.dmSettings.some(
       (s) => s.event_type === "check_in_reminder"
     ),
