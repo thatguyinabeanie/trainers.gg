@@ -123,7 +123,7 @@ beforeEach(() => {
 
 describe("RoleMappingTable", () => {
   describe("rendering", () => {
-    it("renders all 6 role type rows", () => {
+    it("renders all 5 role type rows", () => {
       render(<RoleMappingTable {...defaultProps} />);
 
       expect(screen.getByText("Staff")).toBeInTheDocument();
@@ -131,7 +131,6 @@ describe("RoleMappingTable", () => {
       expect(screen.getByText("Participant")).toBeInTheDocument();
       expect(screen.getByText("Winner")).toBeInTheDocument();
       expect(screen.getByText("Currently playing")).toBeInTheDocument();
-      expect(screen.getByText("Verified")).toBeInTheDocument();
     });
 
     it("shows trophy emoji for the winner role", () => {
@@ -165,7 +164,7 @@ describe("RoleMappingTable", () => {
       render(<RoleMappingTable {...defaultProps} roleMappings={[]} />);
 
       const dashes = screen.getAllByText("—");
-      expect(dashes.length).toBe(6); // one per role type
+      expect(dashes.length).toBe(5); // one per role type
     });
 
     it("shows '✓ Synced' for enabled rows without hierarchy violation", () => {

@@ -80,6 +80,7 @@ export function DiscordClient({
   const [stats, setStats] = useState<DeliveryStatsData | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [statsLoaded, setStatsLoaded] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [wizardDismissed, setWizardDismissed] = useState(false);
 
   // Reset stats when overview changes (e.g., after router.refresh())
@@ -123,10 +124,18 @@ export function DiscordClient({
         if (cancelled) return;
         if (statsResult.success) setStats(statsResult.data);
         if (activityResult.success) setActivities(activityResult.data);
+        if (!statsResult.success || !activityResult.success) {
+          setStatsError("Failed to load some delivery data");
+        } else {
+          setStatsError(null);
+        }
         setStatsLoaded(true);
       })
       .catch(() => {
-        if (!cancelled) setStatsLoaded(true);
+        if (!cancelled) {
+          setStatsError("Failed to load delivery data");
+          setStatsLoaded(true);
+        }
       });
     return () => {
       cancelled = true;
@@ -262,6 +271,9 @@ export function DiscordClient({
         {/* Overview Tab */}
         <TabsContent value="overview">
           <div className="space-y-4">
+            {statsError && (
+              <p className="text-destructive text-sm">{statsError}</p>
+            )}
             {stats && <DeliveryStatsCard stats={stats} />}
             <div className="grid gap-4 md:grid-cols-2">
               <ActivityFeed

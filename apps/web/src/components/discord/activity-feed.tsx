@@ -60,15 +60,16 @@ function getActivityIcon(type: string) {
 
 function getDescription(activity: Activity): string {
   const label = getEventLabel(activity.eventType);
+  const target = activity.target;
   switch (activity.type) {
     case "channel":
-      return `Sent ${label} to #${activity.target}`;
+      return `Sent ${label} to ${target.startsWith("#") ? target : `#${target}`}`;
     case "dm":
-      return `DM'd ${label} to @${activity.target}`;
+      return `DM'd ${label} to ${target.startsWith("@") ? target : `@${target}`}`;
     case "role_sync":
-      return `Synced ${label} for ${activity.target}`;
+      return `Synced ${label} for ${target}`;
     default:
-      return `${label} → ${activity.target}`;
+      return `${label} → ${target}`;
   }
 }
 
