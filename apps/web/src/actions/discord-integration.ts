@@ -34,6 +34,7 @@ import {
   type DiscordDmEventType,
   ALL_CHANNEL_EVENT_TYPES,
   type RoleSyncFailureRow,
+  type Json,
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
 import { z } from "@trainers/validators";
@@ -59,6 +60,7 @@ const DISCORD_ROLE_TYPES = [
   "winner",
   "staff",
   "currently_playing",
+  "verified",
 ] as const;
 
 // =============================================================================
@@ -803,6 +805,364 @@ export async function listRecentFailuresAction(serverId: number): Promise<
     return {
       success: false,
       error: getErrorMessage(error, "Failed to load failure details"),
+    };
+  }
+}
+
+// =============================================================================
+// Test Notification
+// =============================================================================
+
+/**
+ * Send a test notification to a specific Discord channel to verify the bot
+ * can post there. Creates a friendly test embed.
+ */
+export async function sendTestNotificationAction(input: {
+  serverId: number;
+  channelId: string;
+  eventType: string;
+}): Promise<ActionResult<void>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const server = await getDiscordServerById(supabase, input.serverId);
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
+    }
+    await requireCommunityManage(supabase, server.community_id);
+
+    await start(sendChannelNotificationWorkflow, [
+      input.channelId,
+      input.eventType,
+      {
+        __test: true,
+        title: "Test Notification",
+        description: `This is a test notification for the **${input.eventType}** event type. If you can see this, the bot is working correctly!`,
+      },
+      server.id,
+    ]);
+
+    revalidatePath(DISCORD_SETTINGS_PATH, "page");
+    return { success: true, data: undefined };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to send test notification"),
+    };
+  }
+}
+
+// =============================================================================
+// Server Settings
+// =============================================================================
+
+/**
+ * Update the discord_servers.settings JSONB for a community's Discord server.
+ * Merges the provided settings into the existing object (does not replace).
+ */
+export async function updateServerSettingsAction(input: {
+  serverId: number;
+  communityId: number;
+  settings: Record<string, unknown>;
+}): Promise<ActionResult<void>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    await requireCommunityManage(supabase, input.communityId);
+
+    const server = await getDiscordServerById(supabase, input.serverId);
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
+    }
+
+    const mergedSettings = {
+      ...(server.settings as object),
+      ...input.settings,
+    } as Record<string, unknown>;
+
+    const { error } = await supabase
+      .from("discord_servers")
+      .update({ settings: mergedSettings as unknown as Json })
+      .eq("id", input.serverId);
+
+    if (error) throw new Error(`Failed to update settings: ${error.message}`);
+
+    revalidatePath(DISCORD_SETTINGS_PATH, "page");
+    return { success: true, data: undefined };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update server settings"),
+    };
+  }
+}
+
+// =============================================================================
+// Channel Ping Role
+// =============================================================================
+
+/**
+ * Update the ping_role_id for a specific channel mapping.
+ */
+export async function updateChannelPingRoleAction(input: {
+  mappingId: number;
+  pingRoleId: string | null;
+  communityId: number;
+}): Promise<ActionResult<void>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    await requireCommunityManage(supabase, input.communityId);
+
+    const { error } = await supabase
+      .from("discord_channels")
+      .update({ ping_role_id: input.pingRoleId })
+      .eq("id", input.mappingId);
+
+    if (error) throw new Error(`Failed to update ping role: ${error.message}`);
+
+    revalidatePath(DISCORD_SETTINGS_PATH, "page");
+    return { success: true, data: undefined };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update ping role"),
+    };
+  }
+}
+
+// =============================================================================
+// Verified Role
+// =============================================================================
+
+/**
+ * Configure the verified role auto-assignment feature.
+ * Stored in discord_role_mappings with role_type='verified'.
+ */
+export async function updateVerifiedRoleAction(input: {
+  serverId: number;
+  communityId: number;
+  enabled: boolean;
+  roleId: string | null;
+}): Promise<ActionResult<void>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    await requireCommunityManage(supabase, input.communityId);
+
+    if (input.enabled && input.roleId) {
+      // Upsert the verified role mapping
+      await upsertRoleMapping(supabase, {
+        discord_server_id: input.serverId,
+        role_type: "verified",
+        discord_role_id: input.roleId,
+      });
+      // Ensure it's enabled
+      const { data: mapping } = await supabase
+        .from("discord_role_mappings")
+        .select("id")
+        .eq("discord_server_id", input.serverId)
+        .eq("role_type", "verified")
+        .maybeSingle();
+      if (mapping) {
+        await toggleRoleMapping(supabase, mapping.id, true);
+      }
+    } else {
+      // Disable the verified role mapping if it exists
+      const { data: mapping } = await supabase
+        .from("discord_role_mappings")
+        .select("id")
+        .eq("discord_server_id", input.serverId)
+        .eq("role_type", "verified")
+        .maybeSingle();
+      if (mapping) {
+        await toggleRoleMapping(supabase, mapping.id, false);
+      }
+    }
+
+    revalidatePath(DISCORD_SETTINGS_PATH, "page");
+    return { success: true, data: undefined };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update verified role"),
+    };
+  }
+}
+
+// =============================================================================
+// Delivery Stats & Activity Feed
+// =============================================================================
+
+export interface DeliveryStatsData {
+  channelMessages: number;
+  dmsDelivered: number;
+  roleSyncs: number;
+  failures: number;
+  period: string;
+}
+
+/**
+ * Fetch delivery statistics for the last 24 hours.
+ */
+export async function getDeliveryStatsAction(
+  serverId: number
+): Promise<ActionResult<DeliveryStatsData>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const server = await getDiscordServerById(supabase, serverId);
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
+    }
+    await requireCommunityManage(supabase, server.community_id);
+
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: logs, error } = await supabase
+      .from("discord_delivery_log")
+      .select("type")
+      .eq("discord_server_id", serverId)
+      .gte("created_at", since);
+
+    if (error) throw new Error(`Failed to fetch stats: ${error.message}`);
+
+    const channelMessages = (logs ?? []).filter(
+      (l) => l.type === "channel"
+    ).length;
+    const dmsDelivered = (logs ?? []).filter((l) => l.type === "dm").length;
+    const roleSyncs = (logs ?? []).filter((l) => l.type === "role_sync").length;
+
+    // Also count failures from the failures table
+    const { count: failureCount } = await supabase
+      .from("discord_delivery_failures")
+      .select("id", { count: "exact", head: true })
+      .eq("discord_server_id", serverId)
+      .gte("created_at", since);
+
+    return {
+      success: true,
+      data: {
+        channelMessages,
+        dmsDelivered,
+        roleSyncs,
+        failures: failureCount ?? 0,
+        period: "Last 24 hours",
+      },
+    };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to fetch delivery stats"),
+    };
+  }
+}
+
+export interface ActivityItem {
+  id: number;
+  type: string;
+  eventType: string;
+  target: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+/**
+ * Fetch recent activity (delivery log) for a Discord server.
+ */
+export async function getActivityFeedAction(
+  serverId: number
+): Promise<ActionResult<ActivityItem[]>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const server = await getDiscordServerById(supabase, serverId);
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
+    }
+    await requireCommunityManage(supabase, server.community_id);
+
+    const { data: logs, error } = await supabase
+      .from("discord_delivery_log")
+      .select("id, type, event_type, target, metadata, created_at")
+      .eq("discord_server_id", serverId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error)
+      throw new Error(`Failed to fetch activity feed: ${error.message}`);
+
+    return {
+      success: true,
+      data: (logs ?? []).map((log) => ({
+        id: log.id,
+        type: log.type,
+        eventType: log.event_type,
+        target: log.target,
+        metadata: (log.metadata as Record<string, unknown>) ?? {},
+        createdAt: log.created_at,
+      })),
+    };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to fetch activity feed"),
+    };
+  }
+}
+
+// =============================================================================
+// Linked Accounts Stats
+// =============================================================================
+
+/**
+ * Get statistics on how many Discord guild members have linked trainers.gg accounts.
+ */
+export async function getLinkedAccountsStatsAction(input: {
+  serverId: number;
+  communityId: number;
+}): Promise<
+  ActionResult<{ totalMembers: number | null; linkedCount: number }>
+> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    await requireCommunityManage(supabase, input.communityId);
+
+    // Count users who have discord identities and are linked to this community
+    // via community_staff or tournament registrations
+    const { count: linkedCount } = await supabase
+      .from("community_staff")
+      .select("user_id", { count: "exact", head: true })
+      .eq("community_id", input.communityId);
+
+    // We can't easily get total Discord members without calling the Discord API
+    // which is done server-side in the page.tsx; pass null for now
+    return {
+      success: true,
+      data: {
+        totalMembers: null,
+        linkedCount: linkedCount ?? 0,
+      },
+    };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to fetch linked accounts stats"),
     };
   }
 }

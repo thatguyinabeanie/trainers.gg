@@ -41,6 +41,7 @@ export const ROLE_TYPES: DiscordRoleType[] = [
   "participant",
   "winner",
   "currently_playing",
+  "verified",
 ];
 
 export const ROLE_TYPE_META: Record<
@@ -67,6 +68,11 @@ export const ROLE_TYPE_META: Record<
   currently_playing: {
     label: "Currently playing",
     description: "Players in an active round (added + removed per round)",
+  },
+  verified: {
+    label: "Verified",
+    description: "Members who linked their trainers.gg account",
+    emoji: "✓",
   },
 };
 

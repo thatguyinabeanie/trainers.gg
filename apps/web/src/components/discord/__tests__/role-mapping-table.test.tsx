@@ -15,8 +15,11 @@ jest.mock("@/hooks/use-is-client", () => ({
 // Capture onRoleChange and onToggle so tests can invoke them directly.
 // Base UI Select does not expose ARIA options in JSDOM, so we drive the mobile
 // path for the freshly-upserted-row test instead of clicking the desktop Select.
-let capturedOnRoleChange: ((roleType: string, discordRoleId: string) => void) | null = null;
-let capturedOnToggle: ((roleType: string, enabled: boolean) => void) | null = null;
+let capturedOnRoleChange:
+  | ((roleType: string, discordRoleId: string) => void)
+  | null = null;
+let capturedOnToggle: ((roleType: string, enabled: boolean) => void) | null =
+  null;
 
 jest.mock("../role-mapping-cards", () => ({
   RoleMappingCards: (props: {
@@ -120,7 +123,7 @@ beforeEach(() => {
 
 describe("RoleMappingTable", () => {
   describe("rendering", () => {
-    it("renders all 5 role type rows", () => {
+    it("renders all 6 role type rows", () => {
       render(<RoleMappingTable {...defaultProps} />);
 
       expect(screen.getByText("Staff")).toBeInTheDocument();
@@ -128,6 +131,7 @@ describe("RoleMappingTable", () => {
       expect(screen.getByText("Participant")).toBeInTheDocument();
       expect(screen.getByText("Winner")).toBeInTheDocument();
       expect(screen.getByText("Currently playing")).toBeInTheDocument();
+      expect(screen.getByText("Verified")).toBeInTheDocument();
     });
 
     it("shows trophy emoji for the winner role", () => {
@@ -161,7 +165,7 @@ describe("RoleMappingTable", () => {
       render(<RoleMappingTable {...defaultProps} roleMappings={[]} />);
 
       const dashes = screen.getAllByText("—");
-      expect(dashes.length).toBe(5); // one per role type
+      expect(dashes.length).toBe(6); // one per role type
     });
 
     it("shows '✓ Synced' for enabled rows without hierarchy violation", () => {

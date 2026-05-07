@@ -1,0 +1,279 @@
+"use client";
+
+import { useTransition, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Bot } from "lucide-react";
+import { toast } from "sonner";
+import {
+  upsertChannelMappingAction,
+  upsertDmSettingAction,
+} from "@/actions/discord-integration";
+
+interface GuildChannel {
+  id: string;
+  name: string;
+  type: number;
+}
+
+interface TournamentAutomationSettingsProps {
+  serverId: number;
+  communityId: number;
+  guildChannels: GuildChannel[];
+  settings: {
+    roundPostedChannel: string | null;
+    standingsChannel: string | null;
+    registrationReminderMinutes: number | null;
+    checkInReminderEnabled: boolean;
+  };
+}
+
+export function TournamentAutomationSettings({
+  serverId: _serverId,
+  communityId,
+  guildChannels,
+  settings,
+}: TournamentAutomationSettingsProps) {
+  const [isPending, startTransition] = useTransition();
+
+  const [roundPostedEnabled, setRoundPostedEnabled] = useState(
+    !!settings.roundPostedChannel
+  );
+  const [roundPostedChannel, setRoundPostedChannel] = useState(
+    settings.roundPostedChannel ?? ""
+  );
+
+  const [standingsEnabled, setStandingsEnabled] = useState(
+    !!settings.standingsChannel
+  );
+  const [standingsChannel, setStandingsChannel] = useState(
+    settings.standingsChannel ?? ""
+  );
+
+  const [registrationReminderEnabled, setRegistrationReminderEnabled] =
+    useState(settings.registrationReminderMinutes !== null);
+  const [registrationReminderMinutes, setRegistrationReminderMinutes] =
+    useState(settings.registrationReminderMinutes ?? 60);
+
+  const [checkInReminderEnabled, setCheckInReminderEnabled] = useState(
+    settings.checkInReminderEnabled
+  );
+
+  // Only show text channels (type === 0)
+  const textChannels = guildChannels.filter((c) => c.type === 0);
+
+  function handleChannelMapping(channelId: string, eventType: string) {
+    startTransition(async () => {
+      const result = await upsertChannelMappingAction({
+        communityId,
+        channelId,
+        eventType: eventType as Parameters<
+          typeof upsertChannelMappingAction
+        >[0]["eventType"],
+      });
+      if (!result.success) {
+        toast.error(result.error);
+      } else {
+        toast.success("Channel mapping saved");
+      }
+    });
+  }
+
+  function handleDmSetting(enabled: boolean) {
+    setCheckInReminderEnabled(enabled);
+    startTransition(async () => {
+      const result = await upsertDmSettingAction({
+        communityId,
+        eventType: "check_in_reminder",
+        deliveryMode: enabled ? "dm_only" : "channel_only",
+        fallbackChannelId: enabled ? undefined : null,
+      });
+      if (!result.success) {
+        toast.error(result.error);
+      } else {
+        toast.success(
+          enabled ? "DM reminders enabled" : "DM reminders disabled"
+        );
+      }
+    });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bot className="size-5" />
+          Tournament Automation
+        </CardTitle>
+        <CardDescription>
+          Automatically post updates during tournament lifecycle.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Round Posted Announcements */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={roundPostedEnabled}
+              onCheckedChange={(checked) => {
+                setRoundPostedEnabled(checked);
+                if (!checked) {
+                  setRoundPostedChannel("");
+                }
+              }}
+              disabled={isPending}
+            />
+            <Label className="font-medium">Round Posted Announcements</Label>
+          </div>
+          <p className="text-muted-foreground ml-11 text-sm">
+            Auto-post a message when new round pairings are published
+          </p>
+          {roundPostedEnabled && (
+            <div className="ml-11">
+              <Select
+                value={roundPostedChannel}
+                onValueChange={(value) => {
+                  if (!value) return;
+                  setRoundPostedChannel(value);
+                  handleChannelMapping(value, "round_posted");
+                }}
+                disabled={isPending}
+              >
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select channel" />
+                </SelectTrigger>
+                <SelectContent>
+                  {textChannels.map((channel) => (
+                    <SelectItem key={channel.id} value={channel.id}>
+                      # {channel.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+
+        {/* Standings Auto-Post */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={standingsEnabled}
+              onCheckedChange={(checked) => {
+                setStandingsEnabled(checked);
+                if (!checked) {
+                  setStandingsChannel("");
+                }
+              }}
+              disabled={isPending}
+            />
+            <Label className="font-medium">Standings Auto-Post</Label>
+          </div>
+          <p className="text-muted-foreground ml-11 text-sm">
+            Post top standings after each round completes
+          </p>
+          {standingsEnabled && (
+            <div className="ml-11">
+              <Select
+                value={standingsChannel}
+                onValueChange={(value) => {
+                  if (!value) return;
+                  setStandingsChannel(value);
+                  handleChannelMapping(value, "standings_posted");
+                }}
+                disabled={isPending}
+              >
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select channel" />
+                </SelectTrigger>
+                <SelectContent>
+                  {textChannels.map((channel) => (
+                    <SelectItem key={channel.id} value={channel.id}>
+                      # {channel.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+
+        {/* Registration Closing Reminder */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={registrationReminderEnabled}
+              onCheckedChange={(checked) => {
+                setRegistrationReminderEnabled(checked);
+                if (checked && registrationReminderMinutes) {
+                  // Will be saved when input blurs or channel is selected
+                }
+              }}
+              disabled={isPending}
+            />
+            <Label className="font-medium">Registration Closing Reminder</Label>
+          </div>
+          <p className="text-muted-foreground ml-11 text-sm">
+            Post a reminder before registration closes
+          </p>
+          {registrationReminderEnabled && (
+            <div className="ml-11 flex items-center gap-2">
+              <Input
+                type="number"
+                min={1}
+                value={registrationReminderMinutes}
+                onChange={(e) =>
+                  setRegistrationReminderMinutes(Number(e.target.value))
+                }
+                onBlur={() => {
+                  handleChannelMapping(
+                    String(registrationReminderMinutes),
+                    "registration_closing_soon"
+                  );
+                }}
+                className="w-20"
+                disabled={isPending}
+              />
+              <span className="text-muted-foreground text-sm">
+                minutes before close
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Check-in Reminder DMs */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={checkInReminderEnabled}
+              onCheckedChange={(checked) => {
+                setCheckInReminderEnabled(checked);
+                handleDmSetting(checked);
+              }}
+              disabled={isPending}
+            />
+            <Label className="font-medium">Check-in Reminder DMs</Label>
+          </div>
+          <p className="text-muted-foreground ml-11 text-sm">
+            DM registered players when check-in opens for their tournament
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

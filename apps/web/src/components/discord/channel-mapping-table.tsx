@@ -245,6 +245,7 @@ export function ChannelMappingTable({
         discord_server_id: serverId,
         event_type: eventType as unknown as DiscordDmEventType,
         channel_id: channelId,
+        ping_role_id: null,
         created_at: new Date().toISOString(),
       },
     ]);

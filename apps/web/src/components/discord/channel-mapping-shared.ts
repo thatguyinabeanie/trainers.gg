@@ -47,6 +47,10 @@ export const CHANNEL_EVENT_LABELS: Record<
     label: "Registration opens",
     description: "When sign-ups open for a tournament",
   },
+  registration_closing_soon: {
+    label: "Registration closing soon",
+    description: "Reminder before registration closes",
+  },
   tournament_ended: {
     label: "Tournament ended",
     description: "Final standings + winner announcement",
@@ -55,6 +59,18 @@ export const CHANNEL_EVENT_LABELS: Record<
     label: "Match result reported",
     description: "Score reported for a match",
   },
+  round_posted: {
+    label: "Round posted",
+    description: "When new round pairings are published",
+  },
+  standings_posted: {
+    label: "Standings posted",
+    description: "Updated standings after each round",
+  },
+  check_in_opened: {
+    label: "Check-in opened",
+    description: "When check-in opens for a tournament",
+  },
 };
 
 /**
@@ -62,9 +78,10 @@ export const CHANNEL_EVENT_LABELS: Record<
  * with underscores converted to spaces and the first letter capitalized,
  * so a label-map miss never leaks the raw DB enum into the dashboard.
  */
-export function getChannelEventMeta(
-  eventType: string
-): { label: string; description: string } {
+export function getChannelEventMeta(eventType: string): {
+  label: string;
+  description: string;
+} {
   const known = CHANNEL_EVENT_LABELS[eventType as DiscordChannelEventType];
   if (known) return known;
   const humanized = eventType.replace(/_/g, " ");
