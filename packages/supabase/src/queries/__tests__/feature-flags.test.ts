@@ -7,6 +7,8 @@ import {
   updateFeatureFlag,
   deleteFeatureFlag,
   hasTeamBuilderAccess,
+  hasCommunityFeatureAccess,
+  getCommunityIdsWithFeatureAccess,
   type AccessCheckResult,
 } from "../feature-flags";
 import type { TypedClient } from "../../client";
@@ -818,5 +820,182 @@ describe("feature-flags queries", () => {
         expect(result.access).toBe(expectedAccess);
       }
     );
+  });
+
+  // ===========================================================================
+  // hasCommunityFeatureAccess
+  // ===========================================================================
+
+  describe("hasCommunityFeatureAccess", () => {
+    it("returns { access: false } when flag does not exist", async () => {
+      const client = createMockClient();
+      client._queryBuilder.maybeSingle.mockResolvedValue({
+        data: null,
+        error: null,
+      });
+
+      const result = await hasCommunityFeatureAccess(
+        client,
+        "discord_integration",
+        42
+      );
+      expect(result).toEqual({ access: false });
+    });
+
+    it("returns { access: true } when flag is globally enabled", async () => {
+      const client = createMockClient();
+      client._queryBuilder.maybeSingle.mockResolvedValue({
+        data: { id: 1, key: "discord_integration", enabled: true, metadata: {} },
+        error: null,
+      });
+
+      const result = await hasCommunityFeatureAccess(
+        client,
+        "discord_integration",
+        42
+      );
+      expect(result).toEqual({ access: true });
+    });
+
+    it("returns { access: true } when community is in allowed_communities", async () => {
+      const client = createMockClient();
+      client._queryBuilder.maybeSingle.mockResolvedValue({
+        data: {
+          id: 1,
+          key: "discord_integration",
+          enabled: false,
+          metadata: { allowed_communities: [42, 99] },
+        },
+        error: null,
+      });
+
+      const result = await hasCommunityFeatureAccess(
+        client,
+        "discord_integration",
+        42
+      );
+      expect(result).toEqual({ access: true });
+    });
+
+    it("returns { access: false } when community is NOT in allowed_communities", async () => {
+      const client = createMockClient();
+      client._queryBuilder.maybeSingle.mockResolvedValue({
+        data: {
+          id: 1,
+          key: "discord_integration",
+          enabled: false,
+          metadata: { allowed_communities: [99, 100] },
+        },
+        error: null,
+      });
+
+      const result = await hasCommunityFeatureAccess(
+        client,
+        "discord_integration",
+        42
+      );
+      expect(result).toEqual({ access: false });
+    });
+
+    it("returns { access: 'error', reason } on database error", async () => {
+      const client = createMockClient();
+      client._queryBuilder.maybeSingle.mockResolvedValue({
+        data: null,
+        error: { message: "connection refused" },
+      });
+
+      const consoleSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      const result = await hasCommunityFeatureAccess(
+        client,
+        "discord_integration",
+        42
+      );
+      expect(result.access).toBe("error");
+      if (result.access === "error") {
+        expect(result.reason).toBeDefined();
+      }
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  // ===========================================================================
+  // getCommunityIdsWithFeatureAccess
+  // ===========================================================================
+
+  describe("getCommunityIdsWithFeatureAccess", () => {
+    it("returns empty Set when flag does not exist", async () => {
+      const client = createMockClient();
+      client._queryBuilder.maybeSingle.mockResolvedValue({
+        data: null,
+        error: null,
+      });
+
+      const result = await getCommunityIdsWithFeatureAccess(
+        client,
+        "discord_integration",
+        [1, 2, 3]
+      );
+      expect(result).toEqual(new Set());
+    });
+
+    it("returns all community IDs when flag is globally enabled", async () => {
+      const client = createMockClient();
+      client._queryBuilder.maybeSingle.mockResolvedValue({
+        data: { id: 1, key: "discord_integration", enabled: true, metadata: {} },
+        error: null,
+      });
+
+      const result = await getCommunityIdsWithFeatureAccess(
+        client,
+        "discord_integration",
+        [1, 2, 3]
+      );
+      expect(result).toEqual(new Set([1, 2, 3]));
+    });
+
+    it("returns only allowed community IDs from allowlist", async () => {
+      const client = createMockClient();
+      client._queryBuilder.maybeSingle.mockResolvedValue({
+        data: {
+          id: 1,
+          key: "discord_integration",
+          enabled: false,
+          metadata: { allowed_communities: [2, 5] },
+        },
+        error: null,
+      });
+
+      const result = await getCommunityIdsWithFeatureAccess(
+        client,
+        "discord_integration",
+        [1, 2, 3, 5]
+      );
+      expect(result).toEqual(new Set([2, 5]));
+    });
+
+    it("returns empty Set on error", async () => {
+      const client = createMockClient();
+      client._queryBuilder.maybeSingle.mockResolvedValue({
+        data: null,
+        error: { message: "timeout" },
+      });
+
+      const consoleSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      const result = await getCommunityIdsWithFeatureAccess(
+        client,
+        "discord_integration",
+        [1, 2, 3]
+      );
+      expect(result).toEqual(new Set());
+
+      consoleSpy.mockRestore();
+    });
   });
 });
