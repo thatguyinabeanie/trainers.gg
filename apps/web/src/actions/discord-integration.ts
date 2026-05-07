@@ -121,7 +121,7 @@ const updateServerSettingsSchema = z.object({
 
 const updateChannelPingRoleSchema = z.object({
   mappingId: z.number().int().positive(),
-  pingRoleId: z.string().nullable(),
+  pingRoleId: z.string().min(1).nullable(),
   communityId: z.number().int().positive(),
 });
 

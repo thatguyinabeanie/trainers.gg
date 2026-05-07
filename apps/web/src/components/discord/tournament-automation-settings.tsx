@@ -171,16 +171,25 @@ export function TournamentAutomationSettings({
               id={roundPostedId}
               checked={roundPostedEnabled}
               onCheckedChange={(checked) => {
-                setRoundPostedEnabled(checked);
                 if (!checked) {
+                  const prevChannel = roundPostedChannel;
+                  setRoundPostedEnabled(false);
                   setRoundPostedChannel("");
                   if (roundPostedMappingId) {
                     startTransition(async () => {
                       const result = await deleteChannelMappingAction(roundPostedMappingId);
-                      if (!result.success) toast.error(result.error);
-                      else setRoundPostedMappingId(null);
+                      if (!result.success) {
+                        // Rollback on failure
+                        setRoundPostedEnabled(true);
+                        setRoundPostedChannel(prevChannel);
+                        toast.error(result.error);
+                      } else {
+                        setRoundPostedMappingId(null);
+                      }
                     });
                   }
+                } else {
+                  setRoundPostedEnabled(true);
                 }
               }}
               disabled={isPending}
@@ -225,16 +234,25 @@ export function TournamentAutomationSettings({
               id={standingsId}
               checked={standingsEnabled}
               onCheckedChange={(checked) => {
-                setStandingsEnabled(checked);
                 if (!checked) {
+                  const prevChannel = standingsChannel;
+                  setStandingsEnabled(false);
                   setStandingsChannel("");
                   if (standingsMappingId) {
                     startTransition(async () => {
                       const result = await deleteChannelMappingAction(standingsMappingId);
-                      if (!result.success) toast.error(result.error);
-                      else setStandingsMappingId(null);
+                      if (!result.success) {
+                        // Rollback on failure
+                        setStandingsEnabled(true);
+                        setStandingsChannel(prevChannel);
+                        toast.error(result.error);
+                      } else {
+                        setStandingsMappingId(null);
+                      }
                     });
                   }
+                } else {
+                  setStandingsEnabled(true);
                 }
               }}
               disabled={isPending}
@@ -279,8 +297,9 @@ export function TournamentAutomationSettings({
               id={registrationReminderId}
               checked={registrationReminderEnabled}
               onCheckedChange={(checked) => {
-                setRegistrationReminderEnabled(checked);
                 if (!checked) {
+                  const prevChannel = registrationReminderChannel;
+                  setRegistrationReminderEnabled(false);
                   // Persist the disable: clear minutes + delete mapping
                   startTransition(async () => {
                     const settingsResult = await updateServerSettingsAction({
@@ -294,12 +313,20 @@ export function TournamentAutomationSettings({
                       return;
                     }
                     if (registrationReminderMappingId) {
-                      await deleteChannelMappingAction(registrationReminderMappingId);
+                      const deleteResult = await deleteChannelMappingAction(registrationReminderMappingId);
+                      if (!deleteResult.success) {
+                        // Rollback: re-enable since mapping still exists
+                        setRegistrationReminderEnabled(true);
+                        toast.error(deleteResult.error);
+                        return;
+                      }
                       setRegistrationReminderMappingId(null);
                     }
                     setRegistrationReminderChannel("");
                     toast.success("Registration reminder disabled");
                   });
+                } else {
+                  setRegistrationReminderEnabled(true);
                 }
               }}
               disabled={isPending}
@@ -340,10 +367,23 @@ export function TournamentAutomationSettings({
                   type="number"
                   min={1}
                   value={registrationReminderMinutes}
-                  onChange={(e) =>
-                    setRegistrationReminderMinutes(Number(e.target.value))
-                  }
+                  onChange={(e) => {
+                    const parsed = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(parsed) && parsed > 0) {
+                      setRegistrationReminderMinutes(parsed);
+                    } else if (e.target.value === "") {
+                      // Allow clearing the field temporarily (will revert on blur)
+                      setRegistrationReminderMinutes(0);
+                    }
+                  }}
                   onBlur={() => {
+                    // Guard: only persist valid positive integers
+                    if (registrationReminderMinutes <= 0) {
+                      setRegistrationReminderMinutes(
+                        settings.registrationReminderMinutes ?? 60
+                      );
+                      return;
+                    }
                     startTransition(async () => {
                       const result = await updateServerSettingsAction({
                         serverId,
