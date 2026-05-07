@@ -218,6 +218,8 @@ export {
   listFeatureFlags,
   getFeatureFlag,
   isFeatureEnabled,
+  hasCommunityFeatureAccess,
+  getCommunityIdsWithFeatureAccess,
   hasTeamBuilderAccess,
   createFeatureFlag,
   updateFeatureFlag,

@@ -87,6 +87,7 @@ interface CommunityInfo {
   role: "owner" | "staff" | "sudo";
   hasLiveTournament: boolean;
   status?: string | null;
+  discordEnabled?: boolean;
 }
 
 interface DashboardSidebarProps {
@@ -898,14 +899,17 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
       }
     : null;
 
-  const discordItem = isOwner
-    ? {
-        label: "Discord",
-        href: `${base}/settings/integrations/discord`,
-        icon: DiscordIcon,
-        isActive: pathname.startsWith(`${base}/settings/integrations/discord`),
-      }
-    : null;
+  const discordItem =
+    isOwner && community.discordEnabled
+      ? {
+          label: "Discord",
+          href: `${base}/settings/integrations/discord`,
+          icon: DiscordIcon,
+          isActive: pathname.startsWith(
+            `${base}/settings/integrations/discord`
+          ),
+        }
+      : null;
 
   return (
     <>

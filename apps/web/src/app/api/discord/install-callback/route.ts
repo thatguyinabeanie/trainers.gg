@@ -28,6 +28,7 @@ import {
 } from "@trainers/supabase";
 
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { checkCommunityFeatureAccess } from "@/lib/feature-flags/check-flag";
 import { verifyInstallState } from "@/lib/discord/install-state";
 import { captureServerEvent } from "@/lib/posthog/server";
 
@@ -119,6 +120,15 @@ export async function GET(request: Request): Promise<Response> {
   const hasAccess = await hasCommunityAccess(supabase, community_id, user.id);
   if (!hasAccess) {
     return redirectWithError("not_authorized");
+  }
+
+  // Step 5b: Confirm Discord integration is enabled for this community
+  const discordEnabled = await checkCommunityFeatureAccess(
+    "discord_integration",
+    community_id
+  );
+  if (!discordEnabled) {
+    return redirectWithError("feature_disabled");
   }
 
   // Step 6: Create the discord_servers row

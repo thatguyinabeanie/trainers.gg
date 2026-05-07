@@ -16,6 +16,8 @@ import {
   suspendOrganization,
   unsuspendOrganization,
   transferCommunityOwnership,
+  getFeatureFlag,
+  updateFeatureFlag,
 } from "@trainers/supabase/queries";
 import { CacheTags } from "@/lib/cache";
 
@@ -262,4 +264,53 @@ export async function updateFeaturedOrderAction(
     updateTag(CacheTags.COMMUNITIES_LIST);
     return { success: true };
   }, "Failed to update featured order");
+}
+
+// --- Toggle Discord Integration ---
+
+export async function toggleDiscordAction(
+  communityId: number,
+  enabled: boolean
+): Promise<ActionResult> {
+  const parsedOrgId = positiveIntSchema.safeParse(communityId);
+  if (!parsedOrgId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
+    };
+  }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    const flag = await getFeatureFlag(supabase, "discord_integration");
+    if (!flag) {
+      throw new Error("discord_integration feature flag not found");
+    }
+
+    const metadata = (flag.metadata ?? {}) as {
+      allowed_communities?: number[];
+    };
+    const current = new Set(metadata.allowed_communities ?? []);
+
+    if (enabled) {
+      current.add(parsedOrgId.data);
+    } else {
+      current.delete(parsedOrgId.data);
+    }
+
+    await updateFeatureFlag(
+      supabase,
+      flag.id,
+      {
+        metadata: {
+          ...metadata,
+          allowed_communities: Array.from(current),
+        },
+      },
+      adminUserId
+    );
+
+    updateTag(CacheTags.COMMUNITIES_LIST);
+    updateTag(CacheTags.community(parsedOrgId.data));
+    return { success: true };
+  }, "Failed to toggle Discord integration");
 }

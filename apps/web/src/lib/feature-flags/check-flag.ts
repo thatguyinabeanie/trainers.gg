@@ -30,3 +30,34 @@ export async function checkFeatureAccess(
     (flag.metadata as { allowed_users?: string[] })?.allowed_users || [];
   return allowedUsers.includes(userId);
 }
+
+/**
+ * Check if a community has access to a feature flag.
+ *
+ * Logic:
+ * - If flag.enabled = true: all communities have access
+ * - If flag.enabled = false: only communities in metadata.allowed_communities
+ *
+ * @param flagKey - Feature flag key (e.g., "discord_integration")
+ * @param communityId - Community ID to check
+ * @returns true if community has access, false otherwise
+ */
+export async function checkCommunityFeatureAccess(
+  flagKey: string,
+  communityId: number
+): Promise<boolean> {
+  const supabase = await createClient();
+  const flag = await getFeatureFlag(supabase, flagKey);
+
+  // Flag doesn't exist = disabled
+  if (!flag) return false;
+
+  // Globally enabled = all communities have access
+  if (flag.enabled) return true;
+
+  // Globally disabled = check allowlist
+  const allowed =
+    (flag.metadata as { allowed_communities?: number[] })
+      ?.allowed_communities || [];
+  return allowed.includes(communityId);
+}

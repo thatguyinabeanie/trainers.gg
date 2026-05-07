@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSupabaseQuery } from "@/lib/supabase";
+import { hasCommunityFeatureAccess } from "@trainers/supabase";
 import {
   Sheet,
   SheetContent,
@@ -41,6 +43,7 @@ import {
   transferOwnershipAction,
   toggleFeaturedAction,
   togglePartnerAction,
+  toggleDiscordAction,
 } from "./actions";
 
 // --- Status and tier badge styles (reused from columns for consistency) ---
@@ -97,6 +100,20 @@ export function CommunityDetailSheet({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
     null
   );
+
+  // Discord integration feature flag state
+  const discordQuery = useSupabaseQuery(
+    async (supabase) => {
+      if (!community) return { access: false };
+      return await hasCommunityFeatureAccess(
+        supabase,
+        "discord_integration",
+        community.id
+      );
+    },
+    [community?.id]
+  );
+  const discordEnabled = discordQuery.data?.access === true;
 
   // Reset form state when the sheet opens/closes or community changes
   const handleOpenChange = (nextOpen: boolean) => {
@@ -344,6 +361,36 @@ export function CommunityDetailSheet({
                     }
                   }}
                   disabled={loading}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="discord-toggle">Discord Integration</Label>
+                  <p className="text-muted-foreground text-xs">
+                    Enable Discord bot integration for this community
+                  </p>
+                </div>
+                <Switch
+                  id="discord-toggle"
+                  checked={discordEnabled}
+                  onCheckedChange={async (checked) => {
+                    setLoading(true);
+                    const result = await toggleDiscordAction(
+                      community.id,
+                      checked
+                    );
+                    setLoading(false);
+                    if (!result.success) {
+                      setError(
+                        result.error ?? "Failed to toggle Discord integration"
+                      );
+                    } else {
+                      discordQuery.refetch();
+                      router.refresh();
+                    }
+                  }}
+                  disabled={loading || discordQuery.isLoading}
                 />
               </div>
             </section>
