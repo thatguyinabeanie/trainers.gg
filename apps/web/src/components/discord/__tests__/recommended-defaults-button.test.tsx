@@ -32,7 +32,6 @@ describe("RecommendedDefaultsButton", () => {
       { id: "ch1", name: "general", type: 0 },
       { id: "ch2", name: "announcements", type: 0 },
     ],
-    guildRoles: [{ id: "role1", name: "Admin", color: 0 }],
     onApplied: jest.fn(),
   };
 

@@ -62,7 +62,7 @@ describe("ActivityFeed", () => {
   it("renders activity descriptions for role_sync type", () => {
     render(<ActivityFeed activities={activities} />);
     expect(
-      screen.getByText("Synced role verified for user-123")
+      screen.getByText("Synced Verified Role for user-123")
     ).toBeInTheDocument();
   });
 

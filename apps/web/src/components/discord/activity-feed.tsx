@@ -18,7 +18,18 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   // DM event types (from ALL_DM_EVENT_TYPES)
   match_ready: "Match Ready",
   check_in_reminder: "Check-in Reminder",
+  // Role sync types
+  verified: "Verified Role",
+  subscriber: "Subscriber Role",
+  tournament_winner: "Tournament Winner Role",
 };
+
+function getEventLabel(eventType: string): string {
+  return (
+    EVENT_TYPE_LABELS[eventType] ??
+    eventType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  );
+}
 
 interface Activity {
   id: number;
@@ -48,15 +59,16 @@ function getActivityIcon(type: string) {
 }
 
 function getDescription(activity: Activity): string {
+  const label = getEventLabel(activity.eventType);
   switch (activity.type) {
     case "channel":
-      return `Sent ${EVENT_TYPE_LABELS[activity.eventType] ?? activity.eventType.replace(/_/g, " ")} to #${activity.target}`;
+      return `Sent ${label} to #${activity.target}`;
     case "dm":
-      return `DM'd ${EVENT_TYPE_LABELS[activity.eventType] ?? activity.eventType.replace(/_/g, " ")} to @${activity.target}`;
+      return `DM'd ${label} to @${activity.target}`;
     case "role_sync":
-      return `Synced role ${EVENT_TYPE_LABELS[activity.eventType] ?? activity.eventType.replace(/_/g, " ")} for ${activity.target}`;
+      return `Synced ${label} for ${activity.target}`;
     default:
-      return `${EVENT_TYPE_LABELS[activity.eventType] ?? activity.eventType.replace(/_/g, " ")} → ${activity.target}`;
+      return `${label} → ${activity.target}`;
   }
 }
 

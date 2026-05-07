@@ -52,7 +52,7 @@ export function RecommendedDefaultsButton({
       const r1 = await upsertChannelMappingAction({
         communityId,
         eventType: "tournament_created",
-        channelId: (announcementChannel ?? generalChannel)!.id,
+        channelId: primaryChannel.id,
       });
       if (!r1.success) {
         toast.error(r1.error);
@@ -60,7 +60,7 @@ export function RecommendedDefaultsButton({
       }
 
       // Map other events to general or announcement channel
-      const fallbackId = (generalChannel ?? announcementChannel)!.id;
+      const fallbackId = (generalChannel ?? announcementChannel ?? primaryChannel).id;
       const r2 = await upsertChannelMappingAction({
         communityId,
         eventType: "registration_opens",

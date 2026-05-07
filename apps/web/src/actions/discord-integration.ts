@@ -125,12 +125,17 @@ const updateChannelPingRoleSchema = z.object({
   communityId: z.number().int().positive(),
 });
 
-const updateVerifiedRoleSchema = z.object({
-  serverId: z.number().int().positive(),
-  communityId: z.number().int().positive(),
-  enabled: z.boolean(),
-  roleId: z.string().min(1).nullable(),
-});
+const updateVerifiedRoleSchema = z
+  .object({
+    serverId: z.number().int().positive(),
+    communityId: z.number().int().positive(),
+    enabled: z.boolean(),
+    roleId: z.string().min(1).nullable(),
+  })
+  .refine((data) => !data.enabled || data.roleId !== null, {
+    message: "roleId is required when enabling the verified role",
+    path: ["roleId"],
+  });
 
 // Payload schemas for discord_delivery_failures — each failure type carries a
 // different shape. Validated at retry time to catch malformed DB rows early.
@@ -990,12 +995,14 @@ export async function updateChannelPingRoleAction(
     await requireCommunityManage(supabase, parsed.communityId);
 
     // Verify mapping belongs to this community's server
-    const { data: mapping } = await supabase
+    const { data: mapping, error: selectError } = await supabase
       .from("discord_channels")
       .select("id, discord_server_id, discord_servers!inner(community_id)")
       .eq("id", parsed.mappingId)
-      .single();
+      .maybeSingle();
 
+    if (selectError)
+      throw new Error(`Failed to look up channel mapping: ${selectError.message}`);
     if (!mapping) {
       return { success: false, error: "Channel mapping not found" };
     }
@@ -1064,23 +1071,27 @@ export async function updateVerifiedRoleAction(input: {
         discord_role_id: parsed.roleId,
       });
       // Ensure it's enabled
-      const { data: mapping } = await supabase
+      const { data: mapping, error: lookupError } = await supabase
         .from("discord_role_mappings")
         .select("id")
         .eq("discord_server_id", parsed.serverId)
         .eq("role_type", "verified")
         .maybeSingle();
+      if (lookupError)
+        throw new Error(`Failed to look up role mapping: ${lookupError.message}`);
       if (mapping) {
         await toggleRoleMapping(supabase, mapping.id, true);
       }
     } else {
       // Disable the verified role mapping if it exists
-      const { data: mapping } = await supabase
+      const { data: mapping, error: lookupError } = await supabase
         .from("discord_role_mappings")
         .select("id")
         .eq("discord_server_id", parsed.serverId)
         .eq("role_type", "verified")
         .maybeSingle();
+      if (lookupError)
+        throw new Error(`Failed to look up role mapping: ${lookupError.message}`);
       if (mapping) {
         await toggleRoleMapping(supabase, mapping.id, false);
       }
@@ -1153,7 +1164,7 @@ export async function getDeliveryStatsAction(
         channelMessages,
         dmsDelivered,
         roleSyncs,
-        failures: failureCount ?? 0,
+        failures: failureCount,
         period: "Last 24 hours",
       },
     };
