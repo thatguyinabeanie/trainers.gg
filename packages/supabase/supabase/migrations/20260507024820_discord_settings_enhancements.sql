@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS public.discord_delivery_log (
                     CONSTRAINT discord_delivery_log_type_check CHECK (type IN ('channel', 'dm', 'role_sync')),
   event_type        text   NOT NULL,
   target            text   NOT NULL,
-  metadata          jsonb  NOT NULL DEFAULT '{}'::jsonb,
+  metadata          jsonb  DEFAULT '{}'::jsonb,
   created_at        timestamptz NOT NULL DEFAULT now()
 );
 
@@ -84,3 +84,10 @@ CREATE POLICY "Community leaders can view delivery logs"
 
 -- No INSERT/UPDATE/DELETE policies for authenticated users — only service role
 -- (edge functions / cron workers) writes to this table.
+-- service_role bypasses RLS, but explicit policy documents intent:
+DROP POLICY IF EXISTS "service_role can insert delivery logs" ON public.discord_delivery_log;
+CREATE POLICY "service_role can insert delivery logs"
+  ON public.discord_delivery_log
+  FOR INSERT
+  TO service_role
+  WITH CHECK (true);

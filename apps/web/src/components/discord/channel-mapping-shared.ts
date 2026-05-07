@@ -12,6 +12,9 @@ import {
 
 import { type GuildChannel } from "@/lib/discord/guild-cache";
 
+import { DM_EVENT_LABELS as DM_EVENT_META } from "./dm-settings-shared";
+import { ROLE_TYPE_META } from "./role-mapping-shared";
+
 // ---------------------------------------------------------------------------
 // Props shared by both layouts
 // ---------------------------------------------------------------------------
@@ -92,35 +95,31 @@ export function getChannelEventMeta(eventType: string): {
 }
 
 // ---------------------------------------------------------------------------
-// DM event labels
+// DM event labels — derived from canonical dm-settings-shared.ts
 // ---------------------------------------------------------------------------
 
-export const DM_EVENT_LABELS: Record<string, string> = {
-  match_ready: "Match Ready",
-  match_starting_soon: "Match Starting Soon",
-  match_result_to_confirm: "Match Result to Confirm",
-  match_disputed: "Match Disputed",
-  team_sheet_needed: "Team Sheet Needed",
-  team_sheet_approved: "Team Sheet Approved",
-  team_sheet_rejected: "Team Sheet Rejected",
-  you_dropped: "You Dropped",
-  top_cut_made: "Top Cut Made",
-  tournament_starting: "Tournament Starting",
-  tournament_cancelled: "Tournament Cancelled",
-  check_in_reminder: "Check-in Reminder",
-};
+/** Title-cased DM event labels, derived from the canonical DM_EVENT_LABELS */
+const DM_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(DM_EVENT_META).map(([key, meta]) => [
+    key,
+    meta.label.replace(/(?:^|\s)\w/g, (c) => c.toUpperCase()),
+  ])
+);
 
 // ---------------------------------------------------------------------------
-// Role sync event labels
+// Role sync event labels — derived from canonical role-mapping-shared.ts
 // ---------------------------------------------------------------------------
 
-export const ROLE_SYNC_LABELS: Record<string, string> = {
-  verified: "Verified Role",
-  member: "Member Role",
-  participant: "Participant Role",
+/** Title-cased role sync labels, derived from ROLE_TYPE_META + "Role" suffix */
+const ROLE_LABELS: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.entries(ROLE_TYPE_META).map(([key, meta]) => [
+      key,
+      meta.label.endsWith("Role") ? meta.label : `${meta.label} Role`,
+    ])
+  ),
+  // Overrides for labels that differ from "<meta.label> Role"
   winner: "Tournament Winner Role",
-  staff: "Staff Role",
-  currently_playing: "Currently Playing Role",
   subscriber: "Subscriber Role",
 };
 
@@ -139,9 +138,9 @@ export function getEventLabel(eventType: string): string {
     // Title-case the sentence-case label (capitalize first letter of each word)
     return channelMeta.label.replace(/(?:^|\s)\w/g, (c) => c.toUpperCase());
   }
-  const dmLabel = DM_EVENT_LABELS[eventType];
+  const dmLabel = DM_LABELS[eventType];
   if (dmLabel) return dmLabel;
-  const roleLabel = ROLE_SYNC_LABELS[eventType];
+  const roleLabel = ROLE_LABELS[eventType];
   if (roleLabel) return roleLabel;
   // Fallback: title-case humanization
   return eventType
