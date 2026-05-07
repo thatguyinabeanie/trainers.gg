@@ -204,6 +204,7 @@ export default async function DashboardHomePage() {
     .map((t) => ({
       id: t.id,
       name: t.name,
+      slug: t.slug,
       startDate: t.startDate ? new Date(t.startDate).getTime() : null,
       status: t.status,
       hasTeam: t.hasTeam,

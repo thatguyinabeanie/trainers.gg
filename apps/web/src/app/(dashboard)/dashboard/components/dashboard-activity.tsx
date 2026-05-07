@@ -26,6 +26,7 @@ import { checkIn } from "@/actions/tournaments";
 interface Tournament {
   id: number;
   name: string;
+  slug: string;
   startDate: number | null;
   status: string;
   hasTeam: boolean;
@@ -200,12 +201,12 @@ function UpcomingTournamentsList({
                 statusInfo.bgColor
               )}
             >
-              <Trophy className={cn("size-4", statusInfo.color)} />
+              <StatusIcon className={cn("size-4", statusInfo.color)} />
             </div>
 
             {/* Content */}
             <Link
-              href={`/tournaments/${tournament.id}`}
+              href={`/tournaments/${tournament.slug}`}
               className="min-w-0 flex-1"
             >
               <p className="group-hover:text-primary truncate text-sm font-medium transition-colors">
@@ -235,7 +236,7 @@ function UpcomingTournamentsList({
                   size="sm"
                   variant="outline"
                   className="h-7 text-xs"
-                  render={<Link href={`/tournaments/${tournament.id}`} />}
+                  render={<Link href={`/tournaments/${tournament.slug}`} />}
                   nativeButton={false}
                 >
                   <Upload className="mr-1 size-3" />
@@ -261,7 +262,7 @@ function UpcomingTournamentsList({
                   size="sm"
                   variant="ghost"
                   className="h-7 text-xs"
-                  render={<Link href={`/tournaments/${tournament.id}`} />}
+                  render={<Link href={`/tournaments/${tournament.slug}`} />}
                   nativeButton={false}
                 >
                   View

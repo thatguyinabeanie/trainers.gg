@@ -44,11 +44,11 @@ function TeamCard({
 }) {
   return (
     <Link
-      href={`/dashboard/alts/${altUsername}`}
+      href={`/dashboard/alts/${altUsername}/teams/${team.id}`}
       className="group flex items-center gap-3 rounded-lg bg-background/60 px-3 py-2 transition-colors hover:bg-background"
     >
       {/* Team name */}
-      <span className="min-w-0 shrink-0 truncate text-xs font-medium">
+      <span className="min-w-0 flex-1 truncate text-xs font-medium">
         {team.name}
       </span>
 
