@@ -42,7 +42,7 @@ jest.mock("@tanstack/react-query", () => ({
 }));
 
 // Mock dependencies
-const mockSignInWithOAuth = jest.fn().mockResolvedValue({ error: null });
+const mockLinkIdentity = jest.fn().mockResolvedValue({ data: { url: "" }, error: null });
 const mockUnlinkIdentity = jest.fn();
 
 jest.mock("@/hooks/use-auth", () => ({
@@ -51,13 +51,13 @@ jest.mock("@/hooks/use-auth", () => ({
       id: "user-123",
       identities: mockUserIdentities,
     },
-    signInWithOAuth: mockSignInWithOAuth,
   }),
 }));
 
 jest.mock("@/lib/supabase/client", () => ({
   createClient: jest.fn(() => ({
     auth: {
+      linkIdentity: mockLinkIdentity,
       unlinkIdentity: mockUnlinkIdentity,
     },
   })),
@@ -99,7 +99,7 @@ jest.mock("sonner", () => ({
 
 // Mock window.location
 delete (window as Partial<Window>).location;
-window.location = { href: "" } as Location;
+window.location = { href: "", origin: "http://localhost:3000" } as Location;
 
 // Test data
 let mockUserIdentities: Array<{
@@ -224,7 +224,7 @@ describe("LinkedIdentitiesSection", () => {
   });
 
   describe("connect functionality", () => {
-    it("calls signInWithOAuth when clicking Connect for OAuth provider", async () => {
+    it("calls linkIdentity when clicking Connect for OAuth provider", async () => {
       const user = userEvent.setup();
       render(<LinkedIdentitiesSection />);
 
@@ -241,10 +241,12 @@ describe("LinkedIdentitiesSection", () => {
       });
       await user.click(connectButton);
 
-      expect(mockSignInWithOAuth).toHaveBeenCalledWith(
-        "discord",
-        "/dashboard/settings/account"
-      );
+      expect(mockLinkIdentity).toHaveBeenCalledWith({
+        provider: "discord",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=%2Fdashboard%2Fsettings%2Faccount`,
+        },
+      });
     });
 
     it("redirects to Bluesky OAuth when clicking Connect for Bluesky", async () => {
