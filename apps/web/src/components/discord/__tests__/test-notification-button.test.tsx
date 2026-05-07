@@ -52,8 +52,8 @@ describe("TestNotificationButton", () => {
     expect(mockToast.success).toHaveBeenCalledWith("Test notification sent!");
   });
 
-  it("shows error toast when action throws", async () => {
-    mockSendTestNotificationAction.mockRejectedValue(new Error("fail"));
+  it("shows error toast when action returns failure", async () => {
+    mockSendTestNotificationAction.mockResolvedValue({ success: false, error: "Failed to send test notification" });
     const user = userEvent.setup();
 
     render(

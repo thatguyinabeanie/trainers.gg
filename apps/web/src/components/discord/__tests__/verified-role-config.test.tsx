@@ -2,20 +2,20 @@
  * @jest-environment jsdom
  */
 
-import { describe, it, expect, jest } from "@jest/globals";
+import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { VerifiedRoleConfig } from "../verified-role-config";
-
+const mockUpdateVerifiedRoleAction = jest.fn();
 jest.mock("@/actions/discord-integration", () => ({
-  updateVerifiedRoleAction: jest
-    .fn()
-    .mockResolvedValue({ success: true, data: undefined }),
+  updateVerifiedRoleAction: (...args: unknown[]) =>
+    mockUpdateVerifiedRoleAction(...args),
 }));
-jest.mock("sonner", () => ({
-  toast: { success: jest.fn(), error: jest.fn() },
-}));
+
+const mockToast = { success: jest.fn(), error: jest.fn() };
+jest.mock("sonner", () => ({ toast: mockToast }));
+
+import { VerifiedRoleConfig } from "../verified-role-config";
 
 describe("VerifiedRoleConfig", () => {
   const defaultProps = {
@@ -28,6 +28,8 @@ describe("VerifiedRoleConfig", () => {
     communityId: 1,
     enabled: false,
   };
+
+  beforeEach(() => jest.clearAllMocks());
 
   it("renders heading", () => {
     render(<VerifiedRoleConfig {...defaultProps} />);
@@ -49,17 +51,105 @@ describe("VerifiedRoleConfig", () => {
     expect(screen.getByRole("combobox")).toBeInTheDocument();
   });
 
-  it("toggling switch calls updateVerifiedRoleAction", async () => {
-    const { updateVerifiedRoleAction } = jest.requireMock(
-      "@/actions/discord-integration"
-    ) as { updateVerifiedRoleAction: jest.Mock };
+  it("toggling switch ON calls action with enabled: true", async () => {
+    mockUpdateVerifiedRoleAction.mockResolvedValue({ success: true });
 
     render(<VerifiedRoleConfig {...defaultProps} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole("switch"));
 
-    expect(updateVerifiedRoleAction).toHaveBeenCalledWith(
+    expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: true })
+    );
+    expect(mockToast.success).toHaveBeenCalledWith("Verified role enabled.");
+  });
+
+  it("toggling switch OFF calls action with enabled: false", async () => {
+    mockUpdateVerifiedRoleAction.mockResolvedValue({ success: true });
+
+    render(<VerifiedRoleConfig {...defaultProps} enabled={true} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("switch"));
+
+    expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
+      expect.objectContaining({ enabled: false })
+    );
+    expect(mockToast.success).toHaveBeenCalledWith("Verified role disabled.");
+  });
+
+  it("rolls back toggle on error", async () => {
+    mockUpdateVerifiedRoleAction.mockResolvedValue({
+      success: false,
+      error: "Server error",
+    });
+
+    render(<VerifiedRoleConfig {...defaultProps} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("switch"));
+
+    expect(mockToast.error).toHaveBeenCalledWith("Server error");
+    // Switch should be rolled back to unchecked
+    expect(screen.getByRole("switch")).not.toBeChecked();
+  });
+
+  it("changing role calls action and shows success toast", async () => {
+    mockUpdateVerifiedRoleAction.mockResolvedValue({ success: true });
+
+    render(
+      <VerifiedRoleConfig {...defaultProps} enabled={true} currentRoleId={null} />
+    );
+    const user = userEvent.setup();
+
+    const combobox = screen.getByRole("combobox");
+    await user.click(combobox);
+    await user.click(screen.getByText("Verified"));
+
+    expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
+      expect.objectContaining({ roleId: "role1" })
+    );
+    expect(mockToast.success).toHaveBeenCalledWith("Verified role updated.");
+  });
+
+  it("shows error toast when role change fails", async () => {
+    mockUpdateVerifiedRoleAction.mockResolvedValue({
+      success: false,
+      error: "Role update failed",
+    });
+
+    render(
+      <VerifiedRoleConfig
+        {...defaultProps}
+        enabled={true}
+        currentRoleId={null}
+      />
+    );
+    const user = userEvent.setup();
+
+    const combobox = screen.getByRole("combobox");
+    await user.click(combobox);
+    await user.click(screen.getByText("Member"));
+
+    expect(mockToast.error).toHaveBeenCalledWith("Role update failed");
+  });
+
+  it("selecting 'None' sends roleId as null", async () => {
+    mockUpdateVerifiedRoleAction.mockResolvedValue({ success: true });
+
+    render(
+      <VerifiedRoleConfig
+        {...defaultProps}
+        enabled={true}
+        currentRoleId="role1"
+      />
+    );
+    const user = userEvent.setup();
+
+    const combobox = screen.getByRole("combobox");
+    await user.click(combobox);
+    await user.click(screen.getByText("None"));
+
+    expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
+      expect.objectContaining({ roleId: null })
     );
   });
 });

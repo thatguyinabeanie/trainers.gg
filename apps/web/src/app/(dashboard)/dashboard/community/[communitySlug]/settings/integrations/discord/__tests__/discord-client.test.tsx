@@ -46,10 +46,6 @@ jest.mock("@/components/discord/activity-feed", () => ({
   ActivityFeed: () => <div>Activity feed stub</div>,
 }));
 
-jest.mock("@/components/discord/linked-accounts-overview", () => ({
-  LinkedAccountsOverview: () => <div>Linked accounts stub</div>,
-}));
-
 jest.mock("@/components/discord/embed-preview", () => ({
   EmbedPreview: () => <div>Embed preview stub</div>,
 }));
@@ -251,7 +247,7 @@ describe("DiscordClient", () => {
     it("renders the overview tab content by default", () => {
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      // Overview tab shows recommended defaults and linked accounts stubs
+      // Overview tab shows recommended defaults stub
       expect(
         screen.getByText(/recommended defaults stub/i)
       ).toBeInTheDocument();

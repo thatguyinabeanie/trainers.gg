@@ -97,7 +97,6 @@ import {
   sendTestNotificationAction,
   getDeliveryStatsAction,
   getActivityFeedAction,
-  getLinkedAccountsStatsAction,
 } from "../discord-integration";
 
 // =============================================================================
@@ -402,15 +401,16 @@ describe("getDeliveryStatsAction", () => {
     mockPermission(true);
     mockGetDiscordServerById.mockResolvedValue(fakeServer);
 
-    const logs = [
-      { type: "channel" },
-      { type: "channel" },
-      { type: "dm" },
-      { type: "role_sync" },
-    ];
-    const logsChain = mockQueryChain({ data: logs, error: null });
+    // The action runs 4 parallel head-count queries
+    const channelChain = mockQueryChain({ data: null, error: null, count: 2 });
+    const dmChain = mockQueryChain({ data: null, error: null, count: 1 });
+    const roleChain = mockQueryChain({ data: null, error: null, count: 1 });
     const failuresChain = mockQueryChain({ data: null, error: null, count: 2 });
-    mockFrom.mockReturnValueOnce(logsChain).mockReturnValueOnce(failuresChain);
+    mockFrom
+      .mockReturnValueOnce(channelChain)
+      .mockReturnValueOnce(dmChain)
+      .mockReturnValueOnce(roleChain)
+      .mockReturnValueOnce(failuresChain);
 
     const result = await getDeliveryStatsAction(99);
     expect(result.success).toBe(true);
@@ -468,35 +468,4 @@ describe("getActivityFeedAction", () => {
   });
 });
 
-// =============================================================================
-// getLinkedAccountsStatsAction
-// =============================================================================
 
-describe("getLinkedAccountsStatsAction", () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it("returns FORBIDDEN when caller lacks permission", async () => {
-    mockPermission(false);
-    const result = await getLinkedAccountsStatsAction({
-      serverId: 99,
-      communityId: 1,
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("returns linked account counts", async () => {
-    mockPermission(true);
-    const chain = mockQueryChain({ data: null, error: null, count: 5 });
-    mockFrom.mockReturnValue(chain);
-
-    const result = await getLinkedAccountsStatsAction({
-      serverId: 99,
-      communityId: 1,
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.linkedCount).toBe(5);
-      expect(result.data.totalMembers).toBeNull();
-    }
-  });
-});

@@ -2,25 +2,30 @@
  * @jest-environment jsdom
  */
 
-import { describe, it, expect, jest } from "@jest/globals";
+import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
-import { TournamentAutomationSettings } from "../tournament-automation-settings";
+const mockUpsertChannelMappingAction = jest.fn();
+const mockDeleteChannelMappingAction = jest.fn();
+const mockUpsertDmSettingAction = jest.fn();
+const mockUpdateServerSettingsAction = jest.fn();
 
 jest.mock("@/actions/discord-integration", () => ({
-  upsertChannelMappingAction: jest
-    .fn()
-    .mockResolvedValue({ success: true, data: { id: 1 } }),
-  upsertDmSettingAction: jest
-    .fn()
-    .mockResolvedValue({ success: true, data: undefined }),
-  updateServerSettingsAction: jest
-    .fn()
-    .mockResolvedValue({ success: true, data: undefined }),
+  upsertChannelMappingAction: (...args: unknown[]) =>
+    mockUpsertChannelMappingAction(...args),
+  deleteChannelMappingAction: (...args: unknown[]) =>
+    mockDeleteChannelMappingAction(...args),
+  upsertDmSettingAction: (...args: unknown[]) =>
+    mockUpsertDmSettingAction(...args),
+  updateServerSettingsAction: (...args: unknown[]) =>
+    mockUpdateServerSettingsAction(...args),
 }));
-jest.mock("sonner", () => ({
-  toast: { success: jest.fn(), error: jest.fn() },
-}));
+
+const mockToast = { success: jest.fn(), error: jest.fn() };
+jest.mock("sonner", () => ({ toast: mockToast }));
+
+import { TournamentAutomationSettings } from "../tournament-automation-settings";
 
 describe("TournamentAutomationSettings", () => {
   const defaultProps = {
@@ -33,12 +38,16 @@ describe("TournamentAutomationSettings", () => {
     ],
     settings: {
       roundPostedChannel: null,
+      roundPostedMappingId: null,
       standingsChannel: null,
+      standingsMappingId: null,
       registrationReminderChannel: null,
       registrationReminderMinutes: null,
       checkInReminderEnabled: false,
     },
   };
+
+  beforeEach(() => jest.clearAllMocks());
 
   it("renders heading", () => {
     render(<TournamentAutomationSettings {...defaultProps} />);
@@ -61,14 +70,152 @@ describe("TournamentAutomationSettings", () => {
     expect(switches).toHaveLength(4);
   });
 
-  it("shows channel select when round posted is enabled", async () => {
+  it("shows channel select when round posted is enabled", () => {
     render(
       <TournamentAutomationSettings
         {...defaultProps}
         settings={{ ...defaultProps.settings, roundPostedChannel: "ch1" }}
       />
     );
-    // When roundPostedChannel is set, select should be visible
     expect(screen.getByRole("combobox")).toBeInTheDocument();
+  });
+
+  it("toggles round posted OFF and deletes mapping", async () => {
+    mockDeleteChannelMappingAction.mockResolvedValue({ success: true });
+
+    const user = userEvent.setup();
+    render(
+      <TournamentAutomationSettings
+        {...defaultProps}
+        settings={{
+          ...defaultProps.settings,
+          roundPostedChannel: "ch1",
+          roundPostedMappingId: 42,
+        }}
+      />
+    );
+
+    // First switch is Round Posted Announcements
+    const switches = screen.getAllByRole("switch");
+    await user.click(switches[0]!);
+
+    expect(mockDeleteChannelMappingAction).toHaveBeenCalledWith(42);
+  });
+
+  it("toggles round posted OFF without mappingId does not call delete", async () => {
+    const user = userEvent.setup();
+    render(
+      <TournamentAutomationSettings
+        {...defaultProps}
+        settings={{
+          ...defaultProps.settings,
+          roundPostedChannel: "ch1",
+          roundPostedMappingId: null,
+        }}
+      />
+    );
+
+    const switches = screen.getAllByRole("switch");
+    await user.click(switches[0]!);
+
+    expect(mockDeleteChannelMappingAction).not.toHaveBeenCalled();
+  });
+
+  it("toggles standings OFF and deletes mapping", async () => {
+    mockDeleteChannelMappingAction.mockResolvedValue({ success: true });
+
+    const user = userEvent.setup();
+    render(
+      <TournamentAutomationSettings
+        {...defaultProps}
+        settings={{
+          ...defaultProps.settings,
+          standingsChannel: "ch2",
+          standingsMappingId: 99,
+        }}
+      />
+    );
+
+    // Second switch is Standings Auto-Post
+    const switches = screen.getAllByRole("switch");
+    await user.click(switches[1]!);
+
+    expect(mockDeleteChannelMappingAction).toHaveBeenCalledWith(99);
+  });
+
+  it("shows error toast when delete mapping fails", async () => {
+    mockDeleteChannelMappingAction.mockResolvedValue({
+      success: false,
+      error: "Permission denied",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <TournamentAutomationSettings
+        {...defaultProps}
+        settings={{
+          ...defaultProps.settings,
+          roundPostedChannel: "ch1",
+          roundPostedMappingId: 42,
+        }}
+      />
+    );
+
+    const switches = screen.getAllByRole("switch");
+    await user.click(switches[0]!);
+
+    expect(mockToast.error).toHaveBeenCalledWith("Permission denied");
+  });
+
+  it("check-in reminder toggle OFF does not call action (early return)", async () => {
+    const user = userEvent.setup();
+    render(
+      <TournamentAutomationSettings
+        {...defaultProps}
+        settings={{
+          ...defaultProps.settings,
+          checkInReminderEnabled: true,
+        }}
+      />
+    );
+
+    // Fourth switch is Check-in Reminder DMs — toggling OFF
+    const switches = screen.getAllByRole("switch");
+    await user.click(switches[3]!);
+
+    expect(mockUpsertDmSettingAction).not.toHaveBeenCalled();
+  });
+
+  it("check-in reminder toggle ON calls upsertDmSettingAction", async () => {
+    mockUpsertDmSettingAction.mockResolvedValue({ success: true });
+
+    const user = userEvent.setup();
+    render(<TournamentAutomationSettings {...defaultProps} />);
+
+    // Fourth switch is Check-in Reminder DMs — toggling ON
+    const switches = screen.getAllByRole("switch");
+    await user.click(switches[3]!);
+
+    expect(mockUpsertDmSettingAction).toHaveBeenCalledWith({
+      communityId: 1,
+      eventType: "check_in_reminder",
+      deliveryMode: "dm_only",
+    });
+    expect(mockToast.success).toHaveBeenCalledWith("DM reminders enabled");
+  });
+
+  it("shows error toast when DM setting fails", async () => {
+    mockUpsertDmSettingAction.mockResolvedValue({
+      success: false,
+      error: "Server error",
+    });
+
+    const user = userEvent.setup();
+    render(<TournamentAutomationSettings {...defaultProps} />);
+
+    const switches = screen.getAllByRole("switch");
+    await user.click(switches[3]!);
+
+    expect(mockToast.error).toHaveBeenCalledWith("Server error");
   });
 });
