@@ -46,7 +46,11 @@ jest.mock("@smogon/calc", () => {
     Move: MockMove,
     Side: MockSide,
     Field: MockField,
-    Generations: { get: jest.fn(() => ({ species: { get: jest.fn() } })) },
+    Generations: { get: jest.fn(() => ({
+      species: { get: jest.fn(() => ({
+        baseStats: { hp: 78, atk: 84, def: 78, spa: 109, spd: 85, spe: 100 },
+      })) },
+    })) },
   };
 });
 
