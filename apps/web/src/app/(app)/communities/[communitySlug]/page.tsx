@@ -9,24 +9,20 @@ import { CacheTags } from "@/lib/cache";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, Calendar, Settings, Globe } from "lucide-react";
+import { Users, Calendar, Settings, Globe, Trophy } from "lucide-react";
 import {
   communitySocialLinksSchema,
   type CommunitySocialLink,
 } from "@trainers/validators";
 import { socialSvgPaths, socialPlatformLabels } from "@trainers/utils";
+import type { TournamentWithOrg } from "@trainers/supabase";
 import { CommunityTabs } from "./community-tabs";
 
 // ==========================================================================
 // Social Link Helpers
 // ==========================================================================
 
-/**
- * Parse the raw JSONB social_links field into typed array.
- * Returns empty array if parsing fails (defensive for bad data).
- */
 function parseSocialLinks(raw: unknown): CommunitySocialLink[] {
   const result = communitySocialLinksSchema.safeParse(raw);
   return result.success ? result.data : [];
@@ -36,33 +32,33 @@ function SocialLinkIcon({ link }: { link: CommunitySocialLink }) {
   const svgPath = socialSvgPaths[link.platform];
   const label = link.label || socialPlatformLabels[link.platform] || "Link";
 
-  // Platforms with custom SVG paths
   if (svgPath) {
     return (
       <a
         href={link.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-muted-foreground hover:text-foreground transition-colors"
+        className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
         aria-label={label}
       >
-        <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+        <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
           <path fill="currentColor" d={svgPath} />
         </svg>
+        <span className="text-sm">{label}</span>
       </a>
     );
   }
 
-  // Fallback: Globe icon for website/custom/unknown
   return (
     <a
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-muted-foreground hover:text-foreground transition-colors"
+      className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
       aria-label={label}
     >
-      <Globe className="h-5 w-5" />
+      <Globe className="h-4 w-4" />
+      <span className="text-sm">{label}</span>
     </a>
   );
 }
@@ -76,10 +72,6 @@ interface OrganizationPageProps {
   }>;
 }
 
-/**
- * Cached organization fetcher
- * Uses slug-specific cache tag for granular invalidation
- */
 const getCachedOrganization = (slug: string) =>
   unstable_cache(
     async () => {
@@ -90,9 +82,6 @@ const getCachedOrganization = (slug: string) =>
     { tags: [CacheTags.community(slug), CacheTags.COMMUNITIES_LIST] }
   )();
 
-/**
- * Get current user ID (not cached - user-specific)
- */
 async function getCurrentUserId(): Promise<string | null> {
   try {
     const supabase = await createClientReadOnly();
@@ -109,126 +98,130 @@ async function getCurrentUserId(): Promise<string | null> {
 // Server Components
 // ============================================================================
 
-function Breadcrumb({ orgName }: { orgName: string }) {
+/**
+ * Banner image with avatar overlaid at the bottom edge.
+ * Sits inside the page container — centered with content, not edge-to-edge.
+ */
+function BannerHero({
+  bannerUrl,
+  organization,
+}: {
+  bannerUrl: string | null;
+  organization: NonNullable<Awaited<ReturnType<typeof getCommunityBySlug>>>;
+}) {
   return (
-    <div className="text-muted-foreground mb-4 flex items-center gap-2 text-sm">
-      <Link href="/communities" className="hover:underline">
-        Communities
-      </Link>
-      <span>/</span>
-      <span className="text-foreground">{orgName}</span>
+    <div className="relative">
+      {/* Banner */}
+      <div className="h-40 w-full overflow-hidden rounded-xl sm:h-48 md:h-56">
+        {bannerUrl ? (
+          <img
+            src={bannerUrl}
+            alt={`${organization.name} banner`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="bg-muted h-full w-full" />
+        )}
+      </div>
+
+      {/* Avatar — overlaps the bottom of the banner */}
+      <div className="absolute bottom-0 left-4 translate-y-1/2 sm:left-6">
+        <Avatar
+          noBorder
+          className="ring-background h-24 w-24 shadow-lg ring-4 sm:h-28 sm:w-28"
+        >
+          <AvatarImage src={organization.logo_url ?? undefined} />
+          <AvatarFallback className="bg-muted text-3xl font-bold">
+            {organization.icon || organization.name.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+      </div>
     </div>
   );
 }
 
-function OrganizationHeader({
+function CommunityHeader({
   organization,
   canManage,
 }: {
   organization: NonNullable<Awaited<ReturnType<typeof getCommunityBySlug>>>;
   canManage: boolean;
 }) {
-  return (
-    <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-      <div className="flex items-start gap-4">
-        <Avatar noBorder className="h-16 w-16">
-          <AvatarImage src={organization.logo_url ?? undefined} />
-          <AvatarFallback className="text-xl">
-            {organization.name.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold">{organization.name}</h1>
-            {organization.tier === "partner" && (
-              <Badge variant="secondary">Partner</Badge>
-            )}
-          </div>
-          <p className="text-muted-foreground mt-1">@{organization.slug}</p>
-          {organization.description && (
-            <p className="text-muted-foreground mt-2 max-w-xl">
-              {organization.description}
-            </p>
-          )}
-          {(() => {
-            const socialLinks = parseSocialLinks(organization.social_links);
-            if (socialLinks.length === 0) return null;
-            return (
-              <div className="mt-3 flex items-center gap-3">
-                {socialLinks.map((link, i) => (
-                  <SocialLinkIcon key={`${link.platform}-${i}`} link={link} />
-                ))}
-              </div>
-            );
-          })()}
-        </div>
-      </div>
-
-      <div className="flex gap-2">
-        {canManage && (
-          <Link href={`/dashboard/community/${organization.slug}`}>
-            <Button variant="outline">
-              <Settings className="mr-2 h-4 w-4" />
-              Manage Community
-            </Button>
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function StatsCards({
-  organization,
-}: {
-  organization: NonNullable<Awaited<ReturnType<typeof getCommunityBySlug>>>;
-}) {
   const totalTournaments =
     (organization.tournaments?.active?.length ?? 0) +
     (organization.tournaments?.upcoming?.length ?? 0) +
     (organization.tournaments?.completed?.length ?? 0);
 
+  const foundedYear = organization.created_at
+    ? new Date(organization.created_at).getFullYear()
+    : new Date().getFullYear();
+
+  const socialLinks = parseSocialLinks(organization.social_links);
+
   return (
-    <div className="mb-8 grid gap-4 sm:grid-cols-3">
-      <Card>
-        <CardContent className="flex items-center gap-4 pt-6">
-          <div className="bg-primary/10 rounded-full p-3">
-            <Trophy className="text-primary h-6 w-6" />
+    <div className="mt-4">
+      {/* Name row with manage button */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-bold tracking-tight">
+              {organization.name}
+            </h1>
+            {organization.tier === "partner" && (
+              <Badge variant="secondary" className="text-xs">
+                Partner
+              </Badge>
+            )}
           </div>
-          <div>
-            <p className="text-2xl font-bold">{totalTournaments}</p>
-            <p className="text-muted-foreground text-sm">Tournaments</p>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-4 pt-6">
-          <div className="bg-primary/10 rounded-full p-3">
-            <Users className="text-primary h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold">
-              {organization.followerCount || 0}
+
+          {organization.description && (
+            <p className="text-muted-foreground max-w-2xl text-lg">
+              {organization.description}
             </p>
-            <p className="text-muted-foreground text-sm">Followers</p>
+          )}
+        </div>
+
+        {canManage && (
+          <div className="shrink-0">
+            <Link href={`/dashboard/community/${organization.slug}`}>
+              <Button variant="outline" size="sm">
+                <Settings className="mr-2 h-4 w-4" />
+                Manage Community
+              </Button>
+            </Link>
           </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-4 pt-6">
-          <div className="bg-primary/10 rounded-full p-3">
-            <Calendar className="text-primary h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold">
-              {organization.created_at
-                ? new Date(organization.created_at).getFullYear()
-                : new Date().getFullYear()}
-            </p>
-            <p className="text-muted-foreground text-sm">Founded</p>
-          </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
+
+      {/* Stats pills */}
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <div className="bg-muted/60 flex items-center gap-2 rounded-full px-4 py-1.5">
+          <Trophy className="text-primary h-4 w-4" />
+          <span className="text-sm font-medium">
+            {totalTournaments}{" "}
+            {totalTournaments === 1 ? "Tournament" : "Tournaments"}
+          </span>
+        </div>
+        <div className="bg-muted/60 flex items-center gap-2 rounded-full px-4 py-1.5">
+          <Users className="text-primary h-4 w-4" />
+          <span className="text-sm font-medium">
+            {organization.followerCount || 0} Followers
+          </span>
+        </div>
+        <div className="bg-muted/60 flex items-center gap-2 rounded-full px-4 py-1.5">
+          <Calendar className="text-primary h-4 w-4" />
+          <span className="text-sm font-medium">Founded {foundedYear}</span>
+        </div>
+      </div>
+
+      {/* Social links */}
+      {socialLinks.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-4">
+          {socialLinks.map((link, i) => (
+            <SocialLinkIcon key={`${link.platform}-${i}`} link={link} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -242,7 +235,6 @@ export default async function OrganizationPage({
 }: OrganizationPageProps) {
   const { communitySlug } = await params;
 
-  // Fetch organization (cached) and current user ID (not cached) in parallel
   const [organization, currentUserId] = await Promise.all([
     getCachedOrganization(communitySlug),
     getCurrentUserId(),
@@ -252,7 +244,6 @@ export default async function OrganizationPage({
     notFound();
   }
 
-  // Check if user can manage (owner or staff)
   let canManage = false;
   if (currentUserId) {
     if (currentUserId === organization.owner_user_id) {
@@ -267,7 +258,6 @@ export default async function OrganizationPage({
     }
   }
 
-  // Combine all tournament types and transform to match TournamentWithOrg type
   const tournaments = [
     ...(organization.tournaments?.active || []),
     ...(organization.tournaments?.upcoming || []),
@@ -282,20 +272,31 @@ export default async function OrganizationPage({
       name: organization.name,
       slug: organization.slug,
     },
-    winner: null, // Organization page doesn't fetch winner data
+    winner: null,
   }));
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Breadcrumb orgName={organization.name} />
-      <OrganizationHeader organization={organization} canManage={canManage} />
-      <StatsCards organization={organization} />
-      <CommunityTabs
-        tournaments={tournaments}
-        communitySlug={communitySlug}
-        canManage={canManage}
-        about={organization.about ?? null}
+    <div className="container mx-auto px-4 py-8 md:px-6">
+      {/* Banner with avatar overlay */}
+      <BannerHero
+        bannerUrl={organization.banner_url ?? null}
+        organization={organization}
       />
+
+      {/* Community identity — offset below avatar */}
+      <div className="mt-16 sm:mt-18">
+        <CommunityHeader organization={organization} canManage={canManage} />
+      </div>
+
+      {/* Tabbed content */}
+      <div className="mt-8">
+        <CommunityTabs
+          about={organization.about ?? null}
+          tournaments={tournaments as TournamentWithOrg[]}
+          communitySlug={communitySlug}
+          canManage={canManage}
+        />
+      </div>
     </div>
   );
 }

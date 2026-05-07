@@ -17,12 +17,17 @@ DECLARE
   seed_now timestamptz := NOW();
   vgc_league_id bigint;
   pallet_town_id bigint;
+  stellar_novas_id bigint;
+  hatterene_id bigint;
   tournament_1_id bigint;
   tournament_2_id bigint;
   tournament_3_id bigint;
   tournament_4_id bigint;
   tournament_5_id bigint;
   tournament_6_id bigint;
+  tournament_7_id bigint;
+  tournament_8_id bigint;
+  tournament_9_id bigint;
   tournaments_exist boolean;
 BEGIN
   -- Check if tournaments already seeded
@@ -35,15 +40,36 @@ BEGIN
   -- Get organization IDs
   SELECT id INTO vgc_league_id FROM public.communities WHERE slug = 'vgc-league';
   SELECT id INTO pallet_town_id FROM public.communities WHERE slug = 'pallet-town';
+  SELECT id INTO stellar_novas_id FROM public.communities WHERE slug = 'stellar-novas';
+  SELECT id INTO hatterene_id FROM public.communities WHERE slug = 'hatterene-series';
 
-  -- Tournaments batch 1
+  -- =========================================================================
+  -- VGC League Tournaments
+  -- =========================================================================
+
   INSERT INTO public.tournaments (
     community_id, name, slug, description, format, status,
     start_date, end_date, max_participants,
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
   ) VALUES (
     vgc_league_id, 'VGC League Week 1 Championship', 'vgc-league-week-01',
-    'VGC League tournament for week 1',
+    '## VGC League Week 1 Championship
+
+Welcome to VGC League''s Week 1 Championship! This is our weekly Swiss + Top Cut tournament open to all skill levels.
+
+### Rules
+- **Format:** VGC Regulation I on Pokemon Showdown
+- **Best of 3** for all matches
+- **Open Team Sheets** — opponents can see your team before the match
+- **50 minute rounds** with 5 minute check-in between rounds
+
+### How to Participate
+1. Register on this page
+2. Join our [Discord server](https://discord.gg/vgc-league) for check-in notifications
+3. Submit your team sheet before the tournament starts
+4. Check in when prompted — you have 5 minutes!
+
+Good luck, trainers!',
     'VGC', 'upcoming',
     (seed_now - interval '2 days 5 hours 11 minutes'), (seed_now - interval '1 days 23 hours 11 minutes'), 32,
     'swiss_with_cut', 5, 50, false, 4
@@ -55,7 +81,18 @@ BEGIN
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 1 Championship', 'pallet-town-week-01',
-    'Pallet Town Trainers tournament for week 1',
+    '## Pallet Town Week 1
+
+Welcome to Pallet Town Trainers'' first weekly tournament! Whether you''re a seasoned veteran or just starting your competitive journey, you''re welcome here.
+
+### Format & Rules
+- **VGC Regulation I** on Pokemon Showdown
+- **Best of 3**, open team sheets
+- **50 minute rounds**
+- Be respectful to your opponents — we''re all here to learn and have fun!
+
+### Need Help?
+If this is your first tournament, don''t worry! Check out our Discord for tips on team building and tournament etiquette.',
     'VGC', 'upcoming',
     (seed_now - interval '1 days 5 hours 11 minutes'), (seed_now - interval '23 hours 11 minutes'), 32,
     'swiss_with_cut', 5, 50, false, 4
@@ -68,7 +105,25 @@ BEGIN
     , allow_late_registration, check_in_window_minutes, late_check_in_max_round
   ) VALUES (
     vgc_league_id, 'VGC League Week 2 Championship', 'vgc-league-championship-week-02',
-    'VGC League tournament for week 2',
+    '## VGC League Week 2 Championship
+
+Week 2 is here! This week features an expanded format with **6 Swiss rounds** and a **Top 8 cut**, making it our biggest weekly yet.
+
+### What''s New This Week
+- Expanded to **6 Swiss rounds** (up from 5)
+- **Top 8 cut** instead of Top 4
+- **Late registration** is enabled through Round 3
+
+### Rules
+- **Format:** VGC Regulation I on Pokemon Showdown
+- **Best of 3** for all matches
+- **Open Team Sheets**
+- **50 minute rounds** with 5 minute check-in
+
+### Important
+All participants must join our [Discord server](https://discord.gg/vgc-league) for real-time announcements. Rounds begin shortly after the previous round completes.
+
+> **Tip:** Submit your team sheet early to avoid last-minute stress!',
     'VGC', 'upcoming',
     (seed_now - interval '3 hours'), (seed_now + interval '5 hours'), NULL,
     'swiss_with_cut', 6, 50, true, 8
@@ -82,7 +137,21 @@ BEGIN
     , allow_late_registration, check_in_window_minutes, late_check_in_max_round
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 2 Championship', 'pallet-town-championship-week-02',
-    'Pallet Town Trainers tournament for week 2',
+    '## Pallet Town Week 2 Championship
+
+Back for another week of friendly competition! This week we''re trying out an expanded format.
+
+### Format
+- **6 Swiss Rounds** into **Top 8**
+- VGC Regulation I on Pokemon Showdown
+- Best of 3, open team sheets, 50 minute rounds
+
+### Late Registration
+Can''t make it right at the start? No problem — **late registration is open through Round 3**. Jump in when you can!
+
+### Reminders
+- Join [Discord](https://discord.gg/pallet-town) for round notifications
+- Be kind, have fun, and may the best trainer win!',
     'VGC', 'upcoming',
     (seed_now - interval '3 hours'), (seed_now + interval '5 hours'), NULL,
     'swiss_with_cut', 6, 50, true, 8
@@ -95,7 +164,20 @@ BEGIN
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
   ) VALUES (
     vgc_league_id, 'VGC League Week 3 Championship', 'vgc-league-week-03',
-    'VGC League tournament for week 3 — check-in open!',
+    '## VGC League Week 3 Championship
+
+Registration is open and check-in starts 1 hour before the tournament!
+
+### Rules
+- **Format:** VGC Regulation I on Pokemon Showdown
+- **6 Swiss Rounds** into **Top 8 Cut**
+- **Best of 3**, open team sheets
+- **50 minute rounds**
+
+### Schedule
+- Registration closes at start time
+- Check-in opens 1 hour before start
+- Rounds begin on schedule — don''t be late!',
     'VGC', 'upcoming',
     (seed_now + interval '1 hours'), (seed_now + interval '7 hours'), 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -107,12 +189,106 @@ BEGIN
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 3 Championship', 'pallet-town-week-03',
-    'Pallet Town Trainers tournament for week 3 — check-in open!',
+    '## Pallet Town Week 3
+
+Another week, another chance to prove yourself! Check-in opens 1 hour before start.
+
+### Quick Info
+- VGC Regulation I, Best of 3
+- 5 Swiss Rounds into Top 4
+- Open team sheets, 50 min rounds
+
+See you on the battlefield, trainers!',
     'VGC', 'upcoming',
     (seed_now + interval '1 hours'), (seed_now + interval '7 hours'), 32,
     'swiss_with_cut', 5, 50, false, 4
   ) RETURNING id INTO tournament_6_id;
 
+  -- =========================================================================
+  -- Stellar Novas Tournaments
+  -- =========================================================================
+
+  INSERT INTO public.tournaments (
+    community_id, name, slug, description, format, status,
+    start_date, end_date, max_participants,
+    tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
+  ) VALUES (
+    stellar_novas_id, 'Stellar Novas Monthly #12', 'stellar-novas-monthly-12',
+    '## Stellar Novas Monthly #12
+
+Our monthly flagship tournament! The Stellar Novas Monthly is our longest-running series — this is edition #12.
+
+### Format
+- **VGC Regulation I** on Pokemon Showdown
+- **5 Swiss Rounds** into **Top 4 Cut**
+- **Best of 3**, open team sheets
+- **50 minute rounds**
+
+### Prizes
+Top 4 finishers earn Stellar Points toward our seasonal leaderboard. The season champion receives a special role and recognition in our community.
+
+### Stream
+This tournament will be streamed on [Twitch](https://twitch.tv/stellarnovas) with live commentary!',
+    'VGC', 'upcoming',
+    (seed_now - interval '3 days 4 hours'), (seed_now - interval '2 days 22 hours'), 32,
+    'swiss_with_cut', 5, 50, false, 4
+  ) RETURNING id INTO tournament_7_id;
+
+  INSERT INTO public.tournaments (
+    community_id, name, slug, description, format, status,
+    start_date, end_date, max_participants,
+    tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
+  ) VALUES (
+    stellar_novas_id, 'Stellar Novas Monthly #13', 'stellar-novas-monthly-13',
+    '## Stellar Novas Monthly #13
+
+It''s that time again! Monthly #13 is coming up — register now to secure your spot.
+
+### Format
+- **VGC Regulation I** on Pokemon Showdown
+- **5 Swiss Rounds** into **Top 4 Cut**
+- **Best of 3**, open team sheets
+- **50 minute rounds**
+
+### Seasonal Standings
+This tournament counts toward our Season 3 leaderboard. Check the #standings channel in Discord for current rankings.',
+    'VGC', 'upcoming',
+    (seed_now + interval '2 hours'), (seed_now + interval '8 hours'), 32,
+    'swiss_with_cut', 5, 50, false, 4
+  ) RETURNING id INTO tournament_8_id;
+
+  -- =========================================================================
+  -- Hatterene Series Tournaments
+  -- =========================================================================
+
+  INSERT INTO public.tournaments (
+    community_id, name, slug, description, format, status,
+    start_date, end_date, max_participants,
+    tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
+  ) VALUES (
+    hatterene_id, 'Hatterene Cup #1', 'hatterene-cup-01',
+    '## Hatterene Cup #1
+
+Welcome to the first Hatterene Cup! This is a tournament by and for women and femme-oriented players in the Pokemon VGC community.
+
+### About This Event
+The Hatterene Cup is a welcoming, inclusive space for players who are often underrepresented in competitive Pokemon. All skill levels welcome — from first-timers to seasoned competitors.
+
+### Format
+- **VGC Regulation I** on Pokemon Showdown
+- **4 Swiss Rounds** into **Top 4 Cut**
+- **Best of 3**, open team sheets
+- **50 minute rounds**
+
+### Code of Conduct
+We take our safe-space policy seriously. All participants must follow our [Code of Conduct](https://discord.gg/hatterene). Any violations will result in immediate disqualification.
+
+### New Players
+Never played in a tournament before? That''s great — we love first-timers! Join our Discord and check out the #getting-started channel for resources.',
+    'VGC', 'upcoming',
+    (seed_now + interval '3 hours'), (seed_now + interval '8 hours'), 32,
+    'swiss_with_cut', 4, 50, false, 4
+  ) RETURNING id INTO tournament_9_id;
 
   -- Compute tournament status from dates
   UPDATE public.tournaments SET status = (CASE
@@ -121,7 +297,7 @@ BEGIN
     ELSE 'completed'
   END)::tournament_status;
 
-  RAISE NOTICE 'Created 6 tournaments';
+  RAISE NOTICE 'Created 9 tournaments';
 END $$;
 
 -- Tournament Phases
@@ -221,7 +397,76 @@ BEGIN
     ) ON CONFLICT DO NOTHING;
   END IF;
 
-  RAISE NOTICE 'Created phases for 4 tournaments';
+  -- Phases for: Stellar Novas Monthly #12
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'stellar-novas-monthly-12';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      best_of, round_time_minutes, planned_rounds, current_round,
+      cut_rule, check_in_time_minutes
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      3, 50, 5, 5,
+      NULL, 5
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      best_of, round_time_minutes, planned_rounds, current_round,
+      cut_rule, check_in_time_minutes
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      3, 50, NULL, 2,
+      'top-4', 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Stellar Novas Monthly #13
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'stellar-novas-monthly-13';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      best_of, round_time_minutes, planned_rounds, current_round,
+      cut_rule, check_in_time_minutes
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'pending',
+      3, 50, 5, 0,
+      NULL, 5
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      best_of, round_time_minutes, planned_rounds, current_round,
+      cut_rule, check_in_time_minutes
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'pending',
+      3, 50, NULL, 0,
+      'top-4', 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Hatterene Cup #1
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'hatterene-cup-01';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      best_of, round_time_minutes, planned_rounds, current_round,
+      cut_rule, check_in_time_minutes
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'pending',
+      3, 50, 4, 0,
+      NULL, 5
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      best_of, round_time_minutes, planned_rounds, current_round,
+      cut_rule, check_in_time_minutes
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'pending',
+      3, 50, NULL, 0,
+      'top-4', 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  RAISE NOTICE 'Created phases for 7 tournaments';
 END $$;
 
 -- Tournament Registrations

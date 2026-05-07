@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, use } from "react";
 import Link from "next/link";
-import { Camera, Loader2, X, Plus } from "lucide-react";
+import { Camera, Loader2, X, Plus, ImageIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkdownContent } from "@/components/ui/markdown-content";
 import { toast } from "sonner";
@@ -28,6 +28,10 @@ import {
   uploadCommunityLogo,
   removeCommunityLogo,
 } from "@/actions/community-logo";
+import {
+  uploadCommunityBanner,
+  removeCommunityBanner,
+} from "@/actions/community-banner";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { Button } from "@/components/ui/button";
@@ -146,6 +150,7 @@ interface SettingsFormProps {
     about: string | null;
     social_links: unknown;
     logo_url: string | null;
+    banner_url: string | null;
   };
   communitySlug: string;
   onSaved: () => void;
@@ -154,9 +159,14 @@ interface SettingsFormProps {
 function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
   const [isPending, startTransition] = useTransition();
   const [isLogoUploading, startLogoTransition] = useTransition();
+  const [isBannerUploading, startBannerTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   const [currentLogoUrl, setCurrentLogoUrl] = useState<string | null>(
     org.logo_url
+  );
+  const [currentBannerUrl, setCurrentBannerUrl] = useState<string | null>(
+    org.banner_url
   );
 
   const [name, setName] = useState(org.name);
@@ -220,6 +230,53 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
     });
   };
 
+  const handleBannerSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size === 0) {
+      toast.error("File is empty");
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.error("File must be smaller than 2 MB");
+      return;
+    }
+    if (!(ALLOWED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
+      toast.error("File must be a JPEG, PNG, WebP, or GIF image");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    startBannerTransition(async () => {
+      const result = await uploadCommunityBanner(org.id, formData);
+      if (result.success) {
+        setCurrentBannerUrl(result.data.bannerUrl);
+        toast.success("Banner updated");
+        onSaved();
+      } else {
+        toast.error(result.error);
+      }
+    });
+
+    e.target.value = "";
+  };
+
+  const handleBannerRemove = () => {
+    startBannerTransition(async () => {
+      const result = await removeCommunityBanner(org.id);
+      if (result.success) {
+        setCurrentBannerUrl(null);
+        toast.success("Banner removed");
+        onSaved();
+      } else {
+        toast.error(result.error);
+      }
+    });
+  };
+
   const handleSave = () => {
     if (!name.trim()) {
       toast.error("Community name is required");
@@ -259,6 +316,70 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
 
   return (
     <div className="space-y-3">
+      {/* Banner Image — full width */}
+      <DashboardCard label="Banner Image">
+        <p className="text-muted-foreground mb-3 text-xs">
+          Displayed at the top of your community page. Recommended size: 1200
+          &times; 300px.
+        </p>
+        <button
+          type="button"
+          onClick={() => bannerInputRef.current?.click()}
+          disabled={isBannerUploading}
+          className={cn(
+            "border-border group relative w-full cursor-pointer overflow-hidden rounded-lg border-2 border-dashed transition-colors",
+            "hover:border-primary/60 disabled:cursor-not-allowed",
+            currentBannerUrl ? "h-36 sm:h-44" : "h-28 sm:h-36"
+          )}
+          aria-label="Upload community banner"
+        >
+          {currentBannerUrl ? (
+            <img
+              src={currentBannerUrl}
+              alt="Community banner"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="bg-muted/50 flex h-full w-full items-center justify-center">
+              <div className="text-muted-foreground flex flex-col items-center gap-2">
+                <ImageIcon className="h-8 w-8" />
+                <span className="text-sm">Click to upload a banner</span>
+              </div>
+            </div>
+          )}
+          <div
+            className={cn(
+              "absolute inset-0 flex items-center justify-center rounded-lg transition-opacity",
+              "bg-black/50 opacity-0 group-hover:opacity-100",
+              isBannerUploading && "opacity-100"
+            )}
+          >
+            {isBannerUploading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-white" />
+            ) : (
+              <Camera className="h-6 w-6 text-white" />
+            )}
+          </div>
+          <input
+            ref={bannerInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleBannerSelect}
+            className="hidden"
+          />
+        </button>
+        {currentBannerUrl && (
+          <button
+            type="button"
+            onClick={handleBannerRemove}
+            disabled={isBannerUploading}
+            className="text-muted-foreground hover:text-destructive mt-2 text-xs transition-colors disabled:opacity-50"
+          >
+            Remove banner
+          </button>
+        )}
+      </DashboardCard>
+
       {/* Top row: Identity + Social Links side by side */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {/* Card: Community Identity */}

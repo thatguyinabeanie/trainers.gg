@@ -33,7 +33,6 @@ import {
   type TournamentScheduleData,
 } from "@trainers/tournaments";
 import { cn } from "@/lib/utils";
-// import { TeamSubmissionsList } from "@/components/tournament/team-submissions-list";
 
 // On-demand revalidation only (no time-based)
 export const revalidate = false;
@@ -50,6 +49,16 @@ const tournamentFormatLabels: Record<string, string> = {
   single_elimination: "Single Elimination",
   double_elimination: "Double Elimination",
 };
+
+const phaseTypeLabels: Record<string, string> = {
+  swiss: "Swiss",
+  single_elimination: "Single Elimination",
+  double_elimination: "Double Elimination",
+};
+
+// ============================================================================
+// Cached Fetchers
+// ============================================================================
 
 /**
  * Cached tournament fetcher
@@ -80,8 +89,6 @@ async function getMyTeam(tournamentId: number) {
 
 /**
  * ISR-cached public team list for open teamsheet tournaments.
- * Only used when tournament has open_team_sheets = true and status
- * is "active" or "completed".
  */
 const getCachedTournamentTeams = (tournamentId: number, slug: string) =>
   unstable_cache(
@@ -132,15 +139,13 @@ async function getCurrentUserId(): Promise<string | null> {
 // Helper Functions
 // ============================================================================
 
-function _formatDate(dateStr?: string | null): string {
+function formatDate(dateStr?: string | null): string {
   if (!dateStr) return "TBD";
   return new Date(dateStr).toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -176,10 +181,11 @@ function TournamentHeader({
   const registrationCount = tournament.registrations?.length || 0;
 
   return (
-    <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-      <div>
-        <div className="mb-2 flex items-center gap-3">
-          <h1 className="text-3xl font-bold">{tournament.name}</h1>
+    <div className="mb-8">
+      {/* Title row */}
+      <div className="mb-3 flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <h1 className="text-4xl font-bold">{tournament.name}</h1>
           {(tournament.status === "active" ||
             tournament.status === "upcoming" ||
             tournament.status === "draft" ||
@@ -189,35 +195,7 @@ function TournamentHeader({
           )}
         </div>
 
-        <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
-          {organization && (
-            <Link
-              href={`/communities/${organization.slug}`}
-              className="flex items-center gap-1 hover:underline"
-            >
-              <Building2 className="h-4 w-4" />
-              {organization.name}
-            </Link>
-          )}
-          {tournament.format && (
-            <span className="flex items-center gap-1">
-              <Trophy className="h-4 w-4" />
-              {tournament.format}
-            </span>
-          )}
-          <span className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
-            {registrationCount}
-            {tournament.max_participants
-              ? ` / ${tournament.max_participants}`
-              : ""}{" "}
-            players
-          </span>
-        </div>
-      </div>
-
-      {canManage && organization && (
-        <div className="flex gap-2">
+        {canManage && organization && (
           <Link
             href={`/dashboard/community/${organization.slug}/tournaments/${tournament.slug}/manage`}
           >
@@ -226,8 +204,47 @@ function TournamentHeader({
               Manage Tournament
             </Button>
           </Link>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Metadata chips */}
+      <div className="text-muted-foreground flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+        {organization && (
+          <Link
+            href={`/communities/${organization.slug}`}
+            className="flex items-center gap-1.5 hover:underline"
+          >
+            <Building2 className="h-4 w-4" />
+            {organization.name}
+          </Link>
+        )}
+        {tournament.format && (
+          <span className="flex items-center gap-1.5">
+            <Trophy className="h-4 w-4" />
+            {tournament.format}
+          </span>
+        )}
+        <span className="flex items-center gap-1.5">
+          <Users className="h-4 w-4" />
+          {registrationCount}
+          {tournament.max_participants
+            ? ` / ${tournament.max_participants}`
+            : ""}{" "}
+          players
+        </span>
+        {tournament.start_date && (
+          <span className="flex items-center gap-1.5">
+            <Calendar className="h-4 w-4" />
+            {formatDate(tournament.start_date)}
+          </span>
+        )}
+        {tournament.round_time_minutes && (
+          <span className="flex items-center gap-1.5">
+            <Clock className="h-4 w-4" />
+            {tournament.round_time_minutes} min rounds
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -268,7 +285,6 @@ function ScheduleCard({
   const schedule = getTournamentSchedule(scheduleData);
 
   if (!schedule.tournamentStartTime) {
-    // No start date set
     return (
       <Card>
         <CardHeader>
@@ -394,6 +410,42 @@ function FormatCard({
 }
 
 // ============================================================================
+// Phase data extraction for tournament structure visual
+// ============================================================================
+
+interface PhaseData {
+  id: number;
+  name: string;
+  phaseType: string;
+  phaseTypeLabel: string;
+  status: string;
+  plannedRounds: number | null;
+  bestOf: number | null;
+  roundTimeMinutes: number | null;
+  checkInTimeMinutes: number | null;
+  cutRule: string | null;
+}
+
+function extractPhaseData(
+  tournament: NonNullable<Awaited<ReturnType<typeof getTournamentBySlug>>>
+): PhaseData[] {
+  if (!tournament.phases || tournament.phases.length === 0) return [];
+
+  return tournament.phases.map((phase) => ({
+    id: phase.id,
+    name: phase.name,
+    phaseType: phase.phase_type,
+    phaseTypeLabel: phaseTypeLabels[phase.phase_type] || phase.phase_type,
+    status: phase.status ?? "pending",
+    plannedRounds: phase.planned_rounds,
+    bestOf: phase.best_of,
+    roundTimeMinutes: phase.round_time_minutes,
+    checkInTimeMinutes: phase.check_in_time_minutes,
+    cutRule: phase.cut_rule,
+  }));
+}
+
+// ============================================================================
 // Main Page (Server Component)
 // ============================================================================
 
@@ -434,6 +486,9 @@ export default async function TournamentPage({ params }: PageProps) {
       ? await getCachedTournamentTeams(tournament.id, tournamentSlug)
       : null;
 
+  // Extract phase data for the structure visual
+  const phases = extractPhaseData(tournament);
+
   return (
     <PageContainer>
       <Breadcrumb tournamentName={tournament.name} />
@@ -443,6 +498,7 @@ export default async function TournamentPage({ params }: PageProps) {
         description={tournament.description}
         scheduleCard={<ScheduleCard tournament={tournament} />}
         formatCard={<FormatCard tournament={tournament} />}
+        phases={phases}
         canManage={canManage}
         sidebarCard={
           <TournamentSidebarCard
