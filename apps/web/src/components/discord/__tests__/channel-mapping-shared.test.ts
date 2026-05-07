@@ -83,39 +83,15 @@ describe("getChannelEventMeta", () => {
 // ---------------------------------------------------------------------------
 
 describe("getEventLabel", () => {
-  // Channel events — title-cased
-  it("returns title-cased label for channel event tournament_created", () => {
-    expect(getEventLabel("tournament_created")).toBe("Tournament Created");
-  });
-
-  it("returns title-cased label for channel event match_result_reported", () => {
-    expect(getEventLabel("match_result_reported")).toBe(
-      "Match Result Reported"
-    );
-  });
-
-  // DM events
-  it("returns DM event label for match_ready", () => {
-    expect(getEventLabel("match_ready")).toBe("Match Ready");
-  });
-
-  it("returns DM event label for team_sheet_needed", () => {
-    expect(getEventLabel("team_sheet_needed")).toBe("Team Sheet Needed");
-  });
-
-  // Role events
-  it("returns role label for staff", () => {
-    expect(getEventLabel("staff")).toBe("Staff Role");
-  });
-
-  it("returns overridden role label for winner", () => {
-    expect(getEventLabel("winner")).toBe("Tournament Winner Role");
-  });
-
-  // Fallback
-  it("returns title-cased fallback for totally unknown event", () => {
-    expect(getEventLabel("totally_unknown_event")).toBe(
-      "Totally Unknown Event"
-    );
+  it.each([
+    ["tournament_created", "Tournament Created"],
+    ["match_result_reported", "Match Result Reported"],
+    ["match_ready", "Match Ready"],
+    ["team_sheet_needed", "Team Sheet Needed"],
+    ["staff", "Staff Role"],
+    ["winner", "Tournament Winner Role"],
+    ["totally_unknown_event", "Totally Unknown Event"],
+  ] as const)("returns correct label for %s", (event, expected) => {
+    expect(getEventLabel(event)).toBe(expected);
   });
 });

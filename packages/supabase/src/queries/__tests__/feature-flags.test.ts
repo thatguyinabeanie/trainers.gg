@@ -915,8 +915,9 @@ describe("feature-flags queries", () => {
       );
       expect(result.access).toBe("error");
       if (result.access === "error") {
-        expect(result.reason).toBeDefined();
+        expect(result.reason).toBe("Unknown error");
       }
+      expect(consoleSpy).toHaveBeenCalled();
 
       consoleSpy.mockRestore();
     });
@@ -994,6 +995,7 @@ describe("feature-flags queries", () => {
         [1, 2, 3]
       );
       expect(result).toEqual(new Set());
+      expect(consoleSpy).toHaveBeenCalled();
 
       consoleSpy.mockRestore();
     });

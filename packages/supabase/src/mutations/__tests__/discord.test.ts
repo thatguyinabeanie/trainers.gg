@@ -617,6 +617,54 @@ describe("recordChannelFailure", () => {
       "Failed to read channel failure on retry: retry read fail"
     );
   });
+
+  it("throws on retry update error", async () => {
+    const fromSpy = jest.spyOn(mockClient, "from");
+    fromSpy.mockReturnValueOnce({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest
+              .fn()
+              .mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+      }),
+    } as unknown as ReturnType<TypedClient["from"]>);
+    fromSpy.mockReturnValueOnce({
+      insert: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: null,
+            error: { code: "23505", message: "dup" },
+          }),
+        }),
+      }),
+    } as unknown as ReturnType<TypedClient["from"]>);
+    fromSpy.mockReturnValueOnce({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: { id: "row-1", consecutive_failures: 2 },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    } as unknown as ReturnType<TypedClient["from"]>);
+    fromSpy.mockReturnValueOnce({
+      update: jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({
+          error: { message: "update boom" },
+        }),
+      }),
+    } as unknown as ReturnType<TypedClient["from"]>);
+
+    await expect(recordChannelFailure(mockClient, 1, "ch1")).rejects.toThrow(
+      "Failed to record channel failure (retry update): update boom"
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

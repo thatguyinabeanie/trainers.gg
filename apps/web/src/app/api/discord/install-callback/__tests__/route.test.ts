@@ -38,8 +38,10 @@ jest.mock("@trainers/supabase", () => ({
 }));
 
 // Mock feature-flag check — always enabled in tests
+const mockCheckCommunityFeatureAccess = jest.fn();
 jest.mock("@/lib/feature-flags/check-flag", () => ({
-  checkCommunityFeatureAccess: jest.fn().mockResolvedValue(true),
+  checkCommunityFeatureAccess: (...args: unknown[]) =>
+    mockCheckCommunityFeatureAccess(...args),
 }));
 
 // =============================================================================
@@ -81,6 +83,7 @@ describe("GET /api/discord/install-callback", () => {
     mockVerifyInstallState.mockResolvedValue(VERIFIED_STATE);
     mockGetUser.mockResolvedValue({ data: { user: AUTHED_USER }, error: null });
     mockHasCommunityAccess.mockResolvedValue(true);
+    mockCheckCommunityFeatureAccess.mockResolvedValue(true);
     mockCreateDiscordServer.mockResolvedValue(undefined);
     mockGetCommunityById.mockResolvedValue(COMMUNITY);
   });
@@ -215,6 +218,23 @@ describe("GET /api/discord/install-callback", () => {
         mockAuthClient,
         VERIFIED_STATE.community_id,
         VERIFIED_STATE.user_id
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Feature flag check
+  // ---------------------------------------------------------------------------
+
+  describe("Feature flag check", () => {
+    it("redirects with feature_disabled when Discord integration is not enabled", async () => {
+      mockCheckCommunityFeatureAccess.mockResolvedValue(false);
+
+      const response = await GET(makeRequest(VALID_PARAMS));
+
+      expect(response.status).toBe(303);
+      expect(getRedirectLocation(response)).toContain(
+        "discord_install_error=feature_disabled"
       );
     });
   });
