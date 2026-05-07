@@ -6,6 +6,7 @@
  */
 
 import type { Page } from "@playwright/test";
+import { expect } from "@playwright/test";
 import type { Pairing, TestUser, TournamentConfig } from "./types";
 
 const DEFAULT_TIMEOUT = 30_000;
@@ -196,9 +197,7 @@ export async function completeRound(
   // Wait for "Complete Round" to be enabled (all matches done)
   const completeBtn = page.getByRole("button", { name: "Complete Round" });
   await completeBtn.waitFor({ state: "visible", timeout: 60_000 });
-
-  // May need to wait for it to become enabled
-  await page.waitForTimeout(2_000);
+  await expect(completeBtn).toBeEnabled({ timeout: 60_000 });
   await completeBtn.click({ timeout: DEFAULT_TIMEOUT });
 
   // Wait for round completion confirmation

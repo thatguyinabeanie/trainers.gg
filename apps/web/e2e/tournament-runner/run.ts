@@ -4,7 +4,7 @@
  * CLI runner for executing tournament scenarios against the web UI.
  * Uses Playwright with isolated browser contexts per player.
  *
- * Usage:
+ * Examples:
  *   npx tsx apps/web/e2e/tournament-runner/run.ts [options]
  *
  * Options:
@@ -16,8 +16,8 @@
  *
  * Examples:
  *   pnpm test:tournament
- *   pnpm test:tournament --scenario swiss-8-drops --headed
- *   pnpm test:tournament --headed --slow-mo 500
+ *   pnpm test:tournament -- --scenario swiss-8-drops --headed
+ *   pnpm test:tournament -- --headed --slow-mo 500
  */
 
 import { TournamentOrchestrator } from "./orchestrator";
@@ -39,8 +39,12 @@ function parseArgs(): { scenario: string; options: RunnerOptions } {
   let scenario = "swiss-8";
   let headed = false;
   let slowMo: number | undefined;
-  let baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
+  let baseUrl =
+    process.env.PLAYWRIGHT_BASE_URL ??
+    process.env.BASE_URL ??
+    "http://localhost:3000";
   let verbose = true;
+  let allowRemote = false;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -50,9 +54,16 @@ function parseArgs(): { scenario: string; options: RunnerOptions } {
       case "--headed":
         headed = true;
         break;
-      case "--slow-mo":
-        slowMo = parseInt(args[++i] ?? "0", 10);
+      case "--slow-mo": {
+        const raw = args[++i] ?? "0";
+        const parsed = parseInt(raw, 10);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          console.error(`Invalid --slow-mo value: "${raw}" (must be a positive integer)`);
+          process.exit(1);
+        }
+        slowMo = parsed;
         break;
+      }
       case "--base-url":
         baseUrl = args[++i] ?? baseUrl;
         break;
@@ -61,6 +72,9 @@ function parseArgs(): { scenario: string; options: RunnerOptions } {
         break;
       case "--quiet":
         verbose = false;
+        break;
+      case "--allow-remote":
+        allowRemote = true;
         break;
       case "--help":
       case "-h":
@@ -72,6 +86,19 @@ function parseArgs(): { scenario: string; options: RunnerOptions } {
         printHelp();
         process.exit(1);
     }
+  }
+
+  // Safety guard: prevent accidental runs against production
+  const url = new URL(baseUrl);
+  const isLocal =
+    url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  if (!isLocal && !allowRemote) {
+    console.error(
+      `ERROR: Base URL "${baseUrl}" is not localhost.\n` +
+        `The tournament runner mutates state (creates tournaments, submits results).\n` +
+        `To run against a remote URL, pass --allow-remote explicitly.`
+    );
+    process.exit(1);
   }
 
   return {
@@ -93,15 +120,16 @@ Options:
   --headed             Run in headed mode (visible browser)
   --slow-mo <ms>       Slow down each action by N milliseconds
   --base-url <url>     Base URL of the web app (default: http://localhost:3000)
+  --allow-remote       Allow running against non-localhost URLs (safety guard)
   --verbose            Enable verbose logging (default)
   --quiet              Suppress log output
   --help, -h           Show this help message
 
 Examples:
   pnpm test:tournament
-  pnpm test:tournament --scenario swiss-8-drops --headed
-  pnpm test:tournament --headed --slow-mo 500
-  pnpm test:tournament --base-url http://localhost:3001
+  pnpm test:tournament -- --scenario swiss-8-drops --headed
+  pnpm test:tournament -- --headed --slow-mo 500
+  pnpm test:tournament -- --base-url http://localhost:3001
 `);
 }
 

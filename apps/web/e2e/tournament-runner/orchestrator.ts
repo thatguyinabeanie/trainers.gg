@@ -72,9 +72,17 @@ export class TournamentOrchestrator {
       slowMo: this.options.slowMo,
     });
 
+    // Build extra HTTP headers (e.g. Vercel protection bypass for preview deploys)
+    const extraHTTPHeaders: Record<string, string> = {};
+    const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+    if (bypassSecret) {
+      extraHTTPHeaders["x-vercel-protection-bypass"] = bypassSecret;
+    }
+
     // Create host context
     this.hostContext = await this.browser.newContext({
       baseURL: this.options.baseUrl,
+      extraHTTPHeaders,
     });
     this.hostPage = await this.hostContext.newPage();
 
@@ -82,6 +90,7 @@ export class TournamentOrchestrator {
     for (const player of this.scenario.players) {
       const context = await this.browser.newContext({
         baseURL: this.options.baseUrl,
+        extraHTTPHeaders,
       });
       const page = await context.newPage();
       this.playerContexts.set(player.username, {
@@ -209,8 +218,10 @@ export class TournamentOrchestrator {
       this.log(`  Pairings read: ${pairings.length} matches`);
 
       if (pairings.length === 0) {
-        this.log("  WARNING: No pairings found — skipping round actions");
-        continue;
+        throw new Error(
+          `No pairings found for round ${round}. ` +
+            `The DOM selectors in readPairings() may need updating for the current UI.`
+        );
       }
 
       // Resolve what each player should do
@@ -313,9 +324,15 @@ export class TournamentOrchestrator {
     }
 
     if (mismatches.length > 0) {
+      const details = [
+        `Standings assertion failed after round ${round}:`,
+        ...mismatches,
+        `Actual standings: ${actual.join(", ")}`,
+      ].join("\n");
       this.log(`  ASSERTION FAILED (after round ${round}):`);
       mismatches.forEach((m) => this.log(m));
       this.log(`  Actual standings: ${actual.join(", ")}`);
+      throw new Error(details);
     } else {
       this.log(`  Standings verified after round ${round}`);
     }
