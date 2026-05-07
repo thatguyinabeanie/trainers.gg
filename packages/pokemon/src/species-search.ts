@@ -12,6 +12,7 @@ import { getFormatById } from "./formats";
 import {
   getLegalMoves,
   getLegalSpecies,
+  getMegaAbilityForSpecies,
   getMegaStoneForSpecies,
   LEGALITY_UNAVAILABLE,
 } from "./format-legality";
@@ -146,17 +147,34 @@ function makeEntry(
   getRoles?: GetRolesFn,
   formatId?: string
 ): SpeciesSearchEntry {
-  // Cast abilities to an indexable record for per-slot access
-  const abilitiesRecord = species.abilities as Record<
-    string,
-    string | undefined
-  >;
-  const abilities = Object.values(abilitiesRecord).filter(
-    (a): a is string => typeof a === "string" && a.length > 0
-  );
-  const abilitySlot1 = abilitiesRecord["0"] ?? null;
-  const abilitySlot2 = abilitiesRecord["1"] ?? null;
-  const hiddenAbility = abilitiesRecord["H"] ?? null;
+  // If the species is a mega with a known post-evolution ability, use only
+  // that ability — the dex entry may carry base-form slots instead.
+  const megaAbility = getMegaAbilityForSpecies(species.name);
+
+  let abilitySlot1: string | null;
+  let abilitySlot2: string | null;
+  let hiddenAbility: string | null;
+  let abilities: string[];
+
+  if (megaAbility) {
+    abilitySlot1 = megaAbility;
+    abilitySlot2 = null;
+    hiddenAbility = null;
+    abilities = [megaAbility];
+  } else {
+    // Cast abilities to an indexable record for per-slot access
+    const abilitiesRecord = species.abilities as Record<
+      string,
+      string | undefined
+    >;
+    abilities = Object.values(abilitiesRecord).filter(
+      (a): a is string => typeof a === "string" && a.length > 0
+    );
+    abilitySlot1 = abilitiesRecord["0"] ?? null;
+    abilitySlot2 = abilitiesRecord["1"] ?? null;
+    hiddenAbility = abilitiesRecord["H"] ?? null;
+  }
+
   const { hp, atk, def, spa, spd, spe } = species.baseStats;
   const roles =
     getRoles && formatId

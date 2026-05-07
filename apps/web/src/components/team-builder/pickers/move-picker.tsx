@@ -14,7 +14,6 @@
 import { useRef, useState } from "react";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
-import Image from "next/image";
 
 import {
   getLearnableMoves,
@@ -22,32 +21,28 @@ import {
   getMoveData,
   legalSetOrPermissive,
   type GameFormat,
+  type MoveData,
 } from "@trainers/pokemon";
 import { cn } from "@/lib/utils";
 
-import { CATEGORY_ICON_URLS } from "../move-category-ui";
-import { TypeSymbolIcon } from "../type-symbol-icon";
 import {
   DEFAULT_MOVE_FILTERS,
   type MoveCategory,
   type MoveFilterState,
 } from "./move-filter-state";
+import {
+  MoveListHeader,
+  MoveListRow,
+  type MoveListSortCol,
+  type MoveListSortState,
+} from "./move-list-shared";
 import { MoveSidebar } from "./move-sidebar";
-import { RoleChip } from "./role-chip";
 import { RolePresetsPanel } from "./role-presets-panel";
 import { getRolesForMove, type RoleId } from "./role-registry";
 
 // =============================================================================
 // Types
 // =============================================================================
-
-type SortCol = "type" | "name" | "category" | "bp" | "acc";
-type SortDir = "asc" | "desc";
-
-interface SortState {
-  col: SortCol;
-  dir: SortDir;
-}
 
 interface MovePickerProps {
   value: string | null | undefined;
@@ -59,32 +54,14 @@ interface MovePickerProps {
 
 type MoveRow = {
   name: string;
-  data: ReturnType<typeof getMoveData>;
+  data: MoveData | null;
 };
-
-// =============================================================================
-// Constants
-// =============================================================================
-
-/**
- * Shared grid template for header and data rows.
- *
- *   56px              — type icon (h-6 Showdown badge)
- *   56px              — category icon (h-6 Showdown badge)
- *   minmax(140px,1.4fr) — name (fits longest competitive move names)
- *   minmax(0,2fr)     — effect (short description, truncates if cramped)
- *   40px              — BP
- *   48px              — Accuracy
- *   minmax(140px,1fr) — roles chips
- */
-const ROW_GRID =
-  "grid-cols-[56px_56px_minmax(140px,1.4fr)_minmax(0,2fr)_40px_48px_minmax(140px,1fr)]";
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
-function sortMoves(rows: MoveRow[], sort: SortState): MoveRow[] {
+function sortMoves(rows: MoveRow[], sort: MoveListSortState): MoveRow[] {
   const out = [...rows];
   out.sort((a, b) => {
     let cmp = 0;
@@ -117,162 +94,6 @@ function sortMoves(rows: MoveRow[], sort: SortState): MoveRow[] {
 }
 
 // =============================================================================
-// SortArrow
-// =============================================================================
-
-function SortArrow({ active, dir }: { active: boolean; dir: SortDir }) {
-  if (!active) return null;
-  return (
-    <span aria-hidden="true" className="ml-0.5 inline-block leading-none">
-      {dir === "asc" ? "↑" : "↓"}
-    </span>
-  );
-}
-
-// =============================================================================
-// MoveRow — one row in the virtualized list
-// =============================================================================
-
-interface MoveRowProps {
-  row: MoveRow;
-  isSelected: boolean;
-  onSelect: () => void;
-  onTypeFilter: (type: string) => void;
-  onCategoryFilter: (cat: MoveCategory) => void;
-  onRoleFilter: (roleId: RoleId) => void;
-}
-
-function MoveRowItem({
-  row,
-  isSelected,
-  onSelect,
-  onTypeFilter,
-  onCategoryFilter,
-  onRoleFilter,
-}: MoveRowProps) {
-  const { name, data } = row;
-  const roles = getRolesForMove(name);
-
-  function handleKey(e: React.KeyboardEvent<HTMLDivElement>) {
-    // Only handle Enter/Space when the row itself is focused. Nested
-    // interactive elements (RoleChip <button>, the Type/Category buttons)
-    // bubble keyboard events up to this handler, so without this guard
-    // pressing Enter on a chip would both toggle the chip AND select the
-    // row (closing the picker).
-    if (e.currentTarget !== e.target) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onSelect();
-    }
-  }
-
-  return (
-    <div
-      role="row"
-      aria-label={`Select ${name}`}
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={handleKey}
-      className={cn(
-        "grid h-full w-full cursor-pointer items-center gap-2 border-b px-3 transition-colors focus:outline-none",
-        "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-        isSelected && "bg-accent text-accent-foreground",
-        ROW_GRID
-      )}
-    >
-      {/* Type icon — clickable filter affordance. Real <button> for keyboard
-          accessibility; stopPropagation prevents the row select from firing. */}
-      {data?.type ? (
-        <button
-          type="button"
-          aria-label={`Filter by ${data.type}`}
-          title={`Filter by ${data.type}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onTypeFilter(data.type!);
-          }}
-          onKeyDown={(e) => e.stopPropagation()}
-          className="focus-visible:ring-primary flex cursor-pointer items-center justify-center rounded outline-none focus-visible:ring-2"
-        >
-          <TypeSymbolIcon
-            type={data.type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
-            size={24}
-          />
-        </button>
-      ) : (
-        <span className="text-muted-foreground flex justify-center text-xs">
-          —
-        </span>
-      )}
-
-      {/* Category icon — clickable filter affordance (real <button>). */}
-      {data?.category && CATEGORY_ICON_URLS[data.category] ? (
-        <button
-          type="button"
-          aria-label={`Filter by ${data.category}`}
-          title={`Filter by ${data.category}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onCategoryFilter(data.category as MoveCategory);
-          }}
-          onKeyDown={(e) => e.stopPropagation()}
-          className="focus-visible:ring-primary flex cursor-pointer items-center justify-center rounded outline-none focus-visible:ring-2"
-        >
-          <Image
-            src={CATEGORY_ICON_URLS[data.category]!}
-            alt={data.category}
-            width={32}
-            height={14}
-            unoptimized
-            className="h-6 w-auto [image-rendering:pixelated]"
-          />
-        </button>
-      ) : (
-        <span className="text-muted-foreground flex justify-center font-mono text-xs">
-          —
-        </span>
-      )}
-
-      {/* Name */}
-      <span className="min-w-0 truncate text-sm font-medium" title={name}>
-        {name}
-      </span>
-
-      {/* Effect (shortDesc) */}
-      <span
-        className="text-muted-foreground min-w-0 truncate text-xs"
-        title={data?.shortDesc ?? undefined}
-      >
-        {data?.shortDesc && data.shortDesc !== "No additional effect."
-          ? data.shortDesc
-          : ""}
-      </span>
-
-      {/* BP */}
-      <span className="text-muted-foreground text-right font-mono text-xs tabular-nums">
-        {data?.basePower && data.basePower > 0 ? data.basePower : "—"}
-      </span>
-
-      {/* Accuracy */}
-      <span className="text-muted-foreground text-right font-mono text-xs tabular-nums">
-        {data?.accuracy === true || !data?.accuracy ? "—" : `${data.accuracy}%`}
-      </span>
-
-      {/* Roles — click-to-filter, stopPropagation on the container */}
-      <div
-        role="presentation"
-        onClick={(e) => e.stopPropagation()}
-        className="flex min-w-0 flex-wrap gap-1"
-      >
-        {roles.map((roleId) => (
-          <RoleChip key={roleId} roleId={roleId} onClick={onRoleFilter} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// =============================================================================
 // MovePicker
 // =============================================================================
 
@@ -294,7 +115,7 @@ export function MovePicker({
   onClose,
 }: MovePickerProps) {
   const [filters, setFilters] = useState<MoveFilterState>(DEFAULT_MOVE_FILTERS);
-  const [sort, setSort] = useState<SortState>({ col: "name", dir: "asc" });
+  const [sort, setSort] = useState<MoveListSortState>({ col: "name", dir: "asc" });
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -376,7 +197,7 @@ export function MovePicker({
   // Handlers
   // -------------------------------------------------------------------------
 
-  function handleSort(col: SortCol) {
+  function handleSort(col: MoveListSortCol) {
     setSort((prev) =>
       prev.col === col
         ? { col, dir: prev.dir === "asc" ? "desc" : "asc" }
@@ -405,16 +226,6 @@ export function MovePicker({
       f.roles.includes(roleId)
         ? { ...f, roles: f.roles.filter((r) => r !== roleId) }
         : { ...f, roles: [...f.roles, roleId] }
-    );
-  }
-
-  // -------------------------------------------------------------------------
-  // -------------------------------------------------------------------------
-
-  function headerBtnClass(col: SortCol) {
-    return cn(
-      "cursor-pointer select-none transition-colors hover:text-foreground",
-      sort.col === col ? "text-foreground" : "text-muted-foreground"
     );
   }
 
@@ -490,18 +301,26 @@ export function MovePicker({
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Left rail — sidebar on top, role presets below */}
         <div className="border-border flex w-[380px] flex-shrink-0 flex-col border-r">
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="shrink-0">
             <MoveSidebar filters={filters} onFiltersChange={setFilters} />
           </div>
-          <div className="border-border min-h-0 flex-1 overflow-hidden border-t">
+          <div className="bg-muted/20 border-border min-h-0 flex-1 overflow-y-auto border-t">
             <RolePresetsPanel
               selected={filters.roles}
               onChange={(roles) =>
                 setFilters((f) => ({ ...f, roles }))
               }
               bucketCount={bucketCount}
-              className="h-full"
             />
+          </div>
+          <div className="border-border shrink-0 border-t p-2.5">
+            <button
+              type="button"
+              onClick={() => setFilters((f) => ({ ...DEFAULT_MOVE_FILTERS, search: f.search }))}
+              className="border-border bg-background text-muted-foreground hover:border-destructive/50 hover:text-destructive w-full rounded-md border py-1 text-[11px] transition-colors"
+            >
+              Clear all filters
+            </button>
           </div>
         </div>
 
@@ -510,66 +329,11 @@ export function MovePicker({
             produced layout shift the user objected to). */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {/* Sticky table header */}
-          <div
-            className={cn(
-              "bg-card sticky top-0 z-20 grid shrink-0 items-center gap-2 border-b px-3 py-1.5 text-[10px] font-semibold tracking-wide uppercase",
-              ROW_GRID
-            )}
-          >
-            {/* Type — icon only, no header label */}
-            <span />
-
-            {/* Category — icon only, no header label */}
-            <span />
-
-            {/* Name — sortable */}
-            <button
-              type="button"
-              className={cn(
-                headerBtnClass("name"),
-                "flex items-center gap-0.5"
-              )}
-              onClick={() => handleSort("name")}
-              aria-label="Sort by name"
-            >
-              Name
-              <SortArrow active={sort.col === "name"} dir={sort.dir} />
-            </button>
-
-            {/* Effect — plain label */}
-            <span className="text-muted-foreground">Effect</span>
-
-            {/* BP — sortable */}
-            <button
-              type="button"
-              className={cn(
-                headerBtnClass("bp"),
-                "flex items-center justify-end gap-0.5"
-              )}
-              onClick={() => handleSort("bp")}
-              aria-label="Sort by base power"
-            >
-              BP
-              <SortArrow active={sort.col === "bp"} dir={sort.dir} />
-            </button>
-
-            {/* Accuracy — sortable */}
-            <button
-              type="button"
-              className={cn(
-                headerBtnClass("acc"),
-                "flex items-center justify-end gap-0.5"
-              )}
-              onClick={() => handleSort("acc")}
-              aria-label="Sort by accuracy"
-            >
-              Acc
-              <SortArrow active={sort.col === "acc"} dir={sort.dir} />
-            </button>
-
-            {/* Roles — plain label */}
-            <span className="text-muted-foreground">Roles</span>
-          </div>
+          <MoveListHeader
+            sort={sort}
+            onSort={handleSort}
+            className="bg-card sticky top-0 z-20 shrink-0"
+          />
 
           {/* Virtualized rows */}
           <div
@@ -587,7 +351,11 @@ export function MovePicker({
               >
                 {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                   const item = sorted[virtualRow.index];
-                  if (!item) return null;
+                  if (!item || !item.data) return null;
+                  // Ensure `name` is present — getMoveData includes it in
+                  // production but test mocks may omit it. item.name is the
+                  // canonical source.
+                  const moveData = { ...item.data, name: item.name };
                   return (
                     <div
                       key={item.name}
@@ -597,15 +365,17 @@ export function MovePicker({
                         transform: `translateY(${virtualRow.start}px)`,
                       }}
                     >
-                      <MoveRowItem
-                        row={item}
+                      <MoveListRow
+                        move={moveData}
                         isSelected={item.name === value}
                         onSelect={() => {
                           onPick(item.name);
                           onClose();
                         }}
                         onTypeFilter={handleTypeFilter}
-                        onCategoryFilter={handleCategoryFilter}
+                        onCategoryFilter={(cat) =>
+                          handleCategoryFilter(cat)
+                        }
                         onRoleFilter={handleRoleFilter}
                       />
                     </div>

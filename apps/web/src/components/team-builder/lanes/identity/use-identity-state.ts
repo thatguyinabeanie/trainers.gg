@@ -110,7 +110,7 @@ export function useIdentityState(
     onUpdate({
       species,
       nickname: null,
-      held_item: null,
+      held_item: getMegaStoneForSpecies(species) ?? null,
       ability: "",
       nature: "Serious",
       tera_type: null,

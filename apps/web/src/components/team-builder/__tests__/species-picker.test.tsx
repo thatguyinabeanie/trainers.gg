@@ -167,6 +167,14 @@ jest.mock("../pickers/ability-cell", () => ({
     ),
 }));
 
+jest.mock("../pickers/species-expanded-panel", () => ({
+  SpeciesExpandedPanel: ({ id, species }: { id?: string; species: string }) => (
+    <div data-testid={`expanded-panel-${species}`} id={id}>
+      Learnset for {species}
+    </div>
+  ),
+}));
+
 jest.mock("../pickers/role-chip", () => ({
   RoleChip: ({
     roleId,
@@ -909,5 +917,147 @@ describe("SpeciesPicker", () => {
     expect(
       screen.getByRole("button", { name: /Clear 1 active filter/i })
     ).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Expand / Collapse
+  // ---------------------------------------------------------------------------
+
+  describe("expand/collapse", () => {
+    it("renders a chevron button for each species row", () => {
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+      expect(
+        screen.getByRole("button", { name: /expand bulbasaur/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /expand garchomp/i })
+      ).toBeInTheDocument();
+    });
+
+    it("chevron button starts with aria-expanded=false", () => {
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+      const btn = screen.getByRole("button", { name: /expand bulbasaur/i });
+      expect(btn).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("clicking chevron expands the species and shows the expanded panel", async () => {
+      const user = userEvent.setup();
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+      const btn = screen.getByRole("button", { name: /expand bulbasaur/i });
+      await user.click(btn);
+
+      // Panel should now be visible
+      expect(screen.getByTestId("expanded-panel-Bulbasaur")).toBeInTheDocument();
+      // aria-expanded should be true, label changes to "Collapse"
+      expect(
+        screen.getByRole("button", { name: /collapse bulbasaur/i })
+      ).toHaveAttribute("aria-expanded", "true");
+    });
+
+    it("clicking chevron again collapses the panel", async () => {
+      const user = userEvent.setup();
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+      // Expand
+      await user.click(
+        screen.getByRole("button", { name: /expand bulbasaur/i })
+      );
+      expect(screen.getByTestId("expanded-panel-Bulbasaur")).toBeInTheDocument();
+
+      // Collapse
+      await user.click(
+        screen.getByRole("button", { name: /collapse bulbasaur/i })
+      );
+      expect(
+        screen.queryByTestId("expanded-panel-Bulbasaur")
+      ).not.toBeInTheDocument();
+    });
+
+    it("expanded panel has aria-controls id matching the panel id", async () => {
+      const user = userEvent.setup();
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+      const btn = screen.getByRole("button", { name: /expand garchomp/i });
+      expect(btn).toHaveAttribute("aria-controls", "panel-Garchomp");
+      await user.click(btn);
+      const panel = screen.getByTestId("expanded-panel-Garchomp");
+      expect(panel).toHaveAttribute("id", "panel-Garchomp");
+    });
+
+    it("clicking chevron does NOT trigger row selection (onPick)", async () => {
+      const user = userEvent.setup();
+      const onPick = jest.fn();
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={onPick}
+          onClose={jest.fn()}
+        />
+      );
+      await user.click(
+        screen.getByRole("button", { name: /expand bulbasaur/i })
+      );
+      expect(onPick).not.toHaveBeenCalled();
+    });
+
+    it("only one row can be expanded at a time", async () => {
+      const user = userEvent.setup();
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+      // Expand Bulbasaur
+      await user.click(
+        screen.getByRole("button", { name: /expand bulbasaur/i })
+      );
+      expect(screen.getByTestId("expanded-panel-Bulbasaur")).toBeInTheDocument();
+
+      // Expand Garchomp — Bulbasaur should collapse
+      await user.click(
+        screen.getByRole("button", { name: /expand garchomp/i })
+      );
+      expect(screen.getByTestId("expanded-panel-Garchomp")).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("expanded-panel-Bulbasaur")
+      ).not.toBeInTheDocument();
+    });
   });
 });

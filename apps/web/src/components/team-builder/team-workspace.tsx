@@ -47,16 +47,6 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { ImportDialog } from "./import-dialog";
 import { useTeamValidation, type ValidationError } from "./validation-hooks";
 import { CalcBottomPanel } from "./calc/calc-bottom-panel";
@@ -429,7 +419,6 @@ export function TeamWorkspaceV2({
   const [importOpen, setImportOpen] = useState(false);
 
   /** Slot index awaiting remove confirmation. null = dialog closed. */
-  const [removeSlotIdx, setRemoveSlotIdx] = useState<number | null>(null);
 
   /** Ref to the worklane element — used by the panel resizer to compute the
    *  pointer's offset within the lane during drag. */
@@ -579,16 +568,9 @@ export function TeamWorkspaceV2({
     });
   }
 
-  /** Opens the remove confirmation dialog for the given slot index. */
+  /** Removes the Pokémon at the given slot index immediately. */
   function handleRequestRemove(idx: number) {
-    setRemoveSlotIdx(idx);
-  }
-
-  /** Called when the user confirms removal in the AlertDialog. */
-  function handleConfirmRemove() {
-    if (removeSlotIdx === null) return;
-    const p = slots[removeSlotIdx];
-    setRemoveSlotIdx(null);
+    const p = slots[idx];
     if (!p) return;
     const pokemonId = p.id;
 
@@ -1129,31 +1111,6 @@ export function TeamWorkspaceV2({
           formatId={format?.id}
         />
 
-        {/* Remove confirmation dialog */}
-        <AlertDialog
-          open={removeSlotIdx !== null}
-          onOpenChange={(open) => {
-            if (!open) setRemoveSlotIdx(null);
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Remove Pokémon?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will remove the Pokémon from this slot.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleConfirmRemove}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Remove
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </CalcStateProvider>
     </TeamLayoutContext.Provider>
   );

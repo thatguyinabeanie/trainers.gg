@@ -501,8 +501,8 @@ describe("MovesLane — move tile display", () => {
       .map((el) => el.textContent);
     expect(tooltipBodies).not.toContain(undefined);
     expect(tooltipBodies).not.toContain("");
-    // Only the type-icon tooltip should remain.
-    expect(tooltipBodies).toEqual(["Normal"]);
+    // TypeSymbolIcon no longer renders a tooltip, so array is empty.
+    expect(tooltipBodies).toEqual([]);
   });
 });
 

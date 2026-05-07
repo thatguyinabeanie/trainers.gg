@@ -592,23 +592,11 @@ describe("TeamWorkspaceV2 — add pokemon flow", () => {
 // =============================================================================
 
 describe("TeamWorkspaceV2 — remove pokemon flow", () => {
-  it("opens the remove confirmation dialog when remove is clicked", async () => {
+  it("calls persistence.removePokemon when remove is clicked", async () => {
     const user = userEvent.setup();
     renderWorkspace();
 
     await user.click(screen.getByTestId("remove-0"));
-
-    // AlertDialog should be open
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
-    expect(screen.getByText(/remove pokémon\?/i)).toBeInTheDocument();
-  });
-
-  it("calls persistence.removePokemon after the user confirms removal", async () => {
-    const user = userEvent.setup();
-    renderWorkspace();
-
-    await user.click(screen.getByTestId("remove-0")); // open dialog
-    await user.click(screen.getByRole("button", { name: /^remove$/i })); // confirm
 
     await waitFor(() => {
       expect(MOCK_PERSISTENCE.removePokemon).toHaveBeenCalledWith(1, 10);
@@ -620,7 +608,6 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
     renderWorkspace();
 
     await user.click(screen.getByTestId("remove-0"));
-    await user.click(screen.getByRole("button", { name: /^remove$/i }));
 
     await waitFor(() => {
       expect(mockToastSuccess).toHaveBeenCalledWith("Pokémon removed.");
@@ -643,7 +630,6 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
     expect(screen.getByTestId("species-0")).toHaveTextContent("Garchomp");
 
     await user.click(screen.getByTestId("remove-0"));
-    await user.click(screen.getByRole("button", { name: /^remove$/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("species-0")).toHaveTextContent("empty");
@@ -666,7 +652,6 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
     renderWorkspace();
 
     await user.click(screen.getByTestId("remove-0"));
-    await user.click(screen.getByRole("button", { name: /^remove$/i }));
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Permission denied.");
@@ -683,25 +668,9 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
     renderWorkspace();
 
     await user.click(screen.getByTestId("remove-0"));
-    await user.click(screen.getByRole("button", { name: /^remove$/i }));
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Failed to remove Pokémon.");
-    });
-  });
-
-  it("closes the dialog and does nothing when Cancel is clicked", async () => {
-    const user = userEvent.setup();
-    renderWorkspace();
-
-    await user.click(screen.getByTestId("remove-0"));
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /cancel/i }));
-
-    await waitFor(() => {
-      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-      expect(MOCK_PERSISTENCE.removePokemon).not.toHaveBeenCalled();
     });
   });
 
@@ -709,11 +678,9 @@ describe("TeamWorkspaceV2 — remove pokemon flow", () => {
     const user = userEvent.setup();
     renderWorkspace(EMPTY_TEAM);
 
-    await user.click(screen.getByTestId("remove-0")); // opens dialog for empty slot
-    await user.click(screen.getByRole("button", { name: /^remove$/i })); // confirm
+    await user.click(screen.getByTestId("remove-0"));
 
     await waitFor(() => {
-      // No pokemon in slot → action should not be called
       expect(MOCK_PERSISTENCE.removePokemon).not.toHaveBeenCalled();
     });
   });
@@ -753,7 +720,6 @@ describe("TeamWorkspaceV2 — optimistic placeholder guards", () => {
     renderWorkspace(PENDING_TEAM);
 
     await user.click(screen.getByTestId("remove-0"));
-    await user.click(screen.getByRole("button", { name: /^remove$/i }));
 
     await waitFor(() => {
       expect(mockToastInfo).toHaveBeenCalledWith(
