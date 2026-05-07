@@ -298,18 +298,8 @@ export function TournamentAutomationSettings({
                 if (!checked) {
                   const prevChannel = registrationReminderChannel;
                   setRegistrationReminderEnabled(false);
-                  // Persist the disable: clear minutes + delete mapping
+                  // Persist the disable: delete mapping first, then clear minutes
                   startTransition(async () => {
-                    const settingsResult = await updateServerSettingsAction({
-                      serverId,
-                      communityId,
-                      settings: { registration_reminder_minutes: null },
-                    });
-                    if (!settingsResult.success) {
-                      setRegistrationReminderEnabled(true);
-                      toast.error(settingsResult.error ?? "An error occurred");
-                      return;
-                    }
                     if (registrationReminderMappingId) {
                       const deleteResult = await deleteChannelMappingAction(registrationReminderMappingId);
                       if (!deleteResult.success) {
@@ -320,6 +310,15 @@ export function TournamentAutomationSettings({
                         return;
                       }
                       setRegistrationReminderMappingId(null);
+                    }
+                    const settingsResult = await updateServerSettingsAction({
+                      serverId,
+                      communityId,
+                      settings: { registration_reminder_minutes: null },
+                    });
+                    if (!settingsResult.success) {
+                      // Mapping already deleted — surface error but don't re-enable
+                      toast.error(settingsResult.error ?? "An error occurred");
                     }
                     setRegistrationReminderChannel("");
                     toast.success("Registration reminder disabled");
