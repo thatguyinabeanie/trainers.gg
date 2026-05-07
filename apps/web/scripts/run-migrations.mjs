@@ -85,16 +85,12 @@ function execWithRetry(command, options = {}, maxRetries = 3, delayMs = 10000) {
     try {
       return exec(command, options);
     } catch (error) {
-      const message = error.message || "";
-      const isTransient =
-        /timeout|FGA Error|ETIMEDOUT|ECONNRESET|socket hang up/i.test(message);
-
-      if (attempt < maxRetries && isTransient) {
+      if (attempt < maxRetries) {
         console.log(
-          `\n⚠️  Transient failure (attempt ${attempt}/${maxRetries}): ${message}`
+          `\n⚠️  Command failed (attempt ${attempt}/${maxRetries})`
         );
         console.log(`   Retrying in ${delayMs / 1000}s...\n`);
-        execSync(`sleep ${delayMs / 1000}`);
+        execSync(`sleep ${Math.ceil(delayMs / 1000)}`);
       } else {
         throw error;
       }

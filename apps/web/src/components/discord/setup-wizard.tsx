@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -354,6 +355,7 @@ export function SetupWizard({
                 >
                   <div className="flex items-center gap-3">
                     <Switch
+                      id={`role-sync-${key}`}
                       checked={roles[key].enabled}
                       onCheckedChange={(checked) =>
                         setRoles((s) => ({
@@ -362,7 +364,7 @@ export function SetupWizard({
                         }))
                       }
                     />
-                    <span className="text-sm font-medium">{label}</span>
+                    <Label htmlFor={`role-sync-${key}`} className="text-sm font-medium">{label}</Label>
                   </div>
                   <Select
                     value={roles[key].roleId}

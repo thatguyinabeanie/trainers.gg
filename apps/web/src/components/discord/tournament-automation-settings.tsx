@@ -130,7 +130,8 @@ export function TournamentAutomationSettings({
     eventType: Parameters<typeof upsertChannelMappingAction>[0]["eventType"],
     onMappingId?: (id: number) => void,
     onRollback?: () => void,
-    existingMappingId?: number | null
+    existingMappingId?: number | null,
+    previousChannelId?: string
   ) {
     startTransition(async () => {
       // Delete old mapping first to avoid duplicates when changing channels
@@ -149,6 +150,17 @@ export function TournamentAutomationSettings({
         eventType,
       });
       if (!result.success) {
+        // Attempt to re-create the old mapping if we deleted it
+        if (existingMappingId && previousChannelId) {
+          const rollbackResult = await upsertChannelMappingAction({
+            communityId,
+            channelId: previousChannelId,
+            eventType,
+          });
+          if (rollbackResult.success) {
+            onMappingId?.(rollbackResult.data.mappingId);
+          }
+        }
         onRollback?.();
         toast.error(result.error ?? "An error occurred");
       } else {
@@ -246,7 +258,8 @@ export function TournamentAutomationSettings({
                   handleChannelMapping(value, "round_posted", (id) =>
                     setRoundPostedMappingId(id),
                     () => setRoundPostedChannel(prevChannel),
-                    roundPostedMappingId
+                    roundPostedMappingId,
+                    prevChannel
                   );
                 }}
                 disabled={isPending}
@@ -312,7 +325,8 @@ export function TournamentAutomationSettings({
                   handleChannelMapping(value, "standings_posted", (id) =>
                     setStandingsMappingId(id),
                     () => setStandingsChannel(prevChannel),
-                    standingsMappingId
+                    standingsMappingId,
+                    prevChannel
                   );
                 }}
                 disabled={isPending}
@@ -392,7 +406,8 @@ export function TournamentAutomationSettings({
                     "registration_closing_soon",
                     (id) => setRegistrationReminderMappingId(id),
                     () => setRegistrationReminderChannel(prevChannel),
-                    registrationReminderMappingId
+                    registrationReminderMappingId,
+                    prevChannel
                   );
                 }}
                 disabled={isPending}
@@ -430,6 +445,7 @@ export function TournamentAutomationSettings({
                       );
                       return;
                     }
+                    const prevMinutes = registrationReminderMinutes;
                     startTransition(async () => {
                       const result = await updateServerSettingsAction({
                         serverId,
@@ -440,6 +456,7 @@ export function TournamentAutomationSettings({
                         },
                       });
                       if (!result.success) {
+                        setRegistrationReminderMinutes(prevMinutes);
                         toast.error(result.error ?? "An error occurred");
                       }
                     });

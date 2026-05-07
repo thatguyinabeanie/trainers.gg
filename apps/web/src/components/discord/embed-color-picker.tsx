@@ -76,7 +76,7 @@ export function EmbedColorPicker({
   return (
     <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
       <div className="flex flex-col gap-1">
-        <Label className="flex items-center gap-2 text-sm font-medium">
+        <Label htmlFor="embed-color-input" className="flex items-center gap-2 text-sm font-medium">
           <Palette className="h-4 w-4" />
           Embed Color
         </Label>
@@ -91,6 +91,7 @@ export function EmbedColorPicker({
           style={{ backgroundColor: isValid ? color : currentColor }}
         />
         <Input
+          id="embed-color-input"
           value={color}
           onChange={(e) => setEditedColor(e.target.value)}
           className="w-28 font-mono text-sm"
