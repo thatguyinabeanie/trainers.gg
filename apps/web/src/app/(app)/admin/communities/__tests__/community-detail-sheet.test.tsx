@@ -126,6 +126,35 @@ jest.mock("@trainers/utils", () => ({
   formatDateTime: (date: string) => `formatted(${date})`,
 }));
 
+jest.mock("@/lib/supabase", () => ({
+  useSupabaseQuery: () => ({
+    data: null,
+    isLoading: false,
+    refetch: jest.fn(),
+  }),
+  useSupabase: () => ({ supabase: {} }),
+  useUser: () => null,
+  createClient: jest.fn(),
+  supabase: {},
+}));
+
+jest.mock("@trainers/supabase", () => ({
+  hasCommunityFeatureAccess: jest.fn().mockResolvedValue({ access: false }),
+}));
+
+jest.mock("@/components/ui/switch", () => ({
+  Switch: (props: React.InputHTMLAttributes<HTMLInputElement> & { onCheckedChange?: (v: boolean) => void }) => (
+    <input
+      type="checkbox"
+      role="switch"
+      checked={props.checked as boolean}
+      onChange={() => props.onCheckedChange?.(!props.checked)}
+      disabled={props.disabled}
+      id={props.id}
+    />
+  ),
+}));
+
 const mockApproveCommunityAction = jest.fn();
 const mockRejectCommunityAction = jest.fn();
 const mockSuspendCommunityAction = jest.fn();

@@ -94,7 +94,7 @@ beforeEach(() => {
   mockUseIsMobile.mockReturnValue(false);
   mockUpsertChannelMappingAction.mockResolvedValue({
     success: true,
-    data: { id: 1 },
+    data: { mappingId: 1 },
   });
   mockDeleteChannelMappingAction.mockResolvedValue({
     success: true,
@@ -134,6 +134,10 @@ describe("ChannelMappingTable", () => {
         makeMapping({ id: 2, event_type: "registration_opens" }),
         makeMapping({ id: 3, event_type: "tournament_ended" }),
         makeMapping({ id: 4, event_type: "match_result_reported" }),
+        makeMapping({ id: 5, event_type: "registration_closing_soon" }),
+        makeMapping({ id: 6, event_type: "round_posted" }),
+        makeMapping({ id: 7, event_type: "standings_posted" }),
+        makeMapping({ id: 8, event_type: "check_in_opened" }),
       ];
       render(
         <ChannelMappingTable {...defaultProps} channelMappings={allMappings} />

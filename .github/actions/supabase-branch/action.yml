@@ -23,7 +23,7 @@ runs:
     - name: Setup Supabase CLI
       uses: supabase/setup-cli@v1
       with:
-        version: 2.84.2
+        version: 2.98.2
 
     - name: Create or find branch
       id: branch

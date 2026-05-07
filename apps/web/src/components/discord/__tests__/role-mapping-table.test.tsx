@@ -15,8 +15,11 @@ jest.mock("@/hooks/use-is-client", () => ({
 // Capture onRoleChange and onToggle so tests can invoke them directly.
 // Base UI Select does not expose ARIA options in JSDOM, so we drive the mobile
 // path for the freshly-upserted-row test instead of clicking the desktop Select.
-let capturedOnRoleChange: ((roleType: string, discordRoleId: string) => void) | null = null;
-let capturedOnToggle: ((roleType: string, enabled: boolean) => void) | null = null;
+let capturedOnRoleChange:
+  | ((roleType: string, discordRoleId: string) => void)
+  | null = null;
+let capturedOnToggle: ((roleType: string, enabled: boolean) => void) | null =
+  null;
 
 jest.mock("../role-mapping-cards", () => ({
   RoleMappingCards: (props: {

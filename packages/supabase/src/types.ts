@@ -619,6 +619,7 @@ export type Database = {
           discord_server_id: number
           event_type: string
           id: number
+          ping_role_id: string | null
         }
         Insert: {
           channel_id: string
@@ -626,6 +627,7 @@ export type Database = {
           discord_server_id: number
           event_type: string
           id?: never
+          ping_role_id?: string | null
         }
         Update: {
           channel_id?: string
@@ -633,6 +635,7 @@ export type Database = {
           discord_server_id?: number
           event_type?: string
           id?: never
+          ping_role_id?: string | null
         }
         Relationships: [
           {
@@ -694,6 +697,54 @@ export type Database = {
           },
           {
             foreignKeyName: "discord_delivery_failures_discord_server_id_fkey"
+            columns: ["discord_server_id"]
+            isOneToOne: false
+            referencedRelation: "discord_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_delivery_log: {
+        Row: {
+          community_id: number
+          created_at: string
+          discord_server_id: number
+          event_type: string
+          id: number
+          metadata: Json | null
+          target: string
+          type: string
+        }
+        Insert: {
+          community_id: number
+          created_at?: string
+          discord_server_id: number
+          event_type: string
+          id?: never
+          metadata?: Json | null
+          target: string
+          type: string
+        }
+        Update: {
+          community_id?: number
+          created_at?: string
+          discord_server_id?: number
+          event_type?: string
+          id?: never
+          metadata?: Json | null
+          target?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discord_delivery_log_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discord_delivery_log_discord_server_id_fkey"
             columns: ["discord_server_id"]
             isOneToOne: false
             referencedRelation: "discord_servers"
@@ -3673,12 +3724,14 @@ export type Database = {
         | "top_cut_made"
         | "tournament_starting"
         | "tournament_cancelled"
+        | "check_in_reminder"
       discord_role_type:
         | "member"
         | "participant"
         | "winner"
         | "staff"
         | "currently_playing"
+        | "verified"
       drop_category: "no_show" | "conduct" | "disqualification" | "other"
       entity_type: "profile" | "community" | "alt"
       invitation_status: "pending" | "accepted" | "declined" | "expired"
@@ -3934,6 +3987,7 @@ export const Constants = {
         "top_cut_made",
         "tournament_starting",
         "tournament_cancelled",
+        "check_in_reminder",
       ],
       discord_role_type: [
         "member",
@@ -3941,6 +3995,7 @@ export const Constants = {
         "winner",
         "staff",
         "currently_playing",
+        "verified",
       ],
       drop_category: ["no_show", "conduct", "disqualification", "other"],
       entity_type: ["profile", "community", "alt"],

@@ -30,14 +30,19 @@ export const ALL_DM_EVENT_TYPES = [
   "top_cut_made",
   "tournament_starting",
   "tournament_cancelled",
+  "check_in_reminder",
 ] as const satisfies readonly DiscordDmEventType[];
 
 /** All Discord channel notification event types — single source of truth. */
 export const ALL_CHANNEL_EVENT_TYPES = [
   "tournament_created",
   "registration_opens",
+  "registration_closing_soon",
   "tournament_ended",
   "match_result_reported",
+  "round_posted",
+  "standings_posted",
+  "check_in_opened",
 ] as const;
 
 export type DiscordChannelEventType = (typeof ALL_CHANNEL_EVENT_TYPES)[number];
@@ -957,6 +962,11 @@ export type DiscordLeaderboardRow = {
  * Get community leaderboard for Discord preview.
  * scope='current': ratings from current/most recent active tournament
  * scope='all-time': global ELO ratings
+ *
+ * Note: The tournament_player_stats query is bounded by the number of
+ * tournaments fetched (1 for current, up to 50 for all-time). Each tournament
+ * typically has at most ~256 players, so the stats result set is naturally
+ * bounded at ~12,800 rows worst case.
  */
 export async function listCommunityLeaderboard(
   supabase: TypedClient,
@@ -965,7 +975,10 @@ export async function listCommunityLeaderboard(
 ): Promise<DiscordLeaderboardRow[]> {
   const { limit = 10 } = options;
 
-  // For both scopes, fetch tournament_player_stats for this community's tournaments
+  // Cap tournament fetch: 1 for current scope, 50 for all-time (practical
+  // upper bound — communities rarely have more than 50 completed tournaments).
+  const tournamentLimit = options.scope === "current" ? 1 : 50;
+
   const { data: tournaments, error: tErr } = await supabase
     .from("tournaments")
     .select("id")
@@ -973,7 +986,7 @@ export async function listCommunityLeaderboard(
     .in("status", ["active", "completed"])
     .is("archived_at", null)
     .order("start_date", { ascending: false, nullsFirst: false })
-    .limit(options.scope === "current" ? 1 : 100);
+    .limit(tournamentLimit);
 
   if (tErr)
     throw new Error(
@@ -1246,35 +1259,32 @@ export async function getPlayerCommunityStats(
   tournamentsPlayed: number;
   lastPlayedAt: string | null;
 }> {
-  // Get the user's alts
-  const { data: alts, error: altsError } = await supabase
-    .from("alts")
-    .select("id")
-    .eq("user_id", userId);
+  // Get the user's alts and community tournaments in parallel — they're
+  // independent queries and the stats query depends on both results.
+  const [altsResult, tournamentsResult] = await Promise.all([
+    supabase.from("alts").select("id").eq("user_id", userId),
+    supabase
+      .from("tournaments")
+      .select("id")
+      .eq("community_id", communityId)
+      .is("archived_at", null),
+  ]);
 
-  if (altsError)
+  if (altsResult.error)
     throw new Error(
-      `Failed to get alts for player stats: ${altsError.message}`
+      `Failed to get alts for player stats: ${altsResult.error.message}`
+    );
+  if (tournamentsResult.error)
+    throw new Error(
+      `Failed to get community tournaments for player stats: ${tournamentsResult.error.message}`
     );
 
-  const altIds = (alts ?? []).map((a) => a.id);
+  const altIds = (altsResult.data ?? []).map((a) => a.id);
   if (altIds.length === 0) {
     return { wins: 0, losses: 0, tournamentsPlayed: 0, lastPlayedAt: null };
   }
 
-  // Get all tournaments for this community
-  const { data: tournaments, error: tErr } = await supabase
-    .from("tournaments")
-    .select("id")
-    .eq("community_id", communityId)
-    .is("archived_at", null);
-
-  if (tErr)
-    throw new Error(
-      `Failed to get community tournaments for player stats: ${tErr.message}`
-    );
-
-  const tournamentIds = (tournaments ?? []).map((t) => t.id);
+  const tournamentIds = (tournamentsResult.data ?? []).map((t) => t.id);
   if (tournamentIds.length === 0) {
     return { wins: 0, losses: 0, tournamentsPlayed: 0, lastPlayedAt: null };
   }

@@ -68,6 +68,11 @@ export const ROLE_TYPE_META: Record<
     label: "Currently playing",
     description: "Players in an active round (added + removed per round)",
   },
+  verified: {
+    label: "Verified",
+    description: "Members who linked their trainers.gg account",
+    emoji: "✓",
+  },
 };
 
 // ---------------------------------------------------------------------------
