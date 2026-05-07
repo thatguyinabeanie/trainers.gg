@@ -288,7 +288,7 @@ export function AltsTable({
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <th className="h-8 w-8" />
+              <th className="h-8 w-8" aria-label="Expand" />
               <th className="text-muted-foreground h-8 w-[200px] px-3 text-left text-xs font-medium tracking-wide uppercase">
                 Handle
               </th>

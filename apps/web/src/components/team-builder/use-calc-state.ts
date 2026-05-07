@@ -515,6 +515,8 @@ function buildDefenderPokemon(
       canMega && megaActive && megaSpecies
         ? (getMegaAbilityForSpecies(megaSpecies) ?? ability)
         : ability;
+    // Bail if the species has no base stats in @pkmn/dex.
+    if (!getBaseStats(effectiveSpecies)) return null;
     // Bail if the species is unknown to @smogon/calc's gen data.
     if (!calcGenKnowsSpecies(gen, effectiveSpecies)) return null;
     // Build without curHP first so we can call maxHP() to compute the real value.

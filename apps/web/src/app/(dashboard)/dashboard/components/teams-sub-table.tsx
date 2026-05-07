@@ -14,22 +14,11 @@ import {
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { getTeamsForAlt, getPlayerTournamentHistory } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
+import { formatShortDate } from "@trainers/utils";
 
 import { Button } from "@/components/ui/button";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Format a date as "Mar 28" */
-function formatShortDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Team Card (replaces nested table row)
@@ -278,7 +267,7 @@ export function TeamsSubTable({
       </div>
 
       {/* Footer — softened buttons */}
-      <div className="flex items-center justify-between border-t px-3 py-2.5">
+      <div className="flex items-center justify-between bg-muted/50 px-3 py-2.5">
         <div className="flex gap-2">
           <Button
             nativeButton={false}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   Trophy,
@@ -57,6 +58,7 @@ function UpcomingTournamentsList({
 }: {
   tournaments: Tournament[];
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [checkingInId, setCheckingInId] = useState<number | null>(null);
   const [now] = useState(() => Date.now());
@@ -64,12 +66,12 @@ function UpcomingTournamentsList({
   const formatDate = (timestamp: number | null) => {
     if (!timestamp) return "Date TBD";
     const date = new Date(timestamp);
-    const diffDays = Math.ceil(
-      (date.getTime() - now) / (1000 * 60 * 60 * 24)
-    );
-    if (diffDays < 0) return "In Progress";
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Tomorrow";
+    const diffMs = date.getTime() - now;
+    if (diffMs < 0) return "In Progress";
+    const hoursUntil = diffMs / (1000 * 60 * 60);
+    if (hoursUntil < 24) return "Today";
+    if (hoursUntil < 48) return "Tomorrow";
+    const diffDays = Math.ceil(hoursUntil / 24);
     if (diffDays <= 7) return `In ${diffDays} days`;
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
@@ -130,6 +132,7 @@ function UpcomingTournamentsList({
         const result = await checkIn(tournamentId);
         if (result.success) {
           toast.success("Successfully checked in!");
+          router.refresh();
         } else {
           toast.error(result.error || "Failed to check in");
         }
@@ -295,8 +298,8 @@ function UpcomingTournamentsList({
 // =============================================================================
 
 /** Format a timestamp as a relative age string (e.g. "5m ago", "2d ago") */
-function formatAge(timestamp: number) {
-  const diffMs = Date.now() - timestamp;
+function formatAge(timestamp: number, now: number) {
+  const diffMs = now - timestamp;
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
@@ -316,6 +319,8 @@ function formatAge(timestamp: number) {
 // =============================================================================
 
 function RecentActivityList({ activities }: { activities: Activity[] }) {
+  const [now] = useState(() => Date.now());
+
   if (activities.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-10">
@@ -365,7 +370,7 @@ function RecentActivityList({ activities }: { activities: Activity[] }) {
 
             {/* Time */}
             <span className="text-muted-foreground shrink-0 text-xs">
-              {formatAge(activity.date)}
+              {formatAge(activity.date, now)}
             </span>
           </div>
         );

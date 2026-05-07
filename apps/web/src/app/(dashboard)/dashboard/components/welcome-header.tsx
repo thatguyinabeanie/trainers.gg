@@ -54,27 +54,15 @@ export function WelcomeHeader({
             Team Builder
           </Button>
         )}
-        {hasAlts && (
-          <Button
-            size="sm"
-            variant="outline"
-            render={<Link href="/dashboard/alts" />}
-            nativeButton={false}
-          >
-            <UserPlus className="mr-1.5 size-3.5" />
-            New Alt
-          </Button>
-        )}
-        {!hasAlts && (
-          <Button
-            size="sm"
-            render={<Link href="/dashboard/alts" />}
-            nativeButton={false}
-          >
-            <UserPlus className="mr-1.5 size-3.5" />
-            Create Alt
-          </Button>
-        )}
+        <Button
+          size="sm"
+          variant={hasAlts ? "outline" : undefined}
+          render={<Link href="/dashboard/alts" />}
+          nativeButton={false}
+        >
+          <UserPlus className="mr-1.5 size-3.5" />
+          {hasAlts ? "New Alt" : "Create Alt"}
+        </Button>
       </div>
     </div>
   );

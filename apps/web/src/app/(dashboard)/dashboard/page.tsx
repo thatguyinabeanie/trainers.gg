@@ -132,16 +132,10 @@ export default async function DashboardHomePage() {
         getCachedBulkStats(altIds),
         getCachedBulkRatings(altIds),
         mainAltId
-          ? (() => {
-              const staticClient = createStaticClient();
-              return getActiveMatch(staticClient, mainAltId);
-            })()
+          ? getActiveMatch(supabase, mainAltId)
           : Promise.resolve(null),
         mainAltId
-          ? (() => {
-              const staticClient = createStaticClient();
-              return getMyDashboardData(staticClient, mainAltId);
-            })()
+          ? getMyDashboardData(supabase, mainAltId)
           : Promise.resolve(null),
       ]);
 
@@ -225,8 +219,7 @@ export default async function DashboardHomePage() {
 
   if (communityIds.length > 0) {
     try {
-      const staticClient = createStaticClient();
-      const { data: liveTournaments } = await staticClient
+      const { data: liveTournaments } = await supabase
         .from("tournaments")
         .select("community_id")
         .in("community_id", communityIds)
