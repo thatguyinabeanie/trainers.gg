@@ -30,7 +30,7 @@ describe("EnhancedStats", () => {
   });
 
   it("applies high tier color for win rate >= 60%", () => {
-    const { container } = render(
+    render(
       <EnhancedStats {...defaultProps} winRate="65.0%" />
     );
     // The value element should have emerald color class
