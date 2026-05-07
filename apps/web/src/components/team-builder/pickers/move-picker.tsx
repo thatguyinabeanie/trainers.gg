@@ -374,7 +374,7 @@ export function MovePicker({
                         }}
                         onTypeFilter={handleTypeFilter}
                         onCategoryFilter={(cat) =>
-                          handleCategoryFilter(cat as MoveCategory)
+                          handleCategoryFilter(cat)
                         }
                         onRoleFilter={handleRoleFilter}
                       />

@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { CATEGORY_ICON_URLS } from "../move-category-ui";
+import { type MoveCategory } from "./move-filter-state";
 import { RoleChip } from "./role-chip";
 import { getRolesForMove, type RoleId } from "./role-registry";
 
@@ -137,7 +138,8 @@ export function MoveListHeader({ sort, onSort, className }: MoveListHeaderProps)
         type="button"
         className={cn(headerBtnClass("name"), "flex items-center gap-0.5")}
         onClick={() => onSort("name")}
-        aria-label="Sort by name"
+        aria-pressed={sort.col === "name"}
+        aria-label={`Sort by name${sort.col === "name" ? `, ${sort.dir === "asc" ? "ascending" : "descending"}` : ""}`}
       >
         Name
         <SortArrow active={sort.col === "name"} dir={sort.dir} />
@@ -151,7 +153,8 @@ export function MoveListHeader({ sort, onSort, className }: MoveListHeaderProps)
           "flex items-center justify-end gap-0.5"
         )}
         onClick={() => onSort("bp")}
-        aria-label="Sort by base power"
+        aria-pressed={sort.col === "bp"}
+        aria-label={`Sort by base power${sort.col === "bp" ? `, ${sort.dir === "asc" ? "ascending" : "descending"}` : ""}`}
       >
         BP
         <SortArrow active={sort.col === "bp"} dir={sort.dir} />
@@ -165,7 +168,8 @@ export function MoveListHeader({ sort, onSort, className }: MoveListHeaderProps)
           "flex items-center justify-end gap-0.5"
         )}
         onClick={() => onSort("acc")}
-        aria-label="Sort by accuracy"
+        aria-pressed={sort.col === "acc"}
+        aria-label={`Sort by accuracy${sort.col === "acc" ? `, ${sort.dir === "asc" ? "ascending" : "descending"}` : ""}`}
       >
         ACC
         <SortArrow active={sort.col === "acc"} dir={sort.dir} />
@@ -203,7 +207,7 @@ interface MoveListRowProps {
   /** Called when the type icon is clicked (filter affordance). */
   onTypeFilter?: (type: string) => void;
   /** Called when the category icon is clicked (filter affordance). */
-  onCategoryFilter?: (category: string) => void;
+  onCategoryFilter?: (category: MoveCategory) => void;
   /** Called when a role chip is clicked (filter affordance). */
   onRoleFilter?: (roleId: RoleId) => void;
 }

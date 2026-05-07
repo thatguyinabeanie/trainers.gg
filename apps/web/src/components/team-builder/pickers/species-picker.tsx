@@ -290,7 +290,6 @@ function SpeciesRow({
       <div
         role="row"
         aria-label={`Select ${entry.species}`}
-        aria-expanded={isExpanded}
         tabIndex={0}
         onClick={onSelect}
         onKeyDown={handleRowKey}
@@ -304,6 +303,8 @@ function SpeciesRow({
         <button
           type="button"
           aria-label={isExpanded ? `Collapse ${entry.species}` : `Expand ${entry.species}`}
+          aria-expanded={isExpanded}
+          aria-controls={`panel-${entry.species}`}
           onClick={(e) => {
             e.stopPropagation();
             onToggleExpand();
@@ -370,21 +371,21 @@ function SpeciesRow({
               onFilter={onFilterAbility}
             />
           </div>
-          {(entry.abilitySlot2 || entry.hiddenAbility) && (
+          {entry.abilitySlot2 && (
             <div className="flex min-w-0 items-baseline gap-1">
               <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-[8px]">●</span>
               <AbilityCell
-                name={entry.abilitySlot2 ?? null}
+                name={entry.abilitySlot2}
                 slot="slot2"
                 onFilter={onFilterAbility}
               />
             </div>
           )}
-          {(entry.abilitySlot2 || entry.hiddenAbility) && (
+          {entry.hiddenAbility && (
             <div className="flex min-w-0 items-baseline gap-1">
               <span className="text-amber-400/70 inline-block w-2.5 shrink-0 text-center text-[8px]">★</span>
               <AbilityCell
-                name={entry.hiddenAbility ?? null}
+                name={entry.hiddenAbility}
                 slot="hidden"
                 onFilter={onFilterAbility}
               />
@@ -469,6 +470,7 @@ function SpeciesRow({
       {isExpanded && (
         <div className="border-b">
           <SpeciesExpandedPanel
+            id={`panel-${entry.species}`}
             species={entry.species}
             formatId={formatId}
             filteredMoves={filteredMoves}

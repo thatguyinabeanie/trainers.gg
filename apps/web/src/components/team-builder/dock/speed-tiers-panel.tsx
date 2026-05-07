@@ -338,10 +338,8 @@ function metaToScored(
         ? 0.9
         : 1.0;
 
-  // EVs: if custom set use that; otherwise max EVs for +/neutral, 0 for -
-  const evs =
-    customEvs ??
-    (toggle.theirs.nature === "negative" ? 0 : champions ? 0 : 252);
+  // EVs: if custom set use that; otherwise 0 baseline
+  const evs = customEvs ?? 0;
 
   const rawSpeed = champions
     ? calculateChampionsStat(b, evs, natureMult)

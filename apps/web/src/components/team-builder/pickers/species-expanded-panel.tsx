@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { getLegalMoves, getMoveData, type MoveData } from "@trainers/pokemon";
 
@@ -18,6 +18,7 @@ import { getRolesForMove, type RoleId } from "./role-registry";
 // =============================================================================
 
 interface SpeciesExpandedPanelProps {
+  id?: string;
   species: string;
   formatId: string;
   /** Currently-active "learns move" filter values — these get highlighted. */
@@ -37,6 +38,7 @@ interface SpeciesExpandedPanelProps {
  * highlighted. The panel is vertically resizable via a drag handle.
  */
 export function SpeciesExpandedPanel({
+  id,
   species,
   formatId,
   filteredMoves,
@@ -48,6 +50,21 @@ export function SpeciesExpandedPanel({
   });
   const [height, setHeight] = useState(320);
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
+  const moveHandlerRef = useRef<((ev: PointerEvent) => void) | null>(null);
+  const upHandlerRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (moveHandlerRef.current) {
+        document.removeEventListener("pointermove", moveHandlerRef.current);
+      }
+      if (upHandlerRef.current) {
+        document.removeEventListener("pointerup", upHandlerRef.current);
+        document.removeEventListener("pointercancel", upHandlerRef.current);
+      }
+      dragRef.current = null;
+    };
+  }, []);
 
   const legalMovesResult = getLegalMoves(species, formatId);
 
@@ -91,7 +108,7 @@ export function SpeciesExpandedPanel({
   }
 
   return (
-    <div className="bg-muted/30 border-border/60 border-t">
+    <div id={id} className="bg-muted/30 border-border/60 border-t">
       {/* Sticky header */}
       <MoveListHeader
         sort={sort}
@@ -116,12 +133,13 @@ export function SpeciesExpandedPanel({
         aria-orientation="horizontal"
         aria-label="Resize learnset panel"
         className="group flex h-2 cursor-row-resize items-center justify-center"
-        onMouseDown={(e) => {
+        onPointerDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          e.currentTarget.setPointerCapture(e.pointerId);
           dragRef.current = { startY: e.clientY, startHeight: height };
 
-          function onMouseMove(ev: MouseEvent) {
+          function onPointerMove(ev: PointerEvent) {
             if (!dragRef.current) return;
             const delta = ev.clientY - dragRef.current.startY;
             const next = Math.max(
@@ -131,14 +149,21 @@ export function SpeciesExpandedPanel({
             setHeight(next);
           }
 
-          function onMouseUp() {
+          function onPointerUp() {
             dragRef.current = null;
-            document.removeEventListener("mousemove", onMouseMove);
-            document.removeEventListener("mouseup", onMouseUp);
+            document.removeEventListener("pointermove", onPointerMove);
+            document.removeEventListener("pointerup", onPointerUp);
+            document.removeEventListener("pointercancel", onPointerUp);
+            moveHandlerRef.current = null;
+            upHandlerRef.current = null;
           }
 
-          document.addEventListener("mousemove", onMouseMove);
-          document.addEventListener("mouseup", onMouseUp);
+          moveHandlerRef.current = onPointerMove;
+          upHandlerRef.current = onPointerUp;
+
+          document.addEventListener("pointermove", onPointerMove);
+          document.addEventListener("pointerup", onPointerUp);
+          document.addEventListener("pointercancel", onPointerUp);
         }}
       >
         <div className="bg-border group-hover:bg-foreground/30 h-0.5 w-12 rounded-full transition-colors" />
