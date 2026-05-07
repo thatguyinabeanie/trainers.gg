@@ -80,7 +80,7 @@ const providerIcons: Record<string, () => React.JSX.Element> = {
  * Includes lockout protection to prevent unlinking the last authentication method
  */
 export function LinkedIdentitiesSection() {
-  const { user, signInWithOAuth } = useAuth();
+  const { user } = useAuth();
   const supabase = createClient();
   const queryClient = useQueryClient();
   const [unlinking, setUnlinking] = useState<string | null>(null);
@@ -132,11 +132,16 @@ export function LinkedIdentitiesSection() {
       const returnUrl = encodeURIComponent("/dashboard/settings/account");
       window.location.href = `/api/oauth/login?returnUrl=${returnUrl}`;
     } else {
-      // Use standard Supabase OAuth
-      const { error } = await signInWithOAuth(
+      // Use linkIdentity to attach the provider to the current user
+      // (signInWithOAuth would replace the session instead of linking)
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const { error } = await supabase.auth.linkIdentity({
         provider,
-        "/dashboard/settings/account"
-      );
+        options: {
+          redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/dashboard/settings/account")}`,
+        },
+      });
       if (error) {
         toast.error(`Failed to link ${provider}: ${error.message}`);
       }
