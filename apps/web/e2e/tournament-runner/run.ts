@@ -89,7 +89,16 @@ function parseArgs(): { scenario: string; options: RunnerOptions } {
   }
 
   // Safety guard: prevent accidental runs against production
-  const url = new URL(baseUrl);
+  let url: URL;
+  try {
+    url = new URL(baseUrl);
+  } catch {
+    console.error(
+      `ERROR: Invalid base URL "${baseUrl}".\n` +
+        `URL must include the scheme (e.g. http://localhost:3000, not just localhost:3000).`
+    );
+    process.exit(1);
+  }
   const isLocal =
     url.hostname === "localhost" || url.hostname === "127.0.0.1";
   if (!isLocal && !allowRemote) {

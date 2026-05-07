@@ -242,8 +242,8 @@ export async function readPairings(
       );
       matchElements.forEach((el, i) => {
         const text = el.textContent ?? "";
-        // Try to parse "username1 vs username2" patterns
-        const vsMatch = text.match(/(\w+)\s+vs\.?\s+(\w+)/);
+        // Try to parse "username1 vs username2" patterns (usernames may contain hyphens/underscores)
+        const vsMatch = text.match(/([\w-]+)\s+vs\.?\s+([\w-]+)/);
         if (vsMatch) {
           results.push({
             table: i + 1,
@@ -256,10 +256,14 @@ export async function readPairings(
       matchRows.forEach((row, i) => {
         const cells = row.querySelectorAll("td, [class*='player']");
         if (cells.length >= 2) {
+          const p1 = cells[0]?.textContent?.trim() ?? "";
+          const p2 = cells[1]?.textContent?.trim() ?? "";
+          // Skip rows where player1 is empty (header/separator rows)
+          if (!p1) return;
           results.push({
             table: i + 1,
-            player1: cells[0]?.textContent?.trim() ?? "",
-            player2: cells[1]?.textContent?.trim() ?? null,
+            player1: p1,
+            player2: p2 || null, // Normalize empty string to null (bye)
           });
         }
       });

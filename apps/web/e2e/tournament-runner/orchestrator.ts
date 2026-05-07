@@ -244,10 +244,15 @@ export class TournamentOrchestrator {
 
           switch (action.type) {
             case "check-in-and-report":
+              if (!action.games) {
+                throw new Error(
+                  `check-in-and-report action for ${action.player} is missing games array`
+                );
+              }
               return checkInAndReport(
                 pc.page,
                 this.tournamentSlug,
-                action.games ?? ["won", "won"]
+                action.games
               );
             case "check-in-and-wait":
               return checkInToMatch(pc.page, this.tournamentSlug);
