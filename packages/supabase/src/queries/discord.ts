@@ -30,14 +30,19 @@ export const ALL_DM_EVENT_TYPES = [
   "top_cut_made",
   "tournament_starting",
   "tournament_cancelled",
+  "check_in_reminder",
 ] as const satisfies readonly DiscordDmEventType[];
 
 /** All Discord channel notification event types — single source of truth. */
 export const ALL_CHANNEL_EVENT_TYPES = [
   "tournament_created",
   "registration_opens",
+  "registration_closing_soon",
   "tournament_ended",
   "match_result_reported",
+  "round_posted",
+  "standings_posted",
+  "check_in_opened",
 ] as const;
 
 export type DiscordChannelEventType = (typeof ALL_CHANNEL_EVENT_TYPES)[number];

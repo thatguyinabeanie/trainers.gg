@@ -34,6 +34,7 @@ import {
   type DiscordDmEventType,
   ALL_CHANNEL_EVENT_TYPES,
   type RoleSyncFailureRow,
+  type Json,
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
 import { z } from "@trainers/validators";
@@ -59,6 +60,7 @@ const DISCORD_ROLE_TYPES = [
   "winner",
   "staff",
   "currently_playing",
+  "verified",
 ] as const;
 
 // =============================================================================
@@ -89,6 +91,11 @@ const upsertDmSettingSchema = z
     }
   );
 
+const deleteDmSettingSchema = z.object({
+  communityId: z.number().int().positive(),
+  eventType: z.enum(ALL_DM_EVENT_TYPES),
+});
+
 const upsertRoleMappingSchema = z.object({
   communityId: z.number().int().positive(),
   roleType: z.enum(DISCORD_ROLE_TYPES),
@@ -99,6 +106,41 @@ const setDmPreferenceSchema = z.object({
   eventType: z.enum(ALL_DM_EVENT_TYPES),
   enabled: z.boolean(),
 });
+
+const sendTestNotificationSchema = z.object({
+  serverId: z.number().int().positive(),
+  channelId: z.string().min(1),
+  eventType: z.enum(ALL_CHANNEL_EVENT_TYPES),
+});
+
+const updateServerSettingsSchema = z.object({
+  serverId: z.number().int().positive(),
+  communityId: z.number().int().positive(),
+  settings: z.object({
+    embed_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    setup_completed: z.boolean().optional(),
+    registration_reminder_minutes: z.number().int().positive().nullable().optional(),
+    link_prompt_frequency: z.string().optional(),
+  }).strict(),
+});
+
+const updateChannelPingRoleSchema = z.object({
+  mappingId: z.number().int().positive(),
+  pingRoleId: z.string().min(1).nullable(),
+  communityId: z.number().int().positive(),
+});
+
+const updateVerifiedRoleSchema = z
+  .object({
+    serverId: z.number().int().positive(),
+    communityId: z.number().int().positive(),
+    enabled: z.boolean(),
+    roleId: z.string().min(1).nullable(),
+  })
+  .refine((data) => !data.enabled || data.roleId !== null, {
+    message: "roleId is required when enabling the verified role",
+    path: ["roleId"],
+  });
 
 // Payload schemas for discord_delivery_failures — each failure type carries a
 // different shape. Validated at retry time to catch malformed DB rows early.
@@ -196,11 +238,11 @@ const DISCORD_SETTINGS_PATH =
  * Discord server linked. Conflicts on (discord_server_id, channel_id, event_type)
  * are idempotent (Supabase upsert).
  *
- * @returns `{ id }` of the Discord server (not the channel mapping row, which is an upsert with no returned ID)
+ * @returns `{ mappingId }` of the upserted channel mapping row
  */
 export async function upsertChannelMappingAction(
   input: z.infer<typeof upsertChannelMappingSchema>
-): Promise<ActionResult<{ id: number }>> {
+): Promise<ActionResult<{ mappingId: number }>> {
   try {
     await rejectBots();
     const parsed = upsertChannelMappingSchema.parse(input);
@@ -209,15 +251,14 @@ export async function upsertChannelMappingAction(
     if ("error" in result) return result.error;
     const { server } = result;
 
-    await upsertChannelMapping(supabase, {
+    const { id: mappingId } = await upsertChannelMapping(supabase, {
       discord_server_id: server.id,
       event_type: parsed.eventType,
       channel_id: parsed.channelId,
     });
 
     revalidatePath(DISCORD_SETTINGS_PATH, "page");
-    // upsertChannelMapping returns void; callers only need success confirmation
-    return { success: true, data: { id: server.id } };
+    return { success: true, data: { mappingId } };
   } catch (error) {
     const forbidden = asForbidden(error);
     if (forbidden) return forbidden;
@@ -329,6 +370,44 @@ export async function upsertDmSettingAction(
   }
 }
 
+/**
+ * Delete the DM delivery setting for a specific event type on a community's
+ * Discord server (e.g. when the user toggles the feature off).
+ *
+ * Requires `community.manage` permission.
+ */
+export async function deleteDmSettingAction(input: {
+  communityId: number;
+  eventType: DiscordDmEventType;
+}): Promise<ActionResult<void>> {
+  try {
+    await rejectBots();
+    const parsed = deleteDmSettingSchema.parse(input);
+    const supabase = await createClient();
+    const result = await requireDiscordServer(supabase, parsed.communityId);
+    if ("error" in result) return result.error;
+    const { server } = result;
+
+    const { error } = await supabase
+      .from("discord_dm_settings")
+      .delete()
+      .eq("discord_server_id", server.id)
+      .eq("event_type", parsed.eventType);
+
+    if (error) throw error;
+
+    revalidatePath(DISCORD_SETTINGS_PATH, "page");
+    return { success: true, data: undefined };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to delete DM setting"),
+    };
+  }
+}
+
 // =============================================================================
 // Role Mapping Actions
 // =============================================================================
@@ -436,6 +515,7 @@ export async function setDmPreferenceAction(
     }
 
     await setDmPreference(supabase, user.id, parsed.eventType, parsed.enabled);
+    revalidatePath(DISCORD_SETTINGS_PATH, "page");
     return { success: true, data: undefined };
   } catch (error) {
     return {
@@ -806,3 +886,356 @@ export async function listRecentFailuresAction(serverId: number): Promise<
     };
   }
 }
+
+// =============================================================================
+// Test Notification
+// =============================================================================
+
+/**
+ * Send a test notification to a specific Discord channel to verify the bot
+ * can post there. Creates a friendly test embed.
+ */
+export async function sendTestNotificationAction(
+  input: z.infer<typeof sendTestNotificationSchema>
+): Promise<ActionResult<void>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const parsed = sendTestNotificationSchema.parse(input);
+
+    const server = await getDiscordServerById(supabase, parsed.serverId);
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
+    }
+    await requireCommunityManage(supabase, server.community_id);
+
+    await start(sendChannelNotificationWorkflow, [
+      parsed.channelId,
+      parsed.eventType,
+      {
+        __test: true,
+        title: "Test Notification",
+        description: `This is a test notification for the **${parsed.eventType}** event type. If you can see this, the bot is working correctly!`,
+      },
+      server.id,
+    ]);
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to send test notification"),
+    };
+  }
+}
+
+// =============================================================================
+// Server Settings
+// =============================================================================
+
+/**
+ * Update the discord_servers.settings JSONB for a community's Discord server.
+ * Merges the provided settings into the existing object (does not replace).
+ */
+export async function updateServerSettingsAction(
+  input: z.infer<typeof updateServerSettingsSchema>
+): Promise<ActionResult<void>> {
+  try {
+    await rejectBots();
+    const parsed = updateServerSettingsSchema.parse(input);
+    const supabase = await createClient();
+    await requireCommunityManage(supabase, parsed.communityId);
+
+    const server = await getDiscordServerById(supabase, parsed.serverId);
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
+    }
+    if (server.community_id !== parsed.communityId) {
+      return {
+        success: false,
+        error: "Server does not belong to this community",
+      };
+    }
+
+    const existing = server.settings;
+    const base =
+      existing && typeof existing === "object" && !Array.isArray(existing)
+        ? (existing as Record<string, unknown>)
+        : {};
+    const mergedSettings = { ...base, ...parsed.settings } as Record<
+      string,
+      unknown
+    >;
+
+    const { error } = await supabase
+      .from("discord_servers")
+      .update({ settings: mergedSettings as unknown as Json })
+      .eq("id", parsed.serverId);
+
+    if (error) throw new Error(`Failed to update settings: ${error.message}`);
+
+    revalidatePath(DISCORD_SETTINGS_PATH, "page");
+    return { success: true, data: undefined };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update server settings"),
+    };
+  }
+}
+
+// =============================================================================
+// Channel Ping Role
+// =============================================================================
+
+/**
+ * Update the ping_role_id for a specific channel mapping.
+ */
+export async function updateChannelPingRoleAction(
+  input: z.infer<typeof updateChannelPingRoleSchema>
+): Promise<ActionResult<void>> {
+  try {
+    await rejectBots();
+    const parsed = updateChannelPingRoleSchema.parse(input);
+    const supabase = await createClient();
+    await requireCommunityManage(supabase, parsed.communityId);
+
+    // Verify mapping belongs to this community's server
+    const { data: mapping, error: selectError } = await supabase
+      .from("discord_channels")
+      .select("id, discord_server_id, discord_servers!inner(community_id)")
+      .eq("id", parsed.mappingId)
+      .maybeSingle();
+
+    if (selectError)
+      throw new Error(`Failed to look up channel mapping: ${selectError.message}`);
+    if (!mapping) {
+      return { success: false, error: "Channel mapping not found" };
+    }
+    const serverJoin = mapping.discord_servers;
+    const mappingCommunityId = Array.isArray(serverJoin)
+      ? (serverJoin[0] as { community_id: number } | undefined)?.community_id
+      : (serverJoin as { community_id: number } | null)?.community_id;
+
+    if (!mappingCommunityId || mappingCommunityId !== parsed.communityId) {
+      return {
+        success: false,
+        error: "Mapping does not belong to this community",
+      };
+    }
+
+    const { error } = await supabase
+      .from("discord_channels")
+      .update({ ping_role_id: parsed.pingRoleId })
+      .eq("id", parsed.mappingId);
+
+    if (error) throw new Error(`Failed to update ping role: ${error.message}`);
+
+    revalidatePath(DISCORD_SETTINGS_PATH, "page");
+    return { success: true, data: undefined };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update ping role"),
+    };
+  }
+}
+
+// =============================================================================
+// Verified Role
+// =============================================================================
+
+/**
+ * Configure the verified role auto-assignment feature.
+ * Stored in discord_role_mappings with role_type='verified'.
+ */
+export async function updateVerifiedRoleAction(input: {
+  serverId: number;
+  communityId: number;
+  enabled: boolean;
+  roleId: string | null;
+}): Promise<ActionResult<void>> {
+  try {
+    await rejectBots();
+    const parsed = updateVerifiedRoleSchema.parse(input);
+    const supabase = await createClient();
+    await requireCommunityManage(supabase, parsed.communityId);
+
+    const server = await getDiscordServerById(supabase, parsed.serverId);
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
+    }
+    if (server.community_id !== parsed.communityId) {
+      return { success: false, error: "Server does not belong to this community" };
+    }
+
+    if (parsed.enabled && parsed.roleId) {
+      // Upsert the verified role mapping with enabled:true in one operation
+      await upsertRoleMapping(supabase, {
+        discord_server_id: parsed.serverId,
+        role_type: "verified",
+        discord_role_id: parsed.roleId,
+        enabled: true,
+      });
+    } else {
+      // Disable the verified role mapping if it exists
+      const { data: mapping, error: lookupError } = await supabase
+        .from("discord_role_mappings")
+        .select("id")
+        .eq("discord_server_id", parsed.serverId)
+        .eq("role_type", "verified")
+        .maybeSingle();
+      if (lookupError)
+        throw new Error(`Failed to look up role mapping: ${lookupError.message}`);
+      if (mapping) {
+        await toggleRoleMapping(supabase, mapping.id, false);
+      }
+    }
+
+    revalidatePath(DISCORD_SETTINGS_PATH, "page");
+    return { success: true, data: undefined };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update verified role"),
+    };
+  }
+}
+
+// =============================================================================
+// Delivery Stats & Activity Feed
+// =============================================================================
+
+export interface DeliveryStatsData {
+  channelMessages: number;
+  dmsDelivered: number;
+  roleSyncs: number;
+  failures: number;
+  period: string;
+}
+
+/**
+ * Fetch delivery statistics for the last 24 hours.
+ */
+export async function getDeliveryStatsAction(
+  serverId: number
+): Promise<ActionResult<DeliveryStatsData>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const server = await getDiscordServerById(supabase, serverId);
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
+    }
+    await requireCommunityManage(supabase, server.community_id);
+
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const [channelResult, dmResult, roleResult, failedResult] = await Promise.all([
+      supabase.from("discord_delivery_log").select("*", { count: "exact", head: true })
+        .eq("discord_server_id", serverId).eq("type", "channel").gte("created_at", since),
+      supabase.from("discord_delivery_log").select("*", { count: "exact", head: true })
+        .eq("discord_server_id", serverId).eq("type", "dm").gte("created_at", since),
+      supabase.from("discord_delivery_log").select("*", { count: "exact", head: true })
+        .eq("discord_server_id", serverId).eq("type", "role_sync").gte("created_at", since),
+      supabase.from("discord_delivery_failures").select("*", { count: "exact", head: true })
+        .eq("discord_server_id", serverId).gte("created_at", since),
+    ]);
+
+    if (channelResult.error || dmResult.error || roleResult.error || failedResult.error) {
+      return { success: false, error: "Failed to load delivery stats" };
+    }
+
+    const channelMessages = channelResult.count ?? 0;
+    const dmsDelivered = dmResult.count ?? 0;
+    const roleSyncs = roleResult.count ?? 0;
+    const failureCount = failedResult.count ?? 0;
+
+    return {
+      success: true,
+      data: {
+        channelMessages,
+        dmsDelivered,
+        roleSyncs,
+        failures: failureCount,
+        period: "Last 24 hours",
+      },
+    };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to fetch delivery stats"),
+    };
+  }
+}
+
+export interface ActivityItem {
+  id: number;
+  type: string;
+  eventType: string;
+  target: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+/**
+ * Fetch recent activity (delivery log) for a Discord server.
+ */
+export async function getActivityFeedAction(
+  serverId: number
+): Promise<ActionResult<ActivityItem[]>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const server = await getDiscordServerById(supabase, serverId);
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
+    }
+    await requireCommunityManage(supabase, server.community_id);
+
+    const { data: logs, error } = await supabase
+      .from("discord_delivery_log")
+      .select("id, type, event_type, target, metadata, created_at")
+      .eq("discord_server_id", serverId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error)
+      throw new Error(`Failed to fetch activity feed: ${error.message}`);
+
+    return {
+      success: true,
+      data: (logs ?? []).map((log) => ({
+        id: log.id,
+        type: log.type,
+        eventType: log.event_type,
+        target: log.target,
+        metadata: (log.metadata as Record<string, unknown>) ?? {},
+        createdAt: log.created_at,
+      })),
+    };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to fetch activity feed"),
+    };
+  }
+}
+
+// =============================================================================
+// Linked Accounts Stats
+// =============================================================================
+
+

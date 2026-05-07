@@ -26,8 +26,8 @@ import {
   BarChart3,
   FileText,
   GraduationCap,
-  Plug,
 } from "lucide-react";
+import { DiscordIcon } from "@/components/icons/discord-icon";
 
 import { formatDisplayUsername } from "@trainers/utils";
 
@@ -898,12 +898,12 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
       }
     : null;
 
-  const integrationsItem = isOwner
+  const discordItem = isOwner
     ? {
-        label: "Integrations",
+        label: "Discord",
         href: `${base}/settings/integrations/discord`,
-        icon: Plug,
-        isActive: pathname.startsWith(`${base}/settings/integrations`),
+        icon: DiscordIcon,
+        isActive: pathname.startsWith(`${base}/settings/integrations/discord`),
       }
     : null;
 
@@ -957,15 +957,15 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
               </SidebarMenuItem>
             )}
 
-            {integrationsItem && (
+            {discordItem && (
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  render={<Link href={integrationsItem.href} />}
-                  isActive={integrationsItem.isActive}
-                  tooltip={integrationsItem.label}
+                  render={<Link href={discordItem.href} />}
+                  isActive={discordItem.isActive}
+                  tooltip={discordItem.label}
                 >
-                  <integrationsItem.icon className="size-4 shrink-0" />
-                  <span>{integrationsItem.label}</span>
+                  <discordItem.icon className="size-4 shrink-0" />
+                  <span>{discordItem.label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}

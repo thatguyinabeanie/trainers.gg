@@ -54,8 +54,7 @@ export const DM_EVENT_LABELS: Record<
   },
   match_result_to_confirm: {
     label: "Match result to confirm",
-    description:
-      "When a match result is submitted and needs your confirmation",
+    description: "When a match result is submitted and needs your confirmation",
   },
   match_disputed: {
     label: "Match disputed",
@@ -88,6 +87,10 @@ export const DM_EVENT_LABELS: Record<
   tournament_cancelled: {
     label: "Tournament cancelled",
     description: "When a tournament you registered for is cancelled",
+  },
+  check_in_reminder: {
+    label: "Check-in reminder",
+    description: "Reminder to check in when check-in opens for your tournament",
   },
 };
 

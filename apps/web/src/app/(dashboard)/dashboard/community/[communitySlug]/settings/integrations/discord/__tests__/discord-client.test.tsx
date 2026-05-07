@@ -8,8 +8,8 @@ import { type DiscordIntegrationOverview } from "@trainers/supabase";
 import { DiscordClient } from "../discord-client";
 
 // =============================================================================
-// Stub out child components added in T15/T16 so this suite stays focused
-// on DiscordClient routing/tab logic.
+// Stub out child components so this suite stays focused on DiscordClient
+// routing/tab logic.
 // =============================================================================
 
 jest.mock("@/components/discord/install-card", () => ({
@@ -28,6 +28,71 @@ jest.mock("@/components/discord/failure-banner", () => ({
   FailureBanner: ({ count }: { count: number }) => (
     <div data-testid="failure-banner">{count} delivery failures stub</div>
   ),
+}));
+
+jest.mock("@/components/discord/setup-wizard", () => ({
+  SetupWizard: () => <div data-testid="setup-wizard">Setup wizard stub</div>,
+}));
+
+jest.mock("@/components/discord/bot-health-indicator", () => ({
+  BotHealthIndicator: () => <div>Bot health stub</div>,
+}));
+
+jest.mock("@/components/discord/delivery-stats-card", () => ({
+  DeliveryStatsCard: () => <div>Delivery stats stub</div>,
+}));
+
+jest.mock("@/components/discord/activity-feed", () => ({
+  ActivityFeed: () => <div>Activity feed stub</div>,
+}));
+
+jest.mock("@/components/discord/embed-preview", () => ({
+  EmbedPreview: () => <div>Embed preview stub</div>,
+}));
+
+jest.mock("@/components/discord/recommended-defaults-button", () => ({
+  RecommendedDefaultsButton: () => <div>Recommended defaults stub</div>,
+}));
+
+jest.mock("@/components/discord/channel-mapping-table", () => ({
+  ChannelMappingTable: () => <div>Channel mapping table stub</div>,
+}));
+
+jest.mock("@/components/discord/dm-settings-table", () => ({
+  DmSettingsTable: () => <div>DM settings table stub</div>,
+}));
+
+jest.mock("@/components/discord/embed-color-picker", () => ({
+  EmbedColorPicker: () => <div>Embed color picker stub</div>,
+}));
+
+jest.mock("@/components/discord/ping-role-config", () => ({
+  PingRoleConfig: () => <div>Ping role config stub</div>,
+}));
+
+jest.mock("@/components/discord/role-mapping-table", () => ({
+  RoleMappingTable: () => <div>Role mapping table stub</div>,
+}));
+
+jest.mock("@/components/discord/verified-role-config", () => ({
+  VerifiedRoleConfig: () => <div>Verified role config stub</div>,
+}));
+
+jest.mock("@/components/discord/tournament-automation-settings", () => ({
+  TournamentAutomationSettings: () => <div>Tournament automation stub</div>,
+}));
+
+jest.mock("@/components/discord/failures-tab-content", () => ({
+  FailuresTabContent: () => <div>Failures tab content stub</div>,
+}));
+
+jest.mock("@/actions/discord-integration", () => ({
+  getDeliveryStatsAction: jest
+    .fn()
+    .mockResolvedValue({ success: false, error: "noop" }),
+  getActivityFeedAction: jest
+    .fn()
+    .mockResolvedValue({ success: false, error: "noop" }),
 }));
 
 // =============================================================================
@@ -53,7 +118,7 @@ const defaultOverview: DiscordIntegrationOverview = {
     guild_id: "123456789",
     installed_by: "user-uuid-123",
     created_at: "2026-01-01T00:00:00Z",
-    settings: {},
+    settings: { setup_completed: true },
   },
   channelMappings: [],
   dmSettings: [],
@@ -69,7 +134,10 @@ const defaultProps = {
 };
 
 function setupNavMocks(tab: string | null = null) {
-  (useRouter as jest.Mock).mockReturnValue({ replace: mockReplace });
+  (useRouter as jest.Mock).mockReturnValue({
+    replace: mockReplace,
+    refresh: jest.fn(),
+  });
   (usePathname as jest.Mock).mockReturnValue(
     "/dashboard/community/test-community/settings/integrations/discord"
   );
@@ -111,13 +179,35 @@ describe("DiscordClient", () => {
       render(<DiscordClient {...defaultProps} overview={null} />);
 
       expect(
-        screen.queryByRole("tab", { name: /notifications/i })
+        screen.queryByRole("tab", { name: /overview/i })
       ).not.toBeInTheDocument();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // State B — installed
+  // Setup wizard
+  // ---------------------------------------------------------------------------
+
+  describe("setup wizard", () => {
+    it("shows setup wizard when setup_completed is not true", () => {
+      const notCompleted = {
+        ...defaultOverview,
+        server: { ...defaultOverview.server, settings: {} },
+      };
+      render(<DiscordClient {...defaultProps} overview={notCompleted} />);
+
+      expect(screen.getByTestId("setup-wizard")).toBeInTheDocument();
+    });
+
+    it("does not show wizard when setup_completed is true", () => {
+      render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
+
+      expect(screen.queryByTestId("setup-wizard")).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // State B — installed and setup complete
   // ---------------------------------------------------------------------------
 
   describe("when overview is present (State B)", () => {
@@ -136,22 +226,31 @@ describe("DiscordClient", () => {
       expect(screen.getByText(/123456789/)).toBeInTheDocument();
     });
 
-    it("renders three tab triggers", () => {
+    it("renders five tab triggers", () => {
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
+      expect(
+        screen.getByRole("tab", { name: /overview/i })
+      ).toBeInTheDocument();
       expect(
         screen.getByRole("tab", { name: /notifications/i })
       ).toBeInTheDocument();
       expect(screen.getByRole("tab", { name: /roles/i })).toBeInTheDocument();
       expect(
+        screen.getByRole("tab", { name: /automation/i })
+      ).toBeInTheDocument();
+      expect(
         screen.getByRole("tab", { name: /failures/i })
       ).toBeInTheDocument();
     });
 
-    it("renders the notifications tab content placeholder by default", () => {
+    it("renders the overview tab content by default", () => {
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      expect(screen.getByText(/channel announcements/i)).toBeInTheDocument();
+      // Overview tab shows recommended defaults stub
+      expect(
+        screen.getByText(/recommended defaults stub/i)
+      ).toBeInTheDocument();
     });
 
     it("does not show the failure banner when recentFailureCount is 0", () => {
@@ -166,35 +265,48 @@ describe("DiscordClient", () => {
   // ---------------------------------------------------------------------------
 
   describe("tab selection from ?tab= query param", () => {
+    it("shows Notifications tab content when ?tab=notifications", () => {
+      setupNavMocks("notifications");
+      render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
+
+      expect(screen.getByText(/channel mapping table stub/i)).toBeVisible();
+    });
+
     it("shows Roles tab content when ?tab=roles", () => {
       setupNavMocks("roles");
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      // Real component renders role assignment UI
-      expect(screen.getByText(/role assignments/i)).toBeVisible();
+      expect(screen.getByText(/role mapping table stub/i)).toBeVisible();
     });
 
-    it("falls back to Notifications tab content when ?tab=garbage", () => {
+    it("shows Automation tab content when ?tab=automation", () => {
+      setupNavMocks("automation");
+      render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
+
+      expect(screen.getByText(/tournament automation stub/i)).toBeVisible();
+    });
+
+    it("falls back to Overview tab content when ?tab=garbage", () => {
       setupNavMocks("garbage");
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      // Falls back to notifications — shows channel announcements heading
-      expect(screen.getByText(/channel announcements/i)).toBeVisible();
+      expect(screen.getByText(/recommended defaults stub/i)).toBeVisible();
     });
 
-    it("shows Notifications tab content when no ?tab= param is present", () => {
+    it("shows Overview tab content when no ?tab= param is present", () => {
       setupNavMocks(null);
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      expect(screen.getByText(/channel announcements/i)).toBeVisible();
+      expect(screen.getByText(/recommended defaults stub/i)).toBeVisible();
     });
 
     it("shows Failures tab content when ?tab=failures", () => {
       setupNavMocks("failures");
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
-      // Failures tab shows filter or content
-      expect(screen.getByText(/^failures$/i)).toBeVisible();
+      expect(
+        screen.getByText(/no failures in the last 24 hours/i)
+      ).toBeVisible();
     });
   });
 
@@ -259,8 +371,6 @@ describe("DiscordClient", () => {
       render(<DiscordClient {...defaultProps} overview={defaultOverview} />);
 
       // The badge span only renders when failureCount > 0
-      // Verify failures tab has no badge by checking no numeric badge appears
-      // The tab trigger text "Failures" should be present but no count badge
       expect(screen.queryByText(/^\d+$/)).not.toBeInTheDocument();
     });
   });

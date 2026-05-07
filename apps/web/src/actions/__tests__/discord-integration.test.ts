@@ -184,7 +184,7 @@ describe("upsertChannelMappingAction", () => {
   it("calls upsertChannelMapping and revalidates the page on success", async () => {
     mockPermission(true);
     mockGetDiscordServerByCommunityId.mockResolvedValue(fakeServer);
-    mockUpsertChannelMapping.mockResolvedValue(undefined);
+    mockUpsertChannelMapping.mockResolvedValue({ id: 42 });
 
     const result = await upsertChannelMappingAction({
       communityId: 1,
@@ -192,7 +192,7 @@ describe("upsertChannelMappingAction", () => {
       channelId: "123456",
     });
 
-    expect(result).toEqual({ success: true, data: { id: 99 } });
+    expect(result).toEqual({ success: true, data: { mappingId: 42 } });
     expect(mockUpsertChannelMapping).toHaveBeenCalledWith(mockSupabase, {
       discord_server_id: 99,
       event_type: "tournament_created",

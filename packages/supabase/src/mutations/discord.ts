@@ -86,18 +86,24 @@ export async function upsertChannelMapping(
     channel_id: string;
     event_type: string;
   }
-): Promise<void> {
-  const { error } = await supabase.from("discord_channels").upsert(
-    {
-      discord_server_id: input.discord_server_id,
-      channel_id: input.channel_id,
-      event_type: input.event_type,
-    },
-    { onConflict: "discord_server_id,channel_id,event_type" }
-  );
+): Promise<{ id: number }> {
+  const { data, error } = await supabase
+    .from("discord_channels")
+    .upsert(
+      {
+        discord_server_id: input.discord_server_id,
+        channel_id: input.channel_id,
+        event_type: input.event_type,
+      },
+      { onConflict: "discord_server_id,channel_id,event_type" }
+    )
+    .select("id")
+    .single();
 
   if (error)
     throw new Error(`Failed to upsert channel mapping: ${error.message}`);
+
+  return { id: data.id };
 }
 
 /**

@@ -483,7 +483,7 @@ describe("DashboardSidebar", () => {
       expect(settingsItems.length).toBeLessThanOrEqual(2);
     });
 
-    it("renders Integrations nav item for owner communities", () => {
+    it("renders Discord nav item for owner communities", () => {
       render(
         <DashboardSidebar
           user={baseUser}
@@ -492,10 +492,10 @@ describe("DashboardSidebar", () => {
           selectedAltUsername={null}
         />
       );
-      expect(screen.getByText("Integrations")).toBeInTheDocument();
+      expect(screen.getByText("Discord")).toBeInTheDocument();
     });
 
-    it("Integrations link points to discord integrations route", () => {
+    it("Discord link points to discord integrations route", () => {
       render(
         <DashboardSidebar
           user={baseUser}
@@ -505,10 +505,10 @@ describe("DashboardSidebar", () => {
         />
       );
       // The SidebarMenuButton mock renders the Link (renderProp) and children
-      // separately, so "Integrations" text is a sibling of the <a> tag.
+      // separately, so "Discord" text is a sibling of the <a> tag.
       // Find the <a> inside the same sidebar-menu-button container.
-      const integrationsText = screen.getByText("Integrations");
-      const menuButton = integrationsText.closest(
+      const discordText = screen.getByText("Discord");
+      const menuButton = discordText.closest(
         "[data-testid='sidebar-menu-button']"
       );
       expect(menuButton).not.toBeNull();
@@ -519,7 +519,7 @@ describe("DashboardSidebar", () => {
       );
     });
 
-    it("Integrations entry is active when on an integrations sub-path", () => {
+    it("Discord entry is active when on an integrations sub-path", () => {
       (usePathname as jest.Mock).mockReturnValue(
         "/dashboard/community/pallet-town/settings/integrations/discord"
       );
@@ -531,16 +531,16 @@ describe("DashboardSidebar", () => {
           selectedAltUsername={null}
         />
       );
-      // Find the SidebarMenuButton wrapping Integrations — data-active should be true
-      const integrationsText = screen.getByText("Integrations");
-      const menuButton = integrationsText.closest(
+      // Find the SidebarMenuButton wrapping Discord — data-active should be true
+      const discordText = screen.getByText("Discord");
+      const menuButton = discordText.closest(
         "[data-testid='sidebar-menu-button']"
       );
       expect(menuButton).not.toBeNull();
       expect(menuButton?.getAttribute("data-active")).toBe("true");
     });
 
-    it("does not render Integrations nav item for non-owner staff", () => {
+    it("does not render Discord nav item for non-owner staff", () => {
       const staffCommunities = [
         {
           ...baseCommunities[0]!,
@@ -556,7 +556,7 @@ describe("DashboardSidebar", () => {
           selectedAltUsername={null}
         />
       );
-      expect(screen.queryByText("Integrations")).not.toBeInTheDocument();
+      expect(screen.queryByText("Discord")).not.toBeInTheDocument();
     });
 
     it("shows owner role label in community header", () => {
