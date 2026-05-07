@@ -91,6 +91,11 @@ const upsertDmSettingSchema = z
     }
   );
 
+const deleteDmSettingSchema = z.object({
+  communityId: z.number().int().positive(),
+  eventType: z.enum(ALL_DM_EVENT_TYPES),
+});
+
 const upsertRoleMappingSchema = z.object({
   communityId: z.number().int().positive(),
   roleType: z.enum(DISCORD_ROLE_TYPES),
@@ -377,8 +382,9 @@ export async function deleteDmSettingAction(input: {
 }): Promise<ActionResult<void>> {
   try {
     await rejectBots();
+    const parsed = deleteDmSettingSchema.parse(input);
     const supabase = await createClient();
-    const result = await requireDiscordServer(supabase, input.communityId);
+    const result = await requireDiscordServer(supabase, parsed.communityId);
     if ("error" in result) return result.error;
     const { server } = result;
 
@@ -386,7 +392,7 @@ export async function deleteDmSettingAction(input: {
       .from("discord_dm_settings")
       .delete()
       .eq("discord_server_id", server.id)
-      .eq("event_type", input.eventType);
+      .eq("event_type", parsed.eventType);
 
     if (error) throw error;
 
