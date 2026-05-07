@@ -3,13 +3,6 @@
 import { type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { MarkdownContent } from "@/components/ui/markdown-content";
 import { PublicPairings } from "./public-pairings";
 import { TournamentStandings } from "@/components/tournaments/manage/tournament-standings";
@@ -42,7 +35,13 @@ interface TournamentTabsProps {
   canManage?: boolean;
 }
 
-const VALID_TABS = ["overview", "pairings", "standings"] as const;
+const VALID_TABS = [
+  "overview",
+  "register",
+  "details",
+  "pairings",
+  "standings",
+] as const;
 
 type ValidTab = (typeof VALID_TABS)[number];
 
@@ -197,6 +196,12 @@ export function TournamentTabs({
           <TabsTrigger value="overview" id="tournament-tab-overview">
             Overview
           </TabsTrigger>
+          <TabsTrigger value="register" id="tournament-tab-register">
+            Register
+          </TabsTrigger>
+          <TabsTrigger value="details" id="tournament-tab-details">
+            Details
+          </TabsTrigger>
           <TabsTrigger value="pairings" id="tournament-tab-pairings">
             Pairings
           </TabsTrigger>
@@ -205,46 +210,54 @@ export function TournamentTabs({
           </TabsTrigger>
         </TabsList>
 
+        {/* Overview — organizer description */}
         <TabsContent
           value="overview"
           id="tournament-panel-overview"
           className="space-y-6"
         >
-          {/* Description — rendered as markdown in a subtle card */}
-          {description && (
+          {description ? (
             <div className="bg-muted/20 rounded-xl p-5 sm:p-6">
               <MarkdownContent content={description} />
             </div>
+          ) : (
+            <div className="bg-muted/20 rounded-xl px-6 py-12 text-center">
+              <p className="text-muted-foreground text-sm">
+                No description provided by the organizer yet.
+              </p>
+            </div>
           )}
+        </TabsContent>
 
+        {/* Register — registration, team submission, check-in */}
+        <TabsContent value="register" id="tournament-panel-register">
+          {sidebarCard}
+        </TabsContent>
+
+        {/* Details — format, schedule, tournament structure */}
+        <TabsContent
+          value="details"
+          id="tournament-panel-details"
+          className="space-y-6"
+        >
           {/* Tournament structure visual */}
           <TournamentStructure phases={phases} />
 
-          {/* Format and schedule cards side by side on larger screens */}
+          {/* Format and schedule side by side */}
           <div className="grid gap-4 lg:grid-cols-2">
             {formatCard}
             {scheduleCard}
           </div>
-
-          {/* Registration — full width */}
-          {sidebarCard}
         </TabsContent>
 
+        {/* Pairings */}
         <TabsContent value="pairings" id="tournament-panel-pairings">
           {isPreTournament ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Pairings</CardTitle>
-                <CardDescription>
-                  Tournament pairings and results
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground py-8 text-center">
-                  Pairings will be available once the tournament begins
-                </p>
-              </CardContent>
-            </Card>
+            <div className="bg-muted/20 rounded-xl px-6 py-12 text-center">
+              <p className="text-muted-foreground text-sm">
+                Pairings will be available once the tournament begins.
+              </p>
+            </div>
           ) : (
             <PublicPairings
               tournamentId={tournamentId}
@@ -254,19 +267,14 @@ export function TournamentTabs({
           )}
         </TabsContent>
 
+        {/* Standings */}
         <TabsContent value="standings" id="tournament-panel-standings">
           {isPreTournament ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Standings</CardTitle>
-                <CardDescription>Current tournament standings</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground py-8 text-center">
-                  Standings will appear once the tournament begins
-                </p>
-              </CardContent>
-            </Card>
+            <div className="bg-muted/20 rounded-xl px-6 py-12 text-center">
+              <p className="text-muted-foreground text-sm">
+                Standings will appear once the tournament begins.
+              </p>
+            </div>
           ) : (
             <TournamentStandings
               tournament={{ id: tournamentId, status: tournamentStatus }}

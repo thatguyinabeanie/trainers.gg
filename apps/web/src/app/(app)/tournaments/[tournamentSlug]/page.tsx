@@ -17,6 +17,7 @@ import {
   Calendar,
   Users,
   Clock,
+  Building2,
   Settings,
   CheckCircle2,
   Gamepad2,
@@ -165,6 +166,55 @@ function Breadcrumb({ tournamentName }: { tournamentName: string }) {
   );
 }
 
+/**
+ * Banner hero reusing the community's banner image.
+ * Same visual language as the community detail page — contained, rounded,
+ * with the community avatar overlapping the bottom edge.
+ */
+function TournamentBanner({
+  organization,
+}: {
+  organization: {
+    name: string;
+    slug: string;
+    logo_url: string | null;
+    banner_url: string | null;
+  };
+}) {
+  return (
+    <div className="relative mb-14 sm:mb-16">
+      {/* Banner */}
+      <div className="h-36 w-full overflow-hidden rounded-xl sm:h-44 md:h-52">
+        {organization.banner_url ? (
+          <img
+            src={organization.banner_url}
+            alt={`${organization.name} banner`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="bg-muted h-full w-full" />
+        )}
+      </div>
+
+      {/* Community avatar — overlaps bottom of banner */}
+      <Link
+        href={`/communities/${organization.slug}`}
+        className="absolute bottom-0 left-4 translate-y-1/2 transition-opacity hover:opacity-90 sm:left-6"
+      >
+        <Avatar
+          noBorder
+          className="ring-background h-20 w-20 shadow-lg ring-4 sm:h-24 sm:w-24"
+        >
+          <AvatarImage src={organization.logo_url ?? undefined} />
+          <AvatarFallback className="bg-muted text-2xl font-bold">
+            {organization.name.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+      </Link>
+    </div>
+  );
+}
+
 function TournamentHeader({
   tournament,
   canManage,
@@ -183,22 +233,15 @@ function TournamentHeader({
   const registrationCount = tournament.registrations?.length || 0;
 
   return (
-    <div className="bg-muted/40 -mx-4 mb-8 rounded-xl px-4 py-6 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8">
-      {/* Community link */}
+    <div className="mb-6">
+      {/* Community name link */}
       {organization && (
         <Link
           href={`/communities/${organization.slug}`}
-          className="mb-3 inline-flex items-center gap-2 transition-opacity hover:opacity-80"
+          className="text-muted-foreground hover:text-foreground mb-1 inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
         >
-          <Avatar className="h-6 w-6">
-            <AvatarImage src={organization.logo_url ?? undefined} />
-            <AvatarFallback className="bg-muted text-[10px] font-bold">
-              {organization.name.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-muted-foreground text-sm font-medium">
-            {organization.name}
-          </span>
+          <Building2 className="h-3.5 w-3.5" />
+          {organization.name}
         </Link>
       )}
 
@@ -230,19 +273,19 @@ function TournamentHeader({
       {/* Metadata pills */}
       <div className="flex flex-wrap gap-2">
         {tournament.format && (
-          <span className="bg-background/80 text-muted-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">
+          <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
             <Gamepad2 className="h-3.5 w-3.5" />
             {tournament.format}
           </span>
         )}
         {tournament.tournament_format && (
-          <span className="bg-background/80 text-muted-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">
+          <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
             <Trophy className="h-3.5 w-3.5" />
             {tournamentFormatLabels[tournament.tournament_format] ||
               tournament.tournament_format}
           </span>
         )}
-        <span className="bg-background/80 text-muted-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">
+        <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
           <Users className="h-3.5 w-3.5" />
           {registrationCount}
           {tournament.max_participants
@@ -251,13 +294,13 @@ function TournamentHeader({
           players
         </span>
         {tournament.start_date && (
-          <span className="bg-background/80 text-muted-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">
+          <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
             <Calendar className="h-3.5 w-3.5" />
             {formatDate(tournament.start_date)}
           </span>
         )}
         {tournament.round_time_minutes && (
-          <span className="bg-background/80 text-muted-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">
+          <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
             <Clock className="h-3.5 w-3.5" />
             {tournament.round_time_minutes} min rounds
           </span>
@@ -507,9 +550,22 @@ export default async function TournamentPage({ params }: PageProps) {
   // Extract phase data for the structure visual
   const phases = extractPhaseData(tournament);
 
+  // Extract organization for banner
+  const organization = tournament.organization as {
+    id: number;
+    name: string;
+    slug: string;
+    logo_url: string | null;
+    banner_url: string | null;
+  } | null;
+
   return (
     <PageContainer>
       <Breadcrumb tournamentName={tournament.name} />
+
+      {/* Community banner — mirrors community detail page */}
+      {organization && <TournamentBanner organization={organization} />}
+
       <TournamentHeader tournament={tournament} canManage={canManage} />
 
       <TournamentTabs
