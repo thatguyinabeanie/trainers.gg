@@ -13,11 +13,11 @@
  *
  * OAuth2 token exchange: deliberately skipped.
  * The bot uses its bot token for all Discord API calls — it does not need to
- * act on behalf of the installing user. The `code` param Discord provides is
- * only needed to exchange for a user access token, which we have no use for.
+ * act on behalf of the installing user. Because we don't set `response_type=code`
+ * in the authorize URL, Discord omits the `code` param from the redirect entirely.
  * Skipping the exchange avoids needing DISCORD_CLIENT_SECRET in this flow.
  *
- * GET /api/discord/install-callback?code=...&guild_id=...&state=...
+ * GET /api/discord/install-callback?guild_id=...&state=...
  */
 
 import { DISCORD_BOT_INSTALLED } from "@trainers/posthog";
@@ -87,11 +87,14 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   // Step 2: Validate required params
-  const code = searchParams.get("code");
+  // Note: `code` is deliberately NOT required. Discord only includes it when
+  // the authorize URL specifies `response_type=code`. We skip the OAuth2 token
+  // exchange (the bot uses its bot token), so we never set `response_type` and
+  // Discord omits `code` from the redirect. We only need `guild_id` and `state`.
   const guildId = searchParams.get("guild_id");
   const state = searchParams.get("state");
 
-  if (!code || !guildId || !state) {
+  if (!guildId || !state) {
     return redirectWithError("missing_params");
   }
 
