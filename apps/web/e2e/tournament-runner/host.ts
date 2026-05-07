@@ -144,6 +144,9 @@ export async function activateTournament(
     );
   }
 
+  // Production safety: prevent accidental mutations against prod database
+  assertNotProductionDatabase(supabaseUrl);
+
   // Create a Supabase client authenticated as the host
   const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -177,24 +180,42 @@ export async function activateTournament(
   // The UI's prepareRound flow (RoundCommandCenter) expects to create rounds
   // from scratch via createRound(). Delete phantom rounds so the UI shows
   // "Start Round 1" instead of "Start Round 2".
-  const { data: phases } = await supabase
+  const { data: phases, error: phasesError } = await supabase
     .from("tournament_phases")
     .select("id")
     .eq("tournament_id", tournament.id);
 
+  if (phasesError) {
+    throw new Error(
+      `Failed to fetch phases for tournament ${tournament.id}: ${phasesError.message}`
+    );
+  }
+
   if (phases?.length) {
     for (const phase of phases) {
-      const { data: phantomRounds } = await supabase
+      const { data: phantomRounds, error: roundsError } = await supabase
         .from("tournament_rounds")
         .select("id")
         .eq("phase_id", phase.id);
 
+      if (roundsError) {
+        throw new Error(
+          `Failed to fetch rounds for phase ${phase.id}: ${roundsError.message}`
+        );
+      }
+
       if (phantomRounds?.length) {
         for (const round of phantomRounds) {
-          await supabase
+          const { error: deleteError } = await supabase
             .from("tournament_rounds")
             .delete()
             .eq("id", round.id);
+
+          if (deleteError) {
+            throw new Error(
+              `Failed to delete phantom round ${round.id}: ${deleteError.message}`
+            );
+          }
         }
       }
     }
@@ -202,6 +223,45 @@ export async function activateTournament(
 
   // Sign out to clean up the client
   await supabase.auth.signOut().catch(() => {});
+}
+
+/**
+ * Fail-closed production database guard.
+ * Matches the pattern from tournament-simulator.ts.
+ */
+function assertNotProductionDatabase(supabaseUrl: string): void {
+  // Localhost URLs are never production — local dev/CI with `supabase start`
+  if (
+    /(^|\/\/)(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(supabaseUrl)
+  ) {
+    return;
+  }
+
+  const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
+  // Fail-closed: if we can't verify, block rather than assume safe
+  if (!productionRef) {
+    throw new Error(
+      "Tournament runner BLOCKED: SUPABASE_PRODUCTION_PROJECT_REF is not set — " +
+        "cannot verify this is not the production database."
+    );
+  }
+
+  const match = supabaseUrl.match(/https:\/\/([a-z0-9]+)\.supabase\.co/i);
+  const currentRef = match?.[1];
+  if (!currentRef) {
+    throw new Error(
+      "Tournament runner BLOCKED: could not extract Supabase project ref from " +
+        `NEXT_PUBLIC_SUPABASE_URL (${supabaseUrl || "<empty>"}) — ` +
+        "cannot verify this is not the production database."
+    );
+  }
+
+  if (currentRef === productionRef) {
+    throw new Error(
+      "Tournament runner BLOCKED: connected to production database " +
+        `(ref: ${currentRef}). Aborting to prevent production pollution.`
+    );
+  }
 }
 
 /**

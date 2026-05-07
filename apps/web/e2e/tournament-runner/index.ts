@@ -11,10 +11,10 @@
  * - Scenarios: define tournament config, player pool, deterministic outcomes
  *
  * Usage:
- *   pnpm test:tournament                          # Run default scenario
- *   pnpm test:tournament --scenario swiss-8-drops  # Run with drops/upsets
- *   pnpm test:tournament --headed                  # Watch it run
- *   pnpm test:tournament --headed --slow-mo 500    # Slow for debugging
+ *   pnpm test:tournament                               # Run default scenario
+ *   pnpm test:tournament -- --scenario swiss-8-drops    # Run with drops/upsets
+ *   pnpm test:tournament -- --headed                    # Watch it run
+ *   pnpm test:tournament -- --headed --slow-mo 500      # Slow for debugging
  */
 
 export { TournamentOrchestrator } from "./orchestrator";

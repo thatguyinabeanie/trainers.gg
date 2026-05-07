@@ -242,8 +242,11 @@ export class TournamentOrchestrator {
         actions.map((action) => {
           const pc = this.playerContexts.get(action.player);
           if (!pc) {
-            this.log(`  WARNING: No context for player ${action.player}`);
-            return Promise.resolve();
+            throw new Error(
+              `No browser context for player "${action.player}" — ` +
+                `the pairings parser returned a username that doesn't match any known player. ` +
+                `Known players: ${Array.from(this.playerContexts.keys()).join(", ")}`
+            );
           }
 
           switch (action.type) {
