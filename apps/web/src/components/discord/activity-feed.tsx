@@ -6,14 +6,18 @@ import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
+  // Channel event types (from ALL_CHANNEL_EVENT_TYPES)
   tournament_created: "Tournament Created",
-  tournament_started: "Tournament Started",
-  match_ready: "Match Ready",
+  registration_opens: "Registration Opens",
+  registration_closing_soon: "Registration Closing",
+  tournament_ended: "Tournament Ended",
+  match_result_reported: "Match Result",
   round_posted: "Round Posted",
-  results_posted: "Results Posted",
-  standings_updated: "Standings Updated",
+  standings_posted: "Standings Posted",
+  check_in_opened: "Check-in Opened",
+  // DM event types (from ALL_DM_EVENT_TYPES)
+  match_ready: "Match Ready",
   check_in_reminder: "Check-in Reminder",
-  registration_reminder: "Registration Reminder",
 };
 
 interface Activity {

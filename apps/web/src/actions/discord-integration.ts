@@ -125,6 +125,13 @@ const updateChannelPingRoleSchema = z.object({
   communityId: z.number().int().positive(),
 });
 
+const updateVerifiedRoleSchema = z.object({
+  serverId: z.number().int().positive(),
+  communityId: z.number().int().positive(),
+  enabled: z.boolean(),
+  roleId: z.string().min(1).nullable(),
+});
+
 // Payload schemas for discord_delivery_failures — each failure type carries a
 // different shape. Validated at retry time to catch malformed DB rows early.
 const channelFailurePayloadSchema = z.record(z.string(), z.unknown());
@@ -943,7 +950,7 @@ export async function updateServerSettingsAction(
     }
 
     const mergedSettings = {
-      ...(server.settings as object),
+      ...((server.settings as object | null) ?? {}),
       ...parsed.settings,
     } as Record<string, unknown>;
 
@@ -1037,29 +1044,30 @@ export async function updateVerifiedRoleAction(input: {
 }): Promise<ActionResult<void>> {
   try {
     await rejectBots();
+    const parsed = updateVerifiedRoleSchema.parse(input);
     const supabase = await createClient();
-    await requireCommunityManage(supabase, input.communityId);
+    await requireCommunityManage(supabase, parsed.communityId);
 
-    const server = await getDiscordServerById(supabase, input.serverId);
+    const server = await getDiscordServerById(supabase, parsed.serverId);
     if (!server) {
       return { success: false, error: "Discord server not found" };
     }
-    if (server.community_id !== input.communityId) {
+    if (server.community_id !== parsed.communityId) {
       return { success: false, error: "Server does not belong to this community" };
     }
 
-    if (input.enabled && input.roleId) {
+    if (parsed.enabled && parsed.roleId) {
       // Upsert the verified role mapping
       await upsertRoleMapping(supabase, {
-        discord_server_id: input.serverId,
+        discord_server_id: parsed.serverId,
         role_type: "verified",
-        discord_role_id: input.roleId,
+        discord_role_id: parsed.roleId,
       });
       // Ensure it's enabled
       const { data: mapping } = await supabase
         .from("discord_role_mappings")
         .select("id")
-        .eq("discord_server_id", input.serverId)
+        .eq("discord_server_id", parsed.serverId)
         .eq("role_type", "verified")
         .maybeSingle();
       if (mapping) {
@@ -1070,7 +1078,7 @@ export async function updateVerifiedRoleAction(input: {
       const { data: mapping } = await supabase
         .from("discord_role_mappings")
         .select("id")
-        .eq("discord_server_id", input.serverId)
+        .eq("discord_server_id", parsed.serverId)
         .eq("role_type", "verified")
         .maybeSingle();
       if (mapping) {

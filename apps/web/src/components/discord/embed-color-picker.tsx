@@ -23,16 +23,12 @@ export function EmbedColorPicker({
   serverId,
   communityId,
 }: EmbedColorPickerProps) {
-  const [color, setColor] = useState(currentColor);
-  const [prevCurrentColor, setPrevCurrentColor] = useState(currentColor);
+  // Track user edits separately — null means "not editing, use prop"
+  const [editedColor, setEditedColor] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Sync local state when parent prop changes (React-sanctioned render-time adjustment)
-  if (prevCurrentColor !== currentColor) {
-    setPrevCurrentColor(currentColor);
-    setColor(currentColor);
-  }
-
+  // Derived display value: user edit takes precedence over prop
+  const color = editedColor ?? currentColor;
   const isValid = HEX_REGEX.test(color);
   const hasChanged = color !== currentColor;
 
@@ -52,12 +48,14 @@ export function EmbedColorPicker({
         toast.error(result.error);
         return;
       }
+      // Clear local override — prop will update to reflect saved value
+      setEditedColor(null);
       toast.success("Embed color updated.");
     });
   }
 
   function handleReset() {
-    setColor(DEFAULT_COLOR);
+    setEditedColor(DEFAULT_COLOR);
 
     startTransition(async () => {
       const result = await updateServerSettingsAction({
@@ -66,10 +64,11 @@ export function EmbedColorPicker({
         settings: { embed_color: DEFAULT_COLOR },
       });
       if (!result.success) {
-        setColor(currentColor);
+        setEditedColor(null);
         toast.error(result.error);
         return;
       }
+      setEditedColor(null);
       toast.success("Embed color reset to default.");
     });
   }
@@ -93,7 +92,7 @@ export function EmbedColorPicker({
         />
         <Input
           value={color}
-          onChange={(e) => setColor(e.target.value)}
+          onChange={(e) => setEditedColor(e.target.value)}
           className="w-28 font-mono text-sm"
           placeholder="#0D9488"
         />
