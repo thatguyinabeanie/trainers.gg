@@ -134,13 +134,13 @@ export function LinkedIdentitiesSection() {
     } else {
       // Use linkIdentity to attach the provider to the current user
       // (signInWithOAuth would replace the session instead of linking)
-      const origin =
-        typeof window !== "undefined" ? window.location.origin : "";
+      const redirectTo = new URL(
+        "/auth/callback?next=%2Fdashboard%2Fsettings%2Faccount",
+        window.location.origin
+      ).toString();
       const { error } = await supabase.auth.linkIdentity({
         provider,
-        options: {
-          redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/dashboard/settings/account")}`,
-        },
+        options: { redirectTo },
       });
       if (error) {
         toast.error(`Failed to link ${provider}: ${error.message}`);

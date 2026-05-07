@@ -99,7 +99,7 @@ jest.mock("sonner", () => ({
 
 // Mock window.location
 delete (window as Partial<Window>).location;
-window.location = { href: "" } as Location;
+window.location = { href: "", origin: "http://localhost:3000" } as Location;
 
 // Test data
 let mockUserIdentities: Array<{
@@ -244,7 +244,7 @@ describe("LinkedIdentitiesSection", () => {
       expect(mockLinkIdentity).toHaveBeenCalledWith({
         provider: "discord",
         options: {
-          redirectTo: expect.stringContaining("/auth/callback?next=%2Fdashboard%2Fsettings%2Faccount"),
+          redirectTo: `${window.location.origin}/auth/callback?next=%2Fdashboard%2Fsettings%2Faccount`,
         },
       });
     });
