@@ -5,7 +5,6 @@ import {
   getDiscordIntegrationOverview,
 } from "@trainers/supabase";
 
-import { rejectBots } from "@/actions/utils";
 import { createClient } from "@/lib/supabase/server";
 import {
   getCachedGuildChannels,
@@ -20,7 +19,6 @@ interface PageProps {
 }
 
 export default async function DiscordIntegrationPage({ params }: PageProps) {
-  await rejectBots();
   const { communitySlug } = await params;
   const supabase = await createClient();
 
