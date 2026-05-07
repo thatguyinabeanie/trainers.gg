@@ -11,6 +11,7 @@ import {
   type MoveListSortCol,
   type MoveListSortState,
 } from "./move-list-shared";
+import { getRolesForMove, type RoleId } from "./role-registry";
 
 // =============================================================================
 // Types
@@ -21,6 +22,8 @@ interface SpeciesExpandedPanelProps {
   formatId: string;
   /** Currently-active "learns move" filter values — these get highlighted. */
   filteredMoves: readonly string[];
+  /** Currently-active role filters — moves are filtered to only show matches. */
+  filteredRoles: readonly RoleId[];
 }
 
 // =============================================================================
@@ -37,6 +40,7 @@ export function SpeciesExpandedPanel({
   species,
   formatId,
   filteredMoves,
+  filteredRoles,
 }: SpeciesExpandedPanelProps) {
   const [sort, setSort] = useState<MoveListSortState>({
     col: "bp",
@@ -63,7 +67,16 @@ export function SpeciesExpandedPanel({
     if (data) allMoves.push(data);
   }
 
-  const sorted = sortMoveData(allMoves, sort);
+  // Filter by active roles — a move must carry ALL selected roles (AND logic)
+  const visibleMoves =
+    filteredRoles.length > 0
+      ? allMoves.filter((move) => {
+          const moveRoles = getRolesForMove(move.name);
+          return filteredRoles.some((role) => moveRoles.includes(role));
+        })
+      : allMoves;
+
+  const sorted = sortMoveData(visibleMoves, sort);
 
   const filteredMovesLower = new Set(
     filteredMoves.map((m) => m.toLowerCase())
@@ -79,16 +92,6 @@ export function SpeciesExpandedPanel({
 
   return (
     <div className="bg-muted/30 border-border/60 border-t">
-      {/* Label */}
-      <div className="flex items-center gap-2 px-3 pt-2 pb-1">
-        <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
-          Learnset
-        </span>
-        <span className="text-muted-foreground/70 text-[10px]">
-          {allMoves.length} moves
-        </span>
-      </div>
-
       {/* Sticky header */}
       <MoveListHeader
         sort={sort}

@@ -11,6 +11,8 @@ import {
   buildSpeciesSearchIndex,
   getAllLegalMoves,
   isLegalSpecies,
+  getLegalMoves,
+  getMoveData,
   searchSpecies,
   type GameFormat,
   type SpeciesSearchEntry,
@@ -22,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { AbilityCell } from "./ability-cell";
 import { RolePresetsPanel } from "./role-presets-panel";
-import { getRolesForSpecies } from "./role-registry";
+import { getRolesForMove, getRolesForSpecies, type RoleId } from "./role-registry";
 import {
   DEFAULT_SPECIES_FILTERS,
   type SpeciesFilterState,
@@ -41,29 +43,17 @@ const HIGH_STAT_THRESHOLD = 110;
 /**
  * Shared Tailwind grid template for each data row.
  *
- *   20px              — expand/collapse chevron
- *   64px              — sprite circle (size-16, sprite rendered at size-14)
- *   minmax(180px,2fr) — name column. 180px floor fits "Kangaskhan-Mega",
- *                       "Aegislash-Blade", "Charizard-Mega-X", etc. without
- *                       truncation.
- *   72px              — Types (two wordless icons side-by-side; em-dash
- *                       for monotypes)
- *   minmax(160px,2fr) — Regular abilities — slot 1 stacked above slot 2.
- *                       If the species has only one regular ability, only
- *                       that ability renders (no empty placeholder line).
- *   minmax(180px,2fr) — Hidden ability (italic + muted). 180px floor so
- *                       names like "Magic Guard", "Heavy Metal", "Aroma
- *                       Veil", "Sheer Force" don't truncate.
- *   repeat(6,44px)    — HP/Atk/Def/SpA/SpD/Spe stat cells. 44px so the
- *                       active sort arrow (e.g. "SPA ↓") doesn't push the
- *                       header label into the neighboring cell. Empty
- *                       buffer on each side keeps adjacent labels from
- *                       visually touching.
- *   48px              — BST rollup (large enough for "BST ↓" when sorted
- *                       by base-stat total)
+ *   20px               — expand/collapse chevron
+ *   56px               — sprite circle
+ *   minmax(170px,2fr)  — name
+ *   60px               — types (two icons)
+ *   minmax(120px,1.5fr)— abilities (stacked: ● slot1, ● slot2, ★ hidden)
+ *   repeat(6,38px)     — HP/Atk/Def/SpA/SpD/Spe
+ *   42px               — BST
+ *   minmax(0,2fr)      — matching move chips (collapses when empty)
  */
 const ROW_GRID =
-  "grid-cols-[20px_64px_minmax(180px,2fr)_72px_minmax(160px,2fr)_minmax(180px,2fr)_repeat(6,44px)_48px]";
+  "grid-cols-[20px_56px_minmax(170px,2fr)_60px_minmax(120px,1.5fr)_repeat(6,38px)_42px_minmax(0,2fr)]";
 
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
@@ -232,6 +222,7 @@ interface SpeciesRowProps {
   isExpanded: boolean;
   formatId: string;
   filteredMoves: readonly string[];
+  filteredRoles: readonly RoleId[];
   onSelect: () => void;
   onToggleExpand: () => void;
   onFilterAbility: (ability: string) => void;
@@ -243,11 +234,27 @@ function SpeciesRow({
   isExpanded,
   formatId,
   filteredMoves,
+  filteredRoles,
   onSelect,
   onToggleExpand,
   onFilterAbility,
 }: SpeciesRowProps) {
   const sprite = getPokemonSprite(entry.species);
+
+  // Compute moves matching active role filters (only when roles are active)
+  const matchingMoveNames: string[] = [];
+  if (filteredRoles.length > 0) {
+    const legalMoves = getLegalMoves(entry.species, formatId);
+    if (legalMoves && typeof legalMoves !== "symbol") {
+      for (const moveName of legalMoves) {
+        const moveRoles = getRolesForMove(moveName);
+        if (filteredRoles.some((role) => moveRoles.includes(role))) {
+          const data = getMoveData(moveName);
+          if (data) matchingMoveNames.push(data.name);
+        }
+      }
+    }
+  }
 
   function handleRowKey(e: React.KeyboardEvent<HTMLDivElement>) {
     // Only respond when focus is on the row itself (not on a nested
@@ -260,7 +267,7 @@ function SpeciesRow({
   }
 
   return (
-    <div>
+    <div className={cn(!isExpanded && "border-b")}>
       {/* Using `<div role="row" tabIndex={0}>` instead of a wrapping `<button>`
           because the row contains nested interactive elements (AbilityCell
           `<button>`s) and nested buttons are invalid HTML. The row is itself
@@ -277,8 +284,7 @@ function SpeciesRow({
         className={cn(
           "hover:bg-muted/60 focus-visible:bg-muted/80 focus-visible:outline-primary relative grid w-full cursor-pointer items-center gap-2 px-4 py-2 text-left transition-colors outline-none focus-visible:outline-2",
           ROW_GRID,
-          isCurrent && "bg-primary/5",
-          !isExpanded && "border-b"
+          isCurrent && "bg-primary/5"
         )}
       >
         {/* Expand/collapse chevron */}
@@ -341,32 +347,36 @@ function SpeciesRow({
           )}
         </div>
 
-        {/* Regular abilities — slot 1 stacked above slot 2, left-aligned.
-            If the species has only one regular ability, render just that one. */}
+        {/* Abilities — all slots stacked: • regular, ★ hidden */}
         <div className="relative z-10 flex min-w-0 flex-col justify-center gap-0.5 overflow-hidden">
-          {entry.abilitySlot1 ? (
+          <div className="flex min-w-0 items-baseline gap-1">
+            <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-[8px]">●</span>
             <AbilityCell
-              name={entry.abilitySlot1}
+              name={entry.abilitySlot1 ?? null}
               slot="slot1"
               onFilter={onFilterAbility}
             />
-          ) : null}
-          {entry.abilitySlot2 ? (
-            <AbilityCell
-              name={entry.abilitySlot2}
-              slot="slot2"
-              onFilter={onFilterAbility}
-            />
-          ) : null}
-        </div>
-
-        {/* Hidden ability — italic + muted, left-aligned in its own column */}
-        <div className="relative z-10 flex min-w-0 items-center overflow-hidden">
-          <AbilityCell
-            name={entry.hiddenAbility ?? null}
-            slot="hidden"
-            onFilter={onFilterAbility}
-          />
+          </div>
+          {(entry.abilitySlot2 || entry.hiddenAbility) && (
+            <div className="flex min-w-0 items-baseline gap-1">
+              <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-[8px]">●</span>
+              <AbilityCell
+                name={entry.abilitySlot2 ?? null}
+                slot="slot2"
+                onFilter={onFilterAbility}
+              />
+            </div>
+          )}
+          {(entry.abilitySlot2 || entry.hiddenAbility) && (
+            <div className="flex min-w-0 items-baseline gap-1">
+              <span className="text-amber-400/70 inline-block w-2.5 shrink-0 text-center text-[8px]">★</span>
+              <AbilityCell
+                name={entry.hiddenAbility ?? null}
+                slot="hidden"
+                onFilter={onFilterAbility}
+              />
+            </div>
+          )}
         </div>
 
         {/* HP */}
@@ -428,6 +438,18 @@ function SpeciesRow({
         <span className="border-border/60 text-foreground relative z-10 border-l pl-1.5 text-center font-mono text-xs font-semibold tabular-nums">
           {entry.bst}
         </span>
+
+        {/* Matching move chips — inline column */}
+        <div className="relative z-10 flex min-w-0 flex-wrap items-center gap-1 overflow-hidden">
+          {matchingMoveNames.map((name) => (
+            <span
+              key={name}
+              className="bg-primary/8 text-primary border-primary/15 shrink-0 rounded-full border px-1.5 py-px text-[10px] font-medium leading-tight"
+            >
+              {name}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* Expanded content — learnset panel */}
@@ -437,6 +459,7 @@ function SpeciesRow({
             species={entry.species}
             formatId={formatId}
             filteredMoves={filteredMoves}
+            filteredRoles={filteredRoles}
           />
         </div>
       )}
@@ -849,9 +872,6 @@ export function SpeciesPicker({
                 <span className="text-muted-foreground text-[9px] whitespace-nowrap">
                   Abilities
                 </span>
-                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
-                  Hidden
-                </span>
                 <SortHeaderButton
                   col="hp"
                   label="HP"
@@ -907,6 +927,9 @@ export function SpeciesPicker({
                   sort={sort}
                   onSort={handleSort}
                 />
+                <span className="text-muted-foreground text-[9px] whitespace-nowrap">
+                  Moves
+                </span>
               </div>
 
               {matched.length === 0 ? (
@@ -938,6 +961,7 @@ export function SpeciesPicker({
                           isExpanded={entry.species === expandedSpecies}
                           formatId={format?.id ?? DEFAULT_FORMAT_ID}
                           filteredMoves={filters.moves}
+                          filteredRoles={filters.roles}
                           onSelect={() => onPick(entry.species)}
                           onToggleExpand={() =>
                             setExpandedSpecies((prev) =>

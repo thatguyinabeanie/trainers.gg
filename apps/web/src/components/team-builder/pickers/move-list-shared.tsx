@@ -34,15 +34,15 @@ export type MoveListSortState = { col: MoveListSortCol; dir: MoveListSortDir };
  *
  *   56px                — type icon
  *   56px                — category icon
- *   minmax(140px,1.4fr) — name
+ *   minmax(100px,1fr)   — name
  *   40px                — BP
  *   48px                — Accuracy
- *   48px                — Usage (coming soon)
+ *   56px                — Usage (coming soon)
  *   minmax(0,2fr)       — effect (short description)
  *   minmax(140px,1fr)   — roles chips
  */
 export const MOVE_LIST_GRID =
-  "grid-cols-[56px_56px_minmax(140px,1.4fr)_40px_48px_48px_minmax(0,2fr)_minmax(140px,1fr)]";
+  "grid-cols-[56px_56px_minmax(100px,1fr)_40px_48px_56px_minmax(0,2fr)_minmax(140px,1fr)]";
 
 // =============================================================================
 // Sort logic
@@ -173,10 +173,10 @@ export function MoveListHeader({ sort, onSort, className }: MoveListHeaderProps)
 
       {/* Usage — placeholder */}
       <span
-        className="text-muted-foreground/50 cursor-default"
+        className="text-muted-foreground/50 cursor-default text-center"
         title="Coming soon"
       >
-        Use%
+        USE%
       </span>
 
       {/* Effect */}
@@ -344,7 +344,7 @@ export function MoveListRow({
 
       {/* Usage — coming soon placeholder */}
       <span
-        className="text-muted-foreground/30 cursor-default text-right font-mono text-xs tabular-nums"
+        className="text-muted-foreground/30 cursor-default text-center font-mono text-xs tabular-nums"
         title="Coming soon"
       >
         —
