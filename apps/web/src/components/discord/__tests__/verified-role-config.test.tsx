@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mockUpdateVerifiedRoleAction = jest.fn();
@@ -74,7 +74,9 @@ describe("VerifiedRoleConfig", () => {
     expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: true, roleId: "role1" })
     );
-    expect(mockToast.success).toHaveBeenCalledWith("Verified role enabled.");
+    await waitFor(() => {
+      expect(mockToast.success).toHaveBeenCalledWith("Verified role enabled.");
+    });
   });
 
   it("toggling switch OFF calls action with enabled: false", async () => {
@@ -87,7 +89,9 @@ describe("VerifiedRoleConfig", () => {
     expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: false })
     );
-    expect(mockToast.success).toHaveBeenCalledWith("Verified role disabled.");
+    await waitFor(() => {
+      expect(mockToast.success).toHaveBeenCalledWith("Verified role disabled.");
+    });
   });
 
   it("rolls back toggle on error", async () => {
@@ -102,7 +106,9 @@ describe("VerifiedRoleConfig", () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole("switch"));
 
-    expect(mockToast.error).toHaveBeenCalledWith("Server error");
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith("Server error");
+    });
     // Switch should be rolled back to unchecked
     expect(screen.getByRole("switch")).not.toBeChecked();
   });
@@ -122,7 +128,9 @@ describe("VerifiedRoleConfig", () => {
     expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
       expect.objectContaining({ roleId: "role1" })
     );
-    expect(mockToast.success).toHaveBeenCalledWith("Verified role updated.");
+    await waitFor(() => {
+      expect(mockToast.success).toHaveBeenCalledWith("Verified role updated.");
+    });
   });
 
   it("shows error toast when role change fails", async () => {
@@ -144,7 +152,9 @@ describe("VerifiedRoleConfig", () => {
     await user.click(combobox);
     await user.click(screen.getByText("Member"));
 
-    expect(mockToast.error).toHaveBeenCalledWith("Role update failed");
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith("Role update failed");
+    });
   });
 
   it("selecting 'None' disables the role and sends enabled: false", async () => {

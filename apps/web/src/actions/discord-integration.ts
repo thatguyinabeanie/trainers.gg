@@ -959,10 +959,15 @@ export async function updateServerSettingsAction(
       };
     }
 
-    const mergedSettings = {
-      ...((server.settings as object | null) ?? {}),
-      ...parsed.settings,
-    } as Record<string, unknown>;
+    const existing = server.settings;
+    const base =
+      existing && typeof existing === "object" && !Array.isArray(existing)
+        ? (existing as Record<string, unknown>)
+        : {};
+    const mergedSettings = { ...base, ...parsed.settings } as Record<
+      string,
+      unknown
+    >;
 
     const { error } = await supabase
       .from("discord_servers")
@@ -1011,10 +1016,12 @@ export async function updateChannelPingRoleAction(
     if (!mapping) {
       return { success: false, error: "Channel mapping not found" };
     }
-    const serverData = mapping.discord_servers as unknown as {
-      community_id: number;
-    };
-    if (serverData.community_id !== parsed.communityId) {
+    const serverJoin = mapping.discord_servers;
+    const mappingCommunityId = Array.isArray(serverJoin)
+      ? (serverJoin[0] as { community_id: number } | undefined)?.community_id
+      : (serverJoin as { community_id: number } | null)?.community_id;
+
+    if (!mappingCommunityId || mappingCommunityId !== parsed.communityId) {
       return {
         success: false,
         error: "Mapping does not belong to this community",
