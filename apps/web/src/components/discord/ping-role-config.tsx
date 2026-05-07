@@ -55,16 +55,16 @@ export function PingRoleConfig({
     const pingRoleId = value === "none" ? null : value;
 
     startTransition(async () => {
-      try {
-        await updateChannelPingRoleAction({
-          mappingId,
-          pingRoleId,
-          communityId,
-        });
-        toast.success("Ping role updated.");
-      } catch {
-        toast.error("Failed to update ping role.");
+      const result = await updateChannelPingRoleAction({
+        mappingId,
+        pingRoleId,
+        communityId,
+      });
+      if (!result.success) {
+        toast.error(result.error ?? "Failed to update ping role.");
+        return;
       }
+      toast.success("Ping role updated.");
     });
   }
 
@@ -84,7 +84,10 @@ export function PingRoleConfig({
               className="flex items-center justify-between gap-4"
             >
               <span className="text-sm font-medium">
-                {EVENT_TYPE_LABELS[mapping.eventType] ?? mapping.eventType}
+                {EVENT_TYPE_LABELS[mapping.eventType] ??
+                  mapping.eventType
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, (c) => c.toUpperCase())}
               </span>
               <Select
                 value={mapping.pingRoleId ?? "none"}
