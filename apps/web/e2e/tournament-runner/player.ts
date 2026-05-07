@@ -26,9 +26,16 @@ export async function login(page: Page, user: TestUser): Promise<void> {
     .getByRole("button", { name: /sign in/i })
     .click();
 
-  await page.waitForURL((url) => !url.pathname.includes("/sign-in"), {
-    timeout: 15_000,
-  });
+  try {
+    await page.waitForURL((url) => !url.pathname.includes("/sign-in"), {
+      timeout: 15_000,
+    });
+  } catch {
+    throw new Error(
+      `Login failed for "${user.email}" — timed out waiting for redirect away from /sign-in. ` +
+        `Check that test users are seeded (run pnpm db:reset).`
+    );
+  }
 }
 
 /**
@@ -159,7 +166,13 @@ export async function reportGames(
     // After reporting, wait for the button to disappear (UI transitions to
     // next game or match completion). Skip for the last game — no next state.
     if (i < games.length - 1) {
-      await btn.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
+      await btn.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {
+        // Non-fatal: if the button doesn't disappear, the next iteration's
+        // waitFor({ state: "visible" }) will still handle the transition.
+        console.warn(
+          `[reportGames] Button "${btnName}" did not disappear after game ${i + 1} — continuing`
+        );
+      });
     }
   }
 }

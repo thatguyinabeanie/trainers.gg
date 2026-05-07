@@ -28,9 +28,16 @@ export async function loginAsHost(page: Page, host: TestUser): Promise<void> {
     .getByRole("button", { name: /sign in/i })
     .click();
 
-  await page.waitForURL((url) => !url.pathname.includes("/sign-in"), {
-    timeout: 15_000,
-  });
+  try {
+    await page.waitForURL((url) => !url.pathname.includes("/sign-in"), {
+      timeout: 15_000,
+    });
+  } catch {
+    throw new Error(
+      `Host login failed for "${host.email}" — timed out waiting for redirect away from /sign-in. ` +
+        `Check that test users are seeded (run pnpm db:reset).`
+    );
+  }
 }
 
 /**
@@ -72,7 +79,7 @@ export async function createTournament(
 
   // Click Next to go to Step 2: Structure
   const nextBtn = page.getByRole("button", { name: /next|continue/i });
-  if (await nextBtn.isVisible().catch(() => false)) {
+  if (await nextBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await nextBtn.click();
   }
 

@@ -48,25 +48,41 @@ function parseArgs(): { scenario: string; options: RunnerOptions } {
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
-      case "--scenario":
-        scenario = args[++i] ?? scenario;
+      case "--scenario": {
+        const val = args[++i];
+        if (!val || val.startsWith("--")) {
+          console.error("ERROR: --scenario requires a value (e.g., --scenario swiss-8)");
+          process.exit(1);
+        }
+        scenario = val;
         break;
+      }
       case "--headed":
         headed = true;
         break;
       case "--slow-mo": {
-        const raw = args[++i] ?? "0";
-        const parsed = parseInt(raw, 10);
-        if (!Number.isFinite(parsed) || parsed < 0) {
+        const raw = args[++i];
+        if (!raw || raw.startsWith("--")) {
+          console.error("ERROR: --slow-mo requires a value (e.g., --slow-mo 250)");
+          process.exit(1);
+        }
+        const parsed = Number(raw);
+        if (!Number.isFinite(parsed) || parsed < 0 || parsed !== Math.floor(parsed)) {
           console.error(`Invalid --slow-mo value: "${raw}" (must be a non-negative integer)`);
           process.exit(1);
         }
         slowMo = parsed;
         break;
       }
-      case "--base-url":
-        baseUrl = args[++i] ?? baseUrl;
+      case "--base-url": {
+        const val = args[++i];
+        if (!val || val.startsWith("--")) {
+          console.error("ERROR: --base-url requires a value (e.g., --base-url http://localhost:3000)");
+          process.exit(1);
+        }
+        baseUrl = val;
         break;
+      }
       case "--verbose":
         verbose = true;
         break;
@@ -100,7 +116,9 @@ function parseArgs(): { scenario: string; options: RunnerOptions } {
     process.exit(1);
   }
   const isLocal =
-    url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    url.hostname === "localhost" ||
+    url.hostname === "127.0.0.1" ||
+    url.hostname === "0.0.0.0";
   if (!isLocal && !allowRemote) {
     console.error(
       `ERROR: Base URL "${baseUrl}" is not localhost.\n` +

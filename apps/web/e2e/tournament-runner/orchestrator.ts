@@ -31,6 +31,8 @@ import {
 } from "./player";
 import { resolveRoundActions } from "./resolve-actions";
 
+const DEFAULT_TIMEOUT = 30_000;
+
 export class TournamentOrchestrator {
   private browser: Browser | null = null;
   private hostContext: BrowserContext | null = null;
@@ -206,7 +208,10 @@ export class TournamentOrchestrator {
     await this.hostPage!.goto(
       `/dashboard/community/${this.scenario.config.community}/tournaments/${this.tournamentSlug}/manage`
     );
-    await this.hostPage!.waitForLoadState("networkidle");
+    // Wait for the RoundCommandCenter to render (deterministic — no networkidle)
+    await this.hostPage!
+      .getByRole("button", { name: /Start Round 1/i })
+      .waitFor({ state: "visible", timeout: DEFAULT_TIMEOUT });
   }
 
   private async phaseRounds(): Promise<void> {
