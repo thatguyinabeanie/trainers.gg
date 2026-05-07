@@ -62,55 +62,55 @@ function formatCutRule(cutRule: string): string {
 }
 
 function PhaseCard({ phase }: { phase: PhaseData }) {
-  const statusColors: Record<string, string> = {
-    active: "border-primary/30 bg-primary/5",
-    completed: "border-border bg-muted/30",
-    pending: "border-border bg-muted/50",
+  const statusStyles: Record<string, string> = {
+    active: "border-primary/40 bg-primary/5 shadow-sm",
+    completed: "border-border bg-muted/20",
+    pending: "border-border bg-muted/40",
   };
 
   return (
     <div
       className={cn(
-        "rounded-lg border p-4",
-        statusColors[phase.status] || statusColors.pending
+        "rounded-xl border p-4",
+        statusStyles[phase.status] || statusStyles.pending
       )}
     >
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <h4 className="font-semibold">{phase.name}</h4>
         {phase.status === "active" && (
-          <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
+          <span className="bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-xs font-medium">
             In Progress
           </span>
         )}
         {phase.status === "completed" && (
-          <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+          <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
             Completed
           </span>
         )}
       </div>
 
-      <div className="text-muted-foreground grid grid-cols-2 gap-2 text-sm">
+      <div className="text-muted-foreground grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
         <div className="flex items-center gap-1.5">
-          <Layers className="h-3.5 w-3.5" />
+          <Layers className="h-3.5 w-3.5 shrink-0" />
           {phase.phaseTypeLabel}
         </div>
         {phase.plannedRounds && (
           <div className="flex items-center gap-1.5">
-            <Shield className="h-3.5 w-3.5" />
+            <Shield className="h-3.5 w-3.5 shrink-0" />
             {phase.plannedRounds} rounds
           </div>
         )}
         <div className="flex items-center gap-1.5">
-          <Users className="h-3.5 w-3.5" />
+          <Users className="h-3.5 w-3.5 shrink-0" />
           Best of {phase.bestOf}
         </div>
         <div className="flex items-center gap-1.5">
-          <Clock className="h-3.5 w-3.5" />
+          <Clock className="h-3.5 w-3.5 shrink-0" />
           {phase.roundTimeMinutes} min
         </div>
         {phase.checkInTimeMinutes && (
           <div className="flex items-center gap-1.5">
-            <Timer className="h-3.5 w-3.5" />
+            <Timer className="h-3.5 w-3.5 shrink-0" />
             {phase.checkInTimeMinutes} min check-in
           </div>
         )}
@@ -123,8 +123,8 @@ function TournamentStructure({ phases }: { phases: PhaseData[] }) {
   if (phases.length === 0) return null;
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-lg font-semibold">Tournament Structure</h3>
+    <div className="bg-muted/30 rounded-xl p-5">
+      <h3 className="mb-4 text-lg font-semibold">Tournament Structure</h3>
       <div className="space-y-0">
         {phases.map((phase, index) => (
           <div key={phase.id}>
@@ -133,9 +133,10 @@ function TournamentStructure({ phases }: { phases: PhaseData[] }) {
             {/* Arrow connector with cut rule between phases */}
             {index < phases.length - 1 && (
               <div className="flex flex-col items-center py-2">
-                <ArrowDown className="text-muted-foreground h-5 w-5" />
+                <div className="bg-border h-4 w-px" />
+                <ArrowDown className="text-muted-foreground h-4 w-4" />
                 {phase.cutRule && (
-                  <span className="text-muted-foreground mt-0.5 text-xs font-medium">
+                  <span className="text-primary mt-0.5 text-xs font-medium">
                     {formatCutRule(phase.cutRule)}
                   </span>
                 )}
@@ -209,16 +210,18 @@ export function TournamentTabs({
           id="tournament-panel-overview"
           className="space-y-6"
         >
-          {/* Description — rendered as markdown */}
+          {/* Description — rendered as markdown in a subtle card */}
           {description && (
-            <MarkdownContent content={description} className="text-muted-foreground" />
+            <div className="bg-muted/20 rounded-xl p-5 sm:p-6">
+              <MarkdownContent content={description} />
+            </div>
           )}
 
           {/* Tournament structure visual */}
           <TournamentStructure phases={phases} />
 
           {/* Format and schedule cards side by side on larger screens */}
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             {formatCard}
             {scheduleCard}
           </div>
