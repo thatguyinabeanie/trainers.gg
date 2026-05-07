@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
+import type { Json } from "@trainers/supabase";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be declared before imports
@@ -24,12 +25,32 @@ const mockGetFeatureFlag = getFeatureFlag as jest.MockedFunction<
 >;
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Build a minimal feature flag row for test mocking */
+function buildFlag(overrides: { enabled: boolean; metadata: Json }) {
+  return {
+    id: 1,
+    key: "test_flag",
+    description: null,
+    enabled: overrides.enabled,
+    metadata: overrides.metadata,
+    created_by: null,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Setup
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockCreateClient.mockResolvedValue({} as ReturnType<typeof createClient> extends Promise<infer T> ? T : never);
+  mockCreateClient.mockResolvedValue(
+    {} as Awaited<ReturnType<typeof createClient>>
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -43,34 +64,36 @@ describe("checkFeatureAccess", () => {
   });
 
   it("returns true when flag is globally enabled", async () => {
-    mockGetFeatureFlag.mockResolvedValue({
-      enabled: true,
-      metadata: {},
-    } as any);
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({ enabled: true, metadata: {} })
+    );
     expect(await checkFeatureAccess("some_flag", "user-1")).toBe(true);
   });
 
   it("returns true when user is in allowed_users", async () => {
-    mockGetFeatureFlag.mockResolvedValue({
-      enabled: false,
-      metadata: { allowed_users: ["user-1", "user-2"] },
-    } as any);
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({
+        enabled: false,
+        metadata: { allowed_users: ["user-1", "user-2"] },
+      })
+    );
     expect(await checkFeatureAccess("some_flag", "user-1")).toBe(true);
   });
 
   it("returns false when user is NOT in allowed_users", async () => {
-    mockGetFeatureFlag.mockResolvedValue({
-      enabled: false,
-      metadata: { allowed_users: ["user-2", "user-3"] },
-    } as any);
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({
+        enabled: false,
+        metadata: { allowed_users: ["user-2", "user-3"] },
+      })
+    );
     expect(await checkFeatureAccess("some_flag", "user-1")).toBe(false);
   });
 
   it("returns false when metadata has no allowed_users", async () => {
-    mockGetFeatureFlag.mockResolvedValue({
-      enabled: false,
-      metadata: {},
-    } as any);
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({ enabled: false, metadata: {} })
+    );
     expect(await checkFeatureAccess("some_flag", "user-1")).toBe(false);
   });
 });
@@ -86,26 +109,29 @@ describe("checkCommunityFeatureAccess", () => {
   });
 
   it("returns true when flag is globally enabled", async () => {
-    mockGetFeatureFlag.mockResolvedValue({
-      enabled: true,
-      metadata: {},
-    } as any);
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({ enabled: true, metadata: {} })
+    );
     expect(await checkCommunityFeatureAccess("discord", 42)).toBe(true);
   });
 
   it("returns true when community is in allowed_communities", async () => {
-    mockGetFeatureFlag.mockResolvedValue({
-      enabled: false,
-      metadata: { allowed_communities: [42, 99] },
-    } as any);
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({
+        enabled: false,
+        metadata: { allowed_communities: [42, 99] },
+      })
+    );
     expect(await checkCommunityFeatureAccess("discord", 42)).toBe(true);
   });
 
   it("returns false when community is NOT in allowed_communities", async () => {
-    mockGetFeatureFlag.mockResolvedValue({
-      enabled: false,
-      metadata: { allowed_communities: [99, 100] },
-    } as any);
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({
+        enabled: false,
+        metadata: { allowed_communities: [99, 100] },
+      })
+    );
     expect(await checkCommunityFeatureAccess("discord", 42)).toBe(false);
   });
 
