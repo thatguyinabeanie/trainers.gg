@@ -229,6 +229,7 @@ export class TournamentOrchestrator {
       this.log(
         `  Actions resolved: ${actions.filter((a) => a.type === "check-in-and-report").length} reporters, ` +
           `${actions.filter((a) => a.type === "check-in-and-wait").length} waiters, ` +
+          `${actions.filter((a) => a.type === "bye").length} byes, ` +
           `${actions.filter((a) => a.type === "drop").length} drops`
       );
 
@@ -252,6 +253,7 @@ export class TournamentOrchestrator {
               return checkInToMatch(pc.page, this.tournamentSlug);
             case "drop":
               return dropFromTournament(pc.page, this.tournamentSlug);
+            case "bye":
             case "no-show":
               return Promise.resolve(); // Do nothing
           }

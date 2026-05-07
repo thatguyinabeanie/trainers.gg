@@ -5,7 +5,7 @@
  * determines what each player should do: report a win, wait, drop, or no-show.
  */
 
-import type { Pairing, RoundAction, RoundOverride, Scenario } from "./types";
+import type { BestOf, Pairing, RoundAction, RoundOverride, Scenario } from "./types";
 
 /**
  * For a given round, resolve what each player should do based on:
@@ -24,11 +24,11 @@ export function resolveRoundActions(
   const overrides = scenario.overrides.filter((o) => o.round === round);
 
   for (const pairing of pairings) {
-    // Handle byes — player with bye does nothing
+    // Handle byes — player with bye does nothing (no match page exists)
     if (!pairing.player2) {
       actions.push({
         player: pairing.player1,
-        type: "check-in-and-wait",
+        type: "bye",
       });
       continue;
     }
@@ -72,12 +72,12 @@ export function resolveRoundActions(
     const loser =
       winner === pairing.player1 ? pairing.player2 : pairing.player1;
 
-    // Winner reports: for best-of-3, report "won", "won" (2-0)
-    // Could make this configurable for 2-1 scenarios
+    // Winner reports: derive game count from bestOf config (wins needed = ceil(bestOf/2))
+    const gamesNeeded = getWinGames(scenario.config.bestOf);
     actions.push({
       player: winner,
       type: "check-in-and-report",
-      games: ["won", "won"],
+      games: gamesNeeded,
     });
 
     // Loser just checks in and waits for the match to resolve
@@ -129,4 +129,13 @@ function findOverride(
   player: string
 ): RoundOverride | undefined {
   return overrides.find((o) => o.player === player);
+}
+
+/**
+ * Derive the minimum games a winner must report for a clean sweep.
+ * BO1 → ["won"], BO3 → ["won", "won"], BO5 → ["won", "won", "won"]
+ */
+function getWinGames(bestOf: BestOf): ("won" | "lost")[] {
+  const winsNeeded = Math.ceil(bestOf / 2);
+  return Array.from({ length: winsNeeded }, () => "won" as const);
 }

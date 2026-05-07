@@ -99,6 +99,7 @@ export interface Pairing {
 export type RoundActionType =
   | "check-in-and-report"
   | "check-in-and-wait"
+  | "bye"
   | "drop"
   | "no-show";
 
