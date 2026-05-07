@@ -317,6 +317,7 @@ export function TournamentAutomationSettings({
                       if (!deleteResult.success) {
                         // Rollback: re-enable since mapping still exists
                         setRegistrationReminderEnabled(true);
+                        setRegistrationReminderChannel(prevChannel);
                         toast.error(deleteResult.error);
                         return;
                       }
