@@ -22,6 +22,7 @@ import { Bot } from "lucide-react";
 import { toast } from "sonner";
 import {
   upsertChannelMappingAction,
+  deleteChannelMappingAction,
   upsertDmSettingAction,
   updateServerSettingsAction,
 } from "@/actions/discord-integration";
@@ -38,7 +39,9 @@ interface TournamentAutomationSettingsProps {
   guildChannels: GuildChannel[];
   settings: {
     roundPostedChannel: string | null;
+    roundPostedMappingId: number | null;
     standingsChannel: string | null;
+    standingsMappingId: number | null;
     registrationReminderChannel: string | null;
     registrationReminderMinutes: number | null;
     checkInReminderEnabled: boolean;
@@ -100,19 +103,17 @@ export function TournamentAutomationSettings({
 
   function handleDmSetting(enabled: boolean) {
     setCheckInReminderEnabled(enabled);
+    if (!enabled) return; // Don't persist disable — setting remains but UI shows off
     startTransition(async () => {
       const result = await upsertDmSettingAction({
         communityId,
         eventType: "check_in_reminder",
-        deliveryMode: enabled ? "dm_only" : "channel_only",
-        fallbackChannelId: enabled ? undefined : null,
+        deliveryMode: "dm_only",
       });
       if (!result.success) {
         toast.error(result.error);
       } else {
-        toast.success(
-          enabled ? "DM reminders enabled" : "DM reminders disabled"
-        );
+        toast.success("DM reminders enabled");
       }
     });
   }
@@ -138,6 +139,12 @@ export function TournamentAutomationSettings({
                 setRoundPostedEnabled(checked);
                 if (!checked) {
                   setRoundPostedChannel("");
+                  if (settings.roundPostedMappingId) {
+                    startTransition(async () => {
+                      const result = await deleteChannelMappingAction(settings.roundPostedMappingId!);
+                      if (!result.success) toast.error(result.error);
+                    });
+                  }
                 }
               }}
               disabled={isPending}
@@ -182,6 +189,12 @@ export function TournamentAutomationSettings({
                 setStandingsEnabled(checked);
                 if (!checked) {
                   setStandingsChannel("");
+                  if (settings.standingsMappingId) {
+                    startTransition(async () => {
+                      const result = await deleteChannelMappingAction(settings.standingsMappingId!);
+                      if (!result.success) toast.error(result.error);
+                    });
+                  }
                 }
               }}
               disabled={isPending}
@@ -297,7 +310,6 @@ export function TournamentAutomationSettings({
             <Switch
               checked={checkInReminderEnabled}
               onCheckedChange={(checked) => {
-                setCheckInReminderEnabled(checked);
                 handleDmSetting(checked);
               }}
               disabled={isPending}

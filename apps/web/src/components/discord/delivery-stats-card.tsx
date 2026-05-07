@@ -3,6 +3,7 @@
 import { Hash, Mail, Shield, AlertTriangle } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface DeliveryStats {
   channelMessages: number;
@@ -59,10 +60,10 @@ export function DeliveryStatsCard({ stats }: DeliveryStatsCardProps) {
               className="bg-muted/50 flex flex-col items-center gap-1 rounded-lg p-3"
             >
               <item.icon
-                className={`size-4 ${item.destructive ? "text-destructive" : "text-muted-foreground"}`}
+                className={cn("size-4", item.destructive ? "text-destructive" : "text-muted-foreground")}
               />
               <span
-                className={`text-2xl font-bold ${item.destructive ? "text-destructive" : ""}`}
+                className={cn("text-2xl font-bold", item.destructive && "text-destructive")}
               >
                 {item.value}
               </span>

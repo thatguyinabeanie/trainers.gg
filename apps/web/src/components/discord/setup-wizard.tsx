@@ -22,6 +22,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   updateServerSettingsAction,
   upsertChannelMappingAction,
@@ -99,80 +100,90 @@ export function SetupWizard({
 
   function handleFinish() {
     startTransition(async () => {
-      try {
-        // Apply channel mappings
-        if (channels.tournamentAnnouncements) {
-          await upsertChannelMappingAction({
-            communityId,
-            eventType: "tournament_created",
-            channelId: channels.tournamentAnnouncements,
-          });
-        }
-        if (channels.registrationUpdates) {
-          await upsertChannelMappingAction({
-            communityId,
-            eventType: "registration_opens",
-            channelId: channels.registrationUpdates,
-          });
-        }
-        if (channels.matchResults) {
-          await upsertChannelMappingAction({
-            communityId,
-            eventType: "match_result_reported",
-            channelId: channels.matchResults,
-          });
-        }
+      const errors: string[] = [];
 
-        // Apply role mappings
-        if (roles.participant.enabled && roles.participant.roleId) {
-          await upsertRoleMappingAction({
-            communityId,
-            roleType: "participant",
-            discordRoleId: roles.participant.roleId,
-          });
-        }
-        if (roles.winner.enabled && roles.winner.roleId) {
-          await upsertRoleMappingAction({
-            communityId,
-            roleType: "winner",
-            discordRoleId: roles.winner.roleId,
-          });
-        }
-        if (roles.verified.enabled && roles.verified.roleId) {
-          await upsertRoleMappingAction({
-            communityId,
-            roleType: "verified",
-            discordRoleId: roles.verified.roleId,
-          });
-        }
-
-        // Mark setup as completed
-        await updateServerSettingsAction({
-          serverId,
+      // Apply channel mappings
+      if (channels.tournamentAnnouncements) {
+        const r = await upsertChannelMappingAction({
           communityId,
-          settings: { setup_completed: true },
+          eventType: "tournament_created",
+          channelId: channels.tournamentAnnouncements,
         });
-
-        toast.success("Setup complete! Your Discord integration is ready.");
-        onComplete();
-      } catch {
-        toast.error("Something went wrong. Please try again.");
+        if (!r.success) errors.push(r.error);
       }
+      if (channels.registrationUpdates) {
+        const r = await upsertChannelMappingAction({
+          communityId,
+          eventType: "registration_opens",
+          channelId: channels.registrationUpdates,
+        });
+        if (!r.success) errors.push(r.error);
+      }
+      if (channels.matchResults) {
+        const r = await upsertChannelMappingAction({
+          communityId,
+          eventType: "match_result_reported",
+          channelId: channels.matchResults,
+        });
+        if (!r.success) errors.push(r.error);
+      }
+
+      // Apply role mappings
+      if (roles.participant.enabled && roles.participant.roleId) {
+        const r = await upsertRoleMappingAction({
+          communityId,
+          roleType: "participant",
+          discordRoleId: roles.participant.roleId,
+        });
+        if (!r.success) errors.push(r.error);
+      }
+      if (roles.winner.enabled && roles.winner.roleId) {
+        const r = await upsertRoleMappingAction({
+          communityId,
+          roleType: "winner",
+          discordRoleId: roles.winner.roleId,
+        });
+        if (!r.success) errors.push(r.error);
+      }
+      if (roles.verified.enabled && roles.verified.roleId) {
+        const r = await upsertRoleMappingAction({
+          communityId,
+          roleType: "verified",
+          discordRoleId: roles.verified.roleId,
+        });
+        if (!r.success) errors.push(r.error);
+      }
+
+      // Mark setup as completed
+      const settingsResult = await updateServerSettingsAction({
+        serverId,
+        communityId,
+        settings: { setup_completed: true },
+      });
+      if (!settingsResult.success) errors.push(settingsResult.error);
+
+      if (errors.length > 0) {
+        toast.error(errors[0]);
+        return;
+      }
+
+      toast.success("Setup complete! Your Discord integration is ready.");
+      onComplete();
     });
   }
 
   function handleSkip() {
     startTransition(async () => {
-      try {
-        await updateServerSettingsAction({
-          serverId,
-          communityId,
-          settings: { setup_completed: true },
-        });
-        onComplete();
-      } catch {
-        toast.error("Something went wrong. Please try again.");
+      const result = await updateServerSettingsAction({
+        serverId,
+        communityId,
+        settings: { setup_completed: true },
+      });
+      if (!result.success) {
+        toast.error(result.error);
+        return;
       }
+      onComplete();
     });
   }
 
@@ -193,13 +204,12 @@ export function SetupWizard({
             <div key={label} className="flex items-center">
               <div className="flex flex-col items-center gap-1">
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
-                    i < currentStep
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium",
+                    i <= currentStep
                       ? "bg-teal-600 text-white"
-                      : i === currentStep
-                        ? "bg-teal-600 text-white"
-                        : "bg-muted text-muted-foreground"
-                  }`}
+                      : "bg-muted text-muted-foreground"
+                  )}
                 >
                   {i < currentStep ? <Check className="h-4 w-4" /> : i + 1}
                 </div>
@@ -207,9 +217,10 @@ export function SetupWizard({
               </div>
               {i < steps.length - 1 && (
                 <div
-                  className={`mx-2 mb-5 h-0.5 w-12 ${
+                  className={cn(
+                    "mx-2 mb-5 h-0.5 w-12",
                     i < currentStep ? "bg-teal-600" : "bg-muted"
-                  }`}
+                  )}
                 />
               )}
             </div>

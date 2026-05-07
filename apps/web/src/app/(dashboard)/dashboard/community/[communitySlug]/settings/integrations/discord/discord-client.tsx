@@ -18,7 +18,6 @@ import { EmbedPreview } from "@/components/discord/embed-preview";
 import { FailureBanner } from "@/components/discord/failure-banner";
 import { FailuresTabContent } from "@/components/discord/failures-tab-content";
 import { InstallCard } from "@/components/discord/install-card";
-import { LinkedAccountsOverview } from "@/components/discord/linked-accounts-overview";
 import { PingRoleConfig } from "@/components/discord/ping-role-config";
 import { RecommendedDefaultsButton } from "@/components/discord/recommended-defaults-button";
 import { RoleMappingTable } from "@/components/discord/role-mapping-table";
@@ -169,9 +168,15 @@ export function DiscordClient({
     roundPostedChannel:
       overview.channelMappings.find((m) => m.event_type === "round_posted")
         ?.channel_id ?? null,
+    roundPostedMappingId:
+      overview.channelMappings.find((m) => m.event_type === "round_posted")
+        ?.id ?? null,
     standingsChannel:
       overview.channelMappings.find((m) => m.event_type === "standings_posted")
         ?.channel_id ?? null,
+    standingsMappingId:
+      overview.channelMappings.find((m) => m.event_type === "standings_posted")
+        ?.id ?? null,
     registrationReminderChannel:
       overview.channelMappings.find(
         (m) => m.event_type === "registration_closing_soon"
@@ -245,11 +250,6 @@ export function DiscordClient({
                 isLoading={isLoadingStats}
               />
               <div className="space-y-4">
-                <LinkedAccountsOverview
-                  totalMembers={null}
-                  linkedCount={0}
-                  communitySlug={communitySlug}
-                />
                 <EmbedPreview
                   embedColor={embedColor}
                   eventType="tournament_created"

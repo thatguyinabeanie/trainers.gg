@@ -823,6 +823,9 @@ export async function sendTestNotificationAction(input: {
   eventType: string;
 }): Promise<ActionResult<void>> {
   try {
+    if (!Number.isInteger(input.serverId) || input.serverId <= 0) {
+      return { success: false, error: "Invalid server ID" };
+    }
     await rejectBots();
     const supabase = await createClient();
     const server = await getDiscordServerById(supabase, input.serverId);
@@ -982,6 +985,14 @@ export async function updateVerifiedRoleAction(input: {
     const supabase = await createClient();
     await requireCommunityManage(supabase, input.communityId);
 
+    const server = await getDiscordServerById(supabase, input.serverId);
+    if (!server) {
+      return { success: false, error: "Discord server not found" };
+    }
+    if (server.community_id !== input.communityId) {
+      return { success: false, error: "Server does not belong to this community" };
+    }
+
     if (input.enabled && input.roleId) {
       // Upsert the verified role mapping
       await upsertRoleMapping(supabase, {
@@ -1053,26 +1064,21 @@ export async function getDeliveryStatsAction(
 
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: logs, error } = await supabase
-      .from("discord_delivery_log")
-      .select("type")
-      .eq("discord_server_id", serverId)
-      .gte("created_at", since);
+    const [channelResult, dmResult, roleResult, failedResult] = await Promise.all([
+      supabase.from("discord_delivery_log").select("*", { count: "exact", head: true })
+        .eq("discord_server_id", serverId).eq("type", "channel").gte("created_at", since),
+      supabase.from("discord_delivery_log").select("*", { count: "exact", head: true })
+        .eq("discord_server_id", serverId).eq("type", "dm").gte("created_at", since),
+      supabase.from("discord_delivery_log").select("*", { count: "exact", head: true })
+        .eq("discord_server_id", serverId).eq("type", "role_sync").gte("created_at", since),
+      supabase.from("discord_delivery_failures").select("*", { count: "exact", head: true })
+        .eq("discord_server_id", serverId).gte("created_at", since),
+    ]);
 
-    if (error) throw new Error(`Failed to fetch stats: ${error.message}`);
-
-    const channelMessages = (logs ?? []).filter(
-      (l) => l.type === "channel"
-    ).length;
-    const dmsDelivered = (logs ?? []).filter((l) => l.type === "dm").length;
-    const roleSyncs = (logs ?? []).filter((l) => l.type === "role_sync").length;
-
-    // Also count failures from the failures table
-    const { count: failureCount } = await supabase
-      .from("discord_delivery_failures")
-      .select("id", { count: "exact", head: true })
-      .eq("discord_server_id", serverId)
-      .gte("created_at", since);
+    const channelMessages = channelResult.count ?? 0;
+    const dmsDelivered = dmResult.count ?? 0;
+    const roleSyncs = roleResult.count ?? 0;
+    const failureCount = failedResult.count ?? 0;
 
     return {
       success: true,
@@ -1153,42 +1159,4 @@ export async function getActivityFeedAction(
 // Linked Accounts Stats
 // =============================================================================
 
-/**
- * Get statistics on how many Discord guild members have linked trainers.gg accounts.
- */
-export async function getLinkedAccountsStatsAction(input: {
-  serverId: number;
-  communityId: number;
-}): Promise<
-  ActionResult<{ totalMembers: number | null; linkedCount: number }>
-> {
-  try {
-    await rejectBots();
-    const supabase = await createClient();
-    await requireCommunityManage(supabase, input.communityId);
 
-    // Count users who have discord identities and are linked to this community
-    // via community_staff or tournament registrations
-    const { count: linkedCount } = await supabase
-      .from("community_staff")
-      .select("user_id", { count: "exact", head: true })
-      .eq("community_id", input.communityId);
-
-    // We can't easily get total Discord members without calling the Discord API
-    // which is done server-side in the page.tsx; pass null for now
-    return {
-      success: true,
-      data: {
-        totalMembers: null,
-        linkedCount: linkedCount ?? 0,
-      },
-    };
-  } catch (error) {
-    const forbidden = asForbidden(error);
-    if (forbidden) return forbidden;
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to fetch linked accounts stats"),
-    };
-  }
-}

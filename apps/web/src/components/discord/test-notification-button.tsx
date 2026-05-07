@@ -22,12 +22,12 @@ export function TestNotificationButton({
 
   function handleClick() {
     startTransition(async () => {
-      try {
-        await sendTestNotificationAction({ serverId, channelId, eventType });
-        toast.success("Test notification sent!");
-      } catch {
-        toast.error("Failed to send test notification");
+      const result = await sendTestNotificationAction({ serverId, channelId, eventType });
+      if (!result.success) {
+        toast.error(result.error);
+        return;
       }
+      toast.success("Test notification sent!");
     });
   }
 

@@ -9,7 +9,6 @@ import {
   ALL_CHANNEL_EVENT_TYPES,
   type DiscordChannelEventType,
   type DiscordChannelMapping,
-  type DiscordDmEventType,
 } from "@trainers/supabase";
 
 import {
@@ -243,7 +242,7 @@ export function ChannelMappingTable({
       {
         id: sentinelId,
         discord_server_id: serverId,
-        event_type: eventType as unknown as DiscordDmEventType,
+        event_type: eventType as unknown as DiscordChannelEventType,
         channel_id: channelId,
         ping_role_id: null,
         created_at: new Date().toISOString(),

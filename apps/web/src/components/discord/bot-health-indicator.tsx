@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from "date-fns";
 
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface BotHealthIndicatorProps {
   lastDeliveryAt: string | null;
@@ -38,7 +39,7 @@ export function BotHealthIndicator({
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
-        <span className={`size-2.5 rounded-full ${dotColor}`} />
+        <span className={cn("size-2.5 rounded-full", dotColor)} />
         <span className="text-muted-foreground text-sm">{timeText}</span>
       </div>
       <div className="flex items-center gap-1.5">

@@ -36,16 +36,16 @@ export function EmbedColorPicker({
     }
 
     startTransition(async () => {
-      try {
-        await updateServerSettingsAction({
-          serverId,
-          communityId,
-          settings: { embed_color: color },
-        });
-        toast.success("Embed color updated.");
-      } catch {
-        toast.error("Failed to update embed color.");
+      const result = await updateServerSettingsAction({
+        serverId,
+        communityId,
+        settings: { embed_color: color },
+      });
+      if (!result.success) {
+        toast.error(result.error);
+        return;
       }
+      toast.success("Embed color updated.");
     });
   }
 
@@ -53,16 +53,17 @@ export function EmbedColorPicker({
     setColor(DEFAULT_COLOR);
 
     startTransition(async () => {
-      try {
-        await updateServerSettingsAction({
-          serverId,
-          communityId,
-          settings: { embed_color: DEFAULT_COLOR },
-        });
-        toast.success("Embed color reset to default.");
-      } catch {
-        toast.error("Failed to reset embed color.");
+      const result = await updateServerSettingsAction({
+        serverId,
+        communityId,
+        settings: { embed_color: DEFAULT_COLOR },
+      });
+      if (!result.success) {
+        setColor(currentColor);
+        toast.error(result.error);
+        return;
       }
+      toast.success("Embed color reset to default.");
     });
   }
 

@@ -45,20 +45,20 @@ export function VerifiedRoleConfig({
     setEnabled(checked);
 
     startTransition(async () => {
-      try {
-        await updateVerifiedRoleAction({
-          serverId,
-          communityId,
-          enabled: checked,
-          roleId,
-        });
-        toast.success(
-          checked ? "Verified role enabled." : "Verified role disabled."
-        );
-      } catch {
+      const result = await updateVerifiedRoleAction({
+        serverId,
+        communityId,
+        enabled: checked,
+        roleId,
+      });
+      if (!result.success) {
         setEnabled(!checked);
-        toast.error("Failed to update verified role setting.");
+        toast.error(result.error);
+        return;
       }
+      toast.success(
+        checked ? "Verified role enabled." : "Verified role disabled."
+      );
     });
   }
 
@@ -68,18 +68,18 @@ export function VerifiedRoleConfig({
     setRoleId(newRoleId);
 
     startTransition(async () => {
-      try {
-        await updateVerifiedRoleAction({
-          serverId,
-          communityId,
-          enabled,
-          roleId: newRoleId,
-        });
-        toast.success("Verified role updated.");
-      } catch {
+      const result = await updateVerifiedRoleAction({
+        serverId,
+        communityId,
+        enabled,
+        roleId: newRoleId,
+      });
+      if (!result.success) {
         setRoleId(roleId);
-        toast.error("Failed to update verified role.");
+        toast.error(result.error);
+        return;
       }
+      toast.success("Verified role updated.");
     });
   }
 

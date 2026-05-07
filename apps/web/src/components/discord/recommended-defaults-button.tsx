@@ -49,51 +49,64 @@ export function RecommendedDefaultsButton({
         return;
       }
 
-      try {
-        // Map tournament_created to the best channel
-        await upsertChannelMappingAction({
-          communityId,
-          eventType: "tournament_created",
-          channelId: (announcementChannel ?? generalChannel)!.id,
-        });
-
-        // Map other events to general or announcement channel
-        const fallbackId = (generalChannel ?? announcementChannel)!.id;
-        await upsertChannelMappingAction({
-          communityId,
-          eventType: "registration_opens",
-          channelId: fallbackId,
-        });
-        await upsertChannelMappingAction({
-          communityId,
-          eventType: "match_result_reported",
-          channelId: fallbackId,
-        });
-
-        // Mark setup as completed
-        await updateServerSettingsAction({
-          serverId,
-          communityId,
-          settings: { setup_completed: true },
-        });
-
-        const applied: string[] = [];
-        if (announcementChannel) {
-          applied.push(`Announcements → #${announcementChannel.name}`);
-        }
-        if (generalChannel) {
-          applied.push(`Fallback → #${generalChannel.name}`);
-        }
-        applied.push("Default channel mappings applied");
-
-        toast.success("Recommended defaults applied", {
-          description: applied.join(", "),
-        });
-
-        onApplied();
-      } catch {
-        toast.error("Failed to apply defaults. Please try again.");
+      // Map tournament_created to the best channel
+      const r1 = await upsertChannelMappingAction({
+        communityId,
+        eventType: "tournament_created",
+        channelId: (announcementChannel ?? generalChannel)!.id,
+      });
+      if (!r1.success) {
+        toast.error(r1.error);
+        return;
       }
+
+      // Map other events to general or announcement channel
+      const fallbackId = (generalChannel ?? announcementChannel)!.id;
+      const r2 = await upsertChannelMappingAction({
+        communityId,
+        eventType: "registration_opens",
+        channelId: fallbackId,
+      });
+      if (!r2.success) {
+        toast.error(r2.error);
+        return;
+      }
+
+      const r3 = await upsertChannelMappingAction({
+        communityId,
+        eventType: "match_result_reported",
+        channelId: fallbackId,
+      });
+      if (!r3.success) {
+        toast.error(r3.error);
+        return;
+      }
+
+      // Mark setup as completed
+      const r4 = await updateServerSettingsAction({
+        serverId,
+        communityId,
+        settings: { setup_completed: true },
+      });
+      if (!r4.success) {
+        toast.error(r4.error);
+        return;
+      }
+
+      const applied: string[] = [];
+      if (announcementChannel) {
+        applied.push(`Announcements → #${announcementChannel.name}`);
+      }
+      if (generalChannel) {
+        applied.push(`Fallback → #${generalChannel.name}`);
+      }
+      applied.push("Default channel mappings applied");
+
+      toast.success("Recommended defaults applied", {
+        description: applied.join(", "),
+      });
+
+      onApplied();
     });
   }
 
