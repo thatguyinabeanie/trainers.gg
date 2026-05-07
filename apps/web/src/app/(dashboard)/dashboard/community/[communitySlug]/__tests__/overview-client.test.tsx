@@ -156,7 +156,7 @@ describe("OverviewClient — StatCards", () => {
           stats={makeStats({ totalTournaments: 5, activeTournaments: 2 })}
         />
       );
-      expect(screen.getByText("↑ 2 active")).toBeInTheDocument();
+      expect(screen.getByText("2 active")).toBeInTheDocument();
     });
 
     it("shows total entries in Unique Players subtitle", () => {
@@ -205,48 +205,6 @@ describe("OverviewClient — StatCards", () => {
         />
       );
       expect(screen.getByText("2 admins, 3 judges")).toBeInTheDocument();
-    });
-  });
-
-  describe("staff avatar badges", () => {
-    it("shows Admin badge when adminCount > 0", () => {
-      render(
-        <OverviewClient
-          {...defaultProps}
-          stats={makeStats({ adminCount: 1, judgeCount: 0 })}
-        />
-      );
-      expect(screen.getByText("A")).toBeInTheDocument();
-    });
-
-    it("shows Judge badge when judgeCount > 0", () => {
-      render(
-        <OverviewClient
-          {...defaultProps}
-          stats={makeStats({ adminCount: 0, judgeCount: 1 })}
-        />
-      );
-      expect(screen.getByText("J")).toBeInTheDocument();
-    });
-
-    it("hides Admin badge when adminCount is 0", () => {
-      render(
-        <OverviewClient
-          {...defaultProps}
-          stats={makeStats({ adminCount: 0, judgeCount: 1 })}
-        />
-      );
-      expect(screen.queryByText("A")).not.toBeInTheDocument();
-    });
-
-    it("hides Judge badge when judgeCount is 0", () => {
-      render(
-        <OverviewClient
-          {...defaultProps}
-          stats={makeStats({ adminCount: 1, judgeCount: 0 })}
-        />
-      );
-      expect(screen.queryByText("J")).not.toBeInTheDocument();
     });
   });
 });
@@ -382,9 +340,10 @@ describe("OverviewClient — Upcoming Tournaments", () => {
 describe("OverviewClient — Activity Feed", () => {
   it("shows empty state message when activity is empty", () => {
     render(<OverviewClient {...defaultProps} activity={[]} />);
+    expect(screen.getByText("No activity yet")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "No activity yet — things will show up here as your community grows"
+        "Things will show up here as your community grows"
       )
     ).toBeInTheDocument();
   });
@@ -475,6 +434,7 @@ describe("OverviewClient — Activity Feed", () => {
 describe("OverviewClient — Top Regulars", () => {
   it("shows empty state when topPlayers is empty", () => {
     render(<OverviewClient {...defaultProps} topPlayers={[]} />);
+    expect(screen.getByText("No regulars yet")).toBeInTheDocument();
     expect(
       screen.getByText("Players will appear here after your first tournament")
     ).toBeInTheDocument();

@@ -57,14 +57,14 @@ describe("DashboardCard", () => {
         <DashboardCard className="extra-class">content</DashboardCard>
       );
       const wrapper = container.firstChild as HTMLElement;
-      expect(wrapper).toHaveClass("rounded-lg");
+      expect(wrapper).toHaveClass("rounded-xl");
       expect(wrapper).toHaveClass("extra-class");
     });
 
     it("renders correctly without a className prop", () => {
       const { container } = render(<DashboardCard>content</DashboardCard>);
       const wrapper = container.firstChild as HTMLElement;
-      expect(wrapper).toHaveClass("rounded-lg");
+      expect(wrapper).toHaveClass("rounded-xl");
     });
   });
 

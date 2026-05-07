@@ -2,6 +2,7 @@ import {
   type PlayerRef,
   getPlayerName,
   formatDate,
+  formatShortDate,
   formatDateTime,
   formatTimeAgo,
   isTempUsername,
@@ -81,6 +82,29 @@ describe("formatDate", () => {
     ["2025-12-01T12:00:00.000Z", "Dec 1, 2025"],
   ])("formats %s as %s", (input, expected) => {
     expect(formatDate(input)).toBe(expected);
+  });
+});
+
+describe("formatShortDate", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-03-25T12:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('formats "2026-03-28" as "Mar 28"', () => {
+    expect(formatShortDate("2026-03-28")).toBe("Mar 28");
+  });
+
+  it('formats "2026-01-01" as "Jan 1"', () => {
+    expect(formatShortDate("2026-01-01")).toBe("Jan 1");
+  });
+
+  it("handles full ISO datetime strings", () => {
+    expect(formatShortDate("2026-06-15T14:30:00.000Z")).toBe("Jun 15");
   });
 });
 

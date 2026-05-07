@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import Image from "next/image";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -84,17 +85,23 @@ export function InstallCard({ communityId }: InstallCardProps) {
   return (
     <div className="space-y-4">
       {/* Hero card */}
-      <div className="rounded-xl border bg-white p-12 text-center">
+      <div className="rounded-xl border border-border bg-card p-12 text-center">
         {/* Bot icon */}
-        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[#e6f4f1] to-[#cfe9e4] text-4xl">
-          🤖
+        <div className="mx-auto mb-5 flex size-40 items-center justify-center rounded-3xl bg-primary/10">
+          <Image
+            src="/icons/beanie_logo.png"
+            alt="Beanie Bot"
+            width={128}
+            height={128}
+            className="size-32"
+          />
         </div>
 
-        <h2 className="mb-2 text-2xl font-bold tracking-tight text-gray-900">
+        <h2 className="mb-2 text-2xl font-bold tracking-tight">
           Add Beanie Bot to your Discord
         </h2>
 
-        <p className="mx-auto mb-6 max-w-md leading-relaxed text-gray-500">
+        <p className="text-muted-foreground mx-auto mb-6 max-w-md leading-relaxed">
           Install the bot in a Discord server you manage. You&apos;ll be able to
           map tournament events to channels, sync roles, and control DM
           notifications — all from this page.
@@ -113,7 +120,7 @@ export function InstallCard({ communityId }: InstallCardProps) {
           {isLoading ? "Redirecting…" : "Add to your server"}
         </Button>
 
-        <p className="mt-4 text-xs text-gray-400">
+        <p className="text-muted-foreground/70 mt-4 text-xs">
           Requires a Discord server where you have Manage Server permission.
         </p>
       </div>
@@ -121,12 +128,12 @@ export function InstallCard({ communityId }: InstallCardProps) {
       {/* Feature grid */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {FEATURES.map((feature) => (
-          <div key={feature.title} className="rounded-lg border bg-white p-5">
+          <div key={feature.title} className="rounded-xl border border-border bg-card p-5">
             <div className="mb-2 text-2xl">{feature.icon}</div>
-            <div className="mb-1 font-semibold text-gray-900">
+            <div className="mb-1 font-semibold">
               {feature.title}
             </div>
-            <div className="text-xs leading-relaxed text-gray-500">
+            <div className="text-muted-foreground text-xs leading-relaxed">
               {feature.description}
             </div>
           </div>
@@ -134,15 +141,15 @@ export function InstallCard({ communityId }: InstallCardProps) {
       </div>
 
       {/* Slash commands strip */}
-      <div className="rounded-lg border bg-white px-5 py-4">
-        <div className="mb-3 font-semibold text-gray-900">
+      <div className="rounded-xl border border-border bg-card px-5 py-4">
+        <div className="mb-3 font-semibold">
           Plus 13 slash commands for your members
         </div>
         <div className="flex flex-wrap gap-1.5">
           {SLASH_COMMANDS.map((cmd) => (
             <code
               key={cmd}
-              className="rounded bg-gray-100 px-2 py-0.5 text-xs text-teal-700"
+              className="rounded bg-muted px-2 py-0.5 text-xs text-primary"
             >
               {cmd}
             </code>

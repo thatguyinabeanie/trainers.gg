@@ -3,6 +3,7 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { listMyCommunities } from "@trainers/supabase";
 import { CommunitySelectorClient } from "./community-selector-client";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
 export default async function DashboardCommunityPage() {
   const user = await getUser();
@@ -21,9 +22,9 @@ export default async function DashboardCommunityPage() {
     return (
       <>
         <PageHeader title="Communities" />
-        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+        <DashboardContent>
           <CommunitySelectorClient organizations={[]} />
-        </div>
+        </DashboardContent>
       </>
     );
   }
@@ -37,9 +38,9 @@ export default async function DashboardCommunityPage() {
   return (
     <>
       <PageHeader title="Communities" />
-      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+      <DashboardContent>
         <CommunitySelectorClient organizations={organizations} />
-      </div>
+      </DashboardContent>
     </>
   );
 }

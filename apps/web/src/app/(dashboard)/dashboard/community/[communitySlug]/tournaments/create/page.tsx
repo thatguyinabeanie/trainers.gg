@@ -8,6 +8,7 @@ import {
 
 import { createClientReadOnly } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { CreateTournamentClient } from "./create-tournament-client";
 
 interface PageProps {
@@ -38,12 +39,12 @@ export default async function DashboardCreateTournamentPage({
           Tournaments
         </Link>
       </PageHeader>
-      <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
+      <DashboardContent>
         <CreateTournamentClient
           communitySlug={communitySlug}
           discordInstalled={discordInstalled}
         />
-      </div>
+      </DashboardContent>
     </>
   );
 }

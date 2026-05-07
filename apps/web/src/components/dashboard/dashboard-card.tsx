@@ -16,7 +16,7 @@ export function DashboardCard({
   return (
     <div
       className={cn(
-        "bg-card text-card-foreground rounded-lg p-4 shadow-sm",
+        "bg-card text-card-foreground rounded-xl p-4 shadow-sm",
         className
       )}
     >

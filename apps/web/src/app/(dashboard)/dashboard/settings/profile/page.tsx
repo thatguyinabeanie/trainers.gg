@@ -24,6 +24,7 @@ import { Loader2, Save, Check, X } from "lucide-react";
 import { SpritePicker } from "@/components/profile/sprite-picker";
 import { DiscordProfilePrivacyRow } from "@/components/settings/discord-profile-privacy-row";
 import { toast } from "sonner";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { COUNTRIES } from "@trainers/utils";
 import {
   checkUsernameAvailability,
@@ -204,16 +205,19 @@ export default function ProfileSettingsPage() {
 
   if (isLoading) {
     return (
-      <Card>
+      <DashboardContent>
+        <Card>
         <CardContent className="flex min-h-[200px] items-center justify-center">
           <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
         </CardContent>
-      </Card>
+        </Card>
+      </DashboardContent>
     );
   }
 
   return (
-    <Card>
+    <DashboardContent>
+      <Card>
       <CardHeader>
         <CardTitle>Profile</CardTitle>
         <CardDescription>
@@ -344,5 +348,6 @@ export default function ProfileSettingsPage() {
         </Button>
       </CardContent>
     </Card>
+    </DashboardContent>
   );
 }

@@ -11,13 +11,15 @@ import {
 } from "@/components/ui/card";
 import { Mail, Lock } from "lucide-react";
 import { LinkedIdentitiesSection } from "@/components/settings/linked-identities-section";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
 export default function AccountSettingsPage() {
   const { user } = useAuth();
   const email = user?.email ?? "";
 
   return (
-    <div className="space-y-4">
+    <DashboardContent>
+      <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>Email</CardTitle>
@@ -65,6 +67,7 @@ export default function AccountSettingsPage() {
           <LinkedIdentitiesSection />
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </DashboardContent>
   );
 }

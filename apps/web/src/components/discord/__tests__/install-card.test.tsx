@@ -15,6 +15,15 @@ jest.mock("@/actions/discord-integration", () => ({
     mockGetDiscordInstallUrlAction(...args),
 }));
 
+// Mock next/image to render a plain img
+jest.mock("next/image", () => {
+  const MockImage = (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+    <img {...props} />
+  );
+  MockImage.displayName = "MockImage";
+  return { __esModule: true, default: MockImage };
+});
+
 // Mock window.location so tests can assert on href assignments
 Object.defineProperty(window, "location", {
   writable: true,

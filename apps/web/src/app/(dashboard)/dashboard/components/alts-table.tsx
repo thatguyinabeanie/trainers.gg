@@ -100,6 +100,15 @@ function AltTableRow({
           !isExpanded && "last:border-0"
         )}
       >
+        {/* Chevron */}
+        <td className="w-8 px-2 py-2.5 text-center">
+          {isExpanded ? (
+            <ChevronDown className="text-muted-foreground mx-auto size-3.5" />
+          ) : (
+            <ChevronRight className="text-muted-foreground mx-auto size-3.5" />
+          )}
+        </td>
+
         {/* Handle */}
         <td className="w-[200px] px-3 py-2.5">
           <div className="flex items-center gap-2">
@@ -202,15 +211,6 @@ function AltTableRow({
             layout="cell"
           />
         </td>
-
-        {/* Chevron */}
-        <td className="w-8 px-2 py-2.5 text-center">
-          {isExpanded ? (
-            <ChevronDown className="text-muted-foreground mx-auto size-3.5" />
-          ) : (
-            <ChevronRight className="text-muted-foreground mx-auto size-3.5" />
-          )}
-        </td>
       </tr>
 
       {/* Expanded panel */}
@@ -288,6 +288,7 @@ export function AltsTable({
         <table className="w-full text-sm">
           <thead>
             <tr>
+              <th className="h-8 w-8" aria-label="Expand" />
               <th className="text-muted-foreground h-8 w-[200px] px-3 text-left text-xs font-medium tracking-wide uppercase">
                 Handle
               </th>
@@ -309,7 +310,6 @@ export function AltsTable({
               <th className="text-muted-foreground h-8 px-3 text-center text-xs font-medium tracking-wide uppercase">
                 Public
               </th>
-              <th className="h-8 w-8" />
             </tr>
           </thead>
           <tbody>

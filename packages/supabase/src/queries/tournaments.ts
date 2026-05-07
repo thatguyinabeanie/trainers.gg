@@ -1386,6 +1386,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
   const myTournaments: {
     id: number;
     name: string;
+    slug: string;
     startDate: string | null;
     status: string;
     hasTeam: boolean;
@@ -1399,6 +1400,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
     const tournament = reg.tournament as {
       id: number;
       name: string;
+      slug: string;
       start_date: string | null;
       status: string;
       archived_at: string | null;
@@ -1409,6 +1411,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
       myTournaments.push({
         id: tournament.id,
         name: tournament.name,
+        slug: tournament.slug,
         startDate: tournament.start_date,
         status: tournament.status,
         hasTeam: reg.team_id != null,
