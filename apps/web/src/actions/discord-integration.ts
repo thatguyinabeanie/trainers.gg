@@ -1069,24 +1069,13 @@ export async function updateVerifiedRoleAction(input: {
     }
 
     if (parsed.enabled && parsed.roleId) {
-      // Upsert the verified role mapping
+      // Upsert the verified role mapping with enabled:true in one operation
       await upsertRoleMapping(supabase, {
         discord_server_id: parsed.serverId,
         role_type: "verified",
         discord_role_id: parsed.roleId,
+        enabled: true,
       });
-      // Ensure it's enabled
-      const { data: mapping, error: lookupError } = await supabase
-        .from("discord_role_mappings")
-        .select("id")
-        .eq("discord_server_id", parsed.serverId)
-        .eq("role_type", "verified")
-        .maybeSingle();
-      if (lookupError)
-        throw new Error(`Failed to look up role mapping: ${lookupError.message}`);
-      if (mapping) {
-        await toggleRoleMapping(supabase, mapping.id, true);
-      }
     } else {
       // Disable the verified role mapping if it exists
       const { data: mapping, error: lookupError } = await supabase

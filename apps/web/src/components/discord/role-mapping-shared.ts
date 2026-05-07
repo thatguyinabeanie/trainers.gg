@@ -41,7 +41,6 @@ export const ROLE_TYPES: DiscordRoleType[] = [
   "participant",
   "winner",
   "currently_playing",
-  "verified",
 ];
 
 export const ROLE_TYPE_META: Record<

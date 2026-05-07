@@ -377,11 +377,9 @@ describe("updateVerifiedRoleAction", () => {
       roleId: "role-456",
     });
     expect(result.success).toBe(true);
-    expect(mockUpsertRoleMapping).toHaveBeenCalled();
-    expect(mockToggleRoleMapping).toHaveBeenCalledWith(
+    expect(mockUpsertRoleMapping).toHaveBeenCalledWith(
       expect.anything(),
-      5,
-      true
+      expect.objectContaining({ enabled: true })
     );
   });
 

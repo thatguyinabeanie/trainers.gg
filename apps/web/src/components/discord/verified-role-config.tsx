@@ -57,7 +57,7 @@ export function VerifiedRoleConfig({
       });
       if (!result.success) {
         setEnabled(!checked);
-        toast.error(result.error);
+        toast.error(result.error ?? "An error occurred");
         return;
       }
       toast.success(
@@ -69,21 +69,26 @@ export function VerifiedRoleConfig({
   function handleRoleChange(value: string | null) {
     if (!value) return;
     const newRoleId = value === "none" ? null : value;
+    const newEnabled = newRoleId === null ? false : enabled;
     setRoleId(newRoleId);
+    if (!newEnabled) setEnabled(false);
 
     startTransition(async () => {
       const result = await updateVerifiedRoleAction({
         serverId,
         communityId,
-        enabled,
+        enabled: newEnabled,
         roleId: newRoleId,
       });
       if (!result.success) {
         setRoleId(roleId);
-        toast.error(result.error);
+        if (!newEnabled) setEnabled(enabled);
+        toast.error(result.error ?? "An error occurred");
         return;
       }
-      toast.success("Verified role updated.");
+      toast.success(
+        newRoleId ? "Verified role updated." : "Verified role disabled."
+      );
     });
   }
 

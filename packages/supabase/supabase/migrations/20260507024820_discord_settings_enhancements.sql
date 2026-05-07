@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS public.discord_delivery_log (
   id                bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   discord_server_id bigint NOT NULL REFERENCES public.discord_servers(id) ON DELETE CASCADE,
   community_id      bigint NOT NULL REFERENCES public.communities(id) ON DELETE CASCADE,
-  type              text   NOT NULL,
+  type              text   NOT NULL
+                    CONSTRAINT discord_delivery_log_type_check CHECK (type IN ('channel', 'dm', 'role_sync')),
   event_type        text   NOT NULL,
   target            text   NOT NULL,
   metadata          jsonb  NOT NULL DEFAULT '{}'::jsonb,

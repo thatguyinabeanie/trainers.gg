@@ -102,19 +102,17 @@ export function TournamentAutomationSettings({
 
   function handleChannelMapping(
     channelId: string,
-    eventType: string,
+    eventType: Parameters<typeof upsertChannelMappingAction>[0]["eventType"],
     onMappingId?: (id: number) => void
   ) {
     startTransition(async () => {
       const result = await upsertChannelMappingAction({
         communityId,
         channelId,
-        eventType: eventType as Parameters<
-          typeof upsertChannelMappingAction
-        >[0]["eventType"],
+        eventType,
       });
       if (!result.success) {
-        toast.error(result.error);
+        toast.error(result.error ?? "An error occurred");
       } else {
         onMappingId?.(result.data.mappingId);
         toast.success("Channel mapping saved");
@@ -132,7 +130,7 @@ export function TournamentAutomationSettings({
         });
         if (!result.success) {
           setCheckInReminderEnabled(true); // rollback
-          toast.error(result.error);
+          toast.error(result.error ?? "An error occurred");
         }
       });
       return;
@@ -145,7 +143,7 @@ export function TournamentAutomationSettings({
       });
       if (!result.success) {
         setCheckInReminderEnabled(false); // rollback
-        toast.error(result.error);
+        toast.error(result.error ?? "An error occurred");
       } else {
         toast.success("DM reminders enabled");
       }
@@ -182,7 +180,7 @@ export function TournamentAutomationSettings({
                         // Rollback on failure
                         setRoundPostedEnabled(true);
                         setRoundPostedChannel(prevChannel);
-                        toast.error(result.error);
+                        toast.error(result.error ?? "An error occurred");
                       } else {
                         setRoundPostedMappingId(null);
                       }
@@ -245,7 +243,7 @@ export function TournamentAutomationSettings({
                         // Rollback on failure
                         setStandingsEnabled(true);
                         setStandingsChannel(prevChannel);
-                        toast.error(result.error);
+                        toast.error(result.error ?? "An error occurred");
                       } else {
                         setStandingsMappingId(null);
                       }
@@ -309,7 +307,7 @@ export function TournamentAutomationSettings({
                     });
                     if (!settingsResult.success) {
                       setRegistrationReminderEnabled(true);
-                      toast.error(settingsResult.error);
+                      toast.error(settingsResult.error ?? "An error occurred");
                       return;
                     }
                     if (registrationReminderMappingId) {
@@ -318,7 +316,7 @@ export function TournamentAutomationSettings({
                         // Rollback: re-enable since mapping still exists
                         setRegistrationReminderEnabled(true);
                         setRegistrationReminderChannel(prevChannel);
-                        toast.error(deleteResult.error);
+                        toast.error(deleteResult.error ?? "An error occurred");
                         return;
                       }
                       setRegistrationReminderMappingId(null);
@@ -395,7 +393,7 @@ export function TournamentAutomationSettings({
                         },
                       });
                       if (!result.success) {
-                        toast.error(result.error);
+                        toast.error(result.error ?? "An error occurred");
                       }
                     });
                   }}

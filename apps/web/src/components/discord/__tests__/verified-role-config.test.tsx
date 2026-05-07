@@ -147,7 +147,7 @@ describe("VerifiedRoleConfig", () => {
     expect(mockToast.error).toHaveBeenCalledWith("Role update failed");
   });
 
-  it("selecting 'None' sends roleId as null", async () => {
+  it("selecting 'None' disables the role and sends enabled: false", async () => {
     mockUpdateVerifiedRoleAction.mockResolvedValue({ success: true });
 
     render(
@@ -164,7 +164,7 @@ describe("VerifiedRoleConfig", () => {
     await user.click(screen.getByText("None"));
 
     expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
-      expect.objectContaining({ roleId: null })
+      expect.objectContaining({ roleId: null, enabled: false })
     );
   });
 });

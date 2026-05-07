@@ -94,11 +94,16 @@ export function DiscordClient({
   }, [overview]);
 
   // Determine if setup wizard should be shown
-  const settings = (overview?.server?.settings ?? {}) as Record<
-    string,
-    unknown
-  >;
-  const setupCompleted = settings.setup_completed === true;
+  const rawSettings = (overview?.server?.settings ?? {}) as Record<string, unknown>;
+  const settings = {
+    setup_completed: typeof rawSettings.setup_completed === "boolean" ? rawSettings.setup_completed : false,
+    embed_color: typeof rawSettings.embed_color === "string" ? rawSettings.embed_color : "#0D9488",
+    registration_reminder_minutes:
+      typeof rawSettings.registration_reminder_minutes === "number"
+        ? rawSettings.registration_reminder_minutes
+        : null,
+  };
+  const setupCompleted = settings.setup_completed;
   const showWizard = !!overview && !setupCompleted && !wizardDismissed;
 
   // Derive loading state — loading when we should fetch but haven't finished yet
@@ -172,7 +177,7 @@ export function DiscordClient({
   }
 
   const failureCount = overview.recentFailureCount;
-  const embedColor = (settings.embed_color as string) ?? "#0D9488";
+  const embedColor = settings.embed_color;
 
   // Derive automation settings from existing channel mappings
   const automationSettings = {
@@ -196,8 +201,7 @@ export function DiscordClient({
       overview.channelMappings.find(
         (m) => m.event_type === "registration_closing_soon"
       )?.id ?? null,
-    registrationReminderMinutes:
-      (settings.registration_reminder_minutes as number) ?? null,
+    registrationReminderMinutes: settings.registration_reminder_minutes,
     checkInReminderEnabled: overview.dmSettings.some(
       (s) => s.event_type === "check_in_reminder"
     ),
