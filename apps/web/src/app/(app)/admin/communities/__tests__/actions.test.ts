@@ -46,6 +46,8 @@ jest.mock("@trainers/supabase/queries", () => ({
   suspendOrganization: jest.fn(),
   unsuspendOrganization: jest.fn(),
   transferCommunityOwnership: jest.fn(),
+  getFeatureFlag: jest.fn(),
+  updateFeatureFlag: jest.fn(),
 }));
 
 // Import after mocks are declared
@@ -58,6 +60,7 @@ import {
   toggleFeaturedAction,
   togglePartnerAction,
   updateFeaturedOrderAction,
+  toggleDiscordAction,
 } from "../actions";
 import { requireAdminWithSudo } from "@/lib/auth/require-admin";
 import {
@@ -66,6 +69,8 @@ import {
   suspendOrganization,
   unsuspendOrganization,
   transferCommunityOwnership,
+  getFeatureFlag,
+  updateFeatureFlag,
 } from "@trainers/supabase/queries";
 
 // Cast to jest.Mock for type-safe mock API access
@@ -75,6 +80,8 @@ const mockRejectOrganization = rejectOrganization as jest.Mock;
 const mockSuspendOrganization = suspendOrganization as jest.Mock;
 const mockUnsuspendOrganization = unsuspendOrganization as jest.Mock;
 const mockTransferCommunityOwnership = transferCommunityOwnership as jest.Mock;
+const mockGetFeatureFlag = getFeatureFlag as jest.Mock;
+const mockUpdateFeatureFlag = updateFeatureFlag as jest.Mock;
 
 // --- Constants ---
 const ADMIN_USER_ID = "00000000-0000-0000-0000-000000000001";
@@ -673,6 +680,111 @@ describe("updateFeaturedOrderAction", () => {
     expect(result).toEqual({
       success: false,
       error: "Failed to update featured order: Constraint violation",
+    });
+  });
+});
+
+describe("toggleDiscordAction", () => {
+  const FLAG_ID = "flag-discord-123";
+  const baseFlagMetadata = { allowed_communities: [10, 20] };
+  const baseFlag = {
+    id: FLAG_ID,
+    metadata: baseFlagMetadata,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
+    mockGetFeatureFlag.mockResolvedValue(baseFlag);
+    mockUpdateFeatureFlag.mockResolvedValue(undefined);
+  });
+
+  it("returns an error when community ID is invalid", async () => {
+    const result = await toggleDiscordAction(-1, true);
+
+    expect(result).toEqual({
+      success: false,
+      error: expect.stringContaining("Invalid input"),
+    });
+    expect(mockGetFeatureFlag).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when auth check fails", async () => {
+    mockRequireAdminWithSudo.mockResolvedValue({
+      success: false,
+      error: "Not authenticated",
+    });
+
+    const result = await toggleDiscordAction(ORG_ID, true);
+
+    expect(result).toEqual({ success: false, error: "Not authenticated" });
+    expect(mockGetFeatureFlag).not.toHaveBeenCalled();
+  });
+
+  it("adds communityId to allowed_communities when enabling", async () => {
+    const result = await toggleDiscordAction(ORG_ID, true);
+
+    expect(result).toEqual({ success: true });
+    expect(mockUpdateFeatureFlag).toHaveBeenCalledWith(
+      mockServiceClient,
+      FLAG_ID,
+      {
+        metadata: {
+          allowed_communities: expect.arrayContaining([10, 20, ORG_ID]),
+        },
+      },
+      ADMIN_USER_ID
+    );
+  });
+
+  it("removes communityId from allowed_communities when disabling", async () => {
+    // Set up flag with ORG_ID already in the list
+    mockGetFeatureFlag.mockResolvedValue({
+      id: FLAG_ID,
+      metadata: { allowed_communities: [10, ORG_ID, 20] },
+    });
+
+    const result = await toggleDiscordAction(ORG_ID, false);
+
+    expect(result).toEqual({ success: true });
+    expect(mockUpdateFeatureFlag).toHaveBeenCalledWith(
+      mockServiceClient,
+      FLAG_ID,
+      {
+        metadata: {
+          allowed_communities: expect.not.arrayContaining([ORG_ID]),
+        },
+      },
+      ADMIN_USER_ID
+    );
+  });
+
+  it("invalidates community cache tags on success", async () => {
+    await toggleDiscordAction(ORG_ID, true);
+
+    expect(mockUpdateTag).toHaveBeenCalledWith("communities-list");
+    expect(mockUpdateTag).toHaveBeenCalledWith(`community:${ORG_ID}`);
+  });
+
+  it("returns an error when the feature flag is not found", async () => {
+    mockGetFeatureFlag.mockResolvedValue(null);
+
+    const result = await toggleDiscordAction(ORG_ID, true);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to toggle Discord integration: discord_integration feature flag not found",
+    });
+  });
+
+  it("returns an error when the flag update fails", async () => {
+    mockUpdateFeatureFlag.mockRejectedValue(new Error("DB failure"));
+
+    const result = await toggleDiscordAction(ORG_ID, true);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to toggle Discord integration: DB failure",
     });
   });
 });
