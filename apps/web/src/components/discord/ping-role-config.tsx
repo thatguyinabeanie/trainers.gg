@@ -40,7 +40,6 @@ interface GuildRole {
 interface PingRoleConfigProps {
   channelMappings: ChannelMapping[];
   guildRoles: GuildRole[];
-  serverId: number;
   communityId: number;
 }
 

@@ -88,6 +88,8 @@ export function DiscordClient({
     if (prevOverviewRef.current !== overview) {
       prevOverviewRef.current = overview;
       setStatsLoaded(false);
+      setStats(null);
+      setActivities([]);
     }
   }, [overview]);
 
@@ -311,7 +313,6 @@ export function DiscordClient({
                 name: r.name,
                 color: r.color,
               }))}
-              serverId={overview.server.id}
               communityId={community.id}
             />
           </div>

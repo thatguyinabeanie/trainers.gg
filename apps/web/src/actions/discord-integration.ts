@@ -105,7 +105,7 @@ const setDmPreferenceSchema = z.object({
 const sendTestNotificationSchema = z.object({
   serverId: z.number().int().positive(),
   channelId: z.string().min(1),
-  eventType: z.string().min(1),
+  eventType: z.enum(ALL_CHANNEL_EVENT_TYPES),
 });
 
 const updateServerSettingsSchema = z.object({

@@ -63,7 +63,16 @@ const mockToggleRoleMapping = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
   ALL_DM_EVENT_TYPES: [],
-  ALL_CHANNEL_EVENT_TYPES: [],
+  ALL_CHANNEL_EVENT_TYPES: [
+    "tournament_created",
+    "registration_opens",
+    "registration_closing_soon",
+    "tournament_ended",
+    "match_result_reported",
+    "round_posted",
+    "standings_posted",
+    "check_in_opened",
+  ],
   getDiscordServerByCommunityId: jest.fn(),
   getDiscordServerById: (...args: unknown[]) =>
     mockGetDiscordServerById(...args),

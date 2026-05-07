@@ -6,11 +6,12 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { sendTestNotificationAction } from "@/actions/discord-integration";
+import type { DiscordChannelEventType } from "@trainers/supabase";
 
 interface TestNotificationButtonProps {
   serverId: number;
   channelId: string;
-  eventType: string;
+  eventType: DiscordChannelEventType;
 }
 
 export function TestNotificationButton({

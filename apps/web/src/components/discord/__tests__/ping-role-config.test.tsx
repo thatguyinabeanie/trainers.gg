@@ -37,7 +37,6 @@ describe("PingRoleConfig", () => {
       { id: "role1", name: "Competitors", color: 0 },
       { id: "role2", name: "Admins", color: 0 },
     ],
-    serverId: 1,
     communityId: 1,
   };
 
