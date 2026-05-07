@@ -51,6 +51,13 @@ jest.mock("@/lib/cache-invalidation", () => ({
     mockInvalidateCommunityPageCaches(...args),
 }));
 
+// Mock feature-flag check — always enabled in tests
+const mockCheckCommunityFeatureAccess = jest.fn().mockResolvedValue(true);
+jest.mock("@/lib/feature-flags/check-flag", () => ({
+  checkCommunityFeatureAccess: (...args: unknown[]) =>
+    mockCheckCommunityFeatureAccess(...args),
+}));
+
 // Mock install-state signing. Preserve verifyInstallState shape to match the
 // global mock from test-setup — the override must provide the full module
 // surface so transitive imports don't see `undefined` for verifyInstallState.

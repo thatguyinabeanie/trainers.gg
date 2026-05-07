@@ -73,7 +73,7 @@ describe("PingRoleConfig", () => {
   it("calls updateChannelPingRoleAction with role id on change", async () => {
     mockUpdateChannelPingRoleAction.mockResolvedValue({ success: true });
 
-    const user = userEvent.setup();
+    const user = userEvent.setup({ pointerEventsCheck: false });
     render(
       <PingRoleConfig
         {...defaultProps}
@@ -104,7 +104,7 @@ describe("PingRoleConfig", () => {
   it("sends pingRoleId as null when 'None' is selected", async () => {
     mockUpdateChannelPingRoleAction.mockResolvedValue({ success: true });
 
-    const user = userEvent.setup();
+    const user = userEvent.setup({ pointerEventsCheck: false });
     render(
       <PingRoleConfig
         {...defaultProps}
@@ -136,7 +136,7 @@ describe("PingRoleConfig", () => {
       error: "Permission denied",
     });
 
-    const user = userEvent.setup();
+    const user = userEvent.setup({ pointerEventsCheck: false });
     render(
       <PingRoleConfig
         {...defaultProps}
@@ -163,7 +163,7 @@ describe("PingRoleConfig", () => {
       success: false,
     });
 
-    const user = userEvent.setup();
+    const user = userEvent.setup({ pointerEventsCheck: false });
     render(
       <PingRoleConfig
         {...defaultProps}

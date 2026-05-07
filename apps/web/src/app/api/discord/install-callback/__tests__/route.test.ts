@@ -37,6 +37,11 @@ jest.mock("@trainers/supabase", () => ({
   createDiscordServer: (...args: unknown[]) => mockCreateDiscordServer(...args),
 }));
 
+// Mock feature-flag check — always enabled in tests
+jest.mock("@/lib/feature-flags/check-flag", () => ({
+  checkCommunityFeatureAccess: jest.fn().mockResolvedValue(true),
+}));
+
 // =============================================================================
 // Helpers
 // =============================================================================

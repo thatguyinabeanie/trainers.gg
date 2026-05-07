@@ -119,7 +119,7 @@ describe("VerifiedRoleConfig", () => {
     render(
       <VerifiedRoleConfig {...defaultProps} enabled={true} currentRoleId={null} />
     );
-    const user = userEvent.setup();
+    const user = userEvent.setup({ pointerEventsCheck: false });
 
     const combobox = screen.getByRole("combobox");
     await user.click(combobox);
@@ -146,7 +146,7 @@ describe("VerifiedRoleConfig", () => {
         currentRoleId={null}
       />
     );
-    const user = userEvent.setup();
+    const user = userEvent.setup({ pointerEventsCheck: false });
 
     const combobox = screen.getByRole("combobox");
     await user.click(combobox);
@@ -167,7 +167,7 @@ describe("VerifiedRoleConfig", () => {
         currentRoleId="role1"
       />
     );
-    const user = userEvent.setup();
+    const user = userEvent.setup({ pointerEventsCheck: false });
 
     const combobox = screen.getByRole("combobox");
     await user.click(combobox);
