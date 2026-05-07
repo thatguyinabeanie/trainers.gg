@@ -138,7 +138,7 @@ describe("SpeciesExpandedPanel", () => {
   });
 
   it("highlights moves that match filteredMoves", () => {
-    const { container } = render(
+    render(
       <SpeciesExpandedPanel
         species="Charizard"
         formatId="gen9vgc2024regg"
