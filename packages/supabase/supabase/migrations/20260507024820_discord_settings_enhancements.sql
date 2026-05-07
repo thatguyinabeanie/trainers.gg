@@ -64,8 +64,8 @@ CREATE INDEX IF NOT EXISTS idx_discord_delivery_log_server_created
 CREATE INDEX IF NOT EXISTS idx_discord_delivery_log_community_created
   ON public.discord_delivery_log (community_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_discord_delivery_log_type
-  ON public.discord_delivery_log (type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_discord_delivery_log_server_type_created
+  ON public.discord_delivery_log (discord_server_id, type, created_at DESC);
 
 -- =============================================================================
 -- RLS for discord_delivery_log

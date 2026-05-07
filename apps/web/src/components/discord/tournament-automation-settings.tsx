@@ -77,7 +77,10 @@ export function TournamentAutomationSettings({
   );
 
   const [registrationReminderEnabled, setRegistrationReminderEnabled] =
-    useState(settings.registrationReminderMinutes !== null);
+    useState(
+      settings.registrationReminderMinutes !== null &&
+        !!settings.registrationReminderChannel
+    );
   const [registrationReminderMinutes, setRegistrationReminderMinutes] =
     useState(settings.registrationReminderMinutes ?? 60);
   const [registrationReminderChannel, setRegistrationReminderChannel] =
@@ -106,7 +109,10 @@ export function TournamentAutomationSettings({
       setRoundPostedChannel(settings.roundPostedChannel ?? "");
       setStandingsEnabled(!!settings.standingsChannel);
       setStandingsChannel(settings.standingsChannel ?? "");
-      setRegistrationReminderEnabled(settings.registrationReminderMinutes !== null);
+      setRegistrationReminderEnabled(
+        settings.registrationReminderMinutes !== null &&
+          !!settings.registrationReminderChannel
+      );
       setRegistrationReminderMinutes(settings.registrationReminderMinutes ?? 60);
       setRegistrationReminderChannel(settings.registrationReminderChannel ?? "");
       setCheckInReminderEnabled(settings.checkInReminderEnabled);
