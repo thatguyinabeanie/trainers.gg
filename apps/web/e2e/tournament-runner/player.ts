@@ -2,7 +2,8 @@
  * Player Actions — UI-driven via Playwright
  *
  * Each function operates on a player's isolated Page instance.
- * All actions wait for the relevant UI state before proceeding.
+ * All actions wait for deterministic UI state before proceeding —
+ * no networkidle or fixed sleeps.
  */
 
 import type { Page } from "@playwright/test";
@@ -39,9 +40,8 @@ export async function registerForTournament(
   tournamentSlug: string
 ): Promise<void> {
   await page.goto(`/tournaments/${tournamentSlug}`);
-  await page.waitForLoadState("networkidle");
 
-  // Click the Register button in the sidebar
+  // Wait for the Register button (deterministic — no networkidle)
   await page
     .getByRole("button", { name: "Register" })
     .click({ timeout: DEFAULT_TIMEOUT });
@@ -67,9 +67,8 @@ export async function submitTeam(
   teamPaste: string
 ): Promise<void> {
   await page.goto(`/tournaments/${tournamentSlug}`);
-  await page.waitForLoadState("networkidle");
 
-  // Click "Paste Team" to enter editing mode
+  // Wait for the Paste Team button (deterministic — no networkidle)
   await page
     .getByRole("button", { name: "Paste Team" })
     .click({ timeout: DEFAULT_TIMEOUT });
@@ -97,8 +96,8 @@ export async function checkInToTournament(
   tournamentSlug: string
 ): Promise<void> {
   await page.goto(`/tournaments/${tournamentSlug}`);
-  await page.waitForLoadState("networkidle");
 
+  // Wait for Check In button (deterministic — no networkidle)
   await page
     .getByRole("button", { name: "Check In" })
     .click({ timeout: DEFAULT_TIMEOUT });
@@ -118,20 +117,18 @@ export async function checkInToMatch(
   tournamentSlug: string
 ): Promise<void> {
   await page.goto(`/tournaments/${tournamentSlug}`);
-  await page.waitForLoadState("networkidle");
 
-  // Click the current match banner to navigate to match page
+  // Wait for match banner (deterministic — no networkidle)
   const matchLink = page.locator('a:has-text("Go to Match")');
   await matchLink.waitFor({ state: "visible", timeout: DEFAULT_TIMEOUT });
   await matchLink.click();
 
-  // Wait for match page to load
-  await page.waitForLoadState("networkidle");
-
-  // Click "Ready" to check in to the match
+  // Wait for match page by looking for the Ready button (deterministic)
   const readyBtn = page.getByRole("button", { name: "Ready" });
   // May already be checked in (e.g. auto check-in) — only click if visible
-  const isVisible = await readyBtn.isVisible().catch(() => false);
+  const isVisible = await readyBtn
+    .isVisible({ timeout: 5_000 })
+    .catch(() => false);
   if (isVisible) {
     await readyBtn.click();
   }
@@ -141,12 +138,17 @@ export async function checkInToMatch(
  * Report game results for a match.
  * Assumes player is on the match page and checked in.
  * Clicks "Won" or "Lost" for each game in sequence.
+ *
+ * Between games, waits for the clicked button to disappear (indicating
+ * the game result was processed and the next game's UI is loading) rather
+ * than using a fixed sleep.
  */
 export async function reportGames(
   page: Page,
   games: ("won" | "lost")[]
 ): Promise<void> {
-  for (const result of games) {
+  for (let i = 0; i < games.length; i++) {
+    const result = games[i]!;
     const btnName = result === "won" ? "Won" : "Lost";
 
     // Wait for the report button to be available (match must be active)
@@ -154,8 +156,11 @@ export async function reportGames(
     await btn.waitFor({ state: "visible", timeout: DEFAULT_TIMEOUT });
     await btn.click();
 
-    // Small delay between game reports to let realtime catch up
-    await page.waitForTimeout(500);
+    // After reporting, wait for the button to disappear (UI transitions to
+    // next game or match completion). Skip for the last game — no next state.
+    if (i < games.length - 1) {
+      await btn.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
+    }
   }
 }
 
@@ -169,23 +174,22 @@ export async function checkInAndReport(
   games: ("won" | "lost")[]
 ): Promise<void> {
   await page.goto(`/tournaments/${tournamentSlug}`);
-  await page.waitForLoadState("networkidle");
 
-  // Navigate to match via banner
+  // Wait for match banner (deterministic — no networkidle)
   const matchLink = page.locator('a:has-text("Go to Match")');
   await matchLink.waitFor({ state: "visible", timeout: DEFAULT_TIMEOUT });
   await matchLink.click();
-  await page.waitForLoadState("networkidle");
 
-  // Check in if needed
+  // Wait for match page by looking for Ready button or game report buttons
   const readyBtn = page.getByRole("button", { name: "Ready" });
   const readyVisible = await readyBtn
     .isVisible({ timeout: 5_000 })
     .catch(() => false);
   if (readyVisible) {
     await readyBtn.click();
-    // Wait for match to become active (both players checked in)
-    await page.waitForTimeout(2_000);
+    // Wait for match to become active — first game report button appears
+    const firstGameBtn = page.getByRole("button", { name: /Won|Lost/ }).first();
+    await firstGameBtn.waitFor({ state: "visible", timeout: DEFAULT_TIMEOUT });
   }
 
   // Report games
@@ -201,9 +205,8 @@ export async function dropFromTournament(
   tournamentSlug: string
 ): Promise<void> {
   await page.goto(`/tournaments/${tournamentSlug}`);
-  await page.waitForLoadState("networkidle");
 
-  // Look for drop/withdraw button
+  // Wait for drop button (deterministic — no networkidle)
   const dropBtn = page.getByRole("button", { name: /drop|withdraw/i });
   await dropBtn.waitFor({ state: "visible", timeout: DEFAULT_TIMEOUT });
   await dropBtn.click();

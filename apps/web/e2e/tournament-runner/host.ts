@@ -50,15 +50,11 @@ export async function createTournament(
   await page.goto(
     `/dashboard/community/${config.community}/tournaments/create`
   );
-  await page.waitForLoadState("networkidle");
 
   // -- Step 1: Details (name, registration, schedule) --
   const nameInput = page.getByLabel("Tournament Name");
   await nameInput.waitFor({ state: "visible", timeout: DEFAULT_TIMEOUT });
   await nameInput.fill(config.name);
-
-  // The slug auto-generates from the name — wait for it
-  await page.waitForTimeout(500);
 
   // Set max participants if specified (player cap is on the Details step)
   if (config.maxParticipants) {
@@ -66,11 +62,9 @@ export async function createTournament(
     const capSwitch = page.locator("#playerCap");
     if (await capSwitch.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await capSwitch.click();
-      await page.waitForTimeout(300);
-    }
-    // Fill max participants
-    const maxInput = page.locator("#maxParticipants");
-    if (await maxInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      // Wait for the max participants input to appear after toggling
+      const maxInput = page.locator("#maxParticipants");
+      await maxInput.waitFor({ state: "visible", timeout: 3_000 });
       await maxInput.clear();
       await maxInput.fill(String(config.maxParticipants));
     }
@@ -83,8 +77,6 @@ export async function createTournament(
   }
 
   // -- Step 2: Structure (format preset, phase settings) --
-  await page.waitForTimeout(500);
-
   // Select format preset (labels: "Competitive Tournament" / "Practice Tournament")
   if (config.format === "swiss_only") {
     const practiceBtn = page.getByRole("button", {
@@ -92,7 +84,11 @@ export async function createTournament(
     });
     if (await practiceBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await practiceBtn.click();
-      await page.waitForTimeout(300);
+      // Wait for phases editor to reconfigure after preset change
+      await page.locator('input[id$="-rounds"]').first().waitFor({
+        state: "visible",
+        timeout: 5_000,
+      }).catch(() => {});
     }
   }
   // Default is swiss_with_cut → "Competitive Tournament" (already selected)
@@ -162,15 +158,15 @@ export async function openRegistration(
   await page.goto(
     `/dashboard/community/${communitySlug}/tournaments/${tournamentSlug}/manage`
   );
-  await page.waitForLoadState("networkidle");
 
-  // Look for publish/open registration button
+  // Wait for publish button (deterministic — no networkidle)
   const publishBtn = page.getByRole("button", {
     name: /publish|open registration/i,
   });
   if (await publishBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
     await publishBtn.click();
-    await page.waitForTimeout(1_000);
+    // Wait for the button to disappear or change (registration now open)
+    await publishBtn.waitFor({ state: "hidden", timeout: 5_000 }).catch(() => {});
   }
 }
 
@@ -358,8 +354,8 @@ export async function startRound(
   await page.goto(
     `/dashboard/community/${communitySlug}/tournaments/${tournamentSlug}/manage`
   );
-  await page.waitForLoadState("networkidle");
 
+  // Wait for the Start Round button (deterministic — no networkidle)
   // Dismiss cookie consent if present
   const cookieBtn = page.getByRole("button", { name: "Accept" });
   if (await cookieBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
@@ -449,16 +445,16 @@ export async function completeRound(
   await page.goto(
     `/dashboard/community/${communitySlug}/tournaments/${tournamentSlug}/manage`
   );
-  await page.waitForLoadState("networkidle");
 
   // Wait for "Complete Round" to be enabled (all matches done)
+  // No networkidle — the button visibility is the deterministic signal
   const completeBtn = page.getByRole("button", { name: "Complete Round" });
   await completeBtn.waitFor({ state: "visible", timeout: timeoutMs });
   await expect(completeBtn).toBeEnabled({ timeout: timeoutMs });
   await completeBtn.click({ timeout: DEFAULT_TIMEOUT });
 
-  // Wait for round completion confirmation
-  await page.waitForTimeout(3_000);
+  // Wait for the button to disappear (round completed, UI updates)
+  await completeBtn.waitFor({ state: "hidden", timeout: DEFAULT_TIMEOUT }).catch(() => {});
 }
 
 /**
@@ -470,13 +466,16 @@ export async function readStandings(
   tournamentSlug: string
 ): Promise<string[]> {
   await page.goto(`/tournaments/${tournamentSlug}`);
-  await page.waitForLoadState("networkidle");
 
-  // Navigate to standings tab if needed
+  // Navigate to standings tab if needed (deterministic — no networkidle)
   const standingsTab = page.getByRole("tab", { name: /standings/i });
-  if (await standingsTab.isVisible().catch(() => false)) {
+  if (await standingsTab.isVisible({ timeout: DEFAULT_TIMEOUT }).catch(() => false)) {
     await standingsTab.click();
-    await page.waitForTimeout(1_000);
+    // Wait for standings content to render (table rows appear)
+    await page.locator("table tbody tr").first().waitFor({
+      state: "visible",
+      timeout: DEFAULT_TIMEOUT,
+    }).catch(() => {});
   }
 
   // Extract standings from the page
