@@ -67,9 +67,11 @@ jest.mock("@/lib/utils", () => ({
 // --- lucide-react ---
 jest.mock("lucide-react", () => ({
   Loader2: () => <svg data-testid="icon-loader" />,
-  Hammer: () => <svg data-testid="icon-hammer" />,
-  ArrowUpRight: () => <svg data-testid="icon-arrow-up" />,
-  Copy: () => <svg data-testid="icon-copy" />,
+  ExternalLink: () => <svg data-testid="icon-external-link" />,
+  Trophy: () => <svg data-testid="icon-trophy" />,
+  Swords: () => <svg data-testid="icon-swords" />,
+  ChevronRight: () => <svg data-testid="icon-chevron-right" />,
+  History: () => <svg data-testid="icon-history" />,
 }));
 
 // --- @/components/ui/button ---
@@ -93,23 +95,6 @@ jest.mock("@/components/ui/button", () => ({
     }
     return <button {...props}>{children}</button>;
   },
-}));
-
-// --- @/components/ui/tooltip ---
-jest.mock("@/components/ui/tooltip", () => ({
-  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  TooltipTrigger: ({
-    children,
-    render: _render,
-    ...props
-  }: {
-    children?: React.ReactNode;
-    render?: React.ReactElement;
-    [key: string]: unknown;
-  }) => <span {...props}>{children}</span>,
-  TooltipContent: ({ children }: { children: React.ReactNode }) => (
-    <span>{children}</span>
-  ),
 }));
 
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -180,7 +165,7 @@ describe("TeamsSubTable", () => {
     setupQueryMocks({ data: [], isLoading: false });
   });
 
-  // ── Loading state ──────────────────────────────────────────────────────
+  // -- Loading state --
 
   it("renders loading spinner when teams are loading", () => {
     setupQueryMocks({ data: null, isLoading: true });
@@ -190,7 +175,7 @@ describe("TeamsSubTable", () => {
     expect(loaders.length).toBeGreaterThanOrEqual(1);
   });
 
-  // ── Empty state ────────────────────────────────────────────────────────
+  // -- Empty state --
 
   it("renders 'No teams yet' when there are no teams", () => {
     setupQueryMocks({ data: [], isLoading: false });
@@ -207,7 +192,7 @@ describe("TeamsSubTable", () => {
     expect(screen.getByText("No results yet")).toBeInTheDocument();
   });
 
-  // ── Teams display ──────────────────────────────────────────────────────
+  // -- Teams display --
 
   it("renders team names and pokemon sprites", () => {
     const teams: Team[] = [
@@ -226,7 +211,7 @@ describe("TeamsSubTable", () => {
     expect(images.length).toBe(4);
   });
 
-  // ── Recent results display ─────────────────────────────────────────────
+  // -- Recent results display --
 
   it("renders tournament results with placement", () => {
     const results: TournamentResult[] = [
@@ -255,57 +240,57 @@ describe("TeamsSubTable", () => {
 
     expect(screen.getByText("Pallet Open")).toBeInTheDocument();
     expect(screen.getByText("Viridian Cup")).toBeInTheDocument();
-    // First place gets trophy emoji
-    expect(screen.getByText(/^#1/)).toBeInTheDocument();
+    // First place shows trophy icon instead of #1 text
+    expect(screen.getByTestId("icon-trophy")).toBeInTheDocument();
     expect(screen.getByText("#4")).toBeInTheDocument();
   });
 
-  // ── Footer buttons ─────────────────────────────────────────────────────
+  // -- Footer buttons --
 
-  it("renders 'View as this alt' and 'View history' links", () => {
+  it("renders 'View alt' and 'History' links", () => {
     setupQueryMocks({ data: [], isLoading: false });
     render(<TeamsSubTable {...getDefaultProps()} />);
 
-    const viewAltLink = screen.getByText("View as this alt");
+    const viewAltLink = screen.getByText("View alt");
     expect(viewAltLink.closest("a")).toHaveAttribute(
       "href",
       "/dashboard/alts/ash_main"
     );
 
-    const viewHistoryLink = screen.getByText("View history");
-    expect(viewHistoryLink.closest("a")).toHaveAttribute(
+    const historyLink = screen.getByText("History");
+    expect(historyLink.closest("a")).toHaveAttribute(
       "href",
       "/dashboard/alts/ash_main/tournaments"
     );
   });
 
-  it("renders Delete alt button for non-main alts", () => {
+  it("renders Delete button for non-main alts", () => {
     setupQueryMocks({ data: [], isLoading: false });
     render(<TeamsSubTable {...getDefaultProps({ isMain: false })} />);
     expect(
-      screen.getByRole("button", { name: /Delete alt/ })
+      screen.getByRole("button", { name: /Delete/ })
     ).toBeInTheDocument();
   });
 
-  it("does not render Delete alt button for main alt", () => {
+  it("does not render Delete button for main alt", () => {
     render(<TeamsSubTable {...getDefaultProps({ isMain: true })} />);
-    expect(screen.queryByText("Delete alt")).not.toBeInTheDocument();
+    expect(screen.queryByText("Delete")).not.toBeInTheDocument();
   });
 
   it("calls onDeleteAlt when delete button is clicked", () => {
     const props = getDefaultProps();
     render(<TeamsSubTable {...props} />);
-    fireEvent.click(screen.getByText("Delete alt"));
+    fireEvent.click(screen.getByText("Delete"));
     expect(props.onDeleteAlt).toHaveBeenCalled();
   });
 
   it("disables delete button when isDeletePending is true", () => {
     render(<TeamsSubTable {...getDefaultProps({ isDeletePending: true })} />);
-    const deleteBtn = screen.getByText("Delete alt");
+    const deleteBtn = screen.getByText("Delete");
     expect(deleteBtn).toBeDisabled();
   });
 
-  // ── Section headings ──────────────────────────────────────────────────
+  // -- Section headings --
 
   it("renders Teams and Recent Results section headings", () => {
     setupQueryMocks({ data: [], isLoading: false });

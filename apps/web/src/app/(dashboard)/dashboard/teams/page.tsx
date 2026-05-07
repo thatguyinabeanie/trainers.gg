@@ -9,6 +9,7 @@ import {
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { AllTeamsClient } from "@/components/team-builder/all-teams-client";
 
 // ---------------------------------------------------------------------------
@@ -50,11 +51,13 @@ export default async function AllTeamsPage() {
   return (
     <>
       <PageHeader title="Team Builder" />
-      <AllTeamsClient
-        initialTeams={teams}
-        alts={alts}
-        activeFormats={activeFormats}
-      />
+      <DashboardContent>
+        <AllTeamsClient
+          initialTeams={teams}
+          alts={alts}
+          activeFormats={activeFormats}
+        />
+      </DashboardContent>
     </>
   );
 }

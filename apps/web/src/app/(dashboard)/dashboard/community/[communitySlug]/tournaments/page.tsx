@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { TournamentsListClient } from "./tournaments-list-client";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
 interface PageProps {
   params: Promise<{
@@ -41,13 +42,13 @@ export default async function DashboardTournamentsPage({
           </Button>
         </Link>
       </PageHeader>
-      <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
+      <DashboardContent>
         <TournamentsListClient
           communityId={organization.id}
           communitySlug={communitySlug}
           initialStatus={status}
         />
-      </div>
+      </DashboardContent>
     </>
   );
 }

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUserSpritePreference } from "@trainers/supabase";
 import { DisplayPreferencesForm } from "@/components/settings/display-preferences-form";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
 export default async function DisplaySettingsPage() {
   const supabase = await createClient();
@@ -8,5 +9,9 @@ export default async function DisplaySettingsPage() {
   // Fetch current sprite preference from database
   const spritePreference = await getUserSpritePreference(supabase);
 
-  return <DisplayPreferencesForm initialPreference={spritePreference} />;
+  return (
+    <DashboardContent>
+      <DisplayPreferencesForm initialPreference={spritePreference} />
+    </DashboardContent>
+  );
 }

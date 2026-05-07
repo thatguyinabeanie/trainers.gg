@@ -11,6 +11,7 @@ export {
   getPlayerName,
   formatDate,
   formatDateTime,
+  formatShortDate,
   formatTimeAgo,
   isTempUsername,
   formatDisplayUsername,

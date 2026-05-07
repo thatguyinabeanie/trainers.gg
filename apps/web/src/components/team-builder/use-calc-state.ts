@@ -149,6 +149,28 @@ function getGen(format: GameFormat | undefined) {
   return getCachedGen(safeGen);
 }
 
+/**
+ * Check whether @smogon/calc's gen data can resolve a species name.
+ * `getBaseStats` (from @pkmn/dex) may know about species that @smogon/calc's
+ * internal Generations data doesn't — particularly for gen 0 (Champions) or
+ * species with `exists: false` in certain gens.  This guard prevents the
+ * Pokemon constructor from constructing with `undefined` baseStats.
+ */
+function calcGenKnowsSpecies(
+  gen: ReturnType<typeof Generations.get>,
+  species: string
+): boolean {
+  try {
+    // The gen species lookup expects a branded ID type; cast to satisfy TS
+    // while using the same toID normalization the Pokemon constructor applies.
+    const id = species.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const entry = gen.species.get(id as Parameters<typeof gen.species.get>[0]);
+    return entry?.baseStats != null;
+  } catch {
+    return false;
+  }
+}
+
 /** Status display label → Smogon status code mapping. */
 export const STATUS_MAP = {
   Healthy: "",
@@ -428,6 +450,9 @@ function buildAttackerFromDb(
     // Verify the effective species (which may differ from db.species after mega
     // resolution) also has known base stats before constructing.
     if (!getBaseStats(effectiveSpecies)) return null;
+    // Also verify the species exists in @smogon/calc's gen data — @pkmn/dex
+    // and @smogon/calc have different species coverage per gen.
+    if (!calcGenKnowsSpecies(gen, effectiveSpecies)) return null;
     const calcAbility =
       canMega && megaActive && megaSpecies
         ? (getMegaAbilityForSpecies(megaSpecies) ?? db.ability ?? null)
@@ -490,6 +515,10 @@ function buildDefenderPokemon(
       canMega && megaActive && megaSpecies
         ? (getMegaAbilityForSpecies(megaSpecies) ?? ability)
         : ability;
+    // Bail if the species has no base stats in @pkmn/dex.
+    if (!getBaseStats(effectiveSpecies)) return null;
+    // Bail if the species is unknown to @smogon/calc's gen data.
+    if (!calcGenKnowsSpecies(gen, effectiveSpecies)) return null;
     // Build without curHP first so we can call maxHP() to compute the real value.
     const mon = new Pokemon(gen, effectiveSpecies, {
       level: 50,

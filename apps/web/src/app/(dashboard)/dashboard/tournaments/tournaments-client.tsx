@@ -227,7 +227,7 @@ function FilterChips({
             className={cn(
               "cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
               active === chip
-                ? "border-foreground bg-foreground text-background"
+                ? "border-primary bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:border-border border-border bg-background hover:text-foreground"
             )}
           >
@@ -235,7 +235,7 @@ function FilterChips({
             <span
               className={cn(
                 "ml-1 text-[10px]",
-                active === chip ? "text-background/70" : "text-muted-foreground"
+                active === chip ? "text-primary-foreground/70" : "text-muted-foreground"
               )}
             >
               {counts[chip]}

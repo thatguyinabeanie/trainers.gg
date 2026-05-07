@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -543,42 +544,44 @@ function StaffMobileRow({
             <MoreHorizontal className="size-5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel>Move to</DropdownMenuLabel>
-            {groups.map((group) => {
-              const targetRole = group.role?.name ?? null;
-              const canMoveHere = canManageGroup(
-                currentUserRole,
-                isOwner,
-                targetRole
-              );
-              const isCurrent = currentGroupId === group.id;
-              return (
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Move to</DropdownMenuLabel>
+              {groups.map((group) => {
+                const targetRole = group.role?.name ?? null;
+                const canMoveHere = canManageGroup(
+                  currentUserRole,
+                  isOwner,
+                  targetRole
+                );
+                const isCurrent = currentGroupId === group.id;
+                return (
+                  <DropdownMenuItem
+                    key={group.id}
+                    disabled={!canMoveHere || isCurrent}
+                    onClick={() => {
+                      if (!canMoveHere || isCurrent) return;
+                      void onMoveTo(member, { type: "group", group });
+                    }}
+                  >
+                    {group.name}
+                    {isCurrent && (
+                      <span className="text-muted-foreground ml-auto text-xs">
+                        Current
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                );
+              })}
+              {currentGroupId !== null && canManageMember && (
                 <DropdownMenuItem
-                  key={group.id}
-                  disabled={!canMoveHere || isCurrent}
                   onClick={() => {
-                    if (!canMoveHere || isCurrent) return;
-                    void onMoveTo(member, { type: "group", group });
+                    void onMoveTo(member, { type: "unassigned" });
                   }}
                 >
-                  {group.name}
-                  {isCurrent && (
-                    <span className="text-muted-foreground ml-auto text-xs">
-                      Current
-                    </span>
-                  )}
+                  Unassign
                 </DropdownMenuItem>
-              );
-            })}
-            {currentGroupId !== null && canManageMember && (
-              <DropdownMenuItem
-                onClick={() => {
-                  void onMoveTo(member, { type: "unassigned" });
-                }}
-              >
-                Unassign
-              </DropdownMenuItem>
-            )}
+              )}
+            </DropdownMenuGroup>
             {isOwner && (
               <>
                 <DropdownMenuSeparator />

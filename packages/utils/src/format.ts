@@ -18,6 +18,14 @@ export function formatDate(dateStr: string): string {
   });
 }
 
+/** Format a date string as "Mar 1" (without year). */
+export function formatShortDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 /** Format a date string as "Mar 1, 2026, 3:45 PM". */
 export function formatDateTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", {

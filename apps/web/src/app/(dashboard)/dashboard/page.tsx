@@ -7,6 +7,8 @@ import {
   getAltsBulkStats,
   getPlayerRatingsBulk,
   getActiveMatch,
+  getMyDashboardData,
+  listMyCommunities,
   type AltStats,
   type PlayerRating,
 } from "@trainers/supabase";
@@ -19,10 +21,14 @@ import {
 import { CacheTags } from "@/lib/cache";
 import { DASHBOARD_ALT_COOKIE } from "@/components/dashboard/sidebar-helpers";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
 import { HomeClient } from "./home-client";
 import { LiveMatchBar, type ActiveMatch } from "./components/live-match-bar";
-import { DashboardStats } from "./components/dashboard-stats";
+import { EnhancedStats } from "./components/enhanced-stats";
+import { WelcomeHeader } from "./components/welcome-header";
+import { DashboardActivity } from "./components/dashboard-activity";
+import { CommunityHighlights } from "./components/community-highlights";
 import { computeStats } from "./compute-stats";
 
 // On-demand revalidation only — no time-based revalidation
@@ -32,10 +38,6 @@ export const revalidate = false;
 // Cached Fetchers (public data — anonymous client, no cookies)
 // =============================================================================
 
-/**
- * Fetch bulk match stats for a list of alt IDs.
- * Cache key includes sorted alt IDs for stable deduplication.
- */
 function getCachedBulkStats(altIds: number[]) {
   return unstable_cache(
     async () => {
@@ -47,10 +49,6 @@ function getCachedBulkStats(altIds: number[]) {
   )();
 }
 
-/**
- * Fetch bulk ratings for a list of alt IDs.
- * Cache key includes sorted alt IDs for stable deduplication.
- */
 function getCachedBulkRatings(altIds: number[]) {
   return unstable_cache(
     async () => {
@@ -67,13 +65,13 @@ function getCachedBulkRatings(altIds: number[]) {
 // =============================================================================
 
 export default async function DashboardHomePage() {
-  // Auth check — layout already redirects, but guard just in case
+  // Auth check
   const user = await getUser();
   if (!user) {
     redirect("/sign-in?redirect=/dashboard");
   }
 
-  // Read selected alt cookie (decode to match encodeURIComponent in writers)
+  // Read selected alt cookie
   const cookieStore = await cookies();
   const rawCookieValue = cookieStore.get(DASHBOARD_ALT_COOKIE)?.value ?? null;
   let selectedAltUsername: string | null = null;
@@ -81,7 +79,6 @@ export default async function DashboardHomePage() {
     try {
       selectedAltUsername = decodeURIComponent(rawCookieValue);
     } catch {
-      // Malformed encoding — treat as no selection
       selectedAltUsername = null;
     }
   }
@@ -96,7 +93,15 @@ export default async function DashboardHomePage() {
     alts = [];
   }
 
-  // Fetch main_alt_id from users table (auth-required — not cached)
+  // Fetch user's communities (auth-required — not cached)
+  let myCommunities: Awaited<ReturnType<typeof listMyCommunities>> = [];
+  try {
+    myCommunities = await listMyCommunities(supabase, user.id);
+  } catch (err) {
+    console.error("[DashboardHomePage] Failed to load communities:", err);
+  }
+
+  // Fetch main_alt_id from users table
   const { data: userRow, error: userRowError } = await supabase
     .from("users")
     .select("main_alt_id")
@@ -114,22 +119,25 @@ export default async function DashboardHomePage() {
   // Extract alt IDs for bulk queries
   const altIds = alts.map((a) => a.id);
 
-  // Parallel fetch: cached bulk stats/ratings + uncached active match (all public data)
+  // Parallel fetch: cached bulk stats/ratings + uncached active match + dashboard data
   let bulkStats: Record<number, AltStats> | undefined;
   let bulkRatings: Record<number, PlayerRating> | undefined;
   let activeMatch: ActiveMatch | null = null;
+  let dashboardData: Awaited<ReturnType<typeof getMyDashboardData>> | null =
+    null;
 
   if (altIds.length > 0) {
-    const [statsResult, ratingsResult, matchResult] = await Promise.allSettled([
-      getCachedBulkStats(altIds),
-      getCachedBulkRatings(altIds),
-      mainAltId
-        ? (() => {
-            const staticClient = createStaticClient();
-            return getActiveMatch(staticClient, mainAltId);
-          })()
-        : Promise.resolve(null),
-    ]);
+    const [statsResult, ratingsResult, matchResult, dashboardResult] =
+      await Promise.allSettled([
+        getCachedBulkStats(altIds),
+        getCachedBulkRatings(altIds),
+        mainAltId
+          ? getActiveMatch(supabase, mainAltId)
+          : Promise.resolve(null),
+        mainAltId
+          ? getMyDashboardData(supabase, mainAltId)
+          : Promise.resolve(null),
+      ]);
 
     bulkStats =
       statsResult.status === "fulfilled" ? statsResult.value : undefined;
@@ -156,9 +164,18 @@ export default async function DashboardHomePage() {
         matchResult.reason
       );
     }
+
+    dashboardData =
+      dashboardResult.status === "fulfilled" ? dashboardResult.value : null;
+    if (dashboardResult.status === "rejected") {
+      console.error(
+        "[DashboardHomePage] Failed to load dashboard data:",
+        dashboardResult.reason
+      );
+    }
   }
 
-  // Compute stats for server-rendered DashboardStats
+  // Compute stats for server-rendered stat cards
   const altCount = alts.length;
   const stats =
     altCount > 0
@@ -175,19 +192,75 @@ export default async function DashboardHomePage() {
           tournamentsSubAccent: false,
         };
 
-  // Extract username for welcome toast detection in client component
+  // Prepare tournament data for UpcomingTournaments component
+  const myTournaments = (dashboardData?.myTournaments ?? [])
+    .filter((t) => t.status === "upcoming" || t.status === "active")
+    .map((t) => ({
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+      startDate: t.startDate ? new Date(t.startDate).getTime() : null,
+      status: t.status,
+      hasTeam: t.hasTeam,
+      registrationStatus: t.registrationStatus ?? null,
+      registrationId: t.registrationId ?? null,
+      lateCheckInMaxRound: t.lateCheckInMaxRound ?? null,
+    }));
+
+  // Prepare activity data
+  const recentActivity = dashboardData?.recentActivity ?? [];
+
+  // Username for welcome header
   const username = (user.user_metadata?.username as string) ?? "";
+
+  // Prepare community highlights data
+  const communityIds = myCommunities.map((c) => c.id);
+  let liveTournamentCommunityIds = new Set<number>();
+
+  if (communityIds.length > 0) {
+    try {
+      const { data: liveTournaments } = await supabase
+        .from("tournaments")
+        .select("community_id")
+        .in("community_id", communityIds)
+        .eq("status", "active");
+
+      liveTournamentCommunityIds = new Set(
+        (liveTournaments ?? []).map((t) => t.community_id).filter(Boolean)
+      );
+    } catch (err) {
+      console.error(
+        "[DashboardHomePage] Failed to check live tournaments:",
+        err
+      );
+    }
+  }
+
+  const communityHighlights = myCommunities.map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    logoUrl: c.logo_url,
+    hasLiveTournament: liveTournamentCommunityIds.has(c.id),
+  }));
 
   return (
     <>
       <PageHeader title="Dashboard" />
-      <div className="flex flex-1 flex-col gap-4 p-4">
+      <DashboardContent>
         <div className="space-y-6">
+          {/* Welcome header with greeting + quick actions */}
+          <WelcomeHeader
+            username={username}
+            hasAlts={alts.length > 0}
+            hasTeamBuilderAccess
+          />
+
           {/* Live match bar — server-rendered */}
           {activeMatch && <LiveMatchBar match={activeMatch} />}
 
-          {/* Stats row — server-rendered */}
-          <DashboardStats
+          {/* Stats row — server-rendered with icons and contextual color */}
+          <EnhancedStats
             winRate={stats.winRate}
             winRateSub={stats.winRateSub}
             rating={stats.rating}
@@ -199,7 +272,16 @@ export default async function DashboardHomePage() {
             tournamentsSubAccent={stats.tournamentsSubAccent}
           />
 
-          {/* Client component — handles interactivity only */}
+          {/* Tournaments + Activity — two-column on desktop */}
+          <DashboardActivity
+            myTournaments={myTournaments}
+            recentActivity={recentActivity}
+          />
+
+          {/* Community highlights — shows user's communities with live indicators */}
+          <CommunityHighlights communities={communityHighlights} />
+
+          {/* Alt management — kept prominent */}
           <HomeClient
             alts={alts.map((a) => ({
               id: a.id,
@@ -214,7 +296,7 @@ export default async function DashboardHomePage() {
             username={username}
           />
         </div>
-      </div>
+      </DashboardContent>
     </>
   );
 }

@@ -78,7 +78,7 @@ test.describe("Community dashboard", () => {
         page.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
-      await expect(page.getByText("📅 Upcoming Tournaments")).toBeVisible({
+      await expect(page.getByText("Upcoming Tournaments")).toBeVisible({
         timeout: 10000,
       });
     });

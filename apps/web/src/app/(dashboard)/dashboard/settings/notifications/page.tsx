@@ -11,6 +11,7 @@ import {
 import { createClient, getUser } from "@/lib/supabase/server";
 import { DiscordDmPreferencesSection } from "@/components/settings/discord-dm-preferences-section";
 import { NotificationPreferencesForm } from "./notification-preferences-form";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
 /**
  * Check if a user has any staff roles by looking at organization_staff membership.
@@ -89,7 +90,8 @@ export default async function NotificationSettingsPage() {
   ) as Record<DiscordDmEventType, boolean>;
 
   return (
-    <div className="space-y-10">
+    <DashboardContent>
+      <div className="space-y-10">
       <NotificationPreferencesForm
         initialPreferences={preferences}
         isStaff={isStaff}
@@ -102,6 +104,7 @@ export default async function NotificationSettingsPage() {
           discordDmWarnUntil={userRow?.discord_dm_warn_until ?? null}
         />
       </div>
-    </div>
+      </div>
+    </DashboardContent>
   );
 }

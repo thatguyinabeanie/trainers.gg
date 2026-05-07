@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { PageHeader } from "@/components/dashboard/page-header";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { TournamentSettingsPageClient } from "./tournament-settings-page-client";
 
 interface PageProps {
@@ -25,12 +26,12 @@ export default async function TournamentSettingsPage({ params }: PageProps) {
           Manage
         </Link>
       </PageHeader>
-      <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
+      <DashboardContent>
         <TournamentSettingsPageClient
           communitySlug={communitySlug}
           tournamentSlug={tournamentSlug}
         />
-      </div>
+      </DashboardContent>
     </>
   );
 }

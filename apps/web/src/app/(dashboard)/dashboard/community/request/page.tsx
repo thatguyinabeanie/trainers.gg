@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { PlatformIcon } from "@/components/communities/social-link-icons";
 import { submitCommunityRequestAction } from "@/actions/community-requests";
 import { cn } from "@/lib/utils";
@@ -120,7 +121,7 @@ export default function DashboardCommunityRequestPage() {
   return (
     <>
       <PageHeader title="Request a Community" />
-      <div className="flex flex-1 flex-col p-4 md:p-6">
+      <DashboardContent>
         <div className="w-full max-w-[520px]">
           {isLoading ? (
             <RequestPageSkeleton />
@@ -134,7 +135,7 @@ export default function DashboardCommunityRequestPage() {
             />
           )}
         </div>
-      </div>
+      </DashboardContent>
     </>
   );
 }
