@@ -44,6 +44,7 @@ interface TournamentAutomationSettingsProps {
     standingsChannel: string | null;
     standingsMappingId: number | null;
     registrationReminderChannel: string | null;
+    registrationReminderMappingId: number | null;
     registrationReminderMinutes: number | null;
     checkInReminderEnabled: boolean;
   };
@@ -94,7 +95,7 @@ export function TournamentAutomationSettings({
     settings.standingsMappingId
   );
   const [registrationReminderMappingId, setRegistrationReminderMappingId] =
-    useState<number | null>(null);
+    useState<number | null>(settings.registrationReminderMappingId);
 
   // Only show text channels (type === 0)
   const textChannels = guildChannels.filter((c) => c.type === 0);

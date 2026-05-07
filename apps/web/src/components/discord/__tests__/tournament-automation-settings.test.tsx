@@ -45,6 +45,7 @@ describe("TournamentAutomationSettings", () => {
       standingsChannel: null,
       standingsMappingId: null,
       registrationReminderChannel: null,
+      registrationReminderMappingId: null,
       registrationReminderMinutes: null,
       checkInReminderEnabled: false,
     },
