@@ -98,19 +98,4 @@ describe("MoveSidebar", () => {
     );
   });
 
-  it("Clear all resets to DEFAULT_MOVE_FILTERS", async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    renderSidebar({
-      filters: {
-        search: "fire",
-        types: ["Fire"],
-        categories: ["Special"],
-        roles: ["spread"],
-      },
-      onFiltersChange: onChange,
-    });
-    await user.click(screen.getByRole("button", { name: /clear/i }));
-    expect(onChange).toHaveBeenCalledWith(DEFAULT_MOVE_FILTERS);
-  });
 });

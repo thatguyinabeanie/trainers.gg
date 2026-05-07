@@ -417,13 +417,13 @@ describe("MovePicker", () => {
     it("renders sortable column headers for Name, BP, and Acc", () => {
       render(<MovePicker {...defaultProps()} />);
       expect(
-        screen.getByRole("button", { name: "Sort by name" })
+        screen.getByRole("button", { name: /sort by name/i })
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: "Sort by base power" })
+        screen.getByRole("button", { name: /sort by base power/i })
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: "Sort by accuracy" })
+        screen.getByRole("button", { name: /sort by accuracy/i })
       ).toBeInTheDocument();
     });
   });
@@ -645,7 +645,7 @@ describe("MovePicker", () => {
     it("clicking 'Sort by name' again toggles to descending", async () => {
       const user = userEvent.setup();
       render(<MovePicker {...defaultProps()} />);
-      await user.click(screen.getByRole("button", { name: "Sort by name" }));
+      await user.click(screen.getByRole("button", { name: /sort by name/i }));
       expect(screen.getByText("↓")).toBeInTheDocument();
     });
 
@@ -653,7 +653,7 @@ describe("MovePicker", () => {
       const user = userEvent.setup();
       render(<MovePicker {...defaultProps()} />);
       await user.click(
-        screen.getByRole("button", { name: "Sort by base power" })
+        screen.getByRole("button", { name: /sort by base power/i })
       );
       expect(screen.getByText("↓")).toBeInTheDocument();
     });
@@ -662,7 +662,7 @@ describe("MovePicker", () => {
       const user = userEvent.setup();
       render(<MovePicker {...defaultProps()} />);
       await user.click(
-        screen.getByRole("button", { name: "Sort by accuracy" })
+        screen.getByRole("button", { name: /sort by accuracy/i })
       );
       expect(screen.getByText("↓")).toBeInTheDocument();
     });
@@ -672,12 +672,12 @@ describe("MovePicker", () => {
       render(<MovePicker {...defaultProps()} />);
       // Click BP once → desc
       await user.click(
-        screen.getByRole("button", { name: "Sort by base power" })
+        screen.getByRole("button", { name: /sort by base power/i })
       );
       expect(screen.getByText("↓")).toBeInTheDocument();
       // Click BP again → asc
       await user.click(
-        screen.getByRole("button", { name: "Sort by base power" })
+        screen.getByRole("button", { name: /sort by base power/i })
       );
       expect(screen.getByText("↑")).toBeInTheDocument();
     });

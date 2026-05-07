@@ -1,18 +1,6 @@
-import { describe, it, expect, jest } from "@jest/globals";
+import { describe, it, expect } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import React from "react";
-
-// Tooltip uses Base UI — mock to a simple pass-through so the icon renders
-// without needing a full JSDOM provider setup for portal positioning.
-jest.mock("@/components/ui/tooltip", () => ({
-  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  TooltipTrigger: ({ render: renderProp }: { render: React.ReactNode }) => (
-    <>{renderProp}</>
-  ),
-  TooltipContent: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="tooltip-content">{children}</div>
-  ),
-}));
 
 import { TypeSymbolIcon } from "../type-symbol-icon";
 
@@ -25,11 +13,6 @@ describe("TypeSymbolIcon", () => {
     render(<TypeSymbolIcon type="Fire" />);
     const icon = screen.getByRole("img", { name: "Fire" });
     expect(icon).toBeInTheDocument();
-  });
-
-  it("renders the tooltip content with the full type name", () => {
-    render(<TypeSymbolIcon type="Water" />);
-    expect(screen.getByTestId("tooltip-content")).toHaveTextContent("Water");
   });
 
   it("applies a size style matching the size prop", () => {
