@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useTransition, useState } from "react";
+import { useEffect, useId, useRef, useTransition, useState } from "react";
 import {
   Card,
   CardContent,
@@ -97,13 +97,33 @@ export function TournamentAutomationSettings({
   const [registrationReminderMappingId, setRegistrationReminderMappingId] =
     useState<number | null>(settings.registrationReminderMappingId);
 
+  // Sync local state when settings prop changes (e.g., after router.refresh())
+  const prevSettingsRef = useRef(settings);
+  useEffect(() => {
+    if (prevSettingsRef.current !== settings) {
+      prevSettingsRef.current = settings;
+      setRoundPostedEnabled(!!settings.roundPostedChannel);
+      setRoundPostedChannel(settings.roundPostedChannel ?? "");
+      setStandingsEnabled(!!settings.standingsChannel);
+      setStandingsChannel(settings.standingsChannel ?? "");
+      setRegistrationReminderEnabled(settings.registrationReminderMinutes !== null);
+      setRegistrationReminderMinutes(settings.registrationReminderMinutes ?? 60);
+      setRegistrationReminderChannel(settings.registrationReminderChannel ?? "");
+      setCheckInReminderEnabled(settings.checkInReminderEnabled);
+      setRoundPostedMappingId(settings.roundPostedMappingId);
+      setStandingsMappingId(settings.standingsMappingId);
+      setRegistrationReminderMappingId(settings.registrationReminderMappingId);
+    }
+  }, [settings]);
+
   // Only show text channels (type === 0)
   const textChannels = guildChannels.filter((c) => c.type === 0);
 
   function handleChannelMapping(
     channelId: string,
     eventType: Parameters<typeof upsertChannelMappingAction>[0]["eventType"],
-    onMappingId?: (id: number) => void
+    onMappingId?: (id: number) => void,
+    onRollback?: () => void
   ) {
     startTransition(async () => {
       const result = await upsertChannelMappingAction({
@@ -112,6 +132,7 @@ export function TournamentAutomationSettings({
         eventType,
       });
       if (!result.success) {
+        onRollback?.();
         toast.error(result.error ?? "An error occurred");
       } else {
         onMappingId?.(result.data.mappingId);
@@ -203,9 +224,11 @@ export function TournamentAutomationSettings({
                 value={roundPostedChannel}
                 onValueChange={(value) => {
                   if (!value) return;
+                  const prevChannel = roundPostedChannel;
                   setRoundPostedChannel(value);
                   handleChannelMapping(value, "round_posted", (id) =>
-                    setRoundPostedMappingId(id)
+                    setRoundPostedMappingId(id),
+                    () => setRoundPostedChannel(prevChannel)
                   );
                 }}
                 disabled={isPending}
@@ -266,9 +289,11 @@ export function TournamentAutomationSettings({
                 value={standingsChannel}
                 onValueChange={(value) => {
                   if (!value) return;
+                  const prevChannel = standingsChannel;
                   setStandingsChannel(value);
                   handleChannelMapping(value, "standings_posted", (id) =>
-                    setStandingsMappingId(id)
+                    setStandingsMappingId(id),
+                    () => setStandingsChannel(prevChannel)
                   );
                 }}
                 disabled={isPending}
@@ -319,9 +344,10 @@ export function TournamentAutomationSettings({
                     if (!settingsResult.success) {
                       // Mapping already deleted — surface error but don't re-enable
                       toast.error(settingsResult.error ?? "An error occurred");
+                    } else {
+                      toast.success("Registration reminder disabled");
                     }
                     setRegistrationReminderChannel("");
-                    toast.success("Registration reminder disabled");
                   });
                 } else {
                   setRegistrationReminderEnabled(true);
@@ -340,11 +366,13 @@ export function TournamentAutomationSettings({
                 value={registrationReminderChannel}
                 onValueChange={(value) => {
                   if (!value) return;
+                  const prevChannel = registrationReminderChannel;
                   setRegistrationReminderChannel(value);
                   handleChannelMapping(
                     value,
                     "registration_closing_soon",
-                    (id) => setRegistrationReminderMappingId(id)
+                    (id) => setRegistrationReminderMappingId(id),
+                    () => setRegistrationReminderChannel(prevChannel)
                   );
                 }}
                 disabled={isPending}

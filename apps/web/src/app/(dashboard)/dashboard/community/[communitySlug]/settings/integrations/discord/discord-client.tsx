@@ -91,6 +91,7 @@ export function DiscordClient({
       setStatsLoaded(false);
       setStats(null);
       setActivities([]);
+      setStatsError(null);
     }
   }, [overview]);
 

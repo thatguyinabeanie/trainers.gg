@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,6 +40,22 @@ export function VerifiedRoleConfig({
   const [enabled, setEnabled] = useState(initialEnabled);
   const [roleId, setRoleId] = useState(currentRoleId);
   const [isPending, startTransition] = useTransition();
+
+  const prevEnabledRef = useRef(initialEnabled);
+  useEffect(() => {
+    if (prevEnabledRef.current !== initialEnabled) {
+      prevEnabledRef.current = initialEnabled;
+      setEnabled(initialEnabled);
+    }
+  }, [initialEnabled]);
+
+  const prevRoleIdRef = useRef(currentRoleId);
+  useEffect(() => {
+    if (prevRoleIdRef.current !== currentRoleId) {
+      prevRoleIdRef.current = currentRoleId;
+      setRoleId(currentRoleId);
+    }
+  }, [currentRoleId]);
 
   function handleToggle(checked: boolean) {
     setEnabled(checked);
