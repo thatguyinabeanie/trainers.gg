@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Palette, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,11 +24,14 @@ export function EmbedColorPicker({
   communityId,
 }: EmbedColorPickerProps) {
   const [color, setColor] = useState(currentColor);
+  const [prevCurrentColor, setPrevCurrentColor] = useState(currentColor);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
+  // Sync local state when parent prop changes (React-sanctioned render-time adjustment)
+  if (prevCurrentColor !== currentColor) {
+    setPrevCurrentColor(currentColor);
     setColor(currentColor);
-  }, [currentColor]);
+  }
 
   const isValid = HEX_REGEX.test(color);
   const hasChanged = color !== currentColor;
