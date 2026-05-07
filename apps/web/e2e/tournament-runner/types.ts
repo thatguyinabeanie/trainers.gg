@@ -40,7 +40,8 @@ export interface TournamentConfig {
    * Match check-in window in minutes (per game).
    * Controls how long the system waits before auto-awarding a no-show.
    * Not exposed in the creation wizard — set via Supabase in activateTournament.
-   * Defaults to 1 minute (fast auto-awards for testing).
+   * When omitted, the DB default (5 minutes) applies.
+   * Set to 1 for faster no-show resolution in test scenarios.
    */
   checkInTimeMinutes?: number;
 }

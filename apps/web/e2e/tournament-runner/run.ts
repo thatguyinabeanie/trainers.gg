@@ -58,7 +58,7 @@ function parseArgs(): { scenario: string; options: RunnerOptions } {
         const raw = args[++i] ?? "0";
         const parsed = parseInt(raw, 10);
         if (!Number.isFinite(parsed) || parsed < 0) {
-          console.error(`Invalid --slow-mo value: "${raw}" (must be a positive integer)`);
+          console.error(`Invalid --slow-mo value: "${raw}" (must be a non-negative integer)`);
           process.exit(1);
         }
         slowMo = parsed;

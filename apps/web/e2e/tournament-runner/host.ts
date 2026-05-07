@@ -37,12 +37,10 @@ export async function loginAsHost(page: Page, host: TestUser): Promise<void> {
  * Create a tournament via the dashboard UI.
  * Returns the tournament slug for use in subsequent operations.
  *
- * Wires scenario config fields into the multi-step wizard:
- * - Step 1: Basic Info (name)
- * - Step 2: Format (preset, bestOf, plannedRounds, roundTimeMinutes per phase)
- * - Step 3: Registration (maxParticipants)
- * - Step 4: Schedule (skipped — defaults are fine)
- * - Step 5: Review → Create
+ * Matches the 3-step wizard flow:
+ * - Step 1 (Details): name, schedule, registration (maxParticipants)
+ * - Step 2 (Structure): format preset, bestOf, plannedRounds, roundTimeMinutes
+ * - Step 3 (Review): confirm and create
  */
 export async function createTournament(
   page: Page,
@@ -54,7 +52,7 @@ export async function createTournament(
   );
   await page.waitForLoadState("networkidle");
 
-  // -- Step 1: Basic Info --
+  // -- Step 1: Details (name, registration, schedule) --
   const nameInput = page.getByLabel("Tournament Name");
   await nameInput.waitFor({ state: "visible", timeout: DEFAULT_TIMEOUT });
   await nameInput.fill(config.name);
@@ -62,20 +60,42 @@ export async function createTournament(
   // The slug auto-generates from the name — wait for it
   await page.waitForTimeout(500);
 
-  // Select format preset
-  if (config.format === "swiss_only") {
-    await page.getByText("Swiss Only").click();
+  // Set max participants if specified (player cap is on the Details step)
+  if (config.maxParticipants) {
+    // Enable player cap switch
+    const capSwitch = page.locator("#playerCap");
+    if (await capSwitch.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await capSwitch.click();
+      await page.waitForTimeout(300);
+    }
+    // Fill max participants
+    const maxInput = page.locator("#maxParticipants");
+    if (await maxInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await maxInput.clear();
+      await maxInput.fill(String(config.maxParticipants));
+    }
   }
-  // Default is swiss_with_cut which should already be selected
 
-  // Click Next to go to Step 2: Format
+  // Click Next to go to Step 2: Structure
   const nextBtn = page.getByRole("button", { name: /next|continue/i });
   if (await nextBtn.isVisible().catch(() => false)) {
     await nextBtn.click();
   }
 
-  // -- Step 2: Format (phase settings) --
+  // -- Step 2: Structure (format preset, phase settings) --
   await page.waitForTimeout(500);
+
+  // Select format preset (labels: "Competitive Tournament" / "Practice Tournament")
+  if (config.format === "swiss_only") {
+    const practiceBtn = page.getByRole("button", {
+      name: /Practice Tournament/i,
+    });
+    if (await practiceBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await practiceBtn.click();
+      await page.waitForTimeout(300);
+    }
+  }
+  // Default is swiss_with_cut → "Competitive Tournament" (already selected)
 
   // Set best-of for the Swiss phase (ButtonGroup with buttons "1", "3", "5")
   if (config.bestOf !== 3) {
@@ -107,41 +127,12 @@ export async function createTournament(
     }
   }
 
-  // Click Next to go to Step 3: Registration
+  // Click Next to go to Step 3: Review
   if (await nextBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await nextBtn.click();
   }
 
-  // -- Step 3: Registration --
-  await page.waitForTimeout(500);
-
-  // Set max participants if specified
-  if (config.maxParticipants) {
-    // Enable player cap switch
-    const capSwitch = page.locator("#playerCap");
-    if (await capSwitch.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await capSwitch.click();
-      await page.waitForTimeout(300);
-    }
-    // Fill max participants
-    const maxInput = page.locator("#maxParticipants");
-    if (await maxInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await maxInput.clear();
-      await maxInput.fill(String(config.maxParticipants));
-    }
-  }
-
-  // Click Next to go to Step 4: Schedule
-  if (await nextBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-    await nextBtn.click();
-  }
-
-  // -- Step 4: Schedule (skip — use defaults) --
-  if (await nextBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-    await nextBtn.click();
-  }
-
-  // -- Step 5: Review → Create --
+  // -- Step 3: Review → Create --
   const createBtn = page.getByRole("button", { name: /create tournament/i });
   await createBtn.waitFor({ state: "visible", timeout: DEFAULT_TIMEOUT });
   await createBtn.click();
