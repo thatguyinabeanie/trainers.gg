@@ -36,6 +36,19 @@ export function resolveRoundActions(
     const p1Override = findOverride(overrides, pairing.player1);
     const p2Override = findOverride(overrides, pairing.player2);
 
+    // Fail-fast: detect contradictory overrides for the same pairing
+    if (
+      p1Override &&
+      p2Override &&
+      p1Override.outcome === p2Override.outcome &&
+      ["drop", "no-show", "win", "loss"].includes(p1Override.outcome)
+    ) {
+      throw new Error(
+        `Round ${round}: contradictory overrides for ${pairing.player1} vs ${pairing.player2} — ` +
+          `both have outcome "${p1Override.outcome}". Only one player per pairing can have a terminal override.`
+      );
+    }
+
     // Handle drops
     if (p1Override?.outcome === "drop") {
       actions.push({ player: pairing.player1, type: "drop" });

@@ -225,7 +225,7 @@ export async function dropFromTournament(
   await dropBtn.click();
 
   // Confirm the drop if there's a confirmation dialog
-  const confirmBtn = page.getByRole("button", { name: /confirm/i });
+  const confirmBtn = page.getByRole("button", { name: /confirm drop/i });
   const confirmVisible = await confirmBtn
     .isVisible({ timeout: 3_000 })
     .catch(() => false);
