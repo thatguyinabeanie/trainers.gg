@@ -115,7 +115,7 @@ describe("SetupWizard", () => {
   it("finishes setup successfully, calls onComplete and shows toast", async () => {
     mockUpsertChannelMappingAction.mockResolvedValue({
       success: true,
-      data: { id: 1 },
+      data: { mappingId: 1 },
     });
     mockUpdateServerSettingsAction.mockResolvedValue({
       success: true,
@@ -169,7 +169,7 @@ describe("SetupWizard", () => {
   it("shows error toast when updateServerSettings fails", async () => {
     mockUpsertChannelMappingAction.mockResolvedValue({
       success: true,
-      data: { id: 1 },
+      data: { mappingId: 1 },
     });
     mockUpdateServerSettingsAction.mockResolvedValue({
       success: false,

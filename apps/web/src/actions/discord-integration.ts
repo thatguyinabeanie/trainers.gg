@@ -114,7 +114,7 @@ const updateServerSettingsSchema = z.object({
   settings: z.object({
     embed_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
     setup_completed: z.boolean().optional(),
-    registration_reminder_minutes: z.number().int().positive().optional(),
+    registration_reminder_minutes: z.number().int().positive().nullable().optional(),
     link_prompt_frequency: z.string().optional(),
   }).strict(),
 });
@@ -233,11 +233,11 @@ const DISCORD_SETTINGS_PATH =
  * Discord server linked. Conflicts on (discord_server_id, channel_id, event_type)
  * are idempotent (Supabase upsert).
  *
- * @returns `{ id }` of the Discord server (not the channel mapping row, which is an upsert with no returned ID)
+ * @returns `{ mappingId }` of the upserted channel mapping row
  */
 export async function upsertChannelMappingAction(
   input: z.infer<typeof upsertChannelMappingSchema>
-): Promise<ActionResult<{ id: number }>> {
+): Promise<ActionResult<{ mappingId: number }>> {
   try {
     await rejectBots();
     const parsed = upsertChannelMappingSchema.parse(input);
@@ -246,15 +246,14 @@ export async function upsertChannelMappingAction(
     if ("error" in result) return result.error;
     const { server } = result;
 
-    await upsertChannelMapping(supabase, {
+    const { id: mappingId } = await upsertChannelMapping(supabase, {
       discord_server_id: server.id,
       event_type: parsed.eventType,
       channel_id: parsed.channelId,
     });
 
     revalidatePath(DISCORD_SETTINGS_PATH, "page");
-    // upsertChannelMapping returns void; callers only need success confirmation
-    return { success: true, data: { id: server.id } };
+    return { success: true, data: { mappingId } };
   } catch (error) {
     const forbidden = asForbidden(error);
     if (forbidden) return forbidden;

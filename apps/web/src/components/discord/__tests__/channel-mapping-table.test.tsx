@@ -94,7 +94,7 @@ beforeEach(() => {
   mockUseIsMobile.mockReturnValue(false);
   mockUpsertChannelMappingAction.mockResolvedValue({
     success: true,
-    data: { id: 1 },
+    data: { mappingId: 1 },
   });
   mockDeleteChannelMappingAction.mockResolvedValue({
     success: true,

@@ -47,7 +47,7 @@ describe("RecommendedDefaultsButton", () => {
   it("applies defaults successfully and calls onApplied", async () => {
     mockUpsertChannelMappingAction.mockResolvedValue({
       success: true,
-      data: { id: 1 },
+      data: { mappingId: 1 },
     });
     mockUpdateServerSettingsAction.mockResolvedValue({
       success: true,
@@ -113,7 +113,7 @@ describe("RecommendedDefaultsButton", () => {
 
   it("shows error toast when second mapping fails", async () => {
     mockUpsertChannelMappingAction
-      .mockResolvedValueOnce({ success: true, data: { id: 1 } })
+      .mockResolvedValueOnce({ success: true, data: { mappingId: 1 } })
       .mockResolvedValueOnce({ success: false, error: "Rate limited" });
 
     const user = userEvent.setup();
@@ -130,7 +130,7 @@ describe("RecommendedDefaultsButton", () => {
   it("shows error toast when updateServerSettings fails", async () => {
     mockUpsertChannelMappingAction.mockResolvedValue({
       success: true,
-      data: { id: 1 },
+      data: { mappingId: 1 },
     });
     mockUpdateServerSettingsAction.mockResolvedValue({
       success: false,
@@ -168,7 +168,7 @@ describe("RecommendedDefaultsButton", () => {
   it("filters to only text channels (type 0)", async () => {
     mockUpsertChannelMappingAction.mockResolvedValue({
       success: true,
-      data: { id: 1 },
+      data: { mappingId: 1 },
     });
     mockUpdateServerSettingsAction.mockResolvedValue({
       success: true,

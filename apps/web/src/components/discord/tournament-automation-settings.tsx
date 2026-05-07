@@ -86,10 +86,24 @@ export function TournamentAutomationSettings({
     settings.checkInReminderEnabled
   );
 
+  // Track mapping IDs locally so toggle-off can delete even before revalidation
+  const [roundPostedMappingId, setRoundPostedMappingId] = useState<
+    number | null
+  >(settings.roundPostedMappingId);
+  const [standingsMappingId, setStandingsMappingId] = useState<number | null>(
+    settings.standingsMappingId
+  );
+  const [registrationReminderMappingId, setRegistrationReminderMappingId] =
+    useState<number | null>(null);
+
   // Only show text channels (type === 0)
   const textChannels = guildChannels.filter((c) => c.type === 0);
 
-  function handleChannelMapping(channelId: string, eventType: string) {
+  function handleChannelMapping(
+    channelId: string,
+    eventType: string,
+    onMappingId?: (id: number) => void
+  ) {
     startTransition(async () => {
       const result = await upsertChannelMappingAction({
         communityId,
@@ -101,6 +115,7 @@ export function TournamentAutomationSettings({
       if (!result.success) {
         toast.error(result.error);
       } else {
+        onMappingId?.(result.data.mappingId);
         toast.success("Channel mapping saved");
       }
     });
@@ -158,10 +173,11 @@ export function TournamentAutomationSettings({
                 setRoundPostedEnabled(checked);
                 if (!checked) {
                   setRoundPostedChannel("");
-                  if (settings.roundPostedMappingId) {
+                  if (roundPostedMappingId) {
                     startTransition(async () => {
-                      const result = await deleteChannelMappingAction(settings.roundPostedMappingId!);
+                      const result = await deleteChannelMappingAction(roundPostedMappingId);
                       if (!result.success) toast.error(result.error);
+                      else setRoundPostedMappingId(null);
                     });
                   }
                 }
@@ -180,7 +196,9 @@ export function TournamentAutomationSettings({
                 onValueChange={(value) => {
                   if (!value) return;
                   setRoundPostedChannel(value);
-                  handleChannelMapping(value, "round_posted");
+                  handleChannelMapping(value, "round_posted", (id) =>
+                    setRoundPostedMappingId(id)
+                  );
                 }}
                 disabled={isPending}
               >
@@ -209,10 +227,11 @@ export function TournamentAutomationSettings({
                 setStandingsEnabled(checked);
                 if (!checked) {
                   setStandingsChannel("");
-                  if (settings.standingsMappingId) {
+                  if (standingsMappingId) {
                     startTransition(async () => {
-                      const result = await deleteChannelMappingAction(settings.standingsMappingId!);
+                      const result = await deleteChannelMappingAction(standingsMappingId);
                       if (!result.success) toast.error(result.error);
+                      else setStandingsMappingId(null);
                     });
                   }
                 }
@@ -231,7 +250,9 @@ export function TournamentAutomationSettings({
                 onValueChange={(value) => {
                   if (!value) return;
                   setStandingsChannel(value);
-                  handleChannelMapping(value, "standings_posted");
+                  handleChannelMapping(value, "standings_posted", (id) =>
+                    setStandingsMappingId(id)
+                  );
                 }}
                 disabled={isPending}
               >
@@ -258,8 +279,26 @@ export function TournamentAutomationSettings({
               checked={registrationReminderEnabled}
               onCheckedChange={(checked) => {
                 setRegistrationReminderEnabled(checked);
-                if (checked && registrationReminderMinutes) {
-                  // Will be saved when input blurs or channel is selected
+                if (!checked) {
+                  // Persist the disable: clear minutes + delete mapping
+                  startTransition(async () => {
+                    const settingsResult = await updateServerSettingsAction({
+                      serverId,
+                      communityId,
+                      settings: { registration_reminder_minutes: null },
+                    });
+                    if (!settingsResult.success) {
+                      setRegistrationReminderEnabled(true);
+                      toast.error(settingsResult.error);
+                      return;
+                    }
+                    if (registrationReminderMappingId) {
+                      await deleteChannelMappingAction(registrationReminderMappingId);
+                      setRegistrationReminderMappingId(null);
+                    }
+                    setRegistrationReminderChannel("");
+                    toast.success("Registration reminder disabled");
+                  });
                 }
               }}
               disabled={isPending}
@@ -276,7 +315,11 @@ export function TournamentAutomationSettings({
                 onValueChange={(value) => {
                   if (!value) return;
                   setRegistrationReminderChannel(value);
-                  handleChannelMapping(value, "registration_closing_soon");
+                  handleChannelMapping(
+                    value,
+                    "registration_closing_soon",
+                    (id) => setRegistrationReminderMappingId(id)
+                  );
                 }}
                 disabled={isPending}
               >

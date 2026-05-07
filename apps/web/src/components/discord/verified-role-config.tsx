@@ -44,6 +44,10 @@ export function VerifiedRoleConfig({
   function handleToggle(checked: boolean) {
     setEnabled(checked);
 
+    // When enabling with no role selected, just show the Select locally.
+    // The server persist will happen when a role is chosen via handleRoleChange.
+    if (checked && !roleId) return;
+
     startTransition(async () => {
       const result = await updateVerifiedRoleAction({
         serverId,

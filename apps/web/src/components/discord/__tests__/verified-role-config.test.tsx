@@ -51,15 +51,28 @@ describe("VerifiedRoleConfig", () => {
     expect(screen.getByRole("combobox")).toBeInTheDocument();
   });
 
-  it("toggling switch ON calls action with enabled: true", async () => {
-    mockUpdateVerifiedRoleAction.mockResolvedValue({ success: true });
-
+  it("toggling switch ON with no role selected shows Select without calling action", async () => {
     render(<VerifiedRoleConfig {...defaultProps} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole("switch"));
 
+    // Should NOT call the server action when roleId is null
+    expect(mockUpdateVerifiedRoleAction).not.toHaveBeenCalled();
+    // But should show the Select (enabled locally)
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
+  });
+
+  it("toggling switch ON with a pre-selected role calls action", async () => {
+    mockUpdateVerifiedRoleAction.mockResolvedValue({ success: true });
+
+    render(
+      <VerifiedRoleConfig {...defaultProps} currentRoleId="role1" />
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("switch"));
+
     expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
-      expect.objectContaining({ enabled: true })
+      expect.objectContaining({ enabled: true, roleId: "role1" })
     );
     expect(mockToast.success).toHaveBeenCalledWith("Verified role enabled.");
   });
@@ -83,7 +96,9 @@ describe("VerifiedRoleConfig", () => {
       error: "Server error",
     });
 
-    render(<VerifiedRoleConfig {...defaultProps} />);
+    render(
+      <VerifiedRoleConfig {...defaultProps} currentRoleId="role1" />
+    );
     const user = userEvent.setup();
     await user.click(screen.getByRole("switch"));
 
