@@ -1130,6 +1130,10 @@ export async function getDeliveryStatsAction(
         .eq("discord_server_id", serverId).gte("created_at", since),
     ]);
 
+    if (channelResult.error || dmResult.error || roleResult.error || failedResult.error) {
+      return { success: false, error: "Failed to load delivery stats" };
+    }
+
     const channelMessages = channelResult.count ?? 0;
     const dmsDelivered = dmResult.count ?? 0;
     const roleSyncs = roleResult.count ?? 0;

@@ -48,14 +48,14 @@ describe("ActivityFeed", () => {
   it("renders activity descriptions for channel type", () => {
     render(<ActivityFeed activities={activities} />);
     expect(
-      screen.getByText("Sent tournament_created to #general")
+      screen.getByText("Sent Tournament Created to #general")
     ).toBeInTheDocument();
   });
 
   it("renders activity descriptions for dm type", () => {
     render(<ActivityFeed activities={activities} />);
     expect(
-      screen.getByText("DM'd match_ready to @ash_ketchum")
+      screen.getByText("DM'd Match Ready to @ash_ketchum")
     ).toBeInTheDocument();
   });
 
@@ -66,7 +66,7 @@ describe("ActivityFeed", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows 'View all' when more than 20 activities", () => {
+  it("does not show 'View all' (removed)", () => {
     const manyActivities = Array.from({ length: 25 }, (_, i) => ({
       id: i,
       type: "channel",
@@ -76,7 +76,7 @@ describe("ActivityFeed", () => {
       createdAt: "2026-01-01T00:00:00Z",
     }));
     render(<ActivityFeed activities={manyActivities} />);
-    expect(screen.getByText("View all")).toBeInTheDocument();
+    expect(screen.queryByText("View all")).not.toBeInTheDocument();
   });
 
   it("renders the card title", () => {

@@ -24,7 +24,7 @@ export function TestNotificationButton({
     startTransition(async () => {
       const result = await sendTestNotificationAction({ serverId, channelId, eventType });
       if (!result.success) {
-        toast.error(result.error);
+        toast.error(result.error ?? "Failed to send test notification");
         return;
       }
       toast.success("Test notification sent!");

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 
 interface EmbedPreviewProps {
@@ -31,13 +33,15 @@ export function EmbedPreview({
   communityName,
 }: EmbedPreviewProps) {
   const message = getSampleMessage(eventType);
-  const now = new Date().toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const [now] = useState(() =>
+    new Date().toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    })
+  );
 
   return (
     <div className="rounded-lg bg-[#2B2D31] p-4">

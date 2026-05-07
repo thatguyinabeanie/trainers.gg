@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Palette, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,6 +25,10 @@ export function EmbedColorPicker({
 }: EmbedColorPickerProps) {
   const [color, setColor] = useState(currentColor);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setColor(currentColor);
+  }, [currentColor]);
 
   const isValid = HEX_REGEX.test(color);
   const hasChanged = color !== currentColor;

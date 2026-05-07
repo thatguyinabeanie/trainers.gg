@@ -274,12 +274,7 @@ export function DiscordClient({
                 name: c.name,
                 type: c.type,
               }))}
-              guildRoles={(guildRoles ?? []).map((r) => ({
-                id: r.id,
-                name: r.name,
-                color: r.color,
-              }))}
-              onApplied={() => router.refresh()}
+               onApplied={() => router.refresh()}
             />
           </div>
         </TabsContent>

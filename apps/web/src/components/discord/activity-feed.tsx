@@ -5,6 +5,17 @@ import { formatDistanceToNow } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  tournament_created: "Tournament Created",
+  tournament_started: "Tournament Started",
+  match_ready: "Match Ready",
+  round_posted: "Round Posted",
+  results_posted: "Results Posted",
+  standings_updated: "Standings Updated",
+  check_in_reminder: "Check-in Reminder",
+  registration_reminder: "Registration Reminder",
+};
+
 interface Activity {
   id: number;
   type: string;
@@ -35,19 +46,18 @@ function getActivityIcon(type: string) {
 function getDescription(activity: Activity): string {
   switch (activity.type) {
     case "channel":
-      return `Sent ${activity.eventType} to #${activity.target}`;
+      return `Sent ${EVENT_TYPE_LABELS[activity.eventType] ?? activity.eventType.replace(/_/g, " ")} to #${activity.target}`;
     case "dm":
-      return `DM'd ${activity.eventType} to @${activity.target}`;
+      return `DM'd ${EVENT_TYPE_LABELS[activity.eventType] ?? activity.eventType.replace(/_/g, " ")} to @${activity.target}`;
     case "role_sync":
-      return `Synced role ${activity.eventType} for ${activity.target}`;
+      return `Synced role ${EVENT_TYPE_LABELS[activity.eventType] ?? activity.eventType.replace(/_/g, " ")} for ${activity.target}`;
     default:
-      return `${activity.eventType} → ${activity.target}`;
+      return `${EVENT_TYPE_LABELS[activity.eventType] ?? activity.eventType.replace(/_/g, " ")} → ${activity.target}`;
   }
 }
 
 export function ActivityFeed({ activities, isLoading }: ActivityFeedProps) {
   const displayedActivities = activities.slice(0, 20);
-  const hasMore = activities.length > 20;
 
   return (
     <Card>
@@ -84,11 +94,7 @@ export function ActivityFeed({ activities, isLoading }: ActivityFeedProps) {
                 </div>
               );
             })}
-            {hasMore && (
-              <p className="text-muted-foreground pt-2 text-center text-xs">
-                View all
-              </p>
-            )}
+
           </div>
         )}
       </CardContent>

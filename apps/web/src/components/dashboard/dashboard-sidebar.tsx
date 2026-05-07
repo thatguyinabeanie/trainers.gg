@@ -903,7 +903,7 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
         label: "Discord",
         href: `${base}/settings/integrations/discord`,
         icon: DiscordIcon,
-        isActive: pathname.startsWith(`${base}/settings/integrations`),
+        isActive: pathname.startsWith(`${base}/settings/integrations/discord`),
       }
     : null;
 

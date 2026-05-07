@@ -154,16 +154,19 @@ export function SetupWizard({
         if (!r.success) errors.push(r.error);
       }
 
-      // Mark setup as completed
+      if (errors.length > 0) {
+        toast.error(errors[0]);
+        return;
+      }
+
+      // Mark setup as completed only if no errors
       const settingsResult = await updateServerSettingsAction({
         serverId,
         communityId,
         settings: { setup_completed: true },
       });
-      if (!settingsResult.success) errors.push(settingsResult.error);
-
-      if (errors.length > 0) {
-        toast.error(errors[0]);
+      if (!settingsResult.success) {
+        toast.error(settingsResult.error);
         return;
       }
 

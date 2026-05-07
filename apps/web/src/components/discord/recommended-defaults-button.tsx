@@ -14,7 +14,6 @@ interface RecommendedDefaultsButtonProps {
   serverId: number;
   communityId: number;
   guildChannels: Array<{ id: string; name: string; type: number }>;
-  guildRoles: Array<{ id: string; name: string; color: number }>;
   onApplied: () => void;
 }
 

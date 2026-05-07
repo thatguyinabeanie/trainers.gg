@@ -103,6 +103,38 @@ import {
 // Helpers
 // =============================================================================
 
+/**
+ * Re-establish the baseline module-level mock implementations that
+ * `jest.resetAllMocks()` clears between tests.
+ */
+function setupBaseMocks(): void {
+  // botid/server
+  const { checkBotId } = jest.requireMock("botid/server") as {
+    checkBotId: jest.Mock;
+  };
+  checkBotId.mockResolvedValue({ isBot: false });
+
+  // next/headers
+  const { headers } = jest.requireMock("next/headers") as {
+    headers: jest.Mock;
+  };
+  headers.mockResolvedValue({ get: jest.fn(() => null) });
+
+  // supabase client
+  const { createClient } = jest.requireMock("@/lib/supabase/server") as {
+    createClient: jest.Mock;
+  };
+  createClient.mockResolvedValue(mockSupabase);
+
+  // utils
+  const { getErrorMessage } = jest.requireMock("@trainers/utils") as {
+    getErrorMessage: jest.Mock;
+  };
+  getErrorMessage.mockImplementation(
+    (_err: unknown, fallback: string) => fallback
+  );
+}
+
 function mockPermission(allowed: boolean): void {
   mockRpc.mockResolvedValue({ data: allowed, error: null });
 }
@@ -147,7 +179,10 @@ function mockQueryChain(result: {
 // =============================================================================
 
 describe("updateServerSettingsAction", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    setupBaseMocks();
+  });
 
   it("returns FORBIDDEN when caller lacks permission", async () => {
     mockPermission(false);
@@ -212,7 +247,10 @@ describe("updateServerSettingsAction", () => {
 // =============================================================================
 
 describe("updateChannelPingRoleAction", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    setupBaseMocks();
+  });
 
   it("returns FORBIDDEN when caller lacks permission", async () => {
     mockPermission(false);
@@ -286,7 +324,10 @@ describe("updateChannelPingRoleAction", () => {
 // =============================================================================
 
 describe("updateVerifiedRoleAction", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    setupBaseMocks();
+  });
 
   it("returns FORBIDDEN when caller lacks permission", async () => {
     mockPermission(false);
@@ -301,6 +342,7 @@ describe("updateVerifiedRoleAction", () => {
 
   it("upserts and enables role mapping when enabled with roleId", async () => {
     mockPermission(true);
+    mockGetDiscordServerById.mockResolvedValue(fakeServer);
     mockUpsertRoleMapping.mockResolvedValue(undefined);
     const chain = mockQueryChain({ data: { id: 5 }, error: null });
     mockFrom.mockReturnValue(chain);
@@ -323,6 +365,7 @@ describe("updateVerifiedRoleAction", () => {
 
   it("disables role mapping when not enabled", async () => {
     mockPermission(true);
+    mockGetDiscordServerById.mockResolvedValue(fakeServer);
     const chain = mockQueryChain({ data: { id: 5 }, error: null });
     mockFrom.mockReturnValue(chain);
     mockToggleRoleMapping.mockResolvedValue(undefined);
@@ -347,7 +390,10 @@ describe("updateVerifiedRoleAction", () => {
 // =============================================================================
 
 describe("sendTestNotificationAction", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    setupBaseMocks();
+  });
 
   it("returns error when server not found", async () => {
     mockPermission(true);
@@ -389,7 +435,10 @@ describe("sendTestNotificationAction", () => {
 // =============================================================================
 
 describe("getDeliveryStatsAction", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    setupBaseMocks();
+  });
 
   it("returns error when server not found", async () => {
     mockGetDiscordServerById.mockResolvedValue(null);
@@ -429,7 +478,10 @@ describe("getDeliveryStatsAction", () => {
 // =============================================================================
 
 describe("getActivityFeedAction", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    setupBaseMocks();
+  });
 
   it("returns error when server not found", async () => {
     mockGetDiscordServerById.mockResolvedValue(null);

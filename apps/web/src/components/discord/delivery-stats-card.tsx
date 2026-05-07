@@ -1,5 +1,3 @@
-"use client";
-
 import { Hash, Mail, Shield, AlertTriangle } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

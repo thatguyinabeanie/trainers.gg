@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useId, useTransition, useState } from "react";
 import {
   Card,
   CardContent,
@@ -56,6 +56,10 @@ export function TournamentAutomationSettings({
   settings,
 }: TournamentAutomationSettingsProps) {
   const [isPending, startTransition] = useTransition();
+  const roundPostedId = useId();
+  const standingsId = useId();
+  const registrationReminderId = useId();
+  const checkInReminderId = useId();
 
   const [roundPostedEnabled, setRoundPostedEnabled] = useState(
     !!settings.roundPostedChannel
@@ -148,6 +152,7 @@ export function TournamentAutomationSettings({
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <Switch
+              id={roundPostedId}
               checked={roundPostedEnabled}
               onCheckedChange={(checked) => {
                 setRoundPostedEnabled(checked);
@@ -163,7 +168,7 @@ export function TournamentAutomationSettings({
               }}
               disabled={isPending}
             />
-            <Label className="font-medium">Round Posted Announcements</Label>
+            <Label htmlFor={roundPostedId} className="font-medium">Round Posted Announcements</Label>
           </div>
           <p className="text-muted-foreground ml-11 text-sm">
             Auto-post a message when new round pairings are published
@@ -198,6 +203,7 @@ export function TournamentAutomationSettings({
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <Switch
+              id={standingsId}
               checked={standingsEnabled}
               onCheckedChange={(checked) => {
                 setStandingsEnabled(checked);
@@ -213,7 +219,7 @@ export function TournamentAutomationSettings({
               }}
               disabled={isPending}
             />
-            <Label className="font-medium">Standings Auto-Post</Label>
+            <Label htmlFor={standingsId} className="font-medium">Standings Auto-Post</Label>
           </div>
           <p className="text-muted-foreground ml-11 text-sm">
             Post top standings after each round completes
@@ -248,6 +254,7 @@ export function TournamentAutomationSettings({
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <Switch
+              id={registrationReminderId}
               checked={registrationReminderEnabled}
               onCheckedChange={(checked) => {
                 setRegistrationReminderEnabled(checked);
@@ -257,7 +264,7 @@ export function TournamentAutomationSettings({
               }}
               disabled={isPending}
             />
-            <Label className="font-medium">Registration Closing Reminder</Label>
+            <Label htmlFor={registrationReminderId} className="font-medium">Registration Closing Reminder</Label>
           </div>
           <p className="text-muted-foreground ml-11 text-sm">
             Post a reminder before registration closes
@@ -322,13 +329,14 @@ export function TournamentAutomationSettings({
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <Switch
+              id={checkInReminderId}
               checked={checkInReminderEnabled}
               onCheckedChange={(checked) => {
                 handleDmSetting(checked);
               }}
               disabled={isPending}
             />
-            <Label className="font-medium">Check-in Reminder DMs</Label>
+            <Label htmlFor={checkInReminderId} className="font-medium">Check-in Reminder DMs</Label>
           </div>
           <p className="text-muted-foreground ml-11 text-sm">
             DM registered players when check-in opens for their tournament
