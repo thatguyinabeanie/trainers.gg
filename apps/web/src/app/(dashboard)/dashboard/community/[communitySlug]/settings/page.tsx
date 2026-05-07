@@ -29,6 +29,7 @@ import {
   removeCommunityLogo,
 } from "@/actions/community-logo";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -100,23 +101,21 @@ export default function DashboardSettingsPage({ params }: PageProps) {
   return (
     <>
       <PageHeader title="Settings" />
-      <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
-        <div className="mx-auto w-full max-w-6xl">
-          {isLoading ? (
-            <SettingsSkeleton />
-          ) : !org ? (
-            <p className="text-muted-foreground text-sm">
-              Community not found.
-            </p>
-          ) : (
-            <SettingsForm
-              org={org}
-              communitySlug={communitySlug}
-              onSaved={refetch}
-            />
-          )}
-        </div>
-      </div>
+      <DashboardContent>
+        {isLoading ? (
+          <SettingsSkeleton />
+        ) : !org ? (
+          <p className="text-muted-foreground text-sm">
+            Community not found.
+          </p>
+        ) : (
+          <SettingsForm
+            org={org}
+            communitySlug={communitySlug}
+            onSaved={refetch}
+          />
+        )}
+      </DashboardContent>
     </>
   );
 }

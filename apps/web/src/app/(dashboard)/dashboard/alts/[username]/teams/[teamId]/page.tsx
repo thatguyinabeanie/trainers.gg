@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getFormatById } from "@trainers/pokemon";
 import { getCurrentUserAlts, getTeamWithPokemon } from "@trainers/supabase";
 
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { createClientReadOnly } from "@/lib/supabase/server";
 import { DashboardBuilderWrapper } from "@/components/team-builder/dashboard-builder-wrapper";
 
@@ -48,11 +49,13 @@ export default async function TeamWorkspacePage({
   const format = team.format ? getFormatById(team.format) : undefined;
 
   return (
-    <DashboardBuilderWrapper
-      team={team}
-      format={format}
-      username={username}
-      alts={alts}
-    />
+    <DashboardContent>
+      <DashboardBuilderWrapper
+        team={team}
+        format={format}
+        username={username}
+        alts={alts}
+      />
+    </DashboardContent>
   );
 }

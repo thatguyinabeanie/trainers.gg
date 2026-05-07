@@ -4,6 +4,7 @@ import { getActiveFormats } from "@trainers/pokemon";
 import { getAltByUsername, hasTeamBuilderAccess } from "@trainers/supabase";
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { PageHeader } from "@/components/dashboard/page-header";
 
 import { NewTeamForm } from "./new-team-form";
@@ -66,7 +67,7 @@ export default async function NewTeamPage({
   return (
     <>
       <PageHeader title="New Team" />
-      <div className="flex flex-1 flex-col p-4 md:p-6">
+      <DashboardContent>
         <div className="mx-auto w-full max-w-xl">
           <div className="mb-6">
             <h1 className="text-xl font-semibold tracking-tight">
@@ -85,7 +86,7 @@ export default async function NewTeamPage({
             initialMode={initialMode}
           />
         </div>
-      </div>
+      </DashboardContent>
     </>
   );
 }

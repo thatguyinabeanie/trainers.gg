@@ -8,6 +8,7 @@ import {
 } from "@trainers/supabase";
 
 import { getUser, createClientReadOnly } from "@/lib/supabase/server";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { TeamsListClient } from "@/components/team-builder/teams-list-client";
 
@@ -61,12 +62,14 @@ export default async function TeamsPage({ params }: TeamsPageProps) {
   return (
     <>
       <PageHeader title="Teams" />
-      <TeamsListClient
-        initialTeams={teams}
-        altId={alt.id}
-        handle={username}
-        activeFormats={activeFormats}
-      />
+      <DashboardContent>
+        <TeamsListClient
+          initialTeams={teams}
+          altId={alt.id}
+          handle={username}
+          activeFormats={activeFormats}
+        />
+      </DashboardContent>
     </>
   );
 }

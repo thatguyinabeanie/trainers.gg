@@ -9,6 +9,7 @@ import {
 
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
 import { OverviewClient } from "./overview-client";
 
@@ -67,7 +68,7 @@ export default async function DashboardCommunityOverviewPage({
   return (
     <>
       <PageHeader title="Overview" />
-      <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
+      <DashboardContent>
         <OverviewClient
           communitySlug={communitySlug}
           stats={stats}
@@ -75,7 +76,7 @@ export default async function DashboardCommunityOverviewPage({
           activity={activity}
           upcomingTournaments={upcomingTournaments}
         />
-      </div>
+      </DashboardContent>
     </>
   );
 }
