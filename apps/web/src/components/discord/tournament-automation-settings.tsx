@@ -129,9 +129,20 @@ export function TournamentAutomationSettings({
     channelId: string,
     eventType: Parameters<typeof upsertChannelMappingAction>[0]["eventType"],
     onMappingId?: (id: number) => void,
-    onRollback?: () => void
+    onRollback?: () => void,
+    existingMappingId?: number | null
   ) {
     startTransition(async () => {
+      // Delete old mapping first to avoid duplicates when changing channels
+      if (existingMappingId) {
+        const deleteResult =
+          await deleteChannelMappingAction(existingMappingId);
+        if (!deleteResult.success) {
+          onRollback?.();
+          toast.error(deleteResult.error ?? "An error occurred");
+          return;
+        }
+      }
       const result = await upsertChannelMappingAction({
         communityId,
         channelId,
@@ -234,7 +245,8 @@ export function TournamentAutomationSettings({
                   setRoundPostedChannel(value);
                   handleChannelMapping(value, "round_posted", (id) =>
                     setRoundPostedMappingId(id),
-                    () => setRoundPostedChannel(prevChannel)
+                    () => setRoundPostedChannel(prevChannel),
+                    roundPostedMappingId
                   );
                 }}
                 disabled={isPending}
@@ -299,7 +311,8 @@ export function TournamentAutomationSettings({
                   setStandingsChannel(value);
                   handleChannelMapping(value, "standings_posted", (id) =>
                     setStandingsMappingId(id),
-                    () => setStandingsChannel(prevChannel)
+                    () => setStandingsChannel(prevChannel),
+                    standingsMappingId
                   );
                 }}
                 disabled={isPending}
@@ -378,7 +391,8 @@ export function TournamentAutomationSettings({
                     value,
                     "registration_closing_soon",
                     (id) => setRegistrationReminderMappingId(id),
-                    () => setRegistrationReminderChannel(prevChannel)
+                    () => setRegistrationReminderChannel(prevChannel),
+                    registrationReminderMappingId
                   );
                 }}
                 disabled={isPending}
