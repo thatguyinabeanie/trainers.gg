@@ -10,8 +10,11 @@ test.describe("Dashboard alts section", () => {
       { timeout: 10000 }
     );
 
-    // "New Alt" button should be present
-    await expect(main.getByRole("button", { name: /new alt/i })).toBeVisible();
+    // "New Alt" button in the alts section (the actual <button>, not the
+    // welcome header's <a role="button"> quick-action link)
+    await expect(
+      main.locator("button", { hasText: /new alt/i })
+    ).toBeVisible();
   });
 
   test("renders alt list or empty state", async ({ page }) => {
