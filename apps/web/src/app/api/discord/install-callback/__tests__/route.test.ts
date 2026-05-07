@@ -30,11 +30,14 @@ jest.mock("@/lib/supabase/server", () => ({
 const mockHasCommunityAccess = jest.fn();
 const mockGetCommunityById = jest.fn();
 const mockCreateDiscordServer = jest.fn();
+const mockHasCommunityFeatureAccess = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
   hasCommunityAccess: (...args: unknown[]) => mockHasCommunityAccess(...args),
   getCommunityById: (...args: unknown[]) => mockGetCommunityById(...args),
   createDiscordServer: (...args: unknown[]) => mockCreateDiscordServer(...args),
+  hasCommunityFeatureAccess: (...args: unknown[]) =>
+    mockHasCommunityFeatureAccess(...args),
 }));
 
 // =============================================================================
@@ -76,6 +79,7 @@ describe("GET /api/discord/install-callback", () => {
     mockVerifyInstallState.mockResolvedValue(VERIFIED_STATE);
     mockGetUser.mockResolvedValue({ data: { user: AUTHED_USER }, error: null });
     mockHasCommunityAccess.mockResolvedValue(true);
+    mockHasCommunityFeatureAccess.mockResolvedValue({ access: true });
     mockCreateDiscordServer.mockResolvedValue(undefined);
     mockGetCommunityById.mockResolvedValue(COMMUNITY);
   });
@@ -215,6 +219,23 @@ describe("GET /api/discord/install-callback", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Feature flag check
+  // ---------------------------------------------------------------------------
+
+  describe("Feature flag check", () => {
+    it("redirects with feature_disabled when Discord integration is not enabled", async () => {
+      mockHasCommunityFeatureAccess.mockResolvedValue({ access: false });
+
+      const response = await GET(makeRequest(VALID_PARAMS));
+
+      expect(response.status).toBe(303);
+      expect(getRedirectLocation(response)).toContain(
+        "discord_install_error=feature_disabled"
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Discord server creation
   // ---------------------------------------------------------------------------
 
@@ -281,7 +302,7 @@ describe("GET /api/discord/install-callback", () => {
       expect(response.status).toBe(303);
       const location = getRedirectLocation(response);
       expect(location).toContain(
-        "/communities/my-community/settings/integrations/discord"
+        "/dashboard/community/my-community/settings/integrations/discord"
       );
       expect(location).toContain("installed=true");
       expect(location).toContain(`guild=${VALID_PARAMS.guild_id}`);

@@ -12,6 +12,7 @@ import {
   listAllCommunitiesForSudo,
   getCurrentUserAlts,
   hasTeamBuilderAccess,
+  getCommunityIdsWithFeatureAccess,
 } from "@trainers/supabase";
 import { isSudoModeActive, isSiteAdmin } from "@/lib/sudo/server";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -161,6 +162,21 @@ export default async function DashboardLayout({
     status: c.status,
   }));
 
+  // Check which communities have Discord integration enabled
+  const discordEnabledIds =
+    communityIds.length > 0
+      ? await getCommunityIdsWithFeatureAccess(
+          supabase,
+          "discord_integration",
+          communityIds
+        )
+      : new Set<number>();
+
+  const sidebarCommunitiesWithFlags = sidebarCommunities.map((c) => ({
+    ...c,
+    discordEnabled: discordEnabledIds.has(c.id),
+  }));
+
   const sidebarAlts = alts.map((a) => ({
     id: a.id,
     username: a.username,
@@ -172,7 +188,7 @@ export default async function DashboardLayout({
     <SidebarProvider>
       <DashboardSidebar
         user={sidebarUser}
-        communities={sidebarCommunities}
+        communities={sidebarCommunitiesWithFlags}
         alts={sidebarAlts}
         selectedAltUsername={selectedAltUsername}
         isOnboarding={isOnboarding}

@@ -3,17 +3,63 @@
  */
 
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mockUpdateVerifiedRoleAction = jest.fn();
 jest.mock("@/actions/discord-integration", () => ({
+  ...jest.requireActual<object>("@/actions/discord-integration"),
   updateVerifiedRoleAction: (...args: unknown[]) =>
     mockUpdateVerifiedRoleAction(...args),
 }));
 
 const mockToast = { success: jest.fn(), error: jest.fn() };
 jest.mock("sonner", () => ({ toast: mockToast }));
+
+// Mock Select to use native <select> for jsdom compatibility in parallel
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const ReactForMock = require("react");
+jest.mock("@/components/ui/select", () => {
+  return {
+    Select: ({
+      children,
+      value,
+      onValueChange,
+      disabled,
+    }: {
+      children: React.ReactNode;
+      value: string;
+      onValueChange: (v: string) => void;
+      disabled?: boolean;
+    }) =>
+      ReactForMock.createElement(
+        "div",
+        { "data-testid": "mock-select" },
+        ReactForMock.createElement(
+          "select",
+          {
+            value: value || "",
+            onChange: (e: React.ChangeEvent<HTMLSelectElement>) =>
+              onValueChange(e.target.value),
+            disabled,
+          },
+          ReactForMock.createElement("option", { value: "" }, "Select a role"),
+          children
+        )
+      ),
+    SelectTrigger: ({ children }: { children: React.ReactNode }) => children,
+    SelectContent: ({ children }: { children: React.ReactNode }) => children,
+    SelectItem: ({
+      children,
+      value,
+    }: {
+      children: React.ReactNode;
+      value: string;
+    }) => ReactForMock.createElement("option", { value }, children),
+    SelectValue: ({ placeholder }: { placeholder?: string }) =>
+      ReactForMock.createElement("span", null, placeholder),
+  };
+});
 
 import { VerifiedRoleConfig } from "../verified-role-config";
 
@@ -119,15 +165,15 @@ describe("VerifiedRoleConfig", () => {
     render(
       <VerifiedRoleConfig {...defaultProps} enabled={true} currentRoleId={null} />
     );
-    const user = userEvent.setup();
 
-    const combobox = screen.getByRole("combobox");
-    await user.click(combobox);
-    await user.click(screen.getByText("Verified"));
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "role1" } });
 
-    expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
-      expect.objectContaining({ roleId: "role1" })
-    );
+    await waitFor(() => {
+      expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
+        expect.objectContaining({ roleId: "role1" })
+      );
+    });
     await waitFor(() => {
       expect(mockToast.success).toHaveBeenCalledWith("Verified role updated.");
     });
@@ -146,11 +192,9 @@ describe("VerifiedRoleConfig", () => {
         currentRoleId={null}
       />
     );
-    const user = userEvent.setup();
 
-    const combobox = screen.getByRole("combobox");
-    await user.click(combobox);
-    await user.click(screen.getByText("Member"));
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "role2" } });
 
     await waitFor(() => {
       expect(mockToast.error).toHaveBeenCalledWith("Role update failed");
@@ -167,14 +211,14 @@ describe("VerifiedRoleConfig", () => {
         currentRoleId="role1"
       />
     );
-    const user = userEvent.setup();
 
-    const combobox = screen.getByRole("combobox");
-    await user.click(combobox);
-    await user.click(screen.getByText("None"));
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "none" } });
 
-    expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
-      expect.objectContaining({ roleId: null, enabled: false })
-    );
+    await waitFor(() => {
+      expect(mockUpdateVerifiedRoleAction).toHaveBeenCalledWith(
+        expect.objectContaining({ roleId: null, enabled: false })
+      );
+    });
   });
 });

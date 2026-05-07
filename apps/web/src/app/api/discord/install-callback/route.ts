@@ -23,6 +23,7 @@
 import { DISCORD_BOT_INSTALLED } from "@trainers/posthog";
 import {
   hasCommunityAccess,
+  hasCommunityFeatureAccess,
   getCommunityById,
   createDiscordServer,
 } from "@trainers/supabase";
@@ -121,6 +122,16 @@ export async function GET(request: Request): Promise<Response> {
     return redirectWithError("not_authorized");
   }
 
+  // Step 5b: Confirm Discord integration is enabled for this community
+  const featureCheck = await hasCommunityFeatureAccess(
+    supabase,
+    "discord_integration",
+    community_id
+  );
+  if (featureCheck.access !== true) {
+    return redirectWithError("feature_disabled");
+  }
+
   // Step 6: Create the discord_servers row
   // We use the service-role client to bypass RLS — the authorization check
   // above (steps 4 & 5) already confirmed the user has the right to do this.
@@ -161,7 +172,7 @@ export async function GET(request: Request): Promise<Response> {
 
   // Step 9: Redirect to the integration settings page (Phase 5 page location)
   return Response.redirect(
-    `${baseUrl}/communities/${community.slug}/settings/integrations/discord?installed=true&guild=${guildId}`,
+    `${baseUrl}/dashboard/community/${community.slug}/settings/integrations/discord?installed=true&guild=${guildId}`,
     303
   );
 }

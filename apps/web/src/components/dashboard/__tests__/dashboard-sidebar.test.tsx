@@ -219,6 +219,7 @@ const baseCommunities = [
     logoUrl: null,
     role: "owner" as const,
     hasLiveTournament: false,
+    discordEnabled: true,
   },
 ];
 
