@@ -1,6 +1,14 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import {
+  Calendar,
+  Plus,
+  Swords,
+  Trophy,
+  UserCheck,
+  Users,
+  Zap,
+} from "lucide-react";
 import Link from "next/link";
 
 import type {
@@ -63,34 +71,22 @@ interface StatCardProps {
   label: string;
   value: number | string;
   subtitle: string;
-  extra?: React.ReactNode;
+  icon: React.ReactNode;
 }
 
-function StatCard({ label, value, subtitle, extra }: StatCardProps) {
+function StatCard({ label, value, subtitle, icon }: StatCardProps) {
   return (
-    <div className="bg-card text-card-foreground rounded-lg p-3 shadow-sm">
-      <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
-        {label}
-      </p>
-      <div className="mt-1.5 flex items-end justify-between">
-        <p className="text-xl font-bold">{value}</p>
-        {extra ?? (
-          <svg
-            width="52"
-            height="22"
-            viewBox="0 0 52 22"
-            className="text-primary opacity-60"
-          >
-            <polyline
-              points="0,20 9,15 17,17 26,11 35,13 43,7 52,4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            />
-          </svg>
-        )}
+    <div className="rounded-xl bg-card p-4 shadow-sm">
+      <div className="flex items-center gap-2">
+        {icon}
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          {label}
+        </p>
       </div>
-      <p className="mt-1 text-[10px] text-emerald-600">{subtitle}</p>
+      <p className="mt-2.5 text-2xl font-bold leading-none tabular-nums">
+        {value}
+      </p>
+      <p className="text-muted-foreground mt-1.5 text-[11px]">{subtitle}</p>
     </div>
   );
 }
@@ -111,37 +107,32 @@ export function OverviewClient({
       ? Math.round(stats.totalEntries / stats.totalTournaments)
       : 0;
 
-  const staffExtra = (
-    <div className="flex">
-      {stats.adminCount > 0 && (
-        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-500 text-[8px] font-semibold text-white">
-          A
-        </div>
-      )}
-      {stats.judgeCount > 0 && (
-        <div className="-ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-[8px] font-semibold text-white">
-          J
-        </div>
-      )}
-    </div>
-  );
-
   return (
-    <>
+    <div className="space-y-4">
       {/* Stats row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 rounded-2xl bg-muted/30 p-3 lg:grid-cols-4">
         <StatCard
           label="Tournaments"
           value={stats.totalTournaments}
+          icon={
+            <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
+              <Trophy className="size-3.5 text-primary" />
+            </div>
+          }
           subtitle={
             stats.totalTournaments === 0
               ? "Host your first tournament to start tracking"
-              : `↑ ${stats.activeTournaments} active`
+              : `${stats.activeTournaments} active`
           }
         />
         <StatCard
           label="Unique Players"
           value={stats.uniquePlayers}
+          icon={
+            <div className="flex size-7 items-center justify-center rounded-lg bg-violet-500/10">
+              <Users className="size-3.5 text-violet-600 dark:text-violet-400" />
+            </div>
+          }
           subtitle={
             stats.totalTournaments === 0
               ? "Host your first tournament to start tracking"
@@ -151,6 +142,11 @@ export function OverviewClient({
         <StatCard
           label="Total Entries"
           value={stats.totalEntries}
+          icon={
+            <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/10">
+              <Swords className="size-3.5 text-amber-600 dark:text-amber-400" />
+            </div>
+          }
           subtitle={
             stats.totalTournaments === 0
               ? "Host your first tournament to start tracking"
@@ -160,19 +156,26 @@ export function OverviewClient({
         <StatCard
           label="Staff"
           value={stats.staffCount}
+          icon={
+            <div className="flex size-7 items-center justify-center rounded-lg bg-sky-500/10">
+              <UserCheck className="size-3.5 text-sky-600 dark:text-sky-400" />
+            </div>
+          }
           subtitle={
             stats.totalTournaments === 0
               ? "Host your first tournament to start tracking"
               : `${stats.adminCount} admins, ${stats.judgeCount} judges`
           }
-          extra={staffExtra}
         />
       </div>
 
       {/* Upcoming Tournaments */}
       <DashboardCard>
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-semibold">📅 Upcoming Tournaments</p>
+          <div className="flex items-center gap-2">
+            <Calendar className="size-4 text-primary" />
+            <p className="text-sm font-semibold">Upcoming Tournaments</p>
+          </div>
           <div className="flex items-center gap-3">
             <Link
               href={`/dashboard/community/${communitySlug}/tournaments/create`}
@@ -190,9 +193,13 @@ export function OverviewClient({
           </div>
         </div>
         {upcomingTournaments.length === 0 ? (
-          <div className="py-6 text-center">
+          <div className="py-8 text-center">
+            <Calendar className="text-muted-foreground/50 mx-auto mb-2 size-8" />
             <p className="text-muted-foreground text-sm">
               No upcoming tournaments
+            </p>
+            <p className="text-muted-foreground/70 mt-1 text-xs">
+              Create one to get started
             </p>
           </div>
         ) : (
@@ -201,14 +208,14 @@ export function OverviewClient({
               <Link
                 key={t.id}
                 href={`/dashboard/community/${communitySlug}/tournaments/${t.slug}/manage`}
-                className="bg-muted border-primary hover:bg-muted/70 focus-visible:ring-ring flex-1 rounded-lg border-l-[3px] p-3 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                className="flex-1 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <p className="text-sm font-semibold">{t.name}</p>
                 <p className="text-muted-foreground mt-1 text-xs">
                   {formatShortDate(t.start_date)} · {t.registrationCount}/
                   {t.max_participants ?? "∞"} registered
                 </p>
-                <div className="bg-border mt-2 h-1 overflow-hidden rounded-full">
+                <div className="mt-2 h-1 overflow-hidden rounded-full bg-border">
                   <div
                     className="bg-primary h-full rounded-full"
                     style={{
@@ -223,21 +230,28 @@ export function OverviewClient({
       </DashboardCard>
 
       {/* Activity Feed + Top Regulars */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {/* Activity Feed */}
         <DashboardCard>
-          <p className="mb-3 text-sm font-semibold">⚡ Recent Activity</p>
+          <div className="mb-3 flex items-center gap-2">
+            <Zap className="size-4 text-amber-500" />
+            <p className="text-sm font-semibold">Recent Activity</p>
+          </div>
           {activity.length === 0 ? (
-            <p className="text-muted-foreground text-xs">
-              No activity yet — things will show up here as your community grows
-            </p>
+            <div className="py-6 text-center">
+              <Zap className="text-muted-foreground/50 mx-auto mb-2 size-8" />
+              <p className="text-muted-foreground text-sm">No activity yet</p>
+              <p className="text-muted-foreground/70 mt-1 text-xs">
+                Things will show up here as your community grows
+              </p>
+            </div>
           ) : (
             activity.map((item, i) => (
               <div
                 key={i}
                 className={cn(
                   "py-2",
-                  i < activity.length - 1 && "border-border/50 border-b"
+                  i < activity.length - 1 && "border-b border-border/50"
                 )}
               >
                 <p className="text-xs">
@@ -259,11 +273,18 @@ export function OverviewClient({
 
         {/* Top Regulars */}
         <DashboardCard>
-          <p className="mb-3 text-sm font-semibold">🏆 Top Regulars</p>
+          <div className="mb-3 flex items-center gap-2">
+            <Trophy className="size-4 text-amber-500" />
+            <p className="text-sm font-semibold">Top Regulars</p>
+          </div>
           {topPlayers.length === 0 ? (
-            <p className="text-muted-foreground text-xs">
-              Players will appear here after your first tournament
-            </p>
+            <div className="py-6 text-center">
+              <Trophy className="text-muted-foreground/50 mx-auto mb-2 size-8" />
+              <p className="text-muted-foreground text-sm">No regulars yet</p>
+              <p className="text-muted-foreground/70 mt-1 text-xs">
+                Players will appear here after your first tournament
+              </p>
+            </div>
           ) : (
             topPlayers.map((player, i) => (
               <div
@@ -275,9 +296,9 @@ export function OverviewClient({
                 </span>
                 <div
                   className={cn(
-                    "flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold",
-                    i === 0 && "bg-amber-400",
-                    i === 1 && "bg-zinc-300",
+                    "flex size-6 items-center justify-center rounded-full text-[9px] font-bold",
+                    i === 0 && "bg-amber-400 text-amber-950",
+                    i === 1 && "bg-zinc-300 text-zinc-700",
                     i === 2 && "bg-amber-700 text-white",
                     i > 2 && "bg-muted text-muted-foreground"
                   )}
@@ -295,6 +316,6 @@ export function OverviewClient({
           )}
         </DashboardCard>
       </div>
-    </>
+    </div>
   );
 }
