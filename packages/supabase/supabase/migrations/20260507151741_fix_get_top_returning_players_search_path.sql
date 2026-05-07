@@ -30,5 +30,5 @@ AS $$
     AND t.archived_at IS NULL
   GROUP BY a.user_id, a.username, a.avatar_url
   ORDER BY event_count DESC
-  LIMIT GREATEST(LEAST(p_limit, 100), 1);
+  LIMIT GREATEST(LEAST(COALESCE(p_limit, 10), 100), 1);
 $$;

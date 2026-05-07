@@ -291,12 +291,17 @@ export async function recordChannelFailure(
   const now = new Date().toISOString();
 
   // Try to read the existing row first
-  const { data: existing } = await supabase
+  const { data: existing, error: readError } = await supabase
     .from("discord_channel_failures")
     .select("id, consecutive_failures")
     .eq("discord_server_id", discordServerId)
     .eq("channel_id", channelId)
     .maybeSingle();
+
+  if (readError)
+    throw new Error(
+      `Failed to read channel failure record: ${readError.message}`
+    );
 
   if (existing) {
     // Row exists — increment the counter
@@ -336,19 +341,28 @@ export async function recordChannelFailure(
   // Duplicate key (SQLSTATE 23505) — another worker inserted first.
   // Fall through to update the now-existing row.
   if (insertError.code === "23505") {
-    const { data: retry } = await supabase
+    const { data: retry, error: retryReadError } = await supabase
       .from("discord_channel_failures")
       .select("id, consecutive_failures")
       .eq("discord_server_id", discordServerId)
       .eq("channel_id", channelId)
       .single();
 
+    if (retryReadError)
+      throw new Error(
+        `Failed to read channel failure on retry: ${retryReadError.message}`
+      );
+
     if (retry) {
       const newCount = retry.consecutive_failures + 1;
-      await supabase
+      const { error: retryUpdateError } = await supabase
         .from("discord_channel_failures")
         .update({ consecutive_failures: newCount, last_failed_at: now })
         .eq("id", retry.id);
+      if (retryUpdateError)
+        throw new Error(
+          `Failed to record channel failure (retry update): ${retryUpdateError.message}`
+        );
       return { consecutive_failures: newCount };
     }
   }

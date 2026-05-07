@@ -171,7 +171,7 @@ export async function GET(request: Request): Promise<Response> {
 
   // Step 9: Redirect to the integration settings page (Phase 5 page location)
   return Response.redirect(
-    `${baseUrl}/communities/${community.slug}/settings/integrations/discord?installed=true&guild=${guildId}`,
+    `${baseUrl}/dashboard/community/${community.slug}/settings/integrations/discord?installed=true&guild=${guildId}`,
     303
   );
 }

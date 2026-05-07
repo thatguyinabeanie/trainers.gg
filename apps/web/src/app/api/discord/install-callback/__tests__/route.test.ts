@@ -286,7 +286,7 @@ describe("GET /api/discord/install-callback", () => {
       expect(response.status).toBe(303);
       const location = getRedirectLocation(response);
       expect(location).toContain(
-        "/communities/my-community/settings/integrations/discord"
+        "/dashboard/community/my-community/settings/integrations/discord"
       );
       expect(location).toContain("installed=true");
       expect(location).toContain(`guild=${VALID_PARAMS.guild_id}`);

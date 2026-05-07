@@ -46,18 +46,27 @@ export async function checkCommunityFeatureAccess(
   flagKey: string,
   communityId: number
 ): Promise<boolean> {
-  const supabase = await createClient();
-  const flag = await getFeatureFlag(supabase, flagKey);
+  try {
+    const supabase = await createClient();
+    const flag = await getFeatureFlag(supabase, flagKey);
 
-  // Flag doesn't exist = disabled
-  if (!flag) return false;
+    // Flag doesn't exist = disabled
+    if (!flag) return false;
 
-  // Globally enabled = all communities have access
-  if (flag.enabled) return true;
+    // Globally enabled = all communities have access
+    if (flag.enabled) return true;
 
-  // Globally disabled = check allowlist
-  const allowed =
-    (flag.metadata as { allowed_communities?: number[] })
-      ?.allowed_communities || [];
-  return allowed.includes(communityId);
+    // Globally disabled = check allowlist
+    const allowed =
+      (flag.metadata as { allowed_communities?: number[] })
+        ?.allowed_communities || [];
+    return allowed.includes(communityId);
+  } catch (error) {
+    // Fail closed — if we can't read the flag, deny access
+    console.error(
+      `[feature-flags] Failed to check ${flagKey} for community ${communityId}:`,
+      error
+    );
+    return false;
+  }
 }

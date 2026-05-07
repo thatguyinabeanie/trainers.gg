@@ -372,10 +372,12 @@ export function CommunityDetailSheet({
                   </p>
                 </div>
                 <Switch
-                  id="discord-toggle"
-                  checked={discordEnabled}
-                  onCheckedChange={async (checked) => {
-                    setLoading(true);
+                   id="discord-toggle"
+                   checked={discordEnabled}
+                   onCheckedChange={async (checked) => {
+                     setError(null);
+                     setSuccess(null);
+                     setLoading(true);
                     const result = await toggleDiscordAction(
                       community.id,
                       checked
