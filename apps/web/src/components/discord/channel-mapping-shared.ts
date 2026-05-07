@@ -90,3 +90,61 @@ export function getChannelEventMeta(eventType: string): {
     description: "",
   };
 }
+
+// ---------------------------------------------------------------------------
+// DM event labels
+// ---------------------------------------------------------------------------
+
+export const DM_EVENT_LABELS: Record<string, string> = {
+  match_ready: "Match Ready",
+  match_starting_soon: "Match Starting Soon",
+  match_result_to_confirm: "Match Result to Confirm",
+  match_disputed: "Match Disputed",
+  team_sheet_needed: "Team Sheet Needed",
+  team_sheet_approved: "Team Sheet Approved",
+  team_sheet_rejected: "Team Sheet Rejected",
+  you_dropped: "You Dropped",
+  top_cut_made: "Top Cut Made",
+  tournament_starting: "Tournament Starting",
+  tournament_cancelled: "Tournament Cancelled",
+  check_in_reminder: "Check-in Reminder",
+};
+
+// ---------------------------------------------------------------------------
+// Role sync event labels
+// ---------------------------------------------------------------------------
+
+export const ROLE_SYNC_LABELS: Record<string, string> = {
+  verified: "Verified Role",
+  member: "Member Role",
+  participant: "Participant Role",
+  winner: "Tournament Winner Role",
+  staff: "Staff Role",
+  currently_playing: "Currently Playing Role",
+  subscriber: "Subscriber Role",
+};
+
+// ---------------------------------------------------------------------------
+// Universal event label helper — works for channel, DM, and role_sync types
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns a human-readable label for any event type across all Discord
+ * notification categories. Returns title-cased labels for use in activity
+ * feeds, ping role config, etc. Falls back to title-cased humanization.
+ */
+export function getEventLabel(eventType: string): string {
+  const channelMeta = CHANNEL_EVENT_LABELS[eventType as DiscordChannelEventType];
+  if (channelMeta) {
+    // Title-case the sentence-case label (capitalize first letter of each word)
+    return channelMeta.label.replace(/(?:^|\s)\w/g, (c) => c.toUpperCase());
+  }
+  const dmLabel = DM_EVENT_LABELS[eventType];
+  if (dmLabel) return dmLabel;
+  const roleLabel = ROLE_SYNC_LABELS[eventType];
+  if (roleLabel) return roleLabel;
+  // Fallback: title-case humanization
+  return eventType
+    .replace(/_/g, " ")
+    .replace(/(?:^|\s)\w/g, (c) => c.toUpperCase());
+}

@@ -4,32 +4,7 @@ import { Hash, Mail, Shield, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  // Channel event types (from ALL_CHANNEL_EVENT_TYPES)
-  tournament_created: "Tournament Created",
-  registration_opens: "Registration Opens",
-  registration_closing_soon: "Registration Closing",
-  tournament_ended: "Tournament Ended",
-  match_result_reported: "Match Result",
-  round_posted: "Round Posted",
-  standings_posted: "Standings Posted",
-  check_in_opened: "Check-in Opened",
-  // DM event types (from ALL_DM_EVENT_TYPES)
-  match_ready: "Match Ready",
-  check_in_reminder: "Check-in Reminder",
-  // Role sync types
-  verified: "Verified Role",
-  subscriber: "Subscriber Role",
-  tournament_winner: "Tournament Winner Role",
-};
-
-function getEventLabel(eventType: string): string {
-  return (
-    EVENT_TYPE_LABELS[eventType] ??
-    eventType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-  );
-}
+import { getEventLabel } from "@/components/discord/channel-mapping-shared";
 
 interface Activity {
   id: number;

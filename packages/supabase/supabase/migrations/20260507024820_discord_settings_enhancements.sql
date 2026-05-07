@@ -25,22 +25,13 @@ COMMENT ON COLUMN public.discord_channels.ping_role_id IS
 -- 2. Add check_in_reminder to discord_dm_event_type enum
 -- =============================================================================
 
--- ALTER TYPE ... ADD VALUE cannot run inside a transaction block when using
--- IF NOT EXISTS, but Supabase migrations run each file in its own transaction.
--- We use a DO block with exception handling as a safe alternative.
-DO $$ BEGIN
-  ALTER TYPE public.discord_dm_event_type ADD VALUE IF NOT EXISTS 'check_in_reminder';
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+ALTER TYPE public.discord_dm_event_type ADD VALUE IF NOT EXISTS 'check_in_reminder';
 
 -- =============================================================================
 -- 3. Add verified to discord_role_type enum
 -- =============================================================================
 
-DO $$ BEGIN
-  ALTER TYPE public.discord_role_type ADD VALUE IF NOT EXISTS 'verified';
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+ALTER TYPE public.discord_role_type ADD VALUE IF NOT EXISTS 'verified';
 
 -- =============================================================================
 -- 4. discord_delivery_log — activity feed for Discord notifications

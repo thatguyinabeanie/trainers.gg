@@ -12,17 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { updateChannelPingRoleAction } from "@/actions/discord-integration";
-
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  tournament_created: "Tournament Created",
-  registration_opens: "Registration Opens",
-  registration_closing_soon: "Registration Closing Soon",
-  tournament_ended: "Tournament Ended",
-  match_result_reported: "Match Result",
-  round_posted: "Round Posted",
-  standings_posted: "Standings Posted",
-  check_in_opened: "Check-in Opened",
-};
+import { getEventLabel } from "@/components/discord/channel-mapping-shared";
 
 interface ChannelMapping {
   id: number;
@@ -103,10 +93,7 @@ export function PingRoleConfig({
                 className="flex items-center justify-between gap-4"
               >
                 <span className="text-sm font-medium">
-                  {EVENT_TYPE_LABELS[mapping.eventType] ??
-                    mapping.eventType
-                      .replace(/_/g, " ")
-                      .replace(/\b\w/g, (c) => c.toUpperCase())}
+                  {getEventLabel(mapping.eventType)}
                 </span>
                 <Select
                   value={currentRoleId ?? "none"}
