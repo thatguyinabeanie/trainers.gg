@@ -64,7 +64,8 @@ export async function checkCommunityFeatureAccess(
   } catch (error) {
     // Fail closed — if we can't read the flag, deny access
     console.error(
-      `[feature-flags] Failed to check ${flagKey} for community ${communityId}:`,
+      "[feature-flags] Failed to check flag for community:",
+      { flagKey, communityId },
       error
     );
     return false;
