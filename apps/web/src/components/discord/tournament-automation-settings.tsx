@@ -24,6 +24,7 @@ import {
   upsertChannelMappingAction,
   deleteChannelMappingAction,
   upsertDmSettingAction,
+  deleteDmSettingAction,
   updateServerSettingsAction,
 } from "@/actions/discord-integration";
 
@@ -103,7 +104,19 @@ export function TournamentAutomationSettings({
 
   function handleDmSetting(enabled: boolean) {
     setCheckInReminderEnabled(enabled);
-    if (!enabled) return; // Don't persist disable — setting remains but UI shows off
+    if (!enabled) {
+      startTransition(async () => {
+        const result = await deleteDmSettingAction({
+          communityId,
+          eventType: "check_in_reminder",
+        });
+        if (!result.success) {
+          setCheckInReminderEnabled(true); // rollback
+          toast.error(result.error);
+        }
+      });
+      return;
+    }
     startTransition(async () => {
       const result = await upsertDmSettingAction({
         communityId,
@@ -111,6 +124,7 @@ export function TournamentAutomationSettings({
         deliveryMode: "dm_only",
       });
       if (!result.success) {
+        setCheckInReminderEnabled(false); // rollback
         toast.error(result.error);
       } else {
         toast.success("DM reminders enabled");

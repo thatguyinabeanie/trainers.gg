@@ -102,6 +102,29 @@ const setDmPreferenceSchema = z.object({
   enabled: z.boolean(),
 });
 
+const sendTestNotificationSchema = z.object({
+  serverId: z.number().int().positive(),
+  channelId: z.string().min(1),
+  eventType: z.string().min(1),
+});
+
+const updateServerSettingsSchema = z.object({
+  serverId: z.number().int().positive(),
+  communityId: z.number().int().positive(),
+  settings: z.object({
+    embed_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    setup_completed: z.boolean().optional(),
+    registration_reminder_minutes: z.number().int().positive().optional(),
+    link_prompt_frequency: z.string().optional(),
+  }).strict(),
+});
+
+const updateChannelPingRoleSchema = z.object({
+  mappingId: z.number().int().positive(),
+  pingRoleId: z.string().nullable(),
+  communityId: z.number().int().positive(),
+});
+
 // Payload schemas for discord_delivery_failures — each failure type carries a
 // different shape. Validated at retry time to catch malformed DB rows early.
 const channelFailurePayloadSchema = z.record(z.string(), z.unknown());
@@ -331,6 +354,43 @@ export async function upsertDmSettingAction(
   }
 }
 
+/**
+ * Delete the DM delivery setting for a specific event type on a community's
+ * Discord server (e.g. when the user toggles the feature off).
+ *
+ * Requires `community.manage` permission.
+ */
+export async function deleteDmSettingAction(input: {
+  communityId: number;
+  eventType: DiscordDmEventType;
+}): Promise<ActionResult<void>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const result = await requireDiscordServer(supabase, input.communityId);
+    if ("error" in result) return result.error;
+    const { server } = result;
+
+    const { error } = await supabase
+      .from("discord_dm_settings")
+      .delete()
+      .eq("discord_server_id", server.id)
+      .eq("event_type", input.eventType);
+
+    if (error) throw error;
+
+    revalidatePath(DISCORD_SETTINGS_PATH, "page");
+    return { success: true, data: undefined };
+  } catch (error) {
+    const forbidden = asForbidden(error);
+    if (forbidden) return forbidden;
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to delete DM setting"),
+    };
+  }
+}
+
 // =============================================================================
 // Role Mapping Actions
 // =============================================================================
@@ -438,6 +498,7 @@ export async function setDmPreferenceAction(
     }
 
     await setDmPreference(supabase, user.id, parsed.eventType, parsed.enabled);
+    revalidatePath(DISCORD_SETTINGS_PATH, "page");
     return { success: true, data: undefined };
   } catch (error) {
     return {
@@ -817,35 +878,31 @@ export async function listRecentFailuresAction(serverId: number): Promise<
  * Send a test notification to a specific Discord channel to verify the bot
  * can post there. Creates a friendly test embed.
  */
-export async function sendTestNotificationAction(input: {
-  serverId: number;
-  channelId: string;
-  eventType: string;
-}): Promise<ActionResult<void>> {
+export async function sendTestNotificationAction(
+  input: z.infer<typeof sendTestNotificationSchema>
+): Promise<ActionResult<void>> {
   try {
-    if (!Number.isInteger(input.serverId) || input.serverId <= 0) {
-      return { success: false, error: "Invalid server ID" };
-    }
     await rejectBots();
     const supabase = await createClient();
-    const server = await getDiscordServerById(supabase, input.serverId);
+    const parsed = sendTestNotificationSchema.parse(input);
+
+    const server = await getDiscordServerById(supabase, parsed.serverId);
     if (!server) {
       return { success: false, error: "Discord server not found" };
     }
     await requireCommunityManage(supabase, server.community_id);
 
     await start(sendChannelNotificationWorkflow, [
-      input.channelId,
-      input.eventType,
+      parsed.channelId,
+      parsed.eventType,
       {
         __test: true,
         title: "Test Notification",
-        description: `This is a test notification for the **${input.eventType}** event type. If you can see this, the bot is working correctly!`,
+        description: `This is a test notification for the **${parsed.eventType}** event type. If you can see this, the bot is working correctly!`,
       },
       server.id,
     ]);
 
-    revalidatePath(DISCORD_SETTINGS_PATH, "page");
     return { success: true, data: undefined };
   } catch (error) {
     const forbidden = asForbidden(error);
@@ -865,21 +922,20 @@ export async function sendTestNotificationAction(input: {
  * Update the discord_servers.settings JSONB for a community's Discord server.
  * Merges the provided settings into the existing object (does not replace).
  */
-export async function updateServerSettingsAction(input: {
-  serverId: number;
-  communityId: number;
-  settings: Record<string, unknown>;
-}): Promise<ActionResult<void>> {
+export async function updateServerSettingsAction(
+  input: z.infer<typeof updateServerSettingsSchema>
+): Promise<ActionResult<void>> {
   try {
     await rejectBots();
+    const parsed = updateServerSettingsSchema.parse(input);
     const supabase = await createClient();
-    await requireCommunityManage(supabase, input.communityId);
+    await requireCommunityManage(supabase, parsed.communityId);
 
-    const server = await getDiscordServerById(supabase, input.serverId);
+    const server = await getDiscordServerById(supabase, parsed.serverId);
     if (!server) {
       return { success: false, error: "Discord server not found" };
     }
-    if (server.community_id !== input.communityId) {
+    if (server.community_id !== parsed.communityId) {
       return {
         success: false,
         error: "Server does not belong to this community",
@@ -888,13 +944,13 @@ export async function updateServerSettingsAction(input: {
 
     const mergedSettings = {
       ...(server.settings as object),
-      ...input.settings,
+      ...parsed.settings,
     } as Record<string, unknown>;
 
     const { error } = await supabase
       .from("discord_servers")
       .update({ settings: mergedSettings as unknown as Json })
-      .eq("id", input.serverId);
+      .eq("id", parsed.serverId);
 
     if (error) throw new Error(`Failed to update settings: ${error.message}`);
 
@@ -917,21 +973,20 @@ export async function updateServerSettingsAction(input: {
 /**
  * Update the ping_role_id for a specific channel mapping.
  */
-export async function updateChannelPingRoleAction(input: {
-  mappingId: number;
-  pingRoleId: string | null;
-  communityId: number;
-}): Promise<ActionResult<void>> {
+export async function updateChannelPingRoleAction(
+  input: z.infer<typeof updateChannelPingRoleSchema>
+): Promise<ActionResult<void>> {
   try {
     await rejectBots();
+    const parsed = updateChannelPingRoleSchema.parse(input);
     const supabase = await createClient();
-    await requireCommunityManage(supabase, input.communityId);
+    await requireCommunityManage(supabase, parsed.communityId);
 
     // Verify mapping belongs to this community's server
     const { data: mapping } = await supabase
       .from("discord_channels")
       .select("id, discord_server_id, discord_servers!inner(community_id)")
-      .eq("id", input.mappingId)
+      .eq("id", parsed.mappingId)
       .single();
 
     if (!mapping) {
@@ -940,7 +995,7 @@ export async function updateChannelPingRoleAction(input: {
     const serverData = mapping.discord_servers as unknown as {
       community_id: number;
     };
-    if (serverData.community_id !== input.communityId) {
+    if (serverData.community_id !== parsed.communityId) {
       return {
         success: false,
         error: "Mapping does not belong to this community",
@@ -949,8 +1004,8 @@ export async function updateChannelPingRoleAction(input: {
 
     const { error } = await supabase
       .from("discord_channels")
-      .update({ ping_role_id: input.pingRoleId })
-      .eq("id", input.mappingId);
+      .update({ ping_role_id: parsed.pingRoleId })
+      .eq("id", parsed.mappingId);
 
     if (error) throw new Error(`Failed to update ping role: ${error.message}`);
 

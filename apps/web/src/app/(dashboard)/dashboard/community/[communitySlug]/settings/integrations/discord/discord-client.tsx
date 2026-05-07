@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { type DiscordIntegrationOverview } from "@trainers/supabase";
@@ -81,6 +81,15 @@ export function DiscordClient({
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [wizardDismissed, setWizardDismissed] = useState(false);
+
+  // Reset stats when overview changes (e.g., after router.refresh())
+  const prevOverviewRef = useRef(overview);
+  useEffect(() => {
+    if (prevOverviewRef.current !== overview) {
+      prevOverviewRef.current = overview;
+      setStatsLoaded(false);
+    }
+  }, [overview]);
 
   // Determine if setup wizard should be shown
   const settings = (overview?.server?.settings ?? {}) as Record<
@@ -300,10 +309,7 @@ export function DiscordClient({
                 id: m.id,
                 eventType: m.event_type,
                 channelId: m.channel_id,
-                pingRoleId:
-                  ((m as Record<string, unknown>).ping_role_id as
-                    | string
-                    | null) ?? null,
+                pingRoleId: m.ping_role_id ?? null,
               }))}
               guildRoles={(guildRoles ?? []).map((r) => ({
                 id: r.id,

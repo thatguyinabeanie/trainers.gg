@@ -9,6 +9,7 @@ import userEvent from "@testing-library/user-event";
 const mockUpsertChannelMappingAction = jest.fn();
 const mockDeleteChannelMappingAction = jest.fn();
 const mockUpsertDmSettingAction = jest.fn();
+const mockDeleteDmSettingAction = jest.fn();
 const mockUpdateServerSettingsAction = jest.fn();
 
 jest.mock("@/actions/discord-integration", () => ({
@@ -18,6 +19,8 @@ jest.mock("@/actions/discord-integration", () => ({
     mockDeleteChannelMappingAction(...args),
   upsertDmSettingAction: (...args: unknown[]) =>
     mockUpsertDmSettingAction(...args),
+  deleteDmSettingAction: (...args: unknown[]) =>
+    mockDeleteDmSettingAction(...args),
   updateServerSettingsAction: (...args: unknown[]) =>
     mockUpdateServerSettingsAction(...args),
 }));
@@ -167,7 +170,9 @@ describe("TournamentAutomationSettings", () => {
     expect(mockToast.error).toHaveBeenCalledWith("Permission denied");
   });
 
-  it("check-in reminder toggle OFF does not call action (early return)", async () => {
+  it("check-in reminder toggle OFF calls deleteDmSettingAction", async () => {
+    mockDeleteDmSettingAction.mockResolvedValue({ success: true });
+
     const user = userEvent.setup();
     render(
       <TournamentAutomationSettings
@@ -183,7 +188,10 @@ describe("TournamentAutomationSettings", () => {
     const switches = screen.getAllByRole("switch");
     await user.click(switches[3]!);
 
-    expect(mockUpsertDmSettingAction).not.toHaveBeenCalled();
+    expect(mockDeleteDmSettingAction).toHaveBeenCalledWith({
+      communityId: 1,
+      eventType: "check_in_reminder",
+    });
   });
 
   it("check-in reminder toggle ON calls upsertDmSettingAction", async () => {
