@@ -36,11 +36,7 @@ function mockFrom(returnValue: Record<string, unknown>) {
     .mockReturnValueOnce(returnValue as unknown as ReturnType<TypedClient["from"]>);
 }
 
-// Shorthand for void mutations (insert/delete/update with no .select())
-function voidChain(method: string, error: unknown = null) {
-  return { [method]: jest.fn().mockReturnValue({ eq: jest.fn().mockResolvedValue({ error }) }) };
-}
-
+// Shorthand for void insert mutations
 function voidInsert(error: unknown = null) {
   return { insert: jest.fn().mockResolvedValue({ error }) };
 }
