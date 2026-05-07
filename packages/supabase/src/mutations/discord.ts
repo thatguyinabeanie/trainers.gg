@@ -273,23 +273,38 @@ export async function deleteRoleMapping(
  * Record a channel send failure, incrementing the consecutive failure counter.
  * Creates the row if this is the first failure for the (server, channel) pair.
  * Returns the updated consecutive_failures count for threshold checks.
+ *
+ * Handles the INSERT race condition: if two workers concurrently try to
+ * create the first failure row, one INSERT succeeds and the other hits the
+ * UNIQUE constraint. The failing worker catches the duplicate-key error and
+ * falls through to the UPDATE path, avoiding a hard crash.
+ *
+ * Note: the UPDATE path has a minor theoretical race (two concurrent +1
+ * increments could lose one count), but this is acceptable given the low
+ * concurrency and non-critical nature of the failure counter.
  */
 export async function recordChannelFailure(
   supabase: TypedClient,
   discordServerId: number,
   channelId: string
 ): Promise<{ consecutive_failures: number }> {
-  // Upsert: on first failure create the row; on subsequent failures increment
-  const { data: existing } = await supabase
+  const now = new Date().toISOString();
+
+  // Try to read the existing row first
+  const { data: existing, error: readError } = await supabase
     .from("discord_channel_failures")
     .select("id, consecutive_failures")
     .eq("discord_server_id", discordServerId)
     .eq("channel_id", channelId)
     .maybeSingle();
 
-  const now = new Date().toISOString();
+  if (readError)
+    throw new Error(
+      `Failed to read channel failure record: ${readError.message}`
+    );
 
   if (existing) {
+    // Row exists — increment the counter
     const newCount = existing.consecutive_failures + 1;
     const { error } = await supabase
       .from("discord_channel_failures")
@@ -305,7 +320,9 @@ export async function recordChannelFailure(
     return { consecutive_failures: newCount };
   }
 
-  // First failure — insert a new row
+  // No row exists — try to insert. If another worker raced us and inserted
+  // first, we'll get a unique constraint violation (23505). Catch it and
+  // fall through to an update.
   const { data: inserted, error: insertError } = await supabase
     .from("discord_channel_failures")
     .insert({
@@ -317,12 +334,42 @@ export async function recordChannelFailure(
     .select("consecutive_failures")
     .single();
 
-  if (insertError)
-    throw new Error(
-      `Failed to record channel failure (insert): ${insertError.message}`
-    );
+  if (!insertError) {
+    return { consecutive_failures: inserted.consecutive_failures };
+  }
 
-  return { consecutive_failures: inserted.consecutive_failures };
+  // Duplicate key (SQLSTATE 23505) — another worker inserted first.
+  // Fall through to update the now-existing row.
+  if (insertError.code === "23505") {
+    const { data: retry, error: retryReadError } = await supabase
+      .from("discord_channel_failures")
+      .select("id, consecutive_failures")
+      .eq("discord_server_id", discordServerId)
+      .eq("channel_id", channelId)
+      .single();
+
+    if (retryReadError)
+      throw new Error(
+        `Failed to read channel failure on retry: ${retryReadError.message}`
+      );
+
+    if (retry) {
+      const newCount = retry.consecutive_failures + 1;
+      const { error: retryUpdateError } = await supabase
+        .from("discord_channel_failures")
+        .update({ consecutive_failures: newCount, last_failed_at: now })
+        .eq("id", retry.id);
+      if (retryUpdateError)
+        throw new Error(
+          `Failed to record channel failure (retry update): ${retryUpdateError.message}`
+        );
+      return { consecutive_failures: newCount };
+    }
+  }
+
+  throw new Error(
+    `Failed to record channel failure (insert): ${insertError.message}`
+  );
 }
 
 /**

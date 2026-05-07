@@ -209,6 +209,98 @@ export async function deleteFeatureFlag(
 }
 
 // =============================================================================
+// Community Feature Access
+// =============================================================================
+
+/**
+ * Check whether a community has access to a feature flag.
+ *
+ * Access is granted when ANY of:
+ * 1. The flag is globally enabled
+ * 2. The community's ID is in the flag's `metadata.allowed_communities` array
+ *
+ * Returns a discriminated `AccessCheckResult` so callers can distinguish
+ * "no access" from "a system error occurred".
+ *
+ * @param supabase - Typed Supabase client
+ * @param flagKey - Feature flag key (e.g., "discord_integration")
+ * @param communityId - Community ID to check access for
+ */
+export async function hasCommunityFeatureAccess(
+  supabase: TypedClient,
+  flagKey: string,
+  communityId: number
+): Promise<AccessCheckResult> {
+  try {
+    const flag = await getFeatureFlag(supabase, flagKey);
+
+    if (!flag) return { access: false };
+    if (flag.enabled) return { access: true };
+
+    // Check allowed_communities in metadata
+    const metadata = flag.metadata as {
+      allowed_communities?: number[];
+    } | null;
+    if (metadata?.allowed_communities?.includes(communityId)) {
+      return { access: true };
+    }
+
+    return { access: false };
+  } catch (error) {
+    console.error(
+      `[hasCommunityFeatureAccess] Error checking ${flagKey} for community:`,
+      communityId,
+      error
+    );
+    return {
+      access: "error",
+      reason: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Batch-check community feature access for multiple community IDs.
+ *
+ * Fetches the flag once and checks all community IDs against it.
+ * Returns a Set of community IDs that have access.
+ *
+ * @param supabase - Typed Supabase client
+ * @param flagKey - Feature flag key (e.g., "discord_integration")
+ * @param communityIds - Community IDs to check
+ */
+export async function getCommunityIdsWithFeatureAccess(
+  supabase: TypedClient,
+  flagKey: string,
+  communityIds: number[]
+): Promise<Set<number>> {
+  try {
+    const flag = await getFeatureFlag(supabase, flagKey);
+
+    // Flag doesn't exist — no community has access
+    if (!flag) return new Set();
+
+    // Globally enabled — all communities have access
+    if (flag.enabled) return new Set(communityIds);
+
+    // Check allowed_communities allowlist
+    const metadata = flag.metadata as {
+      allowed_communities?: number[];
+    } | null;
+    const allowedSet = new Set(metadata?.allowed_communities ?? []);
+
+    return new Set(communityIds.filter((id) => allowedSet.has(id)));
+  } catch (error) {
+    console.error(
+      "[getCommunityIdsWithFeatureAccess] Failed to check flag:",
+      { flagKey, communityIds },
+      error
+    );
+    return new Set();
+  }
+}
+
+// =============================================================================
 // Team Builder Access
 // =============================================================================
 

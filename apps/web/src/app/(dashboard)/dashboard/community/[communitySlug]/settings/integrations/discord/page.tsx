@@ -6,6 +6,7 @@ import {
 } from "@trainers/supabase";
 
 import { createClient } from "@/lib/supabase/server";
+import { checkCommunityFeatureAccess } from "@/lib/feature-flags/check-flag";
 import {
   getCachedGuildChannels,
   getCachedGuildRoles,
@@ -24,6 +25,13 @@ export default async function DiscordIntegrationPage({ params }: PageProps) {
 
   const community = await getCommunityBySlug(supabase, communitySlug);
   if (!community) notFound();
+
+  // Gate: Discord integration must be enabled for this community
+  const discordEnabled = await checkCommunityFeatureAccess(
+    "discord_integration",
+    community.id
+  );
+  if (!discordEnabled) notFound();
 
   const { data: canManage } = await supabase.rpc("has_community_permission", {
     p_community_id: community.id,

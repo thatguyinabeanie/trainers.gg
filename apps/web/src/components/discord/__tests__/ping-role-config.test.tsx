@@ -3,17 +3,62 @@
  */
 
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockUpdateChannelPingRoleAction = jest.fn();
 jest.mock("@/actions/discord-integration", () => ({
+  ...jest.requireActual<object>("@/actions/discord-integration"),
   updateChannelPingRoleAction: (...args: unknown[]) =>
     mockUpdateChannelPingRoleAction(...args),
 }));
 
 const mockToast = { success: jest.fn(), error: jest.fn() };
 jest.mock("sonner", () => ({ toast: mockToast }));
+
+// Mock Select to use native <select> for jsdom compatibility in parallel
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const ReactForMock = require("react");
+jest.mock("@/components/ui/select", () => {
+  return {
+    Select: ({
+      children,
+      value,
+      onValueChange,
+      disabled,
+    }: {
+      children: React.ReactNode;
+      value: string;
+      onValueChange: (v: string) => void;
+      disabled?: boolean;
+    }) =>
+      ReactForMock.createElement(
+        "div",
+        { "data-testid": "mock-select" },
+        ReactForMock.createElement(
+          "select",
+          {
+            value: value || "",
+            onChange: (e: React.ChangeEvent<HTMLSelectElement>) =>
+              onValueChange(e.target.value),
+            disabled,
+          },
+          ReactForMock.createElement("option", { value: "" }, "Select a role"),
+          children
+        )
+      ),
+    SelectTrigger: ({ children }: { children: React.ReactNode }) => children,
+    SelectContent: ({ children }: { children: React.ReactNode }) => children,
+    SelectItem: ({
+      children,
+      value,
+    }: {
+      children: React.ReactNode;
+      value: string;
+    }) => ReactForMock.createElement("option", { value }, children),
+    SelectValue: ({ placeholder }: { placeholder?: string }) =>
+      ReactForMock.createElement("span", null, placeholder),
+  };
+});
 
 import { PingRoleConfig } from "../ping-role-config";
 
@@ -73,7 +118,6 @@ describe("PingRoleConfig", () => {
   it("calls updateChannelPingRoleAction with role id on change", async () => {
     mockUpdateChannelPingRoleAction.mockResolvedValue({ success: true });
 
-    const user = userEvent.setup();
     render(
       <PingRoleConfig
         {...defaultProps}
@@ -88,15 +132,15 @@ describe("PingRoleConfig", () => {
       />
     );
 
-    // Click the combobox to open it, select a role
-    const combobox = screen.getByRole("combobox");
-    await user.click(combobox);
-    await user.click(screen.getByText("Competitors"));
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "role1" } });
 
-    expect(mockUpdateChannelPingRoleAction).toHaveBeenCalledWith({
-      mappingId: 1,
-      pingRoleId: "role1",
-      communityId: 1,
+    await waitFor(() => {
+      expect(mockUpdateChannelPingRoleAction).toHaveBeenCalledWith({
+        mappingId: 1,
+        pingRoleId: "role1",
+        communityId: 1,
+      });
     });
     expect(mockToast.success).toHaveBeenCalledWith("Ping role updated.");
   });
@@ -104,7 +148,6 @@ describe("PingRoleConfig", () => {
   it("sends pingRoleId as null when 'None' is selected", async () => {
     mockUpdateChannelPingRoleAction.mockResolvedValue({ success: true });
 
-    const user = userEvent.setup();
     render(
       <PingRoleConfig
         {...defaultProps}
@@ -119,14 +162,15 @@ describe("PingRoleConfig", () => {
       />
     );
 
-    const combobox = screen.getByRole("combobox");
-    await user.click(combobox);
-    await user.click(screen.getByText("None"));
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "none" } });
 
-    expect(mockUpdateChannelPingRoleAction).toHaveBeenCalledWith({
-      mappingId: 2,
-      pingRoleId: null,
-      communityId: 1,
+    await waitFor(() => {
+      expect(mockUpdateChannelPingRoleAction).toHaveBeenCalledWith({
+        mappingId: 2,
+        pingRoleId: null,
+        communityId: 1,
+      });
     });
   });
 
@@ -136,7 +180,6 @@ describe("PingRoleConfig", () => {
       error: "Permission denied",
     });
 
-    const user = userEvent.setup();
     render(
       <PingRoleConfig
         {...defaultProps}
@@ -151,11 +194,12 @@ describe("PingRoleConfig", () => {
       />
     );
 
-    const combobox = screen.getByRole("combobox");
-    await user.click(combobox);
-    await user.click(screen.getByText("Admins"));
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "role2" } });
 
-    expect(mockToast.error).toHaveBeenCalledWith("Permission denied");
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith("Permission denied");
+    });
   });
 
   it("shows fallback error message when error is undefined", async () => {
@@ -163,7 +207,6 @@ describe("PingRoleConfig", () => {
       success: false,
     });
 
-    const user = userEvent.setup();
     render(
       <PingRoleConfig
         {...defaultProps}
@@ -178,12 +221,13 @@ describe("PingRoleConfig", () => {
       />
     );
 
-    const combobox = screen.getByRole("combobox");
-    await user.click(combobox);
-    await user.click(screen.getByText("Competitors"));
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "role1" } });
 
-    expect(mockToast.error).toHaveBeenCalledWith(
-      "Failed to update ping role."
-    );
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith(
+        "Failed to update ping role."
+      );
+    });
   });
 });

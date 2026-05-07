@@ -28,6 +28,7 @@ import {
   deleteDiscordServer,
   getDeliveryFailure,
   listRecentFailures,
+  hasCommunityFeatureAccess,
   type ChannelFailureRow,
   type DmFailureRow,
   ALL_DM_EVENT_TYPES,
@@ -116,12 +117,22 @@ const sendTestNotificationSchema = z.object({
 const updateServerSettingsSchema = z.object({
   serverId: z.number().int().positive(),
   communityId: z.number().int().positive(),
-  settings: z.object({
-    embed_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-    setup_completed: z.boolean().optional(),
-    registration_reminder_minutes: z.number().int().positive().nullable().optional(),
-    link_prompt_frequency: z.string().optional(),
-  }).strict(),
+  settings: z
+    .object({
+      embed_color: z
+        .string()
+        .regex(/^#[0-9a-fA-F]{6}$/)
+        .optional(),
+      setup_completed: z.boolean().optional(),
+      registration_reminder_minutes: z
+        .number()
+        .int()
+        .positive()
+        .nullable()
+        .optional(),
+      link_prompt_frequency: z.string().optional(),
+    })
+    .strict(),
 });
 
 const updateChannelPingRoleSchema = z.object({
@@ -200,7 +211,7 @@ function asForbidden(error: unknown): ActionResult<never> | undefined {
 }
 
 /**
- * Require community.manage permission and a linked Discord server.
+ * Require community.manage permission, feature flag, and a linked Discord server.
  * Returns the Discord server row or an ActionResult error.
  */
 async function requireDiscordServer(
@@ -211,6 +222,26 @@ async function requireDiscordServer(
   | { error: ActionResult<never> }
 > {
   await requireCommunityManage(supabase, communityId);
+
+  // Gate: Discord integration must be enabled for this community
+  const featureCheck = await hasCommunityFeatureAccess(
+    supabase,
+    "discord_integration",
+    communityId
+  );
+  if (featureCheck.access !== true) {
+    return {
+      error: {
+        success: false,
+        error:
+          featureCheck.access === "error"
+            ? "Failed to check feature access"
+            : "Discord integration is not enabled for this community",
+        code: "FORBIDDEN",
+      },
+    };
+  }
+
   const server = await getDiscordServerByCommunityId(supabase, communityId);
   if (!server) {
     return {
@@ -691,6 +722,23 @@ export async function getDiscordInstallUrlAction(
       return { success: false, error: "Not authenticated" };
     }
 
+    // Gate: Discord integration must be enabled for this community
+    const featureCheck = await hasCommunityFeatureAccess(
+      supabase,
+      "discord_integration",
+      communityId
+    );
+    if (featureCheck.access !== true) {
+      return {
+        success: false,
+        error:
+          featureCheck.access === "error"
+            ? "Failed to check feature access"
+            : "Discord integration is not enabled for this community",
+        code: "FORBIDDEN",
+      };
+    }
+
     const applicationId = process.env.DISCORD_APPLICATION_ID;
     if (!applicationId) {
       return {
@@ -1012,7 +1060,9 @@ export async function updateChannelPingRoleAction(
       .maybeSingle();
 
     if (selectError)
-      throw new Error(`Failed to look up channel mapping: ${selectError.message}`);
+      throw new Error(
+        `Failed to look up channel mapping: ${selectError.message}`
+      );
     if (!mapping) {
       return { success: false, error: "Channel mapping not found" };
     }
@@ -1072,7 +1122,10 @@ export async function updateVerifiedRoleAction(input: {
       return { success: false, error: "Discord server not found" };
     }
     if (server.community_id !== parsed.communityId) {
-      return { success: false, error: "Server does not belong to this community" };
+      return {
+        success: false,
+        error: "Server does not belong to this community",
+      };
     }
 
     if (parsed.enabled && parsed.roleId) {
@@ -1092,7 +1145,9 @@ export async function updateVerifiedRoleAction(input: {
         .eq("role_type", "verified")
         .maybeSingle();
       if (lookupError)
-        throw new Error(`Failed to look up role mapping: ${lookupError.message}`);
+        throw new Error(
+          `Failed to look up role mapping: ${lookupError.message}`
+        );
       if (mapping) {
         await toggleRoleMapping(supabase, mapping.id, false);
       }
@@ -1139,18 +1194,39 @@ export async function getDeliveryStatsAction(
 
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const [channelResult, dmResult, roleResult, failedResult] = await Promise.all([
-      supabase.from("discord_delivery_log").select("*", { count: "exact", head: true })
-        .eq("discord_server_id", serverId).eq("type", "channel").gte("created_at", since),
-      supabase.from("discord_delivery_log").select("*", { count: "exact", head: true })
-        .eq("discord_server_id", serverId).eq("type", "dm").gte("created_at", since),
-      supabase.from("discord_delivery_log").select("*", { count: "exact", head: true })
-        .eq("discord_server_id", serverId).eq("type", "role_sync").gte("created_at", since),
-      supabase.from("discord_delivery_failures").select("*", { count: "exact", head: true })
-        .eq("discord_server_id", serverId).gte("created_at", since),
-    ]);
+    const [channelResult, dmResult, roleResult, failedResult] =
+      await Promise.all([
+        supabase
+          .from("discord_delivery_log")
+          .select("*", { count: "exact", head: true })
+          .eq("discord_server_id", serverId)
+          .eq("type", "channel")
+          .gte("created_at", since),
+        supabase
+          .from("discord_delivery_log")
+          .select("*", { count: "exact", head: true })
+          .eq("discord_server_id", serverId)
+          .eq("type", "dm")
+          .gte("created_at", since),
+        supabase
+          .from("discord_delivery_log")
+          .select("*", { count: "exact", head: true })
+          .eq("discord_server_id", serverId)
+          .eq("type", "role_sync")
+          .gte("created_at", since),
+        supabase
+          .from("discord_delivery_failures")
+          .select("*", { count: "exact", head: true })
+          .eq("discord_server_id", serverId)
+          .gte("created_at", since),
+      ]);
 
-    if (channelResult.error || dmResult.error || roleResult.error || failedResult.error) {
+    if (
+      channelResult.error ||
+      dmResult.error ||
+      roleResult.error ||
+      failedResult.error
+    ) {
       return { success: false, error: "Failed to load delivery stats" };
     }
 
@@ -1237,5 +1313,4 @@ export async function getActivityFeedAction(
 // =============================================================================
 // Linked Accounts Stats
 // =============================================================================
-
 
