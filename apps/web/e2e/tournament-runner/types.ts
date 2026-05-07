@@ -36,6 +36,13 @@ export interface TournamentConfig {
   maxParticipants?: number;
   /** Round time in minutes */
   roundTimeMinutes?: number;
+  /**
+   * Match check-in window in minutes (per game).
+   * Controls how long the system waits before auto-awarding a no-show.
+   * Not exposed in the creation wizard — set via Supabase in activateTournament.
+   * Defaults to 1 minute (fast auto-awards for testing).
+   */
+  checkInTimeMinutes?: number;
 }
 
 // -- Scenario Definition --

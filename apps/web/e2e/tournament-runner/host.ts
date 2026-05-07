@@ -36,6 +36,13 @@ export async function loginAsHost(page: Page, host: TestUser): Promise<void> {
 /**
  * Create a tournament via the dashboard UI.
  * Returns the tournament slug for use in subsequent operations.
+ *
+ * Wires scenario config fields into the multi-step wizard:
+ * - Step 1: Basic Info (name)
+ * - Step 2: Format (preset, bestOf, plannedRounds, roundTimeMinutes per phase)
+ * - Step 3: Registration (maxParticipants)
+ * - Step 4: Schedule (skipped — defaults are fine)
+ * - Step 5: Review → Create
  */
 export async function createTournament(
   page: Page,
@@ -47,7 +54,7 @@ export async function createTournament(
   );
   await page.waitForLoadState("networkidle");
 
-  // Fill tournament name
+  // -- Step 1: Basic Info --
   const nameInput = page.getByLabel("Tournament Name");
   await nameInput.waitFor({ state: "visible", timeout: DEFAULT_TIMEOUT });
   await nameInput.fill(config.name);
@@ -61,24 +68,80 @@ export async function createTournament(
   }
   // Default is swiss_with_cut which should already be selected
 
-  // Submit the form (multi-step wizard — click through steps)
-  // Step 1: Format — click Next/Continue
+  // Click Next to go to Step 2: Format
   const nextBtn = page.getByRole("button", { name: /next|continue/i });
   if (await nextBtn.isVisible().catch(() => false)) {
     await nextBtn.click();
   }
 
-  // Step 2: Registration settings — click Next/Continue
+  // -- Step 2: Format (phase settings) --
+  await page.waitForTimeout(500);
+
+  // Set best-of for the Swiss phase (ButtonGroup with buttons "1", "3", "5")
+  if (config.bestOf !== 3) {
+    // Default is BO3, only click if different
+    const bestOfBtn = page.getByRole("button", {
+      name: new RegExp(`^${config.bestOf}$`),
+      exact: true,
+    });
+    if (await bestOfBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await bestOfBtn.click();
+    }
+  }
+
+  // Set planned rounds if specified (Swiss phase only)
+  if (config.rounds) {
+    const roundsInput = page.locator('input[id$="-rounds"]').first();
+    if (await roundsInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await roundsInput.clear();
+      await roundsInput.fill(String(config.rounds));
+    }
+  }
+
+  // Set round time if specified
+  if (config.roundTimeMinutes !== undefined) {
+    const timerInput = page.locator('input[id$="-timer"]').first();
+    if (await timerInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await timerInput.clear();
+      await timerInput.fill(String(config.roundTimeMinutes));
+    }
+  }
+
+  // Click Next to go to Step 3: Registration
   if (await nextBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await nextBtn.click();
   }
 
-  // Step 3: Schedule — click Next/Continue
+  // -- Step 3: Registration --
+  await page.waitForTimeout(500);
+
+  // Set max participants if specified
+  if (config.maxParticipants) {
+    // Enable player cap switch
+    const capSwitch = page.locator("#playerCap");
+    if (await capSwitch.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await capSwitch.click();
+      await page.waitForTimeout(300);
+    }
+    // Fill max participants
+    const maxInput = page.locator("#maxParticipants");
+    if (await maxInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await maxInput.clear();
+      await maxInput.fill(String(config.maxParticipants));
+    }
+  }
+
+  // Click Next to go to Step 4: Schedule
   if (await nextBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await nextBtn.click();
   }
 
-  // Final step: Review — click Create
+  // -- Step 4: Schedule (skip — use defaults) --
+  if (await nextBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await nextBtn.click();
+  }
+
+  // -- Step 5: Review → Create --
   const createBtn = page.getByRole("button", { name: /create tournament/i });
   await createBtn.waitFor({ state: "visible", timeout: DEFAULT_TIMEOUT });
   await createBtn.click();
@@ -129,10 +192,14 @@ export async function openRegistration(
  *
  * Also deletes phantom rounds pre-created by startTournamentEnhanced so the
  * UI's "Start Round 1" button works correctly.
+ *
+ * If `checkInTimeMinutes` is specified in config, updates all phases to use
+ * that value (not exposed in the creation wizard UI, so must be set via DB).
  */
 export async function activateTournament(
   host: TestUser,
-  tournamentSlug: string
+  tournamentSlug: string,
+  config?: TournamentConfig
 ): Promise<void> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -217,6 +284,25 @@ export async function activateTournament(
             );
           }
         }
+      }
+    }
+  }
+
+  // Set check-in time on all phases if configured.
+  // This field is not exposed in the creation wizard — must be set via DB.
+  // A short value (e.g., 1 min) ensures no-show auto-awards resolve quickly.
+  const checkInMinutes = config?.checkInTimeMinutes;
+  if (checkInMinutes !== undefined && phases?.length) {
+    for (const phase of phases) {
+      const { error: updateError } = await supabase
+        .from("tournament_phases")
+        .update({ check_in_time_minutes: checkInMinutes })
+        .eq("id", phase.id);
+
+      if (updateError) {
+        throw new Error(
+          `Failed to set check_in_time_minutes on phase ${phase.id}: ${updateError.message}`
+        );
       }
     }
   }
@@ -356,11 +442,18 @@ export async function startRound(
 /**
  * Complete the current round from the management UI.
  * Waits for all matches to be completed, then clicks "Complete Round".
+ *
+ * @param timeoutMs How long to wait for all matches to finish (ms).
+ *   Default 60s is fine when all players report normally.
+ *   For rounds with no-shows, pass a higher value:
+ *   `bestOf × checkInTimeMinutes × 60_000 + buffer`
+ *   so the auto-award timer has time to expire.
  */
 export async function completeRound(
   page: Page,
   communitySlug: string,
-  tournamentSlug: string
+  tournamentSlug: string,
+  timeoutMs: number = 60_000
 ): Promise<void> {
   await page.goto(
     `/dashboard/community/${communitySlug}/tournaments/${tournamentSlug}/manage`
@@ -369,8 +462,8 @@ export async function completeRound(
 
   // Wait for "Complete Round" to be enabled (all matches done)
   const completeBtn = page.getByRole("button", { name: "Complete Round" });
-  await completeBtn.waitFor({ state: "visible", timeout: 60_000 });
-  await expect(completeBtn).toBeEnabled({ timeout: 60_000 });
+  await completeBtn.waitFor({ state: "visible", timeout: timeoutMs });
+  await expect(completeBtn).toBeEnabled({ timeout: timeoutMs });
   await completeBtn.click({ timeout: DEFAULT_TIMEOUT });
 
   // Wait for round completion confirmation

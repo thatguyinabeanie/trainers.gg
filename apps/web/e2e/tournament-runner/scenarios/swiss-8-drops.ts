@@ -18,6 +18,8 @@ export const swiss8Drops: Scenario = {
     format: "swiss_only",
     bestOf: 3,
     rounds: 3,
+    // Short check-in window so no-show auto-awards resolve quickly in tests
+    checkInTimeMinutes: 1,
   },
 
   host: {

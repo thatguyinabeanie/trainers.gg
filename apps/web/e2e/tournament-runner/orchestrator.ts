@@ -194,7 +194,12 @@ export class TournamentOrchestrator {
     // Transition tournament from upcoming → active via Supabase mutation.
     // There is no UI button for this step — the startTournament server action
     // exists but is not wired to any manage-page control.
-    await activateTournament(this.scenario.host, this.tournamentSlug);
+    // Also sets checkInTimeMinutes on phases if configured (not exposed in wizard UI).
+    await activateTournament(
+      this.scenario.host,
+      this.tournamentSlug,
+      this.scenario.config
+    );
     this.log("  Tournament activated (status: active)");
 
     // Reload the host's manage page so the RoundCommandCenter renders
@@ -273,11 +278,21 @@ export class TournamentOrchestrator {
       );
       this.log(`  Round ${round} actions completed`);
 
+      // Calculate completeRound timeout.
+      // If this round has no-shows, the auto-award timer must expire before
+      // the match resolves. Budget: bestOf × checkInTimeMinutes × 60s + buffer.
+      const hasNoShow = actions.some((a) => a.type === "no-show");
+      const checkInMin = this.scenario.config.checkInTimeMinutes ?? 5;
+      const completeTimeout = hasNoShow
+        ? this.scenario.config.bestOf * checkInMin * 60_000 + 30_000
+        : 60_000;
+
       // Host completes the round
       await completeRound(
         this.hostPage!,
         this.scenario.config.community,
-        this.tournamentSlug
+        this.tournamentSlug,
+        completeTimeout
       );
       this.log(`  Round ${round} completed`);
 
