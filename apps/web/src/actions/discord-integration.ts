@@ -28,6 +28,7 @@ import {
   deleteDiscordServer,
   getDeliveryFailure,
   listRecentFailures,
+  hasCommunityFeatureAccess,
   type ChannelFailureRow,
   type DmFailureRow,
   ALL_DM_EVENT_TYPES,
@@ -42,7 +43,6 @@ import { getErrorMessage } from "@trainers/utils";
 
 import { CacheTags } from "@/lib/cache";
 import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
-import { checkCommunityFeatureAccess } from "@/lib/feature-flags/check-flag";
 import { signInstallState } from "@/lib/discord/install-state";
 import { createClient } from "@/lib/supabase/server";
 import { sendChannelNotificationWorkflow } from "@/workflows/send-channel-notification";
@@ -224,15 +224,19 @@ async function requireDiscordServer(
   await requireCommunityManage(supabase, communityId);
 
   // Gate: Discord integration must be enabled for this community
-  const discordEnabled = await checkCommunityFeatureAccess(
+  const featureCheck = await hasCommunityFeatureAccess(
+    supabase,
     "discord_integration",
     communityId
   );
-  if (!discordEnabled) {
+  if (featureCheck.access !== true) {
     return {
       error: {
         success: false,
-        error: "Discord integration is not enabled for this community",
+        error:
+          featureCheck.access === "error"
+            ? "Failed to check feature access"
+            : "Discord integration is not enabled for this community",
         code: "FORBIDDEN",
       },
     };
@@ -719,14 +723,18 @@ export async function getDiscordInstallUrlAction(
     }
 
     // Gate: Discord integration must be enabled for this community
-    const discordEnabled = await checkCommunityFeatureAccess(
+    const featureCheck = await hasCommunityFeatureAccess(
+      supabase,
       "discord_integration",
       communityId
     );
-    if (!discordEnabled) {
+    if (featureCheck.access !== true) {
       return {
         success: false,
-        error: "Discord integration is not enabled for this community",
+        error:
+          featureCheck.access === "error"
+            ? "Failed to check feature access"
+            : "Discord integration is not enabled for this community",
         code: "FORBIDDEN",
       };
     }

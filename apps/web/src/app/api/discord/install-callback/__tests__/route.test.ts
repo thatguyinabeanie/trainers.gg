@@ -30,18 +30,14 @@ jest.mock("@/lib/supabase/server", () => ({
 const mockHasCommunityAccess = jest.fn();
 const mockGetCommunityById = jest.fn();
 const mockCreateDiscordServer = jest.fn();
+const mockHasCommunityFeatureAccess = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
   hasCommunityAccess: (...args: unknown[]) => mockHasCommunityAccess(...args),
   getCommunityById: (...args: unknown[]) => mockGetCommunityById(...args),
   createDiscordServer: (...args: unknown[]) => mockCreateDiscordServer(...args),
-}));
-
-// Mock feature-flag check — always enabled in tests
-const mockCheckCommunityFeatureAccess = jest.fn();
-jest.mock("@/lib/feature-flags/check-flag", () => ({
-  checkCommunityFeatureAccess: (...args: unknown[]) =>
-    mockCheckCommunityFeatureAccess(...args),
+  hasCommunityFeatureAccess: (...args: unknown[]) =>
+    mockHasCommunityFeatureAccess(...args),
 }));
 
 // =============================================================================
@@ -83,7 +79,7 @@ describe("GET /api/discord/install-callback", () => {
     mockVerifyInstallState.mockResolvedValue(VERIFIED_STATE);
     mockGetUser.mockResolvedValue({ data: { user: AUTHED_USER }, error: null });
     mockHasCommunityAccess.mockResolvedValue(true);
-    mockCheckCommunityFeatureAccess.mockResolvedValue(true);
+    mockHasCommunityFeatureAccess.mockResolvedValue({ access: true });
     mockCreateDiscordServer.mockResolvedValue(undefined);
     mockGetCommunityById.mockResolvedValue(COMMUNITY);
   });
@@ -228,7 +224,7 @@ describe("GET /api/discord/install-callback", () => {
 
   describe("Feature flag check", () => {
     it("redirects with feature_disabled when Discord integration is not enabled", async () => {
-      mockCheckCommunityFeatureAccess.mockResolvedValue(false);
+      mockHasCommunityFeatureAccess.mockResolvedValue({ access: false });
 
       const response = await GET(makeRequest(VALID_PARAMS));
 

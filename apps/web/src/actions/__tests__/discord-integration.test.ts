@@ -52,11 +52,9 @@ jest.mock("@/lib/cache-invalidation", () => ({
 }));
 
 // Mock feature-flag check — always enabled in tests
-const mockCheckCommunityFeatureAccess = jest.fn().mockResolvedValue(true);
-jest.mock("@/lib/feature-flags/check-flag", () => ({
-  checkCommunityFeatureAccess: (...args: unknown[]) =>
-    mockCheckCommunityFeatureAccess(...args),
-}));
+const mockHasCommunityFeatureAccess = jest
+  .fn()
+  .mockResolvedValue({ access: true });
 
 // Mock install-state signing. Preserve verifyInstallState shape to match the
 // global mock from test-setup — the override must provide the full module
@@ -127,6 +125,8 @@ jest.mock("@trainers/supabase", () => ({
   deleteDiscordServer: (...args: unknown[]) => mockDeleteDiscordServer(...args),
   getDeliveryFailure: (...args: unknown[]) => mockGetDeliveryFailure(...args),
   listRecentFailures: (...args: unknown[]) => mockListRecentFailures(...args),
+  hasCommunityFeatureAccess: (...args: unknown[]) =>
+    mockHasCommunityFeatureAccess(...args),
 }));
 
 // Import actions under test — must come AFTER all jest.mock() calls

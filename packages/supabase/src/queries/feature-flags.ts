@@ -292,7 +292,8 @@ export async function getCommunityIdsWithFeatureAccess(
     return new Set(communityIds.filter((id) => allowedSet.has(id)));
   } catch (error) {
     console.error(
-      `[getCommunityIdsWithFeatureAccess] Error checking ${flagKey}:`,
+      "[getCommunityIdsWithFeatureAccess] Failed to check flag:",
+      { flagKey, communityIds },
       error
     );
     return new Set();

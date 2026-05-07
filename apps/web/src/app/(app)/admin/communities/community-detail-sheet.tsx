@@ -366,7 +366,14 @@ export function CommunityDetailSheet({
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="discord-toggle">Discord Integration</Label>
+                  <Label htmlFor="discord-toggle">
+                    Discord Integration
+                    {discordQuery.error && (
+                      <span className="text-destructive text-xs ml-1 font-normal">
+                        (error loading status)
+                      </span>
+                    )}
+                  </Label>
                   <p className="text-muted-foreground text-xs">
                     Enable Discord bot integration for this community
                   </p>
