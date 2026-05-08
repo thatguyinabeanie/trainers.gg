@@ -1,6 +1,8 @@
 "use server";
 
 import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
+import { CacheTags } from "@/lib/cache";
+import { updateTag } from "next/cache";
 import { z } from "@trainers/validators";
 import { imageUploadSchema } from "@trainers/validators";
 import { type ActionResult } from "@trainers/validators";
@@ -83,6 +85,7 @@ export async function uploadCommunityBanner(
     }
 
     invalidateCommunityPageCaches(org.slug, validatedId);
+    updateTag(CacheTags.TOURNAMENTS_LIST);
     return { bannerUrl };
   }, "Failed to upload banner");
 }
@@ -128,6 +131,7 @@ export async function removeCommunityBanner(
     if (error) throw error;
 
     invalidateCommunityPageCaches(org.slug, validatedId);
+    updateTag(CacheTags.TOURNAMENTS_LIST);
     return { success: true as const };
   }, "Failed to remove banner");
 }
