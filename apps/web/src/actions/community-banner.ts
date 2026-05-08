@@ -71,7 +71,13 @@ export async function uploadCommunityBanner(
       .from("communities")
       .update({ banner_url: bannerUrl })
       .eq("id", validatedId);
-    if (error) throw error;
+    if (error) {
+      // Clean up uploaded file to avoid orphaned storage
+      await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, path).catch(
+        () => {}
+      );
+      throw error;
+    }
 
     // Best-effort cleanup — old banner may be external
     if (oldBannerUrl) {

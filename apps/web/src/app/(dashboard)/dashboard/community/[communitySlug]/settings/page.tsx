@@ -360,14 +360,14 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
               <Camera className="h-6 w-6 text-white" />
             )}
           </div>
-          <input
-            ref={bannerInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            onChange={handleBannerSelect}
-            className="hidden"
-          />
         </button>
+        <input
+          ref={bannerInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={handleBannerSelect}
+          className="hidden"
+        />
         {currentBannerUrl && (
           <button
             type="button"
@@ -421,15 +421,15 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
                   <Camera className="h-4 w-4 text-white" />
                 )}
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                aria-label="Upload community logo"
-                onChange={handleLogoSelect}
-                className="hidden"
-              />
             </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              aria-label="Upload community logo"
+              onChange={handleLogoSelect}
+              className="hidden"
+            />
 
             <div className="min-w-0 flex-1">
               {currentLogoUrl && (
