@@ -154,18 +154,6 @@ function formatDate(dateStr?: string | null): string {
 // Server Components
 // ============================================================================
 
-function Breadcrumb({ tournamentName }: { tournamentName: string }) {
-  return (
-    <div className="text-muted-foreground mb-4 flex items-center gap-2 text-sm">
-      <Link href="/tournaments" className="hover:underline">
-        Tournaments
-      </Link>
-      <span>/</span>
-      <span className="text-foreground">{tournamentName}</span>
-    </div>
-  );
-}
-
 /**
  * Banner hero reusing the community's banner image.
  * Same visual language as the community detail page — contained, rounded,
@@ -182,9 +170,9 @@ function TournamentBanner({
   };
 }) {
   return (
-    <div className="relative mb-14 sm:mb-16">
+    <div className="relative">
       {/* Banner */}
-      <div className="h-36 w-full overflow-hidden rounded-xl sm:h-44 md:h-52">
+      <div className="h-40 w-full overflow-hidden rounded-xl sm:h-48 md:h-56">
         {organization.banner_url ? (
           <img
             src={organization.banner_url}
@@ -203,7 +191,7 @@ function TournamentBanner({
       >
         <Avatar
           noBorder
-          className="ring-background h-20 w-20 shadow-lg ring-4 sm:h-24 sm:w-24"
+          className="ring-background h-24 w-24 shadow-lg ring-4 sm:h-28 sm:w-28"
         >
           <AvatarImage src={organization.logo_url ?? undefined} />
           <AvatarFallback className="bg-muted text-2xl font-bold">
@@ -233,7 +221,7 @@ function TournamentHeader({
   const registrationCount = tournament.registrations?.length || 0;
 
   return (
-    <div className="mb-6">
+    <div className="mt-10 mb-6 sm:mt-12">
       {/* Community name link */}
       {organization && (
         <Link
@@ -561,8 +549,6 @@ export default async function TournamentPage({ params }: PageProps) {
 
   return (
     <PageContainer>
-      <Breadcrumb tournamentName={tournament.name} />
-
       {/* Community banner — mirrors community detail page */}
       {organization && <TournamentBanner organization={organization} />}
 

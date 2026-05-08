@@ -10,6 +10,13 @@ jest.mock("next/navigation", () => ({
   useSearchParams: jest.fn(),
 }));
 
+// Mock MarkdownContent to avoid ESM react-markdown import
+jest.mock("@/components/ui/markdown-content", () => ({
+  MarkdownContent: ({ content }: { content: string }) => (
+    <div data-testid="markdown-content">{content}</div>
+  ),
+}));
+
 // Mock child components
 jest.mock("../public-pairings", () => ({
   PublicPairings: () => (
@@ -38,6 +45,7 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
     scheduleCard: <div data-testid="schedule-card">Schedule</div>,
     formatCard: <div data-testid="format-card">Format</div>,
     sidebarCard: <div data-testid="sidebar-card">Sidebar</div>,
+    phases: [],
     tournamentId: 1,
     tournamentSlug: "test-tournament",
     tournamentStatus: "active",
@@ -54,10 +62,30 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
     it("should show overview tab by default when no tab parameter is provided", () => {
       render(<TournamentTabs {...defaultProps} />);
 
-      // Check that the overview tab content is visible
-      expect(screen.getByTestId("schedule-card")).toBeInTheDocument();
-      expect(screen.getByTestId("format-card")).toBeInTheDocument();
+      // Overview tab shows description
+      expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
+      expect(screen.getByText("Test tournament description")).toBeInTheDocument();
+    });
+
+    it("should show the register tab when tab=register is in URL", () => {
+      (useSearchParams as jest.Mock).mockReturnValue(
+        new URLSearchParams("tab=register")
+      );
+
+      render(<TournamentTabs {...defaultProps} />);
+
       expect(screen.getByTestId("sidebar-card")).toBeInTheDocument();
+    });
+
+    it("should show the details tab when tab=details is in URL", () => {
+      (useSearchParams as jest.Mock).mockReturnValue(
+        new URLSearchParams("tab=details")
+      );
+
+      render(<TournamentTabs {...defaultProps} />);
+
+      expect(screen.getByTestId("format-card")).toBeInTheDocument();
+      expect(screen.getByTestId("schedule-card")).toBeInTheDocument();
     });
 
     it("should show the pairings tab when tab=pairings is in URL", () => {
@@ -67,7 +95,6 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
 
       render(<TournamentTabs {...defaultProps} />);
 
-      // Check that the pairings tab content is visible
       expect(screen.getByTestId("public-pairings")).toBeInTheDocument();
     });
 
@@ -78,7 +105,6 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
 
       render(<TournamentTabs {...defaultProps} />);
 
-      // Check that the standings tab content is visible
       expect(screen.getByTestId("tournament-standings")).toBeInTheDocument();
     });
 
@@ -87,14 +113,10 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
 
       render(<TournamentTabs {...defaultProps} />);
 
-      // Verify we're on the overview tab initially
-      expect(screen.getByTestId("schedule-card")).toBeInTheDocument();
-
       // Click on the Pairings tab
       const pairingsTab = screen.getByRole("tab", { name: /pairings/i });
       await user.click(pairingsTab);
 
-      // Check that router.replace was called with the correct URL
       expect(mockRouter.replace).toHaveBeenCalledWith(
         expect.stringContaining("tab=pairings"),
         { scroll: false }
@@ -108,9 +130,8 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
 
       render(<TournamentTabs {...defaultProps} />);
 
-      // Should show overview content
-      expect(screen.getByTestId("schedule-card")).toBeInTheDocument();
-      expect(screen.getByTestId("format-card")).toBeInTheDocument();
+      // Should show overview content (markdown)
+      expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
     });
   });
 
@@ -179,7 +200,9 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
   describe("All Tab Parameters", () => {
     it("should handle all valid tab values", () => {
       const tabs = [
-        { param: "overview", testId: "schedule-card" },
+        { param: "overview", testId: "markdown-content" },
+        { param: "register", testId: "sidebar-card" },
+        { param: "details", testId: "format-card" },
         { param: "pairings", testId: "public-pairings" },
         { param: "standings", testId: "tournament-standings" },
       ];
@@ -207,7 +230,7 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
       const { unmount } = render(<TournamentTabs {...defaultProps} />);
 
       // Verify we're on the overview tab
-      expect(screen.getByTestId("schedule-card")).toBeInTheDocument();
+      expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
 
       // Click on Standings tab
       const standingsTab = screen.getByRole("tab", { name: /standings/i });
@@ -224,21 +247,19 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
 
       // Should be back on overview tab
       await waitFor(() => {
-        expect(screen.getByTestId("schedule-card")).toBeInTheDocument();
+        expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
       });
     });
   });
 
   describe("Deep Link Sharing", () => {
     it("should allow sharing direct links to specific tabs", () => {
-      // Simulate user opening a shared link with tab=pairings
       (useSearchParams as jest.Mock).mockReturnValue(
         new URLSearchParams("tab=pairings")
       );
 
       render(<TournamentTabs {...defaultProps} />);
 
-      // Pairings tab should be immediately visible
       expect(screen.getByTestId("public-pairings")).toBeInTheDocument();
     });
 
@@ -251,11 +272,9 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
 
       render(<TournamentTabs {...defaultProps} />);
 
-      // Click on Pairings tab
       const pairingsTab = screen.getByRole("tab", { name: /pairings/i });
       await user.click(pairingsTab);
 
-      // Check that router.replace was called with both the new tab param and existing params
       expect(mockRouter.replace).toHaveBeenCalledWith(
         expect.stringMatching(/utm_source=email/),
         { scroll: false }
@@ -278,7 +297,7 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
       render(<TournamentTabs {...defaultProps} />);
 
       // Start on overview
-      expect(screen.getByTestId("schedule-card")).toBeInTheDocument();
+      expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
 
       // Switch to pairings
       const pairingsTab = screen.getByRole("tab", { name: /pairings/i });

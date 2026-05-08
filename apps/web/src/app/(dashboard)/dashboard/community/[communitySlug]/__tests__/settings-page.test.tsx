@@ -40,6 +40,11 @@ jest.mock("@/actions/community-logo", () => ({
   removeCommunityLogo: jest.fn(),
 }));
 
+jest.mock("@/actions/community-banner", () => ({
+  uploadCommunityBanner: jest.fn(),
+  removeCommunityBanner: jest.fn(),
+}));
+
 jest.mock("sonner", () => ({
   toast: {
     success: jest.fn(),
@@ -365,9 +370,9 @@ describe("DashboardSettingsPage", () => {
   describe("logo upload validation", () => {
     function getFileInput(): HTMLInputElement {
       const input = document.querySelector(
-        'input[type="file"][accept*="image"]'
+        'input[type="file"][aria-label="Upload community logo"]'
       );
-      if (!input) throw new Error("File input not found");
+      if (!input) throw new Error("Logo file input not found");
       return input as HTMLInputElement;
     }
 

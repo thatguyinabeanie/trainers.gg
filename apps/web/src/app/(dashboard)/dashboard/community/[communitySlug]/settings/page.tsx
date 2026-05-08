@@ -425,6 +425,7 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
                 ref={fileInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
+                aria-label="Upload community logo"
                 onChange={handleLogoSelect}
                 className="hidden"
               />

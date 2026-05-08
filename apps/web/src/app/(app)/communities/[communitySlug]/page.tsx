@@ -7,6 +7,7 @@ import {
 import { getCommunityBySlug, hasCommunityAccess } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 import Link from "next/link";
+import { PageContainer } from "@/components/layout/page-container";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -276,7 +277,7 @@ export default async function OrganizationPage({
   }));
 
   return (
-    <div className="container mx-auto px-4 py-8 md:px-6">
+    <PageContainer>
       {/* Banner with avatar overlay */}
       <BannerHero
         bannerUrl={organization.banner_url ?? null}
@@ -284,12 +285,12 @@ export default async function OrganizationPage({
       />
 
       {/* Community identity — offset below avatar */}
-      <div className="mt-16 sm:mt-18">
+      <div className="mt-10 sm:mt-12">
         <CommunityHeader organization={organization} canManage={canManage} />
       </div>
 
       {/* Tabbed content */}
-      <div className="mt-8">
+      <div className="mt-6">
         <CommunityTabs
           about={organization.about ?? null}
           tournaments={tournaments as TournamentWithOrg[]}
@@ -297,6 +298,6 @@ export default async function OrganizationPage({
           canManage={canManage}
         />
       </div>
-    </div>
+    </PageContainer>
   );
 }
