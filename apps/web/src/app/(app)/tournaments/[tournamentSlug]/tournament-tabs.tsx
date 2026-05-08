@@ -99,14 +99,18 @@ function PhaseCard({ phase }: { phase: PhaseData }) {
             {phase.plannedRounds} rounds
           </div>
         )}
-        <div className="flex items-center gap-1.5">
-          <Users className="h-3.5 w-3.5 shrink-0" />
-          Best of {phase.bestOf}
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Clock className="h-3.5 w-3.5 shrink-0" />
-          {phase.roundTimeMinutes} min
-        </div>
+        {phase.bestOf != null && (
+          <div className="flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5 shrink-0" />
+            Best of {phase.bestOf}
+          </div>
+        )}
+        {phase.roundTimeMinutes != null && (
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 shrink-0" />
+            {phase.roundTimeMinutes} min
+          </div>
+        )}
         {phase.checkInTimeMinutes && (
           <div className="flex items-center gap-1.5">
             <Timer className="h-3.5 w-3.5 shrink-0" />
@@ -134,9 +138,9 @@ function TournamentStructure({ phases }: { phases: PhaseData[] }) {
               <div className="flex flex-col items-center py-2">
                 <div className="bg-border h-4 w-px" />
                 <ArrowDown className="text-muted-foreground h-4 w-4" />
-                {phase.cutRule && (
+                {phases[index + 1]?.cutRule && (
                   <span className="text-primary mt-0.5 text-xs font-medium">
-                    {formatCutRule(phase.cutRule)}
+                    {formatCutRule(phases[index + 1]!.cutRule!)}
                   </span>
                 )}
               </div>

@@ -321,6 +321,98 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
     });
   });
 
+  describe("Tournament Structure", () => {
+    it("should not render 'Best of null' when bestOf is null", () => {
+      (useSearchParams as jest.Mock).mockReturnValue(
+        new URLSearchParams("tab=details")
+      );
+
+      const phases = [
+        {
+          id: 1,
+          name: "Swiss Rounds",
+          phaseType: "swiss",
+          phaseTypeLabel: "Swiss",
+          status: "pending",
+          bestOf: null,
+          roundTimeMinutes: null,
+          plannedRounds: 5,
+          checkInTimeMinutes: null,
+          cutRule: null,
+        },
+      ];
+
+      render(<TournamentTabs {...defaultProps} phases={phases} />);
+
+      expect(screen.queryByText(/Best of null/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/null min/)).not.toBeInTheDocument();
+    });
+
+    it("should render bestOf and roundTimeMinutes when they have values", () => {
+      (useSearchParams as jest.Mock).mockReturnValue(
+        new URLSearchParams("tab=details")
+      );
+
+      const phases = [
+        {
+          id: 1,
+          name: "Swiss Rounds",
+          phaseType: "swiss",
+          phaseTypeLabel: "Swiss",
+          status: "pending",
+          bestOf: 3,
+          roundTimeMinutes: 50,
+          plannedRounds: 5,
+          checkInTimeMinutes: null,
+          cutRule: null,
+        },
+      ];
+
+      render(<TournamentTabs {...defaultProps} phases={phases} />);
+
+      expect(screen.getByText(/Best of 3/)).toBeInTheDocument();
+      expect(screen.getByText(/50 min/)).toBeInTheDocument();
+    });
+
+    it("should display cut rule from the next phase on the connector", () => {
+      (useSearchParams as jest.Mock).mockReturnValue(
+        new URLSearchParams("tab=details")
+      );
+
+      const phases = [
+        {
+          id: 1,
+          name: "Swiss Rounds",
+          phaseType: "swiss",
+          phaseTypeLabel: "Swiss",
+          status: "pending",
+          bestOf: 3,
+          roundTimeMinutes: 50,
+          plannedRounds: 5,
+          checkInTimeMinutes: null,
+          cutRule: null,
+        },
+        {
+          id: 2,
+          name: "Top Cut",
+          phaseType: "single_elimination",
+          phaseTypeLabel: "Single Elimination",
+          status: "pending",
+          bestOf: 3,
+          roundTimeMinutes: 60,
+          plannedRounds: 3,
+          checkInTimeMinutes: null,
+          cutRule: "top-8",
+        },
+      ];
+
+      render(<TournamentTabs {...defaultProps} phases={phases} />);
+
+      // The cut rule "Top 8 advance" should be displayed on the connector between phases
+      expect(screen.getByText(/Top 8 advance/)).toBeInTheDocument();
+    });
+  });
+
   describe("CanManage Prop", () => {
     it("should pass canManage prop to PublicPairings component", () => {
       (useSearchParams as jest.Mock).mockReturnValue(
