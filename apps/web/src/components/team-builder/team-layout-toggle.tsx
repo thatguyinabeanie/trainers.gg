@@ -70,36 +70,35 @@ const BUTTONS: readonly ToggleButton[] = [
   },
 ];
 
-/** Topbar control for switching between team grid layouts. */
+/**
+ * Topbar control for switching between team grid layouts.
+ *
+ * Phase 2c: this component is hidden at the mount site on `<md` viewports
+ * via Tailwind (the mobile lock in `useTeamLayout()` already forces compact).
+ * The component itself therefore always renders normally and has no mobile
+ * branch of its own.
+ */
 export function TeamLayoutToggle() {
-  const { setMode, persisted, isMobileLocked } = useTeamLayout();
+  const { setMode, persisted } = useTeamLayout();
 
   return (
     <div
       role="group"
       aria-label="Team layout"
-      aria-disabled={isMobileLocked}
-      className={cn(
-        "border-border bg-muted inline-flex gap-px rounded-md border p-0.5",
-        isMobileLocked && "opacity-50"
-      )}
+      className="border-border bg-muted inline-flex gap-px rounded-md border p-0.5"
     >
       {BUTTONS.map(({ mode: btnMode, label, icon: IconCmp }) => {
-        // Pressed reflects the user's persisted choice. Phase 2a removed
-        // viewport-based auto-degrade; Phase 2c will overhaul this toggle.
         const active = persisted === btnMode;
         return (
           <button
             key={btnMode}
             type="button"
-            disabled={isMobileLocked}
             onClick={() => setMode(btnMode)}
             aria-pressed={active}
             aria-label={label}
             title={label}
             className={cn(
               "flex size-7 items-center justify-center rounded transition-colors",
-              isMobileLocked && "cursor-not-allowed",
               active
                 ? "bg-background text-primary shadow-sm"
                 : "text-muted-foreground hover:bg-background/60 hover:text-foreground"

@@ -863,7 +863,7 @@ export function TeamWorkspaceV2({
                           persistence.onMutationSuccess();
                         }}
                       />
-                      <div className="ml-auto">
+                      <div className="ml-auto hidden md:block">
                         <TeamLayoutToggle />
                       </div>
                     </div>

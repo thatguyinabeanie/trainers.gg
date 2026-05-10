@@ -2,29 +2,13 @@ import { fireEvent, render, screen } from "@testing-library/react";
 
 import { TeamLayoutToggle } from "../team-layout-toggle";
 
-const mockUseIsMobile = jest.fn();
-jest.mock("@/hooks/use-mobile", () => ({
-  useIsMobile: () => mockUseIsMobile(),
-}));
-
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn() }),
   useSearchParams: () => new URLSearchParams(),
 }));
 
-function setViewportWidth(width: number) {
-  Object.defineProperty(window, "innerWidth", {
-    configurable: true,
-    writable: true,
-    value: width,
-  });
-  window.dispatchEvent(new Event("resize"));
-}
-
 beforeEach(() => {
-  mockUseIsMobile.mockReturnValue(false);
   window.localStorage.clear();
-  setViewportWidth(2400);
 });
 
 describe("TeamLayoutToggle", () => {
@@ -49,29 +33,16 @@ describe("TeamLayoutToggle", () => {
     expect(window.localStorage.getItem("tg.team-layout")).toBe(expectedValue);
   });
 
-  it("disables interaction on mobile", () => {
-    mockUseIsMobile.mockReturnValue(true);
+  // Phase 2c: mobile-lock is enforced structurally at the mount site via
+  // Tailwind (`hidden md:inline-flex`). The component itself always renders
+  // normally — it is simply not mounted at `<md` viewports.
+  it("renders normally regardless of viewport (mobile-lock is structural)", () => {
     const { container } = render(<TeamLayoutToggle />);
     const group = container.firstChild as HTMLElement;
-    expect(group.className).toContain("opacity-50");
-    expect(group).toHaveAttribute("aria-disabled", "true");
-    // All buttons should be disabled
-    const buttons = screen.getAllByRole("button");
-    for (const btn of buttons) {
-      expect(btn).toBeDisabled();
+    expect(group.className).not.toContain("opacity-50");
+    expect(group).not.toHaveAttribute("aria-disabled");
+    for (const btn of screen.getAllByRole("button")) {
+      expect(btn).not.toBeDisabled();
     }
-  });
-
-  it("keeps the persisted button pressed even when auto-degraded", () => {
-    window.localStorage.setItem("tg.team-layout", "2x3-vertical");
-    setViewportWidth(1200); // below 1500 — degrades to 1x6
-    render(<TeamLayoutToggle />);
-    const persistedBtn = screen.getByLabelText(
-      /2 × 3 — stacked per cell/
-    );
-    expect(persistedBtn).toHaveAttribute("aria-pressed", "true");
-    // Effective is 1x6, but user's pick (2x3-vertical) should still show pressed.
-    const oneByBtn = screen.getByLabelText(/1 × 6 — full row layout/);
-    expect(oneByBtn).toHaveAttribute("aria-pressed", "false");
   });
 });
