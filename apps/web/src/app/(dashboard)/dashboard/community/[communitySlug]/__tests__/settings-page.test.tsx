@@ -15,8 +15,14 @@ import { MAX_IMAGE_SIZE } from "@trainers/validators";
 
 const mockUseSupabaseQuery = jest.fn();
 
+const mockSupabaseClient = {
+  functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
+  auth: { getSession: jest.fn().mockResolvedValue({ data: { session: { access_token: "test-token" } }, error: null }) },
+};
+
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: (...args: unknown[]) => mockUseSupabaseQuery(...args),
+  useSupabase: () => mockSupabaseClient,
 }));
 
 jest.mock("next/link", () => ({
@@ -691,6 +697,64 @@ describe("DashboardSettingsPage", () => {
       });
 
       expect(screen.queryByTestId("discord-bot-chip")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("bluesky identity card", () => {
+    it("shows active state with handle and DID when PDS is active", async () => {
+      const org = buildOrg({
+        bluesky_handle: "test-org.trainers.gg",
+        bluesky_did: "did:plc:abc123",
+        pds_status: "active",
+      });
+      await renderPage(org);
+
+      expect(screen.getByText("Active on network")).toBeInTheDocument();
+      expect(screen.getByText("@test-org.trainers.gg")).toBeInTheDocument();
+      expect(screen.getByText("did:plc:abc123")).toBeInTheDocument();
+    });
+
+    it("shows enable button when community has no PDS status", async () => {
+      const org = buildOrg({
+        bluesky_handle: null,
+        bluesky_did: null,
+        pds_status: null,
+      });
+      await renderPage(org);
+
+      expect(
+        screen.getByRole("button", { name: /Enable Bluesky Identity/i })
+      ).toBeInTheDocument();
+    });
+
+    it("shows retry button when PDS provisioning previously failed", async () => {
+      const org = buildOrg({
+        bluesky_handle: null,
+        bluesky_did: null,
+        pds_status: "failed",
+      });
+      await renderPage(org);
+
+      expect(
+        screen.getByRole("button", { name: /Retry/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("Previous attempt failed. You can try again.")
+      ).toBeInTheDocument();
+    });
+
+    it("does not show active state when DID is missing even with active status", async () => {
+      const org = buildOrg({
+        bluesky_handle: "test-org.trainers.gg",
+        bluesky_did: null,
+        pds_status: "active",
+      });
+      await renderPage(org);
+
+      expect(screen.queryByText("Active on network")).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Enable Bluesky Identity/i })
+      ).toBeInTheDocument();
     });
   });
 });

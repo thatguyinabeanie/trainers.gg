@@ -39,7 +39,7 @@ interface UpdatePdsHandleResponse {
     | "DB_UPDATE_FAILED";
 }
 
-Deno.serve(async (req) => {
+async function handler(req: Request): Promise<Response> {
   const cors = getCorsHeaders(req);
 
   // Handle CORS preflight
@@ -275,6 +275,43 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Update pds_handles registry: delete old handle, insert new one.
+    // Uses INSERT (not upsert) so a conflicting handle safely fails rather than
+    // overwriting another entity's row in a TOCTOU race.
+    if (userData.pds_handle) {
+      await supabaseAdmin
+        .from("pds_handles")
+        .delete()
+        .eq("entity_type", "user")
+        .eq("entity_id", user.id);
+    }
+    const { error: registryError } = await supabaseAdmin
+      .from("pds_handles")
+      .insert({
+        handle: newHandle,
+        entity_type: "user",
+        entity_id: user.id,
+        did: userData.did,
+      });
+    if (registryError) {
+      // Unique violation (23505) means the handle was claimed between our
+      // availability check and now — treat as HANDLE_TAKEN
+      if (registryError.code === "23505") {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Handle was claimed by another entity. Please try a different username.",
+            code: "HANDLE_TAKEN",
+          } satisfies UpdatePdsHandleResponse),
+          {
+            status: 409,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
+      console.warn("Failed to update pds_handles registry:", registryError);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -314,4 +351,7 @@ Deno.serve(async (req) => {
       }
     );
   }
-});
+}
+
+export default handler;
+Deno.serve(handler);
