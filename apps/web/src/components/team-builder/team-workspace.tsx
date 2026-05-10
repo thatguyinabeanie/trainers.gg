@@ -1100,7 +1100,7 @@ export function TeamWorkspaceV2({
                   </div>
 
                   <section
-                    className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3 [[data-density=compact]_&]:p-2"
+                    className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 px-3 pb-3 [[data-density=compact]_&]:px-2 [[data-density=compact]_&]:pb-2"
                     data-calc-open="false"
                     data-layout={layoutMode}
                   >
