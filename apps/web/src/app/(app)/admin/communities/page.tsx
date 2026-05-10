@@ -20,6 +20,7 @@ import {
 } from "@/app/(app)/admin/community-requests/columns";
 import { CommunityDetailSheet } from "./community-detail-sheet";
 import { RequestDetailSheet } from "@/app/(app)/admin/community-requests/request-detail-sheet";
+import { ProvisionAllCommunitiesButton } from "@/components/admin/provision-all-communities-button";
 
 // --- Constants ---
 
@@ -130,16 +131,19 @@ export default function AdminCommunitiesPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header row: title + search */}
+      {/* Header row: title + actions + search */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold">
-          {isRequestsOnly ? "Community Requests" : "Communities"}
-          {!isLoading && !isAll && (
-            <span className="text-muted-foreground ml-2 text-sm font-normal">
-              ({totalCount})
-            </span>
-          )}
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold">
+            {isRequestsOnly ? "Community Requests" : "Communities"}
+            {!isLoading && !isAll && (
+              <span className="text-muted-foreground ml-2 text-sm font-normal">
+                ({totalCount})
+              </span>
+            )}
+          </h2>
+          {!isRequestsOnly && <ProvisionAllCommunitiesButton />}
+        </div>
         <div className="relative w-full sm:w-64">
           <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
           <Input
