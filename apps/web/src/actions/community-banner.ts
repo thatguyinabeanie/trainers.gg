@@ -73,9 +73,7 @@ export async function uploadCommunityBanner(
       .eq("id", validatedId);
     if (error) {
       // Clean up uploaded file to avoid orphaned storage
-      await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, path).catch(
-        () => {}
-      );
+      await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, path);
       throw error;
     }
 
@@ -86,9 +84,7 @@ export async function uploadCommunityBanner(
         STORAGE_BUCKETS.UPLOADS
       );
       if (oldPath) {
-        await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, oldPath).catch(
-          () => {}
-        );
+        await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, oldPath);
       }
     }
 
@@ -136,10 +132,12 @@ export async function removeCommunityBanner(
     if (bannerUrl) {
       const path = extractPathFromUrl(bannerUrl, STORAGE_BUCKETS.UPLOADS);
       if (path) {
-        const storageClient = await createStorageClient();
-        await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, path).catch(
-          () => {}
-        );
+        try {
+          const storageClient = await createStorageClient();
+          await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, path);
+        } catch {
+          // Storage cleanup is best-effort; DB update already succeeded
+        }
       }
     }
 

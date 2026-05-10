@@ -165,6 +165,7 @@ function TournamentBanner({
   organization: {
     name: string;
     slug: string;
+    icon: string | null;
     logo_url: string | null;
     banner_url: string | null;
   };
@@ -195,7 +196,7 @@ function TournamentBanner({
         >
           <AvatarImage src={organization.logo_url ?? undefined} />
           <AvatarFallback className="bg-muted text-2xl font-bold">
-            {organization.name.slice(0, 2).toUpperCase()}
+            {organization.icon || organization.name.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
       </Link>
