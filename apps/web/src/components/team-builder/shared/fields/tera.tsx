@@ -12,10 +12,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { TypeDot } from "../../../type-dot";
-import { TypePicker } from "../../../pickers/type-picker";
-import { formatSupportsTera } from "../../../format-gating";
-import { cellClasses, type CellVariant } from "./identity-cell-shared";
+import { TypeDot } from "../../type-dot";
+import { TypePicker } from "../../pickers/type-picker";
+import { formatSupportsTera } from "../../format-gating";
+import { cellClasses, type CellVariant } from "./shared";
 
 // =============================================================================
 // TeraCell — tera type form cell, row (compact) or grid (hero) variant

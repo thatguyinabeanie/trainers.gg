@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 
-import { cellClasses } from "./cells/identity-cell-shared";
+import { cellClasses } from "../../shared/fields/shared";
 
 // Migrated identity-lane.module.css class strings used by ghost variants only.
 // Most cell-level chrome lives in cellClasses (shared with the real cells);

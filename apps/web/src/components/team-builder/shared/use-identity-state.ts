@@ -15,8 +15,8 @@ import { type Tables, type TablesUpdate } from "@trainers/supabase";
 import {
   errorsForFields,
   type ValidationError,
-} from "../../validation-hooks";
-import { formatSupportsLevel } from "../../format-gating";
+} from "../validation-hooks";
+import { formatSupportsLevel } from "../format-gating";
 
 // =============================================================================
 // useIdentityState

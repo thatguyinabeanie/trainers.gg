@@ -12,12 +12,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { type ValidationError } from "../../../validation-hooks";
-import { NatureChevrons } from "../../../nature-chevrons";
-import { NaturePicker } from "../../../pickers/nature-picker";
-import { FieldErrors } from "../../../validation/field-error";
-import { FormChip } from "../../form-chip";
-import { cellClasses, type CellVariant } from "./identity-cell-shared";
+import { type ValidationError } from "../../validation-hooks";
+import { NatureChevrons } from "../../nature-chevrons";
+import { NaturePicker } from "../../pickers/nature-picker";
+import { FieldErrors } from "../../validation/field-error";
+import { FormChip } from "../../lanes/form-chip";
+import { cellClasses, type CellVariant } from "./shared";
 
 // =============================================================================
 // NatureCell — nature form cell, row (compact) or grid (hero) variant
