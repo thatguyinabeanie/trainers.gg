@@ -1,3 +1,11 @@
+
+> @thatguyinabeanie/trainers.gg@ supabase /Users/beanie/source/trainers.gg-communities-bsky
+> pnpm --filter=@trainers/supabase run supabase gen types --lang=typescript --local
+
+
+> @trainers/supabase@0.0.1 supabase /Users/beanie/source/trainers.gg-communities-bsky/packages/supabase
+> supabase gen types --lang=typescript --local
+
 export type Json =
   | string
   | number
@@ -285,6 +293,8 @@ export type Database = {
         Row: {
           about: string | null
           banner_url: string | null
+          bluesky_did: string | null
+          bluesky_handle: string | null
           created_at: string | null
           description: string | null
           discord_invite_url: string | null
@@ -295,6 +305,7 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_user_id: string
+          pds_status: Database["public"]["Enums"]["pds_account_status"] | null
           platform_fee_percentage: number | null
           slug: string
           social_links: Json
@@ -310,6 +321,8 @@ export type Database = {
         Insert: {
           about?: string | null
           banner_url?: string | null
+          bluesky_did?: string | null
+          bluesky_handle?: string | null
           created_at?: string | null
           description?: string | null
           discord_invite_url?: string | null
@@ -320,6 +333,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_user_id: string
+          pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
           platform_fee_percentage?: number | null
           slug: string
           social_links?: Json
@@ -335,6 +349,8 @@ export type Database = {
         Update: {
           about?: string | null
           banner_url?: string | null
+          bluesky_did?: string | null
+          bluesky_handle?: string | null
           created_at?: string | null
           description?: string | null
           discord_invite_url?: string | null
@@ -345,6 +361,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_user_id?: string
+          pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
           platform_fee_percentage?: number | null
           slug?: string
           social_links?: Json
@@ -1533,6 +1550,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pds_handles: {
+        Row: {
+          created_at: string
+          did: string | null
+          entity_id: string
+          entity_type: string
+          handle: string
+        }
+        Insert: {
+          created_at?: string
+          did?: string | null
+          entity_id: string
+          entity_type: string
+          handle: string
+        }
+        Update: {
+          created_at?: string
+          did?: string | null
+          entity_id?: string
+          entity_type?: string
+          handle?: string
+        }
+        Relationships: []
       }
       permissions: {
         Row: {

@@ -178,6 +178,18 @@ function CommunityHeader({
             )}
           </div>
 
+          {/* Bluesky handle */}
+          {organization.bluesky_handle && (
+            <a
+              href={`https://bsky.app/profile/${organization.bluesky_handle}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 text-sm transition-colors"
+            >
+              <span>@{organization.bluesky_handle}</span>
+            </a>
+          )}
+
           {organization.description && (
             <p className="text-muted-foreground max-w-2xl text-lg">
               {organization.description}
