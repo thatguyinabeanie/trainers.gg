@@ -144,23 +144,12 @@ async function handleLinkMode({
     return NextResponse.redirect(errorUrl.toString());
   }
 
-  // Check user's current pds_status so we don't regress it
-  const { data: currentUser } = await supabaseAtproto
-    .from("users")
-    .select("pds_status")
-    .eq("id", linkUserId)
-    .single();
-
-  // Only set pds_status to "pending" if user doesn't already have a PDS status
-  const updateFields: { did: string; pds_status?: "pending" | "active" | "suspended" | "failed" | "external" } = { did };
-  if (!currentUser?.pds_status) {
-    updateFields.pds_status = "pending";
-  }
-
   // Attach the DID to the current user
+  // NOTE: Only update `did` — pds_status tracks trainers.gg-managed PDS state
+  // and must not be changed when linking an external Bluesky identity.
   const { error: updateError } = await supabaseAtproto
     .from("users")
-    .update(updateFields)
+    .update({ did })
     .eq("id", linkUserId);
 
   if (updateError) {

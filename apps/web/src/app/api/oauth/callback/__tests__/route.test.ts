@@ -66,11 +66,6 @@ describe("GET /api/oauth/callback", () => {
       const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
 
-      // User's current pds_status
-      const mockSingle = jest.fn().mockResolvedValue({ data: { pds_status: null }, error: null });
-      const mockEqSingle = jest.fn().mockReturnValue({ single: mockSingle });
-      const mockSelectSingle = jest.fn().mockReturnValue({ eq: mockEqSingle });
-
       // Update call
       const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
       const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
@@ -81,11 +76,8 @@ describe("GET /api/oauth/callback", () => {
         if (fromCallCount === 1) {
           // First call: check existing holder
           return { select: mockSelect };
-        } else if (fromCallCount === 2) {
-          // Second call: get current user's pds_status
-          return { select: mockSelectSingle };
         } else {
-          // Third call: update
+          // Second call: update
           return { update: mockUpdate };
         }
       });
@@ -97,7 +89,7 @@ describe("GET /api/oauth/callback", () => {
       expect(location).toBe("https://trainers.gg/dashboard/settings/account");
     });
 
-    it("does not overwrite existing pds_status", async () => {
+    it("only updates did field — never touches pds_status", async () => {
       mockHandleAtprotoCallback.mockResolvedValue({
         did: "did:plc:abc123",
         returnUrl: "/dashboard/settings/account",
@@ -108,11 +100,6 @@ describe("GET /api/oauth/callback", () => {
       const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
 
-      // User already has pds_status = "active"
-      const mockSingle = jest.fn().mockResolvedValue({ data: { pds_status: "active" }, error: null });
-      const mockEqSingle = jest.fn().mockReturnValue({ single: mockSingle });
-      const mockSelectSingle = jest.fn().mockReturnValue({ eq: mockEqSingle });
-
       const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
       const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
 
@@ -120,46 +107,16 @@ describe("GET /api/oauth/callback", () => {
       mockFrom.mockImplementation(() => {
         fromCallCount++;
         if (fromCallCount === 1) return { select: mockSelect };
-        if (fromCallCount === 2) return { select: mockSelectSingle };
         return { update: mockUpdate };
       });
 
       await GET(createRequest({ code: "test", state: "test" }));
 
-      // Should only update did, NOT pds_status
+      // Should ONLY update did — pds_status must never be touched in link mode
       expect(mockUpdate).toHaveBeenCalledWith({ did: "did:plc:abc123" });
-    });
-
-    it("sets pds_status to pending when user has no existing pds_status", async () => {
-      mockHandleAtprotoCallback.mockResolvedValue({
-        did: "did:plc:abc123",
-        returnUrl: "/dashboard/settings/account",
-        linkUserId: "user-456",
-      });
-
-      const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
-      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
-
-      // User has no pds_status
-      const mockSingle = jest.fn().mockResolvedValue({ data: { pds_status: null }, error: null });
-      const mockEqSingle = jest.fn().mockReturnValue({ single: mockSingle });
-      const mockSelectSingle = jest.fn().mockReturnValue({ eq: mockEqSingle });
-
-      const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
-      const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
-
-      let fromCallCount = 0;
-      mockFrom.mockImplementation(() => {
-        fromCallCount++;
-        if (fromCallCount === 1) return { select: mockSelect };
-        if (fromCallCount === 2) return { select: mockSelectSingle };
-        return { update: mockUpdate };
-      });
-
-      await GET(createRequest({ code: "test", state: "test" }));
-
-      expect(mockUpdate).toHaveBeenCalledWith({ did: "did:plc:abc123", pds_status: "pending" });
+      expect(mockUpdate).not.toHaveBeenCalledWith(
+        expect.objectContaining({ pds_status: expect.anything() })
+      );
     });
   });
 
@@ -203,10 +160,6 @@ describe("GET /api/oauth/callback", () => {
       const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
 
-      const mockSingle = jest.fn().mockResolvedValue({ data: { pds_status: null }, error: null });
-      const mockEqSingle = jest.fn().mockReturnValue({ single: mockSingle });
-      const mockSelectSingle = jest.fn().mockReturnValue({ eq: mockEqSingle });
-
       const mockUpdateEq = jest.fn().mockResolvedValue({ error: { message: "DB error" } });
       const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
 
@@ -214,7 +167,6 @@ describe("GET /api/oauth/callback", () => {
       mockFrom.mockImplementation(() => {
         fromCallCount++;
         if (fromCallCount === 1) return { select: mockSelect };
-        if (fromCallCount === 2) return { select: mockSelectSingle };
         return { update: mockUpdate };
       });
 
@@ -704,10 +656,6 @@ describe("GET /api/oauth/callback", () => {
       const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
 
-      const mockSingle = jest.fn().mockResolvedValue({ data: { pds_status: "active" }, error: null });
-      const mockEqSingle = jest.fn().mockReturnValue({ single: mockSingle });
-      const mockSelectSingle = jest.fn().mockReturnValue({ eq: mockEqSingle });
-
       const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
       const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
 
@@ -715,7 +663,6 @@ describe("GET /api/oauth/callback", () => {
       mockFrom.mockImplementation(() => {
         fromCallCount++;
         if (fromCallCount === 1) return { select: mockSelect };
-        if (fromCallCount === 2) return { select: mockSelectSingle };
         return { update: mockUpdate };
       });
 
@@ -725,7 +672,7 @@ describe("GET /api/oauth/callback", () => {
       expect(response.status).toBe(307);
       const location = response.headers.get("location");
       expect(location).toBe("https://trainers.gg/dashboard/settings/account");
-      // Should only update did (not pds_status since it's already "active")
+      // Should only update did — pds_status is never touched in link mode
       expect(mockUpdate).toHaveBeenCalledWith({ did: "did:plc:mine" });
     });
   });
