@@ -3,10 +3,15 @@
  *
  * Initiates the OAuth flow for Bluesky/AT Protocol authentication.
  * GET /api/oauth/login?handle=user.bsky.social
+ *
+ * Supports two modes:
+ * - Sign-in (default): signs in or creates a user from the Bluesky identity
+ * - Link (mode=link): attaches the Bluesky DID to the currently authenticated user
  */
 
 import { NextResponse } from "next/server";
 import { startAtprotoAuth } from "@/lib/atproto/oauth-client";
+import { getUser } from "@/lib/supabase/server";
 
 /**
  * Check if running on a Vercel preview deployment.
@@ -48,6 +53,19 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const handle = searchParams.get("handle");
   const returnUrl = searchParams.get("returnUrl") || "/";
+  const mode = searchParams.get("mode"); // "link" to attach DID to current user
+
+  // If in link mode, verify the user is authenticated
+  let linkUserId: string | undefined;
+  if (mode === "link") {
+    const user = await getUser();
+    if (!user) {
+      const signInUrl = new URL("/sign-in", new URL(request.url).origin);
+      signInUrl.searchParams.set("redirect", returnUrl);
+      return NextResponse.redirect(signInUrl);
+    }
+    linkUserId = user.id;
+  }
 
   // If no handle provided, default to bsky.social as the authorization server.
   // The AT Protocol OAuth client accepts PDS/auth server URLs as input,
@@ -58,7 +76,7 @@ export async function GET(request: Request) {
 
   try {
     // Start the OAuth flow - this discovers the user's PDS and redirects
-    const authUrl = await startAtprotoAuth(normalizedHandle, returnUrl);
+    const authUrl = await startAtprotoAuth(normalizedHandle, returnUrl, linkUserId);
 
     // Redirect to the authorization server
     return NextResponse.redirect(authUrl);

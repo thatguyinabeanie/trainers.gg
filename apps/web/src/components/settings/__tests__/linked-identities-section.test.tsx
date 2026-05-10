@@ -267,7 +267,7 @@ describe("LinkedIdentitiesSection", () => {
       await user.click(connectButton);
 
       expect(window.location.href).toBe(
-        "/api/oauth/login?returnUrl=%2Fdashboard%2Fsettings%2Faccount"
+        "/api/oauth/login?mode=link&returnUrl=%2Fdashboard%2Fsettings%2Faccount"
       );
     });
   });
