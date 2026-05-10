@@ -37,11 +37,10 @@ describe("TeamLayoutToggle", () => {
   // Tailwind (`hidden md:inline-flex`). The component itself always renders
   // normally — it is simply not mounted at `<md` viewports.
   it("renders normally regardless of viewport (mobile-lock is structural)", () => {
-    const { container } = render(<TeamLayoutToggle />);
-    const group = container.firstChild as HTMLElement;
-    expect(group.className).not.toContain("opacity-50");
-    expect(group).not.toHaveAttribute("aria-disabled");
-    for (const btn of screen.getAllByRole("button")) {
+    render(<TeamLayoutToggle />);
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(2);
+    for (const btn of buttons) {
       expect(btn).not.toBeDisabled();
     }
   });

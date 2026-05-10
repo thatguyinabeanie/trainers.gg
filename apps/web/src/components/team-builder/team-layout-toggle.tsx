@@ -2,7 +2,7 @@
 
 import { type JSX } from "react";
 
-import { cn } from "@/lib/utils";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import { type TeamLayoutMode, useTeamLayout } from "./use-team-layout";
 
@@ -16,20 +16,6 @@ function Icon1x6() {
       <rect x="2" y="3" width="12" height="2" fill="currentColor" />
       <rect x="2" y="7" width="12" height="2" fill="currentColor" />
       <rect x="2" y="11" width="12" height="2" fill="currentColor" />
-    </svg>
-  );
-}
-
-// 2×3 — mid-stack layout: two columns, cells show a horizontal bar per row
-function _Icon2x3() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden className="size-3.5">
-      <rect x="2" y="3" width="5" height="2" fill="currentColor" />
-      <rect x="9" y="3" width="5" height="2" fill="currentColor" />
-      <rect x="2" y="7" width="5" height="2" fill="currentColor" />
-      <rect x="9" y="7" width="5" height="2" fill="currentColor" />
-      <rect x="2" y="11" width="5" height="2" fill="currentColor" />
-      <rect x="9" y="11" width="5" height="2" fill="currentColor" />
     </svg>
   );
 }
@@ -77,37 +63,39 @@ const BUTTONS: readonly ToggleButton[] = [
  * via Tailwind (the mobile lock in `useTeamLayout()` already forces compact).
  * The component itself therefore always renders normally and has no mobile
  * branch of its own.
+ *
+ * Phase 3a: rebuilt on shadcn ToggleGroup; controlled single-select bound
+ * to `persisted` + `setMode` from `useTeamLayout()`. Base UI's ToggleGroup
+ * is array-shaped even in single-select mode (the default `multiple={false}`
+ * still surfaces values as `Value[]`).
  */
 export function TeamLayoutToggle() {
   const { setMode, persisted } = useTeamLayout();
 
   return (
-    <div
-      role="group"
+    <ToggleGroup
       aria-label="Team layout"
-      className="border-border bg-muted inline-flex gap-px rounded-md border p-0.5"
+      value={[persisted]}
+      onValueChange={(next) => {
+        // Single-select: Base UI returns `[]` when the user clicks the
+        // already-pressed item (deselect). We disallow the empty state by
+        // re-asserting the current mode, keeping the control idempotent
+        // and matching the previous bespoke-button behavior.
+        const [picked] = next;
+        setMode((picked as TeamLayoutMode | undefined) ?? persisted);
+      }}
+      size="sm"
     >
-      {BUTTONS.map(({ mode: btnMode, label, icon: IconCmp }) => {
-        const active = persisted === btnMode;
-        return (
-          <button
-            key={btnMode}
-            type="button"
-            onClick={() => setMode(btnMode)}
-            aria-pressed={active}
-            aria-label={label}
-            title={label}
-            className={cn(
-              "flex size-7 items-center justify-center rounded transition-colors",
-              active
-                ? "bg-background text-primary shadow-sm"
-                : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
-            )}
-          >
-            <IconCmp />
-          </button>
-        );
-      })}
-    </div>
+      {BUTTONS.map(({ mode: btnMode, label, icon: IconCmp }) => (
+        <ToggleGroupItem
+          key={btnMode}
+          value={btnMode}
+          aria-label={label}
+          title={label}
+        >
+          <IconCmp />
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   );
 }
