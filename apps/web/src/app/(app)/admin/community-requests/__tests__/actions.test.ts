@@ -56,7 +56,10 @@ describe("grantCommunityRequestAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
-    mockGrantCommunityRequest.mockResolvedValue(undefined);
+    mockGrantCommunityRequest.mockResolvedValue({
+      request: { id: REQUEST_ID },
+      organization: { id: 1, slug: "test-org" },
+    });
     mockFunctionsInvoke.mockResolvedValue({ data: null });
   });
 
