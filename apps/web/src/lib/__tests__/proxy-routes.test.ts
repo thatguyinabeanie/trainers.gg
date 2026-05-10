@@ -1,9 +1,11 @@
-/**
- * @jest-environment node
- */
-
 import { describe, it, expect } from "@jest/globals";
+
 import {
+  ADMIN_ROUTES,
+  PROTECTED_ROUTES,
+  PROTECTED_PATTERNS,
+  PUBLIC_ROUTES,
+  STATIC_FILE_EXTENSIONS,
   isStaticFile,
   isPublicRoute,
   isProtectedRoute,
@@ -11,235 +13,222 @@ import {
   isNextInternal,
   isOnboardingExempt,
   needsOnboarding,
-  ADMIN_ROUTES,
-  PROTECTED_ROUTES,
-  PUBLIC_ROUTES,
-  STATIC_FILE_EXTENSIONS,
 } from "../proxy-routes";
 
-describe("proxy-routes", () => {
-  describe("isStaticFile", () => {
-    it("should match common static file extensions", () => {
-      expect(isStaticFile("/favicon.ico")).toBe(true);
-      expect(isStaticFile("/images/logo.png")).toBe(true);
-      expect(isStaticFile("/fonts/inter.woff2")).toBe(true);
-      expect(isStaticFile("/oauth/jwks.json")).toBe(true);
-      expect(isStaticFile("/styles/main.css")).toBe(true);
-    });
+describe("proxy-routes constants", () => {
+  it("exports non-empty arrays", () => {
+    expect(ADMIN_ROUTES.length).toBeGreaterThan(0);
+    expect(PROTECTED_ROUTES.length).toBeGreaterThan(0);
+    expect(PROTECTED_PATTERNS.length).toBeGreaterThan(0);
+    expect(PUBLIC_ROUTES.length).toBeGreaterThan(0);
+    expect(STATIC_FILE_EXTENSIONS.length).toBeGreaterThan(0);
+  });
+});
 
-    it("should not match route paths", () => {
-      expect(isStaticFile("/dashboard")).toBe(false);
-      expect(isStaticFile("/sign-in")).toBe(false);
-      expect(isStaticFile("/api/health")).toBe(false);
-    });
-
-    it("should cover all declared extensions", () => {
-      for (const ext of STATIC_FILE_EXTENSIONS) {
-        expect(isStaticFile(`/file${ext}`)).toBe(true);
-      }
-    });
+describe("isStaticFile", () => {
+  it.each([
+    "/favicon.ico",
+    "/images/logo.png",
+    "/assets/photo.jpg",
+    "/assets/photo.jpeg",
+    "/icon.svg",
+    "/anim.gif",
+    "/hero.webp",
+    "/styles/main.css",
+    "/bundle.js",
+    "/fonts/inter.woff",
+    "/fonts/inter.woff2",
+    "/fonts/legacy.ttf",
+    "/fonts/old.eot",
+    "/manifest.json",
+  ])("returns true for %s", (path) => {
+    expect(isStaticFile(path)).toBe(true);
   });
 
-  describe("isPublicRoute", () => {
-    it("should match exact public routes", () => {
-      expect(isPublicRoute("/sign-in")).toBe(true);
-      expect(isPublicRoute("/sign-up")).toBe(true);
-      expect(isPublicRoute("/forgot-password")).toBe(true);
-      expect(isPublicRoute("/reset-password")).toBe(true);
-      expect(isPublicRoute("/tournaments")).toBe(true);
-      expect(isPublicRoute("/communities")).toBe(true);
-      expect(isPublicRoute("/organizations")).toBe(true);
-      expect(isPublicRoute("/auth")).toBe(true);
-      expect(isPublicRoute("/api")).toBe(true);
-      expect(isPublicRoute("/oauth")).toBe(true);
-      expect(isPublicRoute("/.well-known")).toBe(true);
-    });
+  it.each(["/dashboard", "/sign-in", "/api/users", "/", "/.well-known/atproto-did"])(
+    "returns false for %s",
+    (path) => {
+      expect(isStaticFile(path)).toBe(false);
+    }
+  );
 
-    it("should match public route prefixes", () => {
-      expect(isPublicRoute("/auth/callback")).toBe(true);
-      expect(isPublicRoute("/api/health")).toBe(true);
-      expect(isPublicRoute("/tournaments/summer-2025")).toBe(true);
-      expect(isPublicRoute("/communities/smogon")).toBe(true);
-      expect(isPublicRoute("/organizations/smogon")).toBe(true);
-      expect(isPublicRoute("/.well-known/atproto-did")).toBe(true);
-    });
+  it("returns false for extension-like substrings mid-path", () => {
+    expect(isStaticFile("/files.png/download")).toBe(false);
+  });
+});
 
-    it("should not match non-public routes", () => {
-      expect(isPublicRoute("/dashboard")).toBe(false);
-      expect(isPublicRoute("/admin")).toBe(false);
-      expect(isPublicRoute("/")).toBe(false);
-      expect(isPublicRoute("/dashboard/settings")).toBe(false);
-    });
-
-    it("should cover all declared public routes", () => {
-      for (const route of PUBLIC_ROUTES) {
-        expect(isPublicRoute(route)).toBe(true);
-        expect(isPublicRoute(`${route}/sub`)).toBe(true);
-      }
-    });
+describe("isPublicRoute", () => {
+  it.each([
+    "/sign-in",
+    "/sign-up",
+    "/forgot-password",
+    "/reset-password",
+    "/tournaments",
+    "/tournaments/some-slug",
+    "/tournaments/some-slug/details",
+    "/communities",
+    "/communities/my-community",
+    "/organizations",
+    "/organizations/legacy",
+    "/players",
+    "/players/rankings",
+    "/user",
+    "/user/ash_ketchum",
+    "/alts",
+    "/alts/some-alt",
+    "/auth",
+    "/auth/callback",
+    "/api",
+    "/api/webhooks/stripe",
+    "/oauth",
+    "/oauth/.well-known/jwks.json",
+    "/.well-known",
+    "/.well-known/atproto-did",
+  ])("returns true for %s", (path) => {
+    expect(isPublicRoute(path)).toBe(true);
   });
 
-  describe("isProtectedRoute", () => {
-    it("should match exact protected routes", () => {
-      expect(isProtectedRoute("/dashboard")).toBe(true);
-      expect(isProtectedRoute("/communities/create")).toBe(true);
-      // /onboarding removed — now handled by the expanded onboarding gate
-    });
-
-    it("should match protected route prefixes", () => {
-      expect(isProtectedRoute("/dashboard/settings")).toBe(true);
-      expect(isProtectedRoute("/dashboard/alts")).toBe(true);
-    });
-
-    it("should match dynamic tournament match patterns", () => {
-      expect(isProtectedRoute("/tournaments/abc/r/1/t/1")).toBe(true);
-      expect(isProtectedRoute("/tournaments/abc/r/3/t/12")).toBe(true);
-      expect(isProtectedRoute("/tournaments/summer-2025/r/1/t/5")).toBe(true);
-    });
-
-    it("should not match tournament routes without /r/.../t/...", () => {
-      expect(isProtectedRoute("/tournaments/abc")).toBe(false);
-      expect(isProtectedRoute("/tournaments")).toBe(false);
-      expect(isProtectedRoute("/tournaments/abc/standings")).toBe(false);
-      expect(isProtectedRoute("/tournaments/abc/matches")).toBe(false);
-      expect(isProtectedRoute("/tournaments/abc/matches/1")).toBe(false);
-    });
-
-    it("should not match public or admin routes", () => {
-      expect(isProtectedRoute("/sign-in")).toBe(false);
-      expect(isProtectedRoute("/admin")).toBe(false);
-      expect(isProtectedRoute("/")).toBe(false);
-    });
-
-    it("should cover all declared protected routes", () => {
-      for (const route of PROTECTED_ROUTES) {
-        expect(isProtectedRoute(route)).toBe(true);
-      }
-    });
+  // Special "/@" prefix — no "/" separator needed
+  it("matches /@username without slash separator", () => {
+    expect(isPublicRoute("/@ash_ketchum")).toBe(true);
+    expect(isPublicRoute("/@someone/posts")).toBe(true);
   });
 
-  describe("isAdminRoute", () => {
-    it("should match /admin exactly", () => {
-      expect(isAdminRoute("/admin")).toBe(true);
-    });
+  it.each(["/dashboard", "/admin", "/", "/settings", "/dashboard/onboarding"])(
+    "returns false for %s",
+    (path) => {
+      expect(isPublicRoute(path)).toBe(false);
+    }
+  );
+});
 
-    it("should match /admin sub-routes", () => {
-      expect(isAdminRoute("/admin/users")).toBe(true);
-      expect(isAdminRoute("/admin/sudo-required")).toBe(true);
-    });
-
-    it("should not match non-admin routes", () => {
-      expect(isAdminRoute("/dashboard")).toBe(false);
-      expect(isAdminRoute("/administrator")).toBe(false);
-      expect(isAdminRoute("/")).toBe(false);
-    });
-
-    it("should cover all declared admin routes", () => {
-      for (const route of ADMIN_ROUTES) {
-        expect(isAdminRoute(route)).toBe(true);
-        expect(isAdminRoute(`${route}/sub`)).toBe(true);
-      }
-    });
+describe("isProtectedRoute", () => {
+  it.each([
+    "/dashboard",
+    "/dashboard/settings",
+    "/dashboard/onboarding",
+    "/communities/create",
+    "/communities/create/step-2",
+  ])("returns true for %s", (path) => {
+    expect(isProtectedRoute(path)).toBe(true);
   });
 
-  describe("needsOnboarding", () => {
-    it.each([
-      // temp_ prefix usernames from OAuth sign-up
-      { username: "temp_06143118-14b", expected: true },
-      // user_ prefix usernames from OAuth sign-up
-      { username: "user_abc123", expected: true },
-    ])(
-      "should return true for temporary username '$username'",
-      ({ username, expected }) => {
-        expect(needsOnboarding(username)).toBe(expected);
-      }
-    );
-
-    it.each([
-      // Normal usernames do not need onboarding
-      { username: "ash_ketchum", expected: false },
-      // undefined means no user / not logged in
-      { username: undefined, expected: false },
-      // Empty string is falsy
-      { username: "", expected: false },
-    ])(
-      "should return false for username '$username'",
-      ({ username, expected }) => {
-        expect(needsOnboarding(username)).toBe(expected);
-      }
-    );
-
-    it("returns false for non-string types", () => {
-      expect(needsOnboarding(123)).toBe(false);
-      expect(needsOnboarding(true)).toBe(false);
-      expect(needsOnboarding(null)).toBe(false);
-      expect(needsOnboarding({})).toBe(false);
-    });
+  // Dynamic pattern: /tournaments/[slug]/r/[num]/t/[num]
+  it.each([
+    "/tournaments/worlds-2025/r/1/t/1",
+    "/tournaments/worlds-2025/r/1/t/1/",
+    "/tournaments/worlds-2025/r/12/t/99",
+    "/tournaments/worlds-2025/r/1/t/1/chat",
+  ])("returns true for match page pattern %s", (path) => {
+    expect(isProtectedRoute(path)).toBe(true);
   });
 
-  describe("isOnboardingExempt", () => {
-    it("should exempt auth pages", () => {
-      expect(isOnboardingExempt("/sign-in")).toBe(true);
-      expect(isOnboardingExempt("/sign-up")).toBe(true);
-      expect(isOnboardingExempt("/forgot-password")).toBe(true);
-      expect(isOnboardingExempt("/reset-password")).toBe(true);
-    });
+  it.each([
+    "/tournaments",
+    "/tournaments/worlds-2025",
+    "/tournaments/worlds-2025/r/1",
+    "/tournaments/worlds-2025/r/abc/t/1",
+    "/tournaments/worlds-2025/r/1/t/abc",
+    "/sign-in",
+    "/",
+  ])("returns false for %s", (path) => {
+    expect(isProtectedRoute(path)).toBe(false);
+  });
+});
 
-    it("should exempt auth callbacks and API routes", () => {
-      expect(isOnboardingExempt("/auth/callback")).toBe(true);
-      expect(isOnboardingExempt("/api/health")).toBe(true);
-      expect(isOnboardingExempt("/api/oauth/callback")).toBe(true);
-    });
-
-    it("should exempt AT Protocol paths", () => {
-      expect(isOnboardingExempt("/oauth/jwks")).toBe(true);
-      expect(isOnboardingExempt("/.well-known/atproto-did")).toBe(true);
-    });
-
-    it("should exempt the onboarding page itself", () => {
-      expect(isOnboardingExempt("/dashboard/onboarding")).toBe(true);
-    });
-
-    it("should exempt the homepage", () => {
-      expect(isOnboardingExempt("/")).toBe(true);
-    });
-
-    it("should NOT exempt dashboard routes", () => {
-      expect(isOnboardingExempt("/dashboard")).toBe(false);
-      expect(isOnboardingExempt("/dashboard/overview")).toBe(false);
-      expect(isOnboardingExempt("/dashboard/settings")).toBe(false);
-    });
-
-    it("should exempt public content pages (modal handles them client-side)", () => {
-      expect(isOnboardingExempt("/players")).toBe(true);
-      expect(isOnboardingExempt("/tournaments")).toBe(true);
-      expect(isOnboardingExempt("/communities")).toBe(true);
-    });
-
-    it("should exempt public content sub-routes", () => {
-      expect(isOnboardingExempt("/players/ash_ketchum")).toBe(true);
-      expect(isOnboardingExempt("/tournaments/summer-2025")).toBe(true);
-      expect(isOnboardingExempt("/user/ash_ketchum")).toBe(true);
-      expect(isOnboardingExempt("/@ash_ketchum")).toBe(true);
-      expect(isOnboardingExempt("/organizations/smogon")).toBe(true);
-    });
+describe("isAdminRoute", () => {
+  it("returns true for /admin", () => {
+    expect(isAdminRoute("/admin")).toBe(true);
   });
 
-  describe("isNextInternal", () => {
-    it("should match _next paths", () => {
-      expect(isNextInternal("/_next/static/chunks/main.js")).toBe(true);
-      expect(isNextInternal("/_next/image?url=foo")).toBe(true);
-      expect(isNextInternal("/_next/data/build-id/page.json")).toBe(true);
-    });
+  it("returns true for /admin sub-paths", () => {
+    expect(isAdminRoute("/admin/users")).toBe(true);
+    expect(isAdminRoute("/admin/settings/advanced")).toBe(true);
+  });
 
-    it("should match __next paths", () => {
-      expect(isNextInternal("/__next/something")).toBe(true);
-    });
+  it.each(["/dashboard", "/", "/administrator", "/sign-in"])(
+    "returns false for %s",
+    (path) => {
+      expect(isAdminRoute(path)).toBe(false);
+    }
+  );
+});
 
-    it("should not match regular routes", () => {
-      expect(isNextInternal("/dashboard")).toBe(false);
-      expect(isNextInternal("/next")).toBe(false);
-      expect(isNextInternal("/about-next")).toBe(false);
-    });
+describe("isNextInternal", () => {
+  it.each([
+    "/_next/static/chunks/main.js",
+    "/_next/data/build-id/page.json",
+    "/__next/something",
+  ])("returns true for %s", (path) => {
+    expect(isNextInternal(path)).toBe(true);
+  });
+
+  it.each(["/next", "/dashboard", "/_notNext"])(
+    "returns false for %s",
+    (path) => {
+      expect(isNextInternal(path)).toBe(false);
+    }
+  );
+});
+
+describe("isOnboardingExempt", () => {
+  it("homepage / is exempt", () => {
+    expect(isOnboardingExempt("/")).toBe(true);
+  });
+
+  it.each([
+    "/sign-in",
+    "/sign-up",
+    "/forgot-password",
+    "/reset-password",
+    "/auth/callback",
+    "/api/webhooks",
+    "/oauth/.well-known/jwks.json",
+    "/.well-known/atproto-did",
+    "/dashboard/onboarding",
+    "/dashboard/onboarding/step-2",
+    "/players",
+    "/players/rankings",
+    "/user/ash_ketchum",
+    "/@ash_ketchum",
+    "/alts/my-alt",
+    "/tournaments/worlds-2025",
+    "/communities/my-community",
+    "/organizations/legacy",
+    "/builder",
+    "/builder/team",
+  ])("returns true for %s", (path) => {
+    expect(isOnboardingExempt(path)).toBe(true);
+  });
+
+  it.each(["/dashboard", "/dashboard/settings"])(
+    "returns false for %s (requires onboarding)",
+    (path) => {
+      expect(isOnboardingExempt(path)).toBe(false);
+    }
+  );
+});
+
+describe("needsOnboarding", () => {
+  it.each(["temp_abc123", "temp_xyz", "user_abc123", "user_def456"])(
+    "returns true for temp username %s",
+    (username) => {
+      expect(needsOnboarding(username)).toBe(true);
+    }
+  );
+
+  it.each(["ash_ketchum", "admin_trainer", "misty", "brock123"])(
+    "returns false for normal username %s",
+    (username) => {
+      expect(needsOnboarding(username)).toBe(false);
+    }
+  );
+
+  it("returns false for non-string inputs", () => {
+    expect(needsOnboarding(null)).toBe(false);
+    expect(needsOnboarding(undefined)).toBe(false);
+    expect(needsOnboarding(123)).toBe(false);
+    expect(needsOnboarding({})).toBe(false);
+    expect(needsOnboarding(true)).toBe(false);
   });
 });

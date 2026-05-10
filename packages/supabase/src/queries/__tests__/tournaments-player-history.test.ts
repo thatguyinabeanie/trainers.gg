@@ -206,4 +206,239 @@ describe("getPlayerTournamentHistory", () => {
       ],
     });
   });
+
+  it("should filter out non-completed tournaments", async () => {
+    const mockStats = [
+      {
+        id: 1,
+        alt_id: 1,
+        tournament_id: 100,
+        match_wins: 3,
+        match_losses: 1,
+        final_ranking: 2,
+        created_at: "2024-01-01T00:00:00Z",
+        tournament: {
+          id: 100,
+          name: "Active Tournament",
+          slug: "active-tournament",
+          start_date: "2024-01-15T00:00:00Z",
+          status: "active",
+          format: "VGC 2024",
+          organization: {
+            id: 5,
+            name: "Test Org",
+            slug: "test-org",
+          },
+        },
+      },
+    ];
+
+    const mockFrom = jest.fn().mockImplementation((table: string) => {
+      if (table === "tournament_player_stats") {
+        return {
+          select: jest.fn().mockReturnValue({
+            in: jest.fn().mockReturnValue({
+              order: jest.fn().mockResolvedValue({
+                data: mockStats,
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      return { select: jest.fn() };
+    });
+    jest.mocked(mockSupabase.from).mockImplementation(mockFrom);
+
+    const result = await getPlayerTournamentHistory(mockSupabase, [1]);
+    expect(result).toEqual([]);
+  });
+
+  it("should handle null tournament gracefully", async () => {
+    const mockStats = [
+      {
+        id: 1,
+        alt_id: 1,
+        tournament_id: 100,
+        match_wins: 3,
+        match_losses: 1,
+        final_ranking: 2,
+        created_at: "2024-01-01T00:00:00Z",
+        tournament: null,
+      },
+    ];
+
+    const mockFrom = jest.fn().mockImplementation((table: string) => {
+      if (table === "tournament_player_stats") {
+        return {
+          select: jest.fn().mockReturnValue({
+            in: jest.fn().mockReturnValue({
+              order: jest.fn().mockResolvedValue({
+                data: mockStats,
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      return { select: jest.fn() };
+    });
+    jest.mocked(mockSupabase.from).mockImplementation(mockFrom);
+
+    const result = await getPlayerTournamentHistory(mockSupabase, [1]);
+    expect(result).toEqual([]);
+  });
+
+  it("should default wins/losses to 0 when null", async () => {
+    const mockStats = [
+      {
+        id: 1,
+        alt_id: 1,
+        tournament_id: 100,
+        match_wins: null,
+        match_losses: null,
+        final_ranking: 4,
+        created_at: "2024-01-01T00:00:00Z",
+        tournament: {
+          id: 100,
+          name: "Null Wins Tournament",
+          slug: "null-wins",
+          start_date: "2024-01-15T00:00:00Z",
+          status: "completed",
+          format: "VGC 2024",
+          organization: {
+            id: 5,
+            name: "Test Org",
+            slug: "test-org",
+          },
+        },
+      },
+    ];
+
+    const mockRegistrations = [
+      { tournament_id: 100, alt_id: 1, team_id: null },
+    ];
+
+    const mockRegCounts = [{ tournament_id: 100, registration_count: 16 }];
+
+    let callCount = 0;
+    const mockFrom = jest.fn().mockImplementation((table: string) => {
+      callCount++;
+      if (callCount === 1 && table === "tournament_player_stats") {
+        return {
+          select: jest.fn().mockReturnValue({
+            in: jest.fn().mockReturnValue({
+              order: jest.fn().mockResolvedValue({
+                data: mockStats,
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (callCount === 2 && table === "tournament_registrations") {
+        return {
+          select: jest.fn().mockReturnValue({
+            in: jest.fn().mockReturnValue({
+              in: jest.fn().mockResolvedValue({
+                data: mockRegistrations,
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      return { select: jest.fn() };
+    });
+    jest.mocked(mockSupabase.from).mockImplementation(mockFrom);
+    jest
+      .mocked(mockSupabase.rpc as ReturnType<typeof jest.fn>)
+      .mockResolvedValue({
+        data: mockRegCounts,
+        error: null,
+      });
+
+    const result = await getPlayerTournamentHistory(mockSupabase, [1]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]!.wins).toBe(0);
+    expect(result[0]!.losses).toBe(0);
+  });
+
+  it("should handle registrations without teams", async () => {
+    const mockStats = [
+      {
+        id: 1,
+        alt_id: 1,
+        tournament_id: 100,
+        match_wins: 2,
+        match_losses: 1,
+        final_ranking: 3,
+        created_at: "2024-01-01T00:00:00Z",
+        tournament: {
+          id: 100,
+          name: "No Team Tournament",
+          slug: "no-team",
+          start_date: "2024-01-15T00:00:00Z",
+          status: "completed",
+          format: "VGC 2024",
+          organization: {
+            id: 5,
+            name: "Test Org",
+            slug: "test-org",
+          },
+        },
+      },
+    ];
+
+    const mockRegistrations = [
+      { tournament_id: 100, alt_id: 1, team_id: null },
+    ];
+
+    const mockRegCounts = [{ tournament_id: 100, registration_count: 24 }];
+
+    let callCount = 0;
+    const mockFrom = jest.fn().mockImplementation((table: string) => {
+      callCount++;
+      if (callCount === 1 && table === "tournament_player_stats") {
+        return {
+          select: jest.fn().mockReturnValue({
+            in: jest.fn().mockReturnValue({
+              order: jest.fn().mockResolvedValue({
+                data: mockStats,
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (callCount === 2 && table === "tournament_registrations") {
+        return {
+          select: jest.fn().mockReturnValue({
+            in: jest.fn().mockReturnValue({
+              in: jest.fn().mockResolvedValue({
+                data: mockRegistrations,
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      return { select: jest.fn() };
+    });
+    jest.mocked(mockSupabase.from).mockImplementation(mockFrom);
+    jest
+      .mocked(mockSupabase.rpc as ReturnType<typeof jest.fn>)
+      .mockResolvedValue({
+        data: mockRegCounts,
+        error: null,
+      });
+
+    const result = await getPlayerTournamentHistory(mockSupabase, [1]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]!.teamPokemon).toEqual([]);
+    expect(result[0]!.playerCount).toBe(24);
+    expect(result[0]!.placement).toBe(3);
+  });
 });

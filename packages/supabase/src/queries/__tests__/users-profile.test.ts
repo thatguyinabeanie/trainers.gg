@@ -8,6 +8,7 @@ import {
   getFollowingCount,
   getPlayerTournamentHistoryFull,
   getPlayerPublicTeams,
+  getAltByHandle,
 } from "../users";
 import {
   createMockClient,
@@ -489,5 +490,58 @@ describe("getPlayerPublicTeams", () => {
         pokepasteUrl: null,
       })
     );
+  });
+});
+
+// ============================================================================
+// getAltByHandle
+// ============================================================================
+
+describe("getAltByHandle", () => {
+  it("returns alt data when found", async () => {
+    const supabase = mockSupabaseSequential([
+      {
+        data: {
+          id: 1,
+          username: "ash_ketchum",
+          bio: "Gotta catch em all",
+          avatar_url: "https://example.com/ash.png",
+          tier: "free",
+          tier_expires_at: null,
+          is_public: true,
+        },
+        error: null,
+      },
+    ]);
+
+    const result = await getAltByHandle(supabase, "ash_ketchum");
+
+    expect(result).toEqual({
+      id: 1,
+      username: "ash_ketchum",
+      bio: "Gotta catch em all",
+      avatar_url: "https://example.com/ash.png",
+      tier: "free",
+      tier_expires_at: null,
+      is_public: true,
+    });
+  });
+
+  it("returns null when not found", async () => {
+    const supabase = mockSupabaseSequential([{ data: null, error: null }]);
+
+    const result = await getAltByHandle(supabase, "nonexistent");
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null on error", async () => {
+    const supabase = mockSupabaseSequential([
+      { data: null, error: { message: "DB error" } },
+    ]);
+
+    const result = await getAltByHandle(supabase, "ash_ketchum");
+
+    expect(result).toBeNull();
   });
 });
