@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useSyncExternalStore } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createContext, useContext, useEffect, useSyncExternalStore } from "react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -11,17 +12,20 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export type TeamLayoutMode = "1x6" | "2x3-vertical";
 
 const STORAGE_KEY = "tg.team-layout";
+const URL_PARAM = "layout";
 const DEFAULT_MODE: TeamLayoutMode = "1x6";
-const VALID_MODES: readonly TeamLayoutMode[] = [
-  "1x6",
-  "2x3-vertical",
-];
+const VALID_MODES: readonly TeamLayoutMode[] = ["1x6", "2x3-vertical"];
 
-// Viewport thresholds for auto-degrading the persisted grid mode. The
-// numbers are total viewport widths (not slot widths) — the choice of
-// columns has to happen before the slots can know their own width. Each
-// threshold corresponds to ~700px per cell after sidebar + padding.
-const MIN_VIEWPORT_FOR_3_COLS = 2200;
+// URL-friendly aliases. We expose `compact` / `grid` in shareable links
+// rather than the internal mode names, which are an implementation detail.
+const MODE_TO_URL: Record<TeamLayoutMode, string> = {
+  "1x6": "compact",
+  "2x3-vertical": "grid",
+};
+const URL_TO_MODE: Record<string, TeamLayoutMode> = {
+  compact: "1x6",
+  grid: "2x3-vertical",
+};
 
 // =============================================================================
 // External store — keeps all hook consumers in sync within and across tabs
@@ -73,111 +77,69 @@ function getServerSnapshot(): TeamLayoutMode {
 }
 
 // =============================================================================
-// Viewport-width store — drives auto-degrade based on browser width
-// =============================================================================
-
-function subscribeToViewport(callback: () => void) {
-  // rAF-coalesce burst resize events into one notification per frame so
-  // every IdentityLane consumer of useTeamLayoutMode doesn't re-render at
-  // browser-resize cadence (~60Hz) while the user is dragging the window.
-  let rafId = 0;
-  const handler = () => {
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(callback);
-  };
-  window.addEventListener("resize", handler);
-  return () => {
-    if (rafId) cancelAnimationFrame(rafId);
-    window.removeEventListener("resize", handler);
-  };
-}
-
-function getViewportSnapshot(): number {
-  return window.innerWidth;
-}
-
-function getServerViewportSnapshot(): number {
-  // SSR fallback — pick a wide value so the persisted preference renders
-  // as-is on the server (no degrade). Hydration corrects to actual width.
-  return MIN_VIEWPORT_FOR_3_COLS;
-}
-
-// =============================================================================
-// Auto-degrade
-// =============================================================================
-
-/**
- * Reduce a persisted layout to one that fits the viewport. 3-column modes
- * step down to 2 columns at 1500–2199, then to 1 column under 1500.
- * 2-column modes step down to 1 column under 1500. 1-column modes pass
- * through.
- */
-function degradeForViewport(
-  persisted: TeamLayoutMode,
-  viewportWidth: number
-): TeamLayoutMode {
-  if (persisted === "2x3-vertical" && viewportWidth < MIN_VIEWPORT_FOR_3_COLS) {
-    return "1x6";
-  }
-  return persisted;
-}
-
-// =============================================================================
 // Hook
 // =============================================================================
 
 interface UseTeamLayoutResult {
-  /** The mode actually rendered — accounts for mobile + viewport degrade. */
+  /** The mode actually rendered — accounts for mobile lock. */
   mode: TeamLayoutMode;
   setMode: (next: TeamLayoutMode) => void;
-  /** The user's persisted preference, regardless of overrides. */
+  /** The user's persisted preference, regardless of mobile lock. */
   persisted: TeamLayoutMode;
-  /** True when mobile viewport is forcing 1×6 regardless of preference. */
+  /** True when mobile viewport is forcing 1x6 regardless of preference. */
   isMobileLocked: boolean;
-  /** True when the viewport is too narrow to honour persisted column count. */
-  isAutoDegraded: boolean;
 }
 
 /**
  * Returns the user's team layout preference and a setter that persists to
- * localStorage. On phone viewports the effective mode is forced to `1x6`.
- * On non-mobile viewports the effective mode is auto-degraded when the
- * viewport is too narrow for the persisted column count to render with
- * usable cell widths — the persisted value is preserved so widening the
- * viewport restores the user's pick.
+ * localStorage and mirrors to the `?layout=` URL parameter. On phone
+ * viewports the effective mode is forced to `1x6`; the persisted value is
+ * preserved so widening the viewport restores the user's pick.
+ *
+ * URL precedence: when `?layout=compact|grid` is present it wins over
+ * localStorage and is mirrored back to storage so the choice survives a
+ * subsequent visit without the param.
  */
 export function useTeamLayout(): UseTeamLayoutResult {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const isMobile = useIsMobile();
-  const persisted = useSyncExternalStore(
+  const persistedFromStorage = useSyncExternalStore(
     subscribe,
     getSnapshot,
     getServerSnapshot
   );
-  const viewportWidth = useSyncExternalStore(
-    subscribeToViewport,
-    getViewportSnapshot,
-    getServerViewportSnapshot
-  );
 
-  let mode: TeamLayoutMode;
-  let isAutoDegraded = false;
+  const urlValue = searchParams.get(URL_PARAM);
+  const urlMode = urlValue ? URL_TO_MODE[urlValue] : undefined;
 
-  if (isMobile) {
-    mode = "1x6";
-  } else {
-    const degraded = degradeForViewport(persisted, viewportWidth);
-    mode = degraded;
-    isAutoDegraded = degraded !== persisted;
-  }
+  // Mirror a valid URL value into localStorage so the choice persists past
+  // the current navigation. Guard on inequality to avoid an infinite emit
+  // loop and to skip writes when storage already matches.
+  useEffect(() => {
+    if (urlMode && urlMode !== persistedFromStorage) {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, urlMode);
+        emit();
+      } catch {
+        // localStorage unavailable — silent fallthrough
+      }
+    }
+  }, [urlMode, persistedFromStorage]);
+
+  const persisted: TeamLayoutMode = urlMode ?? persistedFromStorage;
+  const mode: TeamLayoutMode = isMobile ? "1x6" : persisted;
 
   function setMode(next: TeamLayoutMode) {
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
       emit();
     } catch {
-      // localStorage unavailable — graceful degradation, in-memory snapshot
-      // won't update either, which is the desired behaviour
+      // localStorage unavailable — graceful degradation
     }
+    const params = new URLSearchParams(searchParams.toString());
+    params.set(URL_PARAM, MODE_TO_URL[next]);
+    router.replace(`?${params.toString()}`, { scroll: false });
   }
 
   return {
@@ -185,7 +147,6 @@ export function useTeamLayout(): UseTeamLayoutResult {
     setMode,
     persisted,
     isMobileLocked: isMobile,
-    isAutoDegraded,
   };
 }
 
@@ -197,7 +158,7 @@ export function useTeamLayout(): UseTeamLayoutResult {
 // provider get this default, which matches the persisted-default constant.
 // =============================================================================
 
-export const TeamLayoutContext = createContext<TeamLayoutMode>("1x6");
+export const TeamLayoutContext = createContext<TeamLayoutMode>(DEFAULT_MODE);
 
 /**
  * Read the effective team-layout mode from context. Returns "1x6" when no

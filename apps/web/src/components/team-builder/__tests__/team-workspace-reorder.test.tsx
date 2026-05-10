@@ -150,7 +150,8 @@ jest.mock("@/hooks/use-mobile", () => ({
 }));
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: jest.fn() }),
+  useRouter: () => ({ refresh: jest.fn(), replace: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // Mock CSS module
