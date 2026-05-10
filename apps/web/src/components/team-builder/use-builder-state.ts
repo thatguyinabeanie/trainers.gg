@@ -176,14 +176,15 @@ export function useBuilderState(): BuilderState {
 
   // Close side panels on mobile before first paint so the editor is immediately
   // visible. useLayoutEffect fires before the browser paints, preventing any
-  // flash of panel content.
+  // flash of panel content. setState here is a deliberate pre-paint correction —
+  // not a reaction to external data — so the set-state-in-effect rule is suppressed.
   useLayoutEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (window.innerWidth < 768) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate pre-paint correction: panels must close before browser paints to avoid flash
       setSideDrawer(null);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate pre-paint correction: panels must close before browser paints to avoid flash
       setRightDrawer(null);
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   const [panelHeightPct, setPanelHeightPctState] = useState<number>(
