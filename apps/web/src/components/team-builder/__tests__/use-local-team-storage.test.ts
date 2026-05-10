@@ -71,7 +71,7 @@ describe("useLocalTeamStorage — initialization", () => {
     const { result } = renderHook(() => useLocalTeamStorage());
     expect(result.current.team.name).toBe("Untitled Team");
     expect(result.current.team.team_pokemon).toHaveLength(0);
-    expect(result.current.team.format).toBe("gen9vgc2026regi");
+    expect(result.current.team.format).toBe("championsvgc2026regma");
   });
 
   it("sets hydrated to true after mount", () => {
