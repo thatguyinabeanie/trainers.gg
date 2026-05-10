@@ -131,7 +131,10 @@ function BannerHero({
           noBorder
           className="ring-background h-24 w-24 shadow-lg ring-4 sm:h-28 sm:w-28"
         >
-          <AvatarImage src={organization.logo_url ?? undefined} />
+          <AvatarImage
+            src={organization.logo_url ?? undefined}
+            alt={`${organization.name} logo`}
+          />
           <AvatarFallback className="bg-muted text-3xl font-bold">
             {organization.icon || organization.name.slice(0, 2).toUpperCase()}
           </AvatarFallback>

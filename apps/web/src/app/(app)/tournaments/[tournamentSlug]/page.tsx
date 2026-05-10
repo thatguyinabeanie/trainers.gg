@@ -243,11 +243,7 @@ function TournamentHeader({
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-bold sm:text-4xl">{tournament.name}</h1>
-          {(tournament.status === "active" ||
-            tournament.status === "upcoming" ||
-            tournament.status === "draft" ||
-            tournament.status === "completed" ||
-            tournament.status === "cancelled") && (
+          {tournament.status && (
             <StatusBadge status={tournament.status} />
           )}
         </div>

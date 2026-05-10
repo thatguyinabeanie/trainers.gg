@@ -26,6 +26,7 @@ export const tournamentStatusLabels: Record<string, string> = {
   draft: "Draft",
   registration: "Registration Open",
   active: "In Progress",
+  paused: "Paused",
   completed: "Completed",
   cancelled: "Cancelled",
   upcoming: "Upcoming",
