@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 // =============================================================================
 // Types
@@ -173,6 +173,18 @@ export function useBuilderState(): BuilderState {
   const [sideDrawer, setSideDrawer] = useState<SideDrawerKey>("speed");
   const [rightDrawer, setRightDrawer] = useState<RightDrawerKey>("calc");
   const [bottomDrawer, setBottomDrawer] = useState<BottomDrawerKey>(null);
+
+  // Close side panels on mobile before first paint so the editor is immediately
+  // visible. useLayoutEffect fires before the browser paints, preventing any
+  // flash of panel content.
+  useLayoutEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (window.innerWidth < 768) {
+      setSideDrawer(null);
+      setRightDrawer(null);
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
 
   const [panelHeightPct, setPanelHeightPctState] = useState<number>(
     DEFAULT_PANEL_HEIGHT_PCT
