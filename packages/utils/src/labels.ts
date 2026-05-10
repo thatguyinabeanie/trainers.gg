@@ -59,7 +59,7 @@ export const roundStatusLabels: Record<string, string> = {
 
 export const gameFormatLabels: Record<string, string> = {
   VGC: "VGC",
-  VGC2025: "VGC 2025",
+  "VGC 2025": "VGC 2025",
   TCG: "TCG",
   "Pokemon Go": "Pokemon Go",
   Unite: "Pokemon Unite",

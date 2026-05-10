@@ -2,6 +2,7 @@
 -- 04_organizations.sql - Create Communities and Staff
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
+-- Generated at: 2026-05-07T18:00:00.000Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- Depends on: 03_users.sql
 -- =============================================================================
