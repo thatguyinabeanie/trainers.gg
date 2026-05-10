@@ -334,6 +334,34 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Register in pds_handles registry for namespace uniqueness.
+    // Fatal — if registry insert fails, the user must retry to ensure
+    // namespace integrity across users and communities.
+    const { error: registryError } = await supabaseAdmin
+      .from("pds_handles")
+      .insert({
+        handle,
+        entity_type: "user",
+        entity_id: user.id,
+        did: pdsResult.did,
+      });
+
+    if (registryError) {
+      console.error("Failed to register user handle in pds_handles registry:", registryError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "PDS account was created but registry sync failed. Please retry.",
+          code: "DB_UPDATE_FAILED",
+          did: pdsResult.did,
+        } satisfies ProvisionPdsResponse),
+        {
+          status: 500,
+          headers: { ...cors, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

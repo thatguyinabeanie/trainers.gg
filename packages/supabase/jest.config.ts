@@ -12,11 +12,14 @@ const config: Config = createConfig({
   ],
   testPathIgnorePatterns: [
     "/node_modules/",
-    // These tests use Deno-specific imports (jsr:, npm:) and must run with Deno
+    // These tests use Deno-specific imports (jsr:, npm:) that need special resolution
     "<rootDir>/supabase/functions/_shared/__tests__/cache.test.ts",
     "<rootDir>/supabase/functions/_shared/__tests__/pds.test.ts",
-    "<rootDir>/supabase/functions/update-pds-handle/__tests__/",
   ],
+  moduleNameMapper: {
+    // Map Deno-specific import specifiers to identity (they're jest.mock'd in tests)
+    "^jsr:@supabase/supabase-js@2$": "<rootDir>/src/__mocks__/supabase-js.ts",
+  },
   collectCoverageFrom: [
     "src/**/*.ts",
     // Exclude Edge Functions from coverage - they run in Deno, not Jest

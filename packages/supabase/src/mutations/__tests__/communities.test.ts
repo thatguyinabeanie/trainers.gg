@@ -57,7 +57,7 @@ describe("Community Mutations", () => {
       logoUrl: "https://test.org/logo.png",
     };
 
-    // Helper: mock a successful create flow (slug check + insert + staff insert)
+    // Helper: mock a successful create flow (slug check + pds_handles check + insert + staff insert)
     function mockSuccessfulCreate(
       fromSpy: jest.SpyInstance,
       overrides?: Partial<ReturnType<typeof organizationFactory.build>>
@@ -68,11 +68,18 @@ describe("Community Mutations", () => {
         ...overrides,
       });
 
-      // Check slug uniqueness
+      // Check slug uniqueness (communities table)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
+      } as unknown as MockQueryBuilder);
+
+      // Check pds_handles namespace collision
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
       // Create community
@@ -178,6 +185,13 @@ describe("Community Mutations", () => {
           single: jest.fn().mockResolvedValue({ data: null, error: null }),
         } as unknown as MockQueryBuilder);
 
+        // pds_handles namespace check
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+        } as unknown as MockQueryBuilder);
+
         await expect(
           createCommunity(mockClient, {
             ...communityData,
@@ -196,6 +210,13 @@ describe("Community Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: eqMock,
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
+      } as unknown as MockQueryBuilder);
+
+      // pds_handles namespace check
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
       const insertMock = jest.fn().mockReturnThis();
@@ -247,6 +268,31 @@ describe("Community Mutations", () => {
       );
     });
 
+    it("should throw error if handle already taken in PDS namespace", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+
+      // Slug check passes (no community with that slug)
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: null, error: null }),
+      } as unknown as MockQueryBuilder);
+
+      // pds_handles check returns an existing handle
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { handle: "test-org.trainers.gg" },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      await expect(createCommunity(mockClient, communityData)).rejects.toThrow(
+        "This name is already taken on the Bluesky network"
+      );
+    });
+
     it("should propagate database errors", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
@@ -254,6 +300,13 @@ describe("Community Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
+      } as unknown as MockQueryBuilder);
+
+      // pds_handles namespace check
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
       const dbError = new Error("Database error");
