@@ -350,6 +350,20 @@ export async function provisionAllCommunitiesAction(): Promise<
         if (controller.signal.aborted || error.name === "AbortError") {
           return { success: false, error: "Request timed out" };
         }
+
+        // FunctionsHttpError has a `context` property containing the Response.
+        // Try to extract the actual JSON error body from the edge function.
+        if (error.name === "FunctionsHttpError" && error.context) {
+          try {
+            const body = await error.context.json();
+            if (body?.error) {
+              return { success: false, error: body.error };
+            }
+          } catch {
+            // Response body already consumed or not JSON — fall through
+          }
+        }
+
         return { success: false, error: error.message };
       }
 
