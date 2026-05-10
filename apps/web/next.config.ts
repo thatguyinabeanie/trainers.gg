@@ -37,10 +37,14 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2mb",
     },
   },
-  rewrites: async () => [
-    // Vanity profile URLs: /@username → /user/username (internal route)
-    { source: "/@:handle", destination: "/user/:handle" },
-  ],
+  rewrites: async () => ({
+    beforeFiles: [
+      // Vanity profile URLs: /@username → /user/username (internal route)
+      { source: "/@:handle", destination: "/user/:handle" },
+    ],
+    afterFiles: [],
+    fallback: [],
+  }),
   redirects: async () => [
     // Old /u/ URLs redirect to vanity /@handle format
     {

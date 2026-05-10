@@ -286,17 +286,27 @@ export async function getPlayerProfileByHandle(
   if (userError) return null;
 
   let userId: string | null = user?.id ?? null;
+  let resolvedViaAlt: { id: number; is_public: boolean } | null = null;
 
   // Fallback: check alts.username and resolve to user
   if (!userId) {
     const { data: alt, error: altError } = await supabase
       .from("alts")
-      .select("user_id")
+      .select("user_id, id, is_public")
       .eq("username", handle)
       .maybeSingle();
 
     if (altError || !alt) return null;
     userId = alt.user_id;
+    resolvedViaAlt = { id: alt.id, is_public: alt.is_public };
+  }
+
+  // If resolved via a private alt, don't expose the parent profile
+  if (resolvedViaAlt && !resolvedViaAlt.is_public) {
+    return {
+      type: "private-alt" as const,
+      altUsername: handle,
+    };
   }
 
   // Fetch all alts for this user (include is_public for profile visibility)
@@ -329,6 +339,7 @@ export async function getPlayerProfileByHandle(
     alts?.find((a) => a.id === userData.main_alt_id) ?? alts?.[0] ?? null;
 
   return {
+    type: "profile" as const,
     userId: userData.id,
     username: userData.username,
     country: userData.country,
@@ -338,6 +349,8 @@ export async function getPlayerProfileByHandle(
     mainAlt,
     alts: alts ?? [],
     altIds: (alts ?? []).map((a) => a.id),
+    /** The alt that was used to resolve this profile (null if resolved via user username) */
+    resolvedViaAlt,
   };
 }
 
@@ -628,4 +641,23 @@ export async function getPlayerPublicTeams(
         pokepasteUrl: team?.pokepaste_url ?? null,
       };
     });
+}
+
+// ============================================================================
+// Standalone alt lookup (for /alts/[handle] — private alt pages)
+// ============================================================================
+
+/**
+ * Fetch an alt by its username without exposing parent user info.
+ * Returns basic alt data for the standalone alt page.
+ */
+export async function getAltByHandle(supabase: TypedClient, handle: string) {
+  const { data: alt, error } = await supabase
+    .from("alts")
+    .select("id, username, bio, avatar_url, tier, tier_expires_at, is_public")
+    .eq("username", handle)
+    .maybeSingle();
+
+  if (error || !alt) return null;
+  return alt;
 }

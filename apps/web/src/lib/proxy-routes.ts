@@ -29,6 +29,7 @@ export const PUBLIC_ROUTES = [
   "/players", // Player directory (public)
   "/user", // Player profiles (internal route, rewritten from /@handle)
   "/@", // Player profiles (vanity URL, rewrites to /user/handle)
+  "/alts", // Standalone alt pages (private alt tournament history)
   "/auth",
   "/api",
   "/oauth", // OAuth JWKS and well-known files (AT Protocol requires no redirects)
@@ -110,6 +111,7 @@ const ONBOARDING_EXEMPT_ROUTES = [
   "/players",
   "/user",
   "/@",
+  "/alts",
   "/tournaments",
   "/communities",
   "/organizations",
@@ -119,7 +121,9 @@ const ONBOARDING_EXEMPT_ROUTES = [
 export function isOnboardingExempt(pathname: string): boolean {
   // Homepage must match exactly — every route starts with "/"
   if (pathname === "/") return true;
-  return ONBOARDING_EXEMPT_ROUTES.some((route) => matchesRoute(pathname, route));
+  return ONBOARDING_EXEMPT_ROUTES.some((route) =>
+    matchesRoute(pathname, route)
+  );
 }
 
 /**

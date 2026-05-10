@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import {
   createStaticClient,
@@ -174,8 +174,9 @@ function countryCodeToFlag(code: string): string {
 // Server Components
 // ============================================================================
 
-type PlayerProfile = NonNullable<
-  Awaited<ReturnType<typeof getPlayerProfileByHandle>>
+type PlayerProfile = Extract<
+  NonNullable<Awaited<ReturnType<typeof getPlayerProfileByHandle>>>,
+  { type: "profile" }
 >;
 
 /**
@@ -259,9 +260,7 @@ function ProfileHeader({
           {isTemp ? (
             <p className="text-muted-foreground text-lg">@New Trainer</p>
           ) : (
-            <p className="text-muted-foreground text-lg">
-              @{profile.username}
-            </p>
+            <p className="text-muted-foreground text-lg">@{profile.username}</p>
           )}
 
           {/* Bio */}
@@ -372,14 +371,21 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
   const { handle } = await params;
 
   // Fetch profile (cached) and current user ID (not cached) in parallel
-  const [profile, currentUserId] = await Promise.all([
+  const [profileResult, currentUserId] = await Promise.all([
     getCachedPlayerProfile(handle),
     getCurrentUserId(),
   ]);
 
-  if (!profile) {
+  if (!profileResult) {
     notFound();
   }
+
+  // If the handle resolved to a private alt, redirect to standalone alt page
+  if (profileResult.type === "private-alt") {
+    redirect(`/alts/${profileResult.altUsername}`);
+  }
+
+  const profile = profileResult;
 
   // Fetch follow counts and Discord handle in parallel (both depend on profile)
   const [followCounts, discordHandle] = await Promise.all([

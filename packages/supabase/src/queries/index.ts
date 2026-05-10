@@ -23,6 +23,7 @@ export {
   getFollowingCount,
   getPlayerTournamentHistoryFull,
   getPlayerPublicTeams,
+  getAltByHandle,
 } from "./users";
 
 // Community queries (renamed from organization)
