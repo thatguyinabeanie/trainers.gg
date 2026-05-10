@@ -277,6 +277,18 @@ Deno.serve(async (req) => {
 
     if (vaultError) {
       console.error("Failed to store community PDS password in vault:", vaultError);
+
+      // Persist DID with 'failed' status so the community isn't stuck
+      // (retries would otherwise hit HANDLE_TAKEN with no DID recorded)
+      await supabaseAdmin
+        .from("communities")
+        .update({
+          bluesky_did: pdsResult.did,
+          bluesky_handle: handle,
+          pds_status: "failed",
+        })
+        .eq("id", communityId);
+
       return new Response(
         JSON.stringify({
           success: false,

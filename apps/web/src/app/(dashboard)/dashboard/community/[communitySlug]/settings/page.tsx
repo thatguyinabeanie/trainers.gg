@@ -790,7 +790,7 @@ function BlueskyIdentityCard({
   const supabase = useSupabase();
   const [isProvisioning, startProvisionTransition] = useTransition();
 
-  const isActive = pdsStatus === "active" && did;
+  const isActive = pdsStatus === "active" && !!did;
   const isFailed = pdsStatus === "failed";
   const isPending = !pdsStatus || pdsStatus === "pending";
 
