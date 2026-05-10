@@ -18,6 +18,7 @@ import { isSudoModeActive, isSiteAdmin } from "@/lib/sudo/server";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DASHBOARD_ALT_COOKIE } from "@/components/dashboard/sidebar-helpers";
+import { SupabaseHashErrorHandler } from "@/components/auth/supabase-hash-error-handler";
 
 export default async function DashboardLayout({
   children,
@@ -186,6 +187,7 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
+      <SupabaseHashErrorHandler />
       <DashboardSidebar
         user={sidebarUser}
         communities={sidebarCommunitiesWithFlags}

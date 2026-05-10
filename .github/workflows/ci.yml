@@ -176,13 +176,14 @@ jobs:
           comment_title: "Test Results / web"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v6
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v7
         if: always()
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: "**/coverage/lcov.info"
-          fail_ci_if_error: false
+          name: coverage-web
+          path: "**/coverage/lcov.info"
+          retention-days: 1
+          if-no-files-found: ignore
 
   test-mobile:
     name: Test @trainers/mobile
@@ -228,13 +229,14 @@ jobs:
           comment_title: "Test Results / mobile"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v6
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v7
         if: always()
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: "**/coverage/lcov.info"
-          fail_ci_if_error: false
+          name: coverage-mobile
+          path: "**/coverage/lcov.info"
+          retention-days: 1
+          if-no-files-found: ignore
 
   test-packages:
     name: Test packages
@@ -287,12 +289,39 @@ jobs:
           comment_title: "Test Results / packages"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v6
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v7
         if: always()
         with:
+          name: coverage-packages
+          path: "**/coverage/lcov.info"
+          retention-days: 1
+          if-no-files-found: ignore
+
+  # ── Coverage reporting (single aggregated upload) ──────────
+  coverage:
+    name: Upload Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [test-web, test-mobile, test-packages]
+    if: always()
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+          path: coverage
+
+      - name: Upload combined coverage to Codecov
+        uses: codecov/codecov-action@v6
+        with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: "**/coverage/lcov.info"
+          directory: coverage
           fail_ci_if_error: false
 
   # ── E2E preparation (parallel with preview wait) ──────────
