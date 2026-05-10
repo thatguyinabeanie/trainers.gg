@@ -29,7 +29,7 @@ function makeTeam(overrides?: Partial<TeamWithPokemon>): TeamWithPokemon {
   return {
     id: -1,
     name: "Untitled Team",
-    format: "gen9vgc2026regi",
+    format: "championsvgc2026regma",
     format_legal: null,
     description: null,
     notes: null,
