@@ -17,8 +17,11 @@ function clearStorage() {
 // =============================================================================
 
 describe("useBuilderState — ephemeral state defaults", () => {
+  let originalInnerWidth: number;
+
   beforeEach(() => {
     clearStorage();
+    originalInnerWidth = window.innerWidth;
     // Simulate desktop so drawers default to open (JSDOM defaults innerWidth=0)
     Object.defineProperty(window, "innerWidth", {
       writable: true,
@@ -31,7 +34,7 @@ describe("useBuilderState — ephemeral state defaults", () => {
     Object.defineProperty(window, "innerWidth", {
       writable: true,
       configurable: true,
-      value: 0,
+      value: originalInnerWidth,
     });
   });
 
