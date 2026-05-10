@@ -116,6 +116,10 @@ interface StatsLaneProps {
   onUpdate?: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   /** Validation errors scoped to stat/EV fields. */
   fieldErrors?: ValidationError[];
+  /** Show the right-edge dashed border that separates stats from moves
+   *  in side-by-side layouts. GridRow stacks these vertically, so it
+   *  passes false. Defaults to true. */
+  borderRight?: boolean;
 }
 
 // =============================================================================
@@ -768,6 +772,7 @@ export function StatsLane({
   format,
   onUpdate,
   fieldErrors = [],
+  borderRight = true,
 }: StatsLaneProps) {
   // Hooks must be called unconditionally — declare state before the
   // pokemon-null early return so the call order stays stable across both
@@ -798,7 +803,7 @@ export function StatsLane({
 
   if (!pokemon) {
     return (
-      <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
+      <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", borderRight && "border-r border-dashed", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
 
 
         {/* Column headers — same structure as real but dimmed */}
@@ -904,7 +909,7 @@ export function StatsLane({
   );
 
   return (
-    <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
+    <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", borderRight && "border-r border-dashed", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
       {/* Column headers */}
       <div
         className={cn(

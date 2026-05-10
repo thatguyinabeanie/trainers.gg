@@ -281,6 +281,7 @@ export function GridRow({
           format={format}
           onUpdate={onUpdate}
           fieldErrors={statsErrors}
+          borderRight={false}
         />
         <MovesLane
           pokemon={pokemon}
