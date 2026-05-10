@@ -58,7 +58,6 @@ function getRedirectLocation(response: Response): string {
 
 /** Standard valid params for the happy path. */
 const VALID_PARAMS = {
-  code: "discord-oauth-code",
   guild_id: "987654321098765432",
   state: "valid-signed-state-token",
 };
@@ -119,9 +118,8 @@ describe("GET /api/discord/install-callback", () => {
 
   describe("Missing required params", () => {
     it.each([
-      ["code", { guild_id: "123", state: "tok" }],
-      ["guild_id", { code: "abc", state: "tok" }],
-      ["state", { code: "abc", guild_id: "123" }],
+      ["guild_id", { state: "tok" }],
+      ["state", { guild_id: "123" }],
       ["all", {}],
     ])(
       "redirects with missing_params when %s is absent",
