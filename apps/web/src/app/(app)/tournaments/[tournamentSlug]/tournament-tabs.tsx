@@ -93,7 +93,7 @@ function PhaseCard({ phase }: { phase: PhaseData }) {
           <Layers className="h-3.5 w-3.5 shrink-0" />
           {phase.phaseTypeLabel}
         </div>
-        {phase.plannedRounds && (
+        {phase.plannedRounds != null && (
           <div className="flex items-center gap-1.5">
             <Shield className="h-3.5 w-3.5 shrink-0" />
             {phase.plannedRounds} rounds
@@ -111,7 +111,7 @@ function PhaseCard({ phase }: { phase: PhaseData }) {
             {phase.roundTimeMinutes} min
           </div>
         )}
-        {phase.checkInTimeMinutes && (
+        {phase.checkInTimeMinutes != null && (
           <div className="flex items-center gap-1.5">
             <Timer className="h-3.5 w-3.5 shrink-0" />
             {phase.checkInTimeMinutes} min check-in

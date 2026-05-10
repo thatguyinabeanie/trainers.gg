@@ -86,7 +86,9 @@ export async function uploadCommunityBanner(
         STORAGE_BUCKETS.UPLOADS
       );
       if (oldPath) {
-        await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, oldPath);
+        await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, oldPath).catch(
+          () => {}
+        );
       }
     }
 
@@ -122,19 +124,24 @@ export async function removeCommunityBanner(
       throw new Error("You can only update your own community");
     }
 
-    if (org.banner_url) {
-      const path = extractPathFromUrl(org.banner_url, STORAGE_BUCKETS.UPLOADS);
-      if (path) {
-        const storageClient = await createStorageClient();
-        await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, path);
-      }
-    }
+    const bannerUrl = org.banner_url;
 
     const { error } = await supabase
       .from("communities")
       .update({ banner_url: null })
       .eq("id", validatedId);
     if (error) throw error;
+
+    // Best-effort storage cleanup — delete after DB update succeeds
+    if (bannerUrl) {
+      const path = extractPathFromUrl(bannerUrl, STORAGE_BUCKETS.UPLOADS);
+      if (path) {
+        const storageClient = await createStorageClient();
+        await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, path).catch(
+          () => {}
+        );
+      }
+    }
 
     invalidateCommunityPageCaches(org.slug, validatedId);
     updateTag(CacheTags.TOURNAMENTS_LIST);
