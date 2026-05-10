@@ -131,11 +131,18 @@ async function handleLinkMode({
   const redirectTarget = sanitizeReturnUrl(returnUrl, "/dashboard/settings/account");
 
   // Check if the DID is already linked to another user
-  const { data: existingHolder } = await supabaseAtproto
+  const { data: existingHolder, error: lookupError } = await supabaseAtproto
     .from("users")
     .select("id")
     .eq("did", did)
     .maybeSingle();
+
+  if (lookupError) {
+    console.error("Failed to check DID ownership:", lookupError);
+    const errorUrl = new URL(redirectTarget, baseUrl);
+    errorUrl.hash = "error=link_failed&error_code=update_failed&error_description=Failed+to+verify+Bluesky+account+ownership";
+    return NextResponse.redirect(errorUrl.toString());
+  }
 
   if (existingHolder && existingHolder.id !== linkUserId) {
     // DID belongs to a different user — redirect with error

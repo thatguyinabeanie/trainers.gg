@@ -61,7 +61,9 @@ export async function GET(request: Request) {
   if (mode === "link") {
     const user = await getUser();
     if (!user) {
-      const signInUrl = new URL("/sign-in", new URL(request.url).origin);
+      // Use NEXT_PUBLIC_SITE_URL to avoid broken redirects in tunnel/proxy scenarios
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+      const signInUrl = new URL("/sign-in", baseUrl);
       signInUrl.searchParams.set("redirect", returnUrl);
       return NextResponse.redirect(signInUrl);
     }

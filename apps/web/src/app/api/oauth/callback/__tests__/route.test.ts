@@ -146,6 +146,31 @@ describe("GET /api/oauth/callback", () => {
       expect(location).toContain("#error=link_failed");
       expect(location).toContain("error_code=identity_already_exists");
     });
+
+    it("redirects with error when DID lookup query fails", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:abc123",
+        returnUrl: "/dashboard/settings/account",
+        linkUserId: "user-456",
+      });
+
+      // DB error on lookup
+      const mockMaybeSingle = jest.fn().mockResolvedValue({
+        data: null,
+        error: { message: "connection timeout" },
+      });
+      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+
+      mockFrom.mockReturnValue({ select: mockSelect });
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location");
+      expect(location).toContain("#error=link_failed");
+      expect(location).toContain("error_code=update_failed");
+    });
   });
 
   describe("link mode - update failure", () => {
