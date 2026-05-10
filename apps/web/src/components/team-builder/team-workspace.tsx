@@ -906,8 +906,6 @@ export function TeamWorkspaceV2({
                                   idx={i}
                                   pokemon={p}
                                   isActive={state.activeIdx === i}
-                                  density="comfy"
-                                  expandMode="all"
                                   onActivate={state.setActiveIdx}
                                   onAdd={handleAdd}
                                   onRemove={handleRemoveByIdx}
@@ -1125,8 +1123,6 @@ export function TeamWorkspaceV2({
                             idx={i}
                             pokemon={p}
                             isActive={state.activeIdx === i}
-                            density="comfy"
-                            expandMode="all"
                             onActivate={state.setActiveIdx}
                             onAdd={handleAdd}
                             onRemove={handleRemoveByIdx}
