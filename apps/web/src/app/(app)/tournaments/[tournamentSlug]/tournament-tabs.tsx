@@ -10,7 +10,7 @@ import { CurrentMatchBanner } from "./current-match-banner";
 import { ArrowDown, Clock, Layers, Shield, Timer, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface PhaseData {
+export interface PhaseData {
   id: number;
   name: string;
   phaseType: string;

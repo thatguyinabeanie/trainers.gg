@@ -52,6 +52,7 @@ export {
   tournamentStatusLabels,
   matchStatusLabels,
   roundStatusLabels,
+  gameFormatLabels,
   getLabel,
 } from "./labels";
 

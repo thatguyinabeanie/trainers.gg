@@ -54,6 +54,18 @@ export const roundStatusLabels: Record<string, string> = {
 };
 
 // ============================================================================
+// Game Format Labels
+// ============================================================================
+
+export const gameFormatLabels: Record<string, string> = {
+  VGC: "VGC",
+  VGC2025: "VGC 2025",
+  TCG: "TCG",
+  "Pokemon Go": "Pokemon Go",
+  Unite: "Pokemon Unite",
+};
+
+// ============================================================================
 // Helper Function
 // ============================================================================
 

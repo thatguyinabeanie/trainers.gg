@@ -498,7 +498,7 @@ BEGIN
       cut_rule, check_in_time_minutes
     ) VALUES (
       t_id, 'Swiss Rounds', 1, 'swiss', 'pending',
-      3, 50, 6, 0,
+      3, 50, 5, 0,
       NULL, 5
     ) ON CONFLICT DO NOTHING;
     INSERT INTO public.tournament_phases (
@@ -508,7 +508,7 @@ BEGIN
     ) VALUES (
       t_id, 'Top Cut', 2, 'single_elimination', 'pending',
       3, 50, NULL, 0,
-      'top-8', 5
+      'top-4', 5
     ) ON CONFLICT DO NOTHING;
   END IF;
 

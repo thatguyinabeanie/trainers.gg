@@ -10,6 +10,7 @@ import {
   hasCommunityAccess,
 } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
+import { getLabel, gameFormatLabels } from "@trainers/utils";
 import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -23,7 +24,7 @@ import {
   Gamepad2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TournamentTabs } from "./tournament-tabs";
+import { TournamentTabs, type PhaseData } from "./tournament-tabs";
 import { PageContainer } from "@/components/layout/page-container";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TournamentSidebarCard } from "@/components/tournament";
@@ -188,13 +189,17 @@ function TournamentBanner({
       {/* Community avatar — overlaps bottom of banner */}
       <Link
         href={`/communities/${organization.slug}`}
+        aria-label={`View ${organization.name} community`}
         className="absolute bottom-0 left-4 translate-y-1/2 transition-opacity hover:opacity-90 sm:left-6"
       >
         <Avatar
           noBorder
           className="ring-background h-24 w-24 shadow-lg ring-4 sm:h-28 sm:w-28"
         >
-          <AvatarImage src={organization.logo_url ?? undefined} />
+          <AvatarImage
+            src={organization.logo_url ?? undefined}
+            alt={`${organization.name} logo`}
+          />
           <AvatarFallback className="bg-muted text-2xl font-bold">
             {organization.icon || organization.name.slice(0, 2).toUpperCase()}
           </AvatarFallback>
@@ -264,8 +269,7 @@ function TournamentHeader({
         {tournament.format && (
           <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
             <Gamepad2 className="h-3.5 w-3.5" />
-            {tournament.format}
-          </span>
+            {getLabel(tournament.format, gameFormatLabels)}          </span>
         )}
         {tournament.tournament_format && (
           <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
@@ -421,7 +425,9 @@ function FormatCard({
             Game Format
           </p>
           <p className="font-medium">
-            {tournament.format || "Not specified"}
+            {tournament.format
+              ? getLabel(tournament.format, gameFormatLabels)
+              : "Not specified"}
           </p>
         </div>
         <div>
@@ -462,19 +468,6 @@ function FormatCard({
 // ============================================================================
 // Phase data extraction for tournament structure visual
 // ============================================================================
-
-interface PhaseData {
-  id: number;
-  name: string;
-  phaseType: string;
-  phaseTypeLabel: string;
-  status: string;
-  plannedRounds: number | null;
-  bestOf: number | null;
-  roundTimeMinutes: number | null;
-  checkInTimeMinutes: number | null;
-  cutRule: string | null;
-}
 
 function extractPhaseData(
   tournament: NonNullable<Awaited<ReturnType<typeof getTournamentBySlug>>>
