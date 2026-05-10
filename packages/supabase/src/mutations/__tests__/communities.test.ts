@@ -268,6 +268,31 @@ describe("Community Mutations", () => {
       );
     });
 
+    it("should throw error if handle already taken in PDS namespace", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+
+      // Slug check passes (no community with that slug)
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: null, error: null }),
+      } as unknown as MockQueryBuilder);
+
+      // pds_handles check returns an existing handle
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { handle: "test-org.trainers.gg" },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      await expect(createCommunity(mockClient, communityData)).rejects.toThrow(
+        "This name is already taken on the Bluesky network"
+      );
+    });
+
     it("should propagate database errors", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 

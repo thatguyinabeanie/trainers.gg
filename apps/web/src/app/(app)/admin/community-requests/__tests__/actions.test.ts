@@ -91,6 +91,15 @@ describe("grantCommunityRequestAction", () => {
     );
   });
 
+  it("triggers PDS provisioning after approval", async () => {
+    await grantCommunityRequestAction(REQUEST_ID);
+
+    expect(mockFunctionsInvoke).toHaveBeenCalledWith(
+      "provision-community-pds",
+      { body: { communityId: 1 } }
+    );
+  });
+
   it("returns an error when auth check fails", async () => {
     mockRequireAdminWithSudo.mockResolvedValue({
       success: false,
