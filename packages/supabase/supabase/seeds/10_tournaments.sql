@@ -1,12 +1,9 @@
 -- =============================================================================
 -- 10_tournaments.sql - Create Tournaments, Phases, and Registrations
 -- =============================================================================
--- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-02-03T01:10:30.376Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 
--- IDEMPOTENT: Uses ON CONFLICT DO NOTHING
 -- Depends on: 03_users.sql, 04_organizations.sql
 -- NOTE: All dates use relative expressions (interval offsets from
 -- NOW()) so seed data never goes stale.
