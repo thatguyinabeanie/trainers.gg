@@ -6923,6 +6923,30 @@ ON CONFLICT (username) DO NOTHING;
 
 
 -- -----------------------------------------------------------------------------
+-- Make one alt per named account public (the _vgc alt)
+-- -----------------------------------------------------------------------------
+
+UPDATE public.alts SET is_public = true WHERE username IN (
+  -- Primary alts (main identity — always public)
+  'admin_trainer',
+  'ash_ketchum',
+  'cynthia',
+  'brock',
+  'karen',
+  'red',
+  'lance',
+  -- One additional public alt per account
+  'admin_trainer_vgc',
+  'ash_ketchum_vgc',
+  'cynthia_vgc',
+  'brock_vgc',
+  'karen_vgc',
+  'red_vgc',
+  'lance_vgc'
+);
+
+
+-- -----------------------------------------------------------------------------
 -- Site Admin Role
 -- -----------------------------------------------------------------------------
 
