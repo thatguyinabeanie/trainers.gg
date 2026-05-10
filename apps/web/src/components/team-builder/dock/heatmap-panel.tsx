@@ -251,12 +251,12 @@ function MonRowLabel({ pokemon }: { pokemon: Tables<"pokemon"> }) {
             draggable={false}
           />
         ) : (
-          <span className="text-muted-foreground text-[8px]" aria-hidden>
+          <span className="text-muted-foreground text-xs" aria-hidden>
             ?
           </span>
         )}
       </span>
-      <span className="text-foreground text-[11px] font-medium whitespace-nowrap">
+      <span className="text-foreground text-xs font-medium whitespace-nowrap">
         {name}
       </span>
     </div>
@@ -318,7 +318,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
             aria-pressed={mode === "defensive"}
             onClick={() => setMode("defensive")}
             className={cn(
-              "px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
+              "px-2 py-0.5 text-xs font-semibold tracking-wide uppercase transition-colors duration-150",
               mode === "defensive"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -331,7 +331,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
             aria-pressed={mode === "offensive"}
             onClick={() => setMode("offensive")}
             className={cn(
-              "px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
+              "px-2 py-0.5 text-xs font-semibold tracking-wide uppercase transition-colors duration-150",
               mode === "offensive"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -348,7 +348,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
             aria-pressed={showTera}
             onClick={() => setShowTera((v) => !v)}
             className={cn(
-              "rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors duration-150",
+              "rounded px-2 py-0.5 text-xs font-semibold tracking-wide uppercase transition-colors duration-150",
               showTera
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:text-foreground"
@@ -359,7 +359,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
         )}
 
         {/* Legend (center, fills space) */}
-        <div className="flex flex-1 items-center justify-center gap-1.5 text-[10px]">
+        <div className="flex flex-1 items-center justify-center gap-1.5 text-xs">
           {(
             [
               {
@@ -385,7 +385,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
             <span
               key={label}
               className={cn(
-                "inline-flex min-w-7 items-center justify-center rounded px-1.5 py-0.5 font-mono text-[10px] leading-tight",
+                "inline-flex min-w-7 items-center justify-center rounded px-1.5 py-0.5 font-mono text-xs leading-tight",
                 cls
               )}
             >
@@ -443,7 +443,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
             </Tooltip>
           ))}
           {/* Summary header */}
-          <span className="text-muted-foreground text-center text-[8px] font-semibold tracking-wide uppercase">
+          <span className="text-muted-foreground text-center text-xs font-semibold tracking-wide uppercase">
             Net
           </span>
         </div>
@@ -475,7 +475,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
                   return (
                     <span
                       key={`${row.pokemon.id}-${t}`}
-                      className="text-muted-foreground/40 inline-flex items-center justify-center font-mono text-[10px] leading-none"
+                      className="text-muted-foreground/40 inline-flex items-center justify-center font-mono text-xs leading-none"
                       onMouseEnter={() =>
                         setHoverCell({ row: rowIdx, col: colIdx })
                       }
@@ -490,7 +490,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
                   <span
                     key={`${row.pokemon.id}-${t}`}
                     className={cn(
-                      "inline-flex items-center justify-center rounded px-0.5 py-0.5 font-mono text-[10px] leading-tight transition-all duration-100",
+                      "inline-flex items-center justify-center rounded px-0.5 py-0.5 font-mono text-xs leading-tight transition-all duration-100",
                       cellClass(mult, mode),
                       isCrosshair && "ring-primary/30 ring-1"
                     )}
@@ -513,7 +513,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
                 return (
                   <span
                     className={cn(
-                      "flex justify-center font-mono text-[10px] font-semibold",
+                      "flex justify-center font-mono text-xs font-semibold",
                       net > 0
                         ? "text-emerald-600 dark:text-emerald-400"
                         : net < 0
@@ -542,13 +542,13 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
                 style={gridStyle}
                 aria-hidden="true"
               >
-                <span className="text-muted-foreground/30 text-[10px] italic">
+                <span className="text-muted-foreground/30 text-xs italic">
                   {rows.length === 0 && idx === 2 ? "Add Pokémon…" : "\u00A0"}
                 </span>
                 {ALL_TYPES.map((t) => (
                   <span
                     key={`empty-${rows.length + idx}-${t}`}
-                    className="text-muted-foreground/15 inline-flex items-center justify-center font-mono text-[10px] leading-none"
+                    className="text-muted-foreground/15 inline-flex items-center justify-center font-mono text-xs leading-none"
                   >
                     ·
                   </span>
@@ -564,7 +564,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
           className="bg-muted/50 sticky bottom-0 grid items-center gap-px border-t px-2 py-1.5"
           style={gridStyle}
         >
-          <span className="text-muted-foreground text-[9px] font-semibold tracking-wide uppercase">
+          <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
             TOTAL
           </span>
           {colTotals.map((col, idx) => {
@@ -573,7 +573,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
               <span
                 key={ALL_TYPES[idx]}
                 className={cn(
-                  "flex justify-center font-mono text-[9px] font-semibold transition-opacity duration-100",
+                  "flex justify-center font-mono text-xs font-semibold transition-opacity duration-100",
                   hoverCell !== null && hoverCell.col !== idx && "opacity-40",
                   net > 0
                     ? "text-emerald-600 dark:text-emerald-400"
@@ -595,7 +595,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
             return (
               <span
                 className={cn(
-                  "flex justify-center font-mono text-[9px] font-semibold",
+                  "flex justify-center font-mono text-xs font-semibold",
                   grandNet > 0
                     ? "text-emerald-600 dark:text-emerald-400"
                     : grandNet < 0

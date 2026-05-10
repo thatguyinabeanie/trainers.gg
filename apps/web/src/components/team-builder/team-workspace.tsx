@@ -783,7 +783,7 @@ export function TeamWorkspaceV2({
                     >
                       <div className="flex h-full flex-col overflow-hidden">
                         <header className="flex items-center gap-2 px-3 py-2">
-                          <span className="text-primary flex-1 text-center font-mono text-[10px] font-bold tracking-wider uppercase">
+                          <span className="text-primary flex-1 text-center font-mono text-xs font-bold tracking-wider uppercase">
                             Speed Tiers
                           </span>
                           <button

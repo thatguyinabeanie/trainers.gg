@@ -296,7 +296,7 @@ export function CompactRow({
           />
         </div>
         <div className="flex w-64 min-w-0 shrink-0 flex-col justify-center gap-0.5">
-          <div className="mb-1 flex flex-col gap-[3px] border-b border-border pb-1.5">
+          <div className="mb-1 flex flex-col gap-1 border-b border-border pb-1.5">
             <MetaBar
               nickDraft={id.nickDraft}
               setNickDraft={id.setNickDraft}
@@ -392,7 +392,7 @@ export function CompactRow({
           {...dragAttributes}
           {...dragListeners}
           className={cn(
-            "text-muted-foreground font-mono text-[10px] font-medium tracking-wide",
+            "text-muted-foreground font-mono text-xs font-medium tracking-wide",
             dragListeners && "cursor-grab touch-none active:cursor-grabbing"
           )}
           aria-label={`Drag to reorder slot ${idx + 1}`}

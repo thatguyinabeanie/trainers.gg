@@ -86,7 +86,7 @@ export function CalcBottomPanel({
     <section className="flex min-h-0 flex-1 flex-col" aria-label="Damage Calc">
       {/* Panel header */}
       <header className="border-border flex items-center gap-2 border-b px-3 py-2">
-        <span className="text-primary flex-1 text-center font-mono text-[10px] font-bold tracking-wider uppercase">
+        <span className="text-primary flex-1 text-center font-mono text-xs font-bold tracking-wider uppercase">
           Damage Calc
         </span>
         <button

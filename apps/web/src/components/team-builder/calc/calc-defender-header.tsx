@@ -157,7 +157,7 @@ export function DefenderMonHeader({
               >
                 {defenderSpecies || "Choose…"}
               </span>
-              <span aria-hidden className="text-[10px] text-muted-foreground">
+              <span aria-hidden className="text-xs text-muted-foreground">
                 ▾
               </span>
             </button>
@@ -201,7 +201,7 @@ export function DefenderMonHeader({
               />
             </FormChip>
             {canMega && (
-              <span className="pl-[calc(60px+6px+4px)] font-mono text-[9px] text-muted-foreground/50">
+              <span className="pl-[calc(60px+6px+4px)] font-mono text-xs text-muted-foreground/50">
                 {defenderMegaActive ? defenderAbility : displayAbility}
               </span>
             )}
@@ -232,7 +232,7 @@ export function DefenderMonHeader({
           )}
 
           {!hasLegalAbility && (
-            <p className="px-1 font-mono text-[9px] text-muted-foreground/60">
+            <p className="px-1 font-mono text-xs text-muted-foreground/60">
               No abilities found for format
             </p>
           )}

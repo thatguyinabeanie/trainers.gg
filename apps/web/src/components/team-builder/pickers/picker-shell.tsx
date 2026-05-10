@@ -53,7 +53,7 @@ export function PickerShell({
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2">
-        <span className="text-muted-foreground font-mono text-[9.5px] font-medium tracking-widest uppercase">
+        <span className="text-muted-foreground font-mono text-xs font-medium tracking-widest uppercase">
           {title}
         </span>
         <button

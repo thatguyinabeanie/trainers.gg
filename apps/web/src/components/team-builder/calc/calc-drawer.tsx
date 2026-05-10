@@ -59,10 +59,10 @@ export function CalcDrawer({
 
         <header className="flex items-center justify-between border-b px-4 py-2.5">
           <div className="flex flex-col gap-px">
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <span className="font-mono text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Damage calc
             </span>
-            <span className="font-mono text-[10px] text-muted-foreground">
+            <span className="font-mono text-xs text-muted-foreground">
               live · inherits attacker
             </span>
           </div>

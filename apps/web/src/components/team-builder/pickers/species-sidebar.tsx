@@ -35,7 +35,7 @@ import { type SpeciesFilterState } from "./species-filter-state";
 // =============================================================================
 
 const SECTION_HEADER =
-  "text-muted-foreground mb-1.5 block text-[9px] font-bold tracking-widest uppercase";
+  "text-muted-foreground mb-1.5 block text-xs font-bold tracking-widest uppercase";
 
 const SECTION_PADDING = "px-3 py-2.5";
 
@@ -214,13 +214,13 @@ export function SpeciesSidebar({
           >
             {/* Gradient gem icon */}
             <span
-              className="flex size-4 items-center justify-center rounded-sm bg-gradient-to-br from-violet-500 to-pink-500 text-[8px] font-bold text-white"
+              className="flex size-4 items-center justify-center rounded-sm bg-gradient-to-br from-violet-500 to-pink-500 text-xs font-bold text-white"
               aria-hidden="true"
             >
               M
             </span>
 
-            <span className="text-[11px] font-medium">Mega only</span>
+            <span className="text-xs font-medium">Mega only</span>
 
             {/* Checkbox — filled violet when active */}
             <span
@@ -281,7 +281,7 @@ export function SpeciesSidebar({
                 {isNeeded && (
                   <span
                     aria-hidden="true"
-                    className="absolute -top-1 -right-1 z-10 text-[9px] leading-none text-amber-500 drop-shadow"
+                    className="absolute -top-1 -right-1 z-10 text-xs leading-none text-amber-500 drop-shadow"
                   >
                     ✦
                   </span>
@@ -307,10 +307,10 @@ export function SpeciesSidebar({
             type="button"
             onClick={() => onFiltersChange({ ...filters, ability: null })}
             aria-label={`Clear ${filters.ability} filter`}
-            className="bg-primary/10 text-primary border-primary hover:bg-primary/15 inline-flex w-full items-center justify-between gap-2 rounded border px-2 py-1 text-[11px] font-medium transition-colors"
+            className="bg-primary/10 text-primary border-primary hover:bg-primary/15 inline-flex w-full items-center justify-between gap-2 rounded border px-2 py-1 text-xs font-medium transition-colors"
           >
             <span className="truncate">{filters.ability}</span>
-            <span aria-hidden="true" className="text-[10px] opacity-70">
+            <span aria-hidden="true" className="text-xs opacity-70">
               ×
             </span>
           </button>
@@ -332,7 +332,7 @@ export function SpeciesSidebar({
                   120
                 );
               }}
-              className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-[11px] focus:ring-1 focus:outline-none"
+              className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-xs focus:ring-1 focus:outline-none"
             />
             {abilityFocused && abilitySuggestions.length > 0 && (
               <ul
@@ -350,7 +350,7 @@ export function SpeciesSidebar({
                         onFiltersChange({ ...filters, ability });
                         setAbilityInput("");
                       }}
-                      className="hover:bg-accent w-full px-2 py-1 text-left text-[11px]"
+                      className="hover:bg-accent w-full px-2 py-1 text-left text-xs"
                     >
                       {ability}
                     </button>
@@ -386,7 +386,7 @@ export function SpeciesSidebar({
                 120
               );
             }}
-            className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-[11px] focus:ring-1 focus:outline-none"
+            className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-xs focus:ring-1 focus:outline-none"
           />
           {moveFocused && moveSuggestions.length > 0 && (
             <ul
@@ -402,7 +402,7 @@ export function SpeciesSidebar({
                       addMove(move);
                       setMoveInput("");
                     }}
-                    className="hover:bg-accent w-full px-2 py-1 text-left text-[11px]"
+                    className="hover:bg-accent w-full px-2 py-1 text-left text-xs"
                   >
                     {move}
                   </button>
@@ -420,10 +420,10 @@ export function SpeciesSidebar({
                 key={move}
                 type="button"
                 onClick={() => removeMove(move)}
-                className="bg-primary/15 text-primary border-primary hover:bg-primary/25 flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors"
+                className="bg-primary/15 text-primary border-primary hover:bg-primary/25 flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors"
               >
                 {move}
-                <span aria-hidden="true" className="ml-0.5 text-[9px]">
+                <span aria-hidden="true" className="ml-0.5 text-xs">
                   ×
                 </span>
               </button>

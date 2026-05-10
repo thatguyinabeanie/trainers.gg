@@ -192,7 +192,7 @@ export function GridRow({
           {...dragAttributes}
           {...dragListeners}
           className={cn(
-            "text-muted-foreground font-mono text-[10px] font-medium tracking-wide",
+            "text-muted-foreground font-mono text-xs font-medium tracking-wide",
             dragListeners && "cursor-grab touch-none active:cursor-grabbing"
           )}
           aria-label={`Drag to reorder slot ${idx + 1}`}

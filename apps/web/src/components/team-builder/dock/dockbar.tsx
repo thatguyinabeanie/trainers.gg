@@ -109,7 +109,7 @@ export function Dockbar({
   return (
     <div className="bg-background relative w-full rounded-b-lg border-t">
       {/* Footer disclaimer — left side, absolutely positioned */}
-      <p className="text-muted-foreground absolute top-1/2 left-3 hidden -translate-y-1/2 text-[8px] lg:block">
+      <p className="text-muted-foreground absolute top-1/2 left-3 hidden -translate-y-1/2 text-xs lg:block">
         Not affiliated with Nintendo, The Pok&eacute;mon Company, or Game Freak.
       </p>
 
@@ -124,14 +124,14 @@ export function Dockbar({
           onOpen={() => onOpen("matchups")}
           ariaLabel="Defensive type matchups"
         >
-          <span className="shrink-0 text-[15px] leading-none" aria-hidden>
+          <span className="shrink-0 text-base leading-none" aria-hidden>
             ▦
           </span>
           <span className="text-xs leading-none font-semibold">
             Type matchups
           </span>
           <span
-            className="text-muted-foreground ml-1 shrink-0 text-[10px]"
+            className="text-muted-foreground ml-1 shrink-0 text-xs"
             aria-hidden
           >
             {isMatchupsActive ? "▾" : "▴"}
@@ -144,14 +144,14 @@ export function Dockbar({
           onOpen={() => onOpen("speed")}
           ariaLabel="Speed tier ladder"
         >
-          <span className="shrink-0 text-[15px] leading-none" aria-hidden>
+          <span className="shrink-0 text-base leading-none" aria-hidden>
             ≫
           </span>
           <span className="text-xs leading-none font-semibold">
             Speed tiers
           </span>
           <span
-            className="text-muted-foreground ml-1 shrink-0 text-[10px]"
+            className="text-muted-foreground ml-1 shrink-0 text-xs"
             aria-hidden
           >
             {isSpeedActive ? "▾" : "▴"}
@@ -164,19 +164,19 @@ export function Dockbar({
           onOpen={() => onOpen("calc")}
           ariaLabel="Damage calc"
         >
-          <span className="shrink-0 text-[15px] leading-none" aria-hidden>
+          <span className="shrink-0 text-base leading-none" aria-hidden>
             🎯
           </span>
           <span className="flex min-w-0 items-center gap-2">
             <span className="text-xs leading-none font-semibold">
               Damage calc
             </span>
-            <span className="text-muted-foreground flex min-w-0 items-center gap-1 font-mono text-[10px] leading-none">
+            <span className="text-muted-foreground flex min-w-0 items-center gap-1 font-mono text-xs leading-none">
               <span className="truncate">{calcSubLabel}</span>
             </span>
           </span>
           <span
-            className="text-muted-foreground ml-1 shrink-0 text-[10px]"
+            className="text-muted-foreground ml-1 shrink-0 text-xs"
             aria-hidden
           >
             {isCalcActive ? "▾" : "▴"}
@@ -185,7 +185,7 @@ export function Dockbar({
       </div>
 
       {/* Footer copyright — right side, absolutely positioned */}
-      <p className="text-muted-foreground absolute top-1/2 right-3 hidden -translate-y-1/2 items-center gap-1 text-[10px] whitespace-nowrap lg:flex">
+      <p className="text-muted-foreground absolute top-1/2 right-3 hidden -translate-y-1/2 items-center gap-1 text-xs whitespace-nowrap lg:flex">
         <a href="https://x.com/thatguyinabeani" target="_blank" rel="noopener noreferrer">
           <Image
             src="/icons/beanie_logo.png"

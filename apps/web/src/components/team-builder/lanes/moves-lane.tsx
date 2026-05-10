@@ -81,7 +81,7 @@ function CalcRange({
   empty?: boolean;
 }) {
   return (
-    <span className="text-[11px] font-medium tabular-nums">
+    <span className="text-xs font-medium tabular-nums">
       {empty ? "—" : `${min.toFixed(1)}–${max.toFixed(1)}%`}
     </span>
   );
@@ -111,7 +111,7 @@ function KoLabel({ tier, koChance }: { tier: string; koChance?: number | null })
   return (
     <span
       className={cn(
-        "text-[9px] font-extrabold tracking-wide uppercase",
+        "text-xs font-extrabold tracking-wide uppercase",
         KO_COLORS[tier] ?? "text-muted-foreground"
       )}
     >
@@ -132,10 +132,10 @@ function CalcDescTooltip({ desc, children }: { desc: string; children: ReactNode
       {children}
       <TooltipContent side="bottom" className="max-w-[560px] overflow-hidden border border-border bg-popover text-popover-foreground p-0">
         <div className="flex flex-col gap-1.5 p-3">
-          <p className="text-[13px] leading-relaxed font-mono whitespace-normal">
+          <p className="text-sm leading-relaxed font-mono whitespace-normal">
             {desc}
           </p>
-          <span className="text-[10px] opacity-60">
+          <span className="text-xs opacity-60">
             Click to copy
           </span>
         </div>
@@ -321,7 +321,7 @@ function MoveTile({
               <TooltipTrigger
                 render={<span />}
                 className={cn(
-                  "block max-w-36 truncate text-[13px] font-medium",
+                  "block max-w-36 truncate text-sm font-medium",
                   !moveName && "text-muted-foreground/50"
                 )}
               >
@@ -331,7 +331,7 @@ function MoveTile({
           </TableCell>
 
           {/* Base Power */}
-          <TableCell className="text-muted-foreground p-1 align-middle font-mono text-[11px] tabular-nums">
+          <TableCell className="text-muted-foreground p-1 align-middle font-mono text-xs tabular-nums">
             {moveName && moveData?.basePower && moveData.basePower > 0
               ? moveData.basePower
               : moveName
@@ -340,7 +340,7 @@ function MoveTile({
           </TableCell>
 
           {/* Accuracy */}
-          <TableCell className="text-muted-foreground p-1 align-middle font-mono text-[11px] tabular-nums">
+          <TableCell className="text-muted-foreground p-1 align-middle font-mono text-xs tabular-nums">
             {moveName
               ? moveData?.accuracy === true || !moveData?.accuracy
                 ? "—"
@@ -352,11 +352,11 @@ function MoveTile({
           {calc.calcEnabled && (
             <TableCell className="p-1 pl-2 whitespace-nowrap">
               {hasCalc && koTier && output?.rolls.length ? (
-                <span className="text-muted-foreground text-[11px] tabular-nums">
+                <span className="text-muted-foreground text-xs tabular-nums">
                   {output.rolls[0] ?? 0}–{output.rolls[output.rolls.length - 1] ?? 0}
                 </span>
               ) : (
-                <span className="text-muted-foreground text-[13px]">—</span>
+                <span className="text-muted-foreground text-sm">—</span>
               )}
             </TableCell>
           )}
@@ -367,7 +367,7 @@ function MoveTile({
               {hasCalc && koTier ? (
                 <CalcRange min={displayMin} max={displayMax} />
               ) : (
-                <span className="text-muted-foreground text-[13px]">—</span>
+                <span className="text-muted-foreground text-sm">—</span>
               )}
             </TableCell>
           )}
@@ -378,7 +378,7 @@ function MoveTile({
               {hasCalc && koTier ? (
                 <KoLabel tier={koTier} koChance={output?.koChance} />
               ) : (
-                <span className="text-muted-foreground text-[13px]">—</span>
+                <span className="text-muted-foreground text-sm">—</span>
               )}
             </TableCell>
           )}
@@ -463,13 +463,13 @@ function MovesLaneTileGhost() {
       <TableRow className="border-none">
         <TableHead className="!h-auto w-6 border-none p-0 pb-0.5"><span className="sr-only">Type</span></TableHead>
         <TableHead className="!h-auto w-8 border-none p-0 pb-0.5"><span className="sr-only">Category</span></TableHead>
-        <TableHead className="text-muted-foreground/30 !h-auto border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
+        <TableHead className="text-muted-foreground/30 !h-auto border-none p-0 pb-0.5 text-xs font-medium tracking-[0.04em] uppercase">
           NAME
         </TableHead>
-        <TableHead className="text-muted-foreground/30 !h-auto w-11 border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
+        <TableHead className="text-muted-foreground/30 !h-auto w-11 border-none p-0 pb-0.5 text-xs font-medium tracking-[0.04em] uppercase">
           BP
         </TableHead>
-        <TableHead className="text-muted-foreground/30 !h-auto w-12 border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
+        <TableHead className="text-muted-foreground/30 !h-auto w-12 border-none p-0 pb-0.5 text-xs font-medium tracking-[0.04em] uppercase">
           ACC
         </TableHead>
         {calcEnabled && (
@@ -511,12 +511,12 @@ function MovesLaneGhost() {
               <TableCell className="w-6 p-1" />
               <TableCell className="w-8 p-1" />
               <TableCell className="p-1">
-                <span className="text-muted-foreground/30 text-[13px] font-medium">
+                <span className="text-muted-foreground/30 text-sm font-medium">
                   + Add move
                 </span>
               </TableCell>
-              <TableCell className="w-11 p-1  font-mono text-[11px] tabular-nums" />
-              <TableCell className="w-12 p-1  font-mono text-[11px] tabular-nums" />
+              <TableCell className="w-11 p-1  font-mono text-xs tabular-nums" />
+              <TableCell className="w-12 p-1  font-mono text-xs tabular-nums" />
               {calcEnabled && <TableCell className="p-1 pl-3" />}
               {calcEnabled && <TableCell className="p-1" />}
               {calcEnabled && <TableCell className="p-1" />}

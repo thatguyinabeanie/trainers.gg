@@ -273,11 +273,11 @@ export function MovePicker({
                 setFilters((f) => ({ ...DEFAULT_MOVE_FILTERS, search: f.search }))
               }
               aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
-              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
+              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium transition-colors"
             >
               {activeFilterCount}{" "}
               {activeFilterCount === 1 ? "filter" : "filters"}
-              <span aria-hidden="true" className="text-[10px] opacity-70">
+              <span aria-hidden="true" className="text-xs opacity-70">
                 ×
               </span>
             </button>
@@ -317,7 +317,7 @@ export function MovePicker({
             <button
               type="button"
               onClick={() => setFilters((f) => ({ ...DEFAULT_MOVE_FILTERS, search: f.search }))}
-              className="border-border bg-background text-muted-foreground hover:border-destructive/50 hover:text-destructive w-full rounded-md border py-1 text-[11px] transition-colors"
+              className="border-border bg-background text-muted-foreground hover:border-destructive/50 hover:text-destructive w-full rounded-md border py-1 text-xs transition-colors"
             >
               Clear all filters
             </button>

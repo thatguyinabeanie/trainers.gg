@@ -83,7 +83,7 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
   if (isVertical) {
     return (
       <div className="flex items-center border-t border-border/40 bg-destructive/[0.03] px-2 py-1">
-        <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-wider text-destructive/80 mr-2">
+        <span className="shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-destructive/80 mr-2">
           Incoming
         </span>
         <div className="flex flex-col">
@@ -115,7 +115,7 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
                   >
                     {/* Bullet + Type icon */}
                     <span className="flex items-center gap-1 w-7 shrink-0">
-                      <span className="text-border text-[9px]">•</span>
+                      <span className="text-border text-xs">•</span>
                       {moveType && (
                         <TypeSymbolIcon
                           type={moveType as Parameters<typeof TypeSymbolIcon>[0]["type"]}
@@ -123,11 +123,11 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
                       )}
                     </span>
                     {/* Move name */}
-                    <span className="whitespace-nowrap text-[9px] font-medium text-foreground/80 mr-2">
+                    <span className="whitespace-nowrap text-xs font-medium text-foreground/80 mr-2">
                       {m.moveName}
                     </span>
                     {/* Damage range */}
-                    <span className="whitespace-nowrap font-mono text-[9px] tabular-nums text-foreground/60 mr-1">
+                    <span className="whitespace-nowrap font-mono text-xs tabular-nums text-foreground/60 mr-1">
                       {m.hasCalc
                         ? `${m.displayMin.toFixed(1)}–${m.displayMax.toFixed(1)}%`
                         : m.isStatus
@@ -135,7 +135,7 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
                           : ""}
                     </span>
                     {/* KO tier */}
-                    <span className={cn("whitespace-nowrap font-mono text-[9px] font-black uppercase", m.hasCalc && m.koTier ? KO_TEXT[m.koTier] : "")}>
+                    <span className={cn("whitespace-nowrap font-mono text-xs font-black uppercase", m.hasCalc && m.koTier ? KO_TEXT[m.koTier] : "")}>
                       {m.hasCalc && m.koTier
                         ? m.koChance != null && m.koChance > 0 && m.koChance < 100
                           ? `${m.koChance % 1 === 0 ? m.koChance.toFixed(0) : m.koChance.toFixed(1)}% ${KO_LABEL[m.koTier]}`
@@ -155,10 +155,10 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
                   {m.hasCalc && m.desc && (
                     <TooltipContent side="bottom" className="max-w-[560px] overflow-hidden border border-border bg-popover text-popover-foreground p-0">
                       <div className="flex flex-col gap-1.5 p-3">
-                        <p className="text-[13px] leading-relaxed font-mono whitespace-normal">
+                        <p className="text-sm leading-relaxed font-mono whitespace-normal">
                           {m.desc}
                         </p>
-                        <span className="text-[10px] opacity-60">
+                        <span className="text-xs opacity-60">
                           Click to copy
                         </span>
                       </div>
@@ -176,7 +176,7 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
   return (
     <div className="flex items-center border-t border-border/40 bg-destructive/[0.03] px-2 py-0.5 overflow-x-auto">
       {/* Label */}
-      <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-wider text-destructive/80">
+      <span className="shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-destructive/80">
         Incoming
       </span>
 
@@ -220,22 +220,22 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
             )}
 
             {/* Move name */}
-            <span className="text-[9px] font-medium text-foreground/80 ml-0.5 whitespace-nowrap">
+            <span className="text-xs font-medium text-foreground/80 ml-0.5 whitespace-nowrap">
               {m.moveName}
             </span>
 
             {/* Damage range */}
             {m.hasCalc ? (
-              <span className="ml-1.5 font-mono text-[9px] tabular-nums text-foreground/60 whitespace-nowrap">
+              <span className="ml-1.5 font-mono text-xs tabular-nums text-foreground/60 whitespace-nowrap">
                 {m.displayMin.toFixed(1)}–{m.displayMax.toFixed(1)}%
               </span>
             ) : m.isStatus ? (
-              <span className="ml-1 text-[8.5px] italic text-muted-foreground/40">—</span>
+              <span className="ml-1 text-xs italic text-muted-foreground/40">—</span>
             ) : null}
 
             {/* KO tier */}
             {m.hasCalc && m.koTier && (
-              <span className={cn("ml-1 font-mono text-[9px] font-black uppercase", KO_TEXT[m.koTier])}>
+              <span className={cn("ml-1 font-mono text-xs font-black uppercase", KO_TEXT[m.koTier])}>
                 {m.koChance != null && m.koChance > 0 && m.koChance < 100
                   ? `${m.koChance % 1 === 0 ? m.koChance.toFixed(0) : m.koChance.toFixed(1)}% ${KO_LABEL[m.koTier]}`
                   : KO_LABEL[m.koTier]}
@@ -255,10 +255,10 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
             {m.hasCalc && m.desc && (
               <TooltipContent side="bottom" className="max-w-[560px] overflow-hidden border border-border bg-popover text-popover-foreground p-0">
                 <div className="flex flex-col gap-1.5 p-3">
-                  <p className="text-[13px] leading-relaxed font-mono whitespace-normal">
+                  <p className="text-sm leading-relaxed font-mono whitespace-normal">
                     {m.desc}
                   </p>
-                  <span className="text-[10px] opacity-60">
+                  <span className="text-xs opacity-60">
                     Click to copy
                   </span>
                 </div>
