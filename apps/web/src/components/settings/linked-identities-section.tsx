@@ -128,9 +128,9 @@ export function LinkedIdentitiesSection() {
    */
   const handleLink = async (provider: OAuthProvider | "bluesky") => {
     if (provider === "bluesky") {
-      // Redirect to Bluesky OAuth flow
+      // Redirect to Bluesky OAuth flow in link mode
       const returnUrl = encodeURIComponent("/dashboard/settings/account");
-      window.location.href = `/api/oauth/login?returnUrl=${returnUrl}`;
+      window.location.href = `/api/oauth/login?mode=link&returnUrl=${returnUrl}`;
     } else {
       // Use linkIdentity to attach the provider to the current user
       // (signInWithOAuth would replace the session instead of linking)

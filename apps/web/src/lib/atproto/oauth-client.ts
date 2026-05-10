@@ -247,24 +247,34 @@ export async function getAtprotoOAuthClient(): Promise<NodeOAuthClient> {
 /**
  * Start the OAuth authorization flow
  * Returns the authorization URL to redirect the user to
+ *
+ * @param handle - Bluesky handle or PDS URL
+ * @param returnUrl - URL to redirect to after completion
+ * @param linkUserId - If provided, the callback will link the DID to this user instead of signing in
  */
 export async function startAtprotoAuth(
   handle: string,
-  returnUrl?: string
+  returnUrl?: string,
+  linkUserId?: string
 ): Promise<string> {
   const client = await getAtprotoOAuthClient();
 
   // Generate a state parameter for CSRF protection
   const state = crypto.randomUUID();
 
-  // Store return URL in state if provided
-  if (returnUrl) {
+  // Store return URL (and link user ID if linking) in state
+  if (returnUrl || linkUserId) {
     const supabase = createAtprotoServiceClient();
-    await supabase.from("atproto_oauth_state").upsert({
+    const { error } = await supabase.from("atproto_oauth_state").upsert({
       state_key: `return:${state}`,
-      state_data: { returnUrl } as unknown as Json,
+      state_data: { returnUrl, linkUserId } as unknown as Json,
       expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     });
+
+    if (error) {
+      console.error("Failed to store OAuth return state:", error);
+      throw new Error("Failed to initiate authentication");
+    }
   }
 
   // Initiate authorization - this discovers the user's PDS and authorization server
@@ -281,23 +291,32 @@ export async function handleAtprotoCallback(params: URLSearchParams): Promise<{
   did: string;
   handle?: string;
   returnUrl?: string;
+  linkUserId?: string;
 }> {
   const client = await getAtprotoOAuthClient();
 
   // Exchange authorization code for tokens
   const { session, state } = await client.callback(params);
 
-  // Get the return URL if we stored one
+  // Get the return URL and link user ID if we stored them
   let returnUrl: string | undefined;
+  let linkUserId: string | undefined;
   if (state) {
     const supabase = createAtprotoServiceClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("atproto_oauth_state")
       .select("state_data")
       .eq("state_key", `return:${state}`)
+      .gt("expires_at", new Date().toISOString())
       .maybeSingle();
 
-    returnUrl = (data?.state_data as { returnUrl?: string } | null)?.returnUrl;
+    if (error) {
+      console.error("Failed to retrieve OAuth return state:", error);
+    }
+
+    const stateData = data?.state_data as { returnUrl?: string; linkUserId?: string } | null;
+    returnUrl = stateData?.returnUrl;
+    linkUserId = stateData?.linkUserId;
 
     // Clean up
     await supabase
@@ -311,6 +330,7 @@ export async function handleAtprotoCallback(params: URLSearchParams): Promise<{
     // Handle is available on the session's sub property resolution
     handle: undefined, // Will be resolved separately if needed
     returnUrl,
+    linkUserId,
   };
 }
 
