@@ -11,6 +11,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -49,6 +50,13 @@ import {
 } from "@/components/ui/resizable";
 import { ImportDialog } from "./import-dialog";
 import { useTeamValidation, type ValidationError } from "./validation-hooks";
+import { EditableName } from "./builder-topbar";
+import { ValidationPopover } from "./validation/validation-popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { CalcBottomPanel } from "./calc/calc-bottom-panel";
 import {
   CalcStateProvider,
@@ -418,6 +426,9 @@ export function TeamWorkspaceV2({
   /** Controls the import sheet. */
   const [importOpen, setImportOpen] = useState(false);
 
+  /** Controls the mobile validate popover. */
+  const [mobileValidateOpen, setMobileValidateOpen] = useState(false);
+
   /** Slot index awaiting remove confirmation. null = dialog closed. */
 
   /** Ref to the worklane element — used by the panel resizer to compute the
@@ -438,8 +449,13 @@ export function TeamWorkspaceV2({
   useEffect(() => {
     const formatId = format?.id;
     if (!formatId) return;
-    const id = requestIdleCallback(() => warmSpeciesIndex(formatId));
-    return () => cancelIdleCallback(id);
+    // requestIdleCallback is unavailable in Safari < 16.4 — fall back to setTimeout
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(() => warmSpeciesIndex(formatId));
+      return () => cancelIdleCallback(id);
+    }
+    const id = setTimeout(() => warmSpeciesIndex(formatId), 1);
+    return () => clearTimeout(id);
   }, [format?.id]);
 
   // ---------------------------------------------------------------------------
@@ -943,7 +959,24 @@ export function TeamWorkspaceV2({
               /* Mobile: no panel group, inline layout */
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto">
-                  <div className="flex w-full max-w-[1800px] items-center gap-3 px-3 pt-2">
+                  {/* Mobile: single row — name (flex-1), format, validate icon */}
+                  <div className="flex w-full max-w-[1800px] items-center gap-2 px-3 py-2">
+                    <EditableName
+                      defaultValue={team.name}
+                      onSave={async (name) => {
+                        const result = await persistence.updateTeam(team.id, {
+                          name,
+                        });
+                        if (!result.success) {
+                          toast.error(
+                            result.error ?? "Failed to rename team."
+                          );
+                          return;
+                        }
+                        persistence.onMutationSuccess();
+                      }}
+                      className="h-8 min-w-0 flex-1 text-base"
+                    />
                     <WorkspaceMetadata
                       alts={alts}
                       selectedAltId={
@@ -995,12 +1028,79 @@ export function TeamWorkspaceV2({
                         persistence.onMutationSuccess();
                       }}
                     />
-                    <div className="ml-auto">
-                      <TeamLayoutToggle />
-                    </div>
+                    <Popover
+                      open={mobileValidateOpen}
+                      onOpenChange={(open) => {
+                        if (open) validate();
+                        setMobileValidateOpen(open);
+                      }}
+                    >
+                      <PopoverTrigger
+                        render={
+                          <button
+                            type="button"
+                            aria-label={
+                              validationErrors.some(
+                                (e) => e.severity === "error"
+                              )
+                                ? "Validation errors"
+                                : validationErrors.some(
+                                      (e) => e.severity === "warning"
+                                    )
+                                  ? "Validation warnings"
+                                  : "Team is valid"
+                            }
+                            className={cn(
+                              "hover:bg-accent flex size-8 shrink-0 items-center justify-center rounded-md transition-colors",
+                              validationErrors.some(
+                                (e) => e.severity === "error"
+                              )
+                                ? "text-destructive"
+                                : validationErrors.some(
+                                      (e) => e.severity === "warning"
+                                    )
+                                  ? "text-amber-600 dark:text-amber-400"
+                                  : "text-emerald-600 dark:text-emerald-400"
+                            )}
+                          />
+                        }
+                      >
+                        {validationErrors.some(
+                          (e) => e.severity === "error"
+                        ) ? (
+                          <AlertCircle className="size-5" aria-hidden="true" />
+                        ) : validationErrors.some(
+                            (e) => e.severity === "warning"
+                          ) ? (
+                          <AlertTriangle
+                            className="size-5"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <CheckCircle2
+                            className="size-5"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </PopoverTrigger>
+                      <PopoverContent
+                        side="bottom"
+                        align="end"
+                        className="w-auto max-w-[calc(100vw-2rem)] p-0"
+                      >
+                        <ValidationPopover
+                          errors={validationErrors}
+                          onJumpToPokemon={(id) => {
+                            handleJumpToPokemon(id);
+                            setMobileValidateOpen(false);
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
+
                   <section
-                    className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3 [[data-density=compact]_&]:p-2"
+                    className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 px-3 pb-3 [[data-density=compact]_&]:px-2 [[data-density=compact]_&]:pb-2"
                     data-calc-open="false"
                     data-layout={layoutMode}
                   >

@@ -41,8 +41,8 @@ const mockUseAuthContext = useAuthContext as jest.MockedFunction<
 >;
 
 describe("HeroCTA", () => {
-  // "Explore Players" always appears regardless of auth state
-  it("always renders Explore Players link to /players", () => {
+  // "Team Builder" always appears regardless of auth state
+  it("always renders Team Builder link to /builder", () => {
     mockUseAuthContext.mockReturnValue({
       isAuthenticated: false,
       loading: false,
@@ -53,8 +53,8 @@ describe("HeroCTA", () => {
 
     render(<HeroCTA />);
 
-    const exploreLink = screen.getByRole("link", { name: "Explore Players" });
-    expect(exploreLink).toHaveAttribute("href", "/players");
+    const builderLink = screen.getByRole("link", { name: "Team Builder" });
+    expect(builderLink).toHaveAttribute("href", "/builder");
   });
 
   it.each([

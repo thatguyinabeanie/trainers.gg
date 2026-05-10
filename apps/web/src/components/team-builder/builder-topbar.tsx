@@ -98,9 +98,10 @@ interface BuilderTopbarProps {
 interface EditableNameProps {
   defaultValue: string;
   onSave: (name: string) => Promise<void>;
+  className?: string;
 }
 
-function EditableName({ defaultValue, onSave }: EditableNameProps) {
+export function EditableName({ defaultValue, onSave, className }: EditableNameProps) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(defaultValue);
   const [saving, setSaving] = useState(false);
@@ -153,7 +154,8 @@ function EditableName({ defaultValue, onSave }: EditableNameProps) {
         autoFocus
         className={cn(
           "border-border bg-background focus-visible:ring-ring h-7 w-44 rounded-md border px-2 text-sm font-semibold shadow-xs transition-colors outline-none focus-visible:ring-2 sm:w-56",
-          saving && "opacity-60"
+          saving && "opacity-60",
+          className
         )}
         aria-label="Team name"
       />
@@ -164,7 +166,10 @@ function EditableName({ defaultValue, onSave }: EditableNameProps) {
     <button
       type="button"
       onClick={() => setEditing(true)}
-      className="hover:bg-accent flex h-7 max-w-44 items-center gap-1 rounded-md px-2 text-sm font-semibold transition-colors sm:max-w-56"
+      className={cn(
+        "hover:bg-accent flex h-7 max-w-44 items-center gap-1 rounded-md px-2 text-sm font-semibold transition-colors sm:max-w-56",
+        className
+      )}
       aria-label="Edit team name"
     >
       <span className="truncate">{defaultValue}</span>
@@ -253,8 +258,8 @@ export function BuilderTopbar({
 
   return (
     <>
-      {/* Center: Team name — absolutely centered in the nav bar */}
-      <div className="pointer-events-none absolute inset-x-0 flex items-center justify-center">
+      {/* Center: Team name — hidden on mobile (shown in workspace content area instead), absolutely centered on sm+ */}
+      <div className="pointer-events-none hidden sm:absolute sm:inset-x-0 sm:flex sm:items-center sm:justify-center">
         <div className="pointer-events-auto flex items-center gap-1.5">
           <EditableName defaultValue={team.name} onSave={onNameChange} />
           {onSaveToAccount ? (
@@ -263,7 +268,7 @@ export function BuilderTopbar({
               onClick={onSaveToAccount}
               disabled={isSaving}
               aria-label={isSaving ? "Saving…" : "Save to account"}
-              className="text-muted-foreground hover:text-primary disabled:text-muted-foreground/40 flex size-7 items-center justify-center rounded-md transition-colors"
+              className="text-muted-foreground hover:text-primary disabled:text-muted-foreground/40 hidden size-7 items-center justify-center rounded-md transition-colors sm:flex"
             >
               {SaveIcon}
             </button>
@@ -271,7 +276,7 @@ export function BuilderTopbar({
             <Link
               href={`/sign-in?redirect=${encodeURIComponent("/builder?action=save")}`}
               aria-label="Sign in to save"
-              className="text-muted-foreground hover:text-primary flex size-7 items-center justify-center rounded-md transition-colors"
+              className="text-muted-foreground hover:text-primary hidden size-7 items-center justify-center rounded-md transition-colors sm:flex"
             >
               {SaveIcon}
             </Link>
@@ -287,7 +292,7 @@ export function BuilderTopbar({
             render={
               <button
                 type="button"
-                className="border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-7 items-center gap-1 rounded-md border px-2.5 text-xs shadow-xs transition-colors"
+                className="border-input bg-background hover:bg-accent hover:text-accent-foreground hidden h-7 items-center gap-1 rounded-md border px-2.5 text-xs shadow-xs transition-colors sm:inline-flex"
               />
             }
           >
@@ -330,7 +335,7 @@ export function BuilderTopbar({
               <button
                 type="button"
                 className={cn(
-                  "border-input bg-background hover:bg-accent hover:text-accent-foreground relative inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs shadow-xs transition-colors",
+                  "border-input bg-background hover:bg-accent hover:text-accent-foreground relative hidden h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs shadow-xs transition-colors sm:inline-flex",
                   hasErrors &&
                     "border-destructive/50 text-destructive hover:border-destructive hover:text-destructive",
                   hasWarnings &&

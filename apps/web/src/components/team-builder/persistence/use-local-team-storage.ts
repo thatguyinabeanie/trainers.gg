@@ -24,8 +24,8 @@ const DEBOUNCE_MS = 300;
 /** Module-level ref to the pending debounce timer so clearLocalTeamStorage can cancel it. */
 let pendingWriteTimer: ReturnType<typeof setTimeout> | null = null;
 
-/** Default format for new local teams — current primary VGC format. */
-const DEFAULT_FORMAT = "gen9vgc2026regi";
+/** Default format for new local teams — Pokémon Champions (Reg M-A). */
+const DEFAULT_FORMAT = "championsvgc2026regma";
 
 // =============================================================================
 // Helpers

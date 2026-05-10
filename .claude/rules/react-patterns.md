@@ -155,6 +155,26 @@ useEffect(() => {
 }, [searchTerm]);
 ```
 
+**Pre-paint state correction (no-flash)** — use `useLayoutEffect` when state must be corrected before the browser paints to avoid visible flicker. The most common case is hiding content that is wrong for the current viewport after SSR hydration (e.g., panels that should be closed on mobile):
+
+```tsx
+// Good — fires before browser paint, user never sees the wrong state
+useLayoutEffect(() => {
+  /* eslint-disable react-hooks/set-state-in-effect */
+  if (window.innerWidth < 768) {
+    setPanelOpen(false);
+  }
+  /* eslint-enable react-hooks/set-state-in-effect */
+}, []);
+
+// Bad — useEffect fires after paint; user sees the panel flash closed
+useEffect(() => {
+  if (window.innerWidth < 768) setPanelOpen(false);
+}, []);
+```
+
+`useLayoutEffect` is suppressed on the server (Next.js no-ops it for SSR) so no SSR crash occurs. Use it only for one-time mount corrections — not for derived state that can be computed during render.
+
 ## Refs
 
 `useRef` holds mutable values that don't trigger re-renders. Refs are the correct tool for:

@@ -176,7 +176,7 @@ export function LocalBuilderWorkspace() {
       const result = await teamsApi.saveLocal({
         altId: targetAlt.id,
         name: team.name || "Untitled Team",
-        format: team.format || "gen9vgc2026regi",
+        format: team.format || "championsvgc2026regma",
         pokemon: pokemonPayloads as Record<string, unknown>[],
       });
 
