@@ -187,6 +187,9 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Clear input immediately so re-selecting the same file triggers 'change'
+    e.target.value = "";
+
     if (file.size === 0) {
       toast.error("File is empty");
       return;
@@ -213,8 +216,6 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
         toast.error(result.error);
       }
     });
-
-    e.target.value = "";
   };
 
   const handleLogoRemove = () => {
@@ -233,6 +234,9 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
   const handleBannerSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Clear input immediately so re-selecting the same file triggers 'change'
+    e.target.value = "";
 
     if (file.size === 0) {
       toast.error("File is empty");
@@ -260,8 +264,6 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
         toast.error(result.error);
       }
     });
-
-    e.target.value = "";
   };
 
   const handleBannerRemove = () => {

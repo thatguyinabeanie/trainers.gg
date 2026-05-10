@@ -466,7 +466,53 @@ BEGIN
     ) ON CONFLICT DO NOTHING;
   END IF;
 
-  RAISE NOTICE 'Created phases for 7 tournaments';
+  -- Phases for: VGC League Week 3 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      best_of, round_time_minutes, planned_rounds, current_round,
+      cut_rule, check_in_time_minutes
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'pending',
+      3, 50, 6, 0,
+      NULL, 5
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      best_of, round_time_minutes, planned_rounds, current_round,
+      cut_rule, check_in_time_minutes
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'pending',
+      3, 50, NULL, 0,
+      'top-8', 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 3 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      best_of, round_time_minutes, planned_rounds, current_round,
+      cut_rule, check_in_time_minutes
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'pending',
+      3, 50, 6, 0,
+      NULL, 5
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      best_of, round_time_minutes, planned_rounds, current_round,
+      cut_rule, check_in_time_minutes
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'pending',
+      3, 50, NULL, 0,
+      'top-8', 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  RAISE NOTICE 'Created phases for 9 tournaments';
 END $$;
 
 -- Tournament Registrations
