@@ -1109,16 +1109,18 @@ describe("TeamWorkspaceV2 — mobile header row", () => {
     expect(nameBtn).toHaveTextContent("Test Team");
   });
 
-  it("renders the Validate button in the content area on mobile", () => {
+  it("renders the validate icon button in the content area on mobile", () => {
     renderWorkspace();
-    expect(screen.getByRole("button", { name: /validate/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /team is valid/i })
+    ).toBeInTheDocument();
   });
 
-  it("calls validate when the mobile Validate popover is opened", async () => {
+  it("calls validate when the mobile validate popover is opened", async () => {
     const user = userEvent.setup();
     renderWorkspace();
 
-    await user.click(screen.getByRole("button", { name: /validate/i }));
+    await user.click(screen.getByRole("button", { name: /team is valid/i }));
 
     expect(mockValidate).toHaveBeenCalled();
   });
@@ -1175,21 +1177,25 @@ describe("TeamWorkspaceV2 — mobile header row", () => {
     });
   });
 
-  it("applies error styling to Validate button when there are validation errors", () => {
+  it("applies error styling to validate icon button when there are validation errors", () => {
     mockValidationErrors = [
       { severity: "error", message: "Invalid move", pokemonId: 10 },
     ];
     renderWorkspace();
-    const validateBtn = screen.getByRole("button", { name: /validate/i });
+    const validateBtn = screen.getByRole("button", {
+      name: /validation errors/i,
+    });
     expect(validateBtn).toHaveClass("text-destructive");
   });
 
-  it("applies warning styling to Validate button when there are only warnings", () => {
+  it("applies warning styling to validate icon button when there are only warnings", () => {
     mockValidationErrors = [
       { severity: "warning", message: "Unusual item", pokemonId: 10 },
     ];
     renderWorkspace();
-    const validateBtn = screen.getByRole("button", { name: /validate/i });
+    const validateBtn = screen.getByRole("button", {
+      name: /validation warnings/i,
+    });
     expect(validateBtn).toHaveClass("text-amber-600");
   });
 });

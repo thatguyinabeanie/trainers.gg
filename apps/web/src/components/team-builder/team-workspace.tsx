@@ -11,6 +11,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -958,8 +959,8 @@ export function TeamWorkspaceV2({
               /* Mobile: no panel group, inline layout */
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto">
-                  {/* Mobile: team name row — prominent, above secondary controls */}
-                  <div className="flex w-full max-w-[1800px] px-3 pt-2 pb-0.5">
+                  {/* Mobile: single row — name (flex-1), format, validate icon */}
+                  <div className="flex w-full max-w-[1800px] items-center gap-2 px-3 py-2">
                     <EditableName
                       defaultValue={team.name}
                       onSave={async (name) => {
@@ -974,12 +975,8 @@ export function TeamWorkspaceV2({
                         }
                         persistence.onMutationSuccess();
                       }}
-                      className="h-8 w-full max-w-full text-base"
+                      className="h-8 min-w-0 flex-1 text-base"
                     />
-                  </div>
-
-                  {/* Mobile: format + validate + layout row */}
-                  <div className="flex w-full max-w-[1800px] items-center gap-2 px-3 pb-2">
                     <WorkspaceMetadata
                       alts={alts}
                       selectedAltId={
@@ -1031,66 +1028,75 @@ export function TeamWorkspaceV2({
                         persistence.onMutationSuccess();
                       }}
                     />
-                    <div className="ml-auto flex items-center gap-1.5">
-                      <Popover
-                        open={mobileValidateOpen}
-                        onOpenChange={(open) => {
-                          if (open) validate();
-                          setMobileValidateOpen(open);
-                        }}
-                      >
-                        <PopoverTrigger
-                          render={
-                            <button
-                              type="button"
-                              className={cn(
-                                "border-input bg-background hover:bg-accent hover:text-accent-foreground relative inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs shadow-xs transition-colors",
-                                validationErrors.some(
-                                  (e) => e.severity === "error"
-                                ) &&
-                                  "border-destructive/50 text-destructive hover:border-destructive hover:text-destructive",
-                                validationErrors.some(
-                                  (e) => e.severity === "warning"
-                                ) &&
-                                  !validationErrors.some(
-                                    (e) => e.severity === "error"
-                                  ) &&
-                                  "border-amber-400/50 text-amber-600 hover:border-amber-400 dark:text-amber-400"
-                              )}
-                            />
-                          }
-                        >
-                          Validate
-                          {validationErrors.length > 0 && (
-                            <span
-                              className={cn(
-                                "absolute -top-0.5 -right-0.5 size-2 rounded-full",
-                                validationErrors.some(
-                                  (e) => e.severity === "error"
-                                )
-                                  ? "bg-destructive"
-                                  : "bg-amber-500"
-                              )}
-                              aria-hidden="true"
-                            />
-                          )}
-                        </PopoverTrigger>
-                        <PopoverContent
-                          side="bottom"
-                          align="end"
-                          className="w-auto max-w-[calc(100vw-2rem)] p-0"
-                        >
-                          <ValidationPopover
-                            errors={validationErrors}
-                            onJumpToPokemon={(id) => {
-                              handleJumpToPokemon(id);
-                              setMobileValidateOpen(false);
-                            }}
+                    <Popover
+                      open={mobileValidateOpen}
+                      onOpenChange={(open) => {
+                        if (open) validate();
+                        setMobileValidateOpen(open);
+                      }}
+                    >
+                      <PopoverTrigger
+                        render={
+                          <button
+                            type="button"
+                            aria-label={
+                              validationErrors.some(
+                                (e) => e.severity === "error"
+                              )
+                                ? "Validation errors"
+                                : validationErrors.some(
+                                      (e) => e.severity === "warning"
+                                    )
+                                  ? "Validation warnings"
+                                  : "Team is valid"
+                            }
+                            className={cn(
+                              "hover:bg-accent flex size-8 shrink-0 items-center justify-center rounded-md transition-colors",
+                              validationErrors.some(
+                                (e) => e.severity === "error"
+                              )
+                                ? "text-destructive"
+                                : validationErrors.some(
+                                      (e) => e.severity === "warning"
+                                    )
+                                  ? "text-amber-600 dark:text-amber-400"
+                                  : "text-emerald-600 dark:text-emerald-400"
+                            )}
                           />
-                        </PopoverContent>
-                      </Popover>
-                      <TeamLayoutToggle />
-                    </div>
+                        }
+                      >
+                        {validationErrors.some(
+                          (e) => e.severity === "error"
+                        ) ? (
+                          <AlertCircle className="size-5" aria-hidden="true" />
+                        ) : validationErrors.some(
+                            (e) => e.severity === "warning"
+                          ) ? (
+                          <AlertTriangle
+                            className="size-5"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <CheckCircle2
+                            className="size-5"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </PopoverTrigger>
+                      <PopoverContent
+                        side="bottom"
+                        align="end"
+                        className="w-auto max-w-[calc(100vw-2rem)] p-0"
+                      >
+                        <ValidationPopover
+                          errors={validationErrors}
+                          onJumpToPokemon={(id) => {
+                            handleJumpToPokemon(id);
+                            setMobileValidateOpen(false);
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   <section
