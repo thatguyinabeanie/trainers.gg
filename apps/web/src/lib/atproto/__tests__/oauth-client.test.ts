@@ -135,7 +135,9 @@ describe("getAtprotoOAuthClient", () => {
   it("handles escaped newlines in key", async () => {
     // The module already imported with VALID_PEM, but JoseKey.fromImportable
     // was called with the processed key. Verify it was called correctly.
-    const { JoseKey } = require("@atproto/jwk-jose");
+    const { JoseKey } = jest.requireMock("@atproto/jwk-jose") as {
+      JoseKey: { fromImportable: jest.Mock };
+    };
     // The first call was from the module import — check its arg contains proper PEM
     if (JoseKey.fromImportable.mock.calls.length > 0) {
       const passedKey = JoseKey.fromImportable.mock.calls[0][0];
