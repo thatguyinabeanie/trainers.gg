@@ -536,4 +536,197 @@ describe("GET /api/oauth/callback", () => {
       expect(location).toMatch(/^https:\/\/trainers\.gg\/sign-in/);
     });
   });
+
+  describe("sign-in mode - DID update on legacy user", () => {
+    it("updates DID on legacy user that was found by email", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:legacy",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      // DID lookup: not found
+      const mockMaybeSingleDid = jest.fn().mockResolvedValue({ data: null, error: null });
+      // Email lookup: found, but no DID set (legacy)
+      const mockMaybeSingleEmail = jest.fn().mockResolvedValue({
+        data: { id: "user-legacy", email: "did_plc_legacy@bluesky.trainers.gg", did: null },
+        error: null,
+      });
+
+      // Update call for setting DID
+      const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
+      const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
+
+      let fromCallCount = 0;
+      mockFrom.mockImplementation(() => {
+        fromCallCount++;
+        if (fromCallCount === 1) {
+          return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleDid }) }) };
+        } else if (fromCallCount === 2) {
+          return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleEmail }) }) };
+        } else {
+          return { update: mockUpdate };
+        }
+      });
+
+      mockGenerateLink.mockResolvedValue({
+        data: { properties: { hashed_token: "token_legacy_update" } },
+        error: null,
+      });
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      expect(response.status).toBe(307);
+      expect(mockUpdate).toHaveBeenCalledWith({ did: "did:plc:legacy", pds_status: "pending" });
+      expect(mockUpdateEq).toHaveBeenCalledWith("id", "user-legacy");
+    });
+
+    it("does not update DID if user already has it set", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:hasdid",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      // User found by DID with DID already set
+      const mockMaybeSingle = jest.fn().mockResolvedValue({
+        data: { id: "user-existing", email: "did_plc_hasdid@bluesky.trainers.gg", did: "did:plc:hasdid" },
+        error: null,
+      });
+      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+      const mockUpdate = jest.fn();
+
+      mockFrom.mockReturnValue({ select: mockSelect, update: mockUpdate });
+
+      mockGenerateLink.mockResolvedValue({
+        data: { properties: { hashed_token: "token_existing" } },
+        error: null,
+      });
+
+      await GET(createRequest({ code: "test", state: "test" }));
+
+      // Should NOT call update since user already has DID
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("sign-in mode - user creation failures", () => {
+    it("throws for non-duplicate creation errors", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:fail",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      mockFrom.mockReturnValue({ select: jest.fn().mockReturnValue({ eq: mockEq }) });
+
+      mockGetBlueskyProfile.mockResolvedValue({
+        handle: "fail.bsky.social",
+        displayName: "Fail",
+        avatar: null,
+      });
+
+      // Create user fails with unexpected error
+      mockCreateUser.mockResolvedValue({
+        data: null,
+        error: { message: "Internal server error" },
+      });
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location")!;
+      expect(location).toContain("/sign-in");
+      expect(location).toContain("error=bluesky_auth_failed");
+      expect(location).toContain("Internal+server+error");
+    });
+
+    it("handles short handle usernames with user_ prefix", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:short",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnValue({ eq: mockEq }),
+        update: jest.fn().mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) }),
+      });
+
+      // Handle that extracts to a very short name (e.g., "ab")
+      mockGetBlueskyProfile.mockResolvedValue({
+        handle: "ab.bsky.social",
+        displayName: "AB",
+        avatar: null,
+      });
+
+      mockCreateUser.mockResolvedValue({
+        data: { user: { id: "new-short-user" } },
+        error: null,
+      });
+
+      mockGenerateLink.mockResolvedValue({
+        data: { properties: { hashed_token: "token_short" } },
+        error: null,
+      });
+
+      await GET(createRequest({ code: "test", state: "test" }));
+
+      // Username should be prefixed with user_ since "ab" is < 3 chars
+      expect(mockCreateUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_metadata: expect.objectContaining({
+            username: "user_ab",
+          }),
+        })
+      );
+    });
+  });
+
+  describe("link mode - same user already owns DID", () => {
+    it("proceeds with update when user already has this DID", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:mine",
+        returnUrl: "/dashboard/settings/account",
+        linkUserId: "user-same",
+      });
+
+      // DID already belongs to the same user
+      const mockMaybeSingle = jest.fn().mockResolvedValue({
+        data: { id: "user-same" },
+        error: null,
+      });
+      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+
+      const mockSingle = jest.fn().mockResolvedValue({ data: { pds_status: "active" }, error: null });
+      const mockEqSingle = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockSelectSingle = jest.fn().mockReturnValue({ eq: mockEqSingle });
+
+      const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
+      const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
+
+      let fromCallCount = 0;
+      mockFrom.mockImplementation(() => {
+        fromCallCount++;
+        if (fromCallCount === 1) return { select: mockSelect };
+        if (fromCallCount === 2) return { select: mockSelectSingle };
+        return { update: mockUpdate };
+      });
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      // Should succeed (not error), even though DID is "already linked"
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location");
+      expect(location).toBe("https://trainers.gg/dashboard/settings/account");
+      // Should only update did (not pds_status since it's already "active")
+      expect(mockUpdate).toHaveBeenCalledWith({ did: "did:plc:mine" });
+    });
+  });
 });
