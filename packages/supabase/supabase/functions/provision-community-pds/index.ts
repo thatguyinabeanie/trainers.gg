@@ -85,18 +85,27 @@ Deno.serve(async (req) => {
       error: userError,
     } = await supabaseAdmin.auth.getUser(jwt);
 
+    // Service-role bypass — admin actions invoke this with service-role client
+    let isServiceRole = false;
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid or expired token",
-          code: "UNAUTHORIZED",
-        } satisfies ProvisionCommunityPdsResponse),
-        {
-          status: 401,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
+      try {
+        const payload = JSON.parse(atob(jwt.split(".")[1]));
+        isServiceRole = payload.role === "service_role";
+      } catch { /* not a valid JWT */ }
+
+      if (!isServiceRole) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Invalid or expired token",
+            code: "UNAUTHORIZED",
+          } satisfies ProvisionCommunityPdsResponse),
+          {
+            status: 401,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
     }
 
     // Parse request body
@@ -153,19 +162,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Only the community owner can provision the PDS account
-    if (community.owner_user_id !== user.id) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Only the community owner can enable Bluesky identity",
-          code: "UNAUTHORIZED",
-        } satisfies ProvisionCommunityPdsResponse),
-        {
-          status: 403,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
+    // Only the community owner can provision the PDS account (skip for service-role)
+    if (!isServiceRole) {
+      if (!user || community.owner_user_id !== user.id) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Only the community owner can enable Bluesky identity",
+            code: "UNAUTHORIZED",
+          } satisfies ProvisionCommunityPdsResponse),
+          {
+            status: 403,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
     }
 
     // Check if already provisioned
@@ -188,134 +199,42 @@ Deno.serve(async (req) => {
       console.log(`Retrying PDS provisioning for community ${communityId}`);
     }
 
-    // Generate handle from community slug and check availability
+    // Generate handle from community slug
     const handle = generateHandle(community.slug);
-    const handleAvailable = await checkPdsHandleAvailable(handle);
 
-    if (!handleAvailable) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `The handle @${handle} is already taken on Bluesky`,
-          code: "HANDLE_TAKEN",
-        } satisfies ProvisionCommunityPdsResponse),
-        {
-          status: 409,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
+    // Resume flow: if community already has a DID from a previous failed attempt,
+    // skip account creation and re-run the post-creation steps (which are idempotent)
+    let pdsResultDid: string;
 
-    // Also check the pds_handles registry for namespace collisions
-    const { data: existingHandle } = await supabaseAdmin
-      .from("pds_handles")
-      .select("handle")
-      .eq("handle", handle)
-      .maybeSingle();
+    if (community.bluesky_did) {
+      console.log(`Resuming provisioning for community ${communityId} with existing DID ${community.bluesky_did}`);
+      pdsResultDid = community.bluesky_did;
+    } else {
+      // Fresh provisioning: check handle availability and create account
+      const handleAvailable = await checkPdsHandleAvailable(handle);
 
-    if (existingHandle) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `The handle @${handle} is already registered`,
-          code: "HANDLE_TAKEN",
-        } satisfies ProvisionCommunityPdsResponse),
-        {
-          status: 409,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
+      if (!handleAvailable) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `The handle @${handle} is already taken on Bluesky`,
+            code: "HANDLE_TAKEN",
+          } satisfies ProvisionCommunityPdsResponse),
+          {
+            status: 409,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
 
-    // Generate secure random password (community never needs it directly)
-    const pdsPassword = generateSecurePassword(32);
+      // Also check the pds_handles registry for namespace collisions
+      const { data: existingHandle } = await supabaseAdmin
+        .from("pds_handles")
+        .select("handle")
+        .eq("handle", handle)
+        .maybeSingle();
 
-    // Create invite code
-    const inviteCode = await createPdsInviteCode();
-    if (!inviteCode) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Failed to create PDS invite code",
-          code: "PDS_ERROR",
-        } satisfies ProvisionCommunityPdsResponse),
-        {
-          status: 500,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Create PDS account
-    // Use a synthetic email for the community (not tied to any user)
-    const communityEmail = `community-${community.slug}@trainers.gg`;
-
-    const pdsResult = await createPdsAccount(handle, communityEmail, pdsPassword, inviteCode);
-
-    if ("error" in pdsResult) {
-      console.error("PDS account creation failed for community:", pdsResult.error);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: pdsResult.error,
-          code: "PDS_ERROR",
-        } satisfies ProvisionCommunityPdsResponse),
-        {
-          status: 500,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Store password in Vault (needed for profile sync and future posting)
-    const secretName = `pds_password_community_${communityId}`;
-    const { error: vaultError } = await supabaseAdmin.rpc("vault_create_secret", {
-      secret_value: pdsPassword,
-      secret_name: secretName,
-      secret_description: `PDS password for community ${community.name} (${communityId})`,
-    });
-
-    if (vaultError) {
-      console.error("Failed to store community PDS password in vault:", vaultError);
-
-      // Persist DID with 'failed' status so the community isn't stuck
-      // (retries would otherwise hit HANDLE_TAKEN with no DID recorded)
-      await supabaseAdmin
-        .from("communities")
-        .update({
-          bluesky_did: pdsResult.did,
-          bluesky_handle: handle,
-          pds_status: "failed",
-        })
-        .eq("id", communityId);
-
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error:
-            "PDS account was created but password storage failed. Please contact support.",
-          code: "VAULT_STORAGE_FAILED",
-        } satisfies ProvisionCommunityPdsResponse),
-        {
-          status: 500,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Register in pds_handles registry (fatal — without this the namespace uniqueness guarantee is broken)
-    const { error: registryError } = await supabaseAdmin.from("pds_handles").insert({
-      handle,
-      entity_type: "community",
-      entity_id: communityId.toString(),
-      did: pdsResult.did,
-    });
-
-    if (registryError) {
-      console.error("Failed to register handle in registry:", registryError);
-
-      // Unique violation means this handle/entity is already registered — treat as HANDLE_TAKEN
-      if (registryError.code === "23505") {
+      if (existingHandle) {
         return new Response(
           JSON.stringify({
             success: false,
@@ -329,24 +248,119 @@ Deno.serve(async (req) => {
         );
       }
 
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Failed to register handle in namespace registry",
-          code: "DB_UPDATE_FAILED",
-        } satisfies ProvisionCommunityPdsResponse),
-        {
-          status: 500,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
+      // Generate secure random password (community never needs it directly)
+      const pdsPassword = generateSecurePassword(32);
+
+      // Create invite code
+      const inviteCode = await createPdsInviteCode();
+      if (!inviteCode) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Failed to create PDS invite code",
+            code: "PDS_ERROR",
+          } satisfies ProvisionCommunityPdsResponse),
+          {
+            status: 500,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Create PDS account
+      // Use a synthetic email for the community (not tied to any user)
+      const communityEmail = `community-${community.slug}@trainers.gg`;
+
+      const pdsResult = await createPdsAccount(handle, communityEmail, pdsPassword, inviteCode);
+
+      if ("error" in pdsResult) {
+        console.error("PDS account creation failed for community:", pdsResult.error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: pdsResult.error,
+            code: "PDS_ERROR",
+          } satisfies ProvisionCommunityPdsResponse),
+          {
+            status: 500,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      pdsResultDid = pdsResult.did;
+
+      // Store password in Vault (needed for profile sync and future posting)
+      const secretName = `pds_password_community_${communityId}`;
+      const { error: vaultError } = await supabaseAdmin.rpc("vault_create_secret", {
+        secret_value: pdsPassword,
+        secret_name: secretName,
+        secret_description: `PDS password for community ${community.name} (${communityId})`,
+      });
+
+      if (vaultError) {
+        console.error("Failed to store community PDS password in vault:", vaultError);
+
+        // Persist DID with 'failed' status so the community isn't stuck
+        // (retries would otherwise hit HANDLE_TAKEN with no DID recorded)
+        await supabaseAdmin
+          .from("communities")
+          .update({
+            bluesky_did: pdsResultDid,
+            bluesky_handle: handle,
+            pds_status: "failed",
+          })
+          .eq("id", communityId);
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error:
+              "PDS account was created but password storage failed. Please contact support.",
+            code: "VAULT_STORAGE_FAILED",
+          } satisfies ProvisionCommunityPdsResponse),
+          {
+            status: 500,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
+    }
+
+    // Register in pds_handles registry (fatal — without this the namespace uniqueness guarantee is broken)
+    const { error: registryError } = await supabaseAdmin.from("pds_handles").insert({
+      handle,
+      entity_type: "community",
+      entity_id: communityId.toString(),
+      did: pdsResultDid,
+    });
+
+    if (registryError) {
+      console.error("Failed to register handle in registry:", registryError);
+
+      // Unique violation means this handle/entity is already registered — treat as success for resume
+      if (registryError.code === "23505") {
+        // Already registered — continue to update step
+      } else {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Failed to register handle in namespace registry",
+            code: "DB_UPDATE_FAILED",
+          } satisfies ProvisionCommunityPdsResponse),
+          {
+            status: 500,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
     }
 
     // Update community record with DID and status
     const { error: updateError } = await supabaseAdmin
       .from("communities")
       .update({
-        bluesky_did: pdsResult.did,
+        bluesky_did: pdsResultDid,
         bluesky_handle: handle,
         pds_status: "active",
       })
@@ -377,7 +391,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        did: pdsResult.did,
+        did: pdsResultDid,
         handle,
       } satisfies ProvisionCommunityPdsResponse),
       {

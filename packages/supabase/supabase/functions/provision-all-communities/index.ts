@@ -63,14 +63,15 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Check if user is a site admin
-      const { data: userData } = await supabaseAdmin
-        .from("users")
-        .select("role")
-        .eq("id", user.id)
+      // Check if user is a site admin via user_roles + roles
+      const { data: adminRole } = await supabaseAdmin
+        .from("user_roles")
+        .select("role_id, roles!inner(name)")
+        .eq("user_id", user.id)
+        .eq("roles.name", "site_admin")
         .maybeSingle();
 
-      if (userData?.role !== "admin") {
+      if (!adminRole) {
         return new Response(
           JSON.stringify({ success: false, error: "Admin access required" }),
           { status: 403, headers: { ...cors, "Content-Type": "application/json" } }
@@ -166,22 +167,36 @@ Deno.serve(async (req) => {
 
         // Store password in Vault
         const secretName = `pds_password_community_${community.id}`;
-        await supabaseAdmin.rpc("vault_create_secret", {
+        const { error: vaultError } = await supabaseAdmin.rpc("vault_create_secret", {
           secret_value: pdsPassword,
           secret_name: secretName,
           secret_description: `PDS password for community ${community.name} (${community.id})`,
         });
 
+        if (vaultError) {
+          await supabaseAdmin.from("communities").update({ bluesky_did: pdsResult.did, bluesky_handle: handle, pds_status: "failed" }).eq("id", community.id);
+          result.error = `Vault storage failed: ${vaultError.message}`;
+          results.push(result);
+          continue;
+        }
+
         // Register in pds_handles
-        await supabaseAdmin.from("pds_handles").insert({
+        const { error: registryError } = await supabaseAdmin.from("pds_handles").insert({
           handle,
           entity_type: "community",
           entity_id: community.id.toString(),
           did: pdsResult.did,
         });
 
+        if (registryError) {
+          await supabaseAdmin.from("communities").update({ bluesky_did: pdsResult.did, bluesky_handle: handle, pds_status: "failed" }).eq("id", community.id);
+          result.error = `Registry insert failed: ${registryError.message}`;
+          results.push(result);
+          continue;
+        }
+
         // Update community record
-        await supabaseAdmin
+        const { error: updateError } = await supabaseAdmin
           .from("communities")
           .update({
             bluesky_did: pdsResult.did,
@@ -189,6 +204,12 @@ Deno.serve(async (req) => {
             pds_status: "active",
           })
           .eq("id", community.id);
+
+        if (updateError) {
+          result.error = `Community update failed: ${updateError.message}`;
+          results.push(result);
+          continue;
+        }
 
         result.success = true;
         result.did = pdsResult.did;

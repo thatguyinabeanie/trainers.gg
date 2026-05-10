@@ -22,6 +22,7 @@ import {
 import { socialPlatformLabels } from "@trainers/utils";
 
 import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { updateOrganization } from "@/actions/communities";
 import {
@@ -830,12 +831,7 @@ function BlueskyIdentityCard({
     <DashboardCard label="Bluesky Identity">
       {isActive ? (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="bg-emerald-500/20 h-2 w-2 rounded-full">
-              <div className="bg-emerald-500 h-2 w-2 animate-pulse rounded-full" />
-            </div>
-            <span className="text-sm font-medium">Active on network</span>
-          </div>
+          <StatusBadge status="active" label="Active on network" />
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">

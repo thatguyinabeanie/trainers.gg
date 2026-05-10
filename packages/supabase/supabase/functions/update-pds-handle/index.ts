@@ -280,7 +280,8 @@ Deno.serve(async (req) => {
       await supabaseAdmin
         .from("pds_handles")
         .delete()
-        .eq("handle", userData.pds_handle);
+        .eq("entity_type", "user")
+        .eq("entity_id", user.id);
     }
     const { error: registryError } = await supabaseAdmin
       .from("pds_handles")

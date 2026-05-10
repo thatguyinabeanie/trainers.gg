@@ -347,8 +347,19 @@ Deno.serve(async (req) => {
       });
 
     if (registryError) {
-      // Log but don't fail — the user is already provisioned
-      console.warn("Failed to register user handle in pds_handles registry:", registryError);
+      console.error("Failed to register user handle in pds_handles registry:", registryError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "PDS account was created but registry sync failed. Please retry.",
+          code: "DB_UPDATE_FAILED",
+          did: pdsResult.did,
+        } satisfies ProvisionPdsResponse),
+        {
+          status: 500,
+          headers: { ...cors, "Content-Type": "application/json" },
+        }
+      );
     }
 
     return new Response(
