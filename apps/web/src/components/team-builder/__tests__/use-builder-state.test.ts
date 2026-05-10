@@ -12,31 +12,26 @@ function clearStorage() {
   window.localStorage.clear();
 }
 
+function setViewportWidth(width: number) {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+}
+
+// Default to desktop so useLayoutEffect leaves drawers open.
+// JSDOM defaults innerWidth to 0, which would trigger the mobile close logic.
+beforeEach(() => {
+  setViewportWidth(1024);
+});
+
 // =============================================================================
 // Builder state defaults & updates
 // =============================================================================
 
 describe("useBuilderState — ephemeral state defaults", () => {
-  let originalInnerWidth: number;
-
-  beforeEach(() => {
-    clearStorage();
-    originalInnerWidth = window.innerWidth;
-    // Simulate desktop so drawers default to open (JSDOM defaults innerWidth=0)
-    Object.defineProperty(window, "innerWidth", {
-      writable: true,
-      configurable: true,
-      value: 1024,
-    });
-  });
-
-  afterEach(() => {
-    Object.defineProperty(window, "innerWidth", {
-      writable: true,
-      configurable: true,
-      value: originalInnerWidth,
-    });
-  });
+  beforeEach(clearStorage);
 
   it("starts with activeIdx=0", () => {
     const { result } = renderHook(() => useBuilderState());
@@ -49,11 +44,7 @@ describe("useBuilderState — ephemeral state defaults", () => {
   });
 
   it("closes sideDrawer and rightDrawer by default on mobile", () => {
-    Object.defineProperty(window, "innerWidth", {
-      writable: true,
-      configurable: true,
-      value: 375,
-    });
+    setViewportWidth(375);
     const { result } = renderHook(() => useBuilderState());
     expect(result.current.sideDrawer).toBe(null);
     expect(result.current.rightDrawer).toBe(null);
