@@ -588,8 +588,12 @@ describe("StatsLane", () => {
     (mockFindStatBreakpoints as jest.Mock).mockReturnValue([4, 8, 12]);
     renderLane({ nature: "Adamant", ev_attack: 8 });
 
+    // Base UI Slider exposes role="slider" on the visually-hidden <input>
+    // inside the thumb div. data-at-bump lives on the thumb div (which drives
+    // the hollow-ring visual). Walk up to the thumb to assert.
     const slider = screen.getByLabelText("Atk slider");
-    expect(slider).toHaveAttribute("data-at-bump");
+    const thumb = slider.closest('[data-slot="slider-thumb"]');
+    expect(thumb).toHaveAttribute("data-at-bump");
   });
 
   it("slider does NOT have data-at-bump attribute when current EV is between breakpoints", () => {
@@ -597,7 +601,8 @@ describe("StatsLane", () => {
     renderLane({ nature: "Adamant", ev_attack: 6 });
 
     const slider = screen.getByLabelText("Atk slider");
-    expect(slider).not.toHaveAttribute("data-at-bump");
+    const thumb = slider.closest('[data-slot="slider-thumb"]');
+    expect(thumb).not.toHaveAttribute("data-at-bump");
   });
 
   // ---------------------------------------------------------------------------

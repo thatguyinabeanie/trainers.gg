@@ -29,13 +29,13 @@ import {
 } from "../calc-stat-helpers";
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { StageDropdown } from "./stage-dropdown";
+import { Slider } from "@/components/ui/slider";
 const spreadRowClass = "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
 const spreadRowWithStageClass = "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_32px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
 const spreadLabelClass = "text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px";
 const spreadBaseClass = "font-mono text-[9.5px] text-muted-foreground text-right tabular-nums";
 const spreadSliderWrapClass = "relative h-3.5";
 const spreadSliderTrackClass = "absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none";
-const spreadSliderClass = "spread-slider";
 const spreadFinalClass = "font-mono text-[11.5px] font-bold text-right tabular-nums";
 
 // =============================================================================
@@ -282,14 +282,18 @@ function DefenderStatRow({
 
   const nextBpEv = breakpoints.find((bp) => bp > ev);
 
+  // True when the current EV lands exactly on a breakpoint — drives the
+  // hollow-ring thumb state on the slider primitive.
+  const isAtBump =
+    isNatureBoosted && breakpoints.includes(ev) && ev > 0;
+
   // --- Input buffer for text EV entry ---
   const [inputBuffer, setInputBuffer] = useState<string | null>(null);
 
   const inputDisplay = buildInputDisplay(ev, isNatureBoosted, isNatureReduced);
   const displayValue = inputBuffer ?? inputDisplay;
 
-  function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = Number(e.target.value);
+  function handleSliderChange(raw: number) {
     const clamped = Math.min(raw, investBudget);
     const snapped = Math.round(clamped / budget.step) * budget.step;
     setDefenderEv(evKey, snapped);
@@ -384,15 +388,19 @@ function DefenderStatRow({
       {/* Col 5: EV slider with breakpoint ticks */}
       <div className={spreadSliderWrapClass}>
         <div className={spreadSliderTrackClass} aria-hidden />
-        <input
-          type="range"
+        <Slider
           min={0}
           max={budget.perStat}
           step={budget.step}
-          value={ev}
-          onChange={handleSliderChange}
+          value={[ev]}
+          onValueChange={(next) => {
+            const v = Array.isArray(next) ? next[0] : next;
+            if (typeof v === "number") handleSliderChange(v);
+          }}
           aria-label={`${label} ${isChampions ? "Stat Point slider" : "EV slider"}`}
-          className={spreadSliderClass}
+          inheritColor
+          atBump={isAtBump}
+          className="absolute inset-0"
         />
         {isNatureBoosted && breakpoints.length > 0 && (
           <StatBumpsOverlay

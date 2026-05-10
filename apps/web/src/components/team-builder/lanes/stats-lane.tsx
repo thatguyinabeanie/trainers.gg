@@ -33,6 +33,7 @@ import {
 import { useCalcEnabled, useCalcStateContext } from "../calc/calc-state-context";
 import { formatSupportsIvs } from "../format-gating";
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
+import { Slider } from "@/components/ui/slider";
 import { FieldErrors } from "../validation/field-error";
 import { type StatBoosts } from "../use-calc-state";
 
@@ -470,8 +471,7 @@ function StatRow({
   // investBudget here, because that causes visible jitter when the thumb
   // overshoots the effective limit and snaps back every frame. Instead,
   // clamping happens on commit (debounce fire / pointer-up / blur).
-  function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = Number(e.target.value);
+  function handleSliderChange(raw: number) {
     const snapped = Math.round(raw / budget.step) * budget.step;
     setDraftEv(snapped);
     // Bubble the live value to the parent — clamp here so the running total
@@ -648,26 +648,25 @@ function StatRow({
        * and the bump rings (border: currentColor) inherit it from the row. */}
       <div className={"relative h-3.5"}>
         <div className={"absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none"} aria-hidden />
-        <input
-          type="range"
+        <Slider
           min={0}
           max={budget.perStat}
           step={budget.step}
-          value={displayEv}
-          onChange={handleSliderChange}
-          onPointerUp={flushEvDraft}
-          onKeyUp={flushEvDraft}
+          value={[displayEv]}
+          onValueChange={(next) => {
+            const v = Array.isArray(next) ? next[0] : next;
+            if (typeof v === "number") handleSliderChange(v);
+          }}
+          onValueCommitted={flushEvDraft}
           aria-label={`${label} slider`}
-          aria-valuemin={0}
-          aria-valuemax={budget.perStat}
-          aria-valuenow={displayEv}
-          data-at-bump={isAtBump || undefined}
-          className={"spread-slider"}
+          inheritColor
+          atBump={isAtBump}
+          className="absolute inset-0"
         />
 
         {/* Breakpoint ticks overlay — only on +nature stat. Buttons so they're
-            click-targets that jump the slider to that bump. The bumps overlay
-            disables pointer-events; individual ticks re-enable it. */}
+            click-targets that jump the slider to that bump value. The bumps
+            overlay disables pointer-events; individual ticks re-enable it. */}
         {isNatureBoosted && breakpoints.length > 0 && (
           <StatBumpsOverlay
             breakpoints={breakpoints}
