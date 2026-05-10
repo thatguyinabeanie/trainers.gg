@@ -39,7 +39,7 @@ jest.mock("@/lib/url-safety", () => ({
   },
 }));
 
-describe("GET /api/oauth/callback - Link Mode", () => {
+describe("GET /api/oauth/callback", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.NEXT_PUBLIC_SITE_URL = "https://trainers.gg";
@@ -224,6 +224,316 @@ describe("GET /api/oauth/callback - Link Mode", () => {
       const location = response.headers.get("location");
       expect(location).toContain("#error=link_failed");
       expect(location).toContain("error_code=update_failed");
+    });
+  });
+
+  // ===========================================================================
+  // Sign-In Mode
+  // ===========================================================================
+
+  describe("sign-in mode - existing user by DID", () => {
+    it("generates magic link and redirects to auth callback for existing user", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:existing123",
+        returnUrl: "/dashboard",
+        linkUserId: undefined,
+      });
+
+      // User found by DID
+      const mockMaybeSingle = jest.fn().mockResolvedValue({
+        data: { id: "user-existing", email: "did_plc_existing123@bluesky.trainers.gg", did: "did:plc:existing123" },
+        error: null,
+      });
+      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+      mockFrom.mockReturnValue({ select: mockSelect });
+
+      // Magic link generation
+      mockGenerateLink.mockResolvedValue({
+        data: { properties: { hashed_token: "token_abc123" } },
+        error: null,
+      });
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location")!;
+      expect(location).toContain("/auth/callback");
+      expect(location).toContain("token_hash=token_abc123");
+      expect(location).toContain("type=magiclink");
+      expect(location).toContain("next=%2Fdashboard");
+    });
+  });
+
+  describe("sign-in mode - existing user by email (legacy)", () => {
+    it("finds legacy user by email when DID lookup fails", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:legacy456",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      // First lookup: DID not found
+      const mockMaybeSingleDid = jest.fn().mockResolvedValue({ data: null, error: null });
+      const mockEqDid = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleDid });
+
+      // Second lookup: found by email
+      const mockMaybeSingleEmail = jest.fn().mockResolvedValue({
+        data: { id: "user-legacy", email: "did_plc_legacy456@bluesky.trainers.gg", did: null },
+        error: null,
+      });
+      const mockEqEmail = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleEmail });
+
+      // Update call for setting DID on legacy user
+      const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
+      const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
+
+      let fromCallCount = 0;
+      mockFrom.mockImplementation(() => {
+        fromCallCount++;
+        if (fromCallCount === 1) {
+          // DID lookup
+          return { select: jest.fn().mockReturnValue({ eq: mockEqDid }) };
+        } else if (fromCallCount === 2) {
+          // Email lookup
+          return { select: jest.fn().mockReturnValue({ eq: mockEqEmail }) };
+        } else {
+          // Update DID on legacy user
+          return { update: mockUpdate };
+        }
+      });
+
+      mockGenerateLink.mockResolvedValue({
+        data: { properties: { hashed_token: "token_legacy" } },
+        error: null,
+      });
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location")!;
+      expect(location).toContain("/auth/callback");
+      expect(location).toContain("token_hash=token_legacy");
+      // Should update DID on legacy user
+      expect(mockUpdate).toHaveBeenCalledWith({ did: "did:plc:legacy456", pds_status: "pending" });
+    });
+  });
+
+  describe("sign-in mode - new user", () => {
+    it("creates new user from Bluesky profile and redirects", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:newuser789",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      // DID lookup: not found
+      const mockMaybeSingleDid = jest.fn().mockResolvedValue({ data: null, error: null });
+      const mockEqDid = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleDid });
+
+      // Email lookup: not found
+      const mockMaybeSingleEmail = jest.fn().mockResolvedValue({ data: null, error: null });
+      const mockEqEmail = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleEmail });
+
+      // Update after user creation
+      const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
+      const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
+
+      let fromCallCount = 0;
+      mockFrom.mockImplementation(() => {
+        fromCallCount++;
+        if (fromCallCount === 1) {
+          return { select: jest.fn().mockReturnValue({ eq: mockEqDid }) };
+        } else if (fromCallCount === 2) {
+          return { select: jest.fn().mockReturnValue({ eq: mockEqEmail }) };
+        } else {
+          return { update: mockUpdate };
+        }
+      });
+
+      // Bluesky profile
+      mockGetBlueskyProfile.mockResolvedValue({
+        handle: "pikachu.bsky.social",
+        displayName: "Pikachu",
+        avatar: "https://cdn.bsky.social/avatar.jpg",
+      });
+
+      // Create user success
+      mockCreateUser.mockResolvedValue({
+        data: { user: { id: "new-user-id" } },
+        error: null,
+      });
+
+      // Magic link generation
+      mockGenerateLink.mockResolvedValue({
+        data: { properties: { hashed_token: "token_new" } },
+        error: null,
+      });
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location")!;
+      expect(location).toContain("/auth/callback");
+      expect(location).toContain("token_hash=token_new");
+
+      // Verify user was created with correct metadata
+      expect(mockCreateUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: expect.stringContaining("bluesky.trainers.gg"),
+          email_confirm: true,
+          user_metadata: expect.objectContaining({
+            username: "pikachu",
+            display_name: "Pikachu",
+            did: "did:plc:newuser789",
+            auth_provider: "bluesky",
+          }),
+        })
+      );
+    });
+
+    it("handles 'already registered' error by updating existing auth user", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:conflict",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      // DID lookup: not found
+      const mockMaybeSingleDid = jest.fn().mockResolvedValue({ data: null, error: null });
+      // Email lookup: not found
+      const mockMaybeSingleEmail = jest.fn().mockResolvedValue({ data: null, error: null });
+
+      // After "already registered" error - lookup by email (ilike)
+      const mockMaybeSingleIlike = jest.fn().mockResolvedValue({
+        data: { id: "existing-auth-user" },
+        error: null,
+      });
+      const mockIlike = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleIlike });
+
+      // Update call
+      const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
+      const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
+
+      let fromCallCount = 0;
+      mockFrom.mockImplementation(() => {
+        fromCallCount++;
+        if (fromCallCount === 1) {
+          return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleDid }) }) };
+        } else if (fromCallCount === 2) {
+          return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleEmail }) }) };
+        } else if (fromCallCount === 3) {
+          return { select: jest.fn().mockReturnValue({ ilike: mockIlike }) };
+        } else {
+          return { update: mockUpdate };
+        }
+      });
+
+      mockGetBlueskyProfile.mockResolvedValue({
+        handle: "duplicate.bsky.social",
+        displayName: "Duplicate",
+        avatar: "https://cdn.bsky.social/dup.jpg",
+      });
+
+      // Create user fails with "already registered"
+      mockCreateUser.mockResolvedValue({
+        data: null,
+        error: { message: "A user with this email address has already been registered" },
+      });
+
+      mockGenerateLink.mockResolvedValue({
+        data: { properties: { hashed_token: "token_dup" } },
+        error: null,
+      });
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location")!;
+      expect(location).toContain("token_hash=token_dup");
+    });
+  });
+
+  describe("sign-in mode - error handling", () => {
+    it("redirects to sign-in with error when callback throws", async () => {
+      mockHandleAtprotoCallback.mockRejectedValue(new Error("Token exchange failed"));
+
+      const response = await GET(createRequest({ code: "bad", state: "test" }));
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location")!;
+      expect(location).toContain("/sign-in");
+      expect(location).toContain("error=bluesky_auth_failed");
+      expect(location).toContain("Token+exchange+failed");
+    });
+
+    it("redirects to sign-in when magic link generation fails", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:existing",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      const mockMaybeSingle = jest.fn().mockResolvedValue({
+        data: { id: "user-1", email: "test@bluesky.trainers.gg", did: "did:plc:existing" },
+        error: null,
+      });
+      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      mockFrom.mockReturnValue({ select: jest.fn().mockReturnValue({ eq: mockEq }) });
+
+      mockGenerateLink.mockResolvedValue({
+        data: { properties: { hashed_token: null } },
+        error: { message: "rate limited" },
+      });
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location")!;
+      expect(location).toContain("/sign-in");
+      expect(location).toContain("error=bluesky_auth_failed");
+    });
+
+    it("redirects to sign-in when Bluesky profile cannot be fetched", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:noprofile",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      // DID not found, email not found
+      const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      mockFrom.mockReturnValue({ select: jest.fn().mockReturnValue({ eq: mockEq }) });
+
+      mockGetBlueskyProfile.mockResolvedValue(null);
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location")!;
+      expect(location).toContain("/sign-in");
+      expect(location).toContain("error=bluesky_auth_failed");
+    });
+
+    it("uses NEXT_PUBLIC_SITE_URL for baseUrl when available", async () => {
+      process.env.NEXT_PUBLIC_SITE_URL = "https://custom.trainers.gg";
+      mockHandleAtprotoCallback.mockRejectedValue(new Error("fail"));
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      const location = response.headers.get("location")!;
+      expect(location).toMatch(/^https:\/\/custom\.trainers\.gg\/sign-in/);
+    });
+
+    it("falls back to request origin when NEXT_PUBLIC_SITE_URL is not set", async () => {
+      delete process.env.NEXT_PUBLIC_SITE_URL;
+      mockHandleAtprotoCallback.mockRejectedValue(new Error("fail"));
+
+      const response = await GET(createRequest({ code: "test", state: "test" }));
+
+      const location = response.headers.get("location")!;
+      expect(location).toMatch(/^https:\/\/trainers\.gg\/sign-in/);
     });
   });
 });

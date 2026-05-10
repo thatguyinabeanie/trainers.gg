@@ -77,7 +77,7 @@ export async function GET(request: Request) {
     // LINK MODE: Attach DID to the currently authenticated user
     // =========================================================================
     if (linkUserId) {
-      return handleLinkMode({
+      return await handleLinkMode({
         did,
         linkUserId,
         returnUrl,
@@ -89,7 +89,7 @@ export async function GET(request: Request) {
     // =========================================================================
     // SIGN-IN MODE: Sign in or create user (existing behavior)
     // =========================================================================
-    return handleSignInMode({
+    return await handleSignInMode({
       did,
       returnUrl,
       baseUrl,
