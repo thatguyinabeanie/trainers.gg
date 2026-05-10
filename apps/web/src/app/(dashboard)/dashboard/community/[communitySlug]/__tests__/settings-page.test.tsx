@@ -15,8 +15,14 @@ import { MAX_IMAGE_SIZE } from "@trainers/validators";
 
 const mockUseSupabaseQuery = jest.fn();
 
+const mockSupabaseClient = {
+  functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
+  auth: { getSession: jest.fn().mockResolvedValue({ data: { session: { access_token: "test-token" } }, error: null }) },
+};
+
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: (...args: unknown[]) => mockUseSupabaseQuery(...args),
+  useSupabase: () => mockSupabaseClient,
 }));
 
 jest.mock("next/link", () => ({
