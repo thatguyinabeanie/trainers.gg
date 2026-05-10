@@ -269,7 +269,8 @@ function TournamentHeader({
         {tournament.format && (
           <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
             <Gamepad2 className="h-3.5 w-3.5" />
-            {getLabel(tournament.format, gameFormatLabels)}          </span>
+            {getLabel(tournament.format, gameFormatLabels)}
+          </span>
         )}
         {tournament.tournament_format && (
           <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
