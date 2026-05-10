@@ -25,7 +25,7 @@ const DEBOUNCE_MS = 300;
 let pendingWriteTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** Default format for new local teams — current primary VGC format. */
-const DEFAULT_FORMAT = "gen9vgc2026regi";
+const DEFAULT_FORMAT = "championsvgc2026regma";
 
 // =============================================================================
 // Helpers
