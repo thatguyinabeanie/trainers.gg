@@ -13,10 +13,11 @@ import {
   getPublicDiscordHandle,
 } from "@trainers/supabase/queries";
 import { CacheTags } from "@/lib/cache";
+import { PageContainer } from "@/components/layout/page-container";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Users } from "lucide-react";
+import { Settings, Trophy, Users, Calendar, MapPin } from "lucide-react";
 import {
   getCountryName,
   formatDisplayUsername,
@@ -177,70 +178,47 @@ type PlayerProfile = NonNullable<
   Awaited<ReturnType<typeof getPlayerProfileByHandle>>
 >;
 
-function Breadcrumb({ username }: { username: string }) {
-  return (
-    <div className="text-muted-foreground mb-4 flex items-center gap-2 text-sm">
-      <Link href="/players" className="hover:underline">
-        Players
-      </Link>
-      <span>/</span>
-      <span className="text-foreground">{username}</span>
-    </div>
-  );
-}
-
-function PublicAltChips({
-  alts,
-  isOwner,
-}: {
-  alts: PlayerProfile["alts"];
-  isOwner: boolean;
-}) {
-  // For visitors: show only public alts
-  // For owners: show all alts with their public status
-  const visibleAlts = isOwner ? alts : alts.filter((alt) => alt.is_public);
-
-  if (visibleAlts.length === 0) return null;
+/**
+ * Banner area with gradient background.
+ * Users don't have custom banners (yet) — uses a subtle teal gradient.
+ * Avatar overlaps the bottom-left edge, matching the community page pattern.
+ */
+function ProfileBanner({ profile }: { profile: PlayerProfile }) {
+  const mainAlt = profile.mainAlt;
+  const raw = mainAlt?.username ?? profile.username ?? "?";
+  const initials = isTempUsername(raw) ? "NT" : raw.slice(0, 2).toUpperCase();
 
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
-      {visibleAlts.map((alt) => (
-        <Badge key={alt.id} variant="secondary" className="font-mono text-xs">
-          @{alt.username}
-          {isOwner && !alt.is_public && (
-            <span className="text-muted-foreground ml-1">(hidden)</span>
-          )}
-        </Badge>
-      ))}
-    </div>
-  );
-}
-
-function FollowCounts({
-  followers,
-  following,
-}: {
-  followers: number;
-  following: number;
-}) {
-  return (
-    <div className="mt-2 flex items-center gap-4 text-sm">
-      <div className="flex items-center gap-1">
-        <Users className="text-muted-foreground h-3.5 w-3.5" />
-        <span className="font-semibold">{followers}</span>
-        <span className="text-muted-foreground">
-          {followers === 1 ? "follower" : "followers"}
-        </span>
+    <div className="relative">
+      {/* Gradient banner */}
+      <div className="h-40 w-full overflow-hidden rounded-xl sm:h-48 md:h-56">
+        <div className="from-primary/20 via-primary/10 to-muted h-full w-full bg-gradient-to-br" />
       </div>
-      <div>
-        <span className="font-semibold">{following}</span>
-        <span className="text-muted-foreground ml-1">following</span>
+
+      {/* Avatar — overlaps the bottom of the banner */}
+      <div className="absolute bottom-0 left-4 translate-y-1/2 sm:left-6">
+        <Avatar
+          noBorder
+          className="ring-background h-24 w-24 shadow-lg ring-4 sm:h-28 sm:w-28"
+        >
+          <AvatarImage
+            src={mainAlt?.avatar_url ?? undefined}
+            alt={`${formatDisplayUsername(raw)} avatar`}
+          />
+          <AvatarFallback className="bg-muted text-3xl font-bold">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
       </div>
     </div>
   );
 }
 
-function PlayerHeader({
+/**
+ * Profile header with name, bio, stats pills, and social links.
+ * Matches the community header pattern: offset below banner, stats in pills.
+ */
+function ProfileHeader({
   profile,
   canEdit,
   followCounts,
@@ -254,80 +232,134 @@ function PlayerHeader({
   const mainAlt = profile.mainAlt;
   const countryCode = profile.country;
   const countryName = countryCode ? getCountryName(countryCode) : null;
+  const displayName = formatDisplayUsername(
+    mainAlt?.username ?? profile.username ?? ""
+  );
+  const isTemp = isTempUsername(mainAlt?.username ?? profile.username ?? "");
 
   // Filter out the main alt from the alt chips display
   const otherAlts = profile.alts.filter((a) => a.id !== mainAlt?.id);
 
+  // Member since year
+  const memberSince = profile.createdAt
+    ? new Date(profile.createdAt).getFullYear()
+    : null;
+
   return (
-    <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-      <div className="flex items-start gap-4">
-        <Avatar className="h-16 w-16">
-          <AvatarImage src={mainAlt?.avatar_url ?? undefined} />
-          <AvatarFallback className="text-xl">
-            {(() => {
-              const raw = mainAlt?.username ?? profile.username ?? "?";
-              return isTempUsername(raw) ? "NT" : raw.slice(0, 2).toUpperCase();
-            })()}
-          </AvatarFallback>
-        </Avatar>
-
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold">
-              {formatDisplayUsername(
-                mainAlt?.username ?? profile.username ?? ""
-              )}
-            </h1>
-            {isTempUsername(mainAlt?.username ?? profile.username ?? "") && (
-              <NewTrainerBadge className="mt-1" />
-            )}
+    <div className="mt-10 sm:mt-12">
+      {/* Name row with edit button */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-bold tracking-tight">{displayName}</h1>
+            {isTemp && <NewTrainerBadge className="mt-1" />}
           </div>
 
-          {isTempUsername(profile.username ?? "") ? (
-            <p className="text-muted-foreground text-sm">@New Trainer</p>
+          {/* Handle */}
+          {isTemp ? (
+            <p className="text-muted-foreground text-lg">@New Trainer</p>
           ) : (
-            <p className="text-muted-foreground text-sm">@{profile.username}</p>
-          )}
-
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-            {countryCode && countryName && (
-              <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
-                <span>{countryCodeToFlag(countryCode)}</span>
-                <span>{countryName}</span>
-              </span>
-            )}
-            {discordHandle && (
-              <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
-                <DiscordIcon className="size-3 text-[#5865F2]" />@
-                {discordHandle}
-              </span>
-            )}
-          </div>
-
-          {mainAlt?.bio && (
-            <p className="text-muted-foreground mt-2 max-w-xl whitespace-pre-wrap">
-              {mainAlt.bio}
+            <p className="text-muted-foreground text-lg">
+              @{profile.username}
             </p>
           )}
 
-          <PublicAltChips alts={otherAlts} isOwner={canEdit} />
-          <FollowCounts
-            followers={followCounts.followers}
-            following={followCounts.following}
-          />
+          {/* Bio */}
+          {mainAlt?.bio && (
+            <p className="text-muted-foreground max-w-2xl whitespace-pre-wrap">
+              {mainAlt.bio}
+            </p>
+          )}
         </div>
-      </div>
 
-      <div className="flex gap-2">
         {canEdit && (
-          <Link href="/dashboard/settings/profile">
-            <Button variant="outline">
-              <Settings className="mr-2 h-4 w-4" />
-              Edit Profile
-            </Button>
-          </Link>
+          <div className="shrink-0">
+            <Link href="/dashboard/settings/profile">
+              <Button variant="outline" size="sm">
+                <Settings className="mr-2 h-4 w-4" />
+                Edit Profile
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
+
+      {/* Stats pills */}
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <div className="bg-muted/60 flex items-center gap-2 rounded-full px-4 py-1.5">
+          <Users className="text-primary h-4 w-4" />
+          <span className="text-sm font-medium">
+            {followCounts.followers}{" "}
+            {followCounts.followers === 1 ? "Follower" : "Followers"}
+          </span>
+        </div>
+        <div className="bg-muted/60 flex items-center gap-2 rounded-full px-4 py-1.5">
+          <Trophy className="text-primary h-4 w-4" />
+          <span className="text-sm font-medium">
+            {followCounts.following} Following
+          </span>
+        </div>
+        {countryCode && countryName && (
+          <div className="bg-muted/60 flex items-center gap-2 rounded-full px-4 py-1.5">
+            <MapPin className="text-primary h-4 w-4" />
+            <span className="text-sm font-medium">
+              {countryCodeToFlag(countryCode)} {countryName}
+            </span>
+          </div>
+        )}
+        {memberSince && (
+          <div className="bg-muted/60 flex items-center gap-2 rounded-full px-4 py-1.5">
+            <Calendar className="text-primary h-4 w-4" />
+            <span className="text-sm font-medium">Joined {memberSince}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Social links + alt chips */}
+      <div className="mt-4 flex flex-wrap items-center gap-4">
+        {discordHandle && (
+          <span className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors">
+            <DiscordIcon className="size-4 text-[#5865F2]" />
+            <span>@{discordHandle}</span>
+          </span>
+        )}
+        {profile.pdsHandle && (
+          <a
+            href={`https://bsky.app/profile/${profile.pdsHandle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.272-.04.407-.063-.14.022-.276.047-.407.063-3.868.59-8.048 2.058-3.967 7.279C7.515 25.67 10.98 20.293 12 17.518c1.02 2.775 4.483 8.152 8.96 3.372 4.08-5.22-.098-6.69-3.966-7.28a11.64 11.64 0 01-.407-.062c.135.022.271.042.407.062 2.67.297 5.568-.627 6.383-3.364C23.622 9.418 24 4.458 24 3.768c0-.69-.139-1.861-.902-2.203-.659-.3-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8z"
+              />
+            </svg>
+            <span>@{profile.pdsHandle}</span>
+          </a>
+        )}
+      </div>
+
+      {/* Alt chips */}
+      {otherAlts.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {(canEdit ? otherAlts : otherAlts.filter((a) => a.is_public)).map(
+            (alt) => (
+              <Badge
+                key={alt.id}
+                variant="secondary"
+                className="font-mono text-xs"
+              >
+                @{alt.username}
+                {canEdit && !alt.is_public && (
+                  <span className="text-muted-foreground ml-1">(hidden)</span>
+                )}
+              </Badge>
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -358,19 +390,17 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
   const canEdit = currentUserId != null && profile.userId === currentUserId;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Breadcrumb
-        username={formatDisplayUsername(
-          profile.mainAlt?.username ?? profile.username ?? handle
-        )}
-      />
-      <PlayerHeader
+    <PageContainer>
+      <ProfileBanner profile={profile} />
+      <ProfileHeader
         profile={profile}
         canEdit={canEdit}
         followCounts={followCounts}
         discordHandle={discordHandle}
       />
-      <PlayerProfileTabs altIds={profile.altIds} handle={handle} />
-    </div>
+      <div className="mt-6">
+        <PlayerProfileTabs altIds={profile.altIds} handle={handle} />
+      </div>
+    </PageContainer>
   );
 }

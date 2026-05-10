@@ -37,7 +37,17 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2mb",
     },
   },
+  rewrites: async () => [
+    // Vanity profile URLs: /@username → /user/username (internal route)
+    { source: "/@:handle", destination: "/user/:handle" },
+  ],
   redirects: async () => [
+    // Old /u/ URLs redirect to vanity /@handle format
+    {
+      source: "/u/:handle",
+      destination: "/@:handle",
+      permanent: true,
+    },
     // Old dashboard tab routes
     {
       source: "/dashboard/overview",
