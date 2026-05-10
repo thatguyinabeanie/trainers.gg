@@ -150,6 +150,26 @@ beforeEach(() => {
 
 Add a `describe("conditional mount")` block whenever you introduce a wrapper that switches between table and cards: skeleton when `!isClient`, table when desktop, cards stub when mobile.
 
+## Preventing flash of wrong initial state on mobile
+
+SSR renders with `useIsMobile() === false` (desktop assumption). When React hydrates on mobile, it re-renders to the mobile layout — but any state initialized to "desktop-open" values will still be open, and the user sees them before JavaScript can correct it.
+
+**Use `useLayoutEffect` to close panels/UI that should be hidden on mobile before the first browser paint:**
+
+```tsx
+useLayoutEffect(() => {
+  /* eslint-disable react-hooks/set-state-in-effect */
+  if (window.innerWidth < 768) {
+    setPanelOpen(false);   // or setSideDrawer(null), etc.
+  }
+  /* eslint-enable react-hooks/set-state-in-effect */
+}, []);
+```
+
+`useLayoutEffect` fires synchronously after React's DOM mutations but before the browser paints — so users never see the panel open. `useEffect` fires after paint, causing a visible flash of the panel closing.
+
+This is the correct approach for any piece of state that defaults to "open/visible" for desktop but should be "closed/hidden" on mobile. See `use-builder-state.ts` for a real example (Speed Tiers and Damage Calc panels).
+
 ## What NOT to do
 
 - Don't gate the desktop drag UI behind `hidden md:block` — keep the wrapper unconditional and split the render only.

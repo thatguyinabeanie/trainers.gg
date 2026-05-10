@@ -38,7 +38,7 @@ describe("useLocalTeamStorage", () => {
 
     expect(result.current.team.id).toBe(-1);
     expect(result.current.team.name).toBe("Untitled Team");
-    expect(result.current.team.format).toBe("gen9vgc2026regi");
+    expect(result.current.team.format).toBe("championsvgc2026regma");
     expect(result.current.team.team_pokemon).toEqual([]);
   });
 

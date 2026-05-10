@@ -34,28 +34,32 @@ export function BuilderNav({ children }: BuilderNavProps) {
             <span className="text-primary text-lg font-bold">trainers.gg</span>
           </Link>
 
-          <span className="text-muted-foreground/50 text-sm">/</span>
+          <span className="text-muted-foreground/50 hidden text-sm sm:inline">
+            /
+          </span>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger className="text-foreground hover:bg-accent focus-visible:ring-ring inline-flex items-center gap-0.5 rounded-md px-1.5 py-1 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none">
-              Builder
-              <ChevronDown className="text-muted-foreground size-3.5" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              sideOffset={6}
-              className="min-w-40"
-            >
-              {NAV_LINKS.map((link) => (
-                <DropdownMenuItem
-                  key={link.href}
-                  render={<Link href={link.href} className="w-full" />}
-                >
-                  {link.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="hidden sm:block">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="text-foreground hover:bg-accent focus-visible:ring-ring inline-flex items-center gap-0.5 rounded-md px-1.5 py-1 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none">
+                Builder
+                <ChevronDown className="text-muted-foreground size-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                sideOffset={6}
+                className="min-w-40"
+              >
+                {NAV_LINKS.map((link) => (
+                  <DropdownMenuItem
+                    key={link.href}
+                    render={<Link href={link.href} className="w-full" />}
+                  >
+                    {link.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Center + Right: toolbar controls (uses internal absolute centering for name) */}
