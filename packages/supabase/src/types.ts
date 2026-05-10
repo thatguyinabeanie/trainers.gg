@@ -1,11 +1,3 @@
-
-> @thatguyinabeanie/trainers.gg@ supabase /Users/beanie/source/trainers.gg-communities-bsky
-> pnpm --filter=@trainers/supabase run supabase gen types --lang=typescript --local
-
-
-> @trainers/supabase@0.0.1 supabase /Users/beanie/source/trainers.gg-communities-bsky/packages/supabase
-> supabase gen types --lang=typescript --local
-
 export type Json =
   | string
   | number
@@ -3699,6 +3691,7 @@ export type Database = {
         }
         Returns: string
       }
+      vault_read_secret: { Args: { secret_name: string }; Returns: string }
     }
     Enums: {
       announcement_type: "info" | "warning" | "error" | "success"

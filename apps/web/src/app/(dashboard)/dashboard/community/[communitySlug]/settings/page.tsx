@@ -187,6 +187,19 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
   );
   const discordInstalled = discordServer != null;
 
+  /** Fire-and-forget PDS profile sync (only if community has active PDS). */
+  const syncProfileToPds = () => {
+    if (org.pds_status === "active" && org.bluesky_did) {
+      supabase.functions
+        .invoke("sync-community-profile", {
+          body: { communityId: org.id },
+        })
+        .catch(() => {
+          // Non-blocking — don't fail the save
+        });
+    }
+  };
+
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -216,6 +229,7 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
         setCurrentLogoUrl(result.data.logoUrl);
         toast.success("Logo updated");
         onSaved();
+        syncProfileToPds();
       } else {
         toast.error(result.error);
       }
@@ -229,6 +243,7 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
         setCurrentLogoUrl(null);
         toast.success("Logo removed");
         onSaved();
+        syncProfileToPds();
       } else {
         toast.error(result.error);
       }
@@ -314,17 +329,7 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
       if (result.success) {
         toast.success("Community settings updated");
         onSaved();
-
-        // Sync profile to PDS in the background if active
-        if (org.pds_status === "active" && org.bluesky_did) {
-          supabase.functions
-            .invoke("sync-community-profile", {
-              body: { communityId: org.id },
-            })
-            .catch(() => {
-              // Non-blocking — don't fail the save
-            });
-        }
+        syncProfileToPds();
       } else {
         toast.error(result.error);
       }

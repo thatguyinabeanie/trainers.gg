@@ -291,7 +291,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Register in pds_handles registry
+    // Register in pds_handles registry (fatal — without this the namespace uniqueness guarantee is broken)
     const { error: registryError } = await supabaseAdmin.from("pds_handles").insert({
       handle,
       entity_type: "community",
@@ -301,8 +301,33 @@ Deno.serve(async (req) => {
 
     if (registryError) {
       console.error("Failed to register handle in registry:", registryError);
-      // Non-fatal — the handle is already on the PDS, we just failed to record it locally
-      // Continue and update the community record
+
+      // Unique violation means this handle/entity is already registered — treat as HANDLE_TAKEN
+      if (registryError.code === "23505") {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `The handle @${handle} is already registered`,
+            code: "HANDLE_TAKEN",
+          } satisfies ProvisionCommunityPdsResponse),
+          {
+            status: 409,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Failed to register handle in namespace registry",
+          code: "DB_UPDATE_FAILED",
+        } satisfies ProvisionCommunityPdsResponse),
+        {
+          status: 500,
+          headers: { ...cors, "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Update community record with DID and status

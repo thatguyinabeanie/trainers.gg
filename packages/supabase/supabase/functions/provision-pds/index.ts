@@ -334,6 +334,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Register in pds_handles registry for namespace uniqueness
+    // Non-fatal for user provisioning — the backfill migration handles existing users,
+    // and the user record is the source of truth for users
+    const { error: registryError } = await supabaseAdmin
+      .from("pds_handles")
+      .insert({
+        handle,
+        entity_type: "user",
+        entity_id: user.id,
+        did: pdsResult.did,
+      });
+
+    if (registryError) {
+      // Log but don't fail — the user is already provisioned
+      console.warn("Failed to register user handle in pds_handles registry:", registryError);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS public.pds_handles (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Index for looking up handles by entity
-CREATE INDEX IF NOT EXISTS idx_pds_handles_entity
+-- Enforce 1:1 — each entity can only have one handle
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pds_handles_entity_unique
   ON public.pds_handles (entity_type, entity_id);
 
 -- Index for DID lookups
@@ -28,6 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_pds_handles_did
 ALTER TABLE public.pds_handles ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can read handles (they're public identities)
+DROP POLICY IF EXISTS "Anyone can read handles" ON public.pds_handles;
 CREATE POLICY "Anyone can read handles"
   ON public.pds_handles FOR SELECT
   TO authenticated, anon
@@ -54,7 +55,49 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_communities_bluesky_handle
   ON public.communities (bluesky_handle) WHERE bluesky_handle IS NOT NULL;
 
 -- =============================================================================
--- 3. Backfill pds_handles with existing user handles
+-- 3. Create vault_read_secret function
+-- =============================================================================
+-- Reads decrypted secret value from Supabase Vault by name.
+-- Only accessible via service role (SECURITY DEFINER with vault search_path).
+
+CREATE OR REPLACE FUNCTION public.vault_read_secret(
+  secret_name text
+)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = vault
+AS $$
+DECLARE
+  secret_value text;
+BEGIN
+  -- Validate input
+  IF secret_name IS NULL OR length(secret_name) = 0 THEN
+    RAISE EXCEPTION 'secret_name cannot be null or empty';
+  END IF;
+
+  IF NOT secret_name ~ '^[a-zA-Z0-9_-]+$' THEN
+    RAISE EXCEPTION 'secret_name must contain only alphanumeric characters, underscores, and hyphens';
+  END IF;
+
+  -- Read decrypted secret from vault
+  SELECT decrypted_secret INTO secret_value
+  FROM vault.decrypted_secrets
+  WHERE name = secret_name
+  LIMIT 1;
+
+  IF secret_value IS NULL THEN
+    RAISE EXCEPTION 'Secret "%" not found', secret_name;
+  END IF;
+
+  RETURN secret_value;
+END;
+$$;
+
+COMMENT ON FUNCTION public.vault_read_secret IS 'Reads a decrypted secret from Supabase Vault by name. Only accessible via service role.';
+
+-- =============================================================================
+-- 4. Backfill pds_handles with existing user handles
 -- =============================================================================
 -- Populate the registry with existing active user PDS handles
 

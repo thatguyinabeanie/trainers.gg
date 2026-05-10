@@ -275,6 +275,28 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Update pds_handles registry: delete old handle, insert new one
+    if (userData.pds_handle) {
+      await supabaseAdmin
+        .from("pds_handles")
+        .delete()
+        .eq("handle", userData.pds_handle);
+    }
+    const { error: registryError } = await supabaseAdmin
+      .from("pds_handles")
+      .upsert(
+        {
+          handle: newHandle,
+          entity_type: "user",
+          entity_id: user.id,
+          did: userData.did,
+        },
+        { onConflict: "handle" }
+      );
+    if (registryError) {
+      console.warn("Failed to update pds_handles registry:", registryError);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
