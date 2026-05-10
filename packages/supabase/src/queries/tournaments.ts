@@ -2292,6 +2292,7 @@ export async function getPlayerTournamentHistory(
 
     return {
       id: r.id,
+      altId: r.alt_id,
       tournamentId,
       tournamentName:
         tournament && "name" in tournament ? (tournament.name as string) : "",

@@ -190,6 +190,7 @@ describe("getPlayerTournamentHistory", () => {
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({
       id: 1,
+      altId: 1,
       tournamentId: 100,
       tournamentName: "Test Tournament",
       tournamentSlug: "test-tournament",

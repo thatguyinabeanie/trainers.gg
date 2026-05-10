@@ -395,6 +395,13 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
 
   const canEdit = currentUserId != null && profile.userId === currentUserId;
 
+  // Compute alt sets for privacy-aware data display
+  const allAltIds = profile.altIds;
+  const publicAltIds = profile.alts.filter((a) => a.is_public).map((a) => a.id);
+  const altMap = Object.fromEntries(
+    profile.alts.map((a) => [a.id, a.username])
+  );
+
   return (
     <PageContainer>
       <ProfileBanner profile={profile} />
@@ -405,7 +412,13 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
         discordHandle={discordHandle}
       />
       <div className="mt-6">
-        <PlayerProfileTabs altIds={profile.altIds} handle={handle} />
+        <PlayerProfileTabs
+          allAltIds={allAltIds}
+          publicAltIds={publicAltIds}
+          isOwner={canEdit}
+          altMap={altMap}
+          handle={handle}
+        />
       </div>
     </PageContainer>
   );

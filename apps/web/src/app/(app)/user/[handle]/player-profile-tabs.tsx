@@ -13,9 +13,18 @@ type PlayerTab =
   | "articles"
   | "achievements";
 
+/** Mapping of alt ID to username for display labels */
+export type AltMap = Record<number, string>;
+
 interface PlayerProfileTabsProps {
-  /** All alt IDs for this user (stats aggregate across all alts) */
-  altIds: number[];
+  /** All alt IDs (used for stats — always aggregate) */
+  allAltIds: number[];
+  /** Public alt IDs only (used for tournament list when not owner) */
+  publicAltIds: number[];
+  /** Whether the viewer is the profile owner */
+  isOwner: boolean;
+  /** Alt ID → username mapping for labels */
+  altMap: AltMap;
   /** The user's handle, used for cache keys */
   handle: string;
 }
@@ -27,8 +36,17 @@ const TAB_TRIGGER_CLASS =
  * Tab switcher for the player profile page.
  * Renders 5 tabs: Overview, Tournaments, Teams, Articles, Achievements.
  */
-export function PlayerProfileTabs({ altIds, handle }: PlayerProfileTabsProps) {
+export function PlayerProfileTabs({
+  allAltIds,
+  publicAltIds,
+  isOwner,
+  altMap,
+  handle,
+}: PlayerProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<PlayerTab>("overview");
+
+  // Stats always aggregate all alts; tournament list depends on ownership
+  const tournamentAltIds = isOwner ? allAltIds : publicAltIds;
 
   return (
     <div className="space-y-4">
@@ -64,12 +82,25 @@ export function PlayerProfileTabs({ altIds, handle }: PlayerProfileTabsProps) {
 
       {/* Tab content */}
       {activeTab === "overview" && (
-        <OverviewTab altIds={altIds} handle={handle} />
+        <OverviewTab
+          statsAltIds={allAltIds}
+          tournamentAltIds={tournamentAltIds}
+          altMap={altMap}
+          handle={handle}
+        />
       )}
       {activeTab === "tournaments" && (
-        <TournamentsTab altIds={altIds} handle={handle} />
+        <TournamentsTab
+          altIds={tournamentAltIds}
+          allAltIds={allAltIds}
+          isOwner={isOwner}
+          altMap={altMap}
+          handle={handle}
+        />
       )}
-      {activeTab === "teams" && <TeamsTab altIds={altIds} handle={handle} />}
+      {activeTab === "teams" && (
+        <TeamsTab altIds={tournamentAltIds} handle={handle} />
+      )}
       {activeTab === "articles" && (
         <div className="text-muted-foreground py-12 text-center text-sm">
           Articles coming soon.

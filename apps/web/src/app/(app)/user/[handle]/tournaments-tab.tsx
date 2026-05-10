@@ -23,6 +23,7 @@ import { formatPlacement, formatDate } from "./utils";
 
 interface TournamentHistoryFullEntry {
   id: number;
+  altId: number;
   tournamentId: number;
   tournamentName: string;
   tournamentSlug: string;
@@ -50,7 +51,13 @@ const tournamentHistoryKeys = {
   all: (handle: string) => ["player", handle, "tournament-history"] as const,
   filtered: (
     handle: string,
-    filters: { format: string; year: string; status: string; page: number }
+    filters: {
+      format: string;
+      year: string;
+      status: string;
+      page: number;
+      altFilter: string;
+    }
   ) => [...tournamentHistoryKeys.all(handle), filters] as const,
 };
 
@@ -65,23 +72,43 @@ const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) =>
 // ============================================================================
 
 interface TournamentsTabProps {
+  /** Alt IDs to query (public-only for visitors, all for owner) */
   altIds: number[];
+  /** All alt IDs (for the owner's alt filter dropdown) */
+  allAltIds: number[];
+  /** Whether the viewer is the profile owner */
+  isOwner: boolean;
+  /** Alt ID → username mapping */
+  altMap: Record<number, string>;
   handle: string;
 }
 
-export function TournamentsTab({ altIds, handle }: TournamentsTabProps) {
+export function TournamentsTab({
+  altIds,
+  allAltIds,
+  isOwner,
+  altMap,
+  handle,
+}: TournamentsTabProps) {
   const format = "all";
   const [year, setYear] = useState("all");
   const [status, setStatus] = useState("all");
+  const [altFilter, setAltFilter] = useState("all");
   const [page, setPage] = useState(1);
 
-  const filters = { format, year, status, page };
+  // Determine which alt IDs to query based on filter
+  const effectiveAltIds =
+    altFilter === "all"
+      ? altIds
+      : [Number(altFilter)].filter((id) => altIds.includes(id));
+
+  const filters = { format, year, status, page, altFilter };
 
   const { data, isLoading } = useQuery<TournamentHistoryResponse>({
     queryKey: tournamentHistoryKeys.filtered(handle, filters),
     queryFn: async () => {
       const params = new URLSearchParams({
-        altIds: altIds.join(","),
+        altIds: effectiveAltIds.join(","),
         page: String(page),
       });
       if (format !== "all") params.set("format", format);
@@ -94,7 +121,7 @@ export function TournamentsTab({ altIds, handle }: TournamentsTabProps) {
       if (!res.ok) throw new Error("Failed to fetch tournament history");
       return res.json();
     },
-    enabled: altIds.length > 0,
+    enabled: effectiveAltIds.length > 0,
   });
 
   const tournaments = data?.data ?? [];
@@ -142,6 +169,29 @@ export function TournamentsTab({ altIds, handle }: TournamentsTabProps) {
             <SelectItem value="upcoming">Upcoming</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Alt filter — owner only */}
+        {isOwner && allAltIds.length > 1 && (
+          <Select
+            value={altFilter}
+            onValueChange={(v) => {
+              if (v) setAltFilter(v);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Alt" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Alts</SelectItem>
+              {allAltIds.map((id) => (
+                <SelectItem key={id} value={String(id)}>
+                  @{altMap[id] ?? id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Loading state */}
@@ -203,6 +253,11 @@ export function TournamentsTab({ altIds, handle }: TournamentsTabProps) {
                       )}
                       {entry.format && (
                         <span>{entry.format.toUpperCase()}</span>
+                      )}
+                      {altMap[entry.altId] && (
+                        <span className="text-muted-foreground/70 font-mono text-xs">
+                          as @{altMap[entry.altId]}
+                        </span>
                       )}
                     </div>
                   </div>

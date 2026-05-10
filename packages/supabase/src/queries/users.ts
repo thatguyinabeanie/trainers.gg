@@ -552,6 +552,7 @@ export async function getPlayerTournamentHistoryFull(
 
       return {
         id: r.id,
+        altId: r.alt_id,
         tournamentId: t.id,
         tournamentName: t.name,
         tournamentSlug: t.slug,
