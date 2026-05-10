@@ -120,7 +120,8 @@ export async function listTournamentsGrouped(
             id: standing.alt.id,
             username: standing.alt.username,
             isPublic: standing.alt.is_public,
-            isMainAlt: user.main_alt_id === standing.alt.id,
+            // PostgREST may serialize bigints as strings — use loose equality
+            isMainAlt: Number(user.main_alt_id) === Number(standing.alt.id),
             parentUsername: user.username ?? standing.alt.username,
           };
         }
@@ -2174,17 +2175,19 @@ export async function getPlayerTournamentHistory(
 ) {
   if (altIds.length === 0) return [];
 
-  // Get all registrations for the given alts with tournament and community info
-  const { data: registrations, error } = await supabase
-    .from("tournament_registrations")
+  // Query tournament_player_stats — only tournaments where the player actually played
+  const { data: stats, error } = await supabase
+    .from("tournament_player_stats")
     .select(
       `
       id,
       alt_id,
-      status,
-      registered_at,
-      team_id,
-      tournament:tournaments!tournament_registrations_tournament_id_fkey (
+      tournament_id,
+      match_wins,
+      match_losses,
+      final_ranking,
+      created_at,
+      tournament:tournaments!tournament_player_stats_tournament_id_fkey (
         id,
         name,
         slug,
@@ -2200,55 +2203,45 @@ export async function getPlayerTournamentHistory(
     `
     )
     .in("alt_id", altIds)
-    .order("registered_at", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
-  if (!registrations || registrations.length === 0) return [];
+  if (!stats || stats.length === 0) return [];
 
   // Filter to completed tournaments only
-  const completedRegistrations = registrations.filter(
-    (r) =>
-      r.tournament &&
-      typeof r.tournament === "object" &&
-      "status" in r.tournament &&
-      r.tournament.status === "completed"
+  const completedStats = stats.filter(
+    (s) =>
+      s.tournament &&
+      typeof s.tournament === "object" &&
+      "status" in s.tournament &&
+      s.tournament.status === "completed"
   );
 
-  if (completedRegistrations.length === 0) return [];
+  if (completedStats.length === 0) return [];
 
   // Get tournament IDs for completed tournaments
-  const completedTournamentIds = completedRegistrations
-    .map((r) =>
-      typeof r.tournament === "object" && r.tournament && "id" in r.tournament
-        ? (r.tournament.id as number)
+  const completedTournamentIds = completedStats
+    .map((s) =>
+      typeof s.tournament === "object" && s.tournament && "id" in s.tournament
+        ? (s.tournament.id as number)
         : 0
     )
     .filter((id) => id > 0);
 
-  // Get standings for completed tournaments
-  const standingsMap = new Map<
-    number,
-    { rank: number; wins: number; losses: number }
-  >();
+  // Fetch team_id from registrations for team pokemon display
+  const { data: registrations } = await supabase
+    .from("tournament_registrations")
+    .select("tournament_id, alt_id, team_id")
+    .in("alt_id", altIds)
+    .in("tournament_id", completedTournamentIds);
 
-  if (completedTournamentIds.length > 0) {
-    const { data: standings } = await supabase
-      .from("tournament_standings")
-      .select("tournament_id, alt_id, rank, game_wins, game_losses")
-      .in("tournament_id", completedTournamentIds)
-      .in("alt_id", altIds);
-
-    for (const standing of standings ?? []) {
-      standingsMap.set(Number(`${standing.tournament_id}_${standing.alt_id}`), {
-        rank: standing.rank ?? 0,
-        wins: standing.game_wins ?? 0,
-        losses: standing.game_losses ?? 0,
-      });
-    }
+  const regTeamMap = new Map<string, number | null>();
+  for (const r of registrations ?? []) {
+    regTeamMap.set(`${r.tournament_id}-${r.alt_id}`, r.team_id);
   }
 
   // Get team Pokemon for registrations that have teams
-  const registrationTeamIds = completedRegistrations
+  const registrationTeamIds = (registrations ?? [])
     .filter((r) => r.team_id)
     .map((r) => r.team_id as number);
 
@@ -2295,10 +2288,10 @@ export async function getPlayerTournamentHistory(
     }
   }
 
-  // Map registrations to history records
-  return completedRegistrations.map((r) => {
+  // Map stats to history records
+  return completedStats.map((s) => {
     const tournament =
-      r.tournament && typeof r.tournament === "object" ? r.tournament : null;
+      s.tournament && typeof s.tournament === "object" ? s.tournament : null;
     const community =
       tournament &&
       "organization" in tournament &&
@@ -2307,15 +2300,15 @@ export async function getPlayerTournamentHistory(
         ? tournament.organization
         : null;
 
-    const standing = standingsMap.get(Number(`${tournament?.id}_${r.alt_id}`));
-    const teamPokemon = r.team_id ? (teamPokemonMap.get(r.team_id) ?? []) : [];
-
     const tournamentId =
       tournament && "id" in tournament ? (tournament.id as number) : 0;
 
+    const teamId = regTeamMap.get(`${tournamentId}-${s.alt_id}`) ?? null;
+    const teamPokemon = teamId ? (teamPokemonMap.get(teamId) ?? []) : [];
+
     return {
-      id: r.id,
-      altId: r.alt_id,
+      id: s.id,
+      altId: s.alt_id,
       tournamentId,
       tournamentName:
         tournament && "name" in tournament ? (tournament.name as string) : "",
@@ -2334,9 +2327,9 @@ export async function getPlayerTournamentHistory(
           ? (tournament.format as string | null)
           : null,
       playerCount: playerCountMap[String(tournamentId)] ?? null,
-      placement: standing?.rank ?? null,
-      wins: standing?.wins ?? 0,
-      losses: standing?.losses ?? 0,
+      placement: s.final_ranking ?? null,
+      wins: s.match_wins ?? 0,
+      losses: s.match_losses ?? 0,
       teamPokemon,
     };
   });

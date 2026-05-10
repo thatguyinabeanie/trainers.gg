@@ -447,16 +447,18 @@ export async function getPlayerTournamentHistoryFull(
 ) {
   if (altIds.length === 0) return { data: [], totalCount: 0, page };
 
-  // Get registrations with tournament info
+  // Query tournament_player_stats — only tournaments where the player actually played
   let query = supabase
-    .from("tournament_registrations")
+    .from("tournament_player_stats")
     .select(
       `
       id,
       alt_id,
-      status,
-      registered_at,
-      tournament:tournaments!tournament_registrations_tournament_id_fkey (
+      match_wins,
+      match_losses,
+      final_ranking,
+      created_at,
+      tournament:tournaments!tournament_player_stats_tournament_id_fkey (
         id,
         name,
         slug,
@@ -473,9 +475,9 @@ export async function getPlayerTournamentHistoryFull(
       { count: "exact" }
     )
     .in("alt_id", altIds)
-    .order("registered_at", { ascending: false });
+    .order("created_at", { ascending: false });
 
-  // Apply filters at the SQL level (before pagination)
+  // Apply filters on the nested tournament relation
   if (filters?.format) {
     query = query.eq("tournament.format" as string, filters.format);
   }
@@ -483,59 +485,26 @@ export async function getPlayerTournamentHistoryFull(
     query = query.eq("tournament.status" as string, filters.status);
   }
   if (filters?.year) {
-    // Filter by year using date range
     const yearStart = `${filters.year}-01-01`;
     const yearEnd = `${filters.year}-12-31`;
     query = query.gte("tournament.start_date" as string, yearStart);
     query = query.lte("tournament.start_date" as string, yearEnd);
   }
 
-  // Apply pagination after filters
+  // Apply pagination
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
   query = query.range(from, to);
 
-  const { data: registrations, error, count } = await query;
+  const { data: stats, error, count } = await query;
 
   if (error) throw error;
-  if (!registrations) return { data: [], totalCount: 0, page };
+  if (!stats) return { data: [], totalCount: 0, page };
 
-  // Get tournament IDs to fetch stats
-  const tournamentIds = registrations
-    .map((r) => {
-      const t = r.tournament as { id: number } | null;
-      return t?.id;
-    })
-    .filter((id): id is number => id != null);
-
-  // Fetch player stats for these tournaments
-  let statsMap = new Map<
-    string,
-    { wins: number; losses: number; placement: number | null }
-  >();
-  if (tournamentIds.length > 0) {
-    const { data: stats } = await supabase
-      .from("tournament_player_stats")
-      .select("tournament_id, alt_id, match_wins, match_losses, final_ranking")
-      .in("alt_id", altIds)
-      .in("tournament_id", tournamentIds);
-
-    if (stats) {
-      for (const s of stats) {
-        const key = `${s.tournament_id}-${s.alt_id}`;
-        statsMap.set(key, {
-          wins: s.match_wins ?? 0,
-          losses: s.match_losses ?? 0,
-          placement: s.final_ranking,
-        });
-      }
-    }
-  }
-
-  // Transform results
-  const results = registrations
-    .map((r) => {
-      const t = r.tournament as {
+  // Transform results — stats already contain wins/losses/placement
+  const results = stats
+    .map((s) => {
+      const t = s.tournament as {
         id: number;
         name: string;
         slug: string;
@@ -547,12 +516,9 @@ export async function getPlayerTournamentHistoryFull(
 
       if (!t) return null;
 
-      const statsKey = `${t.id}-${r.alt_id}`;
-      const stat = statsMap.get(statsKey);
-
       return {
-        id: r.id,
-        altId: r.alt_id,
+        id: s.id,
+        altId: s.alt_id,
         tournamentId: t.id,
         tournamentName: t.name,
         tournamentSlug: t.slug,
@@ -561,9 +527,9 @@ export async function getPlayerTournamentHistoryFull(
         format: t.format,
         organizationName: t.organization?.name ?? null,
         organizationSlug: t.organization?.slug ?? null,
-        placement: stat?.placement ?? null,
-        wins: stat?.wins ?? 0,
-        losses: stat?.losses ?? 0,
+        placement: s.final_ranking ?? null,
+        wins: s.match_wins ?? 0,
+        losses: s.match_losses ?? 0,
       };
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);

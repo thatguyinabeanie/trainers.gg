@@ -1162,6 +1162,53 @@ BEGIN
 END $$;
 
 -- =============================================================================
+-- Player stats for tournament history (non-admin users)
+-- These drive the tournament history queries (not registrations)
+-- =============================================================================
+DO $$
+DECLARE
+  t1_id bigint;  -- vgc-league-week-01
+  t2_id bigint;  -- pallet-town-week-01
+  t7_id bigint;  -- stellar-novas-monthly-12
+BEGIN
+  SELECT t.id INTO t1_id FROM public.tournaments t WHERE t.slug = 'vgc-league-week-01';
+  SELECT t.id INTO t2_id FROM public.tournaments t WHERE t.slug = 'pallet-town-week-01';
+  SELECT t.id INTO t7_id FROM public.tournaments t WHERE t.slug = 'stellar-novas-monthly-12';
+
+  -- alyson_stiedemann_vgc: rank 1 in pallet-town-week-01 (public non-main alt winner)
+  IF t2_id IS NOT NULL THEN
+    INSERT INTO public.tournament_player_stats (tournament_id, alt_id, matches_played, match_wins, match_losses, game_wins, game_losses, final_ranking)
+    VALUES (
+      t2_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann_vgc'),
+      5, 5, 0, 17, 8, 1
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- oswaldo_kling: rank 1 in vgc-league-week-01 (main alt winner)
+  IF t1_id IS NOT NULL THEN
+    INSERT INTO public.tournament_player_stats (tournament_id, alt_id, matches_played, match_wins, match_losses, game_wins, game_losses, final_ranking)
+    VALUES (
+      t1_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'oswaldo_kling'),
+      5, 5, 0, 14, 3, 1
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- ash_ketchum_draft: rank 1 in stellar-novas-monthly-12 (private alt winner)
+  IF t7_id IS NOT NULL THEN
+    INSERT INTO public.tournament_player_stats (tournament_id, alt_id, matches_played, match_wins, match_losses, game_wins, game_losses, final_ranking)
+    VALUES (
+      t7_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ash_ketchum_draft'),
+      5, 5, 0, 14, 6, 1
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  RAISE NOTICE 'Created tournament_player_stats for winner alts';
+END $$;
+
+-- =============================================================================
 -- Admin match data + ELO computation
 -- Depends on: 10_tournaments.sql (teams, registrations), 11_matches.sql (rounds)
 -- =============================================================================
