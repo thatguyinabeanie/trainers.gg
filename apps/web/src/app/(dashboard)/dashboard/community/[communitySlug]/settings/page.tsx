@@ -367,6 +367,7 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
           accept="image/jpeg,image/png,image/webp,image/gif"
           onChange={handleBannerSelect}
           className="hidden"
+          aria-label="Upload community banner image"
         />
         {currentBannerUrl && (
           <button

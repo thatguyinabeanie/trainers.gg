@@ -97,6 +97,7 @@ function buildOrg(overrides: Record<string, unknown> = {}) {
     slug: base.slug,
     description: base.description,
     about: null as string | null,
+    banner_url: null as string | null,
     social_links: base.social_links,
     logo_url: base.logo_url,
     ...overrides,
@@ -488,6 +489,153 @@ describe("DashboardSettingsPage", () => {
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("Logo removed");
       });
+    });
+  });
+
+  describe("banner upload validation", () => {
+    function getBannerInput(): HTMLInputElement {
+      const input = document.querySelector(
+        'input[type="file"][aria-label="Upload community banner image"]'
+      );
+      if (!input) throw new Error("Banner file input not found");
+      return input as HTMLInputElement;
+    }
+
+    function createTestFile(name: string, type: string, size: number): File {
+      return new File([new Uint8Array(size)], name, { type });
+    }
+
+    async function selectFile(input: HTMLInputElement, file: File) {
+      const { fireEvent } = await import("@testing-library/react");
+      Object.defineProperty(input, "files", {
+        value: [file],
+        writable: false,
+        configurable: true,
+      });
+      fireEvent.change(input);
+    }
+
+    it("shows error toast for empty banner file", async () => {
+      await renderPage(buildOrg());
+      await selectFile(
+        getBannerInput(),
+        createTestFile("empty.png", "image/png", 0)
+      );
+      expect(toast.error).toHaveBeenCalledWith("File is empty");
+    });
+
+    it("shows error toast for oversized banner file", async () => {
+      await renderPage(buildOrg());
+      await selectFile(
+        getBannerInput(),
+        createTestFile("big.png", "image/png", MAX_IMAGE_SIZE + 1)
+      );
+      expect(toast.error).toHaveBeenCalledWith(
+        "File must be smaller than 2 MB"
+      );
+    });
+
+    it("shows error toast for invalid banner file type", async () => {
+      await renderPage(buildOrg());
+      await selectFile(
+        getBannerInput(),
+        createTestFile("readme.txt", "text/plain", 100)
+      );
+      expect(toast.error).toHaveBeenCalledWith(
+        "File must be a JPEG, PNG, WebP, or GIF image"
+      );
+    });
+
+    it("calls uploadCommunityBanner with org id and formData for a valid file", async () => {
+      const { uploadCommunityBanner } = jest.requireMock(
+        "@/actions/community-banner"
+      ) as { uploadCommunityBanner: jest.Mock };
+      uploadCommunityBanner.mockResolvedValue({
+        success: true,
+        data: { bannerUrl: "https://storage.example.com/banner.jpg" },
+      });
+
+      const org = buildOrg({ id: 42 });
+      await renderPage(org);
+
+      await selectFile(
+        getBannerInput(),
+        createTestFile("banner.jpg", "image/jpeg", 1024)
+      );
+
+      await waitFor(() => {
+        expect(uploadCommunityBanner).toHaveBeenCalledWith(
+          42,
+          expect.any(FormData)
+        );
+      });
+    });
+
+    it("shows error toast when banner upload fails", async () => {
+      const { uploadCommunityBanner } = jest.requireMock(
+        "@/actions/community-banner"
+      ) as { uploadCommunityBanner: jest.Mock };
+      uploadCommunityBanner.mockResolvedValue({
+        success: false,
+        error: "Banner upload failed",
+      });
+
+      await renderPage(buildOrg({ id: 1 }));
+
+      await selectFile(
+        getBannerInput(),
+        createTestFile("banner.jpg", "image/jpeg", 1024)
+      );
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Banner upload failed");
+      });
+    });
+  });
+
+  describe("banner removal", () => {
+    it("calls removeCommunityBanner and hides remove button on success", async () => {
+      const user = userEvent.setup();
+      const { removeCommunityBanner } = jest.requireMock(
+        "@/actions/community-banner"
+      ) as { removeCommunityBanner: jest.Mock };
+      removeCommunityBanner.mockResolvedValue({ success: true });
+
+      await renderPage(
+        buildOrg({
+          id: 5,
+          banner_url: "https://storage.example.com/banner.jpg",
+        })
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /remove banner/i })
+      );
+
+      await waitFor(() => {
+        expect(removeCommunityBanner).toHaveBeenCalledWith(5);
+      });
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("Banner removed");
+      });
+    });
+
+    it("shows remove banner button when org has a banner", async () => {
+      await renderPage(
+        buildOrg({
+          banner_url: "https://storage.example.com/banner.jpg",
+        })
+      );
+      expect(
+        screen.getByRole("button", { name: /remove banner/i })
+      ).toBeInTheDocument();
+    });
+
+    it("hides remove banner button when org has no banner", async () => {
+      await renderPage(buildOrg({ banner_url: null }));
+      expect(
+        screen.queryByRole("button", { name: /remove banner/i })
+      ).not.toBeInTheDocument();
     });
   });
 
