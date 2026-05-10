@@ -438,8 +438,13 @@ export function TeamWorkspaceV2({
   useEffect(() => {
     const formatId = format?.id;
     if (!formatId) return;
-    const id = requestIdleCallback(() => warmSpeciesIndex(formatId));
-    return () => cancelIdleCallback(id);
+    // requestIdleCallback is unavailable in Safari < 16.4 — fall back to setTimeout
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(() => warmSpeciesIndex(formatId));
+      return () => cancelIdleCallback(id);
+    }
+    const id = setTimeout(() => warmSpeciesIndex(formatId), 1);
+    return () => clearTimeout(id);
   }, [format?.id]);
 
   // ---------------------------------------------------------------------------
