@@ -100,7 +100,7 @@ export async function listTournamentsGrouped(
       .select(
         `
         tournament_id,
-        alt:alts(id, username, is_public, user:users!alts_user_id_fkey(username, main_alt_id))
+        alt:alts(id, username, is_public, user:users!profiles_user_id_fkey(username, main_alt_id))
       `
       )
       .in("tournament_id", completedTournamentIds)

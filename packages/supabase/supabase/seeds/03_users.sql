@@ -6942,7 +6942,9 @@ UPDATE public.alts SET is_public = true WHERE username IN (
   'brock_vgc',
   'karen_vgc',
   'red_vgc',
-  'lance_vgc'
+  'lance_vgc',
+  -- Additional public alts for tournament winner link testing
+  'alyson_stiedemann_vgc'
 );
 
 
