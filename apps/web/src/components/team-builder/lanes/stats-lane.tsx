@@ -803,7 +803,7 @@ export function StatsLane({
 
   if (!pokemon) {
     return (
-      <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", borderRight && "border-r border-dashed", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
+      <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-3 2xl:w-[400px] transition-[padding,flex] duration-300 ease-in-out", borderRight && "border-r border-dashed", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
 
 
         {/* Column headers — same structure as real but dimmed */}
@@ -909,7 +909,7 @@ export function StatsLane({
   );
 
   return (
-    <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", borderRight && "border-r border-dashed", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
+    <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-3 2xl:w-[400px] transition-[padding,flex] duration-300 ease-in-out", borderRight && "border-r border-dashed", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
       {/* Column headers */}
       <div
         className={cn(

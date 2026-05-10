@@ -107,9 +107,9 @@ export function Dockbar({
   const calcSubLabel = defenderSpecies ? `vs ${defenderSpecies}` : "no target";
 
   return (
-    <div className="bg-background @container/dock relative w-full rounded-b-lg border-t">
+    <div className="bg-background relative w-full rounded-b-lg border-t">
       {/* Footer disclaimer — left side, absolutely positioned */}
-      <p className="text-muted-foreground absolute top-1/2 left-3 hidden -translate-y-1/2 text-[8px] @[900px]/dock:block">
+      <p className="text-muted-foreground absolute top-1/2 left-3 hidden -translate-y-1/2 text-[8px] lg:block">
         Not affiliated with Nintendo, The Pok&eacute;mon Company, or Game Freak.
       </p>
 
@@ -185,7 +185,7 @@ export function Dockbar({
       </div>
 
       {/* Footer copyright — right side, absolutely positioned */}
-      <p className="text-muted-foreground absolute top-1/2 right-3 hidden -translate-y-1/2 items-center gap-1 text-[10px] whitespace-nowrap @[900px]/dock:flex">
+      <p className="text-muted-foreground absolute top-1/2 right-3 hidden -translate-y-1/2 items-center gap-1 text-[10px] whitespace-nowrap lg:flex">
         <a href="https://x.com/thatguyinabeani" target="_blank" rel="noopener noreferrer">
           <Image
             src="/icons/beanie_logo.png"
