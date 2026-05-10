@@ -49,6 +49,13 @@ import {
 } from "@/components/ui/resizable";
 import { ImportDialog } from "./import-dialog";
 import { useTeamValidation, type ValidationError } from "./validation-hooks";
+import { EditableName } from "./builder-topbar";
+import { ValidationPopover } from "./validation/validation-popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { CalcBottomPanel } from "./calc/calc-bottom-panel";
 import {
   CalcStateProvider,
@@ -417,6 +424,9 @@ export function TeamWorkspaceV2({
 
   /** Controls the import sheet. */
   const [importOpen, setImportOpen] = useState(false);
+
+  /** Controls the mobile validate popover. */
+  const [mobileValidateOpen, setMobileValidateOpen] = useState(false);
 
   /** Slot index awaiting remove confirmation. null = dialog closed. */
 
@@ -1004,6 +1014,85 @@ export function TeamWorkspaceV2({
                       <TeamLayoutToggle />
                     </div>
                   </div>
+
+                  {/* Mobile: team name + validate row */}
+                  <div className="flex w-full max-w-[1800px] items-center gap-2 px-3 pb-1">
+                    <EditableName
+                      defaultValue={team.name}
+                      onSave={async (name) => {
+                        const result = await persistence.updateTeam(team.id, {
+                          name,
+                        });
+                        if (!result.success) {
+                          toast.error(
+                            result.error ?? "Failed to rename team."
+                          );
+                          return;
+                        }
+                        persistence.onMutationSuccess();
+                      }}
+                    />
+                    <div className="ml-auto">
+                      <Popover
+                        open={mobileValidateOpen}
+                        onOpenChange={(open) => {
+                          if (open) validate();
+                          setMobileValidateOpen(open);
+                        }}
+                      >
+                        <PopoverTrigger
+                          render={
+                            <button
+                              type="button"
+                              className={cn(
+                                "border-input bg-background hover:bg-accent hover:text-accent-foreground relative inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs shadow-xs transition-colors",
+                                validationErrors.some(
+                                  (e) => e.severity === "error"
+                                ) &&
+                                  "border-destructive/50 text-destructive hover:border-destructive hover:text-destructive",
+                                validationErrors.some(
+                                  (e) => e.severity === "warning"
+                                ) &&
+                                  !validationErrors.some(
+                                    (e) => e.severity === "error"
+                                  ) &&
+                                  "border-amber-400/50 text-amber-600 hover:border-amber-400 dark:text-amber-400"
+                              )}
+                            />
+                          }
+                        >
+                          Validate
+                          {validationErrors.length > 0 && (
+                            <span
+                              className={cn(
+                                "absolute -top-0.5 -right-0.5 size-2 rounded-full",
+                                validationErrors.some(
+                                  (e) => e.severity === "error"
+                                )
+                                  ? "bg-destructive"
+                                  : "bg-amber-500"
+                              )}
+                              aria-hidden="true"
+                            />
+                          )}
+                        </PopoverTrigger>
+                        <PopoverContent
+                          side="bottom"
+                          align="end"
+                          className="w-auto max-w-[calc(100vw-2rem)] p-0"
+                        >
+                          <ValidationPopover
+                            errors={validationErrors}
+                            onJumpToPokemon={(id) => {
+                              handleJumpToPokemon(id);
+                              setMobileValidateOpen(false);
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
                   <section
                     className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3 [[data-density=compact]_&]:p-2"
                     data-calc-open="false"

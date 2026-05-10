@@ -100,7 +100,7 @@ interface EditableNameProps {
   onSave: (name: string) => Promise<void>;
 }
 
-function EditableName({ defaultValue, onSave }: EditableNameProps) {
+export function EditableName({ defaultValue, onSave }: EditableNameProps) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(defaultValue);
   const [saving, setSaving] = useState(false);
@@ -253,8 +253,8 @@ export function BuilderTopbar({
 
   return (
     <>
-      {/* Center: Team name — flows in flex on mobile, absolutely centered on sm+ */}
-      <div className="pointer-events-none flex items-center justify-center sm:absolute sm:inset-x-0">
+      {/* Center: Team name — hidden on mobile (shown in workspace content area instead), absolutely centered on sm+ */}
+      <div className="pointer-events-none hidden sm:absolute sm:inset-x-0 sm:flex sm:items-center sm:justify-center">
         <div className="pointer-events-auto flex items-center gap-1.5">
           <EditableName defaultValue={team.name} onSave={onNameChange} />
           {onSaveToAccount ? (
@@ -330,7 +330,7 @@ export function BuilderTopbar({
               <button
                 type="button"
                 className={cn(
-                  "border-input bg-background hover:bg-accent hover:text-accent-foreground relative inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs shadow-xs transition-colors",
+                  "border-input bg-background hover:bg-accent hover:text-accent-foreground relative hidden h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs shadow-xs transition-colors sm:inline-flex",
                   hasErrors &&
                     "border-destructive/50 text-destructive hover:border-destructive hover:text-destructive",
                   hasWarnings &&
