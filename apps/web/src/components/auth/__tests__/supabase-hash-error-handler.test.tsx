@@ -32,6 +32,10 @@ describe("SupabaseHashErrorHandler", () => {
     });
   });
 
+  afterAll(() => {
+    replaceStateSpy.mockRestore();
+  });
+
   function setHash(hash: string) {
     Object.defineProperty(window, "location", {
       value: {

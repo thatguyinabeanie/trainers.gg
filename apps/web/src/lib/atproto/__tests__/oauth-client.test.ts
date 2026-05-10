@@ -46,12 +46,20 @@ jest.mock("@/lib/supabase/server", () => ({
 }));
 
 // Polyfill crypto.randomUUID for jsdom
+const originalCrypto = globalThis.crypto;
 Object.defineProperty(globalThis, "crypto", {
   value: {
     ...globalThis.crypto,
     randomUUID: jest.fn(() => "test-state-uuid"),
   },
   writable: true,
+});
+
+afterAll(() => {
+  Object.defineProperty(globalThis, "crypto", {
+    value: originalCrypto,
+    writable: true,
+  });
 });
 
 // --- Helpers ---
