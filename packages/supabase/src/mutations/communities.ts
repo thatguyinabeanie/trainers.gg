@@ -111,6 +111,19 @@ export async function createCommunity(
     throw new Error("Community slug is already taken");
   }
 
+  // Check slug against shared PDS handle namespace (users + communities)
+  const { data: existingHandle } = await supabase
+    .from("pds_handles")
+    .select("handle")
+    .eq("handle", `${data.slug.toLowerCase()}.trainers.gg`)
+    .maybeSingle();
+
+  if (existingHandle) {
+    throw new Error(
+      "This name is already taken on the Bluesky network"
+    );
+  }
+
   // Validate social links if provided
   let validatedLinks: CommunitySocialLink[] = [];
   if (data.socialLinks) {

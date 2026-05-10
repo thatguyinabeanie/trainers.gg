@@ -39,7 +39,7 @@ export async function grantCommunityRequestAction(
   }
 
   return withAdminAction(async (supabase, adminUserId) => {
-    await grantCommunityRequest(
+    const { organization } = await grantCommunityRequest(
       supabase,
       parsed.data,
       adminUserId,
@@ -56,6 +56,15 @@ export async function grantCommunityRequestAction(
       })
       .catch((err: unknown) =>
         console.error("Failed to send approval email:", err)
+      );
+
+    // Fire-and-forget PDS provisioning — community gets a Bluesky identity
+    supabase.functions
+      .invoke("provision-community-pds", {
+        body: { communityId: organization.id },
+      })
+      .catch((err: unknown) =>
+        console.error("Failed to provision community PDS:", err)
       );
 
     return { success: true };
