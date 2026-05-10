@@ -54,7 +54,7 @@ export function SupabaseHashErrorHandler() {
     const friendlyMessage = ERROR_MESSAGES[parsed.errorCode];
     const message =
       friendlyMessage ||
-      parsed.errorDescription.replace(/\+/g, " ") ||
+      parsed.errorDescription ||
       "Something went wrong linking your account.";
 
     toast.error(message);

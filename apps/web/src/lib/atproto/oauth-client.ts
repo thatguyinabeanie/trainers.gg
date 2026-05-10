@@ -265,11 +265,16 @@ export async function startAtprotoAuth(
   // Store return URL (and link user ID if linking) in state
   if (returnUrl || linkUserId) {
     const supabase = createAtprotoServiceClient();
-    await supabase.from("atproto_oauth_state").upsert({
+    const { error } = await supabase.from("atproto_oauth_state").upsert({
       state_key: `return:${state}`,
       state_data: { returnUrl, linkUserId } as unknown as Json,
       expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     });
+
+    if (error) {
+      console.error("Failed to store OAuth return state:", error);
+      throw new Error("Failed to initiate authentication");
+    }
   }
 
   // Initiate authorization - this discovers the user's PDS and authorization server
@@ -298,11 +303,16 @@ export async function handleAtprotoCallback(params: URLSearchParams): Promise<{
   let linkUserId: string | undefined;
   if (state) {
     const supabase = createAtprotoServiceClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("atproto_oauth_state")
       .select("state_data")
       .eq("state_key", `return:${state}`)
+      .gt("expires_at", new Date().toISOString())
       .maybeSingle();
+
+    if (error) {
+      console.error("Failed to retrieve OAuth return state:", error);
+    }
 
     const stateData = data?.state_data as { returnUrl?: string; linkUserId?: string } | null;
     returnUrl = stateData?.returnUrl;

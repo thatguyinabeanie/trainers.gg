@@ -34,6 +34,7 @@ import {
   createServiceRoleClient,
   createAtprotoServiceClient,
 } from "@/lib/supabase/server";
+import { sanitizeReturnUrl } from "@/lib/url-safety";
 
 /**
  * Sanitize a username from a Bluesky handle
@@ -127,7 +128,7 @@ async function handleLinkMode({
   baseUrl: string;
   supabaseAtproto: ReturnType<typeof createAtprotoServiceClient>;
 }) {
-  const redirectTarget = returnUrl || "/dashboard/settings/account";
+  const redirectTarget = sanitizeReturnUrl(returnUrl, "/dashboard/settings/account");
 
   // Check if the DID is already linked to another user
   const { data: existingHolder } = await supabaseAtproto
@@ -143,10 +144,23 @@ async function handleLinkMode({
     return NextResponse.redirect(errorUrl.toString());
   }
 
+  // Check user's current pds_status so we don't regress it
+  const { data: currentUser } = await supabaseAtproto
+    .from("users")
+    .select("pds_status")
+    .eq("id", linkUserId)
+    .single();
+
+  // Only set pds_status to "pending" if user doesn't already have a PDS status
+  const updateFields: { did: string; pds_status?: "pending" | "active" | "suspended" | "failed" | "external" } = { did };
+  if (!currentUser?.pds_status) {
+    updateFields.pds_status = "pending";
+  }
+
   // Attach the DID to the current user
   const { error: updateError } = await supabaseAtproto
     .from("users")
-    .update({ did, pds_status: "pending" })
+    .update(updateFields)
     .eq("id", linkUserId);
 
   if (updateError) {

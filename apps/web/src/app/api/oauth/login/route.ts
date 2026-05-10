@@ -12,6 +12,7 @@
 import { NextResponse } from "next/server";
 import { startAtprotoAuth } from "@/lib/atproto/oauth-client";
 import { getUser } from "@/lib/supabase/server";
+import { sanitizeReturnUrl } from "@/lib/url-safety";
 
 /**
  * Check if running on a Vercel preview deployment.
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const handle = searchParams.get("handle");
-  const returnUrl = searchParams.get("returnUrl") || "/";
+  const returnUrl = sanitizeReturnUrl(searchParams.get("returnUrl"), "/");
   const mode = searchParams.get("mode"); // "link" to attach DID to current user
 
   // If in link mode, verify the user is authenticated
