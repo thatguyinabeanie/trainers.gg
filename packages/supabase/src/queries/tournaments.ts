@@ -12,7 +12,13 @@ type OrganizationRow = Database["public"]["Tables"]["communities"]["Row"];
 export type TournamentWithOrg = TournamentRow & {
   organization: Pick<OrganizationRow, "id" | "name" | "slug"> | null;
   registrationCount: number;
-  winner: { id: number; username: string } | null;
+  winner: {
+    id: number;
+    username: string;
+    isPublic?: boolean;
+    isMainAlt?: boolean;
+    parentUsername?: string;
+  } | null;
 };
 
 export type GroupedTournaments = {
@@ -77,7 +83,16 @@ export async function listTournamentsGrouped(
     .filter((t) => t.status === "completed")
     .map((t) => t.id);
 
-  const winnerMap: Record<string, { id: number; username: string }> = {};
+  const winnerMap: Record<
+    string,
+    {
+      id: number;
+      username: string;
+      isPublic: boolean;
+      isMainAlt: boolean;
+      parentUsername: string;
+    }
+  > = {};
 
   if (completedTournamentIds.length > 0) {
     const { data: standings, error: standingsError } = await supabase
@@ -85,7 +100,7 @@ export async function listTournamentsGrouped(
       .select(
         `
         tournament_id,
-        alt:alts(id, username)
+        alt:alts(id, username, is_public, user:users!alts_user_id_fkey(username, main_alt_id))
       `
       )
       .in("tournament_id", completedTournamentIds)
@@ -97,10 +112,18 @@ export async function listTournamentsGrouped(
 
     for (const standing of standings ?? []) {
       if (standing.alt) {
-        winnerMap[String(standing.tournament_id)] = {
-          id: standing.alt.id,
-          username: standing.alt.username,
-        };
+        const user = Array.isArray(standing.alt.user)
+          ? standing.alt.user[0]
+          : standing.alt.user;
+        if (user) {
+          winnerMap[String(standing.tournament_id)] = {
+            id: standing.alt.id,
+            username: standing.alt.username,
+            isPublic: standing.alt.is_public,
+            isMainAlt: user.main_alt_id === standing.alt.id,
+            parentUsername: user.username ?? standing.alt.username,
+          };
+        }
       }
     }
   }

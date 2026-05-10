@@ -583,7 +583,7 @@ BEGIN
       opponent_game_win_percentage, rank
     ) VALUES (
       t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann'),
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann_vgc'),
       5,
       24,
       17,
@@ -1124,6 +1124,41 @@ BEGIN
   END IF;
 
   RAISE NOTICE 'Created 64 standings entries for 2 tournaments';
+END $$;
+
+-- =============================================================================
+-- Stellar Novas Monthly #12 standings (private alt winner for link testing)
+-- =============================================================================
+DO $$
+DECLARE
+  t_id bigint;
+BEGIN
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'stellar-novas-monthly-12';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ash_ketchum_draft'),
+      5, 21, 14, 6, 0.7, 0.7, 0.52, 0.49, 1
+    ), (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cynthia'),
+      5, 18, 13, 7, 0.6, 0.65, 0.51, 0.48, 2
+    ), (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brock'),
+      5, 15, 11, 9, 0.5, 0.55, 0.50, 0.47, 3
+    ), (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'karen'),
+      5, 12, 9, 11, 0.4, 0.45, 0.49, 0.46, 4
+    );
+    RAISE NOTICE 'Created 4 standings for stellar-novas-monthly-12 (private alt winner)';
+  END IF;
 END $$;
 
 -- =============================================================================

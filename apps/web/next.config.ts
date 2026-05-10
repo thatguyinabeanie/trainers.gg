@@ -40,6 +40,7 @@ const nextConfig: NextConfig = {
   rewrites: async () => ({
     beforeFiles: [
       // Vanity profile URLs: /@username → /user/username (internal route)
+      { source: "/@:handle/alts/:alt", destination: "/user/:handle/alts/:alt" },
       { source: "/@:handle", destination: "/user/:handle" },
     ],
     afterFiles: [],
