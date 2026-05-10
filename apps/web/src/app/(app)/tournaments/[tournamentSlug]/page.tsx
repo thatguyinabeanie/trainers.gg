@@ -544,6 +544,7 @@ export default async function TournamentPage({ params }: PageProps) {
     id: number;
     name: string;
     slug: string;
+    icon: string | null;
     logo_url: string | null;
     banner_url: string | null;
   } | null;
