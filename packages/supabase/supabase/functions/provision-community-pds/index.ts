@@ -85,13 +85,12 @@ Deno.serve(async (req) => {
       error: userError,
     } = await supabaseAdmin.auth.getUser(jwt);
 
-    // Service-role bypass — admin actions invoke this with service-role client
+    // Service-role bypass — admin actions invoke this with service-role client.
+    // We compare the raw bearer token to the known service-role key rather than
+    // decoding JWT claims, which would be forgeable without signature verification.
     let isServiceRole = false;
     if (userError || !user) {
-      try {
-        const payload = JSON.parse(atob(jwt.split(".")[1]));
-        isServiceRole = payload.role === "service_role";
-      } catch { /* not a valid JWT */ }
+      isServiceRole = jwt === SUPABASE_SERVICE_ROLE_KEY;
 
       if (!isServiceRole) {
         return new Response(

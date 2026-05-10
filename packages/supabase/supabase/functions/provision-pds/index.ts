@@ -334,9 +334,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Register in pds_handles registry for namespace uniqueness
-    // Non-fatal for user provisioning — the backfill migration handles existing users,
-    // and the user record is the source of truth for users
+    // Register in pds_handles registry for namespace uniqueness.
+    // Fatal — if registry insert fails, the user must retry to ensure
+    // namespace integrity across users and communities.
     const { error: registryError } = await supabaseAdmin
       .from("pds_handles")
       .insert({
