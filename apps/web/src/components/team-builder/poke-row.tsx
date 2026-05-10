@@ -11,13 +11,10 @@ import {
   type TeamWithPokemon,
 } from "@trainers/supabase";
 
-import { cn } from "@/lib/utils";
-
 import { CompactRow } from "./layouts/compact-row";
+import { CompactRowGhost } from "./layouts/compact-row-ghost";
 import { GridRow } from "./layouts/grid-row";
-import { IdentityLane } from "./lanes/identity";
-import { MovesLane } from "./lanes/moves-lane";
-import { StatsLane } from "./lanes/stats-lane";
+import { GridRowGhost } from "./layouts/grid-row-ghost";
 import { SpeciesPickerDialog } from "./pickers/species-picker-dialog";
 import { useTeamLayoutMode } from "./use-team-layout";
 import { type ValidationError } from "./validation-hooks";
@@ -129,6 +126,8 @@ interface EmptyPokeRowProps {
 
 function EmptyPokeRow({ idx, format, onAdd }: EmptyPokeRowProps) {
   const [open, setOpen] = useState(false);
+  const layoutMode = useTeamLayoutMode();
+  const Ghost = layoutMode === "2x3-vertical" ? GridRowGhost : CompactRowGhost;
 
   return (
     <>
@@ -136,30 +135,9 @@ function EmptyPokeRow({ idx, format, onAdd }: EmptyPokeRowProps) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label={`Add Pokémon to slot ${String(idx + 1).padStart(2, "0")}`}
-        className={cn(
-          "row-active flex h-full w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-dashed",
-          "border-border bg-card text-left transition-colors",
-          "hover:border-primary/40",
-          "focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
-        )}
+        className="focus-visible:ring-primary block w-full rounded-lg text-left focus-visible:ring-2 focus-visible:outline-none"
       >
-        {/* RIB — slot number + × placeholder */}
-        <div className="rib border-border/60 bg-muted/20 flex w-7 shrink-0 flex-col items-center justify-between border-r border-dashed py-2">
-          <span className="text-muted-foreground font-mono text-[10px] font-medium tracking-wide">
-            {String(idx + 1).padStart(2, "0")}
-          </span>
-          <span className="text-muted-foreground/20 flex size-5 items-center justify-center rounded">
-            ×
-          </span>
-        </div>
-
-        <div className="row-vertical-content">
-          <IdentityLane pokemon={null} format={format} />
-          <div className="row-right">
-            <StatsLane pokemon={null} format={format} />
-            <MovesLane pokemon={null} format={format} />
-          </div>
-        </div>
+        <Ghost idx={idx} />
       </button>
 
       <SpeciesPickerDialog

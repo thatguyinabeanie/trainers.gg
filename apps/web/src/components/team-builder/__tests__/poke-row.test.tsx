@@ -93,47 +93,27 @@ jest.mock("../layouts/grid-row", () => ({
 }));
 
 // Lane component ghost mocks — used only by EmptyPokeRow.
-jest.mock("../lanes/identity", () => ({
-  IdentityLane: ({ pokemon }: { pokemon: null | { species?: string } }) => {
-    if (!pokemon) {
-      return (
-        <div data-testid="identity-lane-ghost">
-          <span>+ Add Pokémon</span>
-        </div>
-      );
-    }
-    return <div data-testid="identity-lane-real" />;
-  },
+jest.mock("../layouts/compact-row-ghost", () => ({
+  CompactRowGhost: ({ idx }: { idx: number }) => (
+    <div data-testid="compact-row-ghost" data-idx={String(idx)}>
+      <span>{String(idx + 1).padStart(2, "0")}</span>
+      <span>+ Add Pokémon</span>
+      <span>HP</span>
+      <span>+ Add move</span>
+      <span>+ Add move</span>
+      <span>+ Add move</span>
+      <span>+ Add move</span>
+    </div>
+  ),
 }));
 
-jest.mock("../lanes/stats-lane", () => ({
-  StatsLane: ({ pokemon }: { pokemon: null | object }) => {
-    if (!pokemon) {
-      return (
-        <div data-testid="stats-lane-ghost">
-          <span>HP</span>
-        </div>
-      );
-    }
-    return <div data-testid="stats-lane-real" />;
-  },
-  GHOST_STATS: [],
-}));
-
-jest.mock("../lanes/moves-lane", () => ({
-  MovesLane: ({ pokemon }: { pokemon: null | object }) => {
-    if (!pokemon) {
-      return (
-        <div data-testid="moves-lane-ghost">
-          <span>+ Add move</span>
-          <span>+ Add move</span>
-          <span>+ Add move</span>
-          <span>+ Add move</span>
-        </div>
-      );
-    }
-    return <div data-testid="moves-lane-real" />;
-  },
+jest.mock("../layouts/grid-row-ghost", () => ({
+  GridRowGhost: ({ idx }: { idx: number }) => (
+    <div data-testid="grid-row-ghost" data-idx={String(idx)}>
+      <span>{String(idx + 1).padStart(2, "0")}</span>
+      <span>+ Add Pokémon</span>
+    </div>
+  ),
 }));
 
 jest.mock("../pickers/species-picker-dialog", () => ({
@@ -324,10 +304,25 @@ describe("PokeRow — empty slot", () => {
         onActivate={jest.fn()}
       />
     );
-    expect(screen.getByTestId("identity-lane-ghost")).toBeInTheDocument();
-    expect(screen.getByTestId("stats-lane-ghost")).toBeInTheDocument();
+    // Default layoutMode is "1x6" → CompactRowGhost is rendered.
+    expect(screen.getByTestId("compact-row-ghost")).toBeInTheDocument();
     expect(screen.getByText("HP")).toBeInTheDocument();
     expect(screen.getAllByText(/\+ Add move/i)).toHaveLength(4);
+  });
+
+  it("renders GridRowGhost when layoutMode is '2x3-vertical'", () => {
+    mockLayoutMode.mockReturnValue("2x3-vertical");
+    render(
+      <PokeRow
+        idx={0}
+        sortableId="__empty__0"
+        pokemon={null}
+        isActive={false}
+        onActivate={jest.fn()}
+      />
+    );
+    expect(screen.getByTestId("grid-row-ghost")).toBeInTheDocument();
+    expect(screen.queryByTestId("compact-row-ghost")).not.toBeInTheDocument();
   });
 
   it("outer button has w-full to fill its grid cell", () => {
