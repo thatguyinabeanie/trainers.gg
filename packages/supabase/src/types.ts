@@ -285,6 +285,8 @@ export type Database = {
         Row: {
           about: string | null
           banner_url: string | null
+          bluesky_did: string | null
+          bluesky_handle: string | null
           created_at: string | null
           description: string | null
           discord_invite_url: string | null
@@ -295,6 +297,7 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_user_id: string
+          pds_status: Database["public"]["Enums"]["pds_account_status"] | null
           platform_fee_percentage: number | null
           slug: string
           social_links: Json
@@ -310,6 +313,8 @@ export type Database = {
         Insert: {
           about?: string | null
           banner_url?: string | null
+          bluesky_did?: string | null
+          bluesky_handle?: string | null
           created_at?: string | null
           description?: string | null
           discord_invite_url?: string | null
@@ -320,6 +325,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_user_id: string
+          pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
           platform_fee_percentage?: number | null
           slug: string
           social_links?: Json
@@ -335,6 +341,8 @@ export type Database = {
         Update: {
           about?: string | null
           banner_url?: string | null
+          bluesky_did?: string | null
+          bluesky_handle?: string | null
           created_at?: string | null
           description?: string | null
           discord_invite_url?: string | null
@@ -345,6 +353,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_user_id?: string
+          pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
           platform_fee_percentage?: number | null
           slug?: string
           social_links?: Json
@@ -1533,6 +1542,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pds_handles: {
+        Row: {
+          created_at: string
+          did: string | null
+          entity_id: string
+          entity_type: string
+          handle: string
+        }
+        Insert: {
+          created_at?: string
+          did?: string | null
+          entity_id: string
+          entity_type: string
+          handle: string
+        }
+        Update: {
+          created_at?: string
+          did?: string | null
+          entity_id?: string
+          entity_type?: string
+          handle?: string
+        }
+        Relationships: []
       }
       permissions: {
         Row: {
@@ -3658,6 +3691,7 @@ export type Database = {
         }
         Returns: string
       }
+      vault_read_secret: { Args: { secret_name: string }; Returns: string }
     }
     Enums: {
       announcement_type: "info" | "warning" | "error" | "success"

@@ -24,9 +24,12 @@ export function CommunityCard({ community }: CommunityCardProps) {
       }>)
     : [];
 
-  // Build combined social icons: discord_invite_url (if present and not already in social_links) + social_links
+  // Build combined social icons: discord_invite_url (if not already in social_links) + social_links + bluesky (if not already in social_links)
   const hasDiscordInSocials = socialLinks.some(
     (link) => link.platform === "discord"
+  );
+  const hasBlueskyInSocials = socialLinks.some(
+    (link) => link.platform === "bluesky"
   );
   const allSocialLinks = [
     ...(!hasDiscordInSocials && community.discord_invite_url
@@ -38,6 +41,14 @@ export function CommunityCard({ community }: CommunityCardProps) {
         ]
       : []),
     ...socialLinks,
+    ...(!hasBlueskyInSocials && community.bluesky_handle
+      ? [
+          {
+            platform: "bluesky" as SocialLinkPlatform,
+            url: `https://bsky.app/profile/${community.bluesky_handle}`,
+          },
+        ]
+      : []),
   ];
 
   return (

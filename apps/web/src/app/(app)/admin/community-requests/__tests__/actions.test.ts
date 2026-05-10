@@ -56,7 +56,10 @@ describe("grantCommunityRequestAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
-    mockGrantCommunityRequest.mockResolvedValue(undefined);
+    mockGrantCommunityRequest.mockResolvedValue({
+      request: { id: REQUEST_ID },
+      organization: { id: 1, slug: "test-org" },
+    });
     mockFunctionsInvoke.mockResolvedValue({ data: null });
   });
 
@@ -85,6 +88,15 @@ describe("grantCommunityRequestAction", () => {
     expect(mockFunctionsInvoke).toHaveBeenCalledWith(
       "send-org-request-notification",
       { body: { requestId: REQUEST_ID, action: "approved" } }
+    );
+  });
+
+  it("triggers PDS provisioning after approval", async () => {
+    await grantCommunityRequestAction(REQUEST_ID);
+
+    expect(mockFunctionsInvoke).toHaveBeenCalledWith(
+      "provision-community-pds",
+      { body: { communityId: 1 } }
     );
   });
 

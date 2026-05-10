@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, use } from "react";
 import Link from "next/link";
-import { Camera, Loader2, X, Plus, ImageIcon } from "lucide-react";
+import { Camera, Loader2, X, Plus, ImageIcon, ExternalLink } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkdownContent } from "@/components/ui/markdown-content";
 import { toast } from "sonner";
@@ -21,7 +21,8 @@ import {
 } from "@trainers/validators";
 import { socialPlatformLabels } from "@trainers/utils";
 
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { updateOrganization } from "@/actions/communities";
 import {
@@ -151,12 +152,16 @@ interface SettingsFormProps {
     social_links: unknown;
     logo_url: string | null;
     banner_url: string | null;
+    bluesky_did: string | null;
+    bluesky_handle: string | null;
+    pds_status: string | null;
   };
   communitySlug: string;
   onSaved: () => void;
 }
 
 function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
+  const supabase = useSupabase();
   const [isPending, startTransition] = useTransition();
   const [isLogoUploading, startLogoTransition] = useTransition();
   const [isBannerUploading, startBannerTransition] = useTransition();
@@ -182,6 +187,19 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
     [org.id]
   );
   const discordInstalled = discordServer != null;
+
+  /** Fire-and-forget PDS profile sync (only if community has active PDS). */
+  const syncProfileToPds = () => {
+    if (org.pds_status === "active" && org.bluesky_did) {
+      supabase.functions
+        .invoke("sync-community-profile", {
+          body: { communityId: org.id },
+        })
+        .catch(() => {
+          // Non-blocking — don't fail the save
+        });
+    }
+  };
 
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -212,6 +230,7 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
         setCurrentLogoUrl(result.data.logoUrl);
         toast.success("Logo updated");
         onSaved();
+        syncProfileToPds();
       } else {
         toast.error(result.error);
       }
@@ -225,6 +244,7 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
         setCurrentLogoUrl(null);
         toast.success("Logo removed");
         onSaved();
+        syncProfileToPds();
       } else {
         toast.error(result.error);
       }
@@ -310,6 +330,7 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
       if (result.success) {
         toast.success("Community settings updated");
         onSaved();
+        syncProfileToPds();
       } else {
         toast.error(result.error);
       }
@@ -471,6 +492,16 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
           />
         </DashboardCard>
       </div>
+
+      {/* Bluesky Identity card — full width */}
+      <BlueskyIdentityCard
+        communityId={org.id}
+        handle={org.bluesky_handle}
+        did={org.bluesky_did}
+        pdsStatus={org.pds_status}
+        slug={org.slug}
+        onProvisioned={onSaved}
+      />
 
       {/* About section — full width below */}
       <DashboardCard label="About">
@@ -733,5 +764,138 @@ function SocialLinksEditor({
         Add link
       </button>
     </div>
+  );
+}
+
+// ============================================================================
+// Bluesky Identity Card
+// ============================================================================
+
+interface BlueskyIdentityCardProps {
+  communityId: number;
+  handle: string | null;
+  did: string | null;
+  pdsStatus: string | null;
+  slug: string;
+  onProvisioned: () => void;
+}
+
+function BlueskyIdentityCard({
+  communityId,
+  handle,
+  did,
+  pdsStatus,
+  slug,
+  onProvisioned,
+}: BlueskyIdentityCardProps) {
+  const supabase = useSupabase();
+  const [isProvisioning, startProvisionTransition] = useTransition();
+
+  const isActive = pdsStatus === "active" && !!did;
+  const isFailed = pdsStatus === "failed";
+  const isPending = !pdsStatus || pdsStatus === "pending";
+
+  const handleProvision = () => {
+    startProvisionTransition(async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        toast.error("You must be logged in to enable Bluesky identity");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke(
+        "provision-community-pds",
+        {
+          body: { communityId },
+        }
+      );
+
+      if (error) {
+        toast.error("Failed to create Bluesky identity");
+        return;
+      }
+
+      if (data?.success) {
+        toast.success(`Bluesky identity created: @${data.handle}`);
+        onProvisioned();
+      } else {
+        toast.error(data?.error || "Failed to create Bluesky identity");
+      }
+    });
+  };
+
+  return (
+    <DashboardCard label="Bluesky Identity">
+      {isActive ? (
+        <div className="space-y-3">
+          <StatusBadge status="active" label="Active on network" />
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-sm">Handle</span>
+              <a
+                href={`https://bsky.app/profile/${handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary inline-flex items-center gap-1 text-sm font-medium hover:underline"
+              >
+                @{handle}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-sm">DID</span>
+              <span className="text-muted-foreground max-w-[200px] truncate font-mono text-xs">
+                {did}
+              </span>
+            </div>
+          </div>
+
+          <p className="text-muted-foreground text-xs">
+            Your community&apos;s profile on Bluesky syncs automatically when
+            you update your name, logo, or description.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-muted-foreground text-sm">
+            Give your community a presence on the Bluesky network. Anyone on
+            Bluesky will be able to find and follow{" "}
+            <span className="text-foreground font-medium">
+              @{slug}.trainers.gg
+            </span>
+            .
+          </p>
+
+          {isFailed && (
+            <p className="text-destructive text-xs">
+              Previous attempt failed. You can try again.
+            </p>
+          )}
+
+          <Button
+            onClick={handleProvision}
+            disabled={isProvisioning}
+            variant="outline"
+            size="sm"
+          >
+            {isProvisioning && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            {isFailed ? "Retry" : "Enable Bluesky Identity"}
+          </Button>
+
+          {isPending && (
+            <p className="text-muted-foreground text-xs">
+              This will create an AT Protocol account on trainers.gg&apos;s PDS
+              with the handle @{slug}.trainers.gg.
+            </p>
+          )}
+        </div>
+      )}
+    </DashboardCard>
   );
 }

@@ -54,6 +54,28 @@ function createQueryBuilder(data: unknown = null, error: unknown = null) {
   };
 }
 
+// Helper for chainable mocks that are awaited (update/delete chains)
+function createChainableMock(
+  resolvedValue: { data?: unknown; error: unknown } = {
+    data: null,
+    error: null,
+  }
+) {
+  const chain: Record<string, unknown> = {};
+  chain.update = jest.fn().mockReturnValue(chain);
+  chain.delete = jest.fn().mockReturnValue(chain);
+  chain.eq = jest.fn().mockReturnValue(chain);
+  chain.then = (resolve: (val: unknown) => void) => resolve(resolvedValue);
+  return chain;
+}
+
+// Helper for insert mock (returns Promise directly)
+function createInsertMock(error: unknown = null) {
+  return {
+    insert: jest.fn().mockResolvedValue({ data: null, error }),
+  };
+}
+
 // Helper to create mock request
 function createMockRequest(
   method: string,
@@ -69,6 +91,10 @@ function createMockRequest(
 describe("update-pds-handle edge function", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset mocks that accumulate state (mockReturnValue/mockRejectedValue)
+    // across test sections — clearAllMocks only clears call history.
+    mockFrom.mockReset();
+    mockUpdateHandle.mockReset();
   });
 
   describe("authentication", () => {
@@ -153,12 +179,15 @@ describe("update-pds-handle edge function", () => {
     });
 
     it("accepts valid usernames", async () => {
-      mockFrom.mockReturnValue(
-        createQueryBuilder(
-          { id: "user-123", pds_status: "active", did: "did:plc:test123" },
-          null
+      mockFrom
+        .mockReturnValueOnce(
+          createQueryBuilder(
+            { id: "user-123", pds_status: "active", did: "did:plc:test123" },
+            null
+          )
         )
-      );
+        .mockReturnValueOnce(createChainableMock()) // users update
+        .mockReturnValueOnce(createInsertMock()); // pds_handles insert (no delete — no old handle)
       (checkPdsHandleAvailable as jest.Mock).mockResolvedValue(true);
       mockRpc.mockResolvedValue({ data: "test-password", error: null });
       (loginPdsAgent as jest.Mock).mockResolvedValue({
@@ -229,17 +258,21 @@ describe("update-pds-handle edge function", () => {
     });
 
     it("accepts users with active PDS and DID", async () => {
-      mockFrom.mockReturnValue(
-        createQueryBuilder(
-          {
-            id: "user-123",
-            pds_status: "active",
-            did: "did:plc:test123",
-            pds_handle: "olduser.trainers.gg",
-          },
-          null
+      mockFrom
+        .mockReturnValueOnce(
+          createQueryBuilder(
+            {
+              id: "user-123",
+              pds_status: "active",
+              did: "did:plc:test123",
+              pds_handle: "olduser.trainers.gg",
+            },
+            null
+          )
         )
-      );
+        .mockReturnValueOnce(createChainableMock()) // users update
+        .mockReturnValueOnce(createChainableMock()) // pds_handles delete
+        .mockReturnValueOnce(createInsertMock()); // pds_handles insert
       (checkPdsHandleAvailable as jest.Mock).mockResolvedValue(true);
       mockRpc.mockResolvedValue({ data: "test-password", error: null });
       (loginPdsAgent as jest.Mock).mockResolvedValue({
@@ -363,6 +396,22 @@ describe("update-pds-handle edge function", () => {
     });
 
     it("retrieves password from vault with correct secret name", async () => {
+      mockFrom
+        .mockReset()
+        .mockReturnValueOnce(
+          createQueryBuilder(
+            {
+              id: "user-123",
+              pds_status: "active",
+              did: "did:plc:test123",
+              pds_handle: "olduser.trainers.gg",
+            },
+            null
+          )
+        )
+        .mockReturnValueOnce(createChainableMock()) // users update
+        .mockReturnValueOnce(createChainableMock()) // pds_handles delete
+        .mockReturnValueOnce(createInsertMock()); // pds_handles insert
       mockRpc.mockResolvedValue({ data: "test-password", error: null });
       (loginPdsAgent as jest.Mock).mockResolvedValue({
         success: true,
@@ -427,6 +476,22 @@ describe("update-pds-handle edge function", () => {
     });
 
     it("calls PDS updateHandle with correct handle", async () => {
+      mockFrom
+        .mockReset()
+        .mockReturnValueOnce(
+          createQueryBuilder(
+            {
+              id: "user-123",
+              pds_status: "active",
+              did: "did:plc:test123",
+              pds_handle: "olduser.trainers.gg",
+            },
+            null
+          )
+        )
+        .mockReturnValueOnce(createChainableMock()) // users update
+        .mockReturnValueOnce(createChainableMock()) // pds_handles delete
+        .mockReturnValueOnce(createInsertMock()); // pds_handles insert
       (loginPdsAgent as jest.Mock).mockResolvedValue({
         success: true,
         agent: {
@@ -518,7 +583,9 @@ describe("update-pds-handle edge function", () => {
         .mockReturnValueOnce({
           update: mockUpdate,
           eq: mockEq,
-        });
+        })
+        .mockReturnValueOnce(createChainableMock()) // pds_handles delete
+        .mockReturnValueOnce(createInsertMock()); // pds_handles insert
 
       const handler = await import("../index.ts");
       const request = createMockRequest("POST", { username: "newuser" });
@@ -532,6 +599,40 @@ describe("update-pds-handle edge function", () => {
       expect(mockEq).toHaveBeenCalledWith("id", "user-123");
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
+    });
+
+    it("returns 409 if pds_handles insert hits unique violation (race condition)", async () => {
+      const mockUpdate = jest.fn().mockReturnThis();
+      const mockEq = jest.fn().mockResolvedValue({ error: null });
+
+      mockFrom
+        .mockReturnValueOnce(
+          createQueryBuilder(
+            {
+              id: "user-123",
+              pds_status: "active",
+              did: "did:plc:test123",
+              pds_handle: "olduser.trainers.gg",
+            },
+            null
+          )
+        )
+        .mockReturnValueOnce({
+          update: mockUpdate,
+          eq: mockEq,
+        })
+        .mockReturnValueOnce(createChainableMock()) // pds_handles delete
+        .mockReturnValueOnce(createInsertMock({ code: "23505", message: "duplicate key" })); // unique violation
+
+      const handler = await import("../index.ts");
+      const request = createMockRequest("POST", { username: "newuser" });
+
+      const response = await handler.default(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(409);
+      expect(data.success).toBe(false);
+      expect(data.code).toBe("HANDLE_TAKEN");
     });
 
     it("returns error if database update fails", async () => {
