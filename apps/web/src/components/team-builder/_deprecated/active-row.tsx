@@ -16,10 +16,10 @@ import { cn } from "@/lib/utils";
 
 import { useCalcEnabled } from "../calc/calc-state-context";
 import { errorsForFields, type ValidationError } from "../validation-hooks";
-import { CalcReverseColumn } from "./calc-reverse-card";
-import { IdentityLane } from "./identity";
-import { MovesLane } from "./moves-lane";
-import { StatsLane } from "./stats-lane";
+import { CalcReverseColumn } from "../lanes/calc-reverse-card";
+import { IdentityLane } from "./identity-lane";
+import { MovesLane } from "../lanes/moves-lane";
+import { StatsLane } from "../lanes/stats-lane";
 
 // =============================================================================
 // Types

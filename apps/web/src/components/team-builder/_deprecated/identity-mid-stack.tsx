@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 
-import { FieldErrors } from "../../validation/field-error";
-import { SpeciesPickerDialog } from "../../pickers/species-picker-dialog";
-import { useIdentityState } from "../../shared/use-identity-state";
-import { FormCells } from "../../shared/fields";
-import { MetaBar } from "../../shared/meta-bar";
-import { SpriteSection } from "../../shared/sprite-section";
-import { type IdentityLayoutProps } from "../../shared/identity-layout-props";
+import { FieldErrors } from "../validation/field-error";
+import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
+import { useIdentityState } from "../shared/use-identity-state";
+import { FormCells } from "../shared/fields";
+import { MetaBar } from "../shared/meta-bar";
+import { SpriteSection } from "../shared/sprite-section";
+import { type IdentityLayoutProps } from "../shared/identity-layout-props";
 
 // =============================================================================
 // IdentityMidStack — MidStack layout (slot < 1240px)
