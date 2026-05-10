@@ -98,9 +98,10 @@ interface BuilderTopbarProps {
 interface EditableNameProps {
   defaultValue: string;
   onSave: (name: string) => Promise<void>;
+  className?: string;
 }
 
-export function EditableName({ defaultValue, onSave }: EditableNameProps) {
+export function EditableName({ defaultValue, onSave, className }: EditableNameProps) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(defaultValue);
   const [saving, setSaving] = useState(false);
@@ -153,7 +154,8 @@ export function EditableName({ defaultValue, onSave }: EditableNameProps) {
         autoFocus
         className={cn(
           "border-border bg-background focus-visible:ring-ring h-7 w-44 rounded-md border px-2 text-sm font-semibold shadow-xs transition-colors outline-none focus-visible:ring-2 sm:w-56",
-          saving && "opacity-60"
+          saving && "opacity-60",
+          className
         )}
         aria-label="Team name"
       />
@@ -164,7 +166,10 @@ export function EditableName({ defaultValue, onSave }: EditableNameProps) {
     <button
       type="button"
       onClick={() => setEditing(true)}
-      className="hover:bg-accent flex h-7 max-w-44 items-center gap-1 rounded-md px-2 text-sm font-semibold transition-colors sm:max-w-56"
+      className={cn(
+        "hover:bg-accent flex h-7 max-w-44 items-center gap-1 rounded-md px-2 text-sm font-semibold transition-colors sm:max-w-56",
+        className
+      )}
       aria-label="Edit team name"
     >
       <span className="truncate">{defaultValue}</span>

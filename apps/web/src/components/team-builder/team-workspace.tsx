@@ -958,7 +958,28 @@ export function TeamWorkspaceV2({
               /* Mobile: no panel group, inline layout */
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto">
-                  <div className="flex w-full max-w-[1800px] items-center gap-3 px-3 pt-2">
+                  {/* Mobile: team name row — prominent, above secondary controls */}
+                  <div className="flex w-full max-w-[1800px] px-3 pt-2 pb-0.5">
+                    <EditableName
+                      defaultValue={team.name}
+                      onSave={async (name) => {
+                        const result = await persistence.updateTeam(team.id, {
+                          name,
+                        });
+                        if (!result.success) {
+                          toast.error(
+                            result.error ?? "Failed to rename team."
+                          );
+                          return;
+                        }
+                        persistence.onMutationSuccess();
+                      }}
+                      className="h-8 w-full max-w-full text-base"
+                    />
+                  </div>
+
+                  {/* Mobile: format + validate + layout row */}
+                  <div className="flex w-full max-w-[1800px] items-center gap-2 px-3 pb-2">
                     <WorkspaceMetadata
                       alts={alts}
                       selectedAltId={
@@ -1010,29 +1031,7 @@ export function TeamWorkspaceV2({
                         persistence.onMutationSuccess();
                       }}
                     />
-                    <div className="ml-auto">
-                      <TeamLayoutToggle />
-                    </div>
-                  </div>
-
-                  {/* Mobile: team name + validate row */}
-                  <div className="flex w-full max-w-[1800px] items-center gap-2 px-3 pb-1">
-                    <EditableName
-                      defaultValue={team.name}
-                      onSave={async (name) => {
-                        const result = await persistence.updateTeam(team.id, {
-                          name,
-                        });
-                        if (!result.success) {
-                          toast.error(
-                            result.error ?? "Failed to rename team."
-                          );
-                          return;
-                        }
-                        persistence.onMutationSuccess();
-                      }}
-                    />
-                    <div className="ml-auto">
+                    <div className="ml-auto flex items-center gap-1.5">
                       <Popover
                         open={mobileValidateOpen}
                         onOpenChange={(open) => {
@@ -1090,6 +1089,7 @@ export function TeamWorkspaceV2({
                           />
                         </PopoverContent>
                       </Popover>
+                      <TeamLayoutToggle />
                     </div>
                   </div>
 
