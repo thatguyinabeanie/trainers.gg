@@ -124,12 +124,28 @@ jest.mock("../export-menu", () => ({
   ExportMenu: () => <div data-testid="export-menu" />,
 }));
 
+const mockValidate = jest.fn();
+let mockValidationErrors: Array<{
+  severity: "error" | "warning";
+  message: string;
+  pokemonId: number;
+}> = [];
+
 jest.mock("../validation-hooks", () => ({
   useTeamValidation: () => ({
-    errors: [],
+    errors: mockValidationErrors,
     pokemonErrors: new Map(),
-    validate: jest.fn(),
+    validate: mockValidate,
   }),
+}));
+
+jest.mock("../validation/validation-popover", () => ({
+  ValidationPopover: ({
+    errors,
+  }: {
+    errors: unknown[];
+    onJumpToPokemon: (id: number) => void;
+  }) => <div data-testid="validation-popover" data-count={errors.length} />,
 }));
 
 // Controllable drawer state — default closed, tests can override
@@ -373,6 +389,7 @@ beforeEach(() => {
   mockBuilderState.activeIdx = 0;
   mockBuilderState.attackerSlot = null;
   mockUseIsMobile.mockReturnValue(false);
+  mockValidationErrors = [];
   // Default: all persistence methods succeed
   (MOCK_PERSISTENCE.addPokemon as jest.Mock).mockResolvedValue({
     success: true,
@@ -1073,5 +1090,106 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
     expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);
     expect(mockRouterPush).not.toHaveBeenCalled();
     expect(mockToastError).toHaveBeenCalledWith("Transfer denied");
+  });
+});
+
+// =============================================================================
+// Mobile header row — team name + validate
+// =============================================================================
+
+describe("TeamWorkspaceV2 — mobile header row", () => {
+  beforeEach(() => {
+    mockUseIsMobile.mockReturnValue(true);
+  });
+
+  it("renders the team name in the content area on mobile", () => {
+    renderWorkspace();
+    const nameBtn = screen.getByRole("button", { name: /edit team name/i });
+    expect(nameBtn).toBeInTheDocument();
+    expect(nameBtn).toHaveTextContent("Test Team");
+  });
+
+  it("renders the Validate button in the content area on mobile", () => {
+    renderWorkspace();
+    expect(screen.getByRole("button", { name: /validate/i })).toBeInTheDocument();
+  });
+
+  it("calls validate when the mobile Validate popover is opened", async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await user.click(screen.getByRole("button", { name: /validate/i }));
+
+    expect(mockValidate).toHaveBeenCalled();
+  });
+
+  it("calls persistence.updateTeam with new name when team name is saved", async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await user.click(screen.getByRole("button", { name: /edit team name/i }));
+    const input = screen.getByRole("textbox", { name: /team name/i });
+    await user.clear(input);
+    await user.type(input, "My Renamed Team");
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => {
+      expect(MOCK_PERSISTENCE.updateTeam).toHaveBeenCalledWith(1, {
+        name: "My Renamed Team",
+      });
+    });
+  });
+
+  it("calls persistence.onMutationSuccess after a successful rename", async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await user.click(screen.getByRole("button", { name: /edit team name/i }));
+    const input = screen.getByRole("textbox", { name: /team name/i });
+    await user.clear(input);
+    await user.type(input, "Renamed Team");
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => {
+      expect(MOCK_PERSISTENCE.onMutationSuccess).toHaveBeenCalled();
+    });
+  });
+
+  it("shows error toast when rename fails", async () => {
+    (MOCK_PERSISTENCE.updateTeam as jest.Mock).mockResolvedValueOnce({
+      success: false,
+      error: "Name is too long.",
+    });
+
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await user.click(screen.getByRole("button", { name: /edit team name/i }));
+    const input = screen.getByRole("textbox", { name: /team name/i });
+    await user.clear(input);
+    await user.type(input, "A Very Long Team Name That Fails Validation");
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => {
+      expect(mockToastError).toHaveBeenCalledWith("Name is too long.");
+    });
+  });
+
+  it("applies error styling to Validate button when there are validation errors", () => {
+    mockValidationErrors = [
+      { severity: "error", message: "Invalid move", pokemonId: 10 },
+    ];
+    renderWorkspace();
+    const validateBtn = screen.getByRole("button", { name: /validate/i });
+    expect(validateBtn).toHaveClass("text-destructive");
+  });
+
+  it("applies warning styling to Validate button when there are only warnings", () => {
+    mockValidationErrors = [
+      { severity: "warning", message: "Unusual item", pokemonId: 10 },
+    ];
+    renderWorkspace();
+    const validateBtn = screen.getByRole("button", { name: /validate/i });
+    expect(validateBtn).toHaveClass("text-amber-600");
   });
 });
