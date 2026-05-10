@@ -1156,7 +1156,7 @@ BEGIN
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'karen'),
       5, 12, 9, 11, 0.4, 0.45, 0.49, 0.46, 4
-    );
+    ) ON CONFLICT DO NOTHING;
     RAISE NOTICE 'Created 4 standings for stellar-novas-monthly-12 (private alt winner)';
   END IF;
 END $$;
