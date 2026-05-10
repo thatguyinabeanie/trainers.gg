@@ -117,6 +117,7 @@ describe("getPlayerProfileByHandle", () => {
         avatar_url: null,
         tier: null,
         tier_expires_at: null,
+        is_public: true,
       },
     ];
 
@@ -141,7 +142,7 @@ describe("getPlayerProfileByHandle", () => {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
               maybeSingle: jest.fn().mockResolvedValue({
-                data: { user_id: "user-123" },
+                data: { user_id: "user-123", id: 1, is_public: true },
                 error: null,
               }),
             }),

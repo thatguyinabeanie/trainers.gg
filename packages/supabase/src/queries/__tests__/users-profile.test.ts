@@ -184,14 +184,16 @@ describe("getPlayerTournamentHistoryFull", () => {
 
   it("returns paginated tournament history with stats", async () => {
     const supabase = mockSupabaseSequential([
-      // tournament_registrations with tournament join
+      // tournament_player_stats with tournament join
       {
         data: [
           {
             id: 100,
             alt_id: 1,
-            status: "registered",
-            registered_at: "2026-03-20T10:00:00Z",
+            match_wins: 5,
+            match_losses: 2,
+            final_ranking: 3,
+            created_at: "2026-03-20T10:00:00Z",
             tournament: {
               id: 10,
               name: "VGC Regional",
@@ -210,19 +212,6 @@ describe("getPlayerTournamentHistoryFull", () => {
         count: 1,
         error: null,
       },
-      // tournament_player_stats
-      {
-        data: [
-          {
-            tournament_id: 10,
-            alt_id: 1,
-            match_wins: 5,
-            match_losses: 2,
-            final_ranking: 3,
-          },
-        ],
-        error: null,
-      },
     ]);
 
     const result = await getPlayerTournamentHistoryFull(supabase, [1]);
@@ -233,9 +222,12 @@ describe("getPlayerTournamentHistoryFull", () => {
     expect(result.data[0]).toEqual(
       expect.objectContaining({
         id: 100,
+        altId: 1,
         tournamentId: 10,
         tournamentName: "VGC Regional",
         tournamentSlug: "vgc-regional",
+        startDate: "2026-03-15",
+        status: "completed",
         format: "VGC",
         placement: 3,
         wins: 5,
@@ -294,23 +286,23 @@ describe("getPlayerTournamentHistoryFull", () => {
     );
   });
 
-  it("handles registrations with null tournament gracefully", async () => {
+  it("handles stats with null tournament gracefully", async () => {
     const supabase = mockSupabaseSequential([
       {
         data: [
           {
             id: 200,
             alt_id: 1,
-            status: "registered",
-            registered_at: "2026-03-20T10:00:00Z",
+            match_wins: 3,
+            match_losses: 1,
+            final_ranking: 2,
+            created_at: "2026-03-20T10:00:00Z",
             tournament: null,
           },
         ],
         count: 1,
         error: null,
       },
-      // Stats query — no tournament IDs to look up
-      { data: [], error: null },
     ]);
 
     const result = await getPlayerTournamentHistoryFull(supabase, [1]);
@@ -319,15 +311,17 @@ describe("getPlayerTournamentHistoryFull", () => {
     expect(result.data).toHaveLength(0);
   });
 
-  it("defaults wins/losses to 0 when no stats exist for a tournament", async () => {
+  it("defaults wins/losses to 0 when match_wins/match_losses are null", async () => {
     const supabase = mockSupabaseSequential([
       {
         data: [
           {
             id: 300,
             alt_id: 1,
-            status: "registered",
-            registered_at: "2026-03-20T10:00:00Z",
+            match_wins: null,
+            match_losses: null,
+            final_ranking: null,
+            created_at: "2026-03-20T10:00:00Z",
             tournament: {
               id: 30,
               name: "Locals",
@@ -342,8 +336,6 @@ describe("getPlayerTournamentHistoryFull", () => {
         count: 1,
         error: null,
       },
-      // Stats — empty
-      { data: [], error: null },
     ]);
 
     const result = await getPlayerTournamentHistoryFull(supabase, [1]);

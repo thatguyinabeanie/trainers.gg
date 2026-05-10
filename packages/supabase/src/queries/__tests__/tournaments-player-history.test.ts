@@ -19,9 +19,9 @@ describe("getPlayerTournamentHistory", () => {
     expect(mockSupabase.from).not.toHaveBeenCalled();
   });
 
-  it("should return empty array when no registrations exist", async () => {
+  it("should return empty array when no stats exist", async () => {
     const mockFrom = jest.fn().mockImplementation((table: string) => {
-      if (table === "tournament_registrations") {
+      if (table === "tournament_player_stats") {
         return {
           select: jest.fn().mockReturnValue({
             in: jest.fn().mockReturnValue({
@@ -39,17 +39,19 @@ describe("getPlayerTournamentHistory", () => {
 
     const result = await getPlayerTournamentHistory(mockSupabase, [1, 2]);
     expect(result).toEqual([]);
-    expect(mockFrom).toHaveBeenCalledWith("tournament_registrations");
+    expect(mockFrom).toHaveBeenCalledWith("tournament_player_stats");
   });
 
   it("should return formatted history for completed tournaments with placement, record, and team pokemon", async () => {
-    const mockRegistrations = [
+    const mockStats = [
       {
         id: 1,
         alt_id: 1,
-        status: "checked_in",
-        registered_at: "2024-01-01T00:00:00Z",
-        team_id: 10,
+        tournament_id: 100,
+        match_wins: 5,
+        match_losses: 0,
+        final_ranking: 1,
+        created_at: "2024-01-01T00:00:00Z",
         tournament: {
           id: 100,
           name: "Test Tournament",
@@ -67,9 +69,11 @@ describe("getPlayerTournamentHistory", () => {
       {
         id: 2,
         alt_id: 1,
-        status: "registered",
-        registered_at: "2024-02-01T00:00:00Z",
-        team_id: null,
+        tournament_id: 101,
+        match_wins: 2,
+        match_losses: 3,
+        final_ranking: 8,
+        created_at: "2024-02-01T00:00:00Z",
         tournament: {
           id: 101,
           name: "Active Tournament",
@@ -86,14 +90,8 @@ describe("getPlayerTournamentHistory", () => {
       },
     ];
 
-    const mockStandings = [
-      {
-        tournament_id: 100,
-        alt_id: 1,
-        rank: 1,
-        game_wins: 5,
-        game_losses: 0,
-      },
+    const mockRegistrations = [
+      { tournament_id: 100, alt_id: 1, team_id: 10 },
     ];
 
     const mockTeamPokemon = [
@@ -134,30 +132,26 @@ describe("getPlayerTournamentHistory", () => {
     let callCount = 0;
     const mockFrom = jest.fn().mockImplementation((table: string) => {
       callCount++;
-      if (callCount === 1 && table === "tournament_registrations") {
+      if (callCount === 1 && table === "tournament_player_stats") {
         return {
           select: jest.fn().mockReturnValue({
             in: jest.fn().mockReturnValue({
               order: jest.fn().mockResolvedValue({
-                data: mockRegistrations,
+                data: mockStats,
                 error: null,
               }),
             }),
           }),
         };
       }
-      if (callCount === 2 && table === "tournament_standings") {
+      if (callCount === 2 && table === "tournament_registrations") {
         return {
           select: jest.fn().mockReturnValue({
-            in: jest.fn().mockImplementation((field: string) => {
-              if (field === "tournament_id") {
-                return {
-                  in: jest.fn().mockResolvedValue({
-                    data: mockStandings,
-                    error: null,
-                  }),
-                };
-              }
+            in: jest.fn().mockReturnValue({
+              in: jest.fn().mockResolvedValue({
+                data: mockRegistrations,
+                error: null,
+              }),
             }),
           }),
         };
