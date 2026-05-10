@@ -50,7 +50,7 @@ export function CalcDrawer({
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent
         side="right"
-        className="w-full max-w-[calc(100vw-1rem)] overflow-y-auto p-0 sm:max-w-[380px]"
+        className="w-full max-w-[calc(100vw-1rem)] overflow-y-auto p-0 sm:max-w-sm"
         showCloseButton={false}
       >
         <SheetHeader className="sr-only">

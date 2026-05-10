@@ -910,7 +910,7 @@ export function SpeciesPicker({
         />
         {/* Fixed-width slot reserves space for the filter badge so the search
             input does not shrink when filters become active (no layout shift). */}
-        <div className="flex w-[88px] shrink-0 items-center justify-end">
+        <div className="flex w-22 shrink-0 items-center justify-end">
           {activeFilterCount > 0 && (
             <button
               type="button"

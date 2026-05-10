@@ -580,7 +580,7 @@ export function CalcDefenderStats({
           className="flex-1 accent-rose-500"
           style={{ height: 6 }}
         />
-        <span className="w-[72px] text-right font-mono text-[10px] text-muted-foreground">
+        <span className="w-18 text-right font-mono text-[10px] text-muted-foreground">
           {currentHP}/{maxHP}
         </span>
         <span className="w-8 text-right font-mono text-[10px] font-semibold text-muted-foreground">

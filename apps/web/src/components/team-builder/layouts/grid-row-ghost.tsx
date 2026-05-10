@@ -41,7 +41,7 @@ export function GridRowGhost({ idx }: GridRowGhostProps) {
       {/* IDENTITY — sprite (left, basis-[140px]) + form (right) */}
       <div className="border-border flex w-full flex-col border-b border-dashed">
         <div className="flex min-w-0 flex-auto flex-row items-center justify-center">
-          <div className="flex shrink-0 grow-0 basis-[140px] flex-col items-center justify-center gap-1.5 px-1 py-2">
+          <div className="flex shrink-0 grow-0 basis-36 flex-col items-center justify-center gap-1.5 px-1 py-2">
             <SpriteGhost size={120} />
             <SpeciesPillGhost />
           </div>

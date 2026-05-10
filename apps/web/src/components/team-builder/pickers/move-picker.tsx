@@ -261,7 +261,7 @@ export function MovePicker({
         />
         {/* Fixed-width slot reserves space so the search input width is stable
             whether or not filters are active (no layout shift on toggle). */}
-        <div className="flex w-[88px] shrink-0 items-center justify-end">
+        <div className="flex w-22 shrink-0 items-center justify-end">
           {activeFilterCount > 0 && (
             <button
               type="button"
@@ -300,7 +300,7 @@ export function MovePicker({
           (bottom); right column hosts the filter chips + virtualized table. */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Left rail — sidebar on top, role presets below */}
-        <div className="border-border flex w-[380px] flex-shrink-0 flex-col border-r">
+        <div className="border-border flex w-96 flex-shrink-0 flex-col border-r">
           <div className="shrink-0">
             <MoveSidebar filters={filters} onFiltersChange={setFilters} />
           </div>

@@ -719,13 +719,13 @@ function StatRow({
             type="button"
             aria-label={`Decrease ${STAT_LABELS[statKey]} boost`}
             onClick={() => onBoostChange(Math.max(-6, boost - 1))}
-            className="size-[16px] rounded text-[10px] font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="size-4 rounded text-[10px] font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             −
           </button>
           <span
             className={cn(
-              "font-mono text-[10px] font-semibold tabular-nums w-[20px] text-center",
+              "font-mono text-[10px] font-semibold tabular-nums w-5 text-center",
               boost > 0 && "text-teal-600 dark:text-teal-400",
               boost < 0 && "text-rose-600 dark:text-rose-400",
               boost === 0 && "text-muted-foreground"
@@ -737,7 +737,7 @@ function StatRow({
             type="button"
             aria-label={`Increase ${STAT_LABELS[statKey]} boost`}
             onClick={() => onBoostChange(Math.min(6, boost + 1))}
-            className="size-[16px] rounded text-[10px] font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="size-4 rounded text-[10px] font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             +
           </button>

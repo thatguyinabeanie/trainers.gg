@@ -114,7 +114,7 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
                     }
                   >
                     {/* Bullet + Type icon */}
-                    <span className="flex items-center gap-1 w-[28px] shrink-0">
+                    <span className="flex items-center gap-1 w-7 shrink-0">
                       <span className="text-border text-[9px]">•</span>
                       {moveType && (
                         <TypeSymbolIcon

@@ -313,7 +313,7 @@ function MoveTile({
           </TableCell>
 
           {/* Move name */}
-          <TableCell className="max-w-[140px] p-1 align-middle">
+          <TableCell className="max-w-36 p-1 align-middle">
             <DescriptionTooltip
               description={moveName ? moveData?.shortDesc : null}
               showContent={panel === null}
@@ -321,7 +321,7 @@ function MoveTile({
               <TooltipTrigger
                 render={<span />}
                 className={cn(
-                  "block max-w-[140px] truncate text-[13px] font-medium",
+                  "block max-w-36 truncate text-[13px] font-medium",
                   !moveName && "text-muted-foreground/50"
                 )}
               >

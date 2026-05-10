@@ -385,7 +385,7 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
             <span
               key={label}
               className={cn(
-                "inline-flex min-w-[26px] items-center justify-center rounded px-1.5 py-0.5 font-mono text-[10px] leading-tight",
+                "inline-flex min-w-7 items-center justify-center rounded px-1.5 py-0.5 font-mono text-[10px] leading-tight",
                 cls
               )}
             >

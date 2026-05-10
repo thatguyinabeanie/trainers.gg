@@ -168,7 +168,7 @@ export function CompactRow({
   const identityVertical = (
     <div className="flex w-full flex-col border-b border-dashed border-border md:hidden">
       <div className="flex flex-auto flex-row items-center justify-center min-w-0">
-        <div className="flex shrink-0 grow-0 basis-[140px] flex-col items-center justify-center gap-1.5 px-1 py-2">
+        <div className="flex shrink-0 grow-0 basis-36 flex-col items-center justify-center gap-1.5 px-1 py-2">
           <SpriteSection
             pokemon={pokemon}
             onSpeciesClick={() => setSpeciesOpen(true)}
@@ -222,7 +222,7 @@ export function CompactRow({
 
   // md: mid-stack (mirrors IdentityMidStack)
   const identityMidStack = (
-    <div className="hidden md:flex lg:hidden shrink-0 grow-0 basis-[380px] min-w-0 flex-col border-r border-dashed border-border">
+    <div className="hidden md:flex lg:hidden shrink-0 grow-0 basis-96 min-w-0 flex-col border-r border-dashed border-border">
       <MetaBar
         nickDraft={id.nickDraft}
         setNickDraft={id.setNickDraft}
@@ -240,7 +240,7 @@ export function CompactRow({
         variant="row"
       />
       <div className="flex flex-auto flex-col items-center justify-center gap-2 min-h-0 min-w-0 px-2 py-3">
-        <div className="mx-auto flex w-full max-w-[240px] flex-col items-center gap-1.5">
+        <div className="mx-auto flex w-full max-w-60 flex-col items-center gap-1.5">
           <SpriteSection
             pokemon={pokemon}
             onSpeciesClick={() => setSpeciesOpen(true)}
@@ -250,7 +250,7 @@ export function CompactRow({
             isShiny={id.isShiny}
           />
         </div>
-        <div className="mx-auto flex w-full min-w-0 max-w-[240px] flex-col gap-1">
+        <div className="mx-auto flex w-full min-w-0 max-w-60 flex-col gap-1">
           <FormCells
             pokemon={pokemon}
             format={format}

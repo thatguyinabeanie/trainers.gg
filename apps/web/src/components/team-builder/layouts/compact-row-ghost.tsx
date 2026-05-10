@@ -46,7 +46,7 @@ export function CompactRowGhost({ idx }: CompactRowGhostProps) {
           {/* <md: identity vertical (sprite + form side-by-side, full width) */}
           <div className="border-border flex w-full flex-col border-b border-dashed md:hidden">
             <div className="flex min-w-0 flex-auto flex-row items-center justify-center">
-              <div className="flex shrink-0 grow-0 basis-[140px] flex-col items-center justify-center gap-1.5 px-1 py-2">
+              <div className="flex shrink-0 grow-0 basis-36 flex-col items-center justify-center gap-1.5 px-1 py-2">
                 <SpriteGhost size={120} />
                 <SpeciesPillGhost />
               </div>
@@ -58,14 +58,14 @@ export function CompactRowGhost({ idx }: CompactRowGhostProps) {
           </div>
 
           {/* md: identity mid-stack (380px column, vertical inside) */}
-          <div className="border-border hidden shrink-0 grow-0 basis-[380px] min-w-0 flex-col border-r border-dashed md:flex lg:hidden">
+          <div className="border-border hidden shrink-0 grow-0 basis-96 min-w-0 flex-col border-r border-dashed md:flex lg:hidden">
             <MetaBarGhost />
             <div className="flex flex-auto flex-col items-center justify-center gap-2 min-h-0 min-w-0 px-2 py-3">
-              <div className="mx-auto flex w-full max-w-[240px] flex-col items-center gap-1.5">
+              <div className="mx-auto flex w-full max-w-60 flex-col items-center gap-1.5">
                 <SpriteGhost size={144} />
                 <SpeciesPillGhost />
               </div>
-              <div className="mx-auto flex w-full min-w-0 max-w-[240px] flex-col gap-1">
+              <div className="mx-auto flex w-full min-w-0 max-w-60 flex-col gap-1">
                 <FormRowsGhost />
               </div>
             </div>

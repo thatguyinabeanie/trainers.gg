@@ -124,7 +124,7 @@ export function DefenderMonHeader({
   return (
     <div className="flex w-full flex-col border-b border-dashed border-border">
       {/* Sprite + Meta fields — centered together, fixed height to avoid layout shift */}
-      <div className="flex min-h-[160px] min-w-0 flex-row items-center justify-center gap-2 px-3 py-2">
+      <div className="flex min-h-40 min-w-0 flex-row items-center justify-center gap-2 px-3 py-2">
         {/* Sprite — left of form */}
         <div className="shrink-0">
           <Sprite

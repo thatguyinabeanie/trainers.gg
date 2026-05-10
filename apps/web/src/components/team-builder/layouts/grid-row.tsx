@@ -223,7 +223,7 @@ export function GridRow({
       {/* IDENTITY (vertical) — sprite (left, basis-[140px]) | meta-bar + form-grid */}
       <div className="flex w-full flex-col border-b border-dashed border-border">
         <div className="flex min-w-0 flex-auto flex-row items-center justify-center">
-          <div className="flex shrink-0 grow-0 basis-[140px] flex-col items-center justify-center gap-1.5 px-1 py-2">
+          <div className="flex shrink-0 grow-0 basis-36 flex-col items-center justify-center gap-1.5 px-1 py-2">
             <SpriteSection
               pokemon={pokemon}
               onSpeciesClick={() => setSpeciesOpen(true)}

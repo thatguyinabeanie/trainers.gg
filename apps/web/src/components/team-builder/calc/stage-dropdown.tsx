@@ -61,7 +61,7 @@ export function StageDropdown({ value, onChange, statKey }: StageDropdownProps) 
         <span>{formatStage(value)}</span>
         <span className="text-[8px] opacity-70">▾</span>
       </PopoverTrigger>
-      <PopoverContent align="end" side="bottom" className="w-[60px] p-1">
+      <PopoverContent align="end" side="bottom" className="w-15 p-1">
         <div className="flex flex-col gap-px">
           {STAGES.map((s) => {
             const isCurrent = s === value;

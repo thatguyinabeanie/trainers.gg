@@ -149,7 +149,7 @@ export function CalcDefenderBlock({
           aria-label="Defender target"
           className={cn(
             "border-border bg-background hover:border-primary focus-visible:border-primary",
-            "flex h-6 max-w-[160px] flex-1 items-center gap-1 rounded border px-2 text-left text-[11px]",
+            "flex h-6 max-w-40 flex-1 items-center gap-1 rounded border px-2 text-left text-[11px]",
             "outline-none transition-colors focus:ring-1 focus:ring-primary"
           )}
         >
