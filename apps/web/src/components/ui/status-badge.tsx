@@ -12,6 +12,7 @@ type Status =
   | "draft"
   | "completed"
   | "cancelled"
+  | "paused"
   | "pending"
   // Match statuses
   | "in_progress"
@@ -57,6 +58,11 @@ const statusConfig: Record<Status, { label: string; className: string }> = {
   cancelled: {
     label: allLabels.cancelled ?? "Cancelled",
     className: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/25",
+  },
+  paused: {
+    label: allLabels.paused ?? "Paused",
+    className:
+      "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
   },
   pending: {
     label: allLabels.pending ?? "Pending",

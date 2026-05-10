@@ -7,6 +7,8 @@ export const organizationFactory = Factory.define<Tables<"communities">>(
     name: `Organization ${sequence}`,
     slug: `org-${sequence}`,
     owner_user_id: `user-${sequence}`,
+    about: null,
+    banner_url: null,
     created_at: new Date().toISOString(),
     description: null,
     discord_invite_url: null,

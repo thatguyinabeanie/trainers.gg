@@ -19,14 +19,14 @@ import { withAction } from "./utils";
 const communityIdSchema = z.number().int().positive();
 
 /**
- * Upload a logo image for a community.
+ * Upload a banner image for a community.
  * Validates the file, uploads to storage, updates the community record,
- * and cleans up the previous logo if it was in our storage.
+ * and cleans up the previous banner if it was in our storage.
  */
-export async function uploadCommunityLogo(
+export async function uploadCommunityBanner(
   communityId: number,
   formData: FormData
-): Promise<ActionResult<{ logoUrl: string }>> {
+): Promise<ActionResult<{ bannerUrl: string }>> {
   return withAction(async () => {
     const validatedId = communityIdSchema.parse(communityId);
     const file = formData.get("file");
@@ -44,7 +44,7 @@ export async function uploadCommunityLogo(
 
     const { data: org } = await supabase
       .from("communities")
-      .select("owner_user_id, logo_url, slug")
+      .select("owner_user_id, banner_url, slug")
       .eq("id", validatedId)
       .single();
 
@@ -53,14 +53,14 @@ export async function uploadCommunityLogo(
       throw new Error("You can only update your own community");
     }
 
-    const oldLogoUrl = org.logo_url;
+    const oldBannerUrl = org.banner_url;
 
     const rawPath = getUploadPath(user.id, file.name);
     const fileName = rawPath.split("/").pop()!;
-    const path = `communities/${validatedId}/${fileName}`;
+    const path = `communities/${validatedId}/banner_${fileName}`;
 
     const storageClient = await createStorageClient();
-    const logoUrl = await uploadFile(
+    const bannerUrl = await uploadFile(
       storageClient,
       STORAGE_BUCKETS.UPLOADS,
       path,
@@ -69,14 +69,20 @@ export async function uploadCommunityLogo(
 
     const { error } = await supabase
       .from("communities")
-      .update({ logo_url: logoUrl })
+      .update({ banner_url: bannerUrl })
       .eq("id", validatedId);
-    if (error) throw error;
+    if (error) {
+      // Clean up uploaded file to avoid orphaned storage
+      await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, path);
+      throw error;
+    }
 
-    // Best-effort cleanup — old logo may be external (Discord CDN, etc.)
-    // so only delete if it's in our storage bucket
-    if (oldLogoUrl) {
-      const oldPath = extractPathFromUrl(oldLogoUrl, STORAGE_BUCKETS.UPLOADS);
+    // Best-effort cleanup — old banner may be external
+    if (oldBannerUrl) {
+      const oldPath = extractPathFromUrl(
+        oldBannerUrl,
+        STORAGE_BUCKETS.UPLOADS
+      );
       if (oldPath) {
         await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, oldPath);
       }
@@ -84,15 +90,15 @@ export async function uploadCommunityLogo(
 
     invalidateCommunityPageCaches(org.slug, validatedId);
     updateTag(CacheTags.TOURNAMENTS_LIST);
-    return { logoUrl };
-  }, "Failed to upload logo");
+    return { bannerUrl };
+  }, "Failed to upload banner");
 }
 
 /**
- * Remove the logo from a community.
- * Deletes the file from storage and sets logo_url to null.
+ * Remove the banner from a community.
+ * Deletes the file from storage and sets banner_url to null.
  */
-export async function removeCommunityLogo(
+export async function removeCommunityBanner(
   communityId: number
 ): Promise<ActionResult<{ success: true }>> {
   return withAction(async () => {
@@ -105,7 +111,7 @@ export async function removeCommunityLogo(
 
     const { data: org } = await supabase
       .from("communities")
-      .select("owner_user_id, logo_url, slug")
+      .select("owner_user_id, banner_url, slug")
       .eq("id", validatedId)
       .single();
 
@@ -114,22 +120,29 @@ export async function removeCommunityLogo(
       throw new Error("You can only update your own community");
     }
 
-    if (org.logo_url) {
-      const path = extractPathFromUrl(org.logo_url, STORAGE_BUCKETS.UPLOADS);
-      if (path) {
-        const storageClient = await createStorageClient();
-        await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, path);
-      }
-    }
+    const bannerUrl = org.banner_url;
 
     const { error } = await supabase
       .from("communities")
-      .update({ logo_url: null })
+      .update({ banner_url: null })
       .eq("id", validatedId);
     if (error) throw error;
+
+    // Best-effort storage cleanup — delete after DB update succeeds
+    if (bannerUrl) {
+      const path = extractPathFromUrl(bannerUrl, STORAGE_BUCKETS.UPLOADS);
+      if (path) {
+        try {
+          const storageClient = await createStorageClient();
+          await deleteFile(storageClient, STORAGE_BUCKETS.UPLOADS, path);
+        } catch {
+          // Storage cleanup is best-effort; DB update already succeeded
+        }
+      }
+    }
 
     invalidateCommunityPageCaches(org.slug, validatedId);
     updateTag(CacheTags.TOURNAMENTS_LIST);
     return { success: true as const };
-  }, "Failed to remove logo");
+  }, "Failed to remove banner");
 }

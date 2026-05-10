@@ -10,8 +10,9 @@ import {
   hasCommunityAccess,
 } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
+import { getLabel, gameFormatLabels } from "@trainers/utils";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Trophy,
   Calendar,
@@ -20,9 +21,10 @@ import {
   Building2,
   Settings,
   CheckCircle2,
+  Gamepad2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TournamentTabs } from "./tournament-tabs";
+import { TournamentTabs, type PhaseData } from "./tournament-tabs";
 import { PageContainer } from "@/components/layout/page-container";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TournamentSidebarCard } from "@/components/tournament";
@@ -33,7 +35,6 @@ import {
   type TournamentScheduleData,
 } from "@trainers/tournaments";
 import { cn } from "@/lib/utils";
-// import { TeamSubmissionsList } from "@/components/tournament/team-submissions-list";
 
 // On-demand revalidation only (no time-based)
 export const revalidate = false;
@@ -50,6 +51,16 @@ const tournamentFormatLabels: Record<string, string> = {
   single_elimination: "Single Elimination",
   double_elimination: "Double Elimination",
 };
+
+const phaseTypeLabels: Record<string, string> = {
+  swiss: "Swiss",
+  single_elimination: "Single Elimination",
+  double_elimination: "Double Elimination",
+};
+
+// ============================================================================
+// Cached Fetchers
+// ============================================================================
 
 /**
  * Cached tournament fetcher
@@ -80,8 +91,6 @@ async function getMyTeam(tournamentId: number) {
 
 /**
  * ISR-cached public team list for open teamsheet tournaments.
- * Only used when tournament has open_team_sheets = true and status
- * is "active" or "completed".
  */
 const getCachedTournamentTeams = (tournamentId: number, slug: string) =>
   unstable_cache(
@@ -132,15 +141,13 @@ async function getCurrentUserId(): Promise<string | null> {
 // Helper Functions
 // ============================================================================
 
-function _formatDate(dateStr?: string | null): string {
+function formatDate(dateStr?: string | null): string {
   if (!dateStr) return "TBD";
   return new Date(dateStr).toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -148,14 +155,56 @@ function _formatDate(dateStr?: string | null): string {
 // Server Components
 // ============================================================================
 
-function Breadcrumb({ tournamentName }: { tournamentName: string }) {
+/**
+ * Banner hero reusing the community's banner image.
+ * Same visual language as the community detail page — contained, rounded,
+ * with the community avatar overlapping the bottom edge.
+ */
+function TournamentBanner({
+  organization,
+}: {
+  organization: {
+    name: string;
+    slug: string;
+    icon: string | null;
+    logo_url: string | null;
+    banner_url: string | null;
+  };
+}) {
   return (
-    <div className="text-muted-foreground mb-4 flex items-center gap-2 text-sm">
-      <Link href="/tournaments" className="hover:underline">
-        Tournaments
+    <div className="relative">
+      {/* Banner */}
+      <div className="h-40 w-full overflow-hidden rounded-xl sm:h-48 md:h-56">
+        {organization.banner_url ? (
+          <img
+            src={organization.banner_url}
+            alt={`${organization.name} banner`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="bg-muted h-full w-full" />
+        )}
+      </div>
+
+      {/* Community avatar — overlaps bottom of banner */}
+      <Link
+        href={`/communities/${organization.slug}`}
+        aria-label={`View ${organization.name} community`}
+        className="absolute bottom-0 left-4 translate-y-1/2 transition-opacity hover:opacity-90 sm:left-6"
+      >
+        <Avatar
+          noBorder
+          className="ring-background h-24 w-24 shadow-lg ring-4 sm:h-28 sm:w-28"
+        >
+          <AvatarImage
+            src={organization.logo_url ?? undefined}
+            alt={`${organization.name} logo`}
+          />
+          <AvatarFallback className="bg-muted text-2xl font-bold">
+            {organization.icon || organization.name.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
       </Link>
-      <span>/</span>
-      <span className="text-foreground">{tournamentName}</span>
     </div>
   );
 }
@@ -171,63 +220,82 @@ function TournamentHeader({
     id: number;
     name: string;
     slug: string;
+    logo_url: string | null;
+    banner_url: string | null;
   } | null;
 
   const registrationCount = tournament.registrations?.length || 0;
 
   return (
-    <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-      <div>
-        <div className="mb-2 flex items-center gap-3">
-          <h1 className="text-3xl font-bold">{tournament.name}</h1>
-          {(tournament.status === "active" ||
-            tournament.status === "upcoming" ||
-            tournament.status === "draft" ||
-            tournament.status === "completed" ||
-            tournament.status === "cancelled") && (
+    <div className="mt-10 mb-6 sm:mt-12">
+      {/* Community name link */}
+      {organization && (
+        <Link
+          href={`/communities/${organization.slug}`}
+          className="text-muted-foreground hover:text-foreground mb-1 inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
+        >
+          <Building2 className="h-3.5 w-3.5" />
+          {organization.name}
+        </Link>
+      )}
+
+      {/* Title row */}
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-bold sm:text-4xl">{tournament.name}</h1>
+          {tournament.status && (
             <StatusBadge status={tournament.status} />
           )}
         </div>
 
-        <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
-          {organization && (
-            <Link
-              href={`/communities/${organization.slug}`}
-              className="flex items-center gap-1 hover:underline"
-            >
-              <Building2 className="h-4 w-4" />
-              {organization.name}
-            </Link>
-          )}
-          {tournament.format && (
-            <span className="flex items-center gap-1">
-              <Trophy className="h-4 w-4" />
-              {tournament.format}
-            </span>
-          )}
-          <span className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
-            {registrationCount}
-            {tournament.max_participants
-              ? ` / ${tournament.max_participants}`
-              : ""}{" "}
-            players
-          </span>
-        </div>
-      </div>
-
-      {canManage && organization && (
-        <div className="flex gap-2">
+        {canManage && organization && (
           <Link
             href={`/dashboard/community/${organization.slug}/tournaments/${tournament.slug}/manage`}
           >
-            <Button variant="outline">
+            <Button variant="outline" size="sm">
               <Settings className="mr-2 h-4 w-4" />
-              Manage Tournament
+              Manage
             </Button>
           </Link>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Metadata pills */}
+      <div className="flex flex-wrap gap-2">
+        {tournament.format && (
+          <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
+            <Gamepad2 className="h-3.5 w-3.5" />
+            {getLabel(tournament.format, gameFormatLabels)}
+          </span>
+        )}
+        {tournament.tournament_format && (
+          <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
+            <Trophy className="h-3.5 w-3.5" />
+            {tournamentFormatLabels[tournament.tournament_format] ||
+              tournament.tournament_format}
+          </span>
+        )}
+        <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
+          <Users className="h-3.5 w-3.5" />
+          {registrationCount}
+          {tournament.max_participants
+            ? ` / ${tournament.max_participants}`
+            : ""}{" "}
+          players
+        </span>
+        {tournament.start_date && (
+          <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
+            <Calendar className="h-3.5 w-3.5" />
+            {formatDate(tournament.start_date)}
+          </span>
+        )}
+        {tournament.round_time_minutes && (
+          <span className="bg-muted/60 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium">
+            <Clock className="h-3.5 w-3.5" />
+            {tournament.round_time_minutes} min rounds
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -268,36 +336,31 @@ function ScheduleCard({
   const schedule = getTournamentSchedule(scheduleData);
 
   if (!schedule.tournamentStartTime) {
-    // No start date set
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Schedule
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
-            Tournament start time not yet scheduled
-          </p>
-        </CardContent>
-      </Card>
+      <div className="bg-muted/30 rounded-xl p-5">
+        <h3 className="mb-3 flex items-center gap-2 font-semibold">
+          <Calendar className="h-5 w-5" />
+          Schedule
+        </h3>
+        <p className="text-muted-foreground text-sm">
+          Tournament start time not yet scheduled
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Schedule
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="bg-muted/30 rounded-xl p-5">
+      <h3 className="mb-4 flex items-center gap-2 font-semibold">
+        <Calendar className="h-5 w-5" />
+        Schedule
+      </h3>
+      <div className="space-y-5">
         {/* Start time */}
         <div>
-          <p className="text-muted-foreground mb-1 text-sm">Start</p>
+          <p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wider">
+            Start
+          </p>
           <p className="font-medium">
             {formatStartDateTime(schedule.tournamentStartTime)}
           </p>
@@ -306,8 +369,8 @@ function ScheduleCard({
         {/* Phases and rounds */}
         {schedule.phases.map((phase, phaseIndex) => (
           <div key={phaseIndex}>
-            <h4 className="mb-3 font-semibold">{phase.phaseName}</h4>
-            <div className="space-y-2">
+            <h4 className="mb-2 text-sm font-semibold">{phase.phaseName}</h4>
+            <div className="space-y-1">
               {phase.rounds.map((round) => {
                 const timeToDisplay = round.actualStartTime
                   ? formatRoundTime(round.actualStartTime)
@@ -319,14 +382,14 @@ function ScheduleCard({
                   <div
                     key={round.roundNumber}
                     className={cn(
-                      "flex items-center justify-between rounded-md px-3 py-2",
+                      "flex items-center justify-between rounded-md px-3 py-1.5",
                       round.isActive && "bg-primary/10",
                       round.isCompleted && "text-muted-foreground"
                     )}
                   >
                     <div className="flex items-center gap-2">
                       {round.isCompleted && (
-                        <CheckCircle2 className="text-primary h-4 w-4" />
+                        <CheckCircle2 className="text-primary h-3.5 w-3.5" />
                       )}
                       <span className="text-sm">{round.name}</span>
                     </div>
@@ -337,8 +400,8 @@ function ScheduleCard({
             </div>
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -348,49 +411,78 @@ function FormatCard({
   tournament: NonNullable<Awaited<ReturnType<typeof getTournamentBySlug>>>;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Trophy className="h-5 w-5" />
-          Format
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-muted-foreground text-sm">Game Format</p>
-            <p className="font-medium">
-              {tournament.format || "Not specified"}
-            </p>
-          </div>
-          <div>
-            <p className="text-muted-foreground text-sm">Tournament Format</p>
-            <p className="font-medium">
-              {tournament.tournament_format
-                ? tournamentFormatLabels[tournament.tournament_format] ||
-                  tournament.tournament_format
-                : "Not specified"}
-            </p>
-          </div>
-          {tournament.round_time_minutes && (
-            <div>
-              <p className="text-muted-foreground text-sm">Round Time</p>
-              <p className="flex items-center gap-1 font-medium">
-                <Clock className="h-4 w-4" />
-                {tournament.round_time_minutes} minutes
-              </p>
-            </div>
-          )}
-          {tournament.swiss_rounds && (
-            <div>
-              <p className="text-muted-foreground text-sm">Swiss Rounds</p>
-              <p className="font-medium">{tournament.swiss_rounds} rounds</p>
-            </div>
-          )}
+    <div className="bg-muted/30 rounded-xl p-5">
+      <h3 className="mb-4 flex items-center gap-2 font-semibold">
+        <Trophy className="h-5 w-5" />
+        Format
+      </h3>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+            Game Format
+          </p>
+          <p className="font-medium">
+            {tournament.format
+              ? getLabel(tournament.format, gameFormatLabels)
+              : "Not specified"}
+          </p>
         </div>
-      </CardContent>
-    </Card>
+        <div>
+          <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+            Tournament Format
+          </p>
+          <p className="font-medium">
+            {tournament.tournament_format
+              ? tournamentFormatLabels[tournament.tournament_format] ||
+                tournament.tournament_format
+              : "Not specified"}
+          </p>
+        </div>
+        {tournament.round_time_minutes && (
+          <div>
+            <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+              Round Time
+            </p>
+            <p className="flex items-center gap-1 font-medium">
+              <Clock className="h-4 w-4" />
+              {tournament.round_time_minutes} minutes
+            </p>
+          </div>
+        )}
+        {tournament.swiss_rounds && (
+          <div>
+            <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+              Swiss Rounds
+            </p>
+            <p className="font-medium">{tournament.swiss_rounds} rounds</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
+}
+
+// ============================================================================
+// Phase data extraction for tournament structure visual
+// ============================================================================
+
+function extractPhaseData(
+  tournament: NonNullable<Awaited<ReturnType<typeof getTournamentBySlug>>>
+): PhaseData[] {
+  if (!tournament.phases || tournament.phases.length === 0) return [];
+
+  return tournament.phases.map((phase) => ({
+    id: phase.id,
+    name: phase.name,
+    phaseType: phase.phase_type,
+    phaseTypeLabel: phaseTypeLabels[phase.phase_type] || phase.phase_type,
+    status: phase.status ?? "pending",
+    plannedRounds: phase.planned_rounds,
+    bestOf: phase.best_of,
+    roundTimeMinutes: phase.round_time_minutes,
+    checkInTimeMinutes: phase.check_in_time_minutes,
+    cutRule: phase.cut_rule,
+  }));
 }
 
 // ============================================================================
@@ -434,15 +526,31 @@ export default async function TournamentPage({ params }: PageProps) {
       ? await getCachedTournamentTeams(tournament.id, tournamentSlug)
       : null;
 
+  // Extract phase data for the structure visual
+  const phases = extractPhaseData(tournament);
+
+  // Extract organization for banner
+  const organization = tournament.organization as {
+    id: number;
+    name: string;
+    slug: string;
+    icon: string | null;
+    logo_url: string | null;
+    banner_url: string | null;
+  } | null;
+
   return (
     <PageContainer>
-      <Breadcrumb tournamentName={tournament.name} />
+      {/* Community banner — mirrors community detail page */}
+      {organization && <TournamentBanner organization={organization} />}
+
       <TournamentHeader tournament={tournament} canManage={canManage} />
 
       <TournamentTabs
         description={tournament.description}
         scheduleCard={<ScheduleCard tournament={tournament} />}
         formatCard={<FormatCard tournament={tournament} />}
+        phases={phases}
         canManage={canManage}
         sidebarCard={
           <TournamentSidebarCard

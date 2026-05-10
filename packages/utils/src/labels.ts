@@ -26,6 +26,7 @@ export const tournamentStatusLabels: Record<string, string> = {
   draft: "Draft",
   registration: "Registration Open",
   active: "In Progress",
+  paused: "Paused",
   completed: "Completed",
   cancelled: "Cancelled",
   upcoming: "Upcoming",
@@ -51,6 +52,18 @@ export const roundStatusLabels: Record<string, string> = {
   pending: "Not Started",
   active: "In Progress",
   completed: "Completed",
+};
+
+// ============================================================================
+// Game Format Labels
+// ============================================================================
+
+export const gameFormatLabels: Record<string, string> = {
+  VGC: "VGC",
+  "VGC 2025": "VGC 2025",
+  TCG: "TCG",
+  "Pokemon Go": "Pokemon Go",
+  Unite: "Pokemon Unite",
 };
 
 // ============================================================================
