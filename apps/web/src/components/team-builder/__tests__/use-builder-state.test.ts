@@ -17,16 +17,43 @@ function clearStorage() {
 // =============================================================================
 
 describe("useBuilderState — ephemeral state defaults", () => {
-  beforeEach(clearStorage);
+  beforeEach(() => {
+    clearStorage();
+    // Simulate desktop so drawers default to open (JSDOM defaults innerWidth=0)
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1024,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 0,
+    });
+  });
 
   it("starts with activeIdx=0", () => {
     const { result } = renderHook(() => useBuilderState());
     expect(result.current.activeIdx).toBe(0);
   });
 
-  it("starts with sideDrawer='speed'", () => {
+  it("starts with sideDrawer='speed' on desktop", () => {
     const { result } = renderHook(() => useBuilderState());
     expect(result.current.sideDrawer).toBe("speed");
+  });
+
+  it("closes sideDrawer and rightDrawer by default on mobile", () => {
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 375,
+    });
+    const { result } = renderHook(() => useBuilderState());
+    expect(result.current.sideDrawer).toBe(null);
+    expect(result.current.rightDrawer).toBe(null);
   });
 
   it("setActiveIdx updates the value", () => {
