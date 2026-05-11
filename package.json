@@ -11,10 +11,9 @@
     "postinstall": "./scripts/postinstall.sh",
     "// dev": "",
     "dev": "rm -rf apps/web/.next/dev && turbo run dev",
-    "dev:web": "turbo run dev --filter=@trainers/web",
+    "dev:web": "rm -rf apps/web/.next/dev && turbo run dev --filter=@trainers/web --filter=@trainers/supabase",
     "dev:mobile": "turbo run dev --filter=@trainers/mobile",
     "dev:backend": "turbo run dev --filter=@trainers/supabase",
-    "dev:web+backend": "turbo run dev --filter=@trainers/web --filter=@trainers/supabase",
     "dev:db-reset": "pnpm db:reset && pnpm dev",
     "// build": "",
     "build": "turbo run build",
@@ -64,13 +63,19 @@
     "test:watch": "turbo run test:watch",
     "// cleanup": "",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
-    "turbo:update": "pnpm dlx @turbo/codemod@latest update ."
+    "turbo:update": "pnpm dlx @turbo/codemod@latest update .",
+    "// data pipeline": "",
+    "limitless:download": "tsx scripts/limitless-download.ts",
+    "limitless:import": "tsx scripts/limitless-import.ts"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "catalog:supabase",
     "@trainers/prettier-config": "workspace:*",
+    "dotenv": "^17.4.2",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "catalog:",
-    "turbo": "^2.9.9"
+    "tsx": "catalog:",
+    "turbo": "^2.9.12"
   },
   "pnpm": {
     "overrides": {
