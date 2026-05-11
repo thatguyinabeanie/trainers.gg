@@ -12,6 +12,11 @@
 
 import * as cheerio from "cheerio";
 
+import {
+  getChampionsFormatForDate,
+  getSvFormatForDate,
+} from "@trainers/pokemon";
+
 import type {
   RK9Division,
   RK9Event,
@@ -439,6 +444,70 @@ export function parseTournamentPage(
     tier,
     section: "past",
   };
+}
+
+// ---------------------------------------------------------------------------
+// Format detection from tournament page
+// ---------------------------------------------------------------------------
+
+/**
+ * Detect the game format ID from a tournament page HTML.
+ *
+ * Detection logic:
+ *   1. Check game image: `pokemon-vg-champions` = Champions, `pokemon-vg` = SV
+ *   2. Look for alert/notice text mentioning regulation (e.g., "Regulation M-A")
+ *   3. Fall back to date-based heuristics for regulation set
+ *
+ * Returns a canonical Showdown-compatible format ID (e.g., "gen9vgc2026regi")
+ * or null if format cannot be determined.
+ */
+/**
+ * Detect the format ID for an RK9 event.
+ *
+ * Primary strategy: use the static regulation calendar from @trainers/pokemon.
+ * The calendar maps every known regulation period (date range) to its canonical
+ * format ID — no HTML scraping needed for dates within the calendar.
+ *
+ * HTML-based detection is only needed to distinguish Champions vs SV during the
+ * concurrent format era (May 2026+). For earlier dates, the calendar is
+ * authoritative.
+ *
+ * @param html - Tournament detail page HTML (used for Champions detection)
+ * @param dateStart - Event start date in ISO format (YYYY-MM-DD)
+ * @returns The canonical format ID, or null if date is outside known periods
+ */
+export function detectEventFormat(
+  html: string,
+  dateStart: string
+): string | null {
+  if (!dateStart) return null;
+
+  // Step 1: Check if this is a Champions event (image-based detection)
+  // Only relevant from May 2026 onward — before that, all events are SV.
+  const isChampionsEra = dateStart >= "2026-05-01";
+
+  if (isChampionsEra && html) {
+    const $ = cheerio.load(html);
+    const isChampions = $('img[src*="pokemon-vg-champions"]').length > 0;
+
+    if (isChampions) {
+      return getChampionsFormatForDate(dateStart);
+    }
+  }
+
+  // Step 2: SV format — use the authoritative regulation calendar
+  return getSvFormatForDate(dateStart);
+}
+
+/**
+ * Check whether format detection requires fetching the tournament page HTML.
+ *
+ * Returns false for dates before the Champions era (May 2026), meaning the
+ * calendar alone is sufficient. Use this to skip unnecessary HTTP requests in
+ * the cron worker.
+ */
+export function formatDetectionNeedsHtml(dateStart: string): boolean {
+  return dateStart >= "2026-05-01";
 }
 
 // ---------------------------------------------------------------------------

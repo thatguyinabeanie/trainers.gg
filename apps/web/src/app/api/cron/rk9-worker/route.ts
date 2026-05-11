@@ -27,6 +27,8 @@ import {
   parseEventsPage,
   parseRosterPage,
   parseTeamListPage,
+  detectEventFormat,
+  formatDetectionNeedsHtml,
 } from "@/lib/rk9/scraper";
 import { syncEvents, importEvent, seedSpeciesMap } from "@/lib/rk9/import";
 
@@ -205,7 +207,7 @@ async function tryImportRoster(
   const { data: event } = await supabase
     .schema("rk9")
     .from("events")
-    .select("event_id, name, date_end")
+    .select("event_id, name, date_start, date_end")
     .eq("import_status", "pending")
     .lte("date_start", today)
     .order("date_start", { ascending: true })
@@ -229,6 +231,30 @@ async function tryImportRoster(
     .eq("event_id", event.event_id);
 
   try {
+    // Detect format — use calendar directly when possible, only fetch
+    // tournament page HTML for Champions-era events that need disambiguation
+    let formatId: string | null = null;
+
+    if (formatDetectionNeedsHtml(event.date_start)) {
+      // Champions era — need HTML to distinguish SV vs Champions
+      await sleep(DELAY_ROSTER_MS);
+      const tournamentHtml = await fetchRk9Html(`/tournament/${event.event_id}`);
+      formatId = detectEventFormat(tournamentHtml, event.date_start);
+    } else {
+      // Pre-Champions — calendar is authoritative, no HTTP needed
+      formatId = detectEventFormat("", event.date_start);
+    }
+
+    // Store format_id on the event
+    if (formatId) {
+      await supabase
+        .schema("rk9")
+        .from("events")
+        .update({ format_id: formatId })
+        .eq("event_id", event.event_id);
+    }
+
+    // Fetch roster page
     await sleep(DELAY_ROSTER_MS);
     const html = await fetchRk9Html(`/roster/${event.event_id}`);
     const roster = parseRosterPage(html);
