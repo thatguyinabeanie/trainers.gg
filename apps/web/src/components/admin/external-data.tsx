@@ -299,6 +299,7 @@ export function ExternalData() {
     data: rk9Events,
     error: rk9Error,
     isLoading: rk9Loading,
+    isFetching: rk9Fetching,
   } = useSupabaseQuery(
     async (sb) => {
       const { data, error } = await sb
@@ -322,6 +323,7 @@ export function ExternalData() {
     data: limitlessStats,
     error: limitlessStatsError,
     isLoading: limitlessStatsLoading,
+    isFetching: limitlessStatsFetching,
   } = useSupabaseQuery(async () => {
     return callLimitlessStats();
   }, [refreshKey]);
@@ -330,6 +332,7 @@ export function ExternalData() {
     data: limitlessTournaments,
     error: limitlessError,
     isLoading: limitlessLoading,
+    isFetching: limitlessFetching,
   } = useSupabaseQuery(
     async (sb) => {
       const { data, error } = await sb
@@ -676,6 +679,7 @@ export function ExternalData() {
   // -------------------------------------------------------------------------
 
   const isLoading = rk9Loading || limitlessLoading;
+  const isFetching = rk9Fetching || limitlessFetching;
   const queryError = rk9Error || limitlessError;
 
   return (
@@ -705,8 +709,9 @@ export function ExternalData() {
           variant="outline"
           size="sm"
           onClick={() => setRefreshKey((k) => k + 1)}
+          disabled={isFetching}
         >
-          <RefreshCw className="mr-2 h-4 w-4" />
+          <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
           Refresh
         </Button>
       </div>
@@ -728,7 +733,7 @@ export function ExternalData() {
               <p className="text-muted-foreground text-xs">RK9 imported</p>
             </div>
           </div>
-          {limitlessStatsLoading ? (
+          {limitlessStatsLoading && !limitlessStats ? (
             <Skeleton className="h-10 w-40" />
           ) : limitlessStats ? (
             <>
@@ -899,7 +904,8 @@ export function ExternalData() {
       )}
 
       {/* Table */}
-      {isLoading ? (
+      {/* Show skeleton only on initial load, not background refreshes */}
+      {isLoading && !rk9Events && !limitlessTournaments ? (
         <div className="space-y-3">
           <Skeleton className="h-10 w-full" />
           {Array.from({ length: 8 }).map((_, i) => (
