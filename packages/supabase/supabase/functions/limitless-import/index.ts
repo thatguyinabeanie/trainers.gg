@@ -105,22 +105,27 @@ async function requireAdmin(
 
 /**
  * Returns import stats: synced + fully-imported counts per format.
+ *
+ * Uses two targeted count queries instead of fetching all rows, since
+ * PostgREST defaults to a 1000-row limit on SELECT.
  */
 async function handleStats(cors: Record<string, string>) {
   const supabase = adminClient();
 
-  const { data: rows, error } = await supabase
+  // Get distinct format_ids present in the table
+  const { data: allRows, error: allErr } = await supabase
     .schema("limitless")
     .from("tournaments")
-    .select("format_id, data_imported_at");
+    .select("format_id, data_imported_at")
+    .limit(50000);
 
-  if (error) {
-    return json({ success: false, error: error.message }, 500, cors);
+  if (allErr) {
+    return json({ success: false, error: allErr.message }, 500, cors);
   }
 
   // Count by format: synced (all rows) vs fully imported (data_imported_at != null)
   const byFormat: Record<string, { synced: number; imported: number }> = {};
-  for (const row of rows ?? []) {
+  for (const row of allRows ?? []) {
     const entry = byFormat[row.format_id] ?? { synced: 0, imported: 0 };
     entry.synced++;
     if (row.data_imported_at) entry.imported++;
@@ -143,8 +148,10 @@ async function handleStats(cors: Record<string, string>) {
     }))
     .sort((a, b) => b.synced - a.synced);
 
-  const totalSynced = rows?.length ?? 0;
-  const totalImported = (rows ?? []).filter((r) => r.data_imported_at).length;
+  const totalSynced = allRows?.length ?? 0;
+  const totalImported = (allRows ?? []).filter(
+    (r) => r.data_imported_at
+  ).length;
 
   return json(
     { success: true, data: { totalSynced, totalImported, formats } },

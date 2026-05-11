@@ -240,6 +240,11 @@ export function LimitlessImport() {
     setRefreshKey((k) => k + 1);
   }
 
+  // Count of tournaments still pending (excludes in-session imports)
+  const pendingTournaments = (tournaments ?? []).filter(
+    (t) => !importResults.has(t.tournament_id)
+  );
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -370,7 +375,7 @@ export function LimitlessImport() {
             </SelectContent>
           </Select>
 
-          {tournaments && tournaments.length > 0 && (
+          {pendingTournaments.length > 0 && (
             <Button onClick={importAll} disabled={batchImporting} size="sm">
               {batchImporting ? (
                 <>
@@ -386,7 +391,7 @@ export function LimitlessImport() {
                   {selectedFormat !== "all"
                     ? (FORMAT_ID_TO_CODE[selectedFormat] ?? selectedFormat)
                     : "All"}{" "}
-                  ({tournaments.length})
+                  ({pendingTournaments.length})
                 </>
               )}
             </Button>
