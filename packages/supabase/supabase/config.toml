@@ -69,7 +69,8 @@ sql_paths = [
   "./seeds/10_tournaments.sql",
   "./seeds/11_matches.sql",
   "./seeds/12_standings.sql",
-  "./seeds/13_team_sheets.sql"
+  "./seeds/13_team_sheets.sql",
+  "./seeds/15_vault_secrets.sql"
 ]
 
 [db.network_restrictions]
