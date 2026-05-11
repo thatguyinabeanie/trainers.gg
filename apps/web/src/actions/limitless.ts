@@ -68,7 +68,7 @@ export async function batchQueueTournaments(
 
     for (let i = 0; i < tournamentIds.length; i += CHUNK_SIZE) {
       const chunk = tournamentIds.slice(i, i + CHUNK_SIZE);
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .schema("limitless")
         .from("tournaments")
         .update({
@@ -77,10 +77,11 @@ export async function batchQueueTournaments(
           import_error: null,
           import_attempts: 0,
         })
-        .in("tournament_id", chunk);
+        .in("tournament_id", chunk)
+        .select("tournament_id");
 
       if (error) throw error;
-      totalQueued += chunk.length;
+      totalQueued += updated?.length ?? 0;
     }
 
     return { success: true, data: { queued: totalQueued } };

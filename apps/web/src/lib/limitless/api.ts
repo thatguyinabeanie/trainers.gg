@@ -128,7 +128,7 @@ async function limitlessFetch<T>(path: string, apiKey?: string): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json" };
   if (apiKey) headers["X-Access-Key"] = apiKey;
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
