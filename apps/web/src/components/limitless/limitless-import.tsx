@@ -51,6 +51,9 @@ interface SyncResult {
   synced: number;
   skipped: number;
   total: number;
+  mapped: number;
+  unmapped: number;
+  unmappedFormats: Record<string, number>;
 }
 
 interface ImportResult {
@@ -278,9 +281,31 @@ export function LimitlessImport() {
           )}
 
           {syncResult && (
-            <div className="mt-3 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-400">
-              Synced {syncResult.synced} tournaments ({syncResult.skipped}{" "}
-              skipped, {syncResult.total} total from API)
+            <div className="mt-3 space-y-2 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-400">
+              <p>
+                Synced {syncResult.synced} tournaments from {syncResult.total}{" "}
+                total in API
+                {syncResult.mapped > 0 && (
+                  <> &middot; {syncResult.mapped} with known format mapping</>
+                )}
+                {syncResult.unmapped > 0 && (
+                  <> &middot; {syncResult.unmapped} with raw format codes</>
+                )}
+              </p>
+              {syncResult.skipped > 0 && (
+                <p className="text-amber-700 dark:text-amber-400">
+                  {syncResult.skipped} skipped (no format code)
+                </p>
+              )}
+              {syncResult.unmapped > 0 && (
+                <p className="text-muted-foreground text-xs">
+                  Unmapped formats:{" "}
+                  {Object.entries(syncResult.unmappedFormats)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([code, count]) => `${code} (${count})`)
+                    .join(", ")}
+                </p>
+              )}
             </div>
           )}
 

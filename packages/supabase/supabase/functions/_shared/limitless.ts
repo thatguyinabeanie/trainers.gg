@@ -111,6 +111,12 @@ export interface SyncResult {
   synced: number;
   skipped: number;
   total: number;
+  /** Count of tournaments with a known Showdown format mapping */
+  mapped: number;
+  /** Count of tournaments with an unmapped (raw) format code */
+  unmapped: number;
+  /** Breakdown: raw format code → count for unmapped tournaments */
+  unmappedFormats: Record<string, number>;
 }
 
 // ---------------------------------------------------------------------------
@@ -220,9 +226,11 @@ export function createAdminClient(): SupabaseClient {
 /**
  * Stage 1: Sync the tournament list from Limitless API into the DB.
  *
- * Fetches all VGC tournaments, filters to known formats, and upserts
- * metadata rows. Does NOT touch child data (phases, standings, etc.)
- * or overwrite data_imported_at.
+ * Fetches all VGC tournaments and upserts metadata rows. Tournaments with
+ * a known format mapping get a Showdown format ID; others keep the raw
+ * Limitless format code as format_id so we still have their data.
+ * Does NOT touch child data (phases, standings, etc.) or overwrite
+ * data_imported_at.
  */
 export async function syncTournamentList(
   supabase: SupabaseClient,
@@ -232,8 +240,11 @@ export async function syncTournamentList(
 
   let synced = 0;
   let skipped = 0;
+  let mapped = 0;
+  let unmapped = 0;
+  const unmappedFormats: Record<string, number> = {};
 
-  // Filter to known formats and build upsert rows
+  // Build upsert rows for ALL VGC tournaments
   const rows: Array<{
     tournament_id: string;
     name: string;
@@ -244,15 +255,28 @@ export async function syncTournamentList(
   }> = [];
 
   for (const t of allTournaments) {
-    const formatId = LIMITLESS_TO_FORMAT[t.format];
-    if (!formatId) {
+    const rawCode = t.format ?? "";
+
+    // Skip tournaments with no format at all (empty or null)
+    if (!rawCode) {
       skipped++;
+      unmappedFormats["(empty)"] = (unmappedFormats["(empty)"] ?? 0) + 1;
       continue;
     }
+
+    // Use Showdown format ID if we have a mapping, otherwise keep raw code
+    const showdownId = LIMITLESS_TO_FORMAT[rawCode];
+    if (showdownId) {
+      mapped++;
+    } else {
+      unmapped++;
+      unmappedFormats[rawCode] = (unmappedFormats[rawCode] ?? 0) + 1;
+    }
+
     rows.push({
       tournament_id: t.id,
       name: t.name,
-      format_id: formatId,
+      format_id: showdownId ?? rawCode,
       date: t.date.split("T")[0],
       player_count: t.players ?? 0,
       imported_at: new Date().toISOString(),
@@ -274,7 +298,14 @@ export async function syncTournamentList(
     synced += batch.length;
   }
 
-  return { synced, skipped, total: allTournaments.length };
+  return {
+    synced,
+    skipped,
+    total: allTournaments.length,
+    mapped,
+    unmapped,
+    unmappedFormats,
+  };
 }
 
 /**
@@ -291,11 +322,8 @@ export async function importTournament(
 ): Promise<ImportResult> {
   const { details, standings, pairings } = data;
   const tournamentId = details.id;
-  const formatId = LIMITLESS_TO_FORMAT[limitlessFormat];
-
-  if (!formatId) {
-    throw new Error(`Unknown Limitless format: ${limitlessFormat}`);
-  }
+  // Use Showdown format ID if mapped, otherwise keep the raw Limitless code
+  const formatId = LIMITLESS_TO_FORMAT[limitlessFormat] ?? limitlessFormat;
 
   // 1. Delete child data for idempotency (cascade from phases + standings
   //    handles team_pokemon + match_results)
