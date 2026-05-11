@@ -272,6 +272,7 @@ create_env_file() {
     EXISTING_DISCORD_SECRET=""
     EXISTING_GITHUB_CLIENT_ID=""
     EXISTING_GITHUB_SECRET=""
+    EXISTING_CRON_SECRET=""
 
     if [ -f "$ENV_FILE" ] && [ ! -L "$ENV_FILE" ] || [ -L "$ENV_FILE" ] && [ -f "$(readlink -f "$ENV_FILE" 2>/dev/null || readlink "$ENV_FILE")" ]; then
       EXISTING_PDS_HOST=$(grep "^PDS_HOST=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
@@ -282,6 +283,12 @@ create_env_file() {
       EXISTING_DISCORD_SECRET=$(grep "^SUPABASE_AUTH_EXTERNAL_DISCORD_SECRET=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
       EXISTING_GITHUB_CLIENT_ID=$(grep "^SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
       EXISTING_GITHUB_SECRET=$(grep "^SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+      EXISTING_CRON_SECRET=$(grep "^CRON_SECRET=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+    fi
+
+    # Auto-generate CRON_SECRET if not already set
+    if [ -z "$EXISTING_CRON_SECRET" ]; then
+      EXISTING_CRON_SECRET=$(openssl rand -hex 32)
     fi
 
     cat > "$ENV_FILE" << EOF
@@ -332,6 +339,12 @@ SUPABASE_AUTH_EXTERNAL_DISCORD_SECRET=$EXISTING_DISCORD_SECRET
 # GitHub: https://github.com/settings/developers
 SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID=$EXISTING_GITHUB_CLIENT_ID
 SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET=$EXISTING_GITHUB_SECRET
+
+# =============================================================================
+# Cron Jobs (Vercel cron auth for local dev)
+# =============================================================================
+# Auto-generated on first setup. Used by /api/cron/* routes.
+CRON_SECRET=$EXISTING_CRON_SECRET
 EOF
     echo -e "${GREEN}Created $ENV_FILE${NC}"
   else
@@ -452,9 +465,10 @@ check_fast_path() {
 # Main
 # =============================================================================
 main() {
-  # Fast path: if already set up and running, exit immediately
+  # Fast path: if already set up and running, just apply any new migrations
   if check_fast_path; then
     echo -e "${GREEN}Supabase already set up and running${NC}"
+    apply_migrations
     exit 0
   fi
 

@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   Download,
   Loader2,
   CheckCircle2,
@@ -9,10 +12,13 @@ import {
   Clock,
   ExternalLink,
   RefreshCw,
+  CloudDownload,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -125,6 +131,18 @@ export function LimitlessImport() {
   // Queue action state
   const [queuingIds, setQueuingIds] = useState<Set<string>>(new Set());
   const [batchQueuing, setBatchQueuing] = useState(false);
+  const [queueBatchSize, setQueueBatchSize] = useState(500);
+
+  // Manual sync state
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  // Search + sort state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortColumn, setSortColumn] = useState<
+    "name" | "format" | "date" | "players" | "status"
+  >("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Build reverse format lookup from stats
   const FORMAT_ID_TO_CODE: Record<string, string> = {};
@@ -136,6 +154,24 @@ export function LimitlessImport() {
   // Also include known mappings
   for (const [code, fmtId] of Object.entries(LIMITLESS_TO_FORMAT)) {
     FORMAT_ID_TO_CODE[fmtId] = code;
+  }
+
+  // -------------------------------------------------------------------------
+  // Manual sync (calls edge function)
+  // -------------------------------------------------------------------------
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncError(null);
+    try {
+      await callEdgeFunction({ action: "sync" });
+      refetchStats();
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setSyncError(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -175,9 +211,9 @@ export function LimitlessImport() {
   async function queueAll() {
     if (!tournaments || tournaments.length === 0) return;
 
-    const toQueue = tournaments.filter(
-      (t) => !t.import_status || t.import_status === "failed"
-    );
+    const toQueue = tournaments
+      .filter((t) => !t.import_status || t.import_status === "failed")
+      .slice(0, queueBatchSize);
     if (toQueue.length === 0) return;
 
     setBatchQueuing(true);
@@ -215,6 +251,65 @@ export function LimitlessImport() {
   ).length;
 
   // -------------------------------------------------------------------------
+  // Search + sort logic
+  // -------------------------------------------------------------------------
+
+  const filteredTournaments = (tournaments ?? []).filter((t) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      t.name.toLowerCase().includes(q) ||
+      t.tournament_id.toLowerCase().includes(q) ||
+      (FORMAT_ID_TO_CODE[t.format_id] ?? t.format_id)
+        .toLowerCase()
+        .includes(q)
+    );
+  });
+
+  const sortedTournaments = [...filteredTournaments].sort((a, b) => {
+    const dir = sortDirection === "asc" ? 1 : -1;
+    switch (sortColumn) {
+      case "name":
+        return dir * a.name.localeCompare(b.name);
+      case "format": {
+        const fmtA = FORMAT_ID_TO_CODE[a.format_id] ?? a.format_id;
+        const fmtB = FORMAT_ID_TO_CODE[b.format_id] ?? b.format_id;
+        return dir * fmtA.localeCompare(fmtB);
+      }
+      case "date":
+        return dir * a.date.localeCompare(b.date);
+      case "players":
+        return dir * ((a.player_count ?? 0) - (b.player_count ?? 0));
+      case "status": {
+        const statusOrder = (s: string | null) => {
+          switch (s) {
+            case "importing":
+              return 0;
+            case "queued":
+              return 1;
+            case "failed":
+              return 2;
+            default:
+              return 3;
+          }
+        };
+        return dir * (statusOrder(a.import_status) - statusOrder(b.import_status));
+      }
+      default:
+        return 0;
+    }
+  });
+
+  function handleSort(column: typeof sortColumn) {
+    if (sortColumn === column) {
+      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(column);
+      setSortDirection(column === "name" ? "asc" : "desc");
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
 
@@ -233,17 +328,32 @@ export function LimitlessImport() {
                 Import queue processes every 15 minutes.
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setRefreshKey((k) => k + 1);
-                refetchStats();
-              }}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSync} disabled={syncing} size="sm">
+                {syncing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Syncing...
+                  </>
+                ) : (
+                  <>
+                    <CloudDownload className="mr-2 h-4 w-4" />
+                    Sync Now
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setRefreshKey((k) => k + 1);
+                  refetchStats();
+                }}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh
+              </Button>
+            </div>
           </div>
 
           {/* Stats summary */}
@@ -289,6 +399,12 @@ export function LimitlessImport() {
               {statsError.message}
             </div>
           )}
+
+          {syncError && (
+            <div className="mt-3 rounded-lg bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
+              {syncError}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -297,7 +413,7 @@ export function LimitlessImport() {
         <div>
           <h2 className="text-lg font-semibold">Import Queue</h2>
           <p className="text-muted-foreground text-sm">
-            Queue tournaments for import. The cron processes one tournament
+            Queue tournaments for import. The cron processes queued tournaments
             every 15 minutes.
           </p>
         </div>
@@ -322,24 +438,46 @@ export function LimitlessImport() {
           </Select>
 
           {pendingTournaments.length > 0 && (
-            <Button onClick={queueAll} disabled={batchQueuing} size="sm">
-              {batchQueuing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Queuing...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  Queue{" "}
-                  {selectedFormat !== "all"
-                    ? (FORMAT_ID_TO_CODE[selectedFormat] ?? selectedFormat)
-                    : "All (first 500)"}{" "}
-                  ({pendingTournaments.length})
-                </>
-              )}
-            </Button>
+            <>
+              <Input
+                type="number"
+                min={1}
+                max={5000}
+                value={queueBatchSize}
+                onChange={(e) =>
+                  setQueueBatchSize(
+                    Math.max(1, parseInt(e.target.value, 10) || 1)
+                  )
+                }
+                className="w-20"
+              />
+              <Button onClick={queueAll} disabled={batchQueuing} size="sm">
+                {batchQueuing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Queuing...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Queue{" "}
+                    {Math.min(pendingTournaments.length, queueBatchSize)}
+                  </>
+                )}
+              </Button>
+            </>
           )}
+        </div>
+
+        {/* Search input */}
+        <div className="relative">
+          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Input
+            placeholder="Search tournaments by name, ID, or format..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
 
         {/* Tournament list from DB */}
@@ -349,79 +487,132 @@ export function LimitlessImport() {
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
-        ) : tournaments && tournaments.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tournament</TableHead>
-                <TableHead className="w-32">Format</TableHead>
-                <TableHead className="w-24">Date</TableHead>
-                <TableHead className="w-20 text-right">Players</TableHead>
-                <TableHead className="w-32">Status</TableHead>
-                <TableHead className="w-24" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tournaments.map((t) => {
-                const isQueuing = queuingIds.has(t.tournament_id);
+        ) : sortedTournaments.length > 0 ? (
+          <>
+            <div className="text-muted-foreground text-xs">
+              Showing {sortedTournaments.length}
+              {searchQuery
+                ? ` of ${tournaments?.length ?? 0} tournaments`
+                : " tournaments"}
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <SortableHeader
+                      label="Tournament"
+                      column="name"
+                      current={sortColumn}
+                      direction={sortDirection}
+                      onSort={handleSort}
+                    />
+                  </TableHead>
+                  <TableHead className="w-32">
+                    <SortableHeader
+                      label="Format"
+                      column="format"
+                      current={sortColumn}
+                      direction={sortDirection}
+                      onSort={handleSort}
+                    />
+                  </TableHead>
+                  <TableHead className="w-24">
+                    <SortableHeader
+                      label="Date"
+                      column="date"
+                      current={sortColumn}
+                      direction={sortDirection}
+                      onSort={handleSort}
+                    />
+                  </TableHead>
+                  <TableHead className="w-20 text-right">
+                    <SortableHeader
+                      label="Players"
+                      column="players"
+                      current={sortColumn}
+                      direction={sortDirection}
+                      onSort={handleSort}
+                      className="justify-end"
+                    />
+                  </TableHead>
+                  <TableHead className="w-32">
+                    <SortableHeader
+                      label="Status"
+                      column="status"
+                      current={sortColumn}
+                      direction={sortDirection}
+                      onSort={handleSort}
+                    />
+                  </TableHead>
+                  <TableHead className="w-24" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedTournaments.map((t) => {
+                  const isQueuing = queuingIds.has(t.tournament_id);
 
-                return (
-                  <TableRow key={t.tournament_id}>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-medium">{t.name}</span>
-                        <a
-                          href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}/standings`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-foreground"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      </div>
-                      <div className="text-muted-foreground font-mono text-xs">
-                        {t.tournament_id}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="font-mono text-xs">
-                        {FORMAT_ID_TO_CODE[t.format_id] ?? t.format_id}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">{t.date}</TableCell>
-                    <TableCell className="text-right text-sm">
-                      {t.player_count}
-                    </TableCell>
-                    <TableCell>
-                      <ImportStatusBadge tournament={t} />
-                    </TableCell>
-                    <TableCell>
-                      {(!t.import_status || t.import_status === "failed") && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => queueOne(t.tournament_id)}
-                          disabled={isQueuing || batchQueuing}
-                        >
-                          {isQueuing ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                        </Button>
-                      )}
-                      {t.import_error && (
-                        <div className="text-destructive mt-1 max-w-48 truncate text-xs">
-                          {t.import_error}
+                  return (
+                    <TableRow key={t.tournament_id}>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium">{t.name}</span>
+                          <a
+                            href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}/standings`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
                         </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                        <div className="text-muted-foreground font-mono text-xs">
+                          {t.tournament_id}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {FORMAT_ID_TO_CODE[t.format_id] ?? t.format_id}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{t.date}</TableCell>
+                      <TableCell className="text-right text-sm">
+                        {t.player_count}
+                      </TableCell>
+                      <TableCell>
+                        <ImportStatusBadge tournament={t} />
+                      </TableCell>
+                      <TableCell>
+                        {(!t.import_status || t.import_status === "failed") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => queueOne(t.tournament_id)}
+                            disabled={isQueuing || batchQueuing}
+                          >
+                            {isQueuing ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
+                        {t.import_error && (
+                          <div className="text-destructive mt-1 max-w-48 truncate text-xs">
+                            {t.import_error}
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </>
+        ) : tournaments && tournaments.length > 0 ? (
+          <p className="text-muted-foreground py-8 text-center text-sm">
+            No tournaments match &quot;{searchQuery}&quot;
+          </p>
         ) : (
           <p className="text-muted-foreground py-8 text-center text-sm">
             {stats?.totalSynced === 0
@@ -483,4 +674,47 @@ function ImportStatusBadge({ tournament }: { tournament: TournamentRow }) {
         </Badge>
       );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Sortable header sub-component
+// ---------------------------------------------------------------------------
+
+type SortColumn = "name" | "format" | "date" | "players" | "status";
+
+function SortableHeader({
+  label,
+  column,
+  current,
+  direction,
+  onSort,
+  className,
+}: {
+  label: string;
+  column: SortColumn;
+  current: SortColumn;
+  direction: "asc" | "desc";
+  onSort: (col: SortColumn) => void;
+  className?: string;
+}) {
+  const isActive = current === column;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(column)}
+      className={`flex items-center gap-1 text-left font-medium hover:text-foreground ${className ?? ""}`}
+    >
+      {label}
+      {isActive ? (
+        direction === "asc" ? (
+          <ArrowUp className="h-3.5 w-3.5" />
+        ) : (
+          <ArrowDown className="h-3.5 w-3.5" />
+        )
+      ) : (
+        <ArrowUpDown className="text-muted-foreground/50 h-3.5 w-3.5" />
+      )}
+    </button>
+  );
 }

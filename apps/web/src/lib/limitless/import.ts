@@ -332,20 +332,29 @@ export interface QueueProcessResult {
   recovered?: boolean;
 }
 
+export interface BatchQueueResult {
+  results: QueueProcessResult[];
+  totalProcessed: number;
+  totalErrors: number;
+}
+
 /**
- * Process the next queued tournament import.
+ * Process queued tournament imports in batch.
  *
  * 1. Check for stale "importing" entries (stuck > 10 min) and requeue them.
- * 2. Pick the oldest "queued" tournament.
+ * 2. Pick up to `batchSize` oldest "queued" tournaments and import them sequentially.
  * 3. Set status to "importing" with a timestamp.
  * 4. Fetch data from Limitless API and import.
  * 5. On success: mark "completed". On failure: mark "failed" with error.
  */
 export async function processImportQueue(
   supabase: SupabaseClient,
-  apiKey?: string
-): Promise<QueueProcessResult> {
-  // 1. Recover stale imports
+  apiKey?: string,
+  batchSize: number = 1
+): Promise<BatchQueueResult> {
+  const results: QueueProcessResult[] = [];
+
+  // 1. Recover stale imports (only once per invocation)
   const staleThreshold = new Date(
     Date.now() - STALE_IMPORT_TIMEOUT_MS
   ).toISOString();
@@ -362,7 +371,6 @@ export async function processImportQueue(
     for (const row of staleRows) {
       const attempts = (row.import_attempts ?? 0) + 1;
       if (attempts >= MAX_ATTEMPTS) {
-        // Permanently failed
         await supabase
           .schema("limitless")
           .from("tournaments")
@@ -373,7 +381,6 @@ export async function processImportQueue(
           })
           .eq("tournament_id", row.tournament_id);
       } else {
-        // Requeue for retry
         await supabase
           .schema("limitless")
           .from("tournaments")
@@ -385,10 +392,35 @@ export async function processImportQueue(
       }
     }
 
-    return { processed: false, recovered: true };
+    results.push({ processed: false, recovered: true });
+    return { results, totalProcessed: 0, totalErrors: 0 };
   }
 
-  // 2. Pick the oldest queued tournament
+  // 2. Process up to batchSize tournaments
+  const effectiveBatch = Math.max(1, Math.min(batchSize, 50)); // Cap at 50
+  let totalProcessed = 0;
+  let totalErrors = 0;
+
+  for (let i = 0; i < effectiveBatch; i++) {
+    const singleResult = await processOne(supabase, apiKey);
+    results.push(singleResult);
+
+    if (!singleResult.processed) break; // Queue empty
+    totalProcessed++;
+    if (singleResult.error) totalErrors++;
+  }
+
+  return { results, totalProcessed, totalErrors };
+}
+
+/**
+ * Process a single queued tournament. Internal helper.
+ */
+async function processOne(
+  supabase: SupabaseClient,
+  apiKey?: string
+): Promise<QueueProcessResult> {
+  // Pick the oldest queued tournament
   const { data: queued, error: qErr } = await supabase
     .schema("limitless")
     .from("tournaments")
@@ -403,7 +435,7 @@ export async function processImportQueue(
 
   const { tournament_id: tournamentId, format_id: formatId } = queued;
 
-  // 3. Claim the tournament (set importing)
+  // Claim the tournament (set importing)
   const { error: claimErr } = await supabase
     .schema("limitless")
     .from("tournaments")
@@ -418,7 +450,7 @@ export async function processImportQueue(
   if (claimErr)
     throw new Error(`Failed to claim tournament: ${claimErr.message}`);
 
-  // 4. Fetch and import
+  // Fetch and import
   try {
     const data = await fetchTournamentData(tournamentId, apiKey);
     const result = await importTournament(supabase, data, formatId);

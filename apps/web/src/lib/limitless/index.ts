@@ -19,4 +19,4 @@ export {
   importTournament,
   processImportQueue,
 } from "./import";
-export type { QueueProcessResult } from "./import";
+export type { QueueProcessResult, BatchQueueResult } from "./import";

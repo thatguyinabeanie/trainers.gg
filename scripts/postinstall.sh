@@ -144,6 +144,12 @@ SUPABASE_AUTH_EXTERNAL_DISCORD_SECRET=
 SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID=
 SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET=
 
+# =============================================================================
+# Cron Jobs (Vercel cron auth for local dev)
+# =============================================================================
+# Auto-generated on first setup. Used by /api/cron/* routes.
+CRON_SECRET=$(openssl rand -hex 32)
+
 EOF
 
   log_success "Created .env.local"
