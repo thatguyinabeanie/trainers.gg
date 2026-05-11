@@ -290,9 +290,17 @@ function extractSpeciesFromBlock(html: string): string {
   // Take text before the first <b> tag
   const beforeBold = withoutImg.split(/<b>/i)[0] ?? "";
 
-  // Strip all HTML tags robustly (handles unclosed/malformed tags)
-  const text = beforeBold
-    .replace(/<\/?[a-z][^>]*>/gi, "")
+  // Strip all HTML tags robustly — loop to handle nested/malformed patterns
+  // like "<scr<script>ipt>" that produce new tags after one pass
+  let text = beforeBold;
+  const TAG_PATTERN = /<\/?[a-z][^>]*>/gi;
+  let previous: string;
+  do {
+    previous = text;
+    text = text.replace(TAG_PATTERN, "");
+  } while (text !== previous);
+
+  text = text
     .replace(/<[^>]*$/g, "")
     .replace(/&nbsp;/g, " ")
     .replace(/&[a-z]+;/gi, " ")

@@ -24,20 +24,26 @@ const DELAY_ROSTER_MS = 1000;
 // Helpers
 // ---------------------------------------------------------------------------
 
-function assertSafeRk9Path(path: string): void {
+function buildRk9Url(path: string): string {
   // Path must start with / and contain only safe URL characters
   if (!/^\/[\w\-/.]+$/.test(path)) {
     throw new Error(`Invalid RK9 path: ${path}`);
   }
+  const url = new URL(path, RK9_BASE_URL);
+  // Verify the constructed URL still points to rk9.gg (prevents open-redirect SSRF)
+  if (url.origin !== RK9_BASE_URL) {
+    throw new Error(`URL origin mismatch: ${url.origin}`);
+  }
+  return url.href;
 }
 
 async function fetchRk9Html(path: string): Promise<string> {
-  assertSafeRk9Path(path);
+  const url = buildRk9Url(path);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`${RK9_BASE_URL}${path}`, {
+    const response = await fetch(url, {
       headers: {
         "User-Agent": "trainers.gg-rk9-scraper/1.0 (data import)",
         Accept: "text/html",
@@ -84,7 +90,7 @@ export async function discoverRk9Events(): Promise<
     const supabase = createServiceRoleClient();
     await syncEvents(supabase, events);
 
-    return { success: true, events };
+    return { success: true, data: undefined, events };
   } catch (e) {
     return {
       success: false,
@@ -121,7 +127,7 @@ export async function scrapeRk9Roster(
     // Import roster (without teams)
     const result = await importEvent(supabase, eventId, roster, {});
 
-    return { success: true, playerCount: result.standingsInserted };
+    return { success: true, data: undefined, playerCount: result.standingsInserted };
   } catch (e) {
     // Mark event as failed
     const supabase = createServiceRoleClient();
@@ -142,13 +148,27 @@ export async function scrapeRk9Roster(
 }
 
 // ---------------------------------------------------------------------------
-// Action: Scrape teams for a single event (long-running)
+// Action: Scrape teams for a single event (chunked — call repeatedly)
 // ---------------------------------------------------------------------------
 
-export async function scrapeRk9Teams(
-  eventId: string
+const TEAMS_BATCH_SIZE = 25;
+
+/**
+ * Scrape a batch of team lists for an event.
+ *
+ * Call this repeatedly until `done === true`. Each call scrapes up to
+ * TEAMS_BATCH_SIZE teams, skipping standings that already have team_pokemon.
+ * Returns progress so the client can show a progress bar.
+ */
+export async function scrapeRk9TeamsBatch(
+  eventId: string,
 ): Promise<
-  ActionResult & { teamsImported?: number; pokemonImported?: number }
+  ActionResult & {
+    done?: boolean;
+    scraped?: number;
+    total?: number;
+    failed?: number;
+  }
 > {
   try {
     assertValidEventId(eventId);
@@ -157,15 +177,8 @@ export async function scrapeRk9Teams(
 
     const supabase = createServiceRoleClient();
 
-    // Update status
-    await supabase
-      .schema("rk9")
-      .from("events")
-      .update({ import_status: "teams", import_error: null })
-      .eq("event_id", eventId);
-
-    // Get roster from DB to find roster_entry_ids
-    const { data: standings, error: standingsErr } = await supabase
+    // Get all standings with roster_entry_ids
+    const { data: allStandings, error: standingsErr } = await supabase
       .schema("rk9")
       .from("standings")
       .select("id, roster_entry_id")
@@ -173,11 +186,55 @@ export async function scrapeRk9Teams(
       .not("roster_entry_id", "is", null);
 
     if (standingsErr) throw standingsErr;
-    if (!standings || standings.length === 0) {
-      return { success: true, teamsImported: 0, pokemonImported: 0 };
+    if (!allStandings || allStandings.length === 0) {
+      return { success: true, done: true, scraped: 0, total: 0, failed: 0 };
     }
 
-    // Load species map for normalization
+    // Find standings that DON'T have team_pokemon yet
+    const { data: withTeams } = await supabase
+      .schema("rk9")
+      .from("team_pokemon")
+      .select("standing_id")
+      .in(
+        "standing_id",
+        allStandings.map((s) => s.id),
+      );
+
+    const standingsWithTeams = new Set(
+      (withTeams ?? []).map((t) => t.standing_id),
+    );
+    const remaining = allStandings.filter(
+      (s) => !standingsWithTeams.has(s.id),
+    );
+
+    const total = allStandings.length;
+    const alreadyScraped = total - remaining.length;
+
+    // If nothing remaining, we're done
+    if (remaining.length === 0) {
+      // Mark event complete
+      await supabase
+        .schema("rk9")
+        .from("events")
+        .update({
+          import_status: "complete",
+          import_error: null,
+          has_team_lists: true,
+          imported_at: new Date().toISOString(),
+        })
+        .eq("event_id", eventId);
+
+      return { success: true, done: true, scraped: total, total, failed: 0 };
+    }
+
+    // Update status to "teams" if not already
+    await supabase
+      .schema("rk9")
+      .from("events")
+      .update({ import_status: "teams", import_error: null })
+      .eq("event_id", eventId);
+
+    // Load species map
     const { data: speciesMapRows } = await supabase
       .schema("rk9")
       .from("species_map")
@@ -187,45 +244,34 @@ export async function scrapeRk9Teams(
       speciesMap.set(row.raw_name, row.species_slug);
     }
 
-    // Scrape team lists one by one with rate limiting
-    let teamsImported = 0;
-    let pokemonImported = 0;
-    const allSpecies = new Map<string, string>();
+    // Process this batch
+    const batch = remaining.slice(0, TEAMS_BATCH_SIZE);
+    let batchScraped = 0;
+    let batchFailed = 0;
+    const newSpecies = new Map<string, string>();
 
-    for (const standing of standings) {
+    for (const standing of batch) {
       const entryId = standing.roster_entry_id;
       if (!entryId) continue;
 
       try {
         await sleep(DELAY_TEAM_MS);
         const html = await fetchRk9Html(
-          `/teamlist/public/${eventId}/${entryId}`
+          `/teamlist/public/${eventId}/${entryId}`,
         );
         const pokemon = parseTeamListPage(html);
 
         if (pokemon.length > 0) {
-          // Delete existing team_pokemon for this standing
-          await supabase
-            .schema("rk9")
-            .from("team_pokemon")
-            .delete()
-            .eq("standing_id", standing.id);
-
-          // Resolve species and insert
           const pokemonRows = pokemon.map((mon, i) => {
-            // Track unique species for seeding
-            if (!allSpecies.has(mon.speciesRaw)) {
-              const slug =
-                speciesMap.get(mon.speciesRaw) ??
-                normalizeSpeciesInline(mon.speciesRaw);
-              allSpecies.set(mon.speciesRaw, slug);
+            if (!newSpecies.has(mon.speciesRaw) && !speciesMap.has(mon.speciesRaw)) {
+              newSpecies.set(mon.speciesRaw, normalizeSpeciesInline(mon.speciesRaw));
             }
-
             return {
               standing_id: standing.id,
               position: i + 1,
               species:
                 speciesMap.get(mon.speciesRaw) ??
+                newSpecies.get(mon.speciesRaw) ??
                 normalizeSpeciesInline(mon.speciesRaw),
               species_raw: mon.speciesRaw,
               ability: mon.ability || null,
@@ -240,34 +286,43 @@ export async function scrapeRk9Teams(
             .from("team_pokemon")
             .insert(pokemonRows);
 
-          if (!pkErr) {
-            teamsImported++;
-            pokemonImported += pokemonRows.length;
-          }
+          if (!pkErr) batchScraped++;
+          else batchFailed++;
         }
       } catch {
-        // Individual team fetch failures are non-fatal — continue
+        batchFailed++;
       }
     }
 
-    // Seed species map with newly discovered species
-    if (allSpecies.size > 0) {
-      await seedSpeciesMap(supabase, allSpecies);
+    // Seed new species
+    if (newSpecies.size > 0) {
+      await seedSpeciesMap(supabase, newSpecies);
     }
 
-    // Mark complete
-    await supabase
-      .schema("rk9")
-      .from("events")
-      .update({
-        import_status: "complete",
-        import_error: null,
-        has_team_lists: teamsImported > 0,
-        imported_at: new Date().toISOString(),
-      })
-      .eq("event_id", eventId);
+    const totalScraped = alreadyScraped + batchScraped;
+    const done = totalScraped >= total;
 
-    return { success: true, teamsImported, pokemonImported };
+    // If this batch finished everything, mark complete
+    if (done) {
+      await supabase
+        .schema("rk9")
+        .from("events")
+        .update({
+          import_status: "complete",
+          import_error: null,
+          has_team_lists: true,
+          imported_at: new Date().toISOString(),
+        })
+        .eq("event_id", eventId);
+    }
+
+    return {
+      success: true,
+      done,
+      scraped: totalScraped,
+      total,
+      failed: batchFailed,
+    };
   } catch (e) {
     const supabase = createServiceRoleClient();
     await supabase

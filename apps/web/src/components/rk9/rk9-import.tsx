@@ -30,7 +30,7 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import {
   discoverRk9Events,
   scrapeRk9Roster,
-  scrapeRk9Teams,
+  scrapeRk9TeamsBatch,
 } from "@/actions/rk9";
 
 // ---------------------------------------------------------------------------
@@ -59,7 +59,9 @@ export function RK9Import() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [discoverMessage, setDiscoverMessage] = useState<string | null>(null);
-  const [activeJobs, setActiveJobs] = useState<Map<string, string>>(new Map());
+  const [activeJobs, setActiveJobs] = useState<
+    Map<string, { type: string; scraped?: number; total?: number }>
+  >(new Map());
 
   // Fetch events from DB (sorted by date, most recent first)
   const {
@@ -115,12 +117,9 @@ export function RK9Import() {
   }
 
   async function handleScrapeRoster(eventId: string) {
-    setActiveJobs((prev) => new Map(prev).set(eventId, "roster"));
+    setActiveJobs((prev) => new Map(prev).set(eventId, { type: "roster" }));
     try {
-      const result = await scrapeRk9Roster(eventId);
-      if (result.success) {
-        setRefreshKey((k) => k + 1);
-      }
+      await scrapeRk9Roster(eventId);
     } finally {
       setActiveJobs((prev) => {
         const next = new Map(prev);
@@ -132,11 +131,26 @@ export function RK9Import() {
   }
 
   async function handleScrapeTeams(eventId: string) {
-    setActiveJobs((prev) => new Map(prev).set(eventId, "teams"));
+    setActiveJobs((prev) =>
+      new Map(prev).set(eventId, { type: "teams", scraped: 0, total: 0 }),
+    );
+
     try {
-      const result = await scrapeRk9Teams(eventId);
-      if (result.success) {
-        setRefreshKey((k) => k + 1);
+      // Call the chunked action in a loop until done
+      let done = false;
+      while (!done) {
+        const result = await scrapeRk9TeamsBatch(eventId);
+        if (!result.success) {
+          break;
+        }
+        done = result.done ?? false;
+        setActiveJobs((prev) =>
+          new Map(prev).set(eventId, {
+            type: "teams",
+            scraped: result.scraped ?? 0,
+            total: result.total ?? 0,
+          }),
+        );
       }
     } finally {
       setActiveJobs((prev) => {
