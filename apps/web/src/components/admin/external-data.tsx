@@ -320,7 +320,6 @@ export function ExternalData() {
     data: limitlessStats,
     error: limitlessStatsError,
     isLoading: limitlessStatsLoading,
-    isFetching: limitlessStatsFetching,
   } = useSupabaseQuery(async () => {
     return callLimitlessStats();
   }, [refreshKey]);
@@ -708,7 +707,7 @@ export function ExternalData() {
           (limitlessQueuedCount > 0 || limitlessImportingCount > 0)
         ) {
           promises.push(
-            triggerImportQueue(5).catch(() => {})
+            triggerImportQueue(5).catch(() => {}) as Promise<void>
           );
         }
 

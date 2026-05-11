@@ -21,7 +21,7 @@ export async function queueTournamentForImport(
 
     const supabase = createServiceRoleClient();
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .schema("limitless")
       .from("tournaments")
       .update({
@@ -29,9 +29,14 @@ export async function queueTournamentForImport(
         import_status: "queued",
         import_error: null,
       })
-      .eq("tournament_id", tournamentId);
+      .eq("tournament_id", tournamentId)
+      .select("tournament_id")
+      .maybeSingle();
 
     if (error) throw error;
+    if (!updated) {
+      return { success: false, error: "Tournament not found — sync first?" };
+    }
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: getErrorMessage(e, "Failed to queue") };

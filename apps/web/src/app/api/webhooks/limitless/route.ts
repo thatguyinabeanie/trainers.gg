@@ -75,12 +75,20 @@ export async function POST(request: Request) {
     const supabase = createServiceRoleClient();
 
     // Check current status first to avoid re-queueing completed tournaments
-    const { data: existing } = await supabase
+    const { data: existing, error: lookupErr } = await supabase
       .schema("limitless")
       .from("tournaments")
       .select("tournament_id, import_status")
       .eq("tournament_id", tournamentId)
       .maybeSingle();
+
+    if (lookupErr) {
+      console.error("[limitless-webhook] Lookup error:", lookupErr);
+      return NextResponse.json(
+        { success: false, error: "Database lookup failed" },
+        { status: 500 }
+      );
+    }
 
     // Skip if already completed or currently importing
     if (
@@ -120,11 +128,11 @@ export async function POST(request: Request) {
         .eq("tournament_id", tournamentId);
       if (error) queueErr = error;
     } else {
-      // Row doesn't exist yet — insert a minimal placeholder row
+      // Row doesn't exist yet — upsert to handle race between webhook and sync cron
       const { error } = await supabase
         .schema("limitless")
         .from("tournaments")
-        .insert({
+        .upsert({
           tournament_id: tournamentId,
           name: tournamentId, // Placeholder — sync cron will fill real name
           format_id: "unknown", // Placeholder — sync cron will fill real format
@@ -132,7 +140,7 @@ export async function POST(request: Request) {
           player_count: 0,
           import_requested_at: now,
           import_status: "queued",
-        });
+        }, { onConflict: "tournament_id" });
       if (error) queueErr = error;
     }
 
