@@ -13,7 +13,7 @@ Import Pokemon Showdown ladder replay data and Smogon usage statistics into trai
 1. A download script that discovers and fetches replays from Showdown's public API
 2. A parser that extracts structured data (teams, moves, items, abilities) from battle logs using `@pkmn/protocol`
 3. An aggregation pipeline that computes usage stats from imported replays
-4. Database tables in a `pshowdown` schema to store replays and computed stats
+4. Database tables in a `showdown` schema to store replays and computed stats
 5. Admin UI for browsing imported data and viewing stats
 6. A lightweight edge function for serving pre-computed stats via API
 
@@ -35,7 +35,7 @@ Showdown data enables: usage statistics, bring rate analysis, move selection pat
 
 ### 2.1 Showdown Replay API
 
-**Base URL:** `https://replay.pokemonpshowdown.com`
+**Base URL:** `https://replay.pokemonshowdown.com`
 
 No authentication required. Full CORS support (`Access-Control-Allow-Origin: *`).
 
@@ -144,13 +144,13 @@ This is extremely valuable — full moveset distributions, EV spreads, teammate 
 
 ---
 
-## 3. Schema Design (`pshowdown` schema)
+## 3. Schema Design (`showdown` schema)
 
-All tables live in the `pshowdown` schema, following the same isolation pattern as `limitless`.
+All tables live in the `showdown` schema, following the same isolation pattern as `limitless`.
 
 ### 3.1 Tables
 
-#### `pshowdown.replays`
+#### `showdown.replays`
 
 Selective replay storage — only replays for formats/time windows we care about.
 
@@ -171,7 +171,7 @@ log_hash            text                ← SHA-256 of raw log (for dedup/integr
 imported_at         timestamptz DEFAULT now()
 ```
 
-#### `pshowdown.replay_pokemon`
+#### `showdown.replay_pokemon`
 
 Parsed team data per replay side. One row per Pokemon per side.
 
@@ -191,7 +191,7 @@ terastallized       boolean DEFAULT false ← did this mon actually Tera?
 UNIQUE(replay_id, player_num, slot)
 ```
 
-#### `pshowdown.replay_moves`
+#### `showdown.replay_moves`
 
 Moves observed during battle. One row per unique species+move combination per side.
 
@@ -206,7 +206,7 @@ use_count           smallint DEFAULT 1  ← how many times used in this replay
 UNIQUE(replay_id, player_num, species, move_name)
 ```
 
-#### `pshowdown.replay_items`
+#### `showdown.replay_items`
 
 Items revealed during battle (consumed, knocked off, or otherwise triggered).
 
@@ -220,7 +220,7 @@ item_name           text NOT NULL
 UNIQUE(replay_id, player_num, species, item_name)
 ```
 
-#### `pshowdown.replay_abilities`
+#### `showdown.replay_abilities`
 
 Abilities revealed during battle (triggered, traced, etc.).
 
@@ -234,7 +234,7 @@ ability_name        text NOT NULL
 UNIQUE(replay_id, player_num, species, ability_name)
 ```
 
-#### `pshowdown.format_snapshots`
+#### `showdown.format_snapshots`
 
 A computed stats snapshot for a format over a time period. One row per snapshot computation.
 
@@ -251,7 +251,7 @@ computed_at         timestamptz DEFAULT now()
 UNIQUE(format_id, period, source, min_rating)
 ```
 
-#### `pshowdown.pokemon_usage`
+#### `showdown.pokemon_usage`
 
 Per-Pokemon usage stats within a snapshot.
 
@@ -269,7 +269,7 @@ win_rate            numeric(6,4)        ← win_count / usage_count
 UNIQUE(snapshot_id, species)
 ```
 
-#### `pshowdown.pokemon_movesets`
+#### `showdown.pokemon_movesets`
 
 Move/item/ability/spread distributions per Pokemon per snapshot, stored as JSONB for flexibility.
 
@@ -287,7 +287,7 @@ counters            jsonb                        ← from Smogon checks/counters
 UNIQUE(snapshot_id, species)
 ```
 
-#### `pshowdown.team_cores`
+#### `showdown.team_cores`
 
 Common Pokemon pairings per snapshot.
 
@@ -303,7 +303,7 @@ win_rate            numeric(6,4)
 UNIQUE(snapshot_id, species_pair)
 ```
 
-#### `pshowdown.tera_usage`
+#### `showdown.tera_usage`
 
 Tera type distributions per Pokemon per snapshot. Only populated for formats with Tera.
 
@@ -318,7 +318,7 @@ tera_rate           numeric(6,4) NOT NULL ← tera_count / usage_count for this 
 UNIQUE(snapshot_id, species, tera_type)
 ```
 
-#### `pshowdown.sync_cursors`
+#### `showdown.sync_cursors`
 
 Tracks cron job progress per format. Each hourly sync run reads/updates this row.
 
@@ -353,16 +353,16 @@ Raw replay tables and aggregate tables are independent — aggregates are comput
 ### 3.3 Migration SQL
 
 ```sql
--- Migration: create_pshowdown_schema
+-- Migration: create_showdown_schema
 -- Idempotent: safe to re-run
 
-CREATE SCHEMA IF NOT EXISTS pshowdown;
+CREATE SCHEMA IF NOT EXISTS showdown;
 
 -- ============================================================
 -- Raw replay data (selective storage)
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS pshowdown.replays (
+CREATE TABLE IF NOT EXISTS showdown.replays (
   id text PRIMARY KEY,
   format_id text NOT NULL,
   player1 text NOT NULL,
@@ -379,15 +379,15 @@ CREATE TABLE IF NOT EXISTS pshowdown.replays (
   imported_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_replays_format_id ON pshowdown.replays (format_id);
-CREATE INDEX IF NOT EXISTS idx_replays_upload_time ON pshowdown.replays (upload_time DESC);
-CREATE INDEX IF NOT EXISTS idx_replays_format_upload ON pshowdown.replays (format_id, upload_time DESC);
-CREATE INDEX IF NOT EXISTS idx_replays_player1 ON pshowdown.replays (player1);
-CREATE INDEX IF NOT EXISTS idx_replays_player2 ON pshowdown.replays (player2);
+CREATE INDEX IF NOT EXISTS idx_replays_format_id ON showdown.replays (format_id);
+CREATE INDEX IF NOT EXISTS idx_replays_upload_time ON showdown.replays (upload_time DESC);
+CREATE INDEX IF NOT EXISTS idx_replays_format_upload ON showdown.replays (format_id, upload_time DESC);
+CREATE INDEX IF NOT EXISTS idx_replays_player1 ON showdown.replays (player1);
+CREATE INDEX IF NOT EXISTS idx_replays_player2 ON showdown.replays (player2);
 
-CREATE TABLE IF NOT EXISTS pshowdown.replay_pokemon (
+CREATE TABLE IF NOT EXISTS showdown.replay_pokemon (
   id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  replay_id text NOT NULL REFERENCES pshowdown.replays (id) ON DELETE CASCADE,
+  replay_id text NOT NULL REFERENCES showdown.replays (id) ON DELETE CASCADE,
   player_num smallint NOT NULL CHECK (player_num IN (1, 2)),
   slot smallint NOT NULL CHECK (slot BETWEEN 1 AND 6),
   species text NOT NULL,
@@ -400,12 +400,12 @@ CREATE TABLE IF NOT EXISTS pshowdown.replay_pokemon (
   UNIQUE (replay_id, player_num, slot)
 );
 
-CREATE INDEX IF NOT EXISTS idx_replay_pokemon_species ON pshowdown.replay_pokemon (species);
-CREATE INDEX IF NOT EXISTS idx_replay_pokemon_replay ON pshowdown.replay_pokemon (replay_id);
+CREATE INDEX IF NOT EXISTS idx_replay_pokemon_species ON showdown.replay_pokemon (species);
+CREATE INDEX IF NOT EXISTS idx_replay_pokemon_replay ON showdown.replay_pokemon (replay_id);
 
-CREATE TABLE IF NOT EXISTS pshowdown.replay_moves (
+CREATE TABLE IF NOT EXISTS showdown.replay_moves (
   id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  replay_id text NOT NULL REFERENCES pshowdown.replays (id) ON DELETE CASCADE,
+  replay_id text NOT NULL REFERENCES showdown.replays (id) ON DELETE CASCADE,
   player_num smallint NOT NULL CHECK (player_num IN (1, 2)),
   species text NOT NULL,
   move_name text NOT NULL,
@@ -413,18 +413,18 @@ CREATE TABLE IF NOT EXISTS pshowdown.replay_moves (
   UNIQUE (replay_id, player_num, species, move_name)
 );
 
-CREATE TABLE IF NOT EXISTS pshowdown.replay_items (
+CREATE TABLE IF NOT EXISTS showdown.replay_items (
   id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  replay_id text NOT NULL REFERENCES pshowdown.replays (id) ON DELETE CASCADE,
+  replay_id text NOT NULL REFERENCES showdown.replays (id) ON DELETE CASCADE,
   player_num smallint NOT NULL CHECK (player_num IN (1, 2)),
   species text NOT NULL,
   item_name text NOT NULL,
   UNIQUE (replay_id, player_num, species, item_name)
 );
 
-CREATE TABLE IF NOT EXISTS pshowdown.replay_abilities (
+CREATE TABLE IF NOT EXISTS showdown.replay_abilities (
   id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  replay_id text NOT NULL REFERENCES pshowdown.replays (id) ON DELETE CASCADE,
+  replay_id text NOT NULL REFERENCES showdown.replays (id) ON DELETE CASCADE,
   player_num smallint NOT NULL CHECK (player_num IN (1, 2)),
   species text NOT NULL,
   ability_name text NOT NULL,
@@ -435,7 +435,7 @@ CREATE TABLE IF NOT EXISTS pshowdown.replay_abilities (
 -- Aggregated stats
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS pshowdown.format_snapshots (
+CREATE TABLE IF NOT EXISTS showdown.format_snapshots (
   id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   format_id text NOT NULL,
   period text NOT NULL,
@@ -447,9 +447,9 @@ CREATE TABLE IF NOT EXISTS pshowdown.format_snapshots (
   UNIQUE (format_id, period, source, min_rating)
 );
 
-CREATE TABLE IF NOT EXISTS pshowdown.pokemon_usage (
+CREATE TABLE IF NOT EXISTS showdown.pokemon_usage (
   id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  snapshot_id int NOT NULL REFERENCES pshowdown.format_snapshots (id) ON DELETE CASCADE,
+  snapshot_id int NOT NULL REFERENCES showdown.format_snapshots (id) ON DELETE CASCADE,
   species text NOT NULL,
   usage_count int NOT NULL,
   usage_rate numeric(6,4) NOT NULL,
@@ -460,12 +460,12 @@ CREATE TABLE IF NOT EXISTS pshowdown.pokemon_usage (
   UNIQUE (snapshot_id, species)
 );
 
-CREATE INDEX IF NOT EXISTS idx_pokemon_usage_snapshot ON pshowdown.pokemon_usage (snapshot_id);
-CREATE INDEX IF NOT EXISTS idx_pokemon_usage_species ON pshowdown.pokemon_usage (species);
+CREATE INDEX IF NOT EXISTS idx_pokemon_usage_snapshot ON showdown.pokemon_usage (snapshot_id);
+CREATE INDEX IF NOT EXISTS idx_pokemon_usage_species ON showdown.pokemon_usage (species);
 
-CREATE TABLE IF NOT EXISTS pshowdown.pokemon_movesets (
+CREATE TABLE IF NOT EXISTS showdown.pokemon_movesets (
   id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  snapshot_id int NOT NULL REFERENCES pshowdown.format_snapshots (id) ON DELETE CASCADE,
+  snapshot_id int NOT NULL REFERENCES showdown.format_snapshots (id) ON DELETE CASCADE,
   species text NOT NULL,
   moves jsonb NOT NULL DEFAULT '{}',
   items jsonb NOT NULL DEFAULT '{}',
@@ -476,9 +476,9 @@ CREATE TABLE IF NOT EXISTS pshowdown.pokemon_movesets (
   UNIQUE (snapshot_id, species)
 );
 
-CREATE TABLE IF NOT EXISTS pshowdown.team_cores (
+CREATE TABLE IF NOT EXISTS showdown.team_cores (
   id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  snapshot_id int NOT NULL REFERENCES pshowdown.format_snapshots (id) ON DELETE CASCADE,
+  snapshot_id int NOT NULL REFERENCES showdown.format_snapshots (id) ON DELETE CASCADE,
   species_pair text[] NOT NULL,
   pair_count int NOT NULL,
   pair_rate numeric(6,4) NOT NULL,
@@ -487,9 +487,9 @@ CREATE TABLE IF NOT EXISTS pshowdown.team_cores (
   UNIQUE (snapshot_id, species_pair)
 );
 
-CREATE TABLE IF NOT EXISTS pshowdown.tera_usage (
+CREATE TABLE IF NOT EXISTS showdown.tera_usage (
   id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  snapshot_id int NOT NULL REFERENCES pshowdown.format_snapshots (id) ON DELETE CASCADE,
+  snapshot_id int NOT NULL REFERENCES showdown.format_snapshots (id) ON DELETE CASCADE,
   species text NOT NULL,
   tera_type text NOT NULL,
   tera_count int NOT NULL,
@@ -501,7 +501,7 @@ CREATE TABLE IF NOT EXISTS pshowdown.tera_usage (
 -- Sync state (cron job progress tracking)
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS pshowdown.sync_cursors (
+CREATE TABLE IF NOT EXISTS showdown.sync_cursors (
   format_id text PRIMARY KEY,
   last_before bigint,
   total_discovered int DEFAULT 0,
@@ -517,17 +517,17 @@ CREATE TABLE IF NOT EXISTS pshowdown.sync_cursors (
 -- RLS policies (admin read-only, same as limitless)
 -- ============================================================
 
-ALTER TABLE pshowdown.replays ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pshowdown.replay_pokemon ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pshowdown.replay_moves ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pshowdown.replay_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pshowdown.replay_abilities ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pshowdown.format_snapshots ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pshowdown.pokemon_usage ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pshowdown.pokemon_movesets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pshowdown.team_cores ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pshowdown.tera_usage ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pshowdown.sync_cursors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE showdown.replays ENABLE ROW LEVEL SECURITY;
+ALTER TABLE showdown.replay_pokemon ENABLE ROW LEVEL SECURITY;
+ALTER TABLE showdown.replay_moves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE showdown.replay_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE showdown.replay_abilities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE showdown.format_snapshots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE showdown.pokemon_usage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE showdown.pokemon_movesets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE showdown.team_cores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE showdown.tera_usage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE showdown.sync_cursors ENABLE ROW LEVEL SECURITY;
 
 -- Admin read policies (site_role = 'admin')
 DO $$ 
@@ -539,9 +539,9 @@ BEGIN
     'format_snapshots', 'pokemon_usage', 'pokemon_movesets', 'team_cores', 'tera_usage',
     'sync_cursors'
   ]) LOOP
-    EXECUTE format('DROP POLICY IF EXISTS admin_read ON pshowdown.%I', t);
+    EXECUTE format('DROP POLICY IF EXISTS admin_read ON showdown.%I', t);
     EXECUTE format(
-      'CREATE POLICY admin_read ON pshowdown.%I FOR SELECT TO authenticated USING (
+      'CREATE POLICY admin_read ON showdown.%I FOR SELECT TO authenticated USING (
         EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND site_role = ''admin'')
       )', t
     );
@@ -549,20 +549,20 @@ BEGIN
 END $$;
 
 -- Service role has full access (for import scripts)
-GRANT USAGE ON SCHEMA pshowdown TO service_role;
-GRANT ALL ON ALL TABLES IN SCHEMA pshowdown TO service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA pshowdown TO service_role;
+GRANT USAGE ON SCHEMA showdown TO service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA showdown TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA showdown TO service_role;
 
 -- Authenticated users can read via RLS policies above
-GRANT USAGE ON SCHEMA pshowdown TO authenticated;
-GRANT SELECT ON ALL TABLES IN SCHEMA pshowdown TO authenticated;
+GRANT USAGE ON SCHEMA showdown TO authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA showdown TO authenticated;
 
 -- ============================================================
 -- Helper function: showdown_stats()
 -- Returns usage stats for a given format, similar to tournament_stats()
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION pshowdown.format_usage_stats(
+CREATE OR REPLACE FUNCTION showdown.format_usage_stats(
   p_format_id text,
   p_period text DEFAULT 'all-time',
   p_source text DEFAULT 'replays',
@@ -589,9 +589,9 @@ AS $$
     pm.moves AS top_moves,
     pm.items AS top_items,
     pm.abilities AS top_abilities
-  FROM pshowdown.format_snapshots fs
-  JOIN pshowdown.pokemon_usage pu ON pu.snapshot_id = fs.id
-  LEFT JOIN pshowdown.pokemon_movesets pm ON pm.snapshot_id = fs.id AND pm.species = pu.species
+  FROM showdown.format_snapshots fs
+  JOIN showdown.pokemon_usage pu ON pu.snapshot_id = fs.id
+  LEFT JOIN showdown.pokemon_movesets pm ON pm.snapshot_id = fs.id AND pm.species = pu.species
   WHERE fs.format_id = p_format_id
     AND fs.period = p_period
     AND fs.source = p_source
@@ -622,20 +622,20 @@ For `gen9championsvgc2026regma` (current active format):
 ```sql
 -- Top 20 Pokemon on Champions M-A ladder (latest snapshot)
 SELECT species, usage_rate, win_rate, bring_rate
-FROM pshowdown.format_usage_stats('gen9championsvgc2026regma');
+FROM showdown.format_usage_stats('gen9championsvgc2026regma');
 
 -- Rayquaza's moveset distribution
 SELECT pm.moves, pm.items, pm.abilities
-FROM pshowdown.pokemon_movesets pm
-JOIN pshowdown.format_snapshots fs ON fs.id = pm.snapshot_id
+FROM showdown.pokemon_movesets pm
+JOIN showdown.format_snapshots fs ON fs.id = pm.snapshot_id
 WHERE fs.format_id = 'gen9championsvgc2026regma'
   AND fs.period = 'all-time'
   AND pm.species = 'Rayquaza';
 
 -- Most common team cores
 SELECT species_pair, pair_rate, win_rate
-FROM pshowdown.team_cores tc
-JOIN pshowdown.format_snapshots fs ON fs.id = tc.snapshot_id
+FROM showdown.team_cores tc
+JOIN showdown.format_snapshots fs ON fs.id = tc.snapshot_id
 WHERE fs.format_id = 'gen9championsvgc2026regma'
   AND fs.period = 'all-time'
 ORDER BY pair_rate DESC
@@ -643,7 +643,7 @@ LIMIT 20;
 
 -- Specific player's replays
 SELECT r.id, r.player1, r.player2, r.winner, r.upload_time, r.rating
-FROM pshowdown.replays r
+FROM showdown.replays r
 WHERE r.format_id = 'gen9championsvgc2026regma'
   AND (r.player1 = 'someuser' OR r.player2 = 'someuser')
 ORDER BY r.upload_time DESC;
@@ -653,8 +653,8 @@ SELECT rp.species,
   COUNT(*) FILTER (WHERE rp.was_brought) AS brought,
   COUNT(*) AS total,
   ROUND(COUNT(*) FILTER (WHERE rp.was_brought)::numeric / COUNT(*), 4) AS bring_rate
-FROM pshowdown.replay_pokemon rp
-JOIN pshowdown.replays r ON r.id = rp.replay_id
+FROM showdown.replay_pokemon rp
+JOIN showdown.replays r ON r.id = rp.replay_id
 WHERE r.format_id = 'gen9championsvgc2026regma'
   AND rp.species = 'Rayquaza'
 GROUP BY rp.species;
@@ -686,7 +686,7 @@ The pipeline runs as **Vercel cron jobs** hitting Next.js API routes. Each invoc
 
 **Security:** Both routes verify `Authorization: Bearer ${CRON_SECRET}` header (Vercel injects this automatically for cron invocations). Manual triggers from the admin UI also pass this header.
 
-### 4.2 Progress Tracking: `pshowdown.sync_cursors`
+### 4.2 Progress Tracking: `showdown.sync_cursors`
 
 Each cron run picks up where the last one left off. Progress is stored in the DB, not on disk.
 
@@ -721,11 +721,11 @@ Discovers new replays, downloads their full data, parses battle logs, and import
 2. Set status to `'running'`, update `last_run_at`
 3. Paginate `search.json?format={format}&before={cursor}` with 1.5s delay between pages
 4. For each replay in search results (up to `batchSize`):
-   - Skip if already in `pshowdown.replays` (check by ID)
+   - Skip if already in `showdown.replays` (check by ID)
    - Fetch `/{replayId}.json` with 1s delay
    - Parse battle log using `@pkmn/protocol` (see Section 5)
    - Extract: team preview, moves, items, abilities, winner, ratings, bring selections
-   - Insert into `pshowdown.replays`, `replay_pokemon`, `replay_moves`, `replay_items`, `replay_abilities`
+   - Insert into `showdown.replays`, `replay_pokemon`, `replay_moves`, `replay_items`, `replay_abilities`
 5. Update `sync_cursors`: save new `last_before`, increment counters
 6. Set status back to `'idle'`
 7. Return `{ imported: N, cursor: last_before, elapsed: Xms }`
@@ -759,7 +759,7 @@ Computes usage statistics from all imported replays for each active format.
 
 **For replay-based aggregation:**
 
-1. Query `pshowdown.replays` + `replay_pokemon` for the given format and time period
+1. Query `showdown.replays` + `replay_pokemon` for the given format and time period
 2. Compute per-species: usage count/rate, bring count/rate, win count/rate
 3. Compute moveset distributions from `replay_moves`, `replay_items`, `replay_abilities`
 4. Compute team cores (all 2-Pokemon pairs that appear on the same side)
@@ -1057,8 +1057,8 @@ GET /functions/v1/showdown-stats?format={formatId}&type=cores
 
 ### Phase 1: Schema + Sync Cron
 
-- [ ] Create `pshowdown` schema migration (all tables including `sync_cursors`, indexes, RLS, grants, helper function)
-- [ ] Add `pshowdown` to PostgREST exposed schemas (`config.toml` + production dashboard)
+- [ ] Create `showdown` schema migration (all tables including `sync_cursors`, indexes, RLS, grants, helper function)
+- [ ] Add `showdown` to PostgREST exposed schemas (`config.toml` + production dashboard)
 - [ ] Install `@pkmn/protocol`, `@pkmn/data`, `@pkmn/dex`
 - [ ] Build battle log parser module (team preview, moves, items, abilities, winner, ratings, bring selections)
 - [ ] Handle Champions M-A specifics (Mega Evolution, no Tera)
@@ -1111,7 +1111,7 @@ GET /functions/v1/showdown-stats?format={formatId}&type=cores
 | **Trigger** | Webhook (`tournament:ended`) + backfill script | Poll-based discovery (search.json pagination) |
 | **Team data** | Complete (all 4 moves, item, ability, tera) | Partial per replay (only revealed info) |
 | **Volume** | ~20 events/season, ~6K standings | ~10K-50K replays/month per format |
-| **Schema** | `limitless.*` | `pshowdown.*` |
+| **Schema** | `limitless.*` | `showdown.*` |
 | **Player identity** | Limitless username (stable) | Showdown username (can change) |
 | **Tournament context** | Placements, phases, rounds | None — ladder games only |
 | **Processing model** | Download → import (1:1) | Download → import → aggregate (needs aggregation step) |
