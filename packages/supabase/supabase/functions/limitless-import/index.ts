@@ -249,7 +249,7 @@ async function handleProcessQueue(
 
   // 1. Recover stale imports (stuck > 10 min)
   const staleThreshold = new Date(Date.now() - STALE_IMPORT_TIMEOUT_MS).toISOString();
-  const { data: staleRows } = await supabase
+  const { data: staleRows, error: staleErr } = await supabase
     .schema("limitless")
     .from("tournaments")
     .select("tournament_id, import_attempts")
@@ -257,28 +257,24 @@ async function handleProcessQueue(
     .lt("import_started_at", staleThreshold)
     .limit(5);
 
-  if (staleRows && staleRows.length > 0) {
+  if (staleErr) {
+    console.error("[limitless-edge] Stale import query failed:", staleErr.message);
+  } else if (staleRows && staleRows.length > 0) {
     for (const row of staleRows) {
       const attempts = (row.import_attempts ?? 0) + 1;
-      if (attempts >= MAX_ATTEMPTS) {
-        await supabase
-          .schema("limitless")
-          .from("tournaments")
-          .update({
-            import_status: "failed",
-            import_error: `Timed out after ${MAX_ATTEMPTS} attempts`,
-            import_attempts: attempts,
-          })
-          .eq("tournament_id", row.tournament_id);
-      } else {
-        await supabase
-          .schema("limitless")
-          .from("tournaments")
-          .update({
-            import_status: "queued",
-            import_attempts: attempts,
-          })
-          .eq("tournament_id", row.tournament_id);
+      const newStatus = attempts >= MAX_ATTEMPTS ? "failed" : "queued";
+      const { error: updateErr } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({
+          import_status: newStatus,
+          import_error: newStatus === "failed" ? `Timed out after ${MAX_ATTEMPTS} attempts` : null,
+          import_attempts: attempts,
+        })
+        .eq("tournament_id", row.tournament_id);
+
+      if (updateErr) {
+        console.error("[limitless-edge] Stale recovery update failed:", updateErr.message);
       }
     }
     results.push({ processed: false, recovered: true });

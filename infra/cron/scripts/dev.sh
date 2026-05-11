@@ -109,7 +109,8 @@ run_cron() {
 
   local response
   local http_code
-  response=$(curl -s -w "\n%{http_code}" -H "$AUTH_HEADER" "${BASE_URL}${path}")
+  local curl_exit=0
+  response=$(curl -s -w "\n%{http_code}" -H "$AUTH_HEADER" "${BASE_URL}${path}") || curl_exit=$?
   http_code=$(echo "$response" | tail -1)
   local body
   body=$(echo "$response" | sed '$d')
@@ -118,8 +119,9 @@ run_cron() {
   end_time=$(date +%s)
   local duration=$((end_time - start_time))
 
-  if [ -z "$http_code" ]; then
-    log_error "$name failed (${duration}s) — curl returned no response"
+  if [ "$curl_exit" -ne 0 ]; then
+    log_error "$name failed (${duration}s) — curl exited with code $curl_exit"
+    log_error "$body"
   elif [[ "$http_code" == 2* ]]; then
     log_success "$name completed (${duration}s) — HTTP $http_code"
     log_dim "$body"
