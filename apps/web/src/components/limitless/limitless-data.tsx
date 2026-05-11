@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { DataTable, SortableHeader } from "@/components/ui/data-table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 
 // ---------------------------------------------------------------------------
@@ -202,17 +203,22 @@ export function LimitlessData() {
   // Fetch distinct formats for the filter dropdown
   // -------------------------------------------------------------------------
 
-  const { data: formats } = useSupabaseQuery(async (sb) => {
-    const { data, error } = await sb
-      .schema("limitless")
-      .from("tournaments")
-      .select("format_id")
-      .order("format_id");
+  const { data: formats } = useSupabaseQuery(
+    async (sb) => {
+      // Use .range() to bypass PostgREST default 1000-row limit
+      const { data, error } = await sb
+        .schema("limitless")
+        .from("tournaments")
+        .select("format_id")
+        .order("format_id")
+        .range(0, 9999);
 
-    if (error) throw error;
-    const unique = [...new Set((data ?? []).map((r) => r.format_id))];
-    return unique;
-  }, []);
+      if (error) throw error;
+      const unique = [...new Set((data ?? []).map((r) => r.format_id))];
+      return unique;
+    },
+    [refreshKey]
+  );
 
   const tournaments = result?.tournaments ?? [];
   const total = result?.total ?? 0;
@@ -235,7 +241,7 @@ export function LimitlessData() {
           disabled={isLoading}
         >
           <RefreshCw
-            className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+            className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")}
           />
           Refresh
         </Button>

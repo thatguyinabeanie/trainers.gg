@@ -104,7 +104,7 @@ mise.local.toml
 *.egg-info/
 
 # External data pipeline (raw downloads)
-data/
+/data/
 
 # Android SDK (symlink to external or local install)
 .android-sdk/

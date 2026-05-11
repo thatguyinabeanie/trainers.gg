@@ -390,7 +390,7 @@ export function LimitlessImport() {
                   Import{" "}
                   {selectedFormat !== "all"
                     ? (FORMAT_ID_TO_CODE[selectedFormat] ?? selectedFormat)
-                    : "All"}{" "}
+                    : `All (first 500)`}{" "}
                   ({pendingTournaments.length})
                 </>
               )}

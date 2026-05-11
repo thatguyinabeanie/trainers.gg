@@ -175,7 +175,7 @@ function StandingRow({
         <TableRow>
           <TableCell colSpan={4} className="bg-muted/50 p-0">
             <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-6">
-              {s.team_pokemon
+              {[...s.team_pokemon]
                 .sort((a, b) => a.position - b.position)
                 .map((mon) => (
                   <div

@@ -49,8 +49,9 @@ function setupMocks({
 } = {}) {
   mockUseSupabaseQuery.mockImplementation(
     (_queryFn: unknown, deps: unknown[]) => {
-      // The format query uses [] as deps, the tournament query uses 4-element array
-      if (Array.isArray(deps) && deps.length === 0) {
+      // The format query uses [refreshKey] (1 dep), the tournament query uses
+      // [debouncedSearch, formatFilter, page, refreshKey] (4 deps)
+      if (Array.isArray(deps) && deps.length === 1) {
         return {
           data: formats,
           error: null,

@@ -320,22 +320,23 @@ phases ◄──composite FK── match_results (tournament_id, phase)
 
 ```sql
 -- Charizard usage in Champions M-A
-SELECT tp.species, COUNT(*)
-FROM limitless.team_pokemon tp
-JOIN limitless.standings s ON s.id = tp.standing_id
-JOIN limitless.tournaments t ON t.tournament_id = s.tournament_id
-WHERE t.format_id = 'gen9championsvgc2026regma' AND tp.species = 'charizard';
-
--- Top items on Charizard
-SELECT tp.held_item, COUNT(*)
+SELECT tp.species, COUNT(*) AS usage_count
 FROM limitless.team_pokemon tp
 JOIN limitless.standings s ON s.id = tp.standing_id
 JOIN limitless.tournaments t ON t.tournament_id = s.tournament_id
 WHERE t.format_id = 'gen9championsvgc2026regma' AND tp.species = 'charizard'
-GROUP BY tp.held_item ORDER BY count DESC;
+GROUP BY tp.species;
+
+-- Top items on Charizard
+SELECT tp.held_item, COUNT(*) AS usage_count
+FROM limitless.team_pokemon tp
+JOIN limitless.standings s ON s.id = tp.standing_id
+JOIN limitless.tournaments t ON t.tournament_id = s.tournament_id
+WHERE t.format_id = 'gen9championsvgc2026regma' AND tp.species = 'charizard'
+GROUP BY tp.held_item ORDER BY usage_count DESC;
 
 -- Usage over time
-SELECT tp.species, t.date, COUNT(*)
+SELECT tp.species, t.date, COUNT(*) AS usage_count
 FROM limitless.team_pokemon tp
 JOIN limitless.standings s ON s.id = tp.standing_id
 JOIN limitless.tournaments t ON t.tournament_id = s.tournament_id
@@ -343,7 +344,7 @@ WHERE t.format_id = 'gen9championsvgc2026regma'
 GROUP BY tp.species, t.date ORDER BY t.date;
 
 -- Player tournament history
-SELECT t.name, t.date, s.placing, s.record_wins, s.record_losses
+SELECT t.name, t.date, s.placement, s.record_wins, s.record_losses
 FROM limitless.standings s
 JOIN limitless.tournaments t ON t.tournament_id = s.tournament_id
 JOIN limitless.players p ON p.id = s.player_id
@@ -351,13 +352,13 @@ WHERE p.username = 'lecehlou'
 ORDER BY t.date DESC;
 
 -- Pokemon with Protect
-SELECT tp.species, COUNT(*)
+SELECT tp.species, COUNT(*) AS usage_count
 FROM limitless.team_pokemon tp
 WHERE 'Protect' = ANY(tp.moves)
-GROUP BY tp.species ORDER BY count DESC;
+GROUP BY tp.species ORDER BY usage_count DESC;
 
 -- Win rate (with phase mode context)
-SELECT mr.winner_id = p.id as won, ph.mode, COUNT(*)
+SELECT mr.winner_id = p.id AS won, ph.mode, COUNT(*) AS match_count
 FROM limitless.match_results mr
 JOIN limitless.phases ph ON ph.tournament_id = mr.tournament_id
   AND ph.phase_number = mr.phase

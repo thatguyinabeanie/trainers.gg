@@ -206,11 +206,8 @@ async function importTournament(
   matches: number;
 }> {
   const { details, standings, pairings } = file;
-  const formatId = LIMITLESS_TO_FORMAT[limitlessFormat];
-
-  if (!formatId) {
-    throw new Error(`Unknown format: ${limitlessFormat}`);
-  }
+  // Use Showdown format ID if mapped, otherwise keep the raw Limitless code
+  const formatId = LIMITLESS_TO_FORMAT[limitlessFormat] ?? limitlessFormat;
 
   // 1. Delete existing tournament data (cascade handles phases, standings, match_results)
   await supabase
@@ -392,6 +389,15 @@ async function importTournament(
     }
   }
 
+  // 6. Mark tournament as fully imported
+  const { error: markError } = await supabase
+    .schema("limitless")
+    .from("tournaments")
+    .update({ data_imported_at: new Date().toISOString() })
+    .eq("tournament_id", tournamentId);
+  if (markError)
+    throw new Error(`Failed to mark tournament imported: ${markError.message}`);
+
   return {
     players: playerIdCache.size,
     standings: standings.length,
@@ -414,12 +420,12 @@ async function main() {
   const formatsToImport =
     formatArg === "all" ? [...KNOWN_FORMATS] : [formatArg];
 
-  // Validate format
+  // Validate format — allow unmapped formats (they use the raw code as format_id)
   for (const fmt of formatsToImport) {
     if (!KNOWN_FORMATS.has(fmt)) {
-      console.error(`Unknown format: "${fmt}"`);
-      console.error(`Known formats: ${[...KNOWN_FORMATS].join(", ")}`);
-      process.exit(1);
+      console.warn(
+        `Warning: "${fmt}" has no Showdown mapping — will use raw code as format_id`
+      );
     }
   }
 
@@ -450,16 +456,21 @@ async function main() {
     console.log(`  ${files.length} tournament files`);
 
     // Check which tournaments are already imported (skip unless --force)
+    // Only skip if data_imported_at is set — partial imports should be retried
     let toImport = files;
     if (!forceReimport) {
       const tournamentIds = files.map((f) => f.replace(".json", ""));
       const { data: existing } = await supabase
         .schema("limitless")
         .from("tournaments")
-        .select("tournament_id")
+        .select("tournament_id, data_imported_at")
         .in("tournament_id", tournamentIds);
 
-      const existingIds = new Set(existing?.map((r) => r.tournament_id) ?? []);
+      const existingIds = new Set(
+        existing
+          ?.filter((r) => r.data_imported_at)
+          .map((r) => r.tournament_id) ?? []
+      );
       toImport = files.filter((f) => !existingIds.has(f.replace(".json", "")));
       const skipped = files.length - toImport.length;
       if (skipped > 0) {

@@ -101,6 +101,10 @@ async function log(message: string): Promise<void> {
   await appendFile(LOG_PATH, line);
 }
 
+const FETCH_MAX_RETRIES = 3;
+const FETCH_INITIAL_BACKOFF_MS = 2000;
+const FETCH_TIMEOUT_MS = 30_000;
+
 async function fetchJson<T>(path: string): Promise<T> {
   const url = `${BASE_URL}${path}`;
   const headers: Record<string, string> = {
@@ -110,15 +114,51 @@ async function fetchJson<T>(path: string): Promise<T> {
     headers["X-Access-Key"] = API_KEY;
   }
 
-  const response = await fetch(url, { headers });
+  for (let attempt = 0; attempt <= FETCH_MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-  if (!response.ok) {
-    throw new Error(
-      `HTTP ${response.status} for ${url}: ${response.statusText}`
-    );
+    try {
+      const response = await fetch(url, {
+        headers,
+        signal: controller.signal,
+      });
+
+      if (response.status === 429 && attempt < FETCH_MAX_RETRIES) {
+        const retryAfter = response.headers.get("Retry-After");
+        let delayMs: number;
+        if (retryAfter) {
+          const seconds = Number(retryAfter);
+          if (!isNaN(seconds) && seconds > 0) {
+            delayMs = seconds * 1000;
+          } else {
+            const date = Date.parse(retryAfter);
+            delayMs =
+              !isNaN(date) && date > Date.now()
+                ? date - Date.now()
+                : FETCH_INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+          }
+        } else {
+          delayMs = FETCH_INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+        }
+        console.warn(`  429 on ${path}, retrying in ${delayMs}ms...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          `HTTP ${response.status} for ${url}: ${response.statusText}`
+        );
+      }
+
+      return response.json() as Promise<T>;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
-  return response.json() as Promise<T>;
+  throw new Error(`Exhausted ${FETCH_MAX_RETRIES} retries for ${url}`);
 }
 
 function manifestPath(format: string): string {

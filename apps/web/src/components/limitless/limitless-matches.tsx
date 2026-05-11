@@ -37,7 +37,14 @@ export function MatchesTable({
   // Accept the raw Supabase query shape — cast in parent
   matches: unknown[];
 }) {
-  const rows = matches as MatchResult[];
+  // Sort rows before grouping so phase/round order is deterministic
+  const rows = [...(matches as MatchResult[])].sort(
+    (a, b) =>
+      a.phase - b.phase ||
+      a.round - b.round ||
+      (a.table_number ?? Number.MAX_SAFE_INTEGER) -
+        (b.table_number ?? Number.MAX_SAFE_INTEGER)
+  );
 
   // Group by phase + round
   const grouped = new Map<string, MatchResult[]>();

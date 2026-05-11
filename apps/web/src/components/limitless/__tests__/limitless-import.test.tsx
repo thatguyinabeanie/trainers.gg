@@ -431,8 +431,10 @@ describe("LimitlessImport", () => {
       setupMocks();
       render(<LimitlessImport />);
 
-      // Default is "All" so it shows "Import All (1)"
-      expect(screen.getByText(/Import All \(1\)/)).toBeInTheDocument();
+      // Default is "All" so it shows "Import All (first 500) (1)"
+      expect(
+        screen.getByText(/Import All \(first 500\) \(1\)/)
+      ).toBeInTheDocument();
     });
 
     it("shows mapped Limitless code in format badge", () => {

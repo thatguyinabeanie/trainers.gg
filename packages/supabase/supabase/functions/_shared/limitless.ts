@@ -138,10 +138,22 @@ async function limitlessFetch<T>(path: string, apiKey?: string): Promise<T> {
     // Retry on 429 (rate limited) with exponential backoff
     if (res.status === 429 && attempt < MAX_RETRIES) {
       const retryAfter = res.headers.get("Retry-After");
-      // Use Retry-After header if present (seconds), otherwise exponential backoff
-      const delayMs = retryAfter
-        ? parseInt(retryAfter, 10) * 1000
-        : INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+      let delayMs: number;
+      if (retryAfter) {
+        // Try delta-seconds first, fall back to HTTP-date, then exponential backoff
+        const seconds = Number(retryAfter);
+        if (!isNaN(seconds) && seconds > 0) {
+          delayMs = seconds * 1000;
+        } else {
+          const date = Date.parse(retryAfter);
+          delayMs =
+            !isNaN(date) && date > Date.now()
+              ? date - Date.now()
+              : INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+        }
+      } else {
+        delayMs = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+      }
       console.warn(
         `Limitless API 429 on ${path} — retrying in ${delayMs}ms (attempt ${attempt + 1}/${MAX_RETRIES})`
       );
@@ -328,23 +340,31 @@ export async function importTournament(
 
   // 1. Delete child data for idempotency (cascade from phases + standings
   //    handles team_pokemon + match_results)
-  await supabase
+  const { error: delPhasesErr } = await supabase
     .schema("limitless")
     .from("phases")
     .delete()
     .eq("tournament_id", tournamentId);
-  await supabase
+  if (delPhasesErr)
+    throw new Error(`Delete phases failed: ${delPhasesErr.message}`);
+
+  const { error: delStandingsErr } = await supabase
     .schema("limitless")
     .from("standings")
     .delete()
     .eq("tournament_id", tournamentId);
-  await supabase
+  if (delStandingsErr)
+    throw new Error(`Delete standings failed: ${delStandingsErr.message}`);
+
+  const { error: delMatchesErr } = await supabase
     .schema("limitless")
     .from("match_results")
     .delete()
     .eq("tournament_id", tournamentId);
+  if (delMatchesErr)
+    throw new Error(`Delete match_results failed: ${delMatchesErr.message}`);
 
-  // 2. Upsert tournament — enriches stage 1 row with detail fields
+  // 2. Upsert tournament metadata (WITHOUT data_imported_at — set after all children succeed)
   const { error: tErr } = await supabase
     .schema("limitless")
     .from("tournaments")
@@ -359,7 +379,6 @@ export async function importTournament(
         is_online: details.isOnline ?? true,
         decklists: details.decklists ?? false,
         organizer_name: details.organizer?.name ?? null,
-        data_imported_at: new Date().toISOString(),
       },
       { onConflict: "tournament_id" }
     );
@@ -499,6 +518,15 @@ export async function importTournament(
       matchCount += rows.length;
     }
   }
+
+  // 6. Mark tournament as fully imported AFTER all children succeed
+  const { error: markErr } = await supabase
+    .schema("limitless")
+    .from("tournaments")
+    .update({ data_imported_at: new Date().toISOString() })
+    .eq("tournament_id", tournamentId);
+  if (markErr)
+    throw new Error(`Failed to mark tournament imported: ${markErr.message}`);
 
   return {
     tournamentId,
