@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Trophy, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-import { formatPlacement, formatDate } from "./utils";
+import { formatPlacement, formatDate } from "../../user/[handle]/utils";
 
 // ============================================================================
 // Types
@@ -43,48 +43,48 @@ interface TournamentHistoryResponse {
 }
 
 // ============================================================================
-// Query key factories
+// Query keys
 // ============================================================================
 
-const tournamentHistoryKeys = {
-  all: (handle: string) => ["player", handle, "tournament-history"] as const,
+const altHistoryKeys = {
+  all: (handle: string) => ["alt", handle, "tournament-history"] as const,
   filtered: (
     handle: string,
-    filters: { format: string; year: string; status: string; page: number }
-  ) => [...tournamentHistoryKeys.all(handle), filters] as const,
+    filters: { year: string; status: string; page: number }
+  ) => [...altHistoryKeys.all(handle), filters] as const,
 };
 
-// Current year and a few previous years for the year filter
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) =>
   String(CURRENT_YEAR - i)
 );
 
 // ============================================================================
-// Main component
+// Component
 // ============================================================================
 
-interface TournamentsTabProps {
-  altIds: number[];
+interface AltTournamentHistoryProps {
+  altId: number;
   handle: string;
 }
 
-export function TournamentsTab({ altIds, handle }: TournamentsTabProps) {
-  const format = "all";
+export function AltTournamentHistory({
+  altId,
+  handle,
+}: AltTournamentHistoryProps) {
   const [year, setYear] = useState("all");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
 
-  const filters = { format, year, status, page };
+  const filters = { year, status, page };
 
   const { data, isLoading } = useQuery<TournamentHistoryResponse>({
-    queryKey: tournamentHistoryKeys.filtered(handle, filters),
+    queryKey: altHistoryKeys.filtered(handle, filters),
     queryFn: async () => {
       const params = new URLSearchParams({
-        altIds: altIds.join(","),
+        altIds: String(altId),
         page: String(page),
       });
-      if (format !== "all") params.set("format", format);
       if (year !== "all") params.set("year", year);
       if (status !== "all") params.set("status", status);
 
@@ -94,7 +94,6 @@ export function TournamentsTab({ altIds, handle }: TournamentsTabProps) {
       if (!res.ok) throw new Error("Failed to fetch tournament history");
       return res.json();
     },
-    enabled: altIds.length > 0,
   });
 
   const tournaments = data?.data ?? [];
@@ -165,7 +164,7 @@ export function TournamentsTab({ altIds, handle }: TournamentsTabProps) {
       {/* Empty state */}
       {!isLoading && tournaments.length === 0 && (
         <div className="text-muted-foreground py-12 text-center text-sm">
-          No tournaments found matching your filters.
+          No tournaments found.
         </div>
       )}
 

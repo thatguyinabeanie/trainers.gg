@@ -5,7 +5,7 @@ import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 
-import { Sprite } from "../../../sprite";
+import { Sprite } from "../sprite";
 
 // =============================================================================
 // SpriteSection — sprite button + species pill in compact or hero arrangement

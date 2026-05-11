@@ -11,9 +11,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { type ValidationError } from "../../../validation-hooks";
-import { NumberPicker } from "../../../pickers/number-picker";
-import { FieldErrors } from "../../../validation/field-error";
+import { type ValidationError } from "../validation-hooks";
+import { NumberPicker } from "../pickers/number-picker";
+import { FieldErrors } from "../validation/field-error";
 
 // Shared Tailwind class strings for MidStack/Vertical meta-bar pieces.
 // Migrated from identity-lane.module.css. Kept as locals so they read

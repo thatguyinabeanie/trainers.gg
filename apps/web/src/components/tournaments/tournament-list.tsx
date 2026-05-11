@@ -25,6 +25,29 @@ const TOURNAMENT_FORMAT_LABELS: Record<string, string> = {
   double_elimination: "Double Elim",
 };
 
+/**
+ * Determines the correct href for a tournament winner link:
+ * - Main alt → /@username (user profile)
+ * - Public non-main alt → /@parentUsername/alts/altUsername
+ * - Private alt → /alts/altUsername (standalone, no parent reveal)
+ * - Unknown (no link data) → null (render as plain text)
+ */
+function getWinnerHref(
+  winner: NonNullable<TournamentWithOrg["winner"]>
+): string | null {
+  if (winner.isMainAlt) {
+    return `/@${winner.username}`;
+  }
+  if (winner.isPublic && winner.parentUsername) {
+    return `/@${winner.parentUsername}/alts/${winner.username}`;
+  }
+  if (winner.isPublic === false) {
+    return `/alts/${winner.username}`;
+  }
+  // No link data available (e.g. dashboard context)
+  return null;
+}
+
 // ============================================================================
 // Section Header
 // ============================================================================
@@ -447,12 +470,31 @@ export function CompletedTournaments({
                     )}
                     <TableCell>
                       {tournament.winner ? (
-                        <div className="text-primary flex items-center gap-1.5 font-medium">
-                          <Trophy className="h-3.5 w-3.5" />
-                          <span>
-                            {formatDisplayUsername(tournament.winner.username)}
-                          </span>
-                        </div>
+                        (() => {
+                          const href = getWinnerHref(tournament.winner);
+                          const content = (
+                            <>
+                              <Trophy className="h-3.5 w-3.5" />
+                              <span>
+                                {formatDisplayUsername(
+                                  tournament.winner.username
+                                )}
+                              </span>
+                            </>
+                          );
+                          return href ? (
+                            <Link
+                              href={href}
+                              className="text-primary hover:text-primary/80 flex items-center gap-1.5 font-medium transition-colors"
+                            >
+                              {content}
+                            </Link>
+                          ) : (
+                            <span className="text-primary flex items-center gap-1.5 font-medium">
+                              {content}
+                            </span>
+                          );
+                        })()
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}

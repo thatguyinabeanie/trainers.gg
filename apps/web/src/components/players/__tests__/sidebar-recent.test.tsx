@@ -48,8 +48,8 @@ describe("SidebarRecent", () => {
   it("links each player to their profile", () => {
     render(<SidebarRecent players={makePlayers(2)} />);
     const links = screen.getAllByRole("link");
-    expect(links[0]).toHaveAttribute("href", "/u/player0");
-    expect(links[1]).toHaveAttribute("href", "/u/player1");
+    expect(links[0]).toHaveAttribute("href", "/@player0");
+    expect(links[1]).toHaveAttribute("href", "/@player1");
   });
 
   it("shows last active time via formatTimeAgo", () => {

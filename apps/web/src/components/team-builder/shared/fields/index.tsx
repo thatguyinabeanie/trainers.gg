@@ -7,12 +7,12 @@ import {
 } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
-import { type ValidationError } from "../../../validation-hooks";
-import { AbilityCell } from "./ability-cell";
-import { type CellVariant } from "./identity-cell-shared";
-import { ItemCell } from "./item-cell";
-import { NatureCell } from "./nature-cell";
-import { TypeCell } from "./type-cell";
+import { type ValidationError } from "../../validation-hooks";
+import { AbilityCell } from "./ability";
+import { type CellVariant } from "./shared";
+import { ItemCell } from "./item";
+import { NatureCell } from "./nature";
+import { TypeCell } from "./type";
 
 // =============================================================================
 // FormCells — thin wrapper that renders the loadout cells in order

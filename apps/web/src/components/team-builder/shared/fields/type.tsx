@@ -16,7 +16,7 @@ import { HEXAGON_CLIP, TeraTypeIcon } from "@/components/team-builder/tera-type-
 import { TypePill } from "@/components/team-builder/type-pill";
 import { formatSupportsTera } from "@/components/team-builder/format-gating";
 import { TypePicker } from "@/components/team-builder/pickers/type-picker";
-import { cellClasses, type CellVariant } from "./identity-cell-shared";
+import { cellClasses, type CellVariant } from "./shared";
 
 // =============================================================================
 // TypeCell — Pokémon types + inline tera type icon (for SV formats)

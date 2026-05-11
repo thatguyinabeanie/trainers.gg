@@ -17,6 +17,7 @@ import { formatPlacement, formatDate } from "./utils";
 
 interface TournamentHistoryEntry {
   id: number;
+  altId: number;
   tournamentId: number;
   tournamentName: string;
   tournamentSlug: string;
@@ -90,17 +91,28 @@ function usePlayerTournaments(altIds: number[], handle: string) {
 // ============================================================================
 
 interface OverviewTabProps {
-  altIds: number[];
+  /** Alt IDs for stats (always all alts) */
+  statsAltIds: number[];
+  /** Alt IDs for tournament list (public only for visitors, all for owner) */
+  tournamentAltIds: number[];
+  /** Alt ID → username mapping */
+  altMap: Record<number, string>;
   handle: string;
 }
 
-function StatsCards({ altIds, handle }: OverviewTabProps) {
+function StatsCards({
+  statsAltIds,
+  handle,
+}: {
+  statsAltIds: number[];
+  handle: string;
+}) {
   const { data: stats, isLoading: statsLoading } = usePlayerStats(
-    altIds,
+    statsAltIds,
     handle
   );
   const { data: rating, isLoading: ratingLoading } = usePlayerRating(
-    altIds[0],
+    statsAltIds[0],
     handle
   );
 
@@ -207,8 +219,19 @@ function StatsCards({ altIds, handle }: OverviewTabProps) {
   );
 }
 
-function RecentTournaments({ altIds, handle }: OverviewTabProps) {
-  const { data: tournaments, isLoading } = usePlayerTournaments(altIds, handle);
+function RecentTournaments({
+  tournamentAltIds,
+  altMap,
+  handle,
+}: {
+  tournamentAltIds: number[];
+  altMap: Record<number, string>;
+  handle: string;
+}) {
+  const { data: tournaments, isLoading } = usePlayerTournaments(
+    tournamentAltIds,
+    handle
+  );
 
   if (isLoading) {
     return (
@@ -275,6 +298,11 @@ function RecentTournaments({ altIds, handle }: OverviewTabProps) {
                       {formatDate(entry.startDate)}
                     </span>
                   )}
+                  {altMap[entry.altId] && (
+                    <span className="text-muted-foreground/70 font-mono text-xs">
+                      as @{altMap[entry.altId]}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -303,11 +331,20 @@ function RecentTournaments({ altIds, handle }: OverviewTabProps) {
 // Main component
 // ============================================================================
 
-export function OverviewTab({ altIds, handle }: OverviewTabProps) {
+export function OverviewTab({
+  statsAltIds,
+  tournamentAltIds,
+  altMap,
+  handle,
+}: OverviewTabProps) {
   return (
     <div className="space-y-8">
-      <StatsCards altIds={altIds} handle={handle} />
-      <RecentTournaments altIds={altIds} handle={handle} />
+      <StatsCards statsAltIds={statsAltIds} handle={handle} />
+      <RecentTournaments
+        tournamentAltIds={tournamentAltIds}
+        altMap={altMap}
+        handle={handle}
+      />
     </div>
   );
 }

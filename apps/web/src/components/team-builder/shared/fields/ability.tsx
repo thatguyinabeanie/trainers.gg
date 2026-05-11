@@ -18,11 +18,11 @@ import {
 } from "@/components/ui/popover";
 import { TooltipTrigger } from "@/components/ui/tooltip";
 
-import { type ValidationError } from "../../../validation-hooks";
-import { AbilityPicker } from "../../../pickers/ability-picker";
-import { FieldErrors } from "../../../validation/field-error";
-import { DescriptionTooltip } from "../../description-tooltip";
-import { cellClasses, type CellVariant } from "./identity-cell-shared";
+import { type ValidationError } from "../../validation-hooks";
+import { AbilityPicker } from "../../pickers/ability-picker";
+import { FieldErrors } from "../../validation/field-error";
+import { DescriptionTooltip } from "../../lanes/description-tooltip";
+import { cellClasses, type CellVariant } from "./shared";
 
 // =============================================================================
 // AbilityCell — ability form cell, row (compact) or grid (hero) variant

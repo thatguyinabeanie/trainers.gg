@@ -31,7 +31,7 @@ export function SidebarLeaderboard({ entries }: SidebarLeaderboardProps) {
           return (
             <Link
               key={entry.userId}
-              href={`/u/${entry.username}`}
+              href={`/@${entry.username}`}
               className="hover:bg-muted/50 flex items-center gap-2.5 rounded-md p-1.5 transition-colors"
             >
               {/* Rank number */}

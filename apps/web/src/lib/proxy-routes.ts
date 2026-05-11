@@ -27,7 +27,9 @@ export const PUBLIC_ROUTES = [
   "/communities", // Browse communities (public directory)
   "/organizations", // Legacy redirect — redirects to /communities
   "/players", // Player directory (public)
-  "/u", // Player profiles (public)
+  "/user", // Player profiles (internal route, rewritten from /@handle)
+  "/@", // Player profiles (vanity URL, rewrites to /user/handle)
+  "/alts", // Standalone alt pages (private alt tournament history)
   "/auth",
   "/api",
   "/oauth", // OAuth JWKS and well-known files (AT Protocol requires no redirects)
@@ -56,10 +58,20 @@ export function isStaticFile(pathname: string): boolean {
   return STATIC_FILE_EXTENSIONS.some((ext) => pathname.endsWith(ext));
 }
 
+/**
+ * Check if a pathname matches a route prefix.
+ * Most routes use "/" as the delimiter (e.g., "/user/handle"), but "/@" is a
+ * special prefix where the handle follows directly (e.g., "/@handle").
+ */
+function matchesRoute(pathname: string, route: string): boolean {
+  if (pathname === route) return true;
+  // "/@" is a prefix without path separator — "/@handle" not "/@/handle"
+  if (route === "/@") return pathname.startsWith("/@");
+  return pathname.startsWith(`${route}/`);
+}
+
 export function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
+  return PUBLIC_ROUTES.some((route) => matchesRoute(pathname, route));
 }
 
 export function isProtectedRoute(pathname: string): boolean {
@@ -97,7 +109,9 @@ const ONBOARDING_EXEMPT_ROUTES = [
   "/.well-known",
   "/dashboard/onboarding",
   "/players",
-  "/u",
+  "/user",
+  "/@",
+  "/alts",
   "/tournaments",
   "/communities",
   "/organizations",
@@ -107,8 +121,8 @@ const ONBOARDING_EXEMPT_ROUTES = [
 export function isOnboardingExempt(pathname: string): boolean {
   // Homepage must match exactly — every route starts with "/"
   if (pathname === "/") return true;
-  return ONBOARDING_EXEMPT_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  return ONBOARDING_EXEMPT_ROUTES.some((route) =>
+    matchesRoute(pathname, route)
   );
 }
 

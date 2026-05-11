@@ -35,7 +35,7 @@ describe("PlayerCard", () => {
   it("links to the correct profile URL", () => {
     render(<PlayerCard {...defaultProps} />);
     const link = screen.getByRole("link");
-    expect(link).toHaveAttribute("href", "/u/ash_ketchum");
+    expect(link).toHaveAttribute("href", "/@ash_ketchum");
   });
 
   it("displays tournament count", () => {

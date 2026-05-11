@@ -3,7 +3,7 @@
 import { type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
-import { type ValidationError } from "../../validation-hooks";
+import { type ValidationError } from "../validation-hooks";
 
 // =============================================================================
 // Shared prop interface for all three IdentityLane layout components.

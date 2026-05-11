@@ -219,7 +219,8 @@ describe("proxy-routes", () => {
     it("should exempt public content sub-routes", () => {
       expect(isOnboardingExempt("/players/ash_ketchum")).toBe(true);
       expect(isOnboardingExempt("/tournaments/summer-2025")).toBe(true);
-      expect(isOnboardingExempt("/u/ash_ketchum")).toBe(true);
+      expect(isOnboardingExempt("/user/ash_ketchum")).toBe(true);
+      expect(isOnboardingExempt("/@ash_ketchum")).toBe(true);
       expect(isOnboardingExempt("/organizations/smogon")).toBe(true);
     });
   });
