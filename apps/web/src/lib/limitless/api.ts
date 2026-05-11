@@ -144,7 +144,7 @@ async function limitlessFetch<T>(path: string, apiKey?: string): Promise<T> {
       if (
         err instanceof Error &&
         err.name === "AbortError" &&
-        attempt < MAX_RETRIES
+        attempt < MAX_RETRIES - 1
       ) {
         const delayMs = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
         console.warn(
@@ -159,7 +159,7 @@ async function limitlessFetch<T>(path: string, apiKey?: string): Promise<T> {
     }
 
     // Retry on 429 (rate limited) with exponential backoff
-    if (res.status === 429 && attempt < MAX_RETRIES) {
+    if (res.status === 429 && attempt < MAX_RETRIES - 1) {
       const retryAfter = res.headers.get("Retry-After");
       let delayMs: number;
       if (retryAfter) {
@@ -184,7 +184,7 @@ async function limitlessFetch<T>(path: string, apiKey?: string): Promise<T> {
     }
 
     // Retry on 5xx (transient server errors) with exponential backoff
-    if (res.status >= 500 && res.status < 600 && attempt < MAX_RETRIES) {
+    if (res.status >= 500 && res.status < 600 && attempt < MAX_RETRIES - 1) {
       const delayMs = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
       console.warn(
         `[limitless] ${res.status} on ${path} — retrying in ${delayMs}ms (attempt ${attempt + 1}/${MAX_RETRIES})`
