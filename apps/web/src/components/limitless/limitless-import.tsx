@@ -6,8 +6,9 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
-  CloudDownload,
+  Clock,
   ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { supabase } from "@/lib/supabase/client";
+import { LIMITLESS_TO_FORMAT } from "@/lib/limitless";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,24 +50,6 @@ interface StatsResponse {
   formats: FormatStats[];
 }
 
-interface SyncResult {
-  synced: number;
-  skipped: number;
-  total: number;
-  mapped: number;
-  unmapped: number;
-  unmappedFormats: Record<string, number>;
-}
-
-interface ImportResult {
-  tournamentId: string;
-  name: string;
-  players: number;
-  standings: number;
-  pokemon: number;
-  matches: number;
-}
-
 interface TournamentRow {
   tournament_id: string;
   name: string;
@@ -73,10 +57,14 @@ interface TournamentRow {
   date: string;
   player_count: number;
   data_imported_at: string | null;
+  import_status: string | null;
+  import_requested_at: string | null;
+  import_error: string | null;
+  import_attempts: number | null;
 }
 
 // ---------------------------------------------------------------------------
-// Edge function helper
+// Edge function helper (for stats only — sync+import are now crons)
 // ---------------------------------------------------------------------------
 
 async function callEdgeFunction<T>(body: Record<string, unknown>): Promise<T> {
@@ -96,7 +84,7 @@ async function callEdgeFunction<T>(body: Record<string, unknown>): Promise<T> {
 // ---------------------------------------------------------------------------
 
 export function LimitlessImport() {
-  // Stats
+  // Stats from edge function
   const {
     data: stats,
     error: statsError,
@@ -105,11 +93,6 @@ export function LimitlessImport() {
   } = useSupabaseQuery(async () => {
     return callEdgeFunction<StatsResponse>({ action: "stats" });
   }, []);
-
-  // Sync state
-  const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
-  const [syncError, setSyncError] = useState<string | null>(null);
 
   // Format filter + tournament list from DB
   const [selectedFormat, setSelectedFormat] = useState<string>("all");
@@ -122,7 +105,7 @@ export function LimitlessImport() {
         .schema("limitless")
         .from("tournaments")
         .select(
-          "tournament_id, name, format_id, date, player_count, data_imported_at"
+          "tournament_id, name, format_id, date, player_count, data_imported_at, import_status, import_requested_at, import_error, import_attempts"
         )
         .is("data_imported_at", null)
         .order("date", { ascending: false });
@@ -131,7 +114,6 @@ export function LimitlessImport() {
         query = query.eq("format_id", selectedFormat);
       }
 
-      // When filtering by format, fetch all; otherwise cap at 500
       const limit = selectedFormat !== "all" ? 5000 : 500;
       const { data, error } = await query.limit(limit);
       if (error) throw error;
@@ -140,68 +122,45 @@ export function LimitlessImport() {
     [selectedFormat, refreshKey]
   );
 
-  // Import state
-  const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
-  const [importResults, setImportResults] = useState<
-    Map<string, ImportResult | string>
-  >(new Map());
+  // Queue action state
+  const [queuingIds, setQueuingIds] = useState<Set<string>>(new Set());
+  const [batchQueuing, setBatchQueuing] = useState(false);
 
-  // Batch import state
-  const [batchImporting, setBatchImporting] = useState(false);
-  const [batchProgress, setBatchProgress] = useState<{
-    current: number;
-    total: number;
-  } | null>(null);
-
-  // Build reverse format lookup from stats (derived, not mutated)
+  // Build reverse format lookup from stats
   const FORMAT_ID_TO_CODE: Record<string, string> = {};
   if (stats) {
     for (const f of stats.formats) {
       FORMAT_ID_TO_CODE[f.formatId] = f.limitlessCode;
     }
   }
-
-  // -------------------------------------------------------------------------
-  // Sync tournament list (Stage 1)
-  // -------------------------------------------------------------------------
-
-  async function handleSync() {
-    setSyncing(true);
-    setSyncError(null);
-    setSyncResult(null);
-    try {
-      const result = await callEdgeFunction<SyncResult>({ action: "sync" });
-      setSyncResult(result);
-      refetchStats();
-      setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setSyncError(err instanceof Error ? err.message : "Sync failed");
-    } finally {
-      setSyncing(false);
-    }
+  // Also include known mappings
+  for (const [code, fmtId] of Object.entries(LIMITLESS_TO_FORMAT)) {
+    FORMAT_ID_TO_CODE[fmtId] = code;
   }
 
   // -------------------------------------------------------------------------
-  // Import single tournament (Stage 2)
+  // Queue single tournament for import
   // -------------------------------------------------------------------------
 
-  async function importOne(tournamentId: string, formatId: string) {
-    // Use Limitless code if mapped, otherwise pass raw format_id
-    const format = FORMAT_ID_TO_CODE[formatId] ?? formatId;
-
-    setImportingIds((prev) => new Set(prev).add(tournamentId));
+  async function queueOne(tournamentId: string) {
+    setQueuingIds((prev) => new Set(prev).add(tournamentId));
     try {
-      const result = await callEdgeFunction<ImportResult>({
-        action: "import",
-        tournamentId,
-        format,
-      });
-      setImportResults((prev) => new Map(prev).set(tournamentId, result));
+      const { error } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({
+          import_requested_at: new Date().toISOString(),
+          import_status: "queued",
+          import_error: null,
+        })
+        .eq("tournament_id", tournamentId);
+
+      if (error) throw error;
+      setRefreshKey((k) => k + 1);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Import failed";
-      setImportResults((prev) => new Map(prev).set(tournamentId, msg));
+      console.error("Failed to queue tournament:", err);
     } finally {
-      setImportingIds((prev) => {
+      setQueuingIds((prev) => {
         const next = new Set(prev);
         next.delete(tournamentId);
         return next;
@@ -210,112 +169,82 @@ export function LimitlessImport() {
   }
 
   // -------------------------------------------------------------------------
-  // Batch import (Stage 2 for all shown)
+  // Batch queue all visible pending tournaments
   // -------------------------------------------------------------------------
 
-  async function importAll() {
+  async function queueAll() {
     if (!tournaments || tournaments.length === 0) return;
 
-    const toImport = tournaments.filter(
-      (t) => !importResults.has(t.tournament_id)
+    const toQueue = tournaments.filter(
+      (t) => !t.import_status || t.import_status === "failed"
     );
-    if (toImport.length === 0) return;
+    if (toQueue.length === 0) return;
 
-    setBatchImporting(true);
-    setBatchProgress({ current: 0, total: toImport.length });
+    setBatchQueuing(true);
+    try {
+      const ids = toQueue.map((t) => t.tournament_id);
+      const { error } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({
+          import_requested_at: new Date().toISOString(),
+          import_status: "queued",
+          import_error: null,
+        })
+        .in("tournament_id", ids);
 
-    let completed = 0;
-    for (const t of toImport) {
-      setBatchProgress({ current: ++completed, total: toImport.length });
-      await importOne(t.tournament_id, t.format_id);
-      // 2s delay between imports to stay under rate limits
-      if (completed < toImport.length) {
-        await new Promise((r) => setTimeout(r, 2000));
-      }
+      if (error) throw error;
+      setRefreshKey((k) => k + 1);
+      refetchStats();
+    } catch (err) {
+      console.error("Failed to batch queue:", err);
+    } finally {
+      setBatchQueuing(false);
     }
-
-    setBatchImporting(false);
-    setBatchProgress(null);
-    refetchStats();
-    setRefreshKey((k) => k + 1);
   }
 
-  // Count of tournaments still pending (excludes in-session imports)
+  // Count of tournaments still pending (not queued, not importing)
   const pendingTournaments = (tournaments ?? []).filter(
-    (t) => !importResults.has(t.tournament_id)
+    (t) => !t.import_status || t.import_status === "failed"
   );
+  const queuedCount = (tournaments ?? []).filter(
+    (t) => t.import_status === "queued"
+  ).length;
+  const importingCount = (tournaments ?? []).filter(
+    (t) => t.import_status === "importing"
+  ).length;
 
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
 
-  // Available format IDs for the dropdown
   const formatOptions = (stats?.formats ?? []).filter((f) => f.synced > 0);
 
   return (
     <div className="space-y-6">
-      {/* Stage 1: Sync */}
+      {/* Sync info card */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold">
-                Stage 1: Sync Tournament List
-              </h2>
+              <h2 className="text-lg font-semibold">Tournament Sync</h2>
               <p className="text-muted-foreground text-sm">
-                Fetch all VGC tournaments from the Limitless API and save
-                metadata to the database.
+                Tournament list syncs automatically every 5 minutes via cron.
+                Import queue processes every 15 minutes.
               </p>
             </div>
-            <Button onClick={handleSync} disabled={syncing}>
-              {syncing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <CloudDownload className="mr-2 h-4 w-4" />
-                  Sync List
-                </>
-              )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setRefreshKey((k) => k + 1);
+                refetchStats();
+              }}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
             </Button>
           </div>
-
-          {syncError && (
-            <div className="mt-3 rounded-lg bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
-              {syncError}
-            </div>
-          )}
-
-          {syncResult && (
-            <div className="mt-3 space-y-2 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-400">
-              <p>
-                Synced {syncResult.synced} tournaments from {syncResult.total}{" "}
-                total in API
-                {syncResult.mapped > 0 && (
-                  <> &middot; {syncResult.mapped} with known format mapping</>
-                )}
-                {syncResult.unmapped > 0 && (
-                  <> &middot; {syncResult.unmapped} with raw format codes</>
-                )}
-              </p>
-              {syncResult.skipped > 0 && (
-                <p className="text-amber-700 dark:text-amber-400">
-                  {syncResult.skipped} skipped (no format code)
-                </p>
-              )}
-              {syncResult.unmapped > 0 && (
-                <p className="text-muted-foreground text-xs">
-                  Unmapped formats:{" "}
-                  {Object.entries(syncResult.unmappedFormats)
-                    .sort(([, a], [, b]) => b - a)
-                    .map(([code, count]) => `${code} (${count})`)
-                    .join(", ")}
-                </p>
-              )}
-            </div>
-          )}
 
           {/* Stats summary */}
           {statsLoading ? (
@@ -334,6 +263,24 @@ export function LimitlessImport() {
               <Badge variant="outline" className="text-sm">
                 {stats.totalSynced - stats.totalImported} pending import
               </Badge>
+              {queuedCount > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-500/10 text-sm text-amber-700 dark:text-amber-400"
+                >
+                  <Clock className="mr-1 h-3 w-3" />
+                  {queuedCount} queued
+                </Badge>
+              )}
+              {importingCount > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-blue-500/10 text-sm text-blue-700 dark:text-blue-400"
+                >
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  {importingCount} importing
+                </Badge>
+              )}
             </div>
           ) : null}
 
@@ -345,18 +292,17 @@ export function LimitlessImport() {
         </CardContent>
       </Card>
 
-      {/* Stage 2: Import */}
+      {/* Import queue management */}
       <div className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold">
-            Stage 2: Import Tournament Data
-          </h2>
+          <h2 className="text-lg font-semibold">Import Queue</h2>
           <p className="text-muted-foreground text-sm">
-            Fetch standings, teams, and match results for synced tournaments.
+            Queue tournaments for import. The cron processes one tournament
+            every 15 minutes.
           </p>
         </div>
 
-        {/* Format filter + Import button */}
+        {/* Format filter + Queue All button */}
         <div className="flex items-center gap-3">
           <Select
             value={selectedFormat}
@@ -376,21 +322,19 @@ export function LimitlessImport() {
           </Select>
 
           {pendingTournaments.length > 0 && (
-            <Button onClick={importAll} disabled={batchImporting} size="sm">
-              {batchImporting ? (
+            <Button onClick={queueAll} disabled={batchQueuing} size="sm">
+              {batchQueuing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {batchProgress
-                    ? `${batchProgress.current}/${batchProgress.total}`
-                    : "Importing..."}
+                  Queuing...
                 </>
               ) : (
                 <>
                   <Download className="mr-2 h-4 w-4" />
-                  Import{" "}
+                  Queue{" "}
                   {selectedFormat !== "all"
                     ? (FORMAT_ID_TO_CODE[selectedFormat] ?? selectedFormat)
-                    : `All (first 500)`}{" "}
+                    : "All (first 500)"}{" "}
                   ({pendingTournaments.length})
                 </>
               )}
@@ -413,17 +357,13 @@ export function LimitlessImport() {
                 <TableHead className="w-32">Format</TableHead>
                 <TableHead className="w-24">Date</TableHead>
                 <TableHead className="w-20 text-right">Players</TableHead>
-                <TableHead className="w-28">Status</TableHead>
+                <TableHead className="w-32">Status</TableHead>
                 <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {tournaments.map((t) => {
-                const isImporting = importingIds.has(t.tournament_id);
-                const result = importResults.get(t.tournament_id);
-                const importFailed = typeof result === "string";
-                const importDone =
-                  typeof result === "object" && result !== null;
+                const isQueuing = queuingIds.has(t.tournament_id);
 
                 return (
                   <TableRow key={t.tournament_id}>
@@ -454,48 +394,26 @@ export function LimitlessImport() {
                       {t.player_count}
                     </TableCell>
                     <TableCell>
-                      {importDone ? (
-                        <Badge variant="default" className="text-xs">
-                          <CheckCircle2 className="mr-1 h-3 w-3" />
-                          Imported
-                        </Badge>
-                      ) : importFailed ? (
-                        <Badge variant="destructive" className="text-xs">
-                          <XCircle className="mr-1 h-3 w-3" />
-                          Failed
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          Pending
-                        </Badge>
-                      )}
+                      <ImportStatusBadge tournament={t} />
                     </TableCell>
                     <TableCell>
-                      {!importDone && (
+                      {(!t.import_status || t.import_status === "failed") && (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            importOne(t.tournament_id, t.format_id)
-                          }
-                          disabled={isImporting || batchImporting}
+                          onClick={() => queueOne(t.tournament_id)}
+                          disabled={isQueuing || batchQueuing}
                         >
-                          {isImporting ? (
+                          {isQueuing ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Download className="h-4 w-4" />
                           )}
                         </Button>
                       )}
-                      {importFailed && (
-                        <div className="text-destructive mt-1 text-xs">
-                          {result}
-                        </div>
-                      )}
-                      {importDone && (
-                        <div className="text-muted-foreground mt-1 text-xs">
-                          {result.standings}s / {result.pokemon}p /{" "}
-                          {result.matches}m
+                      {t.import_error && (
+                        <div className="text-destructive mt-1 max-w-48 truncate text-xs">
+                          {t.import_error}
                         </div>
                       )}
                     </TableCell>
@@ -507,11 +425,62 @@ export function LimitlessImport() {
         ) : (
           <p className="text-muted-foreground py-8 text-center text-sm">
             {stats?.totalSynced === 0
-              ? "No tournaments synced yet. Click Sync List above."
-              : "All synced tournaments have been imported."}
+              ? "No tournaments synced yet. The sync cron will populate this shortly."
+              : "All synced tournaments have been imported or queued."}
           </p>
         )}
       </div>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Status badge sub-component
+// ---------------------------------------------------------------------------
+
+function ImportStatusBadge({ tournament }: { tournament: TournamentRow }) {
+  const { import_status, import_attempts } = tournament;
+
+  switch (import_status) {
+    case "queued":
+      return (
+        <Badge
+          variant="secondary"
+          className="bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400"
+        >
+          <Clock className="mr-1 h-3 w-3" />
+          Queued
+        </Badge>
+      );
+    case "importing":
+      return (
+        <Badge
+          variant="secondary"
+          className="bg-blue-500/10 text-xs text-blue-700 dark:text-blue-400"
+        >
+          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+          Importing
+        </Badge>
+      );
+    case "completed":
+      return (
+        <Badge variant="default" className="text-xs">
+          <CheckCircle2 className="mr-1 h-3 w-3" />
+          Imported
+        </Badge>
+      );
+    case "failed":
+      return (
+        <Badge variant="destructive" className="text-xs">
+          <XCircle className="mr-1 h-3 w-3" />
+          Failed{import_attempts ? ` (${import_attempts}x)` : ""}
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="outline" className="text-xs">
+          Pending
+        </Badge>
+      );
+  }
 }

@@ -2,8 +2,10 @@
  * Limitless Webhook Route
  *
  * Receives POST from Limitless when a tournament ends.
- * Validates the shared secret, then delegates to the limitless-import
- * edge function for the actual import work.
+ * Validates the shared secret, then queues the tournament for import
+ * by setting import_status = 'queued' on the tournaments row.
+ *
+ * The /api/cron/limitless-import cron processes the queue every 15 minutes.
  *
  * Webhook payload from Limitless:
  *   {
@@ -68,26 +70,39 @@ export async function POST(request: Request) {
       );
     }
 
-    // Delegate to the limitless-import edge function via service role client.
-    // The auto-import action fetches tournament details, determines format,
-    // and imports if the format is known.
+    // Queue the tournament for import.
+    // If the sync cron hasn't seen this tournament yet, the update below will
+    // match 0 rows — that's fine. The sync cron runs every 5 minutes and will
+    // create the row, then the import cron will pick it up from the queue.
     const supabase = createServiceRoleClient();
-    const { data, error } = await supabase.functions.invoke(
-      "limitless-import",
-      {
-        body: { action: "auto-import", tournamentId },
-      }
-    );
 
-    if (error) {
-      console.error("[limitless-webhook] Edge function error:", error);
+    // Set queue status (only updates if the row already exists)
+    const { error: queueErr } = await supabase
+      .schema("limitless")
+      .from("tournaments")
+      .update({
+        import_requested_at: new Date().toISOString(),
+        import_status: "queued",
+        import_error: null,
+      })
+      .eq("tournament_id", tournamentId);
+
+    if (queueErr) {
+      console.error("[limitless-webhook] Queue error:", queueErr);
       return NextResponse.json(
-        { success: false, error: "Import failed" },
+        { success: false, error: "Failed to queue tournament" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(data);
+    console.log(
+      `[limitless-webhook] Queued tournament ${tournamentId} for import`
+    );
+
+    return NextResponse.json({
+      success: true,
+      data: { tournamentId, queued: true },
+    });
   } catch (err) {
     console.error("[limitless-webhook]", err);
     return NextResponse.json(

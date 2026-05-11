@@ -228,6 +228,13 @@ export type Database = {
           date: string
           decklists: boolean
           format_id: string
+          import_attempts: number | null
+          import_error: string | null
+          import_page: number | null
+          import_phase: string | null
+          import_requested_at: string | null
+          import_started_at: string | null
+          import_status: string | null
           imported_at: string
           is_online: boolean
           name: string
@@ -241,6 +248,13 @@ export type Database = {
           date: string
           decklists?: boolean
           format_id: string
+          import_attempts?: number | null
+          import_error?: string | null
+          import_page?: number | null
+          import_phase?: string | null
+          import_requested_at?: string | null
+          import_started_at?: string | null
+          import_status?: string | null
           imported_at?: string
           is_online?: boolean
           name: string
@@ -254,6 +268,13 @@ export type Database = {
           date?: string
           decklists?: boolean
           format_id?: string
+          import_attempts?: number | null
+          import_error?: string | null
+          import_page?: number | null
+          import_phase?: string | null
+          import_requested_at?: string | null
+          import_started_at?: string | null
+          import_status?: string | null
           imported_at?: string
           is_online?: boolean
           name?: string
@@ -269,7 +290,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      tournament_stats: {
+        Args: never
+        Returns: {
+          format_id: string
+          imported: number
+          synced: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

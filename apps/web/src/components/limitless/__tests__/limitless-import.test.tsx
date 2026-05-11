@@ -6,15 +6,18 @@ import { LimitlessImport } from "../limitless-import";
 // Mocks
 // ---------------------------------------------------------------------------
 
+const mockUpdate = jest.fn();
+const mockIn = jest.fn();
+const mockEq = jest.fn();
+const mockFrom = jest.fn();
+const mockSchema = jest.fn();
+
 jest.mock("@/lib/supabase/client", () => ({
   supabase: {
     functions: { invoke: jest.fn() },
+    schema: (...args: unknown[]) => mockSchema(...args),
   },
 }));
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { supabase: mockSupabase } = require("@/lib/supabase/client");
-const mockInvoke = mockSupabase.functions.invoke as jest.Mock;
 
 const mockUseSupabaseQuery = jest.fn();
 jest.mock("@/lib/supabase", () => ({
@@ -52,6 +55,10 @@ function makeTournament(overrides: Record<string, unknown> = {}) {
     date: "2024-03-15",
     player_count: 32,
     data_imported_at: null,
+    import_status: null,
+    import_requested_at: null,
+    import_error: null,
+    import_attempts: null,
     ...overrides,
   };
 }
@@ -88,6 +95,13 @@ function setupMocks({
     };
   });
 
+  // Setup schema mock chain for queue operations
+  mockEq.mockResolvedValue({ error: null });
+  mockIn.mockResolvedValue({ error: null });
+  mockUpdate.mockReturnValue({ eq: mockEq, in: mockIn });
+  mockFrom.mockReturnValue({ update: mockUpdate });
+  mockSchema.mockReturnValue({ from: mockFrom });
+
   return { refetchStats };
 }
 
@@ -101,30 +115,26 @@ describe("LimitlessImport", () => {
   });
 
   // -----------------------------------------------------------------------
-  // Stage 1: Sync UI
+  // Sync info card
   // -----------------------------------------------------------------------
 
-  describe("Stage 1: Sync", () => {
-    it("renders the sync section header", () => {
+  describe("Sync info card", () => {
+    it("renders the tournament sync header", () => {
       setupMocks();
       render(<LimitlessImport />);
 
+      expect(screen.getByText("Tournament Sync")).toBeInTheDocument();
       expect(
-        screen.getByText("Stage 1: Sync Tournament List")
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          "Fetch all VGC tournaments from the Limitless API and save metadata to the database."
-        )
+        screen.getByText(/syncs automatically every 5 minutes/)
       ).toBeInTheDocument();
     });
 
-    it("renders the Sync List button", () => {
+    it("renders a Refresh button", () => {
       setupMocks();
       render(<LimitlessImport />);
 
       expect(
-        screen.getByRole("button", { name: /sync list/i })
+        screen.getByRole("button", { name: /refresh/i })
       ).toBeInTheDocument();
     });
 
@@ -152,135 +162,48 @@ describe("LimitlessImport", () => {
       expect(screen.getByText("Edge function failed")).toBeInTheDocument();
     });
 
-    it("shows Syncing state when sync button is clicked", async () => {
-      setupMocks();
-      const user = userEvent.setup();
-
-      // Mock the edge function invoke for sync action
-      mockInvoke.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            synced: 50,
-            skipped: 2,
-            total: 100,
-            mapped: 45,
-            unmapped: 5,
-            unmappedFormats: { CUSTOM: 5 },
-          },
-        },
-        error: null,
+    it("shows queued count badge when tournaments are queued", () => {
+      setupMocks({
+        tournaments: [
+          makeTournament({ import_status: "queued", tournament_id: "t-1" }),
+          makeTournament({ import_status: "queued", tournament_id: "t-2" }),
+          makeTournament({ tournament_id: "t-3" }),
+        ],
       });
-
       render(<LimitlessImport />);
 
-      const syncButton = screen.getByRole("button", { name: /sync list/i });
-      await user.click(syncButton);
-
-      // Should show syncing state briefly
-      await waitFor(() => {
-        expect(
-          screen.getByText(/Synced 50 tournaments from 100 total/)
-        ).toBeInTheDocument();
-      });
+      expect(screen.getByText("2 queued")).toBeInTheDocument();
     });
 
-    it("shows error message when sync fails", async () => {
-      setupMocks();
-      const user = userEvent.setup();
-
-      mockInvoke.mockResolvedValueOnce({
-        data: { success: false, error: "Rate limited" },
-        error: null,
+    it("shows importing count badge when tournaments are being imported", () => {
+      setupMocks({
+        tournaments: [
+          makeTournament({ import_status: "importing", tournament_id: "t-1" }),
+          makeTournament({ tournament_id: "t-2" }),
+        ],
       });
-
       render(<LimitlessImport />);
 
-      const syncButton = screen.getByRole("button", { name: /sync list/i });
-      await user.click(syncButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Rate limited")).toBeInTheDocument();
-      });
-    });
-
-    it("shows sync result with unmapped formats", async () => {
-      setupMocks();
-      const user = userEvent.setup();
-
-      mockInvoke.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            synced: 50,
-            skipped: 0,
-            total: 100,
-            mapped: 45,
-            unmapped: 5,
-            unmappedFormats: { CUSTOM: 3, OTHER: 2 },
-          },
-        },
-        error: null,
-      });
-
-      render(<LimitlessImport />);
-      await user.click(screen.getByRole("button", { name: /sync list/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/5 with raw format codes/)).toBeInTheDocument();
-        expect(screen.getByText(/CUSTOM \(3\)/)).toBeInTheDocument();
-      });
-    });
-
-    it("shows skipped count when present", async () => {
-      setupMocks();
-      const user = userEvent.setup();
-
-      mockInvoke.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            synced: 50,
-            skipped: 3,
-            total: 100,
-            mapped: 50,
-            unmapped: 0,
-            unmappedFormats: {},
-          },
-        },
-        error: null,
-      });
-
-      render(<LimitlessImport />);
-      await user.click(screen.getByRole("button", { name: /sync list/i }));
-
-      await waitFor(() => {
-        expect(
-          screen.getByText(/3 skipped \(no format code\)/)
-        ).toBeInTheDocument();
-      });
+      expect(screen.getByText("1 importing")).toBeInTheDocument();
     });
   });
 
   // -----------------------------------------------------------------------
-  // Stage 2: Import UI
+  // Import Queue
   // -----------------------------------------------------------------------
 
-  describe("Stage 2: Import", () => {
-    it("renders the import section header", () => {
+  describe("Import Queue", () => {
+    it("renders the import queue header", () => {
       setupMocks();
       render(<LimitlessImport />);
 
-      expect(
-        screen.getByText("Stage 2: Import Tournament Data")
-      ).toBeInTheDocument();
+      expect(screen.getByText("Import Queue")).toBeInTheDocument();
     });
 
     it("renders format filter dropdown", () => {
       setupMocks();
       render(<LimitlessImport />);
 
-      // The format select combobox should be present
       expect(screen.getByRole("combobox")).toBeInTheDocument();
     });
 
@@ -308,16 +231,16 @@ describe("LimitlessImport", () => {
       expect(skeletons.length).toBeGreaterThan(0);
     });
 
-    it("shows 'all imported' message when no pending tournaments", () => {
+    it("shows 'all imported or queued' message when no pending tournaments", () => {
       setupMocks({ tournaments: [] });
       render(<LimitlessImport />);
 
       expect(
-        screen.getByText("All synced tournaments have been imported.")
+        screen.getByText("All synced tournaments have been imported or queued.")
       ).toBeInTheDocument();
     });
 
-    it("shows 'no tournaments synced' message when totalSynced is 0", () => {
+    it("shows 'sync will populate' message when totalSynced is 0", () => {
       setupMocks({
         stats: { totalSynced: 0, totalImported: 0, formats: [] },
         tournaments: [],
@@ -325,15 +248,46 @@ describe("LimitlessImport", () => {
       render(<LimitlessImport />);
 
       expect(
-        screen.getByText("No tournaments synced yet. Click Sync List above.")
+        screen.getByText(
+          "No tournaments synced yet. The sync cron will populate this shortly."
+        )
       ).toBeInTheDocument();
     });
 
-    it("renders Pending badge for not-yet-imported tournaments", () => {
+    it("renders Pending badge for not-yet-queued tournaments", () => {
       setupMocks();
       render(<LimitlessImport />);
 
       expect(screen.getByText("Pending")).toBeInTheDocument();
+    });
+
+    it("renders Queued badge for queued tournaments", () => {
+      setupMocks({
+        tournaments: [makeTournament({ import_status: "queued" })],
+      });
+      render(<LimitlessImport />);
+
+      expect(screen.getByText("Queued")).toBeInTheDocument();
+    });
+
+    it("renders Importing badge for actively importing tournaments", () => {
+      setupMocks({
+        tournaments: [makeTournament({ import_status: "importing" })],
+      });
+      render(<LimitlessImport />);
+
+      expect(screen.getByText("Importing")).toBeInTheDocument();
+    });
+
+    it("renders Failed badge with attempt count", () => {
+      setupMocks({
+        tournaments: [
+          makeTournament({ import_status: "failed", import_attempts: 2 }),
+        ],
+      });
+      render(<LimitlessImport />);
+
+      expect(screen.getByText("Failed (2x)")).toBeInTheDocument();
     });
 
     it("renders tournament table headers", () => {
@@ -362,58 +316,64 @@ describe("LimitlessImport", () => {
       expect(limitlessLink).toBeDefined();
     });
 
-    it("renders import button for each pending tournament", () => {
+    it("renders queue button for pending tournaments", () => {
       setupMocks();
       render(<LimitlessImport />);
 
-      // Should have at least one import button (the per-row button)
+      // Should have at least one queue button (the per-row button)
       const buttons = screen.getAllByRole("button");
-      // Find button that is not sync and not batch import
       expect(buttons.length).toBeGreaterThan(1);
     });
 
-    it("imports a single tournament on button click", async () => {
+    it("does not render queue button for queued tournaments", () => {
+      setupMocks({
+        tournaments: [makeTournament({ import_status: "queued" })],
+      });
+      render(<LimitlessImport />);
+
+      // Only buttons should be Refresh and possibly the batch queue
+      // (batch queue won't show since no pending tournaments)
+      const buttons = screen.getAllByRole("button");
+      // Should only be the Refresh button and the combobox
+      const queueButtons = buttons.filter(
+        (btn) =>
+          !btn.textContent?.includes("Refresh") &&
+          !btn.textContent?.includes("Queue") &&
+          !btn.textContent?.includes("All formats")
+      );
+      expect(queueButtons.length).toBe(0);
+    });
+
+    it("queues a single tournament on button click", async () => {
       setupMocks();
       const user = userEvent.setup();
 
-      // Mock successful import
-      mockInvoke.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            tournamentId: "t-001",
-            name: "Weekly VGC #1",
-            players: 32,
-            standings: 32,
-            pokemon: 192,
-            matches: 64,
-          },
-        },
-        error: null,
-      });
-
       render(<LimitlessImport />);
 
-      // Find the per-row import button (last button that's not Sync List or batch Import)
+      // Find the per-row queue button (small icon-only button)
       const allButtons = screen.getAllByRole("button");
-      // The per-row import button is small with just an icon — find it
-      const importButton = allButtons.find(
+      const queueButton = allButtons.find(
         (btn) =>
-          !btn.textContent?.includes("Sync") &&
-          !btn.textContent?.includes("Import") &&
+          !btn.textContent?.includes("Refresh") &&
+          !btn.textContent?.includes("Queue") &&
           !btn.textContent?.includes("All formats")
       );
 
-      if (importButton) {
-        await user.click(importButton);
+      if (queueButton) {
+        await user.click(queueButton);
 
         await waitFor(() => {
-          expect(screen.getByText("Imported")).toBeInTheDocument();
+          expect(mockSchema).toHaveBeenCalledWith("limitless");
+          expect(mockFrom).toHaveBeenCalledWith("tournaments");
+          expect(mockUpdate).toHaveBeenCalledWith(
+            expect.objectContaining({ import_status: "queued" })
+          );
+          expect(mockEq).toHaveBeenCalledWith("tournament_id", "t-001");
         });
       }
     });
 
-    it("shows batch import button with pending count", () => {
+    it("shows batch queue button with pending count", () => {
       setupMocks({
         tournaments: [
           makeTournament({ tournament_id: "t-1" }),
@@ -423,18 +383,43 @@ describe("LimitlessImport", () => {
       });
       render(<LimitlessImport />);
 
-      // The batch import button should show "Import All (3)"
-      expect(screen.getByText(/Import.*\(3\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Queue.*\(3\)/)).toBeInTheDocument();
     });
 
-    it("shows format-specific label on batch import button", async () => {
-      setupMocks();
+    it("renders queue button for failed tournaments (retry)", () => {
+      setupMocks({
+        tournaments: [
+          makeTournament({
+            import_status: "failed",
+            import_error: "Network timeout",
+          }),
+        ],
+      });
       render(<LimitlessImport />);
 
-      // Default is "All" so it shows "Import All (first 500) (1)"
-      expect(
-        screen.getByText(/Import All \(first 500\) \(1\)/)
-      ).toBeInTheDocument();
+      // Failed tournaments should have a queue button for retry
+      const allButtons = screen.getAllByRole("button");
+      const queueButton = allButtons.find(
+        (btn) =>
+          !btn.textContent?.includes("Refresh") &&
+          !btn.textContent?.includes("Queue") &&
+          !btn.textContent?.includes("All formats")
+      );
+      expect(queueButton).toBeDefined();
+    });
+
+    it("shows error text for failed tournaments", () => {
+      setupMocks({
+        tournaments: [
+          makeTournament({
+            import_status: "failed",
+            import_error: "Network timeout",
+          }),
+        ],
+      });
+      render(<LimitlessImport />);
+
+      expect(screen.getByText("Network timeout")).toBeInTheDocument();
     });
 
     it("shows mapped Limitless code in format badge", () => {
@@ -447,7 +432,6 @@ describe("LimitlessImport", () => {
       });
       render(<LimitlessImport />);
 
-      // Should show the mapped code "M-A" instead of the long format ID
       expect(screen.getByText("M-A")).toBeInTheDocument();
     });
 
@@ -462,75 +446,6 @@ describe("LimitlessImport", () => {
       render(<LimitlessImport />);
 
       expect(screen.getByText("unmapped-format")).toBeInTheDocument();
-    });
-
-    it("shows failed import error", async () => {
-      setupMocks();
-      const user = userEvent.setup();
-
-      // Mock failed import
-      mockInvoke.mockResolvedValueOnce({
-        data: { success: false, error: "Tournament not found" },
-        error: null,
-      });
-
-      render(<LimitlessImport />);
-
-      const allButtons = screen.getAllByRole("button");
-      const importButton = allButtons.find(
-        (btn) =>
-          !btn.textContent?.includes("Sync") &&
-          !btn.textContent?.includes("Import") &&
-          !btn.textContent?.includes("All formats")
-      );
-
-      if (importButton) {
-        await user.click(importButton);
-
-        await waitFor(() => {
-          expect(screen.getByText("Failed")).toBeInTheDocument();
-          expect(screen.getByText("Tournament not found")).toBeInTheDocument();
-        });
-      }
-    });
-
-    it("shows import stats after successful import", async () => {
-      setupMocks();
-      const user = userEvent.setup();
-
-      mockInvoke.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            tournamentId: "t-001",
-            name: "Weekly VGC #1",
-            players: 32,
-            standings: 30,
-            pokemon: 180,
-            matches: 60,
-          },
-        },
-        error: null,
-      });
-
-      render(<LimitlessImport />);
-
-      const allButtons = screen.getAllByRole("button");
-      const importButton = allButtons.find(
-        (btn) =>
-          !btn.textContent?.includes("Sync") &&
-          !btn.textContent?.includes("Import") &&
-          !btn.textContent?.includes("All formats")
-      );
-
-      if (importButton) {
-        await user.click(importButton);
-
-        await waitFor(() => {
-          // Shows "30s / 180p / 60m" format
-          expect(screen.getByText("30s / 180p / 60m")).toBeInTheDocument();
-        });
-      }
     });
 
     it("renders player count and date", () => {

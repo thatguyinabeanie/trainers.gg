@@ -6,7 +6,10 @@
 // Mocks — declared before imports so Jest hoisting works correctly
 // =============================================================================
 
-const mockFunctionsInvoke = jest.fn();
+const mockUpdate = jest.fn();
+const mockEq = jest.fn();
+const mockFrom = jest.fn();
+const mockSchema = jest.fn();
 const mockCreateServiceRoleClient = jest.fn();
 
 jest.mock("@/lib/supabase/server", () => ({
@@ -36,12 +39,14 @@ function makeRequest(body: unknown): Request {
 }
 
 /** Standard tournament:ended payload. */
-function makePayload(overrides: {
-  secret?: string;
-  eventName?: string;
-  game?: string;
-  tournamentId?: string;
-} = {}) {
+function makePayload(
+  overrides: {
+    secret?: string;
+    eventName?: string;
+    game?: string;
+    tournamentId?: string;
+  } = {}
+) {
   return {
     secret: overrides.secret ?? WEBHOOK_SECRET,
     event: {
@@ -61,13 +66,16 @@ const originalEnv = process.env;
 beforeEach(() => {
   jest.clearAllMocks();
   process.env = { ...originalEnv, LIMITLESS_WEBHOOK_SECRET: WEBHOOK_SECRET };
-  // Default: edge function succeeds
-  mockFunctionsInvoke.mockResolvedValue({
-    data: { success: true, imported: 1 },
-    error: null,
+
+  // Default: DB calls succeed
+  mockEq.mockResolvedValue({ error: null });
+  mockUpdate.mockReturnValue({ eq: mockEq });
+  mockFrom.mockReturnValue({
+    update: mockUpdate,
   });
+  mockSchema.mockReturnValue({ from: mockFrom });
   mockCreateServiceRoleClient.mockReturnValue({
-    functions: { invoke: mockFunctionsInvoke },
+    schema: mockSchema,
   });
 });
 
@@ -120,29 +128,25 @@ describe("Event filtering", () => {
 
     expect(response.status).toBe(200);
     expect(body.message).toBe("Ignored event: tournament:started");
-    expect(mockFunctionsInvoke).not.toHaveBeenCalled();
+    expect(mockCreateServiceRoleClient).not.toHaveBeenCalled();
   });
 
   it("ignores payloads with no event object", async () => {
-    const response = await POST(
-      makeRequest({ secret: WEBHOOK_SECRET })
-    );
+    const response = await POST(makeRequest({ secret: WEBHOOK_SECRET }));
     const body = (await response.json()) as Record<string, unknown>;
 
     expect(response.status).toBe(200);
     expect(body.message).toBe("Ignored event: unknown");
-    expect(mockFunctionsInvoke).not.toHaveBeenCalled();
+    expect(mockCreateServiceRoleClient).not.toHaveBeenCalled();
   });
 
   it("ignores non-VGC games with a 200", async () => {
-    const response = await POST(
-      makeRequest(makePayload({ game: "TCG" }))
-    );
+    const response = await POST(makeRequest(makePayload({ game: "TCG" })));
     const body = (await response.json()) as Record<string, unknown>;
 
     expect(response.status).toBe(200);
     expect(body.message).toBe("Ignored non-VGC game: TCG");
-    expect(mockFunctionsInvoke).not.toHaveBeenCalled();
+    expect(mockCreateServiceRoleClient).not.toHaveBeenCalled();
   });
 
   it("returns 400 when tournamentId is missing", async () => {
@@ -158,44 +162,44 @@ describe("Event filtering", () => {
 });
 
 // =============================================================================
-// Edge function delegation
+// Queue-based import
 // =============================================================================
 
-describe("Edge function delegation", () => {
-  it("calls the limitless-import edge function with auto-import action", async () => {
+describe("Queue-based import", () => {
+  it("updates the tournament row with queue status", async () => {
     await POST(makeRequest(makePayload({ tournamentId: "tourney-99" })));
 
     expect(mockCreateServiceRoleClient).toHaveBeenCalledTimes(1);
-    expect(mockFunctionsInvoke).toHaveBeenCalledWith("limitless-import", {
-      body: { action: "auto-import", tournamentId: "tourney-99" },
-    });
+    expect(mockSchema).toHaveBeenCalledWith("limitless");
+    expect(mockFrom).toHaveBeenCalledWith("tournaments");
+    // Update call to set queue status
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ import_status: "queued" })
+    );
+    expect(mockEq).toHaveBeenCalledWith("tournament_id", "tourney-99");
   });
 
-  it("returns the edge function response data on success", async () => {
-    mockFunctionsInvoke.mockResolvedValue({
-      data: { success: true, imported: 1, format: "gen9championsvgc2026regma" },
-      error: null,
-    });
-
-    const response = await POST(makeRequest(makePayload()));
+  it("returns success with queued flag", async () => {
+    const response = await POST(
+      makeRequest(makePayload({ tournamentId: "tourney-99" }))
+    );
     const body = (await response.json()) as Record<string, unknown>;
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(body.imported).toBe(1);
+    expect(body.data).toEqual(
+      expect.objectContaining({ tournamentId: "tourney-99", queued: true })
+    );
   });
 
-  it("returns 500 when the edge function returns an error", async () => {
-    mockFunctionsInvoke.mockResolvedValue({
-      data: null,
-      error: { message: "Edge function failed" },
-    });
+  it("returns 500 when queue update fails", async () => {
+    mockEq.mockResolvedValue({ error: { message: "Update failed" } });
 
     const response = await POST(makeRequest(makePayload()));
     const body = (await response.json()) as Record<string, unknown>;
 
     expect(response.status).toBe(500);
-    expect(body.error).toBe("Import failed");
+    expect(body.error).toBe("Failed to queue tournament");
   });
 });
 
@@ -223,7 +227,6 @@ describe("Error handling", () => {
   });
 
   it("returns 500 with generic message for non-Error throws", async () => {
-    // Force a non-Error throw by making json() reject with a string
     const request = {
       json: jest.fn().mockRejectedValue("string-error"),
     } as unknown as Request;
