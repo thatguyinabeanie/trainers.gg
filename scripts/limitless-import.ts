@@ -224,7 +224,7 @@ async function importTournament(
       tournament_id: tournamentId,
       name: details.name,
       format_id: formatId,
-      date: details.date.split("T")[0], // date only
+      date: details.date.slice(0, 10), // date only
       player_count: details.players ?? 0,
       platform: details.platform ?? null,
       is_online: details.isOnline ?? true,
