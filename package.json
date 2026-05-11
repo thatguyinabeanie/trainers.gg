@@ -64,10 +64,7 @@
     "test:watch": "turbo run test:watch",
     "// cleanup": "",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
-    "turbo:update": "pnpm dlx @turbo/codemod@latest update .",
-    "// data pipeline": "",
-    "limitless:download": "tsx scripts/limitless-download.ts",
-    "limitless:import": "tsx scripts/limitless-import.ts"
+    "turbo:update": "pnpm dlx @turbo/codemod@latest update ."
   },
   "devDependencies": {
     "@supabase/supabase-js": "catalog:supabase",
@@ -119,5 +116,8 @@
       "supabase",
       "utf-8-validate"
     ]
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0"
   }
 }
