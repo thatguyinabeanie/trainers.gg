@@ -107,7 +107,7 @@ interface UnifiedRow {
 }
 
 type SourceFilter = "all" | "rk9" | "limitless";
-type StatusFilter = "all" | "pending" | "complete" | "failed" | "in-progress";
+type StatusFilter = "all" | "pending" | "queued" | "importing" | "complete" | "failed" | "in-progress";
 type SortDirection = "asc" | "desc";
 type SortColumn =
   | "name"
@@ -115,7 +115,8 @@ type SortColumn =
   | "category"
   | "date"
   | "playerCount"
-  | "status";
+  | "status"
+  | "queueOrder";
 
 interface SortState {
   column: SortColumn;
@@ -153,8 +154,9 @@ function normalizeLimitlessStatus(status: string | null): string {
     case "completed":
       return "complete";
     case "queued":
+      return "queued";
     case "importing":
-      return "in-progress";
+      return "importing";
     case "failed":
       return "failed";
     default:
@@ -422,7 +424,14 @@ export function ExternalData() {
       // Source filter
       if (sourceFilter !== "all" && row.source !== sourceFilter) return false;
       // Status filter
-      if (statusFilter !== "all" && row.status !== statusFilter) return false;
+      if (statusFilter !== "all") {
+        if (statusFilter === "in-progress") {
+          const activeStatuses = ["queued", "importing", "in-progress", "roster", "teams"];
+          if (!activeStatuses.includes(row.status)) return false;
+        } else if (row.status !== statusFilter) {
+          return false;
+        }
+      }
       // Search
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -450,6 +459,11 @@ export function ExternalData() {
           return compareValues(a.playerCount, b.playerCount, direction);
         case "status":
           return compareValues(a.status, b.status, direction);
+        case "queueOrder": {
+          const aTime = a.limitless?.import_requested_at ?? "";
+          const bTime = b.limitless?.import_requested_at ?? "";
+          return compareValues(aTime, bTime, direction);
+        }
         default:
           return 0;
       }
@@ -471,6 +485,27 @@ export function ExternalData() {
   const limitlessPendingCount = (limitlessTournaments ?? []).filter(
     (t) => !t.import_status || t.import_status === "failed"
   ).length;
+
+  const rk9ActiveCount = activeJobs.size;
+
+  const nextQueuedItem = (limitlessTournaments ?? [])
+    .filter((t) => t.import_status === "queued" && t.import_requested_at)
+    .sort(
+      (a, b) =>
+        new Date(a.import_requested_at!).getTime() -
+        new Date(b.import_requested_at!).getTime()
+    )[0] ?? null;
+
+  function formatRelativeTime(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  }
 
   // -------------------------------------------------------------------------
   // RK9 actions
@@ -857,6 +892,47 @@ export function ExternalData() {
         )}
       </div>
 
+      {/* Queue status strip */}
+      {(limitlessQueuedCount > 0 || limitlessImportingCount > 0 || rk9ActiveCount > 0) && (
+        <div className="bg-muted/30 flex items-center gap-4 rounded-lg border px-4 py-2 text-sm">
+          {limitlessImportingCount > 0 && (
+            <span className="flex items-center gap-1.5 font-medium text-blue-600 dark:text-blue-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {limitlessImportingCount} importing now
+            </span>
+          )}
+          {rk9ActiveCount > 0 && (
+            <span className="flex items-center gap-1.5 font-medium text-purple-600 dark:text-purple-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {rk9ActiveCount} RK9 processing
+            </span>
+          )}
+          {limitlessQueuedCount > 0 && nextQueuedItem && (
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              Next up:
+              <span className="max-w-[300px] truncate font-medium">
+                {nextQueuedItem.name}
+              </span>
+              <span className="text-xs">
+                (queued {formatRelativeTime(nextQueuedItem.import_requested_at!)})
+              </span>
+            </span>
+          )}
+          {limitlessQueuedCount > 0 && !nextQueuedItem && (
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              {limitlessQueuedCount} queued
+            </span>
+          )}
+          {limitlessQueuedCount > 0 && (
+            <span className="text-muted-foreground ml-auto text-xs">
+              {limitlessQueuedCount} in queue
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Filters Row */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
@@ -891,6 +967,8 @@ export function ExternalData() {
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="queued">Queued</SelectItem>
+            <SelectItem value="importing">Importing</SelectItem>
             <SelectItem value="in-progress">In progress</SelectItem>
             <SelectItem value="complete">Complete</SelectItem>
             <SelectItem value="failed">Failed</SelectItem>
@@ -927,7 +1005,7 @@ export function ExternalData() {
           </div>
 
           {/* Fixed header row */}
-          <div className="grid grid-cols-[1fr_80px_90px_110px_70px_110px_96px] border-b">
+          <div className="grid grid-cols-[1fr_80px_90px_110px_70px_110px_100px_80px] border-b">
             <SortableHeader
               column="name"
               label="Event"
@@ -961,6 +1039,12 @@ export function ExternalData() {
             <SortableHeader
               column="status"
               label="Status"
+              sort={sort}
+              onSort={(c) => setSort(toggleSort(sort, c))}
+            />
+            <SortableHeader
+              column="queueOrder"
+              label="Queue"
               sort={sort}
               onSort={(c) => setSort(toggleSort(sort, c))}
             />
@@ -1000,7 +1084,7 @@ export function ExternalData() {
                     ref={rowVirtualizer.measureElement}
                     data-index={virtualRow.index}
                     className={cn(
-                      "grid grid-cols-[1fr_80px_90px_110px_70px_110px_96px] border-b transition-colors hover:bg-muted/50",
+                      "grid grid-cols-[1fr_80px_90px_110px_70px_110px_100px_80px] border-b transition-colors hover:bg-muted/50",
                       isUpcomingRow && "opacity-60"
                     )}
                     style={{
@@ -1081,6 +1165,18 @@ export function ExternalData() {
                     </div>
                     <div className="flex items-center p-2">
                       <StatusBadge row={row} activeJobs={activeJobs} />
+                    </div>
+                    <div className="flex items-center p-2">
+                      {row.status === "queued" && row.limitless?.import_requested_at && (
+                        <span className="text-muted-foreground whitespace-nowrap text-xs">
+                          {formatRelativeTime(row.limitless.import_requested_at)}
+                        </span>
+                      )}
+                      {row.status === "importing" && row.limitless?.import_requested_at && (
+                        <span className="whitespace-nowrap text-xs text-blue-600 dark:text-blue-400">
+                          started {formatRelativeTime(row.limitless.import_requested_at)}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center justify-end p-2">
                       <RowActions
