@@ -351,6 +351,11 @@ describe("listTournamentsGrouped", () => {
                 alt: {
                   id: 100,
                   username: "champion_player",
+                  is_public: true,
+                  user: {
+                    username: "champion_player",
+                    main_alt_id: 100,
+                  },
                 },
               },
             ],
@@ -382,6 +387,9 @@ describe("listTournamentsGrouped", () => {
       winner: {
         id: 100,
         username: "champion_player",
+        isPublic: true,
+        isMainAlt: true,
+        parentUsername: "champion_player",
       },
       registrationCount: 32,
     });

@@ -3996,3 +3996,80 @@ BEGIN
 
   RAISE NOTICE 'Admin tournament seed data created: main=%, vgc=%, draft=%', v_main_id, v_vgc_id, v_draft_id;
 END $$;
+
+-- =============================================================================
+-- Stellar Novas Monthly #12 registrations (for player count display)
+-- =============================================================================
+DO $$
+DECLARE
+  t_id bigint;
+BEGIN
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'stellar-novas-monthly-12';
+  IF t_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  -- Register the 4 finalists + 24 other players for a realistic field size
+  INSERT INTO public.tournament_registrations (tournament_id, alt_id, status, registered_at, show_country_flag)
+  SELECT t_id, a.id, 'confirmed', now() - interval '10 days', TRUE
+  FROM public.alts a
+  WHERE a.username IN (
+    -- Top 4 (have standings)
+    'ash_ketchum_draft', 'cynthia', 'brock', 'karen',
+    -- Rest of field
+    'oswaldo_kling', 'dim_trainer_491', 'shad_williamson9',
+    'westonwilderman14', 'alyson_stiedemann', 'annette_harber2',
+    'oleflatley25', 'titus_kohler60', 'dirty_trainer_951',
+    'ashamed_elite', 'aged_trainer_120', 'angelic_trainer_423',
+    'abelardo_konopelski', 'adela1', 'alda_rau2',
+    'aliviashields97', 'alvertalemke46', 'amber_reichel25',
+    'annette20', 'arnoldo81', 'artfritsch16',
+    'arturofahey55', 'ashton_kshlerin', 'ashtyn_vonrueden'
+  )
+  ON CONFLICT DO NOTHING;
+
+  RAISE NOTICE 'Created registrations for stellar-novas-monthly-12';
+END $$;
+
+-- =============================================================================
+-- Stellar Novas Monthly #13 + Hatterene Cup registrations (upcoming events)
+-- =============================================================================
+DO $$
+DECLARE
+  t_stellar_id bigint;
+  t_hatterene_id bigint;
+BEGIN
+  SELECT id INTO t_stellar_id FROM public.tournaments WHERE slug = 'stellar-novas-monthly-13';
+  SELECT id INTO t_hatterene_id FROM public.tournaments WHERE slug = 'hatterene-cup-01';
+
+  -- Stellar Novas Monthly #13: 16 early registrations
+  IF t_stellar_id IS NOT NULL THEN
+    INSERT INTO public.tournament_registrations (tournament_id, alt_id, status, registered_at, show_country_flag)
+    SELECT t_stellar_id, a.id, 'registered', now() - interval '2 days', TRUE
+    FROM public.alts a
+    WHERE a.username IN (
+      'cynthia', 'brock', 'karen', 'oswaldo_kling',
+      'dim_trainer_491', 'shad_williamson9', 'westonwilderman14',
+      'alyson_stiedemann', 'ashamed_elite', 'aged_trainer_120',
+      'angelic_trainer_423', 'abelardo_konopelski', 'adela1',
+      'alda_rau2', 'aliviashields97', 'alvertalemke46'
+    )
+    ON CONFLICT DO NOTHING;
+    RAISE NOTICE 'Created registrations for stellar-novas-monthly-13';
+  END IF;
+
+  -- Hatterene Cup #1: 12 early registrations
+  IF t_hatterene_id IS NOT NULL THEN
+    INSERT INTO public.tournament_registrations (tournament_id, alt_id, status, registered_at, show_country_flag)
+    SELECT t_hatterene_id, a.id, 'registered', now() - interval '1 day', TRUE
+    FROM public.alts a
+    WHERE a.username IN (
+      'ash_ketchum', 'cynthia', 'brock', 'karen',
+      'oswaldo_kling', 'alyson_stiedemann', 'annette_harber2',
+      'ashamed_elite', 'aged_trainer_120', 'angelic_trainer_423',
+      'amber_reichel25', 'arnoldo81'
+    )
+    ON CONFLICT DO NOTHING;
+    RAISE NOTICE 'Created registrations for hatterene-cup-01';
+  END IF;
+END $$;

@@ -9,7 +9,7 @@ import { type ValidationError } from "../../validation-hooks";
 import { useContainerCompact } from "../../use-container-compact";
 import { useTeamLayoutMode } from "../../use-team-layout";
 import { IdentityLaneGhost } from "./identity-lane-ghost";
-import { filterCurrentTeam } from "./identity-layout-props";
+import { filterCurrentTeam } from "../../shared/identity-layout-props";
 import { IdentityMidStack } from "./identity-mid-stack";
 import { IdentitySingleRow } from "./identity-single-row";
 import { IdentityVertical } from "./identity-vertical";

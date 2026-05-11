@@ -545,7 +545,7 @@ export async function updateAltVisibilityAction(
 
     if (updateError) throw updateError;
 
-    // Invalidate the public profile cache so /u/[handle] reflects the change
+    // Invalidate the public profile cache so /@[handle] reflects the change
     const { data: userData } = await supabase
       .from("users")
       .select("username")

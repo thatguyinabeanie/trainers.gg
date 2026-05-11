@@ -22,7 +22,7 @@ interface PlayerCardProps {
 /**
  * Player card for the directory grid.
  * Displays avatar, username, country flag, tournament count, and win rate.
- * Links to the player's profile page at /u/[handle].
+ * Links to the player's profile page at /@[handle].
  */
 export function PlayerCard({
   username,
@@ -39,7 +39,7 @@ export function PlayerCard({
   const countryName = country ? getCountryName(country) : null;
 
   return (
-    <Link href={`/u/${username}`} className="block">
+    <Link href={`/@${username}`} className="block">
       <Card
         size="sm"
         className={cn(

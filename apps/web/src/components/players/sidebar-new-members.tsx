@@ -36,7 +36,7 @@ export function SidebarNewMembers({ members }: SidebarNewMembersProps) {
           return (
             <Link
               key={member.userId}
-              href={`/u/${member.username}`}
+              href={`/@${member.username}`}
               className="hover:bg-muted/50 flex items-center gap-2.5 rounded-md p-1.5 transition-colors"
             >
               {/* Avatar */}
