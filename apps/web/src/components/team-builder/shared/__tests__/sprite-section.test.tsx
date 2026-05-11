@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen } from "@testing-library/react";
 import React from "react";
 
@@ -25,7 +26,7 @@ import { SpriteSection } from "../sprite-section";
 // Helpers
 // =============================================================================
 
-function makePokemon(overrides: Partial<Tables<"pokemon">> = {}): Tables<"pokemon"> {
+function makePokemon(): Tables<"pokemon"> {
   return {
     id: "poke-1",
     species: "Garchomp",

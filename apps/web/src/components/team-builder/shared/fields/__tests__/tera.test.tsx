@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, jest } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 
