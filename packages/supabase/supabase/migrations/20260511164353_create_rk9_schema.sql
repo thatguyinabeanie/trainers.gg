@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS rk9.players (
   created_at        timestamptz         NOT NULL DEFAULT now(),
 
   -- Dedup constraint: same name + country = same player
+  -- Refined later with player_id_masked column for full disambiguation
   UNIQUE (first_name, last_name, country)
 );
 
