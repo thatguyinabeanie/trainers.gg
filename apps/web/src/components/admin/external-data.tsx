@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ArrowDown,
   ArrowUp,
@@ -28,14 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -168,7 +162,7 @@ function normalizeLimitlessStatus(status: string | null): string {
   }
 }
 
-// Sortable table header
+// Sortable header cell
 function SortableHeader({
   column,
   label,
@@ -184,7 +178,7 @@ function SortableHeader({
 }) {
   const isActive = sort.column === column;
   return (
-    <TableHead className={className}>
+    <div className={cn("flex h-10 items-center px-2 font-medium whitespace-nowrap", className)}>
       <button
         className="hover:text-foreground inline-flex items-center gap-1"
         onClick={() => onSort(column)}
@@ -200,7 +194,7 @@ function SortableHeader({
           <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
         )}
       </button>
-    </TableHead>
+    </div>
   );
 }
 
@@ -608,6 +602,14 @@ export function ExternalData() {
   // -------------------------------------------------------------------------
 
   const autoImportRunning = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: filteredRows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 56,
+    overscan: 10,
+  });
 
   useEffect(() => {
     if (!autoImportEnabled || autoImportRunning.current) return;
@@ -923,227 +925,186 @@ export function ExternalData() {
           <div className="text-muted-foreground px-4 py-2 text-xs">
             Showing {filteredRows.length} of {unifiedRows.length} events
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortableHeader
-                  column="name"
-                  label="Event"
-                  sort={sort}
-                  onSort={(c) => setSort(toggleSort(sort, c))}
-                />
-                <SortableHeader
-                  column="source"
-                  label="Source"
-                  sort={sort}
-                  onSort={(c) => setSort(toggleSort(sort, c))}
-                />
-                <SortableHeader
-                  column="category"
-                  label="Type"
-                  sort={sort}
-                  onSort={(c) => setSort(toggleSort(sort, c))}
-                />
-                <SortableHeader
-                  column="date"
-                  label="Date"
-                  sort={sort}
-                  onSort={(c) => setSort(toggleSort(sort, c))}
-                />
-                <SortableHeader
-                  column="playerCount"
-                  label="Players"
-                  sort={sort}
-                  onSort={(c) => setSort(toggleSort(sort, c))}
-                />
-                <SortableHeader
-                  column="status"
-                  label="Status"
-                  sort={sort}
-                  onSort={(c) => setSort(toggleSort(sort, c))}
-                />
-                <TableHead className="w-24 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRows.map((row) => (
-                <UnifiedTableRow
-                  key={row.id}
-                  row={row}
-                  activeJobs={activeJobs}
-                  queuingIds={queuingIds}
-                  batchQueuing={batchQueuing}
-                  onScrapeRoster={handleScrapeRoster}
-                  onScrapeTeams={handleScrapeTeams}
-                  onQueueOne={handleQueueOne}
-                />
-              ))}
-            </TableBody>
-          </Table>
+
+          {/* Fixed header row */}
+          <div className="grid grid-cols-[1fr_80px_90px_110px_70px_110px_96px] border-b">
+            <SortableHeader
+              column="name"
+              label="Event"
+              sort={sort}
+              onSort={(c) => setSort(toggleSort(sort, c))}
+            />
+            <SortableHeader
+              column="source"
+              label="Source"
+              sort={sort}
+              onSort={(c) => setSort(toggleSort(sort, c))}
+            />
+            <SortableHeader
+              column="category"
+              label="Type"
+              sort={sort}
+              onSort={(c) => setSort(toggleSort(sort, c))}
+            />
+            <SortableHeader
+              column="date"
+              label="Date"
+              sort={sort}
+              onSort={(c) => setSort(toggleSort(sort, c))}
+            />
+            <SortableHeader
+              column="playerCount"
+              label="Players"
+              sort={sort}
+              onSort={(c) => setSort(toggleSort(sort, c))}
+            />
+            <SortableHeader
+              column="status"
+              label="Status"
+              sort={sort}
+              onSort={(c) => setSort(toggleSort(sort, c))}
+            />
+            <div className="flex h-10 items-center justify-end px-2 font-medium whitespace-nowrap">
+              Actions
+            </div>
+          </div>
+
+          {/* Virtualized body */}
+          <div ref={scrollRef} className="overflow-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
+            <div style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}>
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const row = filteredRows[virtualRow.index];
+                if (!row) return null;
+                const isUpcomingRow = row.status === "upcoming";
+                const externalUrl =
+                  row.source === "rk9"
+                    ? `https://rk9.gg/tournament/${row.rk9!.event_id}`
+                    : `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}`;
+                const subLinks =
+                  row.source === "rk9" && !isUpcomingRow
+                    ? [
+                        { label: "Roster", href: `https://rk9.gg/roster/${row.rk9!.event_id}` },
+                        { label: "Pairings", href: `https://rk9.gg/pairings/${row.rk9!.event_id}` },
+                        { label: "Standings", href: `https://rk9.gg/standings/${row.rk9!.event_id}` },
+                      ]
+                    : row.source === "limitless"
+                      ? [
+                          { label: "Standings", href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/standings` },
+                          { label: "Pairings", href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/pairings` },
+                          { label: "Players", href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/players` },
+                        ]
+                      : [];
+                return (
+                  <div
+                    key={row.id}
+                    ref={rowVirtualizer.measureElement}
+                    data-index={virtualRow.index}
+                    className={cn(
+                      "grid grid-cols-[1fr_80px_90px_110px_70px_110px_96px] border-b transition-colors hover:bg-muted/50",
+                      isUpcomingRow && "opacity-60"
+                    )}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <div className="p-2">
+                      <div className="flex items-center gap-1.5">
+                        <a
+                          href={externalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium hover:underline"
+                        >
+                          {row.name}
+                        </a>
+                        <a
+                          href={externalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
+                      {row.rk9?.location_city && (
+                        <p className="text-muted-foreground text-xs">
+                          {row.rk9.location_city}
+                          {row.rk9.location_country ? `, ${row.rk9.location_country}` : ""}
+                        </p>
+                      )}
+                      {subLinks.length > 0 && (
+                        <div className="mt-0.5 flex items-center gap-2 text-xs">
+                          {subLinks.map((link) => (
+                            <a
+                              key={link.label}
+                              href={link.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-muted-foreground hover:text-foreground hover:underline"
+                            >
+                              {link.label}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {row.error && (
+                        <p className="mt-0.5 text-xs text-red-500">{row.error}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center p-2">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-xs",
+                          row.source === "rk9"
+                            ? "border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400"
+                            : "border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400"
+                        )}
+                      >
+                        {row.source === "rk9" ? "RK9" : "Limitless"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center p-2">
+                      <Badge variant="secondary" className="text-xs capitalize">
+                        {row.category}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center p-2 text-sm">
+                      {row.date}
+                    </div>
+                    <div className="flex items-center p-2 text-sm">
+                      {row.playerCount ?? "—"}
+                    </div>
+                    <div className="flex items-center p-2">
+                      <StatusBadge row={row} activeJobs={activeJobs} />
+                    </div>
+                    <div className="flex items-center justify-end p-2">
+                      <RowActions
+                        row={row}
+                        activeJobs={activeJobs}
+                        queuingIds={queuingIds}
+                        batchQueuing={batchQueuing}
+                        onScrapeRoster={handleScrapeRoster}
+                        onScrapeTeams={handleScrapeTeams}
+                        onQueueOne={handleQueueOne}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Unified Table Row
-// ---------------------------------------------------------------------------
 
-function UnifiedTableRow({
-  row,
-  activeJobs,
-  queuingIds,
-  batchQueuing,
-  onScrapeRoster,
-  onScrapeTeams,
-  onQueueOne,
-}: {
-  row: UnifiedRow;
-  activeJobs: Map<string, { type: string; scraped?: number; total?: number }>;
-  queuingIds: Set<string>;
-  batchQueuing: boolean;
-  onScrapeRoster: (eventId: string) => void;
-  onScrapeTeams: (eventId: string) => void;
-  onQueueOne: (tournamentId: string) => void;
-}) {
-  const isUpcomingRow = row.status === "upcoming";
-
-  // External links
-  const externalUrl =
-    row.source === "rk9"
-      ? `https://rk9.gg/tournament/${row.rk9!.event_id}`
-      : `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}`;
-
-  const subLinks =
-    row.source === "rk9" && !isUpcomingRow
-      ? [
-          {
-            label: "Roster",
-            href: `https://rk9.gg/roster/${row.rk9!.event_id}`,
-          },
-          {
-            label: "Pairings",
-            href: `https://rk9.gg/pairings/${row.rk9!.event_id}`,
-          },
-          {
-            label: "Standings",
-            href: `https://rk9.gg/standings/${row.rk9!.event_id}`,
-          },
-        ]
-      : row.source === "limitless"
-        ? [
-            {
-              label: "Standings",
-              href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/standings`,
-            },
-            {
-              label: "Pairings",
-              href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/pairings`,
-            },
-            {
-              label: "Players",
-              href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/players`,
-            },
-          ]
-        : [];
-
-  return (
-    <TableRow className={isUpcomingRow ? "opacity-60" : undefined}>
-      {/* Event name + location + sub-links */}
-      <TableCell>
-        <div className="flex items-center gap-1.5">
-          <a
-            href={externalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-medium hover:underline"
-          >
-            {row.name}
-          </a>
-          <a
-            href={externalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        </div>
-        {row.rk9?.location_city && (
-          <p className="text-muted-foreground text-xs">
-            {row.rk9.location_city}
-            {row.rk9.location_country ? `, ${row.rk9.location_country}` : ""}
-          </p>
-        )}
-        {subLinks.length > 0 && (
-          <div className="mt-0.5 flex items-center gap-2 text-xs">
-            {subLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground hover:underline"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-        )}
-        {row.error && (
-          <p className="mt-0.5 text-xs text-red-500">{row.error}</p>
-        )}
-      </TableCell>
-
-      {/* Source */}
-      <TableCell>
-        <Badge
-          variant="outline"
-          className={cn(
-            "text-xs",
-            row.source === "rk9"
-              ? "border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400"
-              : "border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400"
-          )}
-        >
-          {row.source === "rk9" ? "RK9" : "Limitless"}
-        </Badge>
-      </TableCell>
-
-      {/* Type (tier / format) */}
-      <TableCell>
-        <Badge variant="secondary" className="text-xs capitalize">
-          {row.category}
-        </Badge>
-      </TableCell>
-
-      {/* Date */}
-      <TableCell className="text-sm">{row.date}</TableCell>
-
-      {/* Players */}
-      <TableCell className="text-sm">{row.playerCount ?? "—"}</TableCell>
-
-      {/* Status */}
-      <TableCell>
-        <StatusBadge row={row} activeJobs={activeJobs} />
-      </TableCell>
-
-      {/* Actions */}
-      <TableCell className="text-right">
-        <RowActions
-          row={row}
-          activeJobs={activeJobs}
-          queuingIds={queuingIds}
-          batchQueuing={batchQueuing}
-          onScrapeRoster={onScrapeRoster}
-          onScrapeTeams={onScrapeTeams}
-          onQueueOne={onQueueOne}
-        />
-      </TableCell>
-    </TableRow>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Status Badge
