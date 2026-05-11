@@ -9,6 +9,7 @@ const navItems = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/communities", label: "Communities" },
   { href: "/admin/limitless", label: "Limitless" },
+  { href: "/admin/rk9", label: "RK9" },
   { href: "/admin/config", label: "Settings" },
 ];
 
