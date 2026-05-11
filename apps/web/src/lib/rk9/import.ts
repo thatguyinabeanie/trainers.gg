@@ -204,18 +204,23 @@ export async function importEvent(
     pokemonInserted: 0,
   };
 
-  // 1. Delete existing child data for idempotency
-  //    (team_pokemon cascades from standings via ON DELETE CASCADE)
-  const { error: delStandingsErr } = await supabase
-    .schema("rk9")
-    .from("standings")
-    .delete()
-    .eq("event_id", eventId);
-  if (delStandingsErr)
-    throw new Error(`Delete standings: ${delStandingsErr.message}`);
+  // 1. Delete existing child data and load species_map in parallel
+  const [delErr, speciesMap] = await Promise.all([
+    // Delete standings (team_pokemon cascades via ON DELETE CASCADE)
+    supabase
+      .schema("rk9")
+      .from("standings")
+      .delete()
+      .eq("event_id", eventId)
+      .then(({ error }) => error),
 
-  // 2. Load species_map for normalization overrides
-  const speciesMap = speciesMapOverrides ?? (await loadSpeciesMap(supabase));
+    // Load species_map for normalization overrides
+    speciesMapOverrides
+      ? Promise.resolve(speciesMapOverrides)
+      : loadSpeciesMap(supabase),
+  ]);
+
+  if (delErr) throw new Error(`Delete standings: ${delErr.message}`);
 
   // 3. Batch upsert all players first
   const playerIdCache = new Map<string, number>();

@@ -441,29 +441,45 @@ export async function processImportQueue(
   if (staleErr) {
     console.error("[limitless-import] Stale import query failed:", staleErr.message);
   } else if (staleRows && staleRows.length > 0) {
+    // Batch stale recovery: separate failed vs requeue in two .in() calls
+    const failed: string[] = [];
+    const requeue: string[] = [];
+
     for (const row of staleRows) {
       const attempts = (row.import_attempts ?? 0) + 1;
       if (attempts >= MAX_ATTEMPTS) {
-        await supabase
+        failed.push(row.tournament_id);
+      } else {
+        requeue.push(row.tournament_id);
+      }
+    }
+
+    const ops: Promise<unknown>[] = [];
+    if (failed.length > 0) {
+      ops.push(
+        supabase
           .schema("limitless")
           .from("tournaments")
           .update({
             import_status: "failed",
             import_error: `Timed out after ${MAX_ATTEMPTS} attempts`,
-            import_attempts: attempts,
           })
-          .eq("tournament_id", row.tournament_id);
-      } else {
-        await supabase
+          .in("tournament_id", failed)
+      );
+    }
+    if (requeue.length > 0) {
+      ops.push(
+        supabase
           .schema("limitless")
           .from("tournaments")
           .update({
             import_status: "queued",
-            import_attempts: attempts,
+            import_error: null,
           })
-          .eq("tournament_id", row.tournament_id);
-      }
+          .in("tournament_id", requeue)
+      );
     }
+    await Promise.all(ops);
 
     results.push({ processed: false, recovered: true });
     // Continue to process queue — don't short-circuit after recovery
