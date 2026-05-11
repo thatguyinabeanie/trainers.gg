@@ -6,8 +6,7 @@ import type { ActionResult } from "@trainers/validators";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 
-const CONFIG_KEY_REGEX = /^[a-z_][a-z0-9_]{0,63}$/i;
-const configKeySchema = z.string().regex(CONFIG_KEY_REGEX, "Invalid config key");
+const configKeySchema = z.string().regex(/^[a-z_][a-z0-9_]{0,63}$/i, "Invalid config key");
 
 /**
  * Read a site config value by key.

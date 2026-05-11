@@ -12,4 +12,4 @@ ALTER TABLE rk9.players
 
 ALTER TABLE rk9.players
   ADD CONSTRAINT players_dedup_key
-    UNIQUE (player_id_masked, first_name, last_name, country, division);
+    UNIQUE (player_id_masked, first_name, last_name, country);
