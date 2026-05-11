@@ -106,21 +106,33 @@ async function requireAdmin(
 /**
  * Returns import stats: synced + fully-imported counts per format.
  *
- * Uses two targeted count queries instead of fetching all rows, since
- * PostgREST defaults to a 1000-row limit on SELECT.
+ * Paginates through all rows since PostgREST caps SELECT at 1000 rows.
  */
 async function handleStats(cors: Record<string, string>) {
   const supabase = adminClient();
 
-  // Get distinct format_ids present in the table
-  const { data: allRows, error: allErr } = await supabase
-    .schema("limitless")
-    .from("tournaments")
-    .select("format_id, data_imported_at")
-    .limit(50000);
+  // Paginate to get ALL rows — PostgREST caps at 1000 per request
+  const PAGE_SIZE = 1000;
+  const allRows: Array<{
+    format_id: string;
+    data_imported_at: string | null;
+  }> = [];
+  let offset = 0;
 
-  if (allErr) {
-    return json({ success: false, error: allErr.message }, 500, cors);
+  while (true) {
+    const { data, error } = await supabase
+      .schema("limitless")
+      .from("tournaments")
+      .select("format_id, data_imported_at")
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      return json({ success: false, error: error.message }, 500, cors);
+    }
+
+    allRows.push(...(data ?? []));
+    if (!data || data.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
   }
 
   // Count by format: synced (all rows) vs fully imported (data_imported_at != null)
