@@ -11,6 +11,7 @@ const mockEq = jest.fn();
 const mockMaybeSingle = jest.fn();
 const mockUpdate = jest.fn();
 const mockInsert = jest.fn();
+const mockUpsert = jest.fn();
 const mockFrom = jest.fn();
 const mockSchema = jest.fn();
 const mockCreateServiceRoleClient = jest.fn();
@@ -70,15 +71,28 @@ beforeEach(() => {
   jest.clearAllMocks();
   process.env = { ...originalEnv, LIMITLESS_WEBHOOK_SECRET: WEBHOOK_SECRET };
 
-  mockSelect.mockReturnValue({ eq: mockEq, maybeSingle: mockMaybeSingle });
+  // select → eq → maybeSingle chain (select.eq returns a new object with maybeSingle)
+  mockSelect.mockImplementation(() => ({
+    eq: jest.fn(() => ({ maybeSingle: mockMaybeSingle })),
+    maybeSingle: mockMaybeSingle,
+  }));
   mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+  // update → eq → resolved result (update.eq resolves directly)
+  mockUpdate.mockImplementation(() => ({
+    eq: mockEq,
+  }));
   mockEq.mockResolvedValue({ error: null });
-  mockUpdate.mockReturnValue({ eq: mockEq });
+
+  // Direct resolves for terminal methods
   mockInsert.mockResolvedValue({ error: null });
+  mockUpsert.mockResolvedValue({ error: null });
+
   mockFrom.mockReturnValue({
     select: mockSelect,
     update: mockUpdate,
     insert: mockInsert,
+    upsert: mockUpsert,
   });
   mockSchema.mockReturnValue({ from: mockFrom });
   mockCreateServiceRoleClient.mockReturnValue({
@@ -174,6 +188,12 @@ describe("Event filtering", () => {
 
 describe("Queue-based import", () => {
   it("updates the tournament row with queue status", async () => {
+    // Make the select lookup return a row so we hit the update path
+    mockMaybeSingle.mockResolvedValue({
+      data: { tournament_id: "tourney-99", import_status: "pending" },
+      error: null,
+    });
+
     await POST(makeRequest(makePayload({ tournamentId: "tourney-99" })));
 
     expect(mockCreateServiceRoleClient).toHaveBeenCalledTimes(1);
@@ -200,6 +220,11 @@ describe("Queue-based import", () => {
   });
 
   it("returns 500 when queue update fails", async () => {
+    // Make the select lookup return a row so we hit the update path
+    mockMaybeSingle.mockResolvedValue({
+      data: { tournament_id: "abc123", import_status: "pending" },
+      error: null,
+    });
     mockEq.mockResolvedValue({ error: { message: "Update failed" } });
 
     const response = await POST(makeRequest(makePayload()));

@@ -206,9 +206,14 @@ describe("processImportQueue", () => {
     // Update call for requeue
     const updateChain = createChain();
 
+    // Default chain for subsequent processOne call — no queued tournament
+    const waitChain = createChain();
+    waitChain.maybeSingle.mockResolvedValue({ data: null, error: null });
+
     supabase.schema
       .mockReturnValueOnce(staleChain)
-      .mockReturnValueOnce(updateChain);
+      .mockReturnValueOnce(updateChain)
+      .mockReturnValue(waitChain);
 
     const result = await processImportQueue(supabase as unknown as MockSupabase, "key", 1);
 
@@ -236,9 +241,14 @@ describe("processImportQueue", () => {
     // Update call for fail
     const updateChain = createChain();
 
+    // Default chain for subsequent processOne call — no queued tournament
+    const waitChain = createChain();
+    waitChain.maybeSingle.mockResolvedValue({ data: null, error: null });
+
     supabase.schema
       .mockReturnValueOnce(staleChain)
-      .mockReturnValueOnce(updateChain);
+      .mockReturnValueOnce(updateChain)
+      .mockReturnValue(waitChain);
 
     const result = await processImportQueue(supabase as unknown as MockSupabase, "key", 1);
 
