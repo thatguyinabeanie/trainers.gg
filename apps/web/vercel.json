@@ -5,9 +5,6 @@
   "buildCommand": "cd ../.. && pnpm turbo run build --filter=@trainers/web",
   "crons": [
     { "path": "/api/discord/reconcile-roles", "schedule": "3-59/15 * * * *" },
-    { "path": "/api/discord/uninstall-sweep", "schedule": "0 7 * * *" },
-    { "path": "/api/cron/limitless-sync", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/limitless-import", "schedule": "*/15 * * * *" },
-    { "path": "/api/cron/rk9-worker", "schedule": "*/5 * * * *" }
+    { "path": "/api/discord/uninstall-sweep", "schedule": "0 7 * * *" }
   ]
 }
