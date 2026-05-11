@@ -131,7 +131,9 @@ export function LimitlessImport() {
         query = query.eq("format_id", selectedFormat);
       }
 
-      const { data, error } = await query.limit(200);
+      // When filtering by format, fetch all; otherwise cap at 500
+      const limit = selectedFormat !== "all" ? 5000 : 500;
+      const { data, error } = await query.limit(limit);
       if (error) throw error;
       return (data ?? []) as TournamentRow[];
     },
@@ -184,15 +186,15 @@ export function LimitlessImport() {
   // -------------------------------------------------------------------------
 
   async function importOne(tournamentId: string, formatId: string) {
-    const limitlessCode = FORMAT_ID_TO_CODE[formatId];
-    if (!limitlessCode) return;
+    // Use Limitless code if mapped, otherwise pass raw format_id
+    const format = FORMAT_ID_TO_CODE[formatId] ?? formatId;
 
     setImportingIds((prev) => new Set(prev).add(tournamentId));
     try {
       const result = await callEdgeFunction<ImportResult>({
         action: "import",
         tournamentId,
-        format: limitlessCode,
+        format,
       });
       setImportResults((prev) => new Map(prev).set(tournamentId, result));
     } catch (err) {
@@ -340,53 +342,56 @@ export function LimitlessImport() {
 
       {/* Stage 2: Import */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">
-              Stage 2: Import Tournament Data
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              Fetch standings, teams, and match results for synced tournaments.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {tournaments && tournaments.length > 0 && (
-              <Button onClick={importAll} disabled={batchImporting} size="sm">
-                {batchImporting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {batchProgress
-                      ? `${batchProgress.current}/${batchProgress.total}`
-                      : "Importing..."}
-                  </>
-                ) : (
-                  <>
-                    <Download className="mr-2 h-4 w-4" />
-                    Import All ({tournaments.length})
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+        <div>
+          <h2 className="text-lg font-semibold">
+            Stage 2: Import Tournament Data
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Fetch standings, teams, and match results for synced tournaments.
+          </p>
         </div>
 
-        {/* Format filter */}
-        <Select
-          value={selectedFormat}
-          onValueChange={(v) => setSelectedFormat(v ?? "all")}
-        >
-          <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder="All formats" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All formats</SelectItem>
-            {formatOptions.map((f) => (
-              <SelectItem key={f.formatId} value={f.formatId}>
-                {f.limitlessCode} — {f.synced - f.imported} pending
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Format filter + Import button */}
+        <div className="flex items-center gap-3">
+          <Select
+            value={selectedFormat}
+            onValueChange={(v) => setSelectedFormat(v ?? "all")}
+          >
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="All formats" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All formats</SelectItem>
+              {formatOptions.map((f) => (
+                <SelectItem key={f.formatId} value={f.formatId}>
+                  {f.limitlessCode} — {f.synced - f.imported} pending
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {tournaments && tournaments.length > 0 && (
+            <Button onClick={importAll} disabled={batchImporting} size="sm">
+              {batchImporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {batchProgress
+                    ? `${batchProgress.current}/${batchProgress.total}`
+                    : "Importing..."}
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Import{" "}
+                  {selectedFormat !== "all"
+                    ? (FORMAT_ID_TO_CODE[selectedFormat] ?? selectedFormat)
+                    : "All"}{" "}
+                  ({tournaments.length})
+                </>
+              )}
+            </Button>
+          )}
+        </div>
 
         {/* Tournament list from DB */}
         {tournamentsLoading ? (
