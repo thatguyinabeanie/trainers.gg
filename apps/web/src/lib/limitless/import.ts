@@ -71,9 +71,19 @@ export async function syncTournamentList(
     });
   }
 
+  // Deduplicate by tournament_id — pagination can return the same tournament
+  // on multiple pages if new tournaments are added between requests
+  const seen = new Set<string>();
+  const uniqueRows = rows.filter((r) => {
+    const tid = r.tournament_id as string;
+    if (seen.has(tid)) return false;
+    seen.add(tid);
+    return true;
+  });
+
   // Batch upsert in chunks of 500
-  for (let i = 0; i < rows.length; i += 500) {
-    const batch = rows.slice(i, i + 500);
+  for (let i = 0; i < uniqueRows.length; i += 500) {
+    const batch = uniqueRows.slice(i, i + 500);
     const { error } = await supabase
       .schema("limitless")
       .from("tournaments")
