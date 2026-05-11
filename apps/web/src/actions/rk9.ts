@@ -228,7 +228,7 @@ export async function discoverRk9Events(): Promise<
       liveCount = liveEvents.length;
     } catch (e) {
       // Live fetch failing shouldn't block archive recovery
-      console.warn("[discoverRk9Events] Live RK9 fetch failed:", getErrorMessage(e));
+      console.warn("[discoverRk9Events] Live RK9 fetch failed:", getErrorMessage(e, "unknown"));
     }
 
     // Source 2: Wayback Machine (all historical seasons)
@@ -246,13 +246,13 @@ export async function discoverRk9Events(): Promise<
           // Individual snapshot failure shouldn't abort the whole process
           console.warn(
             `[discoverRk9Events] Wayback snapshot ${timestamp} failed:`,
-            getErrorMessage(e)
+            getErrorMessage(e, "unknown")
           );
         }
       }
     } catch (e) {
       // CDX API failure shouldn't block if live succeeded
-      console.warn("[discoverRk9Events] Wayback CDX query failed:", getErrorMessage(e));
+      console.warn("[discoverRk9Events] Wayback CDX query failed:", getErrorMessage(e, "unknown"));
     }
 
     if (allEvents.length === 0) {

@@ -560,9 +560,16 @@ export function LimitlessImport() {
                     <TableRow key={t.tournament_id}>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
-                          <span className="font-medium">{t.name}</span>
                           <a
-                            href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}/standings`}
+                            href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium hover:underline"
+                          >
+                            {t.name}
+                          </a>
+                          <a
+                            href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-muted-foreground hover:text-foreground"
@@ -574,6 +581,32 @@ export function LimitlessImport() {
                         </div>
                         <div className="text-muted-foreground font-mono text-xs">
                           {t.tournament_id}
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-2 text-xs">
+                          <a
+                            href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}/standings`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground hover:underline"
+                          >
+                            Standings
+                          </a>
+                          <a
+                            href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}/pairings`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground hover:underline"
+                          >
+                            Pairings
+                          </a>
+                          <a
+                            href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}/players`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground hover:underline"
+                          >
+                            Players
+                          </a>
                         </div>
                       </TableCell>
                       <TableCell>
