@@ -30,7 +30,7 @@ import {
   detectEventFormat,
   formatDetectionNeedsHtml,
 } from "@/lib/rk9/scraper";
-import { syncEvents, importEvent, seedSpeciesMap } from "@/lib/rk9/import";
+import { syncEvents, importEvent, seedSpeciesMap, normalizeSpecies } from "@/lib/rk9/import";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -88,10 +88,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function normalizeSpeciesInline(raw: string): string {
-  const bracketMatch = raw.match(/^(.+?)\s*\[(.+?)\]$/);
-  let species = bracketMatch ? bracketMatch[1]!.trim() : raw.trim();
-  const form = bracketMatch ? bracketMatch[2]!.trim() : null;
 
   species = species.toLowerCase().replace(/[^a-z0-9-]/g, "");
 
@@ -173,7 +169,7 @@ async function tryDiscoverEvents(
     .select("imported_at")
     .order("imported_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (latestEvent) {
     const lastSync = new Date(latestEvent.imported_at).getTime();
@@ -212,7 +208,7 @@ async function tryImportRoster(
     .lte("date_start", today)
     .order("date_start", { ascending: true })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (!event) return null;
 
@@ -306,7 +302,7 @@ async function tryImportTeamBatch(
     .in("import_status", ["roster", "teams"])
     .order("date_start", { ascending: true })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (!event) return null;
 
@@ -397,7 +393,7 @@ async function tryImportTeamBatch(
       if (pokemon.length > 0) {
         const pokemonRows = pokemon.map((mon, i) => {
           if (!newSpecies.has(mon.speciesRaw) && !speciesMap.has(mon.speciesRaw)) {
-            newSpecies.set(mon.speciesRaw, normalizeSpeciesInline(mon.speciesRaw));
+            newSpecies.set(mon.speciesRaw, normalizeSpecies(mon.speciesRaw));
           }
           return {
             standing_id: standing.id,
@@ -405,7 +401,7 @@ async function tryImportTeamBatch(
             species:
               speciesMap.get(mon.speciesRaw) ??
               newSpecies.get(mon.speciesRaw) ??
-              normalizeSpeciesInline(mon.speciesRaw),
+              normalizeSpecies(mon.speciesRaw),
             species_raw: mon.speciesRaw,
             ability: mon.ability || null,
             held_item: mon.heldItem || null,

@@ -20,6 +20,7 @@ const posthogSrc = resolve(repoRoot, "packages/posthog/src");
 const validatorsSrc = resolve(repoRoot, "packages/validators/src");
 const supabaseSrc = resolve(__dirname, "../src");
 const utilsSrc = resolve(repoRoot, "packages/utils/src");
+const pokemonSrc = resolve(repoRoot, "packages/pokemon/src");
 
 const isDeploy = process.argv.includes("--deploy");
 
@@ -56,6 +57,10 @@ const trainersResolvePlugin: esbuild.Plugin = {
       const subpath = args.path.replace("@trainers/validators/", "");
       return { path: resolve(validatorsSrc, `${subpath}.ts`) };
     });
+
+    build.onResolve({ filter: /^@trainers\/pokemon\/regulation-calendar/ }, () => ({
+      path: resolve(pokemonSrc, "regulation-calendar.ts"),
+    }));
   },
 };
 
@@ -79,6 +84,7 @@ async function main() {
   mkdirSync(resolve(vendorDir, "posthog"), { recursive: true });
   mkdirSync(resolve(vendorDir, "validators"), { recursive: true });
   mkdirSync(resolve(vendorDir, "supabase"), { recursive: true });
+  mkdirSync(resolve(vendorDir, "pokemon"), { recursive: true });
 
   console.log("  Bundling @trainers/posthog...");
   await esbuild.build({
@@ -115,6 +121,16 @@ async function main() {
     plugins: [trainersResolvePlugin],
     entryPoints: { mutations: resolve(supabaseSrc, "mutations/index.ts") },
     outdir: resolve(vendorDir, "supabase"),
+  });
+
+  console.log("  Bundling @trainers/pokemon/regulation-calendar...");
+  await esbuild.build({
+    ...sharedConfig,
+    plugins: [trainersResolvePlugin],
+    entryPoints: {
+      "regulation-calendar": resolve(pokemonSrc, "regulation-calendar.ts"),
+    },
+    outdir: resolve(vendorDir, "pokemon"),
   });
 
   console.log("  ✅ Vendor complete: _shared/vendor/ ready");
