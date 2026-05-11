@@ -64,12 +64,18 @@
     "test:watch": "turbo run test:watch",
     "// cleanup": "",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
-    "turbo:update": "pnpm dlx @turbo/codemod@latest update ."
+    "turbo:update": "pnpm dlx @turbo/codemod@latest update .",
+    "// data pipeline": "",
+    "limitless:download": "tsx scripts/limitless-download.ts",
+    "limitless:import": "tsx scripts/limitless-import.ts"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "catalog:supabase",
     "@trainers/prettier-config": "workspace:*",
+    "dotenv": "^17.4.2",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "catalog:",
+    "tsx": "catalog:",
     "turbo": "^2.9.9"
   },
   "pnpm": {

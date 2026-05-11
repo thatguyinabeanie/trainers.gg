@@ -103,6 +103,9 @@ mise.local.toml
 .venv/
 *.egg-info/
 
+# External data pipeline (raw downloads)
+data/
+
 # Android SDK (symlink to external or local install)
 .android-sdk/
 .superpowers

@@ -29,7 +29,7 @@
     "test:watch": "jest --watch",
     "lint": "eslint . --max-warnings 0 --cache",
     "typecheck": "tsc --noEmit",
-    "generate-types": "supabase gen types typescript --local 2>/dev/null > src/types.ts",
+    "generate-types": "supabase gen types typescript --local --schema public,limitless 2>/dev/null > src/types.ts",
     "generate-seed-json": "tsx scripts/generate-seed-data/generate-user-data.ts",
     "generate-seeds": "tsx scripts/generate-seed-data/index.ts",
     "db:migrate": "supabase db push",

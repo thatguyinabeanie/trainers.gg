@@ -27,19 +27,19 @@ Build and validate the pipeline using existing **Scarlet & Violet (Regulation I)
 
 ### Format ID Mapping (Limitless → Internal)
 
-| Limitless | Showdown (canonical) | Display |
-|-----------|---------------------|---------|
-| `M-A` | `gen9championsvgc2026regma` | Champions: Reg M-A |
-| `SVI` | `gen9vgc2025regi` | VGC 2025 Reg I |
-| `SVH` | `gen9vgc2024regh` | VGC 2024 Reg H |
-| `SVG` | `gen9vgc2024regg` | VGC 2024 Reg G |
-| `SVF` | `gen9vgc2024regf` | VGC 2024 Reg F |
-| `SVE` | `gen9vgc2023rege` | VGC 2023 Reg E |
-| `VGC23` | `gen9vgc2023regd` | VGC 2023 Reg D |
-| `23S3` | `gen9vgc2023regc` | VGC 2023 Reg C |
-| `23S2` | `gen9vgc2023regb` | VGC 2023 Reg B |
-| `23S1` | `gen9vgc2023rega` | VGC 2023 Reg A |
-| `VGC22` | `gen8vgc2022series12` | VGC 2022 Series 12 |
+| Limitless | Showdown (canonical)        | Display            |
+| --------- | --------------------------- | ------------------ |
+| `M-A`     | `gen9championsvgc2026regma` | Champions: Reg M-A |
+| `SVI`     | `gen9vgc2025regi`           | VGC 2025 Reg I     |
+| `SVH`     | `gen9vgc2024regh`           | VGC 2024 Reg H     |
+| `SVG`     | `gen9vgc2024regg`           | VGC 2024 Reg G     |
+| `SVF`     | `gen9vgc2024regf`           | VGC 2024 Reg F     |
+| `SVE`     | `gen9vgc2023rege`           | VGC 2023 Reg E     |
+| `VGC23`   | `gen9vgc2023regd`           | VGC 2023 Reg D     |
+| `23S3`    | `gen9vgc2023regc`           | VGC 2023 Reg C     |
+| `23S2`    | `gen9vgc2023regb`           | VGC 2023 Reg B     |
+| `23S1`    | `gen9vgc2023rega`           | VGC 2023 Reg A     |
+| `VGC22`   | `gen8vgc2022series12`       | VGC 2022 Series 12 |
 
 > Note: some of these Showdown format IDs need verification — the pattern may vary for older formats.
 
@@ -49,14 +49,14 @@ Build and validate the pipeline using existing **Scarlet & Violet (Regulation I)
 
 ### Endpoints
 
-| Endpoint | Auth Required | Description |
-|----------|---------------|-------------|
-| `GET /tournaments` | No | Paginated list (filter by game, format, organizer) |
-| `GET /tournaments/{id}/details` | No | Full event metadata (organizer, phases, platform) |
-| `GET /tournaments/{id}/standings` | No | All players — placing, record, team sheet, country |
-| `GET /tournaments/{id}/pairings` | No | Every match — round, phase, table, players, winner |
-| `GET /games` | No | Supported games, formats, platforms |
-| `GET /games/{id}/decks` | Yes | Deck categorization rules |
+| Endpoint                          | Auth Required | Description                                        |
+| --------------------------------- | ------------- | -------------------------------------------------- |
+| `GET /tournaments`                | No            | Paginated list (filter by game, format, organizer) |
+| `GET /tournaments/{id}/details`   | No            | Full event metadata (organizer, phases, platform)  |
+| `GET /tournaments/{id}/standings` | No            | All players — placing, record, team sheet, country |
+| `GET /tournaments/{id}/pairings`  | No            | Every match — round, phase, table, players, winner |
+| `GET /games`                      | No            | Supported games, formats, platforms                |
+| `GET /games/{id}/decks`           | Yes           | Deck categorization rules                          |
 
 ### Webhook
 
@@ -66,26 +66,26 @@ Build and validate the pipeline using existing **Scarlet & Violet (Regulation I)
 
 ### VGC Format IDs
 
-| ID | Name |
-|----|------|
-| `M-A` | Regulation Set M-A (Pokemon Champions) |
-| `SVI` | Scarlet & Violet - Regulation I |
-| `SVH` | Scarlet & Violet - Regulation H |
-| `SVG` | Scarlet & Violet - Regulation G |
-| `SVF` | Scarlet & Violet - Regulation F |
-| `SVE` | Scarlet & Violet - Regulation E |
-| `VGC23` | Scarlet & Violet - Regulation D |
-| `23S3` | Scarlet & Violet - Regulation C |
-| `23S2` | Scarlet & Violet - Regulation B |
-| `23S1` | Scarlet & Violet - Regulation A |
-| `VGC22` | VGC 2022 (Series 12) |
+| ID      | Name                                   |
+| ------- | -------------------------------------- |
+| `M-A`   | Regulation Set M-A (Pokemon Champions) |
+| `SVI`   | Scarlet & Violet - Regulation I        |
+| `SVH`   | Scarlet & Violet - Regulation H        |
+| `SVG`   | Scarlet & Violet - Regulation G        |
+| `SVF`   | Scarlet & Violet - Regulation F        |
+| `SVE`   | Scarlet & Violet - Regulation E        |
+| `VGC23` | Scarlet & Violet - Regulation D        |
+| `23S3`  | Scarlet & Violet - Regulation C        |
+| `23S2`  | Scarlet & Violet - Regulation B        |
+| `23S1`  | Scarlet & Violet - Regulation A        |
+| `VGC22` | VGC 2022 (Series 12)                   |
 
 ### Platforms
 
-| ID | Name |
-|----|------|
+| ID       | Name            |
+| -------- | --------------- |
 | `SWITCH` | Nintendo Switch |
-| `SIM` | Simulator |
+| `SIM`    | Simulator       |
 
 ## Data Shapes
 
@@ -152,229 +152,255 @@ Bracket matches use `"match": "T2-1"` instead of `"table"`.
 
 ## Data Available vs. Not Available
 
-| Field | Available | Notes |
-|-------|-----------|-------|
-| Species | Yes | `id` (slug) and `name` |
-| Item | Yes | |
-| Ability | Yes | |
-| Moves | Yes | Array of 4 |
-| Tera type | Yes | `null` for non-SV formats |
-| EVs / IVs | No | Not provided by Limitless |
-| Nature | No | Not provided by Limitless |
-| Gender | No | |
-| Level | No | |
+| Field     | Available | Notes                     |
+| --------- | --------- | ------------------------- |
+| Species   | Yes       | `id` (slug) and `name`    |
+| Item      | Yes       |                           |
+| Ability   | Yes       |                           |
+| Moves     | Yes       | Array of 4                |
+| Tera type | Yes       | `null` for non-SV formats |
+| EVs / IVs | No        | Not provided by Limitless |
+| Nature    | No        | Not provided by Limitless |
+| Gender    | No        |                           |
+| Level     | No        |                           |
 
 ## Existing Schema (to be dropped)
 
-The current tables in `public` were an early attempt. They'll be dropped and replaced by the `external` schema.
+Tables in `public` from the earlier attempt — will be dropped when we create the `limitless` schema:
 
-**Tables to drop:**
+**Drop:**
+
 - `public.external_players`
 - `public.data_imports`
 - `public.imported_team_sheets`
 
-**Tables to keep (web app reads these):**
+**Keep (web app reads these):**
+
 - `public.format_meta_stats`
 - `public.pokemon_usage_stats`
 - `public.pokemon_detail_stats`
 
-**Problems with the old design:**
-1. Lives in `public` — should be in a separate schema
-2. Normalized for writes, slow for reads (needs JOINs for basic analytics)
-3. Assumes EV/IV/nature data that external sources don't provide
-4. No match/pairing storage at all
-5. Tournament metadata denormalized per-row but inconsistently (no standalone tournament entity)
+## Database Schema Design
 
-## Database Schema Design (Brainstorming)
+> **Status:** Finalized for Limitless. RK9 and Showdown deferred — they'll get their own schemas later.
 
-> **Status:** Exploring options. Nothing committed. Two approaches considered so far — landed on denormalized for query performance.
+### Decisions
 
-### Approach: Denormalized, query-optimized
+- Schema: **`limitless`** (each source gets its own schema later)
+- Format IDs: **Showdown strings** (`gen9championsvgc2026regma`) — map from Limitless codes at import time
+- All PKs are `int` (except `tournaments` which uses Limitless's native ID string). Migrate to `bigint` later if ever needed.
+- No FK to `public.alts` or any trainers.gg entity (for now — future account linking will add this)
+- `moves text[]` for move storage
+- Phases as a proper table with composite PK — match_results composite FK to it
+- Each match_results row = one set (BO3 or BO1), not individual games. Limitless doesn't provide game-by-game scores.
 
-Optimized for reads over writes. Tournament metadata repeated on every row — trivial at our volume (~36K rows/season max). Zero JOINs for common analytics queries.
+### Tables (6 total)
 
-**Schema:** `external` (separate from `public`)
-
-#### `external.team_appearances` — the workhorse table
-
-One row per Pokemon per player per tournament. Every row has full context.
+#### `limitless.tournaments`
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│              external.team_appearances                         │
-├──────────────────────────────────────────────────────────────┤
-│ id                  bigint PK                                 │
-│                                                               │
-│ -- Source identity (for dedup/idempotency)                    │
-│ source              text (limitless/rk9)                       │
-│ source_tournament_id text                                     │
-│ source_player_id    text                                      │
-│                                                               │
-│ -- Tournament context (fully denormalized)                    │
-│ tournament_name     text                                      │
-│ format_id           text (e.g. gen9championsvgc2026regma)      │
-│ tournament_date     date                                      │
-│ tournament_tier     text (regional/international/community/..)│
-│ player_count        int                                       │
-│ platform            text (switch/sim)                          │
-│                                                               │
-│ -- Player context (fully denormalized)                        │
-│ player_name         text                                      │
-│ player_country      text                                      │
-│                                                               │
-│ -- Placement context (fully denormalized)                     │
-│ placing             int                                       │
-│ record_wins         int                                       │
-│ record_losses       int                                       │
-│ record_ties         int                                       │
-│                                                               │
-│ -- The Pokemon (one per row)                                  │
-│ position            int (1-6)                                 │
-│ species             text                                      │
-│ ability             text                                      │
-│ held_item           text                                      │
-│ tera_type           text (nullable — null for Champions M-A)  │
-│ moves               text[]                                    │
-│                                                               │
-│ -- Housekeeping                                               │
-│ imported_at         timestamptz                                │
-├──────────────────────────────────────────────────────────────┤
-│ UNIQUE(source, source_tournament_id, source_player_id,        │
-│        position)                                              │
-└──────────────────────────────────────────────────────────────┘
+tournament_id       text PK            ← Limitless's own ID ('69e3bf...')
+name                text
+format_id           text               ← Showdown format string
+date                date
+player_count        int
+platform            text               ← 'SWITCH' / 'SIM'
+is_online           boolean
+decklists           boolean
+organizer_name      text
+imported_at         timestamptz
 ```
 
-#### `external.match_results` — pairings/match data
-
-One row per match. Tournament context denormalized.
+#### `limitless.phases`
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│              external.match_results                            │
-├──────────────────────────────────────────────────────────────┤
-│ id                  bigint PK                                 │
-│                                                               │
-│ -- Source identity                                            │
-│ source              text                                      │
-│ source_tournament_id text                                     │
-│                                                               │
-│ -- Tournament context (denormalized)                          │
-│ tournament_name     text                                      │
-│ format_id           text                                      │
-│ tournament_date     date                                      │
-│ tournament_tier     text                                      │
-│                                                               │
-│ -- Match info                                                 │
-│ phase               int                                       │
-│ round               int                                       │
-│ table_number        int (nullable)                            │
-│ match_label         text (nullable, e.g. 'Finals')            │
-│                                                               │
-│ -- Players (denormalized)                                     │
-│ player1_source_id   text                                      │
-│ player1_name        text                                      │
-│ player2_source_id   text (nullable — bye)                     │
-│ player2_name        text (nullable)                           │
-│ winner_source_id    text (nullable)                           │
-│ winner_name         text (nullable)                           │
-│                                                               │
-│ -- Housekeeping                                               │
-│ imported_at         timestamptz                                │
-└──────────────────────────────────────────────────────────────┘
+tournament_id       text FK → tournaments  ┐
+phase_number        int                    ┘ composite PK
+type                text               ← SWISS / SINGLE_BRACKET / DOUBLE_BRACKET
+rounds              int                ← how many rounds in this phase
+mode                text               ← BO1 / BO3
 ```
 
-#### `external.players` — thin identity lookup (for future account linking)
-
-Exists solely so players can link their trainers.gg account to external data in the future. No FK to `public.alts` for now.
+#### `limitless.players`
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│              external.players                                  │
-├──────────────────────────────────────────────────────────────┤
-│ id                  bigint PK                                 │
-│ source              text                                      │
-│ source_player_id    text                                      │
-│ display_name        text                                      │
-│ country             text                                      │
-│ extra_data          jsonb                                     │
-│ created_at          timestamptz                                │
-├──────────────────────────────────────────────────────────────┤
-│ UNIQUE(source, source_player_id)                              │
-└──────────────────────────────────────────────────────────────┘
+id                  int PK
+username            text UNIQUE        ← stable Limitless ID
+display_name        text               ← can change between tournaments
+country             text               ← ISO alpha-2
+created_at          timestamptz
 ```
 
-#### Example queries (zero JOINs)
+#### `limitless.standings`
+
+```
+id                  int PK
+tournament_id       text FK → tournaments
+player_id           int FK → players
+placement           int
+record_wins         int
+record_losses       int
+record_ties         int
+drop_round          int (nullable)
+
+UNIQUE(tournament_id, player_id)
+```
+
+#### `limitless.team_pokemon`
+
+```
+id                  int PK
+standing_id         int FK → standings
+position            int (1-6)
+species             text
+ability             text
+held_item           text
+tera_type           text (nullable)    ← null for Champions M-A
+moves               text[]
+
+UNIQUE(standing_id, position)
+```
+
+#### `limitless.match_results`
+
+```
+id                  int PK
+tournament_id       text  ┐
+phase               int   ┘ composite FK → phases(tournament_id, phase_number)
+round               int
+table_number        int (nullable)     ← Swiss matches
+match_label         text (nullable)    ← Bracket matches ('T2-1')
+player1_id          int FK → players
+player2_id          int FK → players (nullable — bye)
+winner_id           int FK → players (nullable — tie/bye/unfinished)
+imported_at         timestamptz
+```
+
+### Relationships
+
+```
+tournaments ──1:*──► phases
+tournaments ──1:*──► standings ──1:6──► team_pokemon
+tournaments ──1:*──► match_results
+players ◄──FK── standings (player_id)
+players ◄──FK── match_results (player1_id, player2_id, winner_id)
+phases ◄──composite FK── match_results (tournament_id, phase)
+```
+
+### Data mapping from Limitless API
+
+| API field                           | Table         | Column                                              |
+| ----------------------------------- | ------------- | --------------------------------------------------- |
+| Tournament `.id`                    | tournaments   | `tournament_id`                                     |
+| Tournament `.format` (`"M-A"`)      | tournaments   | `format_id` (mapped to `gen9championsvgc2026regma`) |
+| Tournament `.phases[].phase`        | phases        | `phase_number`                                      |
+| Tournament `.phases[].type`         | phases        | `type`                                              |
+| Tournament `.phases[].rounds`       | phases        | `rounds`                                            |
+| Tournament `.phases[].mode`         | phases        | `mode`                                              |
+| Standing `.player`                  | players       | `username`                                          |
+| Standing `.name`                    | players       | `display_name`                                      |
+| Standing `.country`                 | players       | `country`                                           |
+| Standing `.placing`                 | standings     | `placing`                                           |
+| Standing `.record.wins/losses/ties` | standings     | `record_wins/losses/ties`                           |
+| Standing `.drop`                    | standings     | `drop_round`                                        |
+| Standing `.decklist[].id`           | team_pokemon  | `species`                                           |
+| Standing `.decklist[].ability`      | team_pokemon  | `ability`                                           |
+| Standing `.decklist[].item`         | team_pokemon  | `held_item`                                         |
+| Standing `.decklist[].tera`         | team_pokemon  | `tera_type`                                         |
+| Standing `.decklist[].attacks`      | team_pokemon  | `moves`                                             |
+| Pairing `.phase`                    | match_results | `phase`                                             |
+| Pairing `.round`                    | match_results | `round`                                             |
+| Pairing `.table`                    | match_results | `table_number`                                      |
+| Pairing `.match`                    | match_results | `match_label`                                       |
+| Pairing `.player1`                  | match_results | `player1_id` (lookup from players)                  |
+| Pairing `.player2`                  | match_results | `player2_id` (lookup from players)                  |
+| Pairing `.winner`                   | match_results | `winner_id` (lookup from players)                   |
+
+### Example queries
 
 ```sql
--- Charizard usage rate in Champions M-A
-SELECT COUNT(DISTINCT (source_tournament_id, source_player_id)) * 100.0
-       / (SELECT COUNT(DISTINCT (source_tournament_id, source_player_id))
-          FROM external.team_appearances WHERE format_id = 'gen9championsvgc2026regma')
-FROM external.team_appearances
-WHERE format_id = 'gen9championsvgc2026regma' AND species = 'charizard';
+-- Charizard usage in Champions M-A
+SELECT tp.species, COUNT(*)
+FROM limitless.team_pokemon tp
+JOIN limitless.standings s ON s.id = tp.standing_id
+JOIN limitless.tournaments t ON t.tournament_id = s.tournament_id
+WHERE t.format_id = 'gen9championsvgc2026regma' AND tp.species = 'charizard';
 
 -- Top items on Charizard
-SELECT held_item, COUNT(*) as count
-FROM external.team_appearances
-WHERE format_id = 'gen9championsvgc2026regma' AND species = 'charizard'
-GROUP BY held_item ORDER BY count DESC;
+SELECT tp.held_item, COUNT(*)
+FROM limitless.team_pokemon tp
+JOIN limitless.standings s ON s.id = tp.standing_id
+JOIN limitless.tournaments t ON t.tournament_id = s.tournament_id
+WHERE t.format_id = 'gen9championsvgc2026regma' AND tp.species = 'charizard'
+GROUP BY tp.held_item ORDER BY count DESC;
 
--- Moves that contain Protect
-SELECT species, COUNT(*)
-FROM external.team_appearances
-WHERE format_id = 'gen9championsvgc2026regma' AND 'Protect' = ANY(moves)
-GROUP BY species ORDER BY count DESC;
+-- Usage over time
+SELECT tp.species, t.date, COUNT(*)
+FROM limitless.team_pokemon tp
+JOIN limitless.standings s ON s.id = tp.standing_id
+JOIN limitless.tournaments t ON t.tournament_id = s.tournament_id
+WHERE t.format_id = 'gen9championsvgc2026regma'
+GROUP BY tp.species, t.date ORDER BY t.date;
 
--- Top 8 teams at a tournament
-SELECT source_player_id, player_name, placing, species, held_item
-FROM external.team_appearances
-WHERE source_tournament_id = '69e3bf...' AND placing <= 8
-ORDER BY placing, position;
+-- Player tournament history
+SELECT t.name, t.date, s.placing, s.record_wins, s.record_losses
+FROM limitless.standings s
+JOIN limitless.tournaments t ON t.tournament_id = s.tournament_id
+JOIN limitless.players p ON p.id = s.player_id
+WHERE p.username = 'lecehlou'
+ORDER BY t.date DESC;
+
+-- Pokemon with Protect
+SELECT tp.species, COUNT(*)
+FROM limitless.team_pokemon tp
+WHERE 'Protect' = ANY(tp.moves)
+GROUP BY tp.species ORDER BY count DESC;
+
+-- Win rate (with phase mode context)
+SELECT mr.winner_id = p.id as won, ph.mode, COUNT(*)
+FROM limitless.match_results mr
+JOIN limitless.phases ph ON ph.tournament_id = mr.tournament_id
+  AND ph.phase_number = mr.phase
+JOIN limitless.players p ON p.id IN (mr.player1_id, mr.player2_id)
+WHERE p.username = 'lecehlou'
+GROUP BY won, ph.mode;
 ```
 
-#### Volume estimate
+### Volume estimate
 
-~20 events × ~300 avg players × 6 Pokemon = **~36,000 rows** for a full season of `team_appearances`. Trivial. Denormalization cost is negligible.
+Per season (~20 Limitless events, ~300 avg players):
 
-#### Why not normalized?
+- `tournaments`: ~20 rows
+- `phases`: ~40-60 rows
+- `players`: ~1,000-2,000 rows (shared across tournaments)
+- `standings`: ~6,000 rows
+- `team_pokemon`: ~36,000 rows
+- `match_results`: ~10,000-15,000 rows
 
-We considered a fully normalized design (imports → tournaments → standings → team_sheet_pokemon + pairings + players with FKs everywhere). Rejected because:
-- Every analytics query would need 3-4 JOINs
-- The data is write-once, read-many — optimizing for writes makes no sense
-- Volume is small enough that repeating tournament names costs nothing
-- Simpler mental model: one table answers most questions
+### Old tables to drop
 
-### Decisions made
+Drop in the migration that creates the `limitless` schema:
 
-- ✅ Denormalized over normalized — query speed matters, write efficiency doesn't
-- ✅ One `external` schema for all sources
-- ✅ `moves text[]` (PostgreSQL array) for move storage
-- ✅ No FK to `public.alts` or any trainers.gg identity (for now)
-- ✅ `external.players` kept as thin lookup for future account linking
-- ✅ Raw data stored as local files only (no JSONB raw dumps in DB)
-- ✅ Drop existing `public.external_players` / `data_imports` / `imported_team_sheets` immediately
-- ✅ Keep existing `public.format_meta_stats` / `pokemon_usage_stats` / `pokemon_detail_stats` (web app reads these)
-- ✅ Canonical format IDs = Showdown format strings (e.g., `gen9championsvgc2026regma`)
+- `public.external_players`
+- `public.data_imports`
+- `public.imported_team_sheets`
 
-### Still open / TBD
+Keep (web app reads these):
 
-- Showdown replays — different data model, deferred to Phase 2
-- Whether Limitless and RK9 should share tables or be separate (leaning unified since denormalized shape is identical)
-- Indexes — which columns need them for our query patterns
-- RLS policy details
-- How the `players` table relates to the denormalized tables (populated in parallel? or derived from team_appearances?)
-- Migration strategy (new migration that creates `external` schema + drops old tables)
+- `public.format_meta_stats`
+- `public.pokemon_usage_stats`
+- `public.pokemon_detail_stats`
 
 ## Runtime & Data Flow
 
 ### Where things run
 
-| Task | Runtime | Trigger |
-|------|---------|---------|
-| Limitless webhook receiver | Supabase Edge Function | Automatic (webhook POST) |
-| Limitless backfill | Local script (first pass) | Manual |
-| RK9 scraper | Local script (first pass) | Manual |
-| Analytics aggregation | TBD | After imports |
+| Task                       | Runtime                   | Trigger                  |
+| -------------------------- | ------------------------- | ------------------------ |
+| Limitless webhook receiver | Supabase Edge Function    | Automatic (webhook POST) |
+| Limitless backfill         | Local script (first pass) | Manual                   |
+| RK9 scraper                | Local script (first pass) | Manual                   |
+| Analytics aggregation      | TBD                       | After imports            |
 
 **First pass: everything runs locally.** We can graduate to GitHub Actions, Fly.io, or scheduled jobs later once the pipeline is proven.
 
@@ -391,6 +417,7 @@ We considered a fully normalized design (imports → tournaments → standings �
 ```
 
 **Key requirements:**
+
 - Pulled data stored as an organized set of files and directories (not just ephemeral)
 - Structure should be deterministic and inspectable (e.g., `data/limitless/{tournamentId}/standings.json`)
 - Import tooling to load files into local dev Supabase for testing and iteration
@@ -398,6 +425,7 @@ We considered a fully normalized design (imports → tournaments → standings �
 - Idempotent — re-running import for the same tournament doesn't create duplicates
 
 **File structure (rough idea — TBD):**
+
 ```
 data/
   limitless/
@@ -416,6 +444,7 @@ data/
 ```
 
 **Open questions for later:**
+
 - How does production push work? (Direct DB inserts via service_role? Migration-style SQL files? Edge function endpoint?)
 - Do we version/checksum the data files to detect changes?
 - Git-tracked data files vs. gitignored with external storage (S3, etc.)?
@@ -423,14 +452,13 @@ data/
 
 ## Next Steps
 
-- [ ] Finalize schema design (resolve open questions above)
-- [ ] Plan the local file storage structure for raw data
-- [ ] Build Limitless API client + local file export
-- [ ] Build RK9 scraper + local file export
-- [ ] Create migration (new `external` schema + drop old tables)
-- [ ] Build import tooling (local files → Supabase)
+- [ ] Create migration (`limitless` schema + 6 tables + drop old `public` tables)
+- [ ] Build format ID mapping (Limitless codes → Showdown strings)
+- [ ] Build Limitless API client (TypeScript)
+- [ ] Build local file export (pull tournaments → write to `data/limitless/`)
+- [ ] Build import tooling (local JSON files → Supabase `limitless` schema)
+- [ ] Validate with real SVI data
 - [ ] Plan production push process
-- [ ] Plan Showdown replay pipeline (Phase 2)
 
 ---
 
@@ -450,40 +478,40 @@ Authentication: Google OAuth (required to view some data).
 
 ### URL Patterns
 
-| Page | URL Pattern | Description |
-|------|-------------|-------------|
-| Events list | `/events/pokemon` | Upcoming + past official Play! Pokemon events |
-| Tournament details | `/tournament/{id}` | Registration info, dates, venue |
-| Live Roster | `/roster/{id}` | All registered players with standings |
-| Pairings | `/pairings/{id}` | Round-by-round match pairings (by division) |
-| Team List | `/teamlist/public/{tournamentId}/{playerId}` | Individual player's team sheet |
+| Page               | URL Pattern                                  | Description                                   |
+| ------------------ | -------------------------------------------- | --------------------------------------------- |
+| Events list        | `/events/pokemon`                            | Upcoming + past official Play! Pokemon events |
+| Tournament details | `/tournament/{id}`                           | Registration info, dates, venue               |
+| Live Roster        | `/roster/{id}`                               | All registered players with standings         |
+| Pairings           | `/pairings/{id}`                             | Round-by-round match pairings (by division)   |
+| Team List          | `/teamlist/public/{tournamentId}/{playerId}` | Individual player's team sheet                |
 
 Tournament IDs look like: `PR02wayEt6qQBnpFi6cp` (alphanumeric, ~20 chars)
 
 ### Data Available from Roster
 
-| Field | Example |
-|-------|---------|
-| Player ID | `4....3` (masked Play! Pokemon ID) |
-| First name | `Aaron` |
-| Last name | `O'Doherty` |
-| Country | `IE` (ISO alpha-2) |
-| Division | `Masters` / `Senior` / `Junior` |
-| Trainer name | `Sark` (in-game name) |
-| Team List | Link to `/teamlist/public/...` |
-| Standing | `62` (final placement) |
+| Field        | Example                            |
+| ------------ | ---------------------------------- |
+| Player ID    | `4....3` (masked Play! Pokemon ID) |
+| First name   | `Aaron`                            |
+| Last name    | `O'Doherty`                        |
+| Country      | `IE` (ISO alpha-2)                 |
+| Division     | `Masters` / `Senior` / `Junior`    |
+| Trainer name | `Sark` (in-game name)              |
+| Team List    | Link to `/teamlist/public/...`     |
+| Standing     | `62` (final placement)             |
 
 ### Data Available from Team Lists
 
 Each Pokemon on the team shows:
 
-| Field | Example |
-|-------|---------|
-| Species | `Rillaboom`, `Calyrex [Ice Rider]`, `Landorus [Incarnate Forme]` |
-| Tera Type | `Water`, `Fairy`, `Steel` |
-| Ability | `Grassy Surge`, `As One`, `Sheer Force` |
-| Held Item | `Assault Vest`, `Leftovers`, `Life Orb` |
-| Moves | 4 moves listed |
+| Field     | Example                                                          |
+| --------- | ---------------------------------------------------------------- |
+| Species   | `Rillaboom`, `Calyrex [Ice Rider]`, `Landorus [Incarnate Forme]` |
+| Tera Type | `Water`, `Fairy`, `Steel`                                        |
+| Ability   | `Grassy Surge`, `As One`, `Sheer Force`                          |
+| Held Item | `Assault Vest`, `Leftovers`, `Life Orb`                          |
+| Moves     | 4 moves listed                                                   |
 
 **NOT available:** EVs, IVs, Nature, Gender, Level (same as Limitless)
 
@@ -496,19 +524,19 @@ Each Pokemon on the team shows:
 
 ### Key Differences from Limitless
 
-| Aspect | Limitless | RK9 |
-|--------|-----------|-----|
-| Access method | REST API (JSON) | HTML scraping |
-| Auth required | No (most endpoints) | Google OAuth for some pages |
-| Player identity | Stable username (`lecehlou`) | Masked Player ID + real name |
-| Names | Usernames / display names | Real first + last names |
-| Divisions | Not separated | Masters / Senior / Junior |
-| Events | Community tournaments (any size) | Official Play! Pokemon only |
-| Event tiers | Community, online | Regionals, Internationals, Worlds, Special |
-| Webhook | Yes (`tournament:ended`) | No |
-| Team sheet format | JSON array in API response | HTML rendered per Pokemon |
-| Species IDs | Slug (`calyrex-shadow-rider`) | Display name with form (`Calyrex [Ice Rider]`) |
-| W-L-T record | In standings response | Not visible on roster (only placement) |
+| Aspect            | Limitless                        | RK9                                            |
+| ----------------- | -------------------------------- | ---------------------------------------------- |
+| Access method     | REST API (JSON)                  | HTML scraping                                  |
+| Auth required     | No (most endpoints)              | Google OAuth for some pages                    |
+| Player identity   | Stable username (`lecehlou`)     | Masked Player ID + real name                   |
+| Names             | Usernames / display names        | Real first + last names                        |
+| Divisions         | Not separated                    | Masters / Senior / Junior                      |
+| Events            | Community tournaments (any size) | Official Play! Pokemon only                    |
+| Event tiers       | Community, online                | Regionals, Internationals, Worlds, Special     |
+| Webhook           | Yes (`tournament:ended`)         | No                                             |
+| Team sheet format | JSON array in API response       | HTML rendered per Pokemon                      |
+| Species IDs       | Slug (`calyrex-shadow-rider`)    | Display name with form (`Calyrex [Ice Rider]`) |
+| W-L-T record      | In standings response            | Not visible on roster (only placement)         |
 
 ### RK9 Event Tiers (from events page)
 
@@ -519,13 +547,13 @@ Each Pokemon on the team shows:
 
 ### Example Events (2025-2026 season)
 
-| Date | Event | Location | VGC Tournament ID |
-|------|-------|----------|-------------------|
-| Apr 25-26, 2026 | Prague Regionals | Praha, CZ | `PR02wayEt6qQBnpFi6cp` |
-| Apr 3-5, 2026 | Orlando Regionals | Orlando, US | `OR02wF0GhaiorROTkFlu` |
-| Mar 28-29, 2026 | Seville Special | Sevilla, ES | `SV02wtoHf5SDBUM0ntB2` |
-| Feb 13-15, 2026 | EUIC | London, UK | `EU02mADIyxk2QHCU8dqx` |
-| Nov 21-23, 2025 | LAIC | São Paulo, BR | `LA0226md2zDgZtmvexIY` |
+| Date            | Event             | Location      | VGC Tournament ID      |
+| --------------- | ----------------- | ------------- | ---------------------- |
+| Apr 25-26, 2026 | Prague Regionals  | Praha, CZ     | `PR02wayEt6qQBnpFi6cp` |
+| Apr 3-5, 2026   | Orlando Regionals | Orlando, US   | `OR02wF0GhaiorROTkFlu` |
+| Mar 28-29, 2026 | Seville Special   | Sevilla, ES   | `SV02wtoHf5SDBUM0ntB2` |
+| Feb 13-15, 2026 | EUIC              | London, UK    | `EU02mADIyxk2QHCU8dqx` |
+| Nov 21-23, 2025 | LAIC              | São Paulo, BR | `LA0226md2zDgZtmvexIY` |
 
 ---
 
@@ -534,6 +562,7 @@ Each Pokemon on the team shows:
 ### Team Sheet Data (Both Sources)
 
 Both Limitless and RK9 provide the same core fields for VGC team sheets:
+
 - Species (with form/variant names)
 - Held Item
 - Ability
@@ -545,10 +574,12 @@ Neither source provides: EVs, IVs, Nature, Gender, Level.
 ### Player Identity Challenge
 
 The two sources use completely different player identity systems:
+
 - **Limitless:** stable username (e.g., `lecehlou`) — consistent across tournaments
 - **RK9:** masked Play! Pokemon Player ID + real name + in-game trainer name
 
 Linking a player across both sources (same person plays Limitless weeklies AND attends Regionals on RK9) requires either:
+
 - Manual player linking (user claims both identities)
 - Heuristic matching (trainer name + country overlap)
 - External mapping (community-maintained player databases)
@@ -603,15 +634,16 @@ Fetched via simple JSON API — no auth, no scraping needed.
 
 ### API Endpoints (no auth required)
 
-| Endpoint | Description |
-|----------|-------------|
+| Endpoint                                                | Description                           |
+| ------------------------------------------------------- | ------------------------------------- |
 | `GET /search.json?format={formatId}&before={timestamp}` | Paginated replay search (51 per page) |
-| `GET /search.json?user={username}` | Search by player |
-| `GET /search.json?user={u1}&user2={u2}` | Search by matchup |
-| `GET /{replayId}.json` | Full replay data with battle log |
-| `GET /{replayId}.log` | Plain-text battle log only |
+| `GET /search.json?user={username}`                      | Search by player                      |
+| `GET /search.json?user={u1}&user2={u2}`                 | Search by matchup                     |
+| `GET /{replayId}.json`                                  | Full replay data with battle log      |
+| `GET /{replayId}.log`                                   | Plain-text battle log only            |
 
 **Key API details:**
+
 - No authentication, full CORS (`Access-Control-Allow-Origin: *`)
 - Pagination uses `before` (unix timestamp of last result), NOT page numbers
 - 51 results per page — presence of 51st result signals more pages exist
@@ -622,6 +654,7 @@ Fetched via simple JSON API — no auth, no scraping needed.
 - No streaming/firehose — must poll `search.json` to discover new replays
 
 **Existing ecosystem:**
+
 - `@pkmn/client`, `@pkmn/protocol`, `@pkmn/data` — TypeScript libraries for parsing battle logs
 - `@pkmn/logs` — framework for processing terabytes of battle logs
 - HuggingFace dataset `HolidayOugi/pokemon-showdown-replays` — 30.5M replays already scraped
@@ -659,38 +692,38 @@ Fetched via simple JSON API — no auth, no scraping needed.
 
 The log is a pipe-delimited text format. From a single replay we can extract:
 
-| Data | How | Complete? |
-|------|-----|-----------|
-| All 6 Pokemon (species, level, gender) | `\|poke\|p1\|Rayquaza, L50\|` | Yes — full team from team preview |
-| Tera types | `\|raw\|...Tera Types:...` | Yes (if format has Tera Type Preview) |
-| Moves used | `\|move\|p1a: snek\|Dragon Ascent\|...` | Partial — only moves selected during game |
-| Items | `\|-enditem\|...\|Booster Energy\|` | Partial — only when triggered/consumed |
-| Abilities | `\|-ability\|p1a: snek\|Air Lock\|` | Partial — only when triggered |
-| Damage amounts | `\|-damage\|...\|77/100\|` | Yes — can reverse-engineer EVs |
-| Winner | `\|win\|Myth1cal30\|` | Yes |
-| Terastallization | `\|-terastallize\|p1a: snek\|Bug\|` | Yes — which mon actually terastallized |
+| Data                                   | How                                     | Complete?                                 |
+| -------------------------------------- | --------------------------------------- | ----------------------------------------- |
+| All 6 Pokemon (species, level, gender) | `\|poke\|p1\|Rayquaza, L50\|`           | Yes — full team from team preview         |
+| Tera types                             | `\|raw\|...Tera Types:...`              | Yes (if format has Tera Type Preview)     |
+| Moves used                             | `\|move\|p1a: snek\|Dragon Ascent\|...` | Partial — only moves selected during game |
+| Items                                  | `\|-enditem\|...\|Booster Energy\|`     | Partial — only when triggered/consumed    |
+| Abilities                              | `\|-ability\|p1a: snek\|Air Lock\|`     | Partial — only when triggered             |
+| Damage amounts                         | `\|-damage\|...\|77/100\|`              | Yes — can reverse-engineer EVs            |
+| Winner                                 | `\|win\|Myth1cal30\|`                   | Yes                                       |
+| Terastallization                       | `\|-terastallize\|p1a: snek\|Bug\|`     | Yes — which mon actually terastallized    |
 
 ### VGC Format IDs on Showdown
 
-| Format ID | Display Name | Status |
-|-----------|--------------|--------|
-| `gen9championsvgc2026regma` | [Gen 9 Champions] VGC 2026 Reg M-A | Active on ladder |
-| `gen9vgc2024regg` | [Gen 9] VGC 2024 Reg G | Active on ladder |
-| `gen9vgc2025regi` | [Gen 9] VGC 2025 Reg I | Recent replays (SVI format) |
+| Format ID                   | Display Name                       | Status                      |
+| --------------------------- | ---------------------------------- | --------------------------- |
+| `gen9championsvgc2026regma` | [Gen 9 Champions] VGC 2026 Reg M-A | Active on ladder            |
+| `gen9vgc2024regg`           | [Gen 9] VGC 2024 Reg G             | Active on ladder            |
+| `gen9vgc2025regi`           | [Gen 9] VGC 2025 Reg I             | Recent replays (SVI format) |
 
 Note: Champions M-A format has **Mega Evolutions** and **no Tera types**.
 
 ### Key Differences from Limitless/RK9
 
-| Aspect | Limitless/RK9 | Showdown |
-|--------|--------------|----------|
-| Data type | Tournament results + full team sheets | Individual battle replays |
-| Context | Organized events with placements | Ladder games / friendlies |
-| Team info | Complete (all 4 moves, item, ability) | Partial per replay (only what's revealed) |
-| Volume | Dozens of events, hundreds of players | Thousands of replays per format |
-| Game detail | Only final result (W/L) | Turn-by-turn actions |
-| Player identity | Limitless username / RK9 real name | Showdown username |
-| EVs/Nature | Not available | Can be reverse-engineered from damage |
+| Aspect          | Limitless/RK9                         | Showdown                                  |
+| --------------- | ------------------------------------- | ----------------------------------------- |
+| Data type       | Tournament results + full team sheets | Individual battle replays                 |
+| Context         | Organized events with placements      | Ladder games / friendlies                 |
+| Team info       | Complete (all 4 moves, item, ability) | Partial per replay (only what's revealed) |
+| Volume          | Dozens of events, hundreds of players | Thousands of replays per format           |
+| Game detail     | Only final result (W/L)               | Turn-by-turn actions                      |
+| Player identity | Limitless username / RK9 real name    | Showdown username                         |
+| EVs/Nature      | Not available                         | Can be reverse-engineered from damage     |
 
 ### Use Cases (different from tournament data)
 

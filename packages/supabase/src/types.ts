@@ -562,33 +562,6 @@ export type Database = {
           },
         ]
       }
-      data_imports: {
-        Row: {
-          event_tier: string | null
-          external_ref: string | null
-          format: string
-          id: number
-          imported_at: string
-          source: string
-        }
-        Insert: {
-          event_tier?: string | null
-          external_ref?: string | null
-          format: string
-          id?: never
-          imported_at?: string
-          source: string
-        }
-        Update: {
-          event_tier?: string | null
-          external_ref?: string | null
-          format?: string
-          id?: never
-          imported_at?: string
-          source?: string
-        }
-        Relationships: []
-      }
       discord_channel_failures: {
         Row: {
           channel_id: string
@@ -887,47 +860,6 @@ export type Database = {
         }
         Relationships: []
       }
-      external_players: {
-        Row: {
-          created_at: string
-          display_name: string
-          id: number
-          linked_alt_id: number | null
-          linked_at: string | null
-          linked_by: string | null
-          source: string
-          source_player_id: string
-        }
-        Insert: {
-          created_at?: string
-          display_name: string
-          id?: never
-          linked_alt_id?: number | null
-          linked_at?: string | null
-          linked_by?: string | null
-          source: string
-          source_player_id: string
-        }
-        Update: {
-          created_at?: string
-          display_name?: string
-          id?: never
-          linked_alt_id?: number | null
-          linked_at?: string | null
-          linked_by?: string | null
-          source?: string
-          source_player_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "external_players_linked_alt_id_fkey"
-            columns: ["linked_alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       feature_flags: {
         Row: {
           created_at: string
@@ -1186,93 +1118,6 @@ export type Database = {
             columns: ["target_user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      imported_team_sheets: {
-        Row: {
-          ability: string
-          created_at: string
-          ev_spread: string | null
-          external_player_id: number | null
-          format: string
-          held_item: string | null
-          id: number
-          import_id: number
-          iv_spread: string | null
-          move1: string | null
-          move2: string | null
-          move3: string | null
-          move4: string | null
-          nature: string | null
-          placement_tier: string | null
-          player_count: number | null
-          position: number
-          species: string
-          tera_type: string | null
-          tournament_date: string | null
-          tournament_name: string
-        }
-        Insert: {
-          ability: string
-          created_at?: string
-          ev_spread?: string | null
-          external_player_id?: number | null
-          format: string
-          held_item?: string | null
-          id?: never
-          import_id: number
-          iv_spread?: string | null
-          move1?: string | null
-          move2?: string | null
-          move3?: string | null
-          move4?: string | null
-          nature?: string | null
-          placement_tier?: string | null
-          player_count?: number | null
-          position: number
-          species: string
-          tera_type?: string | null
-          tournament_date?: string | null
-          tournament_name: string
-        }
-        Update: {
-          ability?: string
-          created_at?: string
-          ev_spread?: string | null
-          external_player_id?: number | null
-          format?: string
-          held_item?: string | null
-          id?: never
-          import_id?: number
-          iv_spread?: string | null
-          move1?: string | null
-          move2?: string | null
-          move3?: string | null
-          move4?: string | null
-          nature?: string | null
-          placement_tier?: string | null
-          player_count?: number | null
-          position?: number
-          species?: string
-          tera_type?: string | null
-          tournament_date?: string | null
-          tournament_name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "imported_team_sheets_external_player_id_fkey"
-            columns: ["external_player_id"]
-            isOneToOne: false
-            referencedRelation: "external_players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "imported_team_sheets_import_id_fkey"
-            columns: ["import_id"]
-            isOneToOne: false
-            referencedRelation: "data_imports"
             referencedColumns: ["id"]
           },
         ]
