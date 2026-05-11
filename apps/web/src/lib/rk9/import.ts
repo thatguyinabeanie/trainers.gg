@@ -6,7 +6,7 @@
  *
  * Import flow:
  *   1. Upsert event metadata (from events.json)
- *   2. Upsert players from roster (dedup by player_id_masked + first_name + last_name + country + division)
+ *   2. Upsert players from roster (dedup by player_id_masked + first_name + last_name + country)
  *   3. Create standings (linking players to events with placement)
  *   4. Insert team_pokemon (species, ability, item, tera, moves)
  *
@@ -224,7 +224,7 @@ export async function importEvent(
     // Skip entries without names
     if (!entry.firstName || !entry.lastName) continue;
 
-    // Upsert player — dedup by (player_id_masked, first_name, last_name, country, division)
+    // Upsert player — dedup by (player_id_masked, first_name, last_name, country)
     const playerId = await resolvePlayer(
       supabase,
       playerIdCache,
@@ -232,7 +232,6 @@ export async function importEvent(
       entry.firstName,
       entry.lastName,
       entry.country,
-      entry.division,
       entry.trainerName
     );
     result.playersUpserted++;
@@ -324,7 +323,10 @@ export async function importEvent(
 /**
  * Upsert a player and return the database ID.
  * Uses a local cache to avoid redundant DB round-trips.
- * Dedup key: (player_id_masked, first_name, last_name, country, division)
+ * Dedup key: (player_id_masked, first_name, last_name, country)
+ *
+ * Division is NOT part of the player identity — players age up across
+ * seasons (Junior → Senior → Masters). Division lives on standings.
  */
 async function resolvePlayer(
   supabase: SupabaseClient,
@@ -333,11 +335,10 @@ async function resolvePlayer(
   firstName: string,
   lastName: string,
   country: string,
-  division: string,
   trainerName: string
 ): Promise<number> {
   // Cache key mirrors the unique constraint
-  const cacheKey = `${playerIdMasked}|${firstName}|${lastName}|${country}|${division}`;
+  const cacheKey = `${playerIdMasked}|${firstName}|${lastName}|${country}`;
   const cached = cache.get(cacheKey);
   if (cached !== undefined) return cached;
 
@@ -350,10 +351,9 @@ async function resolvePlayer(
         first_name: firstName,
         last_name: lastName,
         country: country || null,
-        division: division || "masters",
         trainer_name: trainerName || null,
       },
-      { onConflict: "player_id_masked,first_name,last_name,country,division" }
+      { onConflict: "player_id_masked,first_name,last_name,country" }
     )
     .select("id")
     .single();
