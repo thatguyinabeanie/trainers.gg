@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
@@ -51,6 +52,7 @@ import {
   batchQueueTournaments,
   triggerLimitlessSync,
 } from "@/actions/limitless";
+import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -94,25 +96,35 @@ interface LimitlessStatsResponse {
   }[];
 }
 
-type Source = "rk9" | "limitless";
+// Unified row that merges both sources
+interface UnifiedRow {
+  id: string;
+  source: "rk9" | "limitless";
+  name: string;
+  category: string; // tier for RK9, format code for Limitless
+  date: string;
+  playerCount: number | null;
+  status: string; // normalized status
+  statusDetail: string; // original status for display
+  error: string | null;
+  // Source-specific extras
+  rk9?: RK9EventRow;
+  limitless?: LimitlessTournamentRow;
+}
+
+type SourceFilter = "all" | "rk9" | "limitless";
 type StatusFilter = "all" | "pending" | "complete" | "failed" | "in-progress";
 type SortDirection = "asc" | "desc";
-
-type RK9SortColumn =
+type SortColumn =
   | "name"
-  | "tier"
-  | "date_start"
-  | "player_count"
-  | "import_status";
-type LimitlessSortColumn =
-  | "name"
-  | "format_id"
+  | "source"
+  | "category"
   | "date"
-  | "player_count"
-  | "import_status";
+  | "playerCount"
+  | "status";
 
-interface SortState<T extends string> {
-  column: T;
+interface SortState {
+  column: SortColumn;
   direction: SortDirection;
 }
 
@@ -125,18 +137,49 @@ function isUpcoming(dateStart: string): boolean {
   return dateStart > today;
 }
 
+// Normalize RK9 status to a shared vocabulary
+function normalizeRk9Status(status: string, upcoming: boolean): string {
+  if (upcoming) return "upcoming";
+  switch (status) {
+    case "complete":
+      return "complete";
+    case "roster":
+    case "teams":
+      return "in-progress";
+    case "failed":
+      return "failed";
+    default:
+      return "pending";
+  }
+}
+
+// Normalize Limitless status
+function normalizeLimitlessStatus(status: string | null): string {
+  switch (status) {
+    case "completed":
+      return "complete";
+    case "queued":
+    case "importing":
+      return "in-progress";
+    case "failed":
+      return "failed";
+    default:
+      return "pending";
+  }
+}
+
 // Sortable table header
-function SortableHeader<T extends string>({
+function SortableHeader({
   column,
   label,
   sort,
   onSort,
   className,
 }: {
-  column: T;
+  column: SortColumn;
   label: string;
-  sort: SortState<T>;
-  onSort: (column: T) => void;
+  sort: SortState;
+  onSort: (column: SortColumn) => void;
   className?: string;
 }) {
   const isActive = sort.column === column;
@@ -161,18 +204,13 @@ function SortableHeader<T extends string>({
   );
 }
 
-// Generic sort toggle handler
-function toggleSort<T extends string>(
-  current: SortState<T>,
-  column: T
-): SortState<T> {
+function toggleSort(current: SortState, column: SortColumn): SortState {
   if (current.column === column) {
     return { column, direction: current.direction === "asc" ? "desc" : "asc" };
   }
   return { column, direction: "asc" };
 }
 
-// Compare values for sorting (handles strings, numbers, nulls)
 function compareValues(
   a: string | number | null | undefined,
   b: string | number | null | undefined,
@@ -206,10 +244,19 @@ async function callLimitlessStats(): Promise<LimitlessStatsResponse> {
 // ---------------------------------------------------------------------------
 
 export function ExternalData() {
-  const [source, setSource] = useState<Source>("rk9");
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sort, setSort] = useState<SortState>({
+    column: "date",
+    direction: "desc",
+  });
+
+  // Auto-import state
+  const [autoImportEnabled, setAutoImportEnabled] = useState(false);
+  const [autoImportLoading, setAutoImportLoading] = useState(true);
+  const autoImportRef = useRef(false);
 
   // RK9 state
   const [isDiscovering, setIsDiscovering] = useState(false);
@@ -223,25 +270,25 @@ export function ExternalData() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [queuingIds, setQueuingIds] = useState<Set<string>>(new Set());
   const [batchQueuing, setBatchQueuing] = useState(false);
-  const [queueBatchSize, setQueueBatchSize] = useState(500);
 
-  // Sort state
-  const [rk9Sort, setRk9Sort] = useState<SortState<RK9SortColumn>>({
-    column: "date_start",
-    direction: "desc",
-  });
-  const [limitlessSort, setLimitlessSort] = useState<
-    SortState<LimitlessSortColumn>
-  >({
-    column: "date",
-    direction: "desc",
-  });
+  // -------------------------------------------------------------------------
+  // Load auto-import setting from DB
+  // -------------------------------------------------------------------------
 
-  // Handler to switch source and reset filters
-  function switchSource(newSource: Source) {
-    setSource(newSource);
-    setSearchQuery("");
-    setStatusFilter("all");
+  useEffect(() => {
+    getSiteConfig<boolean>("auto_import_enabled").then((result) => {
+      if (result.success && result.data !== null) {
+        setAutoImportEnabled(result.data);
+        autoImportRef.current = result.data;
+      }
+      setAutoImportLoading(false);
+    });
+  }, []);
+
+  async function handleToggleAutoImport(checked: boolean) {
+    setAutoImportEnabled(checked);
+    autoImportRef.current = checked;
+    await setSiteConfig("auto_import_enabled", checked);
   }
 
   // -------------------------------------------------------------------------
@@ -254,7 +301,6 @@ export function ExternalData() {
     isLoading: rk9Loading,
   } = useSupabaseQuery(
     async (sb) => {
-      if (source !== "rk9") return [];
       const { data, error } = await sb
         .schema("rk9")
         .from("events")
@@ -265,7 +311,7 @@ export function ExternalData() {
       if (error) throw error;
       return (data ?? []) as RK9EventRow[];
     },
-    [source, refreshKey]
+    [refreshKey]
   );
 
   // -------------------------------------------------------------------------
@@ -277,9 +323,8 @@ export function ExternalData() {
     error: limitlessStatsError,
     isLoading: limitlessStatsLoading,
   } = useSupabaseQuery(async () => {
-    if (source !== "limitless") return null;
     return callLimitlessStats();
-  }, [source, refreshKey]);
+  }, [refreshKey]);
 
   const {
     data: limitlessTournaments,
@@ -287,7 +332,6 @@ export function ExternalData() {
     isLoading: limitlessLoading,
   } = useSupabaseQuery(
     async (sb) => {
-      if (source !== "limitless") return [];
       const { data, error } = await sb
         .schema("limitless")
         .from("tournaments")
@@ -298,7 +342,7 @@ export function ExternalData() {
       if (error) throw error;
       return (data ?? []) as LimitlessTournamentRow[];
     },
-    [source, refreshKey]
+    [refreshKey]
   );
 
   // Build format lookup
@@ -313,7 +357,7 @@ export function ExternalData() {
   }
 
   // -------------------------------------------------------------------------
-  // Auto-poll for Limitless queue
+  // Auto-poll when there are active items
   // -------------------------------------------------------------------------
 
   const limitlessQueuedCount = (limitlessTournaments ?? []).filter(
@@ -323,116 +367,99 @@ export function ExternalData() {
     (t) => t.import_status === "importing"
   ).length;
   const hasActiveQueue =
-    limitlessQueuedCount > 0 || limitlessImportingCount > 0;
+    limitlessQueuedCount > 0 ||
+    limitlessImportingCount > 0 ||
+    activeJobs.size > 0;
 
   useEffect(() => {
-    if (source !== "limitless" || !hasActiveQueue) return;
+    if (!hasActiveQueue) return;
     const interval = setInterval(() => {
       setRefreshKey((k) => k + 1);
     }, 5000);
     return () => clearInterval(interval);
-  }, [source, hasActiveQueue]);
+  }, [hasActiveQueue]);
 
   // -------------------------------------------------------------------------
-  // RK9 filtering + sorting
+  // Build unified rows
   // -------------------------------------------------------------------------
 
-  const filteredRk9 = (rk9Events ?? [])
-    .filter((e) => {
-      // Search
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        if (
-          !e.name.toLowerCase().includes(q) &&
-          !e.event_id.toLowerCase().includes(q)
-        )
-          return false;
-      }
-      // Status filter
-      if (statusFilter === "pending" && e.import_status !== "pending")
-        return false;
-      if (statusFilter === "complete" && e.import_status !== "complete")
-        return false;
-      if (statusFilter === "failed" && e.import_status !== "failed")
-        return false;
-      if (
-        statusFilter === "in-progress" &&
-        e.import_status !== "roster" &&
-        e.import_status !== "teams"
-      )
-        return false;
-      return true;
-    })
-    .sort((a, b) => {
-      const { column, direction } = rk9Sort;
-      switch (column) {
-        case "name":
-          return compareValues(a.name, b.name, direction);
-        case "tier":
-          return compareValues(a.tier, b.tier, direction);
-        case "date_start":
-          return compareValues(a.date_start, b.date_start, direction);
-        case "player_count":
-          return compareValues(a.player_count, b.player_count, direction);
-        case "import_status":
-          return compareValues(a.import_status, b.import_status, direction);
-        default:
-          return 0;
-      }
+  const unifiedRows: UnifiedRow[] = [];
+
+  for (const e of rk9Events ?? []) {
+    const upcoming = isUpcoming(e.date_start);
+    unifiedRows.push({
+      id: `rk9-${e.event_id}`,
+      source: "rk9",
+      name: e.name,
+      category: e.tier,
+      date: e.date_start,
+      playerCount: e.player_count,
+      status: normalizeRk9Status(e.import_status, upcoming),
+      statusDetail: upcoming ? "upcoming" : e.import_status,
+      error: e.import_error,
+      rk9: e,
     });
+  }
+
+  for (const t of limitlessTournaments ?? []) {
+    unifiedRows.push({
+      id: `limitless-${t.tournament_id}`,
+      source: "limitless",
+      name: t.name,
+      category: FORMAT_ID_TO_CODE[t.format_id] ?? t.format_id,
+      date: t.date,
+      playerCount: t.player_count,
+      status: normalizeLimitlessStatus(t.import_status),
+      statusDetail: t.import_status ?? "pending",
+      error: t.import_error,
+      limitless: t,
+    });
+  }
 
   // -------------------------------------------------------------------------
-  // Limitless filtering + sorting
+  // Filter + sort
   // -------------------------------------------------------------------------
 
-  const filteredLimitless = (limitlessTournaments ?? [])
-    .filter((t) => {
+  const filteredRows = unifiedRows
+    .filter((row) => {
+      // Source filter
+      if (sourceFilter !== "all" && row.source !== sourceFilter) return false;
+      // Status filter
+      if (statusFilter !== "all" && row.status !== statusFilter) return false;
       // Search
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         if (
-          !t.name.toLowerCase().includes(q) &&
-          !t.tournament_id.toLowerCase().includes(q) &&
-          !(FORMAT_ID_TO_CODE[t.format_id] ?? t.format_id)
-            .toLowerCase()
-            .includes(q)
+          !row.name.toLowerCase().includes(q) &&
+          !row.id.toLowerCase().includes(q) &&
+          !row.category.toLowerCase().includes(q)
         )
           return false;
       }
-      // Status filter
-      const s = t.import_status;
-      if (statusFilter === "pending" && s !== null && s !== "failed")
-        return false;
-      if (statusFilter === "complete" && s !== "completed") return false;
-      if (statusFilter === "failed" && s !== "failed") return false;
-      if (statusFilter === "in-progress" && s !== "queued" && s !== "importing")
-        return false;
       return true;
     })
     .sort((a, b) => {
-      const { column, direction } = limitlessSort;
+      const { column, direction } = sort;
       switch (column) {
         case "name":
           return compareValues(a.name, b.name, direction);
-        case "format_id":
-          return compareValues(
-            FORMAT_ID_TO_CODE[a.format_id] ?? a.format_id,
-            FORMAT_ID_TO_CODE[b.format_id] ?? b.format_id,
-            direction
-          );
+        case "source":
+          return compareValues(a.source, b.source, direction);
+        case "category":
+          return compareValues(a.category, b.category, direction);
         case "date":
           return compareValues(a.date, b.date, direction);
-        case "player_count":
-          return compareValues(a.player_count, b.player_count, direction);
-        case "import_status":
-          return compareValues(a.import_status, b.import_status, direction);
+        case "playerCount":
+          return compareValues(a.playerCount, b.playerCount, direction);
+        case "status":
+          return compareValues(a.status, b.status, direction);
         default:
           return 0;
       }
     });
 
   // -------------------------------------------------------------------------
-  // RK9 stats
+  // Stats
   // -------------------------------------------------------------------------
 
   const rk9Total = rk9Events?.length ?? 0;
@@ -443,7 +470,10 @@ export function ExternalData() {
         e.import_status === "teams" ||
         e.import_status === "complete"
     ).length ?? 0;
-  const rk9WithTeams = rk9Events?.filter((e) => e.has_team_lists).length ?? 0;
+
+  const limitlessPendingCount = (limitlessTournaments ?? []).filter(
+    (t) => !t.import_status || t.import_status === "failed"
+  ).length;
 
   // -------------------------------------------------------------------------
   // RK9 actions
@@ -551,9 +581,9 @@ export function ExternalData() {
   }
 
   async function handleQueueAll() {
-    const toQueue = filteredLimitless
-      .filter((t) => !t.import_status || t.import_status === "failed")
-      .slice(0, queueBatchSize);
+    const toQueue = (limitlessTournaments ?? []).filter(
+      (t) => !t.import_status || t.import_status === "failed"
+    );
     if (toQueue.length === 0) return;
 
     setBatchQueuing(true);
@@ -569,44 +599,106 @@ export function ExternalData() {
     }
   }
 
-  const limitlessPendingCount = (limitlessTournaments ?? []).filter(
-    (t) => !t.import_status || t.import_status === "failed"
-  ).length;
+  // -------------------------------------------------------------------------
+  // Auto-import loop
+  // When enabled, process one pending item at a time from each source.
+  // -------------------------------------------------------------------------
+
+  const autoImportRunning = useRef(false);
+
+  useEffect(() => {
+    if (!autoImportEnabled || autoImportRunning.current) return;
+    if (rk9Loading || limitlessLoading) return;
+
+    // Find next RK9 item to process
+    const nextRk9Pending = (rk9Events ?? []).find(
+      (e) =>
+        !isUpcoming(e.date_start) &&
+        (e.import_status === "pending" || e.import_status === "failed") &&
+        !activeJobs.has(e.event_id)
+    );
+
+    const nextRk9Roster = (rk9Events ?? []).find(
+      (e) =>
+        !isUpcoming(e.date_start) &&
+        (e.import_status === "roster" ||
+          e.import_status === "teams" ||
+          (e.import_status === "complete" && !e.has_team_lists)) &&
+        !activeJobs.has(e.event_id)
+    );
+
+    // Find next Limitless item to queue
+    const nextLimitlessPending = (limitlessTournaments ?? []).find(
+      (t) =>
+        (!t.import_status || t.import_status === "failed") &&
+        !queuingIds.has(t.tournament_id)
+    );
+
+    async function processNext() {
+      autoImportRunning.current = true;
+      try {
+        // Process RK9: roster first, then teams
+        if (nextRk9Pending && autoImportRef.current) {
+          await handleScrapeRoster(nextRk9Pending.event_id);
+        } else if (nextRk9Roster && autoImportRef.current) {
+          await handleScrapeTeams(nextRk9Roster.event_id);
+        }
+
+        // Process Limitless: queue pending tournaments in batches
+        if (nextLimitlessPending && autoImportRef.current) {
+          const pending = (limitlessTournaments ?? []).filter(
+            (t) => !t.import_status || t.import_status === "failed"
+          );
+          if (pending.length > 0) {
+            const ids = pending.slice(0, 100).map((t) => t.tournament_id);
+            await batchQueueTournaments(ids);
+            setRefreshKey((k) => k + 1);
+          }
+        }
+      } finally {
+        autoImportRunning.current = false;
+      }
+    }
+
+    processNext();
+  }, [
+    autoImportEnabled,
+    rk9Events,
+    limitlessTournaments,
+    rk9Loading,
+    limitlessLoading,
+    activeJobs,
+    queuingIds,
+  ]);
 
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
 
-  const isLoading = source === "rk9" ? rk9Loading : limitlessLoading;
-  const queryError = source === "rk9" ? rk9Error : limitlessError;
+  const isLoading = rk9Loading || limitlessLoading;
+  const queryError = rk9Error || limitlessError;
 
   return (
     <div className="space-y-6">
-      {/* Source Toggle */}
+      {/* Header: Auto-import toggle + Refresh */}
       <div className="flex items-center justify-between">
-        <div className="inline-flex rounded-lg border p-1">
-          <button
-            className={cn(
-              "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
-              source === "rk9"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            {autoImportLoading ? (
+              <Skeleton className="h-[18px] w-[32px] rounded-full" />
+            ) : (
+              <Switch
+                checked={autoImportEnabled}
+                onCheckedChange={handleToggleAutoImport}
+              />
             )}
-            onClick={() => switchSource("rk9")}
-          >
-            RK9
-          </button>
-          <button
-            className={cn(
-              "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
-              source === "limitless"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-            onClick={() => switchSource("limitless")}
-          >
-            Limitless
-          </button>
+            Auto-import
+          </label>
+          {autoImportEnabled && (
+            <span className="text-muted-foreground text-xs">
+              Automatically processes discovered events
+            </span>
+          )}
         </div>
 
         <Button
@@ -620,153 +712,141 @@ export function ExternalData() {
       </div>
 
       {/* Stats Row */}
-      {source === "rk9" ? (
-        <Card>
-          <CardContent className="flex items-center gap-6 p-4">
-            <div className="flex items-center gap-2">
-              <Globe className="text-muted-foreground h-4 w-4" />
-              <div>
-                <p className="text-2xl font-bold">{rk9Total}</p>
-                <p className="text-muted-foreground text-xs">Events</p>
-              </div>
+      <Card>
+        <CardContent className="flex flex-wrap items-center gap-6 p-4">
+          <div className="flex items-center gap-2">
+            <Globe className="text-muted-foreground h-4 w-4" />
+            <div>
+              <p className="text-2xl font-bold">{rk9Total}</p>
+              <p className="text-muted-foreground text-xs">RK9 events</p>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-              <div>
-                <p className="text-2xl font-bold">{rk9Imported}</p>
-                <p className="text-muted-foreground text-xs">Imported</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="text-muted-foreground h-4 w-4" />
-              <div>
-                <p className="text-2xl font-bold">{rk9WithTeams}</p>
-                <p className="text-muted-foreground text-xs">With teams</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="flex flex-wrap items-center gap-4 p-4">
-            {limitlessStatsLoading ? (
-              <Skeleton className="h-6 w-64" />
-            ) : limitlessStats ? (
-              <>
-                <Badge variant="secondary" className="text-sm">
-                  {limitlessStats.totalSynced} synced
-                </Badge>
-                <Badge variant="default" className="text-sm">
-                  {limitlessStats.totalImported} imported
-                </Badge>
-                {limitlessQueuedCount > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="bg-amber-500/10 text-sm text-amber-700 dark:text-amber-400"
-                  >
-                    <Clock className="mr-1 h-3 w-3" />
-                    {limitlessQueuedCount} queued
-                  </Badge>
-                )}
-                {limitlessImportingCount > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="bg-blue-500/10 text-sm text-blue-700 dark:text-blue-400"
-                  >
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                    {limitlessImportingCount} importing
-                  </Badge>
-                )}
-              </>
-            ) : null}
-            {limitlessStatsError && (
-              <p className="text-xs text-red-500">
-                {limitlessStatsError.message}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Primary Action */}
-      <div className="flex flex-wrap items-center gap-3">
-        {source === "rk9" ? (
-          <div className="flex flex-col gap-2">
-            <Button onClick={handleDiscover} disabled={isDiscovering}>
-              {isDiscovering ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-2 h-4 w-4" />
-              )}
-              Discover Events
-            </Button>
-            {discoverMessage && (
-              <p
-                className={cn(
-                  "text-xs",
-                  discoverMessage.startsWith("Error")
-                    ? "text-red-500"
-                    : "text-muted-foreground"
-                )}
-              >
-                {discoverMessage}
-              </p>
-            )}
           </div>
-        ) : (
-          <>
-            <div className="flex flex-col gap-2">
-              <Button onClick={handleSync} disabled={syncing} size="sm">
-                {syncing ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <CloudDownload className="mr-2 h-4 w-4" />
-                )}
-                Sync Now
-              </Button>
-              {syncMessage && (
-                <p
-                  className={cn(
-                    "text-xs",
-                    syncMessage.startsWith("Error")
-                      ? "text-red-500"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {syncMessage}
-                </p>
-              )}
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <div>
+              <p className="text-2xl font-bold">{rk9Imported}</p>
+              <p className="text-muted-foreground text-xs">RK9 imported</p>
             </div>
-            {limitlessPendingCount > 0 && (
+          </div>
+          {limitlessStatsLoading ? (
+            <Skeleton className="h-10 w-40" />
+          ) : limitlessStats ? (
+            <>
               <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min={1}
-                  max={5000}
-                  value={queueBatchSize}
-                  onChange={(e) =>
-                    setQueueBatchSize(
-                      Math.max(1, parseInt(e.target.value, 10) || 1)
-                    )
-                  }
-                  className="w-20"
-                />
-                <Button
-                  onClick={handleQueueAll}
-                  disabled={batchQueuing}
-                  size="sm"
-                  variant="outline"
-                >
-                  {batchQueuing ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="mr-2 h-4 w-4" />
-                  )}
-                  Queue {Math.min(limitlessPendingCount, queueBatchSize)}
-                </Button>
+                <Globe className="text-muted-foreground h-4 w-4" />
+                <div>
+                  <p className="text-2xl font-bold">
+                    {limitlessStats.totalSynced}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    Limitless synced
+                  </p>
+                </div>
               </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                <div>
+                  <p className="text-2xl font-bold">
+                    {limitlessStats.totalImported}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    Limitless imported
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : null}
+          {limitlessQueuedCount > 0 && (
+            <Badge
+              variant="secondary"
+              className="bg-amber-500/10 text-sm text-amber-700 dark:text-amber-400"
+            >
+              <Clock className="mr-1 h-3 w-3" />
+              {limitlessQueuedCount} queued
+            </Badge>
+          )}
+          {limitlessImportingCount > 0 && (
+            <Badge
+              variant="secondary"
+              className="bg-blue-500/10 text-sm text-blue-700 dark:text-blue-400"
+            >
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              {limitlessImportingCount} importing
+            </Badge>
+          )}
+          {limitlessStatsError && (
+            <p className="text-xs text-red-500">
+              {limitlessStatsError.message}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Actions Row */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* RK9 discover */}
+        <div className="flex flex-col gap-1">
+          <Button onClick={handleDiscover} disabled={isDiscovering} size="sm">
+            {isDiscovering ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
             )}
-          </>
+            Discover RK9
+          </Button>
+          {discoverMessage && (
+            <p
+              className={cn(
+                "text-xs",
+                discoverMessage.startsWith("Error")
+                  ? "text-red-500"
+                  : "text-muted-foreground"
+              )}
+            >
+              {discoverMessage}
+            </p>
+          )}
+        </div>
+
+        {/* Limitless sync */}
+        <div className="flex flex-col gap-1">
+          <Button onClick={handleSync} disabled={syncing} size="sm">
+            {syncing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <CloudDownload className="mr-2 h-4 w-4" />
+            )}
+            Sync Limitless
+          </Button>
+          {syncMessage && (
+            <p
+              className={cn(
+                "text-xs",
+                syncMessage.startsWith("Error")
+                  ? "text-red-500"
+                  : "text-muted-foreground"
+              )}
+            >
+              {syncMessage}
+            </p>
+          )}
+        </div>
+
+        {/* Batch queue Limitless */}
+        {limitlessPendingCount > 0 && (
+          <Button
+            onClick={handleQueueAll}
+            disabled={batchQueuing}
+            size="sm"
+            variant="outline"
+          >
+            {batchQueuing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            Queue All Limitless ({limitlessPendingCount})
+          </Button>
         )}
       </div>
 
@@ -775,21 +855,30 @@ export function ExternalData() {
         <div className="relative flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
-            placeholder={
-              source === "rk9"
-                ? "Search events..."
-                : "Search tournaments by name, ID, or format..."
-            }
+            placeholder="Search by name, ID, or format..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
           />
         </div>
         <Select
+          value={sourceFilter}
+          onValueChange={(v) => setSourceFilter(v as SourceFilter)}
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="All sources" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All sources</SelectItem>
+            <SelectItem value="rk9">RK9</SelectItem>
+            <SelectItem value="limitless">Limitless</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v as StatusFilter)}
         >
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-36">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
@@ -813,354 +902,76 @@ export function ExternalData() {
       {isLoading ? (
         <div className="space-y-3">
           <Skeleton className="h-10 w-full" />
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-14 w-full" />
           ))}
         </div>
-      ) : source === "rk9" ? (
-        filteredRk9.length === 0 ? (
-          <div className="text-muted-foreground py-12 text-center text-sm">
-            {rk9Total === 0
-              ? 'No events found. Click "Discover Events" to fetch from RK9.'
-              : "No events match your filters."}
-          </div>
-        ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableHeader
-                    column="name"
-                    label="Event"
-                    sort={rk9Sort}
-                    onSort={(c) => setRk9Sort(toggleSort(rk9Sort, c))}
-                  />
-                  <SortableHeader
-                    column="tier"
-                    label="Tier"
-                    sort={rk9Sort}
-                    onSort={(c) => setRk9Sort(toggleSort(rk9Sort, c))}
-                  />
-                  <SortableHeader
-                    column="date_start"
-                    label="Date"
-                    sort={rk9Sort}
-                    onSort={(c) => setRk9Sort(toggleSort(rk9Sort, c))}
-                  />
-                  <SortableHeader
-                    column="player_count"
-                    label="Players"
-                    sort={rk9Sort}
-                    onSort={(c) => setRk9Sort(toggleSort(rk9Sort, c))}
-                  />
-                  <SortableHeader
-                    column="import_status"
-                    label="Status"
-                    sort={rk9Sort}
-                    onSort={(c) => setRk9Sort(toggleSort(rk9Sort, c))}
-                  />
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRk9.map((event) => {
-                  const upcoming = isUpcoming(event.date_start);
-                  const activeJob = activeJobs.get(event.event_id) ?? null;
-                  const isBusy = activeJob !== null;
-
-                  return (
-                    <TableRow
-                      key={event.event_id}
-                      className={upcoming ? "opacity-60" : undefined}
-                    >
-                      {/* Event name + location */}
-                      <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          <a
-                            href={`https://rk9.gg/tournament/${event.event_id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-medium hover:underline"
-                          >
-                            {event.name}
-                          </a>
-                          <a
-                            href={`https://rk9.gg/tournament/${event.event_id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted-foreground hover:text-foreground"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        </div>
-                        {event.location_city && (
-                          <p className="text-muted-foreground text-xs">
-                            {event.location_city}
-                            {event.location_country
-                              ? `, ${event.location_country}`
-                              : ""}
-                          </p>
-                        )}
-                        {!upcoming && (
-                          <div className="mt-0.5 flex items-center gap-2 text-xs">
-                            <a
-                              href={`https://rk9.gg/roster/${event.event_id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-muted-foreground hover:text-foreground hover:underline"
-                            >
-                              Roster
-                            </a>
-                            <a
-                              href={`https://rk9.gg/pairings/${event.event_id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-muted-foreground hover:text-foreground hover:underline"
-                            >
-                              Pairings
-                            </a>
-                            <a
-                              href={`https://rk9.gg/standings/${event.event_id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-muted-foreground hover:text-foreground hover:underline"
-                            >
-                              Standings
-                            </a>
-                          </div>
-                        )}
-                        {event.import_error && (
-                          <p className="mt-0.5 text-xs text-red-500">
-                            {event.import_error}
-                          </p>
-                        )}
-                      </TableCell>
-
-                      {/* Tier */}
-                      <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className="text-xs capitalize"
-                        >
-                          {event.tier}
-                        </Badge>
-                      </TableCell>
-
-                      {/* Date */}
-                      <TableCell className="text-sm">
-                        {event.date_start}
-                      </TableCell>
-
-                      {/* Players */}
-                      <TableCell className="text-sm">
-                        {event.player_count ?? "—"}
-                      </TableCell>
-
-                      {/* Status */}
-                      <TableCell>
-                        <RK9StatusBadge
-                          status={event.import_status}
-                          activeJob={activeJob}
-                          upcoming={upcoming}
-                        />
-                      </TableCell>
-
-                      {/* Actions */}
-                      <TableCell className="text-right">
-                        {upcoming ? null : event.import_status === "complete" &&
-                          event.has_team_lists ? (
-                          <CheckCircle2 className="ml-auto h-4 w-4 text-emerald-500" />
-                        ) : event.import_status === "pending" ||
-                          event.import_status === "failed" ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleScrapeRoster(event.event_id)}
-                            disabled={isBusy}
-                          >
-                            {activeJob?.type === "roster" ? (
-                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Download className="mr-1.5 h-3.5 w-3.5" />
-                            )}
-                            Roster
-                          </Button>
-                        ) : event.import_status === "roster" ||
-                          event.import_status === "teams" ||
-                          (event.import_status === "complete" &&
-                            !event.has_team_lists) ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleScrapeTeams(event.event_id)}
-                            disabled={isBusy}
-                          >
-                            {activeJob?.type === "teams" ? (
-                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Download className="mr-1.5 h-3.5 w-3.5" />
-                            )}
-                            Teams
-                          </Button>
-                        ) : null}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )
-      ) : filteredLimitless.length === 0 ? (
+      ) : filteredRows.length === 0 ? (
         <div className="text-muted-foreground py-12 text-center text-sm">
-          {(limitlessTournaments ?? []).length === 0
-            ? 'No tournaments found. Click "Sync Now" to fetch from Limitless.'
-            : "No tournaments match your filters."}
+          {unifiedRows.length === 0
+            ? "No events found. Discover RK9 events or sync Limitless tournaments."
+            : "No events match your filters."}
         </div>
       ) : (
         <div className="rounded-md border">
           <div className="text-muted-foreground px-4 py-2 text-xs">
-            Showing {filteredLimitless.length} of{" "}
-            {(limitlessTournaments ?? []).length} tournaments
+            Showing {filteredRows.length} of {unifiedRows.length} events
           </div>
           <Table>
             <TableHeader>
               <TableRow>
                 <SortableHeader
                   column="name"
-                  label="Tournament"
-                  sort={limitlessSort}
-                  onSort={(c) => setLimitlessSort(toggleSort(limitlessSort, c))}
+                  label="Event"
+                  sort={sort}
+                  onSort={(c) => setSort(toggleSort(sort, c))}
                 />
                 <SortableHeader
-                  column="format_id"
-                  label="Format"
-                  sort={limitlessSort}
-                  onSort={(c) => setLimitlessSort(toggleSort(limitlessSort, c))}
+                  column="source"
+                  label="Source"
+                  sort={sort}
+                  onSort={(c) => setSort(toggleSort(sort, c))}
+                />
+                <SortableHeader
+                  column="category"
+                  label="Type"
+                  sort={sort}
+                  onSort={(c) => setSort(toggleSort(sort, c))}
                 />
                 <SortableHeader
                   column="date"
                   label="Date"
-                  sort={limitlessSort}
-                  onSort={(c) => setLimitlessSort(toggleSort(limitlessSort, c))}
+                  sort={sort}
+                  onSort={(c) => setSort(toggleSort(sort, c))}
                 />
                 <SortableHeader
-                  column="player_count"
+                  column="playerCount"
                   label="Players"
-                  sort={limitlessSort}
-                  onSort={(c) => setLimitlessSort(toggleSort(limitlessSort, c))}
-                  className="text-right"
+                  sort={sort}
+                  onSort={(c) => setSort(toggleSort(sort, c))}
                 />
                 <SortableHeader
-                  column="import_status"
+                  column="status"
                   label="Status"
-                  sort={limitlessSort}
-                  onSort={(c) => setLimitlessSort(toggleSort(limitlessSort, c))}
+                  sort={sort}
+                  onSort={(c) => setSort(toggleSort(sort, c))}
                 />
-                <TableHead className="w-24" />
+                <TableHead className="w-24 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredLimitless.map((t) => {
-                const isQueuing = queuingIds.has(t.tournament_id);
-
-                return (
-                  <TableRow key={t.tournament_id}>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <a
-                          href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium hover:underline"
-                        >
-                          {t.name}
-                        </a>
-                        <a
-                          href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-foreground"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      </div>
-                      <div className="text-muted-foreground font-mono text-xs">
-                        {t.tournament_id}
-                      </div>
-                      <div className="mt-0.5 flex items-center gap-2 text-xs">
-                        <a
-                          href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}/standings`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-foreground hover:underline"
-                        >
-                          Standings
-                        </a>
-                        <a
-                          href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}/pairings`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-foreground hover:underline"
-                        >
-                          Pairings
-                        </a>
-                        <a
-                          href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}/players`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-foreground hover:underline"
-                        >
-                          Players
-                        </a>
-                      </div>
-                      {t.import_error && (
-                        <p className="mt-0.5 text-xs text-red-500">
-                          {t.import_error}
-                        </p>
-                      )}
-                    </TableCell>
-
-                    {/* Format */}
-                    <TableCell>
-                      <Badge variant="secondary" className="font-mono text-xs">
-                        {FORMAT_ID_TO_CODE[t.format_id] ?? t.format_id}
-                      </Badge>
-                    </TableCell>
-
-                    {/* Date */}
-                    <TableCell className="text-sm">{t.date}</TableCell>
-
-                    {/* Players */}
-                    <TableCell className="text-right text-sm">
-                      {t.player_count}
-                    </TableCell>
-
-                    {/* Status */}
-                    <TableCell>
-                      <LimitlessStatusBadge tournament={t} />
-                    </TableCell>
-
-                    {/* Actions */}
-                    <TableCell>
-                      {(!t.import_status || t.import_status === "failed") && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleQueueOne(t.tournament_id)}
-                          disabled={isQueuing || batchQueuing}
-                        >
-                          {isQueuing ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {filteredRows.map((row) => (
+                <UnifiedTableRow
+                  key={row.id}
+                  row={row}
+                  activeJobs={activeJobs}
+                  queuingIds={queuingIds}
+                  batchQueuing={batchQueuing}
+                  onScrapeRoster={handleScrapeRoster}
+                  onScrapeTeams={handleScrapeTeams}
+                  onQueueOne={handleQueueOne}
+                />
+              ))}
             </TableBody>
           </Table>
         </div>
@@ -1170,65 +981,252 @@ export function ExternalData() {
 }
 
 // ---------------------------------------------------------------------------
-// RK9 Status Badge
+// Unified Table Row
 // ---------------------------------------------------------------------------
 
-function RK9StatusBadge({
-  status,
-  activeJob,
-  upcoming,
+function UnifiedTableRow({
+  row,
+  activeJobs,
+  queuingIds,
+  batchQueuing,
+  onScrapeRoster,
+  onScrapeTeams,
+  onQueueOne,
 }: {
-  status: string;
-  activeJob: { type: string; scraped?: number; total?: number } | null;
-  upcoming: boolean;
+  row: UnifiedRow;
+  activeJobs: Map<string, { type: string; scraped?: number; total?: number }>;
+  queuingIds: Set<string>;
+  batchQueuing: boolean;
+  onScrapeRoster: (eventId: string) => void;
+  onScrapeTeams: (eventId: string) => void;
+  onQueueOne: (tournamentId: string) => void;
 }) {
-  if (upcoming) {
-    return (
-      <Badge variant="outline" className="text-xs text-blue-600">
-        <Clock className="mr-1 h-3 w-3" />
-        Upcoming
-      </Badge>
-    );
-  }
+  const isUpcomingRow = row.status === "upcoming";
 
-  if (activeJob) {
-    if (activeJob.type === "teams" && activeJob.total && activeJob.total > 0) {
-      const pct = Math.round(
-        ((activeJob.scraped ?? 0) / activeJob.total) * 100
-      );
+  // External links
+  const externalUrl =
+    row.source === "rk9"
+      ? `https://rk9.gg/tournament/${row.rk9!.event_id}`
+      : `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}`;
+
+  const subLinks =
+    row.source === "rk9" && !isUpcomingRow
+      ? [
+          {
+            label: "Roster",
+            href: `https://rk9.gg/roster/${row.rk9!.event_id}`,
+          },
+          {
+            label: "Pairings",
+            href: `https://rk9.gg/pairings/${row.rk9!.event_id}`,
+          },
+          {
+            label: "Standings",
+            href: `https://rk9.gg/standings/${row.rk9!.event_id}`,
+          },
+        ]
+      : row.source === "limitless"
+        ? [
+            {
+              label: "Standings",
+              href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/standings`,
+            },
+            {
+              label: "Pairings",
+              href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/pairings`,
+            },
+            {
+              label: "Players",
+              href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/players`,
+            },
+          ]
+        : [];
+
+  return (
+    <TableRow className={isUpcomingRow ? "opacity-60" : undefined}>
+      {/* Event name + location + sub-links */}
+      <TableCell>
+        <div className="flex items-center gap-1.5">
+          <a
+            href={externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium hover:underline"
+          >
+            {row.name}
+          </a>
+          <a
+            href={externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
+        {row.rk9?.location_city && (
+          <p className="text-muted-foreground text-xs">
+            {row.rk9.location_city}
+            {row.rk9.location_country ? `, ${row.rk9.location_country}` : ""}
+          </p>
+        )}
+        {subLinks.length > 0 && (
+          <div className="mt-0.5 flex items-center gap-2 text-xs">
+            {subLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground hover:underline"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+        )}
+        {row.error && (
+          <p className="mt-0.5 text-xs text-red-500">{row.error}</p>
+        )}
+      </TableCell>
+
+      {/* Source */}
+      <TableCell>
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-xs",
+            row.source === "rk9"
+              ? "border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400"
+              : "border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400"
+          )}
+        >
+          {row.source === "rk9" ? "RK9" : "Limitless"}
+        </Badge>
+      </TableCell>
+
+      {/* Type (tier / format) */}
+      <TableCell>
+        <Badge variant="secondary" className="text-xs capitalize">
+          {row.category}
+        </Badge>
+      </TableCell>
+
+      {/* Date */}
+      <TableCell className="text-sm">{row.date}</TableCell>
+
+      {/* Players */}
+      <TableCell className="text-sm">{row.playerCount ?? "—"}</TableCell>
+
+      {/* Status */}
+      <TableCell>
+        <StatusBadge row={row} activeJobs={activeJobs} />
+      </TableCell>
+
+      {/* Actions */}
+      <TableCell className="text-right">
+        <RowActions
+          row={row}
+          activeJobs={activeJobs}
+          queuingIds={queuingIds}
+          batchQueuing={batchQueuing}
+          onScrapeRoster={onScrapeRoster}
+          onScrapeTeams={onScrapeTeams}
+          onQueueOne={onQueueOne}
+        />
+      </TableCell>
+    </TableRow>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Status Badge
+// ---------------------------------------------------------------------------
+
+function StatusBadge({
+  row,
+  activeJobs,
+}: {
+  row: UnifiedRow;
+  activeJobs: Map<string, { type: string; scraped?: number; total?: number }>;
+}) {
+  // RK9 active job display
+  if (row.rk9) {
+    const activeJob = activeJobs.get(row.rk9.event_id);
+    if (activeJob) {
+      if (
+        activeJob.type === "teams" &&
+        activeJob.total &&
+        activeJob.total > 0
+      ) {
+        const pct = Math.round(
+          ((activeJob.scraped ?? 0) / activeJob.total) * 100
+        );
+        return (
+          <Badge variant="secondary" className="text-xs">
+            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+            Teams {activeJob.scraped}/{activeJob.total} ({pct}%)
+          </Badge>
+        );
+      }
       return (
         <Badge variant="secondary" className="text-xs">
           <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          Teams {activeJob.scraped}/{activeJob.total} ({pct}%)
+          {activeJob.type === "roster"
+            ? "Scraping roster..."
+            : "Scraping teams..."}
         </Badge>
       );
     }
-    return (
-      <Badge variant="secondary" className="text-xs">
-        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-        {activeJob.type === "roster"
-          ? "Scraping roster..."
-          : "Scraping teams..."}
-      </Badge>
-    );
   }
 
-  switch (status) {
+  switch (row.status) {
+    case "upcoming":
+      return (
+        <Badge variant="outline" className="text-xs text-blue-600">
+          <Clock className="mr-1 h-3 w-3" />
+          Upcoming
+        </Badge>
+      );
     case "complete":
       return (
         <Badge variant="default" className="text-xs">
           <CheckCircle2 className="mr-1 h-3 w-3" />
-          Complete
+          {row.source === "limitless" ? "Imported" : "Complete"}
         </Badge>
       );
-    case "roster":
-      return (
-        <Badge variant="secondary" className="text-xs">
-          <Users className="mr-1 h-3 w-3" />
-          Roster ready
-        </Badge>
-      );
-    case "teams":
+    case "in-progress":
+      if (row.limitless?.import_status === "queued") {
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400"
+          >
+            <Clock className="mr-1 h-3 w-3" />
+            Queued
+          </Badge>
+        );
+      }
+      if (row.limitless?.import_status === "importing") {
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-blue-500/10 text-xs text-blue-700 dark:text-blue-400"
+          >
+            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+            Importing
+          </Badge>
+        );
+      }
+      // RK9 in-progress states
+      if (row.rk9?.import_status === "roster") {
+        return (
+          <Badge variant="secondary" className="text-xs">
+            <Users className="mr-1 h-3 w-3" />
+            Roster ready
+          </Badge>
+        );
+      }
       return (
         <Badge variant="secondary" className="text-xs">
           <Clock className="mr-1 h-3 w-3" />
@@ -1240,6 +1238,9 @@ function RK9StatusBadge({
         <Badge variant="destructive" className="text-xs">
           <XCircle className="mr-1 h-3 w-3" />
           Failed
+          {row.limitless?.import_attempts
+            ? ` (${row.limitless.import_attempts}x)`
+            : ""}
         </Badge>
       );
     default:
@@ -1252,56 +1253,104 @@ function RK9StatusBadge({
 }
 
 // ---------------------------------------------------------------------------
-// Limitless Status Badge
+// Row Actions
 // ---------------------------------------------------------------------------
 
-function LimitlessStatusBadge({
-  tournament,
+function RowActions({
+  row,
+  activeJobs,
+  queuingIds,
+  batchQueuing,
+  onScrapeRoster,
+  onScrapeTeams,
+  onQueueOne,
 }: {
-  tournament: LimitlessTournamentRow;
+  row: UnifiedRow;
+  activeJobs: Map<string, { type: string; scraped?: number; total?: number }>;
+  queuingIds: Set<string>;
+  batchQueuing: boolean;
+  onScrapeRoster: (eventId: string) => void;
+  onScrapeTeams: (eventId: string) => void;
+  onQueueOne: (tournamentId: string) => void;
 }) {
-  const { import_status, import_attempts } = tournament;
+  if (row.source === "rk9" && row.rk9) {
+    const event = row.rk9;
+    const upcoming = isUpcoming(event.date_start);
+    if (upcoming) return null;
 
-  switch (import_status) {
-    case "queued":
+    const activeJob = activeJobs.get(event.event_id);
+    const isBusy = activeJob !== null && activeJob !== undefined;
+
+    if (event.import_status === "complete" && event.has_team_lists) {
+      return <CheckCircle2 className="ml-auto h-4 w-4 text-emerald-500" />;
+    }
+
+    if (event.import_status === "pending" || event.import_status === "failed") {
       return (
-        <Badge
-          variant="secondary"
-          className="bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400"
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onScrapeRoster(event.event_id)}
+          disabled={isBusy}
         >
-          <Clock className="mr-1 h-3 w-3" />
-          Queued
-        </Badge>
+          {activeJob?.type === "roster" ? (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Download className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          Roster
+        </Button>
       );
-    case "importing":
+    }
+
+    if (
+      event.import_status === "roster" ||
+      event.import_status === "teams" ||
+      (event.import_status === "complete" && !event.has_team_lists)
+    ) {
       return (
-        <Badge
-          variant="secondary"
-          className="bg-blue-500/10 text-xs text-blue-700 dark:text-blue-400"
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onScrapeTeams(event.event_id)}
+          disabled={isBusy}
         >
-          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          Importing
-        </Badge>
+          {activeJob?.type === "teams" ? (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Download className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          Teams
+        </Button>
       );
-    case "completed":
-      return (
-        <Badge variant="default" className="text-xs">
-          <CheckCircle2 className="mr-1 h-3 w-3" />
-          Imported
-        </Badge>
-      );
-    case "failed":
-      return (
-        <Badge variant="destructive" className="text-xs">
-          <XCircle className="mr-1 h-3 w-3" />
-          Failed{import_attempts ? ` (${import_attempts}x)` : ""}
-        </Badge>
-      );
-    default:
-      return (
-        <Badge variant="outline" className="text-xs">
-          Pending
-        </Badge>
-      );
+    }
+
+    return null;
   }
+
+  if (row.source === "limitless" && row.limitless) {
+    const t = row.limitless;
+    const isQueuing = queuingIds.has(t.tournament_id);
+
+    if (!t.import_status || t.import_status === "failed") {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onQueueOne(t.tournament_id)}
+          disabled={isQueuing || batchQueuing}
+        >
+          {isQueuing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+        </Button>
+      );
+    }
+
+    return null;
+  }
+
+  return null;
 }
