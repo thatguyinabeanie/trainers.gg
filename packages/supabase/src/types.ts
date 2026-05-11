@@ -77,6 +77,33 @@ export type Database = {
           },
         ]
       }
+      organizers: {
+        Row: {
+          created_at: string
+          id: number
+          limitless_id: number
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          limitless_id: number
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          limitless_id?: number
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       phases: {
         Row: {
           mode: string
@@ -238,6 +265,7 @@ export type Database = {
           imported_at: string
           is_online: boolean
           name: string
+          organizer_id: number | null
           organizer_name: string | null
           platform: string | null
           player_count: number
@@ -258,6 +286,7 @@ export type Database = {
           imported_at?: string
           is_online?: boolean
           name: string
+          organizer_id?: number | null
           organizer_name?: string | null
           platform?: string | null
           player_count?: number
@@ -278,18 +307,31 @@ export type Database = {
           imported_at?: string
           is_online?: boolean
           name?: string
+          organizer_id?: number | null
           organizer_name?: string | null
           platform?: string | null
           player_count?: number
           tournament_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tournaments_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      atomic_clear_tournament: {
+        Args: { p_tournament_id: string }
+        Returns: undefined
+      }
       tournament_stats: {
         Args: never
         Returns: {

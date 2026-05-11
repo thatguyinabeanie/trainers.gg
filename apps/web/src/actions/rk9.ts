@@ -24,7 +24,15 @@ const DELAY_ROSTER_MS = 1000;
 // Helpers
 // ---------------------------------------------------------------------------
 
+function assertSafeRk9Path(path: string): void {
+  // Path must start with / and contain only safe URL characters
+  if (!/^\/[\w\-/.]+$/.test(path)) {
+    throw new Error(`Invalid RK9 path: ${path}`);
+  }
+}
+
 async function fetchRk9Html(path: string): Promise<string> {
+  assertSafeRk9Path(path);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -44,6 +52,13 @@ async function fetchRk9Html(path: string): Promise<string> {
     return await response.text();
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+/** RK9 event IDs are alphanumeric with hyphens */
+function assertValidEventId(eventId: string): void {
+  if (!/^[\w-]+$/.test(eventId)) {
+    throw new Error(`Invalid event ID: ${eventId}`);
   }
 }
 
@@ -86,6 +101,7 @@ export async function scrapeRk9Roster(
   eventId: string
 ): Promise<ActionResult & { playerCount?: number }> {
   try {
+    assertValidEventId(eventId);
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
 
@@ -135,6 +151,7 @@ export async function scrapeRk9Teams(
   ActionResult & { teamsImported?: number; pokemonImported?: number }
 > {
   try {
+    assertValidEventId(eventId);
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
 

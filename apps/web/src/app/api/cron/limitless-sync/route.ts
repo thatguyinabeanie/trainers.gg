@@ -23,6 +23,14 @@ export async function GET(request: Request): Promise<Response> {
   const supabase = createServiceRoleClient();
   const apiKey = process.env.LIMITLESS_API_KEY;
 
+  if (!apiKey) {
+    console.error("[limitless-sync] LIMITLESS_API_KEY not configured");
+    return Response.json(
+      { success: false, error: "API key not configured" },
+      { status: 500 }
+    );
+  }
+
   try {
     const result = await syncTournamentList(supabase, apiKey);
 

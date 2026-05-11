@@ -290,10 +290,12 @@ function extractSpeciesFromBlock(html: string): string {
   // Take text before the first <b> tag
   const beforeBold = withoutImg.split(/<b>/i)[0] ?? "";
 
-  // Strip remaining HTML tags and clean up whitespace / &nbsp;
+  // Strip all HTML tags robustly (handles unclosed/malformed tags)
   const text = beforeBold
-    .replace(/<[^>]*>/g, "")
+    .replace(/<\/?[a-z][^>]*>/gi, "")
+    .replace(/<[^>]*$/g, "")
     .replace(/&nbsp;/g, " ")
+    .replace(/&[a-z]+;/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 

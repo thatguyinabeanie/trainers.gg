@@ -122,13 +122,41 @@ export interface ImportResult {
 
 const MAX_RETRIES = 5;
 const INITIAL_BACKOFF_MS = 1000;
+const FETCH_TIMEOUT_MS = 30_000;
 
 async function limitlessFetch<T>(path: string, apiKey?: string): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json" };
   if (apiKey) headers["X-Access-Key"] = apiKey;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const res = await fetch(`${LIMITLESS_BASE_URL}${path}`, { headers });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    let res: Response;
+    try {
+      res = await fetch(`${LIMITLESS_BASE_URL}${path}`, {
+        headers,
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timer);
+      // Treat timeout (AbortError) as retryable
+      if (
+        err instanceof Error &&
+        err.name === "AbortError" &&
+        attempt < MAX_RETRIES
+      ) {
+        const delayMs = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+        console.warn(
+          `[limitless] Timeout on ${path} — retrying in ${delayMs}ms (attempt ${attempt + 1}/${MAX_RETRIES})`
+        );
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
 
     // Retry on 429 (rate limited) with exponential backoff
     if (res.status === 429 && attempt < MAX_RETRIES) {

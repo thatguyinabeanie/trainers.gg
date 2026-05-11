@@ -4,8 +4,6 @@
 -- Enables queue-based import processing. The admin UI (or webhook) sets
 -- import_requested_at; the cron picks up the oldest queued tournament
 -- and tracks progress via import_status / import_phase / import_page.
---
--- Also adds last_synced_at for tracking when the sync cron last ran.
 -- ============================================================================
 
 -- Import queue columns

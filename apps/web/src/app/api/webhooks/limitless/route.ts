@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     const supabase = createServiceRoleClient();
 
     // Set queue status (only updates if the row already exists)
-    const { error: queueErr } = await supabase
+    const { data: queued, error: queueErr } = await supabase
       .schema("limitless")
       .from("tournaments")
       .update({
@@ -85,7 +85,9 @@ export async function POST(request: Request) {
         import_status: "queued",
         import_error: null,
       })
-      .eq("tournament_id", tournamentId);
+      .eq("tournament_id", tournamentId)
+      .select("tournament_id")
+      .maybeSingle();
 
     if (queueErr) {
       console.error("[limitless-webhook] Queue error:", queueErr);
@@ -93,6 +95,20 @@ export async function POST(request: Request) {
         { success: false, error: "Failed to queue tournament" },
         { status: 500 }
       );
+    }
+
+    if (!queued) {
+      console.log(
+        `[limitless-webhook] Tournament ${tournamentId} not yet synced — will be queued after next sync`
+      );
+      return NextResponse.json({
+        success: true,
+        data: {
+          tournamentId,
+          queued: false,
+          note: "Tournament not yet synced — will be queued after next sync",
+        },
+      });
     }
 
     console.log(

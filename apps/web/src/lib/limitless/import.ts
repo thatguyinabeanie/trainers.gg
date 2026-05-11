@@ -111,32 +111,34 @@ export async function importTournament(
   const tournamentId = details.id;
   const formatId = LIMITLESS_TO_FORMAT[limitlessFormat] ?? limitlessFormat;
 
-  // 1. Delete child data for idempotency
-  const { error: delPhasesErr } = await supabase
+  // 1. Atomically delete child data for idempotency (single transaction)
+  const { error: clearErr } = await supabase
     .schema("limitless")
-    .from("phases")
-    .delete()
-    .eq("tournament_id", tournamentId);
-  if (delPhasesErr)
-    throw new Error(`Delete phases failed: ${delPhasesErr.message}`);
+    .rpc("atomic_clear_tournament", { p_tournament_id: tournamentId });
+  if (clearErr)
+    throw new Error(`Clear tournament data failed: ${clearErr.message}`);
 
-  const { error: delStandingsErr } = await supabase
-    .schema("limitless")
-    .from("standings")
-    .delete()
-    .eq("tournament_id", tournamentId);
-  if (delStandingsErr)
-    throw new Error(`Delete standings failed: ${delStandingsErr.message}`);
+  // 2. Upsert organizer (if present) and get organizer_id
+  let organizerId: number | null = null;
+  if (details.organizer?.id) {
+    const { data: orgData, error: orgErr } = await supabase
+      .schema("limitless")
+      .from("organizers")
+      .upsert(
+        {
+          limitless_id: details.organizer.id,
+          name: details.organizer.name,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "limitless_id" }
+      )
+      .select("id")
+      .single();
+    if (orgErr) throw new Error(`Organizer upsert failed: ${orgErr.message}`);
+    organizerId = orgData.id;
+  }
 
-  const { error: delMatchesErr } = await supabase
-    .schema("limitless")
-    .from("match_results")
-    .delete()
-    .eq("tournament_id", tournamentId);
-  if (delMatchesErr)
-    throw new Error(`Delete match_results failed: ${delMatchesErr.message}`);
-
-  // 2. Upsert tournament metadata (WITHOUT data_imported_at — set after all children succeed)
+  // 3. Upsert tournament metadata (WITHOUT data_imported_at — set after all children succeed)
   const { error: tErr } = await supabase
     .schema("limitless")
     .from("tournaments")
@@ -151,6 +153,7 @@ export async function importTournament(
         is_online: details.isOnline ?? true,
         decklists: details.decklists ?? false,
         organizer_name: details.organizer?.name ?? null,
+        organizer_id: organizerId,
       },
       { onConflict: "tournament_id" }
     );
@@ -435,8 +438,8 @@ async function processOne(
 
   const { tournament_id: tournamentId, format_id: formatId } = queued;
 
-  // Claim the tournament (set importing)
-  const { error: claimErr } = await supabase
+  // Claim the tournament (set importing) — verify exactly 1 row updated
+  const { data: claimed, error: claimErr } = await supabase
     .schema("limitless")
     .from("tournaments")
     .update({
@@ -445,10 +448,13 @@ async function processOne(
       import_error: null,
     })
     .eq("tournament_id", tournamentId)
-    .eq("import_status", "queued"); // Optimistic lock
+    .eq("import_status", "queued") // Optimistic lock
+    .select("tournament_id")
+    .maybeSingle();
 
   if (claimErr)
     throw new Error(`Failed to claim tournament: ${claimErr.message}`);
+  if (!claimed) return { processed: false }; // Another worker claimed it
 
   // Fetch and import
   try {
