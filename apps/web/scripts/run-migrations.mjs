@@ -555,7 +555,9 @@ async function runMigrations() {
     execWithRetry(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
 
     console.log("\n📤 Applying migrations...");
-    exec("npx supabase db push --linked", { env: cliEnv });
+    // --include-all allows out-of-order migrations that can occur when PRs
+    // merge in a different order than their migration timestamps.
+    exec("npx supabase db push --linked --include-all", { env: cliEnv });
   }
 
   // --- Edge Functions ---
