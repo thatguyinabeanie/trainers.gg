@@ -7,23 +7,269 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
+  limitless: {
     Tables: {
-      [_ in never]: never
+      match_results: {
+        Row: {
+          id: number
+          imported_at: string
+          match_label: string | null
+          phase: number
+          player1_id: number
+          player2_id: number | null
+          round: number
+          table_number: number | null
+          tournament_id: string
+          winner_id: number | null
+        }
+        Insert: {
+          id?: never
+          imported_at?: string
+          match_label?: string | null
+          phase: number
+          player1_id: number
+          player2_id?: number | null
+          round: number
+          table_number?: number | null
+          tournament_id: string
+          winner_id?: number | null
+        }
+        Update: {
+          id?: never
+          imported_at?: string
+          match_label?: string | null
+          phase?: number
+          player1_id?: number
+          player2_id?: number | null
+          round?: number
+          table_number?: number | null
+          tournament_id?: string
+          winner_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_match_phase"
+            columns: ["tournament_id", "phase"]
+            isOneToOne: false
+            referencedRelation: "phases"
+            referencedColumns: ["tournament_id", "phase_number"]
+          },
+          {
+            foreignKeyName: "match_results_player1_id_fkey"
+            columns: ["player1_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_results_player2_id_fkey"
+            columns: ["player2_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_results_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phases: {
+        Row: {
+          mode: string
+          phase_number: number
+          rounds: number
+          tournament_id: string
+          type: string
+        }
+        Insert: {
+          mode: string
+          phase_number: number
+          rounds: number
+          tournament_id: string
+          type: string
+        }
+        Update: {
+          mode?: string
+          phase_number?: number
+          rounds?: number
+          tournament_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phases_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["tournament_id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          country: string | null
+          created_at: string
+          display_name: string | null
+          id: number
+          username: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: never
+          username: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: never
+          username?: string
+        }
+        Relationships: []
+      }
+      standings: {
+        Row: {
+          drop_round: number | null
+          id: number
+          placement: number
+          player_id: number
+          record_losses: number
+          record_ties: number
+          record_wins: number
+          tournament_id: string
+        }
+        Insert: {
+          drop_round?: number | null
+          id?: never
+          placement: number
+          player_id: number
+          record_losses?: number
+          record_ties?: number
+          record_wins?: number
+          tournament_id: string
+        }
+        Update: {
+          drop_round?: number | null
+          id?: never
+          placement?: number
+          player_id?: number
+          record_losses?: number
+          record_ties?: number
+          record_wins?: number
+          tournament_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "standings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "standings_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["tournament_id"]
+          },
+        ]
+      }
+      team_pokemon: {
+        Row: {
+          ability: string | null
+          held_item: string | null
+          id: number
+          moves: string[] | null
+          position: number
+          species: string
+          standing_id: number
+          tera_type: string | null
+        }
+        Insert: {
+          ability?: string | null
+          held_item?: string | null
+          id?: never
+          moves?: string[] | null
+          position: number
+          species: string
+          standing_id: number
+          tera_type?: string | null
+        }
+        Update: {
+          ability?: string | null
+          held_item?: string | null
+          id?: never
+          moves?: string[] | null
+          position?: number
+          species?: string
+          standing_id?: number
+          tera_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_pokemon_standing_id_fkey"
+            columns: ["standing_id"]
+            isOneToOne: false
+            referencedRelation: "standings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournaments: {
+        Row: {
+          data_imported_at: string | null
+          date: string
+          decklists: boolean
+          format_id: string
+          imported_at: string
+          is_online: boolean
+          name: string
+          organizer_name: string | null
+          platform: string | null
+          player_count: number
+          tournament_id: string
+        }
+        Insert: {
+          data_imported_at?: string | null
+          date: string
+          decklists?: boolean
+          format_id: string
+          imported_at?: string
+          is_online?: boolean
+          name: string
+          organizer_name?: string | null
+          platform?: string | null
+          player_count?: number
+          tournament_id: string
+        }
+        Update: {
+          data_imported_at?: string | null
+          date?: string
+          decklists?: boolean
+          format_id?: string
+          imported_at?: string
+          is_online?: boolean
+          name?: string
+          organizer_name?: string | null
+          platform?: string | null
+          player_count?: number
+          tournament_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
@@ -3795,7 +4041,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
+  limitless: {
     Enums: {},
   },
   public: {

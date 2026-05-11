@@ -107,19 +107,51 @@ export interface ImportResult {
   matches: number;
 }
 
+export interface SyncResult {
+  synced: number;
+  skipped: number;
+  total: number;
+}
+
 // ---------------------------------------------------------------------------
 // Limitless API client
 // ---------------------------------------------------------------------------
+
+// Retry config for rate-limited requests
+const MAX_RETRIES = 5;
+const INITIAL_BACKOFF_MS = 1000;
 
 async function limitlessFetch<T>(path: string, apiKey?: string): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json" };
   if (apiKey) headers["X-Access-Key"] = apiKey;
 
-  const res = await fetch(`${LIMITLESS_BASE_URL}${path}`, { headers });
-  if (!res.ok) {
-    throw new Error(`Limitless API ${res.status}: ${res.statusText} (${path})`);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const res = await fetch(`${LIMITLESS_BASE_URL}${path}`, { headers });
+
+    // Retry on 429 (rate limited) with exponential backoff
+    if (res.status === 429 && attempt < MAX_RETRIES) {
+      const retryAfter = res.headers.get("Retry-After");
+      // Use Retry-After header if present (seconds), otherwise exponential backoff
+      const delayMs = retryAfter
+        ? parseInt(retryAfter, 10) * 1000
+        : INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+      console.warn(
+        `Limitless API 429 on ${path} — retrying in ${delayMs}ms (attempt ${attempt + 1}/${MAX_RETRIES})`
+      );
+      await new Promise((r) => setTimeout(r, delayMs));
+      continue;
+    }
+
+    if (!res.ok) {
+      throw new Error(
+        `Limitless API ${res.status}: ${res.statusText} (${path})`
+      );
+    }
+    return res.json() as Promise<T>;
   }
-  return res.json() as Promise<T>;
+
+  // Should not reach here, but satisfies TypeScript
+  throw new Error(`Limitless API: exhausted ${MAX_RETRIES} retries (${path})`);
 }
 
 /**
@@ -153,20 +185,19 @@ export async function fetchTournamentData(
   tournamentId: string,
   apiKey?: string
 ): Promise<TournamentData> {
-  const [details, standings, pairings] = await Promise.all([
-    limitlessFetch<LimitlessTournamentDetails>(
-      `/tournaments/${tournamentId}/details`,
-      apiKey
-    ),
-    limitlessFetch<LimitlessStanding[]>(
-      `/tournaments/${tournamentId}/standings`,
-      apiKey
-    ),
-    limitlessFetch<LimitlessPairing[]>(
-      `/tournaments/${tournamentId}/pairings`,
-      apiKey
-    ),
-  ]);
+  // Sequential to avoid spiking 3 concurrent requests against rate limits
+  const details = await limitlessFetch<LimitlessTournamentDetails>(
+    `/tournaments/${tournamentId}/details`,
+    apiKey
+  );
+  const standings = await limitlessFetch<LimitlessStanding[]>(
+    `/tournaments/${tournamentId}/standings`,
+    apiKey
+  );
+  const pairings = await limitlessFetch<LimitlessPairing[]>(
+    `/tournaments/${tournamentId}/pairings`,
+    apiKey
+  );
 
   return { details, standings, pairings };
 }
@@ -187,8 +218,71 @@ export function createAdminClient(): SupabaseClient {
 }
 
 /**
- * Import a single tournament into the limitless schema.
- * Idempotent — deletes existing data first (cascade handles children).
+ * Stage 1: Sync the tournament list from Limitless API into the DB.
+ *
+ * Fetches all VGC tournaments, filters to known formats, and upserts
+ * metadata rows. Does NOT touch child data (phases, standings, etc.)
+ * or overwrite data_imported_at.
+ */
+export async function syncTournamentList(
+  supabase: SupabaseClient,
+  apiKey?: string
+): Promise<SyncResult> {
+  const allTournaments = await fetchTournamentList(apiKey);
+
+  let synced = 0;
+  let skipped = 0;
+
+  // Filter to known formats and build upsert rows
+  const rows: Array<{
+    tournament_id: string;
+    name: string;
+    format_id: string;
+    date: string;
+    player_count: number;
+    imported_at: string;
+  }> = [];
+
+  for (const t of allTournaments) {
+    const formatId = LIMITLESS_TO_FORMAT[t.format];
+    if (!formatId) {
+      skipped++;
+      continue;
+    }
+    rows.push({
+      tournament_id: t.id,
+      name: t.name,
+      format_id: formatId,
+      date: t.date.split("T")[0],
+      player_count: t.players ?? 0,
+      imported_at: new Date().toISOString(),
+    });
+  }
+
+  // Batch upsert in chunks of 500
+  for (let i = 0; i < rows.length; i += 500) {
+    const batch = rows.slice(i, i + 500);
+    const { error } = await supabase
+      .schema("limitless")
+      .from("tournaments")
+      .upsert(batch, {
+        onConflict: "tournament_id",
+        // Only update metadata fields — never overwrite stage 2 columns
+        // (platform, is_online, decklists, organizer_name, data_imported_at)
+      });
+    if (error) throw new Error(`Sync batch at offset ${i}: ${error.message}`);
+    synced += batch.length;
+  }
+
+  return { synced, skipped, total: allTournaments.length };
+}
+
+/**
+ * Stage 2: Import full tournament data (details, standings, teams, matches).
+ *
+ * Upserts the tournament row (enriching stage 1 metadata with detail fields),
+ * sets data_imported_at, and replaces all child data (phases, standings, etc.).
+ * Idempotent — safe to re-run on an already-imported tournament.
  */
 export async function importTournament(
   supabase: SupabaseClient,
@@ -203,29 +297,44 @@ export async function importTournament(
     throw new Error(`Unknown Limitless format: ${limitlessFormat}`);
   }
 
-  // 1. Delete existing (cascade handles phases, standings, team_pokemon, match_results)
+  // 1. Delete child data for idempotency (cascade from phases + standings
+  //    handles team_pokemon + match_results)
   await supabase
     .schema("limitless")
-    .from("tournaments")
+    .from("phases")
+    .delete()
+    .eq("tournament_id", tournamentId);
+  await supabase
+    .schema("limitless")
+    .from("standings")
+    .delete()
+    .eq("tournament_id", tournamentId);
+  await supabase
+    .schema("limitless")
+    .from("match_results")
     .delete()
     .eq("tournament_id", tournamentId);
 
-  // 2. Insert tournament
+  // 2. Upsert tournament — enriches stage 1 row with detail fields
   const { error: tErr } = await supabase
     .schema("limitless")
     .from("tournaments")
-    .insert({
-      tournament_id: tournamentId,
-      name: details.name,
-      format_id: formatId,
-      date: details.date.split("T")[0],
-      player_count: details.players ?? 0,
-      platform: details.platform ?? null,
-      is_online: details.isOnline ?? true,
-      decklists: details.decklists ?? false,
-      organizer_name: details.organizer?.name ?? null,
-    });
-  if (tErr) throw new Error(`Tournament insert failed: ${tErr.message}`);
+    .upsert(
+      {
+        tournament_id: tournamentId,
+        name: details.name,
+        format_id: formatId,
+        date: details.date.split("T")[0],
+        player_count: details.players ?? 0,
+        platform: details.platform ?? null,
+        is_online: details.isOnline ?? true,
+        decklists: details.decklists ?? false,
+        organizer_name: details.organizer?.name ?? null,
+        data_imported_at: new Date().toISOString(),
+      },
+      { onConflict: "tournament_id" }
+    );
+  if (tErr) throw new Error(`Tournament upsert failed: ${tErr.message}`);
 
   // 3. Insert phases
   if (details.phases && details.phases.length > 0) {

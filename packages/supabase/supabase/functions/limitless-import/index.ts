@@ -5,16 +5,18 @@
  *
  * Actions (POST body):
  *   { action: "stats" }
- *     → Returns import counts by format (how many imported vs available)
+ *     → Returns counts: synced tournaments, fully-imported tournaments, by format
  *
- *   { action: "list", format: "M-A" }
- *     → Fetches available tournaments from Limitless API for a format,
- *       annotates each with whether it's already imported
+ *   { action: "sync" }
+ *     → Stage 1: Fetches tournament list from Limitless API, upserts metadata to DB
  *
  *   { action: "import", tournamentId: "abc123", format: "M-A" }
- *     → Imports a single tournament from Limitless API into the DB
+ *     → Stage 2: Imports full data (standings, teams, matches) for one tournament
  *
- * Auth: Requires JWT from a site_admin user.
+ *   { action: "auto-import", tournamentId: "abc123" }
+ *     → Auto-detects format and imports (used by webhook)
+ *
+ * Auth: Requires JWT from a site_admin user, or service role key.
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -22,10 +24,11 @@ import { getCorsHeaders } from "../_shared/cors.ts";
 import {
   LIMITLESS_TO_FORMAT,
   KNOWN_FORMATS,
-  fetchTournamentList,
   fetchTournamentData,
+  syncTournamentList,
   importTournament,
   type ImportResult,
+  type SyncResult,
 } from "../_shared/limitless.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -42,9 +45,14 @@ function json(data: unknown, status: number, cors: Record<string, string>) {
   });
 }
 
+function adminClient() {
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 /**
  * Verify the caller is a site admin or using the service role key.
- * Returns the caller identity on success, or a Response on failure.
  */
 async function requireAdmin(
   req: Request,
@@ -62,11 +70,8 @@ async function requireAdmin(
     return { userId: "service_role" };
   }
 
-  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const supabaseAdmin = adminClient();
 
-  // Verify the JWT and get the user
   const {
     data: { user },
     error: userError,
@@ -80,7 +85,7 @@ async function requireAdmin(
     );
   }
 
-  // Check site_admin role via user_roles + roles
+  // Check site_admin role
   const { data: adminRole } = await supabaseAdmin
     .from("user_roles")
     .select("role_id, roles!inner(name)")
@@ -100,116 +105,66 @@ async function requireAdmin(
 // ---------------------------------------------------------------------------
 
 /**
- * Returns import stats: count of imported tournaments per format,
- * plus total available (from the tournaments already in DB).
+ * Returns import stats: synced + fully-imported counts per format.
  */
 async function handleStats(cors: Record<string, string>) {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const supabase = adminClient();
 
-  // Count imported tournaments grouped by format_id
   const { data: rows, error } = await supabase
     .schema("limitless")
     .from("tournaments")
-    .select("format_id");
+    .select("format_id, data_imported_at");
 
   if (error) {
     return json({ success: false, error: error.message }, 500, cors);
   }
 
-  // Build counts by format
-  const importedByFormat: Record<string, number> = {};
+  // Count by format: synced (all rows) vs fully imported (data_imported_at != null)
+  const byFormat: Record<string, { synced: number; imported: number }> = {};
   for (const row of rows ?? []) {
-    importedByFormat[row.format_id] =
-      (importedByFormat[row.format_id] ?? 0) + 1;
+    const entry = byFormat[row.format_id] ?? { synced: 0, imported: 0 };
+    entry.synced++;
+    if (row.data_imported_at) entry.imported++;
+    byFormat[row.format_id] = entry;
   }
 
-  // Build the response with all known formats
   const formats = Object.entries(LIMITLESS_TO_FORMAT).map(
     ([limitlessCode, formatId]) => ({
       limitlessCode,
       formatId,
-      imported: importedByFormat[formatId] ?? 0,
+      synced: byFormat[formatId]?.synced ?? 0,
+      imported: byFormat[formatId]?.imported ?? 0,
     })
   );
 
-  const totalImported = rows?.length ?? 0;
-
-  return json({ success: true, data: { totalImported, formats } }, 200, cors);
-}
-
-/**
- * Lists available tournaments from Limitless API for a given format,
- * annotated with import status from our DB.
- */
-async function handleList(format: string, cors: Record<string, string>) {
-  if (!KNOWN_FORMATS.has(format)) {
-    return json(
-      {
-        success: false,
-        error: `Unknown format: ${format}. Known: ${[...KNOWN_FORMATS].join(", ")}`,
-      },
-      400,
-      cors
-    );
-  }
-
-  const apiKey = Deno.env.get("LIMITLESS_API_KEY");
-
-  // Fetch all VGC tournaments from Limitless
-  const allTournaments = await fetchTournamentList(apiKey);
-
-  // Filter to the requested format
-  const formatTournaments = allTournaments.filter((t) => t.format === format);
-
-  // Check which ones are already imported
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
-  const tournamentIds = formatTournaments.map((t) => t.id);
-  const { data: imported } = await supabase
-    .schema("limitless")
-    .from("tournaments")
-    .select("tournament_id, imported_at")
-    .in("tournament_id", tournamentIds);
-
-  const importedMap = new Map(
-    (imported ?? []).map((r) => [r.tournament_id, r.imported_at])
-  );
-
-  // Annotate each tournament
-  const annotated = formatTournaments.map((t) => ({
-    id: t.id,
-    name: t.name,
-    date: t.date,
-    players: t.players,
-    imported: importedMap.has(t.id),
-    importedAt: importedMap.get(t.id) ?? null,
-  }));
-
-  // Sort by date descending (newest first)
-  annotated.sort((a, b) => b.date.localeCompare(a.date));
+  const totalSynced = rows?.length ?? 0;
+  const totalImported = (rows ?? []).filter((r) => r.data_imported_at).length;
 
   return json(
-    {
-      success: true,
-      data: {
-        format,
-        formatId: LIMITLESS_TO_FORMAT[format],
-        total: annotated.length,
-        imported: annotated.filter((t) => t.imported).length,
-        tournaments: annotated,
-      },
-    },
+    { success: true, data: { totalSynced, totalImported, formats } },
     200,
     cors
   );
 }
 
 /**
- * Imports a single tournament from Limitless API into the DB.
+ * Stage 1: Sync tournament list from Limitless API into DB.
+ */
+async function handleSync(cors: Record<string, string>) {
+  const supabase = adminClient();
+  const apiKey = Deno.env.get("LIMITLESS_API_KEY");
+
+  const result: SyncResult = await syncTournamentList(supabase, apiKey);
+
+  console.log(
+    `[limitless-import:sync] Synced ${result.synced} tournaments (${result.skipped} skipped, ${result.total} total from API)`
+  );
+
+  return json({ success: true, data: result }, 200, cors);
+}
+
+/**
+ * Stage 2: Import full tournament data (standings, teams, matches).
  */
 async function handleImport(
   tournamentId: string,
@@ -225,15 +180,8 @@ async function handleImport(
   }
 
   const apiKey = Deno.env.get("LIMITLESS_API_KEY");
-
-  // Fetch tournament data from Limitless API
   const data = await fetchTournamentData(tournamentId, apiKey);
-
-  // Import into DB
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
+  const supabase = adminClient();
   const result: ImportResult = await importTournament(supabase, data, format);
 
   return json({ success: true, data: result }, 200, cors);
@@ -248,12 +196,9 @@ async function handleAutoImport(
   cors: Record<string, string>
 ): Promise<Response> {
   const apiKey = Deno.env.get("LIMITLESS_API_KEY");
-
-  // Fetch tournament data from Limitless API
   const data = await fetchTournamentData(tournamentId, apiKey);
   const limitlessFormat = data.details.format;
 
-  // Skip unknown/custom formats
   if (!KNOWN_FORMATS.has(limitlessFormat)) {
     return json(
       {
@@ -269,7 +214,6 @@ async function handleAutoImport(
     );
   }
 
-  // Only process VGC
   if (data.details.game !== "VGC") {
     return json(
       {
@@ -285,11 +229,7 @@ async function handleAutoImport(
     );
   }
 
-  // Import into DB
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
+  const supabase = adminClient();
   const result: ImportResult = await importTournament(
     supabase,
     data,
@@ -310,7 +250,6 @@ async function handleAutoImport(
 Deno.serve(async (req) => {
   const cors = getCorsHeaders(req);
 
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: cors });
   }
@@ -320,11 +259,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify admin access
     const authResult = await requireAdmin(req, cors);
     if (authResult instanceof Response) return authResult;
 
-    // Parse request body
     const body = await req.json();
     const { action } = body;
 
@@ -332,17 +269,8 @@ Deno.serve(async (req) => {
       case "stats":
         return await handleStats(cors);
 
-      case "list": {
-        const { format } = body;
-        if (!format || typeof format !== "string") {
-          return json(
-            { success: false, error: "Missing required field: format" },
-            400,
-            cors
-          );
-        }
-        return await handleList(format, cors);
-      }
+      case "sync":
+        return await handleSync(cors);
 
       case "import": {
         const { tournamentId, format } = body;
@@ -379,7 +307,7 @@ Deno.serve(async (req) => {
         return json(
           {
             success: false,
-            error: `Unknown action: ${action}. Valid: stats, list, import, auto-import`,
+            error: `Unknown action: ${action}. Valid: stats, sync, import, auto-import`,
           },
           400,
           cors
