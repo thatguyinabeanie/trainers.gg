@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import Link from "next/link";
-import { ArrowLeft, Trophy, Swords } from "lucide-react";
+import { ArrowLeft, Trophy, Swords, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -161,7 +161,17 @@ export default async function LimitlessTournamentPage({ params }: PageProps) {
           </Button>
         </Link>
         <div className="flex-1">
-          <h2 className="text-xl font-semibold">{tournament.name}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">{tournament.name}</h2>
+            <a
+              href={`https://play.limitlesstcg.com/tournament/${tournamentId}/standings`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
           <p className="text-muted-foreground text-sm">
             {tournament.date} &middot; {tournament.player_count} players
             &middot; {tournament.format_id}

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   XCircle,
   CloudDownload,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -417,7 +418,18 @@ export function LimitlessImport() {
                 return (
                   <TableRow key={t.tournament_id}>
                     <TableCell>
-                      <div className="font-medium">{t.name}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium">{t.name}</span>
+                        <a
+                          href={`https://play.limitlesstcg.com/tournament/${t.tournament_id}/standings`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
                       <div className="text-muted-foreground font-mono text-xs">
                         {t.tournament_id}
                       </div>

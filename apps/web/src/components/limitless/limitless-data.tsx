@@ -3,7 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Search, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Search,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -55,7 +61,18 @@ const columns: ColumnDef<LimitlessTournamentRow, unknown>[] = [
     ),
     cell: ({ row }) => (
       <div>
-        <div className="font-medium">{row.original.name}</div>
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium">{row.original.name}</span>
+          <a
+            href={`https://play.limitlesstcg.com/tournament/${row.original.tournament_id}/standings`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
         <div className="text-muted-foreground font-mono text-xs">
           {row.original.tournament_id}
         </div>

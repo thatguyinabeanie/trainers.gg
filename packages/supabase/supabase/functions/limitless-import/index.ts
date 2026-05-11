@@ -23,7 +23,6 @@ import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import {
   LIMITLESS_TO_FORMAT,
-  KNOWN_FORMATS,
   fetchTournamentData,
   syncTournamentList,
   importTournament,
@@ -128,14 +127,21 @@ async function handleStats(cors: Record<string, string>) {
     byFormat[row.format_id] = entry;
   }
 
-  const formats = Object.entries(LIMITLESS_TO_FORMAT).map(
-    ([limitlessCode, formatId]) => ({
-      limitlessCode,
+  // Build reverse lookup for display: formatId → limitlessCode
+  const formatToCode: Record<string, string> = {};
+  for (const [code, fmtId] of Object.entries(LIMITLESS_TO_FORMAT)) {
+    formatToCode[fmtId] = code;
+  }
+
+  // Include ALL formats found in DB, not just mapped ones
+  const formats = Object.entries(byFormat)
+    .map(([formatId, counts]) => ({
+      limitlessCode: formatToCode[formatId] ?? formatId,
       formatId,
-      synced: byFormat[formatId]?.synced ?? 0,
-      imported: byFormat[formatId]?.imported ?? 0,
-    })
-  );
+      synced: counts.synced,
+      imported: counts.imported,
+    }))
+    .sort((a, b) => b.synced - a.synced);
 
   const totalSynced = rows?.length ?? 0;
   const totalImported = (rows ?? []).filter((r) => r.data_imported_at).length;
@@ -171,14 +177,6 @@ async function handleImport(
   format: string,
   cors: Record<string, string>
 ): Promise<Response> {
-  if (!KNOWN_FORMATS.has(format)) {
-    return json(
-      { success: false, error: `Unknown format: ${format}` },
-      400,
-      cors
-    );
-  }
-
   const apiKey = Deno.env.get("LIMITLESS_API_KEY");
   const data = await fetchTournamentData(tournamentId, apiKey);
   const supabase = adminClient();
@@ -198,21 +196,6 @@ async function handleAutoImport(
   const apiKey = Deno.env.get("LIMITLESS_API_KEY");
   const data = await fetchTournamentData(tournamentId, apiKey);
   const limitlessFormat = data.details.format;
-
-  if (!KNOWN_FORMATS.has(limitlessFormat)) {
-    return json(
-      {
-        success: true,
-        data: {
-          skipped: true,
-          reason: `Unknown format: ${limitlessFormat}`,
-          tournamentId,
-        },
-      },
-      200,
-      cors
-    );
-  }
 
   if (data.details.game !== "VGC") {
     return json(
