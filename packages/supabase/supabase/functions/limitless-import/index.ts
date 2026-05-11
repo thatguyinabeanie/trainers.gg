@@ -304,6 +304,13 @@ async function handleProcessQueue(
     const { tournament_id: tournamentId, format_id: formatId } = queued;
     const currentAttempts = queued.import_attempts ?? 0;
 
+    // Skip tournaments with unknown format — the sync cron hasn't filled the row yet
+    if (!formatId || formatId === "unknown" || !(formatId in LIMITLESS_TO_FORMAT)) {
+      console.warn(`[limitless-import] Skipping ${tournamentId}: unknown format "${formatId}"`);
+      results.push({ processed: false });
+      continue;
+    }
+
     // Claim the tournament (optimistic lock)
     const { data: claimed, error: claimErr } = await supabase
       .schema("limitless")
@@ -321,7 +328,7 @@ async function handleProcessQueue(
     if (claimErr) throw new Error(`Failed to claim tournament: ${claimErr.message}`);
     if (!claimed) {
       results.push({ processed: false });
-      break;
+      continue; // Don't break — other tournaments may still be claimable
     }
 
     // Fetch and import

@@ -9,6 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   LIMITLESS_TO_FORMAT,
+  KNOWN_FORMATS,
   fetchTournamentList,
   fetchTournamentData,
   type TournamentData,
@@ -376,6 +377,8 @@ export interface QueueProcessResult {
   error?: string;
   /** True if a stale import was recovered and requeued. */
   recovered?: boolean;
+  /** True if the claim was contested by another worker — not a queue-empty signal. */
+  skipped?: boolean;
 }
 
 export interface BatchQueueResult {
@@ -405,7 +408,7 @@ export async function processImportQueue(
     Date.now() - STALE_IMPORT_TIMEOUT_MS
   ).toISOString();
 
-  const { data: staleRows } = await supabase
+  const { data: staleRows, error: staleErr } = await supabase
     .schema("limitless")
     .from("tournaments")
     .select("tournament_id, import_attempts")
@@ -413,7 +416,9 @@ export async function processImportQueue(
     .lt("import_started_at", staleThreshold)
     .limit(5);
 
-  if (staleRows && staleRows.length > 0) {
+  if (staleErr) {
+    console.error("[limitless-import] Stale import query failed:", staleErr.message);
+  } else if (staleRows && staleRows.length > 0) {
     for (const row of staleRows) {
       const attempts = (row.import_attempts ?? 0) + 1;
       if (attempts >= MAX_ATTEMPTS) {
@@ -451,7 +456,7 @@ export async function processImportQueue(
     const singleResult = await processOne(supabase, apiKey);
     results.push(singleResult);
 
-    if (!singleResult.processed) break; // Queue empty
+    if (!singleResult.processed && !singleResult.skipped) break; // Queue empty
     totalProcessed++;
     if (singleResult.error) totalErrors++;
   }
@@ -482,6 +487,13 @@ async function processOne(
   const { tournament_id: tournamentId, format_id: formatId } = queued;
   const currentAttempts = queued.import_attempts ?? 0;
 
+  // Skip tournaments with unknown format — the sync cron hasn't filled the row yet
+  if (!formatId || formatId === "unknown" || !KNOWN_FORMATS.has(formatId)) {
+    console.warn(`[limitless-import] Skipping ${tournamentId}: unknown format "${formatId}" — re-queuing`);
+    // Don't claim — leave it queued for the next sync to fill
+    return { processed: false };
+  }
+
   // Claim the tournament (set importing) — verify exactly 1 row updated
   const { data: claimed, error: claimErr } = await supabase
     .schema("limitless")
@@ -498,7 +510,10 @@ async function processOne(
 
   if (claimErr)
     throw new Error(`Failed to claim tournament: ${claimErr.message}`);
-  if (!claimed) return { processed: false }; // Another worker claimed it
+  if (!claimed) {
+    // Claim contested — another worker got it. Don't break the batch.
+    return { processed: false, skipped: true };
+  }
 
   // Fetch and import
   try {
