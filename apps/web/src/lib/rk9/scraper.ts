@@ -64,9 +64,10 @@ export function parseEventsPage(html: string): RK9Event[] {
         .find('a[href*="/tournament/"]')
         .filter((_j, el) => {
           const text = $(el).text().trim();
-          // Match "VG" text (past events) or links containing VG image
+          // Match "VG" text (past events) or links containing VG/Champions image
           return (
-            text === "VG" || $(el).find('img[src*="pokemon-vg-300"]').length > 0
+            text === "VG" ||
+            $(el).find('img[src*="pokemon-vg"]').length > 0
           );
         });
 
@@ -333,6 +334,109 @@ function extractLabeledValue(
     .replace(/&nbsp;/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+// ---------------------------------------------------------------------------
+// Tournament detail page parser (/tournament/{eventId})
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse a tournament detail page to extract event metadata.
+ *
+ * This is used when manually adding a tournament by ID — the /events/pokemon
+ * listing doesn't show older events, but their detail pages still exist.
+ *
+ * HTML structure:
+ *   <h3>Event Name<br><small>Date Range</small></h3>
+ *   <img src="...pokemon_regional_championships_100x100.png" ...>
+ *   <dt>Venue</dt><dd>Venue Name<br>Address<br>City, ST ZIP</dd>
+ */
+export function parseTournamentPage(
+  html: string,
+  eventId: string
+): RK9Event | null {
+  const $ = cheerio.load(html);
+
+  // Extract event name from the <h3> heading
+  const $heading = $("h3").first();
+  if (!$heading.length) return null;
+
+  // Name is the text content of the h3 excluding the <small> child
+  const $small = $heading.find("small");
+  const dateRaw = $small.text().trim();
+  $small.remove();
+  const name = $heading.text().trim();
+
+  if (!name) return null;
+
+  // Parse date range from the <small> text
+  // Normalize en-dash and em-dash to hyphen for the parser
+  const normalizedDateRaw = dateRaw.replace(/[–—]/g, "-");
+  const { dateStart, dateEnd } = parseDateRange(normalizedDateRaw);
+
+  // Derive tier from event name and/or image
+  let tier = deriveTier(name);
+
+  // Also check image filename for tier hints
+  const $tierImg = $('img[src*="pokemon_"]');
+  if ($tierImg.length) {
+    const imgSrc = $tierImg.attr("src") ?? "";
+    if (imgSrc.includes("international")) tier = "international";
+    else if (imgSrc.includes("world")) tier = "worlds";
+    else if (imgSrc.includes("special")) tier = "special";
+    // regional is already the default
+  }
+
+  // Extract location from venue section
+  let locationCity = "";
+  let locationCountry = "";
+
+  // Find the Venue <dt> and get its corresponding <dd>
+  $("dt").each((_i, dt) => {
+    if ($(dt).text().trim().toLowerCase() === "venue") {
+      const $dd = $(dt).next("dd");
+      if ($dd.length) {
+        // The venue dd contains lines separated by <br>
+        // Last meaningful line typically has "City, ST ZIP" or "City, Country"
+        const venueHtml = $dd.html() ?? "";
+        const lines = venueHtml
+          .split(/<br\s*\/?>/)
+          .map((l) => l.replace(/<[^>]*>/g, "").trim())
+          .filter(Boolean);
+
+        // Look for a line matching "City, ST ZIP" or "City, Country"
+        for (const line of lines) {
+          const cityStateZip = line.match(
+            /^([^,]+),\s*([A-Z]{2})\s*\d{4,5}$/
+          );
+          if (cityStateZip?.[1]) {
+            locationCity = cityStateZip[1]!.trim();
+            locationCountry = "US";
+            break;
+          }
+          // "City, Country" pattern (2-letter code at end)
+          const cityCountry = line.match(/^([^,]+),\s*([A-Z]{2})$/);
+          if (cityCountry?.[1] && cityCountry[2]) {
+            locationCity = cityCountry[1]!.trim();
+            locationCountry = cityCountry[2]!;
+            break;
+          }
+        }
+      }
+    }
+  });
+
+  return {
+    eventId,
+    name,
+    dateRaw,
+    dateStart,
+    dateEnd,
+    locationCity,
+    locationCountry,
+    tier,
+    section: "past",
+  };
 }
 
 // ---------------------------------------------------------------------------

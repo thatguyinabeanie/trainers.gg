@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   discoverRk9Events,
+  addRk9EventById,
   scrapeRk9Roster,
   scrapeRk9TeamsBatch,
 } from "@/actions/rk9";
@@ -43,12 +44,19 @@ interface RK9EventRow {
   name: string;
   tier: string;
   date_start: string;
+  date_end: string | null;
   location_city: string | null;
   location_country: string | null;
   player_count: number | null;
   has_team_lists: boolean;
   import_status: string;
   import_error: string | null;
+}
+
+/** Check if an event's start date is in the future */
+function isUpcoming(dateStart: string): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  return dateStart > today;
 }
 
 // ---------------------------------------------------------------------------
@@ -60,6 +68,9 @@ export function RK9Import() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [discoverMessage, setDiscoverMessage] = useState<string | null>(null);
+  const [addByIdValue, setAddByIdValue] = useState("");
+  const [isAddingById, setIsAddingById] = useState(false);
+  const [addByIdMessage, setAddByIdMessage] = useState<string | null>(null);
   const [activeJobs, setActiveJobs] = useState<
     Map<string, { type: string; scraped?: number; total?: number }>
   >(new Map());
@@ -74,7 +85,7 @@ export function RK9Import() {
       const { data, error } = await sb
         .schema("rk9")
         .from("events")
-        .select("*")
+        .select("event_id, name, tier, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error")
         .order("date_start", { ascending: false });
       if (error) throw error;
       return (data ?? []) as RK9EventRow[];
@@ -92,8 +103,9 @@ export function RK9Import() {
 
   // Stats
   const totalEvents = events?.length ?? 0;
+  const upcomingEvents = events?.filter((e) => isUpcoming(e.date_start)).length ?? 0;
   const importedEvents =
-    events?.filter((e) => e.import_status === "complete").length ?? 0;
+    events?.filter((e) => e.import_status === "roster" || e.import_status === "teams" || e.import_status === "complete").length ?? 0;
   const withTeams = events?.filter((e) => e.has_team_lists).length ?? 0;
 
   // -------------------------------------------------------------------------
@@ -114,6 +126,27 @@ export function RK9Import() {
       }
     } finally {
       setIsDiscovering(false);
+    }
+  }
+
+  async function handleAddById() {
+    const trimmed = addByIdValue.trim();
+    if (!trimmed) return;
+
+    setIsAddingById(true);
+    setAddByIdMessage(null);
+    try {
+      const result = await addRk9EventById(trimmed);
+      if (result.success) {
+        const name = result.event?.name ?? trimmed;
+        setAddByIdMessage(`Added: ${name}`);
+        setAddByIdValue("");
+        setRefreshKey((k) => k + 1);
+      } else {
+        setAddByIdMessage(`Error: ${result.error}`);
+      }
+    } finally {
+      setIsAddingById(false);
     }
   }
 
@@ -181,6 +214,13 @@ export function RK9Import() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-blue-500" />
+              <div>
+                <p className="text-2xl font-bold">{upcomingEvents}</p>
+                <p className="text-muted-foreground text-xs">Upcoming</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
               <div>
                 <p className="text-2xl font-bold">{importedEvents}</p>
@@ -232,6 +272,50 @@ export function RK9Import() {
         />
       </div>
 
+      {/* Add by Tournament ID */}
+      <Card>
+        <CardContent className="p-4">
+          <p className="text-muted-foreground mb-2 text-xs">
+            Add an event by its RK9 tournament ID (for events not shown on the events listing page)
+          </p>
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Tournament ID (e.g. TtF9O8n416pwR34O0Pxc)"
+              value={addByIdValue}
+              onChange={(e) => setAddByIdValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddById();
+              }}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleAddById}
+              disabled={isAddingById || !addByIdValue.trim()}
+              variant="outline"
+            >
+              {isAddingById ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              Add Event
+            </Button>
+          </div>
+          {addByIdMessage && (
+            <p
+              className={cn(
+                "mt-2 text-xs",
+                addByIdMessage.startsWith("Error")
+                  ? "text-red-500"
+                  : "text-emerald-600"
+              )}
+            >
+              {addByIdMessage}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Error */}
       {queryError && (
         <div className="rounded-lg bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-400">
@@ -259,6 +343,7 @@ export function RK9Import() {
             <TableHeader>
               <TableRow>
                 <TableHead>Event</TableHead>
+                <TableHead>Tier</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Players</TableHead>
                 <TableHead>Status</TableHead>
@@ -307,9 +392,10 @@ function EventTableRow({
   onScrapeTeams,
 }: EventTableRowProps) {
   const isBusy = activeJob !== null;
+  const upcoming = isUpcoming(event.date_start);
 
   return (
-    <TableRow>
+    <TableRow className={upcoming ? "opacity-60" : undefined}>
       {/* Event name + location */}
       <TableCell>
         <div className="flex items-center gap-1.5">
@@ -321,9 +407,6 @@ function EventTableRow({
           >
             {event.name}
           </a>
-          <Badge variant="secondary" className="text-xs capitalize">
-            {event.tier}
-          </Badge>
           <a
             href={`https://rk9.gg/tournament/${event.event_id}`}
             target="_blank"
@@ -339,9 +422,44 @@ function EventTableRow({
             {event.location_country ? `, ${event.location_country}` : ""}
           </p>
         )}
+        {!upcoming && (
+          <div className="mt-0.5 flex items-center gap-2 text-xs">
+            <a
+              href={`https://rk9.gg/roster/${event.event_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground hover:underline"
+            >
+              Roster
+            </a>
+            <a
+              href={`https://rk9.gg/pairings/${event.event_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground hover:underline"
+            >
+              Pairings
+            </a>
+            <a
+              href={`https://rk9.gg/standings/${event.event_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground hover:underline"
+            >
+              Standings
+            </a>
+          </div>
+        )}
         {event.import_error && (
           <p className="mt-0.5 text-xs text-red-500">{event.import_error}</p>
         )}
+      </TableCell>
+
+      {/* Tier */}
+      <TableCell>
+        <Badge variant="secondary" className="text-xs capitalize">
+          {event.tier}
+        </Badge>
       </TableCell>
 
       {/* Date */}
@@ -352,57 +470,101 @@ function EventTableRow({
 
       {/* Status */}
       <TableCell>
-        <EventStatusBadge status={event.import_status} activeJob={activeJob} />
+        <EventStatusBadge
+          status={event.import_status}
+          activeJob={activeJob}
+          upcoming={upcoming}
+        />
       </TableCell>
 
       {/* Actions */}
       <TableCell className="text-right">
-        <div className="flex items-center justify-end gap-2">
-          {/* Scrape Roster button */}
-          {(event.import_status === "pending" ||
-            event.import_status === "failed") && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onScrapeRoster}
-              disabled={isBusy}
-            >
-              {activeJob?.type === "roster" ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Download className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Roster
-            </Button>
-          )}
-
-          {/* Scrape Teams button */}
-          {(event.import_status === "roster" ||
-            event.import_status === "complete") &&
-            !event.has_team_lists && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onScrapeTeams}
-                disabled={isBusy}
-              >
-                {activeJob?.type === "teams" ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Download className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                Teams
-              </Button>
-            )}
-
-          {/* Complete indicator */}
-          {event.import_status === "complete" && event.has_team_lists && (
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          )}
-        </div>
+        <EventActions
+          event={event}
+          activeJob={activeJob}
+          upcoming={upcoming}
+          isBusy={isBusy}
+          onScrapeRoster={onScrapeRoster}
+          onScrapeTeams={onScrapeTeams}
+        />
       </TableCell>
     </TableRow>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Event Actions — determine the correct next action for each event
+// ---------------------------------------------------------------------------
+
+interface EventActionsProps {
+  event: RK9EventRow;
+  activeJob: JobState | null;
+  upcoming: boolean;
+  isBusy: boolean;
+  onScrapeRoster: () => void;
+  onScrapeTeams: () => void;
+}
+
+function EventActions({
+  event,
+  activeJob,
+  upcoming,
+  isBusy,
+  onScrapeRoster,
+  onScrapeTeams,
+}: EventActionsProps) {
+  // No actions for upcoming events
+  if (upcoming) return null;
+
+  // Fully complete — just show a checkmark
+  if (event.import_status === "complete" && event.has_team_lists) {
+    return <CheckCircle2 className="ml-auto h-4 w-4 text-emerald-500" />;
+  }
+
+  // Status-based next action:
+  //   pending/failed → Roster
+  //   roster         → Teams
+  //   teams          → Teams (continue)
+  //   complete w/o teams → Teams (edge case from old imports)
+  const status = event.import_status;
+
+  if (status === "pending" || status === "failed") {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onScrapeRoster}
+        disabled={isBusy}
+      >
+        {activeJob?.type === "roster" ? (
+          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Download className="mr-1.5 h-3.5 w-3.5" />
+        )}
+        Roster
+      </Button>
+    );
+  }
+
+  if (status === "roster" || status === "teams" || (status === "complete" && !event.has_team_lists)) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onScrapeTeams}
+        disabled={isBusy}
+      >
+        {activeJob?.type === "teams" ? (
+          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Download className="mr-1.5 h-3.5 w-3.5" />
+        )}
+        Teams
+      </Button>
+    );
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -412,12 +574,25 @@ function EventTableRow({
 interface EventStatusBadgeProps {
   status: string;
   activeJob: JobState | null;
+  upcoming: boolean;
 }
 
 function EventStatusBadge({
   status,
   activeJob,
+  upcoming,
 }: EventStatusBadgeProps) {
+  // Upcoming events — show upcoming badge regardless of import_status
+  if (upcoming) {
+    return (
+      <Badge variant="outline" className="text-xs text-blue-600">
+        <Clock className="mr-1 h-3 w-3" />
+        Upcoming
+      </Badge>
+    );
+  }
+
+  // Active job in progress — show live progress
   if (activeJob) {
     if (activeJob.type === "teams" && activeJob.total && activeJob.total > 0) {
       const pct = Math.round(
@@ -440,6 +615,7 @@ function EventStatusBadge({
     );
   }
 
+  // Static status from DB
   switch (status) {
     case "complete":
       return (
@@ -451,15 +627,15 @@ function EventStatusBadge({
     case "roster":
       return (
         <Badge variant="secondary" className="text-xs">
-          <Clock className="mr-1 h-3 w-3" />
-          Roster imported
+          <Users className="mr-1 h-3 w-3" />
+          Roster ready
         </Badge>
       );
     case "teams":
       return (
         <Badge variant="secondary" className="text-xs">
-          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          Importing teams
+          <Clock className="mr-1 h-3 w-3" />
+          Teams partial
         </Badge>
       );
     case "failed":

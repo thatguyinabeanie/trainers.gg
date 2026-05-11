@@ -61,8 +61,8 @@ export interface SyncEventsResult {
 export function normalizeSpecies(raw: string): string {
   // Extract form from brackets: "Species [Form]" → species = "Species", form = "Form"
   const bracketMatch = raw.match(/^(.+?)\s*\[(.+?)\]$/);
-  let species = bracketMatch ? bracketMatch[1].trim() : raw.trim();
-  const form = bracketMatch ? bracketMatch[2].trim() : null;
+  let species = bracketMatch ? bracketMatch[1]!.trim() : raw.trim();
+  const form = bracketMatch ? bracketMatch[2]!.trim() : null;
 
   // Remove all non-alphanumeric except hyphens, lowercase
   species = species.toLowerCase().replace(/[^a-z0-9-]/g, "");
@@ -154,17 +154,15 @@ export async function syncEvents(
   supabase: SupabaseClient,
   events: RK9Event[]
 ): Promise<SyncEventsResult> {
-  const rows = events
-    .filter((e) => e.section === "past") // Only import past events
-    .map((e) => ({
-      event_id: e.eventId,
-      name: e.name,
-      tier: e.tier,
-      date_start: e.dateStart,
-      date_end: e.dateEnd,
-      location_city: e.locationCity || null,
-      location_country: e.locationCountry || null,
-    }));
+  const rows = events.map((e) => ({
+    event_id: e.eventId,
+    name: e.name,
+    tier: e.tier,
+    date_start: e.dateStart,
+    date_end: e.dateEnd,
+    location_city: e.locationCity || null,
+    location_country: e.locationCountry || null,
+  }));
 
   // Batch upsert (500 at a time)
   let synced = 0;
@@ -259,7 +257,7 @@ export async function importEvent(
 
     // Insert team_pokemon if we have a team for this player
     if (entry.rosterEntryId && teams[entry.rosterEntryId]) {
-      const pokemon = teams[entry.rosterEntryId];
+      const pokemon = teams[entry.rosterEntryId]!;
       if (pokemon.length > 0) {
         const pokemonRows = pokemon.map((mon, i) => ({
           standing_id: standingRow.id,
@@ -288,13 +286,17 @@ export async function importEvent(
   }
 
   // 4. Update event metadata
+  // Status depends on what was actually imported:
+  //   - "roster" = roster done, teams not yet scraped
+  //   - "complete" = roster + teams both done
+  const newStatus = result.teamsInserted > 0 ? "complete" : "roster";
   const { error: updateErr } = await supabase
     .schema("rk9")
     .from("events")
     .update({
       player_count: roster.length,
       has_team_lists: result.teamsInserted > 0,
-      import_status: "complete" as const,
+      import_status: newStatus,
       import_error: null,
       imported_at: new Date().toISOString(),
     })

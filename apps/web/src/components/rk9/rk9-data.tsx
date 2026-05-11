@@ -177,7 +177,9 @@ export function RK9Data() {
   // Search + filter state
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [tierFilter, setTierFilter] = useState<string>("all");
+  const [tierFilter, setTierFilter] = useState<
+    "all" | "regional" | "international" | "special" | "worlds"
+  >("all");
   const [page, setPage] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -268,7 +270,7 @@ export function RK9Data() {
         </div>
         <Select
           value={tierFilter}
-          onValueChange={(v) => setTierFilter(v ?? "all")}
+          onValueChange={(v) => setTierFilter((v ?? "all") as typeof tierFilter)}
         >
           <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="All tiers" />

@@ -8,6 +8,7 @@ import {
   parseEventsPage,
   parseRosterPage,
   parseTeamListPage,
+  parseTournamentPage,
 } from "@/lib/rk9/scraper";
 import { syncEvents, importEvent, seedSpeciesMap } from "@/lib/rk9/import";
 import type { RK9Event } from "@/lib/rk9/types";
@@ -199,7 +200,7 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
 
     if (standingsErr) throw standingsErr;
     if (!allStandings || allStandings.length === 0) {
-      return { success: true, done: true, scraped: 0, total: 0, failed: 0 };
+      return { success: true, data: undefined, done: true, scraped: 0, total: 0, failed: 0 };
     }
 
     // Find standings that DON'T have team_pokemon yet
@@ -234,7 +235,7 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
         })
         .eq("event_id", eventId);
 
-      return { success: true, done: true, scraped: total, total, failed: 0 };
+      return { success: true, data: undefined, done: true, scraped: total, total, failed: 0 };
     }
 
     // Update status to "teams" if not already
@@ -334,6 +335,7 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
 
     return {
       success: true,
+      data: undefined,
       done,
       scraped: totalScraped,
       total,
@@ -358,14 +360,62 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
 }
 
 // ---------------------------------------------------------------------------
+// Action: Add a single event by tournament ID (for events not in /events/pokemon)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch a tournament detail page by ID and upsert it into the rk9.events table.
+ *
+ * This handles older events that no longer appear on /events/pokemon but whose
+ * detail pages still exist at /tournament/{id}.
+ */
+export async function addRk9EventById(
+  eventId: string
+): Promise<ActionResult & { event?: RK9Event }> {
+  try {
+    const trimmed = eventId.trim();
+    if (!trimmed) return { success: false, error: "Event ID is required" };
+    assertValidEventId(trimmed);
+
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    // Fetch the tournament detail page
+    const html = await fetchRk9Html(`/tournament/${trimmed}`);
+    const event = parseTournamentPage(html, trimmed);
+
+    if (!event) {
+      return {
+        success: false,
+        error: "Could not parse tournament page — check the ID is valid",
+      };
+    }
+
+    // Upsert into DB
+    const supabase = createServiceRoleClient();
+    await syncEvents(supabase, [event]);
+
+    return { success: true, data: undefined, event };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to add event"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Inline species normalization (duplicated from import.ts to avoid
 // importing the full module in the server action bundle)
 // ---------------------------------------------------------------------------
 
 function normalizeSpeciesInline(raw: string): string {
   const bracketMatch = raw.match(/^(.+?)\s*\[(.+?)\]$/);
-  let species = bracketMatch ? bracketMatch[1].trim() : raw.trim();
-  const form = bracketMatch ? bracketMatch[2].trim() : null;
+  let species = bracketMatch ? bracketMatch[1]!.trim() : raw.trim();
+  const form = bracketMatch ? bracketMatch[2]!.trim() : null;
 
   species = species.toLowerCase().replace(/[^a-z0-9-]/g, "");
 
