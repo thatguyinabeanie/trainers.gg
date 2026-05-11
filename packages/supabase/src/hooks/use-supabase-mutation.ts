@@ -67,7 +67,19 @@ export function useSupabaseMutation<TArgs, TResult>(
       const result = await mutationFn(client, args);
       return result;
     } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      // PostgREST errors are plain objects with a `message` property,
+      // not Error instances — extract the message to avoid "[object Object]"
+      const error =
+        err instanceof Error
+          ? err
+          : new Error(
+              typeof err === "object" &&
+                err !== null &&
+                "message" in err &&
+                typeof (err as { message: unknown }).message === "string"
+                ? (err as { message: string }).message
+                : String(err)
+            );
       setError(error);
       throw error;
     } finally {

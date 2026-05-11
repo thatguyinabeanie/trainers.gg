@@ -82,7 +82,20 @@ export function useSupabaseQuery<T>(
       }
     } catch (err) {
       if (mountedRef.current) {
-        setError(err instanceof Error ? err : new Error(String(err)));
+        // PostgREST errors are plain objects with a `message` property,
+        // not Error instances — extract the message to avoid "[object Object]"
+        setError(
+          err instanceof Error
+            ? err
+            : new Error(
+                typeof err === "object" &&
+                  err !== null &&
+                  "message" in err &&
+                  typeof (err as { message: unknown }).message === "string"
+                  ? (err as { message: string }).message
+                  : String(err)
+              )
+        );
       }
     } finally {
       if (mountedRef.current) {
