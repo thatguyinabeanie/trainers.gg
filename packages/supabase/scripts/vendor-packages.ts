@@ -154,6 +154,7 @@ async function main() {
       ),
       resolve(vendorDir, "supabase/queries.js"),
       resolve(vendorDir, "supabase/mutations.js"),
+      resolve(vendorDir, "pokemon/regulation-calendar.js"),
     ];
 
     for (const filePath of vendorFiles) {
@@ -189,6 +190,8 @@ async function main() {
       ),
       "@trainers/supabase/queries": "vendor/supabase/queries.js",
       "@trainers/supabase/mutations": "vendor/supabase/mutations.js",
+      "@trainers/pokemon/regulation-calendar":
+        "vendor/pokemon/regulation-calendar.js",
     };
 
     // Rewrite imports in all function index.ts files and _shared/*.ts files
