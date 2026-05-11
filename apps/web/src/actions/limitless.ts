@@ -28,6 +28,7 @@ export async function queueTournamentForImport(
         import_requested_at: new Date().toISOString(),
         import_status: "queued",
         import_error: null,
+        import_attempts: 0,
       })
       .eq("tournament_id", tournamentId)
       .select("tournament_id")
@@ -74,6 +75,7 @@ export async function batchQueueTournaments(
           import_requested_at: new Date().toISOString(),
           import_status: "queued",
           import_error: null,
+          import_attempts: 0,
         })
         .in("tournament_id", chunk);
 
