@@ -4,7 +4,7 @@ import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
-import { syncTournamentList } from "@/lib/limitless";
+import { syncTournamentList, processImportQueue } from "@/lib/limitless";
 
 /**
  * Queue a single tournament for import.
@@ -110,5 +110,36 @@ export async function triggerLimitlessSync(): Promise<
     return { success: true, data: { synced: result.synced } };
   } catch (e) {
     return { success: false, error: getErrorMessage(e, "Sync failed") };
+  }
+}
+
+/**
+ * Trigger the import queue processor.
+ * Processes up to `batchSize` queued tournaments (fetches data from Limitless API).
+ */
+export async function triggerImportQueue(
+  batchSize: number = 5
+): Promise<ActionResult<{ processed: number; errors: number }>> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    const apiKey = process.env.LIMITLESS_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: "LIMITLESS_API_KEY not configured" };
+    }
+
+    const supabase = createServiceRoleClient();
+    const result = await processImportQueue(supabase, apiKey, batchSize);
+
+    return {
+      success: true,
+      data: { processed: result.totalProcessed, errors: result.totalErrors },
+    };
+  } catch (e) {
+    return { success: false, error: getErrorMessage(e, "Queue processing failed") };
   }
 }

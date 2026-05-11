@@ -44,6 +44,7 @@ import {
 import {
   queueTournamentForImport,
   batchQueueTournaments,
+  triggerImportQueue,
   triggerLimitlessSync,
 } from "@/actions/limitless";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
@@ -677,11 +678,13 @@ export function ExternalData() {
     async function processNext() {
       autoImportRunning.current = true;
       try {
+        const promises: Promise<void>[] = [];
+
         // Process RK9: roster first, then teams
         if (nextRk9Pending && autoImportRef.current) {
-          await handleScrapeRoster(nextRk9Pending.event_id);
+          promises.push(handleScrapeRoster(nextRk9Pending.event_id));
         } else if (nextRk9Roster && autoImportRef.current) {
-          await handleScrapeTeams(nextRk9Roster.event_id);
+          promises.push(handleScrapeTeams(nextRk9Roster.event_id));
         }
 
         // Process Limitless: queue pending tournaments in batches
@@ -691,10 +694,25 @@ export function ExternalData() {
           );
           if (pending.length > 0) {
             const ids = pending.slice(0, 100).map((t) => t.tournament_id);
-            await batchQueueTournaments(ids);
-            setRefreshKey((k) => k + 1);
+            promises.push(
+              batchQueueTournaments(ids).then(() => {
+                setRefreshKey((k) => k + 1);
+              })
+            );
           }
         }
+
+        // Process Limitless import queue if there are queued items
+        if (
+          autoImportRef.current &&
+          (limitlessQueuedCount > 0 || limitlessImportingCount > 0)
+        ) {
+          promises.push(
+            triggerImportQueue(5).catch(() => {})
+          );
+        }
+
+        await Promise.all(promises);
       } finally {
         autoImportRunning.current = false;
       }
