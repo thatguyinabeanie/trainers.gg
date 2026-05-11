@@ -1,9 +1,13 @@
 "use server";
 
+import { z } from "zod";
 import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
+
+const CONFIG_KEY_REGEX = /^[a-z_][a-z0-9_]{0,63}$/i;
+const configKeySchema = z.string().regex(CONFIG_KEY_REGEX, "Invalid config key");
 
 /**
  * Read a site config value by key.
@@ -12,6 +16,9 @@ export async function getSiteConfig<T = unknown>(
   key: string
 ): Promise<ActionResult<T | null>> {
   try {
+    const parsed = configKeySchema.safeParse(key);
+    if (!parsed.success) return { success: false, error: "Invalid config key" };
+
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
 
@@ -43,6 +50,9 @@ export async function setSiteConfig(
   value: unknown
 ): Promise<ActionResult<void>> {
   try {
+    const parsed = configKeySchema.safeParse(key);
+    if (!parsed.success) return { success: false, error: "Invalid config key" };
+
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
 

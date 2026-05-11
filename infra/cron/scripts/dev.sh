@@ -36,7 +36,7 @@ ENV_FILE="$ROOT_DIR/.env.local"
 # Source cron-specific vars from .env.local (if present)
 if [ -f "$ENV_FILE" ]; then
   for var in CRON_SYNC_INTERVAL CRON_IMPORT_INTERVAL CRON_IMPORT_BATCH CRON_BASE_URL; do
-    val=$(grep "^${var}=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
+    val=$(grep "^${var}=" "$ENV_FILE" | cut -d'=' -f2-)
     if [ -n "$val" ]; then
       export "$var=$val"
     fi
@@ -109,7 +109,7 @@ run_cron() {
 
   local response
   local http_code
-  response=$(curl -s -w "\n%{http_code}" -H "$AUTH_HEADER" "${BASE_URL}${path}" 2>&1)
+  response=$(curl -s -w "\n%{http_code}" -H "$AUTH_HEADER" "${BASE_URL}${path}")
   http_code=$(echo "$response" | tail -1)
   local body
   body=$(echo "$response" | sed '$d')
@@ -118,7 +118,9 @@ run_cron() {
   end_time=$(date +%s)
   local duration=$((end_time - start_time))
 
-  if [[ "$http_code" == 2* ]]; then
+  if [ -z "$http_code" ]; then
+    log_error "$name failed (${duration}s) — curl returned no response"
+  elif [[ "$http_code" == 2* ]]; then
     log_success "$name completed (${duration}s) — HTTP $http_code"
     log_dim "$body"
   else

@@ -4,7 +4,7 @@
 
 // Mock the API module before importing the subject
 jest.mock("../api", () => ({
-  LIMITLESS_TO_FORMAT: { "VGC 2024": "gen9vgc2024regulationg" },
+  LIMITLESS_TO_FORMAT: { "VGC 2024": "gen9vgc2024regg" },
   fetchTournamentList: jest.fn(),
   fetchTournamentData: jest.fn(),
 }));
@@ -15,6 +15,14 @@ import { fetchTournamentData } from "../api";
 // ---------------------------------------------------------------------------
 // Supabase mock builder
 // ---------------------------------------------------------------------------
+
+type MockSchema = {
+  from: (table: string) => MockChain;
+};
+
+type MockSupabase = {
+  schema: (name: string) => MockSchema;
+};
 
 type MockChain = Record<string, jest.Mock>;
 
@@ -45,25 +53,20 @@ function createChain(terminal: Record<string, unknown> = {}): MockChain {
   return chain;
 }
 
-function createMockSupabase() {
-  // We need to track calls to route them properly
+function _createMockSupabase() {
   const chains: MockChain[] = [];
-  let currentChain: MockChain;
-
   const newChain = (terminal?: Record<string, unknown>) => {
-    currentChain = createChain(terminal);
-    chains.push(currentChain);
-    return currentChain;
+    const chain = createChain(terminal);
+    chains.push(chain);
+    return chain;
   };
 
-  // The supabase mock: each .schema() call starts a new chain
   const supabase = {
     schema: jest.fn().mockImplementation(() => {
       return newChain();
     }),
     _chains: chains,
     _setNextChain: (terminal: Record<string, unknown>) => {
-      // Pre-configure next chain's terminal result
       supabase.schema.mockImplementationOnce(() => newChain(terminal));
     },
   };
@@ -99,7 +102,7 @@ describe("processImportQueue", () => {
       .mockReturnValueOnce(staleChain) // stale check
       .mockReturnValueOnce(queueChain); // queue pick
 
-    const result = await processImportQueue(supabase as any, "key", 1);
+    const result = await processImportQueue(supabase as unknown as MockSupabase, "key", 1);
 
     expect(result.results[0].processed).toBe(false);
     expect(result.totalProcessed).toBe(0);
@@ -153,7 +156,7 @@ describe("processImportQueue", () => {
 
     supabase.schema.mockReturnValue(genericChain);
 
-    const result = await processImportQueue(supabase as any, "key", 1);
+    const result = await processImportQueue(supabase as unknown as MockSupabase, "key", 1);
 
     expect(result.totalProcessed).toBe(1);
     expect(result.results[0].processed).toBe(true);
@@ -184,7 +187,7 @@ describe("processImportQueue", () => {
       .mockReturnValueOnce(pickChain)
       .mockReturnValueOnce(claimChain);
 
-    const result = await processImportQueue(supabase as any, "key", 1);
+    const result = await processImportQueue(supabase as unknown as MockSupabase, "key", 1);
 
     expect(result.results[0].processed).toBe(false);
     expect(result.totalProcessed).toBe(0);
@@ -207,7 +210,7 @@ describe("processImportQueue", () => {
       .mockReturnValueOnce(staleChain)
       .mockReturnValueOnce(updateChain);
 
-    const result = await processImportQueue(supabase as any, "key", 1);
+    const result = await processImportQueue(supabase as unknown as MockSupabase, "key", 1);
 
     expect(result.results[0].recovered).toBe(true);
     expect(result.results[0].processed).toBe(false);
@@ -237,7 +240,7 @@ describe("processImportQueue", () => {
       .mockReturnValueOnce(staleChain)
       .mockReturnValueOnce(updateChain);
 
-    const result = await processImportQueue(supabase as any, "key", 1);
+    const result = await processImportQueue(supabase as unknown as MockSupabase, "key", 1);
 
     expect(result.results[0].recovered).toBe(true);
     expect(updateChain.update).toHaveBeenCalledWith(

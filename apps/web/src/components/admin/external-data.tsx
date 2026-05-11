@@ -283,9 +283,14 @@ export function ExternalData() {
   }, []);
 
   async function handleToggleAutoImport(checked: boolean) {
+    const previous = autoImportEnabled;
     setAutoImportEnabled(checked);
     autoImportRef.current = checked;
-    await setSiteConfig("auto_import_enabled", checked);
+    const result = await setSiteConfig("auto_import_enabled", checked);
+    if (!result.success) {
+      setAutoImportEnabled(previous);
+      autoImportRef.current = previous;
+    }
   }
 
   // -------------------------------------------------------------------------

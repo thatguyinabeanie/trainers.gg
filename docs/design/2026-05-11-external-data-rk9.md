@@ -183,7 +183,7 @@ All VGC tournament IDs from `/events/pokemon`:
 - Schema: **`rk9`** — isolated from `limitless` and `showdown`
 - Format IDs: **Showdown strings** (`gen9championsvgc2026regma`) — same canonical format as other schemas
 - Tournament IDs: RK9's native alphanumeric IDs (text PK)
-- Player IDs: Generated UUIDs — players are deduplicated by `(first_name, last_name, country)`. The `roster_entry_id` from the RK9 URL is stored on standings for linking back to team list pages.
+- Player IDs: Generated UUIDs — players are deduplicated by `(player_id_masked, first_name, last_name, country)`. The `roster_entry_id` from the RK9 URL is stored on standings for linking back to team list pages.
 - **Division is a first-class concept** — stored on standings, not players (a player could theoretically age up between events)
 - No FK to `public` or other schemas (future account linking will bridge these)
 - `moves text[]` for move storage (same as `limitless`)
@@ -560,13 +560,6 @@ pending → roster → teams → pairings → complete
 ```
 
 Each step is independently resumable. If team list scraping fails halfway through, re-running picks up where it stopped (checks which roster entries already have data in `teams.json`).
-
-```
-pending → roster → teams → pairings → complete
-                                    ↘ failed (with import_error)
-```
-
-Each step is independently resumable. If team list scraping fails halfway through, re-running picks up where it stopped (checks which standings already have `team_pokemon` rows).
 
 ---
 

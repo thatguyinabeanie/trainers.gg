@@ -43,7 +43,7 @@ const VGC_FORMAT: GameFormat = {
 // Champions format: generation:10 so getGen() clamps it down to gen 9 mechanics.
 // gameShort:"Champions" so isChampionsFormat() returns true (EV cap clamp).
 const CHAMPIONS_FORMAT: GameFormat = {
-  id: "championsvgc2026regma",
+  id: "gen9championsvgc2026regma",
   game: "Pokemon Champions",
   gameShort: "Champions",
   generation: 10,

@@ -419,6 +419,16 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
 
     if (standingsErr) throw standingsErr;
     if (!allStandings || allStandings.length === 0) {
+      await supabase
+        .schema("rk9")
+        .from("events")
+        .update({
+          import_status: "complete",
+          import_error: null,
+          has_team_lists: false,
+          imported_at: new Date().toISOString(),
+        })
+        .eq("event_id", eventId);
       return { success: true, data: undefined, done: true, scraped: 0, total: 0, failed: 0 };
     }
 
@@ -524,6 +534,8 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
 
           if (!pkErr) batchScraped++;
           else batchFailed++;
+        } else {
+          batchScraped++;
         }
       } catch {
         batchFailed++;

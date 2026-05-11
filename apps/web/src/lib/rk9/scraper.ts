@@ -30,6 +30,18 @@ type $API = cheerio.CheerioAPI;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type $Selection = cheerio.Cheerio<any>;
 
+const TAG_PATTERN = /<\/?[a-z][^>]*>/gi;
+
+function stripTagsLoop(input: string): string {
+  let text = input;
+  let previous: string;
+  do {
+    previous = text;
+    text = text.replace(TAG_PATTERN, "");
+  } while (text !== previous);
+  return text;
+}
+
 // ---------------------------------------------------------------------------
 // Events page parser (/events/pokemon)
 // ---------------------------------------------------------------------------
@@ -80,7 +92,7 @@ export function parseEventsPage(html: string): RK9Event[] {
 
       // Extract tournament ID from href
       const href = $vgLink.attr("href") ?? "";
-      const tournamentIdMatch = href.match(/\/tournament\/(.+)$/);
+      const tournamentIdMatch = href.match(/\/tournament\/([^/?#]+)/);
       if (!tournamentIdMatch?.[1]) return;
       const eventId = tournamentIdMatch[1];
 
@@ -296,15 +308,7 @@ function extractSpeciesFromBlock(html: string): string {
   // Take text before the first <b> tag
   const beforeBold = withoutImg.split(/<b>/i)[0] ?? "";
 
-  // Strip all HTML tags robustly — loop to handle nested/malformed patterns
-  // like "<scr<script>ipt>" that produce new tags after one pass
-  let text = beforeBold;
-  const TAG_PATTERN = /<\/?[a-z][^>]*>/gi;
-  let previous: string;
-  do {
-    previous = text;
-    text = text.replace(TAG_PATTERN, "");
-  } while (text !== previous);
+  let text = stripTagsLoop(beforeBold);
 
   text = text
     .replace(/<[^>]*$/g, "")
@@ -408,7 +412,7 @@ export function parseTournamentPage(
         const venueHtml = $dd.html() ?? "";
         const lines = venueHtml
           .split(/<br\s*\/?>/)
-          .map((l) => l.replace(/<[^>]*>/g, "").trim())
+          .map((l) => stripTagsLoop(l).trim())
           .filter(Boolean);
 
         // Look for a line matching "City, ST ZIP" or "City, Country"

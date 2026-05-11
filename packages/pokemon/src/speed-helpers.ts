@@ -257,7 +257,7 @@ export function groupBySpeed<T extends { speed: number }>(
 export function getSpeedAffectingItems(
   format: GameFormat
 ): SpeedAffectingItem[] {
-  const useModernSet = format.id === "championsvgc2026regma";
+  const useModernSet = format.id === "gen9championsvgc2026regma";
   const legalIds = useModernSet
     ? MODERN_LEGAL_ITEM_IDS
     : new Set(Object.keys(SPEED_ITEMS));

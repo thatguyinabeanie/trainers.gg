@@ -251,7 +251,7 @@ describe("getTeamSheetByRegistration", () => {
         registration_id: 5,
         alt_id: 300,
         team_id: 80,
-        format: "championsvgc2026regma",
+        format: "gen9championsvgc2026regma",
         position: 1,
         species: "Rillaboom",
         ability: "Grassy Surge",
@@ -267,7 +267,7 @@ describe("getTeamSheetByRegistration", () => {
         registration_id: 5,
         alt_id: 300,
         team_id: 80,
-        format: "championsvgc2026regma",
+        format: "gen9championsvgc2026regma",
         position: 2,
         species: "Urshifu",
         ability: "Unseen Fist",
@@ -287,7 +287,7 @@ describe("getTeamSheetByRegistration", () => {
     expect(result?.registrationId).toBe(5);
     expect(result?.altId).toBe(300);
     expect(result?.teamId).toBe(80);
-    expect(result?.format).toBe("championsvgc2026regma");
+    expect(result?.format).toBe("gen9championsvgc2026regma");
     expect(result?.pokemon).toHaveLength(2);
 
     const [p1, p2] = result!.pokemon;

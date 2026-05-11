@@ -330,7 +330,7 @@ export const CHAMPIONS_CALENDAR: readonly RegulationPeriod[] = [
   {
     start: "2026-05-01",
     end: "2026-08-31",
-    formatId: "championsvgc2026regma",
+    formatId: "gen9championsvgc2026regma",
     regulation: "M-A",
     label: "Champions: Reg M-A",
   },

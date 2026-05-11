@@ -325,7 +325,7 @@ const CHAMPIONS_REGMA_SPEED_TIERS: MetaSpeedEntry[] = [
 
 const TIERS_BY_FORMAT: Record<string, MetaSpeedEntry[]> = {
   // Champions Reg M-A — April 8 through June 17 2026
-  championsvgc2026regma: CHAMPIONS_REGMA_SPEED_TIERS,
+  gen9championsvgc2026regma: CHAMPIONS_REGMA_SPEED_TIERS,
 };
 
 // =============================================================================
@@ -338,7 +338,7 @@ const TIERS_BY_FORMAT: Record<string, MetaSpeedEntry[]> = {
  * Returns an empty array for unknown / unsupported formats so callers can
  * render an "unsupported format" empty state without branching.
  *
- * @param formatId - Showdown format ID (e.g., "championsvgc2026regma")
+ * @param formatId - Showdown format ID (e.g., "gen9championsvgc2026regma")
  */
 export function getMetaSpeedTiers(formatId: string): MetaSpeedEntry[] {
   return TIERS_BY_FORMAT[formatId] ?? [];

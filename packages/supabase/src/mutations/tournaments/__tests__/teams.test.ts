@@ -1327,7 +1327,7 @@ Timid Nature
               id: 500,
               team_id: null,
               team_locked: false,
-              tournaments: { game_format: "championsvgc2026regma" },
+              tournaments: { game_format: "gen9championsvgc2026regma" },
             },
             error: null,
           }),

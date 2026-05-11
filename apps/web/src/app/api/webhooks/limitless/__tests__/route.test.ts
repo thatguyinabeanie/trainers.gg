@@ -6,8 +6,11 @@
 // Mocks — declared before imports so Jest hoisting works correctly
 // =============================================================================
 
-const mockUpdate = jest.fn();
+const mockSelect = jest.fn();
 const mockEq = jest.fn();
+const mockMaybeSingle = jest.fn();
+const mockUpdate = jest.fn();
+const mockInsert = jest.fn();
 const mockFrom = jest.fn();
 const mockSchema = jest.fn();
 const mockCreateServiceRoleClient = jest.fn();
@@ -67,11 +70,15 @@ beforeEach(() => {
   jest.clearAllMocks();
   process.env = { ...originalEnv, LIMITLESS_WEBHOOK_SECRET: WEBHOOK_SECRET };
 
-  // Default: DB calls succeed
+  mockSelect.mockReturnValue({ eq: mockEq, maybeSingle: mockMaybeSingle });
+  mockMaybeSingle.mockResolvedValue({ data: null, error: null });
   mockEq.mockResolvedValue({ error: null });
   mockUpdate.mockReturnValue({ eq: mockEq });
+  mockInsert.mockResolvedValue({ error: null });
   mockFrom.mockReturnValue({
+    select: mockSelect,
     update: mockUpdate,
+    insert: mockInsert,
   });
   mockSchema.mockReturnValue({ from: mockFrom });
   mockCreateServiceRoleClient.mockReturnValue({
