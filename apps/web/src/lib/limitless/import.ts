@@ -176,109 +176,152 @@ export async function importTournament(
     if (pErr) throw new Error(`Phases insert failed: ${pErr.message}`);
   }
 
-  // 4. Upsert players, create standings + team_pokemon
+  // 4. Batch upsert all players (collect from standings + pairings)
   const playerIdCache = new Map<string, number>();
 
-  async function resolvePlayer(
-    username: string,
-    displayName?: string | null,
-    country?: string | null
-  ): Promise<number> {
-    const cached = playerIdCache.get(username);
-    if (cached !== undefined) return cached;
-
-    const { data: row, error } = await supabase
-      .schema("limitless")
-      .from("players")
-      .upsert(
-        {
-          username,
-          display_name: displayName ?? null,
-          country: country ?? null,
-        },
-        { onConflict: "username" }
-      )
-      .select("id")
-      .single();
-
-    if (error) throw new Error(`Player upsert "${username}": ${error.message}`);
-    playerIdCache.set(username, row.id);
-    return row.id;
-  }
-
-  let totalPokemon = 0;
+  // Collect unique players from standings and pairings
+  const playerMap = new Map<
+    string,
+    { username: string; display_name: string | null; country: string | null }
+  >();
 
   for (const standing of standings) {
-    const playerId = await resolvePlayer(
-      standing.player,
-      standing.name,
-      standing.country
-    );
+    playerMap.set(standing.player, {
+      username: standing.player,
+      display_name: standing.name ?? null,
+      country: standing.country ?? null,
+    });
+  }
 
-    const { data: sRow, error: sErr } = await supabase
-      .schema("limitless")
-      .from("standings")
-      .insert({
-        tournament_id: tournamentId,
-        player_id: playerId,
-        placement: standing.placing ?? 0,
-        record_wins: standing.record?.wins ?? 0,
-        record_losses: standing.record?.losses ?? 0,
-        record_ties: standing.record?.ties ?? 0,
-        drop_round: standing.drop ?? null,
-      })
-      .select("id")
-      .single();
-
-    if (sErr)
-      throw new Error(`Standing for "${standing.player}": ${sErr.message}`);
-
-    // Team pokemon
-    if (standing.decklist && standing.decklist.length > 0) {
-      const pokemonRows = standing.decklist.map((mon, i) => ({
-        standing_id: sRow.id,
-        position: i + 1,
-        species: mon.id,
-        ability: mon.ability ?? null,
-        held_item: mon.item ?? null,
-        tera_type: mon.tera ?? null,
-        moves: mon.attacks ?? [],
-      }));
-
-      const { error: pkErr } = await supabase
-        .schema("limitless")
-        .from("team_pokemon")
-        .insert(pokemonRows);
-
-      if (pkErr)
-        throw new Error(
-          `Team pokemon for "${standing.player}": ${pkErr.message}`
-        );
-      totalPokemon += pokemonRows.length;
+  if (pairings && pairings.length > 0) {
+    for (const p of pairings) {
+      if (p.player1 && !playerMap.has(p.player1)) {
+        playerMap.set(p.player1, {
+          username: p.player1,
+          display_name: null,
+          country: null,
+        });
+      }
+      if (p.player2 && !playerMap.has(p.player2)) {
+        playerMap.set(p.player2, {
+          username: p.player2,
+          display_name: null,
+          country: null,
+        });
+      }
     }
   }
 
-  // 5. Insert match results
+  // Batch upsert players in chunks of 200
+  const playerRows = Array.from(playerMap.values());
+  for (let i = 0; i < playerRows.length; i += 200) {
+    const batch = playerRows.slice(i, i + 200);
+    const { data: upserted, error: pErr } = await supabase
+      .schema("limitless")
+      .from("players")
+      .upsert(batch, { onConflict: "username" })
+      .select("id, username");
+
+    if (pErr)
+      throw new Error(`Player batch upsert at offset ${i}: ${pErr.message}`);
+    for (const row of upserted ?? []) {
+      playerIdCache.set(row.username, row.id);
+    }
+  }
+
+  // 5. Batch insert standings in chunks of 200, then team_pokemon
+  let totalPokemon = 0;
+
+  // Insert standings in batches and collect IDs for team_pokemon
+  const standingIds: Array<{ id: number; index: number }> = [];
+
+  for (let i = 0; i < standings.length; i += 200) {
+    const batch = standings.slice(i, i + 200);
+    const rows = batch.map((standing) => ({
+      tournament_id: tournamentId,
+      player_id: playerIdCache.get(standing.player) ?? null,
+      placement: standing.placing ?? 0,
+      record_wins: standing.record?.wins ?? 0,
+      record_losses: standing.record?.losses ?? 0,
+      record_ties: standing.record?.ties ?? 0,
+      drop_round: standing.drop ?? null,
+    }));
+
+    const { data: inserted, error: sErr } = await supabase
+      .schema("limitless")
+      .from("standings")
+      .insert(rows)
+      .select("id");
+
+    if (sErr)
+      throw new Error(`Standings batch at offset ${i}: ${sErr.message}`);
+
+    // Map returned IDs back to original standings index
+    const insertedRows = inserted ?? [];
+    for (let j = 0; j < insertedRows.length; j++) {
+      const row = insertedRows[j];
+      if (row) standingIds.push({ id: row.id, index: i + j });
+    }
+  }
+
+  // Batch insert team_pokemon (collect all, then insert in chunks of 500)
+  const allPokemonRows: Array<{
+    standing_id: number;
+    position: number;
+    species: string;
+    ability: string | null;
+    held_item: string | null;
+    tera_type: string | null;
+    moves: string[];
+  }> = [];
+  for (const { id: standingId, index } of standingIds) {
+    const standing = standings[index];
+    if (!standing) continue;
+    if (standing.decklist && standing.decklist.length > 0) {
+      for (let pos = 0; pos < standing.decklist.length; pos++) {
+        const mon = standing.decklist[pos];
+        if (!mon) continue;
+        allPokemonRows.push({
+          standing_id: standingId,
+          position: pos + 1,
+          species: mon.id,
+          ability: mon.ability ?? null,
+          held_item: mon.item ?? null,
+          tera_type: mon.tera ?? null,
+          moves: mon.attacks ?? [],
+        });
+      }
+    }
+  }
+
+  for (let i = 0; i < allPokemonRows.length; i += 500) {
+    const batch = allPokemonRows.slice(i, i + 500);
+    const { error: pkErr } = await supabase
+      .schema("limitless")
+      .from("team_pokemon")
+      .insert(batch);
+
+    if (pkErr)
+      throw new Error(`Team pokemon batch at offset ${i}: ${pkErr.message}`);
+  }
+  totalPokemon = allPokemonRows.length;
+
+  // 6. Insert match results
   let matchCount = 0;
   if (pairings && pairings.length > 0) {
-    for (const p of pairings) {
-      if (p.player1) await resolvePlayer(p.player1);
-      if (p.player2) await resolvePlayer(p.player2);
-    }
-
     const phaseNumbers = new Set(details.phases?.map((p) => p.phase) ?? []);
     const validPairings = pairings.filter((p) => phaseNumbers.has(p.phase));
 
-    // Batch insert (100 at a time)
-    for (let i = 0; i < validPairings.length; i += 100) {
-      const batch = validPairings.slice(i, i + 100);
+    // Batch insert (200 at a time)
+    for (let i = 0; i < validPairings.length; i += 200) {
+      const batch = validPairings.slice(i, i + 200);
       const rows = batch.map((p) => ({
         tournament_id: tournamentId,
         phase: p.phase,
         round: p.round,
         table_number: p.table ?? null,
         match_label: p.match ?? null,
-        player1_id: playerIdCache.get(p.player1)!,
+        player1_id: playerIdCache.get(p.player1) ?? null,
         player2_id: p.player2 ? (playerIdCache.get(p.player2) ?? null) : null,
         winner_id: p.winner ? (playerIdCache.get(p.winner) ?? null) : null,
       }));
@@ -293,7 +336,7 @@ export async function importTournament(
     }
   }
 
-  // 6. Mark tournament as fully imported + update queue status
+  // 7. Mark tournament as fully imported + update queue status
   const { error: markErr } = await supabase
     .schema("limitless")
     .from("tournaments")

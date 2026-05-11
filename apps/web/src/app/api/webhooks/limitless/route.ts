@@ -71,23 +71,70 @@ export async function POST(request: Request) {
     }
 
     // Queue the tournament for import.
-    // If the sync cron hasn't seen this tournament yet, the update below will
-    // match 0 rows — that's fine. The sync cron runs every 5 minutes and will
-    // create the row, then the import cron will pick it up from the queue.
+    // Use upsert so this works even if the sync cron hasn't created the row yet.
     const supabase = createServiceRoleClient();
 
-    // Set queue status (only updates if the row already exists)
-    const { data: queued, error: queueErr } = await supabase
+    // Check current status first to avoid re-queueing completed tournaments
+    const { data: existing } = await supabase
       .schema("limitless")
       .from("tournaments")
-      .update({
-        import_requested_at: new Date().toISOString(),
-        import_status: "queued",
-        import_error: null,
-      })
+      .select("tournament_id, import_status")
       .eq("tournament_id", tournamentId)
-      .select("tournament_id")
       .maybeSingle();
+
+    // Skip if already completed or currently importing
+    if (
+      existing?.import_status === "completed" ||
+      existing?.import_status === "importing"
+    ) {
+      console.log(
+        `[limitless-webhook] Tournament ${tournamentId} already ${existing.import_status} — skipping`
+      );
+      return NextResponse.json({
+        success: true,
+        data: {
+          tournamentId,
+          queued: false,
+          note: `Already ${existing.import_status}`,
+        },
+      });
+    }
+
+    // Upsert a minimal row with queued status — works whether or not the
+    // sync cron has created this tournament yet
+    const now = new Date().toISOString();
+    const dateOnly = now.slice(0, 10); // YYYY-MM-DD
+
+    let queueErr: { message: string } | null = null;
+    if (existing) {
+      // Row exists — just update queue columns and reset attempts
+      const { error } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({
+          import_requested_at: now,
+          import_status: "queued",
+          import_error: null,
+          import_attempts: 0,
+        })
+        .eq("tournament_id", tournamentId);
+      if (error) queueErr = error;
+    } else {
+      // Row doesn't exist yet — insert a minimal placeholder row
+      const { error } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .insert({
+          tournament_id: tournamentId,
+          name: tournamentId, // Placeholder — sync cron will fill real name
+          format_id: "unknown", // Placeholder — sync cron will fill real format
+          date: dateOnly,
+          player_count: 0,
+          import_requested_at: now,
+          import_status: "queued",
+        });
+      if (error) queueErr = error;
+    }
 
     if (queueErr) {
       console.error("[limitless-webhook] Queue error:", queueErr);
@@ -97,27 +144,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!queued) {
-      console.log(
-        `[limitless-webhook] Tournament ${tournamentId} not yet synced — will be queued after next sync`
-      );
-      return NextResponse.json({
-        success: true,
-        data: {
-          tournamentId,
-          queued: false,
-          note: "Tournament not yet synced — will be queued after next sync",
-        },
-      });
-    }
-
     console.log(
-      `[limitless-webhook] Queued tournament ${tournamentId} for import`
+      `[limitless-webhook] Queued tournament ${tournamentId} for import${!existing ? " (created new row)" : ""}`
     );
 
     return NextResponse.json({
       success: true,
-      data: { tournamentId, queued: true },
+      data: { tournamentId, queued: true, created: !existing },
     });
   } catch (err) {
     console.error("[limitless-webhook]", err);

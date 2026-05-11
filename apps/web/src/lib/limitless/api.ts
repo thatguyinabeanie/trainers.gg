@@ -183,6 +183,16 @@ async function limitlessFetch<T>(path: string, apiKey?: string): Promise<T> {
       continue;
     }
 
+    // Retry on 5xx (transient server errors) with exponential backoff
+    if (res.status >= 500 && res.status < 600 && attempt < MAX_RETRIES) {
+      const delayMs = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+      console.warn(
+        `[limitless] ${res.status} on ${path} — retrying in ${delayMs}ms (attempt ${attempt + 1}/${MAX_RETRIES})`
+      );
+      await new Promise((r) => setTimeout(r, delayMs));
+      continue;
+    }
+
     if (!res.ok) {
       throw new Error(
         `Limitless API ${res.status}: ${res.statusText} (${path})`

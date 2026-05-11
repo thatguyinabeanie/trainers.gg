@@ -154,7 +154,7 @@ export default async function LimitlessTournamentPage({ params }: PageProps) {
     <div className="space-y-6">
       {/* Back button + header */}
       <div className="flex items-start gap-4">
-        <Link href="/admin/limitless">
+        <Link href="/admin/data">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back
