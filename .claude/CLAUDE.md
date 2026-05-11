@@ -17,3 +17,4 @@
 ## Architecture Guidelines
 
 - **Domain knowledge location** — Domain knowledge belongs in on-demand skills, CLAUDE.md only for universal rules.
+- **Mobile data access** — Mobile app hits Supabase directly (not via Next.js API routes). Rationale: Supabase API requests are unlimited on Pro, database compute is fixed cost, and proxying through Vercel adds cost (function invocations, egress) without meaningful savings. Vercel's caching benefits are for SSR/page rendering, not JSON API proxying. Shared query logic lives in `@trainers/supabase` — both web and mobile import from there. Web uses `unstable_cache` server-side; mobile uses TanStack Query `staleTime` client-side.

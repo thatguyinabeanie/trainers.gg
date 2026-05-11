@@ -9,6 +9,8 @@ import {
   getActiveMatch,
   getMyDashboardData,
   listMyCommunities,
+  getUserMainAltId,
+  getLiveTournamentCommunityIds,
   type AltStats,
   type PlayerRating,
 } from "@trainers/supabase";
@@ -102,19 +104,7 @@ export default async function DashboardHomePage() {
   }
 
   // Fetch main_alt_id from users table
-  const { data: userRow, error: userRowError } = await supabase
-    .from("users")
-    .select("main_alt_id")
-    .eq("id", user.id)
-    .single();
-
-  if (userRowError) {
-    console.error(
-      "[DashboardHomePage] Failed to fetch main_alt_id:",
-      userRowError
-    );
-  }
-  const mainAltId: number | null = userRow?.main_alt_id ?? null;
+  const mainAltId = await getUserMainAltId(supabase, user.id);
 
   // Extract alt IDs for bulk queries
   const altIds = alts.map((a) => a.id);
@@ -215,26 +205,8 @@ export default async function DashboardHomePage() {
 
   // Prepare community highlights data
   const communityIds = myCommunities.map((c) => c.id);
-  let liveTournamentCommunityIds = new Set<number>();
-
-  if (communityIds.length > 0) {
-    try {
-      const { data: liveTournaments } = await supabase
-        .from("tournaments")
-        .select("community_id")
-        .in("community_id", communityIds)
-        .eq("status", "active");
-
-      liveTournamentCommunityIds = new Set(
-        (liveTournaments ?? []).map((t) => t.community_id).filter(Boolean)
-      );
-    } catch (err) {
-      console.error(
-        "[DashboardHomePage] Failed to check live tournaments:",
-        err
-      );
-    }
-  }
+  const liveTournamentCommunityIds =
+    await getLiveTournamentCommunityIds(supabase, communityIds);
 
   const communityHighlights = myCommunities.map((c) => ({
     id: c.id,

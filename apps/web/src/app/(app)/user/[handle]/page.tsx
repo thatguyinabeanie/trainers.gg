@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import {
   createStaticClient,
-  createClientReadOnly,
+  getUserId,
 } from "@/lib/supabase/server";
 import {
   getPlayerProfileByHandle,
@@ -71,21 +71,6 @@ const getCachedFollowCounts = (userId: string, handle: string) =>
     [`player-follow-counts-${userId}`],
     { tags: [CacheTags.player(handle)] }
   )();
-
-/**
- * Get current user ID (not cached - user-specific).
- */
-async function getCurrentUserId(): Promise<string | null> {
-  try {
-    const supabase = await createClientReadOnly();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.id ?? null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Cached Discord handle fetcher for public profiles.
@@ -373,7 +358,7 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
   // Fetch profile (cached) and current user ID (not cached) in parallel
   const [profileResult, currentUserId] = await Promise.all([
     getCachedPlayerProfile(handle),
-    getCurrentUserId(),
+    getUserId(),
   ]);
 
   if (!profileResult) {

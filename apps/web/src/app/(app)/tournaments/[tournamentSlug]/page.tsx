@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import {
   createStaticClient,
   createClientReadOnly,
+  getUserId,
 } from "@/lib/supabase/server";
 import {
   getTournamentBySlug,
@@ -121,21 +122,6 @@ const getCachedTournamentTeams = (tournamentId: number, slug: string) =>
       tags: [CacheTags.tournamentTeams(slug), CacheTags.tournament(slug)],
     }
   )();
-
-/**
- * Get current user ID (not cached - user-specific)
- */
-async function getCurrentUserId(): Promise<string | null> {
-  try {
-    const supabase = await createClientReadOnly();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.id ?? null;
-  } catch {
-    return null;
-  }
-}
 
 // ============================================================================
 // Helper Functions
@@ -495,7 +481,7 @@ export default async function TournamentPage({ params }: PageProps) {
   // Fetch tournament (cached) and current user ID (not cached) in parallel
   const [tournament, currentUserId] = await Promise.all([
     getCachedTournament(tournamentSlug),
-    getCurrentUserId(),
+    getUserId(),
   ]);
 
   if (!tournament) {
