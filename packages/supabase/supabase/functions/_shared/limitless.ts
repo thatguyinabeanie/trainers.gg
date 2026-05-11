@@ -1,7 +1,8 @@
 /**
  * Shared Limitless API + import logic
  *
- * Used by both limitless-import (admin) and limitless-webhook edge functions.
+ * Used by the limitless-import edge function (admin) and the Next.js
+ * webhook route at /api/webhooks/limitless.
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";

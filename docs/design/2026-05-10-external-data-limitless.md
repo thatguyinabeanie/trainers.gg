@@ -18,7 +18,7 @@ Build and validate the pipeline using existing **Scarlet & Violet (Regulation I)
 ## Key Decisions
 
 - External tournament data is **completely separate** from native trainers.gg tournaments
-- Connection point: `external_players` links Limitless player IDs to trainers.gg alts
+- Connection point: future account linking will connect Limitless player IDs to trainers.gg alts (not yet implemented)
 - Limitless supports a **webhook** (`tournament:ended`) — we'll receive a POST when a tournament finishes and auto-import
 - We have a `LIMITLESS_API_KEY` (in `.env.local`) for higher rate limits and deck endpoint access
 - We only care about `game: "VGC"` — TCG is out of scope
@@ -39,7 +39,7 @@ Build and validate the pipeline using existing **Scarlet & Violet (Regulation I)
 | `23S3`    | `gen9vgc2023regc`           | VGC 2023 Reg C     |
 | `23S2`    | `gen9vgc2023regb`           | VGC 2023 Reg B     |
 | `23S1`    | `gen9vgc2023rega`           | VGC 2023 Reg A     |
-| `VGC22`   | `gen8vgc2022series12`       | VGC 2022 Series 12 |
+| `VGC22`   | `gen8vgc2022`               | VGC 2022 Series 12 |
 
 > Note: some of these Showdown format IDs need verification — the pattern may vary for older formats.
 

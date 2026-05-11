@@ -40,8 +40,9 @@ let supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!supabaseUrl || !supabaseServiceKey) {
   console.log("Supabase env vars not found, detecting from local Supabase...");
   try {
-    const statusEnv = execSync("pnpm supabase status -o env 2>/dev/null", {
+    const statusEnv = execSync("pnpm supabase status -o env", {
       encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
     });
     if (!supabaseUrl) {
       const urlMatch = statusEnv.match(/^API_URL="(.+)"$/m);
