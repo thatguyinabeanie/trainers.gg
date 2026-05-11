@@ -106,42 +106,18 @@ async function requireAdmin(
 /**
  * Returns import stats: synced + fully-imported counts per format.
  *
- * Paginates through all rows since PostgREST caps SELECT at 1000 rows.
+ * Uses a database function (limitless.tournament_stats) to get accurate
+ * GROUP BY counts without hitting PostgREST's row limit.
  */
 async function handleStats(cors: Record<string, string>) {
   const supabase = adminClient();
 
-  // Paginate to get ALL rows — PostgREST caps at 1000 per request
-  const PAGE_SIZE = 1000;
-  const allRows: Array<{
-    format_id: string;
-    data_imported_at: string | null;
-  }> = [];
-  let offset = 0;
+  const { data: rows, error } = await supabase
+    .schema("limitless")
+    .rpc("tournament_stats");
 
-  while (true) {
-    const { data, error } = await supabase
-      .schema("limitless")
-      .from("tournaments")
-      .select("format_id, data_imported_at")
-      .range(offset, offset + PAGE_SIZE - 1);
-
-    if (error) {
-      return json({ success: false, error: error.message }, 500, cors);
-    }
-
-    allRows.push(...(data ?? []));
-    if (!data || data.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
-  }
-
-  // Count by format: synced (all rows) vs fully imported (data_imported_at != null)
-  const byFormat: Record<string, { synced: number; imported: number }> = {};
-  for (const row of allRows ?? []) {
-    const entry = byFormat[row.format_id] ?? { synced: 0, imported: 0 };
-    entry.synced++;
-    if (row.data_imported_at) entry.imported++;
-    byFormat[row.format_id] = entry;
+  if (error) {
+    return json({ success: false, error: error.message }, 500, cors);
   }
 
   // Build reverse lookup for display: formatId → limitlessCode
@@ -150,20 +126,21 @@ async function handleStats(cors: Record<string, string>) {
     formatToCode[fmtId] = code;
   }
 
-  // Include ALL formats found in DB, not just mapped ones
-  const formats = Object.entries(byFormat)
-    .map(([formatId, counts]) => ({
-      limitlessCode: formatToCode[formatId] ?? formatId,
-      formatId,
-      synced: counts.synced,
-      imported: counts.imported,
-    }))
-    .sort((a, b) => b.synced - a.synced);
+  let totalSynced = 0;
+  let totalImported = 0;
 
-  const totalSynced = allRows?.length ?? 0;
-  const totalImported = (allRows ?? []).filter(
-    (r) => r.data_imported_at
-  ).length;
+  const formats = (rows ?? []).map(
+    (row: { format_id: string; synced: number; imported: number }) => {
+      totalSynced += row.synced;
+      totalImported += row.imported;
+      return {
+        limitlessCode: formatToCode[row.format_id] ?? row.format_id,
+        formatId: row.format_id,
+        synced: row.synced,
+        imported: row.imported,
+      };
+    }
+  );
 
   return json(
     { success: true, data: { totalSynced, totalImported, formats } },
