@@ -55,13 +55,13 @@ export function AttackerChipStrip({
             aria-label={`Use slot ${String(idx + 1).padStart(2, "0")} as calc attacker`}
           >
             {/* slot number badge */}
-            <span className="absolute -left-1 -top-1 rounded border bg-card px-1 font-mono text-[7.5px] text-muted-foreground">
+            <span className="absolute -left-1 -top-1 rounded border bg-card px-1 font-mono text-xs text-muted-foreground">
               {String(idx + 1).padStart(2, "0")}
             </span>
             {!isEmpty && p?.species ? (
               <Sprite species={p.species} types={[]} size={20} />
             ) : (
-              <span className="text-[10px] text-muted-foreground">—</span>
+              <span className="text-xs text-muted-foreground">—</span>
             )}
           </button>
         );

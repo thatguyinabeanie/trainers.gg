@@ -33,6 +33,7 @@ import {
 import { useCalcEnabled, useCalcStateContext } from "../calc/calc-state-context";
 import { formatSupportsIvs } from "../format-gating";
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
+import { Slider } from "@/components/ui/slider";
 import { FieldErrors } from "../validation/field-error";
 import { type StatBoosts } from "../use-calc-state";
 
@@ -116,6 +117,10 @@ interface StatsLaneProps {
   onUpdate?: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   /** Validation errors scoped to stat/EV fields. */
   fieldErrors?: ValidationError[];
+  /** Show the right-edge dashed border that separates stats from moves
+   *  in side-by-side layouts. GridRow stacks these vertically, so it
+   *  passes false. Defaults to true. */
+  borderRight?: boolean;
 }
 
 // =============================================================================
@@ -466,8 +471,7 @@ function StatRow({
   // investBudget here, because that causes visible jitter when the thumb
   // overshoots the effective limit and snaps back every frame. Instead,
   // clamping happens on commit (debounce fire / pointer-up / blur).
-  function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = Number(e.target.value);
+  function handleSliderChange(raw: number) {
     const snapped = Math.round(raw / budget.step) * budget.step;
     setDraftEv(snapped);
     // Bubble the live value to the parent — clamp here so the running total
@@ -596,17 +600,17 @@ function StatRow({
         }}
         disabled={statKey === "hp"}
         aria-label={statKey !== "hp" ? `Cycle nature for ${label}` : undefined}
-        className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px", labelTextClass, statKey !== "hp" && "cursor-pointer hover:opacity-70")}
+        className={cn("text-xs font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px", labelTextClass, statKey !== "hp" && "cursor-pointer hover:opacity-70")}
       >
         {label}
-        <span className="inline-block w-[9px] text-[7px] leading-none">
+        <span className="inline-block w-3 text-xs leading-none">
           {isNatureBoosted && "▴"}
           {isNatureReduced && "▾"}
         </span>
       </button>
 
       {/* Col 2: Base stat number, muted mono */}
-      <span className={"font-mono text-[9.5px] text-muted-foreground text-right tabular-nums"}>{base}</span>
+      <span className={"font-mono text-xs text-muted-foreground text-right tabular-nums"}>{base}</span>
 
       {/* Col 3: Read-only viz bar (solid base + striped invest).
        * `bg-current` so both layers inherit the stat-key color from the row. */}
@@ -628,7 +632,7 @@ function StatRow({
         onKeyDown={handleInputKeyDown}
         aria-label={`${label} investment`}
         className={cn(
-          "focus:ring-primary h-[18px] w-9 rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
+          "focus:ring-primary h-5 w-9 rounded border bg-transparent text-center font-mono text-xs outline-none focus:ring-1",
           isNatureBoosted &&
             "border-emerald-400/70 text-emerald-600 dark:text-emerald-400",
           isNatureReduced &&
@@ -644,26 +648,25 @@ function StatRow({
        * and the bump rings (border: currentColor) inherit it from the row. */}
       <div className={"relative h-3.5"}>
         <div className={"absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none"} aria-hidden />
-        <input
-          type="range"
+        <Slider
           min={0}
           max={budget.perStat}
           step={budget.step}
-          value={displayEv}
-          onChange={handleSliderChange}
-          onPointerUp={flushEvDraft}
-          onKeyUp={flushEvDraft}
+          value={[displayEv]}
+          onValueChange={(next) => {
+            const v = Array.isArray(next) ? next[0] : next;
+            if (typeof v === "number") handleSliderChange(v);
+          }}
+          onValueCommitted={flushEvDraft}
           aria-label={`${label} slider`}
-          aria-valuemin={0}
-          aria-valuemax={budget.perStat}
-          aria-valuenow={displayEv}
-          data-at-bump={isAtBump || undefined}
-          className={"spread-slider"}
+          inheritColor
+          atBump={isAtBump}
+          className="absolute inset-0"
         />
 
         {/* Breakpoint ticks overlay — only on +nature stat. Buttons so they're
-            click-targets that jump the slider to that bump. The bumps overlay
-            disables pointer-events; individual ticks re-enable it. */}
+            click-targets that jump the slider to that bump value. The bumps
+            overlay disables pointer-events; individual ticks re-enable it. */}
         {isNatureBoosted && breakpoints.length > 0 && (
           <StatBumpsOverlay
             breakpoints={breakpoints}
@@ -698,7 +701,7 @@ function StatRow({
             onUpdate({ [IV_FIELD[statKey]]: nextIv });
           }}
           className={cn(
-            "focus:ring-primary h-[18px] w-10 rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
+            "focus:ring-primary h-5 w-10 rounded border bg-transparent text-center font-mono text-xs outline-none focus:ring-1",
             displayIv !== 31
               ? "border-amber-400/60 text-amber-600 dark:text-amber-400"
               : "border-border text-muted-foreground"
@@ -707,7 +710,7 @@ function StatRow({
       )}
 
       {/* Col 6/7: Final stat, mono bold */}
-      <span className={"font-mono text-[11.5px] font-bold text-right tabular-nums"}>{liveFinalStat}</span>
+      <span className={"font-mono text-xs font-bold text-right tabular-nums"}>{liveFinalStat}</span>
 
       {/* Boost stepper — only rendered when calc is active and stat is not HP */}
       {showBoostCol && boost !== undefined && onBoostChange && (
@@ -716,13 +719,13 @@ function StatRow({
             type="button"
             aria-label={`Decrease ${STAT_LABELS[statKey]} boost`}
             onClick={() => onBoostChange(Math.max(-6, boost - 1))}
-            className="size-[16px] rounded text-[10px] font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="size-4 rounded text-xs font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             −
           </button>
           <span
             className={cn(
-              "font-mono text-[10px] font-semibold tabular-nums w-[20px] text-center",
+              "font-mono text-xs font-semibold tabular-nums w-5 text-center",
               boost > 0 && "text-teal-600 dark:text-teal-400",
               boost < 0 && "text-rose-600 dark:text-rose-400",
               boost === 0 && "text-muted-foreground"
@@ -734,7 +737,7 @@ function StatRow({
             type="button"
             aria-label={`Increase ${STAT_LABELS[statKey]} boost`}
             onClick={() => onBoostChange(Math.min(6, boost + 1))}
-            className="size-[16px] rounded text-[10px] font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="size-4 rounded text-xs font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             +
           </button>
@@ -768,6 +771,7 @@ export function StatsLane({
   format,
   onUpdate,
   fieldErrors = [],
+  borderRight = true,
 }: StatsLaneProps) {
   // Hooks must be called unconditionally — declare state before the
   // pokemon-null early return so the call order stays stable across both
@@ -798,7 +802,7 @@ export function StatsLane({
 
   if (!pokemon) {
     return (
-      <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
+      <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-3 2xl:w-[400px] transition-[padding,flex] duration-300 ease-in-out", borderRight && "border-r border-dashed", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
 
 
         {/* Column headers — same structure as real but dimmed */}
@@ -815,18 +819,18 @@ export function StatsLane({
           )}
         >
           <span />
-          <span className="text-muted-foreground/30 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
+          <span className="text-muted-foreground/30 text-center font-mono text-xs font-medium tracking-wide uppercase">
             Base
           </span>
           <span />
-          <span className="text-muted-foreground/30 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
+          <span className="text-muted-foreground/30 text-center font-mono text-xs font-medium tracking-wide uppercase">
             {isChampions ? "SP" : "EVs"}
           </span>
-          <span className="text-muted-foreground/30 text-right font-mono text-[8.5px]">
+          <span className="text-muted-foreground/30 text-right font-mono text-xs">
             0/{budget.total}
           </span>
           {showIv && (
-            <span className="text-muted-foreground/30 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
+            <span className="text-muted-foreground/30 text-center font-mono text-xs font-medium tracking-wide uppercase">
               IVs
             </span>
           )}
@@ -847,17 +851,17 @@ export function StatsLane({
               colorClass
             )}
           >
-            <span className={cn("text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px", "opacity-30")}>{label}</span>
-            <span className={cn("font-mono text-[9.5px] text-muted-foreground text-right tabular-nums", "opacity-25")}>—</span>
+            <span className={cn("text-xs font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px", "opacity-30")}>{label}</span>
+            <span className={cn("font-mono text-xs text-muted-foreground text-right tabular-nums", "opacity-25")}>—</span>
             <div className={"h-2 bg-muted rounded-full overflow-hidden relative min-w-0"} />
-            <div className="border-border/30 h-[18px] w-9 rounded border border-dashed" />
+            <div className="border-border/30 h-5 w-9 rounded border border-dashed" />
             <div className={"relative h-3.5"}>
               <div className={cn("absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none", "opacity-25")} />
             </div>
             {showIv && (
-              <div className="border-border/30 h-[18px] w-10 rounded border border-dashed" />
+              <div className="border-border/30 h-5 w-10 rounded border border-dashed" />
             )}
-            <span className={cn("font-mono text-[11.5px] font-bold text-right tabular-nums", "opacity-25")}>—</span>
+            <span className={cn("font-mono text-xs font-bold text-right tabular-nums", "opacity-25")}>—</span>
             {calcEnabled && <span />}
           </div>
         ))}
@@ -904,7 +908,7 @@ export function StatsLane({
   );
 
   return (
-    <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 border-r border-dashed px-3 @[1580px]:w-[400px] transition-[padding,flex] duration-300 ease-in-out", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
+    <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-3 2xl:w-[400px] transition-[padding,flex] duration-300 ease-in-out", borderRight && "border-r border-dashed", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
       {/* Column headers */}
       <div
         className={cn(
@@ -922,19 +926,19 @@ export function StatsLane({
         {/* Col 1: (stat label — no heading) */}
         <span />
         {/* Col 2: Base */}
-        <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
+        <span className="text-muted-foreground/70 text-center font-mono text-xs font-medium tracking-wide uppercase">
           Base
         </span>
         {/* Col 3: viz bar — no heading */}
         <span />
         {/* Col 4: Points / SP */}
-        <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
+        <span className="text-muted-foreground/70 text-center font-mono text-xs font-medium tracking-wide uppercase">
           {isChampions ? "SP" : "EVs"}
         </span>
         {/* Col 5: slider — no heading, but show total */}
         <span
           className={cn(
-            "text-right font-mono text-[8.5px]",
+            "text-right font-mono text-xs",
             totalEv > budget.total
               ? "text-destructive font-semibold"
               : "text-muted-foreground/70"
@@ -944,7 +948,7 @@ export function StatsLane({
         </span>
         {/* Col 6 (with-IV): IVs */}
         {showIv && (
-          <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
+          <span className="text-muted-foreground/70 text-center font-mono text-xs font-medium tracking-wide uppercase">
             IVs
           </span>
         )}
@@ -952,7 +956,7 @@ export function StatsLane({
         <span />
         {/* Boost header */}
         {calcEnabled && (
-          <span className="text-muted-foreground/70 text-center font-mono text-[8.5px] font-medium tracking-wide uppercase">
+          <span className="text-muted-foreground/70 text-center font-mono text-xs font-medium tracking-wide uppercase">
             ±
           </span>
         )}

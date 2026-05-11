@@ -11,9 +11,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { type ValidationError } from "../../../validation-hooks";
-import { NumberPicker } from "../../../pickers/number-picker";
-import { FieldErrors } from "../../../validation/field-error";
+import { type ValidationError } from "../validation-hooks";
+import { NumberPicker } from "../pickers/number-picker";
+import { FieldErrors } from "../validation/field-error";
 
 // Shared Tailwind class strings for MidStack/Vertical meta-bar pieces.
 // Migrated from identity-lane.module.css. Kept as locals so they read
@@ -23,9 +23,9 @@ const midMetaBarBase =
 const midMetaBarLv = "grid-cols-[auto_1fr_auto]";
 const midMetaBarNoLvCols = "grid-cols-[1fr_auto]";
 const midPill =
-  "inline-flex h-[22px] shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-[5px] border border-border bg-background px-2 font-mono text-[11px] font-semibold leading-none text-muted-foreground transition-colors hover:bg-muted";
+  "inline-flex h-6 shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-[5px] border border-border bg-background px-2 font-mono text-xs font-semibold leading-none text-muted-foreground transition-colors hover:bg-muted";
 const midNickname =
-  "w-full min-w-0 border-0 border-b border-dashed border-b-transparent bg-transparent px-1 py-0.5 text-center text-[13px] font-semibold leading-none text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground placeholder:opacity-70 hover:border-b-border focus:border-b-primary focus:border-solid";
+  "w-full min-w-0 border-0 border-b border-dashed border-b-transparent bg-transparent px-1 py-0.5 text-center text-sm font-semibold leading-none text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground placeholder:opacity-70 hover:border-b-border focus:border-b-primary focus:border-solid";
 
 // =============================================================================
 // Types
@@ -132,7 +132,7 @@ export function MetaBar({
               onClick={handleGenderToggle}
               title="Toggle gender"
               className={cn(
-                "bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                "bg-muted/60 hover:bg-muted border-border rounded border px-1.5 py-0.5 text-xs font-medium",
                 genderErrors.length > 0 && "border-destructive"
               )}
             >
@@ -152,7 +152,7 @@ export function MetaBar({
                 : "Not shiny (click to set)"
             }
             className={cn(
-              "border-border rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+              "border-border rounded border px-1.5 py-0.5 text-xs font-medium transition-colors",
               isShiny
                 ? "border-yellow-400/40 bg-yellow-400/20 text-yellow-600 dark:text-yellow-400"
                 : "bg-muted/60 hover:bg-muted text-muted-foreground"

@@ -51,7 +51,7 @@ export function StageDropdown({ value, onChange, statKey }: StageDropdownProps) 
     <Popover>
       <PopoverTrigger
         className={cn(
-          "flex w-full items-center justify-center gap-0.5 rounded border px-1 py-0.5 font-mono text-[10px] font-semibold cursor-default",
+          "flex w-full items-center justify-center gap-0.5 rounded border px-1 py-0.5 font-mono text-xs font-semibold cursor-default",
           value > 0 && "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400",
           value < 0 && "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400",
           value === 0 && "bg-card border-border text-muted-foreground"
@@ -59,9 +59,9 @@ export function StageDropdown({ value, onChange, statKey }: StageDropdownProps) 
         aria-label={`${statKey.toUpperCase()} stat stage`}
       >
         <span>{formatStage(value)}</span>
-        <span className="text-[8px] opacity-70">▾</span>
+        <span className="text-xs opacity-70">▾</span>
       </PopoverTrigger>
-      <PopoverContent align="end" side="bottom" className="w-[60px] p-1">
+      <PopoverContent align="end" side="bottom" className="w-15 p-1">
         <div className="flex flex-col gap-px">
           {STAGES.map((s) => {
             const isCurrent = s === value;
@@ -71,14 +71,14 @@ export function StageDropdown({ value, onChange, statKey }: StageDropdownProps) 
                 type="button"
                 onClick={() => onChange(s)}
                 className={cn(
-                  "flex items-center justify-between rounded px-2 py-1 font-mono text-[11px] cursor-default",
+                  "flex items-center justify-between rounded px-2 py-1 font-mono text-xs cursor-default",
                   isCurrent
                     ? "bg-primary/10 text-primary font-semibold"
                     : "hover:bg-muted text-foreground"
                 )}
               >
                 <span>{formatStage(s)}</span>
-                {isCurrent && <span className="text-[10px]">✓</span>}
+                {isCurrent && <span className="text-xs">✓</span>}
               </button>
             );
           })}

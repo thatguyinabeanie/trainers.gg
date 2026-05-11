@@ -31,14 +31,14 @@ export function FilterChipsBar({ chips, className }: FilterChipsBarProps) {
         className
       )}
     >
-      <span className="text-muted-foreground text-[10.5px]">Active:</span>
+      <span className="text-muted-foreground text-xs">Active:</span>
       {chips.map((chip) => (
         <button
           key={chip.id}
           type="button"
           onClick={chip.onRemove}
           className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold",
+            "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold",
             chip.tone === "mega"
               ? "border border-violet-400/25 bg-violet-500/8 text-violet-700 dark:text-violet-300"
               : "border-primary/25 bg-primary/8 text-primary border"

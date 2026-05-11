@@ -27,7 +27,7 @@ interface AbilityCellProps {
 export function AbilityCell({ name, slot, onFilter }: AbilityCellProps) {
   if (!name) {
     return (
-      <span className="text-muted-foreground/40 text-[11px] italic">—</span>
+      <span className="text-muted-foreground/40 text-xs italic">—</span>
     );
   }
 
@@ -38,7 +38,7 @@ export function AbilityCell({ name, slot, onFilter }: AbilityCellProps) {
   // <button> so keyboard / screen-reader users can apply the ability filter.
   // Otherwise render a plain <span> so the cell is non-focusable.
   const triggerClass = cn(
-    "inline-block max-w-full overflow-hidden text-[11px] leading-snug text-ellipsis whitespace-nowrap text-left",
+    "inline-block max-w-full overflow-hidden text-xs leading-snug text-ellipsis whitespace-nowrap text-left",
     "border-muted-foreground/40 border-b border-dotted",
     onFilter &&
       "hover:border-primary/60 hover:text-primary focus-visible:text-primary cursor-pointer outline-none focus-visible:border-primary/80",
@@ -78,7 +78,7 @@ export function AbilityCell({ name, slot, onFilter }: AbilityCellProps) {
         <p className="text-sm font-semibold text-slate-100">
           {name}
           {isHidden && (
-            <span className="ml-1.5 rounded bg-violet-500/25 px-1 text-[9px] font-semibold text-violet-300">
+            <span className="ml-1.5 rounded bg-violet-500/25 px-1 text-xs font-semibold text-violet-300">
               Hidden
             </span>
           )}

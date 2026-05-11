@@ -18,11 +18,11 @@ import {
 } from "@/components/ui/popover";
 import { ItemSprite } from "@/components/tournament/item-sprite";
 
-import { type ValidationError } from "../../../validation-hooks";
-import { ItemPicker } from "../../../pickers/item-picker";
-import { FieldErrors } from "../../../validation/field-error";
-import { FormChip } from "../../form-chip";
-import { cellClasses, type CellVariant } from "./identity-cell-shared";
+import { type ValidationError } from "../../validation-hooks";
+import { ItemPicker } from "../../pickers/item-picker";
+import { FieldErrors } from "../../validation/field-error";
+import { FormChip } from "../../lanes/form-chip";
+import { cellClasses, type CellVariant } from "./shared";
 
 // =============================================================================
 // ItemCell — held-item form cell, row (compact) or grid (hero) variant

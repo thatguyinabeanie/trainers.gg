@@ -5,7 +5,7 @@ import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 
-import { Sprite } from "../../../sprite";
+import { Sprite } from "../sprite";
 
 // =============================================================================
 // SpriteSection — sprite button + species pill in compact or hero arrangement
@@ -64,7 +64,7 @@ export function SpriteSection({
         >
           {pokemon.species ?? "Choose species…"}
         </span>
-        <span aria-hidden className="text-muted-foreground text-[9px]">
+        <span aria-hidden className="text-muted-foreground text-xs">
           ▾
         </span>
       </button>
@@ -118,7 +118,7 @@ export function SpriteSection({
       type="button"
       aria-label={`Change species (${pokemon.species ?? "none"})`}
       className={cn(
-        "flex w-full min-w-0 cursor-pointer items-center justify-between gap-1 rounded-md border border-border bg-background px-2.5 py-1 font-mono text-[11px] font-semibold transition-colors hover:border-primary focus-visible:border-primary focus-visible:outline-none",
+        "flex w-full min-w-0 cursor-pointer items-center justify-between gap-1 rounded-md border border-border bg-background px-2.5 py-1 font-mono text-xs font-semibold transition-colors hover:border-primary focus-visible:border-primary focus-visible:outline-none",
         speciesHasError && "ring-destructive/40 rounded ring-1"
       )}
       onClick={onSpeciesClick}
@@ -132,7 +132,7 @@ export function SpriteSection({
       >
         {pokemon.species ?? "Choose species…"}
       </span>
-      <span aria-hidden className="text-muted-foreground text-[9px]">
+      <span aria-hidden className="text-muted-foreground text-xs">
         ▾
       </span>
     </button>

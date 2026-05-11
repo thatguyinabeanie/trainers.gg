@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { type RefObject } from "react";
 
-import { useContainerCompact } from "../use-container-compact";
+import { useContainerCompact } from "../_deprecated/use-container-compact";
 
 let observeCallback: ResizeObserverCallback;
 const mockObserve = jest.fn();

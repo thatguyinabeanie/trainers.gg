@@ -78,7 +78,7 @@ export function FormChips({ currentSpecies, currentItem, onPick }: FormChipsProp
             aria-disabled={!enabled}
             title={tooltip}
             className={cn(
-              "rounded border px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap transition-colors",
+              "rounded border px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap transition-colors",
               !enabled
                 ? "border-border/50 text-muted-foreground/40 cursor-not-allowed border-dashed"
                 : active

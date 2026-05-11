@@ -16,7 +16,7 @@ import { HEXAGON_CLIP, TeraTypeIcon } from "@/components/team-builder/tera-type-
 import { TypePill } from "@/components/team-builder/type-pill";
 import { formatSupportsTera } from "@/components/team-builder/format-gating";
 import { TypePicker } from "@/components/team-builder/pickers/type-picker";
-import { cellClasses, type CellVariant } from "./identity-cell-shared";
+import { cellClasses, type CellVariant } from "./shared";
 
 // =============================================================================
 // TypeCell — Pokémon types + inline tera type icon (for SV formats)
@@ -62,7 +62,7 @@ export function TypeCell({
                 }}
                 aria-label="Set Tera type"
               >
-                <span className="text-[8px] font-bold">T</span>
+                <span className="text-xs font-bold">T</span>
               </span>
             )}
           </button>
@@ -82,16 +82,16 @@ export function TypeCell({
     return (
       <div
         className={cn(
-          "grid w-full grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 rounded px-1 py-[3px] text-left transition-colors",
+          "grid w-full grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 rounded px-1 py-1 text-left transition-colors",
           "cursor-default bg-transparent hover:bg-transparent"
         )}
       >
-        <span className="text-muted-foreground shrink-0 overflow-hidden font-mono text-[9px] font-bold tracking-[0.08em] text-ellipsis whitespace-nowrap uppercase">
+        <span className="text-muted-foreground shrink-0 overflow-hidden font-mono text-xs font-bold tracking-[0.08em] text-ellipsis whitespace-nowrap uppercase">
           Type
         </span>
         <span
           className={cn(
-            "text-foreground min-w-0 overflow-hidden text-[11.5px] text-ellipsis whitespace-nowrap",
+            "text-foreground min-w-0 overflow-hidden text-xs text-ellipsis whitespace-nowrap",
             "flex items-center gap-1"
           )}
         >

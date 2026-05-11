@@ -6,6 +6,7 @@ import { getMoveData, getSpeciesTypes, type GameFormat } from "@trainers/pokemon
 import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import {
   getVerdict,
@@ -262,21 +263,17 @@ export function CalcDetailCard({
 
       {/* Toggle row: Crit / Terastallized / Screen up */}
       <div className="mvdetail-toggles">
-        <label className="mvdetail-tog">
-          <input
-            type="checkbox"
+        <label className="mvdetail-tog flex items-center gap-1.5">
+          <Checkbox
             checked={crit}
-            onChange={(e) => setCrit(e.target.checked)}
-            className="mvdetail-tog-checkbox"
+            onCheckedChange={(v) => setCrit(v === true)}
           />
           Crit
         </label>
-        <label className="mvdetail-tog">
-          <input
-            type="checkbox"
+        <label className="mvdetail-tog flex items-center gap-1.5">
+          <Checkbox
             checked={screen}
-            onChange={(e) => setScreen(e.target.checked)}
-            className="mvdetail-tog-checkbox"
+            onCheckedChange={(v) => setScreen(v === true)}
           />
           Screen up
         </label>

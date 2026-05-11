@@ -34,7 +34,7 @@ export function MegaToggle({ active, onToggle }: MegaToggleProps) {
           : "Mega inactive — click to calc as Mega form"
       }
       className={cn(
-        "rounded-md border px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-wider transition-colors",
+        "rounded-md border px-1.5 py-0.5 font-mono text-xs font-bold uppercase tracking-wider transition-colors",
         active
           ? "border-primary bg-primary/10 text-primary"
           : "border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/70"

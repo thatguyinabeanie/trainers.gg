@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 
-import { useCalcEnabled } from "../../calc/calc-state-context";
+import { useCalcEnabled } from "../calc/calc-state-context";
 import { cn } from "@/lib/utils";
-import { FieldErrors } from "../../validation/field-error";
-import { SpeciesPickerDialog } from "../../pickers/species-picker-dialog";
-import { useIdentityState } from "./use-identity-state";
-import { FormCells } from "./cells/form-cells";
-import { MetaBar } from "./cells/meta-bar";
-import { SpriteSection } from "./cells/sprite-section";
-import { type IdentityLayoutProps } from "./identity-layout-props";
+import { FieldErrors } from "../validation/field-error";
+import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
+import { useIdentityState } from "../shared/use-identity-state";
+import { FormCells } from "../shared/fields";
+import { MetaBar } from "../shared/meta-bar";
+import { SpriteSection } from "../shared/sprite-section";
+import { type IdentityLayoutProps } from "../shared/identity-layout-props";
 
 // =============================================================================
 // IdentitySingleRow — compact layout (slot ≥ 1240px)

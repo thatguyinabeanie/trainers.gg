@@ -159,7 +159,7 @@ function Section({
 }) {
   return (
     <div className="border-border/80 border-t first:border-t-0">
-      <h3 className="bg-muted/40 text-muted-foreground border-border/60 sticky top-0 z-10 border-b px-4 py-2 text-[10px] font-bold tracking-widest uppercase">
+      <h3 className="bg-muted/40 text-muted-foreground border-border/60 sticky top-0 z-10 border-b px-4 py-2 text-xs font-bold tracking-widest uppercase">
         {title}
       </h3>
       <div className="py-1">{children}</div>

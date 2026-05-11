@@ -28,7 +28,7 @@ jest.mock("../lanes/calc-column", () => ({
   CalcColumn: () => <div data-testid="calc-column" />,
 }));
 
-jest.mock("../lanes/identity", () => ({
+jest.mock("../_deprecated/identity-lane", () => ({
   IdentityLane: ({
     pokemon,
     fieldErrors,
@@ -83,7 +83,7 @@ jest.mock("../lanes/stats-lane", () => ({
 // Import after mocks
 // =============================================================================
 
-import { ActiveRow } from "../lanes/active-row";
+import { ActiveRow } from "../_deprecated/active-row";
 import { type ValidationError } from "../validation-hooks";
 
 // =============================================================================

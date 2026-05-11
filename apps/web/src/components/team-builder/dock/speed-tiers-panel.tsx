@@ -433,13 +433,13 @@ function TierMonRow({
         <TableRow className="border-0">
           <TableCell
             colSpan={2}
-            className="text-muted-foreground h-auto px-2 py-0.5 text-[10px] font-medium tabular-nums"
+            className="text-muted-foreground h-auto px-2 py-0.5 text-xs font-medium tabular-nums"
           >
             <div className="border-primary/40 flex items-center justify-center gap-1.5 border-t-2 pt-0.5">
-              <span className="text-primary/70 font-mono text-[10px]">
+              <span className="text-primary/70 font-mono text-xs">
                 {groupValue}
               </span>
-              <span className="text-muted-foreground/70 text-[9px] tracking-wider uppercase">
+              <span className="text-muted-foreground/70 text-xs tracking-wider uppercase">
                 {groupLabel ?? "Base Speed"}
               </span>
             </div>
@@ -491,7 +491,7 @@ function TierMonRow({
                   />
                 )}
                 {isTie && (
-                  <span className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[8px] leading-none font-medium text-amber-600 dark:text-amber-400">
+                  <span className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-xs leading-none font-medium text-amber-600 dark:text-amber-400">
                     Tie
                   </span>
                 )}
@@ -499,7 +499,7 @@ function TierMonRow({
               {mon.speedAbility && (
                 <span
                   className={cn(
-                    "w-fit truncate rounded-full px-1.5 py-0.5 text-[8px] leading-none font-medium capitalize",
+                    "w-fit truncate rounded-full px-1.5 py-0.5 text-xs leading-none font-medium capitalize",
                     abilityActive
                       ? "bg-violet-500/15 text-violet-600 dark:text-violet-400"
                       : "bg-muted text-muted-foreground/50"
@@ -685,12 +685,12 @@ export function SpeedTiersPanel({
       {/* FIELD section — above table */}
       <div className="border-b px-3 py-3">
         <fieldset className="border-border/60 rounded-lg border px-3 py-2">
-          <legend className="text-primary px-1 font-mono text-[9px] font-bold tracking-[0.12em] uppercase">
+          <legend className="text-primary px-1 font-mono text-xs font-bold tracking-[0.12em] uppercase">
             Field
           </legend>
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground/70 shrink-0 font-mono text-[8.5px] tracking-wide uppercase">
+              <span className="text-muted-foreground/70 shrink-0 font-mono text-xs tracking-wide uppercase">
                 Weather
               </span>
               <div className="flex flex-1 flex-wrap justify-end gap-1">
@@ -701,7 +701,7 @@ export function SpeedTiersPanel({
                     aria-label={WEATHER_LABELS[w]}
                     onClick={() => setWeather(w)}
                     className={cn(
-                      "rounded-full border px-2 py-0.5 font-mono text-[10px] leading-tight transition-all",
+                      "rounded-full border px-2 py-0.5 font-mono text-xs leading-tight transition-all",
                       effectiveWeather === w
                         ? "border-primary/50 bg-primary/10 text-primary font-semibold shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
                         : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"
@@ -713,7 +713,7 @@ export function SpeedTiersPanel({
               </div>
             </div>
             <div className="border-border/40 flex items-center gap-2 border-t border-dashed pt-1.5">
-              <span className="text-muted-foreground/70 shrink-0 font-mono text-[8.5px] tracking-wide uppercase">
+              <span className="text-muted-foreground/70 shrink-0 font-mono text-xs tracking-wide uppercase">
                 Other
               </span>
               <div className="flex flex-1 flex-wrap justify-end gap-1">
@@ -723,7 +723,7 @@ export function SpeedTiersPanel({
                   aria-pressed={toggle.trickRoom}
                   onClick={() => setTrickRoom(!toggle.trickRoom)}
                   className={cn(
-                    "rounded-full border px-2 py-0.5 font-mono text-[10px] leading-tight transition-all",
+                    "rounded-full border px-2 py-0.5 font-mono text-xs leading-tight transition-all",
                     toggle.trickRoom
                       ? "border-primary/50 bg-primary/10 text-primary font-semibold shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
                       : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"
@@ -746,7 +746,7 @@ export function SpeedTiersPanel({
           </colgroup>
           <TableHeader className="bg-card/95 sticky top-0 z-10 backdrop-blur-sm">
             <TableRow className="border-b">
-              <TableHead className="text-muted-foreground h-auto px-3 py-1.5 text-[10px] leading-tight font-medium tracking-wide">
+              <TableHead className="text-muted-foreground h-auto px-3 py-1.5 text-xs leading-tight font-medium tracking-wide">
                 Pokémon
               </TableHead>
               <TableHead
@@ -763,7 +763,7 @@ export function SpeedTiersPanel({
                   type="button"
                   onClick={() => setSortBy("speed")}
                   className={cn(
-                    "h-auto w-full px-3 py-1.5 text-right text-[10px] leading-tight font-semibold tracking-wide",
+                    "h-auto w-full px-3 py-1.5 text-right text-xs leading-tight font-semibold tracking-wide",
                     toggle.sortBy === "speed"
                       ? "text-primary"
                       : "text-foreground"
@@ -807,16 +807,16 @@ export function SpeedTiersPanel({
       {/* MODIFIERS section — below table */}
       <div className="border-t px-3 py-3">
         <fieldset className="border-border/60 rounded-lg border px-3 py-2">
-          <legend className="text-primary px-1 font-mono text-[9px] font-bold tracking-[0.12em] uppercase">
+          <legend className="text-primary px-1 font-mono text-xs font-bold tracking-[0.12em] uppercase">
             Modifiers
           </legend>
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-1 gap-y-0.5">
             {/* Header */}
-            <span className="text-muted-foreground text-right text-[10px] font-semibold tracking-wider uppercase">
+            <span className="text-muted-foreground text-right text-xs font-semibold tracking-wider uppercase">
               Ours
             </span>
             <span />
-            <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
+            <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
               Theirs
             </span>
 
@@ -834,7 +834,7 @@ export function SpeedTiersPanel({
                 aria-label="Our Tailwind"
               />
             </div>
-            <span className="text-center text-[11px]">Tailwind</span>
+            <span className="text-center text-xs">Tailwind</span>
             <div className="flex justify-start">
               <Switch
                 size="sm"
@@ -863,7 +863,7 @@ export function SpeedTiersPanel({
                 aria-label="Our Scarf"
               />
             </div>
-            <span className="text-center text-[11px]">Choice Scarf</span>
+            <span className="text-center text-xs">Choice Scarf</span>
             <div className="flex justify-start">
               <Switch
                 size="sm"
@@ -892,7 +892,7 @@ export function SpeedTiersPanel({
                 aria-label="Our Unburden"
               />
             </div>
-            <span className="text-center text-[11px]">Unburden</span>
+            <span className="text-center text-xs">Unburden</span>
             <div className="flex justify-start">
               <Switch
                 size="sm"
@@ -927,7 +927,7 @@ export function SpeedTiersPanel({
                 aria-label="Our Paralyzed"
               />
             </div>
-            <span className="text-center text-[11px]">Paralyzed</span>
+            <span className="text-center text-xs">Paralyzed</span>
             <div className="flex justify-start">
               <Switch
                 size="sm"
@@ -950,7 +950,7 @@ export function SpeedTiersPanel({
 
             {/* Nature — theirs only */}
             <div />
-            <span className="text-center text-[11px]">SPE Nature</span>
+            <span className="text-center text-xs">SPE Nature</span>
             <div className="flex justify-start gap-0.5">
               {(["negative", "neutral", "positive"] as const).map((n) => (
                 <button
@@ -964,7 +964,7 @@ export function SpeedTiersPanel({
                     }))
                   }
                   className={cn(
-                    "rounded px-1.5 py-0.5 font-mono text-[10px] font-bold transition-colors",
+                    "rounded px-1.5 py-0.5 font-mono text-xs font-bold transition-colors",
                     toggle.theirs.nature === n
                       ? "bg-primary/20 text-primary"
                       : "text-muted-foreground/60 hover:text-muted-foreground"
@@ -977,7 +977,7 @@ export function SpeedTiersPanel({
 
             {/* EVs — theirs only */}
             <div />
-            <span className="text-center text-[11px]">{evLabel}</span>
+            <span className="text-center text-xs">{evLabel}</span>
             <div className="flex items-center justify-start gap-0.5">
               <button
                 type="button"
@@ -1017,7 +1017,7 @@ export function SpeedTiersPanel({
                     theirs: { ...prev.theirs, evs: val },
                   }));
                 }}
-                className="text-foreground w-8 [appearance:textfield] bg-transparent text-center font-mono text-[10px] font-semibold outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className="text-foreground w-8 [appearance:textfield] bg-transparent text-center font-mono text-xs font-semibold outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
               <button
                 type="button"
@@ -1058,7 +1058,7 @@ export function SpeedTiersPanel({
               </button>
               <span
                 className={cn(
-                  "min-w-5 rounded px-1 text-center font-mono text-[10px] font-bold",
+                  "min-w-5 rounded px-1 text-center font-mono text-xs font-bold",
                   toggle.yours.stage !== 0
                     ? "bg-primary/20 text-primary"
                     : "text-muted-foreground"
@@ -1085,7 +1085,7 @@ export function SpeedTiersPanel({
                 +
               </button>
             </div>
-            <span className="text-center text-[11px]">Stages</span>
+            <span className="text-center text-xs">Stages</span>
             <div className="flex items-center justify-start gap-0.5">
               <button
                 type="button"
@@ -1103,7 +1103,7 @@ export function SpeedTiersPanel({
               </button>
               <span
                 className={cn(
-                  "min-w-5 rounded px-1 text-center font-mono text-[10px] font-bold",
+                  "min-w-5 rounded px-1 text-center font-mono text-xs font-bold",
                   toggle.theirs.stage !== 0
                     ? "bg-primary/20 text-primary"
                     : "text-muted-foreground"

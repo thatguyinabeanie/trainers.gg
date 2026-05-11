@@ -31,7 +31,7 @@ jest.mock("@trainers/pokemon/sprites", () => ({
 // Import after mocks
 // =============================================================================
 
-import { RibDecorations } from "../lanes/rib-decorations";
+import { RibDecorations } from "../_deprecated/rib-decorations";
 import * as TrainersPokemon from "@trainers/pokemon";
 
 // =============================================================================

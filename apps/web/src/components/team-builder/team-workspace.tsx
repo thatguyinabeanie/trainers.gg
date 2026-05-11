@@ -783,7 +783,7 @@ export function TeamWorkspaceV2({
                     >
                       <div className="flex h-full flex-col overflow-hidden">
                         <header className="flex items-center gap-2 px-3 py-2">
-                          <span className="text-primary flex-1 text-center font-mono text-[10px] font-bold tracking-wider uppercase">
+                          <span className="text-primary flex-1 text-center font-mono text-xs font-bold tracking-wider uppercase">
                             Speed Tiers
                           </span>
                           <button
@@ -863,21 +863,15 @@ export function TeamWorkspaceV2({
                           persistence.onMutationSuccess();
                         }}
                       />
-                      <div className="ml-auto">
+                      <div className="ml-auto hidden md:block">
                         <TeamLayoutToggle />
                       </div>
                     </div>
                     {/* Section wraps pokemon rows */}
-                    <section
-                      className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3 [[data-density=compact]_&]:p-2"
-                      data-calc-open={
-                        state.rightDrawer === "calc" ? "true" : "false"
-                      }
-                      data-layout={layoutMode}
-                    >
+                    <section className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3">
                       <div
                         className={cn(
-                          "grid grid-cols-[minmax(0,1fr)] gap-2 [[data-density=compact]_&]:gap-1",
+                          "grid grid-cols-[minmax(0,1fr)] gap-2",
                           layoutMode === "2x3-vertical" &&
                             "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] items-center justify-center"
                         )}
@@ -906,8 +900,6 @@ export function TeamWorkspaceV2({
                                   idx={i}
                                   pokemon={p}
                                   isActive={state.activeIdx === i}
-                                  density="comfy"
-                                  expandMode="all"
                                   onActivate={state.setActiveIdx}
                                   onAdd={handleAdd}
                                   onRemove={handleRemoveByIdx}
@@ -1099,14 +1091,10 @@ export function TeamWorkspaceV2({
                     </Popover>
                   </div>
 
-                  <section
-                    className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 px-3 pb-3 [[data-density=compact]_&]:px-2 [[data-density=compact]_&]:pb-2"
-                    data-calc-open="false"
-                    data-layout={layoutMode}
-                  >
+                  <section className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 px-3 pb-3">
                     <div
                       className={cn(
-                        "grid grid-cols-[minmax(0,1fr)] gap-2 [[data-density=compact]_&]:gap-1",
+                        "grid grid-cols-[minmax(0,1fr)] gap-2",
                         layoutMode === "2x3-vertical" &&
                           "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] items-center justify-center"
                       )}
@@ -1125,8 +1113,6 @@ export function TeamWorkspaceV2({
                             idx={i}
                             pokemon={p}
                             isActive={state.activeIdx === i}
-                            density="comfy"
-                            expandMode="all"
                             onActivate={state.setActiveIdx}
                             onAdd={handleAdd}
                             onRemove={handleRemoveByIdx}
