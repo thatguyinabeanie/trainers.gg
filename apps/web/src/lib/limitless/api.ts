@@ -215,21 +215,35 @@ async function limitlessFetch<T>(path: string, apiKey?: string): Promise<T> {
 export async function fetchTournamentList(
   apiKey?: string
 ): Promise<LimitlessTournament[]> {
-  const all: LimitlessTournament[] = [];
-  let page = 1;
+  // Fetch first page to determine total pages
+  const first = await limitlessFetch<LimitlessTournament[]>(
+    `/tournaments?game=VGC&limit=500&page=1`,
+    apiKey
+  );
+  if (!first || first.length === 0) return [];
+  if (first.length < 500) return first;
 
-  while (true) {
-    const batch = await limitlessFetch<LimitlessTournament[]>(
-      `/tournaments?game=VGC&limit=500&page=${page}`,
-      apiKey
+  // More pages available — fetch remaining pages concurrently (5 at a time)
+  const all: LimitlessTournament[] = [...first];
+  const MAX_CONCURRENT = 5;
+
+  for (let page = 2; ; page += MAX_CONCURRENT) {
+    const pages = Array.from({ length: MAX_CONCURRENT }, (_, i) => page + i);
+    const results = await Promise.all(
+      pages.map((p) =>
+        limitlessFetch<LimitlessTournament[]>(
+          `/tournaments?game=VGC&limit=500&page=${p}`,
+          apiKey
+        ).catch(() => null)
+      )
     );
-    if (!batch || batch.length === 0) break;
-    all.push(...batch);
-    if (batch.length < 500) break;
-    page++;
-  }
 
-  return all;
+    for (const batch of results) {
+      if (!batch || batch.length === 0) return all;
+      all.push(...batch);
+      if (batch.length < 500) return all;
+    }
+  }
 }
 
 /**
@@ -239,19 +253,21 @@ export async function fetchTournamentData(
   tournamentId: string,
   apiKey?: string
 ): Promise<TournamentData> {
-  // Sequential to avoid spiking 3 concurrent requests against rate limits
-  const details = await limitlessFetch<LimitlessTournamentDetails>(
-    `/tournaments/${tournamentId}/details`,
-    apiKey
-  );
-  const standings = await limitlessFetch<LimitlessStanding[]>(
-    `/tournaments/${tournamentId}/standings`,
-    apiKey
-  );
-  const pairings = await limitlessFetch<LimitlessPairing[]>(
-    `/tournaments/${tournamentId}/pairings`,
-    apiKey
-  );
+  // 3 concurrent requests — rate limit retry handles any throttling
+  const [details, standings, pairings] = await Promise.all([
+    limitlessFetch<LimitlessTournamentDetails>(
+      `/tournaments/${tournamentId}/details`,
+      apiKey
+    ),
+    limitlessFetch<LimitlessStanding[]>(
+      `/tournaments/${tournamentId}/standings`,
+      apiKey
+    ),
+    limitlessFetch<LimitlessPairing[]>(
+      `/tournaments/${tournamentId}/pairings`,
+      apiKey
+    ),
+  ]);
 
   return { details, standings, pairings };
 }
