@@ -132,7 +132,7 @@ export function RK9Import() {
 
   async function handleScrapeTeams(eventId: string) {
     setActiveJobs((prev) =>
-      new Map(prev).set(eventId, { type: "teams", scraped: 0, total: 0 }),
+      new Map(prev).set(eventId, { type: "teams", scraped: 0, total: 0 })
     );
 
     try {
@@ -149,7 +149,7 @@ export function RK9Import() {
             type: "teams",
             scraped: result.scraped ?? 0,
             total: result.total ?? 0,
-          }),
+          })
         );
       }
     } finally {
@@ -286,6 +286,12 @@ export function RK9Import() {
 // Event Row
 // ---------------------------------------------------------------------------
 
+interface JobState {
+  type: string;
+  scraped?: number;
+  total?: number;
+}
+
 function EventTableRow({
   event,
   activeJob,
@@ -293,7 +299,7 @@ function EventTableRow({
   onScrapeTeams,
 }: {
   event: RK9EventRow;
-  activeJob: string | null;
+  activeJob: JobState | null;
   onScrapeRoster: () => void;
   onScrapeTeams: () => void;
 }) {
@@ -343,7 +349,7 @@ function EventTableRow({
               onClick={onScrapeRoster}
               disabled={isBusy}
             >
-              {activeJob === "roster" ? (
+              {activeJob?.type === "roster" ? (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Download className="mr-1.5 h-3.5 w-3.5" />
@@ -362,7 +368,7 @@ function EventTableRow({
                 onClick={onScrapeTeams}
                 disabled={isBusy}
               >
-                {activeJob === "teams" ? (
+                {activeJob?.type === "teams" ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Download className="mr-1.5 h-3.5 w-3.5" />
@@ -390,13 +396,26 @@ function EventStatusBadge({
   activeJob,
 }: {
   status: string;
-  activeJob: string | null;
+  activeJob: JobState | null;
 }) {
   if (activeJob) {
+    if (activeJob.type === "teams" && activeJob.total && activeJob.total > 0) {
+      const pct = Math.round(
+        ((activeJob.scraped ?? 0) / activeJob.total) * 100
+      );
+      return (
+        <Badge variant="secondary" className="text-xs">
+          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+          Teams {activeJob.scraped}/{activeJob.total} ({pct}%)
+        </Badge>
+      );
+    }
     return (
       <Badge variant="secondary" className="text-xs">
         <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-        {activeJob === "roster" ? "Scraping roster..." : "Scraping teams..."}
+        {activeJob.type === "roster"
+          ? "Scraping roster..."
+          : "Scraping teams..."}
       </Badge>
     );
   }

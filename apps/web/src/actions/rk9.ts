@@ -127,7 +127,11 @@ export async function scrapeRk9Roster(
     // Import roster (without teams)
     const result = await importEvent(supabase, eventId, roster, {});
 
-    return { success: true, data: undefined, playerCount: result.standingsInserted };
+    return {
+      success: true,
+      data: undefined,
+      playerCount: result.standingsInserted,
+    };
   } catch (e) {
     // Mark event as failed
     const supabase = createServiceRoleClient();
@@ -160,9 +164,7 @@ const TEAMS_BATCH_SIZE = 25;
  * TEAMS_BATCH_SIZE teams, skipping standings that already have team_pokemon.
  * Returns progress so the client can show a progress bar.
  */
-export async function scrapeRk9TeamsBatch(
-  eventId: string,
-): Promise<
+export async function scrapeRk9TeamsBatch(eventId: string): Promise<
   ActionResult & {
     done?: boolean;
     scraped?: number;
@@ -197,15 +199,13 @@ export async function scrapeRk9TeamsBatch(
       .select("standing_id")
       .in(
         "standing_id",
-        allStandings.map((s) => s.id),
+        allStandings.map((s) => s.id)
       );
 
     const standingsWithTeams = new Set(
-      (withTeams ?? []).map((t) => t.standing_id),
+      (withTeams ?? []).map((t) => t.standing_id)
     );
-    const remaining = allStandings.filter(
-      (s) => !standingsWithTeams.has(s.id),
-    );
+    const remaining = allStandings.filter((s) => !standingsWithTeams.has(s.id));
 
     const total = allStandings.length;
     const alreadyScraped = total - remaining.length;
@@ -257,14 +257,20 @@ export async function scrapeRk9TeamsBatch(
       try {
         await sleep(DELAY_TEAM_MS);
         const html = await fetchRk9Html(
-          `/teamlist/public/${eventId}/${entryId}`,
+          `/teamlist/public/${eventId}/${entryId}`
         );
         const pokemon = parseTeamListPage(html);
 
         if (pokemon.length > 0) {
           const pokemonRows = pokemon.map((mon, i) => {
-            if (!newSpecies.has(mon.speciesRaw) && !speciesMap.has(mon.speciesRaw)) {
-              newSpecies.set(mon.speciesRaw, normalizeSpeciesInline(mon.speciesRaw));
+            if (
+              !newSpecies.has(mon.speciesRaw) &&
+              !speciesMap.has(mon.speciesRaw)
+            ) {
+              newSpecies.set(
+                mon.speciesRaw,
+                normalizeSpeciesInline(mon.speciesRaw)
+              );
             }
             return {
               standing_id: standing.id,
