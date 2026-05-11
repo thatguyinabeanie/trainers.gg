@@ -29,25 +29,49 @@ log_dim() { echo -e "${DIM}[cron] $1${NC}"; }
 # =============================================================================
 # Configuration
 # =============================================================================
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+ENV_FILE="$ROOT_DIR/.env.local"
+
+# Source cron-specific vars from .env.local (if present)
+if [ -f "$ENV_FILE" ]; then
+  for var in CRON_SYNC_INTERVAL CRON_IMPORT_INTERVAL CRON_IMPORT_BATCH CRON_BASE_URL; do
+    val=$(grep "^${var}=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
+    if [ -n "$val" ]; then
+      export "$var=$val"
+    fi
+  done
+fi
+
 BASE_URL="${CRON_BASE_URL:-http://localhost:3000}"
 SYNC_INTERVAL="${CRON_SYNC_INTERVAL:-300}"       # 5 minutes (seconds)
 IMPORT_INTERVAL="${CRON_IMPORT_INTERVAL:-900}"   # 15 minutes (seconds)
 IMPORT_BATCH="${CRON_IMPORT_BATCH:-5}"           # Tournaments per import run
 
-# Load CRON_SECRET from .env.local
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-ENV_FILE="$ROOT_DIR/.env.local"
+# Wait for .env.local to have CRON_SECRET (setup-local.sh may still be running)
+log_info "Waiting for CRON_SECRET in .env.local..."
+attempts=0
+max_attempts=30
+CRON_SECRET=""
 
-if [ -f "$ENV_FILE" ]; then
-  CRON_SECRET=$(grep "^CRON_SECRET=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
-fi
+while [ $attempts -lt $max_attempts ]; do
+  if [ -f "$ENV_FILE" ]; then
+    CRON_SECRET=$(grep "^CRON_SECRET=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
+  fi
+  if [ -n "$CRON_SECRET" ]; then
+    break
+  fi
+  attempts=$((attempts + 1))
+  sleep 2
+done
 
 if [ -z "$CRON_SECRET" ]; then
-  log_error "CRON_SECRET not found in .env.local"
-  log_error "Run 'pnpm dev' once to auto-generate it, or add it manually."
+  log_error "CRON_SECRET not found in .env.local after ${max_attempts} attempts"
+  log_error "Add CRON_SECRET=<any-value> to .env.local manually."
   exit 1
 fi
+
+log_success "CRON_SECRET loaded"
 
 AUTH_HEADER="Authorization: Bearer $CRON_SECRET"
 

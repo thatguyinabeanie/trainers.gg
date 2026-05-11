@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -38,6 +38,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { supabase } from "@/lib/supabase/client";
 import { LIMITLESS_TO_FORMAT } from "@/lib/limitless";
+import {
+  queueTournamentForImport,
+  batchQueueTournaments,
+} from "@/actions/limitless";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -181,17 +185,8 @@ export function LimitlessImport() {
   async function queueOne(tournamentId: string) {
     setQueuingIds((prev) => new Set(prev).add(tournamentId));
     try {
-      const { error } = await supabase
-        .schema("limitless")
-        .from("tournaments")
-        .update({
-          import_requested_at: new Date().toISOString(),
-          import_status: "queued",
-          import_error: null,
-        })
-        .eq("tournament_id", tournamentId);
-
-      if (error) throw error;
+      const result = await queueTournamentForImport(tournamentId);
+      if (!result.success) throw new Error(result.error);
       setRefreshKey((k) => k + 1);
     } catch (err) {
       console.error("Failed to queue tournament:", err);
@@ -219,17 +214,8 @@ export function LimitlessImport() {
     setBatchQueuing(true);
     try {
       const ids = toQueue.map((t) => t.tournament_id);
-      const { error } = await supabase
-        .schema("limitless")
-        .from("tournaments")
-        .update({
-          import_requested_at: new Date().toISOString(),
-          import_status: "queued",
-          import_error: null,
-        })
-        .in("tournament_id", ids);
-
-      if (error) throw error;
+      const result = await batchQueueTournaments(ids);
+      if (!result.success) throw new Error(result.error);
       setRefreshKey((k) => k + 1);
       refetchStats();
     } catch (err) {
@@ -251,6 +237,23 @@ export function LimitlessImport() {
   ).length;
 
   // -------------------------------------------------------------------------
+  // Auto-poll when queue is active (items queued or importing)
+  // -------------------------------------------------------------------------
+
+  const hasActiveQueue = queuedCount > 0 || importingCount > 0;
+
+  useEffect(() => {
+    if (!hasActiveQueue) return;
+
+    const interval = setInterval(() => {
+      setRefreshKey((k) => k + 1);
+      refetchStats();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [hasActiveQueue]);
+
+  // -------------------------------------------------------------------------
   // Search + sort logic
   // -------------------------------------------------------------------------
 
@@ -260,9 +263,7 @@ export function LimitlessImport() {
     return (
       t.name.toLowerCase().includes(q) ||
       t.tournament_id.toLowerCase().includes(q) ||
-      (FORMAT_ID_TO_CODE[t.format_id] ?? t.format_id)
-        .toLowerCase()
-        .includes(q)
+      (FORMAT_ID_TO_CODE[t.format_id] ?? t.format_id).toLowerCase().includes(q)
     );
   });
 
@@ -293,7 +294,9 @@ export function LimitlessImport() {
               return 3;
           }
         };
-        return dir * (statusOrder(a.import_status) - statusOrder(b.import_status));
+        return (
+          dir * (statusOrder(a.import_status) - statusOrder(b.import_status))
+        );
       }
       default:
         return 0;
@@ -460,8 +463,7 @@ export function LimitlessImport() {
                 ) : (
                   <>
                     <Download className="mr-2 h-4 w-4" />
-                    Queue{" "}
-                    {Math.min(pendingTournaments.length, queueBatchSize)}
+                    Queue {Math.min(pendingTournaments.length, queueBatchSize)}
                   </>
                 )}
               </Button>
@@ -571,7 +573,10 @@ export function LimitlessImport() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="font-mono text-xs">
+                        <Badge
+                          variant="secondary"
+                          className="font-mono text-xs"
+                        >
                           {FORMAT_ID_TO_CODE[t.format_id] ?? t.format_id}
                         </Badge>
                       </TableCell>
@@ -703,7 +708,7 @@ function SortableHeader({
     <button
       type="button"
       onClick={() => onSort(column)}
-      className={`flex items-center gap-1 text-left font-medium hover:text-foreground ${className ?? ""}`}
+      className={`hover:text-foreground flex items-center gap-1 text-left font-medium ${className ?? ""}`}
     >
       {label}
       {isActive ? (

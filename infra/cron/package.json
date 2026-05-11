@@ -4,5 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "./scripts/dev.sh"
+  },
+  "devDependencies": {
+    "@trainers/supabase": "workspace:*"
   }
 }
